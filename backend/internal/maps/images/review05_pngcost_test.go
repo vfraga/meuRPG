@@ -29,7 +29,7 @@ func grayPNG(t *testing.T, w, h, depth int, trns bool) []byte {
 		_, _ = zw.Write(row)
 	}
 	_ = zw.Close()
-	ihdr := binary.BigEndian.AppendUint32(nil, uint32(w))  //nolint:gosec // test
+	ihdr := binary.BigEndian.AppendUint32(nil, uint32(w)) //nolint:gosec // test
 	ihdr = binary.BigEndian.AppendUint32(ihdr, uint32(h)) //nolint:gosec // test
 	ihdr = append(ihdr, byte(depth), 0, 0, 0, 0)
 	out := []byte("\x89PNG\r\n\x1a\n")
