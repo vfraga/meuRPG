@@ -175,3 +175,37 @@ All paths under `backend/internal/` unless `web/`. General: the master marks con
 | Unconscious: incapacitated, drops items, prone, auto-fail Str/Dex, advantage against, auto-crit within 5 ft | partial | speed 0 and no reactions; Sleep's pool skips it (play/combat_spells_hp.go:115); ends a druid's Wild Shape (play/combat_conditions.go:90, wildshape.go:119-154); not added at 0 HP | – | high | |
 | Concentration ends when incapacitated or killed | absent | no code path | rules.md:329 "the master decides" | medium | Master or player ends it by hand (SetCombatantConditions end_concentration). |
 | Exhaustion, six levels (level counter, disadvantage on checks, speed halved, HP max halved, speed 0, death) | reminder | web core/combat/conditions.ts:24 is a plain on/off checkbox; no counter; no effect | – | high | Nothing removes a level on a long rest; forced march, starvation and disease feed it by hand. |
+
+## 5. Spellcasting
+
+Paths under `backend/internal/` unless `web/`. Machine coverage of the 319 SRD spells (counted from `rules/srd51/data/spells.json` and `effects/spells.json`, see `raw-spellcasting.md`): 12 have an engine effect entry (3 summon, 2 hp_pool, 2 hp_threshold, 1 zero-HP, 1 flat heal, 1 temp HP, 1 max HP, 1 ignores cover); 66 have damage the server rolls; 10 heal; 16 are spell attacks; 92 ask a saving throw the server rolls; 132 have some server mechanic; 187 are text only. 49 save spells have no damage, heal or effect, so a failed save changes nothing in the app.
+
+| Mechanic | State | Evidence | Deliberate? | Impact | Note |
+| --- | --- | --- | --- | --- | --- |
+| Spell level, spell slots by class/level, pact slots | built | rules/spellcasting.go:55; characters/vitals.go:298 | – | high | Slots are tracked per level, and spent on a cast. |
+| Slot spent on cast (player characters) | built | play/combat_spells.go:391-397 | – | high | NPCs and creatures spend nothing. |
+| Slot recovery (rest) | absent | see Adventuring: no rest action | rules.md:51 claims it | high | The master fixes slots by hand. |
+| Known and prepared spells, class lists, validation | built | rules/spelllist.go; rules/validate.go; characters/spelllist.go | – | high | The player's spell list screen too. |
+| Upcasting: more damage dice and more targets | built | rules/spelldetails.go:269-290; play/combat_spells.go:159-180; rules/combat/rolls.go:127 (Magic Missile) | – | high | Only for spells whose data has the scaling. |
+| Cantrips scale by character level | built | characters/combatspells.go:71; rules/spelldetails.go:237-251 | – | high | |
+| Rituals (cast without a slot, +10 min) | absent | no ritual flag on CastSpell; only summons outside combat (play/creature_cast.go:194-270) | – | medium | |
+| Casting time: action / bonus action / reaction | built | rules/combat/turn.go:392-494 | – | high | Reaction spells (Shield, etc.) only on their trigger. |
+| Casting time of a minute or longer | partial | rules/combat/turn.go:477 refuses in combat | – | low | Out of combat the cast is not tracked at all. |
+| One bonus-action spell per turn rule | built | rules/combat/turn.go (BonusActionSpellLimit) | – | medium | |
+| Range (checked on a map for players) | partial | play/combat_spells.go:534-552 | RN-25 | medium | Master is exempt; without a grid not checked; measured from the caster. |
+| Components V/S/M, costly or consumed material, focus, free hand, silence | absent | no match for component/material in the cast path (play/combat_spells.go) | – | medium | Nothing stops a gagged caster or one without the diamond. |
+| Targets: clear path, total cover | partial | play/combat_spells.go:538 | – | medium | Total cover refuses a single-target spell; area spells exempt. |
+| Areas of effect (cone, cube, cylinder, line, sphere) | reminder | rules/ stores the shape; no geometry in play/ | rules.md:344 "the caster picks the targets, no area drawn" | high | The caster ticks targets by name. |
+| Saving throw spells: server rolls target save vs caster DC | built | play/combat_spells_view.go:33-38; rules/spellcasting.go:55 | – | high | Half on success where the data says so; cover bonus on Dex saves (combat_spells.go:641). |
+| Save with no damage or effect (49 spells) | reminder | effects/spells.json holds only 12 entries | rules.md:329, :336-340 "the master decides" | high | The log shows the result; nothing is applied. |
+| Spell attack rolls | built | play/combat_spells.go:598-612 | – | high | One d20; no disadvantage rules. |
+| Damage and healing spells | built | play/combat_actions.go:974-1013 | – | high | 66 damage + 10 heal spells. |
+| Condition-applying spells | partial | effects/spells.json:7,13,18 | – | high | Only Sleep, Color Spray, Power Word Stun apply conditions. |
+| Summoning spells | partial | rules/summon.go; play/creature_cast.go | – | medium | 3 spells (Animate Dead, Conjure Animals, Find Familiar). Find Steed out. |
+| Concentration: one at a time (new cast replaces the old) | built | play/combat_spells.go:418-429 | – | high | |
+| Concentration: save after damage | reminder | rules/combat/rolls.go:117; play/combat_actions.go:1211-1219 | RN-22 | high | DC shown, nobody rolls it in the app. |
+| Concentration ends on incapacitated / unconscious / death | absent | play/combat_spells_hp.go:269-303, combat_death.go:247 do not touch it | rules.md:329 | high | |
+| Duration (rounds, minutes, hours) | absent | text only; no round counter or expiry | – | high | Spell effects never time out; the master ends them. |
+| Combining magical effects (same spell does not stack) | absent | no match | – | low | |
+| Magic school | built (data) | rules/srd51/data/spells.json; filters in ListContent | – | low | Used for lists only. |
+| Reading spell details in play | built | characters/spelldetails.go; web pages/spells | – | medium | |
