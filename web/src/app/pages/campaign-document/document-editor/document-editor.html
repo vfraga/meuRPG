@@ -95,6 +95,7 @@
       aria-label="Texto do documento"
       aria-describedby="doc-text-hint"
       [value]="draft()"
+      [readOnly]="saving()"
       (input)="onInput(textarea.value)"
     ></textarea>
     <p id="doc-text-hint" class="mr-label hint">

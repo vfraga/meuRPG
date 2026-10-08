@@ -455,6 +455,77 @@ describe('"Voltar à cidade" in the history (E9-09)', () => {
   });
 });
 
+describe('the undo of an award that the history no longer has', () => {
+  const undoLast = vi.fn();
+
+  async function run(rejection: ConnectError) {
+    undoLast.mockReset().mockRejectedValue(rejection);
+    Element.prototype.scrollIntoView = vi.fn();
+    TestBed.configureTestingModule({
+      providers: [
+        ExperienceStore,
+        { provide: ProgressionClient, useValue: { undoLast } },
+        { provide: RosterClient, useValue: { list: () => Promise.resolve([]) } },
+      ],
+    });
+    const store = TestBed.inject(ExperienceStore);
+    store.awards.set([LAST]);
+    store.rows.set([]);
+    const refresh = vi.spyOn(store, 'refresh').mockResolvedValue();
+    const fixture = TestBed.createComponent(AwardHistory);
+    fixture.componentRef.setInput('campaignId', 'camp-1');
+    fixture.componentRef.setInput('isMaster', true);
+    const undone = vi.fn();
+    fixture.componentInstance.undone.subscribe(undone);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const click = async (name: string) => {
+      Array.from(el.querySelectorAll<HTMLButtonElement>('button'))
+        .find(
+          (b) => b.textContent?.trim() === name || b.getAttribute('aria-label')?.startsWith(name),
+        )!
+        .click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+    await click('Desfazer');
+    await click('Desfazer XP');
+    return { el, refresh, undone };
+  }
+
+  it('re-reads the history after an undo the server aborts', async () => {
+    const { refresh } = await run(new ConnectError('x', Code.Aborted));
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it('re-reads the history when the server says there is nothing to undo, as its message says', async () => {
+    const { el, refresh } = await run(
+      new ConnectError('x', Code.FailedPrecondition, undefined, [
+        {
+          desc: XPBlockedSchema,
+          value: { reason: XPBlockedReason.XP_BLOCKED_REASON_NOTHING_TO_UNDO },
+        },
+      ]),
+    );
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('A tela foi atualizada');
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it('tells the page the XP moved when there is nothing to undo, as another tab undid it', async () => {
+    const { undone } = await run(
+      new ConnectError('x', Code.FailedPrecondition, undefined, [
+        {
+          desc: XPBlockedSchema,
+          value: { reason: XPBlockedReason.XP_BLOCKED_REASON_NOTHING_TO_UNDO },
+        },
+      ]),
+    );
+    expect(undone).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('what undoing says', () => {
   const rows = [
     {

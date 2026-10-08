@@ -412,6 +412,12 @@ func TestAdjustCharacterVitalsIsIdempotent(t *testing.T) {
 	// mistake, not a retry.
 	_, err = call(keyA, otherPC.GetId(), 3)
 	wantCode(t, "AdjustCharacterVitals(the key of another change)", err, connect.CodeInvalidArgument)
+	// Nor is it a retry when it comes with other numbers for the same character.
+	_, err = call(keyA, pc.GetId(), 4)
+	wantCode(t, "AdjustCharacterVitals(the key with other hit points)", err, connect.CodeInvalidArgument)
+	if v := master.liveSession(t, campaign).GetVitals(); len(v) == 0 || v[0].GetHitPointsCurrent() != 5 {
+		t.Errorf("vitals after the refused call = %v, want them as they were", v)
+	}
 
 	// The player's stream got exactly the two changes, not the retries.
 	for _, want := range []int32{3, 5} {

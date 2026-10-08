@@ -152,11 +152,14 @@ describe('GiveCreatureSheet: the master gives a creature (E9-10, MR-037)', () =>
   it('a typing pause still pending when the dialog is destroyed never searches', async () => {
     const { el, fixture, settle } = await setup();
     const before = api.searches.length;
+    // A clock the spec drives by hand, turned on after the dialog settled: the typing pause is crossed by advancing it.
+    vi.useFakeTimers();
     const q = el.querySelector<HTMLInputElement>('input[type=search]')!;
     q.value = 'lobo';
     q.dispatchEvent(new Event('input'));
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
     fixture.destroy();
-    await new Promise((r) => setTimeout(r, 400));
+    await vi.advanceTimersByTimeAsync(400);
     expect(api.searches.length).toBe(before);
     void settle;
   });

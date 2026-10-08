@@ -26,6 +26,10 @@ const (
 	// maxEffectList bounds the lists inside an effect (tags, targets, options,
 	// granted spells).
 	maxEffectList = 20
+
+	// MaxChoiceCount bounds how many a choice effect asks the player to pick:
+	// more than the 18 skills there are would never be answerable.
+	MaxChoiceCount = 18
 )
 
 // budget counts what an overlay will cost while it is walked in the first pass.

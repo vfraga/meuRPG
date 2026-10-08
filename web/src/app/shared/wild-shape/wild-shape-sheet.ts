@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -9,7 +9,7 @@ import type { CharacterVitals } from '../../../gen/meurpg/play/v1/play_pb';
 import type { Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { Creature, CreatureSummary } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { combatErrorMessage } from '../../core/combat/combat-errors';
-import { newKey } from '../../core/connect/idempotency';
+import { ActionKey } from '../../core/connect/idempotency';
 import { readBlocks } from '../../core/creatures/read-blocks';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { beastAttacks, beastLine } from '../../core/creatures/creature-format';
@@ -80,8 +80,10 @@ export class WildShapeSheet {
   protected readonly blocks = signal<ReadonlyMap<string, Creature>>(new Map());
   protected readonly chosen = signal('');
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
-  private key = newKey();
+  private readonly key = new ActionKey();
 
   /** "Feras de ND até 1/2, sem voo." */
   protected readonly rule = computed(() => {
@@ -166,7 +168,6 @@ export class WildShapeSheet {
 
   protected pick(key: string): void {
     this.chosen.set(key);
-    this.key = newKey();
     this.error.set('');
   }
 
@@ -182,7 +183,7 @@ export class WildShapeSheet {
         this.data.campaignId,
         this.data.characterId,
         beast.key,
-        this.key,
+        this.key.keyFor(beast.key),
       );
       this.sheet.close({ beastNamePt: beast.namePt, vitals: res.vitals, encounter: res.encounter });
     } catch (err) {

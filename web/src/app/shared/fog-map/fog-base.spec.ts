@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { type Vision, decodeVision } from '../../core/maps/vision';
 import { visionResponse } from '../../core/maps/vision-testing';
@@ -93,13 +93,52 @@ describe('FogBase', () => {
     expect(Array.from(settled.at(-1) ?? [])).toEqual(['0:0']);
   });
 
-  it('does not wait for a tile that failed: its place is black, not a spinner that never ends', () => {
-    const { fixture, el } = create(tiled());
-    el.querySelectorAll<HTMLImageElement>('.fb__tile').forEach((t) =>
-      t.dispatchEvent(new Event('error')),
-    );
-    fixture.detectChanges();
-    expect(el.querySelectorAll('[data-pending]').length).toBe(0);
+  describe('a tile the server did not give', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const fail = (el: HTMLElement) =>
+      el
+        .querySelectorAll<HTMLImageElement>('.fb__tile')
+        .forEach((t) => t.dispatchEvent(new Event('error')));
+
+    it('is asked for again after a wait, by a new URL, and keeps its place waiting', () => {
+      const { fixture, el } = create(tiled());
+      fail(el);
+      fixture.detectChanges();
+      expect(el.querySelectorAll('[data-pending]').length).toBe(2);
+      vi.advanceTimersByTime(2_000);
+      fixture.detectChanges();
+      expect(el.querySelector('.fb__tile')?.getAttribute('src')).toBe(
+        '/images/maps/m1/tiles/0/0?r=3&retry=1',
+      );
+      el.querySelectorAll<HTMLImageElement>('.fb__tile').forEach((t) =>
+        t.dispatchEvent(new Event('load')),
+      );
+      fixture.detectChanges();
+      expect(el.querySelectorAll('[data-pending]').length).toBe(0);
+      expect(el.getAttribute('data-tiles-ready')).toBe('2');
+    });
+
+    it('stops waiting for a tile that failed every attempt: its place is black, not a spinner that never ends', () => {
+      const { fixture, el } = create(tiled());
+      for (let attempt = 0; attempt < 6; attempt++) {
+        fail(el);
+        fixture.detectChanges();
+        vi.advanceTimersByTime(30_000);
+        fixture.detectChanges();
+      }
+      expect(el.querySelectorAll('[data-pending]').length).toBe(0);
+    });
+
+    it('does not ask again once the component is gone', () => {
+      const { fixture, el } = create(tiled());
+      fail(el);
+      const waiting = vi.getTimerCount();
+      fixture.destroy();
+      // The two waits for the two tiles are cancelled.
+      expect(vi.getTimerCount()).toBeLessThanOrEqual(waiting - 2);
+    });
   });
 
   it('keeps the old pixels of a tile while a changed one is fetched: the place is not waiting again', () => {

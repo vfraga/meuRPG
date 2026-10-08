@@ -38,4 +38,36 @@ describe('NextTurn', () => {
     expect(sent).toEqual([true]);
     expect(go.textContent?.trim()).toBe('Passar o turno');
   });
+
+  describe('the question about the owed damage', () => {
+    function ask() {
+      const opened = setup('Falta aplicar 5 de dano');
+      opened.el.querySelector<HTMLButtonElement>('.next')!.click();
+      opened.fixture.detectChanges();
+      expect(opened.el.querySelector('[role="alertdialog"]')).not.toBeNull();
+      return opened;
+    }
+
+    it('closes when the owed damage is gone (applied elsewhere)', () => {
+      const { fixture, el } = ask();
+      fixture.componentRef.setInput('pendingNote', null);
+      fixture.detectChanges();
+      expect(el.querySelector('[role="alertdialog"]')).toBeNull();
+    });
+
+    it('does not discard once the owed damage is gone', () => {
+      const { fixture, el, sent } = ask();
+      fixture.componentRef.setInput('pendingNote', null);
+      fixture.detectChanges();
+      el.querySelector<HTMLButtonElement>('.ask__go')?.click();
+      expect(sent).not.toContain(true);
+    });
+
+    it('closes when the turn moves on', () => {
+      const { fixture, el } = ask();
+      fixture.componentRef.setInput('turn', 'g2:1');
+      fixture.detectChanges();
+      expect(el.querySelector('[role="alertdialog"]')).toBeNull();
+    });
+  });
 });

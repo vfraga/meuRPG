@@ -159,4 +159,108 @@ describe('NotesState', () => {
     expect(state.notes()).toEqual([]);
     expect(state.loaded()).toBe(false);
   });
+
+  describe('a refresh in flight when the own write answers', () => {
+    function deferred<T>() {
+      let resolve!: (v: T) => void;
+      const promise = new Promise<T>((r) => (resolve = r));
+      return { promise, resolve };
+    }
+
+    it('still applies what the refresh carries (a clue), by reading again, and announces it once', async () => {
+      const clue = note('c1', 'Um brasão', AT(20), { clue: true });
+      const lists = [deferred<never>(), deferred<never>()];
+      const update = deferred<ReturnType<typeof note>>();
+      let calls = 0;
+      const gated = {
+        list: () => (++calls === 1 ? api.list('c1') : lists[calls - 2].promise),
+        scenes: () => api.scenes('c1'),
+        create: () => Promise.reject(new Error('unused')),
+        update: () => update.promise,
+        delete: () => Promise.resolve(),
+      };
+      const own = new NotesState(gated as never, () => 'c1');
+      await own.refresh();
+
+      const refresh = own.refresh(true); // notes_changed: in flight
+      const writing = own.update('n1', { text: 'Nova' }); // the player's own write in flight
+      update.resolve(note('n1', 'Nova', AT(30)));
+      await writing;
+      const all = { notes: [note('n1', 'Antiga', AT(3)), clue], noteCount: 1, maxNotes: 300 };
+      lists[0].resolve(all as never); // served before the write
+      await Promise.resolve();
+      expect(own.notes().map((n) => n.text)).not.toContain('Antiga');
+      lists[1].resolve({ ...all, notes: [note('n1', 'Nova', AT(30)), clue] } as never);
+      await refresh;
+
+      expect(own.notes().map((n) => n.id)).toEqual(['n1', 'c1']);
+      expect(own.notes().find((n) => n.id === 'n1')?.text).toBe('Nova');
+      expect(own.fresh().map((n) => n.id)).toEqual(['c1']);
+      expect(own.notice()).toBe(true);
+    });
+  });
+
+  describe('a write that answers after the campaign changed', () => {
+    it('leaves the list and the count of the new campaign alone', async () => {
+      let campaign = 'A';
+      let answer!: (n: ReturnType<typeof note>) => void;
+      const slow = {
+        list: (id: string) =>
+          Promise.resolve({
+            notes: id === 'B' ? [note('b1', 'De B', AT(1))] : [],
+            noteCount: id === 'B' ? 1 : 0,
+            maxNotes: 300,
+          }),
+        scenes: () => Promise.resolve([]),
+        create: () => new Promise<ReturnType<typeof note>>((r) => (answer = r)),
+        update: () => Promise.reject(new Error('unused')),
+        delete: () => Promise.resolve(),
+      };
+      const own = new NotesState(slow as never, () => campaign);
+      await own.refresh();
+
+      const creating = own.create('Segredo de A', '');
+      campaign = 'B';
+      own.clear();
+      await own.refresh();
+      answer(note('a1', 'Segredo de A', AT(40)));
+      await creating;
+
+      expect(own.notes().map((n) => n.id)).toEqual(['b1']);
+      expect(own.noteCount()).toBe(1);
+      expect(own.isWriting('new')).toBe(false);
+    });
+
+    it('does not free the mark of a write that began in the new campaign', async () => {
+      let campaign = 'A';
+      const answers: ((n: ReturnType<typeof note>) => void)[] = [];
+      const slow = {
+        list: () => Promise.resolve({ notes: [], noteCount: 0, maxNotes: 300 }),
+        scenes: () => Promise.resolve([]),
+        create: () => new Promise<ReturnType<typeof note>>((r) => answers.push(r)),
+        update: () => Promise.reject(new Error('unused')),
+        delete: () => Promise.resolve(),
+      };
+      const own = new NotesState(slow as never, () => campaign);
+      const first = own.create('De A', '');
+      campaign = 'B';
+      own.clear();
+      const second = own.create('De B', '');
+      answers[0](note('a1', 'De A', AT(1)));
+      await first;
+      expect(own.isWriting('new')).toBe(true);
+      answers[1](note('b1', 'De B', AT(2)));
+      await second;
+      expect(own.notes().map((n) => n.id)).toEqual(['b1']);
+      expect(own.isWriting('new')).toBe(false);
+    });
+  });
+
+  it('sends no update that changes neither the text nor the tag, and returns the note as it is', async () => {
+    await state.refresh(true);
+    const calls = api.calls.length;
+    const same = await state.update('n1', {});
+    expect(same?.id).toBe('n1');
+    expect(api.calls).toHaveLength(calls);
+  });
 });

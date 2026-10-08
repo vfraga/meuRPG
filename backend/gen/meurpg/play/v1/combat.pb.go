@@ -823,6 +823,10 @@ const (
 	// action, or the same offer already waits. (The reactor's reaction being used is
 	// REACTION_USED.)
 	EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NO_OPPORTUNITY EncounterBlockedReason = 64
+	// TakeAction: a feature that can be used once per turn (Action Surge) was
+	// already used in this turn. The master may use it again (he corrects the
+	// economy).
+	EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ALREADY_USED_THIS_TURN EncounterBlockedReason = 65
 )
 
 // Enum value maps for EncounterBlockedReason.
@@ -887,6 +891,7 @@ var (
 		62: "ENCOUNTER_BLOCKED_REASON_NEEDS_A_MAP",
 		63: "ENCOUNTER_BLOCKED_REASON_THEATRE_HAS_NO_MAP",
 		64: "ENCOUNTER_BLOCKED_REASON_NO_OPPORTUNITY",
+		65: "ENCOUNTER_BLOCKED_REASON_ALREADY_USED_THIS_TURN",
 	}
 	EncounterBlockedReason_value = map[string]int32{
 		"ENCOUNTER_BLOCKED_REASON_UNSPECIFIED":                  0,
@@ -948,6 +953,7 @@ var (
 		"ENCOUNTER_BLOCKED_REASON_NEEDS_A_MAP":                  62,
 		"ENCOUNTER_BLOCKED_REASON_THEATRE_HAS_NO_MAP":           63,
 		"ENCOUNTER_BLOCKED_REASON_NO_OPPORTUNITY":               64,
+		"ENCOUNTER_BLOCKED_REASON_ALREADY_USED_THIS_TURN":       65,
 	}
 )
 
@@ -11841,7 +11847,9 @@ type TrapCaught struct {
 	// creature's, with `character_id` the owner's.
 	TargetId    string `protobuf:"bytes,1,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
 	TargetLabel string `protobuf:"bytes,2,opt,name=target_label,json=targetLabel,proto3" json:"target_label,omitempty"`
-	// The player's character, or the NPC's character, the target stands for (a UUID).
+	// The character the target stands for (a UUID): the player's character, for the
+	// master and for the players; an NPC's only for the master (an NPC's character is
+	// the master's secret).
 	CharacterId string `protobuf:"bytes,3,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
 	// The trap's attacks that were made against it, in order.
 	Attacks []*TrapAttackRoll `protobuf:"bytes,4,rep,name=attacks,proto3" json:"attacks,omitempty"`
@@ -13149,7 +13157,7 @@ const file_meurpg_play_v1_combat_proto_rawDesc = "" +
 	"\x14COMBATANT_STATE_DOWN\x10\x05\x12\x19\n" +
 	"\x15COMBATANT_STATE_DYING\x10\x06\x12\x1a\n" +
 	"\x16COMBATANT_STATE_STABLE\x10\a\x12\x18\n" +
-	"\x14COMBATANT_STATE_DEAD\x10\b*\xde\x15\n" +
+	"\x14COMBATANT_STATE_DEAD\x10\b*\x93\x16\n" +
 	"\x16EncounterBlockedReason\x12(\n" +
 	"$ENCOUNTER_BLOCKED_REASON_UNSPECIFIED\x10\x00\x123\n" +
 	"/ENCOUNTER_BLOCKED_REASON_ENCOUNTER_ALREADY_OPEN\x10\x01\x12+\n" +
@@ -13210,7 +13218,8 @@ const file_meurpg_play_v1_combat_proto_rawDesc = "" +
 	"%ENCOUNTER_BLOCKED_REASON_THEATRE_ONLY\x10=\x12(\n" +
 	"$ENCOUNTER_BLOCKED_REASON_NEEDS_A_MAP\x10>\x12/\n" +
 	"+ENCOUNTER_BLOCKED_REASON_THEATRE_HAS_NO_MAP\x10?\x12+\n" +
-	"'ENCOUNTER_BLOCKED_REASON_NO_OPPORTUNITY\x10@*\x91\x03\n" +
+	"'ENCOUNTER_BLOCKED_REASON_NO_OPPORTUNITY\x10@\x123\n" +
+	"/ENCOUNTER_BLOCKED_REASON_ALREADY_USED_THIS_TURN\x10A*\x91\x03\n" +
 	"\x1aFamiliarSightBlockedReason\x12-\n" +
 	")FAMILIAR_SIGHT_BLOCKED_REASON_UNSPECIFIED\x10\x00\x12-\n" +
 	")FAMILIAR_SIGHT_BLOCKED_REASON_NO_FAMILIAR\x10\x01\x12,\n" +

@@ -100,6 +100,7 @@ export class FamiliarRow {
 
   private readonly creatures = signal<readonly CharacterCreature[]>([]);
   private seq = 0;
+  private shownFor = '';
 
   protected readonly familiar = computed(() =>
     this.seeing()
@@ -120,6 +121,12 @@ export class FamiliarRow {
       const campaignId = this.campaignId();
       const characterId = this.characterId();
       this.reload();
+      // Another character's row never shows the last one's familiar while its own list is on the way.
+      const owner = `${campaignId}/${characterId}`;
+      if (owner !== this.shownFor) {
+        this.shownFor = owner;
+        this.creatures.set([]);
+      }
       const seq = ++this.seq;
       void untracked(() =>
         this.api.list(campaignId, characterId).then(

@@ -131,6 +131,9 @@
               <app-select-field label="Nível da magia" [options]="levelOptions" [value]="levelFilter()" (valueChange)="setLevel($event)" />
             }
           </div>
+          @if (classError() !== '') {
+            <p class="muted" role="alert">{{ classError() }}</p>
+          }
           <div class="bulk">
             <button matButton="outlined" type="button" [disabled]="turnOnDisabled()" (click)="setAll(false)">Ligar {{ allWord() }}{{ bulkSuffix() }}</button>
             <button matButton="outlined" type="button" [disabled]="turnOffDisabled()" (click)="setAll(true)">Desligar {{ allWord() }}{{ bulkSuffix() }}</button>

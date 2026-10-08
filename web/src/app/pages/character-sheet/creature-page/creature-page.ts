@@ -140,14 +140,26 @@ export class CreaturePage {
       const characterId = this.characterId();
       const creatureId = this.creatureId();
       if (campaignId && characterId && creatureId) {
-        untracked(() => void this.load(campaignId, characterId, creatureId));
+        untracked(() => {
+          // The component is reused between two creatures: the previous one's page and open question go away at once.
+          this.state.set({ status: 'loading' });
+          this.mode.set(null);
+          void this.load(campaignId, characterId, creatureId);
+        });
       }
     });
   }
 
+  /** Numbers the reads: only the latest one may set the page, so a slow answer for a creature the person left is dropped. */
+  private loadSeq = 0;
+
   private async load(campaignId: string, characterId: string, creatureId: string): Promise<void> {
+    const seq = ++this.loadSeq;
     try {
       const list = await this.client.list(campaignId, characterId);
+      if (seq !== this.loadSeq) {
+        return;
+      }
       const creature = list.find((c) => c.id === creatureId);
       if (!creature) {
         this.state.set({ status: 'not-found' });
@@ -157,6 +169,9 @@ export class CreaturePage {
         this.client.statBlock(campaignId, creature.monsterKey),
         this.sheets.getCharacterSheet(campaignId, characterId),
       ]);
+      if (seq !== this.loadSeq) {
+        return;
+      }
       this.state.set({
         status: 'ready',
         creature,
@@ -165,6 +180,9 @@ export class CreaturePage {
         isMaster: sheet.isMaster,
       });
     } catch (err) {
+      if (seq !== this.loadSeq) {
+        return;
+      }
       // A creature the viewer may not read (RN-20) or that is gone is the same page: "não encontrada".
       this.state.set(
         creaturesHidden(err)

@@ -36,6 +36,11 @@ const maxUploadBody = images.MaxBytes + 64<<10
 // 2 minutes is a little under 1 Mbit/s, which a phone on a bad connection reaches.
 const uploadReadTimeout = 2 * time.Minute
 
+// downloadWriteTimeout is how long a client has to take a whole image,
+// thumbnail or tile: the same two minutes as the upload, for the same 10 MiB
+// on a slow phone. A client that stops reading is dropped after it.
+const downloadWriteTimeout = 2 * time.Minute
+
 // defaultImageName names an image whose file name leaves nothing usable.
 const defaultImageName = "Imagem"
 
@@ -103,11 +108,23 @@ func (s *Service) upload(w http.ResponseWriter, r *http.Request) (mapsdb.Gallery
 		return mapsdb.GalleryImage{}, errQuota()
 	}
 
-	name, data, err := readFile(form)
+	// The slot is taken before the file is read, not after: a body of up to
+	// 10 MiB waiting for its turn would otherwise sit in memory, and a few of
+	// them would not fit the instance. So at most one uploaded file is in
+	// memory at a time, from the read to the end of the decode. The client's
+	// time to send the file starts when its turn does.
+	release, err := s.acquireProcessing(ctx)
 	if err != nil {
 		return mapsdb.GalleryImage{}, err
 	}
-	res, err := s.process(ctx, data)
+	slowclient.ReadBody(w, uploadReadTimeout)
+	name, data, err := readFile(form)
+	if err != nil {
+		release()
+		return mapsdb.GalleryImage{}, err
+	}
+	res, err := decodeUpload(data)
+	release()
 	if err != nil {
 		return mapsdb.GalleryImage{}, err
 	}
@@ -173,15 +190,31 @@ func formError(err error, message string) error {
 	return invalid(ReasonMalformedRequest, message)
 }
 
-// process checks and re-encodes an image, one at a time (Service.processing).
-func (s *Service) process(ctx context.Context, data []byte) (*images.Result, error) {
+// acquireProcessing waits for the one-at-a-time slot (Service.processing),
+// where images are read into memory and decoded, and returns the function that
+// gives it back.
+func (s *Service) acquireProcessing(ctx context.Context) (release func(), err error) {
 	select {
 	case s.processing <- struct{}{}:
+		return func() { <-s.processing }, nil
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
-	defer func() { <-s.processing }()
+}
 
+// process checks and re-encodes an image, one at a time (Service.processing).
+func (s *Service) process(ctx context.Context, data []byte) (*images.Result, error) {
+	release, err := s.acquireProcessing(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer release()
+	return decodeUpload(data)
+}
+
+// decodeUpload checks and re-encodes an image; the caller holds the processing
+// slot.
+func decodeUpload(data []byte) (*images.Result, error) {
 	res, err := images.Process(data)
 	switch {
 	case err == nil:

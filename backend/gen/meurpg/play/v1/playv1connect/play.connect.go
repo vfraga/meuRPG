@@ -562,7 +562,8 @@ type PlayServiceClient interface {
 	// only the lines of their own characters, with their own d20 and "passou" or
 	// "falhou", never a DC and never a trap their characters do not know. In a combat the
 	// same is in the combat log. Any member may call it. A player's search, and a firing
-	// outside a combat, send the master a `map_changed` hint with no content.
+	// outside a combat, send the master a `map_changed` hint with no content. A long session
+	// lists its newest 500 events, oldest first.
 	//
 	// Errors: `not_found` (the campaign does not exist, or the caller is not a member),
 	// `failed_precondition` (no open session).
@@ -1587,7 +1588,8 @@ type PlayServiceHandler interface {
 	// only the lines of their own characters, with their own d20 and "passou" or
 	// "falhou", never a DC and never a trap their characters do not know. In a combat the
 	// same is in the combat log. Any member may call it. A player's search, and a firing
-	// outside a combat, send the master a `map_changed` hint with no content.
+	// outside a combat, send the master a `map_changed` hint with no content. A long session
+	// lists its newest 500 events, oldest first.
 	//
 	// Errors: `not_found` (the campaign does not exist, or the caller is not a member),
 	// `failed_precondition` (no open session).

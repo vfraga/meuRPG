@@ -2203,3 +2203,177 @@ func TestNoDeathSaveOnTheTurnTheCharacterDrops(t *testing.T) {
 		t.Error("the death save is not due at the start of his next turn")
 	}
 }
+
+// Escudo against a master-hidden attacker is told to the master alone: another player's
+// log gets no line and their stream no hint, or they would learn a hidden NPC attacked (RN-10).
+func TestShieldAgainstAHiddenAttackerIsNotInOthersLog(t *testing.T) {
+	t.Parallel()
+	a := newCasters(t)
+	e := a.hiddenCapitaoFight(t) // the Capitão is first and hidden
+
+	other := a.caio.watch(t, a.campaignID)
+	other.ready(t)
+
+	lines := func() int {
+		n := 0
+		for _, r := range a.log(t, a.caio, e).GetRounds() {
+			n += len(r.GetEntries())
+		}
+		return n
+	}
+	before := lines()
+
+	hit := a.mustAttack(t, a.master, e, "Capitão Goblin", sword, "Pensantus", d20(9))
+	if _, err := a.useReaction(t, a.ana, e, hit.GetPendingDamage().GetId(), slotOfLevel(1)); err != nil {
+		t.Fatalf("UseReaction() error = %v", err)
+	}
+	a.mustEndTurn(t, a.master, e) // the sentinel: a turn change reaches the stream
+
+	if after := lines(); after != before {
+		for _, r := range a.log(t, a.caio, e).GetRounds() {
+			for _, en := range r.GetEntries() {
+				t.Logf("Toren's log: %v", en)
+			}
+		}
+		t.Errorf("Toren's log has %d lines after a hidden NPC's attack met Pensantus's Escudo, want the %d it had before", after, before)
+	}
+	hints := 0
+	for turns := 0; turns < 1; {
+		ev := other.nextChange(t)
+		switch {
+		case ev.GetCombatLogChanged() != nil:
+			hints++
+		case ev.GetTurnChanged() != nil:
+			turns++
+		}
+	}
+	if hints != 0 {
+		t.Errorf("Toren's stream got %d combat_log_changed hints, want none: the only change was the hidden NPC's attack and its Escudo", hints)
+	}
+}
+
+// A retried CastSpell (same key) is answered from the combat as it stands: a target the
+// master hid since is not in it (RN-10).
+func TestReplayedCastDoesNotShowAHiddenTarget(t *testing.T) {
+	t.Parallel()
+	a := newCasters(t)
+	e := a.castersFight(t, 1)
+	goblin := a.id(t, "Goblin")
+
+	key := newKey()
+	targets := []*playv1.SpellTarget{darts(a, t, "Goblin", 3)}
+	first, err := a.castKey(t, a.ana, e, "Pensantus", magicMissileSpell, slotOfLevel(1), targets, noCastRoll, key)
+	if err != nil {
+		t.Fatalf("CastSpell() error = %v", err)
+	}
+	a.h.roller.queue(2, 2, 2)
+	a.mustDamage(t, a.ana, e, first.GetCast().GetPendingDamages()[0].GetId(), inAppDamage)
+
+	if _, err := a.master.combat.SetCombatantHidden(t.Context(), connect.NewRequest(&playv1.SetCombatantHiddenRequest{
+		CampaignId: a.campaignID, EncounterId: e.GetId(), CombatantId: goblin, IdempotencyKey: newKey(), Hidden: true,
+	})); err != nil {
+		t.Fatalf("SetCombatantHidden() error = %v", err)
+	}
+
+	replay, err := a.castKey(t, a.ana, e, "Pensantus", magicMissileSpell, slotOfLevel(1), targets, noCastRoll, key)
+	if err != nil {
+		return // refusing the replay leaks nothing
+	}
+	if strings.Contains(replay.String(), goblin) {
+		t.Errorf("the replayed cast shows the hidden goblin %s: %v", goblin, replay.GetCast())
+	}
+	if n := len(replay.GetCast().GetPendingDamages()); n != 0 {
+		t.Errorf("the replayed cast carries %d pending damages of the hidden goblin, want none", n)
+	}
+}
+
+// Escudo's armor class holds for every hit on the target: a second hit already waiting for
+// the reaction, whose total is under the new armor class, does not land.
+func TestShieldAlsoStopsTheOtherHitsAwaitingTheReaction(t *testing.T) {
+	t.Parallel()
+	a := newCasters(t)
+	e := a.castersFightNPCFirst(t)
+	before := byLabel(t, e, "Pensantus").GetHitPointsCurrent()
+	first := a.mustAttack(t, a.master, e, "Capitão Goblin", sword, "Pensantus", d20(9)) // 13 vs AC 12: a hit
+	second := a.mustAttack(t, a.master, e, "Capitão Goblin", sword, "Pensantus", d20(9))
+	for i, r := range []*playv1.RollAttackResponse{first, second} {
+		if r.GetPendingDamage().GetStatus() != playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_REACTION {
+			t.Fatalf("hit %d = %v, want it awaiting the reaction", i+1, r.GetPendingDamage())
+		}
+	}
+	res, err := a.useReaction(t, a.ana, e, first.GetPendingDamage().GetId(), slotOfLevel(1))
+	if err != nil {
+		t.Fatalf("UseReaction() error = %v", err)
+	}
+	if res.GetOutcome() != playv1.ReactionOutcome_REACTION_OUTCOME_STOPPED {
+		t.Fatalf("outcome = %v, want stopped", res.GetOutcome())
+	}
+	// Escudo is up (AC 17): the other hit, total 13, would miss, so it must not hurt her.
+	if _, err := a.declineReaction(t, a.ana, e, second.GetPendingDamage().GetId()); err != nil {
+		t.Logf("DeclineReaction() error = %v", err)
+	}
+	a.h.roller.queue(7)
+	if _, err := a.damage(t, a.master, e, second.GetPendingDamage().GetId(), inAppDamage); err != nil {
+		t.Logf("RollDamage() error = %v", err)
+	} else if _, err := a.settle(t, a.master, e, second.GetPendingDamage().GetId(), true); err != nil {
+		t.Logf("ApplyPendingDamage() error = %v", err)
+	}
+	if got := byLabel(t, a.get(t, a.master), "Pensantus").GetHitPointsCurrent(); got != before {
+		t.Errorf("Pensantus HP = %d, want %d: a hit with total 13 against the Escudo's AC 17 must not land", got, before)
+	}
+}
+
+// TestActionSurgeIsUsedOncePerTurn: a fighter of level 17 has two uses of Surto
+// de ação, but only one in the same turn. The second is refused (the master may
+// correct the economy), the option says why, an undo gives the use back and the
+// next turn allows it again.
+func TestActionSurgeIsUsedOncePerTurn(t *testing.T) {
+	t.Parallel()
+	a := newArmedWith(t, func(a *armed) {
+		a.toren = a.caio.hero(t, a.campaignID, "Toren", "class:fighter", "race:human", 17,
+			&rulesv1.AbilityScores{Strength: 16, Dexterity: 13, Constitution: 14, Intelligence: 10, Wisdom: 10, Charisma: 8}, []string{battleaxe}, nil)
+		a.pens = a.ana.hero(t, a.campaignID, "Pensantus", "class:wizard", "race:gnome", 1,
+			&rulesv1.AbilityScores{Strength: 10, Dexterity: 14, Constitution: 12, Intelligence: 16, Wisdom: 10, Charisma: 8}, nil, []string{fireBolt})
+		a.bri = a.bia.hero(t, a.campaignID, "Brisa", "class:fighter", "race:human", 2,
+			&rulesv1.AbilityScores{Strength: 10, Dexterity: 16, Constitution: 14, Intelligence: 10, Wisdom: 10, Charisma: 8}, []string{rapier}, nil)
+	})
+	e := a.start(t, plan{
+		npcs: []*playv1.Participant{{CharacterId: a.goblin.GetId()}}, npcRolls: []int{1}, reveal: []string{"Goblin"},
+		at:      map[string][2]int32{"Pensantus": {5, 5}, "Toren": {6, 5}, "Brisa": {5, 6}, "Goblin": {7, 5}},
+		players: map[string]int32{"Toren": 20, "Pensantus": 15, "Brisa": 10},
+	})
+
+	o := a.mustOptions(t, a.caio, e, "Toren")
+	if surge := featureOption(o, actionSurgeKey); surge == nil || !surge.GetEnabled() || surge.GetUsesLeft() != 2 {
+		t.Fatalf("Surto de ação = %v, want enabled with 2 uses at fighter level 17", surge)
+	}
+	a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Goblin", d20(3))
+	if _, err := a.feature(t, a.caio, e, "Toren", actionSurgeKey, noTakeRoll); err != nil {
+		t.Fatalf("first Surto de ação error = %v", err)
+	}
+
+	o = a.mustOptions(t, a.caio, e, "Toren")
+	surge := featureOption(o, actionSurgeKey)
+	if surge == nil || surge.GetEnabled() || surge.GetUsesLeft() != 1 || surge.GetReason().GetCode() != rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN {
+		t.Errorf("Surto de ação after the first use = %v, want disabled as already used this turn, with 1 use left", surge)
+	}
+	_, err := a.feature(t, a.caio, e, "Toren", actionSurgeKey, noTakeRoll)
+	wantBlockedBy(t, "a second Surto de ação in the same turn", err, playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ALREADY_USED_THIS_TURN)
+
+	// Undoing the first use gives the turn's use back.
+	a.undoLast(t, e)
+	if _, err := a.feature(t, a.caio, e, "Toren", actionSurgeKey, noTakeRoll); err != nil {
+		t.Fatalf("Surto de ação after undoing the first use error = %v, want it allowed", err)
+	}
+
+	// The next turn allows the last use.
+	for range 4 { // Toren (his damage is discarded), Pensantus, Brisa and the goblin
+		if _, err := a.endTurn(t, a.master, e, true); err != nil {
+			t.Fatalf("EndTurn(discard) error = %v", err)
+		}
+	}
+	o = a.mustOptions(t, a.caio, e, "Toren")
+	if surge := featureOption(o, actionSurgeKey); surge == nil || !surge.GetEnabled() || surge.GetUsesLeft() != 1 {
+		t.Errorf("Surto de ação in the next turn = %v, want enabled with 1 use left", surge)
+	}
+}

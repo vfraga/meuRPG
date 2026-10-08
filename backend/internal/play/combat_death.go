@@ -10,6 +10,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
@@ -91,7 +92,7 @@ func (s *Service) RollDeathSave(
 
 	var made actionEvent
 	var vitals *playv1.CharacterVitals // after a natural 20
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventDeathSaveRolled, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventDeathSaveRolled, encounterID: encID}, func(c *combatTx) (any, error) {
 		vitals = nil
 		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
 		if err != nil {
@@ -218,7 +219,7 @@ func (s *Service) ConfirmDeath(
 	}
 
 	var turnPassed bool
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventDeathConfirmed, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventDeathConfirmed, encounterID: encID}, func(c *combatTx) (any, error) {
 		turnPassed = false
 		if err := notEnded(c.enc); err != nil {
 			return nil, err

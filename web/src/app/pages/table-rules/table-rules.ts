@@ -469,7 +469,11 @@ export class TableRulesPage {
     try {
       const res = await this.client.set(this.campaignId(), d);
       this.saved.set(res.saved);
-      this.draft.set(res.saved);
+      // What the server kept replaces the draft only when nothing was edited while the call ran: a later edit stays and
+      // is still counted as unsaved.
+      if (this.draft() === d) {
+        this.draft.set(res.saved);
+      }
       this.styleNote.set(null);
       this.wentCustom.set(false);
       this.justSaved.set(true);

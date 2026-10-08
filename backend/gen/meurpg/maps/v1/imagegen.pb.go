@@ -1909,7 +1909,8 @@ type GenerateMapImageRequest struct {
 	// The ratio of MAP_SCENE and ISOMETRIC; empty means 16:9. TEXTURED_MAP ignores
 	// it: the server picks the model's ratio closest to the map's.
 	AspectRatio ImageAspectRatio `protobuf:"varint,7,opt,name=aspect_ratio,json=aspectRatio,proto3,enum=meurpg.maps.v1.ImageAspectRatio" json:"aspect_ratio,omitempty"`
-	// Gallery images of objects and places, at most 10 (UUIDs).
+	// Gallery images of objects and places, at most 10 (UUIDs). A TEXTURED_MAP refuses
+	// the portrait of any NPC with a token on the map, seen or not.
 	ObjectImageIds []string `protobuf:"bytes,8,rep,name=object_image_ids,json=objectImageIds,proto3" json:"object_image_ids,omitempty"`
 	// Gallery images of characters, as GenerateSceneImageRequest.
 	CharacterImageIds []string `protobuf:"bytes,9,rep,name=character_image_ids,json=characterImageIds,proto3" json:"character_image_ids,omitempty"`

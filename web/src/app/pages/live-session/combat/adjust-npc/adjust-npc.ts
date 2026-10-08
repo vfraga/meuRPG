@@ -1,10 +1,11 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { hitPointsAfter } from '../../../../core/combat/attack-flow';
-import { CombatClient, type HpAdjust, newKey } from '../../../../core/combat/combat-client';
+import { CombatClient, type HpAdjust } from '../../../../core/combat/combat-client';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { VitalsStepper } from '../../vitals-stepper/vitals-stepper';
@@ -49,22 +50,29 @@ export class AdjustNpc {
   protected readonly data = this.sheet.data;
   protected readonly inSheet = this.sheet.inSheet;
   protected readonly c = this.data.combatant;
-  protected readonly hp = this.c.hitPointsCurrent ?? 0;
-  protected readonly max = this.c.hitPointsMax ?? 0;
-  protected readonly temp0 = this.c.hitPointsTemporary ?? 0;
+  /** The combatant as the combat has it now: the numbers move while the sheet is open. */
+  private readonly current = computed(
+    () => this.data.state.encounter()?.combatants.find((x) => x.id === this.c.id) ?? this.c,
+  );
+  protected readonly hp = computed(() => this.current().hitPointsCurrent ?? 0);
+  protected readonly max = computed(() => this.current().hitPointsMax ?? 0);
+  protected readonly temp0 = computed(() => this.current().hitPointsTemporary ?? 0);
   protected readonly modes = MODES;
   protected readonly maxAmount = MAX_AMOUNT;
   protected readonly maxTemporary = MAX_TEMPORARY;
 
   protected readonly mode = signal<Mode>('damage');
   protected readonly amount = signal(0);
-  protected readonly temporary = signal(this.temp0);
+  protected readonly temporary = signal(this.c.hitPointsTemporary ?? 0);
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
-  private key = newKey();
-  private keyFor = '';
+  private readonly key = new ActionKey();
 
-  protected readonly amountMax = computed(() => (this.mode() === 'exact' ? this.max : MAX_AMOUNT));
+  protected readonly amountMax = computed(() =>
+    this.mode() === 'exact' ? this.max() : MAX_AMOUNT,
+  );
   protected readonly amountLabel = computed(() =>
     this.mode() === 'damage' ? 'Dano sofrido' : this.mode() === 'heal' ? 'PV curados' : 'PV exatos',
   );
@@ -77,35 +85,40 @@ export class AdjustNpc {
     const kind = this.mode();
     const change =
       kind === 'exact'
-        ? this.amount() === this.hp
+        ? this.amount() === this.hp()
           ? undefined
           : { kind, value: this.amount() }
         : this.amount() > 0
           ? { kind, value: this.amount() }
           : undefined;
-    const temporary = this.temporary() !== this.temp0 ? this.temporary() : undefined;
+    const temporary = this.temporary() !== this.temp0() ? this.temporary() : undefined;
     return change || temporary !== undefined ? { change, temporary } : null;
   });
   protected readonly after = computed(() => {
     const a = this.amount();
     switch (this.mode()) {
       case 'damage':
-        return hitPointsAfter(this.hp, this.temp0, a);
+        return hitPointsAfter(this.hp(), this.temp0(), a);
       case 'heal':
-        return Math.min(this.max, this.hp + a);
+        return Math.min(this.max(), this.hp() + a);
       default:
         return a;
     }
   });
   protected readonly preview = computed(() =>
     this.adjust()?.change
-      ? `Depois: ${this.after()} de ${this.max} PV`
-      : `Agora: ${this.hp} de ${this.max} PV`,
+      ? `Depois: ${this.after()} de ${this.max()} PV`
+      : `Agora: ${this.hp()} de ${this.max()} PV`,
   );
 
   protected readonly amountStep = (step: number) => (step < 0 ? `Tirar ${-step}` : `Somar ${step}`);
   protected readonly tempStep = (step: number) =>
     step < 0 ? 'Tirar 1 PV temporário' : 'Somar 1 PV temporário';
+
+  constructor() {
+    // A request in the air cannot be dismissed (Esc, the backdrop, ✕, Cancelar): its answer is always shown.
+    effect(() => this.sheet.lock(this.busy()));
+  }
 
   protected async save(): Promise<void> {
     const adjust = this.adjust();
@@ -117,11 +130,7 @@ export class AdjustNpc {
       return;
     }
     // New numbers are a new correction; the same numbers again are a retry.
-    const signature = JSON.stringify(adjust);
-    if (signature !== this.keyFor) {
-      this.keyFor = signature;
-      this.key = newKey();
-    }
+    const key = this.key.keyFor([this.c.id, adjust]);
     this.busy.set(true);
     this.error.set('');
     try {
@@ -131,7 +140,7 @@ export class AdjustNpc {
           this.data.encounterId,
           this.c.id,
           adjust,
-          this.key,
+          key,
         ),
       );
       this.sheet.close(true);
@@ -143,6 +152,9 @@ export class AdjustNpc {
   }
 
   protected close(): void {
+    if (this.busy()) {
+      return;
+    }
     this.sheet.close(false);
   }
 }

@@ -20,7 +20,7 @@ import (
 // UndoLastXPAward implements progressionv1connect.ProgressionServiceHandler.
 //
 // One transaction takes the latest award that is not undone (locked, so two
-// undos take turns), subtracts each share from the character's sheet (never
+// undos take turns), subtracts each share (the XP the sheet gained) from the character's sheet (never
 // below 0; a milestone has no XP to take back, its marks go with undone_at),
 // marks the award undone and writes the session's event. The award row stays:
 // the history is never rewritten (ADR-0007).

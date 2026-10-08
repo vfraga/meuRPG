@@ -118,6 +118,9 @@ export class NpcCard {
   /** A damage was applied or discarded (`PendingDamages`): the page keeps the card for its note. */
   readonly settledNote = output<void>();
 
+  protected readonly turnKey = computed(
+    () => `${this.encounter().currentCombatantId}:${this.encounter().round}`,
+  );
   protected readonly attackKey = signal('');
   protected readonly targetId = signal('');
   protected readonly busy = signal(false);
@@ -248,12 +251,14 @@ export class NpcCard {
       const keys = this.attacks().map((a) => a.key);
       if (!keys.includes(this.attackKey())) {
         this.attackKey.set(keys[0] ?? '');
+        this.key = newKey();
       }
     });
     effect(() => {
       const ids = this.targets().map((t) => t.combatantId);
       if (!ids.includes(this.targetId())) {
         this.targetId.set(ids[0] ?? '');
+        this.key = newKey();
       }
     });
   }

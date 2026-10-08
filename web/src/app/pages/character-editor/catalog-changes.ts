@@ -23,8 +23,13 @@ function signature(c: RulesCatalogVm): string {
 }
 
 /** Whether the lists the person picks from are not the ones on screen (the master turned something on or off, or wrote an entry). */
-export function catalogChanged(before: RulesCatalogVm, after: RulesCatalogVm): boolean {
+export function offersChanged(before: RulesCatalogVm, after: RulesCatalogVm): boolean {
   return signature(before) !== signature(after);
+}
+
+/** Whether anything the catalog carries differs (hit dice, skill counts, spell circles, bonuses...): the editor computes from all of it. */
+export function catalogChanged(before: RulesCatalogVm, after: RulesCatalogVm): boolean {
+  return JSON.stringify(before) !== JSON.stringify(after);
 }
 
 /** The controls of the form that can hold a content key the master switched off. */

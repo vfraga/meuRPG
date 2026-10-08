@@ -9,8 +9,8 @@ import type { MapState } from './map-state';
  * The reveal and hide buttons of "Pontos do mapa" and "Tokens no mapa"
  * (MR-009, RN-10), shared by the master's phone map and the session page:
  * one call per click (`SetMapPointRevealed`, `SetMapTokenHidden`), the
- * answer goes into the map's state, and the button waits while its call is
- * in flight. A failure says so in `error` and leaves the state alone.
+ * answer goes into the map's state (when that map is still the open one),
+ * and the button waits while its call is in flight. A failure says so in `error` and leaves the state alone.
  */
 export class MapReveals {
   /** The point or the character whose call is in flight. */
@@ -34,7 +34,9 @@ export class MapReveals {
     this.error.set(null);
     try {
       const saved = await this.api.setPointRevealed(this.campaignId(), mapId, point.id, revealed);
-      this.stateOf().upsertPoint(saved);
+      if (this.stateOf().map()?.id === mapId) {
+        this.stateOf().upsertPoint(saved);
+      }
       this.announcement.set(
         revealed
           ? `${point.name} foi revelado aos jogadores.`
@@ -49,7 +51,8 @@ export class MapReveals {
 
   async toggleToken(token: MapToken, hidden: boolean): Promise<void> {
     const mapId = this.stateOf().map()?.id;
-    if (!mapId || this.pendingId() !== null) {
+    // A creature's token is a party token, never hidden, and its `characterId` is its owner's.
+    if (!mapId || token.creatureId || this.pendingId() !== null) {
       return;
     }
     this.pendingId.set(token.characterId);
@@ -61,7 +64,9 @@ export class MapReveals {
         token.characterId,
         hidden,
       );
-      this.stateOf().upsertToken(saved);
+      if (this.stateOf().map()?.id === mapId) {
+        this.stateOf().upsertToken(saved);
+      }
       this.announcement.set(
         hidden
           ? `${token.name} foi escondido dos jogadores.`

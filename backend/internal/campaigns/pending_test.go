@@ -2,14 +2,17 @@ package campaigns
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5"
 
 	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/campaigns/campaignsdb"
 )
 
 // Pending members (RN-15, MR-024), Q24 and Q25: what happens to someone who
@@ -315,5 +318,78 @@ func TestQ24_PendingMembershipExpiresAfter30Days(t *testing.T) {
 	}
 	if seen != 3 {
 		t.Errorf("evaluated %d rows, want 3", seen)
+	}
+}
+
+// RN-15: the 30-day deadline binds as soon as it passes, not when the daily
+// TTL job deletes the row. A pending member past it is a stranger to
+// authorization, is not listed for the master and cannot clear the deadline.
+func TestQ24_PendingMemberPastTheDeadlineIsNoMemberBeforeTheTTLJobRuns(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	mestre, pendente, ativo := h.newUser("Mestre"), h.newUser("Pendente"), h.newUser("Ativo")
+	id := mestre.createCampaign(t, "Mirathel").GetId()
+	_, approvalToken := mestre.createApprovalInvite(t, id)
+	_, plainToken := mestre.createInvite(t, id, 0, 0)
+	pendente.join(t, approvalToken)
+	ativo.join(t, plainToken)
+	q := h.service.queries
+
+	// Before the deadline: a member, listed, and able to clear the deadline.
+	if got := len(mestre.listPending(t, id)); got != 1 {
+		t.Fatalf("setup: pending members = %d, want 1", got)
+	}
+	if _, err := q.GetMembership(t.Context(), campaignsdb.GetMembershipParams{CampaignID: id, UserID: pendente.id, Now: h.clock.Now()}); err != nil {
+		t.Fatalf("GetMembership() before the deadline error = %v, want the membership", err)
+	}
+
+	h.clock.Advance(PendingMemberLifetime + time.Hour)
+
+	if m, err := q.GetMembership(t.Context(), campaignsdb.GetMembershipParams{CampaignID: id, UserID: pendente.id, Now: h.clock.Now()}); !errors.Is(err, pgx.ErrNoRows) {
+		t.Errorf("GetMembership() of a pending member past the deadline = %+v, %v; want no rows", m, err)
+	}
+	if got := mestre.listPending(t, id); len(got) != 0 {
+		t.Errorf("ListPendingMembers() after the deadline = %d members, want 0", len(got))
+	}
+	_, err := pendente.api.GetCampaign(t.Context(), connect.NewRequest(&campaignsv1.GetCampaignRequest{CampaignId: id}))
+	wantCode(t, "GetCampaign() by a pending member past the deadline", err, connect.CodeNotFound)
+	if _, err := q.ClearPendingExpiry(t.Context(), campaignsdb.ClearPendingExpiryParams{CampaignID: id, UserID: pendente.id, Now: h.clock.Now()}); err != nil {
+		t.Fatalf("ClearPendingExpiry() error = %v", err)
+	}
+	if got := h.pendingExpiresAt(id, pendente.id); got == nil {
+		t.Errorf("ClearPendingExpiry() removed the deadline of a pending member past it; want it kept")
+	}
+	// Positive control: an active member is not affected by the guard.
+	if _, err := ativo.api.GetCampaign(t.Context(), connect.NewRequest(&campaignsv1.GetCampaignRequest{CampaignId: id})); err != nil {
+		t.Errorf("GetCampaign() by an active member error = %v", err)
+	}
+}
+
+// A pending member past the deadline can join again with a new invite, even
+// though the TTL job has not deleted the stale row: the new membership has a
+// new deadline and the invite spends one use.
+func TestQ24_PendingMemberPastTheDeadlineJoinsAgainWithANewInvite(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	mestre, pendente := h.newUser("Mestre"), h.newUser("Pendente")
+	id := mestre.createCampaign(t, "Mirathel").GetId()
+	_, firstToken := mestre.createApprovalInvite(t, id)
+	pendente.join(t, firstToken)
+
+	h.clock.Advance(PendingMemberLifetime + time.Hour)
+	invite, secondToken := mestre.createApprovalInvite(t, id)
+	res, err := pendente.accept(t, secondToken)
+	if err != nil {
+		t.Fatalf("AcceptInvite() after the deadline error = %v", err)
+	}
+	if res.GetAlreadyMember() {
+		t.Errorf("AcceptInvite() after the deadline = already_member, want a new join")
+	}
+	if n := h.useCount(invite.GetId()); n != 1 {
+		t.Errorf("use_count = %d, want 1", n)
+	}
+	want := h.clock.Now().Add(PendingMemberLifetime)
+	if got := h.pendingExpiresAt(id, pendente.id); got == nil || !got.Equal(want) {
+		t.Errorf("pending_expires_at = %v, want a new deadline %v", got, want)
 	}
 }

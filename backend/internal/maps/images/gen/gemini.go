@@ -192,6 +192,13 @@ func (g *Gemini) once(ctx context.Context, req Request) (img Image, retry bool, 
 	if err != nil {
 		return Image{}, false, errors.Join(ErrUnavailable, errors.New("cannot build the request"))
 	}
+	// The only replay net/http makes of a POST is when a reused connection
+	// failed before one byte of the request was written (so nothing reached
+	// the server and nothing can be billed), and it needs GetBody for that.
+	// Without it, an attempt that lands on a keep-alive connection that died
+	// while idle fails with a network error. A fresh body is the same bytes.
+	model := g.Model()
+	httpReq.GetBody = func() (io.ReadCloser, error) { return bodyReader(model, req), nil }
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Api-Revision", APIRevision)
 	httpReq.Header.Set("x-goog-api-key", g.Key.Reveal())

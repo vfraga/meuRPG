@@ -81,4 +81,69 @@ describe('InitiativeSetup', () => {
       .click();
     expect(submits).toEqual([{ id: 'toren', face: 7 }]);
   });
+
+  describe('the master typing a roll for a player', () => {
+    const waiting = [
+      combatant({ id: 'brisa', label: 'Brisa', kind: CombatantKind.PLAYER, initiativeBonus: 2 }),
+    ];
+    const answered = [
+      combatant({
+        id: 'brisa',
+        label: 'Brisa',
+        kind: CombatantKind.PLAYER,
+        initiativeBonus: 2,
+        initiative: 17,
+        initiativeFace: 15,
+      }),
+    ];
+
+    function open() {
+      const fixture = TestBed.createComponent(InitiativeSetup);
+      fixture.componentRef.setInput(
+        'encounter',
+        encounter({ status: EncounterStatus.SETUP, round: 0, combatants: waiting }),
+      );
+      const submits: { id: string; face: number }[] = [];
+      fixture.componentInstance.submit.subscribe((s) => submits.push(s));
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      Array.from(el.querySelectorAll('button'))
+        .find((b) => b.textContent?.includes('Digitar pelo jogador'))!
+        .click();
+      fixture.detectChanges();
+      return { fixture, el, submits };
+    }
+
+    const type = (el: HTMLElement, value: string) => {
+      const field = el.querySelector<HTMLInputElement>('input')!;
+      field.value = value;
+      field.dispatchEvent(new Event('input'));
+    };
+
+    it('closes the field when the player rolls meanwhile, showing their roll', () => {
+      const { fixture, el } = open();
+      type(el, '3');
+      fixture.componentRef.setInput(
+        'encounter',
+        encounter({ status: EncounterStatus.SETUP, round: 0, combatants: answered }),
+      );
+      fixture.detectChanges();
+      expect(el.textContent).toContain('1d20 (15)');
+      expect(el.querySelector('input')).toBeNull();
+    });
+
+    it('ignores Enter while a call is in flight and keeps the field open', () => {
+      const { fixture, el, submits } = open();
+      fixture.componentRef.setInput('busy', true);
+      fixture.detectChanges();
+      type(el, '7');
+      fixture.detectChanges();
+      el.querySelector<HTMLInputElement>('input')!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter' }),
+      );
+      fixture.detectChanges();
+      expect(submits).toEqual([]);
+      expect(el.querySelector('input')).not.toBeNull();
+    });
+  });
 });

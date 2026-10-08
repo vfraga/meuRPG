@@ -37,7 +37,7 @@ export function sceneBlockedMessage(reason: SceneBlockedReason): string {
     case SceneBlockedReason.STAGE_FULL:
       return 'A cena comporta 4 NPCs. Tire um para pôr outro.';
     default:
-      return 'A cena não está num estado que aceite isso. A tela foi atualizada.';
+      return 'A cena não está num estado que aceite isso.';
   }
 }
 

@@ -63,7 +63,14 @@
             >
               Confirmar encerramento
             </button>
-            <button mat-button type="button" (click)="cancelEnd()">Cancelar</button>
+            <button
+              mat-button
+              type="button"
+              [disabled]="endState() === 'saving'"
+              (click)="cancelEnd()"
+            >
+              Cancelar
+            </button>
           </div>
         }
       }

@@ -290,7 +290,8 @@ func (f *fogSight) reactorSees(r playdb.Combatant, sheet link.Sheet, at grid.Squ
 // square it stood on, or, for a move, on either square of it. A line with no NPC
 // in it is left as it is. It is read from the sight taken before the change, which
 // is how the table looked when it happened; it is never worked out again from a
-// view that has changed.
+// view that has changed. A Secret event (a hidden combatant is in it) is seen by no
+// player: their revision does not count it and their stream does not hear it.
 func (c *combatTx) stamp(ctx context.Context, kind string, ev actionEvent) (actionEvent, error) {
 	if c.sight == nil {
 		return ev, nil
@@ -338,6 +339,10 @@ func (c *combatTx) stamp(ctx context.Context, kind string, ev actionEvent) (acti
 			}
 		}
 		ev.Trap = &t
+	}
+	if ev.Secret {
+		ev.Fogged, ev.SeenBy = true, nil
+		return ev, nil
 	}
 	if len(npcSquares) == 0 {
 		return ev, nil
@@ -501,9 +506,10 @@ func (s *Service) publishMovedToPlayers(ctx context.Context, campaignID string, 
 // positionChanged is the hook after a combat move that landed (and after the undo
 // of one): the fog remembers what it showed and tells the players who see the
 // squares. from and to are the squares the combatant left and reached; a combatant
-// that had none stands where it was put.
+// that had none stands where it was put. A hidden combatant's move is nobody's
+// news: telling the players who see its squares would tell them it is there (RN-10).
 func (s *Service) positionChanged(ctx context.Context, campaignID string, e playdb.Encounter, c playdb.Combatant, from *grid.Square) {
-	if s.fog == nil || e.MapID == nil || !placed(c) {
+	if s.fog == nil || e.MapID == nil || !placed(c) || c.Hidden {
 		return
 	}
 	to := squareOfCombatant(c)

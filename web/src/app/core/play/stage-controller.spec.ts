@@ -1,6 +1,7 @@
 import { SceneState } from './scene-state';
 import { FakeSceneClient, masterScene, stageNpc } from './scene-testing';
-import { StageController } from './stage-controller';
+import { StageController, type StageApi } from './stage-controller';
+import type { StageNpc } from '../../../gen/meurpg/play/v1/scene_pb';
 import { SceneBlockedSchema, SceneBlockedReason } from '../../../gen/meurpg/play/v1/scene_pb';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { create } from '@bufbuild/protobuf';
@@ -109,5 +110,74 @@ describe('StageController', () => {
     expect(ctl.status()).toBe('');
     expect(ctl.entered()).toBe('');
     expect(ctl.error()).toBe('');
+  });
+
+  describe('calls for two NPCs in flight together', () => {
+    function overlapping() {
+      const a = stageNpc('sa', 'Aldo', { master: true, characterId: 'a' });
+      const b = stageNpc('sb', 'Bia', { master: true, characterId: 'b' });
+      const answers: Array<(stage: readonly StageNpc[]) => void> = [];
+      const api: StageApi = {
+        putOnStage: () => Promise.reject(new Error('unused')),
+        takeOffStage: () => Promise.reject(new Error('unused')),
+        setSpeaker: () => new Promise((resolve) => answers.push(resolve)),
+      };
+      let reads = 0;
+      const state = new SceneState(
+        () => {
+          reads++;
+          return Promise.resolve(
+            masterScene(
+              [],
+              [
+                { ...a, speaking: false },
+                { ...b, speaking: true },
+              ],
+            ),
+          );
+        },
+        () => true,
+      );
+      state.apply(masterScene([], [a, b]));
+      const ctl = new StageController(
+        api,
+        state,
+        () => 'c1',
+        (id) => id,
+      );
+      return { a, b, answers, state, ctl, reads: () => reads };
+    }
+
+    it('keeps the later stage when the answers come in order', async () => {
+      const { a, b, answers, state, ctl } = overlapping();
+      const first = ctl.speak('a', false);
+      const second = ctl.speak('b', false);
+      answers[0]([{ ...a, speaking: true }, b]);
+      await first;
+      answers[1]([
+        { ...a, speaking: false },
+        { ...b, speaking: true },
+      ]);
+      await second;
+      expect(state.stage().map((n) => n.speaking)).toEqual([false, true]);
+      expect(ctl.status()).toBe('b fala.');
+    });
+
+    it('does not apply an older answer that arrives after a newer one, and reads the scene again', async () => {
+      const { a, b, answers, state, ctl, reads } = overlapping();
+      const first = ctl.speak('a', false);
+      const second = ctl.speak('b', false);
+      // The server applied A then B; B's answer arrives first, A's last.
+      answers[1]([
+        { ...a, speaking: false },
+        { ...b, speaking: true },
+      ]);
+      await second;
+      answers[0]([{ ...a, speaking: true }, b]);
+      expect(await first).toBe(true);
+      expect(state.stage().map((n) => n.speaking)).toEqual([false, true]);
+      expect(ctl.status()).toBe('b fala.');
+      expect(reads()).toBe(1);
+    });
   });
 });

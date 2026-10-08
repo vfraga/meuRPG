@@ -50,4 +50,31 @@ describe('TrapBoard "Quem notaria"', () => {
     await first;
     expect(board.noticers().get('p1')?.noticeDc).toBe(20);
   });
+
+  it('reads who would notice again when a token moves, once more for a burst of moves', async () => {
+    const reads: ((v: unknown) => void)[] = [];
+    const board = setup((n) =>
+      n === 1 ? Promise.resolve(res(10)) : new Promise((r) => reads.push(r)),
+    );
+    await board.watchNoticers('p1');
+    expect(board.noticers().get('p1')?.noticeDc).toBe(10);
+    const first = board.tokensMoved();
+    // Three more moves while the read is out: one read follows, not three.
+    void board.tokensMoved();
+    void board.tokensMoved();
+    void board.tokensMoved();
+    reads[0](res(11));
+    await vi.waitFor(() => expect(reads).toHaveLength(2));
+    reads[1](res(12));
+    await first;
+    expect(board.noticers().get('p1')?.noticeDc).toBe(12);
+    expect(reads).toHaveLength(2);
+  });
+
+  it('reads nothing for a move when no trap card is open', async () => {
+    const reads = vi.fn(async () => res(1));
+    const board = setup(reads);
+    await board.tokensMoved();
+    expect(reads).not.toHaveBeenCalled();
+  });
 });

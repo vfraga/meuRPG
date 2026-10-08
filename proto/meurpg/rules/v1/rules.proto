@@ -1698,6 +1698,9 @@ enum DisabledReasonCode {
   // An attack: the Attack action made all its attacks this turn (Extra
   // Attack). With a single attack per action the code is ACTION_USED.
   DISABLED_REASON_CODE_ATTACKS_USED = 13;
+  // A feature that can be used once per turn (Action Surge, even at fighter
+  // level 17 with two uses) was already used in this turn.
+  DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN = 14;
 }
 
 // AttackOption is an attack the character can make.

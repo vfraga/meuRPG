@@ -51,6 +51,11 @@ const (
 	// the bounds keep a formula from overflowing into nonsense.
 	MaxLiteral = 1000
 	MaxResult  = 10000
+	// maxIntermediate bounds what any step of a formula can reach, worked out
+	// from the literals and the most each function returns. Integer arithmetic
+	// wraps in 64 bits, so a long product could slip under MaxResult; a formula
+	// whose steps could pass this bound is refused when it is written.
+	maxIntermediate = 1 << 31
 )
 
 // Env is what a formula can see. The engine fills the functions for one
@@ -140,6 +145,9 @@ func (c *Compiler) Compile(source string, kind Kind) (*Program, error) {
 		return nil, fmt.Errorf("formula does not parse: %w", err)
 	}
 	if err := c.check(tree.Node); err != nil {
+		return nil, err
+	}
+	if _, err := reach(tree.Node); err != nil {
 		return nil, err
 	}
 
@@ -293,6 +301,71 @@ func (c *Compiler) check(node ast.Node) error {
 	default:
 		return fmt.Errorf("%s is not allowed in a formula", describe(node))
 	}
+}
+
+// reach is the largest magnitude a checked node can take: a literal is itself,
+// a call is at most MaxLiteral (no function returns more in a 5e sheet), and an
+// operator combines its operands'. It refuses a node that could pass
+// maxIntermediate, so no step of the arithmetic can wrap.
+func reach(node ast.Node) (float64, error) {
+	var out float64
+	switch n := node.(type) {
+	case *ast.IntegerNode:
+		out = math.Abs(float64(n.Value))
+	case *ast.FloatNode:
+		out = math.Abs(n.Value)
+	case *ast.UnaryNode:
+		x, err := reach(n.Node)
+		if err != nil {
+			return 0, err
+		}
+		out = x
+	case *ast.BinaryNode:
+		l, err := reach(n.Left)
+		if err != nil {
+			return 0, err
+		}
+		r, err := reach(n.Right)
+		if err != nil {
+			return 0, err
+		}
+		switch n.Operator {
+		case "+", "-":
+			out = l + r
+		case "*":
+			out = l * r
+		case "/", "%":
+			out = l
+		default: // a comparison or a logical operator gives true or false
+			out = 1
+		}
+	case *ast.ConditionalNode:
+		for _, part := range []ast.Node{n.Exp1, n.Exp2} {
+			x, err := reach(part)
+			if err != nil {
+				return 0, err
+			}
+			out = max(out, x)
+		}
+		if _, err := reach(n.Cond); err != nil {
+			return 0, err
+		}
+	case *ast.CallNode:
+		out = MaxLiteral
+		if id, ok := n.Callee.(*ast.IdentifierNode); ok && (id.Value == "floor" || id.Value == "ceil" || id.Value == "min" || id.Value == "max") {
+			for _, arg := range n.Arguments {
+				x, err := reach(arg)
+				if err != nil {
+					return 0, err
+				}
+				out = max(out, x)
+			}
+		}
+	}
+	if out > maxIntermediate {
+		return 0, errors.New("a step of the formula could grow past the limit; use smaller numbers")
+	}
+	return out, nil
 }
 
 // checkCall allows a call to one of our functions, with the right number

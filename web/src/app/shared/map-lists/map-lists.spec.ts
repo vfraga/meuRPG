@@ -253,4 +253,35 @@ describe('MapTokensList', () => {
     expect(asked[0].hidden).toBe(false);
     expect(asked[0].token.characterId).toBe('e');
   });
+
+  describe('with a character and its creature on the map', () => {
+    const tokens = [mapToken('p', 'Pensantus'), mapToken('p', 'Corvo', { creatureId: 'raven' })];
+
+    function mount(pendingId: string | null = null) {
+      const fixture = TestBed.createComponent(MapTokensList);
+      fixture.componentRef.setInput('tokens', tokens);
+      fixture.componentRef.setInput('info', info);
+      fixture.componentRef.setInput('pendingId', pendingId);
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it("offers no Esconder on the creature's row, which would hide its owner", () => {
+      const rows = mount().querySelectorAll('li');
+      expect(rows[0].querySelector('button')?.getAttribute('aria-label')).toBe(
+        'Esconder Pensantus',
+      );
+      expect(rows[1].textContent).toContain('Corvo');
+      expect(rows[1].textContent).toContain('Visível');
+      expect(rows[1].querySelector('button')).toBeNull();
+    });
+
+    it('keys the rows by the token, so the two rows stay apart', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      mount();
+      const duplicates = warn.mock.calls.filter((c) => String(c[0]).includes('NG0955'));
+      warn.mockRestore();
+      expect(duplicates).toEqual([]);
+    });
+  });
 });

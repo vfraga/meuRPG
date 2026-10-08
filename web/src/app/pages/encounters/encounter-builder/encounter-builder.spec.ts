@@ -356,6 +356,9 @@ describe('EncounterBuilder (MR-043, RN-29, E10-09)', () => {
     const { el, button } = await open();
     expect(isOff(button('Guardar no ponto de batalha'))).toBe(true);
     expect(flat(el.querySelector('.act__why'))).toBe('Ponha pelo menos uma criatura.');
+    // The button stays focusable (disabledInteractive), so a click still reaches the handler: it does nothing.
+    button('Guardar no ponto de batalha').click();
+    expect(opened.filter((o) => o.id === 'save-t')).toHaveLength(0);
   });
 
   it('a failed measure says what to do, by code, and "Tentar de novo" asks again', async () => {

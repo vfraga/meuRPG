@@ -46,8 +46,11 @@ type Gallery interface {
 // PortraitCopy is a copy of a gallery image made for a portrait, not yet in the
 // gallery (see Gallery.PreparePortrait).
 type PortraitCopy = interface {
-	// Insert adds the copy to the gallery inside tx.
-	Insert(ctx context.Context, tx pgx.Tx) error
+	// Insert adds the copy to the gallery inside tx and returns the image the
+	// portrait is: the copy, or the one another use of the same image committed first
+	// (created false: the caller then discards these files, as when the save does
+	// not happen).
+	Insert(ctx context.Context, tx pgx.Tx) (id string, created bool, err error)
 	// Discard deletes the copy's files: the save did not happen.
 	Discard(ctx context.Context)
 }

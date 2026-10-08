@@ -244,3 +244,39 @@ func TestReadTxSeesOneSnapshot(t *testing.T) {
 		t.Error("a write inside ReadTx succeeded, want an error (read-only transaction)")
 	}
 }
+
+// A 40001 restarts the transaction with a plain BEGIN; the retry must still
+// refuse writes.
+func TestReadTxStaysReadOnlyAfterRetry(t *testing.T) {
+	pool := testPool(t)
+	ctx := t.Context()
+	table := fmt.Sprintf("readtx_retry_%d", time.Now().UnixNano())
+	if _, err := pool.Exec(ctx, "CREATE TABLE "+table+" (id INT PRIMARY KEY, n INT)"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _, _ = pool.Exec(context.Background(), "DROP TABLE "+table) })
+
+	attempts := 0
+	var writeErr error
+	err := ReadTx(ctx, pool, func(tx pgx.Tx) error {
+		attempts++
+		if attempts == 1 {
+			return &pgconn.PgError{Code: "40001", Message: "forced retry"}
+		}
+		_, writeErr = tx.Exec(ctx, "INSERT INTO "+table+" VALUES (1, 1)")
+		return writeErr
+	})
+	if attempts < 2 {
+		t.Fatalf("retry did not happen (attempts=%d)", attempts)
+	}
+	if err == nil || writeErr == nil {
+		t.Errorf("write inside ReadTx on retry attempt succeeded; want read-only error")
+	}
+	var c int
+	if e := pool.QueryRow(ctx, "SELECT count(*) FROM "+table).Scan(&c); e != nil {
+		t.Fatal(e)
+	}
+	if c != 0 {
+		t.Errorf("rows committed by ReadTx = %d, want 0", c)
+	}
+}

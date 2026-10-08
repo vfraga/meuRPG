@@ -44,6 +44,21 @@ describe('applyVitals', () => {
     ).toBe(17);
   });
 
+  it("drops the familiar's sight when the same revision arrives without it", () => {
+    const sight = { creatureId: 'nanquim', inCombat: true };
+    const list = [pensantusVitals({ revision: 5, familiarSight: sight })];
+    expect(
+      applyVitals(list, pensantusVitals({ revision: 5, familiarSight: null }))[0].familiarSight,
+    ).toBeNull();
+    // The same revision with the sight still on changes nothing, and an older copy never takes it away.
+    expect(
+      applyVitals(list, pensantusVitals({ revision: 5, familiarSight: sight }))[0].familiarSight,
+    ).toEqual(sight);
+    expect(
+      applyVitals(list, pensantusVitals({ revision: 4, familiarSight: null }))[0].familiarSight,
+    ).toEqual(sight);
+  });
+
   it('adds a character that was not on screen', () => {
     expect(applyVitals([pensantusVitals()], brisaVitals()).map((v) => v.name)).toEqual([
       'Pensantus',

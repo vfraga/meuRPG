@@ -4,9 +4,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router } from '@angular/router';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { filter, take } from 'rxjs';
 
-import { AuthService } from '../../core/auth/auth.service';
+import { AuthService, type AuthState } from '../../core/auth/auth.service';
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { describeAcceptInviteError } from '../../core/campaigns/invite-errors';
 
@@ -15,9 +16,24 @@ type State =
   | { status: 'waiting-for-session' }
   | { status: 'signed-out' }
   | { status: 'accepting' }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; retry: 'session' | 'accept' | null };
 // There is no "accepted" state to render: on success, accept() navigates
 // away to the campaign before there is anything left to show here.
+
+/** A failure the same invite may get past on another try: the server or the network, not the invite. */
+function isTransient(err: unknown): boolean {
+  switch (ConnectError.from(err, Code.Unavailable).code) {
+    case Code.Unavailable:
+    case Code.DeadlineExceeded:
+    case Code.ResourceExhausted:
+    case Code.Aborted:
+    case Code.Internal:
+    case Code.Unknown:
+      return true;
+    default:
+      return false;
+  }
+}
 
 const TOKEN_PATTERN = /^#t=(.+)$/;
 
@@ -51,7 +67,13 @@ export class InviteAccept {
 
   constructor() {
     const match = TOKEN_PATTERN.exec(window.location.hash);
-    this.token = match ? decodeURIComponent(match[1]) : null;
+    let token: string | null = null;
+    try {
+      token = match ? decodeURIComponent(match[1]) : null;
+    } catch {
+      // A malformed percent-escape is no token at all: the link is invalid.
+    }
+    this.token = token;
 
     // Strip the fragment right away: the token must not linger in the
     // visible URL, in `history`, or in anything (a screenshot, a shared
@@ -70,18 +92,36 @@ export class InviteAccept {
         filter((s) => s.status !== 'unknown'),
         take(1),
       )
-      .subscribe((s) => {
-        if (s.status === 'signed-in') {
-          void this.accept();
-        } else if (s.status === 'signed-out') {
-          this.state.set({ status: 'signed-out' });
-        } else {
-          this.state.set({
-            status: 'error',
-            message: 'Não foi possível confirmar sua sessão agora. Tente de novo em instantes.',
-          });
-        }
+      .subscribe((s) => this.onSession(s));
+  }
+
+  private onSession(s: AuthState): void {
+    if (s.status === 'signed-in') {
+      void this.accept();
+    } else if (s.status === 'signed-out') {
+      this.state.set({ status: 'signed-out' });
+    } else {
+      this.state.set({
+        status: 'error',
+        message: 'Não foi possível confirmar sua sessão agora. Tente de novo em instantes.',
+        retry: 'session',
       });
+    }
+  }
+
+  /** The page's "Tentar de novo": the fragment is gone from the URL, so a reload could not do it; the token in memory can. */
+  protected async retry(): Promise<void> {
+    const s = this.state();
+    if (s.status !== 'error' || s.retry === null) {
+      return;
+    }
+    if (s.retry === 'accept') {
+      await this.accept();
+      return;
+    }
+    this.state.set({ status: 'waiting-for-session' });
+    await this.auth.refresh();
+    this.onSession(this.auth.state());
   }
 
   private async accept(): Promise<void> {
@@ -100,7 +140,11 @@ export class InviteAccept {
         await this.router.navigate(['/campaigns', id]);
       }
     } catch (err) {
-      this.state.set({ status: 'error', message: describeAcceptInviteError(err) });
+      this.state.set({
+        status: 'error',
+        message: describeAcceptInviteError(err),
+        retry: isTransient(err) ? 'accept' : null,
+      });
     }
   }
 

@@ -137,4 +137,16 @@ describe('the race, subrace and background forms (E10-01 states 6 and 7)', () =>
     // A field the type does not read has no input: a refusal there lands on the effect.
     expect(paths).not.toContain('table_race.traits[0].effects[0].range_ft');
   });
+
+  it('does not turn a speed or darkvision it cannot read into 0, which means "none"', () => {
+    for (const text of ['18 m', '18m', '1.000,5', 'abc', '-3']) {
+      const race = draftToRace({ ...emptyRace(), name: 'X', speedM: text, darkvisionM: text }, m);
+      expect(race.speedFt, `speedM "${text}"`).toBeNaN();
+      expect(race.darkvisionFt, `darkvisionM "${text}"`).toBeNaN();
+    }
+    const read = draftToRace({ ...emptyRace(), name: 'X', speedM: '9', darkvisionM: '4,5' }, m);
+    expect([read.speedFt, read.darkvisionFt]).toEqual([30, 15]);
+    const none = draftToRace({ ...emptyRace(), name: 'X', speedM: '', darkvisionM: '0' }, m);
+    expect([none.speedFt, none.darkvisionFt]).toEqual([0, 0]);
+  });
 });

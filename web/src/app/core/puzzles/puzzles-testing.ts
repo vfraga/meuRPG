@@ -314,17 +314,17 @@ export class FakePuzzlesClient {
       this.runResults.get(puzzleId) as MasterPuzzleRun,
     );
   }
-  reset(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
+  reset(campaignId: string, puzzleId: string, expectedRevision = 0): Promise<MasterPuzzleRun> {
     return this.answer(
       'reset',
-      [campaignId, puzzleId],
+      [campaignId, puzzleId, expectedRevision],
       this.runResults.get(puzzleId) as MasterPuzzleRun,
     );
   }
-  reseed(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
+  reseed(campaignId: string, puzzleId: string, expectedRevision = 0): Promise<MasterPuzzleRun> {
     return this.answer(
       'reseed',
-      [campaignId, puzzleId],
+      [campaignId, puzzleId, expectedRevision],
       this.runResults.get(puzzleId) as MasterPuzzleRun,
     );
   }
@@ -335,10 +335,14 @@ export class FakePuzzlesClient {
       this.runResults.get(puzzleId) as MasterPuzzleRun,
     );
   }
-  releaseHint(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
+  releaseHint(
+    campaignId: string,
+    puzzleId: string,
+    expectedRevision = 0,
+  ): Promise<MasterPuzzleRun> {
     return this.answer(
       'releaseHint',
-      [campaignId, puzzleId],
+      [campaignId, puzzleId, expectedRevision],
       this.runResults.get(puzzleId) as MasterPuzzleRun,
     );
   }
@@ -354,10 +358,14 @@ export class FakePuzzlesClient {
   ): Promise<string> {
     return this.answer('previewCipher', [campaignId, solution], this.cipherResult);
   }
-  playSequence(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
+  playSequence(
+    campaignId: string,
+    puzzleId: string,
+    expectedRevision = 0,
+  ): Promise<MasterPuzzleRun> {
     return this.answer(
       'playSequence',
-      [campaignId, puzzleId],
+      [campaignId, puzzleId, expectedRevision],
       this.runResults.get(puzzleId) as MasterPuzzleRun,
     );
   }

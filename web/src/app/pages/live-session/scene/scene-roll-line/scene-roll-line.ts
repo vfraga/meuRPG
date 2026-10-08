@@ -13,10 +13,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { OpenSceneInfo, SceneRoll } from '../../../../../gen/meurpg/play/v1/scene_pb';
-import { newKey } from '../../../../core/connect/idempotency';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import { joinDots } from '../../../../core/format/text';
 import { SceneClient } from '../../../../core/play/scene-client';
-import { sceneErrorMessage } from '../../../../core/play/scene-errors';
+import { sceneBlocked, sceneErrorMessage } from '../../../../core/play/scene-errors';
 import type { SceneState } from '../../../../core/play/scene-state';
 import {
   canGrantAttempt,
@@ -44,8 +44,8 @@ import { formatClock } from '../../../../shared/session-time/session-time';
  * when it failed). It asks in place first, in a warm notice that takes the
  * card: "Voltar" first and focused, the one filled button the only one; then a
  * status line says what was done. There is no undo: the attempt is spent by
- * rolling. The key is made once per question, so a tap sent again never gives
- * two.
+ * rolling. The key is kept per (action, character) until the grant works, so a tap
+ * sent again, even after "Voltar", never gives two.
  */
 @Component({
   selector: 'app-scene-roll-line',
@@ -92,10 +92,11 @@ export class SceneRollLine {
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
   private readonly opener = viewChild('opener', { read: ElementRef<HTMLButtonElement> });
   private readonly status = viewChild('status', { read: ElementRef<HTMLElement> });
-  private key = '';
+  /** One key per (action, character) grant, kept until it works: a question closed with "Voltar" and asked again
+   * after a lost answer is the same grant, so the server does not give two. */
+  private readonly key = new ActionKey();
 
   protected ask(): void {
-    this.key = newKey();
     this.error.set('');
     this.step.set('asking');
     this.focusAfterRender(() => this.back());
@@ -120,14 +121,18 @@ export class SceneRollLine {
         this.campaignId(),
         roll.actionId,
         roll.characterId,
-        this.key,
+        this.key.keyFor({ actionId: roll.actionId, characterId: roll.characterId }),
       );
+      this.key.renew();
       this.granted.set({ at: formatClock(new Date()), total: before + 1, used: before });
       this.step.set('idle');
       this.state().apply(scene);
       this.focusAfterRender(() => this.status());
     } catch (err) {
       this.error.set(sceneErrorMessage(err, 'dar a tentativa'));
+      if (sceneBlocked(err)) {
+        void this.state().refresh();
+      }
     } finally {
       this.busy.set(false);
     }

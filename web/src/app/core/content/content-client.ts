@@ -18,7 +18,14 @@ import {
   type TableEntry,
   type UpdateTableEntryResponse,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import {
+  OUTCOME_UNKNOWN,
+  SESSION_ENDED,
+  isRateLimited,
+  rateLimitedMessage,
+} from '../connect/connect-errors';
 import { CONNECT_TRANSPORT } from '../connect/transport';
+import { violationText } from './content-violations';
 
 /** What an editor sends: exactly one body, which gives the kind (`CreateTableEntryRequest.body`), as the request takes it. */
 export type EntryBody = NonNullable<MessageInitShape<typeof CreateTableEntryRequestSchema>['body']>;
@@ -136,7 +143,7 @@ export function blockedReason(err: unknown): TableContentBlockedReason | null {
   return e.findDetails(TableContentBlockedSchema)[0]?.reason ?? null;
 }
 
-/** The Portuguese words of an error that is not a refusal: stale, archived, no permission, offline. */
+/** The Portuguese words of an error that is not a refusal: stale, archived, no permission, too many calls, an outcome to check, offline. */
 export function contentErrorText(err: unknown, what: string): string {
   const e = ConnectError.from(err, Code.Unavailable);
   const blocked = blockedReason(err);
@@ -149,13 +156,27 @@ export function contentErrorText(err: unknown, what: string): string {
   if (blocked === TableContentBlockedReason.NOT_ARCHIVED) {
     return 'Esta entrada não está arquivada.';
   }
+  if (isRateLimited(e)) {
+    return rateLimitedMessage(e);
+  }
   switch (e.code) {
     case Code.PermissionDenied:
       return 'Só o mestre da campanha muda o conteúdo da mesa.';
+    case Code.Unknown:
+      return OUTCOME_UNKNOWN;
     case Code.NotFound:
       return 'Essa entrada, ou a campanha, não existe mais.';
     case Code.Unauthenticated:
-      return 'Sua sessão acabou. Entre de novo para continuar.';
+      return SESSION_ENDED;
+    case Code.InvalidArgument: {
+      // A refused archive or unarchive (the entry needs something that is off): the server's reasons, not a connection problem.
+      const texts = new Set(
+        (refusalOf(err) ?? []).map((v) => violationText(v, { aOne: 'uma entrada' })),
+      );
+      return texts.size > 0
+        ? `Não foi possível ${what}. ${[...texts].join(' ')}`
+        : `Não foi possível ${what}: confira os dados e tente de novo.`;
+    }
     default:
       return `Não foi possível ${what}. Confira a conexão e tente de novo.`;
   }

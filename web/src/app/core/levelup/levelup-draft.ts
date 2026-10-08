@@ -69,8 +69,15 @@ export class LevelUpDraft {
   readonly features: PickSet = signal<ReadonlySet<string>>(new Set());
   readonly skills: PickSet = signal<ReadonlySet<string>>(new Set());
   readonly expertise: PickSet = signal<ReadonlySet<string>>(new Set());
-  /** The new maximum of prepared spells, as `PreviewLevelUp` derives it (an ability increase moves it). */
-  readonly preparedMaxAfter = signal(0);
+  private readonly preparedMax = signal(0);
+  /** The new maximum of prepared spells, as `PreviewLevelUp` derives it (an ability increase moves it).
+   * Setting it drops the prepared picks beyond the new maximum. */
+  readonly preparedMaxAfter = Object.assign(() => this.preparedMax(), {
+    set: (max: number): void => {
+      this.preparedMax.set(max);
+      this.reconcile();
+    },
+  });
 
   constructor(
     readonly options: LevelUpOptions,
@@ -81,7 +88,7 @@ export class LevelUpDraft {
       readonly classes?: readonly { readonly key: string; readonly namePt: string }[];
     },
   ) {
-    this.preparedMaxAfter.set(options.preparedMaxAfter);
+    this.preparedMax.set(options.preparedMaxAfter);
     this.startCard = options.hitPointsRule === LevelUpHitPointsRule.ROLL_ONLY ? 'roll' : 'average';
     this.hpCard.set(this.startCard);
   }
@@ -342,9 +349,14 @@ export class LevelUpDraft {
         this.options.subclasses.find((c) => c.key === this.subclassKey())?.featureChoices ?? []
       ).flatMap((f) => f.options.map((o) => o.key)),
     );
+    const preparing = (k: string) => this.options.subclasses.find((c) => c.key === k)?.prepares;
+    const before = this.subclassKey();
     this.subclassKey.set(key);
     // A subclass that prepares (a third caster) says its own maximum until the preview gives the exact one.
-    this.preparedMaxAfter.set(this.effective().preparedMaxAfter);
+    // One that does not leaves the maximum as it is: the pending ability increase may have moved it.
+    if (preparing(before) || preparing(key)) {
+      this.preparedMax.set(this.effective().preparedMaxAfter);
+    }
     // Only what belonged to the previous subclass goes: its feature options. The cantrips, skills and
     // expertise that the level itself asks for stay, trimmed to what the new subclass's counts allow.
     this.features.set(new Set([...this.features()].filter((k) => !gone.has(k))));
@@ -356,11 +368,7 @@ export class LevelUpDraft {
     this.cantrips.set(offered(this.cantrips(), this.cantripItems()));
     this.spells.set(offered(this.spells(), this.spellItems()));
     this.prepared.set(offered(this.prepared(), this.preparedItems()));
-    this.trim(this.cantrips, this.cantripsAsked());
-    this.trim(this.spells, this.spellsAsked());
-    this.trim(this.prepared, this.preparedAsked());
-    this.trim(this.skills, this.skillsAsked());
-    this.trim(this.expertise, this.expertiseAsked());
+    this.reconcile();
   }
 
   /** Takes over what `other` had picked (after the sheet was read again), keeping only what these
@@ -370,8 +378,13 @@ export class LevelUpDraft {
       this.abilityMode.set(other.abilityMode());
       this.abilityKeys.set(other.abilityKeys().slice(0, this.abilityAsked()));
     }
-    this.hpCard.set(other.hpCard());
-    this.rolled.set(other.hpCard() === 'roll' ? other.rolled() : null);
+    this.adoptHitPoints(other);
+    const sameLevel =
+      this.options.classKey === other.options.classKey &&
+      this.options.toLevel === other.options.toLevel;
+    if (sameLevel) {
+      this.preparedMax.set(other.preparedMaxAfter());
+    }
     if (this.options.subclasses.some((c) => c.key === other.subclassKey())) {
       this.subclassKey.set(other.subclassKey());
     }
@@ -388,11 +401,68 @@ export class LevelUpDraft {
     this.features.set(new Set([...other.features()].filter((k) => options.has(k))));
     this.skills.set(keep(other.skills(), this.skillItems()));
     this.expertise.set(keep(other.expertise(), this.expertiseItems()));
+    this.reconcile();
+  }
+
+  /** The hit points card and die result of `other`, as far as these options still allow them: the rule of
+   * the table decides the card, an in-app roll is the server's own kept roll for this class and level (a roll
+   * belongs to the level it was made for), and a typed one stays only for the same level and a die it fits. */
+  private adoptHitPoints(other: LevelUpDraft): void {
+    const o = this.options;
+    const card =
+      o.hitPointsRule === LevelUpHitPointsRule.AVERAGE_ONLY
+        ? 'average'
+        : o.hitPointsRule === LevelUpHitPointsRule.ROLL_ONLY
+          ? 'roll'
+          : other.hpCard();
+    this.hpCard.set(card);
+    const was = other.rolled();
+    let keep: Rolled | null = null;
+    if (card === 'roll' && was) {
+      if (was.kind === 'app') {
+        const keptClass = o.keptHitPointRollClassKey;
+        if (o.keptHitPointRoll === was.value && (keptClass === '' || keptClass === o.classKey)) {
+          keep = was;
+        }
+      } else if (
+        o.classKey === other.options.classKey &&
+        o.toLevel === other.options.toLevel &&
+        Number.isInteger(was.value) &&
+        was.value >= 1 &&
+        was.value <= o.hitDie
+      ) {
+        keep = was;
+      }
+    }
+    this.rolled.set(keep);
+  }
+
+  /** Brings every pick set back in step with the counts: the picks beyond what a count asks go (the first
+   * ones stay), the prepared spells stay among the offered ones, and expertise stays on trained skills only.
+   * Run after anything that moves a count or a list. */
+  private reconcile(): void {
     this.trim(this.cantrips, this.cantripsAsked());
     this.trim(this.spells, this.spellsAsked());
+    const offered = new Set(this.preparedItems().map((i) => i.key));
+    this.keepOnly(this.prepared, (k) => offered.has(k));
     this.trim(this.prepared, this.preparedAsked());
     this.trim(this.skills, this.skillsAsked());
+    this.dropUntrainedExpertise();
     this.trim(this.expertise, this.expertiseAsked());
+  }
+
+  /** Expertise only in what is trained. */
+  private dropUntrainedExpertise(): void {
+    const trained = new Set([...this.have.skills, ...this.skills()]);
+    this.keepOnly(this.expertise, (k) => trained.has(k));
+  }
+
+  /** Drops the picks `keep` refuses, leaving the set itself alone when nothing goes (a new set would wake every reader). */
+  private keepOnly(set: PickSet, keep: (key: string) => boolean): void {
+    const kept = [...set()].filter(keep);
+    if (kept.length !== set().size) {
+      set.set(new Set(kept));
+    }
   }
 
   /** Keeps the first `max` picks of a list. */
@@ -440,9 +510,7 @@ export class LevelUpDraft {
 
   toggleSkill(key: string): void {
     this.flip(this.skills, key, this.skillsAsked());
-    // Expertise only in what is trained.
-    const trained = new Set([...this.have.skills, ...this.skills()]);
-    this.expertise.set(new Set([...this.expertise()].filter((k) => trained.has(k))));
+    this.dropUntrainedExpertise();
   }
 
   toggleExpertise(key: string): void {

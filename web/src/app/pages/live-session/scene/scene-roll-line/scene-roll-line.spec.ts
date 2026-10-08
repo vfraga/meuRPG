@@ -6,8 +6,7 @@ import { SceneState } from '../../../../core/play/scene-state';
 import { FakeSceneClient, masterScene, sceneRoll } from '../../../../core/play/scene-testing';
 import { SceneRollLine } from './scene-roll-line';
 
-const flat = (e: Element | null | undefined) =>
-  e?.textContent?.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const flat = (e: Element | null | undefined) => e?.textContent?.replace(/\s+/g, ' ').trim();
 /** The words of an element, without its icons' ligature names. */
 const words = (e: Element | null | undefined) => {
   if (!e) {

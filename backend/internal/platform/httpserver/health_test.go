@@ -7,7 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // fakePinger is a Pinger whose answer the test controls.
@@ -112,5 +114,52 @@ func TestProbesRejectOtherMethods(t *testing.T) {
 
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("POST /healthz status = %d, want %d", rec.Code, http.StatusMethodNotAllowed)
+	}
+}
+
+// countingPinger counts the pings that reach the database; it fails them
+// when its context is already done, like a real connection would.
+type countingPinger struct{ n atomic.Int64 }
+
+func (p *countingPinger) Ping(ctx context.Context) error { p.n.Add(1); return ctx.Err() }
+
+func TestReadyzSharesOneDatabasePingPerWindow(t *testing.T) {
+	t.Parallel()
+	pinger := &countingPinger{}
+	srv := New(Config{DB: pinger, Logger: discardLogger()})
+	clock := time.Now()
+	srv.now = func() time.Time { return clock }
+
+	const flood = 5000
+	for range flood {
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/readyz", nil)
+		rec := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("/readyz = %d, want 200", rec.Code)
+		}
+	}
+	if got := pinger.n.Load(); got != 1 {
+		t.Fatalf("%d requests in one window made %d database pings, want 1", flood, got)
+	}
+
+	// Positive control: once the window has passed, the database is asked again.
+	clock = clock.Add(dbPingTTL + time.Millisecond)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/readyz", nil)
+	srv.Handler().ServeHTTP(httptest.NewRecorder(), req)
+	if got := pinger.n.Load(); got != 2 {
+		t.Fatalf("after the window: %d pings, want 2", got)
+	}
+}
+
+func TestReadyzAnswerDoesNotDependOnTheAskingRequest(t *testing.T) {
+	t.Parallel()
+	srv := New(Config{DB: &countingPinger{}, Logger: discardLogger()})
+	gone, cancel := context.WithCancel(t.Context())
+	cancel()
+	rec := httptest.NewRecorder()
+	srv.Handler().ServeHTTP(rec, httptest.NewRequestWithContext(gone, http.MethodGet, "/readyz", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("/readyz for a hung-up request = %d, want 200 (the shared ping must not use its context)", rec.Code)
 	}
 }

@@ -250,7 +250,7 @@ func (noStore) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.S
 // CampaignMembership implements authz.MembershipSource with one
 // primary-key read of campaign_members.
 func (s *Service) CampaignMembership(ctx context.Context, campaignID, userID string) (authz.Role, authz.Status, error) {
-	m, err := s.queries.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: campaignID, UserID: userID})
+	m, err := s.queries.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: campaignID, UserID: userID, Now: s.now()})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", "", authz.ErrNotMember
 	}
@@ -303,7 +303,7 @@ func (s *Service) ActivatePendingMember(ctx context.Context, tx pgx.Tx, campaign
 // member's character: the deadline only applies while they have none.
 // Nothing else calls it.
 func (s *Service) ClearPendingExpiry(ctx context.Context, tx pgx.Tx, campaignID, userID string) error {
-	if _, err := s.queries.WithTx(tx).ClearPendingExpiry(ctx, campaignsdb.ClearPendingExpiryParams{CampaignID: campaignID, UserID: userID}); err != nil {
+	if _, err := s.queries.WithTx(tx).ClearPendingExpiry(ctx, campaignsdb.ClearPendingExpiryParams{CampaignID: campaignID, UserID: userID, Now: s.now()}); err != nil {
 		return fmt.Errorf("clear pending expiry: %w", err)
 	}
 	return nil

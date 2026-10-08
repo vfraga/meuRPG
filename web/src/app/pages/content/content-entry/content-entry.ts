@@ -150,6 +150,8 @@ export class ContentEntry {
   protected readonly actionError = signal('');
   protected readonly loadingExtras = signal(false);
   /** The catalog or the effect menu did not come: the page says so, with "Tentar de novo". */
+  /** Moves with each read of the entries: of two that overlap, only the newest lands. */
+  private reads = 0;
   private readonly catalogError = signal('');
   private readonly menuError = signal('');
   /** What blocks this entry: the catalog always, the menu for every editor but the spell's (which does not use it), the defaults
@@ -298,15 +300,22 @@ export class ContentEntry {
     if (s.status !== 'ready') {
       return;
     }
+    const mine = ++this.reads;
     try {
       const res = await loadContext(this.campaigns, this.client, this.campaignId());
       const now = this.state();
+      // Of two reads that overlap, the one that began last is the one that lands.
+      if (mine !== this.reads) {
+        return;
+      }
       if (res.status === 'ok' && now.status === 'ready') {
         const open = now.ctx.entries.find((e) => e.key === this.key());
+        const editing = this.editing();
         const entries = res.ctx.entries.map((e) =>
           // The entry being edited keeps its body and revision when another write changed them: what is typed is not thrown
           // away, and "Salvar" says the entry changed (stale) as it always did. Only the switches and the counts follow.
-          open && e.key === open.key && e.revision !== open.revision
+          // A reader (a player, or a master with no editor open) adopts the new entry whole.
+          editing && open && e.key === open.key && e.revision !== open.revision
             ? ({
                 ...open,
                 off: e.off,
@@ -317,13 +326,23 @@ export class ContentEntry {
             : e,
         );
         this.state.set({ status: 'ready', ctx: { ...res.ctx, entries } });
+        await this.refreshCatalog(entries, mine);
       }
     } catch {
       // Keep what is on screen: the next change reads again.
     }
   }
 
+  /** The names are built from the catalog and the entries together, so they follow a change of either. */
+  private async refreshCatalog(entries: readonly TableEntry[], read: number): Promise<void> {
+    const c = await this.client.catalog(this.campaignId());
+    if (read === this.reads) {
+      this.catalog.set(catalogVm(c, entries));
+    }
+  }
+
   protected async load(): Promise<void> {
+    this.reads++;
     this.state.set({ status: 'loading' });
     this.asking.set(false);
     try {

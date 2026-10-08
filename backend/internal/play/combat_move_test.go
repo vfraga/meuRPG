@@ -11,6 +11,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/protobuf/proto"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
@@ -1327,4 +1328,45 @@ type mapsSessions struct{ Sessions }
 
 func (mapsSessions) AuthenticateRequest(r *http.Request) (context.Context, error) {
 	return withTestUser(r.Context(), r.Header), nil
+}
+
+// A character the master marked dead in the middle of a combat is out of the fight: the
+// master's moves of an NPC and the move options still work.
+func TestADeadCharacterDoesNotBreakNPCMoves(t *testing.T) {
+	t.Parallel()
+	c := newCave(t)
+	c.fight(t)
+
+	if _, err := c.master.characters.MarkCharacterDead(t.Context(), connect.NewRequest(&charactersv1.MarkCharacterDeadRequest{
+		CampaignId: c.campaignID, CharacterId: c.pens.GetId(),
+	})); err != nil {
+		t.Fatalf("MarkCharacterDead() error = %v", err)
+	}
+
+	// The NPC is on turn: only then does a move offer opportunity attacks.
+	c.passTo(t, c.get(t, c.master), "Goblin 1")
+
+	// A forced move still works (no reactors are computed).
+	if _, err := c.move(t, c.master, "Goblin 1", 17, 5, func(r *playv1.MoveCombatantRequest) { r.Forced = true }); err != nil {
+		t.Errorf("forced MoveCombatant(Goblin 1) error = %v, want nil", err)
+	}
+	if _, err := c.options(t, c.master, "Goblin 1"); err != nil {
+		t.Errorf("GetMoveOptions(Goblin 1) error = %v, want nil", err)
+	}
+	if _, err := c.move(t, c.master, "Goblin 1", 16, 5); err != nil {
+		t.Errorf("MoveCombatant(Goblin 1, not forced) error = %v, want nil", err)
+	}
+}
+
+// A player's character at 0 hit points does not move on their turn (RN-03).
+func TestADownPlayerCannotMove(t *testing.T) {
+	c := newCave(t)
+	c.fight(t) // Toren is first on turn
+	if _, err := c.master.play.AdjustCharacterVitals(t.Context(), connect.NewRequest(&playv1.AdjustCharacterVitalsRequest{
+		CampaignId: c.campaignID, CharacterId: c.toren.GetId(), IdempotencyKey: newKey(), HitPointsCurrent: proto.Int32(0),
+	})); err != nil {
+		t.Fatalf("AdjustCharacterVitals() error = %v", err)
+	}
+	_, err := c.move(t, c.caio, "Toren", 7, 7)
+	wantBlockedBy(t, "a down player's MoveCombatant", err, blockedDown)
 }

@@ -39,26 +39,20 @@ func (q *Queries) CountOtherSessions(ctx context.Context, arg CountOtherSessions
 const deleteOtherUserSessions = `-- name: DeleteOtherUserSessions :execrows
 DELETE FROM auth_sessions
 WHERE user_id = $1 AND id <> $2
-  AND expires_at > $3 AND last_used_at > $4
+  AND expires_at > $3
 `
 
 type DeleteOtherUserSessionsParams struct {
-	UserID    string
-	KeepID    string
-	Now       time.Time
-	IdleSince time.Time
+	UserID string
+	KeepID string
+	Now    time.Time
 }
 
-// "Sign out of other devices": every session of the user that still works,
-// but the current one. Expired and idle rows are already unusable (the TTL job
-// removes them), so leaving them out keeps the count honest.
+// "Sign out of other devices": every session of the user that has not expired,
+// but the current one. Idle rows go too: an idle row is only unusable under
+// today's idle timeout, and a longer one would make it valid again.
 func (q *Queries) DeleteOtherUserSessions(ctx context.Context, arg DeleteOtherUserSessionsParams) (int64, error) {
-	result, err := q.db.Exec(ctx, deleteOtherUserSessions,
-		arg.UserID,
-		arg.KeepID,
-		arg.Now,
-		arg.IdleSince,
-	)
+	result, err := q.db.Exec(ctx, deleteOtherUserSessions, arg.UserID, arg.KeepID, arg.Now)
 	if err != nil {
 		return 0, err
 	}

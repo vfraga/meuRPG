@@ -57,14 +57,16 @@ describe('Home', () => {
 
   it('shows a clear error state when the call fails', async () => {
     const fixture = setup({
-      getServerInfo: () =>
-        Promise.reject(new ConnectError('backend indisponível', Code.Unavailable)),
+      getServerInfo: () => Promise.reject(new ConnectError('internal detail', Code.Unavailable)),
     });
     await fixture.whenStable();
     fixture.detectChanges();
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('backend indisponível');
+    expect(text).toContain('Não foi possível falar com o servidor.');
+    expect(text).toContain('Tente de novo em instantes.');
+    expect(text).not.toContain('internal detail');
+    expect(text).not.toContain('[unavailable]');
     expect(text).toContain('Tentar de novo');
   });
 

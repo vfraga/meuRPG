@@ -196,6 +196,10 @@ export class DocumentEditor {
    * the browser's undo history (Ctrl+Z undoes the toolbar too); where it is
    * not there, the value is set directly. */
   private apply(edit: Edit): void {
+    // A save is on its way with the text as it was: what is typed now would be lost when its answer comes.
+    if (this.saving()) {
+      return;
+    }
     const ta = this.textarea().nativeElement;
     const before = ta.value;
     const expected = applyEdit(before, edit);

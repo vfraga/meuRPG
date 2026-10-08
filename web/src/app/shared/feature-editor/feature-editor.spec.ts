@@ -18,7 +18,7 @@ describe('FeatureEditor (a trait, a feature)', () => {
       text: 'Enxergam longe.',
       effects: [
         { ...emptyEffect('proficiency'), proficiency: 'skill:perception' },
-        { ...emptyEffect('sense'), sense: 'darkvision', rangeFt: 60 },
+        { ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' },
       ],
     };
   }

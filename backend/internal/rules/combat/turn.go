@@ -18,7 +18,13 @@ type TurnState struct {
 	// AttacksMade is how many attacks the Attack action made this turn
 	// (Extra Attack); the first one spends the action.
 	AttacksMade int
+	// ActionSurged says Action Surge was used this turn: it is used once per
+	// turn, whatever the uses left.
+	ActionSurged bool
 }
+
+// actionSurgeResource is the resource of Action Surge.
+const actionSurgeResource = "action_surge"
 
 // Reason codes for a disabled option. They are codes, never text: the web
 // maps each to Portuguese copy ("Ação já usada", "Sem espaço de 2º nível
@@ -37,6 +43,9 @@ const (
 	// ReasonNoUses: the feature's resource is spent (Recharge says when it
 	// comes back).
 	ReasonNoUses = "NO_USES"
+	// ReasonAlreadyUsedThisTurn: a feature that can be used once per turn
+	// (Action Surge) was used in this turn.
+	ReasonAlreadyUsedThisTurn = "ALREADY_USED_THIS_TURN"
 	// ReasonReactionOnlyWhenHit: Shield, which is only cast when an attack
 	// hits the caster, never on their own turn.
 	ReasonReactionOnlyWhenHit = "REACTION_ONLY_WHEN_HIT"
@@ -323,6 +332,9 @@ func actionOption(d rules.Derived, turn TurnState, u Usage, a rules.Action) Acti
 	if o.Enabled && left == 0 {
 		o.Enabled = false
 		o.Reason = &Reason{Code: ReasonNoUses, Recharge: rechargeOf(d, a.Resource)}
+	} else if o.Enabled && a.Resource == actionSurgeResource && turn.ActionSurged {
+		o.Enabled = false
+		o.Reason = &Reason{Code: ReasonAlreadyUsedThisTurn}
 	}
 	return o
 }

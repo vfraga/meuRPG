@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
@@ -1122,5 +1123,79 @@ func TestSessionEventKindsMatchTheTable(t *testing.T) {
 	slices.Sort(want)
 	if !slices.Equal(got, want) {
 		t.Errorf("session_event_kinds holds %v, the code writes %v", got, want)
+	}
+}
+
+// RemoveCombatant refuses while a damage the combatant attacked with, or took, is still to roll
+// or to apply: it would vanish with the combatant, leaving an attack whose damage never lands.
+func TestRemoveCombatantRefusesWhileItsDamageWaits(t *testing.T) {
+	t.Parallel()
+	a := newArmed(t)
+	e := a.start(t, plan{
+		npcs:     []*playv1.Participant{{CharacterId: a.capitao.GetId(), Hidden: new(false)}},
+		npcRolls: []int{19},
+		players:  map[string]int32{"Toren": 12, "Pensantus": 8, "Brisa": 1},
+		at:       map[string][2]int32{"Capitão Goblin": {6, 3}, "Toren": {5, 3}, "Pensantus": {10, 3}, "Brisa": {8, 8}},
+	})
+	a.h.roller.queue(15, 4)
+	hit := a.mustAttack(t, a.master, e, "Capitão Goblin", sword, "Toren", inAppRoll)
+	pend := a.mustDamage(t, a.master, e, hit.GetPendingDamage().GetId(), inAppDamage).GetPendingDamage()
+	if pend.GetStatus() != playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_ROLLED {
+		t.Fatalf("the damage = %v, want rolled and waiting for the master", pend)
+	}
+	remove := func() error {
+		_, err := a.master.combat.RemoveCombatant(t.Context(), connect.NewRequest(&playv1.RemoveCombatantRequest{
+			CampaignId: a.campaignID, EncounterId: e.GetId(), CombatantId: a.id(t, "Capitão Goblin"), IdempotencyKey: newKey(),
+		}))
+		return err
+	}
+	err := remove()
+	if connect.CodeOf(err) != connect.CodeFailedPrecondition {
+		t.Fatalf("RemoveCombatant(the attacker of a waiting damage) error = %v, want failed_precondition", err)
+	}
+	var left int
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM pending_damages WHERE id = $1`, pend.GetId()).Scan(&left); err != nil {
+		t.Fatalf("count pending damages: %v", err)
+	}
+	if left != 1 {
+		t.Errorf("the refused removal left %d rows of the waiting damage, want 1", left)
+	}
+	// Once the master settles the damage, the combatant leaves.
+	if _, err := a.settle(t, a.master, e, pend.GetId(), false); err != nil {
+		t.Fatalf("discarding the damage error = %v", err)
+	}
+	if err := remove(); err != nil {
+		t.Errorf("RemoveCombatant after the damage was settled error = %v, want nil", err)
+	}
+}
+
+// TestTheLatestEncounterIsTheOpenOneWhateverTheClockSays: the session's latest combat is the
+// open one even when the clock that stamped it was behind the one of the combat that ended
+// (a clock that stepped back, or two combats within the same instant).
+func TestTheLatestEncounterIsTheOpenOneWhateverTheClockSays(t *testing.T) {
+	t.Parallel()
+	a := newArmed(t)
+	clock := &movableClock{t: time.Now().Truncate(time.Microsecond)}
+	a.h.svc.now = clock.now
+	session := a.master.liveSession(t, a.campaignID).GetGameSession().GetId()
+	latest := func() string {
+		t.Helper()
+		enc, err := a.h.svc.queries.GetLatestEncounter(t.Context(), session)
+		if err != nil {
+			t.Fatalf("GetLatestEncounter() error = %v", err)
+		}
+		return enc.ID
+	}
+	first := a.threeAndAGoblin(t)
+	if got := latest(); got != first.GetId() {
+		t.Fatalf("latest encounter = %q, want the first, %q", got, first.GetId())
+	}
+	if _, err := a.master.combat.EndEncounter(t.Context(), connect.NewRequest(&playv1.EndEncounterRequest{CampaignId: a.campaignID, EncounterId: first.GetId(), IdempotencyKey: newKey()})); err != nil {
+		t.Fatalf("EndEncounter() error = %v", err)
+	}
+	clock.advance(-time.Hour)
+	second := a.threeAndAGoblin(t)
+	if got := latest(); got != second.GetId() {
+		t.Errorf("latest encounter = %q, want the open one, %q", got, second.GetId())
 	}
 }

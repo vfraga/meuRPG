@@ -68,6 +68,7 @@ export class BattleEncounters {
 
   protected readonly kept = signal<readonly Kept[]>([]);
   protected readonly error = signal('');
+  private readonly opening = signal(false);
   protected readonly guide = GUIDE_LABEL;
   protected readonly caveat = GUIDE_CAVEAT;
   protected readonly format = formatInt;
@@ -160,8 +161,41 @@ export class BattleEncounters {
     }
   }
 
-  /** "Começar este combate": "Iniciar combate" opens filled from the point. */
-  protected begin(k: Kept): void {
+  /** The encounter a point keeps right now: another tab can have changed it since the card was read. */
+  private async readOne(k: Kept): Promise<Kept | null> {
+    const read = await this.api.get(this.campaignId(), k.pointId);
+    return read.encounter
+      ? { ...k, encounter: read.encounter, evaluation: read.evaluation, unknown: read.unknownKeys }
+      : null;
+  }
+
+  /** "Começar este combate": "Iniciar combate" opens filled from the point, as the point keeps it at this moment. */
+  protected async begin(kept: Kept): Promise<void> {
+    if (kept.unknown.length > 0 || this.opening()) {
+      // The button is only dimmed (it keeps focus), so the click still comes: a creature the SRD lost cannot start.
+      return;
+    }
+    this.opening.set(true);
+    this.error.set('');
+    let k: Kept | null;
+    try {
+      k = await this.readOne(kept);
+    } catch (err) {
+      this.error.set(encounterErrorMessage(err, 'read'));
+      return;
+    } finally {
+      this.opening.set(false);
+    }
+    if (!k) {
+      // It was cleared meanwhile: the card goes away.
+      this.kept.update((list) => list.filter((x) => x.pointId !== kept.pointId));
+      return;
+    }
+    const fresh = k;
+    this.kept.update((list) => list.map((x) => (x.pointId === fresh.pointId ? fresh : x)));
+    if (k.unknown.length > 0) {
+      return;
+    }
     const map = combatMapInfo(this.state());
     const byKey = new Map(
       (k.evaluation?.lines ?? []).map((l) => [l.creature?.key, l.creature?.namePt ?? '']),

@@ -398,8 +398,9 @@ export type SceneActionView = Message<"meurpg.play.v1.SceneActionView"> & {
 
   /**
    * How many times each player's character may roll this action while the
-   * scene stays open: 1 to 5, and 0 means unlimited (no counter on screen).
-   * Every member gets it.
+   * scene stays open: 1 to 5, and 0 means unlimited (no counter on screen;
+   * the server stops at 200 rolls per character in one opening). Every member
+   * gets it.
    *
    * @generated from field: int32 max_attempts = 8;
    */
@@ -807,9 +808,10 @@ export enum SceneBlockedReason {
    * the scene has been open: it rolled as many times as the action's
    * `max_attempts` allows, plus the attempts the master granted
    * (GrantSceneAttempt). The master may grant one more, raise the limit, or
-   * close and open the scene again, which resets every count. The name stays
-   * from the time the limit was one roll ("already rolled"); the reason is
-   * the same.
+   * close and open the scene again, which resets every count. An unlimited
+   * action stops at 200 rolls per character in one opening, with this same
+   * reason. The name stays from the time the limit was one roll ("already
+   * rolled"); the reason is the same.
    *
    * @generated from enum value: SCENE_BLOCKED_REASON_ALREADY_ROLLED = 3;
    */

@@ -10,6 +10,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/protobuf/proto"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
@@ -221,7 +222,7 @@ func (s *Service) MakePuzzleMove(
 	if err != nil {
 		return nil, s.dbError(ctx, "read the puzzle after a move", err)
 	}
-	return connect.NewResponse(&playv1.MakePuzzleMoveResponse{Run: out, Replayed: res.replayed, SolvedByThisMove: res.solved}), nil
+	return connect.NewResponse(&playv1.MakePuzzleMoveResponse{Run: out, Replayed: res.replayed, SolvedByThisMove: res.solved, Wrong: res.wrong}), nil
 }
 
 // applyMove is the move's transaction. The session's row is locked first (so the
@@ -250,13 +251,22 @@ func (s *Service) applyMove(ctx context.Context, tx pgx.Tx, m authz.Membership, 
 	done, err := q.GetPuzzleMoveByKey(ctx, playdb.GetPuzzleMoveByKeyParams{RunID: run.ID, IdempotencyKey: key})
 	switch {
 	case err == nil:
-		if done.UserID == nil || *done.UserID != m.UserID {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+		// The key stands for that move, of that player: another move, or another player, is
+		// not a retry.
+		made := &playv1.PuzzleMove{}
+		if done.UserID == nil || *done.UserID != m.UserID || fromJSON(done.Move, made) != nil || !proto.Equal(made, mv) {
+			return nil, errKeyReused()
 		}
-		res.replayed, res.solved = true, done.Solved
+		res.replayed, res.solved, res.wrong = true, done.Solved, done.Wrong
 		return s.namesOfRuns(ctx, tx, m.CampaignID, run)
 	case !errors.Is(err, pgx.ErrNoRows):
 		return nil, fmt.Errorf("find the move of this idempotency key: %w", err)
+	}
+	// A key spent on a hint try of the run is spent: a move is another change.
+	if _, err := q.GetPuzzleHintTryByKey(ctx, playdb.GetPuzzleHintTryByKeyParams{RunID: run.ID, IdempotencyKey: key}); err == nil {
+		return nil, errKeyReused()
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("find the try of this idempotency key: %w", err)
 	}
 
 	if run.SolvedAt != nil {
@@ -440,6 +450,9 @@ func solveLine(master string, outcome playv1.PuzzleSolveOutcome, pointName strin
 	case playv1.PuzzleSolveOutcome_PUZZLE_SOLVE_OUTCOME_DOOR_OPENED:
 		return "Uma porta se abriu."
 	case playv1.PuzzleSolveOutcome_PUZZLE_SOLVE_OUTCOME_POINT_REVEALED:
+		if pointName == "" { // the players do not see the point: its name is not theirs to read
+			return "Algo apareceu no mapa."
+		}
 		return pointName + " apareceu no mapa."
 	case playv1.PuzzleSolveOutcome_PUZZLE_SOLVE_OUTCOME_CLUE_REVEALED:
 		return "Você ganhou uma pista." // the clue itself goes to the solver only
@@ -485,7 +498,11 @@ func (s *Service) runSolveAction(ctx context.Context, tx pgx.Tx, m authz.Members
 		if maps == nil {
 			return gone, "", nil
 		}
-		changed, name, after, err := maps.PuzzleRevealPoint(ctx, tx, m.CampaignID, t.GetMapId(), t.GetPointId())
+		onScreen, err := s.queries.WithTx(tx).GetOnScreen(ctx, m.CampaignID)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return 0, "", fmt.Errorf("read what the session shows: %w", err)
+		}
+		changed, name, after, err := maps.PuzzleRevealPoint(ctx, tx, m.CampaignID, t.GetMapId(), t.GetPointId(), deref(onScreen.CurrentMapID))
 		switch {
 		case connect.CodeOf(err) == connect.CodeNotFound:
 			return gone, "", nil

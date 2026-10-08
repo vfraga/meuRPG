@@ -2,9 +2,10 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
-import { ConnectError } from '@connectrpc/connect';
+import { Code } from '@connectrpc/connect';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { describeConnectError } from '../../core/connect/connect-errors';
 import { ServerInfoService } from '../../core/system/server-info.service';
 
 /** State of the one call this page makes, kept as a single signal so the
@@ -72,7 +73,10 @@ export class Home {
         // ConnectError.from() also handles plain network failures (the
         // fetch failing before it ever reaches the server), not just RPCs
         // that came back with an error.
-        this.state.set({ status: 'error', message: ConnectError.from(err).message });
+        this.state.set({
+          status: 'error',
+          message: describeConnectError(err, { [Code.Unavailable]: 'Tente de novo em instantes.' }),
+        });
       },
     );
   }

@@ -212,11 +212,18 @@ export class DungeonNew {
     });
   }
 
+  /** Goes up on every load: an answer made for an earlier route is dropped. */
+  private loadGeneration = 0;
+
   private async load(campaignId: string): Promise<void> {
+    const generation = ++this.loadGeneration;
     this.campaignId.set(campaignId);
     this.phase.set('loading');
     try {
       const res = await this.campaigns.getCampaign(campaignId);
+      if (generation !== this.loadGeneration) {
+        return;
+      }
       if (res.campaign?.myRole !== Role.MASTER || res.campaign.awaitingApproval) {
         this.phase.set('gone');
         return;
@@ -225,7 +232,9 @@ export class DungeonNew {
       this.nameControl.setValue(`Masmorra de ${res.campaign.name}`.slice(0, 80));
       this.phase.set('ready');
     } catch (err) {
-      this.phase.set(ConnectError.from(err).code === Code.NotFound ? 'gone' : 'error');
+      if (generation === this.loadGeneration) {
+        this.phase.set(ConnectError.from(err).code === Code.NotFound ? 'gone' : 'error');
+      }
     }
   }
 

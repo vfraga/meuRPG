@@ -100,6 +100,10 @@ export class MapPins {
     const seen = new Map<string, number>();
     const out: Pin[] = [];
     for (const p of this.points()) {
+      // The second lock: a player never gets the pin of what is still hidden, even if it slipped in.
+      if (!this.isMaster() && pointHidden(p)) {
+        continue;
+      }
       const x = bpToPercent(p.xBp);
       const y = bpToPercent(p.yBp);
       const square = `${Math.round(x * 4)}/${Math.round(y * 4)}`;

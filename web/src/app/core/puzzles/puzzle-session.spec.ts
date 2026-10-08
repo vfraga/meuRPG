@@ -1,5 +1,6 @@
 import { PuzzleRunStatus } from '../../../gen/meurpg/play/v1/puzzles_pb';
-import { PuzzleSessionState } from './puzzle-session';
+import type { MasterPuzzleRun } from '../../../gen/meurpg/play/v1/puzzles_pb';
+import { PuzzleSessionState, type SessionApi } from './puzzle-session';
 import {
   FakePuzzlesClient,
   asClient,
@@ -122,5 +123,50 @@ describe('PuzzleSessionState (MR-038)', () => {
     state.clear();
     expect(state.runs()).toEqual([]);
     expect(state.status()).toBe('idle');
+  });
+});
+
+function deferredValue<T>() {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+}
+
+function slowListSetup() {
+  const list = deferredValue<MasterPuzzleRun[]>();
+  let nextRun: MasterPuzzleRun = masterRun(a, PuzzleRunStatus.SHOWN);
+  const api = {
+    listSession: () => list.promise,
+    masterRun: async () => nextRun,
+    listShown: async () => [],
+  } as unknown as SessionApi;
+  const state = new PuzzleSessionState(
+    api,
+    () => 'camp-1',
+    () => true,
+  );
+  return { list, state, setNext: (r: MasterPuzzleRun) => (nextRun = r) };
+}
+
+describe('PuzzleSessionState, a list read that began before a newer write', () => {
+  it('the answer of a master action is not undone by an older list answer', async () => {
+    const { list, state } = slowListSetup();
+    const pending = state.refresh();
+    state.replace(masterRun(a, PuzzleRunStatus.SOLVED)); // Reset/Close answered meanwhile
+    list.resolve([masterRun(a, PuzzleRunStatus.SHOWN)]); // pre-action snapshot
+    await pending;
+    expect(state.runs().find((r) => r.puzzle?.id === 'a')?.status).toBe(PuzzleRunStatus.SOLVED);
+  });
+
+  it('a puzzle_changed read applied meanwhile is not undone by an older list answer', async () => {
+    const { list, state, setNext } = slowListSetup();
+    // the puzzle is already known on screen, so changed() reads just that puzzle
+    state.replace(masterRun(a, PuzzleRunStatus.SHOWN));
+    const pending = state.refresh();
+    setNext(masterRun(a, PuzzleRunStatus.SOLVED));
+    await state.changed('a');
+    list.resolve([masterRun(a, PuzzleRunStatus.SHOWN)]);
+    await pending;
+    expect(state.runs()[0].status).toBe(PuzzleRunStatus.SOLVED);
   });
 });

@@ -90,29 +90,65 @@ describe('SceneState', () => {
     expect(state.focusNext()).toBeNull();
   });
 
-  it('puts a clue the master just revealed into the open scene, and drops a read that was in flight', async () => {
+  describe("a read in flight when the master's own answer lands", () => {
     const before = create(SceneClueSchema, { id: 'k1', text: 'Uma pista' });
     const after = create(SceneClueSchema, {
       id: 'k1',
       text: 'Uma pista',
       revealedTo: [{ characterId: 'b' }],
     });
-    let release!: (scene: OpenSceneInfo) => void;
-    let calls = 0;
-    const state = new SceneState(
-      () =>
-        calls++ === 0
-          ? Promise.resolve(masterScene([], [], { clues: [before] }))
-          : new Promise((r) => (release = r)),
-      () => true,
-    );
-    await state.refresh();
-    const stale = state.refresh();
-    state.clueRevealed(after);
-    expect(state.scene()?.clues[0].revealedTo).toHaveLength(1);
-    release(masterScene([], [], { clues: [before] }));
-    await stale;
-    expect(state.scene()?.clues[0].revealedTo).toHaveLength(1);
+
+    /** The first read answers at once; each later one waits for the test to answer it. */
+    function setup() {
+      const pending: Array<(scene: OpenSceneInfo) => void> = [];
+      let calls = 0;
+      const state = new SceneState(
+        () =>
+          calls++ === 0
+            ? Promise.resolve(masterScene([], [], { clues: [before] }))
+            : new Promise((r) => pending.push(r)),
+        () => true,
+      );
+      return { state, pending };
+    }
+
+    it('lands when no answer came meanwhile', async () => {
+      const { state, pending } = setup();
+      await state.refresh();
+      const read = state.refresh();
+      pending[0](masterScene([sceneRoll('r1', 'a2', 'Toren', 7)], [], { clues: [before] }));
+      await read;
+      expect(state.scene()?.rolls).toHaveLength(1);
+      expect(pending).toHaveLength(1);
+    });
+
+    it('does not undo a clue the master just revealed: the older read is dropped', async () => {
+      const { state, pending } = setup();
+      await state.refresh();
+      const stale = state.refresh();
+      state.clueRevealed(after);
+      expect(state.scene()?.clues[0].revealedTo).toHaveLength(1);
+      pending[0](masterScene([], [], { clues: [before] }));
+      await Promise.resolve();
+      expect(state.scene()?.clues[0].revealedTo).toHaveLength(1);
+      pending[1](masterScene([], [], { clues: [after] }));
+      await stale;
+      expect(state.scene()?.clues[0].revealedTo).toHaveLength(1);
+    });
+
+    it('still shows what the dropped read carried, by reading again (a roll made meanwhile)', async () => {
+      const { state, pending } = setup();
+      await state.refresh();
+      const read = state.refresh(); // scene_check_rolled
+      state.clueRevealed(after);
+      pending[0](masterScene([], [], { clues: [before] }));
+      await Promise.resolve();
+      pending[1](masterScene([sceneRoll('r1', 'a2', 'Toren', 7)], [], { clues: [after] }));
+      await read;
+      expect(state.scene()?.clues[0].revealedTo).toHaveLength(1);
+      expect(state.scene()?.rolls).toHaveLength(1);
+      expect(state.notice()).toContain('Toren');
+    });
   });
 
   it('tells a player when the master gives another attempt, not the master', async () => {
@@ -180,18 +216,23 @@ describe('SceneState', () => {
     });
 
     it("applies the master's own answer at once, and drops a read that was still on its way", async () => {
-      let release: (s: OpenSceneInfo | null) => void = () => undefined;
-      const slow = new Promise<OpenSceneInfo | null>((r) => (release = r));
+      const pending: Array<(s: OpenSceneInfo | null) => void> = [];
       let calls = 0;
       const state = new SceneState(
-        () => (calls++ === 0 ? Promise.resolve(masterScene()) : slow),
+        () =>
+          calls++ === 0
+            ? Promise.resolve(masterScene())
+            : new Promise<OpenSceneInfo | null>((r) => pending.push(r)),
         () => true,
       );
       await state.refresh();
       const late = state.refresh();
       state.setStage([mira]);
       expect(state.stage().map((n) => n.name)).toEqual(['Mira']);
-      release(masterScene());
+      pending[0](masterScene());
+      await Promise.resolve();
+      expect(state.stage().map((n) => n.name)).toEqual(['Mira']);
+      pending[1](masterScene([], [mira]));
       await late;
       expect(state.stage().map((n) => n.name)).toEqual(['Mira']);
     });

@@ -39,7 +39,9 @@ type fxTarget struct {
 }
 
 // readFxTarget reads a target's hit points: an NPC's or a creature's from its
-// combatant row, a player's character's from its vitals.
+// combatant row, a player's character's from its vitals. A druid in a beast form
+// has the beast's: its separate pool, without temporary hit points, which is what
+// damage and healing use (RN-02).
 func (s *Service) readFxTarget(ctx context.Context, c *combatTx, t playdb.Combatant) (fxTarget, error) {
 	if holdsHP(t) {
 		return fxTarget{c: t, hp: int(num(t.HpCurrent)), max: int(num(t.HpMax)), temp: int(num(t.HpTemp))}, nil
@@ -47,6 +49,9 @@ func (s *Service) readFxTarget(ctx context.Context, c *combatTx, t playdb.Combat
 	v, err := s.vitals.GetVitalsTx(ctx, c.tx, c.session.CampaignID, t.CharacterID)
 	if err != nil {
 		return fxTarget{}, err
+	}
+	if w := v.GetWildShape(); w != nil {
+		return fxTarget{c: t, hp: int(w.GetHitPointsCurrent()), max: int(w.GetHitPointsMax())}, nil
 	}
 	return fxTarget{c: t, hp: int(v.GetHitPointsCurrent()), max: int(v.GetHitPointsMax()), temp: int(v.GetHitPointsTemporary())}, nil
 }
@@ -218,7 +223,9 @@ func (s *Service) setCondition(ctx context.Context, c *combatTx, t playdb.Combat
 // dropToZero is Palavra de Poder Matar on a target: an NPC is defeated at 0 hit
 // points; a player's character drops to 0 with three death save failures, and
 // the master confirms the death with ConfirmDeath (RN-03: the engine never kills
-// a character by itself). It returns the character's vitals after.
+// a character by itself). A druid in a beast form loses the beast's hit points
+// instead: the form ends with nothing carried over and the druid keeps its own.
+// It returns the character's vitals after.
 func (s *Service) dropToZero(ctx context.Context, c *combatTx, t fxTarget, h *castHit) (*playv1.CharacterVitals, error) {
 	zero := int32(0)
 	if holdsHP(t.c) {
@@ -228,6 +235,18 @@ func (s *Service) dropToZero(ctx context.Context, c *combatTx, t fxTarget, h *ca
 			return nil, fmt.Errorf("defeat the target: %w", err)
 		}
 		return nil, nil
+	}
+	now, err := s.vitals.GetVitalsTx(ctx, c.tx, c.session.CampaignID, t.c.CharacterID)
+	if err != nil {
+		return nil, err
+	}
+	if w := now.GetWildShape(); w != nil {
+		before, after, err := s.damageBeast(ctx, c, t.c, now, w.GetHitPointsCurrent(), &actionEvent{})
+		if err != nil {
+			return nil, err
+		}
+		h.Restore = new(hpStateOf(before))
+		return after, nil
 	}
 	before, after, err := s.vitalsOf(ctx, c, t.c.CharacterID, &playv1.AdjustCharacterVitalsRequest{HitPointsCurrent: &zero, HitPointsTemporary: &zero})
 	if err != nil {

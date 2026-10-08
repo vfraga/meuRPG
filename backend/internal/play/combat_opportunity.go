@@ -374,7 +374,7 @@ func (s *Service) answerOffer(ctx context.Context, m authz.Membership, rawEncoun
 		return nil, err
 	}
 	v := viewerOf(m)
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventReactionDeclined, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: requestHash(state, rawEncounter, rawOffer), kind: eventReactionDeclined, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}

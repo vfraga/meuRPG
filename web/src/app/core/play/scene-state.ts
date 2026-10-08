@@ -39,6 +39,9 @@ export class SceneState {
   readonly focusNext = signal<'title' | 'open' | null>(null);
 
   private generation = 0;
+  /** Moves with each local answer: a read that began before it may lack what the answer carries (or carry less
+   * than the answer), so it is dropped and the scene is read once more, not lost. */
+  private edits = 0;
   private loaded = false;
 
   constructor(
@@ -50,11 +53,16 @@ export class SceneState {
    * A failed read keeps the copy on screen: the next event reads it again. */
   async refresh(): Promise<void> {
     const generation = ++this.generation;
+    const edits = this.edits;
     try {
       const next = await this.load();
-      if (generation === this.generation) {
-        this.apply(next);
+      if (generation !== this.generation) {
+        return;
       }
+      if (edits !== this.edits) {
+        return await this.refresh();
+      }
+      this.show(next);
     } catch {
       // The stream's next event, or reconnection, reads it again.
     }
@@ -62,8 +70,12 @@ export class SceneState {
 
   /** The scene as an answer of the master's own call (open, swap, close). */
   apply(next: OpenSceneInfo | null): void {
+    this.edits++;
+    this.show(next);
+  }
+
+  private show(next: OpenSceneInfo | null): void {
     const prev = this.scene();
-    this.generation++;
     this.scene.set(next);
     if (this.loaded) {
       this.say(prev, next);
@@ -78,18 +90,18 @@ export class SceneState {
     if (!scene) {
       return;
     }
-    this.generation++;
+    this.edits++;
     this.scene.set({ ...scene, clues: scene.clues.map((c) => (c.id === clue.id ? clue : c)) });
   }
 
   /** The master's own stage call answered: the stage as it is now. Applied in
-   * place, so the cards change at once; a read still on its way is dropped. */
+   * place, so the cards change at once; a read still on its way is dropped and made again. */
   setStage(stage: readonly StageNpc[]): void {
     const scene = this.scene();
     if (!scene) {
       return;
     }
-    this.generation++;
+    this.edits++;
     this.scene.set({ ...scene, stage: [...stage] });
   }
 

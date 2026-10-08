@@ -184,6 +184,9 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 		}
 		if ev, err := readEvent(e.Payload); err == nil {
 			undone[ev.Undone] = true
+			for _, id := range ev.UndoneAlso {
+				undone[id] = true
+			}
 		}
 	}
 	var out []*logEntry
@@ -319,6 +322,13 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 					host.stopped = append(host.stopped, ev.Pending)
 				}
 			}
+			for _, h := range ev.AlsoStopped {
+				if host, ok := byPending[h.Pending]; ok {
+					host.hosts = append(host.hosts, e.ID)
+					host.setStatus(h.Pending, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_DISCARDED)
+					host.stopped = append(host.stopped, h.Pending)
+				}
+			}
 		case eventOpportunityOffered:
 			moveOf[ev.OfferID] = ev.MoveID
 			if !ev.ByHand {
@@ -418,6 +428,9 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 	_, targetKnown := byID[e.ev.Target]
 	known := (e.ev.Actor == "" || actorKnown) && (e.ev.Target == "" || targetKnown || e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION)
 	visible := !e.masterOnly && !e.ev.Secret && !actor.Hidden && !target.Hidden && known
+	if e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION && (e.ev.AttackerHidden || byID[e.ev.Target].Hidden) && !v.owns(actor) {
+		visible = false
+	}
 	// On a map with the fog of war, a line is the players' who saw its NPCs when it
 	// happened, even if they have walked into the dark since; one they did not see
 	// never appears later (MR-036). The master's copy says it is hidden from them.
@@ -683,9 +696,14 @@ func (e *logEntry) trapEntry(ctx context.Context, v combatViewer, byID map[strin
 			if byID[id].Hidden {
 				return true
 			}
-			// On a fog map: an NPC the firing caught is the line of the players who saw it then.
 			i := slices.IndexFunc(e.ev.Trap.Caught, func(cc trapCaughtEvent) bool { return cc.Target == id })
-			return i >= 0 && e.ev.Trap.Caught[i].Fogged && !slices.Contains(e.ev.Trap.Caught[i].SeenBy, v.userID)
+			if i < 0 {
+				return false
+			}
+			// Hidden when it fired stays hidden; on a fog map an NPC the firing caught is
+			// the line of the players who saw it then.
+			cc := e.ev.Trap.Caught[i]
+			return cc.Hidden || (cc.Fogged && !slices.Contains(cc.SeenBy, v.userID))
 		},
 		label: func(id string) string { return byID[id].Label },
 		status: func(pendingID string) (playv1.PendingDamageStatus, bool) {

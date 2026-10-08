@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { MapLayer } from '../../../gen/meurpg/maps/v1/maps_pb';
-import { NO_GAP_TEXT, hidesWhoStands, planDoor } from './door-paint';
+import {
+  NO_GAP_TEXT,
+  doorBlock,
+  hidesWhoStands,
+  planDoor,
+  planDoorBlock,
+  wallUnderDoor,
+} from './door-paint';
 
 /** A 5 x 3 map: a wall row at the top and the bottom, floor in the middle; plus what each test paints. */
 function reader(walls: readonly string[], doors: Readonly<Record<string, number>> = {}) {
@@ -94,5 +101,61 @@ describe('hidesWhoStands', () => {
       false,
       true,
     ]);
+  });
+});
+
+describe('planDoorBlock (the "Porta" tool on a calibrated map)', () => {
+  // 4 x 2 rules' squares, factor 2: two blocks side by side; the wall of the left one is a single column of the block.
+  const walls = new Set(['0,0']);
+  const read = (layer: MapLayer, col: number, row: number) =>
+    layer === MapLayer.WALL && walls.has(`${col},${row}`) ? 1 : 0;
+
+  it('judges the tap on the block and lists every square of it', () => {
+    const { plan, squares } = planDoorBlock(read, 4, 2, 2, 1, 1, 2);
+    expect(plan.ok).toBe(false); // a wall block with a wall beside it and no floor on both sides
+    expect(squares).toEqual([
+      { col: 0, row: 0 },
+      { col: 1, row: 0 },
+      { col: 0, row: 1 },
+      { col: 1, row: 1 },
+    ]);
+  });
+
+  it('is planDoor when the factor is 1', () => {
+    expect(planDoorBlock(read, 4, 2, 1, 1, 1, 2).plan).toEqual(planDoor(read, 4, 2, 1, 1, 2));
+  });
+});
+
+describe('doorBlock and wallUnderDoor (revealing a secret door)', () => {
+  it('is the one square on a map that was never calibrated', () => {
+    expect(doorBlock(10, 10, 1, 4, 2)).toEqual([{ col: 4, row: 2 }]);
+  });
+
+  it('is the whole drawing square on a calibrated map, cut at the edge of the grid', () => {
+    expect(doorBlock(10, 10, 2, 3, 2)).toEqual([
+      { col: 2, row: 2 },
+      { col: 3, row: 2 },
+      { col: 2, row: 3 },
+      { col: 3, row: 3 },
+    ]);
+    expect(doorBlock(5, 5, 3, 4, 4)).toEqual([
+      { col: 3, row: 3 },
+      { col: 4, row: 3 },
+      { col: 3, row: 4 },
+      { col: 4, row: 4 },
+    ]);
+  });
+
+  it('lists only the squares of the block that have a wall', () => {
+    const walls = [
+      { col: 2, row: 2 },
+      { col: 3, row: 3 },
+      { col: 9, row: 9 },
+    ];
+    expect(wallUnderDoor(walls, 10, 10, 2, { col: 3, row: 2 })).toEqual([
+      { col: 2, row: 2 },
+      { col: 3, row: 3 },
+    ]);
+    expect(wallUnderDoor([], 10, 10, 2, { col: 3, row: 2 })).toEqual([]);
   });
 });

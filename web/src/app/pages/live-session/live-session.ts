@@ -11,6 +11,7 @@ import {
   viewChild,
   TemplateRef,
 } from '@angular/core';
+import { SpellCatalog } from '../../core/combat/spell-catalog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
@@ -165,6 +166,7 @@ export class LiveSession {
   private readonly source = inject(LiveSessionSource);
   private readonly auth = inject(AuthService);
   private readonly xpChanges = inject(XpChanges);
+  private readonly spellCatalog = inject(SpellCatalog);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
   private readonly dialog = inject(MatDialog);
@@ -381,6 +383,8 @@ export class LiveSession {
   private loadedSheetFor: string | null = null;
   private partyInfoIds = new Set<string>();
   private generation = 0;
+  /** Moves with each read of the images left with the players, and with each one taken back here. */
+  private leftSeq = 0;
 
   constructor() {
     // The tab's title carries the campaign's name once it is loaded.
@@ -473,11 +477,23 @@ export class LiveSession {
     // (RN-06) notices the new session, and the page opens it by itself.
     effect(() => {
       const id = this.campaignId();
-      if (this.phase() === 'no-session' && this.openSessions.liveCampaignIds().has(id)) {
+      const listed = this.openSessions.liveCampaignIds().has(id);
+      // Only a campaign that newly shows up in the list opens the page: a stale list still naming a session that
+      // ended would otherwise load, find none, and load again without end.
+      const appeared = this.listedCampaign.id === id && !this.listedCampaign.listed && listed;
+      this.listedCampaign = { id, listed };
+      if (this.phase() === 'no-session' && appeared) {
         untracked(() => this.load(id));
       }
     });
   }
+
+  /** Whether the open-sessions list named the campaign the last time the waiting effect looked. */
+  private listedCampaign: { id: string; listed: boolean } = { id: '', listed: false };
+  /** Counts the stream's news of the current map and of the shown image: a snapshot that began before one of them
+   * does not overwrite it. */
+  private mapEvents = 0;
+  private imageEvents = 0;
 
   private load(campaignId: string): void {
     const generation = ++this.generation;
@@ -543,9 +559,12 @@ export class LiveSession {
         onReady: () => {
           // A missed `xp_changed` while reconnecting leaves nothing stale.
           this.xpChanges.bump();
+          // A `content_changed` missed while reconnecting leaves the spells the page read before out of date.
+          this.spellCatalog.forget(campaignId);
           void this.trapBoard.refresh();
           void this.readSnapshot(campaignId, generation);
         },
+        onContentChanged: () => this.spellCatalog.forget(campaignId),
         onVitals: (v) => {
           // Looking through a familiar's eyes, or coming back, changes what the player sees.
           const before =
@@ -569,6 +588,7 @@ export class LiveSession {
         onPuzzleChanged: (id) => void this.puzzles.changed(id),
         onTokenMoved: (move) => {
           this.scheduleVision();
+          void this.trapBoard.tokensMoved();
           // A token the page doesn't know (a missed `map_changed`): read again.
           if (!this.mapState.moveToken(move.mapId, move.characterId, move.xBp, move.yBp)) {
             void this.mapState.refresh();
@@ -607,6 +627,7 @@ export class LiveSession {
         onCombatantMoved: (move) => {
           if (!this.inTheatre()) {
             this.scheduleVision();
+            void this.trapBoard.tokensMoved();
           }
           if (!this.combat.applyMove(move)) {
             void this.loadCombat(generation);
@@ -619,7 +640,13 @@ export class LiveSession {
           }
         },
         onTrapNoticed: (notice) => void this.trapNoticed(notice.mapId, notice.pointId),
-        onXpChanged: () => this.xpChanges.bump(),
+        onXpChanged: () => {
+          this.xpChanges.bump();
+          // Converting a treasure to XP (and undoing it) changes its point on the map, with no map event.
+          if (this.isMaster()) {
+            void this.mapState.refresh();
+          }
+        },
         onSceneChanged: () => void this.scene.refresh(),
         onNotesChanged: () => {
           void this.notes.refresh(true);
@@ -645,6 +672,8 @@ export class LiveSession {
   }
 
   private async readSnapshot(campaignId: string, generation: number): Promise<void> {
+    const mapEvents = this.mapEvents;
+    const imageEvents = this.imageEvents;
     try {
       const [snapshot, campaign] = await Promise.all([
         this.source.getLiveSession(campaignId),
@@ -655,9 +684,15 @@ export class LiveSession {
       }
       this.session.set(snapshot.session);
       this.vitals.update((list) => applySnapshot(list, snapshot.vitals));
-      this.currentMapId.set(snapshot.currentMapId);
-      this.shownImage.set(snapshot.shownImage);
-      this.shownKeep.set(snapshot.shownImageKeep);
+      // News that came while the snapshot was on its way is newer than it: the snapshot only fills in what no event told.
+      const mapIsNews = mapEvents === this.mapEvents;
+      if (mapIsNews) {
+        this.currentMapId.set(snapshot.currentMapId);
+      }
+      if (imageEvents === this.imageEvents) {
+        this.shownImage.set(snapshot.shownImage);
+        this.shownKeep.set(snapshot.shownImageKeep);
+      }
       void this.reloadLeftImages();
       void this.loadCombat(generation);
       void this.scene.refresh();
@@ -668,7 +703,12 @@ export class LiveSession {
       }
       this.combat.touchLog(); // the log is read again too, after a reconnection
       // Each `ready` (a reconnection too) reads the map again: a missed event never leaves it stale.
-      void this.mapState.open(snapshot.currentMapId);
+      if (mapIsNews) {
+        void this.mapState.open(snapshot.currentMapId);
+      }
+      // What a player sees on a fog map, and the creatures, follow the server's current state too.
+      this.scheduleVision();
+      this.creaturesTick.update((n) => n + 1);
       if (this.isMaster()) {
         void this.reloadMaps();
       }
@@ -681,32 +721,48 @@ export class LiveSession {
       if (generation !== this.generation) {
         return;
       }
-      switch (this.source.classifyError(err)) {
-        case 'no-session':
-          this.ended();
-          return;
-        case 'no-access':
-          this.closeStream();
-          this.phase.set('no-access');
-          return;
-        case 'signed-out':
-          this.closeStream();
-          this.auth.signIn(this.router.url);
-          return;
-        default:
-          // Try the whole thing again: the next `ready` reads a new one.
-          this.stream()?.restart();
-      }
+      this.snapshotFailed(err);
+    }
+  }
+
+  /** What a snapshot that could not be read means: some answers end the page, only the others are worth asking again. */
+  private snapshotFailed(err: unknown): void {
+    switch (this.source.classifyError(err)) {
+      case 'no-session':
+        this.ended();
+        return;
+      case 'no-access':
+      case 'forbidden':
+        // The server will not give this person the session, however many times it is asked.
+        this.closeStream();
+        this.phase.set('no-access');
+        return;
+      case 'signed-out':
+        this.closeStream();
+        this.auth.signIn(this.router.url);
+        return;
+      case 'invalid':
+        // The request itself is wrong: asking again changes nothing, "Tentar de novo" starts over.
+        this.closeStream();
+        this.phase.set('error');
+        return;
+      default:
+        // Try the whole thing again: the next `ready` reads a new one.
+        this.stream()?.restart();
     }
   }
 
   /** The session's combat, as this person may see it (best effort: the
    * screen keeps the copy it has until the next event or `ready`). */
   private async loadCombat(generation: number): Promise<void> {
+    const ticket = this.combat.beginRead();
     try {
       const encounter = await this.combatApi.get(this.campaignId());
-      if (generation === this.generation) {
-        this.combat.apply(encounter);
+      if (generation === this.generation && !this.combat.applyRead(ticket, encounter)) {
+        // Dropped for a turn or a move that came while it was out: that read may be older than the event.
+        if (this.combat.patchedSince(ticket)) {
+          void this.loadCombat(generation);
+        }
       }
     } catch {
       // The stream's next event, or reconnection, reads it again.
@@ -825,6 +881,7 @@ export class LiveSession {
 
   /** `current_map_changed`, or the master's own choice. */
   protected showMap(mapId: string | null): void {
+    this.mapEvents++;
     this.currentMapId.set(mapId);
     void this.mapState.open(mapId);
     if (this.isMaster()) {
@@ -885,6 +942,7 @@ export class LiveSession {
 
   /** `shown_image_changed`: the block appears, changes or goes away. */
   private shownImageChanged(image: ShownImageVm | null): void {
+    this.imageEvents++;
     if (!this.isMaster()) {
       const previous = this.shownImage();
       if (image) {
@@ -898,17 +956,22 @@ export class LiveSession {
     this.shownImage.set(image);
   }
 
-  protected leftWithout(image: ShownImageVm): readonly ShownImageVm[] {
-    return this.leftImages().filter((i) => i.id !== image.id);
+  /** The master took an image back: it leaves the list now, and a read that began before this answer is dropped
+   * (it may still carry the image). */
+  protected takenBack(image: ShownImageVm): void {
+    this.leftSeq++;
+    this.leftImages.update((list) => list.filter((i) => i.id !== image.id));
   }
 
   /** The images left with the players, read again (best effort: the list
    * keeps what it had). */
   protected async reloadLeftImages(): Promise<void> {
     const generation = this.generation;
+    // Only the latest read lands: replies come in any order, and an older one holds an older list.
+    const seq = ++this.leftSeq;
     try {
       const images = await this.source.listLeftImages(this.campaignId());
-      if (generation === this.generation) {
+      if (generation === this.generation && seq === this.leftSeq) {
         this.leftImages.set(images);
       }
     } catch {

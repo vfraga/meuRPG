@@ -59,12 +59,12 @@ DELETE FROM auth_sessions WHERE id = $1;
 DELETE FROM auth_sessions WHERE user_id = $1;
 
 -- name: DeleteOtherUserSessions :execrows
--- "Sign out of other devices": every session of the user that still works,
--- but the current one. Expired and idle rows are already unusable (the TTL job
--- removes them), so leaving them out keeps the count honest.
+-- "Sign out of other devices": every session of the user that has not expired,
+-- but the current one. Idle rows go too: an idle row is only unusable under
+-- today's idle timeout, and a longer one would make it valid again.
 DELETE FROM auth_sessions
 WHERE user_id = $1 AND id <> sqlc.arg(keep_id)
-  AND expires_at > sqlc.arg(now) AND last_used_at > sqlc.arg(idle_since);
+  AND expires_at > sqlc.arg(now);
 
 -- name: CountOtherSessions :one
 -- The user's other sessions that still work.

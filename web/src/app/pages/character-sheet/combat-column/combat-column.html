@@ -86,6 +86,19 @@
       </ul>
     }
 
+    @if (pactRow(); as pact) {
+      <ul class="slots" aria-label="Espaços do pacto">
+        <li class="slots__row">
+          <span class="slots__level">Pacto · {{ pact.label }}</span>
+          <span class="slots__circles" role="img" [attr.aria-label]="pact.countLabel">
+            @for (i of range(pact.count); track i) {
+              <span class="slots__circle"></span>
+            }
+          </span>
+        </li>
+      </ul>
+    }
+
     @if (s.cantripNames.length > 0 || s.spellNames.length > 0) {
       <div class="spells__lists">
         @if (s.cantripNames.length > 0) {

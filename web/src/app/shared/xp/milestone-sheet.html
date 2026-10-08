@@ -22,7 +22,7 @@
 
   <section class="who" aria-labelledby="who-title">
     <h3 class="who__title" id="who-title">Quem ganha o marco</h3>
-    @if (data.rows.length === 0) {
+    @if (rows().length === 0) {
       <p class="mr-muted">Nenhum personagem de jogador vivo nesta campanha.</p>
     } @else {
       <app-xp-recipients label="Quem ganha o marco" [rows]="recipients()" (toggle)="toggle($event)" />

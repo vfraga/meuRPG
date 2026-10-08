@@ -98,13 +98,7 @@ export class PuzzlePlayPage {
 
   protected readonly Kind = PuzzleKind;
   /** The puzzle's moves and run; `open` starts it over for another puzzle (going from `?puzzle=A` to `B` loads B). */
-  protected readonly play = new PuzzlePlay(
-    this.api,
-    () => this.campaignId(),
-    undefined,
-    undefined,
-    () => this.ownName(),
-  );
+  protected readonly play = new PuzzlePlay(this.api, () => this.campaignId());
   /** The last answer was wrong (the riddle and the cipher): "Não é isso." until the next one. */
   protected readonly verdict = signal<'' | 'wrong'>('');
   /** The skills' names, to write "Investigação" from "skill:investigation". */

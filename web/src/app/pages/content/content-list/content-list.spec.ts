@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { of } from 'rxjs';
 
 import { Role } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
@@ -205,6 +206,18 @@ describe('ContentList', () => {
     expect(text(el.querySelector('[role="status"]')!)).toContain(
       'A classe Bardo das Cinzas voltou.',
     );
+  });
+
+  it('says why a refused unarchive was refused, and to check an outcome the server could not confirm', async () => {
+    const { fixture, el } = await setup(Role.MASTER, { phone: true, kind: 'classes' });
+    unarchive.mockRejectedValueOnce(new ConnectError('refused', Code.InvalidArgument));
+    (el.querySelectorAll('.prow__btn')[1] as HTMLButtonElement).click();
+    await settle(fixture);
+    expect(text(el)).toContain('Não foi possível desarquivar: confira os dados e tente de novo.');
+    unarchive.mockRejectedValueOnce(new ConnectError('maybe', Code.Unknown));
+    (el.querySelectorAll('.prow__btn')[1] as HTMLButtonElement).click();
+    await settle(fixture);
+    expect(text(el)).toContain('Não deu para confirmar se a alteração foi salva');
   });
 
   it('tells a campaign that is not the caller\'s "não encontrada"', async () => {

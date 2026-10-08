@@ -13,7 +13,7 @@
     }
     <h1 class="mr-page-title">{{ m.name }}</h1>
     @if (phone() && !fogOn()) {
-      <app-map-pins-legend [points]="state().points()" />
+      <app-map-pins-legend [points]="points()" />
       <app-map-legend [shapes]="false" [tokens]="state().tokens()" [kindShapes]="true" [initialOf]="initialOf" />
     }
   </header>
@@ -30,7 +30,7 @@
           [vision]="fog.vision()"
           [layers]="fog.layers()"
           [tokens]="state().tokens()"
-          [points]="state().points()"
+          [points]="points()"
           [viewer]="viewer()"
           [selectablePoints]="true"
           (pointSelect)="openPoint($event)"
@@ -39,19 +39,19 @@
         <app-map-view
           [image]="img"
           [mapName]="m.name"
-          [points]="state().points()"
+          [points]="points()"
           [tokens]="state().tokens()"
           [selected]="selection()"
           [pinsDrawn]="true"
           (pointSelect)="openPoint($event)"
           (emptyClick)="closeSheet()"
         >
-          <app-map-pins mapOverlay [points]="state().points()" [columns]="m.gridColumns" [rows]="m.gridRows" [isMaster]="false" />
+          <app-map-pins mapOverlay [points]="points()" [columns]="m.gridColumns" [rows]="m.gridRows" [isMaster]="false" />
         </app-map-view>
       }
       @if (!phone() && !fogOn()) {
-        <app-map-pins-legend [points]="state().points()" />
-        <app-map-legend [points]="state().points()" [tokens]="state().tokens()" [kindShapes]="true" [initialOf]="initialOf" />
+        <app-map-pins-legend [points]="points()" />
+        <app-map-legend [points]="points()" [tokens]="state().tokens()" [kindShapes]="true" [initialOf]="initialOf" />
       }
     </div>
 
@@ -97,11 +97,11 @@
 
       <section class="mr-panel" aria-labelledby="points-heading">
         <h2 class="mr-panel__title" id="points-heading">Pontos deste mapa</h2>
-        @if (state().points().length === 0) {
+        @if (points().length === 0) {
           <p class="mr-muted none">O mestre ainda não revelou nenhum ponto neste mapa.</p>
         } @else {
           <ul class="list">
-            @for (p of state().points(); track p.id) {
+            @for (p of points(); track p.id) {
               <li>
                 <button type="button" class="list__row" (click)="openPoint(p.id)">
                   <span class="list__glyph" aria-hidden="true">

@@ -56,7 +56,7 @@ describe("the move page reads the server's options", () => {
     });
     expect(verdictFor(index, origin, { col: 15, row: 7 }).kind).toBe('beyond');
     expect(verdictFor(index, origin, origin).kind).toBe('here');
-    expect(verdictFor(indexOptions(null), origin, { col: 7, row: 8 }).kind).toBe('beyond');
+    expect(verdictFor(indexOptions(null), origin, { col: 7, row: 8 }).kind).toBe('unknown');
   });
 
   it("says the cost in metres and what is left, from the server's numbers", () => {

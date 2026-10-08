@@ -7,6 +7,7 @@ import {
   signal,
   untracked,
   viewChild,
+  viewChildren,
 } from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
@@ -58,6 +59,7 @@ import {
   CombatClient,
   newKey,
 } from '../../../../core/combat/combat-client';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import { diceName, sumRange } from '../../../../core/combat/combat-dice';
 import { criticalHint, criticalTypedHint, fixedParts } from '../../../../core/combat/critical';
 import { poolDice, poolRollText } from '../../../../core/combat/hp-effects';
@@ -178,7 +180,9 @@ export class CastSheet {
 
   /** Made again when the choice changes: a new cast, not a retry. */
   private castKey = newKey();
-  private readonly damageKeys = new Map<string, string>();
+  /** One key per damage roll of a pending (its die): the same die again is a retry, another die a new request. */
+  private readonly damageKeys = new Map<string, ActionKey>();
+  private readonly pickers = viewChildren(RollPicker);
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
   private readonly frame = viewChild(SheetFrame);
 
@@ -483,6 +487,7 @@ export class CastSheet {
         .slice(0, Math.max(r.max, 0));
       if (kept.length !== this.chosen().length) {
         this.chosen.set(kept);
+        untracked(() => this.choiceChanged());
       }
       if (r.kind === 'darts') {
         const only = [...ok];
@@ -493,14 +498,18 @@ export class CastSheet {
           !this.cast()
         ) {
           this.dealt.set(new Map([[only[0], this.dartsTotal()]]));
+          untracked(() => this.choiceChanged());
         }
         if (dartsPlaced(this.dealt()) > this.dartsTotal()) {
           this.dealt.set(new Map());
+          untracked(() => this.choiceChanged());
         }
       }
     });
     // After a result the focus goes to the one next action, as soon as it is drawn.
     effect(() => this.back()?.nativeElement.focus());
+    // The answer of a request in the air has to be shown: the sheet can't be dismissed meanwhile.
+    effect(() => this.sheet.lock(this.busy()));
     effect(() => {
       if (this.error()) {
         this.frame()?.scrollToTop();
@@ -531,21 +540,29 @@ export class CastSheet {
     return { targets } as unknown as SpellCast;
   }
 
+  /** A new slot, target or dart changes what a typed roll was for (its dice, its target): the key is a new cast's and the typed text is dropped (RN-18). */
+  private choiceChanged(): void {
+    this.castKey = newKey();
+    for (const picker of this.pickers()) {
+      picker.clear();
+    }
+  }
+
   protected pickSlot(row: SlotRow): void {
     this.slot.set(row);
-    this.castKey = newKey();
+    this.choiceChanged();
     this.error.set('');
   }
 
   protected toggle(id: string): void {
     this.chosen.set(toggled(this.rule(), this.chosen(), id));
-    this.castKey = newKey();
+    this.choiceChanged();
     this.error.set('');
   }
 
   protected deal(change: { id: string; delta: 1 | -1 }): void {
     this.dealt.set(dealOne(this.dealt(), change.id, change.delta, this.dartsTotal()));
-    this.castKey = newKey();
+    this.choiceChanged();
     this.error.set('');
   }
 
@@ -611,8 +628,9 @@ export class CastSheet {
   protected async rollTyped(sum: number): Promise<void> {
     const group = this.groups()[0];
     if (group) {
-      await this.rollGroup(group, { sum });
-      this.typing.set(false);
+      if (await this.rollGroup(group, { sum })) {
+        this.typing.set(false);
+      }
     }
   }
 
@@ -624,11 +642,12 @@ export class CastSheet {
     this.busy.set(true);
     this.error.set('');
     try {
-      let key = this.damageKeys.get(p.id);
-      if (!key) {
-        key = newKey();
-        this.damageKeys.set(p.id, key);
+      let keys = this.damageKeys.get(p.id);
+      if (!keys) {
+        keys = new ActionKey();
+        this.damageKeys.set(p.id, keys);
       }
+      const key = keys.keyFor(die);
       const res = await this.api.rollDamage(
         this.data.campaignId,
         this.data.encounterId,
@@ -672,6 +691,9 @@ export class CastSheet {
   }
 
   protected close(): void {
+    if (this.busy()) {
+      return;
+    }
     this.sheet.close(this.done() && !this.owed());
   }
 }
