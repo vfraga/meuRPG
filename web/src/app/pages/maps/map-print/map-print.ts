@@ -148,7 +148,11 @@ export class MapPrint {
     });
   }
 
+  /** Goes up on every load: an answer made for an earlier route is dropped. */
+  private generation = 0;
+
   private async load(campaignId: string, mapId: string): Promise<void> {
+    const generation = ++this.generation;
     this.campaignId.set(campaignId);
     this.mapId.set(mapId);
     this.phase.set('loading');
@@ -157,6 +161,9 @@ export class MapPrint {
         this.campaigns.getCampaign(campaignId),
         this.api.get(campaignId, mapId),
       ]);
+      if (generation !== this.generation) {
+        return;
+      }
       if (campaign.campaign?.awaitingApproval || !map.map) {
         this.phase.set('gone');
         return;
@@ -169,7 +176,9 @@ export class MapPrint {
       this.map.set(map.map);
       this.phase.set('ready');
     } catch (err) {
-      this.phase.set(ConnectError.from(err).code === Code.NotFound ? 'gone' : 'error');
+      if (generation === this.generation) {
+        this.phase.set(ConnectError.from(err).code === Code.NotFound ? 'gone' : 'error');
+      }
     }
   }
 

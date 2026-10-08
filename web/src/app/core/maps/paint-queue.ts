@@ -141,9 +141,10 @@ export class PaintQueue {
 
   private async drain(): Promise<void> {
     while (this.batches.length > 0) {
+      // Held by reference: `clear()` may empty the queue while a call is in flight, and then the head is another batch.
       const batch = this.batches[0];
       const squares = [...batch.squares.values()];
-      for (let i = 0; i < squares.length; i += MAX_PAINT_BATCH) {
+      for (let i = 0; i < squares.length && this.batches[0] === batch; i += MAX_PAINT_BATCH) {
         try {
           await this.send(
             batch.target,
@@ -152,29 +153,45 @@ export class PaintQueue {
             squares.slice(i, i + MAX_PAINT_BATCH),
           );
         } catch (err) {
-          this.failure.set(err);
-          this.status.set('error');
-          if (isTransient(err)) {
-            // What was sent stays sent: the head keeps only what is left.
-            const left = new Map<number, Square>();
-            for (const s of squares.slice(i)) {
-              left.set(key(s), s);
-            }
-            this.batches[0] = { ...batch, squares: left };
-            this.retryable.set(true);
-          } else {
-            this.batches.length = 0;
-            this.retryable.set(false);
-            this.refused.update((n) => n + 1);
-            this.drainedCallbacks.length = 0;
+          if (this.fail(err, batch, squares, i)) {
+            return;
           }
-          return;
+          break;
         }
       }
-      this.batches.shift();
+      if (this.batches[0] === batch) {
+        this.batches.shift();
+      }
     }
     this.retryable.set(false);
     this.status.set('saved');
+  }
+
+  /** A send failed: records why and what stays queued. Returns whether the drain stops (`false`: the batch was thrown away and the failure is not about what waits). */
+  private fail(err: unknown, batch: Batch, squares: readonly Square[], from: number): boolean {
+    const cleared = this.batches[0] !== batch;
+    if (cleared && !isTransient(err)) {
+      return false;
+    }
+    this.failure.set(err);
+    this.status.set('error');
+    if (isTransient(err)) {
+      if (!cleared) {
+        // What was sent stays sent: the head keeps only what is left.
+        const left = new Map<number, Square>();
+        for (const s of squares.slice(from)) {
+          left.set(key(s), s);
+        }
+        this.batches[0] = { ...batch, squares: left };
+      }
+      this.retryable.set(true);
+    } else {
+      this.batches.length = 0;
+      this.retryable.set(false);
+      this.refused.update((n) => n + 1);
+      this.drainedCallbacks.length = 0;
+    }
+    return true;
   }
 }
 

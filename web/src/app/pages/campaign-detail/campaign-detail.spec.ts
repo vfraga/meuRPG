@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { Campaign, Member, Role, XpMode } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { AuthService, AuthState } from '../../core/auth/auth.service';
@@ -94,6 +94,12 @@ function activatedRouteFor(id: string) {
   return { paramMap: of(convertToParamMap({ id })) };
 }
 
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 /** Drains pending microtasks (the paramMap subscription and the
  * Promise.all().then() chain it kicks off both hop through a few) before
  * the next detectChanges() — more robust here than relying solely on
@@ -109,7 +115,7 @@ describe('CampaignDetail', () => {
   const listAwards = vi.fn();
   let puzzles: FakePuzzlesClient;
 
-  function configure(id = 'camp-1'): void {
+  function configure(id = 'camp-1', route: unknown = activatedRouteFor(id)): void {
     experience.mockReset().mockResolvedValue(
       create(GetCampaignExperienceResponseSchema, {
         xpMode: XpMode.ENEMIES,
@@ -131,7 +137,7 @@ describe('CampaignDetail', () => {
       imports: [CampaignDetail],
       providers: [
         { provide: CampaignsService, useClass: FakeCampaignsService },
-        { provide: ActivatedRoute, useValue: activatedRouteFor(id) },
+        { provide: ActivatedRoute, useValue: route },
         { provide: CampaignCharactersSource, useClass: FakeCampaignCharactersSource },
         { provide: GameSessionSource, useClass: FakeGameSessionSource },
         { provide: GalleryClient, useClass: FakeGalleryClient },
@@ -384,6 +390,35 @@ describe('CampaignDetail', () => {
     expect(listMembers).not.toHaveBeenCalled();
   });
 
+  it('shows the campaign it was reused for when the answer of the one it left lands last', async () => {
+    const pending = new Map<string, ReturnType<typeof deferred<{ campaign: Campaign }>>>();
+    const params$ = new BehaviorSubject(convertToParamMap({ id: 'camp-a' }));
+    configure('camp-a', { paramMap: params$ });
+    fake.getCampaign = ((id: string) => {
+      const d = deferred<{ campaign: Campaign }>();
+      pending.set(id, d);
+      return d.promise;
+    }) as unknown as typeof fake.getCampaign;
+
+    const fixture = TestBed.createComponent(CampaignDetail);
+    fixture.detectChanges();
+    await flush();
+    // Navigate to B before A answers; B answers first (a player there), then the slow A (the master there).
+    params$.next(convertToParamMap({ id: 'camp-b' }));
+    await flush();
+    pending.get('camp-b')!.resolve({ campaign: campaign('camp-b', 'Campanha B', Role.PLAYER) });
+    await flush();
+    pending.get('camp-a')!.resolve({ campaign: campaign('camp-a', 'Campanha A', Role.MASTER) });
+    await flush();
+    fixture.detectChanges();
+
+    const h1 = (fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent ?? '';
+    expect(h1).toContain('Campanha B');
+    expect(h1).not.toContain('Campanha A');
+    expect(experience).toHaveBeenCalledWith('camp-b');
+    expect(experience).not.toHaveBeenCalledWith('camp-a');
+  });
+
   it('shows a generic error message for a non-not_found failure', async () => {
     configure();
     fake.getCampaignResult = Promise.reject(new ConnectError('down', Code.Unavailable));
@@ -391,6 +426,16 @@ describe('CampaignDetail', () => {
     const el = await render();
     expect(el.querySelector('h1')?.textContent).not.toContain('não encontrada');
     expect(el.textContent).toContain('Tente de novo');
+  });
+
+  it('tells a person whose login session ended to sign in again, not to retry', async () => {
+    configure();
+    fake.getCampaignResult = Promise.reject(new ConnectError('', Code.Unauthenticated));
+
+    const el = await render();
+    const text = el.textContent ?? '';
+    expect(text).not.toContain('Tente de novo');
+    expect(text).toContain('Entre de novo');
   });
 
   describe('"Experiência" (MR-016, E7-09)', () => {

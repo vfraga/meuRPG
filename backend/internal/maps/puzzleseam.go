@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
 
+	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
@@ -137,10 +138,18 @@ type doorMap struct {
 	id     string
 }
 
-// PuzzleCheckPoint says, inside tx, whether the point is on the campaign's map.
+// PuzzleCheckPoint says, inside tx, whether the point is on the campaign's map and is
+// one a puzzle can reveal: a light is never shown to the players, so it is not a
+// target.
 func (s *Service) PuzzleCheckPoint(ctx context.Context, tx pgx.Tx, campaignID, mapID, pointID string) error {
-	_, _, _, err := s.puzzlePoint(ctx, queriesIn(s.queries, tx), campaignID, mapID, pointID, false)
-	return err
+	_, point, _, err := s.puzzlePoint(ctx, queriesIn(s.queries, tx), campaignID, mapID, pointID, false)
+	if err != nil {
+		return err
+	}
+	if point.Kind == kindToDB[mapsv1.MapPointKind_MAP_POINT_KIND_LIGHT] {
+		return errors.Join(errPuzzleTarget, errPointNotFound())
+	}
+	return nil
 }
 
 // puzzlePoint finds the point of the campaign's map, locking it when asked, and
@@ -174,10 +183,12 @@ func (s *Service) puzzlePoint(ctx context.Context, q *mapsdb.Queries, campaignID
 }
 
 // PuzzleRevealPoint reveals the map's point to the players inside tx, as
-// SetMapPointRevealed does, and returns its name (now public, for the line the players
-// read). It reports false, changing nothing, when the point was revealed already. The returned function, called after the commit, tells the map's
-// watchers.
-func (s *Service) PuzzleRevealPoint(ctx context.Context, tx pgx.Tx, campaignID, mapID, pointID string) (changed bool, name string, after func(context.Context), err error) {
+// SetMapPointRevealed does, and returns its name for the line the players read, when
+// they see the point now: currentMapID is the map the session shows, and a point of a
+// map the players cannot open keeps its name to itself (RN-10); name is "" then. It
+// reports false, changing nothing, when the point was revealed already. The returned
+// function, called after the commit, tells the map's watchers.
+func (s *Service) PuzzleRevealPoint(ctx context.Context, tx pgx.Tx, campaignID, mapID, pointID, currentMapID string) (changed bool, name string, after func(context.Context), err error) {
 	q := queriesIn(s.queries, tx)
 	mapRow, before, _, err := s.puzzlePoint(ctx, q, campaignID, mapID, pointID, true)
 	if err != nil {
@@ -191,7 +202,10 @@ func (s *Service) PuzzleRevealPoint(ctx context.Context, tx pgx.Tx, campaignID, 
 	if err != nil {
 		return false, "", nil, err
 	}
-	return true, updated.Name, func(ctx context.Context) {
+	if playersSee(mapRow.ID, mapRow.RevealedAt, currentMapID) && everyoneSees(updated) {
+		name = updated.Name
+	}
+	return true, name, func(ctx context.Context) {
 		current, err := s.currentMap(ctx, campaignID)
 		if err != nil {
 			s.logger.ErrorContext(ctx, "maps: read the current map after a puzzle revealed a point", "error", err)

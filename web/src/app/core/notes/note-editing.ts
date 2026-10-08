@@ -98,9 +98,15 @@ export class NoteEditing {
     this.confirmingDiscard.set(false);
   }
 
-  /** "Cancelar": discards at once, or asks first when there is something to lose. */
+  /**
+   * "Cancelar": discards at once, or asks first when there is something to lose.
+   * While the question shows, it changes nothing: only "Descartar" discards.
+   */
   cancel(): void {
-    if (this.dirty() && !this.confirmingDiscard()) {
+    if (this.confirmingDiscard()) {
+      return;
+    }
+    if (this.dirty()) {
       this.confirmingDelete.set(false);
       this.confirmingDiscard.set(true);
       return;
@@ -134,6 +140,12 @@ export class NoteEditing {
     }
     this.error.set('');
     const note = this.editing();
+    // Nothing changed (whitespace around the text does not count): the server
+    // refuses an update with no field, so there is nothing to send.
+    if (note && !this.dirty()) {
+      this.close();
+      return true;
+    }
     try {
       const saved = note
         ? await this.notes.update(note.id, {

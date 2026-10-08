@@ -296,3 +296,21 @@ func TestSpellAreas(t *testing.T) {
 		}
 	}
 }
+
+// A creature's XP is the challenge rating's, whatever the source says; a challenge rating 0
+// creature may give 0.
+func TestMonsterXPComesFromTheChallengeRating(t *testing.T) {
+	for _, c := range []struct {
+		cr     string
+		source int
+		want   int
+	}{{"1/4", 25, 50}, {"1", 100, 200}, {"1/2", 50, 100}, {"5", 1800, 1800}, {"0", 0, 0}, {"0", 10, 10}} {
+		got, err := monsterXP(c.cr, c.source)
+		if err != nil || got != c.want {
+			t.Errorf("monsterXP(%q, %d) = %d, %v, want %d", c.cr, c.source, got, err, c.want)
+		}
+	}
+	if _, err := monsterXP("31", 0); err == nil {
+		t.Error("monsterXP(31) accepted a challenge rating the table lacks")
+	}
+}

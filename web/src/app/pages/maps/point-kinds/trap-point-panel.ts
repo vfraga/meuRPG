@@ -130,7 +130,11 @@ export class TrapPointPanel {
   protected readonly shown = computed(() =>
     this.show() ? this.errors() : { parts: {} as Record<string, string> },
   );
-  protected readonly dirty = computed(() => isTrapDirty(this.draft(), this.point()));
+  /** The state the form opened with: what the master has not touched is left to the server. */
+  private readonly openedState = signal(TrapState.ARMED);
+  protected readonly dirty = computed(() =>
+    isTrapDirty(this.draft(), this.point(), this.openedState()),
+  );
   protected readonly saved = computed(() => this.point().trap !== undefined);
   protected readonly saveSeverity = computed(() =>
     this.severities()
@@ -194,7 +198,9 @@ export class TrapPointPanel {
   }
 
   private reset(): void {
-    this.draft.set(trapDraftOf(this.point()));
+    const draft = trapDraftOf(this.point());
+    this.openedState.set(draft.state);
+    this.draft.set(draft);
     this.show.set(false);
   }
 
@@ -350,7 +356,7 @@ export class TrapPointPanel {
     if (hasTrapErrors(this.errors())) {
       return null;
     }
-    return trapChangesOf(this.draft(), this.point());
+    return trapChangesOf(this.draft(), this.point(), this.openedState());
   }
 
   discard(): void {

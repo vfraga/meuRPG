@@ -9,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 
+import { Code, ConnectError } from '@connectrpc/connect';
+
 import { AuthService } from '../../core/auth/auth.service';
 import { CONNECT_TRANSPORT } from '../../core/connect/transport';
 
@@ -156,9 +158,13 @@ export class OpenSessions {
       if (this.polling) {
         this.sessionsSignal.set(sessions);
       }
-    } catch {
+    } catch (err) {
       // Keep what we had: a network hiccup shouldn't hide a live session.
-      // A lost sign-in shows up through AuthService, which stops the poll.
+      // A lost sign-in is the exception: AuthService reads it again, settles
+      // to signed-out and the effect above stops the poll.
+      if (ConnectError.from(err).code === Code.Unauthenticated) {
+        void this.auth.refresh();
+      }
     } finally {
       this.inFlight = false;
       if (this.polling && this.visible()) {

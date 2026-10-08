@@ -21,46 +21,38 @@ import { joinDots, tight } from '../format/text';
 
 export { circleLabel };
 
+/** The reasons that read the same whatever the option, by code. */
+const REASON_TEXT: Partial<Record<DisabledReasonCode, string>> = {
+  [DisabledReasonCode.ACTION_USED]: 'Ação já usada',
+  [DisabledReasonCode.BONUS_ACTION_USED]: 'Ação bônus já usada',
+  [DisabledReasonCode.REACTION_USED]: 'Reação já usada',
+  // Extra Attack: the attacks of this Attack action are all made.
+  [DisabledReasonCode.ATTACKS_USED]: 'Ataques desta ação já usados',
+  // Surto de ação: one use per turn, even with another use left.
+  [DisabledReasonCode.ALREADY_USED_THIS_TURN]: 'Já usado neste turno',
+  // Short on purpose: it repeats on every spell row, and the slot rows above
+  // the list are the one explanation of which circles are out (E8-02).
+  [DisabledReasonCode.NO_SLOT]: 'Sem espaço',
+  // Escudo Arcano is listed on the character's own turn, where it cannot be
+  // cast: it waits for a hit (the app asks then).
+  [DisabledReasonCode.REACTION_ONLY_WHEN_HIT]: 'Só fora da sua vez',
+  [DisabledReasonCode.REACTION_ONLY]: 'Só quando o gatilho acontecer',
+  [DisabledReasonCode.CASTING_TIME_TOO_LONG]: 'Demora demais para um combate',
+  [DisabledReasonCode.NOT_YOUR_TURN]: 'Não é a sua vez',
+  [DisabledReasonCode.COMBAT_NOT_ACTIVE]: 'O combate não está em andamento',
+  [DisabledReasonCode.COMBATANT_DOWN]: 'Caído: não pode agir',
+  [DisabledReasonCode.COMBATANT_DEFEATED]: 'Derrotado: fora do combate',
+};
+
 /** Why an option is disabled, in words, by code. `''` when there is none. */
 export function reasonText(reason: DisabledReason | undefined): string {
   if (!reason) {
     return '';
   }
-  switch (reason.code) {
-    case DisabledReasonCode.ACTION_USED:
-      return 'Ação já usada';
-    case DisabledReasonCode.BONUS_ACTION_USED:
-      return 'Ação bônus já usada';
-    case DisabledReasonCode.REACTION_USED:
-      return 'Reação já usada';
-    case DisabledReasonCode.ATTACKS_USED:
-      // Extra Attack: the attacks of this Attack action are all made.
-      return 'Ataques desta ação já usados';
-    case DisabledReasonCode.NO_SLOT:
-      // Short on purpose: it repeats on every spell row, and the slot rows above
-      // the list are the one explanation of which circles are out (E8-02).
-      return 'Sem espaço';
-    case DisabledReasonCode.NO_USES:
-      return `Sem usos: ${rechargeText(reason.recharge)}`;
-    case DisabledReasonCode.REACTION_ONLY_WHEN_HIT:
-      // Escudo Arcano is listed on the character's own turn, where it cannot be
-      // cast: it waits for a hit (the app asks then).
-      return 'Só fora da sua vez';
-    case DisabledReasonCode.REACTION_ONLY:
-      return 'Só quando o gatilho acontecer';
-    case DisabledReasonCode.CASTING_TIME_TOO_LONG:
-      return 'Demora demais para um combate';
-    case DisabledReasonCode.NOT_YOUR_TURN:
-      return 'Não é a sua vez';
-    case DisabledReasonCode.COMBAT_NOT_ACTIVE:
-      return 'O combate não está em andamento';
-    case DisabledReasonCode.COMBATANT_DOWN:
-      return 'Caído: não pode agir';
-    case DisabledReasonCode.COMBATANT_DEFEATED:
-      return 'Derrotado: fora do combate';
-    default:
-      return 'Indisponível agora';
+  if (reason.code === DisabledReasonCode.NO_USES) {
+    return `Sem usos: ${rechargeText(reason.recharge)}`;
   }
+  return REASON_TEXT[reason.code] ?? 'Indisponível agora';
 }
 
 /** A reaction row has no button by design: "Escudo" waits to be hit. Its

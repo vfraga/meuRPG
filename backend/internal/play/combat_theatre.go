@@ -13,6 +13,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
@@ -150,7 +151,7 @@ func (s *Service) SpendMovement(
 
 	var made actionEvent
 	var hidden, onTurn bool
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCombatantMoved, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCombatantMoved, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -267,7 +268,7 @@ func (s *Service) OfferOpportunity(
 
 	var made actionEvent
 	var mover playdb.Combatant
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventOpportunityOffered, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventOpportunityOffered, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}

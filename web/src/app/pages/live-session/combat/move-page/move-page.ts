@@ -240,6 +240,9 @@ export class MovePage {
         trap: v.square.knownTrapName,
       };
     }
+    if (v.kind === 'unknown') {
+      return none;
+    }
     const text = refusalText(v, this.leftDft());
     return text ? { kind: 'refused', ...text, warning: '', trap: '' } : none;
   });
@@ -251,6 +254,9 @@ export class MovePage {
       return null;
     }
     const s = this.summary();
+    if (!this.jumping() && this.verdict()?.kind === 'unknown') {
+      return { square, refused: false, label: undefined };
+    }
     if (s.kind !== 'ok') {
       return {
         square,
@@ -271,7 +277,9 @@ export class MovePage {
         ? this.height() > 0
         : this.chosen() !== null && this.summary().kind === 'ok';
     }
-    return this.verdict()?.kind === 'ok';
+    // Without the reach (unread, or the read failed) the server decides and says why not.
+    const kind = this.verdict()?.kind;
+    return kind === 'ok' || kind === 'unknown';
   });
   protected readonly visibleError = computed(() => {
     const at = this.errorFor();
@@ -466,11 +474,12 @@ export class MovePage {
           : `Você só tem ${metersFixed(left / 10)} de movimento. Escolha um quadrado dentro do círculo.`,
       );
     }
+    const names = read?.kind === 'ok' ? provokedBy(read.square, this.encounter().combatants) : [];
     return {
       kind: 'ok',
       title: `Saltar ${metersFixed(cost / 10)}`,
       detail: `O terreno difícil no caminho não conta. ${afterText(left, cost)}`,
-      warning: '',
+      warning: names.length > 0 ? provokeWarning(names) : '',
       trap: this.trapName() ? this.trapName() : '',
     };
   }

@@ -361,6 +361,63 @@ func TestAwardIsIdempotent(t *testing.T) {
 	wantCode(t, "AwardXP(the key of another change)", err, connect.CodeInvalidArgument)
 }
 
+// TestAwardKeyReusedForAnotherRequestIsRefused: a key kept with the hash of the whole request
+// refuses the same key for a request that differs in the amount, the characters, the reason or
+// the gold, whatever the mode, and changes nothing; the same request, with its characters
+// in another order, is still the retry.
+func TestAwardKeyReusedForAnotherRequestIsRefused(t *testing.T) {
+	t.Parallel()
+	t.Run("manual", func(t *testing.T) {
+		t.Parallel()
+		tb := newTable(t, enemies, 3)
+		key := newKey()
+		send := func(amount int32, reason string, ids ...string) error {
+			_, err := tb.master.award(tb.campaign, func(r *progressionv1.AwardXPRequest) {
+				r.Mode, r.Amount, r.Reason, r.CharacterIds, r.IdempotencyKey = progressionv1.XPAwardMode_XP_AWARD_MODE_MANUAL, amount, reason, ids, key
+			})
+			return err
+		}
+		a, b, c := tb.pcs[0].GetId(), tb.pcs[1].GetId(), tb.pcs[2].GetId()
+		if err := send(50, "Ponte", a, b); err != nil {
+			t.Fatalf("AwardXP() error = %v", err)
+		}
+		if err := send(50, "Ponte", b, a); err != nil {
+			t.Errorf("AwardXP(retry, characters in another order) error = %v, want the first award", err)
+		}
+		wantCode(t, "AwardXP(reused key, other amount)", send(500, "Ponte", a, b), connect.CodeInvalidArgument)
+		wantCode(t, "AwardXP(reused key, other characters)", send(50, "Ponte", c), connect.CodeInvalidArgument)
+		wantCode(t, "AwardXP(reused key, other amount and characters)", send(500, "Ponte", c), connect.CodeInvalidArgument)
+		wantCode(t, "AwardXP(reused key, other reason)", send(50, "Outra", a, b), connect.CodeInvalidArgument)
+		if got := tb.master.xpOf(t, tb.pcs[2]); got != 0 {
+			t.Errorf("third character's XP = %d, want 0", got)
+		}
+		if n := len(tb.master.history(t, tb.campaign)); n != 1 {
+			t.Errorf("history has %d awards, want 1", n)
+		}
+	})
+	t.Run("gold", func(t *testing.T) {
+		t.Parallel()
+		tb := newTable(t, gold, 2)
+		key := newKey()
+		send := func(gold int32) error {
+			_, err := tb.master.award(tb.campaign, func(r *progressionv1.AwardXPRequest) {
+				r.Mode, r.Gold, r.CharacterIds, r.IdempotencyKey = progressionv1.XPAwardMode_XP_AWARD_MODE_GOLD, gold, tb.ids(2), key
+			})
+			return err
+		}
+		if err := send(100); err != nil {
+			t.Fatalf("AwardXP() error = %v", err)
+		}
+		if err := send(100); err != nil {
+			t.Errorf("AwardXP(retry) error = %v, want the first award", err)
+		}
+		wantCode(t, "AwardXP(reused key, other gold)", send(400), connect.CodeInvalidArgument)
+		if got := tb.master.xpOf(t, tb.pcs[0]); got != 50 {
+			t.Errorf("character's XP = %d, want 50", got)
+		}
+	})
+}
+
 // TestUndoTakesBackOnlyTheLastAward: the last one only, never below 0, with a
 // retry that does nothing twice, and the award stays in the history as undone.
 func TestUndoTakesBackOnlyTheLastAward(t *testing.T) {
@@ -837,5 +894,46 @@ func TestMR040_CanLevelUpClearsAfterwards(t *testing.T) {
 				t.Errorf("the campaign's list = level %d, can level up %v", exp.GetLevel(), exp.GetCanLevelUp())
 			}
 		})
+	}
+}
+
+// TestUndoGivesBackWhatTheSheetGained: a sheet holds at most 1,000,000 XP, so an
+// award past it gains less than its share; the share records the gain and the
+// undo takes back exactly that.
+func TestUndoGivesBackWhatTheSheetGained(t *testing.T) {
+	t.Parallel()
+	tb := newTable(t, enemies, 1)
+	pc := tb.pcs[0]
+
+	ch := tb.master.character(t, pc)
+	ch.GetSheet().GetFull().ExperiencePoints = 999_950
+	if _, err := tb.master.characters.UpdateCharacter(t.Context(), connect.NewRequest(&charactersv1.UpdateCharacterRequest{
+		CampaignId: tb.campaign, CharacterId: ch.GetId(), Revision: ch.GetRevision(), Name: ch.GetName(), Sheet: ch.GetSheet(),
+	})); err != nil {
+		t.Fatalf("UpdateCharacter() error = %v", err)
+	}
+
+	tb.master.manual(t, tb.campaign, 100, pc.GetId())
+	if got := tb.master.xpOf(t, pc); got != 1_000_000 {
+		t.Fatalf("sheet XP = %d after the award, want 1000000 (clamped)", got)
+	}
+	if shares := tb.master.history(t, tb.campaign)[0].GetShares(); len(shares) != 1 || shares[0].GetXp() != 50 {
+		t.Errorf("shares = %v, want one of 50 XP (what the sheet gained)", shares)
+	}
+
+	if _, err := tb.master.undo(tb.campaign, newKey()); err != nil {
+		t.Fatalf("UndoLastXPAward() error = %v", err)
+	}
+	if got := tb.master.xpOf(t, pc); got != 999_950 {
+		t.Errorf("sheet XP = %d after the undo, want 999950 (the XP before the award)", got)
+	}
+
+	// Positive control: an award that fits is taken back whole.
+	tb.master.manual(t, tb.campaign, 20, pc.GetId())
+	if _, err := tb.master.undo(tb.campaign, newKey()); err != nil {
+		t.Fatalf("UndoLastXPAward() error = %v", err)
+	}
+	if got := tb.master.xpOf(t, pc); got != 999_950 {
+		t.Errorf("sheet XP = %d after the second undo, want 999950", got)
 	}
 }

@@ -50,7 +50,7 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 		NextLevelXp:           i32(d.NextLevelXP),
 		ArmorClass:            i32(d.ArmorClass),
 		ArmorClassDescription: d.ArmorClassDescription,
-		HitPointsMax:          i32(d.HitPointsMax),
+		HitPointsMax:          i32(max(d.HitPointsMax, 1)),
 		SpeedWalkFt:           i32(d.SpeedWalkFt),
 		SpeedFlyFt:            i32(d.SpeedFlyFt),
 		SpeedSwimFt:           i32(d.SpeedSwimFt),

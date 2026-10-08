@@ -28,7 +28,7 @@ import { MasterRun } from '../master-run/master-run';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MasterRun],
   template: `
-    @if (run(); as r) {
+    @for (r of shown(); track r.puzzle?.id) {
       <app-master-run [campaignId]="campaignId()" [run]="r" [now]="now()" (updated)="updated($event)" />
     }
   `,
@@ -51,6 +51,13 @@ export class MasterLive {
           r.puzzle?.id === id &&
           (r.status === PuzzleRunStatus.SHOWN || r.status === PuzzleRunStatus.SOLVED),
       );
+  });
+
+  /** The chosen run as a list of one, tracked by its puzzle: choosing another puzzle builds a new card, so the
+   * solution shown, the open question and the notices of the previous one never carry over. */
+  protected readonly shown = computed(() => {
+    const r = this.run();
+    return r ? [r] : [];
   });
 
   constructor() {

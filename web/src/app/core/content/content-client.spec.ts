@@ -7,6 +7,7 @@ import {
   TableContentRefusalSchema,
   TableContentViolationSchema,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import { OUTCOME_UNKNOWN, SESSION_ENDED } from '../connect/connect-errors';
 import { blockedReason, contentErrorText, isStale, refusalOf } from './content-client';
 
 function blocked(code: Code, reason: TableContentBlockedReason) {
@@ -72,6 +73,43 @@ describe('the errors of the table content calls', () => {
     );
     expect(contentErrorText(new Error('network'), 'salvar a raça')).toBe(
       'Não foi possível salvar a raça. Confira a conexão e tente de novo.',
+    );
+  });
+
+  it('says the reasons of a refused archive, and a plain refusal when the server names none', () => {
+    const refused = new ConnectError('refused', Code.InvalidArgument, undefined, [
+      {
+        desc: TableContentRefusalSchema,
+        value: create(TableContentRefusalSchema, {
+          violations: [
+            create(TableContentViolationSchema, {
+              field: 'table_spell.name_pt',
+              reason: 'duplicate_name',
+            }),
+          ],
+        }),
+      },
+    ]);
+    expect(contentErrorText(refused, 'desarquivar')).toBe(
+      'Não foi possível desarquivar. Já existe uma entrada da mesa com este nome. Escolha outro.',
+    );
+    expect(contentErrorText(new ConnectError('x', Code.InvalidArgument), 'salvar')).toBe(
+      'Não foi possível salvar: confira os dados e tente de novo.',
+    );
+  });
+
+  it('says to check an ambiguous outcome and to wait out a rate limit, never "confira a conexão"', () => {
+    expect(contentErrorText(new ConnectError('x', Code.Unknown), 'salvar')).toBe(OUTCOME_UNKNOWN);
+    const limited = new ConnectError(
+      'slow down',
+      Code.ResourceExhausted,
+      new Headers({ 'Retry-After': '3' }),
+    );
+    expect(contentErrorText(limited, 'salvar')).toBe(
+      'Muitas ações em pouco tempo. Espere 3 segundos e tente de novo.',
+    );
+    expect(contentErrorText(new ConnectError('x', Code.Unauthenticated), 'salvar')).toBe(
+      SESSION_ENDED,
     );
   });
 });

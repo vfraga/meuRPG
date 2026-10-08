@@ -317,11 +317,9 @@ func (s *Service) PreviewLevelUp(
 	if err != nil {
 		return nil, s.dbError(ctx, "preview a level up", err)
 	}
-	// A choice refused for being retired or switched off builds no sheet: a player who
-	// guesses such a key must not read its features in `after` (RN-23).
-	switch plan.refusal.GetReason() {
-	case charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_ARCHIVED_CHOICE,
-		charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_SWITCHED_OFF_CHOICE:
+	// A retired or switched-off choice builds no sheet, whatever else is refused: a
+	// player who guesses such a key must not read its features in `after` (RN-23).
+	if plan.retiredChoice {
 		return connect.NewResponse(&charactersv1.PreviewLevelUpResponse{Refusal: plan.refusal}), nil
 	}
 	return connect.NewResponse(&charactersv1.PreviewLevelUpResponse{
@@ -660,6 +658,10 @@ type levelUpPlan struct {
 	sheet *charactersv1.FullSheet
 	// refusal is the first rule the choices break, nil when they are allowed.
 	refusal *charactersv1.LevelUpRefusal
+	// retiredChoice says a new choice is one the master archived or, for a player,
+	// switched off, whatever the refusal is: the sheet it builds is not theirs to read
+	// (RN-23).
+	retiredChoice bool
 	// record is what ListLevelUps keeps: the choices, with the hit points
 	// value the level took.
 	record *charactersv1.LevelUpChoices
@@ -761,15 +763,21 @@ func (s *Service) planLevelUpIn(ctx context.Context, tx pgx.Tx, q *charactersdb.
 	}
 	plan.sheet = checked.GetFull()
 	// A table entry the master archived is not a new choice (RN-23).
-	if _, field, found := newArchivedChoice(t.content, t.full, plan.sheet); found && plan.refusal == nil {
-		plan.refusal = &charactersv1.LevelUpRefusal{
-			Field: field, Reason: charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_ARCHIVED_CHOICE,
+	if _, field, found := newArchivedChoice(t.content, t.full, plan.sheet); found {
+		plan.retiredChoice = true
+		if plan.refusal == nil {
+			plan.refusal = &charactersv1.LevelUpRefusal{
+				Field: field, Reason: charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_ARCHIVED_CHOICE,
+			}
 		}
 	}
 	// Nor an option the master switched off, for a player (RN-23).
-	if _, field, found := newOffChoice(t.content, t.full, plan.sheet); found && plan.refusal == nil && !isMaster(m) {
-		plan.refusal = &charactersv1.LevelUpRefusal{
-			Field: field, Reason: charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_SWITCHED_OFF_CHOICE,
+	if _, field, found := newOffChoice(t.content, t.full, plan.sheet); found && !isMaster(m) {
+		plan.retiredChoice = true
+		if plan.refusal == nil {
+			plan.refusal = &charactersv1.LevelUpRefusal{
+				Field: field, Reason: charactersv1.LevelUpRefusalReason_LEVEL_UP_REFUSAL_REASON_SWITCHED_OFF_CHOICE,
+			}
 		}
 	}
 	if plan.refusal == nil {

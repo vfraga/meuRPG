@@ -266,4 +266,34 @@ describe('NotesSheet', () => {
       'Limite de 300 anotações. Apague uma para escrever outra.',
     );
   });
+
+  describe('the question "Descartar o que você escreveu?"', () => {
+    async function askToDiscard() {
+      const s = await setup([], '');
+      s.button('Nova anotação').click();
+      await s.settle();
+      s.type('Algo importante');
+      s.button('Cancelar').click();
+      await s.settle();
+      expect(s.el.querySelector('[role="alertdialog"]')?.textContent).toContain(
+        'Descartar o que você escreveu?',
+      );
+      return s;
+    }
+
+    it('"Continuar" keeps the text', async () => {
+      const { el, button, settle } = await askToDiscard();
+      button('Continuar').click();
+      await settle();
+      expect(el.querySelector<HTMLTextAreaElement>('textarea')?.value).toBe('Algo importante');
+    });
+
+    it('keeps the text when the sheet is closed with the ✕ while the question shows', async () => {
+      const { el, settle } = await askToDiscard();
+      el.querySelector<HTMLButtonElement>('button[aria-label="Fechar"]')!.click();
+      await settle();
+      expect(el.querySelector<HTMLTextAreaElement>('textarea')?.value).toBe('Algo importante');
+      expect(close).not.toHaveBeenCalled();
+    });
+  });
 });

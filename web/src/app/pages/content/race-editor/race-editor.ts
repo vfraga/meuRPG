@@ -19,7 +19,11 @@ import type { TableEntry } from '../../../../gen/meurpg/rules/v1/table_content_p
 import { type CatalogVm } from '../../../core/content/catalog';
 import { type EntryBody, TableContentClient } from '../../../core/content/content-client';
 import { EntrySaver, focusField } from '../../../core/content/entry-saver';
-import type { EffectMenuVm } from '../../../core/content/effect-draft';
+import {
+  type EffectMenuVm,
+  UNREADABLE_RANGE,
+  unreadableRange,
+} from '../../../core/content/effect-draft';
 import { previewRead } from '../../../core/content/preview';
 import {
   ABILITY_FIELDS,
@@ -118,7 +122,8 @@ export class RaceEditor {
   protected readonly bonusRange = { min: BONUS_MIN, max: BONUS_MAX };
   /** A new sub-race picks its race from the catalog's (the SRD's and the table's); an existing one keeps it. */
   protected readonly raceOptions = computed<SelectOption[]>(() => [...this.catalog().races]);
-  protected readonly raceKnown = computed(() => this.sub().raceKey !== '');
+  /** The race is fixed: the entry exists, or the page was opened from a race. A new one chooses it in the select, and the select stays once chosen. */
+  protected readonly raceKnown = computed(() => this.entry() !== null || this.parentKey() !== '');
   protected readonly languageOptions = computed<SelectOption[]>(() =>
     this.menu()
       .list('languages')
@@ -262,7 +267,22 @@ export class RaceEditor {
     ];
   }
 
-  protected readonly issuesOf = (path: string): readonly string[] => this.saver.issues(path);
+  /** The speed and darkvision fields whose text is not a number of metres, by path. */
+  private readonly unreadable = computed<readonly string[]>(() => {
+    const r = this.race();
+    const p = this.prefix();
+    return this.isRace()
+      ? [
+          ...(unreadableRange(r.speedM) ? [`${p}.speed_ft`] : []),
+          ...(unreadableRange(r.darkvisionM) ? [`${p}.darkvision_ft`] : []),
+        ]
+      : [];
+  });
+
+  protected readonly issuesOf = (path: string): readonly string[] => [
+    ...this.saver.issues(path),
+    ...(this.unreadable().includes(path) ? [UNREADABLE_RANGE] : []),
+  ];
 
   private readonly known = (path: string): boolean => {
     const p = this.prefix();
@@ -287,7 +307,7 @@ export class RaceEditor {
   };
 
   protected async save(): Promise<void> {
-    if (this.saver.saving() || this.saveBlocked()) {
+    if (this.saver.saving() || this.saveBlocked() || this.unreadable().length > 0) {
       return;
     }
     const menu = this.menu();

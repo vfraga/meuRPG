@@ -3,6 +3,7 @@ import {
   ElementRef,
   Injector,
   afterNextRender,
+  effect,
   inject,
   input,
   output,
@@ -117,11 +118,26 @@ export class NextTurn {
   readonly busy = input(false);
   /** An opportunity attack waits for an answer: the turn cannot pass yet. */
   readonly waiting = input(false);
+  /** Whose turn it is and the round: the question belongs to one turn. */
+  readonly turn = input('');
   /** `true` when the master passes the turn although a damage waits. */
   readonly next = output<boolean>();
 
   protected readonly asking = signal(false);
   private readonly safe = viewChild('safe', { read: ElementRef<HTMLButtonElement> });
+
+  constructor() {
+    // The question is about the damage and the turn it was asked on: once any of
+    // them changes (applied elsewhere, the turn moved, an answer is pending) it
+    // is closed, and the master asks again if they still want to.
+    effect(() => {
+      this.pendingNote();
+      this.turn();
+      this.waiting();
+      this.busy();
+      this.asking.set(false);
+    });
+  }
 
   protected press(): void {
     if (this.waiting()) {
@@ -136,6 +152,10 @@ export class NextTurn {
   }
 
   protected confirm(): void {
+    if (!this.asking() || !this.pendingNote() || this.waiting() || this.busy()) {
+      this.asking.set(false);
+      return;
+    }
     this.asking.set(false);
     this.next.emit(true);
   }

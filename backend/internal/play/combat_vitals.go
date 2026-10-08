@@ -31,7 +31,7 @@ func (s *Service) changeVitals(ctx context.Context, q *playdb.Queries, tx pgx.Tx
 	// A druid whose own hit points reach 0 is itself again (SRD): the beast form
 	// ends, whatever took them there (damage, the master's hand, a spell).
 	if after.GetWildShape() != nil && after.GetHitPointsMax() > 0 && after.GetHitPointsCurrent() == 0 {
-		if after, err = s.formEnds(ctx, q, tx, sessionID, campaignID, characterID, after.GetWildShape().GetBeastKey(), endedAtZero); err != nil {
+		if after, err = s.formEnds(ctx, q, tx, sessionID, campaignID, characterID, after.GetWildShape().GetBeastKey(), endedAtZero, 0); err != nil {
 			return nil, nil, err
 		}
 	}
@@ -59,7 +59,8 @@ func (s *Service) vitalsOf(ctx context.Context, c *combatTx, characterID string,
 
 // spendSlot spends one spell slot of a player's character (delta 1) or gives it
 // back (delta -1: an undo), and returns its vitals after. NO_SLOT when none is
-// free.
+// free. Giving back never fails for what the sheet became meanwhile: a slot level
+// the sheet no longer has is left alone, and a count above the new total is cut to it.
 func (s *Service) spendSlot(ctx context.Context, c *combatTx, characterID string, slot slotRef, delta int32) (*playv1.CharacterVitals, error) {
 	now, err := s.vitals.GetVitalsTx(ctx, c.tx, c.session.CampaignID, characterID)
 	if err != nil {
@@ -73,23 +74,31 @@ func (s *Service) spendSlot(ctx context.Context, c *combatTx, characterID string
 	if slot.Pact {
 		p := now.GetPactSlots()
 		if p == nil || p.GetSlotLevel() != slot.Level {
-			return nil, noSlot()
+			return s.lostOnGiveBack(ctx, now, delta, "pact slot", noSlot())
 		}
 		used := p.GetUsed() + delta
 		if used > p.GetTotal() {
-			return nil, noSlot()
+			if delta < 0 {
+				used = p.GetTotal()
+			} else {
+				return nil, noSlot()
+			}
 		}
 		used = max(used, 0)
 		req.PactSlotsUsed = &used
 	} else {
 		i := slices.IndexFunc(now.GetSpellSlots(), func(u *playv1.SpellSlotUsage) bool { return u.GetLevel() == slot.Level })
 		if i < 0 {
-			return nil, noSlot()
+			return s.lostOnGiveBack(ctx, now, delta, "spell slot", noSlot())
 		}
 		u := now.GetSpellSlots()[i]
 		used := u.GetUsed() + delta
 		if used > u.GetTotal() {
-			return nil, noSlot()
+			if delta < 0 {
+				used = u.GetTotal()
+			} else {
+				return nil, noSlot()
+			}
 		}
 		req.SpellSlotsUsed = []*playv1.SpellSlotsUsed{{Level: slot.Level, Used: max(used, 0)}}
 	}
@@ -97,9 +106,21 @@ func (s *Service) spendSlot(ctx context.Context, c *combatTx, characterID string
 	return after, err
 }
 
+// lostOnGiveBack answers a spend that finds nothing to spend: for a spend, the
+// refusal; for a give-back (an undo), the sheet no longer has the slot or the
+// resource, so there is nothing to give back and the vitals stay as they are.
+func (s *Service) lostOnGiveBack(ctx context.Context, now *playv1.CharacterVitals, delta int32, what string, refusal error) (*playv1.CharacterVitals, error) {
+	if delta >= 0 {
+		return nil, refusal
+	}
+	s.logger.WarnContext(ctx, "play: an undo found nothing to give back", "what", what)
+	return now, nil
+}
+
 // spendResource spends one use of a class or race resource of a player's
 // character (delta 1) or gives it back (delta -1), and returns its vitals
-// after. NO_USES when none is left.
+// after. NO_USES when none is left. Giving back never fails for what the sheet
+// became meanwhile (see spendSlot).
 func (s *Service) spendResource(ctx context.Context, c *combatTx, characterID, key string, delta int32) (*playv1.CharacterVitals, error) {
 	now, err := s.vitals.GetVitalsTx(ctx, c.tx, c.session.CampaignID, characterID)
 	if err != nil {
@@ -107,10 +128,16 @@ func (s *Service) spendResource(ctx context.Context, c *combatTx, characterID, k
 	}
 	i := slices.IndexFunc(now.GetResources(), func(r *playv1.ResourceUsage) bool { return r.GetKey() == key })
 	if i < 0 {
+		if delta < 0 {
+			return s.lostOnGiveBack(ctx, now, delta, "resource", nil)
+		}
 		return nil, fmt.Errorf("character %s has no resource %q", characterID, key) // the options said it had
 	}
 	r := now.GetResources()[i]
 	used := r.GetUsed() + delta
+	if used > r.GetTotal() && delta < 0 {
+		used = r.GetTotal()
+	}
 	if used > r.GetTotal() {
 		return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NO_USES, "no uses left",
 			func(b *playv1.EncounterBlocked) { b.Recharge = r.GetRecharge() })

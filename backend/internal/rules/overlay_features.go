@@ -124,6 +124,12 @@ func (b *overlayBuilder) checkEffect(owner, path string, e *Effect, strict bool)
 		if e.Count < 1 {
 			return fail(".count", ReasonValue, "a choice needs a count of at least 1")
 		}
+		if e.Count > MaxChoiceCount {
+			return fail(".count", ReasonValue, "a choice has a count of at most %d", MaxChoiceCount)
+		}
+		if e.Choice == "feature" && e.Count > len(e.From) {
+			return fail(".count", ReasonValue, "a choice of features cannot ask for more than the %d options it lists", len(e.From))
+		}
 		if e.Choice == "feature" && len(e.From) == 0 {
 			return fail(".from", ReasonValue, "a choice of features needs the options to choose from")
 		}

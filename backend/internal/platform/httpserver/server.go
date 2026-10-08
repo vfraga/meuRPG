@@ -82,6 +82,10 @@ type Server struct {
 	// draining becomes true once shutdown starts, so /readyz answers 503
 	// and load balancers stop sending new requests.
 	draining atomic.Bool
+
+	// ping caches the database answer of /readyz (see pingCache).
+	ping pingCache
+	now  func() time.Time
 }
 
 // New builds a Server with /healthz and /readyz already registered.
@@ -90,6 +94,7 @@ func New(cfg Config) *Server {
 		mux:             http.NewServeMux(),
 		logger:          cfg.Logger,
 		db:              cfg.DB,
+		now:             time.Now,
 		shutdownTimeout: cfg.ShutdownTimeout,
 	}
 	if s.logger == nil {

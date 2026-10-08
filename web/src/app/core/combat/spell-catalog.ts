@@ -18,11 +18,13 @@ export class SpellCatalog {
 
   /** What the SRD says about one spell (`GetSpellDetails`): the cast sheet
    * needs to know whether it rolls to hit, asks for a save or heals. One read
-   * for each spell, kept; `null` when it could not be read (and then asked again
-   * the next time). */
+   * for each SRD spell, kept; a spell of the table (`@mesa`) is read each time,
+   * since the master can change it while the page is open. `null` when it could
+   * not be read (and then asked again the next time). */
   details(campaignId: string, spellKey: string): Promise<SpellDetails | null> {
     const id = `${campaignId}/${spellKey}`;
-    let known = this.detailsByKey.get(id);
+    const kept = !spellKey.endsWith('@mesa');
+    let known = kept ? this.detailsByKey.get(id) : undefined;
     if (!known) {
       known = this.client
         .getSpellDetails({ campaignId, spellKey })
@@ -31,8 +33,19 @@ export class SpellCatalog {
           this.detailsByKey.delete(id);
           return null;
         });
-      this.detailsByKey.set(id, known);
+      if (kept) {
+        this.detailsByKey.set(id, known);
+      }
     }
     return known;
+  }
+
+  /** The table's content changed (or may have, while the stream was down): the next read asks again. */
+  forget(campaignId: string): void {
+    for (const id of [...this.detailsByKey.keys()]) {
+      if (id.startsWith(`${campaignId}/`)) {
+        this.detailsByKey.delete(id);
+      }
+    }
   }
 }

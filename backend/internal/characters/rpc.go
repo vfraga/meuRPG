@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"uuid"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
@@ -28,6 +29,17 @@ import (
 // it as is. What a player, or a pending member, may see and change is
 // decided next, from the character's row: canSee, playerEditsSheet and
 // playerEditsStory (access.go).
+
+// callerKeyNamespace is the namespace of the create keys scoped to a caller.
+var callerKeyNamespace = uuid.MustParse("b3a1c0f2-5d7e-4a49-8c6b-2e91f4d07a35")
+
+// callerCreateKey is the create_key of a character made by userID with the client's key: a
+// version 5 UUID of both, so the same caller and key always give the same value (a retry
+// finds the first character) and another caller's identical key gives another one. The
+// column stays a UUID, as the unique index (campaign_id, create_key) needs no change.
+func callerCreateKey(userID, key string) string {
+	return nameUUID(callerKeyNamespace, userID+":"+key)
+}
 
 // CreateCharacter implements charactersv1connect.CharacterServiceHandler.
 func (s *Service) CreateCharacter(
@@ -112,11 +124,13 @@ func (s *Service) CreateCharacter(
 	if err != nil {
 		return nil, err
 	}
-	// The key is unique in the campaign (the unique index), and kept with a hash of the whole
-	// request: a retry returns the first character only when it is the same request.
+	// The key is unique per caller in the campaign (the unique index holds the key scoped to
+	// the caller, so another member's key is a different one), and kept with a hash of the
+	// whole request: a retry returns the first character only when it is the same request.
 	var createKey *string
 	if key != "" {
-		createKey = &key
+		scoped := callerCreateKey(m.UserID, key)
+		createKey = &scoped
 	}
 	requestHash := idem.Hash(req.Msg)
 	params.CreateKey, params.CreateHash = createKey, requestHash
@@ -374,6 +388,7 @@ func (s *Service) UpdateCharacter(
 	// fails is the request's failure: an unchecked portrait never goes through.
 	var portraitErr error
 	var portraitCopy PortraitCopy
+	var copyCreated bool // the copy's row is the one this call inserted
 	if portraitOf(sheet) != "" {
 		pre, err := s.queries.GetCharacter(ctx, charactersdb.GetCharacterParams{CampaignID: m.CampaignID, ID: id})
 		switch {
@@ -443,10 +458,14 @@ func (s *Service) UpdateCharacter(
 		// A save never clears an issue that a change of the table's content flagged
 		// and that still stands.
 		carryFlags(content, storedSheet.GetFull(), sheet.GetFull())
+		copyCreated = false
 		if portraitCopy != nil { // the copy's gallery row, in this transaction
-			if err := portraitCopy.Insert(ctx, tx); err != nil {
+			id, created, err := portraitCopy.Insert(ctx, tx)
+			if err != nil {
 				return err
 			}
+			copyCreated = created
+			setPortrait(sheet, id)
 		}
 		// An NPC made from a creature keeps the link to it (MR-042): the
 		// client never sends it, so it is carried over from the saved sheet.
@@ -465,10 +484,10 @@ func (s *Service) UpdateCharacter(
 		}
 		return nil
 	})
+	if portraitCopy != nil && (err != nil || !copyCreated) {
+		portraitCopy.Discard(ctx) // no gallery row: the copy's files go
+	}
 	if err != nil {
-		if portraitCopy != nil {
-			portraitCopy.Discard(ctx) // no gallery row: the copy's files go
-		}
 		return nil, s.dbError(ctx, "update a character", err)
 	}
 	c, err := s.character(ctx, content, row, m)

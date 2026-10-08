@@ -222,7 +222,7 @@ func (s *Service) ListPendingMembers(
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.queries.ListPendingMembersWithoutCharacter(ctx, m.CampaignID)
+	rows, err := s.queries.ListPendingMembersWithoutCharacter(ctx, campaignsdb.ListPendingMembersWithoutCharacterParams{CampaignID: m.CampaignID, Now: s.now()})
 	if err != nil {
 		return nil, s.dbError(ctx, "list pending members", err)
 	}
@@ -282,7 +282,7 @@ func (s *Service) RemovePendingMember(
 			return nil
 		}
 		// Nothing deleted: say why.
-		_, err = q.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: m.CampaignID, UserID: userID})
+		_, err = q.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: m.CampaignID, UserID: userID, Now: s.now()})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return errMemberNotFound()
 		}

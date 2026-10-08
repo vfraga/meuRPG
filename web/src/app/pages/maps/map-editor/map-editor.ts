@@ -32,7 +32,7 @@ import { LightPresets } from '../../../core/maps/light-presets';
 import { editorErrorMessage, mapErrorMessage } from '../../../core/maps/map-errors';
 import { DungeonInfo } from '../../../core/maps/dungeon-info';
 import { DungeonsClient } from '../../../core/maps/dungeons-client';
-import { MapState } from '../../../core/maps/map-state';
+import { MapState, tokenKey } from '../../../core/maps/map-state';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { MoveSaves } from '../../../core/maps/move-saves';
 import { paintHint } from '../../../core/maps/paint-tools';
@@ -250,7 +250,7 @@ export class MapEditor {
     return s?.kind === 'token'
       ? (this.state()
           .tokens()
-          .find((t) => t.characterId === s.id) ?? null)
+          .find((t) => tokenKey(t) === s.id) ?? null)
       : null;
   });
   protected readonly pendingName = computed(() => {
@@ -590,7 +590,7 @@ export class MapEditor {
       );
       return;
     }
-    const before = state.tokens().find((t) => t.characterId === move.id);
+    const before = state.tokens().find((t) => tokenKey(t) === move.id);
     if (!before) {
       return;
     }
@@ -600,9 +600,12 @@ export class MapEditor {
       before,
       { xBp: move.xBp, yBp: move.yBp },
       {
-        save: (to) => this.api.placeToken(this.campaignId(), mapId, move.id, to.xBp, to.yBp),
+        save: (to) =>
+          before.creatureId
+            ? this.api.placeToken(this.campaignId(), mapId, '', to.xBp, to.yBp, before.creatureId)
+            : this.api.placeToken(this.campaignId(), mapId, move.id, to.xBp, to.yBp),
         failed: (saved, err) => {
-          const now = state.tokens().find((t) => t.characterId === move.id);
+          const now = state.tokens().find((t) => tokenKey(t) === move.id);
           if (now) {
             state.upsertToken({ ...now, xBp: saved.xBp, yBp: saved.yBp });
           }
@@ -632,7 +635,7 @@ export class MapEditor {
     this.panelError.set(null);
     try {
       const saved = await this.api.updatePoint(this.campaignId(), mapId, point.id, changes);
-      this.state().upsertPoint(saved);
+      this.setPoint(saved);
       this.message.set(`${saved.name} salvo.`);
       return true;
     } catch (err) {
@@ -672,7 +675,11 @@ export class MapEditor {
 
   /** A treasure marked or unmarked found (saved at once): the map carries the point the server answered. */
   protected setPoint(point: MapPoint): void {
-    this.state().upsertPoint(point);
+    const state = this.state();
+    // A move of this point still on its way: the answer was computed before it, so the screen keeps the place the master dragged to.
+    const shown = state.points().find((p) => p.id === point.id);
+    const ahead = shown && this.moves.isPending(`${this.mapId()}/point/${point.id}`);
+    state.upsertPoint(ahead ? { ...point, xBp: shown.xBp, yBp: shown.yBp } : point);
   }
 
   protected async remove(): Promise<void> {
@@ -720,8 +727,12 @@ export class MapEditor {
       return;
     }
     try {
-      await this.api.removeToken(this.campaignId(), mapId, token.characterId);
-      this.state().removeToken(token.characterId);
+      await this.api.removeToken(this.campaignId(), mapId, token.characterId, token.creatureId);
+      if (token.creatureId) {
+        this.state().removeCreatureToken(token.creatureId);
+      } else {
+        this.state().removeToken(token.characterId);
+      }
       this.selection.set(null);
       this.message.set(`${token.name} saiu do mapa.`);
     } catch (err) {

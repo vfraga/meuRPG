@@ -85,3 +85,40 @@ func TestFromDBPassesAConnectErrorUntouchedAndSilently(t *testing.T) {
 		t.Errorf("a chosen answer must not be logged: %q", logs.String())
 	}
 }
+
+type releaseFailsTx struct{}
+
+func (releaseFailsTx) Exec(_ context.Context, q string, _ ...interface{}) error {
+	if strings.HasPrefix(q, "RELEASE") {
+		return io.EOF // the connection dropped during COMMIT
+	}
+	return nil
+}
+func (releaseFailsTx) Commit(context.Context) error   { return nil }
+func (releaseFailsTx) Rollback(context.Context) error { return nil }
+
+// A commit whose outcome is unknown must not be reported as a safe-to-retry
+// "unavailable": the write may have been applied and a retry would duplicate.
+func TestFromDBDoesNotCallAnAmbiguousCommitRetryable(t *testing.T) {
+	t.Parallel()
+	err := crdb.ExecuteInTx(context.Background(), releaseFailsTx{}, func() error { return nil })
+	if _, ok := errors.AsType[*crdb.AmbiguousCommitError](err); !ok {
+		t.Fatalf("setup: want AmbiguousCommitError, got %T", err)
+	}
+	got := rpcerr.FromDB(context.Background(), slog.New(slog.DiscardHandler), "m", "save", err)
+	if code := connect.CodeOf(got); code != connect.CodeUnknown {
+		t.Fatalf("ambiguous commit reported as %v (%v), want unknown: clients retry unavailable and may duplicate the write", code, got)
+	}
+}
+
+func TestFromDBKeepsTheCauseForTheTransactionRetry(t *testing.T) {
+	t.Parallel()
+	got := rpcerr.FromDB(t.Context(), slog.New(slog.DiscardHandler), "mod", "read", fmt.Errorf("read: %w", &pgconn.PgError{Code: "40001", Message: "SELECT secret"}))
+
+	if _, ok := errors.AsType[*pgconn.PgError](got); !ok {
+		t.Error("the cause is out of reach: db.InTx would not see the 40001 and would not retry")
+	}
+	if strings.Contains(got.Error(), "secret") {
+		t.Errorf("the client would see the cause: %v", got)
+	}
+}

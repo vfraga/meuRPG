@@ -1,4 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { create } from '@bufbuild/protobuf';
+
+import { SpellDetailsSchema } from '../../../gen/meurpg/rules/v1/rules_pb';
 
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import { LevelUpClient } from './levelup-client';
@@ -53,5 +56,28 @@ describe('LevelUpClient.catalog', () => {
     await client.catalog('camp', 'a');
     await client.catalog('camp', 'b');
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe('LevelUpClient.spellDetails', () => {
+  function withSpells(reads: string[]): LevelUpClient {
+    const client = clientWith([]);
+    (client as unknown as { content: unknown }).content = {
+      getSpellDetails: (req: { spellKey: string }) => {
+        reads.push(req.spellKey);
+        return Promise.resolve({ spell: create(SpellDetailsSchema) });
+      },
+    };
+    return client;
+  }
+
+  it('keeps an SRD spell for the page, and reads a spell of the table each time', async () => {
+    const reads: string[] = [];
+    const client = withSpells(reads);
+    await client.spellDetails('camp', 'spell:fireball');
+    await client.spellDetails('camp', 'spell:fireball');
+    await client.spellDetails('camp', 'spell:brasa@mesa');
+    await client.spellDetails('camp', 'spell:brasa@mesa');
+    expect(reads).toEqual(['spell:fireball', 'spell:brasa@mesa', 'spell:brasa@mesa']);
   });
 });

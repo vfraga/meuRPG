@@ -368,6 +368,80 @@ describe('TableAbilityScores', () => {
     });
   });
 
+  describe('when the rolls changed under the person', () => {
+    const refusal = (reason: AbilityScoresRefusalReason) =>
+      new ConnectError('x', Code.FailedPrecondition, undefined, [
+        { desc: AbilityScoresRefusalSchema, value: create(AbilityScoresRefusalSchema, { reason }) },
+      ]);
+
+    async function physical() {
+      await setup(table({ physicalDice: true }));
+      tab('4d6').click();
+      await settle();
+      const inputs = Array.from(el.querySelectorAll<HTMLInputElement>('.roll__die'));
+      STORED.sets
+        .flatMap((x) => x.dice)
+        .forEach((v, i) => {
+          inputs[i].value = String(v);
+          inputs[i].dispatchEvent(new Event('input'));
+        });
+      await settle();
+      button('Guardar os dados').click();
+      await settle();
+    }
+
+    it('shows the dice another tab stored when the typed ones are refused for it', async () => {
+      await physical();
+      roll.mockRejectedValueOnce(refusal(AbilityScoresRefusalReason.ROLLS_ALREADY_STORED));
+      roll.mockResolvedValueOnce(STORED);
+      button('Guardar as rolagens').click();
+      await settle();
+      expect(roll).toHaveBeenCalledTimes(2);
+      expect(roll).toHaveBeenLastCalledWith('camp-1', undefined);
+      expect(el.querySelectorAll('app-dice-result')).toHaveLength(6);
+      expect(el.querySelector('.ask__title')).toBeNull();
+    });
+
+    it('keeps the refusal and asks again only once when the stored dice cannot be read either', async () => {
+      await physical();
+      roll.mockRejectedValue(refusal(AbilityScoresRefusalReason.ROLLS_ALREADY_STORED));
+      button('Guardar as rolagens').click();
+      await settle();
+      expect(roll).toHaveBeenCalledTimes(2);
+      expect(text()).toContain('Os dados já foram guardados e não mudam.');
+    });
+
+    it.each([
+      AbilityScoresRefusalReason.DICE_FORCED_IN_APP,
+      AbilityScoresRefusalReason.DICE_FORCED_PHYSICAL,
+    ])(
+      'asks the page to read the table again when the server refuses with reason %s',
+      async (reason) => {
+        await setup(table());
+        const stale = vi.fn();
+        fixture.componentInstance.staleTable.subscribe(stale);
+        tab('4d6').click();
+        await settle();
+        roll.mockRejectedValueOnce(refusal(reason));
+        button('Rolar as habilidades').click();
+        await settle();
+        expect(stale).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('does not ask the page to read the table again for any other refusal (positive control)', async () => {
+      await setup(table());
+      const stale = vi.fn();
+      fixture.componentInstance.staleTable.subscribe(stale);
+      tab('4d6').click();
+      await settle();
+      roll.mockRejectedValueOnce(refusal(AbilityScoresRefusalReason.METHOD_NOT_ALLOWED));
+      button('Rolar as habilidades').click();
+      await settle();
+      expect(stale).not.toHaveBeenCalled();
+    });
+  });
+
   describe('a draft that already has a recorded method (RN-24)', () => {
     async function locked(
       method: AbilityMethodKey,

@@ -8,6 +8,8 @@ import {
   type Milestone,
   MilestoneSchema,
   XPAwardSchema,
+  XPBlockedReason,
+  XPBlockedSchema,
 } from '../../../../gen/meurpg/progression/v1/progression_pb';
 import { ProgressionClient } from '../../../core/progression/progression-client';
 import { ReachedMilestones } from './reached-milestones';
@@ -117,5 +119,29 @@ describe('ReachedMilestones (E8-14)', () => {
     await settle();
     expect(text(el)).toContain('A lista mudou enquanto você olhava');
     expect(el.querySelector('app-milestone-ask')).toBeNull();
+  });
+
+  it('tells the host to read the list again when there is no mark left to undo', async () => {
+    const { fixture, el, settle, undone } = await setup(true);
+    fixture.componentInstance.undone.subscribe((m) => undone.push(m));
+    api.undoLast = (() =>
+      new Promise((_, reject) =>
+        reject(
+          new ConnectError('x', Code.FailedPrecondition, undefined, [
+            {
+              desc: XPBlockedSchema,
+              value: { reason: XPBlockedReason.XP_BLOCKED_REASON_NOTHING_TO_UNDO },
+            },
+          ]),
+        ),
+      )) as never;
+    el.querySelector<HTMLButtonElement>('[data-undo]')!.click();
+    await settle();
+    Array.from(el.querySelectorAll<HTMLButtonElement>('app-milestone-ask button'))
+      .find((b) => b.textContent?.includes('Desfazer marco'))!
+      .click();
+    await settle();
+    expect(undone).toEqual(['']);
+    expect(text(el)).toContain('A tela foi atualizada');
   });
 });

@@ -4,7 +4,7 @@ import { combatRPC, getEncounterRPC, setGridRPC, startEncounterRPC, toren, toren
 import { CAVE, CAVE_COLUMNS, caveImage, squareBp } from './fog-support';
 import { endOpenSessionRPC, startSessionRPC } from './live-session-support';
 import { createMapRPC, placeTokenRPC, revealMapRPC, setCurrentMapRPC, uploadImageRPC } from './maps-support';
-import { callRPC, characterRpcBody, createCharacterRPC, pensantus, type CharacterBuild } from './support';
+import { boxOf, callRPC, characterRpcBody, createCharacterRPC, pensantus, type CharacterBuild } from './support';
 
 // Setup for the specs of the creatures in combat and Wild Shape (Etapa 9, MR-037, RN-20), through the API:
 // the cave "A caverna do Vale Seco" without fog, a druid (Sálvia) or Pensantus with his familiar, Toren as the
@@ -215,7 +215,7 @@ export const floorAt = (col: number, row: number): boolean => CAVE[row]?.[col] =
 export async function tapCaveSquare(page: Page, col: number, row: number): Promise<void> {
   const map = page.getByRole('group', { name: /Mapa de batalha/ });
   await expect(map).toBeVisible();
-  const box = (await map.boundingBox())!;
+  const box = await boxOf(map);
   await map.click({ position: { x: ((col + 0.5) * box.width) / 24, y: ((row + 0.5) * box.height) / 16 } });
 }
 

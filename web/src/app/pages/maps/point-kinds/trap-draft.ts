@@ -366,23 +366,41 @@ export function trapSpecOf(d: TrapDraft): MessageInitShape<typeof TrapSpecSchema
   };
 }
 
-/** Whether the form differs from what the point has (the page asks before leaving it). */
+/**
+ * Whether the form differs from what the point has (the page asks before leaving it). `openedState` is the state the form opened with: a
+ * trap that fired while the form was open is not an edit of the master's.
+ */
 export function isTrapDirty(
   d: TrapDraft,
   point: Pick<MapPoint, 'name' | 'description' | 'trap'>,
+  openedState?: TrapState,
 ): boolean {
-  return JSON.stringify(d) !== JSON.stringify(trapDraftOf(point));
+  const saved = trapDraftOf(point);
+  return (
+    JSON.stringify(d) !==
+    JSON.stringify(openedState === undefined ? saved : { ...saved, state: openedState })
+  );
 }
 
-/** What "Salvar ponto" sends; `null` when nothing changed. The spec goes whole, as `UpdateMapPoint` replaces it. */
+/**
+ * What "Salvar ponto" sends; `null` when nothing changed. The spec goes whole, as `UpdateMapPoint` replaces it, except the state: the
+ * server keeps the current one unless the master chose another than the form opened with (the live game changes it too).
+ */
 export function trapChangesOf(
   d: TrapDraft,
   point: Pick<MapPoint, 'name' | 'description' | 'trap'>,
+  openedState?: TrapState,
 ): PointChanges | null {
-  if (!isTrapDirty(d, point)) {
+  if (!isTrapDirty(d, point, openedState)) {
     return null;
   }
-  const changes: { -readonly [K in keyof PointChanges]: PointChanges[K] } = { trap: trapSpecOf(d) };
+  const spec = trapSpecOf(d);
+  const changes: { -readonly [K in keyof PointChanges]: PointChanges[K] } = {
+    trap:
+      openedState !== undefined && d.state === openedState
+        ? { ...spec, state: TrapState.UNSPECIFIED }
+        : spec,
+  };
   if (d.name.trim() !== point.name) {
     changes.name = d.name.trim();
   }

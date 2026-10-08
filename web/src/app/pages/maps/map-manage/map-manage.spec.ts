@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
+import type { GetMapLayersResponse } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { MapState } from '../../../core/maps/map-state';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient, mapMessage, mapResponse, mapToken } from '../../../core/maps/maps-testing';
@@ -51,6 +52,7 @@ describe("MapManage: the master's map on a phone (E9-01 7)", () => {
     await fixture.whenStable();
     await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
+    return state;
   }
   const text = () => (el.textContent ?? '').replace(/\s+/g, ' ');
 
@@ -88,5 +90,36 @@ describe("MapManage: the master's map on a phone (E9-01 7)", () => {
     await setup(0);
     expect(api.calls.some((c) => c.startsWith('layers'))).toBe(false);
     expect(text()).toContain('Precisa da grade definida.');
+  });
+
+  it('draws the layers of the latest map change when an older answer comes last', async () => {
+    const state = await setup(24);
+    const pending: ((value: GetMapLayersResponse) => void)[] = [];
+    api.layers = () =>
+      new Promise((resolve) => {
+        pending.push(resolve);
+      });
+    const changed = (layersRevision: number) =>
+      state.setMap(
+        mapMessage('map-1', 'A caverna do Vale Seco', {
+          gridColumns: 24,
+          gridRows: 16,
+          layersRevision,
+        }),
+      );
+    changed(2);
+    fixture.detectChanges();
+    changed(3);
+    fixture.detectChanges();
+    expect(pending).toHaveLength(2);
+    const walls = (wall: number) =>
+      ({ ...api.layersResponse, layersRevision: 3, wall: Uint8Array.of(wall) }) as never;
+    // The newer answer (one wall) is back first, the older one (two walls) after it.
+    pending[1]!(walls(0b0000_0001));
+    await new Promise((r) => setTimeout(r));
+    pending[0]!(walls(0b0000_0011));
+    await new Promise((r) => setTimeout(r));
+    fixture.detectChanges();
+    expect(el.querySelectorAll('app-editor-overlay .sq--wall')).toHaveLength(1);
   });
 });

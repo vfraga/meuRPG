@@ -20,6 +20,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/refimg"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/vision"
 
@@ -505,7 +506,7 @@ func (s *Service) GenerateMapImage(
 		return nil, err
 	}
 	n := newRequest{
-		kind: kind, key: key, prompt: prompt, style: style, ratio: ratio, name: name,
+		kind: kind, key: key, hash: idem.Hash(req.Msg), prompt: prompt, style: style, ratio: ratio, name: name,
 		references: objects, characters: characters, requestedBy: m.UserID,
 		mapReq: &mapRequest{mapID: mapID, layout: layout, npcs: npcs},
 	}
@@ -559,8 +560,13 @@ func (s *Service) prepareMap(ctx context.Context, campaignID string, n *newReque
 		if players.nobody {
 			return errBlocked(mapsv1.ImageGenerationBlockedReason_IMAGE_GENERATION_BLOCKED_REASON_PLAYERS_SEE_NOTHING, status)
 		}
-	} else if int64(sub.imgW)*int64(sub.imgH) > maxTexturePixels {
-		return errBlocked(mapsv1.ImageGenerationBlockedReason_IMAGE_GENERATION_BLOCKED_REASON_MAP_IMAGE_TOO_LARGE, status)
+	} else {
+		if int64(sub.imgW)*int64(sub.imgH) > maxTexturePixels {
+			return errBlocked(mapsv1.ImageGenerationBlockedReason_IMAGE_GENERATION_BLOCKED_REASON_MAP_IMAGE_TOO_LARGE, status)
+		}
+		if err := s.checkTexturePortraits(ctx, campaignID, n, sub); err != nil {
+			return err
+		}
 	}
 	if n.mapReq.layout != gen.LayoutTexture {
 		if err := s.checkCharacters(ctx, campaignID, n, p, players); err != nil {
@@ -617,6 +623,30 @@ func kindNamePT(kind string) string {
 	default:
 		return "arte da cena"
 	}
+}
+
+// checkTexturePortraits refuses, for a textured map, the portrait of any NPC with a token
+// on the map as an object reference, seen or not: the picture starts from the whole map and
+// shows no creature, and it can become the map the players read, so no portrait has a
+// reason to be in it (RN-10).
+func (s *Service) checkTexturePortraits(ctx context.Context, campaignID string, n *newRequest, sub *subject) error {
+	if len(n.references) == 0 || len(sub.tokens) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(sub.tokens))
+	for _, t := range sub.tokens {
+		ids = append(ids, t.CharacterID)
+	}
+	portraits, err := s.characters.NpcPortraits(ctx, nil, campaignID, ids)
+	if err != nil {
+		return s.dbError(ctx, "read the portraits", err)
+	}
+	for _, img := range portraits {
+		if img != "" && slices.Contains(n.references, img) {
+			return errField("object_image_ids", "has the portrait of a creature on the map")
+		}
+	}
+	return nil
 }
 
 // checkCharacters is what a scene art or isometric request says of characters: the NPCs
@@ -791,7 +821,11 @@ func (s *Service) UseGeneratedImageAsMapImage(
 			return nil
 		}
 		changed := errBlocked(mapsv1.ImageGenerationBlockedReason_IMAGE_GENERATION_BLOCKED_REASON_MAP_CHANGED, status)
-		if request.MapImageID == nil || locked.ImageID != *request.MapImageID || locked.GridColumns == nil ||
+		fits, err := mapImageFitsRequest(ctx, q, m.CampaignID, request, locked.ImageID)
+		if err != nil {
+			return err
+		}
+		if !fits || locked.GridColumns == nil ||
 			request.MapGridColumns == nil || *locked.GridColumns != *request.MapGridColumns ||
 			request.MapGridFactor == nil || locked.GridFactor != *request.MapGridFactor {
 			return changed
@@ -845,6 +879,41 @@ func (s *Service) UseGeneratedImageAsMapImage(
 		return nil, err
 	}
 	return connect.NewResponse(&mapsv1.UseGeneratedImageAsMapImageResponse{Map: out}), nil
+}
+
+// maxEditChain bounds the walk up the edits of an edit: far more than a master makes.
+const maxEditChain = 64
+
+// mapImageFitsRequest says whether the map's current image (imageID) is the one
+// the request was made over: the map's image when the request was made, or a
+// picture that "Usar" put on the map from the request itself or from an earlier
+// edit of the same chain (an edit keeps the basis of the picture it adjusts, and
+// after that picture is used the map's image is no longer the original). The grid,
+// size and walls checks that follow keep the rest of the basis.
+func mapImageFitsRequest(ctx context.Context, q *mapsdb.Queries, campaignID string, request mapsdb.ImageRequest, imageID string) (bool, error) {
+	if request.MapImageID == nil {
+		return false, nil
+	}
+	if imageID == *request.MapImageID {
+		return true, nil
+	}
+	for cur, steps := request, 0; cur.SourceImageID != nil && steps < maxEditChain; steps++ {
+		from, err := q.GetImageRequestForImage(ctx, mapsdb.GetImageRequestForImageParams{CampaignID: campaignID, ImageID: cur.SourceImageID})
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		if err != nil {
+			return false, fmt.Errorf("read the request of an edited image: %w", err)
+		}
+		if from.MapImageID == nil || *from.MapImageID != *request.MapImageID {
+			return false, nil // not made over the same map image
+		}
+		if from.UsedMapImageID != nil && *from.UsedMapImageID == imageID {
+			return true, nil
+		}
+		cur = from
+	}
+	return false, nil
 }
 
 // basisParams are a basis's columns of the request's row; a request that is not

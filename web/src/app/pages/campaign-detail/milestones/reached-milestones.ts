@@ -13,7 +13,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { Milestone, XPAward } from '../../../../gen/meurpg/progression/v1/progression_pb';
-import { newKey } from '../../../core/connect/idempotency';
+import { ActionKey } from '../../../core/connect/idempotency';
 import {
   leveledLine,
   markLines,
@@ -21,7 +21,7 @@ import {
   undoMilestoneConsequence,
 } from '../../../core/progression/milestones';
 import { ProgressionClient } from '../../../core/progression/progression-client';
-import { xpAborted, xpErrorMessage } from '../../../core/progression/xp-errors';
+import { xpAborted, xpErrorMessage, xpNothingToUndo } from '../../../core/progression/xp-errors';
 import { MilestoneAsk } from './milestone-ask';
 
 /**
@@ -61,7 +61,7 @@ export class ReachedMilestones {
   protected readonly error = signal('');
   /** Why a stale screen changed nothing. */
   protected readonly notice = signal('');
-  private key = newKey();
+  private readonly key = new ActionKey();
 
   protected readonly rows = computed(() =>
     this.milestones().map((m) => ({
@@ -85,7 +85,6 @@ export class ReachedMilestones {
     this.asking.set(m.id);
     this.error.set('');
     this.notice.set('');
-    this.key = newKey();
   }
 
   protected back(m: Milestone): void {
@@ -107,7 +106,7 @@ export class ReachedMilestones {
     this.busy.set(true);
     this.error.set('');
     try {
-      await this.api.undoLast(this.campaignId(), mark.id, this.key);
+      await this.api.undoLast(this.campaignId(), mark.id, this.key.keyFor(mark.id));
       this.asking.set(null);
       this.undone.emit('Marco desfeito.');
     } catch (err) {
@@ -121,6 +120,10 @@ export class ReachedMilestones {
       } else {
         // A failed call is retried with the same key: it changes nothing twice.
         this.error.set(xpErrorMessage(err, 'desfazer o marco'));
+        if (xpNothingToUndo(err)) {
+          // Its message says the screen was updated: the list is read again.
+          this.undone.emit('');
+        }
       }
     } finally {
       this.busy.set(false);

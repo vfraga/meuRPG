@@ -35,9 +35,14 @@ var monsterNamespace = uuid.MustParse("6f1d6a52-3c1e-4d0b-9a57-0c7b5e1f2a43")
 // version 5 UUID of both, so the same pair always has the same key, and the
 // unique index (campaign_id, create_key) makes the NPC one, whoever creates it.
 func monsterNpcKey(campaignID, monsterKey string) string {
+	return nameUUID(monsterNamespace, campaignID+"|"+monsterKey)
+}
+
+// nameUUID is the version 5 UUID (RFC 9562) of name in namespace.
+func nameUUID(namespace uuid.UUID, name string) string {
 	h := sha1.New() //nolint:gosec // see the import
-	h.Write(monsterNamespace[:])
-	h.Write([]byte(campaignID + "|" + monsterKey))
+	h.Write(namespace[:])
+	h.Write([]byte(name))
 	sum := h.Sum(nil)
 	var u uuid.UUID
 	copy(u[:], sum[:16])

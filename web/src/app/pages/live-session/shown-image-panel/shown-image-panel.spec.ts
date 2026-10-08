@@ -44,6 +44,12 @@ describe('showErrorMessage', () => {
     expect(showErrorMessage(new ConnectError('x', Code.PermissionDenied))).toContain('Só o mestre');
     expect(showErrorMessage(new TypeError('Failed to fetch'))).toContain('Tente de novo');
   });
+
+  it('tells the master a full gallery is why a fog map image cannot be shown', () => {
+    const message = showErrorMessage(new ConnectError('full', Code.ResourceExhausted));
+    expect(message).toContain('galeria da campanha está cheia');
+    expect(message).not.toContain('falar com o servidor');
+  });
 });
 
 describe('ShownImagePanel, "Deixar com os jogadores" (E6-25)', () => {
@@ -136,6 +142,41 @@ describe('ShownImagePanel, "Deixar com os jogadores" (E6-25)', () => {
     expect(el.querySelector('[role="status"]')?.textContent).toContain(
       'Planta da torre foi tirada.',
     );
+  });
+
+  it('does not show the withdrawn image again when the switch is flipped during a stop', async () => {
+    const { fixture, el } = await render({});
+    let release: () => void = () => undefined;
+    source.setShownImage.mockImplementationOnce(
+      () => new Promise<null>((resolve) => (release = () => resolve(null))),
+    );
+    const stop = [...el.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Parar de mostrar'),
+    );
+    await click(fixture, stop ?? null);
+    expect(source.setShownImage).toHaveBeenCalledTimes(1);
+    await click(fixture, el.querySelector('[role="switch"]'));
+    release();
+    await fixture.whenStable();
+    expect(source.setShownImage.mock.calls).toEqual([['c1', null]]);
+  });
+
+  it('takes an image back once when "Tirar" is clicked twice before the answer', async () => {
+    const { fixture, el } = await render({ left: [planta] });
+    // The first call succeeds; a second one would find the image already back.
+    source.takeBackLeftImage.mockResolvedValueOnce(undefined);
+    source.takeBackLeftImage.mockRejectedValueOnce(new ConnectError('gone', Code.NotFound));
+    let left = 0;
+    fixture.componentInstance.leftChanged.subscribe(() => left++);
+    const button = el.querySelector<HTMLElement>(
+      'button[aria-label="Tirar Planta da torre dos jogadores"]',
+    )!;
+    button.click();
+    button.click();
+    await fixture.whenStable();
+    expect(source.takeBackLeftImage).toHaveBeenCalledTimes(1);
+    expect(el.textContent).not.toContain('já não estava com os jogadores');
+    expect(left).toBe(0);
   });
 });
 

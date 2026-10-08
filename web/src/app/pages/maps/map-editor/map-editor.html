@@ -263,9 +263,11 @@
               {{ token.hidden ? 'Escondido dos jogadores' : 'Visível aos jogadores' }}
             </p>
             <div class="tk__actions">
-              <button matButton="outlined" type="button" (click)="toggleTokenHidden()">
-                {{ token.hidden ? 'Revelar aos jogadores' : 'Esconder' }}
-              </button>
+              @if (!token.creatureId) {
+                <button matButton="outlined" type="button" (click)="toggleTokenHidden()">
+                  {{ token.hidden ? 'Revelar aos jogadores' : 'Esconder' }}
+                </button>
+              }
               <button matButton type="button" class="tk__remove" (click)="removeToken()">Remover do mapa</button>
             </div>
           </section>

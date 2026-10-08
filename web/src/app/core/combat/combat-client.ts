@@ -181,6 +181,35 @@ export interface HpAdjust {
 @Injectable({ providedIn: 'root' })
 export class CombatClient {
   private readonly client = createClient(CombatService, inject(CONNECT_TRANSPORT));
+  /** The key of each change still waiting for its answer, by the request it carries. */
+  private readonly sending = new Map<string, string>();
+
+  /**
+   * Sends a change under the key of its request: the same request again (a second tap, or a try after a lost
+   * answer) keeps the key, so the server answers with what the first call did; other values are another change
+   * with a new key. Once the change worked the next one, even with the same values (two equal hits), is new.
+   * A `given` key is the caller's, kept across its own retries.
+   */
+  private async keyed<T>(
+    what: readonly unknown[],
+    call: (key: string) => Promise<T>,
+    given?: string,
+  ): Promise<T> {
+    if (given !== undefined) {
+      return call(given);
+    }
+    const print = JSON.stringify(what, (_name, value: unknown) =>
+      typeof value === 'bigint' ? value.toString() : value,
+    );
+    let key = this.sending.get(print);
+    if (key === undefined) {
+      key = newKey();
+      this.sending.set(print, key);
+    }
+    const res = await call(key);
+    this.sending.delete(print);
+    return res;
+  }
 
   /** The latest combat of the open session, or `null` while it had none. */
   async get(campaignId: string): Promise<Encounter | null> {
@@ -251,16 +280,20 @@ export class CombatClient {
     combatantId: string,
     roll: InitiativeRoll,
   ): Promise<Encounter> {
-    const res = await this.client.submitInitiative({
-      campaignId,
-      encounterId,
-      combatantId,
-      idempotencyKey: newKey(),
-      roll:
-        'inApp' in roll
-          ? { case: 'rollInApp', value: true }
-          : { case: 'd20Face', value: roll.face },
-    });
+    const res = await this.keyed(
+      ['submitInitiative', campaignId, encounterId, combatantId, roll],
+      (sent) =>
+        this.client.submitInitiative({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          roll:
+            'inApp' in roll
+              ? { case: 'rollInApp', value: true }
+              : { case: 'd20Face', value: roll.face },
+        }),
+    );
     return need(res.encounter, 'SubmitInitiative');
   }
 
@@ -269,26 +302,33 @@ export class CombatClient {
     encounterId: string,
     combatantIds: readonly string[],
   ): Promise<Encounter> {
-    const res = await this.client.setInitiativeOrder({
-      campaignId,
-      encounterId,
-      idempotencyKey: newKey(),
-      combatantIds: [...combatantIds],
-    });
+    const res = await this.keyed(
+      ['setInitiativeOrder', campaignId, encounterId, combatantIds],
+      (sent) =>
+        this.client.setInitiativeOrder({
+          campaignId,
+          encounterId,
+          idempotencyKey: sent,
+          combatantIds: [...combatantIds],
+        }),
+    );
     return need(res.encounter, 'SetInitiativeOrder');
   }
 
   async begin(campaignId: string, encounterId: string): Promise<Encounter> {
-    const res = await this.client.beginCombat({
-      campaignId,
-      encounterId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(['beginCombat', campaignId, encounterId], (sent) =>
+      this.client.beginCombat({
+        campaignId,
+        encounterId,
+        idempotencyKey: sent,
+      }),
+    );
     return need(res.encounter, 'BeginCombat');
   }
 
-  /** `expectedCombatantId` is whose turn the screen thinks it is, so a double
-   * tap never skips two turns; empty only when nobody is on turn. */
+  /** `expectedCombatantId` is whose turn the screen thinks it is: a tap from a screen that has not caught up with the
+   * turn is refused (`aborted`), never skipping another one; the same tap sent again keeps its key, so the server
+   * answers with the first. Empty only when nobody is on turn. */
   async endTurn(
     campaignId: string,
     encounterId: string,
@@ -296,14 +336,25 @@ export class CombatClient {
     discardPendingDamage = false,
     expectedRound = 0,
   ): Promise<Encounter> {
-    const res = await this.client.endTurn({
-      campaignId,
-      encounterId,
-      idempotencyKey: newKey(),
-      expectedCombatantId,
-      discardPendingDamage,
-      expectedRound,
-    });
+    const res = await this.keyed(
+      [
+        'endTurn',
+        campaignId,
+        encounterId,
+        expectedCombatantId,
+        discardPendingDamage,
+        expectedRound,
+      ],
+      (sent) =>
+        this.client.endTurn({
+          campaignId,
+          encounterId,
+          idempotencyKey: sent,
+          expectedCombatantId,
+          discardPendingDamage,
+          expectedRound,
+        }),
+    );
     return need(res.encounter, 'EndTurn');
   }
 
@@ -311,7 +362,8 @@ export class CombatClient {
    * square, or a high one by `jumpHeightDft` tenths of a foot). `stoppedEarly`
    * is "something you did not see stopped you"; `provoked` that an opportunity
    * offer now waits. The master's drags are plain moves too: only `forced`
-   * (never sent from here) skips the offers. */
+   * (never sent from here) skips the offers. `key` is the caller's, kept across
+   * the retries of one jump (a lost answer must not charge it twice). */
   async move(
     campaignId: string,
     encounterId: string,
@@ -319,17 +371,27 @@ export class CombatClient {
     col: number,
     row: number,
     jump?: { readonly kind: 'long' } | { readonly kind: 'high'; readonly heightDft: number },
+    key?: string,
   ): Promise<MoveResult> {
-    const res = await this.client.moveCombatant({
-      campaignId,
-      encounterId,
-      combatantId,
-      idempotencyKey: newKey(),
-      col,
-      row,
-      jump: jump ? (jump.kind === 'long' ? JumpKind.LONG : JumpKind.HIGH) : JumpKind.UNSPECIFIED,
-      jumpHeightDft: jump?.kind === 'high' ? jump.heightDft : 0,
-    });
+    const res = await this.keyed(
+      ['moveCombatant', campaignId, encounterId, combatantId, col, row, jump],
+      (sent) =>
+        this.client.moveCombatant({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          col,
+          row,
+          jump: jump
+            ? jump.kind === 'long'
+              ? JumpKind.LONG
+              : JumpKind.HIGH
+            : JumpKind.UNSPECIFIED,
+          jumpHeightDft: jump?.kind === 'high' ? jump.heightDft : 0,
+        }),
+      key,
+    );
     return {
       encounter: need(res.encounter, 'MoveCombatant'),
       stoppedEarly: res.stoppedEarly,
@@ -355,13 +417,17 @@ export class CombatClient {
     combatantId: string,
     side: CombatantSide,
   ): Promise<Encounter> {
-    const res = await this.client.setCombatantSide({
-      campaignId,
-      encounterId,
-      combatantId,
-      idempotencyKey: newKey(),
-      side,
-    });
+    const res = await this.keyed(
+      ['setCombatantSide', campaignId, encounterId, combatantId, side],
+      (sent) =>
+        this.client.setCombatantSide({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          side,
+        }),
+    );
     return need(res.encounter, 'SetCombatantSide');
   }
 
@@ -372,13 +438,17 @@ export class CombatClient {
     combatantId: string,
     cover: CoverDegree,
   ): Promise<Encounter> {
-    const res = await this.client.setCombatantCover({
-      campaignId,
-      encounterId,
-      combatantId,
-      idempotencyKey: newKey(),
-      cover,
-    });
+    const res = await this.keyed(
+      ['setCombatantCover', campaignId, encounterId, combatantId, cover],
+      (sent) =>
+        this.client.setCombatantCover({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          cover,
+        }),
+    );
     return need(res.encounter, 'SetCombatantCover');
   }
 
@@ -388,12 +458,14 @@ export class CombatClient {
     encounterId: string,
     offerId: string,
   ): Promise<Encounter> {
-    const res = await this.client.declineOpportunity({
-      campaignId,
-      encounterId,
-      opportunityOfferId: offerId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(['declineOpportunity', campaignId, encounterId, offerId], (sent) =>
+      this.client.declineOpportunity({
+        campaignId,
+        encounterId,
+        opportunityOfferId: offerId,
+        idempotencyKey: sent,
+      }),
+    );
     return need(res.encounter, 'DeclineOpportunity');
   }
 
@@ -403,12 +475,14 @@ export class CombatClient {
     encounterId: string,
     offerId: string,
   ): Promise<Encounter> {
-    const res = await this.client.skipOpportunity({
-      campaignId,
-      encounterId,
-      opportunityOfferId: offerId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(['skipOpportunity', campaignId, encounterId, offerId], (sent) =>
+      this.client.skipOpportunity({
+        campaignId,
+        encounterId,
+        opportunityOfferId: offerId,
+        idempotencyKey: sent,
+      }),
+    );
     return need(res.encounter, 'SkipOpportunity');
   }
 
@@ -457,12 +531,16 @@ export class CombatClient {
     encounterId: string,
     offerId: string,
   ): Promise<Encounter> {
-    const res = await this.client.withdrawOpportunity({
-      campaignId,
-      encounterId,
-      opportunityOfferId: offerId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(
+      ['withdrawOpportunity', campaignId, encounterId, offerId],
+      (sent) =>
+        this.client.withdrawOpportunity({
+          campaignId,
+          encounterId,
+          opportunityOfferId: offerId,
+          idempotencyKey: sent,
+        }),
+    );
     return need(res.encounter, 'WithdrawOpportunity');
   }
 
@@ -472,13 +550,17 @@ export class CombatClient {
     combatantId: string,
     hidden: boolean,
   ): Promise<Encounter> {
-    const res = await this.client.setCombatantHidden({
-      campaignId,
-      encounterId,
-      combatantId,
-      idempotencyKey: newKey(),
-      hidden,
-    });
+    const res = await this.keyed(
+      ['setCombatantHidden', campaignId, encounterId, combatantId, hidden],
+      (sent) =>
+        this.client.setCombatantHidden({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          hidden,
+        }),
+    );
     return need(res.encounter, 'SetCombatantHidden');
   }
 
@@ -486,23 +568,33 @@ export class CombatClient {
     campaignId: string,
     encounterId: string,
     participants: readonly JoinSpec[],
+    key?: string,
   ): Promise<Encounter> {
-    const res = await this.client.addCombatants({
-      campaignId,
-      encounterId,
-      idempotencyKey: newKey(),
-      participants: participants.map(toParticipant),
-    });
+    const res = await this.keyed(
+      ['addCombatants', campaignId, encounterId, participants],
+      (sent) =>
+        this.client.addCombatants({
+          campaignId,
+          encounterId,
+          idempotencyKey: sent,
+          participants: participants.map(toParticipant),
+        }),
+      key,
+    );
     return need(res.encounter, 'AddCombatants');
   }
 
   async remove(campaignId: string, encounterId: string, combatantId: string): Promise<Encounter> {
-    const res = await this.client.removeCombatant({
-      campaignId,
-      encounterId,
-      combatantId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(
+      ['removeCombatant', campaignId, encounterId, combatantId],
+      (sent) =>
+        this.client.removeCombatant({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+        }),
+    );
     return need(res.encounter, 'RemoveCombatant');
   }
 
@@ -578,15 +670,20 @@ export class CombatClient {
     encounterId: string,
     pendingDamageId: string,
     amount?: number,
-    key: string = newKey(),
+    key?: string,
   ): Promise<DamageResult> {
-    const res = await this.client.applyPendingDamage({
-      campaignId,
-      encounterId,
-      pendingDamageId,
-      idempotencyKey: key,
-      amount,
-    });
+    const res = await this.keyed(
+      ['applyPendingDamage', campaignId, encounterId, pendingDamageId, amount],
+      (sent) =>
+        this.client.applyPendingDamage({
+          campaignId,
+          encounterId,
+          pendingDamageId,
+          idempotencyKey: sent,
+          amount,
+        }),
+      key,
+    );
     return {
       encounter: need(res.encounter, 'ApplyPendingDamage'),
       pending: need(res.pendingDamage, 'ApplyPendingDamage'),
@@ -599,12 +696,16 @@ export class CombatClient {
     encounterId: string,
     pendingDamageId: string,
   ): Promise<DamageResult> {
-    const res = await this.client.discardPendingDamage({
-      campaignId,
-      encounterId,
-      pendingDamageId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(
+      ['discardPendingDamage', campaignId, encounterId, pendingDamageId],
+      (sent) =>
+        this.client.discardPendingDamage({
+          campaignId,
+          encounterId,
+          pendingDamageId,
+          idempotencyKey: sent,
+        }),
+    );
     return {
       encounter: need(res.encounter, 'DiscardPendingDamage'),
       pending: need(res.pendingDamage, 'DiscardPendingDamage'),
@@ -655,20 +756,25 @@ export class CombatClient {
     combatantId: string,
     actionKey: string,
     die?: DamageDie,
-    key: string = newKey(),
+    key?: string,
   ): Promise<ActionResult> {
-    const res = await this.client.takeAction({
-      campaignId,
-      encounterId,
-      combatantId,
-      actionKey,
-      idempotencyKey: key,
-      roll: !die
-        ? { case: undefined }
-        : 'inApp' in die
-          ? { case: 'rollInApp', value: true }
-          : { case: 'typedSum', value: die.sum },
-    });
+    const res = await this.keyed(
+      ['takeAction', campaignId, encounterId, combatantId, actionKey, die],
+      (sent) =>
+        this.client.takeAction({
+          campaignId,
+          encounterId,
+          combatantId,
+          actionKey,
+          idempotencyKey: sent,
+          roll: !die
+            ? { case: undefined }
+            : 'inApp' in die
+              ? { case: 'rollInApp', value: true }
+              : { case: 'typedSum', value: die.sum },
+        }),
+      key,
+    );
     return { encounter: need(res.encounter, 'TakeAction'), roll: res.roll, healed: res.healed };
   }
 
@@ -760,16 +866,21 @@ export class CombatClient {
     encounterId: string,
     combatantId: string,
     change: ConditionChange,
-    key: string = newKey(),
+    key?: string,
   ): Promise<Encounter> {
-    const res = await this.client.setCombatantConditions({
-      campaignId,
-      encounterId,
-      combatantId,
-      idempotencyKey: key,
-      conditions: change.keys ? { keys: [...change.keys] } : undefined,
-      endConcentration: change.endConcentration ?? false,
-    });
+    const res = await this.keyed(
+      ['setCombatantConditions', campaignId, encounterId, combatantId, change],
+      (sent) =>
+        this.client.setCombatantConditions({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          conditions: change.keys ? { keys: [...change.keys] } : undefined,
+          endConcentration: change.endConcentration ?? false,
+        }),
+      key,
+    );
     return need(res.encounter, 'SetCombatantConditions');
   }
 
@@ -801,12 +912,16 @@ export class CombatClient {
 
   /** "Desfazer última ação": `expectedEventId` is the log's undoable event. */
   async undo(campaignId: string, encounterId: string, expectedEventId: string): Promise<Encounter> {
-    const res = await this.client.undoLastAction({
-      campaignId,
-      encounterId,
-      expectedEventId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(
+      ['undoLastAction', campaignId, encounterId, expectedEventId],
+      (sent) =>
+        this.client.undoLastAction({
+          campaignId,
+          encounterId,
+          expectedEventId,
+          idempotencyKey: sent,
+        }),
+    );
     return need(res.encounter, 'UndoLastAction');
   }
 
@@ -822,11 +937,13 @@ export class CombatClient {
   }
 
   async end(campaignId: string, encounterId: string): Promise<Encounter> {
-    const res = await this.client.endEncounter({
-      campaignId,
-      encounterId,
-      idempotencyKey: newKey(),
-    });
+    const res = await this.keyed(['endEncounter', campaignId, encounterId], (sent) =>
+      this.client.endEncounter({
+        campaignId,
+        encounterId,
+        idempotencyKey: sent,
+      }),
+    );
     return need(res.encounter, 'EndEncounter');
   }
 }

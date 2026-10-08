@@ -28,11 +28,16 @@ function blockedBy(reason: EncounterBlockedReason): ConnectError {
 const twoDiceError = () => blockedBy(EncounterBlockedReason.SEARCH_NEEDS_TWO_DICE);
 
 describe('TrapSearchSheet', () => {
-  function setup(responses: (unknown | Error)[]) {
+  function setup(
+    responses: (unknown | Error)[],
+    listed?: ReturnType<typeof create<typeof MapPointSchema>>[],
+  ) {
     const sent: unknown[] = [];
+    const keys: string[] = [];
     const api = {
-      search: async (_c: string, skill: string, die: unknown) => {
+      search: async (_c: string, skill: string, die: unknown, key: string) => {
         sent.push([skill, die]);
+        keys.push(key);
         const next = responses.shift();
         if (next instanceof Error) {
           throw next;
@@ -52,7 +57,7 @@ describe('TrapSearchSheet', () => {
       preference: DicePreference.APP,
       state: {
         refresh: async () => undefined,
-        points: () => [found],
+        points: () => listed ?? [found],
       } as unknown as TrapSearchData['state'],
       inCombat: false,
     };
@@ -69,7 +74,7 @@ describe('TrapSearchSheet', () => {
       rollWith(d: unknown): Promise<void>;
       pick(s: string): void;
     };
-    return { fixture, el: fixture.nativeElement as HTMLElement, sent, roller };
+    return { fixture, el: fixture.nativeElement as HTMLElement, sent, keys, roller };
   }
 
   it('offers Percepção and Investigação with the bonus, the helper line and the three steps', () => {
@@ -137,5 +142,32 @@ describe('TrapSearchSheet', () => {
       fixture.detectChanges();
       expect(el.querySelector('[role=alert]')?.textContent).toContain(words);
     }
+  });
+
+  it('says a trap was found, and sends the player to the map, when its name could not be read', async () => {
+    const { fixture, el, roller } = setup(
+      [create(SearchForTrapsResponseSchema, { roll: roll(13, 17), foundPointIds: ['x'] })],
+      [],
+    );
+    await roller.rollWith({ inApp: true });
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Você achou uma armadilha.');
+    expect(el.textContent).toContain('Veja no seu mapa.');
+    expect(el.textContent).not.toContain('Você não encontrou nada.');
+  });
+
+  it('keeps the key of a search retried as it was, and takes a new one for another skill', async () => {
+    const lost = new ConnectError('lost', Code.Unavailable);
+    const { roller, keys } = setup([
+      lost,
+      lost,
+      create(SearchForTrapsResponseSchema, { roll: roll(13, 17), foundPointIds: [] }),
+    ]);
+    await roller.rollWith({ inApp: true });
+    await roller.rollWith({ inApp: true });
+    roller.pick('investigation');
+    await roller.rollWith({ inApp: true });
+    expect(keys[1]).toBe(keys[0]);
+    expect(keys[2]).not.toBe(keys[0]);
   });
 });

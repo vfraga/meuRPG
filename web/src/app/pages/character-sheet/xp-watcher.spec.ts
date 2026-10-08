@@ -105,6 +105,28 @@ describe('XpWatcher (E7-10)', () => {
     watcher.follow(null, vi.fn());
   });
 
+  it("says so when a character's vitals or the combat change (the form of a Wild Shape ends that way), with the character, and on a later `ready`", async () => {
+    const onForm = vi.fn();
+    const watcher = TestBed.inject(XpWatcher);
+    watcher.follow('camp-1', vi.fn(), undefined, undefined, onForm);
+    await flush();
+    calls[0].push({ kind: 'ready' });
+    calls[0].push({ kind: 'xpChanged' });
+    await flush();
+    expect(onForm).not.toHaveBeenCalled();
+    calls[0].push({
+      kind: 'vitals',
+      vitals: { characterId: 'char-1' } as never,
+    });
+    calls[0].push({ kind: 'encounterChanged', encounterId: 'enc-1', revision: 3 });
+    await flush();
+    expect(onForm.mock.calls).toEqual([['char-1'], [null]]);
+    calls[0].push({ kind: 'ready' });
+    await flush();
+    expect(onForm).toHaveBeenLastCalledWith(null);
+    watcher.follow(null, vi.fn());
+  });
+
   it('reads the sheet again when the table\'s content changes (RN-23, "A classe mudou"), on the same stream, and on a reconnection', async () => {
     const onContent = vi.fn();
     const onChange = vi.fn();

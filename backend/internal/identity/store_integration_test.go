@@ -304,8 +304,8 @@ func TestPostgresStoreIdleSessions(t *testing.T) {
 	if n, err := store.countOtherSessions(ctx, userID, s.ID, check, idleSince); err != nil || n != 2 {
 		t.Errorf("countOtherSessions() = %d, %v; want 2 (not the current, the idle or another user's)", n, err)
 	}
-	if n, err := store.revokeOtherSessions(ctx, userID, s.ID, check, idleSince); err != nil || n != 2 {
-		t.Errorf("revokeOtherSessions() = %d, %v; want 2", n, err)
+	if n, err := store.revokeOtherSessions(ctx, userID, s.ID, check); err != nil || n != 3 {
+		t.Errorf("revokeOtherSessions() = %d, %v; want 3 (the idle one too)", n, err)
 	}
 	if n, _ := store.countOtherSessions(ctx, userID, s.ID, check, idleSince); n != 0 {
 		t.Errorf("countOtherSessions() after = %d, want 0", n)
@@ -498,5 +498,40 @@ func TestPostgresStoreDisplayNames(t *testing.T) {
 	}
 	if _, err := store.DisplayName(ctx, missing); !errors.Is(err, ErrNotFound) {
 		t.Errorf("DisplayName(missing user) error = %v, want ErrNotFound", err)
+	}
+}
+
+// "Sign out other devices" ends idle sessions too: raising the idle timeout
+// later must not make them valid again.
+func TestSignOutOthersEndsIdleSessions(t *testing.T) {
+	t.Parallel()
+	pool := testPool(t)
+	store := NewPostgresStore(pool)
+	ctx := t.Context()
+
+	userID, err := store.UpsertUser(ctx, ExternalIdentity{Issuer: "https://idp.example", Subject: "idle-sessions"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().Truncate(time.Microsecond)
+	mk := func() ([]byte, Session) {
+		_, h := secret.New()
+		s, err := store.createSession(ctx, NewSession{TokenHash: h, UserID: userID, CreatedAt: now, ExpiresAt: now.Add(SessionLifetime)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return h, s
+	}
+	_, s1 := mk()
+	h2, s2 := mk()
+	if _, err := pool.Exec(ctx, "UPDATE auth_sessions SET last_used_at = $2 WHERE id = $1", s2.ID, now.Add(-20*24*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := store.revokeOtherSessions(ctx, userID, s1.ID, now); err != nil || n != 1 {
+		t.Fatalf("revokeOtherSessions() = %d, %v; want 1", n, err)
+	}
+	// Operator raises the idle timeout to 30 days.
+	if _, err := store.lookupSession(ctx, h2, now, now.Add(-30*24*time.Hour)); !errors.Is(err, ErrNotFound) {
+		t.Errorf("signed-out-others session revived after raising idle timeout: err = %v, want ErrNotFound", err)
 	}
 }

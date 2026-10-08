@@ -44,10 +44,16 @@ type spyGallery struct {
 	prepared, inserted, discarded atomic.Int32
 }
 
-type spyCopy struct{ g *spyGallery }
+type spyCopy struct {
+	g  *spyGallery
+	id string
+}
 
-func (c spyCopy) Insert(context.Context, pgx.Tx) error { c.g.inserted.Add(1); return nil }
-func (c spyCopy) Discard(context.Context)              { c.g.discarded.Add(1) }
+func (c spyCopy) Insert(context.Context, pgx.Tx) (string, bool, error) {
+	c.g.inserted.Add(1)
+	return c.id, true, nil
+}
+func (c spyCopy) Discard(context.Context) { c.g.discarded.Add(1) }
 
 func (g *spyGallery) PreparePortrait(ctx context.Context, campaignID, imageID string) (string, bool, PortraitCopy, error) {
 	use, found, err := g.PortraitImage(ctx, campaignID, imageID)
@@ -55,7 +61,8 @@ func (g *spyGallery) PreparePortrait(ctx context.Context, campaignID, imageID st
 		return use, found, nil, err
 	}
 	g.prepared.Add(1)
-	return uuid.New().String(), true, spyCopy{g}, nil
+	id := uuid.New().String()
+	return id, true, spyCopy{g, id}, nil
 }
 
 // withPortrait returns a copy of the sheet with the portrait set, full or basic.

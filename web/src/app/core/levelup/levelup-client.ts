@@ -133,16 +133,20 @@ export class LevelUpClient {
     return pending;
   }
 
-  /** The "?" of a spell: its details, kept per spell so a second open is instant. */
+  /** The "?" of a spell: its details, kept per SRD spell so a second open is instant. A spell of the table (`@mesa`) is read each
+   * time: the master can change it while the page is open. */
   spellDetails(campaignId: string, spellKey: string): Promise<SpellDetailsVm> {
     const id = `${campaignId}/${spellKey}`;
-    let pending = this.details.get(id);
+    const kept = !spellKey.endsWith('@mesa');
+    let pending = kept ? this.details.get(id) : undefined;
     if (!pending) {
       pending = this.content
         .getSpellDetails({ campaignId, spellKey })
         .then((res) => spellDetailsFromGen(res.spell!));
-      this.details.set(id, pending);
-      pending.catch(() => this.details.delete(id));
+      if (kept) {
+        this.details.set(id, pending);
+        pending.catch(() => this.details.delete(id));
+      }
     }
     return pending;
   }

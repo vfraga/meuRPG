@@ -14,6 +14,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -189,7 +190,7 @@ func (s *Service) UseReaction(
 
 	var made actionEvent
 	var vitals *playv1.CharacterVitals
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventReactionUsed, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventReactionUsed, encounterID: encID}, func(c *combatTx) (any, error) {
 		vitals = nil
 		p, attacker, target, err := s.reactionTarget(ctx, c, v, pendingID)
 		if err != nil {
@@ -243,13 +244,20 @@ func (s *Service) UseReaction(
 		if _, err := c.q.SetPendingDamageStatus(ctx, playdb.SetPendingDamageStatusParams{ID: p.ID, Status: next, ResolvedAt: resolvedWhen(next, c)}); err != nil {
 			return nil, fmt.Errorf("answer the pending damage: %w", err)
 		}
+		// The bonus holds for every attack on the target until its next turn, so the
+		// other hits already made, still waiting for the reaction or for their damage,
+		// are compared again too.
+		also, err := s.stopOtherHits(ctx, c, p, target)
+		if err != nil {
+			return nil, err
+		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
 			return nil, fmt.Errorf("touch the encounter: %w", err)
 		}
 		c.characterID = &target.CharacterID
 		made = actionEvent{
-			Round: c.enc.Round, Secret: target.Hidden, Actor: target.ID, Target: attacker.ID, Pending: p.ID, Key: shield, Slot: slot,
-			Stopped: stopped, ReactionBefore: target.ReactionUsed, ACBonusBefore: target.AcBonus, PrevStatus: p.Status,
+			Round: c.enc.Round, Secret: target.Hidden, AttackerHidden: attacker.Hidden, Actor: target.ID, Target: attacker.ID, Pending: p.ID, Key: shield, Slot: slot,
+			Stopped: stopped, AlsoStopped: also, ReactionBefore: target.ReactionUsed, ACBonusBefore: target.AcBonus, PrevStatus: p.Status,
 		}
 		return made, nil
 	})
@@ -262,7 +270,7 @@ func (s *Service) UseReaction(
 	}
 	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
-		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
+		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret && !ev.AttackerHidden)
 		s.publishVitals(m.CampaignID, vitals)
 	})
 	if err != nil {
@@ -278,6 +286,32 @@ func (s *Service) UseReaction(
 		}
 	}
 	return connect.NewResponse(resp), nil
+}
+
+// stopOtherHits discards the hits on the target, other than answered, that the
+// Escudo's armor class stops: each is compared again with the armor class it was
+// compared with (cover included) plus the Escudo's 5, as the answered one is. It
+// returns what it discarded, for the undo.
+func (s *Service) stopOtherHits(ctx context.Context, c *combatTx, answered playdb.PendingDamage, target playdb.Combatant) ([]stoppedHit, error) {
+	open, err := c.q.ListOpenPendingDamages(ctx, c.enc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("list the pending damage: %w", err)
+	}
+	var out []stoppedHit
+	for _, o := range open {
+		if o.ID == answered.ID || o.TargetID != target.ID || o.AttackTotal == nil || o.AttackArmorClass == nil ||
+			(o.Status != pendingAwaitingReaction && o.Status != pendingAwaitingRoll) {
+			continue
+		}
+		if int(*o.AttackTotal) >= int(*o.AttackArmorClass)-int(target.AcBonus)+combat.ShieldACBonus {
+			continue
+		}
+		if _, err := c.q.SetPendingDamageStatus(ctx, playdb.SetPendingDamageStatusParams{ID: o.ID, Status: pendingDiscarded, ResolvedAt: &c.now}); err != nil {
+			return nil, fmt.Errorf("stop the other hit: %w", err)
+		}
+		out = append(out, stoppedHit{Pending: o.ID, PrevStatus: o.Status})
+	}
+	return out, nil
 }
 
 // resolvedWhen is when a pending damage was settled by a reaction: now for one
@@ -312,7 +346,7 @@ func (s *Service) DeclineReaction(
 	}
 	v := viewerOf(m)
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventReactionDeclined, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventReactionDeclined, encounterID: encID}, func(c *combatTx) (any, error) {
 		p, _, target, err := s.reactionTarget(ctx, c, v, pendingID)
 		if err != nil {
 			return nil, err

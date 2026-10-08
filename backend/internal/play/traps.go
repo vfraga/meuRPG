@@ -17,6 +17,7 @@ import (
 	maplink "github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -106,6 +107,12 @@ func (s *Service) runningEncounterOn(ctx context.Context, sessionID, mapID strin
 	return enc, enc.Status != statusEnded && enc.MapID != nil && *enc.MapID == mapID, nil
 }
 
+// errCombatBegan is the refusal of a firing outside a combat when a combat began on the
+// trap's map after the firing was read: the trap fires from the combat.
+func errCombatBegan() error {
+	return connect.NewError(connect.CodeFailedPrecondition, errors.New("a combat began on this map: fire the trap from the combat"))
+}
+
 // ---- Procurar armadilhas ----
 
 // SearchForTraps implements playv1connect.PlayServiceHandler.
@@ -121,6 +128,7 @@ func (s *Service) SearchForTraps(
 	if err != nil {
 		return nil, err
 	}
+	hash := idem.Hash(req.Msg)
 	skill := ""
 	switch req.Msg.GetSkill() {
 	case playv1.TrapSearchSkill_TRAP_SEARCH_SKILL_PERCEPTION:
@@ -183,7 +191,7 @@ func (s *Service) SearchForTraps(
 		done, err := q.GetSessionEventByIdempotencyKey(ctx, playdb.GetSessionEventByIdempotencyKeyParams{GameSessionID: session.ID, IdempotencyKey: &key})
 		switch {
 		case err == nil:
-			if done.Kind != eventTrapSearched {
+			if done.Kind != eventTrapSearched || done.ActorUserID == nil || *done.ActorUserID != m.UserID || hashDiffers(done.IdempotencyHash, hash) {
 				return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
 			}
 			repeated = true
@@ -211,7 +219,7 @@ func (s *Service) SearchForTraps(
 			return errScene(playv1.SceneBlockedReason_SCENE_BLOCKED_REASON_NO_CHARACTER, "your character has no numbers for this check")
 		}
 
-		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), characterID: &who.ID, kind: eventTrapSearched, actorUserID: m.UserID})
+		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), characterID: &who.ID, kind: eventTrapSearched, actorUserID: m.UserID, hash: hash})
 		if err != nil {
 			return err
 		}

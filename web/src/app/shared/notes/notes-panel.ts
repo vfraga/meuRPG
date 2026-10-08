@@ -103,9 +103,8 @@ export class NotesPanel implements OnInit {
   }
 
   protected cancel(): void {
-    const wasConfirming = this.editing.confirmingDiscard();
     this.editing.cancel();
-    if (this.editing.stage() === 'list' || wasConfirming) {
+    if (this.editing.stage() === 'list') {
       this.backToList();
     }
     if (this.editing.confirmingDiscard()) {

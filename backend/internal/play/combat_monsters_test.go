@@ -689,3 +689,38 @@ func TestMR042_MultiattackFollowsTheSRDCount(t *testing.T) {
 		a.endEncounter(t, e)
 	}
 }
+
+// A start with the most combatants the combat takes (4 players and 36 bandits) and rolled
+// hit points: the master's lines of the monsters (each with its dice and faces) do not fit one
+// event, so they are written as several.
+func TestStartWithManyRolledMonstersKeepsEachEventWithinThePayloadLimit(t *testing.T) {
+	t.Parallel()
+	m := newMirathel(t)
+	const n = 36 // 4 players + 36 = 40: the server's own TOO_MANY check accepts it (see TestMR043_TheFortyCountsThePartysCreatures)
+	started, err := m.master.combat.StartEncounter(t.Context(), connect.NewRequest(&playv1.StartEncounterRequest{
+		CampaignId: m.campaignID, IdempotencyKey: newKey(), Name: "x", Monsters: groups(bandit, n),
+		MonsterHitPoints: playv1.MonsterHitPoints_MONSTER_HIT_POINTS_ROLLED,
+	}))
+	if err != nil {
+		t.Fatalf("StartEncounter(%d rolled bandits, 4 players = 40 combatants) error = %v; want success (within the limit of 40)", n, err)
+	}
+	// The master's lines together list every monster, each with its dice.
+	log, err := m.master.combat.ListCombatLog(t.Context(), connect.NewRequest(&playv1.ListCombatLogRequest{CampaignId: m.campaignID, EncounterId: started.Msg.GetEncounter().GetId()}))
+	if err != nil {
+		t.Fatalf("ListCombatLog() error = %v", err)
+	}
+	listed := 0
+	for _, round := range log.Msg.GetRounds() {
+		for _, entry := range round.GetEntries() {
+			for _, mon := range entry.GetMonsters() {
+				if mon.GetDice() == "" || len(mon.GetFaces()) == 0 {
+					t.Errorf("the line of %s has no dice: %v", mon.GetLabel(), mon)
+				}
+				listed++
+			}
+		}
+	}
+	if listed != n {
+		t.Errorf("the log lists %d monsters, want %d", listed, n)
+	}
+}

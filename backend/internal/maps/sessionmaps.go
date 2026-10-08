@@ -107,23 +107,40 @@ func (sm *SessionMaps) ShownImage(ctx context.Context, campaignID, imageID strin
 	return shownImage(img), nil
 }
 
-// ImageToShow is ShownImage for the master who is about to show the image: an
-// image that is a fog map's background is copied first, and the copy is what the
-// session shows (RN-10, MR-036). The caller stores the returned ID.
-func (sm *SessionMaps) ImageToShow(ctx context.Context, campaignID, imageID string) (*playv1.ShownImage, error) {
+// ShownCopy is what PrepareShow hands back for an image that is a fog map's
+// background: the same method set as play.ShownCopy, spelled out because modules do
+// not import each other.
+type ShownCopy = interface {
+	Insert(ctx context.Context, tx pgx.Tx) (id string, created bool, err error)
+	Discard(ctx context.Context)
+}
+
+// PrepareShow is ShownImage for the master who is about to show the image. An image
+// that is a fog map's background is not shown as it is (RN-10, MR-036): the copy
+// already made of it is shown, or, when there is none, a new one, whose files are
+// made now and whose gallery row is left to the caller's transaction (Insert,
+// after it locked the session), so a show that does not happen leaves nothing but
+// the files, which Discard deletes. The caller stores the returned ID. The copy is
+// nil when the image is shown as it is.
+func (sm *SessionMaps) PrepareShow(ctx context.Context, campaignID, imageID string) (*playv1.ShownImage, ShownCopy, error) {
 	img, err := sm.queries.GetGalleryImageInCampaign(ctx, mapsdb.GetGalleryImageInCampaignParams{CampaignID: campaignID, ID: imageID})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, errImageNotFound()
+		return nil, nil, errImageNotFound()
 	}
 	if err != nil {
-		return nil, fmt.Errorf("find the image to show: %w", err)
+		return nil, nil, fmt.Errorf("find the image to show: %w", err)
 	}
-	if sm.svc != nil {
-		if img, err = sm.svc.ownImage(ctx, campaignID, img); err != nil {
-			return nil, err
-		}
+	if sm.svc == nil {
+		return shownImage(img), nil, nil
 	}
-	return shownImage(img), nil
+	use, c, err := sm.svc.prepareUseCopy(ctx, campaignID, img)
+	if err != nil {
+		return nil, nil, err
+	}
+	if c == nil {
+		return shownImage(use), nil, nil
+	}
+	return shownImage(use), &pendingCopy{c: c, s: sm.svc, campaignID: campaignID}, nil
 }
 
 func shownImage(img mapsdb.GalleryImage) *playv1.ShownImage {
@@ -278,7 +295,7 @@ func (sm *SessionMaps) SetTokenPositions(ctx context.Context, tx pgx.Tx, mapID s
 // PortraitCopy is what PreparePortrait hands back: the same method set as
 // characters.PortraitCopy, spelled out because modules do not import each other.
 type PortraitCopy = interface {
-	Insert(ctx context.Context, tx pgx.Tx) error
+	Insert(ctx context.Context, tx pgx.Tx) (id string, created bool, err error)
 	Discard(ctx context.Context)
 }
 
@@ -298,29 +315,46 @@ func (sm *SessionMaps) PreparePortrait(ctx context.Context, campaignID, imageID 
 	if sm.svc == nil {
 		return img.ID, true, nil, nil
 	}
-	c, err := sm.svc.prepareReuseCopy(ctx, campaignID, img.ID)
+	use, c, err := sm.svc.prepareUseCopy(ctx, campaignID, img)
 	if err != nil {
 		return "", false, nil, err
 	}
 	if c == nil {
-		return img.ID, true, nil, nil
+		return use.ID, true, nil, nil
 	}
-	return c.id, true, &portraitCopy{c: c, s: sm.svc, campaignID: campaignID}, nil
+	return use.ID, true, &pendingCopy{c: c, s: sm.svc, campaignID: campaignID}, nil
 }
 
-// portraitCopy is the fogCopy of a portrait, for the characters module's transaction.
-type portraitCopy struct {
+// pendingCopy is a fogCopy whose gallery row is left to the transaction of the module that uses it (a portrait, the shown image).
+type pendingCopy struct {
 	c          *fogCopy
 	s          *Service
 	campaignID string
 }
 
-func (p *portraitCopy) Insert(ctx context.Context, tx pgx.Tx) error {
-	_, err := p.c.insertRow(ctx, queriesIn(p.s.queries, tx), p.s, p.campaignID, nil)
-	return err
+// Insert adds the copy's gallery row inside tx and returns the image to use. When
+// another use of the same image committed a copy meanwhile, that copy is the one to
+// use and created is false: the caller deletes these files (Discard) once the
+// transaction is over, so two uses at once leave one copy, not two.
+func (p *pendingCopy) Insert(ctx context.Context, tx pgx.Tx) (string, bool, error) {
+	q := queriesIn(p.s.queries, tx)
+	if p.c.remember {
+		existing, err := q.FindImageCopy(ctx, mapsdb.FindImageCopyParams{CampaignID: p.campaignID, CopyOfImageID: &p.c.source.ID})
+		if err == nil {
+			return existing.ID, false, nil
+		}
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return "", false, fmt.Errorf("find the image's copy: %w", err)
+		}
+	}
+	row, err := p.c.insertRow(ctx, q, p.s, p.campaignID, nil)
+	if err != nil {
+		return "", false, err
+	}
+	return row.ID, true, nil
 }
 
-func (p *portraitCopy) Discard(ctx context.Context) {
+func (p *pendingCopy) Discard(ctx context.Context) {
 	p.s.deleteFiles(context.WithoutCancel(ctx), p.campaignID, p.c.id)
 }
 

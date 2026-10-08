@@ -2,11 +2,15 @@ package progression
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
+	"strconv"
+	"strings"
 	"time"
 	"uuid"
 
@@ -93,6 +97,22 @@ type grant struct {
 	// treasureIDs are the found treasures a "Voltar à cidade" award converts
 	// (gold only): its amount is their PO, summed inside the transaction.
 	treasureIDs []string
+	// hash is requestHash, set when the award is given.
+	hash string
+}
+
+// requestHash is the hash of the whole request but its key, kept with the award: a retry of
+// the key has the very same one, and the key reused for another change does not. The amount
+// is the one the request carried (the sum of the treasures is worked out inside the
+// transaction, later), and the sets do not depend on the order they were sent in.
+func (g grant) requestHash() string {
+	parts := []string{
+		g.mode, g.reason, g.encounterID, strconv.Itoa(int(g.amount)), g.milestoneID, strconv.FormatBool(g.again),
+		strings.Join(slices.Sorted(slices.Values(g.characters)), ","),
+		strings.Join(slices.Sorted(slices.Values(g.treasureIDs)), ","),
+	}
+	sum := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
+	return hex.EncodeToString(sum[:])
 }
 
 // AwardXP implements progressionv1connect.ProgressionServiceHandler.
@@ -254,6 +274,7 @@ func fits(campaignMode campaignsv1.XpMode, mode string) bool {
 // the commit, tells the streams. A retry of the same key changes and sends
 // nothing and returns the award as it was.
 func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progressiondb.XpAward, error) {
+	g.hash = g.requestHash()
 	// A retry comes first: whatever changed since (the mode, a character that
 	// died) must not turn the answer to a request already done into an error.
 	if done, err := s.queries.GetXPAwardByKey(ctx, progressiondb.GetXPAwardByKeyParams{CampaignID: m.CampaignID, IdempotencyKey: g.key}); err == nil {
@@ -337,7 +358,7 @@ func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progre
 		now := s.now()
 		params := progressiondb.InsertXPAwardParams{
 			CampaignID: m.CampaignID, GivenBy: m.UserID, CreatedAt: now, Mode: g.mode, Reason: reason,
-			TotalXp: total, IdempotencyKey: g.key,
+			TotalXp: total, IdempotencyKey: g.key, IdempotencyHash: &g.hash,
 		}
 		if g.milestoneID != "" {
 			params.MilestoneID, params.MilestoneAgain = &g.milestoneID, g.again
@@ -363,11 +384,17 @@ func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progre
 				// The tag lasts until the sheet's level goes past this one.
 				level := party[slices.IndexFunc(party, func(p link.Member) bool { return p.ID == id })].Level
 				share.LevelAtMark = &level
-			} else if _, _, err := s.party.AddExperience(ctx, tx, m.CampaignID, id, each, now); err != nil {
-				if connect.CodeOf(err) == connect.CodeNotFound {
-					return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_CHARACTER_NOT_ELIGIBLE, id, 0)
+			} else {
+				// The sheet holds at most 1,000,000 XP: the share keeps what the
+				// sheet gained, so an undo takes back exactly that.
+				before, after, err := s.party.AddExperience(ctx, tx, m.CampaignID, id, each, now)
+				if err != nil {
+					if connect.CodeOf(err) == connect.CodeNotFound {
+						return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_CHARACTER_NOT_ELIGIBLE, id, 0)
+					}
+					return fmt.Errorf("add the XP to a sheet: %w", err)
 				}
-				return fmt.Errorf("add the XP to a sheet: %w", err)
+				share.Xp = after - before
 			}
 			if err := q.InsertXPShare(ctx, share); err != nil {
 				return fmt.Errorf("insert a share: %w", err)
@@ -422,6 +449,13 @@ func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progre
 // first mark (or the reverse), or other characters.
 func (s *Service) sameRequest(ctx context.Context, q *progressiondb.Queries, done progressiondb.XpAward, g grant) (progressiondb.XpAward, error) {
 	reused := invalidArgument("idempotency_key", errors.New("was already used for another change"))
+	if done.IdempotencyHash != nil {
+		if *done.IdempotencyHash != g.hash {
+			return progressiondb.XpAward{}, reused
+		}
+		return done, nil
+	}
+	// An award from before the hash was kept: compared by what it left.
 	if done.Mode != g.mode || deref(done.MilestoneID) != g.milestoneID || (g.milestoneID != "" && done.MilestoneAgain != g.again) {
 		return progressiondb.XpAward{}, reused
 	}

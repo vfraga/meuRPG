@@ -637,6 +637,30 @@ func slugOfStoredKey(key string) string {
 	return strings.TrimSuffix(rest, "@mesa")
 }
 
+// checkFeatureCount refuses a body with more features than the rules engine
+// allows (rules.MaxTableFeatures per class or subclass, rules.MaxTraits per
+// race or subrace), before any work is done on them: a body inside the request
+// limit can hold far more than that. The engine checks again, with the entry's
+// path, when the entry is compiled.
+func checkFeatureCount(kind rulesv1.TableContentKind, body tableBody) []*rulesv1.TableContentViolation {
+	limit, what := rules.MaxTableFeatures, "features"
+	switch body.(type) {
+	case *rulesv1.TableRace, *rulesv1.TableSubrace:
+		limit, what = rules.MaxTraits, "traits"
+	}
+	n := 0
+	for _, g := range featureGroups(body) {
+		n += len(g.features)
+	}
+	if n <= limit {
+		return nil
+	}
+	return []*rulesv1.TableContentViolation{{
+		Field: bodyField(kind), Reason: rules.ReasonLimit,
+		Message: fmt.Sprintf("%d %s; the limit is %d", n, what, limit),
+	}}
+}
+
 // featureKeys gives every feature of a body its key (ADR-0018, section 1): a
 // feature that has one keeps it, if it is one the entry had; a new one gets a key
 // made from its name; an empty one at a level where the stored entry has a feature
@@ -645,7 +669,7 @@ func slugOfStoredKey(key string) string {
 // entry. It returns a violation for a key the entry never had, which would let a
 // request claim another entry's feature.
 func featureKeys(entryKey string, body, old tableBody) []*rulesv1.TableContentViolation {
-	a := &keyAssigner{entryKey: entryKey, taken: map[string]bool{}, owned: map[string]bool{}, byName: map[string]string{}}
+	a := &keyAssigner{entryKey: entryKey, taken: map[string]bool{}, owned: map[string]bool{}, slugs: map[string]bool{}, byName: map[string]string{}}
 	a.collectOld(old)
 	var out []*rulesv1.TableContentViolation
 	a.violations = &out
@@ -683,9 +707,12 @@ func featureStem(kind, entryKey string) string {
 }
 
 type keyAssigner struct {
-	entryKey   string
-	taken      map[string]bool // slugs in use by this entry's features
-	owned      map[string]bool // keys the stored entry has
+	entryKey string
+	taken    map[string]bool // keys in use by this entry's features
+	owned    map[string]bool // keys the stored entry has
+	// slugs holds the slug of every key in taken and owned, kept as keys are
+	// added, so a new feature's slug is checked without a pass over them all.
+	slugs      map[string]bool
 	byName     map[string]string
 	violations *[]*rulesv1.TableContentViolation
 }
@@ -728,9 +755,16 @@ func (a *keyAssigner) collectOld(old tableBody) {
 	for _, g := range featureGroups(old) {
 		for _, f := range g.features {
 			a.owned[f.GetKey()] = true
+			a.slugs[slugOfStoredKey(f.GetKey())] = true
 			a.byName[strconv.Itoa(g.level)+"\x00"+f.GetNamePt()] = f.GetKey()
 		}
 	}
+}
+
+// take marks key as in use by the entry's features.
+func (a *keyAssigner) take(key string) {
+	a.taken[key] = true
+	a.slugs[slugOfStoredKey(key)] = true
 }
 
 // assign sets the keys of one group of features. Keys already on the features
@@ -747,7 +781,7 @@ func (a *keyAssigner) assign(path, prefix, stem string, level int, features []*r
 			})
 			continue
 		}
-		a.taken[f.GetKey()] = true
+		a.take(f.GetKey())
 	}
 	for _, f := range features {
 		if f.GetKey() != "" && a.owned[f.GetKey()] {
@@ -756,20 +790,13 @@ func (a *keyAssigner) assign(path, prefix, stem string, level int, features []*r
 		if f.GetKey() == "" {
 			if k := a.byName[strconv.Itoa(level)+"\x00"+f.GetNamePt()]; k != "" && !a.taken[k] {
 				f.Key = k
-				a.taken[k] = true
+				a.take(k)
 				continue
 			}
 			slug := slugify(f.GetNamePt())
 			full := strings.Trim(truncate(stem+safeSlug(slug, "feature"), rules.MaxSlugLength), "-")
-			slugTaken := map[string]bool{}
-			for k := range a.taken {
-				slugTaken[slugOfStoredKey(k)] = true
-			}
-			for k := range a.owned {
-				slugTaken[slugOfStoredKey(k)] = true
-			}
-			f.Key = prefix + uniqueSlug(safeSlug(full, "feature"), slugTaken) + "@mesa"
-			a.taken[f.Key] = true
+			f.Key = prefix + uniqueSlug(safeSlug(full, "feature"), a.slugs) + "@mesa" // marks the slug in a.slugs
+			a.take(f.Key)
 		}
 	}
 }

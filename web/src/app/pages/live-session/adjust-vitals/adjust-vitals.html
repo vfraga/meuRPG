@@ -24,7 +24,7 @@
     <div class="adjust__rows">
       <app-vitals-stepper
         layout="wide"
-        label="Pontos de vida"
+        [label]="beast ? 'Pontos de vida de ' + v.name : 'Pontos de vida'"
         [hint]="'máximo ' + v.hitPointsMax"
         [max]="v.hitPointsMax"
         [steps]="[5, 1]"
@@ -32,6 +32,16 @@
         [stepLabel]="hpLabel"
         [(value)]="hp"
       />
+      @if (beast; as b) {
+        <app-vitals-stepper
+          [label]="'PV da fera: ' + b.beastNamePt"
+          [hint]="'máximo ' + b.hitPointsMax + ', 0 encerra a forma'"
+          [max]="b.hitPointsMax"
+          fieldLabel="Pontos de vida da fera"
+          [stepLabel]="beastLabel"
+          [(value)]="beastHp"
+        />
+      }
       <app-vitals-stepper
         label="PV temporários"
         hint="Somem antes dos PV"
@@ -68,6 +78,16 @@
         [stepLabel]="diceLabel"
         [(value)]="hitDice"
       />
+      @for (res of resources; track res.key) {
+        <app-vitals-stepper
+          [label]="res.name"
+          [hint]="usedWords(res.used(), res.total)"
+          [max]="res.total"
+          [fieldLabel]="res.name + ' usos gastos'"
+          [stepLabel]="resourceLabel(res.name)"
+          [(value)]="res.used"
+        />
+      }
     </div>
 
     <p class="adjust__note">

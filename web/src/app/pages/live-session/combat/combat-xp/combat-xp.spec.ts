@@ -447,6 +447,48 @@ describe('CombatXp (E7-06)', () => {
     expect(el.querySelector('app-xp-actions')).not.toBeNull();
   });
 
+  describe('an award given here and undone elsewhere', () => {
+    const given = (undone: boolean) =>
+      create(XPAwardSchema, {
+        id: 'a1',
+        mode: XPAwardMode.XP_AWARD_MODE_ENEMIES,
+        encounterId: 'enc-1',
+        totalXp: 350,
+        shares: [
+          { characterId: 'cp', characterName: 'Pensantus', xp: 175 },
+          { characterId: 'ct', characterName: 'Toren', xp: 175 },
+        ],
+        undone,
+      });
+
+    async function giveThenUndo() {
+      award.mockResolvedValue(create(AwardXPResponseSchema, { xpEach: 175, award: given(false) }));
+      const s = setup();
+      await ready(s.fixture);
+      give(s.el).click();
+      await ready(s.fixture);
+      expect(s.el.querySelector('app-xp-actions')).toBeNull();
+      listAwards.mockResolvedValue(create(ListXPAwardsResponseSchema, { awards: [given(true)] }));
+      TestBed.inject(XpChanges).bump();
+      s.fixture.detectChanges();
+      await ready(s.fixture);
+      return s;
+    }
+
+    it('returns to the give form once the award was undone', async () => {
+      const { el } = await giveThenUndo();
+      expect(el.querySelector('app-xp-actions')).not.toBeNull();
+    });
+
+    it('uses a fresh idempotency key to give again after the undo', async () => {
+      const { fixture, el } = await giveThenUndo();
+      give(el).click();
+      await ready(fixture);
+      expect(award).toHaveBeenCalledTimes(2);
+      expect(award.mock.calls[1][4]).not.toBe(award.mock.calls[0][4]);
+    });
+  });
+
   it('draws nothing in a campaign that does not give XP for enemies, and says so', async () => {
     experience.mockResolvedValue(experienceOf({ cp: 0 }, XpMode.MILESTONES));
     const { fixture, el } = setup();

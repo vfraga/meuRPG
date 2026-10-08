@@ -53,6 +53,8 @@ import { coverBonusText, degreeWord, sourceWord } from '../../../../core/combat/
                 <span class="part__num">{{ d.amount }}</span>
                 <span class="part__formula">{{ damageLine() }}{{ d.roll?.physical ? ' · dado físico' : '' }}</span>
               </span>
+            } @else if (waiting()) {
+              <span class="part__line">Esperando a reação do alvo.</span>
             } @else {
               <span class="part__line">Sem dano: o ataque errou.</span>
             }
@@ -71,6 +73,8 @@ export class AttackResult {
   /** The Dano step is finished: show it (a miss says there is none). */
   readonly showDamage = input(false);
   readonly damage = input<PendingDamage | null>(null);
+  /** The hit's damage waits for the target's reaction (Escudo): it is not a miss. */
+  readonly waiting = input(false);
   readonly damageLine = input('');
   /** "O Goblin 2 estava com meia cobertura.": says why a miss missed, never by how much (RN-20). */
   protected readonly coverLine = computed(() => {

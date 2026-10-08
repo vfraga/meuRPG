@@ -82,6 +82,7 @@ describe('the reasons slice 6.5c added', () => {
     expect(said(EncounterBlockedReason.NO_USES, { recharge: 1 })).toBe(
       'Sem usos: volta num descanso curto.',
     );
+    expect(said(EncounterBlockedReason.ALREADY_USED_THIS_TURN)).toMatch(/uma vez por turno/);
     expect(said(EncounterBlockedReason.BONUS_ACTION_USED)).toMatch(/ação bônus/);
     expect(said(EncounterBlockedReason.ATTACKS_USED)).toMatch(/ataques/);
     expect(said(EncounterBlockedReason.REACTION_USED)).toMatch(/reação/);

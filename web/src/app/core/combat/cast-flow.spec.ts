@@ -72,6 +72,14 @@ describe('the slot step (E6-09)', () => {
 describe('the target step', () => {
   const st = (over: object) => create(SpellTargetsSchema, { spellKey: 'spell:x', ...over });
 
+  it('adds the number of targets per slot level the server sends, not always one', () => {
+    const table = st({ maxTargets: 3, extraTargetPerLevel: true, targetsPerLevel: 2 });
+    expect(targetRule(table, 'me', 2, 2).max).toBe(3);
+    expect(targetRule(table, 'me', 2, 3).max).toBe(5);
+    expect(targetRule(table, 'me', 2, 5).max).toBe(9);
+    expect(targetRule(st({ maxTargets: 3, targetsPerLevel: 0 }), 'me', 2, 4).max).toBe(3);
+  });
+
   it('knows who takes one target, several, an area, only the caster and the darts', () => {
     const self = [{ combatantId: 'me' }];
     expect(targetRule(st({ maxTargets: 1 }), 'me', 1, 1)).toEqual({

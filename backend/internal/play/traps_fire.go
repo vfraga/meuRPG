@@ -128,12 +128,14 @@ func (s *Service) FireTrap(
 	if inCombat {
 		return s.fireByHandInCombat(ctx, m, key, trap, enc, targets, extend)
 	}
-	fired, firingID, repeated, err := s.fireOutsideCombat(ctx, m.CampaignID, m.UserID, key, trap, targets, nil, true, extend)
+	fired, firingID, repeated, err := s.fireOutsideCombat(ctx, m.CampaignID, m.UserID, key, fireHash(trap, extend, targets), trap, targets, nil, true, extend)
 	if err != nil {
 		return nil, s.dbError(ctx, "fire a trap", err)
 	}
 	if !repeated {
 		s.afterFiring(ctx, m.CampaignID, fired, playdb.Encounter{})
+	} else if fired, err = s.firingWithParts(ctx, session.ID, firingID, fired); err != nil {
+		return nil, s.dbError(ctx, "read the firing", err) // the answer of the first call listed every creature, whatever the events it took
 	}
 	names, err := s.characterLabels(ctx, m.CampaignID, fired)
 	if err != nil {
@@ -145,10 +147,16 @@ func (s *Service) FireTrap(
 	return connect.NewResponse(&playv1.FireTrapResponse{Firing: firingProto(fired, firingID, trap.Name, trapView{master: true, label: func(id string) string { return names[id] }})}), nil
 }
 
+// fireHash is the request hash of a trap fired by hand: the trap, the firing it extends and
+// who it hits, in any order.
+func fireHash(trap maplink.Trap, extend string, targetIDs []string) *string {
+	return requestHash(append([]string{trap.PointID, extend}, slices.Sorted(slices.Values(targetIDs))...)...)
+}
+
 // fireByHandInCombat is FireTrap while a combat runs on the trap's map.
 func (s *Service) fireByHandInCombat(ctx context.Context, m authz.Membership, key string, trap maplink.Trap, enc playdb.Encounter, targetIDs []string, extend string) (*connect.Response[playv1.FireTrapResponse], error) {
 	var made actionEvent
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventTrapTriggered, encounterID: enc.ID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: fireHash(trap, extend, targetIDs), kind: eventTrapTriggered, encounterID: enc.ID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -203,12 +211,50 @@ func (s *Service) fireByHandInCombat(ctx context.Context, m authz.Membership, ke
 			return nil, s.dbError(ctx, "read the firing", err)
 		}
 		firingID = row.ID
+		if res.repeated { // the answer of the first call listed every creature, whatever the events it took
+			if ev.Trap, err = s.firingWithParts(ctx, res.session.ID, row.ID, ev.Trap); err != nil {
+				return nil, s.dbError(ctx, "read the firing", err)
+			}
+		}
 	}
 	label := s.membersOf(ctx, res)
 	return connect.NewResponse(&playv1.FireTrapResponse{Firing: firingProto(ev.Trap, firingID, trap.Name, trapView{master: true, label: func(id string) string {
 		c, _ := label(id)
 		return c.Label
 	}})}), nil
+}
+
+// firingWithParts adds to a firing, as its event holds it, the creatures of the
+// events written after it for the ones that did not fit (trapFireEvent.Part).
+func (s *Service) firingWithParts(ctx context.Context, sessionID, hostID string, fired *trapFireEvent) (*trapFireEvent, error) {
+	if fired == nil {
+		return nil, nil
+	}
+	recent, err := s.queries.ListRecentSessionEvents(ctx, playdb.ListRecentSessionEventsParams{GameSessionID: sessionID, Limit: recentEvents})
+	if err != nil {
+		return nil, fmt.Errorf("read the latest events: %w", err)
+	}
+	group := fired.ExtendsID
+	if group == "" {
+		group = hostID
+	}
+	whole := *fired
+	whole.Caught = slices.Clone(fired.Caught)
+	at := slices.IndexFunc(recent, func(e playdb.ListRecentSessionEventsRow) bool { return e.ID == hostID })
+	for i := at - 1; i >= 0; i-- { // the events after it, oldest first: its parts follow it back to back
+		if recent[i].Kind != eventTrapTriggered {
+			break
+		}
+		ev, err := readEvent(recent[i].Payload)
+		if err != nil {
+			return nil, fmt.Errorf("read the event of a part: %w", err)
+		}
+		if ev.Trap == nil || !ev.Trap.Part || ev.Trap.ExtendsID != group {
+			break
+		}
+		whole.Caught = append(whole.Caught, ev.Trap.Caught...)
+	}
+	return &whole, nil
 }
 
 // afterFiring tells the streams, after the commit, what a firing changed: the trap
@@ -334,7 +380,7 @@ func (s *Service) creaturesInArea(ctx context.Context, campaignID string, creatu
 // with tokens on the map, nil for every character in the area (an empty, non-nil
 // list catches none: a creature's token dropped into a trap that picks its targets by
 // hand); creatures are the creature tokens that are caught as well.
-func (s *Service) fireOutsideCombat(ctx context.Context, campaignID, actorUserID, key string, trap maplink.Trap, targetIDs []string, creatures []maplink.MapCreature, manual bool, extend string) (*trapFireEvent, string, bool, error) {
+func (s *Service) fireOutsideCombat(ctx context.Context, campaignID, actorUserID, key string, hash *string, trap maplink.Trap, targetIDs []string, creatures []maplink.MapCreature, manual bool, extend string) (*trapFireEvent, string, bool, error) {
 	at, living, creatureAt, err := s.tokensOn(ctx, campaignID, trap.MapID)
 	if err != nil {
 		return nil, "", false, err
@@ -367,6 +413,9 @@ func (s *Service) fireOutsideCombat(ctx context.Context, campaignID, actorUserID
 		}
 	}
 
+	if s.afterTrapRead != nil {
+		s.afterTrapRead() // a test starts a combat here
+	}
 	var fired *trapFireEvent
 	var firingID string
 	var repeated bool
@@ -384,7 +433,7 @@ func (s *Service) fireOutsideCombat(ctx context.Context, campaignID, actorUserID
 			done, err := q.GetSessionEventByIdempotencyKey(ctx, playdb.GetSessionEventByIdempotencyKeyParams{GameSessionID: session.ID, IdempotencyKey: &key})
 			switch {
 			case err == nil:
-				if done.Kind != eventTrapTriggered {
+				if done.Kind != eventTrapTriggered || hashDiffers(done.IdempotencyHash, hash) {
 					return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
 				}
 				var ev actionEvent
@@ -397,7 +446,20 @@ func (s *Service) fireOutsideCombat(ctx context.Context, campaignID, actorUserID
 				return fmt.Errorf("find the event of this idempotency key: %w", err)
 			}
 		}
-		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), actorUserID: actorUserID})
+		// What was read before the lock may be stale: a combat that began since is the
+		// one the trap fires in, and a firing outside one must not land beside it.
+		enc, err := q.GetLatestEncounter(ctx, session.ID)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("find the session's combat: %w", err)
+		}
+		switch {
+		case err != nil || enc.Status == statusEnded:
+		case isTheatre(enc):
+			return errNeedsAMap() // a combat without a map has no traps (RN-25)
+		case enc.MapID != nil && *enc.MapID == trap.MapID:
+			return errCombatBegan()
+		}
+		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), actorUserID: actorUserID, hash: hash})
 		if err != nil {
 			return err
 		}
@@ -566,7 +628,7 @@ func (s *Service) TokenDropped(ctx context.Context, campaignID, mapID, character
 		if t.Spec.GetEffect().GetTargets() != rulesv1.TrapTargets_TRAP_TARGETS_MANUAL {
 			targets = nil // everyone standing in the area, the one that landed included
 		}
-		fired, _, _, err := s.fireOutsideCombat(ctx, campaignID, actorUserID, "", t, targets, nil, false, "")
+		fired, _, _, err := s.fireOutsideCombat(ctx, campaignID, actorUserID, "", nil, t, targets, nil, false, "")
 		if err != nil && connect.CodeOf(err) == connect.CodeFailedPrecondition {
 			continue // fired or disarmed since it was read: it does not fire twice
 		}
@@ -613,7 +675,7 @@ func (s *Service) CreatureDropped(ctx context.Context, campaignID, mapID string,
 		if t.Spec.GetEffect().GetTargets() == rulesv1.TrapTargets_TRAP_TARGETS_MANUAL {
 			targets = []string{} // only the creature
 		}
-		fired, _, _, err := s.fireOutsideCombat(ctx, campaignID, actorUserID, "", t, targets, []maplink.MapCreature{creature}, false, "")
+		fired, _, _, err := s.fireOutsideCombat(ctx, campaignID, actorUserID, "", nil, t, targets, []maplink.MapCreature{creature}, false, "")
 		if err != nil && connect.CodeOf(err) == connect.CodeFailedPrecondition {
 			continue
 		}

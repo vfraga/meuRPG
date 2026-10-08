@@ -201,6 +201,13 @@ func (s *Service) CreateDungeonMap(
 	if err != nil {
 		return nil, err
 	}
+	// Whether there is room comes before the render and before a token of the
+	// dungeon limit: a campaign at its limits is refused without costing the
+	// server a drawing, or the table a try. The transaction below decides for
+	// good; this only refuses what it would refuse.
+	if err := s.checkDungeonRoom(ctx, m.CampaignID, true, freedRoom{}); err != nil {
+		return nil, err
+	}
 	if ok, _ := s.dungeonLimit.Allow(m.CampaignID); !ok {
 		return nil, errTooManyDungeons()
 	}
@@ -245,7 +252,7 @@ func (s *Service) CreateDungeonMap(
 				if count >= s.maxMaps {
 					return created, connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("the campaign already has %d maps", s.maxMaps))
 				}
-				if _, err := s.insertGeneratedImage(ctx, q, m, imageID, nameWithSuffix(name, dungeonImageSuffix), res); err != nil {
+				if _, err := s.insertGeneratedImage(ctx, q, m, imageID, nameWithSuffix(name, dungeonImageSuffix), res, freedRoom{}); err != nil {
 					return created, err
 				}
 				row, err := q.InsertMap(ctx, mapsdb.InsertMapParams{
@@ -480,6 +487,22 @@ func (s *Service) RedrawDungeonMap(
 	if err != nil {
 		return nil, s.dbError(ctx, "read the map's layers", err)
 	}
+	// The old image goes with the replacement unless something else uses it. The
+	// transaction asks again what it can (another map, an image left with the players,
+	// the shown image); what it cannot read (the stage, a portrait) is asked here.
+	used, err := s.imageUsedElsewhere(ctx, m.CampaignID, mapID, old.ID)
+	if err != nil {
+		return nil, s.dbError(ctx, "read whether the image is used elsewhere", err)
+	}
+	// As in CreateDungeonMap: a full gallery is refused before the render, unless the
+	// old image leaves with the redraw and the gallery does not grow.
+	var freed freedRoom
+	if !used {
+		freed = freedRoom{images: 1, bytes: int64(old.ByteSize)}
+	}
+	if err := s.checkDungeonRoom(ctx, m.CampaignID, false, freed); err != nil {
+		return nil, err
+	}
 	if ok, _ := s.dungeonLimit.Allow(m.CampaignID); !ok {
 		return nil, errTooManyDungeons()
 	}
@@ -487,14 +510,6 @@ func (s *Service) RedrawDungeonMap(
 	if err != nil {
 		return nil, err
 	}
-	// The old image goes with the replacement unless something else uses it. The
-	// transaction asks again what it can (another map, an image left with the players);
-	// what it cannot read (the shown image, the stage, a portrait) is asked here.
-	used, err := s.imageUsedElsewhere(ctx, m.CampaignID, mapID, old.ID)
-	if err != nil {
-		return nil, s.dbError(ctx, "read whether the image is used elsewhere", err)
-	}
-
 	set := loadLayers(stored, g)
 	solid := solidOf(g.Columns, g.Rows, set.walls, set.doors)
 	res, err := s.drawDungeon(ctx, solid, g.Columns, g.Rows, int(old.Width), int(old.Height))
@@ -524,7 +539,7 @@ func (s *Service) RedrawDungeonMap(
 		if err != nil {
 			return err
 		}
-		if !isGeneratedImage(again, locked) || locked.ImageID != row.ImageID || int32PtrValue(locked.GridColumns) != int32PtrValue(row.GridColumns) {
+		if !isGeneratedImage(again, locked) || locked.ImageID != row.ImageID || locked.GridFactor != row.GridFactor || int32PtrValue(locked.GridColumns) != int32PtrValue(row.GridColumns) {
 			return errImageChanged()
 		}
 		now, err := q.GetMapLayers(ctx, mapID)
@@ -541,7 +556,27 @@ func (s *Service) RedrawDungeonMap(
 		if !slices.Equal(solid, solidOf(g.Columns, g.Rows, nowSet.walls, nowSet.doors)) {
 			return errStaleMap()
 		}
-		fresh, err := s.insertGeneratedImage(ctx, q, m, newID, nameWithSuffix(row.Name, dungeonImageSuffix), res)
+		// Whether the old image goes with the redraw, asked before the new one is added:
+		// it frees its place in the gallery, so a full gallery does not grow.
+		elsewhere, err := q.ImageIsUsedElsewhere(ctx, mapsdb.ImageIsUsedElsewhereParams{CampaignID: m.CampaignID, ImageID: old.ID, MapID: mapID})
+		if err != nil {
+			return fmt.Errorf("read whether the image is used elsewhere: %w", err)
+		}
+		// The screen is asked again here: the master may have shown the old image
+		// since the first read, and deleting it would blank the screen. (A portrait
+		// that raced in loses the image, as in DeleteGalleryImage.)
+		shown := false
+		if !used && !elsewhere {
+			if shown, err = s.live.ImageShown(ctx, tx, m.CampaignID, old.ID); err != nil {
+				return fmt.Errorf("read whether the image is shown: %w", err)
+			}
+		}
+		remove := !used && !elsewhere && !shown
+		var freed freedRoom
+		if remove {
+			freed = freedRoom{images: 1, bytes: int64(old.ByteSize)}
+		}
+		fresh, err := s.insertGeneratedImage(ctx, q, m, newID, nameWithSuffix(row.Name, dungeonImageSuffix), res, freed)
 		if err != nil {
 			return err
 		}
@@ -551,11 +586,7 @@ func (s *Service) RedrawDungeonMap(
 		if err := q.SetGeneratedDungeonImage(ctx, mapsdb.SetGeneratedDungeonImageParams{MapID: mapID, ImageID: &newID}); err != nil {
 			return fmt.Errorf("record the dungeon's new image: %w", err)
 		}
-		elsewhere, err := q.ImageIsUsedElsewhere(ctx, mapsdb.ImageIsUsedElsewhereParams{CampaignID: m.CampaignID, ImageID: old.ID, MapID: mapID})
-		if err != nil {
-			return fmt.Errorf("read whether the image is used elsewhere: %w", err)
-		}
-		if used || elsewhere {
+		if !remove {
 			return nil
 		}
 		// As DeleteGalleryImage does: a portrait that raced in loses the image.
@@ -702,6 +733,38 @@ func (s *Service) drawDungeon(ctx context.Context, solid []bool, cols, rows, w, 
 	return res, nil
 }
 
+// checkDungeonRoom refuses, before anything is drawn, a dungeon the transaction
+// would refuse: a campaign at its map limit (only for a new map) or whose
+// gallery has no room for one more image. It reads through the pool, so it
+// runs outside the transaction, and it is only a first look: the transaction
+// counts again under its own snapshot.
+func (s *Service) checkDungeonRoom(ctx context.Context, campaignID string, newMap bool, freed freedRoom) error {
+	if newMap {
+		count, err := s.queries.CountMaps(ctx, campaignID)
+		if err != nil {
+			return s.dbError(ctx, "count maps", err)
+		}
+		if count >= s.maxMaps {
+			return connect.NewError(connect.CodeResourceExhausted, fmt.Errorf("the campaign already has %d maps", s.maxMaps))
+		}
+	}
+	usage, err := s.queries.GetGalleryUsage(ctx, campaignID)
+	if err != nil {
+		return s.dbError(ctx, "read the gallery usage", err)
+	}
+	if usage.ImageCount-freed.images >= s.maxImages || usage.ByteCount-freed.bytes >= int64(s.maxBytes) {
+		return connect.NewError(connect.CodeResourceExhausted, errors.New("the campaign's gallery is full"))
+	}
+	return nil
+}
+
+// freedRoom is the room in the gallery an operation gives back in the same step that
+// adds an image: a redraw whose old image goes away.
+type freedRoom struct {
+	images int32
+	bytes  int64
+}
+
 // putImageFiles writes the image's two files, as an upload does before its row.
 func (s *Service) putImageFiles(ctx context.Context, campaignID, imageID string, res *images.Result) error {
 	imageKey, thumbnailKey := blobKeys(campaignID, imageID)
@@ -719,14 +782,15 @@ func (s *Service) putImageFiles(ctx context.Context, campaignID, imageID string,
 }
 
 // insertGeneratedImage adds the image's row to the campaign's gallery inside the
-// caller's transaction, checking the quota the way the upload does.
-func (s *Service) insertGeneratedImage(ctx context.Context, q *mapsdb.Queries, m authz.Membership, id, name string, res *images.Result) (mapsdb.GalleryImage, error) {
+// caller's transaction, checking the quota the way the upload does (less the room
+// freed in the same step).
+func (s *Service) insertGeneratedImage(ctx context.Context, q *mapsdb.Queries, m authz.Membership, id, name string, res *images.Result, freed freedRoom) (mapsdb.GalleryImage, error) {
 	usage, err := q.GetGalleryUsage(ctx, m.CampaignID)
 	if err != nil {
 		return mapsdb.GalleryImage{}, fmt.Errorf("read the gallery usage: %w", err)
 	}
 	size := int32(len(res.Data)) //nolint:gosec // G115: at most images.MaxBytes
-	if usage.ImageCount >= s.maxImages || usage.ByteCount+int64(size) > int64(s.maxBytes) {
+	if usage.ImageCount-freed.images >= s.maxImages || usage.ByteCount-freed.bytes+int64(size) > int64(s.maxBytes) {
 		return mapsdb.GalleryImage{}, connect.NewError(connect.CodeResourceExhausted, errors.New("the campaign's gallery is full"))
 	}
 	row, err := q.InsertGalleryImage(ctx, mapsdb.InsertGalleryImageParams{

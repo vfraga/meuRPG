@@ -1,16 +1,27 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 
+/** What every call says when the login session is gone: no retry fixes it, signing in again does. */
+export const SESSION_ENDED = 'Sua sessão acabou. Entre de novo para continuar.';
+
+/** What every call says when the server could not tell whether the change was saved (`unknown`): a blind retry could repeat it. */
+export const OUTCOME_UNKNOWN =
+  'Não deu para confirmar se a alteração foi salva. Confira na tela antes de tentar de novo.';
+
+const GENERIC = 'Não foi possível falar com o servidor agora. Tente de novo em instantes.';
+
 /**
  * Turns whatever a Connect call rejected with into a Portuguese message a
  * screen can show as-is.
  *
  * `messages` supplies the wording for the codes this call can meaningfully
- * fail with (see each `.proto` service comment for the list); anything else
- * — including a plain network failure, which `ConnectError.from` cannot tell
- * apart from "the server is down" — falls back to `messages[Code.Unavailable]`
- * if given, or a generic message otherwise. This mirrors how `AuthService`
- * treats an unrecognized failure as `unavailable` rather than a new,
- * unhandled bucket (see its `refresh()`).
+ * fail with (see each `.proto` service comment for the list). A plain network
+ * failure, which `ConnectError.from` cannot tell apart from "the server is
+ * down", is `unavailable` and takes `messages[Code.Unavailable]` if given. A
+ * code the screen did not word says what is true of every call: `unknown` (an
+ * ambiguous commit) that the change must be checked, any other that the server
+ * could not be reached or failed. The screen's `unavailable` wording is not
+ * borrowed for them: it often names a cause (images off, a service down) that
+ * a different failure does not share.
  */
 export function describeConnectError(
   err: unknown,
@@ -21,11 +32,20 @@ export function describeConnectError(
   if (isRateLimited(connectErr)) {
     return rateLimitedMessage(connectErr);
   }
-  return (
-    messages[connectErr.code] ??
-    messages[Code.Unavailable] ??
-    'Não foi possível falar com o servidor agora. Tente de novo em instantes.'
-  );
+  const own = messages[connectErr.code];
+  if (own !== undefined) {
+    return own;
+  }
+  switch (connectErr.code) {
+    case Code.Unauthenticated:
+      return SESSION_ENDED;
+    case Code.Unknown:
+      return OUTCOME_UNKNOWN;
+    case Code.Unavailable:
+      return messages[Code.Unavailable] ?? GENERIC;
+    default:
+      return GENERIC;
+  }
 }
 
 /**

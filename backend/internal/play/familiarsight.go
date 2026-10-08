@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 
 	"connectrpc.com/connect"
 
@@ -166,7 +167,7 @@ func (s *Service) sightChange(ctx context.Context, campaignID, rawCharacter, raw
 	var made actionEvent
 	var vitals *playv1.CharacterVitals
 	var mapID string
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventFamiliarSight}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: requestHash(campaignID, rawCharacter, strconv.FormatBool(stop)), kind: eventFamiliarSight}, func(c *combatTx) (any, error) {
 		made, vitals, mapID = actionEvent{}, nil, deref(c.session.CurrentMapID)
 		_, who, cs, err := s.playerCharacterOf(ctx, c, m, characterID)
 		if err != nil {
