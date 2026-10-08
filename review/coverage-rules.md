@@ -149,3 +149,29 @@ Paths are under `backend/internal/` unless they start with `web/` or `docs/`. "K
 | Monsters die at 0 HP | built | combat_actions.go:1153 | – | high | |
 | Mounted combat (mounting, controlling, mount opportunity attacks) | absent | no match | rules/summon.go:15 "mounted combat comes after the MVP" | low | |
 | Underwater combat | absent | no match; combat_move.go:134 swimming out of scope | combat_move.go:134 | low | |
+
+## 4. Conditions (15) and exhaustion
+
+All paths under `backend/internal/` unless `web/`. General: the master marks conditions as labels (`play/combat_conditions.go:26-146`, players cannot); the screen says "Só rótulos: o app não aplica os efeitos" (web `.../conditions-dialog/conditions-dialog.ts:47`), and shows only the name, never the SRD effect text (web `core/combat/conditions.ts:17-33`). Deliberate: `docs/product/rules.md` RN-22 ("The app marks conditions ... and reminds"). Conditions never expire by themselves; removal is manual or by Heal's `ends` (`rules/srd51/effects/spells.json:46`). Conditions are not on the character sheet. Impact is high for the whole group because they depend on advantage/disadvantage (see Dependencies).
+
+| Condition: effect | State | Evidence | Deliberate? | Impact | Note |
+| --- | --- | --- | --- | --- | --- |
+| Marking a condition on a combatant, listing the 15 | built (label) | play/combat_conditions.go:134-146; web core/combat/conditions.ts:17 | RN-22 | high | Visible to every viewer who sees the combatant (play/combat_view.go:293). |
+| Conditions applied automatically by an effect | partial | rules/srd51/effects/spells.json:7,13,18 (Sleep -> unconscious, Color Spray -> blinded, Power Word Stun -> stunned); play/traps_effect.go:183-214 (traps) | – | medium | Few spells; most condition-giving spells (Hold Person, Charm Person, Bless-like) set nothing. Sleep/Color Spray/Stun apply with no save of their own. |
+| Condition duration / expiry | absent | no timer anywhere; `duration_pt` is text | – | high | |
+| Blinded: auto-fail sight checks; attacks against have advantage, its attacks disadvantage | absent | no read of the key for rolls; only `cantReact` (play/combat_opportunity.go:43) | – | high | Server also blocks the blinded creature's opportunity attacks, which the SRD does not say. |
+| Charmed: cannot attack the charmer; charmer has advantage on social checks | absent | no read | – | medium | |
+| Deafened: auto-fail hearing checks | absent | only set/cleared (play/familiarsight.go:49) | – | low | |
+| Frightened: disadvantage while source in sight; cannot move closer | absent | no read | – | high | |
+| Grappled: speed 0 | built | play/combat_move.go:145 | – | medium | No grapple action, so it is hand-marked. Ends-on-separation rule absent. |
+| Incapacitated: no actions or reactions | partial | reactions: play/combat_opportunity.go:43, combat_theatre.go:365; actions: not blocked; speed not zeroed | – | high | An incapacitated creature can still take an action and walk. |
+| Invisible: heavily obscured, advantage on attacks, attacks against disadvantage | absent | no read | – | medium | |
+| Paralyzed: incapacitated, speed 0, auto-fail Str/Dex saves, attacks advantage, auto-crit within 5 ft | partial | speed 0 and no reactions only (combat_move.go:145; combat_opportunity.go:43) | – | high | No auto-fail saves, no advantage, no auto-crit. |
+| Petrified: as paralyzed plus resistance to all damage, immune to poison/disease | partial | speed 0, no reactions only | – | low | |
+| Poisoned: disadvantage on attacks and checks | absent | no read; also traps apply it (traps.json:141) | – | high | |
+| Prone: crawl, stand up, attacks advantage within 5 ft / disadvantage beyond, own attacks disadvantage | absent | play/combat_move.go:142 comment "not modeled" | comment | high | Prone is set by pit traps and jumps (combat_move.go:494) but nothing reads it. |
+| Restrained: speed 0, attacks disadvantage, against advantage, Dex save disadvantage | partial | speed 0 only (combat_move.go:145) | – | medium | |
+| Stunned: incapacitated, speed 0, auto-fail Str/Dex, advantage against | partial | speed 0, no reactions only | – | medium | |
+| Unconscious: incapacitated, drops items, prone, auto-fail Str/Dex, advantage against, auto-crit within 5 ft | partial | speed 0 and no reactions; Sleep's pool skips it (play/combat_spells_hp.go:115); ends a druid's Wild Shape (play/combat_conditions.go:90, wildshape.go:119-154); not added at 0 HP | – | high | |
+| Concentration ends when incapacitated or killed | absent | no code path | rules.md:329 "the master decides" | medium | Master or player ends it by hand (SetCombatantConditions end_concentration). |
+| Exhaustion, six levels (level counter, disadvantage on checks, speed halved, HP max halved, speed 0, death) | reminder | web core/combat/conditions.ts:24 is a plain on/off checkbox; no counter; no effect | – | high | Nothing removes a level on a long rest; forced march, starvation and disease feed it by hand. |
