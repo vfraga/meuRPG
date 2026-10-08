@@ -1,0 +1,590 @@
+[
+ {
+  "msg": "Invite",
+  "field": "revokedAt",
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 380,
+  "decl": "google.protobuf.Timestamp revoked_at = 6;"
+ },
+ {
+  "msg": "FullSheet",
+  "field": "contentRevision",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 1059,
+  "decl": "int32 content_revision = 29;"
+ },
+ {
+  "msg": "FullSheet",
+  "field": "knownIssues",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 1065,
+  "decl": "repeated string known_issues = 30;"
+ },
+ {
+  "msg": "FullSheet",
+  "field": "contentBaselines",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 1070,
+  "decl": "map<string, int32> content_baselines = 31;"
+ },
+ {
+  "msg": "BasicSheet",
+  "field": "abilityScores",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 1243,
+  "decl": "meurpg.rules.v1.AbilityScores ability_scores = 14;"
+ },
+ {
+  "msg": "BasicSheet",
+  "field": "combatOnly",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 1251,
+  "decl": "bool combat_only = 15;"
+ },
+ {
+  "msg": "RollAbilityScoresResponse",
+  "field": "alreadyRolled",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 1498,
+  "decl": "bool already_rolled = 2;"
+ },
+ {
+  "msg": "LevelUpOptions",
+  "field": "totalFromLevel",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 1726,
+  "decl": "int32 total_from_level = 5;"
+ },
+ {
+  "msg": "LevelUpRefusal",
+  "field": "issueCode",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 2016,
+  "decl": "string issue_code = 3;"
+ },
+ {
+  "msg": "RollLevelUpHitPointsResponse",
+  "field": "alreadyRolled",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 2063,
+  "decl": "bool already_rolled = 3;"
+ },
+ {
+  "msg": "CharacterCreature",
+  "field": "dependsOnConcentration",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 2161,
+  "decl": "bool depends_on_concentration = 9;"
+ },
+ {
+  "msg": "SummonSpellOptions",
+  "field": "canCastWithSlot",
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 2315,
+  "decl": "bool can_cast_with_slot = 8;"
+ },
+ {
+  "msg": "DungeonOptions",
+  "field": "maskHole",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 255,
+  "decl": "optional int32 mask_hole = 4;"
+ },
+ {
+  "msg": "DungeonOptions",
+  "field": "aspectLimit",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 262,
+  "decl": "optional double aspect_limit = 7;"
+ },
+ {
+  "msg": "DungeonOptions",
+  "field": "roomDensity",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 264,
+  "decl": "optional int32 room_density = 8;"
+ },
+ {
+  "msg": "DungeonOptions",
+  "field": "doorDensity",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 268,
+  "decl": "optional int32 door_density = 11;"
+ },
+ {
+  "msg": "DungeonOptions",
+  "field": "extraLoops",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 275,
+  "decl": "optional int32 extra_loops = 15;"
+ },
+ {
+  "msg": "DungeonStair",
+  "field": "facing",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 316,
+  "decl": "DungeonSide facing = 4;"
+ },
+ {
+  "msg": "PreviewDungeonResponse",
+  "field": "generatorVersion",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 342,
+  "decl": "int32 generator_version = 3;"
+ },
+ {
+  "msg": "GetDungeonRoomsResponse",
+  "field": "generatorVersion",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 431,
+  "decl": "int32 generator_version = 4;"
+ },
+ {
+  "msg": "GetDungeonRoomsResponse",
+  "field": "imageIsGenerated",
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 440,
+  "decl": "bool image_is_generated = 8;"
+ },
+ {
+  "msg": "ImageGeneration",
+  "field": "sourceImageId",
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 278,
+  "decl": "string source_image_id = 12;"
+ },
+ {
+  "msg": "ImageGeneration",
+  "field": "referenceImageIds",
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 280,
+  "decl": "repeated string reference_image_ids = 13;"
+ },
+ {
+  "msg": "ImageGeneration",
+  "field": "finishedAt",
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 286,
+  "decl": "google.protobuf.Timestamp finished_at = 16;"
+ },
+ {
+  "msg": "ImageGenerationStatus",
+  "field": "usedThisMonth",
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 301,
+  "decl": "int32 used_this_month = 3;"
+ },
+ {
+  "msg": "GetMapImageReferenceResponse",
+  "field": "paddedRatio",
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 495,
+  "decl": "ImageAspectRatio padded_ratio = 7;"
+ },
+ {
+  "msg": "GetMapImageReferenceResponse",
+  "field": "maxTexturePixels",
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 505,
+  "decl": "int64 max_texture_pixels = 12;"
+ },
+ {
+  "msg": "Map",
+  "field": "imageWithheld",
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 897,
+  "decl": "bool image_withheld = 18;"
+ },
+ {
+  "msg": "GetMapLayersResponse",
+  "field": "fogWithheld",
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 1716,
+  "decl": "bool fog_withheld = 8;"
+ },
+ {
+  "msg": "TreasureItem",
+  "field": "category",
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 205,
+  "decl": "string category = 4;"
+ },
+ {
+  "msg": "Treasure",
+  "field": "coinsPo",
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 242,
+  "decl": "int32 coins_po = 8;"
+ },
+ {
+  "msg": "GetMagicItemResponse",
+  "field": "category",
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 301,
+  "decl": "string category = 4;"
+ },
+ {
+  "msg": "GetMagicItemResponse",
+  "field": "attunementBy",
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 306,
+  "decl": "string attunement_by = 7;"
+ },
+ {
+  "msg": "GetMagicItemResponse",
+  "field": "variants",
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 326,
+  "decl": "repeated string variants = 16;"
+ },
+ {
+  "msg": "GetMagicItemResponse",
+  "field": "variantOf",
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 328,
+  "decl": "string variant_of = 17;"
+ },
+ {
+  "msg": "Combatant",
+  "field": "movementUsedFt",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1724,
+  "decl": "int32 movement_used_ft = 15;"
+ },
+ {
+  "msg": "Combatant",
+  "field": "armorClassBonus",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1764,
+  "decl": "int32 armor_class_bonus = 31;"
+ },
+ {
+  "msg": "GetMoveOptionsResponse",
+  "field": "flier",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 2123,
+  "decl": "bool flier = 4;"
+ },
+ {
+  "msg": "ReachableSquare",
+  "field": "knownTrapPointId",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 2147,
+  "decl": "string known_trap_point_id = 7;"
+ },
+ {
+  "msg": "PendingDamage",
+  "field": "appliedAmount",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 2393,
+  "decl": "optional int32 applied_amount = 18;"
+ },
+ {
+  "msg": "PendingDamage",
+  "field": "trapPointId",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 2409,
+  "decl": "string trap_point_id = 21;"
+ },
+ {
+  "msg": "GetTurnOptionsResponse",
+  "field": "yourTurn",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 2438,
+  "decl": "bool your_turn = 2;"
+ },
+ {
+  "msg": "SpellTargetResult",
+  "field": "morePendingDamageIds",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 2852,
+  "decl": "repeated string more_pending_damage_ids = 10;"
+ },
+ {
+  "msg": "CombatLogEntry",
+  "field": "returnedToReach",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 3340,
+  "decl": "bool returned_to_reach = 34;"
+ },
+ {
+  "msg": "CombatLogEntry",
+  "field": "returnBlocked",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 3343,
+  "decl": "bool return_blocked = 35;"
+ },
+ {
+  "msg": "CombatLogSpellTarget",
+  "field": "moreDamages",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 3419,
+  "decl": "repeated CombatLogDamage more_damages = 13;"
+ },
+ {
+  "msg": "TrapDamageDone",
+  "field": "damageId",
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 3623,
+  "decl": "string damage_id = 1;"
+ },
+ {
+  "msg": "EncounterEvaluation",
+  "field": "overXp",
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 126,
+  "decl": "int32 over_xp = 7;"
+ },
+ {
+  "msg": "FamiliarSightState",
+  "field": "conditionsGiven",
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 1065,
+  "decl": "repeated string conditions_given = 3;"
+ },
+ {
+  "msg": "PuzzleRun",
+  "field": "solvedMessage",
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 589,
+  "decl": "string solved_message = 15;"
+ },
+ {
+  "msg": "PuzzleRun",
+  "field": "stoppedMessage",
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 598,
+  "decl": "string stopped_message = 18;"
+ },
+ {
+  "msg": "PuzzleRun",
+  "field": "myPart",
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 601,
+  "decl": "string my_part = 19;"
+ },
+ {
+  "msg": "PuzzleRun",
+  "field": "partHolders",
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 604,
+  "decl": "repeated string part_holders = 20;"
+ },
+ {
+  "msg": "PuzzleRun",
+  "field": "hintByCheck",
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 606,
+  "decl": "bool hint_by_check = 21;"
+ },
+ {
+  "msg": "PuzzleRun",
+  "field": "hasKeyClue",
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 622,
+  "decl": "bool has_key_clue = 26;"
+ },
+ {
+  "msg": "SequencePlayback",
+  "field": "stepMs",
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 662,
+  "decl": "int32 step_ms = 5;"
+ },
+ {
+  "msg": "SearchForTrapsResponse",
+  "field": "spentAction",
+  "file": "proto/meurpg/play/v1/traps.proto",
+  "line": 63,
+  "decl": "bool spent_action = 3;"
+ },
+ {
+  "msg": "XPBlocked",
+  "field": "treasurePointId",
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 337,
+  "decl": "string treasure_point_id = 4;"
+ },
+ {
+  "msg": "XPAward",
+  "field": "givenByUserId",
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 359,
+  "decl": "string given_by_user_id = 4;"
+ },
+ {
+  "msg": "ListTrapPresetsResponse",
+  "field": "damageByLevel",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 203,
+  "decl": "repeated TrapDamageRow damage_by_level = 3;"
+ },
+ {
+  "msg": "TrapPreset",
+  "field": "findDcIsOurs",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 361,
+  "decl": "bool find_dc_is_ours = 7;"
+ },
+ {
+  "msg": "TrapDamageRow",
+  "field": "setback",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 395,
+  "decl": "string setback = 3;"
+ },
+ {
+  "msg": "TrapDamageRow",
+  "field": "dangerous",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 396,
+  "decl": "string dangerous = 4;"
+ },
+ {
+  "msg": "TrapDamageRow",
+  "field": "deadly",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 397,
+  "decl": "string deadly = 5;"
+ },
+ {
+  "msg": "DerivedSheet",
+  "field": "saveActions",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 569,
+  "decl": "repeated SaveAction save_actions = 40;"
+ },
+ {
+  "msg": "ChangedContent",
+  "field": "savedRevision",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 604,
+  "decl": "int32 saved_revision = 5;"
+ },
+ {
+  "msg": "Attack",
+  "field": "versatileDamageDice",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 869,
+  "decl": "DiceFormula versatile_damage_dice = 14;"
+ },
+ {
+  "msg": "Content",
+  "field": "attribution",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 960,
+  "decl": "string attribution = 2;"
+ },
+ {
+  "msg": "AbilityInfo",
+  "field": "abbreviationPt",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1031,
+  "decl": "string abbreviation_pt = 4;"
+ },
+ {
+  "msg": "Armor",
+  "field": "category",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1221,
+  "decl": "ArmorCategory category = 4;"
+ },
+ {
+  "msg": "Weapon",
+  "field": "category",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1237,
+  "decl": "WeaponCategory category = 4;"
+ },
+ {
+  "msg": "SpellHitPointEffect",
+  "field": "dies",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1465,
+  "decl": "bool dies = 7;"
+ },
+ {
+  "msg": "SpellHitPointEffect",
+  "field": "healAmount",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1467,
+  "decl": "int32 heal_amount = 8;"
+ },
+ {
+  "msg": "SpellHitPointEffect",
+  "field": "healPerLevel",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1468,
+  "decl": "int32 heal_per_level = 9;"
+ },
+ {
+  "msg": "SpellHitPointEffect",
+  "field": "amountPerLevel",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1473,
+  "decl": "int32 amount_per_level = 11;"
+ },
+ {
+  "msg": "TurnEconomy",
+  "field": "bonusAction",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1638,
+  "decl": "EconomyState bonus_action = 2;"
+ },
+ {
+  "msg": "MovementLeft",
+  "field": "usedFt",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1661,
+  "decl": "int32 used_ft = 2;"
+ },
+ {
+  "msg": "CreatureSummary",
+  "field": "subtype",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1894,
+  "decl": "string subtype = 8;"
+ },
+ {
+  "msg": "CreatureSummary",
+  "field": "canFly",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1900,
+  "decl": "bool can_fly = 11;"
+ },
+ {
+  "msg": "CreatureSummary",
+  "field": "canSwim",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 1901,
+  "decl": "bool can_swim = 12;"
+ },
+ {
+  "msg": "CreatureAction",
+  "field": "multiattack",
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 2055,
+  "decl": "repeated CreatureMultiattackRoutine multiattack = 8;"
+ },
+ {
+  "msg": "GetEffectMenuResponse",
+  "field": "extraAttackMin",
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 871,
+  "decl": "int32 extra_attack_min = 9;"
+ },
+ {
+  "msg": "GetEffectMenuResponse",
+  "field": "extraAttackMax",
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 872,
+  "decl": "int32 extra_attack_max = 10;"
+ },
+ {
+  "msg": "FormulaHelper",
+  "field": "returns",
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 949,
+  "decl": "string returns = 2;"
+ }
+]

@@ -1,0 +1,5355 @@
+[
+ {
+  "rpc": "CampaignDocumentService.GetCampaignDocument",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "DocumentClient",
+    "file": "web/src/app/pages/campaign-document/document-clients.ts",
+    "line": 49,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignDocumentService.UpdateCampaignDocument",
+  "sites": [
+   {
+    "wrapper": "save",
+    "cls": "DocumentClient",
+    "file": "web/src/app/pages/campaign-document/document-clients.ts",
+    "line": 61,
+    "callers": [
+     "web/src/app/shared/notes/notes-panel.ts:100",
+     "web/src/app/shared/notes/notes-sheet.ts:168",
+     "web/src/app/core/maps/move-saves.ts:58",
+     "web/src/app/pages/encounters/save-sheet/save-sheet.ts:201",
+     "web/src/app/pages/content/options/options.ts:112"
+    ],
+    "n": 13
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.CreateCampaign",
+  "sites": [
+   {
+    "wrapper": "createCampaign",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 33,
+    "callers": [
+     "web/src/app/pages/campaigns/campaigns.ts:99"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "Campaigns",
+    "file": "web/src/app/pages/campaigns/campaigns.ts",
+    "line": 99,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.ListMyCampaigns",
+  "sites": [
+   {
+    "wrapper": "listMyCampaigns",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 28,
+    "callers": [
+     "web/src/app/pages/campaigns/campaigns.ts:78"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "Campaigns",
+    "file": "web/src/app/pages/campaigns/campaigns.ts",
+    "line": 78,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.GetCampaign",
+  "sites": [
+   {
+    "wrapper": "check",
+    "cls": "BestiaryAccessCheck",
+    "file": "web/src/app/core/creatures/bestiary-access.ts",
+    "line": 27,
+    "callers": [
+     "web/src/app/pages/encounters/encounter-builder/encounter-builder.ts:165",
+     "web/src/app/pages/treasure/treasure.ts:165",
+     "web/src/app/pages/bestiary/bestiary-creature/bestiary-creature.ts:100",
+     "web/src/app/pages/bestiary/bestiary-list/bestiary-list.ts:175",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:273"
+    ],
+    "n": 7
+   },
+   {
+    "wrapper": "check",
+    "cls": "TreasureAccessCheck",
+    "file": "web/src/app/core/treasure/treasure-access.ts",
+    "line": 27,
+    "callers": [
+     "web/src/app/pages/encounters/encounter-builder/encounter-builder.ts:165",
+     "web/src/app/pages/treasure/treasure.ts:165",
+     "web/src/app/pages/bestiary/bestiary-creature/bestiary-creature.ts:100",
+     "web/src/app/pages/bestiary/bestiary-list/bestiary-list.ts:175",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:273"
+    ],
+    "n": 7
+   },
+   {
+    "wrapper": "loadContext",
+    "cls": null,
+    "file": "web/src/app/core/content/content-context.ts",
+    "line": 27,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "check",
+    "cls": "PuzzleAccessCheck",
+    "file": "web/src/app/core/puzzles/puzzle-access.ts",
+    "line": 27,
+    "callers": [
+     "web/src/app/pages/encounters/encounter-builder/encounter-builder.ts:165",
+     "web/src/app/pages/treasure/treasure.ts:165",
+     "web/src/app/pages/bestiary/bestiary-creature/bestiary-creature.ts:100",
+     "web/src/app/pages/bestiary/bestiary-list/bestiary-list.ts:175",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:273"
+    ],
+    "n": 7
+   },
+   {
+    "wrapper": "xpMode",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 165,
+    "callers": [
+     "web/src/app/shared/xp/xp-give-button.ts:184",
+     "web/src/app/shared/xp/xp-give-button.ts:190",
+     "web/src/app/shared/xp/xp-give-button.ts:210",
+     "web/src/app/shared/xp/xp-give-button.ts:212",
+     "web/src/app/shared/xp/xp-give-button.ts:235"
+    ],
+    "n": 19
+   },
+   {
+    "wrapper": "dicePreference",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 171,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1267",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1333",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1452",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1569",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1707"
+    ],
+    "n": 11
+   },
+   {
+    "wrapper": "getCampaign",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 37,
+    "callers": [
+     "web/src/app/core/creatures/bestiary-access.ts:27",
+     "web/src/app/core/treasure/treasure-access.ts:27",
+     "web/src/app/core/content/content-context.ts:27",
+     "web/src/app/core/puzzles/puzzle-access.ts:27",
+     "web/src/app/core/levelup/levelup-client.ts:165"
+    ],
+    "n": 22
+   },
+   {
+    "wrapper": "loadCatalog",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 499,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1087",
+     "web/src/app/pages/character-editor/character-editor.ts:1154",
+     "web/src/app/pages/character-editor/character-editor.ts:1654"
+    ],
+    "n": 3
+   },
+   {
+    "wrapper": "loadAbilityTable",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 679,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1086",
+     "web/src/app/pages/character-editor/character-editor.ts:1139",
+     "web/src/app/pages/character-editor/character-editor.ts:1163"
+    ],
+    "n": 3
+   },
+   {
+    "wrapper": "getXpMode",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 379,
+    "callers": [
+     "web/src/app/pages/character-sheet/character-sheet.ts:258"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "LiveSession",
+    "file": "web/src/app/pages/live-session/live-session.ts",
+    "line": 527,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "LiveSession",
+    "file": "web/src/app/pages/live-session/live-session.ts",
+    "line": 811,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "StartCombatDialog",
+    "file": "web/src/app/pages/live-session/combat/start-combat/start-combat-dialog.ts",
+    "line": 292,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "getCampaign",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 136,
+    "callers": [
+     "web/src/app/core/creatures/bestiary-access.ts:27",
+     "web/src/app/core/treasure/treasure-access.ts:27",
+     "web/src/app/core/content/content-context.ts:27",
+     "web/src/app/core/puzzles/puzzle-access.ts:27",
+     "web/src/app/core/levelup/levelup-client.ts:165"
+    ],
+    "n": 22
+   },
+   {
+    "wrapper": null,
+    "cls": "ContentOptions",
+    "file": "web/src/app/pages/content/options/options.ts",
+    "line": 227,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CampaignDetail",
+    "file": "web/src/app/pages/campaign-detail/campaign-detail.ts",
+    "line": 147,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "TableRulesPage",
+    "file": "web/src/app/pages/table-rules/table-rules.ts",
+    "line": 336,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CampaignDocumentPage",
+    "file": "web/src/app/pages/campaign-document/campaign-document.ts",
+    "line": 125,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "DungeonNew",
+    "file": "web/src/app/pages/maps/dungeon-new/dungeon-new.ts",
+    "line": 223,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "MapPage",
+    "file": "web/src/app/pages/maps/map-page/map-page.ts",
+    "line": 132,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "MapPrint",
+    "file": "web/src/app/pages/maps/map-print/map-print.ts",
+    "line": 161,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "MapGrid",
+    "file": "web/src/app/pages/maps/map-grid/map-grid.ts",
+    "line": 123,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "Spells",
+    "file": "web/src/app/pages/spells/spells.ts",
+    "line": 208,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.ListMembers",
+  "sites": [
+   {
+    "wrapper": "listMembers",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 41,
+    "callers": [
+     "web/src/app/pages/live-session/combat/start-combat/start-combat-dialog.ts:291",
+     "web/src/app/pages/campaign-detail/campaign-detail.ts:155"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "StartCombatDialog",
+    "file": "web/src/app/pages/live-session/combat/start-combat/start-combat-dialog.ts",
+    "line": 291,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CampaignDetail",
+    "file": "web/src/app/pages/campaign-detail/campaign-detail.ts",
+    "line": 155,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.ListPendingMembers",
+  "sites": [
+   {
+    "wrapper": "listPendingMembers",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 46,
+    "callers": [
+     "web/src/app/pages/campaign-detail/pending-members/pending-members.ts:61"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "PendingMembers",
+    "file": "web/src/app/pages/campaign-detail/pending-members/pending-members.ts",
+    "line": 61,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.RemovePendingMember",
+  "sites": [
+   {
+    "wrapper": "removePendingMember",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 51,
+    "callers": [
+     "web/src/app/pages/campaign-detail/pending-members/pending-members.ts:90"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "PendingMembers",
+    "file": "web/src/app/pages/campaign-detail/pending-members/pending-members.ts",
+    "line": 90,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.CreateInvite",
+  "sites": [
+   {
+    "wrapper": "createInvite",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 64,
+    "callers": [
+     "web/src/app/pages/campaign-detail/invites/invites.ts:129"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "CampaignInvites",
+    "file": "web/src/app/pages/campaign-detail/invites/invites.ts",
+    "line": 129,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.ListInvites",
+  "sites": [
+   {
+    "wrapper": "listInvites",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 73,
+    "callers": [
+     "web/src/app/pages/campaign-detail/invites/invites.ts:108"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "CampaignInvites",
+    "file": "web/src/app/pages/campaign-detail/invites/invites.ts",
+    "line": 108,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.RevokeInvite",
+  "sites": [
+   {
+    "wrapper": "revokeInvite",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 77,
+    "callers": [
+     "web/src/app/pages/campaign-detail/invites/invites.ts:178"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "CampaignInvites",
+    "file": "web/src/app/pages/campaign-detail/invites/invites.ts",
+    "line": 178,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.AcceptInvite",
+  "sites": [
+   {
+    "wrapper": "acceptInvite",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 81,
+    "callers": [
+     "web/src/app/pages/invite/invite-accept.ts:130"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "InviteAccept",
+    "file": "web/src/app/pages/invite/invite-accept.ts",
+    "line": 130,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.SetCampaignDiceMode",
+  "sites": []
+ },
+ {
+  "rpc": "CampaignService.SetMyDicePreference",
+  "sites": [
+   {
+    "wrapper": "setDicePreference",
+    "cls": "CampaignsService",
+    "file": "web/src/app/core/campaigns/campaigns.service.ts",
+    "line": 87,
+    "callers": [
+     "web/src/app/pages/campaign-detail/dice-preference-panel/dice-preference-panel.ts:90"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.GetTableRules",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "TableRulesClient",
+    "file": "web/src/app/core/campaigns/table-rules.ts",
+    "line": 199,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   },
+   {
+    "wrapper": "loadAbilityTable",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 680,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1086",
+     "web/src/app/pages/character-editor/character-editor.ts:1139",
+     "web/src/app/pages/character-editor/character-editor.ts:1163"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.SetTableRules",
+  "sites": [
+   {
+    "wrapper": "set",
+    "cls": "TableRulesClient",
+    "file": "web/src/app/core/campaigns/table-rules.ts",
+    "line": 204,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:55",
+     "web/src/app/shared/creatures/creature-choice-list.ts:178",
+     "web/src/app/shared/image-generate/generate-image-button.ts:90",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:348",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:352"
+    ],
+    "n": 2654
+   }
+  ]
+ },
+ {
+  "rpc": "CampaignService.SetCampaignXpMode",
+  "sites": [
+   {
+    "wrapper": "setXpMode",
+    "cls": "TableRulesClient",
+    "file": "web/src/app/core/campaigns/table-rules.ts",
+    "line": 230,
+    "callers": [
+     "web/src/app/pages/table-rules/xp-mode-panel/xp-mode-panel.ts:136"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.CreateCharacter",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "CharacterEditor",
+    "file": "web/src/app/pages/character-editor/character-editor.ts",
+    "line": 1563,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "createCharacter",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 750,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1563"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.GetAbilityRolls",
+  "sites": [
+   {
+    "wrapper": "loadAbilityTable",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 692,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1086",
+     "web/src/app/pages/character-editor/character-editor.ts:1139",
+     "web/src/app/pages/character-editor/character-editor.ts:1163"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.RollAbilityScores",
+  "sites": [
+   {
+    "wrapper": "rollAbilityScores",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 721,
+    "callers": [
+     "web/src/app/pages/character-editor/table-ability-scores/table-ability-scores.ts:371",
+     "web/src/app/pages/character-editor/table-ability-scores/table-ability-scores.ts:391"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "TableAbilityScores",
+    "file": "web/src/app/pages/character-editor/table-ability-scores/table-ability-scores.ts",
+    "line": 371,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "TableAbilityScores",
+    "file": "web/src/app/pages/character-editor/table-ability-scores/table-ability-scores.ts",
+    "line": 391,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.CreateNpcFromCreature",
+  "sites": [
+   {
+    "wrapper": "createNpc",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 197,
+    "callers": [
+     "web/src/app/pages/bestiary/create-npc-sheet/create-npc-sheet.ts:138"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.GetCharacter",
+  "sites": [
+   {
+    "wrapper": "character",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 66,
+    "callers": [
+     "web/src/app/shared/wild-shape/wild-pools.ts:92",
+     "web/src/app/pages/level-up/level-up.ts:258",
+     "web/src/app/pages/level-up/level-up.ts:527",
+     "web/src/app/pages/level-up/level-up.ts:594"
+    ],
+    "n": 4
+   },
+   {
+    "wrapper": "loadCharacterForEdit",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 630,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1155"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "getCharacterSheet",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 391,
+    "callers": [
+     "web/src/app/pages/character-sheet/character-sheet.ts:222",
+     "web/src/app/pages/character-sheet/character-sheet.ts:239",
+     "web/src/app/pages/character-sheet/creature-page/creature-page.ts:170"
+    ],
+    "n": 3
+   },
+   {
+    "wrapper": "getPlayerSheet",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 316,
+    "callers": [
+     "web/src/app/pages/live-session/live-session.ts:841"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "DocumentSheetDialog",
+    "file": "web/src/app/pages/campaign-document/sheet-dialog/sheet-dialog.ts",
+    "line": 45,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "getCharacter",
+    "cls": "DocumentLinks",
+    "file": "web/src/app/pages/campaign-document/document-clients.ts",
+    "line": 127,
+    "callers": [
+     "web/src/app/core/levelup/levelup-client.ts:66",
+     "web/src/app/pages/character-editor/character-editor-source.live.ts:630",
+     "web/src/app/pages/character-sheet/character-sheet-source.live.ts:391",
+     "web/src/app/pages/live-session/live-session-source.live.ts:316",
+     "web/src/app/pages/campaign-document/sheet-dialog/sheet-dialog.ts:45"
+    ],
+    "n": 5
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.ListCharacters",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "StageRoster",
+    "file": "web/src/app/core/play/stage-roster.ts",
+    "line": 32,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   },
+   {
+    "wrapper": "list",
+    "cls": "RosterClient",
+    "file": "web/src/app/core/maps/roster-client.ts",
+    "line": 34,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   },
+   {
+    "wrapper": "getPartyInfo",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 339,
+    "callers": [
+     "web/src/app/pages/live-session/live-session.ts:830"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "CampaignCharacters",
+    "file": "web/src/app/pages/campaign-detail/characters/campaign-characters.ts",
+    "line": 204,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "listCharacters",
+    "cls": "CampaignCharactersSourceLive",
+    "file": "web/src/app/pages/campaign-detail/characters/campaign-characters-source.live.ts",
+    "line": 62,
+    "callers": [
+     "web/src/app/core/play/stage-roster.ts:32",
+     "web/src/app/core/maps/roster-client.ts:34",
+     "web/src/app/pages/live-session/live-session-source.live.ts:339",
+     "web/src/app/pages/campaign-detail/characters/campaign-characters.ts:204",
+     "web/src/app/pages/campaign-document/link-picker-dialog/link-picker-dialog.ts:65"
+    ],
+    "n": 7
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "LinkPickerDialog",
+    "file": "web/src/app/pages/campaign-document/link-picker-dialog/link-picker-dialog.ts",
+    "line": 65,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CampaignDocumentPage",
+    "file": "web/src/app/pages/campaign-document/campaign-document.ts",
+    "line": 154,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "listCharacters",
+    "cls": "DocumentLinks",
+    "file": "web/src/app/pages/campaign-document/document-clients.ts",
+    "line": 117,
+    "callers": [
+     "web/src/app/core/play/stage-roster.ts:32",
+     "web/src/app/core/maps/roster-client.ts:34",
+     "web/src/app/pages/live-session/live-session-source.live.ts:339",
+     "web/src/app/pages/campaign-detail/characters/campaign-characters.ts:204",
+     "web/src/app/pages/campaign-detail/characters/campaign-characters-source.live.ts:62"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.UpdateCharacter",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "CharacterEditor",
+    "file": "web/src/app/pages/character-editor/character-editor.ts",
+    "line": 1573,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "updateCharacter",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 764,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1573"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.UpdateCharacterStory",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "StoryPanel",
+    "file": "web/src/app/pages/character-sheet/story-panel/story-panel.ts",
+    "line": 151,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "updateCharacterStory",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 415,
+    "callers": [
+     "web/src/app/pages/character-sheet/story-panel/story-panel.ts:151"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.SetStoryEditing",
+  "sites": [
+   {
+    "wrapper": "setStoryEditingAllowed",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 429,
+    "callers": [
+     "web/src/app/pages/character-sheet/character-sheet.ts:324"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.MarkCharacterDead",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "CharacterSheetPage",
+    "file": "web/src/app/pages/character-sheet/character-sheet.ts",
+    "line": 300,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "markCharacterDead",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 405,
+    "callers": [
+     "web/src/app/pages/character-sheet/character-sheet.ts:300"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.GetMasterNotes",
+  "sites": [
+   {
+    "wrapper": "ngOnInit",
+    "cls": "MasterNotes",
+    "file": "web/src/app/pages/character-sheet/master-notes/master-notes.ts",
+    "line": 52,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "getMasterNotes",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 396,
+    "callers": [
+     "web/src/app/pages/character-sheet/master-notes/master-notes.ts:52"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.UpdateMasterNotes",
+  "sites": [
+   {
+    "wrapper": "ngOnInit",
+    "cls": "MasterNotes",
+    "file": "web/src/app/pages/character-sheet/master-notes/master-notes.ts",
+    "line": 68,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "updateMasterNotes",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 401,
+    "callers": [
+     "web/src/app/pages/character-sheet/master-notes/master-notes.ts:68"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.ApproveCharacter",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "CharacterSheetPage",
+    "file": "web/src/app/pages/character-sheet/character-sheet.ts",
+    "line": 344,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "approveCharacter",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 434,
+    "callers": [
+     "web/src/app/pages/character-sheet/character-sheet.ts:344"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.RejectCharacter",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "CharacterSheetPage",
+    "file": "web/src/app/pages/character-sheet/character-sheet.ts",
+    "line": 359,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "rejectCharacter",
+    "cls": "CharacterSheetSourceLive",
+    "file": "web/src/app/pages/character-sheet/character-sheet-source.live.ts",
+    "line": 439,
+    "callers": [
+     "web/src/app/pages/character-sheet/character-sheet.ts:359"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.GetLevelUpOptions",
+  "sites": [
+   {
+    "wrapper": "options",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 72,
+    "callers": [
+     "web/src/app/shared/notes/notes-panel.ts:57",
+     "web/src/app/shared/notes/notes-sheet.ts:97",
+     "web/src/app/shared/notes/notes-select.ts:119",
+     "web/src/app/shared/form-fields/select-field.ts:101",
+     "web/src/app/shared/form-fields/pick-list.ts:114"
+    ],
+    "n": 52
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.PreviewLevelUp",
+  "sites": [
+   {
+    "wrapper": "preview",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 81,
+    "callers": [
+     "web/src/app/pages/encounters/party-npc-sheet/party-npc-sheet.ts:83",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:61",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:62",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:63",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:72"
+    ],
+    "n": 19
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.PreviewCharacter",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "CharacterEditor",
+    "file": "web/src/app/pages/character-editor/character-editor.ts",
+    "line": 308,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "previewCharacter",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 729,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:308"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.RollLevelUpHitPoints",
+  "sites": [
+   {
+    "wrapper": "rollHitPoints",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 90,
+    "callers": [
+     "web/src/app/pages/level-up/level-up-session.ts:235"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.LevelUpCharacter",
+  "sites": [
+   {
+    "wrapper": "levelUp",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 104,
+    "callers": [
+     "web/src/app/pages/level-up/level-up.ts:501",
+     "web/src/app/pages/campaign-detail/characters/level-up-changes.ts:40",
+     "web/src/app/pages/campaign-detail/characters/level-up-changes.ts:42"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.ListLevelUps",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 115,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.ListCharacterCreatures",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 73,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   },
+   {
+    "wrapper": "name",
+    "cls": "FamiliarEyesClient",
+    "file": "web/src/app/core/play/familiar-eyes.ts",
+    "line": 63,
+    "callers": [
+     "web/src/app/shared/portrait/portrait.ts:62",
+     "web/src/app/shared/portrait/portrait.ts:63",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:127",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:193",
+     "web/src/app/shared/familiar-eyes/familiar-band.ts:55"
+    ],
+    "n": 34
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.ListWildShapeForms",
+  "sites": [
+   {
+    "wrapper": "wildShapeForms",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 87,
+    "callers": [
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:148"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.GiveCreature",
+  "sites": [
+   {
+    "wrapper": "give",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 131,
+    "callers": [
+     "web/src/app/pages/campaign-detail/creatures/give-creature-sheet.ts:233"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.RenameCreature",
+  "sites": [
+   {
+    "wrapper": "rename",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 146,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/creature-edit.ts:177",
+     "web/src/app/pages/gallery/gallery-card/gallery-card.ts:153"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.DismissCreature",
+  "sites": [
+   {
+    "wrapper": "dismiss",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 150,
+    "callers": [
+     "web/src/app/shared/spell-details/spell-details.ts:77",
+     "web/src/app/shared/sheet/sheet-host.ts:97",
+     "web/src/app/shell/live-notice/live-notice.ts:41",
+     "web/src/app/core/traps/toast-queue.ts:31",
+     "web/src/app/pages/character-sheet/changed-content/changed-content-sheet.ts:182"
+    ],
+    "n": 10
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.AdjustCreatureHitPoints",
+  "sites": [
+   {
+    "wrapper": "setHitPoints",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 160,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/creature-edit.ts:190"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CharacterService.GetSummonOptions",
+  "sites": [
+   {
+    "wrapper": "summonOptions",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 79,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/creatures-panel.ts:247",
+     "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:412",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1679"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "IdentityService.GetMe",
+  "sites": [
+   {
+    "wrapper": "refresh",
+    "cls": "AuthService",
+    "file": "web/src/app/core/auth/auth.service.ts",
+    "line": 92,
+    "callers": [
+     "web/src/app/shared/notes/notes-panel.ts:66",
+     "web/src/app/shared/notes/notes-sheet.ts:133",
+     "web/src/app/shared/fog-map/view-as-map.ts:133",
+     "web/src/app/shell/live-notice/open-sessions.ts:166",
+     "web/src/app/core/traps/trap-board.ts:151"
+    ],
+    "n": 76
+   }
+  ]
+ },
+ {
+  "rpc": "IdentityService.SignOut",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "UserMenu",
+    "file": "web/src/app/shell/user-menu/user-menu.ts",
+    "line": 47,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "signOut",
+    "cls": "AuthService",
+    "file": "web/src/app/core/auth/auth.service.ts",
+    "line": 183,
+    "callers": [
+     "web/src/app/shell/user-menu/user-menu.ts:47"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "IdentityService.SignOutOtherSessions",
+  "sites": [
+   {
+    "wrapper": "signOutOtherSessions",
+    "cls": "AuthService",
+    "file": "web/src/app/core/auth/auth.service.ts",
+    "line": 151,
+    "callers": [
+     "web/src/app/pages/profile/profile.ts:140"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "Profile",
+    "file": "web/src/app/pages/profile/profile.ts",
+    "line": 140,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "IdentityService.CountOtherSessions",
+  "sites": [
+   {
+    "wrapper": "countOtherSessions",
+    "cls": "AuthService",
+    "file": "web/src/app/core/auth/auth.service.ts",
+    "line": 141,
+    "callers": [
+     "web/src/app/pages/profile/profile.ts:114"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "Profile",
+    "file": "web/src/app/pages/profile/profile.ts",
+    "line": 114,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "IdentityService.UpdateProfile",
+  "sites": [
+   {
+    "wrapper": "updateProfile",
+    "cls": "AuthService",
+    "file": "web/src/app/core/auth/auth.service.ts",
+    "line": 125,
+    "callers": [
+     "web/src/app/pages/profile/profile.ts:153"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "Profile",
+    "file": "web/src/app/pages/profile/profile.ts",
+    "line": 153,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "DungeonService.PreviewDungeon",
+  "sites": [
+   {
+    "wrapper": "preview",
+    "cls": "DungeonsClient",
+    "file": "web/src/app/core/maps/dungeons-client.ts",
+    "line": 34,
+    "callers": [
+     "web/src/app/pages/encounters/party-npc-sheet/party-npc-sheet.ts:83",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:61",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:62",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:63",
+     "web/src/app/pages/character-editor/hit-points-rolls/hit-points-rolls.ts:72"
+    ],
+    "n": 19
+   }
+  ]
+ },
+ {
+  "rpc": "DungeonService.CreateDungeonMap",
+  "sites": [
+   {
+    "wrapper": "create",
+    "cls": "DungeonsClient",
+    "file": "web/src/app/core/maps/dungeons-client.ts",
+    "line": 49,
+    "callers": [
+     "web/src/app/core/notes/note-editing.ts:155",
+     "web/src/app/core/notes/notes-state.ts:176",
+     "web/src/app/core/content/content-client.ts:78",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:410",
+     "web/src/app/pages/maps/dungeon-new/dungeon-new.ts:376"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "DungeonService.GetDungeonRooms",
+  "sites": [
+   {
+    "wrapper": "rooms",
+    "cls": "DungeonsClient",
+    "file": "web/src/app/core/maps/dungeons-client.ts",
+    "line": 61,
+    "callers": [
+     "web/src/app/core/maps/dungeon-info.ts:25",
+     "web/src/app/pages/treasure/place-sheet/place-sheet.ts:193",
+     "web/src/app/pages/treasure/place-sheet/place-sheet.ts:286"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "DungeonService.PlaceDungeonScene",
+  "sites": [
+   {
+    "wrapper": "placeScene",
+    "cls": "DungeonsClient",
+    "file": "web/src/app/core/maps/dungeons-client.ts",
+    "line": 71,
+    "callers": [
+     "web/src/app/pages/maps/dungeon-rooms/dungeon-rooms.ts:140"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "DungeonService.RedrawDungeonMap",
+  "sites": [
+   {
+    "wrapper": "redraw",
+    "cls": "DungeonsClient",
+    "file": "web/src/app/core/maps/dungeons-client.ts",
+    "line": 80,
+    "callers": [
+     "web/src/app/pages/maps/dungeon-image/dungeon-image.ts:101"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "GalleryService.ListGalleryImages",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "GalleryClient",
+    "file": "web/src/app/core/images/gallery-client.ts",
+    "line": 36,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "GalleryService.RenameGalleryImage",
+  "sites": [
+   {
+    "wrapper": "rename",
+    "cls": "GalleryClient",
+    "file": "web/src/app/core/images/gallery-client.ts",
+    "line": 51,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/creature-edit.ts:177",
+     "web/src/app/pages/gallery/gallery-card/gallery-card.ts:153"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "GalleryService.DeleteGalleryImage",
+  "sites": [
+   {
+    "wrapper": "delete",
+    "cls": "GalleryClient",
+    "file": "web/src/app/core/images/gallery-client.ts",
+    "line": 59,
+    "callers": [
+     "web/src/app/shared/map-view/map-view.ts:547",
+     "web/src/app/shared/fog-map/fog-base.ts:195",
+     "web/src/app/shared/xp/town-sheet.ts:178",
+     "web/src/app/shared/xp/town-sheet.ts:229",
+     "web/src/app/shared/xp/award-xp-sheet.ts:254"
+    ],
+    "n": 59
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.GetImageGenerationStatus",
+  "sites": [
+   {
+    "wrapper": "status",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 42,
+    "callers": [
+     "web/src/app/shared/image-generate/generate-image-button.ts:89",
+     "web/src/app/shared/image-generate/generate-form.ts:133",
+     "web/src/app/shared/image-generate/generate-form.ts:137",
+     "web/src/app/shared/image-generate/generate-form.ts:140",
+     "web/src/app/shared/image-generate/generate-form.ts:143"
+    ],
+    "n": 44
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.GenerateSceneImage",
+  "sites": [
+   {
+    "wrapper": "generateScene",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 55,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:531"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.EditGeneratedImage",
+  "sites": [
+   {
+    "wrapper": "edit",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 77,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:844",
+     "web/src/app/pages/table-rules/table-rules.ts:437",
+     "web/src/app/pages/table-rules/table-rules.ts:444",
+     "web/src/app/pages/table-rules/table-rules.ts:458"
+    ],
+    "n": 4
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.GetImageGeneration",
+  "sites": [
+   {
+    "wrapper": "poll",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 91,
+    "callers": [
+     "web/src/app/shell/live-notice/open-sessions.ts:109",
+     "web/src/app/shell/live-notice/open-sessions.ts:123",
+     "web/src/app/shell/live-notice/open-sessions.ts:138",
+     "web/src/app/shell/live-notice/open-sessions.ts:171",
+     "web/src/app/core/images/imagegen-run.ts:192"
+    ],
+    "n": 6
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.CancelImageGeneration",
+  "sites": [
+   {
+    "wrapper": "cancel",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 96,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:612",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:641",
+     "web/src/app/shared/notes/notes-panel.ts:106",
+     "web/src/app/shared/notes/notes-sheet.ts:174",
+     "web/src/app/shared/notes/notes-sheet.ts:183"
+    ],
+    "n": 8
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.ListImageEdits",
+  "sites": [
+   {
+    "wrapper": "edits",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 102,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:438",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:726"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.GetMapImageReference",
+  "sites": [
+   {
+    "wrapper": "reference",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 112,
+    "callers": [
+     "web/src/app/shared/image-generate/generate-form.ts:112",
+     "web/src/app/shared/image-generate/generate-form.ts:119",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:218",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:372",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:373"
+    ],
+    "n": 6
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.GenerateMapImage",
+  "sites": [
+   {
+    "wrapper": "generateMap",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 65,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:530"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "ImageGenerationService.UseGeneratedImageAsMapImage",
+  "sites": [
+   {
+    "wrapper": "useAsMapImage",
+    "cls": "ImageGenClient",
+    "file": "web/src/app/core/images/imagegen-client.ts",
+    "line": 117,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:823"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.ListMaps",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 61,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "LinkPickerDialog",
+    "file": "web/src/app/pages/campaign-document/link-picker-dialog/link-picker-dialog.ts",
+    "line": 58,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CampaignDocumentPage",
+    "file": "web/src/app/pages/campaign-document/campaign-document.ts",
+    "line": 153,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "listMaps",
+    "cls": "DocumentLinks",
+    "file": "web/src/app/pages/campaign-document/document-clients.ts",
+    "line": 81,
+    "callers": [
+     "web/src/app/core/maps/maps-client.ts:61",
+     "web/src/app/pages/campaign-document/link-picker-dialog/link-picker-dialog.ts:58",
+     "web/src/app/pages/campaign-document/campaign-document.ts:153"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.GetMap",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 66,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   },
+   {
+    "wrapper": "getMap",
+    "cls": "DocumentLinks",
+    "file": "web/src/app/pages/campaign-document/document-clients.ts",
+    "line": 94,
+    "callers": [
+     "web/src/app/core/maps/maps-client.ts:66",
+     "web/src/app/pages/campaign-document/map-dialog/map-dialog.ts:75"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": "ngOnInit",
+    "cls": "DocumentMapDialog",
+    "file": "web/src/app/pages/campaign-document/map-dialog/map-dialog.ts",
+    "line": 75,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.CreateMap",
+  "sites": [
+   {
+    "wrapper": "create",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 99,
+    "callers": [
+     "web/src/app/core/notes/note-editing.ts:155",
+     "web/src/app/core/notes/notes-state.ts:176",
+     "web/src/app/core/content/content-client.ts:78",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:410",
+     "web/src/app/pages/maps/dungeon-new/dungeon-new.ts:376"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.UpdateMap",
+  "sites": [
+   {
+    "wrapper": "update",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 109,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:416",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:417",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:462",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:494",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:505"
+    ],
+    "n": 164
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.DeleteMap",
+  "sites": [
+   {
+    "wrapper": "delete",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 114,
+    "callers": [
+     "web/src/app/shared/map-view/map-view.ts:547",
+     "web/src/app/shared/fog-map/fog-base.ts:195",
+     "web/src/app/shared/xp/town-sheet.ts:178",
+     "web/src/app/shared/xp/town-sheet.ts:229",
+     "web/src/app/shared/xp/award-xp-sheet.ts:254"
+    ],
+    "n": 59
+   },
+   {
+    "wrapper": null,
+    "cls": "MapHead",
+    "file": "web/src/app/pages/maps/map-head/map-head.ts",
+    "line": 209,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.SetMapRevealed",
+  "sites": [
+   {
+    "wrapper": "setRevealed",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 118,
+    "callers": [
+     "web/src/app/pages/maps/map-page/map-page.ts:245"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.SetMapGrid",
+  "sites": [
+   {
+    "wrapper": "setGrid",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 132,
+    "callers": [
+     "web/src/app/pages/maps/grid-panel/calibrate-ask.ts:186",
+     "web/src/app/pages/maps/grid-panel/grid-panel.ts:156",
+     "web/src/app/pages/maps/map-grid/map-grid.ts:180"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.CreateMapPoint",
+  "sites": [
+   {
+    "wrapper": "createPoint",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 186,
+    "callers": [
+     "web/src/app/pages/maps/map-editor/map-editor.ts:447",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:462"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.UpdateMapPoint",
+  "sites": [
+   {
+    "wrapper": "updatePoint",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 196,
+    "callers": [
+     "web/src/app/pages/maps/scene-actions/scene-actions.ts:216",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:581",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:637"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.DeleteMapPoint",
+  "sites": [
+   {
+    "wrapper": "deletePoint",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 201,
+    "callers": [
+     "web/src/app/pages/maps/map-editor/map-editor.ts:692"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.SetMapPointRevealed",
+  "sites": [
+   {
+    "wrapper": "setPointRevealed",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 210,
+    "callers": [
+     "web/src/app/core/maps/map-reveals.ts:36",
+     "web/src/app/pages/live-session/treasure/treasure-panel/treasure-panel.ts:103"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.AddSceneAction",
+  "sites": [
+   {
+    "wrapper": "addSceneAction",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 322,
+    "callers": [
+     "web/src/app/pages/maps/scene-actions/scene-actions.ts:159"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "SceneActions",
+    "file": "web/src/app/pages/maps/scene-actions/scene-actions.ts",
+    "line": 159,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.UpdateSceneAction",
+  "sites": [
+   {
+    "wrapper": "setSceneActionAttempts",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 341,
+    "callers": [
+     "web/src/app/pages/maps/scene-actions/scene-actions.ts:237"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "updateSceneAction",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 360,
+    "callers": [
+     "web/src/app/core/maps/maps-client.ts:341 (same file)",
+     "web/src/app/pages/maps/scene-actions/scene-actions.ts:133"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "SceneActions",
+    "file": "web/src/app/pages/maps/scene-actions/scene-actions.ts",
+    "line": 133,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.MoveSceneAction",
+  "sites": [
+   {
+    "wrapper": "moveSceneAction",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 378,
+    "callers": [
+     "web/src/app/pages/maps/scene-actions/scene-actions.ts:187"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "SceneActions",
+    "file": "web/src/app/pages/maps/scene-actions/scene-actions.ts",
+    "line": 187,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.RemoveSceneAction",
+  "sites": [
+   {
+    "wrapper": "removeSceneAction",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 395,
+    "callers": [
+     "web/src/app/pages/maps/scene-actions/scene-actions.ts:265"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "SceneActions",
+    "file": "web/src/app/pages/maps/scene-actions/scene-actions.ts",
+    "line": 265,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.AddSceneClue",
+  "sites": [
+   {
+    "wrapper": "addSceneClue",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 407,
+    "callers": [
+     "web/src/app/pages/maps/clue-list/clue-list.ts:158"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "ClueList",
+    "file": "web/src/app/pages/maps/clue-list/clue-list.ts",
+    "line": 158,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.UpdateSceneClue",
+  "sites": [
+   {
+    "wrapper": "updateSceneClue",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 425,
+    "callers": [
+     "web/src/app/pages/maps/clue-list/clue-list.ts:184"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "ClueList",
+    "file": "web/src/app/pages/maps/clue-list/clue-list.ts",
+    "line": 184,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.MoveSceneClue",
+  "sites": [
+   {
+    "wrapper": "moveSceneClue",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 437,
+    "callers": [
+     "web/src/app/pages/maps/clue-list/clue-list.ts:212"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "ClueList",
+    "file": "web/src/app/pages/maps/clue-list/clue-list.ts",
+    "line": 212,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.RemoveSceneClue",
+  "sites": [
+   {
+    "wrapper": "removeSceneClue",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 454,
+    "callers": [
+     "web/src/app/pages/maps/clue-list/clue-list.ts:241"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "ClueList",
+    "file": "web/src/app/pages/maps/clue-list/clue-list.ts",
+    "line": 241,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.RevealSceneClue",
+  "sites": [
+   {
+    "wrapper": "revealSceneClue",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 465,
+    "callers": [
+     "web/src/app/pages/live-session/scene/reveal-sheet/reveal-sheet.ts:166"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "openRevealSheet",
+    "cls": "RevealSheet",
+    "file": "web/src/app/pages/live-session/scene/reveal-sheet/reveal-sheet.ts",
+    "line": 166,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.PlaceMapToken",
+  "sites": [
+   {
+    "wrapper": "placeToken",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 223,
+    "callers": [
+     "web/src/app/pages/live-session/session-map/session-map.ts:254",
+     "web/src/app/pages/live-session/session-map/session-map.ts:255",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:430",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:605",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:606"
+    ],
+    "n": 5
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.SetMapTokenHidden",
+  "sites": [
+   {
+    "wrapper": "setTokenHidden",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 240,
+    "callers": [
+     "web/src/app/core/maps/map-reveals.ts:61",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:711"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.RemoveMapToken",
+  "sites": [
+   {
+    "wrapper": "removeToken",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 252,
+    "callers": [
+     "web/src/app/pages/maps/map-editor/map-editor.ts:730",
+     "web/src/app/pages/maps/map-editor/map-editor.ts:734"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.PaintMapCells",
+  "sites": [
+   {
+    "wrapper": "paint",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 144,
+    "callers": [
+     "web/src/app/core/maps/paint-session.ts:30",
+     "web/src/app/pages/live-session/door-sheet/door-sheet.ts:229",
+     "web/src/app/pages/live-session/door-sheet/door-sheet.ts:242",
+     "web/src/app/pages/live-session/door-sheet/door-sheet.ts:259",
+     "web/src/app/pages/maps/map-editor/editor-painting.ts:252"
+    ],
+    "n": 6
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.GetMapLayers",
+  "sites": [
+   {
+    "wrapper": "layers",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 72,
+    "callers": [
+     "web/src/app/shared/combat-map/combat-map.ts:246",
+     "web/src/app/shared/fog-map/view-as-map.ts:37",
+     "web/src/app/shared/fog-map/fog-base.ts:116",
+     "web/src/app/shared/fog-map/fog-map.ts:134",
+     "web/src/app/shared/map-layers/map-layers-legend.ts:122"
+    ],
+    "n": 30
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.SetMapFog",
+  "sites": [
+   {
+    "wrapper": "setFog",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 160,
+    "callers": [
+     "web/src/app/pages/maps/fog-panel/fog-panel.ts:79"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.GetMapVision",
+  "sites": [
+   {
+    "wrapper": "vision",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 78,
+    "callers": [
+     "web/src/app/shared/fog-map/view-as-map.ts:36",
+     "web/src/app/shared/fog-map/view-as-map.ts:105",
+     "web/src/app/shared/fog-map/fog-base.ts:110",
+     "web/src/app/shared/fog-map/fog-base.ts:111",
+     "web/src/app/shared/fog-map/fog-base.ts:113"
+    ],
+    "n": 25
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.ForgetMapVision",
+  "sites": [
+   {
+    "wrapper": "forgetVision",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 166,
+    "callers": [
+     "web/src/app/pages/maps/fog-panel/fog-panel.ts:104"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.RevealTrap",
+  "sites": [
+   {
+    "wrapper": "revealTrap",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 267,
+    "callers": [
+     "web/src/app/pages/live-session/traps/trap-reveal-sheet/trap-reveal-sheet.ts:189"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "trapRevealLabel",
+    "cls": "TrapRevealSheet",
+    "file": "web/src/app/pages/live-session/traps/trap-reveal-sheet/trap-reveal-sheet.ts",
+    "line": 189,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.GetTrapNoticers",
+  "sites": [
+   {
+    "wrapper": "retryNoticers",
+    "cls": "TrapBoard",
+    "file": "web/src/app/core/traps/trap-board.ts",
+    "line": 130,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "getTrapNoticers",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 282,
+    "callers": [
+     "web/src/app/core/traps/trap-board.ts:130",
+     "web/src/app/pages/maps/point-kinds/trap-point-panel.ts:211"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "TrapPointPanel",
+    "file": "web/src/app/pages/maps/point-kinds/trap-point-panel.ts",
+    "line": 211,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.DisarmTrap",
+  "sites": [
+   {
+    "wrapper": "disarmTrap",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 287,
+    "callers": [
+     "web/src/app/pages/live-session/traps/trap-panel/trap-panel.ts:230"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "TrapPanel",
+    "file": "web/src/app/pages/live-session/traps/trap-panel/trap-panel.ts",
+    "line": 230,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.MarkTreasureFound",
+  "sites": [
+   {
+    "wrapper": "markTreasureFound",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 298,
+    "callers": [
+     "web/src/app/pages/live-session/treasure/treasure-panel/treasure-panel.ts:87",
+     "web/src/app/pages/maps/point-kinds/treasure-point-panel.ts:219",
+     "web/src/app/pages/maps/map-manage/map-manage.ts:188"
+    ],
+    "n": 3
+   },
+   {
+    "wrapper": null,
+    "cls": "TreasurePanel",
+    "file": "web/src/app/pages/live-session/treasure/treasure-panel/treasure-panel.ts",
+    "line": 87,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "discard",
+    "cls": "TreasurePointPanel",
+    "file": "web/src/app/pages/maps/point-kinds/treasure-point-panel.ts",
+    "line": 219,
+    "callers": [
+     "web/src/app/pages/maps/map-editor/map-editor.ts:536"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "MapManage",
+    "file": "web/src/app/pages/maps/map-manage/map-manage.ts",
+    "line": 188,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.UnmarkTreasureFound",
+  "sites": [
+   {
+    "wrapper": "unmarkTreasureFound",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 309,
+    "callers": [
+     "web/src/app/pages/live-session/treasure/treasure-panel/treasure-panel.ts:120",
+     "web/src/app/pages/maps/point-kinds/treasure-point-panel.ts:225"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "TreasurePanel",
+    "file": "web/src/app/pages/live-session/treasure/treasure-panel/treasure-panel.ts",
+    "line": 120,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "discard",
+    "cls": "TreasurePointPanel",
+    "file": "web/src/app/pages/maps/point-kinds/treasure-point-panel.ts",
+    "line": 225,
+    "callers": [
+     "web/src/app/pages/maps/map-editor/map-editor.ts:536"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "MapService.SetCarriedLight",
+  "sites": [
+   {
+    "wrapper": "setCarriedLight",
+    "cls": "MapsClient",
+    "file": "web/src/app/core/maps/maps-client.ts",
+    "line": 88,
+    "callers": [
+     "web/src/app/pages/live-session/carried-light/carried-light-sheet.ts:83",
+     "web/src/app/pages/live-session/carried-light/light-panel.ts:75"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": "openCarriedLight",
+    "cls": "CarriedLightSheet",
+    "file": "web/src/app/pages/live-session/carried-light/carried-light-sheet.ts",
+    "line": 83,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "LightPanel",
+    "file": "web/src/app/pages/live-session/carried-light/light-panel.ts",
+    "line": 75,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "TreasureService.GetTreasureParty",
+  "sites": [
+   {
+    "wrapper": "party",
+    "cls": "TreasureClient",
+    "file": "web/src/app/core/treasure/treasure-client.ts",
+    "line": 43,
+    "callers": [
+     "web/src/app/shared/fog-map/fog-map.ts:185",
+     "web/src/app/shared/fog-map/fog-map.ts:221",
+     "web/src/app/core/encounters/encounter-draft.ts:160",
+     "web/src/app/pages/encounters/encounter-builder/encounter-builder.ts:261",
+     "web/src/app/pages/encounters/encounter-builder/encounter-builder.ts:278"
+    ],
+    "n": 10
+   }
+  ]
+ },
+ {
+  "rpc": "TreasureService.GenerateTreasure",
+  "sites": [
+   {
+    "wrapper": "generate",
+    "cls": "TreasureClient",
+    "file": "web/src/app/core/treasure/treasure-client.ts",
+    "line": 53,
+    "callers": [
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:155",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:160",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:165",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:175",
+     "web/src/app/pages/treasure/treasure.ts:212"
+    ],
+    "n": 6
+   }
+  ]
+ },
+ {
+  "rpc": "TreasureService.GetMagicItem",
+  "sites": [
+   {
+    "wrapper": "item",
+    "cls": "TreasureClient",
+    "file": "web/src/app/core/treasure/treasure-client.ts",
+    "line": 63,
+    "callers": [
+     "web/src/app/shared/gallery-picker/upload-progress/upload-progress.ts:34",
+     "web/src/app/pages/treasure/item-sheet/item-sheet.ts:59",
+     "web/src/app/pages/treasure/item-sheet/item-sheet.ts:63",
+     "web/src/app/pages/treasure/item-sheet/item-sheet.ts:67",
+     "web/src/app/pages/treasure/item-sheet/item-sheet.ts:71"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "TreasureService.PlaceTreasure",
+  "sites": [
+   {
+    "wrapper": "place",
+    "cls": "TreasureClient",
+    "file": "web/src/app/core/treasure/treasure-client.ts",
+    "line": 68,
+    "callers": [
+     "web/src/app/shared/combat-map/combat-map.ts:276",
+     "web/src/app/shared/combat-map/combat-map.ts:281",
+     "web/src/app/shared/combat-map/combat-map.ts:289",
+     "web/src/app/pages/treasure/place-sheet/place-sheet.ts:378"
+    ],
+    "n": 4
+   }
+  ]
+ },
+ {
+  "rpc": "NotesService.ListNotes",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "NotesClient",
+    "file": "web/src/app/core/notes/notes-client.ts",
+    "line": 31,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "NotesService.CreateNote",
+  "sites": [
+   {
+    "wrapper": "create",
+    "cls": "NotesClient",
+    "file": "web/src/app/core/notes/notes-client.ts",
+    "line": 42,
+    "callers": [
+     "web/src/app/core/notes/note-editing.ts:155",
+     "web/src/app/core/notes/notes-state.ts:176",
+     "web/src/app/core/content/content-client.ts:78",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:410",
+     "web/src/app/pages/maps/dungeon-new/dungeon-new.ts:376"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "NotesService.UpdateNote",
+  "sites": [
+   {
+    "wrapper": "update",
+    "cls": "NotesClient",
+    "file": "web/src/app/core/notes/notes-client.ts",
+    "line": 52,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:416",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:417",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:462",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:494",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:505"
+    ],
+    "n": 164
+   }
+  ]
+ },
+ {
+  "rpc": "NotesService.DeleteNote",
+  "sites": [
+   {
+    "wrapper": "delete",
+    "cls": "NotesClient",
+    "file": "web/src/app/core/notes/notes-client.ts",
+    "line": 57,
+    "callers": [
+     "web/src/app/shared/map-view/map-view.ts:547",
+     "web/src/app/shared/fog-map/fog-base.ts:195",
+     "web/src/app/shared/xp/town-sheet.ts:178",
+     "web/src/app/shared/xp/town-sheet.ts:229",
+     "web/src/app/shared/xp/award-xp-sheet.ts:254"
+    ],
+    "n": 59
+   }
+  ]
+ },
+ {
+  "rpc": "NotesService.ListNoteScenes",
+  "sites": [
+   {
+    "wrapper": "scenes",
+    "cls": "NotesClient",
+    "file": "web/src/app/core/notes/notes-client.ts",
+    "line": 62,
+    "callers": [
+     "web/src/app/shared/notes/notes-panel.ts:54",
+     "web/src/app/shared/notes/note-fields.ts:64",
+     "web/src/app/shared/notes/notes-sheet.ts:94",
+     "web/src/app/core/notes/note-editing.ts:69",
+     "web/src/app/core/notes/notes-state.ts:69"
+    ],
+    "n": 6
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.StartEncounter",
+  "sites": [
+   {
+    "wrapper": "start",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 227,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:604",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:218",
+     "web/src/app/shared/familiar-eyes/familiar-eyes-sheet.ts:78",
+     "web/src/app/shell/live-notice/open-sessions.ts:92",
+     "web/src/app/core/content/content-watcher.ts:92"
+    ],
+    "n": 22
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.GetEncounter",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 216,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SubmitInitiative",
+  "sites": [
+   {
+    "wrapper": "submitInitiative",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 286,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1797",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1803"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1797,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1803,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SetInitiativeOrder",
+  "sites": [
+   {
+    "wrapper": "setOrder",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 308,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1808"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.BeginCombat",
+  "sites": [
+   {
+    "wrapper": "begin",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 320,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:527",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:843",
+     "web/src/app/core/images/imagegen-run.ts:123",
+     "web/src/app/core/images/imagegen-run.ts:129",
+     "web/src/app/core/notes/note-editing.ts:70"
+    ],
+    "n": 8
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.EndTurn",
+  "sites": [
+   {
+    "wrapper": "endTurn",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 349,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1226",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1232",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1662"
+    ],
+    "n": 3
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1226,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1232,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1662,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.MoveCombatant",
+  "sites": [
+   {
+    "wrapper": "move",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 381,
+    "callers": [
+     "web/src/app/core/puzzles/puzzle-play.ts:367",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2051",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2058",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2111",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2129"
+    ],
+    "n": 11
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.GetMoveOptions",
+  "sites": [
+   {
+    "wrapper": "moveOptions",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 413,
+    "callers": [
+     "web/src/app/core/combat/move-options-state.ts:33"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SpendMovement",
+  "sites": [
+   {
+    "wrapper": "spendMovement",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 500,
+    "callers": [
+     "web/src/app/pages/live-session/combat/theatre/master-spend.ts:115",
+     "web/src/app/pages/live-session/combat/theatre/spend-sheet.ts:137"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "MasterSpend",
+    "file": "web/src/app/pages/live-session/combat/theatre/master-spend.ts",
+    "line": 115,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "SpendSheet",
+    "file": "web/src/app/pages/live-session/combat/theatre/spend-sheet.ts",
+    "line": 137,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.OfferOpportunity",
+  "sites": [
+   {
+    "wrapper": "offerOpportunity",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 521,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1983"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1983,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.WithdrawOpportunity",
+  "sites": [
+   {
+    "wrapper": "withdrawOpportunity",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 540,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:2007"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 2007,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SetCombatantSide",
+  "sites": [
+   {
+    "wrapper": "setSide",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 426,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:2012"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SetCombatantCover",
+  "sites": [
+   {
+    "wrapper": "setCover",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 447,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:2017"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SetCombatantHidden",
+  "sites": [
+   {
+    "wrapper": "setHidden",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 559,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1812"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.AddCombatants",
+  "sites": [
+   {
+    "wrapper": "add",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 579,
+    "callers": [
+     "web/src/app/shared/markdown/markdown-view.ts:74",
+     "web/src/app/shared/markdown/markdown.ts:367",
+     "web/src/app/shared/markdown/markdown.ts:375",
+     "web/src/app/shared/combat-map/combat-map.ts:151",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:202"
+    ],
+    "n": 52
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.AddMonsters",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "PutMonstersSheet",
+    "file": "web/src/app/shared/monsters/put-sheet/put-sheet.ts",
+    "line": 214,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "addMonsters",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 264,
+    "callers": [
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:214"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.RemoveCombatant",
+  "sites": [
+   {
+    "wrapper": "remove",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 594,
+    "callers": [
+     "web/src/app/shared/notes/note-fields.ts:100",
+     "web/src/app/core/images/upload-queue.ts:106",
+     "web/src/app/core/images/upload-queue.ts:157",
+     "web/src/app/core/images/upload-queue.ts:162",
+     "web/src/app/core/notes/note-editing.ts:174"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.EndEncounter",
+  "sites": [
+   {
+    "wrapper": "end",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 946,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1792"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.GetTurnOptions",
+  "sites": [
+   {
+    "wrapper": "turnOptions",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 611,
+    "callers": [
+     "web/src/app/core/combat/turn-options-state.ts:30",
+     "web/src/app/core/combat/creature-options-state.ts:24",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1130",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1875"
+    ],
+    "n": 4
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.RollAttack",
+  "sites": [
+   {
+    "wrapper": "rollAttack",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 627,
+    "callers": [
+     "web/src/app/pages/live-session/combat/npc-card/npc-card.ts:298",
+     "web/src/app/pages/live-session/combat/npc-card/npc-card.ts:302",
+     "web/src/app/pages/live-session/combat/npc-card/npc-card.ts:314",
+     "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts:388",
+     "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts:412"
+    ],
+    "n": 5
+   },
+   {
+    "wrapper": null,
+    "cls": "NpcCard",
+    "file": "web/src/app/pages/live-session/combat/npc-card/npc-card.ts",
+    "line": 298,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "NpcCard",
+    "file": "web/src/app/pages/live-session/combat/npc-card/npc-card.ts",
+    "line": 302,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "NpcCard",
+    "file": "web/src/app/pages/live-session/combat/npc-card/npc-card.ts",
+    "line": 314,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "AttackSheet",
+    "file": "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts",
+    "line": 388,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "AttackSheet",
+    "file": "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts",
+    "line": 412,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.RollDamage",
+  "sites": [
+   {
+    "wrapper": "rollDamage",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 653,
+    "callers": [
+     "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts:188",
+     "web/src/app/pages/live-session/combat/cast-sheet/cast-sheet.ts:680",
+     "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts:423",
+     "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts:442"
+    ],
+    "n": 4
+   },
+   {
+    "wrapper": null,
+    "cls": "PendingDamages",
+    "file": "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts",
+    "line": 188,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CastSheet",
+    "file": "web/src/app/pages/live-session/combat/cast-sheet/cast-sheet.ts",
+    "line": 680,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "AttackSheet",
+    "file": "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts",
+    "line": 423,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "AttackSheet",
+    "file": "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts",
+    "line": 442,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.ApplyPendingDamage",
+  "sites": [
+   {
+    "wrapper": "applyDamage",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 681,
+    "callers": [
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:143",
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:152",
+     "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts:281"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.DiscardPendingDamage",
+  "sites": [
+   {
+    "wrapper": "discardDamage",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 705,
+    "callers": [
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:167",
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:170",
+     "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts:325"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.TakeAction",
+  "sites": [
+   {
+    "wrapper": "takeAction",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 767,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1245",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1259",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1357",
+     "web/src/app/pages/live-session/combat/feature-sheet/feature-sheet.ts:149"
+    ],
+    "n": 4
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1245,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1259,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1357,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "FeatureSheet",
+    "file": "web/src/app/pages/live-session/combat/feature-sheet/feature-sheet.ts",
+    "line": 149,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.AdjustCombatantHitPoints",
+  "sites": [
+   {
+    "wrapper": "adjustHitPoints",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 901,
+    "callers": [
+     "web/src/app/pages/live-session/combat/adjust-npc/adjust-npc.ts:138"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.UndoLastAction",
+  "sites": [
+   {
+    "wrapper": "undo",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 923,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1960",
+     "web/src/app/pages/live-session/combat/combat-log/combat-log-panel.ts:140",
+     "web/src/app/pages/live-session/treasure/treasure-card/treasure-card.ts:130",
+     "web/src/app/pages/maps/point-kinds/treasure-point-panel.ts:208"
+    ],
+    "n": 4
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.CastSpell",
+  "sites": [
+   {
+    "wrapper": "castSpell",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 799,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:592",
+     "web/src/app/pages/live-session/combat/cast-sheet/cast-sheet.ts:624"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "SummonSheet",
+    "file": "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts",
+    "line": 592,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CastSheet",
+    "file": "web/src/app/pages/live-session/combat/cast-sheet/cast-sheet.ts",
+    "line": 624,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.UseReaction",
+  "sites": [
+   {
+    "wrapper": "useReaction",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 727,
+    "callers": [
+     "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts:202",
+     "web/src/app/pages/live-session/combat/shield-sheet/shield-sheet.ts:214"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "PendingDamages",
+    "file": "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts",
+    "line": 202,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "ShieldSheet",
+    "file": "web/src/app/pages/live-session/combat/shield-sheet/shield-sheet.ts",
+    "line": 214,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.DeclineReaction",
+  "sites": [
+   {
+    "wrapper": "declineReaction",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 744,
+    "callers": [
+     "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts:225",
+     "web/src/app/pages/live-session/combat/shield-sheet/shield-sheet.ts:238"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "PendingDamages",
+    "file": "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts",
+    "line": 225,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "ShieldSheet",
+    "file": "web/src/app/pages/live-session/combat/shield-sheet/shield-sheet.ts",
+    "line": 238,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.DeclineOpportunity",
+  "sites": [
+   {
+    "wrapper": "declineOpportunity",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 465,
+    "callers": [
+     "web/src/app/pages/live-session/combat/opportunity/opportunity-sheet.ts:198",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1951"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "OpportunitySheet",
+    "file": "web/src/app/pages/live-session/combat/opportunity/opportunity-sheet.ts",
+    "line": 198,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1951,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SkipOpportunity",
+  "sites": [
+   {
+    "wrapper": "skipOpportunity",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 482,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1966"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1966,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.RollDeathSave",
+  "sites": [
+   {
+    "wrapper": "rollDeathSave",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 837,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1599"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1599,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.ConfirmDeath",
+  "sites": [
+   {
+    "wrapper": "confirmDeath",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 858,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1613"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 1613,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.SetCombatantConditions",
+  "sites": [
+   {
+    "wrapper": "setConditions",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 879,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:1642",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1818",
+     "web/src/app/pages/live-session/combat/conditions-dialog/conditions-dialog.ts:179"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.EndConcentration",
+  "sites": []
+ },
+ {
+  "rpc": "CombatService.ListCombatLog",
+  "sites": [
+   {
+    "wrapper": "log",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 935,
+    "callers": [
+     "web/src/app/core/combat/combat-log-state.ts:24",
+     "web/src/app/pages/live-session/combat/combat-log/combat-log-panel.ts:79",
+     "web/src/app/pages/live-session/combat/combat-log/combat-log-panel.ts:98",
+     "web/src/app/pages/live-session/combat/combat-log/combat-log-panel.ts:134"
+    ],
+    "n": 4
+   }
+  ]
+ },
+ {
+  "rpc": "CombatService.GetCombatHighlights",
+  "sites": [
+   {
+    "wrapper": "highlights",
+    "cls": "CombatClient",
+    "file": "web/src/app/core/combat/combat-client.ts",
+    "line": 941,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-highlights/combat-highlights.ts:88",
+     "web/src/app/pages/live-session/combat/combat-highlights/highlights-card.ts:78"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "EncounterService.EvaluateEncounter",
+  "sites": [
+   {
+    "wrapper": "evaluate",
+    "cls": "EncountersClient",
+    "file": "web/src/app/core/encounters/encounters-client.ts",
+    "line": 64,
+    "callers": [
+     "web/src/app/core/encounters/encounter-draft.ts:160",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:245",
+     "web/src/app/pages/encounters/party-npc-sheet/party-npc-sheet.ts:114"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "EncounterService.GenerateEncounter",
+  "sites": [
+   {
+    "wrapper": "generate",
+    "cls": "EncountersClient",
+    "file": "web/src/app/core/encounters/encounters-client.ts",
+    "line": 80,
+    "callers": [
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:155",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:160",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:165",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:175",
+     "web/src/app/pages/treasure/treasure.ts:212"
+    ],
+    "n": 6
+   }
+  ]
+ },
+ {
+  "rpc": "EncounterService.ListEncounterSwaps",
+  "sites": [
+   {
+    "wrapper": "swaps",
+    "cls": "EncountersClient",
+    "file": "web/src/app/core/encounters/encounters-client.ts",
+    "line": 96,
+    "callers": [
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:149",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:208",
+     "web/src/app/pages/encounters/generate-sheet/generate-sheet.ts:232"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "EncounterService.SaveBattleEncounter",
+  "sites": [
+   {
+    "wrapper": "save",
+    "cls": "EncountersClient",
+    "file": "web/src/app/core/encounters/encounters-client.ts",
+    "line": 109,
+    "callers": [
+     "web/src/app/shared/notes/notes-panel.ts:100",
+     "web/src/app/shared/notes/notes-sheet.ts:168",
+     "web/src/app/core/maps/move-saves.ts:58",
+     "web/src/app/pages/encounters/save-sheet/save-sheet.ts:201",
+     "web/src/app/pages/content/options/options.ts:112"
+    ],
+    "n": 13
+   }
+  ]
+ },
+ {
+  "rpc": "EncounterService.GetBattleEncounter",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "EncountersClient",
+    "file": "web/src/app/core/encounters/encounters-client.ts",
+    "line": 126,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   }
+  ]
+ },
+ {
+  "rpc": "EncounterService.ClearBattleEncounter",
+  "sites": [
+   {
+    "wrapper": "clear",
+    "cls": "EncountersClient",
+    "file": "web/src/app/core/encounters/encounters-client.ts",
+    "line": 139,
+    "callers": [
+     "web/src/app/shared/fog-map/fog-base.ts:205",
+     "web/src/app/app.ts:91",
+     "web/src/app/core/traps/trap-board.ts:161",
+     "web/src/app/core/traps/trap-board.ts:162",
+     "web/src/app/core/traps/toast-queue.ts:48"
+    ],
+    "n": 40
+   }
+  ]
+ },
+ {
+  "rpc": "EncounterService.ListBattleEncounters",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "EncountersClient",
+    "file": "web/src/app/core/encounters/encounters-client.ts",
+    "line": 144,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.StartGameSession",
+  "sites": [
+   {
+    "wrapper": "startGameSession",
+    "cls": "GameSessionSourceLive",
+    "file": "web/src/app/pages/campaign-detail/game-session/game-session-source.live.ts",
+    "line": 42,
+    "callers": [
+     "web/src/app/pages/campaign-detail/game-session/game-session-card.ts:161"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "ngOnDestroy",
+    "cls": "GameSessionCard",
+    "file": "web/src/app/pages/campaign-detail/game-session/game-session-card.ts",
+    "line": 161,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.EndGameSession",
+  "sites": [
+   {
+    "wrapper": "endSession",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 289,
+    "callers": [
+     "web/src/app/pages/live-session/session-header/session-header.ts:115"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "endGameSession",
+    "cls": "GameSessionSourceLive",
+    "file": "web/src/app/pages/campaign-detail/game-session/game-session-source.live.ts",
+    "line": 47,
+    "callers": [
+     "web/src/app/pages/live-session/live-session-source.live.ts:289",
+     "web/src/app/pages/campaign-detail/game-session/game-session-card.ts:195"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": "ngOnDestroy",
+    "cls": "GameSessionCard",
+    "file": "web/src/app/pages/campaign-detail/game-session/game-session-card.ts",
+    "line": 195,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.GetSessionSummary",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "SessionSummaryClient",
+    "file": "web/src/app/core/play/session-summary.ts",
+    "line": 31,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.ListGameSessions",
+  "sites": [
+   {
+    "wrapper": "getCurrentSession",
+    "cls": "GameSessionSourceLive",
+    "file": "web/src/app/pages/campaign-detail/game-session/game-session-source.live.ts",
+    "line": 33,
+    "callers": [
+     "web/src/app/pages/campaign-detail/game-session/game-session-card.ts:139"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.ListOpenGameSessions",
+  "sites": [
+   {
+    "wrapper": "createOpenSessionsFetcher",
+    "cls": null,
+    "file": "web/src/app/shell/live-notice/open-sessions-client.ts",
+    "line": 17,
+    "callers": [
+     "web/src/app/shell/live-notice/open-sessions.ts:46"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.GetLiveSession",
+  "sites": [
+   {
+    "wrapper": "vitalsOf",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 227,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/creatures-panel.ts:159"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "currentMap",
+    "cls": "OpenSessionLookup",
+    "file": "web/src/app/core/play/open-session.ts",
+    "line": 28,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:356",
+     "web/src/app/pages/campaign-document/document-clients.ts:113",
+     "web/src/app/pages/maps/map-page/map-page.ts:198"
+    ],
+    "n": 3
+   },
+   {
+    "wrapper": null,
+    "cls": "LiveSession",
+    "file": "web/src/app/pages/live-session/live-session.ts",
+    "line": 679,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "getLiveSession",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 257,
+    "callers": [
+     "web/src/app/core/creatures/creatures-client.ts:227",
+     "web/src/app/core/play/open-session.ts:28",
+     "web/src/app/pages/live-session/live-session.ts:679"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.WatchGameSession",
+  "sites": [
+   {
+    "wrapper": "getCampaign",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 147,
+    "callers": [
+     "web/src/app/core/creatures/bestiary-access.ts:27",
+     "web/src/app/core/treasure/treasure-access.ts:27",
+     "web/src/app/core/content/content-context.ts:27",
+     "web/src/app/core/puzzles/puzzle-access.ts:27",
+     "web/src/app/core/levelup/levelup-client.ts:165"
+    ],
+    "n": 23
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.AdjustCharacterVitals",
+  "sites": [
+   {
+    "wrapper": "adjustVitals",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 273,
+    "callers": [
+     "web/src/app/pages/live-session/adjust-vitals/adjust-vitals.ts:176"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.SetCurrentMap",
+  "sites": [
+   {
+    "wrapper": "setCurrentMap",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 293,
+    "callers": [
+     "web/src/app/pages/live-session/session-map/session-map.ts:221"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "SessionMap",
+    "file": "web/src/app/pages/live-session/session-map/session-map.ts",
+    "line": 221,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.SetShownImage",
+  "sites": [
+   {
+    "wrapper": "show",
+    "cls": "ShownImageClient",
+    "file": "web/src/app/core/images/shown-client.ts",
+    "line": 18,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:782",
+     "web/src/app/core/play/scene-state.ts:65",
+     "web/src/app/core/play/scene-state.ts:74",
+     "web/src/app/pages/live-session/puzzles/master-puzzles/master-puzzles.ts:106",
+     "web/src/app/pages/level-up/level-up.ts:517"
+    ],
+    "n": 10
+   },
+   {
+    "wrapper": "setShownImage",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 302,
+    "callers": [
+     "web/src/app/core/images/shown-client.ts:18",
+     "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts:141",
+     "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts:179",
+     "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts:207"
+    ],
+    "n": 4
+   },
+   {
+    "wrapper": "hiddenMapImages",
+    "cls": "ShownImagePanel",
+    "file": "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts",
+    "line": 141,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "hiddenMapImages",
+    "cls": "ShownImagePanel",
+    "file": "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts",
+    "line": 179,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "hiddenMapImages",
+    "cls": "ShownImagePanel",
+    "file": "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts",
+    "line": 207,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.ListLeftImages",
+  "sites": [
+   {
+    "wrapper": null,
+    "cls": "LiveSession",
+    "file": "web/src/app/pages/live-session/live-session.ts",
+    "line": 973,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "listLeftImages",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 307,
+    "callers": [
+     "web/src/app/pages/live-session/live-session.ts:973"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.TakeBackLeftImage",
+  "sites": [
+   {
+    "wrapper": "takeBackLeftImage",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 312,
+    "callers": [
+     "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts:229"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "hiddenMapImages",
+    "cls": "ShownImagePanel",
+    "file": "web/src/app/pages/live-session/shown-image-panel/shown-image-panel.ts",
+    "line": 229,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.OpenScene",
+  "sites": [
+   {
+    "wrapper": "openNew",
+    "cls": "NoteEditing",
+    "file": "web/src/app/core/notes/note-editing.ts",
+    "line": 68,
+    "callers": [
+     "web/src/app/shared/notes/notes-panel.ts:79",
+     "web/src/app/shared/notes/notes-sheet.ts:146"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": "open",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 23,
+    "callers": [
+     "web/src/app/shared/spell-details/open-spell-details.ts:24",
+     "web/src/app/shared/spell-details/open-spell-details.ts:31",
+     "web/src/app/shared/spell-details/open-spell-details.ts:42",
+     "web/src/app/shared/familiar-eyes/familiar-eyes-button.ts:72",
+     "web/src/app/shared/fog-map/view-as-map.ts:126"
+    ],
+    "n": 50
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.CloseScene",
+  "sites": [
+   {
+    "wrapper": "close",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 28,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:647",
+     "web/src/app/shared/spell-details/spell-details.ts:76",
+     "web/src/app/shared/sheet/sheet-host.ts:96",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:230",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:262"
+    ],
+    "n": 104
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.GetOpenScene",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 33,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.RollSceneCheck",
+  "sites": [
+   {
+    "wrapper": "roll",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 64,
+    "callers": [
+     "web/src/app/pages/live-session/combat/start-combat/start-combat-dialog.ts:326",
+     "web/src/app/pages/live-session/combat/attack-sheet/attack-result.ts:81",
+     "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts:205",
+     "web/src/app/pages/live-session/combat/attack-sheet/attack-sheet.ts:215",
+     "web/src/app/pages/live-session/combat/feature-sheet/feature-sheet.ts:132"
+    ],
+    "n": 22
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.SearchForTraps",
+  "sites": [
+   {
+    "wrapper": "search",
+    "cls": "TrapsClient",
+    "file": "web/src/app/core/traps/traps-client.ts",
+    "line": 39,
+    "callers": [
+     "web/src/app/core/spells/spells-state.ts:62",
+     "web/src/app/core/spells/spells-state.ts:77",
+     "web/src/app/pages/encounters/creature-pick/creature-pick.ts:121",
+     "web/src/app/pages/encounters/creature-pick/creature-pick.ts:128",
+     "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:450"
+    ],
+    "n": 21
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.FireTrap",
+  "sites": [
+   {
+    "wrapper": "fire",
+    "cls": "TrapsClient",
+    "file": "web/src/app/core/traps/traps-client.ts",
+    "line": 59,
+    "callers": [
+     "web/src/app/pages/live-session/traps/trap-fire-sheet/trap-fire-sheet.ts:213"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.ListTrapActivity",
+  "sites": [
+   {
+    "wrapper": "activity",
+    "cls": "TrapsClient",
+    "file": "web/src/app/core/traps/traps-client.ts",
+    "line": 71,
+    "callers": [
+     "web/src/app/core/traps/trap-board.ts:47",
+     "web/src/app/core/traps/trap-board.ts:144",
+     "web/src/app/pages/live-session/traps/trap-activity/trap-activity.ts:91"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.ListTrapDamages",
+  "sites": [
+   {
+    "wrapper": "damages",
+    "cls": "TrapsClient",
+    "file": "web/src/app/core/traps/traps-client.ts",
+    "line": 76,
+    "callers": [
+     "web/src/app/core/traps/trap-board.ts:63",
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:67"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.ApplyTrapDamage",
+  "sites": [
+   {
+    "wrapper": "applyDamage",
+    "cls": "TrapsClient",
+    "file": "web/src/app/core/traps/traps-client.ts",
+    "line": 86,
+    "callers": [
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:143",
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:152",
+     "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts:281"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.DiscardTrapDamage",
+  "sites": [
+   {
+    "wrapper": "discardDamage",
+    "cls": "TrapsClient",
+    "file": "web/src/app/core/traps/traps-client.ts",
+    "line": 94,
+    "callers": [
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:167",
+     "web/src/app/pages/live-session/traps/trap-damages/trap-damages.ts:170",
+     "web/src/app/pages/live-session/combat/npc-card/pending-damages.ts:325"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.GrantSceneAttempt",
+  "sites": [
+   {
+    "wrapper": "grantAttempt",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 83,
+    "callers": [
+     "web/src/app/pages/live-session/scene/scene-roll-line/scene-roll-line.ts:120"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.PutOnStage",
+  "sites": [
+   {
+    "wrapper": "putOnStage",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 40,
+    "callers": [
+     "web/src/app/core/play/stage-controller.ts:65"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "put",
+    "cls": "StageController",
+    "file": "web/src/app/core/play/stage-controller.ts",
+    "line": 65,
+    "callers": [
+     "web/src/app/core/puzzles/puzzle-session.ts:113",
+     "web/src/app/core/puzzles/puzzle-session.ts:141",
+     "web/src/app/pages/live-session/scene/stage-master/stage-list.ts:120"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.TakeOffStage",
+  "sites": [
+   {
+    "wrapper": "takeOffStage",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 46,
+    "callers": [
+     "web/src/app/core/play/stage-controller.ts:79"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "take",
+    "cls": "StageController",
+    "file": "web/src/app/core/play/stage-controller.ts",
+    "line": 79,
+    "callers": [
+     "web/src/app/pages/character-editor/table-ability-scores/table-ability-scores.ts:371",
+     "web/src/app/pages/character-editor/table-ability-scores/table-ability-scores.ts:391",
+     "web/src/app/pages/live-session/scene/stage-master/stage-master.ts:118"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.SetSpeaker",
+  "sites": [
+   {
+    "wrapper": "setSpeaker",
+    "cls": "SceneClient",
+    "file": "web/src/app/core/play/scene-client.ts",
+    "line": 52,
+    "callers": [
+     "web/src/app/core/play/stage-controller.ts:93"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "speak",
+    "cls": "StageController",
+    "file": "web/src/app/core/play/stage-controller.ts",
+    "line": 93,
+    "callers": [
+     "web/src/app/pages/live-session/scene/stage-master/stage-master.ts:114"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.CastSummon",
+  "sites": [
+   {
+    "wrapper": "castSummon",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 235,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:549"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "SummonSheet",
+    "file": "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts",
+    "line": 549,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.AssumeWildShape",
+  "sites": [
+   {
+    "wrapper": "openWildShape",
+    "cls": "WildShapeSheet",
+    "file": "web/src/app/shared/wild-shape/wild-shape-sheet.ts",
+    "line": 182,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "assumeWildShape",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 100,
+    "callers": [
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:182"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.LeaveWildShape",
+  "sites": [
+   {
+    "wrapper": "leaveWildShape",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 118,
+    "callers": [
+     "web/src/app/pages/character-sheet/creatures-panel/creatures-panel.ts:207",
+     "web/src/app/pages/live-session/combat/combat-view.ts:448"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": null,
+    "cls": "CreaturesPanel",
+    "file": "web/src/app/pages/character-sheet/creatures-panel/creatures-panel.ts",
+    "line": 207,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": null,
+    "cls": "CombatView",
+    "file": "web/src/app/pages/live-session/combat/combat-view.ts",
+    "line": 448,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.StartFamiliarSight",
+  "sites": [
+   {
+    "wrapper": "start",
+    "cls": "FamiliarEyesClient",
+    "file": "web/src/app/core/play/familiar-eyes.ts",
+    "line": 46,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:604",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:218",
+     "web/src/app/shared/familiar-eyes/familiar-eyes-sheet.ts:78",
+     "web/src/app/shell/live-notice/open-sessions.ts:92",
+     "web/src/app/core/content/content-watcher.ts:92"
+    ],
+    "n": 22
+   }
+  ]
+ },
+ {
+  "rpc": "PlayService.StopFamiliarSight",
+  "sites": [
+   {
+    "wrapper": "stop",
+    "cls": "FamiliarEyesClient",
+    "file": "web/src/app/core/play/familiar-eyes.ts",
+    "line": 54,
+    "callers": [
+     "web/src/app/shared/familiar-eyes/familiar-band.ts:78",
+     "web/src/app/shell/live-notice/open-sessions.ts:94",
+     "web/src/app/shell/live-notice/open-sessions.ts:102",
+     "web/src/app/core/content/content-watcher.ts:58",
+     "web/src/app/core/content/content-watcher.ts:87"
+    ],
+    "n": 25
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.CreatePuzzle",
+  "sites": [
+   {
+    "wrapper": "create",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 60,
+    "callers": [
+     "web/src/app/core/notes/note-editing.ts:155",
+     "web/src/app/core/notes/notes-state.ts:176",
+     "web/src/app/core/content/content-client.ts:78",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:410",
+     "web/src/app/pages/maps/dungeon-new/dungeon-new.ts:376"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.UpdatePuzzle",
+  "sites": [
+   {
+    "wrapper": "update",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 67,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:416",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:417",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:462",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:494",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:505"
+    ],
+    "n": 164
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.PreviewPuzzleStart",
+  "sites": [
+   {
+    "wrapper": "previewStart",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 79,
+    "callers": [
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:368"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ListPuzzles",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 50,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.GetPuzzle",
+  "sites": [
+   {
+    "wrapper": "get",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 54,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:399",
+     "web/src/app/shared/markdown/markdown-view.ts:70",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:161",
+     "web/src/app/shared/wild-shape/wild-shape-sheet.ts:111",
+     "web/src/app/shared/gallery-picker/image-picker-dialog/image-picker-dialog.ts:125"
+    ],
+    "n": 242
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ArchivePuzzle",
+  "sites": [
+   {
+    "wrapper": "archive",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 92,
+    "callers": [
+     "web/src/app/pages/content/content-entry/content-entry.ts:473",
+     "web/src/app/pages/content/content-entry/content-entry.ts:492",
+     "web/src/app/pages/content/content-list/content-list.ts:266",
+     "web/src/app/pages/puzzles/puzzles-panel/puzzles-panel.ts:108"
+    ],
+    "n": 4
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.UnarchivePuzzle",
+  "sites": [
+   {
+    "wrapper": "unarchive",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 99,
+    "callers": [
+     "web/src/app/pages/content/content-entry/content-entry.ts:511",
+     "web/src/app/pages/content/content-list/content-list.ts:265",
+     "web/src/app/pages/puzzles/puzzles-panel/puzzles-panel.ts:136"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ListSessionPuzzles",
+  "sites": [
+   {
+    "wrapper": "listSession",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 107,
+    "callers": [
+     "web/src/app/core/puzzles/puzzle-session.ts:68"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ShowPuzzle",
+  "sites": [
+   {
+    "wrapper": "show",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 118,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:782",
+     "web/src/app/core/play/scene-state.ts:65",
+     "web/src/app/core/play/scene-state.ts:74",
+     "web/src/app/pages/live-session/puzzles/master-puzzles/master-puzzles.ts:106",
+     "web/src/app/pages/level-up/level-up.ts:517"
+    ],
+    "n": 10
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ResetPuzzle",
+  "sites": [
+   {
+    "wrapper": "reset",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 129,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1041",
+     "web/src/app/pages/character-editor/character-editor.ts:1042",
+     "web/src/app/pages/live-session/combat/npc-card/npc-card.ts:326",
+     "web/src/app/pages/live-session/puzzles/master-run/master-run.ts:357",
+     "web/src/app/pages/campaign-detail/invites/invites.ts:143"
+    ],
+    "n": 15
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ReseedPuzzle",
+  "sites": [
+   {
+    "wrapper": "reseed",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 140,
+    "callers": [
+     "web/src/app/pages/live-session/puzzles/master-run/master-run.ts:355"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ClosePuzzle",
+  "sites": [
+   {
+    "wrapper": "close",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 146,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:647",
+     "web/src/app/shared/spell-details/spell-details.ts:76",
+     "web/src/app/shared/sheet/sheet-host.ts:96",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:230",
+     "web/src/app/shared/monsters/put-sheet/put-sheet.ts:262"
+    ],
+    "n": 104
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ReleaseNextPuzzleHint",
+  "sites": [
+   {
+    "wrapper": "releaseHint",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 155,
+    "callers": [
+     "web/src/app/pages/live-session/puzzles/master-run/master-run.ts:351"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.PreviewPuzzleCipher",
+  "sites": [
+   {
+    "wrapper": "previewCipher",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 87,
+    "callers": [
+     "web/src/app/pages/puzzles/puzzle-form/cipher-form.ts:204"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.PlayPuzzleSequence",
+  "sites": [
+   {
+    "wrapper": "playSequence",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 167,
+    "callers": [
+     "web/src/app/pages/live-session/puzzles/master-run/master-run.ts:353"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.GetMasterPuzzleRun",
+  "sites": [
+   {
+    "wrapper": "masterRun",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 112,
+    "callers": [
+     "web/src/app/core/puzzles/puzzle-session.ts:107",
+     "web/src/app/pages/live-session/puzzles/master-run/master-run.ts:330"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.ListShownPuzzles",
+  "sites": [
+   {
+    "wrapper": "listShown",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 175,
+    "callers": [
+     "web/src/app/core/puzzles/puzzle-session.ts:83"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.GetPuzzleRun",
+  "sites": [
+   {
+    "wrapper": "run",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 179,
+    "callers": [
+     "web/src/app/shared/image-generate/generate-running.ts:45",
+     "web/src/app/shared/image-generate/generate-running.ts:60",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:243",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:330",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:332"
+    ],
+    "n": 116
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.TryPuzzleHint",
+  "sites": [
+   {
+    "wrapper": "tryHint",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 204,
+    "callers": [
+     "web/src/app/core/puzzles/puzzle-play.ts:349"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "PuzzleService.MakePuzzleMove",
+  "sites": [
+   {
+    "wrapper": "move",
+    "cls": "PuzzlesClient",
+    "file": "web/src/app/core/puzzles/puzzles-client.ts",
+    "line": 188,
+    "callers": [
+     "web/src/app/core/puzzles/puzzle-play.ts:367",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2051",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2058",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2111",
+     "web/src/app/pages/live-session/combat/combat-view.ts:2129"
+    ],
+    "n": 11
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.AwardXP",
+  "sites": [
+   {
+    "wrapper": "award",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 55,
+    "callers": [
+     "web/src/app/shared/xp/town-sheet.ts:194",
+     "web/src/app/shared/xp/award-xp-sheet.ts:299",
+     "web/src/app/pages/live-session/combat/combat-xp/combat-xp.ts:181",
+     "web/src/app/pages/live-session/combat/combat-xp/combat-xp.ts:255",
+     "web/src/app/pages/live-session/combat/combat-xp/combat-xp.ts:368"
+    ],
+    "n": 5
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.ListTreasuresToConvert",
+  "sites": [
+   {
+    "wrapper": "listTreasures",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 76,
+    "callers": [
+     "web/src/app/shared/xp/town-sheet.ts:158",
+     "web/src/app/shared/xp/award-xp-sheet.ts:230",
+     "web/src/app/core/progression/experience-store.ts:118"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.MarkMilestone",
+  "sites": [
+   {
+    "wrapper": "String",
+    "cls": "MilestoneSheet",
+    "file": "web/src/app/shared/xp/milestone-sheet.ts",
+    "line": 125,
+    "callers": [],
+    "n": 0
+   },
+   {
+    "wrapper": "markMilestone",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 85,
+    "callers": [
+     "web/src/app/shared/xp/milestone-sheet.ts:125"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.ListMilestones",
+  "sites": [
+   {
+    "wrapper": "listMilestones",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 110,
+    "callers": [
+     "web/src/app/core/progression/milestones-store.ts:46"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "refresh",
+    "cls": "MilestonesStore",
+    "file": "web/src/app/core/progression/milestones-store.ts",
+    "line": 46,
+    "callers": [
+     "web/src/app/shared/notes/notes-panel.ts:66",
+     "web/src/app/shared/notes/notes-sheet.ts:133",
+     "web/src/app/shared/fog-map/view-as-map.ts:133",
+     "web/src/app/shell/live-notice/open-sessions.ts:166",
+     "web/src/app/core/traps/trap-board.ts:151"
+    ],
+    "n": 76
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.AddMilestone",
+  "sites": [
+   {
+    "wrapper": "addMilestone",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 118,
+    "callers": [
+     "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts:102"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "PlannedMilestones",
+    "file": "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts",
+    "line": 102,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.UpdateMilestone",
+  "sites": [
+   {
+    "wrapper": "updateMilestone",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 126,
+    "callers": [
+     "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts:132"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "PlannedMilestones",
+    "file": "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts",
+    "line": 132,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.MoveMilestone",
+  "sites": [
+   {
+    "wrapper": "moveMilestone",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 134,
+    "callers": [
+     "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts:176"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "PlannedMilestones",
+    "file": "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts",
+    "line": 176,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.RemoveMilestone",
+  "sites": [
+   {
+    "wrapper": "removeMilestone",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 142,
+    "callers": [
+     "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts:158"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "PlannedMilestones",
+    "file": "web/src/app/pages/campaign-detail/milestones/planned-milestones.ts",
+    "line": 158,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.MarkMilestoneReached",
+  "sites": [
+   {
+    "wrapper": "markMilestoneReached",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 152,
+    "callers": [
+     "web/src/app/pages/campaign-detail/milestones/mark-reached-sheet.ts:143"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "openMarkReached",
+    "cls": "MarkReachedSheet",
+    "file": "web/src/app/pages/campaign-detail/milestones/mark-reached-sheet.ts",
+    "line": 143,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.GiveMilestoneTo",
+  "sites": [
+   {
+    "wrapper": "giveMilestoneTo",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 167,
+    "callers": [
+     "web/src/app/pages/campaign-detail/milestones/mark-reached-sheet.ts:142"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": "openMarkReached",
+    "cls": "MarkReachedSheet",
+    "file": "web/src/app/pages/campaign-detail/milestones/mark-reached-sheet.ts",
+    "line": 142,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.UndoLastXPAward",
+  "sites": [
+   {
+    "wrapper": "undoLast",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 100,
+    "callers": [
+     "web/src/app/pages/campaign-detail/milestones/reached-milestones.ts:109",
+     "web/src/app/pages/campaign-detail/experience/award-history.ts:131"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.ListXPAwards",
+  "sites": [
+   {
+    "wrapper": "listAwards",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 104,
+    "callers": [
+     "web/src/app/core/progression/experience-store.ts:141",
+     "web/src/app/core/progression/experience-store.ts:197",
+     "web/src/app/pages/character-sheet/level-up-banner/level-up-banner.ts:81"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "ProgressionService.GetCampaignExperience",
+  "sites": [
+   {
+    "wrapper": "experience",
+    "cls": "ProgressionClient",
+    "file": "web/src/app/core/progression/progression-client.ts",
+    "line": 176,
+    "callers": [
+     "web/src/app/core/progression/experience-store.ts:157"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "ContentService.ListContent",
+  "sites": [
+   {
+    "wrapper": "catalog",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 122,
+    "callers": [
+     "web/src/app/pages/character-editor/class-block/class-block.ts:74",
+     "web/src/app/pages/character-editor/class-block/class-block.ts:79",
+     "web/src/app/pages/character-editor/class-block/class-block.ts:86",
+     "web/src/app/pages/level-up/level-up.ts:273",
+     "web/src/app/pages/level-up/level-up.ts:596"
+    ],
+    "n": 42
+   },
+   {
+    "wrapper": "catalog",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 129,
+    "callers": [
+     "web/src/app/pages/character-editor/class-block/class-block.ts:74",
+     "web/src/app/pages/character-editor/class-block/class-block.ts:79",
+     "web/src/app/pages/character-editor/class-block/class-block.ts:86",
+     "web/src/app/pages/level-up/level-up.ts:273",
+     "web/src/app/pages/level-up/level-up.ts:596"
+    ],
+    "n": 42
+   },
+   {
+    "wrapper": "skills",
+    "cls": "SceneChecks",
+    "file": "web/src/app/core/maps/scene-actions.ts",
+    "line": 89,
+    "callers": [
+     "web/src/app/core/levelup/levelup-draft.ts:139",
+     "web/src/app/core/levelup/levelup-draft.ts:220",
+     "web/src/app/core/levelup/levelup-draft.ts:287",
+     "web/src/app/core/levelup/levelup-draft.ts:304",
+     "web/src/app/core/levelup/levelup-draft.ts:406"
+    ],
+    "n": 14
+   },
+   {
+    "wrapper": "classes",
+    "cls": "SpellsClient",
+    "file": "web/src/app/core/spells/spells-client.ts",
+    "line": 88,
+    "callers": [
+     "web/src/app/pages/level-up/class-pick/class-pick.ts:76",
+     "web/src/app/pages/level-up/class-pick/class-pick.ts:79",
+     "web/src/app/pages/level-up/class-pick/class-pick.ts:81",
+     "web/src/app/pages/spells/spells.ts:249",
+     "web/src/app/pages/spells/spells.ts:250"
+    ],
+    "n": 7
+   },
+   {
+    "wrapper": "loadCatalog",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 497,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1087",
+     "web/src/app/pages/character-editor/character-editor.ts:1154",
+     "web/src/app/pages/character-editor/character-editor.ts:1654"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "ContentService.GetSpellDetails",
+  "sites": [
+   {
+    "wrapper": "details",
+    "cls": "SpellCatalog",
+    "file": "web/src/app/core/combat/spell-catalog.ts",
+    "line": 30,
+    "callers": [
+     "web/src/app/shared/spell-details/spell-body.ts:23",
+     "web/src/app/shared/spell-details/spell-body.ts:25",
+     "web/src/app/shared/spell-details/spell-details.ts:58",
+     "web/src/app/pages/live-session/combat/combat-view.ts:894",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1510"
+    ],
+    "n": 17
+   },
+   {
+    "wrapper": "spellDetails",
+    "cls": "LevelUpClient",
+    "file": "web/src/app/core/levelup/levelup-client.ts",
+    "line": 153,
+    "callers": [
+     "web/src/app/pages/live-session/combat/combat-view.ts:891",
+     "web/src/app/pages/level-up/level-up.ts:361"
+    ],
+    "n": 2
+   },
+   {
+    "wrapper": "details",
+    "cls": "SpellsClient",
+    "file": "web/src/app/core/spells/spells-client.ts",
+    "line": 67,
+    "callers": [
+     "web/src/app/shared/spell-details/spell-body.ts:23",
+     "web/src/app/shared/spell-details/spell-body.ts:25",
+     "web/src/app/shared/spell-details/spell-details.ts:58",
+     "web/src/app/pages/live-session/combat/combat-view.ts:894",
+     "web/src/app/pages/live-session/combat/combat-view.ts:1510"
+    ],
+    "n": 17
+   },
+   {
+    "wrapper": "loadSpellDetails",
+    "cls": "CharacterEditorSourceLive",
+    "file": "web/src/app/pages/character-editor/character-editor-source.live.ts",
+    "line": 625,
+    "callers": [
+     "web/src/app/pages/character-editor/character-editor.ts:1348",
+     "web/src/app/pages/character-editor/character-editor.ts:1356"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "ContentService.ListSpells",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "SpellsClient",
+    "file": "web/src/app/core/spells/spells-client.ts",
+    "line": 39,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "ContentService.ListCreatures",
+  "sites": [
+   {
+    "wrapper": "search",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 173,
+    "callers": [
+     "web/src/app/core/spells/spells-state.ts:62",
+     "web/src/app/core/spells/spells-state.ts:77",
+     "web/src/app/pages/encounters/creature-pick/creature-pick.ts:121",
+     "web/src/app/pages/encounters/creature-pick/creature-pick.ts:128",
+     "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:450"
+    ],
+    "n": 21
+   }
+  ]
+ },
+ {
+  "rpc": "ContentService.GetCreature",
+  "sites": [
+   {
+    "wrapper": "statBlock",
+    "cls": "CreaturesClient",
+    "file": "web/src/app/core/creatures/creatures-client.ts",
+    "line": 213,
+    "callers": [
+     "web/src/app/core/creatures/read-blocks.ts:21",
+     "web/src/app/pages/character-sheet/creatures-panel/creature-card.ts:133",
+     "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:436",
+     "web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:615",
+     "web/src/app/pages/character-sheet/creature-page/creature-page.ts:169"
+    ],
+    "n": 9
+   },
+   {
+    "wrapper": "getCreatureArmorClass",
+    "cls": "LiveSessionSourceLive",
+    "file": "web/src/app/pages/live-session/live-session-source.live.ts",
+    "line": 334,
+    "callers": [
+     "web/src/app/pages/live-session/live-session.ts:469"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "ContentService.ListTrapPresets",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "TrapPresets",
+    "file": "web/src/app/core/traps/trap-presets.ts",
+    "line": 23,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "ContentService.ListLightPresets",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "LightPresets",
+    "file": "web/src/app/core/maps/light-presets.ts",
+    "line": 55,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.ListTableEntries",
+  "sites": [
+   {
+    "wrapper": "list",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 51,
+    "callers": [
+     "web/src/app/shared/creatures/creature-choice-list.ts:163",
+     "web/src/app/shared/creatures/creature-choice-list.ts:169",
+     "web/src/app/shared/creatures/creature-choice-list.ts:177",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:398",
+     "web/src/app/shared/gallery-picker/gallery-picker.ts:144"
+    ],
+    "n": 66
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.CreateTableEntry",
+  "sites": [
+   {
+    "wrapper": "create",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 57,
+    "callers": [
+     "web/src/app/core/notes/note-editing.ts:155",
+     "web/src/app/core/notes/notes-state.ts:176",
+     "web/src/app/core/content/content-client.ts:78 (same file)",
+     "web/src/app/pages/puzzles/puzzle-form/puzzle-form.ts:410",
+     "web/src/app/pages/maps/dungeon-new/dungeon-new.ts:376"
+    ],
+    "n": 7
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.UpdateTableEntry",
+  "sites": [
+   {
+    "wrapper": "update",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 67,
+    "callers": [
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:416",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:417",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:462",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:494",
+     "web/src/app/shared/image-generate/image-generate-dialog.ts:505"
+    ],
+    "n": 164
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.ArchiveTableEntry",
+  "sites": [
+   {
+    "wrapper": "archive",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 85,
+    "callers": [
+     "web/src/app/pages/content/content-entry/content-entry.ts:473",
+     "web/src/app/pages/content/content-entry/content-entry.ts:492",
+     "web/src/app/pages/content/content-list/content-list.ts:266",
+     "web/src/app/pages/puzzles/puzzles-panel/puzzles-panel.ts:108"
+    ],
+    "n": 4
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.UnarchiveTableEntry",
+  "sites": [
+   {
+    "wrapper": "unarchive",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 90,
+    "callers": [
+     "web/src/app/pages/content/content-entry/content-entry.ts:511",
+     "web/src/app/pages/content/content-list/content-list.ts:265",
+     "web/src/app/pages/puzzles/puzzles-panel/puzzles-panel.ts:136"
+    ],
+    "n": 3
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.ListOptionSwitches",
+  "sites": [
+   {
+    "wrapper": "switches",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 98,
+    "callers": [
+     "web/src/app/core/content/option-switches.ts:267"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.SetOptionSwitches",
+  "sites": [
+   {
+    "wrapper": "setSwitches",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 107,
+    "callers": [
+     "web/src/app/core/content/option-switches.ts:334",
+     "web/src/app/pages/content/players-switch/players-switch.ts:106"
+    ],
+    "n": 2
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.GetClassTableDefaults",
+  "sites": [
+   {
+    "wrapper": "classDefaults",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 117,
+    "callers": [
+     "web/src/app/pages/content/content-entry/content-entry.ts:383"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "TableContentService.GetEffectMenu",
+  "sites": [
+   {
+    "wrapper": "effectMenu",
+    "cls": "TableContentClient",
+    "file": "web/src/app/core/content/content-client.ts",
+    "line": 112,
+    "callers": [
+     "web/src/app/pages/content/content-entry/content-entry.ts:386"
+    ],
+    "n": 1
+   }
+  ]
+ },
+ {
+  "rpc": "SystemService.GetServerInfo",
+  "sites": [
+   {
+    "wrapper": "getServerInfo",
+    "cls": "ServerInfoService",
+    "file": "web/src/app/core/system/server-info.service.ts",
+    "line": 18,
+    "callers": [
+     "web/src/app/pages/home/home.ts:70"
+    ],
+    "n": 1
+   },
+   {
+    "wrapper": null,
+    "cls": "Home",
+    "file": "web/src/app/pages/home/home.ts",
+    "line": 70,
+    "callers": [],
+    "n": 0
+   }
+  ]
+ }
+]

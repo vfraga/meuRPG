@@ -1,0 +1,3316 @@
+[
+ {
+  "svc": "CampaignDocumentService",
+  "rpc": "GetCampaignDocument",
+  "req": "GetCampaignDocumentRequest",
+  "res": "GetCampaignDocumentResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaign_document.proto",
+  "line": 56,
+  "callers": [
+   "pages/campaign-document/document-clients.ts:49:    const res = await this.client.getCampaignDocument({ campaignId });",
+   "pages/campaign-document/document-clients.ts:51:      throw new Error('GetCampaignDocument answered without the document');"
+  ]
+ },
+ {
+  "svc": "CampaignDocumentService",
+  "rpc": "UpdateCampaignDocument",
+  "req": "UpdateCampaignDocumentRequest",
+  "res": "UpdateCampaignDocumentResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaign_document.proto",
+  "line": 81,
+  "callers": [
+   "pages/campaign-document/document-clients.ts:61:    const res = await this.client.updateCampaignDocument({ campaignId, body, expectedRevision });",
+   "pages/campaign-document/document-clients.ts:63:      throw new Error('UpdateCampaignDocument answered without the document');"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "CreateCampaign",
+  "req": "CreateCampaignRequest",
+  "res": "CreateCampaignResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 49,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:32:  createCampaign(name: string, xpMode: XpMode, idempotencyKey: string) {",
+   "core/campaigns/campaigns.service.ts:33:    return this.client.createCampaign({ name, xpMode, idempotencyKey });",
+   "pages/campaigns/campaigns.ts:99:      const res = await this.campaigns.createCampaign("
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "ListMyCampaigns",
+  "req": "ListMyCampaignsRequest",
+  "res": "ListMyCampaignsResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 59,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:27:  listMyCampaigns() {",
+   "core/campaigns/campaigns.service.ts:28:    return this.client.listMyCampaigns({});",
+   "pages/campaigns/campaigns.ts:78:    this.campaigns.listMyCampaigns().then("
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "GetCampaign",
+  "req": "GetCampaignRequest",
+  "res": "GetCampaignResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 70,
+  "callers": [
+   "core/creatures/bestiary-access.ts:27:      const { campaign } = await this.campaigns.getCampaign(campaignId);",
+   "core/treasure/treasure-access.ts:27:      const { campaign } = await this.campaigns.getCampaign(campaignId);",
+   "core/content/content-context.ts:27:    const res = await campaigns.getCampaign(campaignId);",
+   "core/puzzles/puzzle-access.ts:27:      const { campaign } = await this.campaigns.getCampaign(campaignId);",
+   "core/levelup/levelup-client.ts:165:    const res = await this.campaigns.getCampaign({ campaignId });",
+   "core/levelup/levelup-client.ts:171:    const res = await this.campaigns.getCampaign({ campaignId });"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "ListMembers",
+  "req": "ListMembersRequest",
+  "res": "ListMembersResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 84,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:40:  listMembers(campaignId: string) {",
+   "core/campaigns/campaigns.service.ts:41:    return this.client.listMembers({ campaignId });",
+   "pages/live-session/combat/start-combat/start-combat-dialog.ts:291:        this.campaigns.listMembers(this.data.campaignId),",
+   "pages/campaign-detail/campaign-detail.ts:155:      const membersRes = await this.campaigns.listMembers(campaignId);"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "ListPendingMembers",
+  "req": "ListPendingMembersRequest",
+  "res": "ListPendingMembersResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 99,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:45:  listPendingMembers(campaignId: string) {",
+   "core/campaigns/campaigns.service.ts:46:    return this.client.listPendingMembers({ campaignId });",
+   "pages/campaign-detail/pending-members/pending-members.ts:61:      this.pending.set((await this.campaigns.listPendingMembers(this.campaignId())).members);"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "RemovePendingMember",
+  "req": "RemovePendingMemberRequest",
+  "res": "RemovePendingMemberResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 116,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:50:  removePendingMember(campaignId: string, userId: string) {",
+   "core/campaigns/campaigns.service.ts:51:    return this.client.removePendingMember({ campaignId, userId });",
+   "pages/campaign-detail/pending-members/pending-members.ts:90:      await this.campaigns.removePendingMember(this.campaignId(), member.userId);"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "CreateInvite",
+  "req": "CreateInviteRequest",
+  "res": "CreateInviteResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 133,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:58:  createInvite(",
+   "core/campaigns/campaigns.service.ts:64:    return this.client.createInvite({",
+   "pages/campaign-detail/invites/invites.ts:82:  /** The just-created invite's link, shown exactly once (CreateInvite's doc",
+   "pages/campaign-detail/invites/invites.ts:119:  protected async createInvite(): Promise<void> {",
+   "pages/campaign-detail/invites/invites.ts:129:      const res = await this.campaigns.createInvite("
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "ListInvites",
+  "req": "ListInvitesRequest",
+  "res": "ListInvitesResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 138,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:72:  listInvites(campaignId: string) {",
+   "core/campaigns/campaigns.service.ts:73:    return this.client.listInvites({ campaignId });",
+   "pages/campaign-detail/invites/invites.ts:108:    this.campaigns.listInvites(this.campaignId()).then("
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "RevokeInvite",
+  "req": "RevokeInviteRequest",
+  "res": "RevokeInviteResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 145,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:76:  revokeInvite(campaignId: string, inviteId: string) {",
+   "core/campaigns/campaigns.service.ts:77:    return this.client.revokeInvite({ campaignId, inviteId });",
+   "pages/campaign-detail/invites/invites.ts:178:      const res = await this.campaigns.revokeInvite(this.campaignId(), invite.id);"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "AcceptInvite",
+  "req": "AcceptInviteRequest",
+  "res": "AcceptInviteResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 183,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:80:  acceptInvite(token: string) {",
+   "core/campaigns/campaigns.service.ts:81:    return this.client.acceptInvite({ token });",
+   "pages/invite/invite-accept.ts:130:      const res = await this.campaigns.acceptInvite(this.token!);"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "SetCampaignDiceMode",
+  "req": "SetCampaignDiceModeRequest",
+  "res": "SetCampaignDiceModeResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 192,
+  "callers": []
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "SetMyDicePreference",
+  "req": "SetMyDicePreferenceRequest",
+  "res": "SetMyDicePreferenceResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 200,
+  "callers": [
+   "core/campaigns/campaigns.service.ts:87:    return this.client.setMyDicePreference({ campaignId, preference });"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "GetTableRules",
+  "req": "GetTableRulesRequest",
+  "res": "GetTableRulesResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 209,
+  "callers": [
+   "core/campaigns/table-rules.ts:199:    return vmFromResponse(await this.client.getTableRules({ campaignId }));",
+   "pages/character-editor/character-editor-source.live.ts:680:      this.campaignClient.getTableRules({ campaignId }),"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "SetTableRules",
+  "req": "SetTableRulesRequest",
+  "res": "SetTableRulesResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 226,
+  "callers": [
+   "core/campaigns/table-rules.ts:204:    const res = await this.client.setTableRules({"
+  ]
+ },
+ {
+  "svc": "CampaignService",
+  "rpc": "SetCampaignXpMode",
+  "req": "SetCampaignXpModeRequest",
+  "res": "SetCampaignXpModeResponse",
+  "stream": false,
+  "file": "proto/meurpg/campaigns/v1/campaigns.proto",
+  "line": 249,
+  "callers": [
+   "core/campaigns/table-rules.ts:170:/** The `XpModeChangeBlocked` detail of a refused `SetCampaignXpMode`, or `null`. By the typed detail, never the message. */",
+   "core/campaigns/table-rules.ts:230:    return this.client.setCampaignXpMode({ campaignId, xpMode, confirm });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "CreateCharacter",
+  "req": "CreateCharacterRequest",
+  "res": "CreateCharacterResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 122,
+  "callers": [
+   "pages/character-editor/character-editor.ts:1563:        const res = await this.source.createCharacter({",
+   "pages/character-editor/character-editor-source.live.ts:749:  async createCharacter(input: CreateCharacterInput): Promise<{ characterId: string }> {",
+   "pages/character-editor/character-editor-source.live.ts:750:    const res = await this.characterClient.createCharacter({",
+   "pages/character-editor/table-ability-scores/table-ability-scores.ts:90:  /** The chosen way, which the page sends with `CreateCharacter`. */",
+   "pages/character-editor/character-editor.types.ts:493:  abstract createCharacter(input: CreateCharacterInput): Promise<{ characterId: string }>;"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "GetAbilityRolls",
+  "req": "GetAbilityRollsRequest",
+  "res": "GetAbilityRollsResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 133,
+  "callers": [
+   "pages/character-editor/character-editor-source.live.ts:692:      ? (await this.characterClient.getAbilityRolls({ campaignId })).rolls",
+   "pages/character-editor/character-editor.types.ts:377:/** The six sets the server stored for the player's next sheet (`GetAbilityRolls`, `RollAbilityScores`). */"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "RollAbilityScores",
+  "req": "RollAbilityScoresRequest",
+  "res": "RollAbilityScoresResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 161,
+  "callers": [
+   "core/dice/dice.ts:62:export function rollAbilityScores(roll: RollDie): AbilityResult[] {",
+   "pages/character-editor/ability-scores/ability-scores.ts:12:  rollAbilityScores,",
+   "pages/character-editor/ability-scores/ability-scores.ts:88:    this.rolled.set({ results: rollAbilityScores(this.rollDie), placement: emptyPlacement() });",
+   "pages/character-editor/character-editor-source.live.ts:717:  async rollAbilityScores(",
+   "pages/character-editor/character-editor-source.live.ts:721:    const res = await this.characterClient.rollAbilityScores({",
+   "pages/character-editor/table-ability-scores/table-ability-scores.ts:371:      this.take(await this.source.rollAbilityScores(this.campaignId(), typed));"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "CreateNpcFromCreature",
+  "req": "CreateNpcFromCreatureRequest",
+  "res": "CreateNpcFromCreatureResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 202,
+  "callers": [
+   "core/creatures/bestiary-format.ts:60:/** The speed an NPC made from the creature gets, in feet: the walking one, or the best other (the server's rule, `CreateNpcFromCreature`). */",
+   "core/creatures/creatures-client.ts:34:/** \"Criar NPC\" (`CreateNpcFromCreature`): the roles a basic sheet can have. */",
+   "core/creatures/creatures-client.ts:197:      await this.characters.createNpcFromCreature({",
+   "pages/bestiary/create-npc-sheet/create-npc-sheet.ts:33:/** The longest name an NPC has (`CreateNpcFromCreature`: 1 to 80 characters, one line). */"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "GetCharacter",
+  "req": "GetCharacterRequest",
+  "res": "GetCharacterResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 215,
+  "callers": [
+   "core/levelup/levelup-client.ts:66:    const res = await this.characters.getCharacter({ campaignId, characterId });",
+   "pages/character-editor/character-editor-source.live.ts:630:    const res = await this.characterClient.getCharacter({ campaignId, characterId });",
+   "pages/character-sheet/character-sheet-source.live.ts:391:    const res = await this.client.getCharacter({ campaignId, characterId });",
+   "pages/live-session/live-session-source.live.ts:316:    const res = await this.characters.getCharacter({ campaignId, characterId });",
+   "pages/live-session/live-session.types.ts:196:/** From the player's own sheet (`GetCharacter`), what the vitals block",
+   "pages/campaign-document/sheet-dialog/sheet-dialog.ts:45:    this.links.getCharacter(this.campaignId(), this.characterId()).then("
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "ListCharacters",
+  "req": "ListCharactersRequest",
+  "res": "ListCharactersResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 232,
+  "callers": [
+   "core/play/stage-roster.ts:32:    const res = await this.client.listCharacters({ campaignId });",
+   "core/maps/roster-client.ts:34:    const res = await this.client.listCharacters({ campaignId });",
+   "pages/live-session/live-session-source.live.ts:339:    const res = await this.characters.listCharacters({ campaignId });",
+   "pages/live-session/live-session.types.ts:209:/** From `ListCharacters`, what the master's \"Grupo\" row shows under a",
+   "pages/campaign-detail/characters/campaign-characters.ts:204:    this.source.listCharacters(this.campaignId()).then(",
+   "pages/campaign-detail/characters/campaign-characters-source.live.ts:61:  async listCharacters(campaignId: string): Promise<CampaignCharactersVm> {"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "UpdateCharacter",
+  "req": "UpdateCharacterRequest",
+  "res": "UpdateCharacterResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 268,
+  "callers": [
+   "pages/character-editor/character-editor.ts:1573:        await this.source.updateCharacter({",
+   "pages/character-editor/character-editor-source.live.ts:763:  async updateCharacter(input: UpdateCharacterInput): Promise<{ revision: number }> {",
+   "pages/character-editor/character-editor-source.live.ts:764:    const res = await this.characterClient.updateCharacter({",
+   "pages/character-editor/character-editor.types.ts:494:  abstract updateCharacter(input: UpdateCharacterInput): Promise<{ revision: number }>;"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "UpdateCharacterStory",
+  "req": "UpdateCharacterStoryRequest",
+  "res": "UpdateCharacterStoryResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 297,
+  "callers": [
+   "pages/character-sheet/story-panel/story-panel.ts:151:      const updated = await this.source.updateCharacterStory(",
+   "pages/character-sheet/character-sheet.types.ts:354:  abstract updateCharacterStory(",
+   "pages/character-sheet/character-sheet-source.live.ts:409:  async updateCharacterStory(",
+   "pages/character-sheet/character-sheet-source.live.ts:415:    const res = await this.client.updateCharacterStory({"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "SetStoryEditing",
+  "req": "SetStoryEditingRequest",
+  "res": "SetStoryEditingResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 316,
+  "callers": [
+   "pages/character-sheet/character-sheet-source.live.ts:429:    const res = await this.client.setStoryEditing({ campaignId, characterId, allowed });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "MarkCharacterDead",
+  "req": "MarkCharacterDeadRequest",
+  "res": "MarkCharacterDeadResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 338,
+  "callers": [
+   "pages/character-sheet/character-sheet.ts:300:      const vm = await this.source.markCharacterDead(campaignId, characterId);",
+   "pages/character-sheet/character-sheet.types.ts:353:  abstract markCharacterDead(campaignId: string, characterId: string): Promise<CharacterSheetVm>;",
+   "pages/character-sheet/character-sheet-source.live.ts:404:  async markCharacterDead(campaignId: string, characterId: string): Promise<CharacterSheetVm> {",
+   "pages/character-sheet/character-sheet-source.live.ts:405:    const res = await this.client.markCharacterDead({ campaignId, characterId });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "GetMasterNotes",
+  "req": "GetMasterNotesRequest",
+  "res": "GetMasterNotesResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 352,
+  "callers": [
+   "pages/character-sheet/character-sheet.types.ts:349:  abstract getMasterNotes(campaignId: string, characterId: string): Promise<string>;",
+   "pages/character-sheet/master-notes/master-notes.ts:52:    this.source.getMasterNotes(this.campaignId(), this.characterId()).then(",
+   "pages/character-sheet/character-sheet-source.live.ts:395:  async getMasterNotes(campaignId: string, characterId: string): Promise<string> {",
+   "pages/character-sheet/character-sheet-source.live.ts:396:    const res = await this.client.getMasterNotes({ campaignId, characterId });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "UpdateMasterNotes",
+  "req": "UpdateMasterNotesRequest",
+  "res": "UpdateMasterNotesResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 366,
+  "callers": [
+   "pages/character-sheet/character-sheet.types.ts:350:  abstract updateMasterNotes(campaignId: string, characterId: string, notes: string): Promise<void>;",
+   "pages/character-sheet/master-notes/master-notes.ts:68:      await this.source.updateMasterNotes(",
+   "pages/character-sheet/character-sheet-source.live.ts:400:  async updateMasterNotes(campaignId: string, characterId: string, notes: string): Promise<void> {",
+   "pages/character-sheet/character-sheet-source.live.ts:401:    await this.client.updateMasterNotes({ campaignId, characterId, notes });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "ApproveCharacter",
+  "req": "ApproveCharacterRequest",
+  "res": "ApproveCharacterResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 389,
+  "callers": [
+   "pages/character-sheet/character-sheet.ts:344:      const vm = await this.source.approveCharacter(campaignId, characterId);",
+   "pages/character-sheet/character-sheet.types.ts:370:  abstract approveCharacter(campaignId: string, characterId: string): Promise<CharacterSheetVm>;",
+   "pages/character-sheet/character-sheet-source.live.ts:433:  async approveCharacter(campaignId: string, characterId: string): Promise<CharacterSheetVm> {",
+   "pages/character-sheet/character-sheet-source.live.ts:434:    const res = await this.client.approveCharacter({ campaignId, characterId });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "RejectCharacter",
+  "req": "RejectCharacterRequest",
+  "res": "RejectCharacterResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 410,
+  "callers": [
+   "pages/character-sheet/character-sheet.ts:359:      await this.source.rejectCharacter(campaignId, characterId);",
+   "pages/character-sheet/character-sheet.types.ts:374:  abstract rejectCharacter(campaignId: string, characterId: string): Promise<void>;",
+   "pages/character-sheet/character-sheet-source.live.ts:438:  async rejectCharacter(campaignId: string, characterId: string): Promise<void> {",
+   "pages/character-sheet/character-sheet-source.live.ts:439:    await this.client.rejectCharacter({ campaignId, characterId });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "GetLevelUpOptions",
+  "req": "GetLevelUpOptionsRequest",
+  "res": "GetLevelUpOptionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 430,
+  "callers": [
+   "core/levelup/levelup-client.ts:72:    const res = await this.characters.getLevelUpOptions({ campaignId, characterId, classKey });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "PreviewLevelUp",
+  "req": "PreviewLevelUpRequest",
+  "res": "PreviewLevelUpResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 445,
+  "callers": [
+   "core/levelup/levelup-client.ts:81:    return this.characters.previewLevelUp({ campaignId, characterId, choices });",
+   "core/levelup/levelup-draft.ts:73:  /** The new maximum of prepared spells, as `PreviewLevelUp` derives it (an ability increase moves it)."
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "PreviewCharacter",
+  "req": "PreviewCharacterRequest",
+  "res": "PreviewCharacterResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 480,
+  "callers": [
+   "pages/character-editor/character-editor.ts:308:    return this.source.previewCharacter({",
+   "pages/character-editor/character-editor-source.live.ts:728:  async previewCharacter(input: PreviewCharacterInput): Promise<CharacterPreviewVm> {",
+   "pages/character-editor/character-editor-source.live.ts:729:    const res = await this.characterClient.previewCharacter({",
+   "pages/character-editor/character-editor.types.ts:430:/** A draft sheet to derive without saving it (`PreviewCharacter`). */",
+   "pages/character-editor/character-editor.types.ts:491:  /** `PreviewCharacter`: the server derives the draft and writes nothing. */",
+   "pages/character-editor/character-editor.types.ts:492:  abstract previewCharacter(input: PreviewCharacterInput): Promise<CharacterPreviewVm>;"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "RollLevelUpHitPoints",
+  "req": "RollLevelUpHitPointsRequest",
+  "res": "RollLevelUpHitPointsResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 503,
+  "callers": [
+   "core/levelup/levelup-client.ts:90:    return this.characters.rollLevelUpHitPoints({"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "LevelUpCharacter",
+  "req": "LevelUpCharacterRequest",
+  "res": "LevelUpCharacterResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 547,
+  "callers": [
+   "core/levelup/levelup-client.ts:104:    const res = await this.characters.levelUpCharacter({",
+   "pages/level-up/level-up-preview.ts:14:  /** The first rule the choices break: unset when `LevelUpCharacter` would accept them. */",
+   "pages/level-up/level-up-session.ts:57:  /** The revision `LevelUpCharacter` is sent with; read again after a stale one. */"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "ListLevelUps",
+  "req": "ListLevelUpsRequest",
+  "res": "ListLevelUpsResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 564,
+  "callers": [
+   "core/levelup/levelup-client.ts:115:    const res = await this.characters.listLevelUps({ campaignId, pageSize, pageToken });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "ListCharacterCreatures",
+  "req": "ListCharacterCreaturesRequest",
+  "res": "ListCharacterCreaturesResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 587,
+  "callers": [
+   "core/creatures/creatures-client.ts:73:    return (await this.characters.listCharacterCreatures({ campaignId, characterId })).creatures;",
+   "core/play/familiar-eyes.ts:20:  /** The familiar (a creature ID, as `ListCharacterCreatures` lists it). */",
+   "core/play/familiar-eyes.ts:63:        .listCharacterCreatures({ campaignId, characterId })"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "ListWildShapeForms",
+  "req": "ListWildShapeFormsRequest",
+  "res": "ListWildShapeFormsResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 606,
+  "callers": [
+   "core/creatures/creatures-client.ts:82:  /** The beasts the druid's Wild Shape allows now, by Portuguese name, with the limit that decided the list (`ListWildShapeForms`). */",
+   "core/creatures/creatures-client.ts:87:    return this.characters.listWildShapeForms({ campaignId, characterId });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "GiveCreature",
+  "req": "GiveCreatureRequest",
+  "res": "GiveCreatureResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 632,
+  "callers": [
+   "core/creatures/creatures-client.ts:131:      await this.characters.giveCreature({",
+   "core/creatures/creature-format.ts:94:/** The longest name a creature may have (`RenameCreature`, `GiveCreature`). */"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "RenameCreature",
+  "req": "RenameCreatureRequest",
+  "res": "RenameCreatureResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 643,
+  "callers": [
+   "core/creatures/creatures-client.ts:146:    return (await this.characters.renameCreature({ campaignId, creatureId, name })).creature;",
+   "core/creatures/creature-format.ts:94:/** The longest name a creature may have (`RenameCreature`, `GiveCreature`). */"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "DismissCreature",
+  "req": "DismissCreatureRequest",
+  "res": "DismissCreatureResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 654,
+  "callers": [
+   "core/creatures/creatures-client.ts:150:    await this.characters.dismissCreature({ campaignId, creatureId });"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "AdjustCreatureHitPoints",
+  "req": "AdjustCreatureHitPointsRequest",
+  "res": "AdjustCreatureHitPointsResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 668,
+  "callers": [
+   "core/creatures/creatures-client.ts:160:      await this.characters.adjustCreatureHitPoints({"
+  ]
+ },
+ {
+  "svc": "CharacterService",
+  "rpc": "GetSummonOptions",
+  "req": "GetSummonOptionsRequest",
+  "res": "GetSummonOptionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/characters/v1/characters.proto",
+  "line": 689,
+  "callers": [
+   "core/creatures/creatures-client.ts:79:    return this.characters.getSummonOptions({ campaignId, characterId });",
+   "pages/live-session/combat/combat-view.ts:1670:  /** What the player's combatants say a summoning spell is: the keys `GetSummonOptions` lists, read once for the character. */"
+  ]
+ },
+ {
+  "svc": "IdentityService",
+  "rpc": "GetMe",
+  "req": "GetMeRequest",
+  "res": "GetMeResponse",
+  "stream": false,
+  "file": "proto/meurpg/identity/v1/identity.proto",
+  "line": 31,
+  "callers": [
+   "core/auth/auth.service.ts:64:  /** The current session state. Read this, never call GetMe directly. */",
+   "core/auth/auth.service.ts:92:      const res = await this.client.getMe({});",
+   "core/connect/transport.ts:45:      const isReader = req.method.name === 'GetMe' || req.method.name === 'SignOut';"
+  ]
+ },
+ {
+  "svc": "IdentityService",
+  "rpc": "SignOut",
+  "req": "SignOutRequest",
+  "res": "SignOutResponse",
+  "stream": false,
+  "file": "proto/meurpg/identity/v1/identity.proto",
+  "line": 39,
+  "callers": [
+   "shell/user-menu/user-menu.ts:46:  protected signOut(): void {",
+   "shell/user-menu/user-menu.ts:47:    void this.auth.signOut();",
+   "core/auth/auth.service.ts:181:  async signOut(): Promise<void> {",
+   "core/auth/auth.service.ts:183:      await this.client.signOut({});",
+   "core/connect/transport.ts:45:      const isReader = req.method.name === 'GetMe' || req.method.name === 'SignOut';"
+  ]
+ },
+ {
+  "svc": "IdentityService",
+  "rpc": "SignOutOtherSessions",
+  "req": "SignOutOtherSessionsRequest",
+  "res": "SignOutOtherSessionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/identity/v1/identity.proto",
+  "line": 47,
+  "callers": [
+   "core/auth/auth.service.ts:150:  async signOutOtherSessions(): Promise<number> {",
+   "core/auth/auth.service.ts:151:    const res = await this.client.signOutOtherSessions({});",
+   "pages/profile/profile.ts:140:      this.sessions.set({ status: 'done', ended: await this.auth.signOutOtherSessions() });"
+  ]
+ },
+ {
+  "svc": "IdentityService",
+  "rpc": "CountOtherSessions",
+  "req": "CountOtherSessionsRequest",
+  "res": "CountOtherSessionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/identity/v1/identity.proto",
+  "line": 53,
+  "callers": [
+   "core/auth/auth.service.ts:140:  async countOtherSessions(): Promise<number> {",
+   "core/auth/auth.service.ts:141:    const res = await this.client.countOtherSessions({});",
+   "pages/profile/profile.ts:114:      this.sessions.set({ status: 'ready', others: await this.auth.countOtherSessions() });"
+  ]
+ },
+ {
+  "svc": "IdentityService",
+  "rpc": "UpdateProfile",
+  "req": "UpdateProfileRequest",
+  "res": "UpdateProfileResponse",
+  "stream": false,
+  "file": "proto/meurpg/identity/v1/identity.proto",
+  "line": 60,
+  "callers": [
+   "core/auth/auth.service.ts:124:  async updateProfile(displayName: string): Promise<void> {",
+   "core/auth/auth.service.ts:125:    const res = await this.client.updateProfile({ displayName });",
+   "pages/profile/profile.ts:153:      await this.auth.updateProfile(this.form.getRawValue().displayName.trim());"
+  ]
+ },
+ {
+  "svc": "DungeonService",
+  "rpc": "PreviewDungeon",
+  "req": "PreviewDungeonRequest",
+  "res": "PreviewDungeonResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 60,
+  "callers": [
+   "shared/dungeon-preview/dungeon-preview.ts:17:/** What the server's `PreviewDungeon` returns of a layout (the browser draws it; nothing here generates). */",
+   "core/maps/dungeons-client.ts:27:  /** `PreviewDungeon`: the layout for the live preview; stores nothing. No seed asks the server to draw one. */",
+   "core/maps/dungeons-client.ts:34:    return this.client.previewDungeon("
+  ]
+ },
+ {
+  "svc": "DungeonService",
+  "rpc": "CreateDungeonMap",
+  "req": "CreateDungeonMapRequest",
+  "res": "CreateDungeonMapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 96,
+  "callers": [
+   "core/maps/dungeons-client.ts:40:  /** `CreateDungeonMap`: the hidden map with its fog on. The call goes on in the server if `signal` aborts it. */",
+   "core/maps/dungeons-client.ts:49:    const res = await this.client.createDungeonMap(",
+   "core/maps/dungeons-client.ts:54:      throw new Error('CreateDungeonMap answered without a map');"
+  ]
+ },
+ {
+  "svc": "DungeonService",
+  "rpc": "GetDungeonRooms",
+  "req": "GetDungeonRoomsRequest",
+  "res": "GetDungeonRoomsResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 107,
+  "callers": [
+   "core/maps/dungeons-client.ts:59:  /** `GetDungeonRooms`: `not_found` for a map the generator did not make. */",
+   "core/maps/dungeons-client.ts:61:    return this.client.getDungeonRooms({ campaignId, mapId });",
+   "pages/maps/map-manage/map-manage.ts:79:  /** A generated dungeon's rooms (the master reads them on a phone too, `GetDungeonRooms`): the list, with \"Pôr uma cena nesta sala\". */"
+  ]
+ },
+ {
+  "svc": "DungeonService",
+  "rpc": "PlaceDungeonScene",
+  "req": "PlaceDungeonSceneRequest",
+  "res": "PlaceDungeonSceneResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 124,
+  "callers": [
+   "core/maps/dungeons-client.ts:64:  /** `PlaceDungeonScene`: a hidden scene point, \"Sala N\", on the middle square of the room. */",
+   "core/maps/dungeons-client.ts:71:    const res = await this.client.placeDungeonScene({ campaignId, mapId, roomId, idempotencyKey });",
+   "core/maps/dungeons-client.ts:73:      throw new Error('PlaceDungeonScene answered without a point');"
+  ]
+ },
+ {
+  "svc": "DungeonService",
+  "rpc": "RedrawDungeonMap",
+  "req": "RedrawDungeonMapRequest",
+  "res": "RedrawDungeonMapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/dungeons.proto",
+  "line": 146,
+  "callers": [
+   "core/maps/dungeons-client.ts:78:  /** `RedrawDungeonMap`: a new image from the walls and doors the map has now. */",
+   "core/maps/dungeons-client.ts:80:    const res = await this.client.redrawDungeonMap({ campaignId, mapId });",
+   "core/maps/dungeons-client.ts:82:      throw new Error('RedrawDungeonMap answered without a map');"
+  ]
+ },
+ {
+  "svc": "GalleryService",
+  "rpc": "ListGalleryImages",
+  "req": "ListGalleryImagesRequest",
+  "res": "ListGalleryImagesResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/gallery.proto",
+  "line": 94,
+  "callers": [
+   "core/images/upload-errors.ts:11:/** The limits the app assumes before `ListGalleryImages` answers; the",
+   "core/images/gallery-client.ts:36:    const res = await this.client.listGalleryImages({ campaignId });"
+  ]
+ },
+ {
+  "svc": "GalleryService",
+  "rpc": "RenameGalleryImage",
+  "req": "RenameGalleryImageRequest",
+  "res": "RenameGalleryImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/gallery.proto",
+  "line": 107,
+  "callers": [
+   "core/images/gallery-copy.ts:31:/** RenameGalleryImage's errors, in Portuguese. */",
+   "core/images/gallery-client.ts:51:    const res = await this.client.renameGalleryImage({ campaignId, imageId, name });",
+   "core/images/gallery-client.ts:53:      throw new Error('RenameGalleryImage answered without the image');"
+  ]
+ },
+ {
+  "svc": "GalleryService",
+  "rpc": "DeleteGalleryImage",
+  "req": "DeleteGalleryImageRequest",
+  "res": "DeleteGalleryImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/gallery.proto",
+  "line": 120,
+  "callers": [
+   "core/images/gallery-client.ts:59:    await this.client.deleteGalleryImage({ campaignId, imageId });"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "GetImageGenerationStatus",
+  "req": "GetImageGenerationStatusRequest",
+  "res": "GetImageGenerationStatusResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 54,
+  "callers": [
+   "core/images/imagegen-client.ts:40:  /** `GetImageGenerationStatus`: works with generation off (`enabled` false). */",
+   "core/images/imagegen-client.ts:42:    const res = await this.client.getImageGenerationStatus({ campaignId });",
+   "core/images/imagegen-client.ts:44:      throw new Error('GetImageGenerationStatus answered without the status');"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "GenerateSceneImage",
+  "req": "GenerateSceneImageRequest",
+  "res": "GenerateSceneImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 69,
+  "callers": [
+   "core/images/imagegen-client.ts:49:  /** `GenerateSceneImage`: the scene art from the text alone. Answers at once with a PENDING request. */",
+   "core/images/imagegen-client.ts:55:    const res = await this.client.generateSceneImage({ campaignId, ...request }, { signal });",
+   "core/images/imagegen-form.ts:27:/** The request the form makes, from a map (`GenerateMapImage`) or from nothing (`GenerateSceneImage`). */"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "EditGeneratedImage",
+  "req": "EditGeneratedImageRequest",
+  "res": "EditGeneratedImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 79,
+  "callers": [
+   "core/images/imagegen-client.ts:69:  /** `EditGeneratedImage`: \"Pedir o ajuste\". A new request that costs one slot. */",
+   "core/images/imagegen-client.ts:77:    const res = await this.client.editGeneratedImage("
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "GetImageGeneration",
+  "req": "GetImageGenerationRequest",
+  "res": "GetImageGenerationResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 89,
+  "callers": [
+   "core/images/imagegen-client.ts:84:  /** `GetImageGeneration` with `wait_seconds`: a long poll that answers when the state changes (0 to 25 seconds). */",
+   "core/images/imagegen-client.ts:91:    return this.client.getImageGeneration({ campaignId, generationId, waitSeconds }, { signal });"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "CancelImageGeneration",
+  "req": "CancelImageGenerationRequest",
+  "res": "CancelImageGenerationResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 99,
+  "callers": [
+   "core/images/imagegen-client.ts:94:  /** `CancelImageGeneration`: before the request left the server the slot goes back (`slotSpent` false); after, only the wait stops. */",
+   "core/images/imagegen-client.ts:96:    const res = await this.client.cancelImageGeneration({ campaignId, generationId });"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "ListImageEdits",
+  "req": "ListImageEditsRequest",
+  "res": "ListImageEditsResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 104,
+  "callers": [
+   "core/images/imagegen-client.ts:100:  /** `ListImageEdits`: the chain of an image, oldest first. */",
+   "core/images/imagegen-client.ts:102:    return (await this.client.listImageEdits({ campaignId, imageId })).edits;"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "GetMapImageReference",
+  "req": "GetMapImageReferenceRequest",
+  "res": "GetMapImageReferenceResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 121,
+  "callers": [
+   "shared/image-generate/generate-form.ts:38:/** What the server drew for the way chosen (`GetMapImageReference`), as the form shows it. */",
+   "core/images/imagegen-client.ts:105:  /** `GetMapImageReference`: what a request made from a map would send, and the NPCs the players see. Uses no slot. */",
+   "core/images/imagegen-client.ts:112:    return this.client.getMapImageReference({ campaignId, mapId, kind }, { signal });",
+   "core/images/imagegen-copy.ts:68:/** The ways the dialog offers, with the dashed ones' reasons (E10-07 2 and 3). `textureTooLarge` comes from `GetMapImageReference`. */",
+   "core/images/imagegen-form.ts:20:/** An NPC of the players' view, as `GetMapImageReference` lists it. */"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "GenerateMapImage",
+  "req": "GenerateMapImageRequest",
+  "res": "GenerateMapImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 147,
+  "callers": [
+   "core/images/imagegen-client.ts:59:  /** `GenerateMapImage`: the scene art, the isometric view or the textured map of a map. */",
+   "core/images/imagegen-client.ts:65:    const res = await this.client.generateMapImage({ campaignId, ...request }, { signal });",
+   "core/images/imagegen-form.ts:27:/** The request the form makes, from a map (`GenerateMapImage`) or from nothing (`GenerateSceneImage`). */"
+  ]
+ },
+ {
+  "svc": "ImageGenerationService",
+  "rpc": "UseGeneratedImageAsMapImage",
+  "req": "UseGeneratedImageAsMapImageRequest",
+  "res": "UseGeneratedImageAsMapImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/imagegen.proto",
+  "line": 163,
+  "callers": [
+   "core/images/imagegen-client.ts:115:  /** `UseGeneratedImageAsMapImage`: the textured map becomes the map's image, with its layers kept. Returns the map as the master reads it. */",
+   "core/images/imagegen-client.ts:117:    const res = await this.client.useGeneratedImageAsMapImage({ campaignId, imageId });",
+   "core/images/imagegen-client.ts:119:      throw new Error('UseGeneratedImageAsMapImage answered without the map');"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "ListMaps",
+  "req": "ListMapsRequest",
+  "res": "ListMapsResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 94,
+  "callers": [
+   "core/maps/maps-client.ts:61:    return (await this.client.listMaps({ campaignId })).maps;",
+   "pages/campaign-document/link-picker-dialog/link-picker-dialog.ts:58:        ? this.links.listMaps(this.campaignId()).then((maps) =>",
+   "pages/campaign-document/campaign-document.ts:153:      this.links.listMaps(id),",
+   "pages/campaign-document/document-clients.ts:80:  async listMaps(campaignId: string): Promise<MapView[]> {",
+   "pages/campaign-document/document-clients.ts:81:    const res = await this.maps.listMaps({ campaignId });",
+   "pages/maps/player-map/player-map.ts:74:  /** The maps the player may open (ListMaps). */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "GetMap",
+  "req": "GetMapRequest",
+  "res": "GetMapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 117,
+  "callers": [
+   "core/maps/maps-client.ts:64:  /** `GetMap`. `asCharacterId` is the master's \"Ver como\" (MR-036): the map exactly as that character's player gets it. */",
+   "core/maps/maps-client.ts:66:    return this.client.getMap({ campaignId, mapId, asCharacterId });",
+   "pages/treasure/place-sheet/place-sheet.ts:275:        throw new Error('GetMap answered without a map');",
+   "pages/campaign-document/document-clients.ts:18:  /** Absent in a listing; present from `GetMap`. */",
+   "pages/campaign-document/document-clients.ts:93:  async getMap(campaignId: string, mapId: string): Promise<MapView> {",
+   "pages/campaign-document/document-clients.ts:94:    const res = await this.maps.getMap({ campaignId, mapId });"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "CreateMap",
+  "req": "CreateMapRequest",
+  "res": "CreateMapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 139,
+  "callers": [
+   "core/maps/maps-client.ts:92:  /** `CreateMap`. `idempotencyKey`: one per create, sent again on a retry (see `ActionKey`). */",
+   "core/maps/maps-client.ts:99:    const res = await this.client.createMap({ campaignId, name, imageId, idempotencyKey });",
+   "core/maps/maps-client.ts:100:    return need(res.map, 'CreateMap');"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "UpdateMap",
+  "req": "UpdateMapRequest",
+  "res": "UpdateMapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 170,
+  "callers": [
+   "core/maps/maps-client.ts:109:    const res = await this.client.updateMap({ campaignId, mapId, revision, ...changes });",
+   "core/maps/maps-client.ts:110:    return need(res.map, 'UpdateMap');",
+   "core/maps/map-errors.ts:64:  /** `UpdateMap` with another image. */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "DeleteMap",
+  "req": "DeleteMapRequest",
+  "res": "DeleteMapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 190,
+  "callers": [
+   "core/maps/maps-client.ts:114:    await this.client.deleteMap({ campaignId, mapId });",
+   "core/maps/map-errors.ts:74:  /** `DeleteMap`. */",
+   "core/maps/map-errors.ts:97:/** What each reason of `DeleteMap` says, in the map header before the click and in its question after a refusal; one text for both. */",
+   "pages/maps/map-page/map-page.ts:224:  protected readonly deleteMap = async (): Promise<void> => {",
+   "pages/maps/map-head/map-head.ts:80:  readonly deleteMap = input.required<() => Promise<void>>();",
+   "pages/maps/map-head/map-head.ts:209:    await this.run(() => this.deleteMap()());"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "SetMapRevealed",
+  "req": "SetMapRevealedRequest",
+  "res": "SetMapRevealedResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 201,
+  "callers": [
+   "core/maps/maps-client.ts:118:    const res = await this.client.setMapRevealed({ campaignId, mapId, revealed });",
+   "core/maps/maps-client.ts:119:    return need(res.map, 'SetMapRevealed');"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "SetMapGrid",
+  "req": "SetMapGridRequest",
+  "res": "SetMapGridResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 242,
+  "callers": [
+   "core/combat/combat-grid.ts:10:/** The columns of a grid: the server's range (`SetMapGrid`), the same on this",
+   "core/maps/maps-client.ts:122:  /** `SetMapGrid` (RN-21, RN-25): the squares of the DRAWING across the image's width, 4 to 200; 0 clears the",
+   "core/maps/maps-client.ts:132:    const res = await this.client.setMapGrid({ campaignId, mapId, columns, squareFactor });",
+   "core/maps/maps-client.ts:133:    return need(res.map, 'SetMapGrid');",
+   "core/maps/map-errors.ts:62:  /** `SetMapGrid`. */",
+   "core/maps/calibration.ts:10:/** `SetMapGrid.square_factor` goes from 1 (1,5 m) to 20 (30 m). */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "CreateMapPoint",
+  "req": "CreateMapPointRequest",
+  "res": "CreateMapPointResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 263,
+  "callers": [
+   "core/maps/maps-client.ts:186:    const res = await this.client.createMapPoint({ campaignId, mapId, ...point, idempotencyKey });",
+   "core/maps/maps-client.ts:187:    return need(res.point, 'CreateMapPoint');",
+   "core/maps/map-errors.ts:70:  /** `CreateMapPoint`. */",
+   "core/maps/map-errors.ts:85:/** The map's point limit (`CreateMapPoint`). */",
+   "pages/maps/point-kinds/trap-draft.ts:329:/** What `CreateMapPoint` and `UpdateMapPoint` take as the trap (the whole spec). */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "UpdateMapPoint",
+  "req": "UpdateMapPointRequest",
+  "res": "UpdateMapPointResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 282,
+  "callers": [
+   "core/maps/maps-client.ts:26:/** What a point's editor saves in one call (`UpdateMapPoint`). */",
+   "core/maps/maps-client.ts:196:    const res = await this.client.updateMapPoint({ campaignId, mapId, pointId, ...changes });",
+   "core/maps/maps-client.ts:197:    return need(res.point, 'UpdateMapPoint');",
+   "core/maps/map-errors.ts:72:  /** `UpdateMapPoint`, `DeleteMapPoint` and the treasure marks. */",
+   "pages/maps/scene-actions/scene-actions.ts:66:  /** The switch was saved (`UpdateMapPoint` with `show_dc` alone): the point carries it. */",
+   "pages/maps/point-kinds/trap-draft.ts:329:/** What `CreateMapPoint` and `UpdateMapPoint` take as the trap (the whole spec). */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "DeleteMapPoint",
+  "req": "DeleteMapPointRequest",
+  "res": "DeleteMapPointResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 295,
+  "callers": [
+   "core/maps/maps-client.ts:201:    await this.client.deleteMapPoint({ campaignId, mapId, pointId });",
+   "core/maps/map-errors.ts:72:  /** `UpdateMapPoint`, `DeleteMapPoint` and the treasure marks. */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "SetMapPointRevealed",
+  "req": "SetMapPointRevealedRequest",
+  "res": "SetMapPointRevealedResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 308,
+  "callers": [
+   "core/maps/maps-client.ts:210:    const res = await this.client.setMapPointRevealed({ campaignId, mapId, pointId, revealed });",
+   "core/maps/maps-client.ts:211:    return need(res.point, 'SetMapPointRevealed');"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "AddSceneAction",
+  "req": "AddSceneActionRequest",
+  "res": "AddSceneActionResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 333,
+  "callers": [
+   "core/maps/maps-client.ts:313:  /** `AddSceneAction` (MR-015): one more check on a SCENE point, saved at",
+   "core/maps/maps-client.ts:315:  async addSceneAction(",
+   "core/maps/maps-client.ts:322:    const res = await this.client.addSceneAction({",
+   "core/maps/scene-actions.ts:9:/** A scene has at most 20 actions (maps.proto, `AddSceneAction`). */",
+   "pages/maps/scene-actions/scene-actions.ts:159:      const actions = await this.api.addSceneAction("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "UpdateSceneAction",
+  "req": "UpdateSceneActionRequest",
+  "res": "UpdateSceneActionResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 346,
+  "callers": [
+   "core/maps/maps-client.ts:332:  /** `UpdateSceneAction`: how many attempts each player has at the action",
+   "core/maps/maps-client.ts:341:    const res = await this.client.updateSceneAction({",
+   "core/maps/maps-client.ts:351:  /** `UpdateSceneAction` for the check, the name or the DC: only the fields that changed are sent (`name` empty takes",
+   "core/maps/maps-client.ts:353:  async updateSceneAction(",
+   "core/maps/maps-client.ts:360:    const res = await this.client.updateSceneAction({",
+   "pages/maps/scene-actions/scene-actions.ts:24:/** 1 to 5 attempts, or 0: unlimited (maps.proto, `UpdateSceneAction`). */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "MoveSceneAction",
+  "req": "MoveSceneActionRequest",
+  "res": "MoveSceneActionResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 356,
+  "callers": [
+   "core/maps/maps-client.ts:370:  /** `MoveSceneAction`: one place up or down. */",
+   "core/maps/maps-client.ts:371:  async moveSceneAction(",
+   "core/maps/maps-client.ts:378:    const res = await this.client.moveSceneAction({",
+   "pages/maps/scene-actions/scene-actions.ts:187:      const actions = await this.api.moveSceneAction("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "RemoveSceneAction",
+  "req": "RemoveSceneActionRequest",
+  "res": "RemoveSceneActionResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 365,
+  "callers": [
+   "core/maps/maps-client.ts:388:  /** `RemoveSceneAction`: no confirmation (the rolls made stay in the log). */",
+   "core/maps/maps-client.ts:389:  async removeSceneAction(",
+   "core/maps/maps-client.ts:395:    const res = await this.client.removeSceneAction({ campaignId, mapId, pointId, actionId });",
+   "pages/maps/scene-actions/scene-actions.ts:265:      const actions = await this.api.removeSceneAction("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "AddSceneClue",
+  "req": "AddSceneClueRequest",
+  "res": "AddSceneClueResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 387,
+  "callers": [
+   "core/maps/maps-client.ts:398:  /** `AddSceneClue` (MR-029): one more clue on a SCENE point, saved at once.",
+   "core/maps/maps-client.ts:400:  async addSceneClue(",
+   "core/maps/maps-client.ts:407:    const res = await this.client.addSceneClue({",
+   "core/maps/scene-clues.ts:7:/** A scene has at most 30 clues (maps.proto, `AddSceneClue`). */",
+   "pages/maps/clue-list/clue-list.ts:158:      const clues = await this.api.addSceneClue("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "UpdateSceneClue",
+  "req": "UpdateSceneClueRequest",
+  "res": "UpdateSceneClueResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 399,
+  "callers": [
+   "core/maps/maps-client.ts:417:  /** `UpdateSceneClue`: the new text of one clue (what players already got keeps the old). */",
+   "core/maps/maps-client.ts:418:  async updateSceneClue(",
+   "core/maps/maps-client.ts:425:    const res = await this.client.updateSceneClue({ campaignId, mapId, pointId, clueId, text });",
+   "pages/maps/clue-list/clue-list.ts:184:      const clues = await this.api.updateSceneClue("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "MoveSceneClue",
+  "req": "MoveSceneClueRequest",
+  "res": "MoveSceneClueResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 409,
+  "callers": [
+   "core/maps/maps-client.ts:429:  /** `MoveSceneClue`: one place up or down. */",
+   "core/maps/maps-client.ts:430:  async moveSceneClue(",
+   "core/maps/maps-client.ts:437:    const res = await this.client.moveSceneClue({",
+   "pages/maps/clue-list/clue-list.ts:212:      const clues = await this.api.moveSceneClue("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "RemoveSceneClue",
+  "req": "RemoveSceneClueRequest",
+  "res": "RemoveSceneClueResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 418,
+  "callers": [
+   "core/maps/maps-client.ts:447:  /** `RemoveSceneClue`: the page asks first; players who got the clue keep it. */",
+   "core/maps/maps-client.ts:448:  async removeSceneClue(",
+   "core/maps/maps-client.ts:454:    const res = await this.client.removeSceneClue({ campaignId, mapId, pointId, clueId });",
+   "pages/maps/clue-list/clue-list.ts:241:      const clues = await this.api.removeSceneClue("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "RevealSceneClue",
+  "req": "RevealSceneClueRequest",
+  "res": "RevealSceneClueResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 441,
+  "callers": [
+   "core/maps/maps-client.ts:458:  /** `RevealSceneClue` (MR-029): gives the clue to the players of these",
+   "core/maps/maps-client.ts:460:  async revealSceneClue(",
+   "core/maps/maps-client.ts:465:    const res = await this.client.revealSceneClue({",
+   "core/maps/maps-client.ts:470:    return need(res.clue, 'RevealSceneClue');",
+   "core/maps/map-errors.ts:40:/** The Portuguese message for a failed `RevealSceneClue`. */",
+   "pages/live-session/scene/reveal-sheet/reveal-sheet.ts:166:      const clue = await this.api.revealSceneClue("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "PlaceMapToken",
+  "req": "PlaceMapTokenRequest",
+  "res": "PlaceMapTokenResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 461,
+  "callers": [
+   "core/maps/maps-client.ts:223:    const res = await this.client.placeMapToken({",
+   "core/maps/maps-client.ts:231:    return need(res.token, 'PlaceMapToken');"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "SetMapTokenHidden",
+  "req": "SetMapTokenHiddenRequest",
+  "res": "SetMapTokenHiddenResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 471,
+  "callers": [
+   "core/maps/maps-client.ts:240:    const res = await this.client.setMapTokenHidden({ campaignId, mapId, characterId, hidden });",
+   "core/maps/maps-client.ts:241:    return need(res.token, 'SetMapTokenHidden');"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "RemoveMapToken",
+  "req": "RemoveMapTokenRequest",
+  "res": "RemoveMapTokenResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 481,
+  "callers": [
+   "core/maps/maps-client.ts:252:    await this.client.removeMapToken("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "PaintMapCells",
+  "req": "PaintMapCellsRequest",
+  "res": "PaintMapCellsResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 505,
+  "callers": [
+   "core/maps/maps-client.ts:136:  /** `PaintMapCells` (MR-034): one value on up to 400 squares of one layer. Answers with how many changed. */",
+   "core/maps/maps-client.ts:144:    const res = await this.client.paintMapCells({",
+   "core/maps/map-errors.ts:60:  /** `PaintMapCells`. */",
+   "core/maps/paint-queue.ts:7:/** The server takes at most this many squares a call (`PaintMapCells`). */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "GetMapLayers",
+  "req": "GetMapLayersRequest",
+  "res": "GetMapLayersResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 522,
+  "callers": [
+   "core/maps/layers.ts:3:/** What `GetMapLayers` sends (maps.proto): the grid and the packed layers. */",
+   "core/maps/maps-client.ts:69:  /** `GetMapLayers`: the walls, the difficult terrain and the cover the caller",
+   "core/maps/maps-client.ts:72:    return this.client.getMapLayers({ campaignId, mapId, asCharacterId });"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "SetMapFog",
+  "req": "SetMapFogRequest",
+  "res": "SetMapFogResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 550,
+  "callers": [
+   "core/maps/maps-client.ts:154:  /** `SetMapFog` (MR-036): each field set replaces the current value. */",
+   "core/maps/maps-client.ts:160:    const res = await this.client.setMapFog({ campaignId, mapId, ...changes });",
+   "core/maps/maps-client.ts:161:    return need(res.map, 'SetMapFog');",
+   "core/maps/map-errors.ts:66:  /** `SetMapFog`. */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "GetMapVision",
+  "req": "GetMapVisionRequest",
+  "res": "GetMapVisionResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 569,
+  "callers": [
+   "core/maps/maps-client.ts:75:  /** `GetMapVision` (MR-036): what the caller sees of a map's squares, packed",
+   "core/maps/maps-client.ts:78:    return this.client.getMapVision({ campaignId, mapId, asCharacterId });",
+   "core/maps/vision.ts:34:/** `GetMapVision`, unpacked: one state per square, row-major. */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "ForgetMapVision",
+  "req": "ForgetMapVisionRequest",
+  "res": "ForgetMapVisionResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 583,
+  "callers": [
+   "core/maps/maps-client.ts:164:  /** `ForgetMapVision`: \"Esquecer o que foi visto\". */",
+   "core/maps/maps-client.ts:166:    await this.client.forgetMapVision({ campaignId, mapId });",
+   "core/maps/map-errors.ts:68:  /** `ForgetMapVision`. */"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "RevealTrap",
+  "req": "RevealTrapRequest",
+  "res": "RevealTrapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 604,
+  "callers": [
+   "core/maps/maps-client.ts:259:  /** `RevealTrap` (MR-035): the trap goes to the chosen characters' players, or to",
+   "core/maps/maps-client.ts:261:  async revealTrap(",
+   "core/maps/maps-client.ts:267:    const res = await this.client.revealTrap({",
+   "core/maps/maps-client.ts:273:    return need(res.point, 'RevealTrap');",
+   "pages/live-session/traps/trap-reveal-sheet/trap-reveal-sheet.ts:189:      const point = await this.api.revealTrap("
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "GetTrapNoticers",
+  "req": "GetTrapNoticersRequest",
+  "res": "GetTrapNoticersResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 619,
+  "callers": [
+   "core/traps/trap-board.ts:130:      const res = await this.maps.getTrapNoticers(this.campaignId(), mapId, pointId);",
+   "core/maps/maps-client.ts:276:  /** `GetTrapNoticers`: \"Quem notaria\", worked out by the server. */",
+   "core/maps/maps-client.ts:277:  getTrapNoticers(",
+   "core/maps/maps-client.ts:282:    return this.client.getTrapNoticers({ campaignId, mapId, pointId });",
+   "pages/maps/point-kinds/trap-point-panel.ts:211:      const res = await this.api.getTrapNoticers(this.campaignId(), point.mapId, point.id);"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "DisarmTrap",
+  "req": "DisarmTrapRequest",
+  "res": "DisarmTrapResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 637,
+  "callers": [
+   "core/maps/maps-client.ts:285:  /** `DisarmTrap`: \"Desarmada\", after the table resolved the check. */",
+   "core/maps/maps-client.ts:286:  async disarmTrap(campaignId: string, mapId: string, pointId: string): Promise<MapPoint> {",
+   "core/maps/maps-client.ts:287:    const res = await this.client.disarmTrap({ campaignId, mapId, pointId });",
+   "core/maps/maps-client.ts:288:    return need(res.point, 'DisarmTrap');",
+   "pages/live-session/traps/trap-panel/trap-panel.ts:230:      const point = await this.api.disarmTrap(this.campaignId(), this.mapId(), p.id);"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "MarkTreasureFound",
+  "req": "MarkTreasureFoundRequest",
+  "res": "MarkTreasureFoundResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 659,
+  "callers": [
+   "core/maps/maps-client.ts:291:  /** `MarkTreasureFound` (MR-041): by one or more characters. */",
+   "core/maps/maps-client.ts:292:  async markTreasureFound(",
+   "core/maps/maps-client.ts:298:    const res = await this.client.markTreasureFound({",
+   "core/maps/maps-client.ts:304:    return need(res.point, 'MarkTreasureFound');",
+   "pages/live-session/treasure/treasure-panel/treasure-panel.ts:87:      const point = await this.api.markTreasureFound(",
+   "pages/maps/point-kinds/treasure-point-panel.ts:219:      this.api.markTreasureFound(this.campaignId(), this.point().mapId, this.point().id, ids),"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "UnmarkTreasureFound",
+  "req": "UnmarkTreasureFoundRequest",
+  "res": "UnmarkTreasureFoundResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 674,
+  "callers": [
+   "core/maps/maps-client.ts:307:  /** `UnmarkTreasureFound`: back to hidden (refused once it was turned into XP). */",
+   "core/maps/maps-client.ts:308:  async unmarkTreasureFound(campaignId: string, mapId: string, pointId: string): Promise<MapPoint> {",
+   "core/maps/maps-client.ts:309:    const res = await this.client.unmarkTreasureFound({ campaignId, mapId, pointId });",
+   "core/maps/maps-client.ts:310:    return need(res.point, 'UnmarkTreasureFound');",
+   "pages/live-session/treasure/treasure-panel/treasure-panel.ts:120:      const back = await this.api.unmarkTreasureFound(",
+   "pages/maps/point-kinds/treasure-point-panel.ts:225:      this.api.unmarkTreasureFound(this.campaignId(), this.point().mapId, this.point().id),"
+  ]
+ },
+ {
+  "svc": "MapService",
+  "rpc": "SetCarriedLight",
+  "req": "SetCarriedLightRequest",
+  "res": "SetCarriedLightResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/maps.proto",
+  "line": 695,
+  "callers": [
+   "core/maps/maps-client.ts:81:  /** `SetCarriedLight`: the light a character carries (a preset's key, or '' for none). */",
+   "core/maps/maps-client.ts:82:  async setCarriedLight(",
+   "core/maps/maps-client.ts:88:    const res = await this.client.setCarriedLight({ campaignId, mapId, characterId, lightKey });",
+   "core/maps/maps-client.ts:89:    return need(res.token, 'SetCarriedLight');",
+   "pages/live-session/carried-light/carried-light-sheet.ts:83:      const token = await this.api.setCarriedLight(",
+   "pages/live-session/carried-light/light-panel.ts:75:      const next = await this.api.setCarriedLight(this.campaignId(), mapId, token.characterId, key);"
+  ]
+ },
+ {
+  "svc": "TreasureService",
+  "rpc": "GetTreasureParty",
+  "req": "GetTreasurePartyRequest",
+  "res": "GetTreasurePartyResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 56,
+  "callers": [
+   "core/treasure/treasure-client.ts:41:  /** `GetTreasureParty`: \"O grupo está nos níveis 4 e 5\". */",
+   "core/treasure/treasure-client.ts:43:    return this.client.getTreasureParty({ campaignId });"
+  ]
+ },
+ {
+  "svc": "TreasureService",
+  "rpc": "GenerateTreasure",
+  "req": "GenerateTreasureRequest",
+  "res": "GenerateTreasureResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 70,
+  "callers": [
+   "core/treasure/treasure-client.ts:46:  /** `GenerateTreasure`: stores nothing. No seed asks the server to draw one (\"Gerar outro\"). */",
+   "core/treasure/treasure-client.ts:53:    return this.client.generateTreasure({",
+   "pages/treasure/treasure.ts:221:        throw new Error('GenerateTreasure answered without a treasure');"
+  ]
+ },
+ {
+  "svc": "TreasureService",
+  "rpc": "GetMagicItem",
+  "req": "GetMagicItemRequest",
+  "res": "GetMagicItemResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 78,
+  "callers": [
+   "core/treasure/treasure-client.ts:61:  /** `GetMagicItem`: \"Ver descrição\". */",
+   "core/treasure/treasure-client.ts:63:    return this.client.getMagicItem({ campaignId, key });"
+  ]
+ },
+ {
+  "svc": "TreasureService",
+  "rpc": "PlaceTreasure",
+  "req": "PlaceTreasureRequest",
+  "res": "PlaceTreasureResponse",
+  "stream": false,
+  "file": "proto/meurpg/maps/v1/treasure.proto",
+  "line": 107,
+  "callers": [
+   "core/treasure/treasure-errors.ts:63:/** The refusal of `PlaceTreasure` as an `invalid_argument` names the request field that broke the rule: what to do",
+   "core/treasure/treasure-client.ts:66:  /** `PlaceTreasure`: a hidden treasure point on the map. */",
+   "core/treasure/treasure-client.ts:68:    return this.client.placeTreasure({",
+   "pages/treasure/place-sheet/place-sheet.ts:391:        throw new Error('PlaceTreasure answered without a point');"
+  ]
+ },
+ {
+  "svc": "NotesService",
+  "rpc": "ListNotes",
+  "req": "ListNotesRequest",
+  "res": "ListNotesResponse",
+  "stream": false,
+  "file": "proto/meurpg/notes/v1/notes.proto",
+  "line": 69,
+  "callers": [
+   "core/notes/notes-client.ts:28:  /** `ListNotes`: the caller's notes and received clues. The filter by scene",
+   "core/notes/notes-client.ts:31:    const res = await this.client.listNotes({ campaignId });"
+  ]
+ },
+ {
+  "svc": "NotesService",
+  "rpc": "CreateNote",
+  "req": "CreateNoteRequest",
+  "res": "CreateNoteResponse",
+  "stream": false,
+  "file": "proto/meurpg/notes/v1/notes.proto",
+  "line": 86,
+  "callers": [
+   "core/notes/notes-client.ts:35:  /** `CreateNote`; an empty `scenePointId` is a note with no scene. `idempotencyKey`: one per note, sent again on a retry. */",
+   "core/notes/notes-client.ts:42:    const res = await this.client.createNote({ campaignId, text, scenePointId, idempotencyKey });",
+   "core/notes/notes-client.ts:43:    return need(res.note, 'CreateNote');"
+  ]
+ },
+ {
+  "svc": "NotesService",
+  "rpc": "UpdateNote",
+  "req": "UpdateNoteRequest",
+  "res": "UpdateNoteResponse",
+  "stream": false,
+  "file": "proto/meurpg/notes/v1/notes.proto",
+  "line": 97,
+  "callers": [
+   "core/notes/notes-client.ts:46:  /** `UpdateNote`: only the fields given change; `scenePointId: ''` removes the tag. */",
+   "core/notes/notes-client.ts:52:    const res = await this.client.updateNote({ campaignId, noteId, ...changes });",
+   "core/notes/notes-client.ts:53:    return need(res.note, 'UpdateNote');"
+  ]
+ },
+ {
+  "svc": "NotesService",
+  "rpc": "DeleteNote",
+  "req": "DeleteNoteRequest",
+  "res": "DeleteNoteResponse",
+  "stream": false,
+  "file": "proto/meurpg/notes/v1/notes.proto",
+  "line": 104,
+  "callers": [
+   "core/notes/notes-client.ts:57:    await this.client.deleteNote({ campaignId, noteId });"
+  ]
+ },
+ {
+  "svc": "NotesService",
+  "rpc": "ListNoteScenes",
+  "req": "ListNoteScenesRequest",
+  "res": "ListNoteScenesResponse",
+  "stream": false,
+  "file": "proto/meurpg/notes/v1/notes.proto",
+  "line": 114,
+  "callers": [
+   "core/notes/notes-client.ts:60:  /** `ListNoteScenes`: the scenes the group discovered, the tag picker's list. */",
+   "core/notes/notes-client.ts:62:    return (await this.client.listNoteScenes({ campaignId })).scenes;"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "StartEncounter",
+  "req": "StartEncounterRequest",
+  "res": "StartEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 162,
+  "callers": [
+   "core/combat/combat-client.ts:227:    const res = await this.client.startEncounter({",
+   "core/combat/combat-client.ts:247:    return need(res.encounter, 'StartEncounter');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "GetEncounter",
+  "req": "GetEncounterRequest",
+  "res": "GetEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 180,
+  "callers": [
+   "core/combat/combat-client.ts:216:    return (await this.client.getEncounter({ campaignId })).encounter ?? null;"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SubmitInitiative",
+  "req": "SubmitInitiativeRequest",
+  "res": "SubmitInitiativeResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 212,
+  "callers": [
+   "core/combat/combat-client.ts:68:/** How a combatant's d20 comes (`SubmitInitiative`): the app rolls it, or a",
+   "core/combat/combat-client.ts:277:  async submitInitiative(",
+   "core/combat/combat-client.ts:284:      ['submitInitiative', campaignId, encounterId, combatantId, roll],",
+   "core/combat/combat-client.ts:286:        this.client.submitInitiative({",
+   "core/combat/combat-client.ts:297:    return need(res.encounter, 'SubmitInitiative');",
+   "pages/live-session/combat/combat-view.ts:1797:      this.api.submitInitiative(this.campaignId(), e.id, combatantId, { face }),"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SetInitiativeOrder",
+  "req": "SetInitiativeOrderRequest",
+  "res": "SetInitiativeOrderResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 232,
+  "callers": [
+   "core/combat/combat-client.ts:306:      ['setInitiativeOrder', campaignId, encounterId, combatantIds],",
+   "core/combat/combat-client.ts:308:        this.client.setInitiativeOrder({",
+   "core/combat/combat-client.ts:315:    return need(res.encounter, 'SetInitiativeOrder');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "BeginCombat",
+  "req": "BeginCombatRequest",
+  "res": "BeginCombatResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 248,
+  "callers": [
+   "core/combat/combat-client.ts:319:    const res = await this.keyed(['beginCombat', campaignId, encounterId], (sent) =>",
+   "core/combat/combat-client.ts:320:      this.client.beginCombat({",
+   "core/combat/combat-client.ts:326:    return need(res.encounter, 'BeginCombat');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "EndTurn",
+  "req": "EndTurnRequest",
+  "res": "EndTurnResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 290,
+  "callers": [
+   "core/combat/combat-client.ts:332:  async endTurn(",
+   "core/combat/combat-client.ts:341:        'endTurn',",
+   "core/combat/combat-client.ts:349:        this.client.endTurn({",
+   "core/combat/combat-client.ts:358:    return need(res.encounter, 'EndTurn');",
+   "pages/live-session/combat/combat-view.ts:1226:      return this.api.endTurn(this.campaignId(), e.id, who, discard, e.round);",
+   "pages/live-session/combat/combat-view.ts:1232:    return this.run((e) => this.api.endTurn(this.campaignId(), e.id, id, false, e.round));"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "MoveCombatant",
+  "req": "MoveCombatantRequest",
+  "res": "MoveCombatantResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 359,
+  "callers": [
+   "core/combat/combat-client.ts:361:  /** `MoveCombatant`: a walk to a square, or a jump (`jump`: a long one to the",
+   "core/combat/combat-client.ts:379:      ['moveCombatant', campaignId, encounterId, combatantId, col, row, jump, forced],",
+   "core/combat/combat-client.ts:381:        this.client.moveCombatant({",
+   "core/combat/combat-client.ts:399:      encounter: need(res.encounter, 'MoveCombatant'),"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "GetMoveOptions",
+  "req": "GetMoveOptionsRequest",
+  "res": "GetMoveOptionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 384,
+  "callers": [
+   "shared/combat-map/combat-map.ts:30:/** What the server said a combatant reaches (`GetMoveOptions`): the square it",
+   "core/combat/combat-client.ts:406:  /** `GetMoveOptions`: where the combatant can go in one straight move, the",
+   "core/combat/combat-client.ts:413:    return this.client.getMoveOptions({ campaignId, encounterId, combatantId });",
+   "pages/live-session/combat/combat-view.ts:562:  /** Where the combatant of the move page can go (`GetMoveOptions`): the player's own, or whoever the master's reach is on for. */",
+   "pages/live-session/combat/move-page/move-page.ts:115:  /** Where the combatant can go (`GetMoveOptions`); `null` until it is read, or when it failed. */"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SpendMovement",
+  "req": "SpendMovementRequest",
+  "res": "SpendMovementResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 415,
+  "callers": [
+   "core/combat/theatre.ts:40:/** The server's own limits of `SpendMovement.distance_ft`. */",
+   "core/combat/combat-client.ts:493:  async spendMovement(",
+   "core/combat/combat-client.ts:500:    const res = await this.client.spendMovement({",
+   "core/combat/combat-client.ts:508:      encounter: need(res.encounter, 'SpendMovement'),",
+   "pages/live-session/combat/theatre/master-spend.ts:115:      const res = await this.api.spendMovement(",
+   "pages/live-session/combat/theatre/spend-sheet.ts:137:      const res = await this.api.spendMovement("
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "OfferOpportunity",
+  "req": "OfferOpportunityRequest",
+  "res": "OfferOpportunityResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 444,
+  "callers": [
+   "core/combat/combat-client.ts:514:  async offerOpportunity(",
+   "core/combat/combat-client.ts:521:    const res = await this.client.offerOpportunity({",
+   "core/combat/combat-client.ts:528:    return need(res.encounter, 'OfferOpportunity');",
+   "pages/live-session/combat/combat-view.ts:1983:      this.api.offerOpportunity(this.campaignId(), current.id, mover.id, reactorId, key),"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "WithdrawOpportunity",
+  "req": "WithdrawOpportunityRequest",
+  "res": "WithdrawOpportunityResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 455,
+  "callers": [
+   "core/combat/combat-client.ts:532:  async withdrawOpportunity(",
+   "core/combat/combat-client.ts:538:      ['withdrawOpportunity', campaignId, encounterId, offerId],",
+   "core/combat/combat-client.ts:540:        this.client.withdrawOpportunity({",
+   "core/combat/combat-client.ts:547:    return need(res.encounter, 'WithdrawOpportunity');",
+   "pages/live-session/combat/combat-view.ts:2006:  protected withdrawOpportunity(offer: OpportunityOffer): Promise<boolean> {",
+   "pages/live-session/combat/combat-view.ts:2007:    return this.run((e) => this.api.withdrawOpportunity(this.campaignId(), e.id, offer.id));"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SetCombatantSide",
+  "req": "SetCombatantSideRequest",
+  "res": "SetCombatantSideResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 469,
+  "callers": [
+   "core/combat/combat-client.ts:424:      ['setCombatantSide', campaignId, encounterId, combatantId, side],",
+   "core/combat/combat-client.ts:426:        this.client.setCombatantSide({",
+   "core/combat/combat-client.ts:434:    return need(res.encounter, 'SetCombatantSide');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SetCombatantCover",
+  "req": "SetCombatantCoverRequest",
+  "res": "SetCombatantCoverResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 483,
+  "callers": [
+   "core/combat/combat-client.ts:445:      ['setCombatantCover', campaignId, encounterId, combatantId, cover],",
+   "core/combat/combat-client.ts:447:        this.client.setCombatantCover({",
+   "core/combat/combat-client.ts:455:    return need(res.encounter, 'SetCombatantCover');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SetCombatantHidden",
+  "req": "SetCombatantHiddenRequest",
+  "res": "SetCombatantHiddenResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 496,
+  "callers": [
+   "core/combat/combat-client.ts:557:      ['setCombatantHidden', campaignId, encounterId, combatantId, hidden],",
+   "core/combat/combat-client.ts:559:        this.client.setCombatantHidden({",
+   "core/combat/combat-client.ts:567:    return need(res.encounter, 'SetCombatantHidden');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "AddCombatants",
+  "req": "AddCombatantsRequest",
+  "res": "AddCombatantsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 512,
+  "callers": [
+   "core/combat/combat-client.ts:577:      ['addCombatants', campaignId, encounterId, participants],",
+   "core/combat/combat-client.ts:579:        this.client.addCombatants({",
+   "core/combat/combat-client.ts:587:    return need(res.encounter, 'AddCombatants');",
+   "pages/live-session/combat/combat-view.ts:1834:  protected addCombatants(): void {"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "AddMonsters",
+  "req": "AddMonstersRequest",
+  "res": "AddMonstersResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 541,
+  "callers": [
+   "shared/monsters/put-sheet/put-sheet.ts:214:        const made = await this.combat.addMonsters(this.data.campaignId, target.id, add, key);",
+   "core/combat/monsters.ts:9:/** The most monsters of one creature one \"Pôr no combate\" puts in (`AddMonsters`: 1 to 10). */",
+   "core/combat/monsters.ts:13:/** The longest base name (`AddMonsters`: 1 to 30 characters, one line). */",
+   "core/combat/combat-client.ts:62:/** What `AddMonsters` answers: the combat and the ids of the new combatants, in the order of their names. */",
+   "core/combat/combat-client.ts:250:  /** \"Pôr no combate\" (`AddMonsters`): 1 to 10 monsters of one SRD creature. The caller makes the key once per add and sends it",
+   "core/combat/combat-client.ts:252:  async addMonsters("
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "RemoveCombatant",
+  "req": "RemoveCombatantRequest",
+  "res": "RemoveCombatantResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 555,
+  "callers": [
+   "core/combat/combat-client.ts:592:      ['removeCombatant', campaignId, encounterId, combatantId],",
+   "core/combat/combat-client.ts:594:        this.client.removeCombatant({",
+   "core/combat/combat-client.ts:601:    return need(res.encounter, 'RemoveCombatant');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "EndEncounter",
+  "req": "EndEncounterRequest",
+  "res": "EndEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 568,
+  "callers": [
+   "core/combat/combat-client.ts:945:    const res = await this.keyed(['endEncounter', campaignId, encounterId], (sent) =>",
+   "core/combat/combat-client.ts:946:      this.client.endEncounter({",
+   "core/combat/combat-client.ts:952:    return need(res.encounter, 'EndEncounter');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "GetTurnOptions",
+  "req": "GetTurnOptionsRequest",
+  "res": "GetTurnOptionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 599,
+  "callers": [
+   "core/combat/combat-client.ts:611:    return this.client.getTurnOptions({ campaignId, encounterId, combatantId });",
+   "pages/live-session/combat/opportunity/opportunity-sheet.ts:38:  /** Reads the reactor's melee attacks with their numbers (its own `GetTurnOptions`) and the options they came from. */",
+   "pages/live-session/combat/combat-view.ts:503:  /** `GetTurnOptions` of each creature the player plays: the attacks with their numbers, the standard actions. */",
+   "pages/live-session/combat/cast-sheet/cast-sheet.ts:112:  /** Who it can target, with the distance (`GetTurnOptions.spell_targets`). */",
+   "pages/live-session/combat/order-list/order-list.ts:114:  /** The cover each combatant has against whoever has the turn (`GetTurnOptions`",
+   "pages/live-session/combat/attack-sheet/attack-sheet.ts:66:  /** The attack's targets from `GetTurnOptions`, in turn order. */"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "RollAttack",
+  "req": "RollAttackRequest",
+  "res": "RollAttackResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 662,
+  "callers": [
+   "core/combat/combat-client.ts:616:  async rollAttack(",
+   "core/combat/combat-client.ts:627:    const res = await this.client.rollAttack({",
+   "core/combat/combat-client.ts:640:      encounter: need(res.encounter, 'RollAttack'),",
+   "core/combat/combat-client.ts:641:      roll: need(res.roll, 'RollAttack'),",
+   "pages/live-session/combat/npc-card/npc-card.ts:298:    return this.rollAttack({ inApp: true });",
+   "pages/live-session/combat/npc-card/npc-card.ts:302:    return this.rollAttack({ face });"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "RollDamage",
+  "req": "RollDamageRequest",
+  "res": "RollDamageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 704,
+  "callers": [
+   "core/combat/combat-client.ts:646:  async rollDamage(",
+   "core/combat/combat-client.ts:653:    const res = await this.client.rollDamage({",
+   "core/combat/combat-client.ts:662:      encounter: need(res.encounter, 'RollDamage'),",
+   "core/combat/combat-client.ts:663:      pending: need(res.pendingDamage, 'RollDamage'),",
+   "pages/live-session/combat/npc-card/pending-damages.ts:188:      const res = await this.api.rollDamage(",
+   "pages/live-session/combat/cast-sheet/cast-sheet.ts:680:      const res = await this.api.rollDamage("
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "ApplyPendingDamage",
+  "req": "ApplyPendingDamageRequest",
+  "res": "ApplyPendingDamageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 731,
+  "callers": [
+   "core/combat/combat-client.ts:679:      ['applyPendingDamage', campaignId, encounterId, pendingDamageId, amount],",
+   "core/combat/combat-client.ts:681:        this.client.applyPendingDamage({",
+   "core/combat/combat-client.ts:691:      encounter: need(res.encounter, 'ApplyPendingDamage'),",
+   "core/combat/combat-client.ts:692:      pending: need(res.pendingDamage, 'ApplyPendingDamage'),"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "DiscardPendingDamage",
+  "req": "DiscardPendingDamageRequest",
+  "res": "DiscardPendingDamageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 739,
+  "callers": [
+   "core/combat/combat-client.ts:336:    discardPendingDamage = false,",
+   "core/combat/combat-client.ts:345:        discardPendingDamage,",
+   "core/combat/combat-client.ts:354:          discardPendingDamage,",
+   "core/combat/combat-client.ts:703:      ['discardPendingDamage', campaignId, encounterId, pendingDamageId],",
+   "core/combat/combat-client.ts:705:        this.client.discardPendingDamage({",
+   "core/combat/combat-client.ts:713:      encounter: need(res.encounter, 'DiscardPendingDamage'),"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "TakeAction",
+  "req": "TakeActionRequest",
+  "res": "TakeActionResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 775,
+  "callers": [
+   "core/combat/combat-client.ts:756:  async takeAction(",
+   "core/combat/combat-client.ts:765:      ['takeAction', campaignId, encounterId, combatantId, actionKey, die],",
+   "core/combat/combat-client.ts:767:        this.client.takeAction({",
+   "core/combat/combat-client.ts:781:    return { encounter: need(res.encounter, 'TakeAction'), roll: res.roll, healed: res.healed };",
+   "pages/live-session/combat/combat-view.ts:1237:  protected takeAction(key: string): Promise<boolean> {",
+   "pages/live-session/combat/combat-view.ts:1245:      async (e) => (await this.api.takeAction(this.campaignId(), e.id, id, key)).encounter,"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "AdjustCombatantHitPoints",
+  "req": "AdjustCombatantHitPointsRequest",
+  "res": "AdjustCombatantHitPointsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 792,
+  "callers": [
+   "core/combat/combat-client.ts:901:    const res = await this.client.adjustCombatantHitPoints({",
+   "core/combat/combat-client.ts:915:    return need(res.encounter, 'AdjustCombatantHitPoints');",
+   "pages/live-session/combat/combat-view.ts:1776:  /** \"Dano/Cura\" on an NPC (`AdjustCombatantHitPoints`). */",
+   "pages/live-session/combat/order-list/order-list.ts:101:  /** \"Dano/Cura\" on an NPC: its combatant ID (`AdjustCombatantHitPoints`). */"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "UndoLastAction",
+  "req": "UndoLastActionRequest",
+  "res": "UndoLastActionResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 820,
+  "callers": [
+   "core/combat/combat-client.ts:921:      ['undoLastAction', campaignId, encounterId, expectedEventId],",
+   "core/combat/combat-client.ts:923:        this.client.undoLastAction({",
+   "core/combat/combat-client.ts:930:    return need(res.encounter, 'UndoLastAction');",
+   "core/combat/combat-log-state.ts:15:  /** The event `UndoLastAction` would take back; only the master gets it. */"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "CastSpell",
+  "req": "CastSpellRequest",
+  "res": "CastSpellResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 911,
+  "callers": [
+   "core/combat/combat-client.ts:784:  /** `CastSpell`. `slot` is `null` for a cantrip; `die` is the d20 of a spell",
+   "core/combat/combat-client.ts:787:  async castSpell(",
+   "core/combat/combat-client.ts:799:    const res = await this.client.castSpell({",
+   "core/combat/combat-client.ts:824:      encounter: need(res.encounter, 'CastSpell'),",
+   "core/combat/combat-client.ts:825:      cast: need(res.cast, 'CastSpell'),",
+   "pages/character-sheet/creatures-panel/summon-sheet.ts:579:  /** In a combat the cast goes through `CastSpell`: the d20 of the group's initiative (the app's, or the one typed), the slot and the choice. */"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "UseReaction",
+  "req": "UseReactionRequest",
+  "res": "UseReactionResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 939,
+  "callers": [
+   "core/combat/combat-client.ts:160:/** What Escudo did to a hit (`UseReaction`). */",
+   "core/combat/combat-client.ts:720:  async useReaction(",
+   "core/combat/combat-client.ts:727:    const res = await this.client.useReaction({",
+   "core/combat/combat-client.ts:734:    return { encounter: need(res.encounter, 'UseReaction'), outcome: res.outcome };",
+   "pages/live-session/combat/npc-card/pending-damages.ts:202:      const res = await this.api.useReaction(",
+   "pages/live-session/combat/shield-sheet/shield-sheet.ts:214:      const res = await this.api.useReaction("
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "DeclineReaction",
+  "req": "DeclineReactionRequest",
+  "res": "DeclineReactionResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 948,
+  "callers": [
+   "core/combat/combat-client.ts:738:  async declineReaction(",
+   "core/combat/combat-client.ts:744:    const res = await this.client.declineReaction({",
+   "core/combat/combat-client.ts:750:    return need(res.encounter, 'DeclineReaction');",
+   "pages/live-session/combat/npc-card/pending-damages.ts:225:        await this.api.declineReaction(",
+   "pages/live-session/combat/shield-sheet/shield-sheet.ts:238:        await this.api.declineReaction("
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "DeclineOpportunity",
+  "req": "DeclineOpportunityRequest",
+  "res": "DeclineOpportunityResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 964,
+  "callers": [
+   "core/combat/combat-client.ts:459:  async declineOpportunity(",
+   "core/combat/combat-client.ts:464:    const res = await this.keyed(['declineOpportunity', campaignId, encounterId, offerId], (sent) =>",
+   "core/combat/combat-client.ts:465:      this.client.declineOpportunity({",
+   "core/combat/combat-client.ts:472:    return need(res.encounter, 'DeclineOpportunity');",
+   "pages/live-session/combat/opportunity/opportunity-sheet.ts:198:        await this.api.declineOpportunity(",
+   "pages/live-session/combat/combat-view.ts:1951:      return this.run((e) => this.api.declineOpportunity(this.campaignId(), e.id, a.offer.id));"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SkipOpportunity",
+  "req": "SkipOpportunityRequest",
+  "res": "SkipOpportunityResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 973,
+  "callers": [
+   "core/combat/combat-client.ts:476:  async skipOpportunity(",
+   "core/combat/combat-client.ts:481:    const res = await this.keyed(['skipOpportunity', campaignId, encounterId, offerId], (sent) =>",
+   "core/combat/combat-client.ts:482:      this.client.skipOpportunity({",
+   "core/combat/combat-client.ts:489:    return need(res.encounter, 'SkipOpportunity');",
+   "pages/live-session/combat/combat-view.ts:1965:  protected skipOpportunity(offer: OpportunityOffer): Promise<boolean> {",
+   "pages/live-session/combat/combat-view.ts:1966:    return this.run((e) => this.api.skipOpportunity(this.campaignId(), e.id, offer.id));"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "RollDeathSave",
+  "req": "RollDeathSaveRequest",
+  "res": "RollDeathSaveResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1005,
+  "callers": [
+   "core/combat/combat-client.ts:830:  async rollDeathSave(",
+   "core/combat/combat-client.ts:837:    const res = await this.client.rollDeathSave({",
+   "core/combat/combat-client.ts:846:      encounter: need(res.encounter, 'RollDeathSave'),",
+   "core/combat/combat-client.ts:847:      save: need(res.deathSave, 'RollDeathSave'),",
+   "pages/live-session/combat/combat-view.ts:1592:  protected async rollDeathSave(die: AttackDie): Promise<void> {",
+   "pages/live-session/combat/combat-view.ts:1599:      const res = await this.api.rollDeathSave(this.campaignId(), e.id, own.id, die, key);"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "ConfirmDeath",
+  "req": "ConfirmDeathRequest",
+  "res": "ConfirmDeathResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1024,
+  "callers": [
+   "core/combat/combat-client.ts:852:  async confirmDeath(",
+   "core/combat/combat-client.ts:858:    const res = await this.client.confirmDeath({",
+   "core/combat/combat-client.ts:864:    return need(res.encounter, 'ConfirmDeath');",
+   "pages/live-session/combat/combat-view.ts:1610:  /** The master's \"Confirmar a morte\" (ConfirmDeath): the character is dead for good. */",
+   "pages/live-session/combat/combat-view.ts:1611:  protected async confirmDeath(id: string): Promise<void> {",
+   "pages/live-session/combat/combat-view.ts:1613:      const res = await this.api.confirmDeath("
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "SetCombatantConditions",
+  "req": "SetCombatantConditionsRequest",
+  "res": "SetCombatantConditionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1044,
+  "callers": [
+   "core/combat/combat-client.ts:877:      ['setCombatantConditions', campaignId, encounterId, combatantId, change],",
+   "core/combat/combat-client.ts:879:        this.client.setCombatantConditions({",
+   "core/combat/combat-client.ts:889:    return need(res.encounter, 'SetCombatantConditions');"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "EndConcentration",
+  "req": "EndConcentrationRequest",
+  "res": "EndConcentrationResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1067,
+  "callers": [
+   "core/combat/combat-client.ts:157:  readonly endConcentration?: boolean;",
+   "core/combat/combat-client.ts:885:          endConcentration: change.endConcentration ?? false,",
+   "pages/live-session/combat/combat-view.ts:1642:          this.api.setConditions(this.campaignId(), e.id, own.id, { endConcentration: true }),",
+   "pages/live-session/combat/combat-view.ts:1818:      this.api.setConditions(this.campaignId(), e.id, id, { endConcentration: true }),",
+   "pages/live-session/combat/order-list/order-list.ts:106:  readonly endConcentration = output<string>();",
+   "pages/live-session/combat/order-list/order-list.ts:369:    this.endConcentration.emit(id);"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "ListCombatLog",
+  "req": "ListCombatLogRequest",
+  "res": "ListCombatLogResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1083,
+  "callers": [
+   "core/combat/combat-client.ts:935:    return this.client.listCombatLog({ campaignId, encounterId });"
+  ]
+ },
+ {
+  "svc": "CombatService",
+  "rpc": "GetCombatHighlights",
+  "req": "GetCombatHighlightsRequest",
+  "res": "GetCombatHighlightsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/combat.proto",
+  "line": 1117,
+  "callers": [
+   "core/combat/combat-client.ts:941:    return this.client.getCombatHighlights({ campaignId, encounterId });"
+  ]
+ },
+ {
+  "svc": "EncounterService",
+  "rpc": "EvaluateEncounter",
+  "req": "EvaluateEncounterRequest",
+  "res": "EvaluateEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 294,
+  "callers": [
+   "core/encounters/encounters-client.ts:64:    const res = await this.client.evaluateEncounter({",
+   "core/encounters/encounters-client.ts:69:    return need(res.evaluation, 'EvaluateEncounter');"
+  ]
+ },
+ {
+  "svc": "EncounterService",
+  "rpc": "GenerateEncounter",
+  "req": "GenerateEncounterRequest",
+  "res": "GenerateEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 304,
+  "callers": [
+   "core/encounters/encounters-client.ts:80:    const res = await this.client.generateEncounter({",
+   "core/encounters/encounters-client.ts:87:    return { evaluation: need(res.evaluation, 'GenerateEncounter'), seed: res.seed };"
+  ]
+ },
+ {
+  "svc": "EncounterService",
+  "rpc": "ListEncounterSwaps",
+  "req": "ListEncounterSwapsRequest",
+  "res": "ListEncounterSwapsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 310,
+  "callers": [
+   "core/encounters/encounters-client.ts:96:    return (await this.client.listEncounterSwaps({ campaignId, creatureKey, creatureType }))"
+  ]
+ },
+ {
+  "svc": "EncounterService",
+  "rpc": "SaveBattleEncounter",
+  "req": "SaveBattleEncounterRequest",
+  "res": "SaveBattleEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 319,
+  "callers": [
+   "core/encounters/encounters-client.ts:109:    const res = await this.client.saveBattleEncounter({"
+  ]
+ },
+ {
+  "svc": "EncounterService",
+  "rpc": "GetBattleEncounter",
+  "req": "GetBattleEncounterRequest",
+  "res": "GetBattleEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 325,
+  "callers": [
+   "core/encounters/encounters-client.ts:35:/** What `GetBattleEncounter` answers: nothing, or the encounter and how it measures against the party of today. */",
+   "core/encounters/encounters-client.ts:126:    const res = await this.client.getBattleEncounter({"
+  ]
+ },
+ {
+  "svc": "EncounterService",
+  "rpc": "ClearBattleEncounter",
+  "req": "ClearBattleEncounterRequest",
+  "res": "ClearBattleEncounterResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 333,
+  "callers": [
+   "core/encounters/encounters-client.ts:139:    await this.client.clearBattleEncounter({ campaignId, mapPointId });",
+   "pages/encounters/encounter-builder/encounter-builder.ts:209:  /** \"Tirar o encontro\" (`ClearBattleEncounter`): the point keeps nothing; the draft stays on screen. */"
+  ]
+ },
+ {
+  "svc": "EncounterService",
+  "rpc": "ListBattleEncounters",
+  "req": "ListBattleEncountersRequest",
+  "res": "ListBattleEncountersResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/encounters.proto",
+  "line": 338,
+  "callers": [
+   "core/encounters/encounters-client.ts:144:    return (await this.client.listBattleEncounters({ campaignId, mapId })).encounters;"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "StartGameSession",
+  "req": "StartGameSessionRequest",
+  "res": "StartGameSessionResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 74,
+  "callers": [
+   "pages/campaign-detail/game-session/game-session-card.types.ts:15:/** `StartGameSession`'s response: the new session plus how many player",
+   "pages/campaign-detail/game-session/game-session-card.types.ts:38:  abstract startGameSession(",
+   "pages/campaign-detail/game-session/game-session-source.live.ts:38:  async startGameSession(",
+   "pages/campaign-detail/game-session/game-session-source.live.ts:42:    const res = await this.client.startGameSession({ campaignId, idempotencyKey });",
+   "pages/campaign-detail/game-session/game-session-card.ts:82:  /** The locked-sheet count from the last `StartGameSession` call in this",
+   "pages/campaign-detail/game-session/game-session-card.ts:161:      const result = await this.source.startGameSession("
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "EndGameSession",
+  "req": "EndGameSessionRequest",
+  "res": "EndGameSessionResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 88,
+  "callers": [
+   "pages/live-session/live-session-source.live.ts:289:    await this.play.endGameSession({ campaignId, gameSessionId: sessionId });",
+   "pages/campaign-detail/game-session/game-session-card.types.ts:7:  /** `GameSession.id` — `EndGameSession` needs it (integrator amendment,",
+   "pages/campaign-detail/game-session/game-session-card.types.ts:42:  abstract endGameSession(campaignId: string, gameSessionId: string): Promise<GameSessionVm>;",
+   "pages/campaign-detail/game-session/game-session-source.live.ts:46:  async endGameSession(campaignId: string, gameSessionId: string): Promise<GameSessionVm> {",
+   "pages/campaign-detail/game-session/game-session-source.live.ts:47:    const res = await this.client.endGameSession({ campaignId, gameSessionId });",
+   "pages/campaign-detail/game-session/game-session-card.ts:195:      await this.source.endGameSession(this.campaignId(), gameSessionId);"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "GetSessionSummary",
+  "req": "GetSessionSummaryRequest",
+  "res": "GetSessionSummaryResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 120,
+  "callers": [
+   "core/play/session-summary.ts:31:    const res = await this.client.getSessionSummary({ campaignId, gameSessionId });",
+   "core/play/session-summary.ts:33:      throw new Error('GetSessionSummary answered without its result');"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "ListGameSessions",
+  "req": "ListGameSessionsRequest",
+  "res": "ListGameSessionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 130,
+  "callers": [
+   "pages/campaign-detail/game-session/game-session-source.live.ts:33:    const res = await this.client.listGameSessions({ campaignId });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "ListOpenGameSessions",
+  "req": "ListOpenGameSessionsRequest",
+  "res": "ListOpenGameSessionsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 141,
+  "callers": [
+   "shell/live-notice/open-sessions.ts:30:/** One `ListOpenGameSessions` call, newest session first. */",
+   "shell/live-notice/open-sessions-client.ts:17:    const res = await client.listOpenGameSessions({});"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "GetLiveSession",
+  "req": "GetLiveSessionRequest",
+  "res": "GetLiveSessionResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 162,
+  "callers": [
+   "core/creatures/creatures-client.ts:227:    const res = await this.play.getLiveSession({ campaignId });",
+   "core/play/open-session.ts:28:      const res = await this.play.getLiveSession({ campaignId });",
+   "pages/live-session/live-session.ts:679:        this.source.getLiveSession(campaignId),",
+   "pages/live-session/live-session-source.live.ts:256:  async getLiveSession(campaignId: string): Promise<LiveSnapshotVm> {",
+   "pages/live-session/live-session-source.live.ts:257:    const res = await this.play.getLiveSession({ campaignId });",
+   "pages/live-session/live-session.types.ts:95:/** `GetLiveSession`: the session and the vitals the caller may see (the"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "WatchGameSession",
+  "req": "WatchGameSessionRequest",
+  "res": "WatchGameSessionResponse",
+  "stream": true,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 264,
+  "callers": [
+   "pages/live-session/live-session-source.live.ts:147:    for await (const res of this.play.watchGameSession({ campaignId }, { signal })) {",
+   "pages/live-session/live-session.types.ts:109:/** One event of `WatchGameSession`. */",
+   "pages/live-session/live-session.types.ts:238:  /** `WatchGameSession`. Aborting `signal` closes the stream. */"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "AdjustCharacterVitals",
+  "req": "AdjustCharacterVitalsRequest",
+  "res": "AdjustCharacterVitalsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 298,
+  "callers": [
+   "pages/live-session/live-session-source.live.ts:273:    const res = await this.play.adjustCharacterVitals({"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "SetCurrentMap",
+  "req": "SetCurrentMapRequest",
+  "res": "SetCurrentMapResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 317,
+  "callers": [
+   "pages/live-session/live-session-source.live.ts:292:  async setCurrentMap(campaignId: string, mapId: string | null): Promise<string | null> {",
+   "pages/live-session/live-session-source.live.ts:293:    const res = await this.play.setCurrentMap({ campaignId, mapId: mapId ?? '' });",
+   "pages/live-session/session-map/session-map.ts:221:      const current = await this.source.setCurrentMap(this.campaignId(), mapId);",
+   "pages/live-session/live-session.types.ts:248:  /** `SetCurrentMap`: the map the session shows (`null` clears it). */",
+   "pages/live-session/live-session.types.ts:249:  abstract setCurrentMap(campaignId: string, mapId: string | null): Promise<string | null>;"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "SetShownImage",
+  "req": "SetShownImageRequest",
+  "res": "SetShownImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 355,
+  "callers": [
+   "core/images/shown-client.ts:18:    await this.play.setShownImage({ campaignId, imageId });",
+   "core/images/shown-client.ts:22:/** SetShownImage's refusals in Portuguese: no open session is the usual one (`failed_precondition`). */",
+   "pages/live-session/live-session-source.live.ts:297:  async setShownImage(",
+   "pages/live-session/live-session-source.live.ts:302:    const res = await this.play.setShownImage({ campaignId, imageId: imageId ?? '', keep });",
+   "pages/live-session/shown-image-panel/shown-image-panel.ts:141:          const result = await this.source.setShownImage(this.campaignId(), image.id);",
+   "pages/live-session/shown-image-panel/shown-image-panel.ts:179:      await this.source.setShownImage(this.campaignId(), null);"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "ListLeftImages",
+  "req": "ListLeftImagesRequest",
+  "res": "ListLeftImagesResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 370,
+  "callers": [
+   "pages/live-session/live-session.ts:973:      const images = await this.source.listLeftImages(this.campaignId());",
+   "pages/live-session/live-session-source.live.ts:306:  async listLeftImages(campaignId: string): Promise<readonly ShownImageVm[]> {",
+   "pages/live-session/live-session-source.live.ts:307:    const res = await this.play.listLeftImages({ campaignId });",
+   "pages/live-session/live-session.types.ts:257:  /** `ListLeftImages`: the images the master left with the players. */",
+   "pages/live-session/live-session.types.ts:258:  abstract listLeftImages(campaignId: string): Promise<readonly ShownImageVm[]>;"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "TakeBackLeftImage",
+  "req": "TakeBackLeftImageRequest",
+  "res": "TakeBackLeftImageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 385,
+  "callers": [
+   "pages/live-session/live-session-source.live.ts:311:  async takeBackLeftImage(campaignId: string, imageId: string): Promise<void> {",
+   "pages/live-session/live-session-source.live.ts:312:    await this.play.takeBackLeftImage({ campaignId, imageId });",
+   "pages/live-session/shown-image-panel/shown-image-panel.ts:229:      await this.source.takeBackLeftImage(this.campaignId(), image.id);",
+   "pages/live-session/shown-image-panel/shown-image-panel.ts:254:/** TakeBackLeftImage's errors, in Portuguese (play.proto). */",
+   "pages/live-session/live-session.types.ts:259:  /** `TakeBackLeftImage`: the master takes an image back (\"Tirar\"). */",
+   "pages/live-session/live-session.types.ts:260:  abstract takeBackLeftImage(campaignId: string, imageId: string): Promise<void>;"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "OpenScene",
+  "req": "OpenSceneRequest",
+  "res": "OpenSceneResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 407,
+  "callers": [
+   "shared/notes/notes-sheet.ts:36:  readonly openScene: () => string;",
+   "shared/notes/notes-sheet.ts:90:  protected readonly editing = new NoteEditing(this.state, this.data.openScene);",
+   "shared/map-lists/map-points-list.ts:85:  readonly openScene = output<MapPoint>();",
+   "core/notes/note-editing.ts:57:    private readonly openScene: () => string = () => '',",
+   "core/notes/note-editing.ts:68:    const scene = this.openScene();",
+   "core/play/scene-client.ts:23:    const res = await this.client.openScene({ campaignId, pointId });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "CloseScene",
+  "req": "CloseSceneRequest",
+  "res": "CloseSceneResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 419,
+  "callers": [
+   "core/play/scene-client.ts:28:    await this.client.closeScene({ campaignId });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "GetOpenScene",
+  "req": "GetOpenSceneRequest",
+  "res": "GetOpenSceneResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 440,
+  "callers": [
+   "core/play/scene-client.ts:33:    const res = await this.client.getOpenScene({ campaignId });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "RollSceneCheck",
+  "req": "RollSceneCheckRequest",
+  "res": "RollSceneCheckResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 468,
+  "callers": [
+   "core/play/scene-client.ts:56:  /** `RollSceneCheck`. The key is made once per roll and sent again on a retry:",
+   "core/play/scene-client.ts:64:    const res = await this.client.rollSceneCheck({",
+   "core/play/scene-client.ts:71:    return need(res.roll, 'RollSceneCheck');"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "SearchForTraps",
+  "req": "SearchForTrapsRequest",
+  "res": "SearchForTrapsResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 499,
+  "callers": [
+   "core/traps/traps-client.ts:39:    return this.client.searchForTraps({"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "FireTrap",
+  "req": "FireTrapRequest",
+  "res": "FireTrapResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 522,
+  "callers": [
+   "core/traps/traps-client.ts:49:  /** `FireTrap`: empty `targetIds` is whoever stands in the area (the server decides). With",
+   "core/traps/traps-client.ts:59:    return this.client.fireTrap({"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "ListTrapActivity",
+  "req": "ListTrapActivityRequest",
+  "res": "ListTrapActivityResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 536,
+  "callers": [
+   "core/traps/traps-client.ts:71:    return this.client.listTrapActivity({ campaignId });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "ListTrapDamages",
+  "req": "ListTrapDamagesRequest",
+  "res": "ListTrapDamagesResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 548,
+  "callers": [
+   "core/traps/traps-client.ts:76:    return this.client.listTrapDamages({ campaignId });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "ApplyTrapDamage",
+  "req": "ApplyTrapDamageRequest",
+  "res": "ApplyTrapDamageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 562,
+  "callers": [
+   "core/traps/traps-client.ts:86:    return this.client.applyTrapDamage({ campaignId, trapDamageId: id, amount, idempotencyKey });",
+   "pages/live-session/traps/trap-damages/trap-damages.ts:29:/** A number typed for the damage to apply: a whole number from 0 to 1000 (what `ApplyTrapDamage` takes), or `null`. */"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "DiscardTrapDamage",
+  "req": "DiscardTrapDamageRequest",
+  "res": "DiscardTrapDamageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 566,
+  "callers": [
+   "core/traps/traps-client.ts:94:    return this.client.discardTrapDamage({ campaignId, trapDamageId: id, idempotencyKey });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "GrantSceneAttempt",
+  "req": "GrantSceneAttemptRequest",
+  "res": "GrantSceneAttemptResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 589,
+  "callers": [
+   "core/play/scene-client.ts:74:  /** `GrantSceneAttempt` (MR-015): one more attempt for one character at one",
+   "core/play/scene-client.ts:83:    const res = await this.client.grantSceneAttempt({",
+   "core/play/scene-client.ts:89:    return need(res.scene, 'GrantSceneAttempt');"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "PutOnStage",
+  "req": "PutOnStageRequest",
+  "res": "PutOnStageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 607,
+  "callers": [
+   "core/play/scene-client.ts:37:  /** `PutOnStage` (MR-031): the NPC comes in after those already there. The",
+   "core/play/scene-client.ts:39:  async putOnStage(campaignId: string, characterId: string): Promise<readonly StageNpc[]> {",
+   "core/play/scene-client.ts:40:    const res = await this.client.putOnStage({ campaignId, characterId });",
+   "core/play/stage-controller.ts:11:  putOnStage(campaignId: string, characterId: string): Promise<readonly StageNpc[]>;",
+   "core/play/stage-controller.ts:65:      this.api.putOnStage(this.campaignId(), characterId),",
+   "core/play/scene-errors.ts:67:/** What a failed stage call (`PutOnStage`, `TakeOffStage`, `SetSpeaker`) says"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "TakeOffStage",
+  "req": "TakeOffStageRequest",
+  "res": "TakeOffStageResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 620,
+  "callers": [
+   "core/play/scene-client.ts:44:  /** `TakeOffStage`: at once, nothing to confirm. */",
+   "core/play/scene-client.ts:45:  async takeOffStage(campaignId: string, characterId: string): Promise<readonly StageNpc[]> {",
+   "core/play/scene-client.ts:46:    const res = await this.client.takeOffStage({ campaignId, characterId });",
+   "core/play/stage-controller.ts:12:  takeOffStage(campaignId: string, characterId: string): Promise<readonly StageNpc[]>;",
+   "core/play/stage-controller.ts:79:      this.api.takeOffStage(this.campaignId(), characterId),",
+   "core/play/scene-errors.ts:67:/** What a failed stage call (`PutOnStage`, `TakeOffStage`, `SetSpeaker`) says"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "SetSpeaker",
+  "req": "SetSpeakerRequest",
+  "res": "SetSpeakerResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 634,
+  "callers": [
+   "core/play/scene-client.ts:50:  /** `SetSpeaker`: who speaks now, or nobody (an empty `characterId`). */",
+   "core/play/scene-client.ts:51:  async setSpeaker(campaignId: string, characterId: string): Promise<readonly StageNpc[]> {",
+   "core/play/scene-client.ts:52:    const res = await this.client.setSpeaker({ campaignId, characterId });",
+   "core/play/stage-controller.ts:13:  setSpeaker(campaignId: string, characterId: string): Promise<readonly StageNpc[]>;",
+   "core/play/stage-controller.ts:93:      this.api.setSpeaker(this.campaignId(), speaking ? '' : characterId),",
+   "core/play/scene-errors.ts:67:/** What a failed stage call (`PutOnStage`, `TakeOffStage`, `SetSpeaker`) says"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "CastSummon",
+  "req": "CastSummonRequest",
+  "res": "CastSummonResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 670,
+  "callers": [
+   "core/creatures/creatures-client.ts:37:/** One casting of a summoning spell outside a combat (`PlayService.CastSummon`). */",
+   "core/creatures/creatures-client.ts:232:  async castSummon(",
+   "core/creatures/creatures-client.ts:235:    const res = await this.play.castSummon({",
+   "pages/character-sheet/creatures-panel/summon-sheet.ts:549:      const res = await this.client.castSummon({"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "AssumeWildShape",
+  "req": "AssumeWildShapeRequest",
+  "res": "AssumeWildShapeResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 705,
+  "callers": [
+   "shared/wild-shape/wild-shape-sheet.ts:182:      const res = await this.client.assumeWildShape(",
+   "core/creatures/creatures-client.ts:90:  /** \"Virar Lobo\": the action and one use (`AssumeWildShape`). The answer is the vitals with the form and, in a combat, the combat. */",
+   "core/creatures/creatures-client.ts:91:  async assumeWildShape(",
+   "core/creatures/creatures-client.ts:100:    const res = await this.play.assumeWildShape({"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "LeaveWildShape",
+  "req": "LeaveWildShapeRequest",
+  "res": "LeaveWildShapeResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 714,
+  "callers": [
+   "core/creatures/creatures-client.ts:109:  /** \"Voltar à forma normal\" (`LeaveWildShape`): a bonus action in a combat. */",
+   "core/creatures/creatures-client.ts:110:  async leaveWildShape(",
+   "core/creatures/creatures-client.ts:118:    const res = await this.play.leaveWildShape({ campaignId, characterId, idempotencyKey });",
+   "pages/character-sheet/creatures-panel/creatures-panel.ts:207:      await this.client.leaveWildShape(",
+   "pages/live-session/combat/combat-view.ts:448:      const res = await this.creaturesApi.leaveWildShape("
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "StartFamiliarSight",
+  "req": "StartFamiliarSightRequest",
+  "res": "StartFamiliarSightResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 735,
+  "callers": [
+   "core/play/familiar-eyes.ts:46:    return this.play.startFamiliarSight({ campaignId, characterId, idempotencyKey: key });"
+  ]
+ },
+ {
+  "svc": "PlayService",
+  "rpc": "StopFamiliarSight",
+  "req": "StopFamiliarSightRequest",
+  "res": "StopFamiliarSightResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/play.proto",
+  "line": 742,
+  "callers": [
+   "core/play/familiar-eyes.ts:54:    return this.play.stopFamiliarSight({ campaignId, characterId, idempotencyKey: key });"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "CreatePuzzle",
+  "req": "CreatePuzzleRequest",
+  "res": "CreatePuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 881,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:19:/** What the master writes about a puzzle, as `CreatePuzzle` takes it (`UpdatePuzzle` takes the same, with the ID). */",
+   "core/puzzles/puzzles-client.ts:60:      (await this.client.createPuzzle({ ...init, campaignId, idempotencyKey })).puzzle,",
+   "core/puzzles/puzzles-client.ts:61:      'CreatePuzzle',",
+   "core/puzzles/puzzle-draft.ts:410:/** The request body for `CreatePuzzle` and `UpdatePuzzle`. */"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "UpdatePuzzle",
+  "req": "UpdatePuzzleRequest",
+  "res": "UpdatePuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 888,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:19:/** What the master writes about a puzzle, as `CreatePuzzle` takes it (`UpdatePuzzle` takes the same, with the ID). */",
+   "core/puzzles/puzzles-client.ts:67:      (await this.client.updatePuzzle({ ...init, campaignId, puzzleId })).puzzle,",
+   "core/puzzles/puzzles-client.ts:68:      'UpdatePuzzle',",
+   "core/puzzles/puzzle-draft.ts:410:/** The request body for `CreatePuzzle` and `UpdatePuzzle`. */"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "PreviewPuzzleStart",
+  "req": "PreviewPuzzleStartRequest",
+  "res": "PreviewPuzzleStartResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 897,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:79:    return this.client.previewPuzzleStart({ campaignId, config, solution, seed });",
+   "pages/puzzles/puzzle-form/start-preview.ts:3:/** The start the form shows for the lights and the pillars, as the server drew it (`PreviewPuzzleStart`). */"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ListPuzzles",
+  "req": "ListPuzzlesRequest",
+  "res": "ListPuzzlesResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 903,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:50:    return (await this.client.listPuzzles({ campaignId, includeArchived })).puzzles;"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "GetPuzzle",
+  "req": "GetPuzzleRequest",
+  "res": "GetPuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 908,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:54:    return need((await this.client.getPuzzle({ campaignId, puzzleId })).puzzle, 'GetPuzzle');"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ArchivePuzzle",
+  "req": "ArchivePuzzleRequest",
+  "res": "ArchivePuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 915,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:92:      (await this.client.archivePuzzle({ campaignId, puzzleId })).puzzle,",
+   "core/puzzles/puzzles-client.ts:93:      'ArchivePuzzle',"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "UnarchivePuzzle",
+  "req": "UnarchivePuzzleRequest",
+  "res": "UnarchivePuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 918,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:99:      (await this.client.unarchivePuzzle({ campaignId, puzzleId })).puzzle,",
+   "core/puzzles/puzzles-client.ts:100:      'UnarchivePuzzle',"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ListSessionPuzzles",
+  "req": "ListSessionPuzzlesRequest",
+  "res": "ListSessionPuzzlesResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 924,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:107:    return (await this.client.listSessionPuzzles({ campaignId })).puzzles;"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ShowPuzzle",
+  "req": "ShowPuzzleRequest",
+  "res": "ShowPuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 936,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:118:    return need((await this.client.showPuzzle({ campaignId, puzzleId })).run, 'ShowPuzzle');"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ResetPuzzle",
+  "req": "ResetPuzzleRequest",
+  "res": "ResetPuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 945,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:129:      (await this.client.resetPuzzle({ campaignId, puzzleId, expectedRevision })).run,",
+   "core/puzzles/puzzles-client.ts:130:      'ResetPuzzle',"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ReseedPuzzle",
+  "req": "ReseedPuzzleRequest",
+  "res": "ReseedPuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 956,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:140:      (await this.client.reseedPuzzle({ campaignId, puzzleId, expectedRevision })).run,",
+   "core/puzzles/puzzles-client.ts:141:      'ReseedPuzzle',"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ClosePuzzle",
+  "req": "ClosePuzzleRequest",
+  "res": "ClosePuzzleResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 964,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:146:    return need((await this.client.closePuzzle({ campaignId, puzzleId })).run, 'ClosePuzzle');"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ReleaseNextPuzzleHint",
+  "req": "ReleaseNextPuzzleHintRequest",
+  "res": "ReleaseNextPuzzleHintResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 970,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:155:      (await this.client.releaseNextPuzzleHint({ campaignId, puzzleId, expectedRevision })).run,",
+   "core/puzzles/puzzles-client.ts:156:      'ReleaseNextPuzzleHint',"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "PreviewPuzzleCipher",
+  "req": "PreviewPuzzleCipherRequest",
+  "res": "PreviewPuzzleCipherResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 976,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:87:    return (await this.client.previewPuzzleCipher({ campaignId, solution })).ciphertext;",
+   "core/puzzles/puzzle-draft.ts:469:/** The message and the key a cipher is made from (also what `PreviewPuzzleCipher` takes). */"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "PlayPuzzleSequence",
+  "req": "PlayPuzzleSequenceRequest",
+  "res": "PlayPuzzleSequenceResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 991,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:167:      (await this.client.playPuzzleSequence({ campaignId, puzzleId, expectedRevision })).run,",
+   "core/puzzles/puzzles-client.ts:168:      'PlayPuzzleSequence',"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "GetMasterPuzzleRun",
+  "req": "GetMasterPuzzleRunRequest",
+  "res": "GetMasterPuzzleRunResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 997,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:112:      (await this.client.getMasterPuzzleRun({ campaignId, puzzleId })).run,",
+   "core/puzzles/puzzles-client.ts:113:      'GetMasterPuzzleRun',"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "ListShownPuzzles",
+  "req": "ListShownPuzzlesRequest",
+  "res": "ListShownPuzzlesResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 1005,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:175:    return (await this.client.listShownPuzzles({ campaignId })).puzzles;"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "GetPuzzleRun",
+  "req": "GetPuzzleRunRequest",
+  "res": "GetPuzzleRunResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 1014,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:179:    return need((await this.client.getPuzzleRun({ campaignId, puzzleId })).run, 'GetPuzzleRun');"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "TryPuzzleHint",
+  "req": "TryPuzzleHintRequest",
+  "res": "TryPuzzleHintResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 1036,
+  "callers": [
+   "core/puzzles/puzzles-client.ts:204:    return this.client.tryPuzzleHint({"
+  ]
+ },
+ {
+  "svc": "PuzzleService",
+  "rpc": "MakePuzzleMove",
+  "req": "MakePuzzleMoveRequest",
+  "res": "MakePuzzleMoveResponse",
+  "stream": false,
+  "file": "proto/meurpg/play/v1/puzzles.proto",
+  "line": 1065,
+  "callers": [
+   "shared/puzzle-boards/puzzle-host.ts:99:  /** A move, as `MakePuzzleMove` takes it. */",
+   "core/puzzles/puzzles-client.ts:188:    const res = await this.client.makePuzzleMove({ campaignId, puzzleId, move, idempotencyKey });",
+   "core/puzzles/puzzles-client.ts:190:      run: need(res.run, 'MakePuzzleMove'),"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "AwardXP",
+  "req": "AwardXPRequest",
+  "res": "AwardXPResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 104,
+  "callers": [
+   "core/progression/progression-client.ts:55:    return this.client.awardXP({"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "ListTreasuresToConvert",
+  "req": "ListTreasuresToConvertRequest",
+  "res": "ListTreasuresToConvertResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 118,
+  "callers": [
+   "core/progression/progression-client.ts:76:    return this.client.listTreasuresToConvert({ campaignId });"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "MarkMilestone",
+  "req": "MarkMilestoneRequest",
+  "res": "MarkMilestoneResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 128,
+  "callers": [
+   "shared/xp/milestone-sheet.ts:125:      const res = await this.api.markMilestone(this.data.campaignId, reason, ids, key);",
+   "core/progression/progression-client.ts:79:  markMilestone(",
+   "core/progression/progression-client.ts:85:    return this.client.markMilestone({"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "ListMilestones",
+  "req": "ListMilestonesRequest",
+  "res": "ListMilestonesResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 139,
+  "callers": [
+   "core/progression/progression-client.ts:109:  listMilestones(campaignId: string): Promise<ListMilestonesResponse> {",
+   "core/progression/progression-client.ts:110:    return this.client.listMilestones({ campaignId });",
+   "core/progression/milestones-store.ts:46:      const res = await this.api.listMilestones(this.campaignId);"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "AddMilestone",
+  "req": "AddMilestoneRequest",
+  "res": "AddMilestoneResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 160,
+  "callers": [
+   "core/progression/progression-client.ts:113:  addMilestone(",
+   "core/progression/progression-client.ts:118:    return this.client.addMilestone({ campaignId, text, idempotencyKey });",
+   "pages/campaign-detail/milestones/planned-milestones.ts:102:        () => this.api.addMilestone(this.campaignId(), text, this.addKey.keyFor(text)),"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "UpdateMilestone",
+  "req": "UpdateMilestoneRequest",
+  "res": "UpdateMilestoneResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 175,
+  "callers": [
+   "core/progression/progression-client.ts:121:  updateMilestone(",
+   "core/progression/progression-client.ts:126:    return this.client.updateMilestone({ campaignId, milestoneId, text });",
+   "pages/campaign-detail/milestones/planned-milestones.ts:132:        () => this.api.updateMilestone(this.campaignId(), m.id, text),"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "MoveMilestone",
+  "req": "MoveMilestoneRequest",
+  "res": "MoveMilestoneResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 186,
+  "callers": [
+   "core/progression/progression-client.ts:129:  moveMilestone(",
+   "core/progression/progression-client.ts:134:    return this.client.moveMilestone({",
+   "pages/campaign-detail/milestones/planned-milestones.ts:176:        () => this.api.moveMilestone(this.campaignId(), m.id, direction),"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "RemoveMilestone",
+  "req": "RemoveMilestoneRequest",
+  "res": "RemoveMilestoneResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 197,
+  "callers": [
+   "core/progression/progression-client.ts:141:  removeMilestone(campaignId: string, milestoneId: string): Promise<RemoveMilestoneResponse> {",
+   "core/progression/progression-client.ts:142:    return this.client.removeMilestone({ campaignId, milestoneId });",
+   "pages/campaign-detail/milestones/planned-milestones.ts:158:      !(await this.run(() => this.api.removeMilestone(this.campaignId(), m.id), 'remover o marco'))"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "MarkMilestoneReached",
+  "req": "MarkMilestoneReachedRequest",
+  "res": "MarkMilestoneReachedResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 213,
+  "callers": [
+   "core/progression/progression-client.ts:146:  markMilestoneReached(",
+   "core/progression/progression-client.ts:152:    return this.client.markMilestoneReached({",
+   "pages/campaign-detail/milestones/mark-reached-sheet.ts:143:        : await this.api.markMilestoneReached(campaignId, milestoneId, ids, key);"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "GiveMilestoneTo",
+  "req": "GiveMilestoneToRequest",
+  "res": "GiveMilestoneToResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 223,
+  "callers": [
+   "core/progression/progression-client.ts:161:  giveMilestoneTo(",
+   "core/progression/progression-client.ts:167:    return this.client.giveMilestoneTo({",
+   "pages/campaign-detail/milestones/mark-reached-sheet.ts:142:        ? await this.api.giveMilestoneTo(campaignId, milestoneId, ids, key)"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "UndoLastXPAward",
+  "req": "UndoLastXPAwardRequest",
+  "res": "UndoLastXPAwardResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 250,
+  "callers": [
+   "core/progression/progression-client.ts:100:    return this.client.undoLastXPAward({ campaignId, expectedAwardId, idempotencyKey });"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "ListXPAwards",
+  "req": "ListXPAwardsRequest",
+  "res": "ListXPAwardsResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 257,
+  "callers": [
+   "core/progression/progression-client.ts:104:    return this.client.listXPAwards({ campaignId, pageSize: AWARDS_PAGE_SIZE, pageToken });"
+  ]
+ },
+ {
+  "svc": "ProgressionService",
+  "rpc": "GetCampaignExperience",
+  "req": "GetCampaignExperienceRequest",
+  "res": "GetCampaignExperienceResponse",
+  "stream": false,
+  "file": "proto/meurpg/progression/v1/progression.proto",
+  "line": 267,
+  "callers": [
+   "core/progression/progression-client.ts:176:    return this.client.getCampaignExperience({ campaignId });"
+  ]
+ },
+ {
+  "svc": "ContentService",
+  "rpc": "ListContent",
+  "req": "ListContentRequest",
+  "res": "ListContentResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 69,
+  "callers": [
+   "core/content/content-client.ts:122:    const res = await this.content.listContent({ campaignId });",
+   "core/levelup/levelup-client.ts:129:      pending = this.content.listContent({ campaignId, characterId }).then((res) => ({",
+   "core/maps/scene-actions.ts:89:        .listContent({ campaignId })",
+   "core/spells/spells-client.ts:88:        .listContent({ campaignId })",
+   "pages/character-editor/character-editor-source.live.ts:497:      this.contentClient.listContent({ campaignId, characterId: characterId ?? '' }),"
+  ]
+ },
+ {
+  "svc": "ContentService",
+  "rpc": "GetSpellDetails",
+  "req": "GetSpellDetailsRequest",
+  "res": "GetSpellDetailsResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 83,
+  "callers": [
+   "core/combat/hp-effects.ts:37:/** What kind of hit-point spell this is, from the rule `GetSpellDetails` sends, or `null` for any other spell. */",
+   "core/combat/spell-catalog.ts:19:  /** What the SRD says about one spell (`GetSpellDetails`): the cast sheet",
+   "core/combat/spell-catalog.ts:30:        .getSpellDetails({ campaignId, spellKey })",
+   "core/levelup/levelup-client.ts:153:        .getSpellDetails({ campaignId, spellKey })",
+   "core/spells/spells-client.ts:67:        .getSpellDetails({ campaignId, spellKey })",
+   "pages/character-editor/character-editor-source.live.ts:625:    const res = await this.contentClient.getSpellDetails({ campaignId, spellKey });"
+  ]
+ },
+ {
+  "svc": "ContentService",
+  "rpc": "ListSpells",
+  "req": "ListSpellsRequest",
+  "res": "ListSpellsResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 119,
+  "callers": [
+   "core/spells/spells-errors.ts:5:/** `failed_precondition` of `ListSpells`: the character is a basic sheet (an NPC), which has no casting classes. */",
+   "core/spells/spells-filter.ts:52:/** The `ListSpells` request for a filter and a page. `characterId` goes only with \"Só as que posso aprender\". */",
+   "core/spells/spells-client.ts:39:    const res = await this.client.listSpells(request);"
+  ]
+ },
+ {
+  "svc": "ContentService",
+  "rpc": "ListCreatures",
+  "req": "ListCreaturesRequest",
+  "res": "ListCreaturesResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 142,
+  "callers": [
+   "core/creatures/creatures-client.ts:173:    const res = await this.content.listCreatures({",
+   "core/creatures/creature-types.ts:35:/** Every challenge rating of the SRD, as `ListCreatures` takes them. */"
+  ]
+ },
+ {
+  "svc": "ContentService",
+  "rpc": "GetCreature",
+  "req": "GetCreatureRequest",
+  "res": "GetCreatureResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 156,
+  "callers": [
+   "core/creatures/creatures-client.ts:213:    const read = this.content.getCreature({ campaignId, key }).then((res) => {",
+   "pages/live-session/live-session-source.live.ts:334:    const res = await this.content.getCreature({ campaignId, key });",
+   "pages/live-session/live-session.types.ts:262:  /** The armor class of a creature's book (`GetCreature`), for a druid in a beast form; `null` when it cannot be read. */"
+  ]
+ },
+ {
+  "svc": "ContentService",
+  "rpc": "ListTrapPresets",
+  "req": "ListTrapPresetsRequest",
+  "res": "ListTrapPresetsResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 171,
+  "callers": [
+   "core/traps/trap-presets.ts:23:      known = this.client.listTrapPresets({ campaignId }).catch((err) => {"
+  ]
+ },
+ {
+  "svc": "ContentService",
+  "rpc": "ListLightPresets",
+  "req": "ListLightPresetsRequest",
+  "res": "ListLightPresetsResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/rules.proto",
+  "line": 184,
+  "callers": [
+   "core/maps/light-presets.ts:55:        .listLightPresets({ campaignId })"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "ListTableEntries",
+  "req": "ListTableEntriesRequest",
+  "res": "ListTableEntriesResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 526,
+  "callers": [
+   "core/content/content-client.ts:51:    const res = await this.client.listTableEntries({ campaignId });"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "CreateTableEntry",
+  "req": "CreateTableEntryRequest",
+  "res": "CreateTableEntryResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 546,
+  "callers": [
+   "core/content/content-client.ts:57:    const res = await this.client.createTableEntry({ campaignId, body, idempotencyKey });"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "UpdateTableEntry",
+  "req": "UpdateTableEntryRequest",
+  "res": "UpdateTableEntryResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 559,
+  "callers": [
+   "core/content/content-client.ts:67:    return this.client.updateTableEntry({ campaignId, key, expectedRevision, body });"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "ArchiveTableEntry",
+  "req": "ArchiveTableEntryRequest",
+  "res": "ArchiveTableEntryResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 567,
+  "callers": [
+   "core/content/content-client.ts:85:    const res = await this.client.archiveTableEntry({ campaignId, key });"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "UnarchiveTableEntry",
+  "req": "UnarchiveTableEntryRequest",
+  "res": "UnarchiveTableEntryResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 575,
+  "callers": [
+   "core/content/content-client.ts:90:    const res = await this.client.unarchiveTableEntry({ campaignId, key });"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "ListOptionSwitches",
+  "req": "ListOptionSwitchesRequest",
+  "res": "ListOptionSwitchesResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 585,
+  "callers": [
+   "core/content/content-client.ts:98:    const res = await this.client.listOptionSwitches({ campaignId });"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "SetOptionSwitches",
+  "req": "SetOptionSwitchesRequest",
+  "res": "SetOptionSwitchesResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 613,
+  "callers": [
+   "core/content/content-client.ts:107:    return this.client.setOptionSwitches({ campaignId, switches: [...switches] });"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "GetClassTableDefaults",
+  "req": "GetClassTableDefaultsRequest",
+  "res": "GetClassTableDefaultsResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 625,
+  "callers": [
+   "core/content/content-client.ts:117:    return this.client.getClassTableDefaults({ campaignId });",
+   "pages/content/content-entry/content-entry.ts:135:  /** The numbers the class and subclass editors start from (`GetClassTableDefaults`), for the master. */"
+  ]
+ },
+ {
+  "svc": "TableContentService",
+  "rpc": "GetEffectMenu",
+  "req": "GetEffectMenuRequest",
+  "res": "GetEffectMenuResponse",
+  "stream": false,
+  "file": "proto/meurpg/rules/v1/table_content.proto",
+  "line": 640,
+  "callers": [
+   "core/content/effect-draft.ts:235:/** The menu the pickers read, from `GetEffectMenu`. */",
+   "core/content/content-client.ts:112:    return this.client.getEffectMenu({ campaignId });"
+  ]
+ },
+ {
+  "svc": "SystemService",
+  "rpc": "GetServerInfo",
+  "req": "GetServerInfoRequest",
+  "res": "GetServerInfoResponse",
+  "stream": false,
+  "file": "proto/meurpg/system/v1/system.proto",
+  "line": 12,
+  "callers": [
+   "core/system/server-info.service.ts:17:  getServerInfo() {",
+   "core/system/server-info.service.ts:18:    return this.client.getServerInfo({});",
+   "pages/home/home.ts:70:    this.serverInfo.getServerInfo().then("
+  ]
+ }
+]

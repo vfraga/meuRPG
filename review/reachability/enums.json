@@ -1,0 +1,1237 @@
+[
+ {
+  "enum": "Role",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 254,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "XpMode",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 263,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DiceMode",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 275,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DicePreference",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 287,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "InviteState",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 356,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CampaignCreationRefusedReason",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 399,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TableStyle",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 577,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "HitPointsRule",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 592,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CriticalRule",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 608,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DeathSaveVisibility",
+  "file": "campaigns/v1/campaigns.proto",
+  "line": 621,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CharacterKind",
+  "file": "characters/v1/characters.proto",
+  "line": 696,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CharacterState",
+  "file": "characters/v1/characters.proto",
+  "line": 716,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "LevelUpReason",
+  "file": "characters/v1/characters.proto",
+  "line": 809,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CharacterBlockedReason",
+  "file": "characters/v1/characters.proto",
+  "line": 844,
+  "total": 16,
+  "refs": 14,
+  "missing": [
+   "TABLE_CONTENT_STAYS"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "HitPointsMethod",
+  "file": "characters/v1/characters.proto",
+  "line": 1129,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "Alignment",
+  "file": "characters/v1/characters.proto",
+  "line": 1173,
+  "total": 10,
+  "refs": 9,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DamageType",
+  "file": "characters/v1/characters.proto",
+  "line": 1277,
+  "total": 14,
+  "refs": 1,
+  "missing": [
+   "ACID",
+   "BLUDGEONING",
+   "COLD",
+   "FORCE",
+   "LIGHTNING",
+   "NECROTIC",
+   "PIERCING",
+   "POISON",
+   "PSYCHIC",
+   "RADIANT",
+   "SLASHING",
+   "THUNDER"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "AbilityMethod",
+  "file": "characters/v1/characters.proto",
+  "line": 1397,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "AbilityScoresRefusalReason",
+  "file": "characters/v1/characters.proto",
+  "line": 1415,
+  "total": 11,
+  "refs": 10,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "LevelUpSpellsKind",
+  "file": "characters/v1/characters.proto",
+  "line": 1684,
+  "total": 3,
+  "refs": 1,
+  "missing": [
+   "KNOWN"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "LevelUpDiceRule",
+  "file": "characters/v1/characters.proto",
+  "line": 1696,
+  "total": 4,
+  "refs": 2,
+  "missing": [
+   "PLAYER_CHOOSES"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "LevelUpHitPointsRule",
+  "file": "characters/v1/characters.proto",
+  "line": 1827,
+  "total": 4,
+  "refs": 2,
+  "missing": [
+   "PLAYER_CHOOSES"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "LevelUpHitPointsMethod",
+  "file": "characters/v1/characters.proto",
+  "line": 1894,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "LevelUpRefusalReason",
+  "file": "characters/v1/characters.proto",
+  "line": 1942,
+  "total": 22,
+  "refs": 21,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CreatureSource",
+  "file": "characters/v1/characters.proto",
+  "line": 2126,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DungeonMask",
+  "file": "maps/v1/dungeons.proto",
+  "line": 150,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DungeonPlacement",
+  "file": "maps/v1/dungeons.proto",
+  "line": 168,
+  "total": 3,
+  "refs": 0,
+  "missing": [
+   "SPREAD",
+   "TILED"
+  ],
+  "mentioned": false
+ },
+ {
+  "enum": "DungeonCorridorStyle",
+  "file": "maps/v1/dungeons.proto",
+  "line": 178,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DungeonDoorMix",
+  "file": "maps/v1/dungeons.proto",
+  "line": 190,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DungeonDoorKind",
+  "file": "maps/v1/dungeons.proto",
+  "line": 207,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DungeonSide",
+  "file": "maps/v1/dungeons.proto",
+  "line": 222,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DungeonAxis",
+  "file": "maps/v1/dungeons.proto",
+  "line": 231,
+  "total": 3,
+  "refs": 1,
+  "missing": [
+   "HORIZONTAL_WALL"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "ImageStyle",
+  "file": "maps/v1/imagegen.proto",
+  "line": 168,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "ImageAspectRatio",
+  "file": "maps/v1/imagegen.proto",
+  "line": 184,
+  "total": 11,
+  "refs": 0,
+  "missing": [
+   "1_1",
+   "3_2",
+   "2_3",
+   "3_4",
+   "4_3",
+   "4_5",
+   "5_4",
+   "9_16",
+   "16_9",
+   "21_9"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "ImageGenerationKind",
+  "file": "maps/v1/imagegen.proto",
+  "line": 200,
+  "total": 6,
+  "refs": 3,
+  "missing": [
+   "SCENE",
+   "EDIT"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "ImageGenerationState",
+  "file": "maps/v1/imagegen.proto",
+  "line": 216,
+  "total": 6,
+  "refs": 3,
+  "missing": [
+   "REFUSED",
+   "FAILED"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "ImageGenerationFailure",
+  "file": "maps/v1/imagegen.proto",
+  "line": 232,
+  "total": 8,
+  "refs": 7,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "ImageGenerationBlockedReason",
+  "file": "maps/v1/imagegen.proto",
+  "line": 316,
+  "total": 10,
+  "refs": 9,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "MapPointKind",
+  "file": "maps/v1/maps.proto",
+  "line": 699,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "MapLayer",
+  "file": "maps/v1/maps.proto",
+  "line": 724,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DoorState",
+  "file": "maps/v1/maps.proto",
+  "line": 745,
+  "total": 6,
+  "refs": 0,
+  "missing": [
+   "OPEN",
+   "CLOSED",
+   "LOCKED",
+   "BARRED",
+   "SECRET"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "LightLevel",
+  "file": "maps/v1/maps.proto",
+  "line": 766,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TrapState",
+  "file": "maps/v1/maps.proto",
+  "line": 779,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TrapRevealHow",
+  "file": "maps/v1/maps.proto",
+  "line": 791,
+  "total": 4,
+  "refs": 2,
+  "missing": [
+   "MASTER"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "MapBlockedReason",
+  "file": "maps/v1/maps.proto",
+  "line": 802,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "StairDirection",
+  "file": "maps/v1/maps.proto",
+  "line": 1029,
+  "total": 3,
+  "refs": 0,
+  "missing": [
+   "UP",
+   "DOWN"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "SceneActionDirection",
+  "file": "maps/v1/maps.proto",
+  "line": 1523,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TreasureMode",
+  "file": "maps/v1/treasure.proto",
+  "line": 111,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TreasureCoinKind",
+  "file": "maps/v1/treasure.proto",
+  "line": 120,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "MagicItemRarity",
+  "file": "maps/v1/treasure.proto",
+  "line": 135,
+  "total": 8,
+  "refs": 7,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TreasureBlockedReason",
+  "file": "maps/v1/treasure.proto",
+  "line": 150,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "NoteKind",
+  "file": "notes/v1/notes.proto",
+  "line": 120,
+  "total": 3,
+  "refs": 1,
+  "missing": [
+   "NOTE"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "EncounterMode",
+  "file": "play/v1/combat.proto",
+  "line": 1124,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "EncounterStatus",
+  "file": "play/v1/combat.proto",
+  "line": 1140,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CombatantKind",
+  "file": "play/v1/combat.proto",
+  "line": 1151,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CreatureAttack",
+  "file": "play/v1/combat.proto",
+  "line": 1170,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CombatantSide",
+  "file": "play/v1/combat.proto",
+  "line": 1186,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CoverDegree",
+  "file": "play/v1/combat.proto",
+  "line": 1200,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CoverSource",
+  "file": "play/v1/combat.proto",
+  "line": 1210,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "JumpKind",
+  "file": "play/v1/combat.proto",
+  "line": 1219,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "MoveRefusal",
+  "file": "play/v1/combat.proto",
+  "line": 1230,
+  "total": 5,
+  "refs": 3,
+  "missing": [
+   "TOO_COSTLY"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "CombatantState",
+  "file": "play/v1/combat.proto",
+  "line": 1247,
+  "total": 9,
+  "refs": 8,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "EncounterBlockedReason",
+  "file": "play/v1/combat.proto",
+  "line": 1279,
+  "total": 62,
+  "refs": 61,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "FamiliarSightBlockedReason",
+  "file": "play/v1/combat.proto",
+  "line": 1472,
+  "total": 8,
+  "refs": 7,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "MonsterHitPoints",
+  "file": "play/v1/combat.proto",
+  "line": 2220,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CriticalDamageRule",
+  "file": "play/v1/combat.proto",
+  "line": 2308,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "AttackOutcome",
+  "file": "play/v1/combat.proto",
+  "line": 2322,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "PendingDamageStatus",
+  "file": "play/v1/combat.proto",
+  "line": 2334,
+  "total": 6,
+  "refs": 4,
+  "missing": [
+   "APPLIED"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "SaveOutcome",
+  "file": "play/v1/combat.proto",
+  "line": 2805,
+  "total": 3,
+  "refs": 1,
+  "missing": [
+   "FAILED"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellEffectKind",
+  "file": "play/v1/combat.proto",
+  "line": 2857,
+  "total": 7,
+  "refs": 5,
+  "missing": [
+   "THRESHOLD"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellEffectOutcome",
+  "file": "play/v1/combat.proto",
+  "line": 2883,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellEffectReason",
+  "file": "play/v1/combat.proto",
+  "line": 2893,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellEffectGain",
+  "file": "play/v1/combat.proto",
+  "line": 2932,
+  "total": 4,
+  "refs": 2,
+  "missing": [
+   "MAXIMUM"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "ReactionOutcome",
+  "file": "play/v1/combat.proto",
+  "line": 2996,
+  "total": 3,
+  "refs": 1,
+  "missing": [
+   "STILL_HIT"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "DeathSaveOutcome",
+  "file": "play/v1/combat.proto",
+  "line": 3054,
+  "total": 5,
+  "refs": 3,
+  "missing": [
+   "SUCCESS"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "CombatLogKind",
+  "file": "play/v1/combat.proto",
+  "line": 3178,
+  "total": 19,
+  "refs": 18,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "WildShapeEndReason",
+  "file": "play/v1/combat.proto",
+  "line": 3242,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "HighlightKind",
+  "file": "play/v1/combat.proto",
+  "line": 3488,
+  "total": 8,
+  "refs": 7,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "EncounterBand",
+  "file": "play/v1/encounters.proto",
+  "line": 32,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "EncounterWarning",
+  "file": "play/v1/encounters.proto",
+  "line": 46,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "EncounterBuildBlockedReason",
+  "file": "play/v1/encounters.proto",
+  "line": 267,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "GameSessionBlockedReason",
+  "file": "play/v1/play.proto",
+  "line": 845,
+  "total": 4,
+  "refs": 1,
+  "missing": [
+   "SESSION_ALREADY_OPEN",
+   "SESSION_NOT_ENDED"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleKind",
+  "file": "play/v1/puzzles.proto",
+  "line": 38,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleAlphabet",
+  "file": "play/v1/puzzles.proto",
+  "line": 58,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleSolveAction",
+  "file": "play/v1/puzzles.proto",
+  "line": 70,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleSolveOutcome",
+  "file": "play/v1/puzzles.proto",
+  "line": 89,
+  "total": 9,
+  "refs": 8,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleRunStatus",
+  "file": "play/v1/puzzles.proto",
+  "line": 113,
+  "total": 5,
+  "refs": 3,
+  "missing": [
+   "NOT_SHOWN"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleStopReason",
+  "file": "play/v1/puzzles.proto",
+  "line": 692,
+  "total": 3,
+  "refs": 1,
+  "missing": [
+   "MOVES"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleBlockedReason",
+  "file": "play/v1/puzzles.proto",
+  "line": 757,
+  "total": 19,
+  "refs": 18,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "PuzzleInvalidReason",
+  "file": "play/v1/puzzles.proto",
+  "line": 811,
+  "total": 16,
+  "refs": 15,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "SceneBlockedReason",
+  "file": "play/v1/scene.proto",
+  "line": 16,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TrapSearchSkill",
+  "file": "play/v1/traps.proto",
+  "line": 18,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "XPAwardMode",
+  "file": "progression/v1/progression.proto",
+  "line": 273,
+  "total": 5,
+  "refs": 4,
+  "missing": [
+   "XP_AWARD_MODE_UNSPECIFIED"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "XPBlockedReason",
+  "file": "progression/v1/progression.proto",
+  "line": 286,
+  "total": 14,
+  "refs": 13,
+  "missing": [
+   "XP_BLOCKED_REASON_UNSPECIFIED"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "MilestoneDirection",
+  "file": "progression/v1/progression.proto",
+  "line": 557,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TrapTrigger",
+  "file": "rules/v1/rules.proto",
+  "line": 233,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TrapTargets",
+  "file": "rules/v1/rules.proto",
+  "line": 244,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TrapSaveApplies",
+  "file": "rules/v1/rules.proto",
+  "line": 254,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TrapPassOutcome",
+  "file": "rules/v1/rules.proto",
+  "line": 263,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "Ability",
+  "file": "rules/v1/rules.proto",
+  "line": 401,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "ProficiencyLevel",
+  "file": "rules/v1/rules.proto",
+  "line": 431,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "Recharge",
+  "file": "rules/v1/rules.proto",
+  "line": 662,
+  "total": 5,
+  "refs": 3,
+  "missing": [
+   "NONE"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "ActionEconomy",
+  "file": "rules/v1/rules.proto",
+  "line": 688,
+  "total": 6,
+  "refs": 4,
+  "missing": [
+   "MOVEMENT"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "AttackKind",
+  "file": "rules/v1/rules.proto",
+  "line": 896,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "NamedKeyKind",
+  "file": "rules/v1/rules.proto",
+  "line": 999,
+  "total": 8,
+  "refs": 2,
+  "missing": [
+   "ARMOR",
+   "WEAPON",
+   "SKILL",
+   "SAVING_THROW",
+   "LANGUAGE"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellPreparation",
+  "file": "rules/v1/rules.proto",
+  "line": 1106,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "ArmorCategory",
+  "file": "rules/v1/rules.proto",
+  "line": 1208,
+  "total": 4,
+  "refs": 0,
+  "missing": [
+   "LIGHT",
+   "MEDIUM",
+   "HEAVY"
+  ],
+  "mentioned": false
+ },
+ {
+  "enum": "WeaponCategory",
+  "file": "rules/v1/rules.proto",
+  "line": 1225,
+  "total": 3,
+  "refs": 0,
+  "missing": [
+   "SIMPLE",
+   "MARTIAL"
+  ],
+  "mentioned": false
+ },
+ {
+  "enum": "SpellTargetKind",
+  "file": "rules/v1/rules.proto",
+  "line": 1378,
+  "total": 6,
+  "refs": 4,
+  "missing": [
+   "NONE"
+  ],
+  "mentioned": false
+ },
+ {
+  "enum": "SpellAreaShape",
+  "file": "rules/v1/rules.proto",
+  "line": 1399,
+  "total": 6,
+  "refs": 0,
+  "missing": [
+   "CONE",
+   "CUBE",
+   "CYLINDER",
+   "LINE",
+   "SPHERE"
+  ],
+  "mentioned": false
+ },
+ {
+  "enum": "SpellHitPointEffectKind",
+  "file": "rules/v1/rules.proto",
+  "line": 1431,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CastingTimeUnit",
+  "file": "rules/v1/rules.proto",
+  "line": 1488,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellRangeKind",
+  "file": "rules/v1/rules.proto",
+  "line": 1506,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellDurationKind",
+  "file": "rules/v1/rules.proto",
+  "line": 1541,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellDurationUnit",
+  "file": "rules/v1/rules.proto",
+  "line": 1551,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellAttackType",
+  "file": "rules/v1/rules.proto",
+  "line": 1560,
+  "total": 4,
+  "refs": 2,
+  "missing": [
+   "NONE"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellSaveSuccess",
+  "file": "rules/v1/rules.proto",
+  "line": 1575,
+  "total": 4,
+  "refs": 2,
+  "missing": [
+   "OTHER"
+  ],
+  "mentioned": true
+ },
+ {
+  "enum": "SpellDamageChoice",
+  "file": "rules/v1/rules.proto",
+  "line": 1587,
+  "total": 3,
+  "refs": 2,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "CreatureSize",
+  "file": "rules/v1/rules.proto",
+  "line": 1694,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "DisabledReasonCode",
+  "file": "rules/v1/rules.proto",
+  "line": 1713,
+  "total": 17,
+  "refs": 16,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "BonusAttackRule",
+  "file": "rules/v1/rules.proto",
+  "line": 1760,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TableContentKind",
+  "file": "rules/v1/table_content.proto",
+  "line": 31,
+  "total": 7,
+  "refs": 6,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TableSpellTargetKind",
+  "file": "rules/v1/table_content.proto",
+  "line": 301,
+  "total": 5,
+  "refs": 4,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TableAreaShape",
+  "file": "rules/v1/table_content.proto",
+  "line": 316,
+  "total": 6,
+  "refs": 5,
+  "missing": [],
+  "mentioned": true
+ },
+ {
+  "enum": "TableContentBlockedReason",
+  "file": "rules/v1/table_content.proto",
+  "line": 466,
+  "total": 4,
+  "refs": 3,
+  "missing": [],
+  "mentioned": true
+ }
+]
