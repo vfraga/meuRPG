@@ -1,10 +1,106 @@
 # MeuRPG rules coverage: SRD 5.1 rules chapters (work in progress)
 
-Status: chapters 1 (Using Ability Scores), 2 (Adventuring) and 3 (Combat) are judged. Spellcasting, Conditions and "anything else" follow in later pushes; the summary, the top-20 and the dependencies come last.
+Status: complete. Every row below was judged by reading the code; the haiku sweeps' raw lists are in `review/coverage-rules/raw-*.md` (`raw-adventuring.md` was not written by its sweep, which was read-only; its content is folded into chapter 2). Nothing in the repository was changed.
 
 Source: 5e-database at `a8abc93b` (the importer's `sourceCommit`). Note: `5e-SRD-Rule-Sections.json` does not exist at that commit; the 137 sections (with their text) are all in `5e-SRD-Rules.json` (index in `review/coverage-rules/srd-rules-index.txt`).
 
 States: built / partial / reminder / absent. Impact: high / medium / low. "Deliberate" quotes the doc that says it is left out.
+
+## Summary
+
+Scope: the SRD 5.1 rules chapters (Using Ability Scores, Adventuring, Combat, Spellcasting, the 15 conditions and exhaustion, and the Equipment/Appendix rules). 187 mechanics, one row each (rows differ in size, so read the counts as a rough shape; `review/coverage-rules/count.py` recomputes them).
+
+| State | high | medium | low | total |
+| --- | --- | --- | --- | --- |
+| built | 50 | 17 | 6 | 73 |
+| partial | 6 | 16 | 6 | 28 |
+| reminder (text only) | 9 | 8 | 3 | 20 |
+| absent | 21 | 16 | 29 | 66 |
+| **total** | 86 | 57 | 44 | 187 |
+
+The shape: the **rolls and the bookkeeping around a single attack or spell are solid** (initiative, turn economy, movement on the grid, opportunity attacks, cover, damage and critical hits, temp HP, death saves, saving throws, spell slots, upcasting, cantrips, light and fog). What is missing is almost everything that **modifies a d20**: advantage and disadvantage exist nowhere in the engine, so every condition, Dodge, Help, Hide, prone, long range, unseen targets and the like is a label. The second hole is **time and recovery**: there is no rest action, no duration, no condition expiry, no concentration loss. The two known facts are confirmed: attack and spell-attack rolls use one d20 (`play/combat_spells.go:582-595`, `play/combat_actions.go:720`), and a player character's resistances are never applied (`play/combat_actions.go:1127`, `characters/charactercreatures_roster.go:536-545`; `docs/architecture.md:1847` item 7 admits it).
+
+Docs that disagree with the code (found while verifying):
+- `docs/product/rules.md:51` (RN-02) says the system tracks HP and slots from "a rest"; no rest RPC exists, only the master's `AdjustCharacterVitals`.
+- `docs/product/stories.md:822` says an active check in dim light has no disadvantage; the code gives a Perception trap search disadvantage (`play/traps.go:251`), and `stories.md:818` and `architecture.md:1928` say so.
+- `docs/product/stories.md:825` says "eight SRD presets" for traps; the SRD pits have four variants and the app has two, and the Sphere of Annihilation is absent.
+- `5e-SRD-Rule-Sections.json` does not exist at the pinned commit; all sections are in `5e-SRD-Rules.json`.
+
+### The 20 gaps with the highest table impact
+
+Ranked by how often a normal table would hit them, then by how many other rows they unblock.
+
+1. **Advantage and disadvantage on d20 rolls** (attacks, checks, saves): absent; the sheet only shows hints. (Ch. 1, 3)
+2. **Rests**: no short rest (spend and roll hit dice), no long rest (HP, half the hit dice, slots, resource recharge); the master types values by hand. (Ch. 2)
+3. **Resistance, vulnerability and immunity of player characters**: never applied (Rage, racial, spells, items). (Ch. 3)
+4. **Condition effects**: all 15 are labels; only speed 0 and "no reaction" are read. (Ch. 4)
+5. **Dodge**: spends the action, no effect. (Ch. 3)
+6. **Duration and expiry**: spell durations and condition durations never run out. (Ch. 4, 5)
+7. **Concentration**: the Con save is never rolled in the app, and it does not end on incapacitation or death. (Ch. 1, 5)
+8. **Surprise**: no surprised state; first-turn and reaction rules absent. (Ch. 3)
+9. **Long-range and close-range disadvantage on ranged attacks**; unseen target/attacker. (Ch. 3)
+10. **Hide** (Stealth vs passive Perception) and **contests** in general. (Ch. 1, 3)
+11. **Grappling and shoving** (and their escape/contest rules). (Ch. 3)
+12. **Prone**: no drop, stand-up cost, crawling or attack modifiers. (Ch. 3, 4)
+13. **Exhaustion levels**: a checkbox with no counter and no effect. (Ch. 4)
+14. **Area of effect geometry**: the caster picks targets by name; no shape on the map. (Ch. 5)
+15. **Consumables used in play** (potions, scrolls, ammunition): never counted or spent. (Ch. 6)
+16. **Spells that only ask a save** (49) and the 187 text-only spells: nothing is applied. (Ch. 5)
+17. **Condition-applying spells** (Hold Person, Charm Person, etc.): only 3 spells set a condition. (Ch. 5)
+18. **Unconscious and prone at 0 HP, instant death from massive damage**: not applied. (Ch. 3)
+19. **Slot and resource recovery on rest** (Arcane Recovery, Natural Recovery): text only. (Ch. 2, 5)
+20. **Help action and group checks**: no effect; no group check. (Ch. 1, 3)
+
+Close behind (medium): rituals, spell components, knocking a creature out, stabilizing with Medicine, free object interaction, charges and attunement counts, weapon loading/two-handed/ammunition, creature footprints larger than one square, mounted and underwater combat.
+
+## Dependencies: which gaps block which
+
+```
+Advantage / disadvantage on a d20  (root)
+├─ Dodge, Help, Hide (the actions only matter through advantage)
+├─ Ranged long range / adjacent-enemy disadvantage, unseen attackers and targets
+├─ Condition effects: blinded, frightened, poisoned, prone, restrained, invisible,
+│  paralyzed/unconscious/stunned (advantage against), exhaustion level 3+
+├─ Racial / feature advantage now shown as hints (Gnome Cunning, Rage, Danger Sense,
+│  Brave, Fey Ancestry, Pack Tactics-like monster traits)
+├─ Sneak Attack's "has advantage or an ally within 5 ft" condition (class features, mapped elsewhere)
+├─ Stealth disadvantage armor, heavy weapon for Small, Perception in dim light
+└─ Cancellation rule and Lucky-style rerolls
+
+Contests (opposed checks)  (root)
+├─ Grapple, shove, escape
+├─ Hide vs passive Perception (also needs Hide state -> unseen attackers)
+└─ Group checks / Help (share the check machinery)
+
+Rest action  (root)
+├─ HP / hit dice recovery, hit dice spending
+├─ Spell slot and pact slot recovery
+├─ Resource recharge (Rage, Ki, Second Wind, Channel Divinity, Arcane/Natural Recovery)
+├─ Exhaustion removal, temp HP expiry
+└─ Death-save and concentration cleanup at rest
+
+Duration / timers  (root)
+├─ Spell durations (Bless, Haste, Mage Armor, ...), condition expiry
+├─ Concentration ending after a time and on incapacitation (needs condition reads)
+└─ Hit dice / long rest 8 h rules, travel and downtime (need an in-game clock)
+
+Condition reads in the engine  (needs Advantage for most)
+├─ Incapacitated must block actions (cheap; independent)
+├─ Unconscious/prone automatically at 0 HP (cheap; independent)
+├─ Concentration ends on incapacitated/unconscious/dead (cheap; independent)
+└─ Auto-crit within 5 ft vs paralyzed/unconscious (needs a melee-distance test, no advantage)
+
+Character resistance  (independent)
+└─ Needs a source: Rage on/off state, racial traits, item bonuses, spell effects (Absorb Elements, Protection from Energy) -> shares the "active effect with duration" gap
+
+Area geometry  (independent)
+└─ Needs a point of origin on CastSpell (architecture.md:1847 item 4) and the same geometry feeds cover from the origin
+
+Consumable/charge tracking  (independent)
+└─ Needs per-item state on the sheet (equipment is free text + quantity today)
+```
+
+Practical reading: **three roots unblock the most for a first session**: advantage/disadvantage (one d20 vs two, a mode on `RollAttack`, `CastSpell` saves and `RollSceneCheck`), a rest action, and "active effects with a duration" (conditions, concentration, spell durations, Rage). Incapacitated blocking actions, unconscious at 0 HP, and concentration ending on incapacitation need none of them.
 
 ## 1. Using Ability Scores
 
@@ -209,3 +305,31 @@ Paths under `backend/internal/` unless `web/`. Machine coverage of the 319 SRD s
 | Combining magical effects (same spell does not stack) | absent | no match | – | low | |
 | Magic school | built (data) | rules/srd51/data/spells.json; filters in ListContent | – | low | Used for lists only. |
 | Reading spell details in play | built | characters/spelldetails.go; web pages/spells | – | medium | |
+
+## 6. Equipment rules, objects, poisons, appendix
+
+Paths under `backend/internal/` unless `web/`.
+
+| Mechanic | State | Evidence | Deliberate? | Impact | Note |
+| --- | --- | --- | --- | --- | --- |
+| Armor class from armor, shield, unarmored defense | built | rules/armor.go:11-82 | – | high | |
+| Heavy armor Strength requirement (speed -10 ft, dwarves exempt) | built | rules/hitpoints.go:77-79; rules.md:281 | – | low | |
+| Armor without proficiency / stealth disadvantage | reminder | rules/armor.go:38-43 | rules.md hints | medium | Issue text and sheet hint only. |
+| Donning and doffing armor | absent | no match | – | low | |
+| Weapon property: finesse | built | rules/attacks.go:49-54 | – | high | |
+| Weapon property: thrown (range) | built | rules/attacks.go:90-93 | – | medium | |
+| Weapon property: light (two-weapon fighting) | built | rules/attacks.go:77; rules/combat/bonusattack.go:67 | – | medium | |
+| Weapon property: reach | built | combat_actions.go:181-196 | – | medium | |
+| Weapon property: heavy (Small wielder) | reminder | rules/attacks.go:56-61 | – | low | Disadvantage hint. |
+| Weapon property: versatile | partial | rules/attacks.go:82-87; web combat-column.html:48 | – | medium | Shown as a label; the player does not choose one or two hands. |
+| Weapon properties: loading, two-handed, ammunition count | absent | no match in play/ or rules/attacks.go | – | medium | Arrows are never counted or spent. |
+| Equipment list: name + quantity, never decremented | partial | characters/sheet.go:225-240 | – | medium | Nothing is consumed in play. |
+| Consumables (potions, scrolls, ammunition) used up | absent | rules/srd51/effects/consumables.json used only to halve treasure value (rules/treasure_generate.go:243) | – | high | Drinking a potion has no effect and no count. |
+| Magic item bonuses to AC/attack/saves | built | rules/magicitems.go; rules/derive.go | architecture.md:760 | medium | |
+| Attunement (3-item limit, short rest to attune, class restriction) | reminder | rules/magicitems.go:45-50 flags only | architecture.md:760 | medium | No character-side state or counter. |
+| Charges (use, recharge, destroy at 0) | absent | no match | – | medium | |
+| Command word, spells from items, sentient items, paired/duplicate items | absent | no match | – | low | |
+| Currency (five coin counts) | partial | characters/sheet.go:242-257; web treasure-format.ts:40 | – | low | No conversion or wallet; gold turns into XP when the campaign counts gold (rules.md:119). |
+| Poisons (types, application, sample poisons) | absent | only the poison-needle trap | – | low | |
+| Objects: AC, HP, damage immunities, size tiers | absent | no match | – | low | |
+| Appendix: planes of existence, pantheons | absent (content only) | no match | – | low | Lore, no mechanic. |
