@@ -3,6 +3,7 @@
 - Scope: spell slots, multiclass table, pact magic, cantrips/spells known/prepared, DC/attack, always-prepared spells, cantrip and slot damage, concentration DC, HP-reading spells, targets/areas, summons; code in `rules`, `characters`, `play`, web cast flow.
 - Commit reviewed: `933df75` (main). SRD 5.1 data: 5e-database `a8abc93b235c158bb8cbf042e54425b9c2fd79b8`; SRD prose for subclass tables from the public SRD 5.1 markdown.
 - Model: claude-sonnet-5-5 (main session); verification subagents also `sonnet`.
+- Re-checked after merging `origin/main` (merge `1d099dde`): the spell data, `spellcasting.go`, `combatspells.go`, the play spell code and the web cast flow are unchanged in substance, all 14 findings still reproduce and all 18 tests still fail; no conclusion changed.
 - Checked by sweep and found correct: all 8 caster class tables (cantrips, known, slots, pact slots vs SRD), save DC / attack bonus / prepared max at scores 1-30 and levels 1-20, multiclass slot table over every class pair and level split, Sleep/Color Spray/Power Word/Heal numbers, Conjure Animals/Animate Dead/Find Familiar counts, concentration DC formula, cantrip scaling by character level (server).
 
 ## Findings
