@@ -167,10 +167,13 @@ export class SummonSheet {
   /** "Mudar": the slot and the quantity open again after a creature was chosen. */
   protected readonly editing = signal(false);
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
   private readonly frame = viewChild.required(SheetFrame);
   private key = newKey();
   private beastSeq = 0;
+  private formSeq = 0;
 
   protected readonly spell = computed<SummonSpellOptions | null>(
     () => this.options()?.spells.find((s) => s.spellKey === this.data.spellKey) ?? null,
@@ -427,10 +430,15 @@ export class SummonSheet {
   }
 
   private async loadForms(o: SummonOption): Promise<void> {
+    const seq = ++this.formSeq;
     // A form whose numbers cannot be read still shows its name; only the line under it is missing.
     const read = await Promise.allSettled(
       o.forms.map((f) => this.client.statBlock(this.data.campaignId, f.monsterKey)),
     );
+    // An answer that arrives after another option was picked is for a list nobody looks at.
+    if (seq !== this.formSeq) {
+      return;
+    }
     this.forms.set(read.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])));
   }
 

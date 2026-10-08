@@ -39,6 +39,8 @@ export interface WildShapeVm {
 export interface ResourceUsageVm {
   /** "wild_shape", "second_wind". */
   readonly key: string;
+  /** "Forma Selvagem"; absent or empty when the server did not say. */
+  readonly namePt?: string;
   readonly total: number;
   readonly used: number;
   /** When the uses come back, for "volta no descanso curto ou longo". */
@@ -220,6 +222,10 @@ export interface VitalsChange {
   readonly spellSlotsUsed?: readonly { readonly level: number; readonly used: number }[];
   readonly pactSlotsUsed?: number;
   readonly hitDiceUsed?: number;
+  /** The resources whose spent uses change (a master gives uses back). */
+  readonly resourcesUsed?: readonly { readonly key: string; readonly used: number }[];
+  /** The beast's hit points, for a druid in Wild Shape; 0 ends the form. */
+  readonly wildShapeHitPointsCurrent?: number;
 }
 
 /**

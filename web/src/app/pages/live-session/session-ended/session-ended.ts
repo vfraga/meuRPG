@@ -121,7 +121,11 @@ export class SessionEnded {
     effect(() => {
       const campaignId = this.campaignId();
       const sessionId = this.sessionId();
-      untracked(() => void this.read(campaignId, sessionId));
+      untracked(() => {
+        // Another session's card starts open.
+        this.closed.set(false);
+        void this.read(campaignId, sessionId);
+      });
     });
   }
 

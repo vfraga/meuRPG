@@ -1,11 +1,12 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
-  ElementRef,
-  Injector,
-  afterNextRender,
   computed,
+  effect,
+  ElementRef,
   inject,
+  Injector,
   signal,
 } from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
@@ -15,6 +16,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { MapLayer } from '../../../../gen/meurpg/maps/v1/maps_pb';
+import type { Square } from '../../../core/combat/combat-grid';
 import type { DoorKind, DoorSquare } from '../../../core/maps/layers';
 import { mapErrorMessage } from '../../../core/maps/map-errors';
 import { MapsClient } from '../../../core/maps/maps-client';
@@ -22,12 +24,13 @@ import { DoorMark } from '../../../shared/map-layers/door-mark';
 import { SheetFrame } from '../combat/sheet-frame/sheet-frame';
 import { injectSheet, openSheet } from '../combat/sheet-host';
 
-/** What the page hands the door sheet: the door and whether a wall is painted under it (a revealed secret door clears it). */
+/** What the page hands the door sheet: the door and whether a wall is painted under it (a revealed secret door clears it, over the whole block of the drawing's square). */
 export interface DoorSheetData {
   readonly campaignId: string;
   readonly mapId: string;
   readonly door: DoorSquare;
-  readonly wall: boolean;
+  /** The squares of the door's block that have a wall painted under them. */
+  readonly wallSquares: readonly Square[];
 }
 
 const CHOICES: readonly {
@@ -182,6 +185,8 @@ export class DoorSheet {
   /** The kind the door has now (the sheet stays open after a choice, showing it checked). */
   protected readonly now = signal<DoorKind>(this.door.state);
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
   protected readonly saved = signal(false);
   private changed = false;
@@ -214,9 +219,11 @@ export class DoorSheet {
     });
   }
 
-  /** The option the master tapped: the door is painted that way at once. */
+  /** The option the master tapped: the door is painted that way at once. A tap on the one checked is sent too: the
+   * door may have changed since the sheet opened (a player opened it), and painting what is already there changes
+   * nothing on the server. */
   protected async choose(state: DoorKind): Promise<void> {
-    if (state === this.now() || this.busy()) {
+    if (this.busy()) {
       return;
     }
     if (await this.paint([{ layer: MapLayer.DOORS, value: state }])) {
@@ -227,8 +234,9 @@ export class DoorSheet {
 
   /** "Revelar": the secret door becomes a closed one (and a wall painted under it goes, or it would still be a wall). */
   protected async reveal(): Promise<void> {
+    const { wallSquares } = this.sheet.data;
     const writes = [
-      ...(this.sheet.data.wall ? [{ layer: MapLayer.WALL, value: 0 }] : []),
+      ...(wallSquares.length > 0 ? [{ layer: MapLayer.WALL, value: 0, squares: wallSquares }] : []),
       { layer: MapLayer.DOORS, value: 2 },
     ];
     if (await this.paint(writes)) {
@@ -240,15 +248,21 @@ export class DoorSheet {
     this.sheet.close(this.changed);
   }
 
-  private async paint(writes: readonly { layer: MapLayer; value: number }[]): Promise<boolean> {
+  private async paint(
+    writes: readonly { layer: MapLayer; value: number; squares?: readonly Square[] }[],
+  ): Promise<boolean> {
     const { campaignId, mapId, door } = this.sheet.data;
     this.busy.set(true);
     this.error.set('');
     try {
       for (const w of writes) {
-        await this.api.paint(campaignId, mapId, w.layer, w.value, [
-          { col: door.col, row: door.row },
-        ]);
+        await this.api.paint(
+          campaignId,
+          mapId,
+          w.layer,
+          w.value,
+          w.squares ?? [{ col: door.col, row: door.row }],
+        );
       }
       this.changed = true;
       return true;

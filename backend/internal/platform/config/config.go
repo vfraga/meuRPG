@@ -582,6 +582,10 @@ func loadLimits(getenv func(string) string) (Limits, []error) {
 				l.CampaignCreators = append(l.CampaignCreators, email)
 			}
 		}
+		if len(l.CampaignCreators) == 0 && len(errs) == 0 {
+			// Only separators: an empty list would let anyone create campaigns.
+			errs = append(errs, errors.New("CAMPAIGN_CREATORS has no e-mail address; leave it empty to let anyone create"))
+		}
 	}
 	return l, errs
 }

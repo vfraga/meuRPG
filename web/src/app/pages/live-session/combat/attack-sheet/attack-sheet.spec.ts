@@ -17,8 +17,7 @@ import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
 
-const plain = (t: string | null | undefined) =>
-  (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const longsword = {
   key: 'attack:longsword',
   name: 'Longsword',

@@ -119,12 +119,12 @@ describe('EffectPicker (the closed menu of ADR-0018, from the server)', () => {
   });
 
   it("asks a sense's range in metres and keeps feet underneath", () => {
-    setup({ ...emptyEffect('sense'), sense: 'darkvision', rangeFt: 60 });
+    setup({ ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' });
     const range = field('range_ft') as HTMLInputElement;
     expect(range.value).toBe('18');
     range.value = '9';
     range.dispatchEvent(new Event('input'));
-    expect(emitted.at(-1)?.rangeFt).toBe(30);
+    expect(emitted.at(-1)?.rangeM).toBe('9');
   });
 
   it('puts the hint beside its field, and the refusal under it', () => {
@@ -137,5 +137,56 @@ describe('EffectPicker (the closed menu of ADR-0018, from the server)', () => {
     const row = field('value')!.closest('.frow')!;
     expect(text(row)).toContain('Esta fórmula não funciona.');
     expect(row.querySelector('.frow__hint')).toBeNull();
+  });
+});
+
+describe('EffectPicker: the range field (metres on screen, feet on the wire)', () => {
+  let fixture: ComponentFixture<EffectPicker>;
+  let input: HTMLInputElement;
+
+  function setup() {
+    TestBed.resetTestingModule();
+    fixture = TestBed.createComponent(EffectPicker);
+    fixture.componentRef.setInput('effect', {
+      ...emptyEffect('sense'),
+      sense: 'darkvision',
+      rangeM: '18',
+    });
+    fixture.componentRef.setInput('menu', menu());
+    fixture.componentRef.setInput('basePath', 'table_race.traits[0].effects[0]');
+    fixture.componentRef.setInput('allowTextOnly', false);
+    fixture.componentRef.setInput('issuesOf', () => []);
+    // The parent owns the draft: it takes what is emitted and passes it back, as the editor does.
+    fixture.componentInstance.effectChange.subscribe((e: EffectDraft) => {
+      fixture.componentRef.setInput('effect', e);
+    });
+    fixture.detectChanges();
+    input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      '[data-field="table_race.traits[0].effects[0].range_ft"]',
+    )!;
+  }
+
+  async function type(text: string) {
+    input.value = text;
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  it('keeps "4" as typed, though it is not a whole number of feet', async () => {
+    setup();
+    await type('4');
+    expect(input.value).toBe('4');
+  });
+
+  it('keeps "4,5" as typed, character by character', async () => {
+    setup();
+    await type('4');
+    expect(input.value).toBe('4');
+    await type('4,');
+    expect(input.value).toBe('4,');
+    await type('4,5');
+    expect(input.value).toBe('4,5');
   });
 });

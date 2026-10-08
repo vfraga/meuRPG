@@ -298,7 +298,7 @@ describe('adopt: the picks that survive a re-read of the sheet', () => {
     old.toggleSpell('spell:mirror-image');
     // The master changed the sheet meanwhile: Prestidigitação is already a cantrip, and the book gained Passo Nebuloso.
     const fresh = new LevelUpDraft(
-      wizardOptions({ preparedMaxAfter: 4 }),
+      wizardOptions({ preparedMaxAfter: 4, keptHitPointRoll: 5 }),
       {
         ...WIZARD_KEYS,
         cantrips: [...WIZARD_KEYS.cantrips, 'spell:prestidigitation'],

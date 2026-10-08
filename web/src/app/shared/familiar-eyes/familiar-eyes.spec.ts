@@ -66,6 +66,7 @@ describe('familiarSightMessage', () => {
 describe('"Ver pelos olhos do Nanquim?" (E9-04 state 3)', () => {
   const api = { start: vi.fn(), stop: vi.fn(), name: vi.fn(async () => 'Nanquim') };
   const close = vi.fn();
+  const ref = { close, disableClose: false };
 
   function setup(data: Partial<FamiliarEyesData> = {}) {
     TestBed.configureTestingModule({
@@ -82,7 +83,7 @@ describe('"Ver pelos olhos do Nanquim?" (E9-04 state 3)', () => {
             ...data,
           },
         },
-        { provide: MatDialogRef, useValue: { close } },
+        { provide: MatDialogRef, useValue: ref },
       ],
     });
     const fixture = TestBed.createComponent(FamiliarEyesSheet);
@@ -95,6 +96,7 @@ describe('"Ver pelos olhos do Nanquim?" (E9-04 state 3)', () => {
   beforeEach(() => {
     api.start.mockReset();
     close.mockReset();
+    ref.disableClose = false;
   });
 
   it('asks the question with its cost: the character is blind and deaf, and what it takes in and out of a combat', () => {
@@ -123,6 +125,19 @@ describe('"Ver pelos olhos do Nanquim?" (E9-04 state 3)', () => {
     expect(close).toHaveBeenCalledWith(true);
   });
 
+  it('does not let Esc or the backdrop close the question while the sight is being started', async () => {
+    const { fixture, el } = setup();
+    let answer: (value: unknown) => void = () => undefined;
+    api.start.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    buttons(el)[1].click();
+    fixture.detectChanges();
+    expect(ref.disableClose).toBe(true);
+    answer({});
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(ref.disableClose).toBe(false);
+  });
+
   it('says why it was refused and keeps the question open, trying again with the same key', async () => {
     const { fixture, el } = setup();
     api.start
@@ -138,6 +153,19 @@ describe('"Ver pelos olhos do Nanquim?" (E9-04 state 3)', () => {
     buttons(el)[1].click();
     await fixture.whenStable();
     expect(api.start.mock.calls[1][2]).toBe(api.start.mock.calls[0][2]);
+    expect(close).toHaveBeenCalledWith(true);
+  });
+
+  it('cannot be closed by the ✕ while the sight is being started, and shows the answer', async () => {
+    const { fixture, el } = setup();
+    let answer!: () => void;
+    api.start.mockReturnValue(new Promise<object>((resolve) => (answer = () => resolve({}))));
+    buttons(el)[1].click();
+    fixture.detectChanges();
+    (fixture.componentInstance as unknown as { cancel(): void }).cancel();
+    expect(close).not.toHaveBeenCalled();
+    answer();
+    await fixture.whenStable();
     expect(close).toHaveBeenCalledWith(true);
   });
 

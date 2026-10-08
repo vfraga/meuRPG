@@ -1,14 +1,16 @@
 import { Injectable, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { ABILITY_KEYS } from '../../core/characters/characters.types';
 import { OpenSessions, type OpenSessionVm } from '../../shell/live-notice/open-sessions';
 import { CharacterSheetPage } from './character-sheet';
 import { NotesClient } from '../../core/notes/notes-client';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
+import { CreaturesPanel } from './creatures-panel/creatures-panel';
 import { XpWatcher } from './xp-watcher';
 import {
   BasicSheetVm,
@@ -122,6 +124,7 @@ function fullSheet(overrides: Partial<FullSheetVm> = {}): FullSheetVm {
     attacks: [],
     spellcasting: [],
     spellSlots: [],
+    pactSlots: null,
     cantripNames: [],
     spellNames: [],
     features: [],
@@ -217,6 +220,7 @@ const xpWatcher = {
         onChange: () => void,
         onCreatures?: () => void,
         onContent?: () => void,
+        onForm?: (characterId: string | null) => void,
       ) => void
     >(),
 };
@@ -408,6 +412,36 @@ describe('CharacterSheetPage', () => {
     // "1º nível: 42º nível: 2" — no separator, and the wrong term.
     expect(el.textContent).not.toContain('42º');
     expect(el.textContent).not.toContain('nível: 4');
+  });
+
+  it("shows a Warlock's pact slots in their own list, since the sheet has no other slots", async () => {
+    configure();
+    fake.getCharacterSheetFn = () =>
+      Promise.resolve(
+        vm({
+          sheet: fullSheet({
+            spellSlots: [],
+            pactSlots: { level: 1, count: 2 },
+            spellcasting: [
+              {
+                className: 'Bruxo',
+                ability: 'cha',
+                saveDc: 13,
+                attackBonus: 5,
+                cantripsKnown: 2,
+                spellsPreparedMax: 2,
+              },
+            ],
+          }),
+        }),
+      );
+
+    const el = await render();
+    expect(el.querySelector('[aria-label="Espaços de magia"]')).toBeNull();
+    const pact = el.querySelector('[aria-label="Espaços do pacto"]');
+    expect(pact?.querySelector('.slots__level')?.textContent?.trim()).toBe('Pacto · 1º nível');
+    expect(pact?.querySelectorAll('.slots__circle').length).toBe(2);
+    expect(pact?.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('2 espaços');
   });
 
   it("renders every official-sheet section as an <h2>, in the paper sheet's column order", async () => {
@@ -1397,6 +1431,7 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
+      expect.any(Function),
     );
 
     openSessions.set([
@@ -1413,6 +1448,7 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
     await fixture.whenStable();
     expect(xpWatcher.follow).toHaveBeenLastCalledWith(
       'camp-1',
+      expect.any(Function),
       expect.any(Function),
       expect.any(Function),
       expect.any(Function),
@@ -1473,6 +1509,37 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
     expect(el.textContent).not.toContain('Carregando a ficha');
   });
 
+  it("tells the creatures panel when this character's vitals or the combat change (a Wild Shape form ends that way), not another character's", async () => {
+    fake.getCharacterSheetFn = () =>
+      Promise.resolve(vm({ sheet: fullSheet({ hasWildShape: true }) }));
+    openSessions.set([
+      {
+        sessionId: 's1',
+        campaignId: 'camp-1',
+        campaignName: 'Mirathel',
+        sessionNumber: 5,
+        startedAt: new Date(),
+        isMaster: false,
+      },
+    ]);
+    const fixture = await render();
+    const ticks = () =>
+      fixture.debugElement.query(By.directive(CreaturesPanel)).componentInstance.formReload();
+    const onForm = xpWatcher.follow.mock.calls.at(-1)![4]!;
+    const bump = async (who: string | null) => {
+      onForm(who);
+      fixture.detectChanges();
+      await fixture.whenStable();
+    };
+    expect(ticks()).toBe(0);
+    await bump('char-2');
+    expect(ticks()).toBe(0);
+    await bump('char-1');
+    expect(ticks()).toBe(1);
+    await bump(null);
+    expect(ticks()).toBe(2);
+  });
+
   it('reads the character again when the table\'s content changes (content_changed, "A classe mudou"), on the same stream', async () => {
     let reads = 0;
     fake.getCharacterSheetFn = () => {
@@ -1498,5 +1565,147 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
     fixture.detectChanges();
     expect(reads).toBe(before + 1);
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Carregando a ficha');
+  });
+});
+
+describe('CharacterSheetPage: answers that arrive late', () => {
+  let fake: FakeCharacterSheetSource;
+  let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+
+  function deferred<T>() {
+    let resolve!: (v: T) => void;
+    const promise = new Promise<T>((r) => (resolve = r));
+    return { promise, resolve };
+  }
+
+  beforeEach(() => {
+    openSessions.set([
+      {
+        sessionId: 's1',
+        campaignId: 'camp-1',
+        campaignName: 'Mirathel',
+        sessionNumber: 5,
+        startedAt: new Date(),
+        isMaster: true,
+      },
+    ]);
+    xpWatcher.follow.mockClear();
+    params = new BehaviorSubject(convertToParamMap({ id: 'camp-1', characterId: 'char-1' }));
+    TestBed.configureTestingModule({
+      imports: [CharacterSheetPage],
+      providers: [
+        { provide: CharacterSheetSource, useClass: FakeCharacterSheetSource },
+        { provide: ActivatedRoute, useValue: { paramMap: params } },
+        ...xpProviders(),
+      ],
+    });
+    fake = TestBed.inject(CharacterSheetSource) as unknown as FakeCharacterSheetSource;
+  });
+
+  afterEach(() => openSessions.set([]));
+
+  it('keeps the dead sheet when a reload that began before the death lands afterwards', async () => {
+    const alive = vm({ state: 'locked', isMaster: true, canMarkDead: true, canEdit: true });
+    const dead = vm({
+      state: 'dead',
+      isMaster: true,
+      canMarkDead: false,
+      canEdit: false,
+      diedAt: new Date(2026, 8, 30, 21, 0),
+    });
+    const reload = deferred<CharacterSheetVm>();
+    let reads = 0;
+    fake.getCharacterSheetFn = () => (++reads === 1 ? Promise.resolve(alive) : reload.promise);
+    fake.markCharacterDeadFn = () => Promise.resolve(dead);
+
+    const fixture = TestBed.createComponent(CharacterSheetPage);
+    fixture.detectChanges();
+    await flush();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    xpWatcher.follow.mock.calls.at(-1)![1]();
+    expect(reads).toBe(2);
+    buttonWithText(el, 'Marcar como morto')!.click();
+    fixture.detectChanges();
+    buttonWithText(el, 'Confirmar morte')!.click();
+    await flush();
+    fixture.detectChanges();
+    expect(el.querySelector('[aria-label="Estado do personagem"]')?.textContent).toContain('Morto');
+
+    reload.resolve(alive);
+    await flush();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[aria-label="Estado do personagem"]')?.textContent).toContain('Morto');
+    expect(el.textContent).toContain('Morreu em 30/09/2026');
+    expect(buttonWithText(el, 'Marcar como morto')).toBeUndefined();
+  });
+
+  it('takes the answer of a reload that is still the latest', async () => {
+    let reads = 0;
+    fake.getCharacterSheetFn = () =>
+      Promise.resolve(vm({ name: ++reads === 1 ? 'Antes' : 'Depois' }));
+    const fixture = TestBed.createComponent(CharacterSheetPage);
+    fixture.detectChanges();
+    await flush();
+    xpWatcher.follow.mock.calls.at(-1)![1]();
+    await flush();
+    fixture.detectChanges();
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Depois');
+  });
+
+  it('shows the sheet of the route, not a slower answer for the sheet the person left', async () => {
+    const a = deferred<CharacterSheetVm>();
+    const b = deferred<CharacterSheetVm>();
+    fake.getCharacterSheetFn = (_c, id) => (id === 'char-A' ? a.promise : b.promise);
+    params.next(convertToParamMap({ id: 'camp-1', characterId: 'char-A' }));
+
+    const fixture = TestBed.createComponent(CharacterSheetPage);
+    fixture.detectChanges();
+    // The router reuses the page for the same route with another parameter.
+    params.next(convertToParamMap({ id: 'camp-1', characterId: 'char-B' }));
+    b.resolve(vm({ id: 'char-B', name: 'Bravo' }));
+    await flush();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Bravo');
+
+    a.resolve(vm({ id: 'char-A', name: 'Alfa' }));
+    await flush();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Bravo');
+    expect(el.textContent).not.toContain('Alfa');
+  });
+
+  it('drops a quiet reload of the sheet the person left', async () => {
+    const reloadA = deferred<CharacterSheetVm>();
+    let reads = 0;
+    fake.getCharacterSheetFn = (_c, id) => {
+      if (id === 'char-B') return Promise.resolve(vm({ id: 'char-B', name: 'Bravo' }));
+      return reads++ === 0 ? Promise.resolve(vm({ id: 'char-A', name: 'Alfa' })) : reloadA.promise;
+    };
+    params.next(convertToParamMap({ id: 'camp-1', characterId: 'char-A' }));
+
+    const fixture = TestBed.createComponent(CharacterSheetPage);
+    fixture.detectChanges();
+    await flush();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.textContent).toContain('Alfa');
+
+    xpWatcher.follow.mock.calls.at(-1)![1]();
+    params.next(convertToParamMap({ id: 'camp-1', characterId: 'char-B' }));
+    await flush();
+    fixture.detectChanges();
+    expect(el.textContent).toContain('Bravo');
+
+    reloadA.resolve(vm({ id: 'char-A', name: 'Alfa' }));
+    await flush();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Bravo');
+    expect(el.textContent).not.toContain('Alfa');
   });
 });

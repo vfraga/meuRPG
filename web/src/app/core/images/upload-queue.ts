@@ -65,6 +65,8 @@ export class UploadQueue {
   private readonly files = new Map<number, File>();
   private current: { key: number; controller: AbortController } | null = null;
   private destroyed = false;
+  /** Goes up on `reset()`: an upload that was on its way for the old campaign must not report to the new one. */
+  private epoch = 0;
 
   constructor(private readonly options: UploadQueueOptions) {}
 
@@ -104,6 +106,15 @@ export class UploadQueue {
     this.remove(key);
   }
 
+  /** Aborts the upload in flight, forgets the rest and what failed, and keeps the queue usable (the page moved to another campaign). */
+  reset(): void {
+    this.epoch++;
+    this.current?.controller.abort();
+    this.files.clear();
+    this._items.set([]);
+    this._failures.set([]);
+  }
+
   /** Aborts the upload in flight and forgets the rest. */
   destroy(): void {
     this.destroyed = true;
@@ -128,6 +139,7 @@ export class UploadQueue {
     if (!next || !file) {
       return;
     }
+    const epoch = this.epoch;
     const controller = new AbortController();
     this.current = { key: next.key, controller };
     this.patch(next.key, { status: 'sending', percent: 0 });
@@ -143,13 +155,13 @@ export class UploadQueue {
           ),
       });
       this.remove(next.key);
-      if (!this.destroyed) {
+      if (!this.destroyed && epoch === this.epoch) {
         this.options.uploaded(image, file.name);
       }
     } catch (err) {
       this.remove(next.key);
       const kind = err instanceof UploadFailed ? err.kind : 'UNKNOWN';
-      if (kind !== 'CANCELED' && !this.destroyed) {
+      if (kind !== 'CANCELED' && !this.destroyed && epoch === this.epoch) {
         this.fail(next.key, file.name, kind);
       }
     } finally {

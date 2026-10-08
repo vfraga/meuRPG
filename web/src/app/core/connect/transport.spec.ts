@@ -1,9 +1,15 @@
+import type { Injector } from '@angular/core';
 import { Code, ConnectError } from '@connectrpc/connect';
 import type { Transport, UnaryRequest, UnaryResponse } from '@connectrpc/connect';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { isRateLimited } from './connect-errors';
-import { rateLimitInterceptor, UNARY_DEADLINE_MS, withUnaryDeadline } from './transport';
+import {
+  rateLimitInterceptor,
+  sessionEndedInterceptor,
+  UNARY_DEADLINE_MS,
+  withUnaryDeadline,
+} from './transport';
 
 describe('rateLimitInterceptor', () => {
   const call = (fail: unknown) =>
@@ -28,6 +34,36 @@ describe('rateLimitInterceptor', () => {
     await expect(call(full)).rejects.toBe(full);
     const network = new TypeError('Failed to fetch');
     await expect(call(network)).rejects.toBe(network);
+  });
+});
+
+describe('sessionEndedInterceptor', () => {
+  const refresh = vi.fn();
+  const injector = { get: () => ({ refresh }) } as unknown as Injector;
+  const call = (method: string, fail: unknown) =>
+    sessionEndedInterceptor(injector)(async () => {
+      throw fail;
+    })({ method: { name: method } } as UnaryRequest) as Promise<UnaryResponse>;
+
+  beforeEach(() => refresh.mockReset());
+
+  it('has the auth state read again when any call answers unauthenticated', async () => {
+    const ended = new ConnectError('no session', Code.Unauthenticated);
+    await expect(call('ListCampaigns', ended)).rejects.toBe(ended);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('never refreshes on GetMe or SignOut, which would loop', async () => {
+    const ended = new ConnectError('no session', Code.Unauthenticated);
+    await expect(call('GetMe', ended)).rejects.toBe(ended);
+    await expect(call('SignOut', ended)).rejects.toBe(ended);
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('leaves every other failure alone', async () => {
+    const down = new ConnectError('down', Code.Unavailable);
+    await expect(call('ListCampaigns', down)).rejects.toBe(down);
+    expect(refresh).not.toHaveBeenCalled();
   });
 });
 

@@ -226,7 +226,7 @@
           }
         </div>
       }
-      @if (losing() === c.id) {
+      @if (losing() === c.id && c.concentrationSpell) {
         <app-lose-question
           class="row__confirm"
           [question]="loseQuestion(c)"
@@ -240,7 +240,7 @@
         <div class="row__confirm" role="alertdialog" [attr.aria-label]="'Remover ' + c.label">
           <p>Remover {{ c.label }} do combate?</p>
           <button mat-stroked-button type="button" #back (click)="removing.set(null)">Voltar</button>
-          <button mat-stroked-button type="button" class="danger" (click)="confirmRemove(c.id)">
+          <button mat-stroked-button type="button" class="danger" [disabled]="busy()" (click)="confirmRemove(c.id)">
             Remover
           </button>
         </div>

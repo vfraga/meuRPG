@@ -91,6 +91,19 @@ describe("the familiar's row (E9-04)", () => {
     expect((seeing.nativeElement as HTMLElement).querySelector('.fr')).toBeNull();
   });
 
+  it("does not show the last character's familiar while another character's list is on its way", async () => {
+    list.mockResolvedValue([raven]);
+    const fixture = create_();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.fr')).not.toBeNull();
+    list.mockReturnValue(new Promise(() => undefined));
+    fixture.componentRef.setInput('characterId', 'brisa');
+    fixture.detectChanges();
+    expect(el.querySelector('.fr')).toBeNull();
+  });
+
   it('reads the list again when the stream says the creatures changed', async () => {
     list.mockResolvedValue([]);
     const fixture = create_();
@@ -143,7 +156,7 @@ describe("the player's fog tools: the light confirmation is a toast over the pag
       }): void;
     };
     tools.lightChanged({
-      token: mapToken('toren', 'Toren', { mine: true, carriedLight: 'light:torch' }),
+      token: mapToken('toren', 'Toren', { mapId: 'm1', mine: true, carriedLight: 'light:torch' }),
       option: { key: 'light:torch', name: 'Tocha', radii: '6 m claro + 6 m de penumbra' },
     });
     fixture.detectChanges();

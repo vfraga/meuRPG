@@ -135,6 +135,15 @@ function mapBlockedReason(
   }
 }
 
+/** The typed reason of an `AbilityScoresRefusal` an error carries, or `null` for any other error. */
+export function abilityRefusalReason(err: unknown): AbilityScoresRefusalReason | null {
+  const connectErr = ConnectError.from(err, Code.Unavailable);
+  if (connectErr.code !== Code.FailedPrecondition) {
+    return null;
+  }
+  return connectErr.findDetails(AbilityScoresRefusalSchema)[0]?.reason ?? null;
+}
+
 /** What each `AbilityScoresRefusal` says (RN-24): by the typed reason, never by the server's message. */
 export function abilityRefusalMessage(reason: AbilityScoresRefusalReason): string {
   switch (reason) {

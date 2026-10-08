@@ -8,11 +8,14 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { CampaignSchema, Role } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { CharacterKind } from '../../../gen/meurpg/characters/v1/characters_pb';
 import {
+  GetSpellDetailsResponseSchema,
+  ListContentResponseSchema,
   ListSpellsResponseSchema,
   SpellDetailsSchema,
   SpellSchema,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
+import { CONNECT_TRANSPORT } from '../../core/connect/transport';
 import { fakeContentWatcher } from '../../core/content/content-testing';
 import { RosterClient } from '../../core/maps/roster-client';
 import { SpellsClient } from '../../core/spells/spells-client';
@@ -409,9 +412,10 @@ describe('Spells, the players\' "Magias" page (MR-045, E10-11)', () => {
     q.dispatchEvent(new Event('input'));
     await settle();
     expect(location.path()).not.toContain('q=');
-    await new Promise((resolve) => setTimeout(resolve, 320));
-    await settle();
-    expect(location.path()).toContain('q=m');
+    await vi.waitFor(async () => {
+      await settle();
+      expect(location.path()).toContain('q=m');
+    });
   });
 
   it('puts the focus on the next chip when one is taken off, and on the search when none is left', async () => {
@@ -482,5 +486,122 @@ describe('Spells, the players\' "Magias" page (MR-045, E10-11)', () => {
     await settle();
     expect(el.querySelectorAll('button.row')).toHaveLength(3);
     expect(flat(el)).not.toContain('Tentar de novo');
+  });
+});
+
+describe('Spells, the open card after a content_changed (real SpellsClient)', () => {
+  const key = 'spell:table-spell:foo';
+  const originalMatchMedia = window.matchMedia;
+  let version: string;
+  let namePt: string;
+  let off: boolean;
+
+  beforeEach(() => {
+    version = 'v1';
+    namePt = 'Mãos Flamejantes';
+    off = false;
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('1100'),
+      media: q,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+
+  /** The page over the real client, so the details cache is the one the app has. */
+  async function openCard() {
+    const transport = {
+      unary: async (method: { name: string }) => {
+        let message: unknown;
+        if (method.name === 'ListSpells') {
+          message = create(ListSpellsResponseSchema, {
+            spells: off ? [] : [spell(key, namePt)],
+            total: off ? 0 : 1,
+            contentVersion: version,
+          });
+        } else if (method.name === 'GetSpellDetails') {
+          if (off) {
+            throw new ConnectError('gone', Code.NotFound);
+          }
+          message = create(GetSpellDetailsResponseSchema, {
+            spell: create(SpellDetailsSchema, {
+              spell: spell(key, namePt),
+              description: ['Texto completo da magia.'],
+            }),
+          });
+        } else {
+          message = create(ListContentResponseSchema, {});
+        }
+        return {
+          stream: false,
+          service: {},
+          method,
+          header: new Headers(),
+          trailer: new Headers(),
+          message,
+        };
+      },
+    };
+    const watcher = fakeContentWatcher();
+    TestBed.overrideComponent(Spells, { set: { providers: [watcher.provider] } });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'campaigns/:id/spells', component: Spells }]),
+        { provide: CONNECT_TRANSPORT, useValue: transport },
+        {
+          provide: CampaignsService,
+          useValue: {
+            getCampaign: async () => ({
+              campaign: create(CampaignSchema, {
+                id: 'camp-1',
+                name: 'Mirathel',
+                myRole: Role.PLAYER,
+              }),
+            }),
+          },
+        },
+        { provide: RosterClient, useValue: { list: async () => [] } },
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(`/campaigns/camp-1/spells?spell=${key}`, Spells);
+    const settle = async () => {
+      for (let i = 0; i < 6; i++) {
+        harness.detectChanges();
+        await harness.fixture.whenStable();
+        await new Promise((r) => setTimeout(r, 5));
+      }
+    };
+    await settle();
+    return { el: harness.routeNativeElement as HTMLElement, watcher, settle };
+  }
+
+  it('shows the edited text of the spell the master changed', async () => {
+    const { el, watcher, settle } = await openCard();
+    expect(flat(el.querySelector('#spell-card-title'))).toBe('Mãos Flamejantes');
+
+    version = 'v2';
+    namePt = 'Mãos Flamejantes (editada)';
+    watcher.hint();
+    await settle();
+
+    expect(flat(el.querySelector('#spell-card-title'))).toBe('Mãos Flamejantes (editada)');
+  });
+
+  it('says the spell is not available once the master switched it off', async () => {
+    const { el, watcher, settle } = await openCard();
+    expect(flat(el)).toContain('Texto completo da magia.');
+
+    off = true;
+    version = 'v2';
+    watcher.hint();
+    await settle();
+
+    expect(el.querySelectorAll('button.row')).toHaveLength(0);
+    expect(flat(el)).toContain('Esta magia não está disponível.');
+    expect(flat(el)).not.toContain('Texto completo da magia.');
   });
 });

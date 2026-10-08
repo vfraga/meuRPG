@@ -21,7 +21,8 @@ export type TestUser = 'Mestre Teste' | 'Jogador Teste' | 'E-mail Não Verificad
  * the server. ui.spec.ts covers the same flow through the app's buttons.
  *
  * This hits the real, rate-limited `/auth/login` (`backend/internal/
- * identity/login.go`, 20 per client then 1 every 3s). Only call it where a
+ * identity/login.go`, shared with `/auth/callback`: 40 per client, so 20
+ * sign-ins, then 1 every 3s). Only call it where a
  * fresh sign-in is the point of the test — `auth.setup.ts` (once per user,
  * per whole run), `login.spec.ts`, `ui.spec.ts`, and the signed-out half of
  * `invite.spec.ts`'s intent=campaign_invite test. Everything else reuses
@@ -93,6 +94,32 @@ export const signOut = (page: Page) => callRPC(page, 'meurpg.identity.v1.Identit
  */
 export function layoutSize(locator: Locator): Promise<{ width: number; height: number }> {
   return locator.evaluate((el: HTMLElement) => ({ width: el.offsetWidth, height: el.offsetHeight }));
+}
+
+/**
+ * The bounding box of an element, once it has one. boundingBox() answers null
+ * while the element is detached, hidden or being re-rendered, and a zero-sized
+ * box while it hasn't been laid out; this waits for a real one instead of
+ * letting the caller read a field of null.
+ */
+export async function boxOf(locator: Locator): Promise<{ x: number; y: number; width: number; height: number }> {
+  let box: { x: number; y: number; width: number; height: number } | null = null;
+  await expect
+    .poll(async () => {
+      box = await locator.boundingBox();
+      return box !== null && box.width > 0 && box.height > 0;
+    })
+    .toBe(true);
+  return box!;
+}
+
+/**
+ * Waits two animation frames: a click's handlers, and the render they cause,
+ * have run by then. Use it before asserting that a click did nothing, or the
+ * assertion passes before the click's effect could show.
+ */
+export async function afterRender(page: Page): Promise<void> {
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
 export const day = 24 * 60 * 60 * 1000;

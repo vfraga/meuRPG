@@ -110,7 +110,11 @@ export class MapGrid {
     });
   }
 
+  /** Goes up on every load: an answer made for an earlier route is dropped. */
+  private generation = 0;
+
   private async load(campaignId: string, mapId: string): Promise<void> {
+    const generation = ++this.generation;
     this.campaignId.set(campaignId);
     this.mapId.set(mapId);
     this.phase.set('loading');
@@ -119,6 +123,9 @@ export class MapGrid {
         this.campaigns.getCampaign(campaignId),
         this.api.get(campaignId, mapId),
       ]);
+      if (generation !== this.generation) {
+        return;
+      }
       if (campaign.campaign?.awaitingApproval || !map.map) {
         this.phase.set('gone');
         return;
@@ -136,6 +143,9 @@ export class MapGrid {
       );
       this.phase.set('ready');
     } catch (err) {
+      if (generation !== this.generation) {
+        return;
+      }
       this.phase.set(ConnectError.from(err).code === Code.NotFound ? 'gone' : 'error');
     }
   }
@@ -157,6 +167,16 @@ export class MapGrid {
     this.saving.set(true);
     this.error.set('');
     try {
+      // Another tab may have calibrated the map since this page opened: saving the factor read then would undo it (and clear the layers).
+      const fresh = (await this.api.get(this.campaignId(), this.mapId())).map;
+      if (fresh && Math.max(1, fresh.squareFactor) !== this.factor()) {
+        this.map.set(fresh);
+        this.saving.set(false);
+        this.error.set(
+          'A calibração do mapa mudou em outra janela. Confira o tamanho do quadrado e salve de novo.',
+        );
+        return;
+      }
       await this.api.setGrid(this.campaignId(), this.mapId(), columns, this.factor());
       await this.router.navigate(this.backLink().path);
     } catch (err) {

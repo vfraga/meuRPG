@@ -141,7 +141,7 @@ type ImageGenerationServiceClient interface {
 	// Errors: as GenerateSceneImage, `invalid_argument` (with an
 	// ImageGenerationInvalidField detail) also for a kind that is not made from a map,
 	// for an NPC the players do not see (or too many characters in all), for a
-	// hidden NPC's portrait (also in object_image_ids: the portrait is refused wherever it comes), and for characters on a TEXTURED_MAP; and
+	// hidden NPC's portrait (also in object_image_ids: the portrait is refused wherever it comes), for characters on a TEXTURED_MAP, and for the portrait of any NPC with a token on the map in a TEXTURED_MAP's object_image_ids; and
 	// `failed_precondition` with ImageGenerationBlocked also for MAP_HAS_NO_GRID,
 	// PLAYERS_SEE_NOTHING (the players' view is empty: no character of a player is on
 	// the map, or none sees a square) and MAP_IMAGE_TOO_LARGE.
@@ -374,7 +374,7 @@ type ImageGenerationServiceHandler interface {
 	// Errors: as GenerateSceneImage, `invalid_argument` (with an
 	// ImageGenerationInvalidField detail) also for a kind that is not made from a map,
 	// for an NPC the players do not see (or too many characters in all), for a
-	// hidden NPC's portrait (also in object_image_ids: the portrait is refused wherever it comes), and for characters on a TEXTURED_MAP; and
+	// hidden NPC's portrait (also in object_image_ids: the portrait is refused wherever it comes), for characters on a TEXTURED_MAP, and for the portrait of any NPC with a token on the map in a TEXTURED_MAP's object_image_ids; and
 	// `failed_precondition` with ImageGenerationBlocked also for MAP_HAS_NO_GRID,
 	// PLAYERS_SEE_NOTHING (the players' view is empty: no character of a player is on
 	// the map, or none sees a square) and MAP_IMAGE_TOO_LARGE.

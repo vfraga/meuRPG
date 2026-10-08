@@ -38,11 +38,20 @@ const (
 //     for taking too long -> deadline_exceeded, WARN;
 //   - the transaction was retried on 40001 until it gave up -> aborted, WARN
 //     (the client may retry);
+//   - a commit whose outcome is unknown (the connection dropped during COMMIT)
+//     -> unknown, ERROR: the change may have been saved, so the client must not
+//     be told to retry blindly;
 //   - the database cannot be reached -> unavailable, ERROR;
 //   - anything else is a bug or an unexpected failure -> internal, ERROR.
 //
 // The client only gets a fixed sentence, never the error's text (a driver
 // message can carry SQL or a host name); the cause is in the log line.
+//
+// The returned error keeps err as its cause (errors.As and errors.Is reach it,
+// its text stays the fixed sentence). A method that runs inside another
+// module's db.InTx may return it from the closure: InTx still sees a 40001 and
+// retries, instead of answering `aborted` for a conflict a second attempt
+// survives.
 func FromDB(ctx context.Context, logger *slog.Logger, module, action string, err error) error {
 	if connectErr, ok := errors.AsType[*connect.Error](err); ok {
 		return connectErr
@@ -52,8 +61,18 @@ func FromDB(ctx context.Context, logger *slog.Logger, module, action string, err
 		logger = slog.Default()
 	}
 	logger.Log(ctx, level, module+": cannot "+action, "error", err, "code", code.String()) //nolint:sloglint // each call site passes a fixed module and action
-	return connect.NewError(code, errors.New(message))
+	return connect.NewError(code, &causedError{message: message, cause: err})
 }
+
+// causedError is the error a client gets: the fixed message, with the original
+// error one Unwrap away for the code that decides on retries.
+type causedError struct {
+	message string
+	cause   error
+}
+
+func (e *causedError) Error() string { return e.message }
+func (e *causedError) Unwrap() error { return e.cause }
 
 func classify(ctx context.Context, err error) (connect.Code, slog.Level, string) {
 	// A context error wins over what it wraps: pgx wraps it in its own error
@@ -63,6 +82,12 @@ func classify(ctx context.Context, err error) (connect.Code, slog.Level, string)
 		return connect.CodeCanceled, slog.LevelDebug, "the request was canceled"
 	case errors.Is(err, context.DeadlineExceeded):
 		return connect.CodeDeadlineExceeded, slog.LevelWarn, "the request took too long, please try again"
+	}
+	if _, ok := errors.AsType[*crdb.AmbiguousCommitError](err); ok {
+		// The connection broke while committing: the change may or may not
+		// have been saved. The error unwraps to the connection failure, so it
+		// is tested before that (a retry could duplicate a write).
+		return connect.CodeUnknown, slog.LevelError, "the change may or may not have been saved, check before trying again"
 	}
 	if ctx.Err() != nil && isConnectionFailure(err) {
 		// The connection broke because the request was canceled underneath it.

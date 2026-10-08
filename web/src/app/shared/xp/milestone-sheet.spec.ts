@@ -163,4 +163,30 @@ describe('MilestoneSheet (E7-08)', () => {
     await fixture.whenStable();
     expect(markMilestone.mock.calls[1][3]).toBe(markMilestone.mock.calls[0][3]);
   });
+
+  it('drops a character that can no longer receive, so the retry can go', async () => {
+    markMilestone.mockRejectedValueOnce(
+      new ConnectError('x', Code.FailedPrecondition, undefined, [
+        {
+          desc: XPBlockedSchema,
+          value: {
+            reason: XPBlockedReason.XP_BLOCKED_REASON_CHARACTER_NOT_ELIGIBLE,
+            characterId: 't1',
+          },
+        },
+      ]),
+    );
+    const { fixture, el } = setup();
+    type(fixture, 'Marco');
+    primary(el).click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(markMilestone.mock.calls[0][2]).toEqual(['p1', 't1', 'b1']);
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(boxes(el)).toHaveLength(2);
+
+    primary(el).click();
+    await fixture.whenStable();
+    expect(markMilestone.mock.calls[1][2]).toEqual(['p1', 'b1']);
+  });
 });

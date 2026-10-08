@@ -588,17 +588,17 @@ func TestInviteSignInRateLimit(t *testing.T) {
 	t.Parallel()
 	st := newSignInStack(t)
 	token, _ := secret.New()
-	for i := range 20 { // loginRateLimit.PerClient.Burst in package identity
+	for i := range identity.LoginClientBurst {
 		if rec := st.postLogin(inviteForm(token), nil); rec.Code != http.StatusSeeOther {
 			t.Fatalf("sign-in %d: status = %d, want 303", i+1, rec.Code)
 		}
 	}
 	rec := st.postLogin(inviteForm(token), nil)
 	if rec.Code != http.StatusTooManyRequests || rec.Header().Get("Retry-After") == "" {
-		t.Errorf("21st sign-in: status = %d, Retry-After %q; want 429 with Retry-After", rec.Code, rec.Header().Get("Retry-After"))
+		t.Errorf("sign-in %d: status = %d, Retry-After %q; want 429 with Retry-After", identity.LoginClientBurst+1, rec.Code, rec.Header().Get("Retry-After"))
 	}
-	if n := st.count("SELECT count(*) FROM oidc_login_states"); n != 20 {
-		t.Errorf("login states = %d, want 20", n)
+	if n := st.count("SELECT count(*) FROM oidc_login_states"); n != identity.LoginClientBurst {
+		t.Errorf("login states = %d, want %d", n, identity.LoginClientBurst)
 	}
 }
 

@@ -13,9 +13,9 @@
         <p class="on__name">{{ image.name }}</p>
       </div>
     </div>
-    <app-keep-switch [checked]="keep()" [disabled]="keeping()" (toggle)="setKeep($event)" />
+    <app-keep-switch [checked]="keep()" [disabled]="keeping() || stopping()" (toggle)="setKeep($event)" />
     <div class="actions">
-      <button #stopButton matButton="outlined" type="button" [disabled]="stopping()" (click)="stop()">
+      <button #stopButton matButton="outlined" type="button" [disabled]="stopping() || keeping()" (click)="stop()">
         Parar de mostrar
       </button>
       <button matButton="outlined" type="button" (click)="open()">Trocar imagem</button>

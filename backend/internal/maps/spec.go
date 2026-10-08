@@ -448,7 +448,7 @@ func (ps pointSpec) triggeredAt(now func() time.Time) *time.Time {
 
 func errTreasureFound() error {
 	return errMapBlocked(mapsv1.MapBlockedReason_MAP_BLOCKED_REASON_TREASURE_FOUND,
-		"the treasure was found: unmark it before deleting it")
+		"the treasure was found: unmark it before deleting it or changing its kind")
 }
 
 func errTreasureConverted() error {

@@ -2,7 +2,6 @@ package play
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -36,11 +35,6 @@ import (
 // among a treasure's finders and rounded down (MapKeeper.TreasureFoundIn). It
 // counts in every XP mode, and every member who reads the summary gets it:
 // found treasure is public.
-
-// maxSummaryEvents is how many scene events a summary reads. A session never
-// gets near it (a table of a handful of players); past it the summary fails
-// loudly instead of silently dropping the newest events and under-counting.
-const maxSummaryEvents = 20000
 
 // sessionHighlightKinds is the summary's categories: the combat's, then the
 // checks passed and the treasure found.
@@ -207,36 +201,26 @@ func (s *Service) GetSessionSummary(
 }
 
 // tallyChecks adds the checks passed and tried outside combat to the tallies,
-// and returns how many scenes the master opened.
+// and returns how many scenes the master opened. The counting is done by the
+// database, so the number of rolls in a session does not matter.
 func (s *Service) tallyChecks(ctx context.Context, sessionID string, st *sessionTally) (int, error) {
-	events, err := s.queries.ListSessionSceneEvents(ctx, sessionID)
+	opened, err := s.queries.CountSessionScenesOpened(ctx, sessionID)
 	if err != nil {
-		return 0, s.dbError(ctx, "list the session's scenes", err)
+		return 0, s.dbError(ctx, "count the session's scenes", err)
 	}
-	if len(events) > maxSummaryEvents {
-		return 0, s.dbError(ctx, "list the session's scenes", fmt.Errorf("a session with more than %d scene events", maxSummaryEvents))
+	rows, err := s.queries.TallySessionSceneChecks(ctx, sessionID)
+	if err != nil {
+		return 0, s.dbError(ctx, "tally the session's checks", err)
 	}
-	opened := 0
-	for _, e := range events {
-		if e.Kind == eventSceneOpened {
-			opened++
+	for _, r := range rows {
+		if r.CharacterID == nil {
 			continue
 		}
-		var ev sceneRollEvent
-		if err := json.Unmarshal(e.Payload, &ev); err != nil {
-			return 0, s.dbError(ctx, "read a scene roll", fmt.Errorf("decode a roll of the summary: %w", err))
-		}
-		// Only a roll the players could see the DC of, on an action that had one.
-		if e.CharacterID == nil || !ev.DCShown || ev.Passed == nil {
-			continue
-		}
-		t := st.of(*e.CharacterID, "")
-		t.checksTried++
-		if *ev.Passed {
-			t.checksPassed++
-		}
+		t := st.of(*r.CharacterID, "")
+		t.checksTried += clampInt32(int(r.Tried))
+		t.checksPassed += clampInt32(int(r.Passed))
 	}
-	return opened, nil
+	return int(opened), nil
 }
 
 // tallyTreasure adds the PO each character found in the session to the tallies

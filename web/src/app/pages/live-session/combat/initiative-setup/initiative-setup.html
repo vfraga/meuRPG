@@ -103,7 +103,8 @@
                 >
                   <mat-icon aria-hidden="true">arrow_downward</mat-icon>
                 </button>
-              } @else if (c.initiative === undefined) {
+              }
+              @if (c.initiative === undefined) {
                 <button mat-stroked-button type="button" (click)="edit(c)">
                   Digitar pelo jogador
                 </button>

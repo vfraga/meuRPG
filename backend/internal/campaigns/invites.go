@@ -156,7 +156,7 @@ func (s *Service) acceptInvite(ctx context.Context, tokenHash []byte, userID str
 			return fmt.Errorf("get campaign: %w", err)
 		}
 
-		member, err := q.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: invite.CampaignID, UserID: userID})
+		member, err := q.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: invite.CampaignID, UserID: userID, Now: now})
 		switch {
 		case err == nil && member.Status == string(authz.StatusPending) && !invite.RequiresApproval &&
 			inviteState(invite, now) == campaignsv1.InviteState_INVITE_STATE_ACTIVE:
@@ -182,6 +182,11 @@ func (s *Service) acceptInvite(ctx context.Context, tokenHash []byte, userID str
 
 		if state := inviteState(invite, now); state != campaignsv1.InviteState_INVITE_STATE_ACTIVE {
 			return &unusableInviteError{state: state}
+		}
+		// A pending member past the deadline is no member, but the TTL job
+		// may not have deleted the row yet: it goes before the new one.
+		if _, err := q.DeleteExpiredPendingMember(ctx, campaignsdb.DeleteExpiredPendingMemberParams{CampaignID: invite.CampaignID, UserID: userID, Now: now}); err != nil {
+			return fmt.Errorf("delete expired pending member: %w", err)
 		}
 		spent, err := q.IncrementInviteUses(ctx, campaignsdb.IncrementInviteUsesParams{ID: invite.ID, Now: now})
 		if err != nil {

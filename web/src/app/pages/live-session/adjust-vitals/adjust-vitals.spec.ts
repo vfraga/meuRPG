@@ -166,4 +166,68 @@ describe('AdjustVitals (RN-02, E5-05)', () => {
     const { el } = setup(brisaVitals(), null);
     expect(el.textContent).toContain('Quem joga com Brisa vê a mudança na hora.');
   });
+
+  it('gives back a spent use of a resource, and sends only that resource', async () => {
+    adjustVitals.mockResolvedValue(brisaVitals());
+    const { el, fixture } = setup(
+      brisaVitals({
+        resources: [
+          { key: 'rage', namePt: 'Fúria', total: 2, used: 2, recharge: 'long_rest' },
+          {
+            key: 'second_wind',
+            namePt: 'Retomar o Fôlego',
+            total: 1,
+            used: 1,
+            recharge: 'short_rest',
+          },
+        ],
+      }),
+    );
+    expect(el.textContent).toContain('Fúria');
+    expect(el.textContent).toContain('Retomar o Fôlego');
+    expect(byLabel(el, 'Usar 1 uso de Fúria').disabled).toBe(true);
+    byLabel(el, 'Devolver 1 uso de Fúria').click();
+    await settle(fixture);
+    button(el, 'Salvar ajuste').click();
+    await settle(fixture);
+    expect(adjustVitals.mock.calls[0][3]).toEqual({ resourcesUsed: [{ key: 'rage', used: 1 }] });
+  });
+
+  it('never shows the internal key of a resource that has no Portuguese name', () => {
+    const { el } = setup(
+      brisaVitals({
+        resources: [
+          { key: 'feature:odd-pool', namePt: '', total: 1, used: 1, recharge: 'long_rest' },
+        ],
+      }),
+    );
+    expect(el.textContent).not.toContain('odd-pool');
+    expect(byLabel(el, 'Devolver 1 uso de Recurso')).toBeDefined();
+  });
+
+  it("adjusts the beast's hit points apart from the character's, and 0 ends the form", async () => {
+    adjustVitals.mockResolvedValue(brisaVitals());
+    const wolf = {
+      beastKey: 'monster:wolf',
+      beastNamePt: 'Lobo',
+      hitPointsCurrent: 9,
+      hitPointsMax: 11,
+    };
+    const { el, fixture } = setup(brisaVitals({ wildShape: wolf }));
+    expect(el.textContent).toContain('PV da fera: Lobo');
+    expect(el.textContent).toContain('0 encerra a forma');
+    const beast = field(el, 'Pontos de vida da fera');
+    beast.value = '0';
+    beast.dispatchEvent(new Event('input'));
+    await settle(fixture);
+    button(el, 'Salvar ajuste').click();
+    await settle(fixture);
+    expect(adjustVitals.mock.calls[0][3]).toEqual({ wildShapeHitPointsCurrent: 0 });
+  });
+
+  it('offers no beast row and no resource row to a character without them', () => {
+    const { el } = setup(brisaVitals());
+    expect(el.textContent).not.toContain('PV da fera');
+    expect(el.querySelector('input[aria-label="Pontos de vida da fera"]')).toBeNull();
+  });
 });

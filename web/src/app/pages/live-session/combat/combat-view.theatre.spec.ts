@@ -30,8 +30,7 @@ import { CombatView } from './combat-view';
 
 // The combat screen of a combat without a map (RN-25, E10-04), as the page mounts it: what each audience gets, and what is not drawn.
 
-const plain = (t: string | null | undefined) =>
-  (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const toren = combatant({
   id: 't',
   label: 'Toren',

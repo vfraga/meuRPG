@@ -22,7 +22,9 @@ export type SquareVerdict =
   | { readonly kind: 'ok'; readonly square: ReachableSquare }
   | { readonly kind: 'refused'; readonly reason: MoveRefusal }
   /** Not in the options at all: beyond the circle. */
-  | { readonly kind: 'beyond' };
+  | { readonly kind: 'beyond' }
+  /** The options are not known (not answered yet, or the read failed): the server decides. */
+  | { readonly kind: 'unknown' };
 
 const key = (col: number, row: number): number => row * 1000 + col;
 
@@ -30,6 +32,8 @@ const key = (col: number, row: number): number => row * 1000 + col;
 export interface MoveIndex {
   readonly reachable: ReadonlyMap<number, ReachableSquare>;
   readonly refused: ReadonlyMap<number, MoveRefusal>;
+  /** There is an answer to read the squares from. */
+  readonly known: boolean;
 }
 
 export function indexOptions(options: GetMoveOptionsResponse | null): MoveIndex {
@@ -41,7 +45,7 @@ export function indexOptions(options: GetMoveOptionsResponse | null): MoveIndex 
   for (const s of options?.refused ?? []) {
     refused.set(key(s.col, s.row), s.reason);
   }
-  return { reachable, refused };
+  return { reachable, refused, known: options !== null };
 }
 
 export function verdictFor(index: MoveIndex, origin: Square, to: Square): SquareVerdict {
@@ -53,7 +57,10 @@ export function verdictFor(index: MoveIndex, origin: Square, to: Square): Square
     return { kind: 'ok', square: ok };
   }
   const reason = index.refused.get(key(to.col, to.row));
-  return reason !== undefined ? { kind: 'refused', reason } : { kind: 'beyond' };
+  if (reason !== undefined) {
+    return { kind: 'refused', reason };
+  }
+  return index.known ? { kind: 'beyond' } : { kind: 'unknown' };
 }
 
 /** What a refused or unreachable square says: a title, the way out. It never

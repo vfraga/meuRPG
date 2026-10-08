@@ -21,7 +21,9 @@ export interface StageApi {
  *   the same NPC does nothing until the first answers, while another NPC's
  *   buttons stay live;
  * - each answer is the stage as it is now, applied at once through
- *   `SceneState.setStage`;
+ *   `SceneState.setStage`; calls of different NPCs overlap, so an answer
+ *   older than one already applied is not applied (and the scene is read
+ *   again, since the newer one was answered first);
  * - `status` is what the master's screen reader hears ("Aldo entrou na cena.")
  *   and `entered` is the same sentence for the visible green line after "Pôr
  *   em cena", until the next call;
@@ -34,6 +36,9 @@ export class StageController {
   readonly entered = signal('');
   readonly error = signal('');
   private readonly inFlight = signal<ReadonlySet<string>>(new Set());
+  /** The order the calls were made in, and the latest one whose answer is on screen. */
+  private issued = 0;
+  private applied = 0;
 
   constructor(
     private readonly api: StageApi,
@@ -56,42 +61,42 @@ export class StageController {
 
   /** "Pôr em cena": true when the NPC came in. */
   async put(characterId: string): Promise<boolean> {
-    const ok = await this.run(characterId, () =>
+    const result = await this.run(characterId, () =>
       this.api.putOnStage(this.campaignId(), characterId),
     );
-    if (ok) {
+    if (result === 'applied') {
       const sentence = `${this.nameOf(characterId)} entrou na cena.`;
       this.entered.set(sentence);
       this.status.set(sentence);
     }
-    return ok;
+    return result !== 'failed';
   }
 
   /** "Tirar de cena": at once, with no question (putting it back undoes it). */
   async take(characterId: string): Promise<boolean> {
     const name = this.nameOf(characterId);
-    const ok = await this.run(characterId, () =>
+    const result = await this.run(characterId, () =>
       this.api.takeOffStage(this.campaignId(), characterId),
     );
-    if (ok) {
+    if (result === 'applied') {
       this.entered.set('');
       this.status.set(`${name} saiu da cena.`);
     }
-    return ok;
+    return result !== 'failed';
   }
 
   /** "Dar a fala" / "Fala agora": the one who speaks, or, when the NPC
    * already speaks, nobody. */
   async speak(characterId: string, speaking: boolean): Promise<boolean> {
     const name = this.nameOf(characterId);
-    const ok = await this.run(characterId, () =>
+    const result = await this.run(characterId, () =>
       this.api.setSpeaker(this.campaignId(), speaking ? '' : characterId),
     );
-    if (ok) {
+    if (result === 'applied') {
       this.entered.set('');
       this.status.set(speaking ? 'Ninguém fala.' : `${name} fala.`);
     }
-    return ok;
+    return result !== 'failed';
   }
 
   clearMessages(): void {
@@ -103,21 +108,29 @@ export class StageController {
   private async run(
     characterId: string,
     call: () => Promise<readonly StageNpc[]>,
-  ): Promise<boolean> {
+  ): Promise<'applied' | 'stale' | 'failed'> {
     if (this.busy(characterId)) {
-      return false;
+      return 'failed';
     }
+    const order = ++this.issued;
     this.inFlight.update((set) => new Set(set).add(characterId));
     this.error.set('');
     try {
-      this.state.setStage(await call());
-      return true;
+      const stage = await call();
+      if (order < this.applied) {
+        // A later call was answered first: this stage is the older one.
+        void this.state.refresh();
+        return 'stale';
+      }
+      this.applied = order;
+      this.state.setStage(stage);
+      return 'applied';
     } catch (err) {
       this.error.set(stageErrorMessage(err));
       this.entered.set('');
       // The screen was stale (the scene closed, the NPC is gone): read it again.
       void this.state.refresh();
-      return false;
+      return 'failed';
     } finally {
       this.inFlight.update((set) => {
         const next = new Set(set);

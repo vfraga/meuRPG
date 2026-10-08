@@ -527,9 +527,21 @@ func (sm *SessionMaps) DiscoverScene(ctx context.Context, tx pgx.Tx, campaignID,
 }
 
 // DiscoveredScenes returns the scenes the campaign's group discovered, with
-// their current names, oldest discovery first. It implements notes.Scenes.
+// their current names, oldest discovery first, as the players read them: a scene on a
+// map the players cannot open (not revealed, not the session's current map) is not
+// listed, however it was discovered (RN-10). It implements notes.Scenes.
 func (sm *SessionMaps) DiscoveredScenes(ctx context.Context, campaignID string) ([]notelink.Scene, error) {
-	rows, err := sm.queries.ListDiscoveredScenes(ctx, campaignID)
+	var current *string
+	if sm.svc != nil {
+		id, err := sm.svc.currentMap(ctx, campaignID)
+		if err != nil {
+			return nil, err
+		}
+		if id != "" {
+			current = &id
+		}
+	}
+	rows, err := sm.queries.ListDiscoveredScenes(ctx, mapsdb.ListDiscoveredScenesParams{CampaignID: campaignID, CurrentMapID: current})
 	if err != nil {
 		return nil, fmt.Errorf("list the discovered scenes: %w", err)
 	}

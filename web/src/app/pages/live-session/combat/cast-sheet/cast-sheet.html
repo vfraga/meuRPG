@@ -133,7 +133,7 @@
         >
           <mat-icon aria-hidden="true">auto_awesome</mat-icon>Conjurar {{ data.name }}
         </button>
-        <button mat-stroked-button type="button" class="cancel" (click)="close()">Cancelar</button>
+        <button mat-stroked-button type="button" class="cancel" [disabled]="busy()" (click)="close()">Cancelar</button>
       </div>
     </div>
   }

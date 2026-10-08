@@ -1,9 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import { OpenSessions } from '../../../shell/live-notice/open-sessions';
+import { OpenSessionVm, OpenSessions } from '../../../shell/live-notice/open-sessions';
 import { GameSessionCard } from './game-session-card';
 import {
   GameSessionSource,
@@ -32,10 +32,20 @@ function startResult(sessionNumber: number, lockedSheetCount: number): StartGame
 
 describe('GameSessionCard', () => {
   let fake: FakeGameSessionSource;
-  const openSessions = { refresh: vi.fn(() => Promise.resolve()) };
+  const polled = signal<readonly OpenSessionVm[]>([]);
+  const openSessions = { sessions: polled, refresh: vi.fn(() => Promise.resolve()) };
+  const polledSession: OpenSessionVm = {
+    sessionId: 'sess-2',
+    campaignId: 'camp-1',
+    campaignName: 'Mirathel',
+    sessionNumber: 2,
+    startedAt: new Date('2026-09-29T12:00:00Z'),
+    isMaster: false,
+  };
 
   beforeEach(() => {
     openSessions.refresh.mockClear();
+    polled.set([]);
     TestBed.configureTestingModule({
       imports: [GameSessionCard],
       providers: [
@@ -237,6 +247,34 @@ describe('GameSessionCard', () => {
     const { el } = await render(false);
     expect(el.textContent?.trim()).toBe('');
     expect(el.classList).toContain('is-empty');
+  });
+
+  it('shows a player "Entrar na sessão" when the master starts a session while the page is open', async () => {
+    const { el, fixture } = await render(false);
+    expect(el.textContent?.trim()).toBe('');
+
+    fake.getCurrentSessionResult = Promise.resolve(session(2));
+    polled.set([polledSession]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el.textContent).toContain('Entrar na sessão');
+  });
+
+  it('takes "Entrar na sessão" from a player when the master ends the session while the page is open', async () => {
+    fake.getCurrentSessionResult = Promise.resolve(session(2));
+    polled.set([polledSession]);
+    const { el, fixture } = await render(false);
+    expect(el.textContent).toContain('Entrar na sessão');
+
+    fake.getCurrentSessionResult = Promise.resolve(null);
+    polled.set([]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(el.textContent).not.toContain('Entrar na sessão');
   });
 
   it('sends the same idempotency key when the start is tried again after a failure', async () => {

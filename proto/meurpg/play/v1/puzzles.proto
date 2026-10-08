@@ -76,7 +76,8 @@ enum PuzzleSolveAction {
   // secret). The target is a PuzzleDoorTarget.
   PUZZLE_SOLVE_ACTION_OPEN_DOOR = 2;
   // Reveal a point of a map to the players (the same as MapService.
-  // SetMapPointRevealed). The target is a PuzzlePointTarget.
+  // SetMapPointRevealed). The target is a PuzzlePointTarget; a light is refused, since
+  // the players never see one.
   PUZZLE_SOLVE_ACTION_REVEAL_POINT = 3;
   // Reveal a scene clue (MR-029) to the character whose move solved the puzzle,
   // and to nobody else. The target is a PuzzleClueTarget.
@@ -576,7 +577,8 @@ message PuzzleRun {
   // What happened when the puzzle was solved, as the players read it: the master's
   // own text of "Ao resolver" or, without one, a generic line for what the action
   // did ("Uma porta se abriu.", "Salão do trono apareceu no mapa.", "Você ganhou uma
-  // pista."). Empty until solved, and when the action did nothing and the master wrote
+  // pista."). A point the players do not see (its map is hidden from them) is not named:
+  // "Algo apareceu no mapa.". Empty until solved, and when the action did nothing and the master wrote
   // no text.
   string solved_message = 15;
   // The limits of this puzzle: this player's attempts left, the moves and the time.
@@ -786,6 +788,9 @@ enum PuzzleBlockedReason {
   PUZZLE_BLOCKED_REASON_WRONG_DICE_MODE = 16;
   // The caller's character has no numbers for the hint's skill.
   PUZZLE_BLOCKED_REASON_NO_SKILL = 17;
+  // The master's change names a revision of the run that is not the run's any more
+  // (expected_revision): it was made already, or a player moved since the master read it.
+  PUZZLE_BLOCKED_REASON_STALE_REVISION = 18;
 }
 
 // PuzzleInvalid is the detail of an `invalid_argument` of PuzzleService.
@@ -929,7 +934,7 @@ service PuzzleService {
   //
   // Writes `puzzle_reset`.
   //
-  // Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN).
+  // Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN).
   rpc ResetPuzzle(ResetPuzzleRequest) returns (ResetPuzzleResponse);
 
   // ReseedPuzzle ("Gerar outro começo") draws a new seed and a new start for the run,
@@ -940,7 +945,7 @@ service PuzzleService {
   //
   // Writes `puzzle_reset`.
   //
-  // Errors: `failed_precondition` (NO_OPEN_SESSION, NO_GENERATED_START).
+  // Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NO_GENERATED_START).
   rpc ReseedPuzzle(ReseedPuzzleRequest) returns (ReseedPuzzleResponse);
 
   // ClosePuzzle ("Fechar") hides the puzzle from the players. Closing a closed one
@@ -954,7 +959,7 @@ service PuzzleService {
   // ReleaseNextPuzzleHint ("Mostrar a próxima dica") releases the next hint to the
   // players. Master only.
   //
-  // Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN, NO_MORE_HINTS).
+  // Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN, NO_MORE_HINTS).
   rpc ReleaseNextPuzzleHint(ReleaseNextPuzzleHintRequest) returns (ReleaseNextPuzzleHintResponse);
 
   // PreviewPuzzleCipher ciphers a message for the form, as the players will read it
@@ -974,8 +979,8 @@ service PuzzleService {
   //
   // Sends `puzzle_changed` now and at each step. Writes no session event.
   //
-  // Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN, NOT_A_SEQUENCE, SOLVED,
-  // STOPPED).
+  // Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN, NOT_A_SEQUENCE,
+  // SOLVED, STOPPED).
   rpc PlayPuzzleSequence(PlayPuzzleSequenceRequest) returns (PlayPuzzleSequenceResponse);
 
   // GetMasterPuzzleRun is the master's live view of a puzzle of the open session: what
@@ -1210,6 +1215,11 @@ message ShowPuzzleResponse {
 message ResetPuzzleRequest {
   string campaign_id = 1;
   string puzzle_id = 2;
+  // The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+  // set and the run has moved on (a player moved, tried for a hint, or this very change was
+  // made already by a call whose answer was lost), the call changes nothing and fails with
+  // STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+  int32 expected_revision = 3;
 }
 
 // ResetPuzzleResponse carries the puzzle as the master now sees it.
@@ -1221,6 +1231,11 @@ message ResetPuzzleResponse {
 message ReseedPuzzleRequest {
   string campaign_id = 1;
   string puzzle_id = 2;
+  // The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+  // set and the run has moved on (a player moved, tried for a hint, or this very change was
+  // made already by a call whose answer was lost), the call changes nothing and fails with
+  // STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+  int32 expected_revision = 3;
 }
 
 // ReseedPuzzleResponse carries the puzzle as the master now sees it.
@@ -1243,6 +1258,11 @@ message ClosePuzzleResponse {
 message ReleaseNextPuzzleHintRequest {
   string campaign_id = 1;
   string puzzle_id = 2;
+  // The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+  // set and the run has moved on (a player moved, tried for a hint, or this very change was
+  // made already by a call whose answer was lost), the call changes nothing and fails with
+  // STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+  int32 expected_revision = 3;
 }
 
 // ReleaseNextPuzzleHintResponse carries the puzzle as the master now sees it.
@@ -1301,6 +1321,9 @@ message MakePuzzleMoveResponse {
   bool replayed = 2;
   // True when this move is the one that solved the puzzle (also on a replay of it).
   bool solved_by_this_move = 3;
+  // True when this move was judged wrong (it spent an attempt), also on a replay of it: the verdict is the
+  // move's own, not read from the run, which may carry another player's move by then.
+  bool wrong = 4;
 }
 
 // PreviewPuzzleCipherRequest asks for a message to be ciphered.
@@ -1319,6 +1342,11 @@ message PreviewPuzzleCipherResponse {
 message PlayPuzzleSequenceRequest {
   string campaign_id = 1;
   string puzzle_id = 2;
+  // The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+  // set and the run has moved on (a player moved, tried for a hint, or this very change was
+  // made already by a call whose answer was lost), the call changes nothing and fails with
+  // STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+  int32 expected_revision = 3;
 }
 
 // PlayPuzzleSequenceResponse carries the puzzle as the master now sees it.

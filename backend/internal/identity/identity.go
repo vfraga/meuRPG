@@ -161,12 +161,23 @@ func New(ctx context.Context, cfg Config) (*Service, error) {
 // are the Connect options shared by every service (size limits, the
 // Connect-Protocol-Version requirement). Mount adds Interceptor to them.
 func (s *Service) Mount(handle func(pattern string, handler http.Handler), opts ...connect.HandlerOption) {
+	s.MountLimited(handle, nil, opts...)
+}
+
+// MountLimited is Mount with an interceptor that runs right after the
+// session interceptor, which is where the per-user rate limit goes: it needs
+// the user the session interceptor finds. A nil after adds nothing.
+func (s *Service) MountLimited(handle func(pattern string, handler http.Handler), after connect.Interceptor, opts ...connect.HandlerOption) {
 	handle("GET /auth/login", http.HandlerFunc(s.handleLogin))
 	handle("POST /auth/login", http.HandlerFunc(s.handleLoginForm))
 	handle("GET "+config.CallbackPath, http.HandlerFunc(s.handleCallback))
 
+	interceptor := s.Interceptor()
+	if after != nil {
+		interceptor = ratelimit.Chain(interceptor, after)
+	}
 	// Clip so append copies instead of writing into the caller's array.
-	opts = append(slices.Clip(opts), connect.WithInterceptors(s.Interceptor()))
+	opts = append(slices.Clip(opts), connect.WithInterceptors(interceptor))
 	handle(identityv1connect.NewIdentityServiceHandler(s, opts...))
 }
 

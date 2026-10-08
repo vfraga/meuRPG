@@ -1,11 +1,9 @@
 package maps
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 	"unicode/utf8"
 	"uuid"
@@ -40,6 +38,9 @@ import (
 type fogCopy struct {
 	id     string
 	source mapsdb.GalleryImage
+	// remember marks the row as the copy of source (copy_of_image_id), so the next
+	// use of the same fog image finds it (prepareUseCopy).
+	remember bool
 }
 
 // copySuffix is how the copy's name says what it is for.
@@ -94,19 +95,15 @@ func (s *Service) copyFiles(ctx context.Context, campaignID, imageID string) (*f
 	return c, nil
 }
 
-// copyBlob copies one file of the blob store. The image is at most 10 MiB, which
-// the copy holds in memory for a moment, as an upload does.
+// copyBlob copies one file of the blob store, streaming it: nothing of the
+// image (at most 10 MiB) is held in memory.
 func (s *Service) copyBlob(ctx context.Context, from, to string) error {
 	obj, err := s.blobs.Open(ctx, from)
 	if err != nil {
 		return fmt.Errorf("open an image file to copy it: %w", err)
 	}
 	defer func() { _ = obj.Close() }()
-	content, err := io.ReadAll(obj.Content)
-	if err != nil {
-		return fmt.Errorf("read an image file to copy it: %w", err)
-	}
-	if err := s.blobs.Put(ctx, to, obj.ContentType, bytes.NewReader(content)); err != nil {
+	if err := s.blobs.Put(ctx, to, obj.ContentType, obj.Content); err != nil {
 		return fmt.Errorf("store the copy of an image file: %w", err)
 	}
 	return nil
@@ -131,7 +128,7 @@ func (c *fogCopy) insertRow(ctx context.Context, q *mapsdb.Queries, s *Service, 
 	}
 	row, err := q.InsertGalleryImage(ctx, mapsdb.InsertGalleryImageParams{
 		ID: c.id, CampaignID: campaignID, UploadedBy: userID, Name: copyName(c.source.Name),
-		ContentType: c.source.ContentType, Width: c.source.Width, Height: c.source.Height, ByteSize: c.source.ByteSize, CreatedAt: s.now(),
+		ContentType: c.source.ContentType, Width: c.source.Width, Height: c.source.Height, ByteSize: c.source.ByteSize, CreatedAt: s.now(), CopyOfImageID: c.copyOf(),
 	})
 	if err != nil {
 		return mapsdb.GalleryImage{}, fmt.Errorf("insert the image's copy: %w", err)
@@ -139,14 +136,53 @@ func (c *fogCopy) insertRow(ctx context.Context, q *mapsdb.Queries, s *Service, 
 	return row, nil
 }
 
+func (c *fogCopy) copyOf() *string {
+	if !c.remember {
+		return nil
+	}
+	return &c.source.ID
+}
+
+// prepareUseCopy is what a use of the image other than the fog map's own gets: the
+// image itself (nil copy) when it is not a fog map's background; the copy already
+// made of it, when there is one; else the files of a new copy, whose row the
+// caller adds inside its transaction (insertRow), or whose files it deletes. The
+// returned image is the one to use, with the ID and name the new copy will have.
+func (s *Service) prepareUseCopy(ctx context.Context, campaignID string, img mapsdb.GalleryImage) (mapsdb.GalleryImage, *fogCopy, error) {
+	if s.blobs == nil {
+		return img, nil, nil
+	}
+	fog, err := s.queries.ImageIsOnAFogMap(ctx, mapsdb.ImageIsOnAFogMapParams{CampaignID: campaignID, ImageID: img.ID})
+	if err != nil {
+		return mapsdb.GalleryImage{}, nil, fmt.Errorf("check the image's map: %w", err)
+	}
+	if !fog {
+		return img, nil, nil
+	}
+	existing, err := s.queries.FindImageCopy(ctx, mapsdb.FindImageCopyParams{CampaignID: campaignID, CopyOfImageID: &img.ID})
+	if err == nil {
+		return existing, nil, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return mapsdb.GalleryImage{}, nil, fmt.Errorf("find the image's copy: %w", err)
+	}
+	c, err := s.copyFiles(ctx, campaignID, img.ID)
+	if err != nil {
+		return mapsdb.GalleryImage{}, nil, err
+	}
+	c.remember = true
+	img.ID, img.Name = c.id, copyName(img.Name)
+	return img, c, nil
+}
+
 // ownImage returns the gallery image to use for something other than the fog
 // map's own background: the image itself, or, when it is a fog map's background, a
-// copy of it made now (its own transaction and quota check). The session's shown
-// image and an NPC's portrait use it.
+// copy of it, the one made before or a new one made now (its own transaction and
+// quota check). An NPC's portrait uses it.
 func (s *Service) ownImage(ctx context.Context, campaignID string, img mapsdb.GalleryImage) (mapsdb.GalleryImage, error) {
-	c, err := s.prepareReuseCopy(ctx, campaignID, img.ID)
+	use, c, err := s.prepareUseCopy(ctx, campaignID, img)
 	if err != nil || c == nil {
-		return img, err
+		return use, err
 	}
 	var row mapsdb.GalleryImage
 	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {

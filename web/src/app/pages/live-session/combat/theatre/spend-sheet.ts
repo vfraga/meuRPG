@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -77,6 +77,8 @@ export class SpendSheet {
   protected readonly data = this.sheet.data;
   protected readonly inSheet = this.sheet.inSheet;
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
 
   protected readonly who = computed(

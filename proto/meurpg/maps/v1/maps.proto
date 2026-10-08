@@ -1132,7 +1132,8 @@ message SceneAction {
   // 0 still means none.
   int32 dc = 5;
   // How many times each player's character may roll this action while the
-  // scene stays open (MR-015, question 55): 1 to 5, and 0 means unlimited.
+  // scene stays open (MR-015, question 55): 1 to 5, and 0 means unlimited (the
+  // server stops at 200 rolls per character in one opening).
   // New actions have 1. Closing the scene and opening it again starts every
   // count afresh. Every viewer gets it; the open scene
   // (PlayService.GetOpenScene) also says how many a player has left.

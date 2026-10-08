@@ -22,8 +22,7 @@ import { DeathSaves } from './death-saves';
 // The death saves a table hides (RN-24, E10-04 state 6): the owner and the master read the marks and who else sees them; the other
 // players read only the state in words, and the log says why.
 
-const plain = (t: string | null | undefined) =>
-  (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const brisaDown = combatant({
   id: 'b',
   label: 'Brisa',

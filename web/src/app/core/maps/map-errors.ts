@@ -70,7 +70,9 @@ export type EditorCall =
   /** `CreateMapPoint`. */
   | 'pointNew'
   /** `UpdateMapPoint`, `DeleteMapPoint` and the treasure marks. */
-  | 'point';
+  | 'point'
+  /** `DeleteMap`. */
+  | 'delete';
 
 /** What a full gallery means for the fog: it needs a copy of the image. */
 export const GALLERY_FULL =
@@ -102,6 +104,13 @@ const PROFILES: Readonly<
   forget: { blocked: [] },
   pointNew: { blocked: [], exhausted: POINTS_FULL },
   point: { blocked: [MapBlockedReason.TREASURE_CONVERTED, MapBlockedReason.TREASURE_FOUND] },
+  delete: {
+    blocked: [
+      MapBlockedReason.COMBAT_RUNNING,
+      MapBlockedReason.TREASURE_CONVERTED,
+      MapBlockedReason.TREASURE_FOUND,
+    ],
+  },
 };
 
 /**
@@ -113,7 +122,9 @@ export function editorErrorMessage(err: unknown, call: EditorCall, what: string)
   const profile = PROFILES[call];
   const reason = mapBlockedReason(err);
   if (reason !== null && profile.blocked.includes(reason)) {
-    return BLOCKED_TEXT[reason];
+    return call === 'delete' && reason === MapBlockedReason.COMBAT_RUNNING
+      ? 'Há um combate neste mapa: ele só pode ser apagado depois do combate.'
+      : BLOCKED_TEXT[reason];
   }
   const connectErr = ConnectError.from(err, Code.Unavailable);
   if (connectErr.code === Code.ResourceExhausted && profile.exhausted !== undefined) {

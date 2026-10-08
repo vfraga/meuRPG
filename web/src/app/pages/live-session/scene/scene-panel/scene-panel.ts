@@ -74,7 +74,7 @@ export class ScenePanel {
     openScenePicker(this.dialog, this.bottomSheet, {
       campaignId: this.campaignId(),
       mapName: map.map()?.name ?? '',
-      points: map.points(),
+      points: map.points,
       openPointId: null,
       state: this.state(),
     }).subscribe();

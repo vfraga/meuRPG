@@ -1,10 +1,11 @@
 import {
-  Component,
-  ElementRef,
-  Injector,
   afterNextRender,
+  Component,
   computed,
+  effect,
+  ElementRef,
   inject,
+  Injector,
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -126,6 +127,8 @@ export class OpportunitySheet {
   protected readonly data = this.sheet.data;
   protected readonly inSheet = this.sheet.inSheet;
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
   /** The attacks, once read; `null` while they come or when the read failed. */
   protected readonly attacks = signal<readonly (ReactorAttack & { numbers: string })[] | null>(

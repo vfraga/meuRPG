@@ -19,7 +19,7 @@ export interface PreviewState {
   readonly failed: string;
 }
 
-const QUIET_MS = 150;
+export const QUIET_MS = 150;
 
 /**
  * Asks `PreviewLevelUp` after every change of the choices (MR-040): the browser has

@@ -96,4 +96,15 @@ describe('MoveSaves', () => {
     void saves.move('map-1/t1', at(5700), at(6200), handlers);
     expect(sent).toEqual(['5700,5400', '6200,5400']);
   });
+
+  it('says an item has a save in flight until its saves end', async () => {
+    const { saves, pending, handlers } = setup();
+    expect(saves.isPending('map-1/t1')).toBe(false);
+    const first = saves.move('map-1/t1', at(5200), at(5700), handlers);
+    expect(saves.isPending('map-1/t1')).toBe(true);
+    expect(saves.isPending('map-1/t2')).toBe(false);
+    pending[0].resolve();
+    await first;
+    expect(saves.isPending('map-1/t1')).toBe(false);
+  });
 });

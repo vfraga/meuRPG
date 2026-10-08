@@ -1301,3 +1301,66 @@ func TestRN10_FogCombatAWolfFormReactorSeesWithTheBeastsEyes(t *testing.T) {
 		t.Errorf("Sálvia as a wolf, with no darkvision, has %d offers on a goblin she cannot see, want none", n)
 	}
 }
+
+// Moving a master-hidden NPC inside a player's sight tells that player nothing: no
+// vision_changed, and their revision does not count the move (RN-10).
+func TestHiddenNPCMoveInSightIsNotToldToPlayers(t *testing.T) { //nolint:tparallel // the subtests read one stream, in order
+	t.Parallel()
+	f := newFogCave(t)
+	f.fight(t)
+	f.stage(t)
+	f.hide(t, "Goblin 2")
+	for _, sq := range [][2]int{{8, 8}, {9, 8}} {
+		if !f.seesSquare(t, f.caio, sq[0], sq[1]) {
+			t.Fatalf("precondition: Toren's player does not see %v", sq)
+		}
+	}
+	before := f.get(t, f.caio).GetRevision()
+	s := f.watchAll(t)
+	f.mustMove(t, f.master, "Goblin 2", 9, 8)
+	f.markEnd(t, 3)
+
+	t.Run("stream", func(t *testing.T) {
+		if got := f.collect(t, s.caio, 3); len(got) != 0 {
+			t.Errorf("Toren's player got %v for a hidden NPC's move, want nothing", kinds(got))
+		}
+	})
+	t.Run("revision", func(t *testing.T) {
+		// Brisa's marker move is public, so it adds exactly one visible event.
+		if after := f.get(t, f.caio).GetRevision(); after != before+1 {
+			t.Errorf("Toren's player revision = %d, want %d (the hidden move must not count)", after, before+1)
+		}
+	})
+}
+
+// Undoing a move nobody saw is told to nobody: it counts for the players who saw the
+// move, and for no one else (revision, encounter_changed, combat_log_changed).
+func TestUndoOfAnUnseenMoveIsNotToldToPlayers(t *testing.T) {
+	t.Parallel()
+	f := newFogCave(t)
+	f.fight(t)
+	f.stage(t)
+	// The Capitão goes two squares further into the dark: no player sees either square.
+	f.mustMove(t, f.master, "Capitão Goblin", 17, 7)
+	f.mustMove(t, f.master, "Capitão Goblin", 18, 7)
+
+	players := map[string]*user{"Toren's player": f.caio, "Pensantus's player": f.ana, "Brisa's player": f.bia}
+	before := map[string]int32{}
+	for name, u := range players {
+		before[name] = f.get(t, u).GetRevision()
+	}
+	s := f.watchAll(t)
+	f.undoLast(t)
+	for name, u := range players {
+		if after := f.get(t, u).GetRevision(); after != before[name] {
+			t.Errorf("%s: revision went %d -> %d after the undo of a move nobody saw, want unchanged", name, before[name], after)
+		}
+	}
+	f.markEnd(t, 2)
+
+	for name, w := range map[string]*watcher{"Toren's player": s.caio, "Pensantus's player": s.ana, "Brisa's player": s.bia} {
+		if got := f.collect(t, w, 2); len(got) != 0 {
+			t.Errorf("%s's stream got %v for the undo of a move in the dark, want nothing", name, kinds(got))
+		}
+	}
+}

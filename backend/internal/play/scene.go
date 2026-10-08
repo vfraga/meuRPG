@@ -19,6 +19,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
@@ -136,13 +137,16 @@ func insertSceneEvent(ctx context.Context, c *combatTx, kind string, actor, key 
 	if err != nil {
 		return "", fmt.Errorf("encode the event payload: %w", err)
 	}
+	if ev, ok := payload.(actionEvent); ok && len(body) > eventPayloadBudget && ev.Trap != nil && len(ev.Trap.Caught) > 1 {
+		return insertFiringInParts(ctx, c, kind, actor, key, ev) // a firing that catches more creatures than one event holds
+	}
 	seq, err := c.q.NextSessionEventSeq(ctx, c.session.ID)
 	if err != nil {
 		return "", fmt.Errorf("next event number: %w", err)
 	}
 	row, err := c.q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
 		GameSessionID: c.session.ID, Seq: seq, Kind: kind, ActorUserID: actor, CharacterID: c.characterID,
-		Payload: body, IdempotencyKey: key, CreatedAt: c.now,
+		Payload: body, IdempotencyKey: key, CreatedAt: c.now, IdempotencyHash: hashOf(c, key),
 	})
 	if err != nil {
 		return "", fmt.Errorf("insert session event: %w", err)
@@ -521,20 +525,23 @@ type attemptTally struct {
 
 type attemptKey struct{ characterID, actionID string }
 
+// maxUnlimitedSceneRolls is how many times one character may roll one action
+// whose limit is "unlimited" (0) in one opening of a scene. Every roll is a
+// row of the session's log, which the readers of the scene and the summary
+// go through; far more than a table rolls by hand, short of letting one
+// member fill the log.
+const maxUnlimitedSceneRolls = 200
+
 // tallyAttempts reads the rolls and the grants of the opening that began at
 // event number after.
 func tallyAttempts(ctx context.Context, q *playdb.Queries, sessionID string, after int32) (attemptTally, error) {
 	t := attemptTally{rolled: map[attemptKey]int{}, granted: map[attemptKey]int{}}
-	rolls, err := q.ListSceneRollEvents(ctx, playdb.ListSceneRollEventsParams{GameSessionID: sessionID, Seq: after})
+	rolls, err := q.CountSceneRolls(ctx, playdb.CountSceneRollsParams{GameSessionID: sessionID, Seq: after})
 	if err != nil {
-		return t, fmt.Errorf("list the scene's rolls: %w", err)
+		return t, fmt.Errorf("count the scene's rolls: %w", err)
 	}
 	for _, r := range rolls {
-		var ev sceneRollEvent
-		if err := json.Unmarshal(r.Payload, &ev); err != nil {
-			return t, fmt.Errorf("decode the roll of event %s: %w", r.ID, err)
-		}
-		t.rolled[attemptKey{deref(r.CharacterID), ev.ActionID}]++
+		t.rolled[attemptKey{deref(r.CharacterID), r.ActionID}] += int(r.Rolls)
 	}
 	grants, err := q.ListSceneAttemptGrantEvents(ctx, playdb.ListSceneAttemptGrantEventsParams{GameSessionID: sessionID, Seq: after})
 	if err != nil {
@@ -575,6 +582,7 @@ func (s *Service) RollSceneCheck(
 	if err != nil {
 		return nil, err
 	}
+	hash := idem.Hash(req.Msg)
 	actionID, err := uuid.Parse(req.Msg.GetActionId())
 	if err != nil {
 		return nil, errSceneActionNotFound()
@@ -623,7 +631,7 @@ func (s *Service) RollSceneCheck(
 			if doneRow.Kind != eventSceneCheckRolled {
 				return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
 			}
-			if doneRow.ActorUserID == nil || *doneRow.ActorUserID != m.UserID {
+			if doneRow.ActorUserID == nil || *doneRow.ActorUserID != m.UserID || hashDiffers(doneRow.IdempotencyHash, hash) {
 				return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
 			}
 			repeated = true
@@ -690,6 +698,11 @@ func (s *Service) RollSceneCheck(
 		if err != nil {
 			return err
 		}
+		// An unlimited action still has a cap, so the rows a member can
+		// append stay bounded; a new opening of the scene starts the count over.
+		if action.MaxAttempts == 0 && tally.rolled[attemptKey{who.ID, action.ID}] >= maxUnlimitedSceneRolls {
+			return errScene(playv1.SceneBlockedReason_SCENE_BLOCKED_REASON_ALREADY_ROLLED, "this action has been rolled too many times; the master can close and open the scene again")
+		}
 		if left := tally.left(action, who.ID); left != nil && *left == 0 {
 			return errScene(playv1.SceneBlockedReason_SCENE_BLOCKED_REASON_ALREADY_ROLLED, "no attempt left at this action; the master may grant one more")
 		}
@@ -707,7 +720,7 @@ func (s *Service) RollSceneCheck(
 		if action.DC > 0 {
 			ev.Passed = new(roll.Total >= action.DC)
 		}
-		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), characterID: &who.ID})
+		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), characterID: &who.ID, hash: hash})
 		if err != nil {
 			return err
 		}

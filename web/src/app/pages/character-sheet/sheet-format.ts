@@ -1,6 +1,6 @@
 import { spellLevelLabel } from '../../core/characters/character-labels';
 import { AbilityKey, CharacterState } from '../../core/characters/characters.types';
-import { CoinsVm, IssueVm, SpellcastingVm } from './character-sheet.types';
+import { CoinsVm, IssueVm, PactSlotsVm, SpellcastingVm } from './character-sheet.types';
 
 /**
  * Display helpers of the sheet page only (the "Ficha de papel" layout,
@@ -104,6 +104,18 @@ export function spellSlotRows(slots: readonly number[]): SpellSlotRow[] {
       countLabel: count === 1 ? '1 espaço' : `${count} espaços`,
     }))
     .filter((row) => row.count > 0);
+}
+
+/** The row of a Warlock's Pact Magic slots: "Espaços do pacto", all of one level; null without any. */
+export function pactSlotRow(pact: PactSlotsVm | null): SpellSlotRow | null {
+  return pact && pact.count > 0
+    ? {
+        level: pact.level,
+        label: spellLevelLabel(pact.level),
+        count: pact.count,
+        countLabel: pact.count === 1 ? '1 espaço' : `${pact.count} espaços`,
+      }
+    : null;
 }
 
 /** "Até 3 truques e 7 magias preparadas.", from the class's own limits;

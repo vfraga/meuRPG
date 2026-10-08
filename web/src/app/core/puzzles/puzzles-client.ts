@@ -30,6 +30,8 @@ export interface MoveAnswer {
   readonly run: PuzzleRun;
   readonly replayed: boolean;
   readonly solvedByThisMove: boolean;
+  /** This move was judged wrong: the server's verdict, also on a replay of it. */
+  readonly wrong: boolean;
 }
 
 /**
@@ -116,29 +118,53 @@ export class PuzzlesClient {
     return need((await this.client.showPuzzle({ campaignId, puzzleId })).run, 'ShowPuzzle');
   }
 
-  async reset(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
-    return need((await this.client.resetPuzzle({ campaignId, puzzleId })).run, 'ResetPuzzle');
+  /** The master's actions on a shown puzzle send `expectedRevision`, the revision of the run the card shows: when the
+   * run is at another one, the server changes nothing and refuses with `STALE_REVISION` (0 makes no check). */
+  async reset(
+    campaignId: string,
+    puzzleId: string,
+    expectedRevision = 0,
+  ): Promise<MasterPuzzleRun> {
+    return need(
+      (await this.client.resetPuzzle({ campaignId, puzzleId, expectedRevision })).run,
+      'ResetPuzzle',
+    );
   }
 
-  async reseed(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
-    return need((await this.client.reseedPuzzle({ campaignId, puzzleId })).run, 'ReseedPuzzle');
+  async reseed(
+    campaignId: string,
+    puzzleId: string,
+    expectedRevision = 0,
+  ): Promise<MasterPuzzleRun> {
+    return need(
+      (await this.client.reseedPuzzle({ campaignId, puzzleId, expectedRevision })).run,
+      'ReseedPuzzle',
+    );
   }
 
   async close(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
     return need((await this.client.closePuzzle({ campaignId, puzzleId })).run, 'ClosePuzzle');
   }
 
-  async releaseHint(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
+  async releaseHint(
+    campaignId: string,
+    puzzleId: string,
+    expectedRevision = 0,
+  ): Promise<MasterPuzzleRun> {
     return need(
-      (await this.client.releaseNextPuzzleHint({ campaignId, puzzleId })).run,
+      (await this.client.releaseNextPuzzleHint({ campaignId, puzzleId, expectedRevision })).run,
       'ReleaseNextPuzzleHint',
     );
   }
 
   /** "Tocar a sequência": every player's phone shows it step by step. */
-  async playSequence(campaignId: string, puzzleId: string): Promise<MasterPuzzleRun> {
+  async playSequence(
+    campaignId: string,
+    puzzleId: string,
+    expectedRevision = 0,
+  ): Promise<MasterPuzzleRun> {
     return need(
-      (await this.client.playPuzzleSequence({ campaignId, puzzleId })).run,
+      (await this.client.playPuzzleSequence({ campaignId, puzzleId, expectedRevision })).run,
       'PlayPuzzleSequence',
     );
   }
@@ -164,6 +190,7 @@ export class PuzzlesClient {
       run: need(res.run, 'MakePuzzleMove'),
       replayed: res.replayed,
       solvedByThisMove: res.solvedByThisMove,
+      wrong: res.wrong,
     };
   }
 

@@ -82,6 +82,7 @@ export class GenerateImageButton {
 
   protected readonly reasonId = `gen-off-${nextId++}`;
   protected readonly off = signal(false);
+  private opening = false;
 
   constructor() {
     afterNextRender(() => {
@@ -95,17 +96,28 @@ export class GenerateImageButton {
 
   /** The dialog is loaded when it is first asked for: a player's page, and a master's who never generates, never download it. */
   protected async open(): Promise<void> {
-    if (this.off()) {
+    // One dialog at a time: a second tap while the chunk is on its way, or while the dialog is open, would spend a second slot.
+    if (this.off() || this.opening) {
       return;
     }
-    const { openImageGenerate } = await import('./image-generate-dialog');
-    openImageGenerate(this.dialog, this.sheet, {
-      campaignId: this.campaignId(),
-      origin: this.origin(),
-    }).subscribe((outcome) => {
-      if (outcome && (outcome.generated > 0 || outcome.map)) {
-        this.done.emit(outcome);
-      }
-    });
+    this.opening = true;
+    try {
+      const { openImageGenerate } = await import('./image-generate-dialog');
+      openImageGenerate(this.dialog, this.sheet, {
+        campaignId: this.campaignId(),
+        origin: this.origin(),
+      }).subscribe({
+        next: (outcome) => {
+          if (outcome && (outcome.generated > 0 || outcome.map)) {
+            this.done.emit(outcome);
+          }
+        },
+        complete: () => (this.opening = false),
+        error: () => (this.opening = false),
+      });
+    } catch (err) {
+      this.opening = false;
+      throw err;
+    }
   }
 }

@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { endOpenSessionRPC } from './live-session-support';
 import { giveCreatureRPC, listCreaturesRPC, tableForCreatures } from './creatures-support';
-import { callRPC, idpOrigin, newSignedInContext } from './support';
+import { afterRender, callRPC, idpOrigin, newSignedInContext } from './support';
 
 // MR-037 (the character's creatures on the sheet), RN-20 (a creature's hit points go only to its
 // owner's player and the master) and RN-18 (nothing is rolled outside a combat). Setup (campaign,
@@ -127,6 +127,7 @@ test(
       await expect(button).toHaveAttribute('aria-disabled', 'true');
       await expect(player.getByText('Agora não há sessão aberta.')).toBeVisible();
       await button.click({ force: true });
+      await afterRender(player);
       await expect(player.getByRole('dialog')).toHaveCount(0);
       const refused = await callRPC(player, 'meurpg.play.v1.PlayService/CastSummon', {
         campaignId: table.campaignId,

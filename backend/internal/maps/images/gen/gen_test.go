@@ -234,9 +234,15 @@ func status(code int) func(http.ResponseWriter) {
 	return func(w http.ResponseWriter) { w.WriteHeader(code) }
 }
 
+// geminiFor points a client at s with the server's own HTTP client, which has
+// its own transport and so its own pool of keep-alive connections. With
+// http.DefaultTransport, shared by the parallel tests, a connection that went
+// idle in one test could be closed by another test's server.Close, or picked
+// by a test whose server got the same port, and the call failed with a
+// network error that has nothing to do with the code under test.
 func geminiFor(s *server, logs io.Writer) *Gemini {
 	return &Gemini{
-		Key: config.Secret(testKey), URL: s.URL, Backoff: time.Millisecond, AttemptTimeout: 2 * time.Second,
+		Key: config.Secret(testKey), URL: s.URL, Client: s.Client(), Backoff: time.Millisecond, AttemptTimeout: 2 * time.Second,
 		Logger: slog.New(slog.NewTextHandler(logs, nil)),
 	}
 }
@@ -310,17 +316,34 @@ func TestGeminiDoesNotRetryARefusalOrA400(t *testing.T) {
 // billed: it is never retried.
 func TestGeminiDoesNotRetryATimeout(t *testing.T) {
 	t.Parallel()
-	slow := func(w http.ResponseWriter) { time.Sleep(300 * time.Millisecond); ok(w) }
-	s := newServer(t, slow, ok)
+	// The handler counts the call as soon as it starts and then holds the
+	// request until the client gives up, so the timeout always falls after
+	// the call arrived, however slow the machine is. The body is read first:
+	// the server only notices a closed connection once it has.
+	var calls atomic.Int32
+	release := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		calls.Add(1)
+		_, _ = io.Copy(io.Discard, r.Body)
+		select {
+		case <-r.Context().Done():
+		case <-release:
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { close(release) })
 	var logs bytes.Buffer
-	g := geminiFor(s, &logs)
-	g.AttemptTimeout = 100 * time.Millisecond
-	if _, err := g.Generate(t.Context(), sceneRequest()); !errors.Is(err, ErrUnavailable) {
-		t.Fatalf("error = %v, want ErrUnavailable", err)
+	g := &Gemini{
+		Key: config.Secret(testKey), URL: srv.URL, Client: srv.Client(), Backoff: time.Millisecond,
+		AttemptTimeout: time.Second, Logger: slog.New(slog.NewTextHandler(&logs, nil)),
 	}
-	time.Sleep(400 * time.Millisecond)
-	if s.calls.Load() != 1 {
-		t.Errorf("calls = %d, want 1: a timeout is not retried", s.calls.Load())
+	if _, err := g.Generate(t.Context(), sceneRequest()); !errors.Is(err, ErrUnavailable) || !strings.Contains(err.Error(), "timeout") {
+		t.Fatalf("error = %v, want ErrUnavailable by timeout", err)
+	}
+	// A retry would come after the 1 ms backoff; this is far longer.
+	time.Sleep(200 * time.Millisecond)
+	if calls.Load() != 1 {
+		t.Errorf("calls = %d, want 1: a timeout is not retried", calls.Load())
 	}
 }
 

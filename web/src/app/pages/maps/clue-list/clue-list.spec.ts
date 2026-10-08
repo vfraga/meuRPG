@@ -74,8 +74,7 @@ describe('ClueList', () => {
     Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
       b.textContent?.includes(name),
     )!;
-  const flat = (e: Element | null | undefined) =>
-    e?.textContent?.replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const flat = (e: Element | null | undefined) => e?.textContent?.replace(/\s+/g, ' ').trim();
   function type(value: string): HTMLTextAreaElement {
     const field = el.querySelector<HTMLTextAreaElement>('textarea')!;
     field.value = value;

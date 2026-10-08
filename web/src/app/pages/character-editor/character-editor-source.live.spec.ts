@@ -14,6 +14,7 @@ import {
   toFullSheetInit,
 } from './character-editor-source.live';
 import { TestBed } from '@angular/core/testing';
+import { Code, ConnectError } from '@connectrpc/connect';
 
 import { Role } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 
@@ -467,6 +468,51 @@ describe('the catalog the editor reads (slice 10.12b)', () => {
       { key: 'language:elvish', namePt: 'Élfico', kind: 'language' },
     ]);
     expect(catalog.viewerIsMaster).toBe(false);
+  });
+  describe('who is reading', () => {
+    const emptyContent = {
+      races: [],
+      subraces: [],
+      classes: [],
+      subclasses: [],
+      backgrounds: [],
+      skills: [],
+      armor: [],
+      weapons: [],
+      spells: [],
+      proficiencies: [],
+      languages: [],
+      challengeRatings: [],
+    };
+
+    function sourceWith(getCampaign: () => Promise<unknown>): CharacterEditorSourceLive {
+      TestBed.configureTestingModule({
+        providers: [CharacterEditorSourceLive, { provide: CONNECT_TRANSPORT, useValue: {} }],
+      });
+      const source = TestBed.inject(CharacterEditorSourceLive);
+      (source as unknown as { contentClient: unknown }).contentClient = {
+        listContent: () => Promise.resolve({ content: emptyContent }),
+      };
+      (source as unknown as { campaignClient: unknown }).campaignClient = { getCampaign };
+      return source;
+    }
+
+    it('reads the master from the campaign', async () => {
+      const source = sourceWith(() => Promise.resolve({ campaign: { myRole: Role.MASTER } }));
+      expect((await source.loadCatalog('camp-1')).viewerIsMaster).toBe(true);
+    });
+
+    it('fails the load when the role cannot be read, instead of showing a master the player view', async () => {
+      const source = sourceWith(() => Promise.reject(new Error('transient')));
+      await expect(source.loadCatalog('camp-1')).rejects.toThrow('transient');
+    });
+
+    it('takes a refusal of the campaign as "not the master"', async () => {
+      const source = sourceWith(() =>
+        Promise.reject(new ConnectError('no', Code.PermissionDenied)),
+      );
+      expect((await source.loadCatalog('camp-1')).viewerIsMaster).toBe(false);
+    });
   });
 });
 

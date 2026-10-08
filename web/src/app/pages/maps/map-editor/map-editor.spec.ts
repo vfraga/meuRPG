@@ -10,6 +10,7 @@ import {
   MapPointSchema,
   TrapState,
 } from '../../../../gen/meurpg/maps/v1/maps_pb';
+import type { MapPoint } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { TrapTrigger } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { Code, ConnectError } from '@connectrpc/connect';
 import type { GetDungeonRoomsResponse } from '../../../../gen/meurpg/maps/v1/dungeons_pb';
@@ -311,6 +312,58 @@ describe('MapEditor', () => {
       )!;
       expect(row.textContent).toContain('Escada');
       expect(row.textContent).not.toContain('Submapa');
+    });
+  });
+
+  describe('dragging a token', () => {
+    it("saves a creature's move by its creature id, and an owner's by the character id", async () => {
+      await setup();
+      state.upsertToken(mapToken('c-pensantus', 'Corvo', { creatureId: 'raven' }));
+      const view = fixture.debugElement.query(By.directive(MapView)).componentInstance as MapView;
+      view.moved.emit({ kind: 'token', id: 'raven', xBp: 3000, yBp: 3000 });
+      view.moved.emit({ kind: 'token', id: 'c-pensantus', xBp: 7000, yBp: 7000 });
+      await settle();
+      expect(api.calls).toContain('placeToken map-1 creature:raven 3000 3000');
+      expect(api.calls).toContain('placeToken map-1 c-pensantus 7000 7000');
+    });
+  });
+
+  describe("a creature's token and its owner's", () => {
+    // The creature's `character_id` is its owner's: the two share it, and the creature comes first in the list.
+    async function withCreature() {
+      await setup();
+      state.removeToken('c-pensantus');
+      state.upsertToken(mapToken('c-pensantus', 'Corvo', { creatureId: 'raven' }));
+      state.upsertToken(mapToken('c-pensantus', 'Pensantus'));
+      const view = fixture.debugElement.query(By.directive(MapView)).componentInstance as MapView;
+      return view;
+    }
+    const removeButton = () =>
+      Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+        b.textContent?.includes('Remover do mapa'),
+      )!;
+
+    it('takes the owner off the map when the owner is the one selected, not the creature that shares its character id', async () => {
+      const view = await withCreature();
+      view.tokenSelect.emit('c-pensantus');
+      await settle();
+      expect(el.querySelector('#tk-title')?.textContent).toContain('Pensantus');
+      removeButton().click();
+      await settle();
+      expect(api.calls).toContain('removeToken map-1 c-pensantus');
+      expect(state.tokens().map((t) => t.name)).toEqual(['Corvo']);
+    });
+
+    it('takes a creature off the map by its creature id, and offers no hiding, which only a character has', async () => {
+      const view = await withCreature();
+      view.tokenSelect.emit('raven');
+      await settle();
+      expect(el.querySelector('#tk-title')?.textContent).toContain('Corvo');
+      expect(text()).not.toContain('Esconder');
+      removeButton().click();
+      await settle();
+      expect(api.calls).toContain('removeToken map-1 creature:raven');
+      expect(state.tokens().map((t) => t.name)).toEqual(['Pensantus']);
     });
   });
 
@@ -721,6 +774,79 @@ describe('MapEditor', () => {
     });
   });
 
+  describe('the door tool on a calibrated map', () => {
+    // 8 x 8 rules' grid = 4 x 4 drawing squares x factor 2. A one-square wall along column 4, floor on both sides.
+    const thinWall = () => {
+      const bytes = new Uint8Array(8);
+      for (let row = 0; row < 8; row++) {
+        const n = row * 8 + 4;
+        bytes[n >> 3] |= 1 << (n & 7);
+      }
+      return bytes;
+    };
+    const tapAt = async (col: number, row: number) => {
+      surface()!.stroke.emit({ centers: [{ col, row }], erase: false });
+      await frame();
+      await settle();
+    };
+    async function paintCalibrated(doors?: Uint8Array) {
+      await setup(
+        {
+          gridColumns: 8,
+          gridRows: 8,
+          drawnColumns: 4,
+          drawnRows: 4,
+          squareFactor: 2,
+          fogEnabled: false,
+        },
+        undefined,
+        { wall: thinWall(), doors },
+      );
+      radio('Pintar').click();
+      await settle();
+      button('Porta').click();
+      await settle();
+    }
+    const doorSquares = (calls: typeof api.paints) =>
+      calls
+        .filter((c) => c.layer === MapLayer.DOORS)
+        .flatMap((c) => c.squares.map((q) => `${q.col},${q.row}`))
+        .sort();
+
+    it('on a calibrated map a door tap paints and sends the whole block of the drawing square, as the server does', async () => {
+      await paintCalibrated();
+      await tapAt(4, 2);
+      await flush();
+      expect(doorSquares(api.paints)).toEqual(['4,2', '4,3', '5,2', '5,3']);
+      expect(el.querySelectorAll('.sq--door').length).toBe(4);
+    });
+
+    it('on a calibrated map "Tirar a porta" on one square of a door block takes the whole block', async () => {
+      const doors = new Uint8Array(32);
+      for (const [c, r] of [
+        [4, 2],
+        [5, 2],
+        [4, 3],
+        [5, 3],
+      ]) {
+        const n = r * 8 + c;
+        doors[n >> 1] |= 2 << (4 * (n & 1));
+      }
+      await paintCalibrated(doors);
+      button('Tirar a porta').click();
+      await settle();
+      await tapAt(5, 3);
+      await flush();
+      expect(doorSquares(api.paints.filter((p) => p.value === 0))).toEqual([
+        '4,2',
+        '4,3',
+        '5,2',
+        '5,3',
+      ]);
+      expect(el.querySelectorAll('.sq--door').length).toBe(0);
+    });
+  });
+
   describe('leaving with strokes', () => {
     async function strokeWaiting(): Promise<void> {
       await setup();
@@ -965,6 +1091,52 @@ describe('MapEditor', () => {
       const names = Array.from(el.querySelectorAll('.pl__name'), (n) => n.textContent);
       expect(names).toContain('Fosso escondido');
       expect(names).toContain('Baú de moedas');
+    });
+  });
+
+  describe('saving a point that is being moved', () => {
+    it('keeps the dragged position when the answer to "Salvar ponto" was computed before the move committed', async () => {
+      await setup();
+      const updates: { resolve: (p: MapPoint) => void }[] = [];
+      api.updatePoint = () => new Promise((resolve) => updates.push({ resolve }));
+      Array.from(el.querySelectorAll<HTMLElement>('button.pl__row'))
+        .find((r) => r.textContent?.includes('Fosso escondido'))!
+        .click();
+      await settle();
+      const field = Array.from(el.querySelectorAll('mat-form-field'))
+        .find(
+          (f) =>
+            f.querySelector('mat-label')?.textContent?.trim() === 'CD para achar (Investigação)',
+        )!
+        .querySelector('input')!;
+      field.value = '12';
+      field.dispatchEvent(new Event('input'));
+      await settle();
+      const comp = fixture.componentInstance as unknown as {
+        onMoved(m: unknown): Promise<void>;
+        save(): Promise<boolean>;
+      };
+
+      // The master drags the trap; the move request stays in flight.
+      const moving = comp.onMoved({ kind: 'point', id: 'pit', xBp: 1000, yBp: 2000 });
+      await settle();
+      expect(state.points().find((p) => p.id === 'pit')!.xBp).toBe(1000);
+      // Still in flight, "Salvar ponto" for the panel change; the server answers it with the old place first.
+      const saving = comp.save();
+      await settle();
+      expect(updates).toHaveLength(2);
+      updates[1].resolve(
+        mapPoint('pit', 'Fosso escondido', { xBp: 4800, yBp: 5000, kind: MapPointKind.TRAP }),
+      );
+      await saving;
+      updates[0].resolve(
+        mapPoint('pit', 'Fosso escondido', { xBp: 1000, yBp: 2000, kind: MapPointKind.TRAP }),
+      );
+      await moving;
+      await settle();
+
+      const shown = state.points().find((p) => p.id === 'pit')!;
+      expect([shown.xBp, shown.yBp]).toEqual([1000, 2000]);
     });
   });
 

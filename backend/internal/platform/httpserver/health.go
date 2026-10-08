@@ -4,11 +4,45 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 )
 
 // dbPingTimeout keeps /readyz fast even when the database hangs.
 const dbPingTimeout = 2 * time.Second
+
+// dbPingTTL is how long /readyz reuses the last database answer. The route
+// is open to anyone and sits outside the per-IP limit (Cloud Run's probes
+// share addresses), so what bounds its cost is this: at most one ping per
+// window, however many requests arrive.
+const dbPingTTL = 2 * time.Second
+
+// pingCache shares one database ping among all the /readyz requests of a
+// window. The ping runs under the lock, so concurrent requests wait for it
+// instead of each taking a pool connection.
+type pingCache struct {
+	mu      sync.Mutex
+	at      time.Time
+	err     error
+	checked bool
+}
+
+// check returns the cached answer while it is fresh, otherwise pings. The
+// ping is not tied to the asking request: its answer is shared, so one
+// client hanging up must not turn it into an error for the others.
+func (c *pingCache) check(ctx context.Context, db Pinger, now func() time.Time) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.checked && now().Sub(c.at) < dbPingTTL {
+		return c.err
+	}
+	pingCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), dbPingTimeout)
+	defer cancel()
+	c.err = db.Ping(pingCtx)
+	c.at = now()
+	c.checked = true
+	return c.err
+}
 
 // probeResponse is the JSON body of /healthz and /readyz.
 type probeResponse struct {
@@ -37,9 +71,7 @@ func (s *Server) handleReadyz(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), dbPingTimeout)
-	defer cancel()
-	if err := s.db.Ping(ctx); err != nil {
+	if err := s.ping.check(r.Context(), s.db, s.now); err != nil {
 		// The details go to the log, not to the (unauthenticated) caller.
 		s.logger.WarnContext(r.Context(), "readiness: database ping failed", "error", err)
 		writeProbe(w, http.StatusServiceUnavailable, probeResponse{Status: "not_ready", Database: "down"})

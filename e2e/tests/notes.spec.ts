@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';
 import { addClueRPC, cartClues, cartHooks, createNoteRPC } from './notes-support';
 import { tableForScenes } from './scene-support';
-import { newSignedInContext } from './support';
+import { afterRender, newSignedInContext } from './support';
 
 // MR-029 (the master's hooks and clues, and revealing a clue to the players he
 // picks) and MR-030 (the players' private notes), through the screens, with
@@ -120,6 +120,7 @@ test(
       const dashed = dialog.getByRole('button', { name: 'Revelar a pista' });
       await expect(dashed).toHaveAttribute('aria-disabled', 'true');
       await dashed.click({ force: true });
+      await afterRender(master);
       await expect(dialog).toBeVisible();
       await dialog.getByRole('button', { name: 'Marcar todos' }).click();
       await expect(dialog.getByRole('button', { name: 'Desmarcar todos' })).toBeVisible();

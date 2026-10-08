@@ -15,7 +15,7 @@
     [style.width.%]="pct(r.cols, v.columns)"
     [style.height.%]="pct(r.rows, v.rows)"
     (load)="settle(r)"
-    (error)="settle(r)"
+    (error)="fail(r)"
   />
   @if (pending(r)) {
     <span

@@ -350,7 +350,7 @@ describe('ActionGroups: the movement without a map (RN-25, E10-04 state 7)', () 
     fixture.detectChanges();
     return { el: fixture.nativeElement as HTMLElement, moves };
   }
-  const text = (el: HTMLElement) => (el.textContent ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ');
+  const text = (el: HTMLElement) => (el.textContent ?? '').replace(/\s+/g, ' ');
 
   it('has one phrase and "Gastar movimento" instead of "Mover"', () => {
     const { el, moves } = setup(30, true);

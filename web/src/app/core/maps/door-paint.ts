@@ -1,4 +1,5 @@
 import { MapLayer } from '../../../gen/meurpg/maps/v1/maps_pb';
+import type { Square } from '../combat/combat-grid';
 import type { DoorKind } from './layers';
 
 /** One write of a door stroke: the layer, the value and the square. A door that is put where there was a wall clears the wall first. */
@@ -91,6 +92,83 @@ export function planDoor(
     return { ok: true, kind, writes: [{ layer: MapLayer.DOORS, value: kind }] };
   }
   return { ok: false };
+}
+
+/**
+ * `planDoor` for a map whose drawing squares are worth `factor` x `factor` rules' squares: the server paints and erases a door over the
+ * whole block of the tapped square (a door is a whole square of the drawing), so the tap is judged on blocks (a block is a wall when any
+ * of its squares is, a door when its first square is) and every write goes to all the squares of the block. `squares` lists them.
+ */
+export function planDoorBlock(
+  read: LayerReader,
+  columns: number,
+  rows: number,
+  factor: number,
+  col: number,
+  row: number,
+  kind: DoorKind | 0,
+): { readonly plan: DoorPlan; readonly squares: readonly Square[] } {
+  const f = Math.max(1, Math.floor(factor));
+  const bc = Math.floor(col / f) * f;
+  const br = Math.floor(row / f) * f;
+  const squares: Square[] = [];
+  for (let r = br; r < Math.min(br + f, rows); r++) {
+    for (let c = bc; c < Math.min(bc + f, columns); c++) {
+      squares.push({ col: c, row: r });
+    }
+  }
+  if (f === 1) {
+    return { plan: planDoor(read, columns, rows, col, row, kind), squares };
+  }
+  const blockRead: LayerReader = (layer, c, r) => {
+    const cells = [];
+    for (let rr = r * f; rr < Math.min(r * f + f, rows); rr++) {
+      for (let cc = c * f; cc < Math.min(c * f + f, columns); cc++) {
+        cells.push(read(layer, cc, rr));
+      }
+    }
+    return layer === MapLayer.DOORS ? (cells.find((v) => v !== 0) ?? 0) : Math.max(0, ...cells);
+  };
+  return {
+    plan: planDoor(blockRead, Math.ceil(columns / f), Math.ceil(rows / f), bc / f, br / f, kind),
+    squares,
+  };
+}
+
+/**
+ * The squares of the rules' grid that make the drawing's square holding `(col, row)`: a door is a whole drawing square, so
+ * revealing one clears the wall under all of them (one square on a map that was never calibrated).
+ */
+export function doorBlock(
+  columns: number,
+  rows: number,
+  factor: number,
+  col: number,
+  row: number,
+): readonly Square[] {
+  const f = Math.max(1, Math.floor(factor));
+  const bc = Math.floor(col / f) * f;
+  const br = Math.floor(row / f) * f;
+  const squares: Square[] = [];
+  for (let r = br; r < Math.min(br + f, rows); r++) {
+    for (let c = bc; c < Math.min(bc + f, columns); c++) {
+      squares.push({ col: c, row: r });
+    }
+  }
+  return squares;
+}
+
+/** The squares of the door's block that have a wall under them. */
+export function wallUnderDoor(
+  walls: readonly Square[],
+  columns: number,
+  rows: number,
+  factor: number,
+  door: Square,
+): readonly Square[] {
+  return doorBlock(columns, rows, factor, door.col, door.row).filter((s) =>
+    walls.some((w) => w.col === s.col && w.row === s.row),
+  );
 }
 
 /** Whether a door of this kind blocks the sight of a creature standing in its square (RN-26: closed, locked and secret). */

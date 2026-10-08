@@ -364,3 +364,33 @@ describe('the sheet maps armor_class_description, features and hints (integrator
     ]);
   });
 });
+
+describe("the sheet maps a Warlock's Pact Magic apart from the spell slots", () => {
+  const withDerived = (over: Partial<DerivedSheet>) =>
+    toCharacterSheetVm({
+      ...characterWithFullSheet(minimalFullSheet()),
+      derived: { ...minimalDerivedSheet(), ...over },
+    }).sheet as FullSheetVm;
+
+  it('carries the level and the count of the pact slots, with no spell slots', () => {
+    const sheet = withDerived({
+      spellSlots: [],
+      pactMagic: { $typeName: 'meurpg.rules.v1.PactMagic', slotLevel: 1, count: 2 },
+    });
+    expect(sheet.pactSlots).toEqual({ level: 1, count: 2 });
+    expect(sheet.spellSlots).toEqual([]);
+  });
+
+  it('keeps the pact slots out of the slots of the other classes of a multiclass', () => {
+    const sheet = withDerived({
+      spellSlots: [{ $typeName: 'meurpg.rules.v1.SpellSlots', level: 1, count: 3 }],
+      pactMagic: { $typeName: 'meurpg.rules.v1.PactMagic', slotLevel: 2, count: 1 },
+    });
+    expect(sheet.spellSlots).toEqual([3]);
+    expect(sheet.pactSlots).toEqual({ level: 2, count: 1 });
+  });
+
+  it('has no pact slots without the feature', () => {
+    expect(withDerived({}).pactSlots).toBeNull();
+  });
+});

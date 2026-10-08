@@ -243,4 +243,29 @@ describe('GenerateSheet: "Gerar encontro" (MR-043, E10-09 states 4 and 5)', () =
     expect(el.textContent?.toLowerCase()).not.toContain('mortal');
     expect(BUGBEAR.xp).toBe(200);
   });
+
+  it('keeps the encounter of a new draw when a swap of the old one answers last', async () => {
+    const { el, settle, radio } = await setup();
+    let release!: () => void;
+    api.gates = [new Promise<void>((r) => (release = r))];
+    Array.from(el.querySelectorAll<HTMLButtonElement>('.line__swap'))[2].click();
+    await settle();
+    el.querySelector<HTMLInputElement>('.swap__opt input')!.click();
+    await settle();
+    el.querySelector<HTMLButtonElement>('.swap .go')!.click();
+    await settle();
+    expect(api.evaluateCalls.length).toBe(1);
+
+    // Meanwhile the difficulty changes: a new encounter arrives.
+    api.generated = { lines: [[OGRE, 6]], seed: 222 };
+    radio('Alta').click();
+    await settle();
+    expect(flat(el.querySelector('.res__seed'))).toBe('Semente 222');
+
+    release();
+    await settle();
+    expect(flat(el.querySelector('.res__seed'))).toBe('Semente 222');
+    expect(Array.from(el.querySelectorAll('.line__pt')).map((l) => flat(l))).toEqual(['6 × Ogro']);
+    expect(flat(el.querySelector('.seg__item--on'))).toBe('Alta');
+  });
 });

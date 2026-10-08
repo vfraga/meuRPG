@@ -17,7 +17,7 @@ import {
   draftToEffect,
   effectToDraft,
   newRowId,
-  rangeFeet,
+  strictRangeFeet,
   rangeMeters,
 } from './effect-draft';
 import { paragraphs } from './spell-draft';
@@ -184,10 +184,10 @@ export function draftToRace(d: RaceDraft, menu: EffectMenuVm): RaceInit {
   return {
     namePt: d.name.trim(),
     size: d.size,
-    speedFt: rangeFeet(d.speedM),
+    speedFt: strictRangeFeet(d.speedM),
     abilityBonuses: { ...d.bonuses },
     choiceBonuses: d.choosing ? choiceAmounts(d.choice) : [],
-    darkvisionFt: rangeFeet(d.darkvisionM),
+    darkvisionFt: strictRangeFeet(d.darkvisionM),
     languages: [...d.languages],
     languageChoices: d.languageChoices,
     traits: d.traits.map((t) => draftToFeature(t, menu)),

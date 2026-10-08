@@ -8,7 +8,9 @@ import {
   computed,
   inject,
   input,
+  effect,
   signal,
+  untracked,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -88,12 +90,37 @@ export class GameSessionCard implements OnInit, OnDestroy {
   protected readonly sessionLink = sessionLink;
 
   private copiedTimer: ReturnType<typeof setTimeout> | null = null;
+  private loadSeq = 0;
+
+  /** The open session of this campaign in the app's poll of open sessions, empty when there is none. */
+  private readonly openId = computed(
+    () =>
+      this.openSessions.sessions().find((o) => o.campaignId === this.campaignId())?.sessionId ?? '',
+  );
 
   /** A player's panel with no open session renders nothing at all. */
   protected readonly isEmpty = computed(() => {
     const s = this.state();
     return !this.isMaster() && !(s.status === 'ready' && s.session);
   });
+
+  constructor() {
+    // The notice of a session that opens or ends is not shown on this page: this card is the page's announcement, so a
+    // player's card reads again when the poll says a session started or ended. (The master's card changes by its own actions.)
+    let first = true;
+    effect(() => {
+      this.openId();
+      if (first) {
+        first = false;
+        return;
+      }
+      untracked(() => {
+        if (!this.isMaster()) {
+          this.load();
+        }
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.load();
@@ -106,11 +133,19 @@ export class GameSessionCard implements OnInit, OnDestroy {
   }
 
   private load(): void {
+    const mine = ++this.loadSeq;
     this.state.set({ status: 'loading' });
     this.lastLockedSheetCount.set(null);
     this.source.getCurrentSession(this.campaignId()).then(
-      (session) => this.state.set({ status: 'ready', session }),
+      (session) => {
+        if (mine === this.loadSeq) {
+          this.state.set({ status: 'ready', session });
+        }
+      },
       (err: unknown) => {
+        if (mine !== this.loadSeq) {
+          return;
+        }
         this.state.set({
           status: 'error',
           message: describeConnectError(err, MASTER_ONLY_MESSAGES),

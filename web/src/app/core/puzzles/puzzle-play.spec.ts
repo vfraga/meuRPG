@@ -22,7 +22,7 @@ import {
 const puzzle = lightsPuzzle('p1', 'O selo da Capela');
 const press = { kind: { case: 'lights' as const, value: { row: 1, col: 1 } } };
 
-function setup(own = ''): {
+function setup(): {
   fake: Fake;
   play: PuzzlePlay;
   waits: number[];
@@ -37,7 +37,6 @@ function setup(own = ''): {
     () => 'camp-1',
     async (ms) => void waits.push(ms),
     () => `key-${++key}`,
-    () => own,
     // A clock the spec drives by hand: no real sleeps.
     (ms, fn) => {
       const timer = { ms, fn, cancelled: false };
@@ -82,6 +81,7 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
       run: run(2, { name: 'do servidor' }),
       replayed: false,
       solvedByThisMove: false,
+      wrong: false,
     });
     await play.move(press);
     expect(fake.moveKeys).toEqual(['key-1']);
@@ -99,7 +99,7 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
       if (n < 3) {
         throw new ConnectError('down', Code.Unavailable);
       }
-      return { run: run(2), replayed: true, solvedByThisMove: false };
+      return { run: run(2), replayed: true, solvedByThisMove: false, wrong: false };
     };
     await play.move(press);
     expect(fake.moveKeys).toEqual(['key-1', 'key-1', 'key-1']);
@@ -159,6 +159,7 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
       run: run(2, { solved: true }),
       replayed: false,
       solvedByThisMove: true,
+      wrong: false,
     });
     await play.move(press);
     await play.move(press);
@@ -179,14 +180,18 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
     const { fake, play } = setup();
     fake.playerRunResult = run(1);
     await play.open('p1');
-    const open: ((v: { run: PuzzleRun; replayed: boolean; solvedByThisMove: boolean }) => void)[] =
-      [];
+    const open: ((v: {
+      run: PuzzleRun;
+      replayed: boolean;
+      solvedByThisMove: boolean;
+      wrong: boolean;
+    }) => void)[] = [];
     fake.moveResult = () => new Promise((resolve) => open.push(resolve));
     const a = play.move(press);
     const b = play.move(press);
     expect(play.pending()).toBe(2);
     open.forEach((resolve, i) =>
-      resolve({ run: run(2 + i), replayed: false, solvedByThisMove: false }),
+      resolve({ run: run(2 + i), replayed: false, solvedByThisMove: false, wrong: false }),
     );
     await Promise.all([a, b]);
     expect(play.pending()).toBe(0);
@@ -202,50 +207,76 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
       ...partial,
     });
 
-    it("says the answer was wrong when the server's last move is the player's own wrong one", async () => {
-      const { fake, play } = setup('Toren');
+    it('says the answer was wrong when the server judged this move wrong, and sends the move it was given', async () => {
+      const { fake, play } = setup();
       fake.playerRunResult = riddleRun(1);
       await play.open('p1');
       fake.moveResult = () => ({
-        run: riddleRun(2, {
-          lastMove: { characterName: 'Toren', wrong: true, changed: [], at: at(0) } as never,
-        }),
+        run: riddleRun(2),
         replayed: false,
         solvedByThisMove: false,
+        wrong: true,
       });
       const verdict = await play.move(answer);
       expect(verdict).toEqual({ sent: true, wrong: true, solved: false });
       expect(fake.calls.find((c) => c[0] === 'move')![3]).toEqual(answer);
     });
 
-    it("does not take another player's wrong answer for its own", async () => {
-      const { fake, play } = setup('Toren');
+    it("does not take another player's wrong move on the run for the player's own", async () => {
+      const { fake, play } = setup();
       fake.playerRunResult = riddleRun(1);
       await play.open('p1');
       fake.moveResult = () => ({
+        // The player's answer was right but did not solve it; Lia's wrong move landed after.
         run: riddleRun(2, {
           lastMove: { characterName: 'Lia', wrong: true, changed: [], at: at(0) } as never,
         }),
         replayed: false,
         solvedByThisMove: false,
+        wrong: false,
       });
       expect((await play.move(answer)).wrong).toBe(false);
     });
 
+    it('tells the player their answer was wrong when a retry is replayed after another player moved', async () => {
+      const { fake, play } = setup();
+      fake.playerRunResult = riddleRun(1);
+      await play.open('p1');
+      fake.moveResult = (n) => {
+        if (n < 2) {
+          // The first answer is lost; the server had already judged it wrong.
+          throw new ConnectError('down', Code.Unavailable);
+        }
+        // The replay: the run as it is now, with a later move of Lia's on it, and the verdict of the first call.
+        return {
+          run: riddleRun(3, {
+            lastMove: { characterName: 'Lia', wrong: false, changed: [], at: at(1) } as never,
+          }),
+          replayed: true,
+          solvedByThisMove: false,
+          wrong: true,
+        };
+      };
+      const verdict = await play.move(answer);
+      expect(fake.moveKeys).toEqual(['key-1', 'key-1']);
+      expect(verdict.wrong).toBe(true);
+    });
+
     it('says solved when the move solved it, and never wrong', async () => {
-      const { fake, play } = setup('Toren');
+      const { fake, play } = setup();
       fake.playerRunResult = riddleRun(1);
       await play.open('p1');
       fake.moveResult = () => ({
         run: riddleRun(2, { solved: true }),
         replayed: false,
         solvedByThisMove: true,
+        wrong: false,
       });
       expect(await play.move(answer)).toEqual({ sent: true, wrong: false, solved: true });
     });
 
     it('sends nothing in a stopped puzzle and says why in words when the server refuses for attempts', async () => {
-      const { fake, play } = setup('Toren');
+      const { fake, play } = setup();
       fake.playerRunResult = riddleRun(1);
       await play.open('p1');
       fake.moveResult = () => {
@@ -261,13 +292,14 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
     });
 
     it("sends the cipher's message as it was typed, with a key of its own", async () => {
-      const { fake, play } = setup('Toren');
+      const { fake, play } = setup();
       fake.playerRunResult = { ...playerRun(cipherPuzzle('p1', 'A carta')), revision: 1 };
       await play.open('p1');
       fake.moveResult = () => ({
         run: { ...playerRun(cipherPuzzle('p1', 'A carta')), revision: 2 },
         replayed: false,
         solvedByThisMove: false,
+        wrong: false,
       });
       await play.move({
         kind: { case: 'cipher', value: { text: 'o tesouro esta sobre o altar' } },
@@ -462,13 +494,14 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
     const bell = (n: number) => ({ kind: { case: 'sequence' as const, value: { bell: n } } });
 
     it('sends the second tap only after the first was answered, and counts the taps still waiting', async () => {
-      const { fake, play } = setup('Toren');
+      const { fake, play } = setup();
       fake.playerRunResult = ready(1);
       await play.open('p1');
       const release: ((a: {
         run: PuzzleRun;
         replayed: boolean;
         solvedByThisMove: boolean;
+        wrong: boolean;
       }) => void)[] = [];
       fake.moveResult = () => new Promise((resolve) => release.push(resolve));
       const first = play.move(bell(0));
@@ -478,7 +511,7 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
       // Only the first is on its way; the others wait their turn, and all three are pending on screen.
       expect(fake.calls.filter((c) => c[0] === 'move')).toHaveLength(1);
       expect(play.pending()).toBe(3);
-      release[0]({ run: ready(2, 1), replayed: false, solvedByThisMove: false });
+      release[0]({ run: ready(2, 1), replayed: false, solvedByThisMove: false, wrong: false });
       await first;
       await Promise.resolve();
       await Promise.resolve();
@@ -487,11 +520,11 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
           .filter((c) => c[0] === 'move')
           .map((c) => (c[3] as { kind: { value: { bell: number } } }).kind.value.bell),
       ).toEqual([0, 1]);
-      release[1]({ run: ready(3, 2), replayed: false, solvedByThisMove: false });
+      release[1]({ run: ready(3, 2), replayed: false, solvedByThisMove: false, wrong: false });
       await second;
       await Promise.resolve();
       await Promise.resolve();
-      release[2]({ run: ready(4, 3), replayed: false, solvedByThisMove: false });
+      release[2]({ run: ready(4, 3), replayed: false, solvedByThisMove: false, wrong: false });
       await third;
       expect(
         fake.calls
@@ -502,14 +535,14 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
     });
 
     it('keeps the order when the first tap has to be sent again: a retry never lets the second pass it', async () => {
-      const { fake, play } = setup('Toren');
+      const { fake, play } = setup();
       fake.playerRunResult = ready(1);
       await play.open('p1');
       fake.moveResult = (n) => {
         if (n === 1) {
           throw new ConnectError('down', Code.Unavailable);
         }
-        return { run: ready(1 + n, n), replayed: false, solvedByThisMove: false };
+        return { run: ready(1 + n, n), replayed: false, solvedByThisMove: false, wrong: false };
       };
       await Promise.all([play.move(bell(0)), play.move(bell(1))]);
       expect(
@@ -521,21 +554,14 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
     });
 
     it('drops the taps queued behind a wrong bell (they were made for a sequence that started over)', async () => {
-      const { fake, play } = setup('Toren');
+      const { fake, play } = setup();
       fake.playerRunResult = ready(1);
       await play.open('p1');
       fake.moveResult = () => ({
-        run: ready(2, 0, {
-          lastMove: {
-            characterName: 'Toren',
-            wrong: true,
-            step: 1,
-            changed: [],
-            at: at(0),
-          } as never,
-        }),
+        run: ready(2, 0),
         replayed: false,
         solvedByThisMove: false,
+        wrong: true,
       });
       const [a, b, c] = await Promise.all([
         play.move(bell(2)),
@@ -547,18 +573,24 @@ describe('PuzzlePlay (MR-038, RN-27)', () => {
       expect(fake.calls.filter((c2) => c2[0] === 'move')).toHaveLength(1);
       expect(play.pending()).toBe(0);
       // A tap made after the wrong one is a new tap.
-      fake.moveResult = () => ({ run: ready(3, 1), replayed: false, solvedByThisMove: false });
+      fake.moveResult = () => ({
+        run: ready(3, 1),
+        replayed: false,
+        solvedByThisMove: false,
+        wrong: false,
+      });
       expect((await play.move(bell(0))).sent).toBe(true);
     });
 
     it('never sends a bell once the puzzle was solved meanwhile', async () => {
-      const { fake, play } = setup('Toren');
+      const { fake, play } = setup();
       fake.playerRunResult = ready(1);
       await play.open('p1');
       fake.moveResult = () => ({
         run: ready(2, 6, { solved: true }),
         replayed: false,
         solvedByThisMove: true,
+        wrong: false,
       });
       const [a, b] = await Promise.all([play.move(bell(1)), play.move(bell(1))]);
       expect(a.solved).toBe(true);

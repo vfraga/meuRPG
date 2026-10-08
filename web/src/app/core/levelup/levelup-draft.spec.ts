@@ -3,6 +3,7 @@ import { create } from '@bufbuild/protobuf';
 import {
   LevelUpFeatureChoiceSchema,
   LevelUpHitPointsMethod,
+  LevelUpHitPointsRule,
   LevelUpSubclassSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { LevelUpDraft } from './levelup-draft';
@@ -207,5 +208,170 @@ describe('LevelUpDraft: subclass, feature options, skills and expertise', () => 
     expect([...d.expertise()]).toEqual(['skill:stealth']);
     d.toggleSkill('skill:stealth');
     expect([...d.expertise()]).toEqual([]);
+  });
+});
+
+describe('LevelUpDraft: picks that follow the counts', () => {
+  /** A wizard draft that holds the two new book spells and has the preview's maximum raised to 4. */
+  const raised = () => {
+    const d = wizard();
+    d.toggleSpell('spell:misty-step');
+    d.toggleSpell('spell:mirror-image');
+    d.preparedMaxAfter.set(4);
+    d.togglePrepared('spell:misty-step');
+    d.togglePrepared('spell:mirror-image');
+    return d;
+  };
+
+  const fighter = (skillChoices: number) =>
+    fighterOptions({
+      subclassDue: true,
+      expertiseChoices: 1,
+      subclasses: [
+        create(LevelUpSubclassSchema, { key: 'sub:lore', namePt: 'Conhecimento', skillChoices }),
+        create(LevelUpSubclassSchema, { key: 'sub:champion', namePt: 'Campeão' }),
+      ],
+    });
+
+  it('drops the prepared picks beyond the maximum when the preview lowers it', () => {
+    const d = raised();
+    expect(d.choices().preparedSpellKeys).toHaveLength(2);
+    // The ability increase goes back to one that does not raise the maximum.
+    d.preparedMaxAfter.set(3);
+    expect(d.preparedAsked()).toBe(1);
+    expect(d.choices().preparedSpellKeys).toHaveLength(1);
+  });
+
+  it('keeps the prepared picks of the raised maximum when the subclass changes', () => {
+    const d = new LevelUpDraft(
+      wizardOptions({
+        preparedMaxAfter: 3,
+        subclassDue: true,
+        subclasses: [create(LevelUpSubclassSchema, { key: 'sub:x', namePt: 'X' })],
+      }),
+      WIZARD_KEYS,
+      catalog,
+    );
+    d.toggleSpell('spell:misty-step');
+    d.toggleSpell('spell:mirror-image');
+    d.preparedMaxAfter.set(4);
+    d.togglePrepared('spell:misty-step');
+    d.togglePrepared('spell:mirror-image');
+    d.setSubclass('sub:x');
+    expect(d.choices().preparedSpellKeys).toHaveLength(2);
+  });
+
+  it('sends no expertise for a skill that a subclass change trimmed away', () => {
+    const d = new LevelUpDraft(fighter(2), WIZARD_KEYS, catalog);
+    d.setSubclass('sub:lore');
+    d.toggleSkill('skill:stealth');
+    d.toggleSkill('skill:perception');
+    d.toggleExpertise('skill:stealth');
+    d.setSubclass('sub:champion');
+    expect([...d.skills()]).toEqual([]);
+    expect(d.choices().expertiseSkillKeys).toEqual([]);
+  });
+
+  it('keeps expertise on a skill the sheet already trains when the subclass changes', () => {
+    const d = new LevelUpDraft(fighter(1), WIZARD_KEYS, catalog);
+    d.setSubclass('sub:lore');
+    d.toggleExpertise(WIZARD_KEYS.skills[0]);
+    d.setSubclass('sub:champion');
+    expect(d.choices().expertiseSkillKeys).toEqual([WIZARD_KEYS.skills[0]]);
+  });
+});
+
+describe('LevelUpDraft: adopt after the sheet is read again', () => {
+  const lore = (skillChoices: number) =>
+    fighterOptions({
+      subclassDue: true,
+      expertiseChoices: 1,
+      subclasses: [
+        create(LevelUpSubclassSchema, { key: 'sub:lore', namePt: 'Conhecimento', skillChoices }),
+      ],
+    });
+
+  it('sends no expertise for a skill that the new counts trimmed away', () => {
+    const old = new LevelUpDraft(lore(2), WIZARD_KEYS, catalog);
+    old.setSubclass('sub:lore');
+    old.toggleSkill('skill:stealth');
+    old.toggleSkill('skill:perception');
+    old.toggleExpertise('skill:perception');
+    // The level now asks for one skill only.
+    const fresh = new LevelUpDraft(lore(1), WIZARD_KEYS, catalog);
+    fresh.adopt(old);
+    expect([...fresh.skills()]).toEqual(['skill:stealth']);
+    expect(fresh.choices().expertiseSkillKeys).toEqual([]);
+  });
+
+  it('keeps the prepared picks the old draft had under its raised maximum', () => {
+    const old = new LevelUpDraft(wizardOptions({ preparedMaxAfter: 3 }), WIZARD_KEYS, catalog);
+    old.toggleSpell('spell:misty-step');
+    old.toggleSpell('spell:mirror-image');
+    old.preparedMaxAfter.set(4);
+    old.togglePrepared('spell:misty-step');
+    old.togglePrepared('spell:mirror-image');
+    const fresh = wizard();
+    fresh.adopt(old);
+    expect(fresh.choices().preparedSpellKeys).toHaveLength(2);
+  });
+
+  it('goes back to the average, with no roll, when the table now allows only the average', () => {
+    const old = wizard();
+    old.setHpCard('roll');
+    old.rolled.set({ kind: 'app', value: 5 });
+    const fresh = new LevelUpDraft(
+      wizardOptions({ preparedMaxAfter: 3, hitPointsRule: LevelUpHitPointsRule.AVERAGE_ONLY }),
+      WIZARD_KEYS,
+      catalog,
+    );
+    fresh.adopt(old);
+    expect(fresh.hpCard()).toBe('average');
+    expect(fresh.rolled()).toBeNull();
+    expect(fresh.choices().hitPoints?.method).toBe(LevelUpHitPointsMethod.AVERAGE);
+  });
+
+  it('keeps an in-app roll only when it is the one the server kept for this class and level', () => {
+    const old = wizard();
+    old.setHpCard('roll');
+    old.rolled.set({ kind: 'app', value: 5 });
+    const same = new LevelUpDraft(
+      wizardOptions({ preparedMaxAfter: 3, keptHitPointRoll: 5 }),
+      WIZARD_KEYS,
+      catalog,
+    );
+    same.adopt(old);
+    expect(same.rolled()).toEqual({ kind: 'app', value: 5 });
+    const nextLevel = new LevelUpDraft(
+      wizardOptions({ fromLevel: 4, toLevel: 5, keptHitPointRoll: 0 }),
+      WIZARD_KEYS,
+      catalog,
+    );
+    nextLevel.adopt(old);
+    expect(nextLevel.hpCard()).toBe('roll');
+    expect(nextLevel.rolled()).toBeNull();
+  });
+
+  it('keeps a typed roll only for the same class and level and a die it fits', () => {
+    const old = wizard();
+    old.setHpCard('roll');
+    old.rolled.set({ kind: 'physical', value: 6 });
+    const same = wizard();
+    same.adopt(old);
+    expect(same.rolled()).toEqual({ kind: 'physical', value: 6 });
+    const smallerDie = new LevelUpDraft(
+      wizardOptions({ preparedMaxAfter: 3, hitDie: 4 }),
+      WIZARD_KEYS,
+      catalog,
+    );
+    smallerDie.adopt(old);
+    expect(smallerDie.rolled()).toBeNull();
+    const nextLevel = new LevelUpDraft(
+      wizardOptions({ fromLevel: 4, toLevel: 5 }),
+      WIZARD_KEYS,
+      catalog,
+    );
+    nextLevel.adopt(old);
+    expect(nextLevel.rolled()).toBeNull();
   });
 });
