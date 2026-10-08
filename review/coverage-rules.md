@@ -137,7 +137,7 @@ Paths are under `backend/internal/` unless they start with `web/` or `docs/`. "K
 | Hit points and temp HP absorb first | built | rules/combat/vitals.go:18-28 | – | high | |
 | Temp HP do not stack; healing does not restore them | built | play/combat_spells_hp.go:305; combat_actions.go:1173 | – | low | Manual set has no max rule (characters/vitals.go:385). |
 | Healing capped at max; from 0 revives and resets death saves | built | rules/combat/vitals.go:39; play/combat_vitals.go:43; combat_actions.go:1171-1208 | – | high | |
-| Dead cannot be healed | unsure-absent | no match for a refusal | – | low | |
+| Dead cannot be healed | absent | no match for a refusal in play/combat_actions.go healCombatant or characters/vitals.go | – | low | A dead character is a state of the character, not of HP; the table just does not heal it. |
 | Dropping to 0: unconscious + prone automatically | absent | no match; condition not added (combat_actions.go:1371) | – | medium | The player sees the death-save state, but no unconscious label. |
 | Instant death (excess damage >= max HP) | absent | rules/combat/vitals.go:10-25 computes `Excess`; nothing reads it | vitals.go:12 "the master decides (RN-03)" | medium | |
 | Death saves (d20, 1 = two, 20 = revive, 3 fails -> master confirms death) | built | play/combat_death.go:56-278; rules/combat/vitals.go:71 | – | high | |
