@@ -1222,19 +1222,25 @@ func (s *Service) run(campaignID, id string, prep prepared) {
 			return
 		}
 		state, why := stateFailed, reasonUnavailable
+		certainlyFree := false // the slot goes back only when the call surely was not billed
 		switch refused := (*gen.RefusedError)(nil); {
 		case errors.As(err, &refused):
-			state, why = stateRefused, reasonRefused
+			state, why, certainlyFree = stateRefused, reasonRefused, true
 		case errors.Is(err, gen.ErrNoImage):
-			why = reasonNoImage
+			why, certainlyFree = reasonNoImage, true
 		case errors.Is(err, gen.ErrNotAuthorized):
 			// The operator's problem: the key was refused. Say it loudly, once.
-			why = reasonServiceOff
+			why, certainlyFree = reasonServiceOff, true
 			s.logger.ErrorContext(ctx, "maps: the image service refused the API key", "error", err)
 		}
 		// The error says a status or a kind, never the text (package gen).
 		s.logger.WarnContext(ctx, "maps: an image request ended without a picture", "reason", why, "error", err)
-		s.finishFailed(campaignID, id, state, why)
+		if certainlyFree {
+			s.finishFailed(campaignID, id, state, why)
+		} else {
+			// A timeout, a cut connection or an answer that cannot be read may have been billed.
+			s.finishSpent(campaignID, id, why)
+		}
 		return
 	}
 	// The picture is here: finish it on a context of its own, even in a shutdown.

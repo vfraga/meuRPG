@@ -436,7 +436,6 @@ func TestMR039_FailuresGiveTheSlotBack(t *testing.T) {
 	}{
 		{gen.MarkerEmpty, mapsv1.ImageGenerationState_IMAGE_GENERATION_STATE_FAILED, mapsv1.ImageGenerationFailure_IMAGE_GENERATION_FAILURE_NO_IMAGE, "O serviço não gerou uma imagem"},
 		{gen.MarkerRefuse, mapsv1.ImageGenerationState_IMAGE_GENERATION_STATE_REFUSED, mapsv1.ImageGenerationFailure_IMAGE_GENERATION_FAILURE_REFUSED, "recusou"},
-		{gen.MarkerError, mapsv1.ImageGenerationState_IMAGE_GENERATION_STATE_FAILED, mapsv1.ImageGenerationFailure_IMAGE_GENERATION_FAILURE_UNAVAILABLE, "não respondeu"},
 	} {
 		res := master.mustGenerate(campaign, "uma cena "+tc.marker)
 		g := res.GetGeneration()
@@ -449,7 +448,29 @@ func TestMR039_FailuresGiveTheSlotBack(t *testing.T) {
 	}
 	list, _ := master.gallery.ListGalleryImages(t.Context(), connect.NewRequest(&mapsv1.ListGalleryImagesRequest{CampaignId: campaign}))
 	if n := len(list.Msg.GetImages()); n != 0 {
-		t.Errorf("the gallery has %d images after three failures", n)
+		t.Errorf("the gallery has %d images after two failures", n)
+	}
+}
+
+// A call that failed in a way that may have been billed (a timeout, a cut connection,
+// an answer that cannot be read) keeps the month's slot; the control is a refusal, which
+// surely was not billed and gives it back.
+func TestMR039_AFailureThatMayHaveBeenBilledKeepsTheSlot(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t, withFake(&gen.Fake{}, 5))
+	master := h.newUser("Mestre")
+	campaign := h.newCampaign(master)
+	res := master.mustGenerate(campaign, "uma cena "+gen.MarkerRefuse)
+	if res.GetGeneration().GetSlotSpent() || res.GetStatus().GetRemaining() != 5 {
+		t.Fatalf("a refusal: %v, remaining %d; want the slot back", res.GetGeneration(), res.GetStatus().GetRemaining())
+	}
+	res = master.mustGenerate(campaign, "uma cena "+gen.MarkerError)
+	g := res.GetGeneration()
+	if g.GetState() != mapsv1.ImageGenerationState_IMAGE_GENERATION_STATE_FAILED || !g.GetSlotSpent() || res.GetImage() != nil {
+		t.Errorf("a failed call: %v, want FAILED with the slot spent", g)
+	}
+	if got := res.GetStatus().GetRemaining(); got != 4 {
+		t.Errorf("remaining = %d after a call that may have been billed, want 4", got)
 	}
 }
 

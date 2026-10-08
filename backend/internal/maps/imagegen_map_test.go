@@ -965,19 +965,19 @@ func TestMR039_TheCapAndTheLongPollForMapKinds(t *testing.T) {
 	}
 }
 
-// A request the model could not answer gives its slot back, for a map kind too.
+// A request the model refused or answered without an image gives its slot back, for a map kind too.
 func TestMR039_AFailedMapRequestGivesTheSlotBack(t *testing.T) {
 	t.Parallel()
 	c := newCave(t, withFake(&gen.Fake{}, 3))
 	m := c.master
-	for _, marker := range []string{gen.MarkerRefuse, gen.MarkerEmpty, gen.MarkerError} {
+	for _, marker := range []string{gen.MarkerRefuse, gen.MarkerEmpty} {
 		res := m.mustGenerateFromMap(c.campaign, c.mapID, kindIsometricAPI, "Uma vista "+marker)
 		if res.GetGeneration().GetState() == mapsv1.ImageGenerationState_IMAGE_GENERATION_STATE_DONE || res.GetGeneration().GetSlotSpent() {
 			t.Errorf("%s: request = %v, want it failed with the slot back", marker, res.GetGeneration())
 		}
 	}
 	if got := m.imageStatus(c.campaign).GetUsedThisMonth(); got != 0 {
-		t.Errorf("used = %d after three failures, want 0", got)
+		t.Errorf("used = %d after two refusals, want 0", got)
 	}
 }
 
