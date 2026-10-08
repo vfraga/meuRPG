@@ -1,0 +1,71 @@
+CombatLogDamage.deathFailuresAdded | proto/meurpg/play/v1/combat.proto:3472 | textual hits in: core/combat/combat-log.ts
+GetCombatHighlightsResponse.categories | proto/meurpg/play/v1/combat.proto:3550 | textual hits in: core/combat/combat-highlights.ts
+TrapSaveRoll.bonusKnown | proto/meurpg/play/v1/combat.proto:3616 | textual hits in: core/combat/combat-log.ts
+EncounterEvaluation.creatureCount | proto/meurpg/play/v1/encounters.proto:122 | textual hits in: pages/encounters/save-sheet/save-sheet.ts, pages/encounters/encounter-builder/encounter-builder.ts
+BattleEncounterSummary.creatureCount | proto/meurpg/play/v1/encounters.proto:256 | textual hits in: pages/encounters/save-sheet/save-sheet.ts, pages/encounters/encounter-builder/encounter-builder.ts
+GameSession.endedAt | proto/meurpg/play/v1/play.proto:874 | textual hits in: core/play/session-summary.ts, pages/campaign-detail/game-session/game-session-source.live.ts
+GetLiveSessionResponse.shownImage | proto/meurpg/play/v1/play.proto:956 | textual hits in: pages/live-session/live-session.ts, pages/live-session/live-session-source.live.ts
+SetShownImageResponse.shownImage | proto/meurpg/play/v1/play.proto:1477 | textual hits in: pages/live-session/live-session.ts, pages/live-session/live-session-source.live.ts
+Puzzle.minimum | proto/meurpg/play/v1/puzzles.proto:434 | textual hits in: pages/live-session/puzzles/master-run/master-run.ts, pages/puzzles/puzzle-form/puzzle-form.ts
+Puzzle.onSolve | proto/meurpg/play/v1/puzzles.proto:444 | textual hits in: core/puzzles/puzzle-draft.ts, pages/live-session/puzzles/master-run/master-run.ts
+Puzzle.onWrong | proto/meurpg/play/v1/puzzles.proto:459 | textual hits in: core/puzzles/puzzle-draft.ts, pages/live-session/puzzles/master-run/master-run.ts
+PuzzleOnWrong.maxMoves | proto/meurpg/play/v1/puzzles.proto:503 | textual hits in: core/puzzles/puzzle-draft.ts, core/puzzles/puzzle-format.ts
+PuzzleOnWrong.timeLimitSeconds | proto/meurpg/play/v1/puzzles.proto:508 | textual hits in: core/puzzles/puzzle-draft.ts, core/puzzles/puzzle-format.ts
+PuzzleRun.lastMove | proto/meurpg/play/v1/puzzles.proto:578 | textual hits in: pages/live-session/puzzles/master-run/master-run.ts, pages/live-session/puzzles/puzzle-play/puzzle-play.ts
+PuzzleLimits.attemptsLeft | proto/meurpg/play/v1/puzzles.proto:633 | textual hits in: core/play/scene-view.ts, core/puzzles/puzzle-format.ts
+PuzzleLimits.maxMoves | proto/meurpg/play/v1/puzzles.proto:635 | textual hits in: core/puzzles/puzzle-draft.ts, core/puzzles/puzzle-format.ts
+PuzzleLimits.movesMade | proto/meurpg/play/v1/puzzles.proto:636 | textual hits in: core/puzzles/puzzle-format.ts, pages/live-session/puzzles/master-run/master-run.ts
+PuzzleLimits.timeLimitSeconds | proto/meurpg/play/v1/puzzles.proto:640 | textual hits in: core/puzzles/puzzle-draft.ts, core/puzzles/puzzle-format.ts
+MasterPuzzleRun.minimum | proto/meurpg/play/v1/puzzles.proto:728 | textual hits in: pages/live-session/puzzles/master-run/master-run.ts, pages/puzzles/puzzle-form/puzzle-form.ts
+MasterPuzzleRun.movesMade | proto/meurpg/play/v1/puzzles.proto:734 | textual hits in: core/puzzles/puzzle-format.ts, pages/live-session/puzzles/master-run/master-run.ts
+MasterPuzzleRun.lastMove | proto/meurpg/play/v1/puzzles.proto:739 | textual hits in: pages/live-session/puzzles/master-run/master-run.ts, pages/live-session/puzzles/puzzle-play/puzzle-play.ts
+PreviewPuzzleStartResponse.minimum | proto/meurpg/play/v1/puzzles.proto:1150 | textual hits in: pages/live-session/puzzles/master-run/master-run.ts, pages/puzzles/puzzle-form/puzzle-form.ts
+MakePuzzleMoveResponse.replayed | proto/meurpg/play/v1/puzzles.proto:1328 | textual hits in: core/puzzles/puzzles-client.ts
+TryPuzzleHintResponse.replayed | proto/meurpg/play/v1/puzzles.proto:1390 | textual hits in: core/puzzles/puzzles-client.ts
+SceneActionView.attemptsLeft | proto/meurpg/play/v1/scene.proto:186 | textual hits in: core/play/scene-view.ts, core/puzzles/puzzle-format.ts
+SceneRoll.attemptsLeft | proto/meurpg/play/v1/scene.proto:216 | textual hits in: core/play/scene-view.ts, core/puzzles/puzzle-format.ts
+SessionCharacterSummary.checksPassed | proto/meurpg/play/v1/summary.proto:29 | textual hits in: core/play/session-summary.ts, pages/live-session/session-ended/session-ended.ts
+SessionCharacterSummary.checksTried | proto/meurpg/play/v1/summary.proto:30 | textual hits in: core/play/session-summary.ts, pages/live-session/session-ended/session-ended.ts
+SessionSummary.endedAt | proto/meurpg/play/v1/summary.proto:45 | textual hits in: core/play/session-summary.ts, pages/campaign-detail/game-session/game-session-source.live.ts
+SessionSummary.checksPassed | proto/meurpg/play/v1/summary.proto:57 | textual hits in: core/play/session-summary.ts, pages/live-session/session-ended/session-ended.ts
+SessionSummary.checksTried | proto/meurpg/play/v1/summary.proto:58 | textual hits in: core/play/session-summary.ts, pages/live-session/session-ended/session-ended.ts
+SessionSummary.categories | proto/meurpg/play/v1/summary.proto:66 | textual hits in: core/combat/combat-highlights.ts
+SearchForTrapsResponse.foundPointIds | proto/meurpg/play/v1/traps.proto:60 | textual hits in: pages/live-session/traps/trap-search-sheet/trap-search-sheet.ts
+SearchForTrapsResponse.secondRoll | proto/meurpg/play/v1/traps.proto:67 | textual hits in: core/traps/trap-log.ts, pages/live-session/traps/trap-search-sheet/trap-search-sheet.ts
+TrapSearchResult.secondRoll | proto/meurpg/play/v1/traps.proto:221 | textual hits in: core/traps/trap-log.ts, pages/live-session/traps/trap-search-sheet/trap-search-sheet.ts
+TrapSearchResult.foundPointIds | proto/meurpg/play/v1/traps.proto:223 | textual hits in: pages/live-session/traps/trap-search-sheet/trap-search-sheet.ts
+AddMilestoneResponse.milestone | proto/meurpg/progression/v1/progression.proto:613 | textual hits in: pages/character-sheet/level-up-banner/level-up-banner.ts, pages/campaign-detail/milestones/mark-reached-sheet.ts
+UpdateMilestoneResponse.milestone | proto/meurpg/progression/v1/progression.proto:627 | textual hits in: pages/character-sheet/level-up-banner/level-up-banner.ts, pages/campaign-detail/milestones/mark-reached-sheet.ts
+MarkMilestoneReachedResponse.milestone | proto/meurpg/progression/v1/progression.proto:666 | textual hits in: pages/character-sheet/level-up-banner/level-up-banner.ts, pages/campaign-detail/milestones/mark-reached-sheet.ts
+GiveMilestoneToResponse.milestone | proto/meurpg/progression/v1/progression.proto:683 | textual hits in: pages/character-sheet/level-up-banner/level-up-banner.ts, pages/campaign-detail/milestones/mark-reached-sheet.ts
+LightPreset.durationPt | proto/meurpg/rules/v1/rules.proto:229 | textual hits in: pages/maps/point-kinds/trap-draft.ts
+TrapCondition.conditionKey | proto/meurpg/rules/v1/rules.proto:285 | textual hits in: pages/maps/point-kinds/trap-draft.ts
+TrapCondition.durationPt | proto/meurpg/rules/v1/rules.proto:290 | textual hits in: pages/maps/point-kinds/trap-draft.ts
+TrapDamageRow.fromLevel | proto/meurpg/rules/v1/rules.proto:392 | textual hits in: pages/level-up/level-up.ts
+DerivedSheet.standardActions | proto/meurpg/rules/v1/rules.proto:549 | textual hits in: pages/live-session/combat/action-groups/action-groups.ts, pages/live-session/combat/creature-turn/creature-block.ts
+SaveAction.onSuccess | proto/meurpg/rules/v1/rules.proto:639 | textual hits in: core/combat/cast-flow.ts, core/content/spell-draft.ts
+Resource.sourceKey | proto/meurpg/rules/v1/rules.proto:658 | textual hits in: pages/character-sheet/character-sheet-source.live.ts
+Action.sourceKey | proto/meurpg/rules/v1/rules.proto:684 | textual hits in: pages/character-sheet/character-sheet-source.live.ts
+DiceFormula.addsModifier | proto/meurpg/rules/v1/rules.proto:710 | textual hits in: core/content/spell-draft.ts
+Sense.sense | proto/meurpg/rules/v1/rules.proto:787 | textual hits in: core/content/effect-draft.ts, core/content/content-read.ts
+Hint.sourceKey | proto/meurpg/rules/v1/rules.proto:931 | textual hits in: pages/character-sheet/character-sheet-source.live.ts
+SkillChoice.skillKeys | proto/meurpg/rules/v1/rules.proto:1102 | textual hits in: pages/character-editor/character-editor-source.live.ts
+ClassSpellcasting.listClassKey | proto/meurpg/rules/v1/rules.proto:1137 | textual hits in: pages/character-editor/class-blocks.ts, pages/character-editor/character-editor-source.live.ts
+SubclassSpellcasting.listClassKey | proto/meurpg/rules/v1/rules.proto:1173 | textual hits in: pages/character-editor/class-blocks.ts, pages/character-editor/character-editor-source.live.ts
+Background.skillKeys | proto/meurpg/rules/v1/rules.proto:1188 | textual hits in: pages/character-editor/character-editor-source.live.ts
+Armor.category | proto/meurpg/rules/v1/rules.proto:1221 | textual hits in: none
+Weapon.category | proto/meurpg/rules/v1/rules.proto:1237 | textual hits in: none
+SpellHitPointEffect.conditionKey | proto/meurpg/rules/v1/rules.proto:1461 | textual hits in: pages/maps/point-kinds/trap-draft.ts
+SpellSave.onSuccess | proto/meurpg/rules/v1/rules.proto:1571 | textual hits in: core/combat/cast-flow.ts, core/content/spell-draft.ts
+TurnOptions.standardActions | proto/meurpg/rules/v1/rules.proto:1627 | textual hits in: pages/live-session/combat/action-groups/action-groups.ts, pages/live-session/combat/creature-turn/creature-block.ts
+DisabledReason.minLevel | proto/meurpg/rules/v1/rules.proto:1708 | textual hits in: core/creatures/creature-errors.ts, core/combat/combat-errors.ts
+CreatureSave.onSuccess | proto/meurpg/rules/v1/rules.proto:2079 | textual hits in: core/combat/cast-flow.ts, core/content/spell-draft.ts
+TableEffect.sense | proto/meurpg/rules/v1/table_content.proto:118 | textual hits in: core/content/effect-draft.ts, core/content/content-read.ts
+TableSpellTarget.perSlotLevel | proto/meurpg/rules/v1/table_content.proto:337 | textual hits in: core/content/spell-draft.ts
+TableSpellTarget.sizeFt | proto/meurpg/rules/v1/table_content.proto:340 | textual hits in: core/content/spell-draft.ts
+TableSpellDamage.perSlotLevel | proto/meurpg/rules/v1/table_content.proto:390 | textual hits in: core/content/spell-draft.ts
+TableSpellHeal.perSlotLevel | proto/meurpg/rules/v1/table_content.proto:398 | textual hits in: core/content/spell-draft.ts
+TableSpellHeal.addsModifier | proto/meurpg/rules/v1/table_content.proto:400 | textual hits in: core/content/spell-draft.ts
+EffectMenuType.hintPt | proto/meurpg/rules/v1/table_content.proto:881 | textual hits in: shared/effect-picker/effect-picker.ts, core/content/effect-draft.ts
+EffectMenuValue.hintPt | proto/meurpg/rules/v1/table_content.proto:921 | textual hits in: shared/effect-picker/effect-picker.ts, core/content/effect-draft.ts
+FormulaHelper.hintPt | proto/meurpg/rules/v1/table_content.proto:951 | textual hits in: shared/effect-picker/effect-picker.ts, core/content/effect-draft.ts

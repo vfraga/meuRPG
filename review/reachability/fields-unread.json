@@ -140,13 +140,6 @@
   "decl": "int32 generator_version = 4;"
  },
  {
-  "msg": "GetDungeonRoomsResponse",
-  "field": "imageIsGenerated",
-  "file": "proto/meurpg/maps/v1/dungeons.proto",
-  "line": 440,
-  "decl": "bool image_is_generated = 8;"
- },
- {
   "msg": "ImageGeneration",
   "field": "sourceImageId",
   "file": "proto/meurpg/maps/v1/imagegen.proto",
@@ -210,25 +203,11 @@
   "decl": "string category = 4;"
  },
  {
-  "msg": "Treasure",
-  "field": "coinsPo",
-  "file": "proto/meurpg/maps/v1/treasure.proto",
-  "line": 242,
-  "decl": "int32 coins_po = 8;"
- },
- {
   "msg": "GetMagicItemResponse",
   "field": "category",
   "file": "proto/meurpg/maps/v1/treasure.proto",
   "line": 301,
   "decl": "string category = 4;"
- },
- {
-  "msg": "GetMagicItemResponse",
-  "field": "attunementBy",
-  "file": "proto/meurpg/maps/v1/treasure.proto",
-  "line": 306,
-  "decl": "string attunement_by = 7;"
  },
  {
   "msg": "GetMagicItemResponse",
@@ -287,13 +266,6 @@
   "decl": "string trap_point_id = 21;"
  },
  {
-  "msg": "GetTurnOptionsResponse",
-  "field": "yourTurn",
-  "file": "proto/meurpg/play/v1/combat.proto",
-  "line": 2438,
-  "decl": "bool your_turn = 2;"
- },
- {
   "msg": "SpellTargetResult",
   "field": "morePendingDamageIds",
   "file": "proto/meurpg/play/v1/combat.proto",
@@ -343,60 +315,11 @@
   "decl": "repeated string conditions_given = 3;"
  },
  {
-  "msg": "PuzzleRun",
-  "field": "solvedMessage",
-  "file": "proto/meurpg/play/v1/puzzles.proto",
-  "line": 589,
-  "decl": "string solved_message = 15;"
- },
- {
-  "msg": "PuzzleRun",
-  "field": "stoppedMessage",
-  "file": "proto/meurpg/play/v1/puzzles.proto",
-  "line": 598,
-  "decl": "string stopped_message = 18;"
- },
- {
-  "msg": "PuzzleRun",
-  "field": "myPart",
-  "file": "proto/meurpg/play/v1/puzzles.proto",
-  "line": 601,
-  "decl": "string my_part = 19;"
- },
- {
-  "msg": "PuzzleRun",
-  "field": "partHolders",
-  "file": "proto/meurpg/play/v1/puzzles.proto",
-  "line": 604,
-  "decl": "repeated string part_holders = 20;"
- },
- {
-  "msg": "PuzzleRun",
-  "field": "hintByCheck",
-  "file": "proto/meurpg/play/v1/puzzles.proto",
-  "line": 606,
-  "decl": "bool hint_by_check = 21;"
- },
- {
-  "msg": "PuzzleRun",
-  "field": "hasKeyClue",
-  "file": "proto/meurpg/play/v1/puzzles.proto",
-  "line": 622,
-  "decl": "bool has_key_clue = 26;"
- },
- {
   "msg": "SequencePlayback",
   "field": "stepMs",
   "file": "proto/meurpg/play/v1/puzzles.proto",
   "line": 662,
   "decl": "int32 step_ms = 5;"
- },
- {
-  "msg": "SearchForTrapsResponse",
-  "field": "spentAction",
-  "file": "proto/meurpg/play/v1/traps.proto",
-  "line": 63,
-  "decl": "bool spent_action = 3;"
  },
  {
   "msg": "XPBlocked",

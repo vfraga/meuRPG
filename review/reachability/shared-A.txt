@@ -1,0 +1,72 @@
+PendingMember.joinedAt | proto/meurpg/campaigns/v1/campaigns.proto:330 | textual hits in: pages/campaign-detail/pending-members/pending-members.copy.ts
+PendingMember.expiresAt | proto/meurpg/campaigns/v1/campaigns.proto:335 | textual hits in: pages/campaign-detail/pending-members/pending-members.copy.ts, pages/campaign-detail/invites/invite-copy.ts
+Member.joinedAt | proto/meurpg/campaigns/v1/campaigns.proto:346 | textual hits in: pages/campaign-detail/pending-members/pending-members.copy.ts
+Invite.expiresAt | proto/meurpg/campaigns/v1/campaigns.proto:378 | textual hits in: pages/campaign-detail/pending-members/pending-members.copy.ts, pages/campaign-detail/invites/invite-copy.ts
+FullSheet.featureChoiceKeys | proto/meurpg/characters/v1/characters.proto:1027 | textual hits in: core/levelup/levelup-changes.ts, core/levelup/levelup-draft.ts
+CustomBackground.skillKeys | proto/meurpg/characters/v1/characters.proto:1114 | textual hits in: pages/character-editor/character-editor-source.live.ts
+RollAbilityScoresResponse.alreadyRolled | proto/meurpg/characters/v1/characters.proto:1498 | textual hits in: none
+LevelUpOptions.fromLevel | proto/meurpg/characters/v1/characters.proto:1724 | textual hits in: pages/level-up/level-up.ts
+LevelUpOptions.skillChoices | proto/meurpg/characters/v1/characters.proto:1784 | textual hits in: core/levelup/levelup-flow.ts
+LevelUpOptions.expertiseChoices | proto/meurpg/characters/v1/characters.proto:1785 | textual hits in: core/levelup/levelup-flow.ts
+LevelUpSubclass.skillChoices | proto/meurpg/characters/v1/characters.proto:1850 | textual hits in: core/levelup/levelup-flow.ts
+LevelUpSubclass.expertiseChoices | proto/meurpg/characters/v1/characters.proto:1851 | textual hits in: core/levelup/levelup-flow.ts
+LevelUpChoices.featureChoiceKeys | proto/meurpg/characters/v1/characters.proto:1933 | textual hits in: core/levelup/levelup-changes.ts, core/levelup/levelup-draft.ts
+RollLevelUpHitPointsResponse.alreadyRolled | proto/meurpg/characters/v1/characters.proto:2063 | textual hits in: none
+LevelUp.fromLevel | proto/meurpg/characters/v1/characters.proto:2114 | textual hits in: pages/level-up/level-up.ts
+ListWildShapeFormsResponse.noFly | proto/meurpg/characters/v1/characters.proto:2273 | textual hits in: shared/wild-shape/wild-shape-sheet.ts
+ListWildShapeFormsResponse.noSwim | proto/meurpg/characters/v1/characters.proto:2274 | textual hits in: shared/wild-shape/wild-shape-sheet.ts
+DungeonDoor.trapped | proto/meurpg/maps/v1/dungeons.proto:304 | textual hits in: pages/maps/dungeon-rooms/dungeon-rooms.ts, pages/maps/dungeon-rooms/dungeon-rooms.html
+PreviewDungeonResponse.generatorVersion | proto/meurpg/maps/v1/dungeons.proto:342 | textual hits in: none
+DungeonExit.trapped | proto/meurpg/maps/v1/dungeons.proto:402 | textual hits in: pages/maps/dungeon-rooms/dungeon-rooms.ts, pages/maps/dungeon-rooms/dungeon-rooms.html
+GetDungeonRoomsResponse.generatorVersion | proto/meurpg/maps/v1/dungeons.proto:431 | textual hits in: none
+ImageGeneration.aspectRatio | proto/meurpg/maps/v1/imagegen.proto:270 | textual hits in: core/images/imagegen-form.ts
+ImageGeneration.characterImageIds | proto/meurpg/maps/v1/imagegen.proto:288 | textual hits in: core/images/imagegen-form.ts
+Map.baseLight | proto/meurpg/maps/v1/maps.proto:881 | textual hits in: pages/maps/fog-panel/fog-panel.ts, pages/maps/fog-panel/fog-panel.html
+TreasureItem.category | proto/meurpg/maps/v1/treasure.proto:205 | textual hits in: none
+TreasureItem.rarity | proto/meurpg/maps/v1/treasure.proto:207 | textual hits in: core/treasure/treasure-format.ts, pages/treasure/item-sheet/item-sheet.ts
+TreasureItem.consumable | proto/meurpg/maps/v1/treasure.proto:213 | textual hits in: core/treasure/treasure-format.ts
+TreasureItem.halved | proto/meurpg/maps/v1/treasure.proto:216 | textual hits in: core/treasure/treasure-format.ts
+TreasureItem.spellScroll | proto/meurpg/maps/v1/treasure.proto:218 | textual hits in: core/treasure/treasure-format.ts
+TreasureItem.attunement | proto/meurpg/maps/v1/treasure.proto:221 | textual hits in: core/treasure/treasure-format.ts, pages/treasure/item-sheet/item-sheet.html
+TreasureItem.attunementByPt | proto/meurpg/maps/v1/treasure.proto:222 | textual hits in: core/treasure/treasure-format.ts
+GetMagicItemResponse.category | proto/meurpg/maps/v1/treasure.proto:301 | textual hits in: none
+GetMagicItemResponse.rarity | proto/meurpg/maps/v1/treasure.proto:302 | textual hits in: core/treasure/treasure-format.ts, pages/treasure/item-sheet/item-sheet.ts
+GetMagicItemResponse.attunement | proto/meurpg/maps/v1/treasure.proto:305 | textual hits in: core/treasure/treasure-format.ts, pages/treasure/item-sheet/item-sheet.html
+GetMagicItemResponse.attunementByPt | proto/meurpg/maps/v1/treasure.proto:307 | textual hits in: core/treasure/treasure-format.ts
+GetMagicItemResponse.consumable | proto/meurpg/maps/v1/treasure.proto:309 | textual hits in: core/treasure/treasure-format.ts
+GetMagicItemResponse.spellScroll | proto/meurpg/maps/v1/treasure.proto:310 | textual hits in: core/treasure/treasure-format.ts
+GetMagicItemResponse.halved | proto/meurpg/maps/v1/treasure.proto:318 | textual hits in: core/treasure/treasure-format.ts
+EncounterBlocked.minLevel | proto/meurpg/play/v1/combat.proto:1509 | textual hits in: core/creatures/creature-errors.ts, core/combat/combat-errors.ts
+Encounter.endedAt | proto/meurpg/play/v1/combat.proto:1569 | textual hits in: core/play/session-summary.ts, pages/campaign-detail/game-session/game-session-source.live.ts
+OfferOpportunityResponse.opportunityOfferId | proto/meurpg/play/v1/combat.proto:2089 | textual hits in: core/combat/combat-client.ts
+PendingDamage.castId | proto/meurpg/play/v1/combat.proto:2384 | textual hits in: core/combat/cast-flow.ts
+PendingDamage.concentrationDc | proto/meurpg/play/v1/combat.proto:2397 | textual hits in: core/combat/combat-log.ts, pages/live-session/combat/npc-card/pending-damages.ts
+PendingDamage.deathFailuresAdded | proto/meurpg/play/v1/combat.proto:2402 | textual hits in: core/combat/combat-log.ts
+RollAttackResponse.pendingDamage | proto/meurpg/play/v1/combat.proto:2591 | textual hits in: core/combat/combat-client.ts
+RollDamageResponse.pendingDamage | proto/meurpg/play/v1/combat.proto:2617 | textual hits in: core/combat/combat-client.ts
+ApplyPendingDamageResponse.pendingDamage | proto/meurpg/play/v1/combat.proto:2637 | textual hits in: core/combat/combat-client.ts
+DiscardPendingDamageResponse.pendingDamage | proto/meurpg/play/v1/combat.proto:2651 | textual hits in: core/combat/combat-client.ts
+SpellTarget.perSlotLevel | proto/meurpg/rules/v1/rules.proto:1419 | textual hits in: core/content/spell-draft.ts
+SpellTarget.sizeFt | proto/meurpg/rules/v1/rules.proto:1422 | textual hits in: core/content/spell-draft.ts
+SaveResult.bonusKnown | proto/meurpg/play/v1/combat.proto:2822 | textual hits in: core/combat/combat-log.ts
+SpellTargetResult.attackRoll | proto/meurpg/play/v1/combat.proto:2835 | textual hits in: core/combat/cast-flow.ts
+SpellCast.castId | proto/meurpg/play/v1/combat.proto:2957 | textual hits in: core/combat/cast-flow.ts
+SpellCast.effectKind | proto/meurpg/play/v1/combat.proto:2970 | textual hits in: core/combat/combat-log.ts, core/combat/cast-flow.ts
+SpellCast.poolRoll | proto/meurpg/play/v1/combat.proto:2974 | textual hits in: core/combat/combat-log.ts, pages/live-session/combat/cast-sheet/cast-sheet.ts
+SpellCast.effectConditionKey | proto/meurpg/play/v1/combat.proto:2978 | textual hits in: core/combat/combat-log.ts, core/combat/cast-flow.ts
+SpellCast.effectThreshold | proto/meurpg/play/v1/combat.proto:2981 | textual hits in: core/combat/combat-log.ts
+UseReactionResponse.pendingDamage | proto/meurpg/play/v1/combat.proto:3010 | textual hits in: core/combat/combat-client.ts
+RollDeathSaveResponse.deathSave | proto/meurpg/play/v1/combat.proto:3099 | textual hits in: core/combat/combat-log.ts, core/combat/combat-client.ts
+CombatLogEntry.attackRoll | proto/meurpg/play/v1/combat.proto:3293 | textual hits in: core/combat/cast-flow.ts
+CombatLogEntry.deathSave | proto/meurpg/play/v1/combat.proto:3313 | textual hits in: core/combat/combat-log.ts, core/combat/combat-client.ts
+CombatLogEntry.concentrationEndedKey | proto/meurpg/play/v1/combat.proto:3317 | textual hits in: core/combat/combat-log.ts
+CombatLogEntry.coverBonus | proto/meurpg/play/v1/combat.proto:3329 | textual hits in: core/combat/combat-log.ts
+CombatLogEntry.jumpHeightDft | proto/meurpg/play/v1/combat.proto:3334 | textual hits in: core/combat/combat-log.ts, core/combat/combat-client.ts
+CombatLogSpell.concentrationEndedKey | proto/meurpg/play/v1/combat.proto:3385 | textual hits in: core/combat/combat-log.ts
+CombatLogSpell.effectKind | proto/meurpg/play/v1/combat.proto:3389 | textual hits in: core/combat/combat-log.ts, core/combat/cast-flow.ts
+CombatLogSpell.poolRoll | proto/meurpg/play/v1/combat.proto:3390 | textual hits in: core/combat/combat-log.ts, pages/live-session/combat/cast-sheet/cast-sheet.ts
+CombatLogSpell.effectConditionKey | proto/meurpg/play/v1/combat.proto:3391 | textual hits in: core/combat/combat-log.ts, core/combat/cast-flow.ts
+CombatLogSpell.effectThreshold | proto/meurpg/play/v1/combat.proto:3392 | textual hits in: core/combat/combat-log.ts
+CombatLogSpellTarget.attackRoll | proto/meurpg/play/v1/combat.proto:3403 | textual hits in: core/combat/cast-flow.ts
+CombatLogSpellTarget.coverBonus | proto/meurpg/play/v1/combat.proto:3416 | textual hits in: core/combat/combat-log.ts
+CombatLogDamage.concentrationDc | proto/meurpg/play/v1/combat.proto:3468 | textual hits in: core/combat/combat-log.ts, pages/live-session/combat/npc-card/pending-damages.ts

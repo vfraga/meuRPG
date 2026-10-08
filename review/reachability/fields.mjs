@@ -12,7 +12,7 @@ for (const f of protos){ const L=fs.readFileSync(f,'utf8').split('\n'); const st
       if(m&&top.depth===1&&!/^\s*(rpc|enum|oneof|reserved|\/\/)/.test(l)) { const t=l.trim().split(/\s+/); msgs[top.name].fields.push({name:camel(m[1]),proto:m[1],line:i+1,decl:l.trim().slice(0,90)}); }
       top.depth+=opens-closes; if(top.depth<=0) stack.pop(); } });
 }
-const files=execSync(`find web/src/app -name '*.ts' ! -name '*.spec.ts' ! -name '*-testing.ts'`).toString().trim().split('\n');
+const files=execSync(`find web/src/app \\( -name '*.ts' ! -name '*.spec.ts' ! -name '*-testing.ts' -o -name '*.html' \\)`).toString().trim().split('\n');
 const all=files.map(f=>fs.readFileSync(f,'utf8')).join('\n');
 const out=[]; let total=0;
 for(const [mn,m] of Object.entries(msgs)){
