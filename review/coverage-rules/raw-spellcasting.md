@@ -280,7 +280,7 @@ TESTS: backend/internal/play/combat_spells_test.go:444 TestSaveSpellRollsOnceFor
 MECHANIC: spell-saving-throws / half damage on success, none on success
 SERVER: backend/internal/play/combat_spells.go:655-664: if saved and the spell does not say "half" or "other", no damage is opened; with half, damage opened with Half=true (openSpellPending :699-715). Half rounding and application: backend/internal/play/combat_actions.go:1026 (g.Half handled in RollDamage).
 SCREEN: web/src/app/core/combat/combat-log.ts (half/none text: unsure).
-DOCS: docs/product/stories.md:286? (MR-014 text "the saving throw with half" at docs/product/stories.md:562).
+DOCS: docs/product/stories.md:562 "the saving throw with half" (table spell in combat).
 TESTS: backend/internal/play/combat_tablespells_test.go:195 TestMR025_ATableAreaSpellWithASaveAgainstThreeTargets
 
 MECHANIC: spell-saving-throws / Dexterity save: cover bonus; Chama Sagrada ignores cover
@@ -321,7 +321,7 @@ TESTS: backend/internal/play/combat_spells_hp_test.go:574 TestFalseLifeGivesTemp
 
 MECHANIC: the-schools-of-magic / school of magic
 SERVER: school is data only (rules/spelldetails.go SpellEntry school via srd51 data); no rule depends on school (grep "school|escola" in play: no spell rule). The SRD says schools have no rules of their own.
-SCREEN: web/src/app/shared/spell-details/spell-body.ts:7 "What a spell says, below its title" (school shown in the "?" dialog; unsure).
+SCREEN: unsure (school likely shown in the "?" dialog, web/src/app/shared/spell-details/spell-body.ts, not confirmed).
 DOCS: docs/product/stories.md:131 "name, spell level and school".
 TESTS: none.
 
@@ -335,4 +335,4 @@ MECHANIC: spell-level / upcast of summon spells (Animate Dead at 3rd and 5th cir
 SERVER: rules/spelleffects.go:127-135 summon loads count_per_level; play/creature_cast.go:42-100 prepareSummon uses slotLevel; combatant summon in combat via combat_spells.go:343-355.
 SCREEN: web/src/app/pages/character-sheet/creatures-panel/summon-sheet.ts:369-376 (summon ritual and slot text).
 DOCS: docs/product/stories.md:888 "Animate Dead, which spends the slot".
-TESTS: backend/internal/play/combat_creatures? (test name not located in this sweep); backend/internal/play/combat_creatures_test (unsure).
+TESTS: none located in this sweep (unsure).
