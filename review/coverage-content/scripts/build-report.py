@@ -23,7 +23,7 @@ if os.path.exists(os.path.join(root, 'spells-states.json')):
     t += ['', 'Table impact of the 284 spells that are not built: ' + ', '.join(f"{i} {sum(v for (s,k),v in imp.items() if k==i)}" for i in ('high', 'medium', 'low')) + '.']
     fill['SPELL_COUNTS'] = '\n'.join(t)
     g = open(os.path.join(root, 'spells-groups.md')).read()
-    fill['SPELL_GROUPS'] = g.split('## spells that are partial or reminder, by what is missing')[1].split('\n', 1)[1]
+    fill['SPELL_GROUPS'] = re.sub(r'^## ', '#### ', g.split('## spells that are partial or reminder, by what is missing')[1].split('\n', 1)[1], flags=re.M)
     EV = {'attack_roll': 'combat_spells.go:598', 'save_roll': 'combat_spells.go:636', 'darts': 'combat_spells.go:670', 'heal': 'combat_spells.go:574',
           'summon': 'creature_cast.go:170', 'concentration_flag': 'combat_spells.go:418'}
     rows = ['| Spell | L | State | Impact | Engine does | Missing / why | Evidence | Deliberate? |', '| --- | --- | --- | --- | --- | --- | --- | --- |']

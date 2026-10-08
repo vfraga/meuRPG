@@ -27,7 +27,7 @@ simulated the rest with `scripts/monster-counts.py` (`monsters-counts.json`, `mo
 | Reactions | 12 monsters (Parry x6, Split x2, Shield, Rock Catching, Shriek, Unnerving Mask) | absent: the app's reaction is the opportunity attack (built) and Shield for a player's character; a monster's Parry is not offered | `play/combat_reactions.go:38` (`target.Kind != kindPlayer` returns no Shield), `play/combat_opportunity.go` for the attack | `architecture.md:821` (reaction spells), no doc for monsters | medium |
 | Opportunity attack by a monster | all with a melee attack | built | `play/combat_opportunity.go:62-95` | - | - |
 | Special traits (279 monsters have at least one, 152 distinct names) | 279 | reminder: shown in the stat block as English text | `rules/creatures.go:423`, `:585` (`Features`) | `architecture.md:775` ("the sheets' text stays in English") | see below |
-| - Pack Tactics (advantage when an ally is adjacent) | 17 | reminder (there is no advantage anywhere: part 0 fact 3) | `rules.md:353` | `rules.md:353` | high |
+| - Pack Tactics (advantage when an ally is adjacent) | 17 | reminder (there is no advantage anywhere: shared cause C2 in section 7) | `rules.md:353` | `rules.md:353` | high |
 | - Magic Resistance (advantage on saves vs spells) | 31 | reminder: the server rolls a monster's save with no advantage | `play/combat_spells.go:636-668` | `rules.md:353` | high |
 | - Legendary Resistance (3 / day, turn a failed save into a success) | 25 | absent: the save outcome is final; no counter | same | no doc | high |
 | - Regeneration (start of turn) | 7 (troll, oni, shield guardian, 3 vampire forms, vampire bat) | absent: no start-of-turn hook | `play/combat_turn.go:109`, `play/combat.go:744` | `rules.md:329` | high (trolls) |

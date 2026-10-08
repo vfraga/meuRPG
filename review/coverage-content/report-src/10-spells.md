@@ -9,7 +9,7 @@
 | Saving throw rolled by the server for every target, full / half / none damage, cover on Dex saves, one damage roll for an area | built | `play/combat_spells.go:636-668` | - | - |
 | Damage by slot level (upcasting), damage-type choice (`alternative` / `scale`) | built | `characters/combatspells.go:71`, `rules/spelldetails.go:269` `DamageAtChoosing` | - | - |
 | Healing with the casting modifier, up to the maximum, revives from 0 | built | `play/combat_spells.go:574`, `play/combat_actions.go:1169` `healCombatant` | - | - |
-| 12 spells that read hit points (Sleep, Color Spray, Power Word Stun / Kill, Heal, Aid, False Life, Spare the Dying, 3 summons) | built | `play/combat_spells_hp.go:91`, `rules/srd51/effects/spells.json` | no doc (a closed, hand-written list) | - |
+| 8 spells that read hit points (Sleep, Color Spray, Power Word Stun / Kill, Heal, Aid, False Life, Spare the Dying; `effects/spells.json` also holds Sacred Flame's cover rule and the 3 summons) | built | `play/combat_spells_hp.go:91`, `rules/srd51/effects/spells.json` | no doc (a closed, hand-written list) | - |
 | Magic Missile darts, Scorching Ray (one ray per target) | built | `play/combat_spells.go:670`, `:42` | ray limit: comment at `:39-42` | low |
 | Shield (the only reaction) | built | `play/combat_reactions.go:31`, `UseReaction` `:169` | `proto combat.proto:939`, `architecture.md:821` | - |
 | Three summons (Find Familiar as ritual, Animate Dead, Conjure Animals) | built | `play/creature_cast.go:170` `CastSummon`, `rules/summon.go` | - | - |
@@ -47,6 +47,23 @@ The full machine view of all 319 spells is `spells-machine.json`
 need Postgres, so the engine side was verified by reading, not by running a cast.
 
 ### 1.3 Grouped by what is missing
+
+What the codes mean (a spell can carry several; `partial` and `reminder` spells only):
+
+| Code | Meaning |
+| --- | --- |
+| `condition:X` | the condition the text imposes is not applied (Hold Person: paralyzed) |
+| `repeat_save` | a later saving throw (end of the target's turn, when it is hurt) is not run |
+| `ongoing_damage` | damage at a later turn, or when a creature enters / stays in an area, is not rolled |
+| `movement` | push, pull, teleport, speed change, flying or difficult terrain is not applied |
+| `stat_change` | a bonus, penalty, advantage, resistance or changed score is not applied |
+| `zone` | the wall, cloud, light, sphere or object does not exist on the map |
+| `rider` | a second effect on a hit or a failed save (blinded on a hit, extra dice, a curse) is not applied |
+| `duration_not_tracked` | the effect lasts N rounds / minutes / hours and nothing ends it |
+| `creation` | it conjures a creature or an object that is not a modelled summon |
+| `upcast_extra` | a higher slot adds something other than dice, healing or targets |
+| `damage_not_rolled` | the data has a damage table but no attack or save, so the cast rolls nothing |
+| `effect_not_applied`, `pool_not_shared_out`, `heal_half_not_applied`, `repeat_attack_not_run` | one-off gaps named by the hand review (`scripts/spell-overrides.json`) |
 
 {{SPELL_GROUPS}}
 

@@ -21,6 +21,7 @@ for g, ks in sorted(groups.items(), key=lambda kv: -len(kv[1])):
 cond = collections.defaultdict(list)
 for x in r:
     if x['state'] in ('partial', 'reminder'):
+        if any(d.startswith('hp_effect') for d in x['engine_does']): continue
         for c in x['conditions']: cond[c].append(x['key'][6:])
 out.append('\n## conditions a spell should impose and the app does not apply\n')
 for c, ks in sorted(cond.items(), key=lambda kv: -len(kv[1])): out.append(f'- {c}: {len(ks)} - ' + ', '.join(sorted(ks)))

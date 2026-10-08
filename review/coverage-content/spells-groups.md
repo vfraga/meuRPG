@@ -47,9 +47,9 @@
 - prone: 5 - command, earthquake, grease, hideous-laughter, sleet-storm
 - incapacitated: 4 - banishment, hideous-laughter, hypnotic-pattern, modify-memory
 - frightened: 4 - eyebite, fear, phantasmal-killer, weird
-- stunned: 3 - contagion, divine-word, power-word-stun
 - petrified: 3 - flesh-to-stone, prismatic-spray, prismatic-wall
 - invisible: 3 - greater-invisibility, invisibility, mislead
+- stunned: 2 - contagion, divine-word
 - paralyzed: 2 - hold-monster, hold-person
 - grappled: 1 - arcane-hand
 - unconscious: 1 - eyebite

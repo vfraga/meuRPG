@@ -16,41 +16,60 @@ How to read it:
 - Counts come from the scripts in `review/coverage-content/scripts/` and the overlay tests in
   `review/coverage-content/overlay/` (re-runnable: see the README at the end). Raw lists are in the same folder.
 
-## 0. The engine, in the five facts that decide most rows
+The five engine facts that most rows depend on, and the shared causes, are in section 7.
 
-These are the mechanisms the rest of the report keeps pointing at. Each was read in code.
+## Summary
 
-1. **A cast computes five things and nothing else.** `CastSpell` (`backend/internal/play/combat_spells.go:192`) spends
-   the slot and the action, sets concentration, and then, for each target, runs one of: a spell attack roll with the
-   first damage type (`:598`), a saving throw with full/half/no damage (`:636`), Magic Missile's darts (`:670`), a
-   pending heal (`:560`+), or one of 12 hit-point effects (`play/combat_spells_hp.go:91`, data in
-   `effects/spells.json`). Summons go through a separate choice (`play/creature_cast.go:42`). The proto says it
-   plainly: "Anything else (Teia, Passo Nebuloso...): it spends and goes to the log; the effect is the table's"
-   (`proto/meurpg/play/v1/combat.proto:885`), and the web shows "A magia foi conjurada: o mestre resolve o efeito."
-   (`web/src/app/pages/live-session/combat/cast-sheet/cast-result.ts:63`).
-2. **Conditions are labels.** `play/combat_conditions.go:14-18`: "labels the master marks and the app reminds the table
-   about; the engine applies no effect." The only code that reads a condition is speed 0 for grappled, restrained,
-   paralyzed, petrified, stunned, unconscious (`play/combat_move.go:144-146`) and "cannot react" for
-   incapacitated/paralyzed/petrified/stunned/unconscious/blinded (`play/combat_opportunity.go:42-44`). No spell applies a
-   condition except Sleep, Color Spray and Power Word Stun (`effects/spells.json`).
-3. **There is no advantage or disadvantage in any roll.** An attack, save or check is one d20
-   (`RollAttackRequest` has `roll_in_app` or `d20_face` only, `combat.proto:2539`; `play/combat_spells.go:582` `d20`).
-   Every `roll_mode` effect, "Desvantagem em Furtividade", Pack Tactics and flanking are text.
-   Doc: "Out of scope: flanking, which asks for advantage on attacks (the app does not apply it yet)"
-   (`docs/product/rules.md:353`).
-4. **Nothing happens at the start or end of a turn, and nothing expires.** `EndTurn` (`play/combat.go:744`) and
-   `startTurn` (`play/combat_turn.go:109`) reset the economy and the familiar's sight; there are no durations, no repeat
-   saves, no ongoing damage, no regeneration, no recharge dice. Doc: "Applying effects automatically is left for after
-   the MVP. That includes the saving throws a spell forces later ... the master calls for the later ones"
-   (`docs/product/rules.md:329`).
-5. **Content that is not a character's own sheet is a catalogue.** Magic items, adventuring gear, mounts, vehicles,
-   monsters' traits and spellcasting are data plus English text. A character's equipment is free text
-   (`proto/meurpg/characters/v1/characters.proto:1150` `Item`, 1003 `equipment`), and an NPC made from a monster keeps at most
-   three attacks (`backend/internal/characters/npcfromcreature.go:105`).
+### Counts by part and state
 
-Not in the list of five but used everywhere: **damage to a player's character waits for the master**, who applies it
-(`docs/product/rules.md:56`: "A player character's resistances (Rage and others) are notes the master applies"), while
-damage to an NPC lands at once with its plain resistances (`play/combat_actions.go:1126` `afterResistance`).
+| Part | Unit counted | built | partial | reminder | absent | Total |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1. Spells | spells of `data/spells.json` | 35 | 82 | 142 | 60 | 319 |
+| 2. Equipment | rules rows (14 weapon properties and rules, 8 armour and shield, 11 gear / tools / mounts / coins); all 37 weapons, 12 armours and the shield do produce an attack line or an AC | 8 | 5 | 5 | 15 | 33 |
+| 3. Magic items | rows by kind of effect (12); per item: 362 catalogued (text, rarity, value), **0 whose effect the app applies** | 2 | 0 | 5 | 5 | 12 |
+| 4. Monsters | rows by kind of feature (28); per monster: 334 fight as an NPC with HP, AC and speed; 311 with at least one attack line, **23 with none** (19 whose only damage is a flat 1, 4 with no attack action) | 6 | 2 | 10 (9 + 1 mixed) | 10 | 28 |
+| 5. Races | the 38 traits of `data/traits.json` | 11 | 3 | 24 | 0 | 38 |
+| 6. Backgrounds and feats | rows (5 background, 5 feat) | 3 | 1 | 0 | 5 | 9 + 1 context row |
+
+How to read the unit: a **spell** is one row; for monsters and items the unit is a kind of feature, because the same
+mechanism covers many entries (for example 134 save actions in 86 monsters are one row). The per-entry facts that matter are
+in the second column.
+
+What the app runs well, with evidence: attack rolls and saving throws with damage (full, half, none), healing, cantrip
+scaling and slot upcasting, damage-type choices, 8 hit-point spells, Shield, three summons, bonus-action-spell limits,
+concentration prompts, AC from armour and shields, Strength requirement of armour, finesse / light / reach / monk weapons, darkvision
+in the fog of war, a monster's AC / HP / Multiattack count / plain resistances / opportunity attacks, ability bonuses,
+speeds and proficiencies from races, and the custom ("Outro") background.
+
+### The 20 gaps with the highest table impact
+
+Ordered by how soon a table hits them. "Cause" points to the shared causes of section 7.
+
+| # | Gap | Scope | Cause | Impact |
+| --- | --- | --- | --- | --- |
+| 1 | A spell that should impose a condition (Hold Person, Web, Entangle, Fear, Hypnotic Pattern, Blindness...) rolls the save and nothing else; the master marks the label and the label does nothing but stop movement | at least 38 spells, 129 monsters with a rider in an action | C1 | high |
+| 2 | No advantage or disadvantage in any roll: Bless / Bane / Guidance as roll bonuses, Pack Tactics, Magic Resistance, Lucky, Fey Ancestry, Brave, Gnome Cunning, Dwarven Resilience, flanking, long range, heavy weapons, stealth armour | 12 race traits, 48 monsters (Pack Tactics 17, Magic Resistance 31), 8 weapon / armour rows, spells | C2 | high |
+| 3 | Buff and debuff spells compute nothing (Bless, Bane, Haste, Slow, Mage Armor, Shield of Faith, Hunter's Mark, Heroism, Blur, Barkskin, Enlarge / Reduce...) | 53 spells | C4 | high |
+| 4 | Nothing expires or repeats: durations, saves at the end of a turn (Hold Person, Hold Monster, Fear), ongoing damage (Cloudkill, Spirit Guardians, Moonbeam, Acid Arrow, Heat Metal) | 136 spells with a duration, 33 with repeat saves, 22 with ongoing damage | C3 | high |
+| 5 | A monster's save actions and breath weapons are never rolled and never recharge | 86 monsters, 134 actions; recharge 71 monsters, 112 actions (every dragon, ghoul, spider, gelatinous cube) | C8, C3 | high |
+| 6 | An NPC made from a stat block keeps three attacks with one damage die; **19 monsters have no attack at all** (bat, cat, rat, spider, hawk, raven, badger, owl, sprite...), 28 lose an attack, 57 attacks lose their second damage part to the description | 334 monsters | C8 | high |
+| 7 | Legendary actions, Legendary Resistance, Regeneration, Undead Fortitude: text only | 32 + 25 + 7 + 2 monsters (every boss, every troll) | C3, C8 | high |
+| 8 | A monster or NPC cannot cast its spells | 36 monsters (Mage, Priest, Archmage, Lich, Drow, Couatl...) | C8 | high |
+| 9 | Magic items do nothing: +N weapons and armour, Ring and Cloak of protection, Potion of healing, wands, ability-score items, resistance rings | 362 items, 0 applied | C7 | high |
+| 10 | There is no way to hold, drink, attune to or charge an item: no item list, no attunement slots (limit 3), no charges, no coins from treasure | 175 attunement items, 53 with charges, 88 consumables | C7 | high |
+| 11 | There is no cast outside a combat: healing between fights, Mage Armor before one, rituals; the slot is spent by hand | every spell cast outside an encounter; 29 rituals (only Find Familiar works) | C6 | high |
+| 12 | Spells of a minute or more cannot be cast at all: Identify, Alarm, Tiny Hut, Magic Circle, Raise Dead, Resurrection, Commune, Augury, Mending... | 57 spells | C6 | medium-high |
+| 13 | Reactions: Counterspell, Hellish Rebuke, Feather Fall, and every monster reaction (Parry x6) are refused; only Shield and opportunity attacks run | 3 spells, 12 monsters | C9 | high |
+| 14 | Concentration is a flag: no automatic save, no end when the caster is incapacitated or dies, no end on duration | 118 concentration spells | C3 | high |
+| 15 | Area and zone spells: nobody is picked from a shape; walls, clouds, fog, light and spheres are not on the map | 94 area spells, 57 zone / object spells | C5, C12 | medium-high |
+| 16 | Racial and monster triggers: Relentless Endurance (half-orc), Breath Weapon damage (dragonborn), Savage Attacks, Lucky, Infernal Legacy spells | 5 traits | C2, C3 | high |
+| 17 | Spells that read a damage table but roll nothing: Web, Flaming Sphere, Spike Growth, Earthquake, Fire Shield, Branding Smite, Divine Favor, Dimension Door, Teleport, Glyph of Warding; and 34 spells whose text asks for a save that the data does not carry | 10 + 34 spells | data | medium |
+| 18 | Adventuring gear is not content: torches burn forever, no healer's kit, rope, caltrops, holy water, acid, alchemist's fire, oil, ammunition counts, mounts, vehicles | every adventuring-gear, ammunition, pack, mount and vehicle entry (the importer drops them) | C11 | medium |
+| 19 | Weapon rules: versatile (always one-handed in combat), two-handed with a shield, thrown (no loss, no 20 ft limit), long range (no disadvantage), loading, ammunition, net and lance | 6 + 11 + 8 + 7 + 4 + 7 + 2 weapons | C2, C7 | medium |
+| 20 | Feats: none, and the level-up offers only the ability score improvement | the whole feat system | C11 | high for a table that wants them |
+
+Also worth the master's attention: condition immunities of 92 monsters and the conditional resistances of 70 ("nonmagical
+weapons") are not applied; Sleep ignores undead immunity to charm.
 
 ## 1. Spells (319 of `data/spells.json`)
 
@@ -63,7 +82,7 @@ damage to an NPC lands at once with its plain resistances (`play/combat_actions.
 | Saving throw rolled by the server for every target, full / half / none damage, cover on Dex saves, one damage roll for an area | built | `play/combat_spells.go:636-668` | - | - |
 | Damage by slot level (upcasting), damage-type choice (`alternative` / `scale`) | built | `characters/combatspells.go:71`, `rules/spelldetails.go:269` `DamageAtChoosing` | - | - |
 | Healing with the casting modifier, up to the maximum, revives from 0 | built | `play/combat_spells.go:574`, `play/combat_actions.go:1169` `healCombatant` | - | - |
-| 12 spells that read hit points (Sleep, Color Spray, Power Word Stun / Kill, Heal, Aid, False Life, Spare the Dying, 3 summons) | built | `play/combat_spells_hp.go:91`, `rules/srd51/effects/spells.json` | no doc (a closed, hand-written list) | - |
+| 8 spells that read hit points (Sleep, Color Spray, Power Word Stun / Kill, Heal, Aid, False Life, Spare the Dying; `effects/spells.json` also holds Sacred Flame's cover rule and the 3 summons) | built | `play/combat_spells_hp.go:91`, `rules/srd51/effects/spells.json` | no doc (a closed, hand-written list) | - |
 | Magic Missile darts, Scorching Ray (one ray per target) | built | `play/combat_spells.go:670`, `:42` | ray limit: comment at `:39-42` | low |
 | Shield (the only reaction) | built | `play/combat_reactions.go:31`, `UseReaction` `:169` | `proto combat.proto:939`, `architecture.md:821` | - |
 | Three summons (Find Familiar as ritual, Animate Dead, Conjure Animals) | built | `play/creature_cast.go:170` `CastSummon`, `rules/summon.go` | - | - |
@@ -123,6 +142,23 @@ need Postgres, so the engine side was verified by reading, not by running a cast
 
 ### 1.3 Grouped by what is missing
 
+What the codes mean (a spell can carry several; `partial` and `reminder` spells only):
+
+| Code | Meaning |
+| --- | --- |
+| `condition:X` | the condition the text imposes is not applied (Hold Person: paralyzed) |
+| `repeat_save` | a later saving throw (end of the target's turn, when it is hurt) is not run |
+| `ongoing_damage` | damage at a later turn, or when a creature enters / stays in an area, is not rolled |
+| `movement` | push, pull, teleport, speed change, flying or difficult terrain is not applied |
+| `stat_change` | a bonus, penalty, advantage, resistance or changed score is not applied |
+| `zone` | the wall, cloud, light, sphere or object does not exist on the map |
+| `rider` | a second effect on a hit or a failed save (blinded on a hit, extra dice, a curse) is not applied |
+| `duration_not_tracked` | the effect lasts N rounds / minutes / hours and nothing ends it |
+| `creation` | it conjures a creature or an object that is not a modelled summon |
+| `upcast_extra` | a higher slot adds something other than dice, healing or targets |
+| `damage_not_rolled` | the data has a damage table but no attack or save, so the cast rolls nothing |
+| `effect_not_applied`, `pool_not_shared_out`, `heal_half_not_applied`, `repeat_attack_not_run` | one-off gaps named by the hand review (`scripts/spell-overrides.json`) |
+
 
 - **duration_not_tracked**: 136 - alter-self, animal-friendship, animal-shapes, antilife-shell, antimagic-field, arcane-hand, bane, banishment, barkskin, beacon-of-hope, bestow-curse, black-tentacles, blade-barrier, bless, blindness-deafness, blur, call-lightning, calm-emotions, charm-person, chill-touch, cloudkill, command, compulsion, confusion, contagion, control-water, dancing-lights, darkness, darkvision, daylight, death-ward, delayed-blast-fireball, demiplane, dispel-evil-and-good, divine-favor, dominate-beast, dominate-monster, dominate-person, earthquake, enhance-ability, enlarge-reduce, entangle, enthrall, expeditious-retreat, eyebite, faerie-fire, fear, fire-shield, flaming-sphere, flesh-to-stone, fly, fog-cloud, forcecage, freedom-of-movement, gaseous-form, gate, glibness, globe-of-invulnerability, grease, greater-invisibility, guardian-of-faith, guidance, guiding-bolt, gust-of-wind, haste, heat-metal, heroism, hideous-laughter, hold-monster, hold-person, holy-aura, hunters-mark, hypnotic-pattern, incendiary-cloud, insect-plague, invisibility, irresistible-dance, jump, levitate, light, longstrider, mage-armor, magic-weapon, mass-suggestion, maze, mind-blank, mirror-image, mislead, modify-memory, moonbeam, move-earth, pass-without-trace, passwall, phantasmal-killer, polymorph, prismatic-wall, produce-flame, protection-from-energy, protection-from-evil-and-good, protection-from-poison, ray-of-enfeeblement, resilient-sphere, resistance, reverse-gravity, sanctuary, shapechange, shield-of-faith, shillelagh, silence, sleet-storm, slow, speak-with-plants, spider-climb, spike-growth, spirit-guardians, spiritual-weapon, stinking-cloud, stoneskin, storm-of-vengeance, suggestion, sunbeam, telekinesis, transport-via-plants, true-polymorph, true-seeing, true-strike, wall-of-fire, wall-of-force, wall-of-ice, wall-of-stone, wall-of-thorns, warding-bond, web, weird, wind-wall, zone-of-truth
 - **movement**: 68 - alter-self, antilife-shell, arcane-hand, banishment, black-tentacles, blade-barrier, blink, command, compulsion, control-water, dancing-lights, delayed-blast-fireball, dimension-door, earthquake, entangle, etherealness, expeditious-retreat, eyebite, fear, flaming-sphere, floating-disk, fly, forcecage, freedom-of-movement, gaseous-form, gate, grease, gust-of-wind, haste, ice-storm, incendiary-cloud, insect-plague, jump, levitate, longstrider, mage-hand, maze, meld-into-stone, mislead, misty-step, passwall, plane-shift, plant-growth, prismatic-spray, project-image, ray-of-frost, resilient-sphere, reverse-gravity, sleet-storm, slow, speak-with-plants, spider-climb, spike-growth, spirit-guardians, telekinesis, teleport, thunderwave, transport-via-plants, tree-stride, unseen-servant, wall-of-force, wall-of-ice, wall-of-stone, wall-of-thorns, water-walk, web, wind-wall, word-of-recall
@@ -140,7 +176,7 @@ need Postgres, so the engine side was verified by reading, not by running a cast
 - **heal_half_not_applied**: 1 - vampiric-touch
 - **repeat_attack_not_run**: 1 - vampiric-touch
 
-## conditions a spell should impose and the app does not apply
+#### conditions a spell should impose and the app does not apply
 
 - blinded: 9 - blindness-deafness, contagion, divine-word, holy-aura, mislead, prismatic-spray, prismatic-wall, sunbeam, sunburst
 - charmed: 7 - animal-friendship, charm-person, dominate-beast, dominate-monster, dominate-person, hypnotic-pattern, modify-memory
@@ -149,17 +185,17 @@ need Postgres, so the engine side was verified by reading, not by running a cast
 - prone: 5 - command, earthquake, grease, hideous-laughter, sleet-storm
 - incapacitated: 4 - banishment, hideous-laughter, hypnotic-pattern, modify-memory
 - frightened: 4 - eyebite, fear, phantasmal-killer, weird
-- stunned: 3 - contagion, divine-word, power-word-stun
 - petrified: 3 - flesh-to-stone, prismatic-spray, prismatic-wall
 - invisible: 3 - greater-invisibility, invisibility, mislead
+- stunned: 2 - contagion, divine-word
 - paralyzed: 2 - hold-monster, hold-person
 - grappled: 1 - arcane-hand
 - unconscious: 1 - eyebite
 
-## concentration spells castable in combat: 118 (flag set and DC reminder only; no auto end on duration, incapacitation or failed save)
+#### concentration spells castable in combat: 118 (flag set and DC reminder only; no auto end on duration, incapacitation or failed save)
 
 
-## rituals: 29 (alarm, animal-messenger, augury, commune, commune-with-nature, comprehend-languages, contact-other-plane, detect-magic, detect-poison-and-disease, divination, find-familiar, floating-disk, forbiddance, gentle-repose, identify, illusory-script, instant-summons, locate-animals-or-plants, magic-mouth, meld-into-stone, phantom-steed, purify-food-and-drink, silence, speak-with-animals, telepathic-bond, tiny-hut, unseen-servant, water-breathing, water-walk); only find-familiar can be cast as a ritual (CastSummon); 12 of them are absent
+#### rituals: 29 (alarm, animal-messenger, augury, commune, commune-with-nature, comprehend-languages, contact-other-plane, detect-magic, detect-poison-and-disease, divination, find-familiar, floating-disk, forbiddance, gentle-repose, identify, illusory-script, instant-summons, locate-animals-or-plants, magic-mouth, meld-into-stone, phantom-steed, purify-food-and-drink, silence, speak-with-animals, telepathic-bond, tiny-hut, unseen-servant, water-breathing, water-walk); only find-familiar can be cast as a ritual (CastSummon); 12 of them are absent
 
 
 ### 1.4 Every spell
@@ -639,7 +675,7 @@ simulated the rest with `scripts/monster-counts.py` (`monsters-counts.json`, `mo
 | Reactions | 12 monsters (Parry x6, Split x2, Shield, Rock Catching, Shriek, Unnerving Mask) | absent: the app's reaction is the opportunity attack (built) and Shield for a player's character; a monster's Parry is not offered | `play/combat_reactions.go:38` (`target.Kind != kindPlayer` returns no Shield), `play/combat_opportunity.go` for the attack | `architecture.md:821` (reaction spells), no doc for monsters | medium |
 | Opportunity attack by a monster | all with a melee attack | built | `play/combat_opportunity.go:62-95` | - | - |
 | Special traits (279 monsters have at least one, 152 distinct names) | 279 | reminder: shown in the stat block as English text | `rules/creatures.go:423`, `:585` (`Features`) | `architecture.md:775` ("the sheets' text stays in English") | see below |
-| - Pack Tactics (advantage when an ally is adjacent) | 17 | reminder (there is no advantage anywhere: part 0 fact 3) | `rules.md:353` | `rules.md:353` | high |
+| - Pack Tactics (advantage when an ally is adjacent) | 17 | reminder (there is no advantage anywhere: shared cause C2 in section 7) | `rules.md:353` | `rules.md:353` | high |
 | - Magic Resistance (advantage on saves vs spells) | 31 | reminder: the server rolls a monster's save with no advantage | `play/combat_spells.go:636-668` | `rules.md:353` | high |
 | - Legendary Resistance (3 / day, turn a failed save into a success) | 25 | absent: the save outcome is final; no counter | same | no doc | high |
 | - Regeneration (start of turn) | 7 (troll, oni, shield guardian, 3 vampire forms, vampire bat) | absent: no start-of-turn hook | `play/combat_turn.go:109`, `play/combat.go:744` | `rules.md:329` | high (trolls) |
@@ -670,3 +706,172 @@ spellcasting, tremorsense).
   nothing offers a "use / ready" state.
 - **Pack Tactics, Parry, Magic Resistance?** Text. There is no advantage or disadvantage mechanism at all.
 - **Regeneration, Undead Fortitude?** Text; no start-of-turn hook and no 0-HP check for an NPC.
+
+## 5. Races and subraces (9 races, 4 subraces, 38 traits)
+
+Method: `overlay/zz_races_dump_test.go` derives a level 3 Fighter of every race and subrace and writes what the sheet
+shows (`races.json`: speed, senses, skill proficiencies, hints, resources, actions, languages, issues). A trait's state is
+what that sheet does with it, not what `effects/races.json` says it is.
+
+**Race-level numbers (built).** Ability bonuses (`rules/abilities.go:38-70`), size and speed (dwarf and halfling 25, others 30), languages,
+subrace bonuses, weapon / tool proficiencies written in `data/traits.json` (dwarven combat training, elf weapon training,
+tinker), and the half-elf's two free +1 as a prompt to type them into the manual bonuses (`rules/abilities.go:381-407`). The dwarf keeps
+its speed in heavy armour (`rules/hitpoints.go:77`). Armour and heavy weapons for Small races are hints only (part 2).
+
+### 5.1 Traits, one row each
+
+| Trait (races / subraces) | State | What the sheet does | Evidence | Deliberate? | Impact |
+| --- | --- | --- | --- | --- | --- |
+| Darkvision 60 ft (dwarf, elf, gnome, half-elf, half-orc, tiefling) | built | derived sense; feeds the fog of war and trap noticing (dim light is read as bright, darkness as grey) | `effects/races.json:3`, `rules/hitpoints.go:81-105`, `rules/vision/vision.go:258-270`, `characters/partyvision.go:63` | - | - |
+| Dwarven Toughness (hill dwarf) | built | +1 max HP per level (+3 at level 3, checked in `races.json`) | `effects/races.json:19` | - | - |
+| Keen Senses (elf) | built | Perception proficiency | `data/traits.json` (`proficiencies`), `races.json` dump: elf has `skill:perception` | - | - |
+| Menacing (half-orc) | built | Intimidation proficiency | same | - | - |
+| Dwarven Combat Training, Elf Weapon Training | built | four weapon proficiencies each | `data/traits.json` | - | - |
+| Tool Proficiency (dwarf), Extra Language (high elf), High Elf Cantrip, Skill Versatility (half-elf), Draconic Ancestry | built | a choice the builder asks for; missing choices are listed as "Faltam N perícias" | `effects/races.json:13,34,37,52,102` | - | - |
+| Tinker (rock gnome) | partial | Tinker's tools proficiency is real; building the devices (clockwork toy, fire starter, music box) is text | `effects/races.json:99`, `data/traits.json` | no doc | low |
+| Breath Weapon (dragonborn) | partial | a "Sua vez" action that spends 1 use (short rest) and a hint "CD 12; 2d6, 3d6 at 6th..., half on a save"; **no save is rolled, no damage is rolled, no area** | `effects/races.json:85-89`, `play/combat_actions.go:1770-1776` (`spendResource`) | `rules.md:329` | high (dragonborn) |
+| Relentless Endurance (half-orc) | partial | a once-per-long-rest counter and a hint; nothing fires when the character drops to 0 HP | `effects/races.json:108-111`; nothing in `play/combat_death.go` or `play/combat_actions.go` reads `relentless_endurance` | `rules.md:329` | high |
+| Dwarven Resilience (dwarf): advantage on saves vs poison, poison resistance | reminder | two hints; no advantage mechanism, and damage to a player waits for the master | `effects/races.json:6-9`, `rules.md:56` | `rules.md:353`, `:56` | medium |
+| Fey Ancestry (elf, half-elf): advantage vs charm, no magical sleep | reminder | hint; Sleep still works on an elf (no check of the target's traits) | `effects/races.json:25-27`, `effects/spells.json` `spell:sleep` | `rules.md:353` | medium |
+| Brave (halfling) | reminder | hint "Vantagem em testes ... amedrontado" | `effects/races.json:43` | `rules.md:353` | low |
+| Gnome Cunning (gnome): advantage on INT / WIS / CHA saves vs magic | reminder | hint; the server's save roll for a player's character in a spell has no advantage | `effects/races.json:93`, `play/combat_spells.go:636-668` | `rules.md:353` | medium |
+| Lucky (halfling): reroll a natural 1 | reminder | hint; the d20 is rolled once (`d20`, `play/combat_spells.go:582`), no reroll button | `effects/races.json:40` | no doc | medium |
+| Stonecunning (dwarf), Artificer's Lore (rock gnome): double proficiency on a subject | reminder | hint with the computed bonus ("História +4") | `effects/races.json:16,96` | tags are "never applied" (`rules/effects.go:35`) | low |
+| Hellish Resistance (tiefling), Damage Resistance (dragonborn) and the 10 Draconic Ancestry colours (breath shape, DC and resistance) | reminder | text hints; a resistance is never applied to damage on a player's character | `effects/races.json:55-84,90,115` | `rules.md:56` ("Rage and other resistances are notes the master applies") | medium |
+| Infernal Legacy (tiefling): Thaumaturgy, Hellish Rebuke 1/day at 3, Darkness 1/day at 5 | reminder | the spells are only allowed on the list; they are not added to the sheet, not gated by level and not counted per day; Hellish Rebuke is a reaction, which cannot be cast (part 1) | `effects/races.json:118`, `rules/spellcasting.go:164-166` (granted spells only widen the "on list" check); the tiefling Fighter dump has no spells | no doc | medium |
+| Savage Attacks (half-orc): one extra weapon die on a critical hit | reminder | no text on the sheet (an empty note); the critical rule doubles the dice only | `effects/races.json:112`, `play/combat_actions.go` (`openHit`, `play/combat_reactions.go:66`) | no doc | medium |
+| Trance, Halfling Nimbleness, Naturally Stealthy | reminder | the SRD feature text, nothing else | `effects/races.json:28,46,49` | no doc | low |
+
+Totals over the 38 traits: **built 11, partial 3, reminder 24, absent 0**. Every trait at least appears as feature text.
+Counted by what a table notices in play: of the 12 traits that touch a roll (advantage, reroll, extra die, resistance) none
+is applied, because the combat has no roll modes (shared cause C2 in section 7).
+
+## 6. Backgrounds and feats
+
+### 6.1 Backgrounds
+
+| Piece | State | Evidence | Deliberate? | Impact |
+| --- | --- | --- | --- | --- |
+| The SRD's one background, Acolyte: two skills, two languages to choose, the feature "Shelter of the Faithful" | built for skills and languages; the feature is text | `data/backgrounds.json`, `effects/backgrounds.json` (a note with no effect) | - | - |
+| Acolyte equipment, personality traits, ideals, bonds, flaws tables | absent: the SRD data does not carry them (`BackgroundEquipmentPT` is empty for an SRD background) | `rules/api.go:558-560` | the comment itself | low (the sheet has free text boxes for the four personality fields: `characters.proto:1311-1330`) |
+| "Outro" (custom) background: name, two skills, two tools or languages, a written feature, equipment text | built, following SRD "Customizing a Background"; a missing part is a notice, not an error | `rules/api.go:100-112`, `proto characters.proto:1109-1125`, `docs/architecture.md:1131` | by design | - |
+| Table backgrounds (the master writes one) | built | `table_content.proto:288-298` (`TableBackground`), `web/.../background-editor` | - | - |
+| A background feature with a mechanical effect (e.g. contacts, a skill bonus) | partial: a table background's feature may carry the closed effects (proficiency, sense, note...); the SRD's own is a note | `rules/tablemenu.go:120-170` effect menu | - | low |
+
+### 6.2 Feats
+
+| Piece | State | Evidence | Deliberate? | Impact |
+| --- | --- | --- | --- | --- |
+| The SRD's feat (Grappler) in the content | absent: the importer reads features, not feats | `backend/cmd/srdimport/main.go:150` (converters: classes, levels, subclasses, features, backgrounds, ... no feats), `data/` has no feats file, `grep -ri grappler` finds only the grappled condition and monster text | `docs/product/rules.md:47` ("SRD 5.1 has no feats") | medium |
+| A feat field on the sheet (`FullSheet`, `Build`) | absent | `characters.proto:943-1010`, `rules/api.go:90-160` | same | high for a table that wants feats |
+| Level-up choice "feat instead of an ability score improvement" | absent: only +2 / +1 +1 (none above 20) goes to `extra_ability_bonuses` | `rules/levelup.go:111-113` ("The SRD 5.1 has no feats"), `:335`, `:725` | `rules.md:47` | high |
+| A table (house) feat: a content kind the master can write | absent: the kinds are class, subclass, race, subrace, background, spell | `proto/meurpg/rules/v1/table_content.proto:31-46` | no doc | high |
+| What a feat would need that already exists | the closed effect vocabulary can express Tough (`hp.max`), Alert (`initiative`), Mobile (`speed.walk`), Resilient / Skilled / Linguist / Keen Mind style proficiencies, Observant (passive), and notes for the rest | `rules/effects.go:135`, `rules/tablemenu.go:120-170` | - | - |
+
+**Workaround a table has today.** Take the ability score improvement and write the feat in the character's free-text notes
+or in a custom background / table class feature; or make a table subclass whose feature carries the effects. Nothing lets a
+player pick a feat at level-up. A table that wanted feats would lack: (1) a feats catalogue (the SRD gives Grappler only,
+the PHB feats are not shippable, so the table would write its own), (2) a `feat` content kind in the table editor with
+prerequisites, (3) a "feat or ASI" choice in `GetLevelUpOptions` / `LevelUpCharacter`, (4) a place on the sheet and in the
+derive for the feat's effects, and (5) the combat hooks that make the popular ones matter (Great Weapon Master and Sharpshooter
+need a to-hit penalty toggle, Sentinel and Polearm Master need reactions, Lucky and Alert need roll modes), which today do not exist.
+
+## 7. Shared causes
+
+One missing mechanism, many rows. First the five engine facts every part points at, then the causes.
+
+### 7.1 The engine, in five facts that decide most rows
+
+These are the mechanisms the rest of the report keeps pointing at. Each was read in code.
+
+1. **A cast computes five things and nothing else.** `CastSpell` (`backend/internal/play/combat_spells.go:192`) spends
+   the slot and the action, sets concentration, and then, for each target, runs one of: a spell attack roll with the
+   first damage type (`:598`), a saving throw with full/half/no damage (`:636`), Magic Missile's darts (`:670`), a
+   pending heal (`:560`+), or one of 8 hit-point effects (`play/combat_spells_hp.go:91`, data in
+   `effects/spells.json`). Summons go through a separate choice (`play/creature_cast.go:42`). The proto says it
+   plainly: "Anything else (Teia, Passo Nebuloso...): it spends and goes to the log; the effect is the table's"
+   (`proto/meurpg/play/v1/combat.proto:885`), and the web shows "A magia foi conjurada: o mestre resolve o efeito."
+   (`web/src/app/pages/live-session/combat/cast-sheet/cast-result.ts:63`).
+2. **Conditions are labels.** `play/combat_conditions.go:14-18`: "labels the master marks and the app reminds the table
+   about; the engine applies no effect." The only code that reads a condition is speed 0 for grappled, restrained,
+   paralyzed, petrified, stunned, unconscious (`play/combat_move.go:144-146`) and "cannot react" for
+   incapacitated/paralyzed/petrified/stunned/unconscious/blinded (`play/combat_opportunity.go:42-44`). No spell applies a
+   condition except Sleep, Color Spray and Power Word Stun (`effects/spells.json`).
+3. **There is no advantage or disadvantage in any roll.** An attack, save or check is one d20
+   (`RollAttackRequest` has `roll_in_app` or `d20_face` only, `combat.proto:2539`; `play/combat_spells.go:582` `d20`).
+   Every `roll_mode` effect, "Desvantagem em Furtividade", Pack Tactics and flanking are text.
+   Doc: "Out of scope: flanking, which asks for advantage on attacks (the app does not apply it yet)"
+   (`docs/product/rules.md:353`).
+4. **Nothing happens at the start or end of a turn, and nothing expires.** `EndTurn` (`play/combat.go:744`) and
+   `startTurn` (`play/combat_turn.go:109`) reset the economy and the familiar's sight; there are no durations, no repeat
+   saves, no ongoing damage, no regeneration, no recharge dice. Doc: "Applying effects automatically is left for after
+   the MVP. That includes the saving throws a spell forces later ... the master calls for the later ones"
+   (`docs/product/rules.md:329`).
+5. **Content that is not a character's own sheet is a catalogue.** Magic items, adventuring gear, mounts, vehicles,
+   monsters' traits and spellcasting are data plus English text. A character's equipment is free text
+   (`proto/meurpg/characters/v1/characters.proto:1150` `Item`, 1003 `equipment`), and an NPC made from a monster keeps at most
+   three attacks (`backend/internal/characters/npcfromcreature.go:105`).
+
+Not in the list of five but used everywhere: **damage to a player's character waits for the master**, who applies it
+(`docs/product/rules.md:56`: "A player character's resistances (Rage and others) are notes the master applies"), while
+damage to an NPC lands at once with its plain resistances (`play/combat_actions.go:1126` `afterResistance`).
+
+### 7.2 Causes
+
+| ID | Missing mechanism | What it explains | Rows / counts | Evidence |
+| --- | --- | --- | --- | --- |
+| C1 | **Conditions are labels with no effect.** Only speed 0 and "cannot react" read them; no roll, save or attack reads a condition; immunities are never checked | spells that impose a condition (38 flagged, plus Hold Person's paralysis...), monsters' riders (129), condition immunities (92), Sleep ignoring immunities | spells 1.3 "condition"; monsters 4.1 | `play/combat_conditions.go:14-18`, `play/combat_move.go:144`, `play/combat_opportunity.go:42` |
+| C2 | **No roll modes (advantage / disadvantage) in the combat, the cast or the check.** A roll is one d20; "Hints" carry the rest as text | 12 race traits, Pack Tactics, Magic Resistance, flanking, long range, heavy weapons, stealth armour, Bless / Bane / Guidance as bonus dice, guiding bolt, faerie fire, true strike, Vicious Mockery | races 5.1, monsters 4.1, equipment 2.1 and 2.2 | `play/combat_spells.go:582`, `combat.proto:2539`, `rules/effects.go:35` (tagged roll modes are "never applied"), `docs/product/rules.md:353` |
+| C3 | **No turn clock.** Start / end of turn does nothing; no durations, no repeat saves, no ongoing damage, no recharge dice, no regeneration, no legendary-action pool, no concentration timer | 136 spells with a duration, 33 repeat saves, 22 ongoing damage, 118 concentration spells, recharge (71 monsters), Regeneration, legendary actions (32), Undead Fortitude, Relentless Endurance | spells 1.3, monsters 4.1, races 5.1 | `play/combat.go:744` `EndTurn`, `play/combat_turn.go:109` `startTurn`, `docs/product/rules.md:329` |
+| C4 | **No temporary modifiers on a combatant.** Only Shield's `AcBonus`, temporary hit points and a raised maximum exist; no timed +AC, +attack, +save, speed, resistance, extra damage dice | 53 stat-change spells; items; hunters mark, hex style riders | spells 1.3 "stat_change" | `play/combat_reactions.go` (`AcBonus`), `play/combat_spells_hp.go:308-336` |
+| C5 | **Nothing a spell leaves on the map.** Area shapes are data; there are no zones, walls, clouds, lights or summoned objects as map pieces | 57 zone / object spells, 68 with movement, 94 area spells | spells 1.3 "zone" | `rules/spelldetails.go:140`, `maps/` has traps and lights as separate master tools |
+| C6 | **No cast flow outside a combat, for rituals or for a long casting time.** `CastSpell` needs an encounter; `CastSummon` handles three spells | 57 long spells, 29 rituals (Find Familiar only), healing between fights | spells 1.1 | `play/combat_spells.go:192`, `rules/combat/turn.go:478`, `play/creature_cast.go:170` |
+| C7 | **No item model on a sheet.** Equipment is free text; weapons / armour are content keys without bonuses; magic items are a catalogue; no charges, attunement list, weight, ammunition, consumption | magic items (362), gear, ammunition, potions, coins, +N weapons | parts 2 and 3 | `characters.proto:1150`, `rules/attacks.go:36`, `docs/architecture.md:754` |
+| C8 | **A monster fights as a basic NPC sheet.** Three attacks, one damage die each, no save actions, no recharge, no traits, no spells, no reactions, no legendary actions | 19 attack-less monsters, 134 save actions, 112 recharge actions, 32 legendary monsters, 36 casters, 12 reaction monsters | part 4 | `characters/npcfromcreature.go:105-165`, `rules/creatures.go:499` |
+| C9 | **Reactions are two special cases.** Shield and the opportunity attack are coded; the rest of the reaction family has no trigger / prompt | Counterspell, Hellish Rebuke, Feather Fall, Parry (6 monsters), Rock Catching, Shield Guardian | spells 1.1, monsters 4.1 | `play/combat_reactions.go:31`, `rules/combat/turn.go:482` |
+| C10 | **Damage to a player's character is applied by the master**, so resistances (Rage, Hellish Resistance, Dwarven Resilience, dragonborn ancestry) are notes | 4 race traits and class features | races 5.1 | `docs/product/rules.md:56`, `play/combat_actions.go:1126-1155` |
+| C11 | **The importer's scope.** Equipment categories other than weapon, armour and tools, feats, lair actions are not imported | gear, mounts, vehicles, ammunition, Grappler | parts 2 and 6 | `backend/cmd/srdimport/main.go:914`, `:150` |
+| C12 | **Targets are picked by hand.** The server limits the number (10) and the range, but does not work out who stands in a cone, cube, sphere or line | 94 area spells | spells 1.1 | `play/combat_spells.go:47`, `rules/spelldetails.go:140` |
+
+### 7.3 What the best-return mechanisms would unlock
+
+- **C1 + C3 together** (a condition on a combatant with a duration and a repeat-save hook) would turn about 70 spells and most of the
+  129 monster riders from reminders into rolls: Hold Person, Web, Fear, Entangle, a ghoul's claw.
+- **C2** (an advantage / disadvantage flag on a roll, set by a condition or by hand) unlocks Pack Tactics, Magic Resistance and the
+  12 race traits that are hints today. Bless / Bane / Guidance as extra dice need **C4**.
+- **C8** (let a stat block keep all of its attacks and save actions, plus a "used / ready" state) is the most visible one at the table:
+  dragons, spiders, ghouls, and every bat and rat.
+- **C7** is the largest. A cheap first step exists: a list of item keys on a sheet whose +N and protection items are `modifier`
+  effects, which the effect vocabulary can already express (`rules/effects.go:135`).
+
+## Appendix: how this was made and how to repeat it
+
+Everything lives in `review/coverage-content/`. No file of the application was changed.
+
+| What | Where |
+| --- | --- |
+| Overlay tests (Go, run with `go test -overlay`, kept outside the packages) | `overlay/zz_*_dump_test.go`; `overlay/run.sh <name> <TestName> [package]` writes `<name>.json` |
+| Spells: what a cast reads for each of the 319 | `spells-machine.json` (`overlay/zz_spells_dump_test.go`, run with `overlay/run-spells.sh`) |
+| Spells: tags from the description (haiku sweep, 8 batches of 40, two agents at a time) | prompt `scripts/spell-tag-prompt.md`, inputs `raw/in/`, outputs `raw/spell-tags-b*.jsonl` |
+| Spells: state, impact, groups | `scripts/spell-state.py` (rules and hand overrides in `scripts/spell-overrides.json`), `scripts/spell-groups.py`; results `spells-states.json`, `spells-states.csv`, `spells-groups.md` |
+| Spells: sample of the content side of a cast | `spells-cast-sample.txt` (`overlay/zz_sample_dump_test.go`) |
+| Equipment | `equip.json` (`overlay/zz_equip_dump_test.go`: 37 weapons and 13 armour pieces through `Derive`) |
+| Races | `races.json` (`overlay/zz_races_dump_test.go`) |
+| Magic items | `scripts/magic-counts.py`, `magic-counts.json`, `magic-items-by-effect.json` |
+| Monsters | `scripts/monster-counts.py`, `monsters-counts.json`, `monsters-features.json`, `npc-sheets.json` (`overlay/zz_npc_dump_test.go`: `npcSheetFromCreature` over all 334) |
+| Report | `report-src/*.md` assembled by `scripts/build-report.py` into `../coverage-content.md` |
+
+To repeat: `cd backend && ../review/coverage-content/overlay/run-spells.sh`, then `run.sh races TestCoverageDumpRaces`, `run.sh equip TestCoverageDumpEquip`,
+`run.sh sample TestCoverageSampleSpells`, `run.sh npc TestCoverageDumpNpcSheets characters`, then the Python scripts, then `build-report.py`
+(the `run.sh` files write to `review/coverage-content/<name>.json`; the sample output was renamed to `spells-cast-sample.txt`).
+
+**Limits to know.**
+
+- The play tests that cast through the RPC (`play/combat_spells_test.go` and others) need Postgres, which this session did not have, so the
+  engine side of a cast was verified by reading the code at the lines cited, and the content side by the overlay tests above. The sample file shows what the
+  cast would roll for 22 spell and slot combinations.
+- The haiku tags give the *text* of each spell; the *state* of every spell was decided by me from the machine view plus the rules written in
+  `scripts/spell-state.py` and fixed by 16 hand overrides. The impact column of the spell table is a rule of thumb (level, kind, a list of staple spells in the script),
+  not a measurement.
+- Magic item rows 3.1 that count "text mentions" use keywords over the SRD text and are approximate.
+- "Deliberate?" quotes a doc line only when the doc says the gap is on purpose or out of scope; a doc was never used as evidence of a state.
