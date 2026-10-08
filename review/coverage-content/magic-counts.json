@@ -1,0 +1,36 @@
+{
+ "items": 362,
+ "by_category": {
+  "armor": 29,
+  "ammunition": 5,
+  "wondrous-item": 177,
+  "weapon": 30,
+  "rod": 6,
+  "potion": 40,
+  "ring": 36,
+  "scroll": 11,
+  "staff": 12,
+  "wand": 16
+ },
+ "by_rarity": {
+  "uncommon": 94,
+  "varies": 11,
+  "rare": 119,
+  "very_rare": 90,
+  "legendary": 43,
+  "artifact": 1,
+  "common": 4
+ },
+ "families": 21,
+ "variants": 123,
+ "attunement_required": 175,
+ "attunement_by_class_or_kind": 29,
+ "consumable": 88,
+ "mentions_charges": 53,
+ "dawn_recharge": 41,
+ "name_or_text_plus_bonus": 59,
+ "grants_damage_resistance": 66,
+ "casts_spells": 88,
+ "sets_ability_score": 32,
+ "changes_speed": 23
+}
