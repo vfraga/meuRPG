@@ -1,6 +1,6 @@
 # MeuRPG rules coverage: SRD 5.1 rules chapters (work in progress)
 
-Status: chapters 1 (Using Ability Scores) and 2 (Adventuring) are judged. Combat, Spellcasting, Conditions and "anything else" follow in later pushes; the summary, the top-20 and the dependencies come last.
+Status: chapters 1 (Using Ability Scores), 2 (Adventuring) and 3 (Combat) are judged. Spellcasting, Conditions and "anything else" follow in later pushes; the summary, the top-20 and the dependencies come last.
 
 Source: 5e-database at `a8abc93b` (the importer's `sourceCommit`). Note: `5e-SRD-Rule-Sections.json` does not exist at that commit; the 137 sections (with their text) are all in `5e-SRD-Rules.json` (index in `review/coverage-rules/srd-rules-index.txt`).
 
@@ -73,3 +73,79 @@ States: built / partial / reminder / absent. Impact: high / medium / low. "Delib
 | Lifestyle expenses | absent | no match | – | low | |
 | Downtime (crafting, profession, recuperating, research, training) | absent | no match | – | low | |
 | Exhaustion (see Conditions chapter) | reminder | web core/combat/conditions.ts:24 | – | high | |
+
+## 3. Combat
+
+Paths are under `backend/internal/` unless they start with `web/` or `docs/`. "KL" = `docs/architecture.md:1847` ("Known limits of the combat engine").
+
+### 3a. Order of combat, movement and position, actions
+
+| Mechanic | State | Evidence | Deliberate? | Impact | Note |
+| --- | --- | --- | --- | --- | --- |
+| Rounds and turns in initiative order | built | play/combat_turn.go:63-143 | – | high | Skips the defeated, counts rounds. |
+| Initiative roll (d20 + Dex, each NPC its own) | built | play/combat.go:389, :460, :544 | RN-19 | high | |
+| Initiative ties | partial | play/combat_rules.go:61-103; combat.go:599 SetInitiativeOrder | – | low | Sorts by total then bonus; master orders unresolved ties; no optional d20 re-roll. |
+| Joint turn for equal totals | built | play/combat_turn.go:31-43 | project rule, not SRD | medium | |
+| Joining a running combat | partial | play/combat.go:991-1034 | – | medium | NPCs may join; a player's character may not join once the combat began. |
+| Surprise (surprised creatures skip first turn and reaction) | absent | no match for surpris/surpres in play/ rules/ characters/ proto docs | – | high | Stealth vs passive Perception to decide it also absent. |
+| Move + action in either order, split movement | built | play/combat_move.go (no action gate); queries.sql:231 reset | – | high | Movement between the attacks of one Attack action is allowed. |
+| Bonus action (one per turn, only from features/spells) | built | rules/combat/turn.go:383; rules/actions.go:69 | – | high | |
+| Bonus-action spell limit | built | rules/combat/turn.go:392-494 | – | medium | |
+| Reaction (one, resets on own turn) | built | play/combat_actions.go:1728; queries.sql:231 | – | high | |
+| Opportunity attack (offer, Disengage, incapacitated reactors) | built | play/combat_opportunity.go:20-155; combat_actions.go:573-663 | – | high | Melee only, offer to the reactor; forced moves exempt. |
+| Free object interaction | absent | no match; only doors open on a move (play/combat_move.go:552) | – | low | |
+| Dash | built | play/combat_actions.go:1799; combat_move.go:156 | KL(1) second Dash gives x2 not x3 | high | |
+| Disengage | built | play/combat_actions.go:1806; combat_opportunity.go:96 | – | high | |
+| Dodge | reminder | play/combat_actions.go:1732-1753 (spends action only); no dodge flag | KL(2) "Patient Defense's Dodge only logs" | high | Needs advantage/disadvantage. |
+| Help | reminder | same path | combat.proto:742 | medium | Needs advantage. |
+| Hide | reminder | same path; `Hidden` is the master's toggle (play/combat.go:927) | – | high | No Stealth roll, no contest. |
+| Ready (trigger, readied spell) | reminder | same path; no trigger stored | – | medium | The later reaction is an ordinary reaction. |
+| Search (combat action) | reminder | same path; trap search is separate (play/traps.go:336) | – | medium | |
+| Use an Object | reminder | same path; web combat-log.ts:455 | – | medium | |
+| Attack action, Extra Attack | built | rules/combat/turn.go:367; play/combat_actions.go:1644 | – | high | |
+| Cast a Spell action | built | rules/combat/turn.go:458-494 | – | high | Casting times of a minute or more refused in combat. |
+| Improvised actions | absent | play/combat_actions.go:1685 refuses unknown keys | – | low | |
+| Difficult terrain (+5 ft/square, creatures too) | built | rules/grid/move.go:249-251 | RN-21 | high | |
+| Being prone (drop, stand up costs half speed, crawl) | absent | play/combat_move.go:142 comment "not modeled" | comment only | high | Prone is a label; nothing reads it. |
+| Moving through creatures (allies, two sizes apart, no ending on one) | built | rules/grid/move.go:149-160, :255 | – | medium | |
+| Flying movement, falling when it cannot move | partial | play/combat_move.go:131 | – | low | Flier ignores terrain; no falling. |
+| Creature size and space | partial | rules/grid/move.go:29-41 | – | medium | Size only rules passing; every creature takes exactly one square. |
+| Squeezing | absent | no match (grid "squeeze" is wall corners) | – | low | |
+| Speed 0 from conditions | built | play/combat_move.go:144-160 | – | medium | Grappled, restrained, paralyzed, petrified, stunned, unconscious. |
+
+### 3b. Attacks, cover, damage, death, mounts
+
+| Mechanic | State | Evidence | Deliberate? | Impact | Note |
+| --- | --- | --- | --- | --- | --- |
+| Attack roll vs AC, nat 20 hits and crits, nat 1 misses | built | rules/combat/rolls.go:39-52; play/combat_actions.go:728-734 | – | high | |
+| Attack modifier (Str/Dex/finesse, proficiency) | built | rules/attacks.go:45-65 | – | high | |
+| Advantage/disadvantage on attacks (any source) | absent | play/combat_spells.go:582-595, combat_actions.go:720 | combat.proto:639; KL(2) | high | Confirmed: one d20. |
+| Unseen attacker/target (advantage, disadvantage, guess square) | absent | no match; a player cannot target what the fog hides (combat_actions.go:591-604) | – | high | |
+| Ranged: long range disadvantage | absent | combat_actions.go:181-191, :686 (range is a limit only) | combat.proto:639 | high | |
+| Ranged: hostile within 5 ft disadvantage | absent | no match | combat.proto:639 | high | |
+| Melee reach | built | combat_actions.go:45, :181-196 | – | high | Players are limited by reach on a map; master is not. |
+| Unarmed strike | built | rules/attacks.go:143-153 | – | medium | |
+| Two-weapon fighting | built | combat_actions.go:788; rules/combat/bonusattack.go:67-82 | – | medium | |
+| Grappling, escaping, moving a grappled creature | absent | no match; label "Agarrado" only (web conditions.ts:17) | – | high | Needs contests. |
+| Shoving | absent | no match; forced move is the master's (combat_move.go:273) | – | medium | |
+| Cover (half +2, 3/4 +5, total) on AC and Dex saves | built | play/combat_cover.go:16-127; rules/grid/cover.go:11; combat_spells.go:641 | KL(4) area-spell cover measured from the caster | high | Master can override; doors count as walls. |
+| Damage roll, damage rolled once for all targets of a spell | built | combat_actions.go:974-1013 | – | high | |
+| Critical hit (double dice; table option max + roll) | built | rules/combat/rolls.go:80-88; combat_actions.go:730 | KL(3) Brutal Critical not built | high | Spells crit only on a natural 20. |
+| 13 damage types | built | proto/meurpg/characters/v1/characters.proto:1277-1291 | – | high | |
+| Resistance/vulnerability/immunity of NPCs and creatures | partial | rules/combat/damagetype.go:18-32; play/combat_actions.go:1126 | KL(7) | high | Applied only for plain stat-block entries; conditional ones ("nonmagical weapons") are left to the master. |
+| Resistance/vulnerability/immunity of player characters | absent | play/combat_actions.go:1127 (`holdsHP`), characters/charactercreatures_roster.go:536-545 (empty for players), traps_damage.go:28 | KL(7) "not applied" | high | Confirmed: Rage, Tiefling, Dwarf, Absorb Elements, items are notes; the master edits the amount. |
+| Hit points and temp HP absorb first | built | rules/combat/vitals.go:18-28 | – | high | |
+| Temp HP do not stack; healing does not restore them | built | play/combat_spells_hp.go:305; combat_actions.go:1173 | – | low | Manual set has no max rule (characters/vitals.go:385). |
+| Healing capped at max; from 0 revives and resets death saves | built | rules/combat/vitals.go:39; play/combat_vitals.go:43; combat_actions.go:1171-1208 | – | high | |
+| Dead cannot be healed | unsure-absent | no match for a refusal | – | low | |
+| Dropping to 0: unconscious + prone automatically | absent | no match; condition not added (combat_actions.go:1371) | – | medium | The player sees the death-save state, but no unconscious label. |
+| Instant death (excess damage >= max HP) | absent | rules/combat/vitals.go:10-25 computes `Excess`; nothing reads it | vitals.go:12 "the master decides (RN-03)" | medium | |
+| Death saves (d20, 1 = two, 20 = revive, 3 fails -> master confirms death) | built | play/combat_death.go:56-278; rules/combat/vitals.go:71 | – | high | |
+| Damage at 0 HP = failure (critical = two) | built | combat_actions.go:1371; combat_death.go:285; rules/combat/vitals.go:86 | – | high | |
+| Stabilize: Medicine check DC 10 | absent | no match | – | medium | |
+| Stabilize: Spare the Dying | built | play/combat_spells_hp.go:153-170 | – | low | Sets 3 successes. |
+| Stable regains 1 HP after 1d4 hours | absent | no match | – | low | |
+| Knocking a creature out (non-lethal melee) | absent | no match; `openHit` stores no choice (play/combat_reactions.go:66) | – | medium | |
+| Monsters die at 0 HP | built | combat_actions.go:1153 | – | high | |
+| Mounted combat (mounting, controlling, mount opportunity attacks) | absent | no match | rules/summon.go:15 "mounted combat comes after the MVP" | low | |
+| Underwater combat | absent | no match; combat_move.go:134 swimming out of scope | combat_move.go:134 | low | |
