@@ -1,5 +1,7 @@
 # Gap hunt: accounts, campaigns, invites, characters, level-up, XP and table content
 
+Re-checked against the merged `main` (37 pull requests newer than the first read): every item still holds; cited line numbers may have moved a few lines.
+
 Compared: the docs (stories MR-001 to 007, 016, 017, 021 to 027, 040, 045; rules RN-01 to RN-30 that touch the area; architecture; data model; `.proto` comments), the server (`proto/` and `backend/internal/{identity,campaigns,characters,progression,rules,authz}`) and the web (`web/src/app`). The code is the truth. "Fixed" means the doc was corrected on branch `fix/t4-gap-docs-characters` (EN and the PT-BR twin where one exists; `architecture.md`, `data.md` have none). No test was added: every "behaviour differs" item is shown by the cited code and by the existing Vitest case named in the evidence.
 
 | id | kind | where (doc / server / web) | what | evidence |
