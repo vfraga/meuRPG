@@ -9,18 +9,18 @@ Branch `review/reachability`, from `origin/main`. Nothing outside `review/` chan
 | 1 | RPCs with no caller | 234 RPCs, 21 services | 0 (2 by design) |
 | 2 | Response fields nobody reads | 2,384 fields in non-request messages; 73 never read, 143 more with at most two reading files, checked in context | 4 (RA-02, RA-05, RA-06, RA-07) plus RA-01 |
 | 3 | Options the screen disables or hides by its own rule | `enabled`/`can_*`/`for_you` flags (28 fields), the whole combat action panel | 2 (RA-01, RA-03) |
-| 4 | Refusals and reasons without a specific text | 29 reason/refusal enums, 18 `*-errors.ts` files | 0 |
+| 4 | Refusals and reasons without a specific text | 29 reason/refusal enums, 18 `*-errors.ts` files | 1 (RA-08) |
 | 5 | Stream events with no reaction | 23 events of `WatchGameSession` (the only stream) | 1 (RA-04) |
 | 6 | Enum values with no label | 125 enums, 769 values | 0 |
 
-By severity: 0 high, 2 medium (RA-01, RA-02), 5 low.
+By severity: 0 high, 2 medium (RA-01, RA-02), 6 low (RA-03 to RA-08).
 
 **The three worst gaps**
 1. **RA-01**: the Escudo (Shield) +5 armor class is sent in `Combatant.armor_class_bonus` and no screen shows it. The master's order list and the player's armor class badge keep showing the sheet's armor class.
 2. **RA-02**: a spell with two damage types (Tempestade de Gelo) logs only the first type; `more_damages` is never rendered in the combat log.
 3. **RA-03**: the off-turn "Ataque de oportunidade" button uses a fixed 5 ft reach; the server uses the weapon's reach (glaive, whip), and sends `too_far`.
 
-The audit found no "server can, screen cannot" gap as large as the bonus attack defect. Every RPC has a caller, the stream is fully wired, and the refusal and label maps are complete. What is left is display gaps in combat and a few low items.
+The audit found no "server can, screen cannot" gap as large as the bonus attack defect. Every RPC has a caller, the stream is fully wired, and the refusal and label maps are almost complete. What is left is display gaps in combat and a few low items.
 
 ## Findings
 
@@ -33,6 +33,7 @@ The audit found no "server can, screen cannot" gap as large as the bonus attack 
 | RA-05 | low | 2 | `CombatLogEntry.returned_to_reach`, `return_blocked` (`combat.proto:3340-3343`): an opportunity attack dropped the mover to 0 and it went back to the square (or could not) | Never read (`combat-log.ts` `attackText`). The token moves through `combatant_moved`, but the log never says why | Master and players, in the rare 0 HP opportunity attack | S |
 | RA-06 | low | 2 | `Content.attribution` (`rules.proto:960`): "the app must show on its credits page, exactly as given" | `web/src/app/pages/credits/credits.ts` holds a copy of the text and never reads the field. Not wrong today; nothing ties the two together | Nobody now; the credits would drift if the server text changed | S |
 | RA-07 | low | 2 | `CombatLogSpellTarget.attack_roll`, `cover_bonus`, `CombatLogEntry.attack_roll` (`combat.proto:3403`, `:3416`, `:3293`) | Not read by the log (the cast sheet reads `SpellTargetResult.attack_roll`, `cast-flow.ts:551`). The master's log of a spell attack shows hit or miss without the d20 or the cover bonus | Master, reading back a spell attack | S |
+| RA-08 | low | 4 | `DisabledReason.min_level` for `NO_SLOT`: "the lowest slot level that would do" (`rules.proto:1708`) | Never read; the reason is the generic "Sem espaço" (`web/src/app/core/combat/combat-options.ts:41`), while `NO_USES` does use its `recharge` (`:58`) | Player or master looking at a disabled spell with no slot of the needed level | S |
 
 ## Checked, by design
 
