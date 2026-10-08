@@ -62,12 +62,22 @@ export class PuzzleSessionState {
 
   private async read(): Promise<void> {
     const ticket = ++this.listSeq;
+    const written = new Map(this.applied);
     try {
       if (this.isMaster()) {
-        const runs = await this.api.listSession(this.campaignId());
+        const listed = await this.api.listSession(this.campaignId());
         if (ticket !== this.listSeq) {
           return;
         }
+        // A puzzle written (an action's answer, a `puzzle_changed` read) after this list began is newer than the list's copy.
+        const runs = listed.map((r) => {
+          const id = r.puzzle?.id ?? '';
+          const current =
+            this.applied.get(id) !== written.get(id)
+              ? this.runs().find((c) => c.puzzle?.id === id)
+              : undefined;
+          return current ?? r;
+        });
         this.runs.set(runs);
       } else {
         const shown = await this.api.listShown(this.campaignId());

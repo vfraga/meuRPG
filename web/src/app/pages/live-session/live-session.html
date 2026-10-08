@@ -235,7 +235,7 @@
             (changed)="shownImage.set($event); shownKeep.set(false)"
             (keepChange)="shownKeep.set($event)"
             (leftChanged)="reloadLeftImages()"
-            (taken)="leftImages.set(leftWithout($event))"
+            (taken)="takenBack($event)"
           />
           @if (puzzlesShown()) {
             <app-master-puzzles class="board__puzzles" [campaignId]="campaignId()" [state]="puzzles" />

@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MAT_BOTTOM_SHEET_DATA, MatBottomSheetRef } from '@angular/material/bottom-sheet';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
@@ -26,8 +26,8 @@ type SaveState =
 
 /**
  * "Ajustar Brisa" (RN-02, artboard E5-05): the master's correction of a
- * character's hit points, temporary hit points, spell slots and hit dice
- * during the session. One component in two containers: a bottom sheet on
+ * character's hit points, temporary hit points, spell slots, hit dice,
+ * resource uses and a beast form's hit points during the session. One component in two containers: a bottom sheet on
  * a phone, a dialog of about 440px from a tablet up (the page picks).
  *
  * Every number is absolute ("9", not "−5"), and "Salvar ajuste" sends one
@@ -76,11 +76,32 @@ export class AdjustVitals {
     used: signal(s.used),
   }));
 
+  protected readonly resources = (this.v.resources ?? [])
+    .filter((r) => r.total > 0)
+    .map((r) => ({
+      key: r.key,
+      name: r.namePt || 'Recurso',
+      total: r.total,
+      used: signal(r.used),
+    }));
+  protected readonly beast = this.v.wildShape ?? null;
+  protected readonly beastHp = signal(this.initial.wildShapeHitPoints ?? 0);
+
   protected readonly hitDiceHint = computed(
     () => `${this.v.hitDice}, ${usedWords(this.hitDice(), this.v.hitDiceTotal)}`,
   );
 
   protected readonly saveState = signal<SaveState>({ status: 'idle' });
+  /** The save is in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileSaving = effect(() => {
+    const saving = this.saveState().status === 'saving';
+    if (this.dialogRef) {
+      this.dialogRef.disableClose = saving;
+    }
+    if (this.sheetRef) {
+      this.sheetRef.disableClose = saving;
+    }
+  });
 
   /** The idempotency key of the last correction tried, with its numbers:
    * trying the same numbers again reuses it (a retry); new numbers get a
@@ -100,6 +121,12 @@ export class AdjustVitals {
   protected readonly pactLabel = (step: number) =>
     step < 0 ? 'Devolver 1 espaço de pacto' : 'Usar 1 espaço de pacto';
 
+  protected resourceLabel(name: string): (step: number) => string {
+    return (step) => (step < 0 ? `Devolver 1 uso de ${name}` : `Usar 1 uso de ${name}`);
+  }
+  protected readonly beastLabel = (step: number) =>
+    step < 0 ? 'Tirar 1 PV da fera' : 'Somar 1 PV da fera';
+
   protected usedWords = usedWords;
 
   private draft(): VitalsDraft {
@@ -109,6 +136,8 @@ export class AdjustVitals {
       slotsUsed: Object.fromEntries(this.slots.map((s) => [s.level, s.used()])),
       pactSlotsUsed: this.v.pactSlots ? this.pact() : null,
       hitDiceUsed: this.hitDice(),
+      resourcesUsed: Object.fromEntries(this.resources.map((r) => [r.key, r.used()])),
+      wildShapeHitPoints: this.beast ? this.beastHp() : null,
     };
   }
 
@@ -119,6 +148,8 @@ export class AdjustVitals {
       whole(this.temp(), MAX_TEMPORARY_HP) &&
       whole(this.hitDice(), this.v.hitDiceTotal) &&
       this.slots.every((s) => whole(s.used(), s.total)) &&
+      this.resources.every((r) => whole(r.used(), r.total)) &&
+      (!this.beast || whole(this.beastHp(), this.beast.hitPointsMax)) &&
       (!this.v.pactSlots || whole(this.pact(), this.v.pactSlots.total))
     );
   }

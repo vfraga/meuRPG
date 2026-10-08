@@ -85,6 +85,7 @@ func (s *Service) ListTrapActivity(
 	if err != nil {
 		return nil, s.dbError(ctx, "list the trap events", err)
 	}
+	slices.Reverse(rows) // the query returns the newest 500, newest first
 	var lines []*activityLine
 	byID := map[string]*activityLine{}
 	for _, r := range rows {

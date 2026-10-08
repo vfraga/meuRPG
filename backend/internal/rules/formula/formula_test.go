@@ -210,3 +210,39 @@ func TestRunTimeFailuresAreErrors(t *testing.T) {
 		}
 	})
 }
+
+// A product of literals wraps in 64-bit integer arithmetic (1000 is 2^3*5^3,
+// so 22 factors of it come to 0), which would slip under MaxResult: a formula
+// whose steps could grow that far is refused when it is compiled.
+func TestProductsThatCouldOverflowAreRefused(t *testing.T) {
+	t.Parallel()
+	product := strings.TrimSuffix(strings.Repeat("1000*", 22), "*")
+	c := newCompiler()
+	for _, source := range []string{
+		product,
+		product + " + 5",
+		product + " + level()",
+		"1000 * 1000 * 1000 * 1000",
+		"level() * 1000 * 1000 * 1000",
+	} {
+		if _, err := c.Compile(source, Int); err == nil {
+			t.Errorf("%q (%d bytes) was accepted; a product that could overflow must be refused", source[max(0, len(source)-12):], len(source))
+		}
+	}
+	// The multiplications the rules content really writes stay accepted.
+	for source, want := range map[string]int{
+		"5 * classLevel(\"wizard\")":      15,
+		"1000 * level() * 2":              6000,
+		"8 + prof() * mod(\"int\") * 100": 808,
+		"(level() + 4) * (prof() + 1)":    21,
+	} {
+		p, err := c.Compile(source, Int)
+		if err != nil {
+			t.Errorf("%q was refused: %v", source, err)
+			continue
+		}
+		if got, err := p.Int(wizard3()); err != nil || got != want {
+			t.Errorf("%q = %d, %v; want %d", source, got, err, want)
+		}
+	}
+}

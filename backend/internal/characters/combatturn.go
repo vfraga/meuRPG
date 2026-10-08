@@ -163,7 +163,7 @@ func (s *Service) CombatTurnOptions(ctx context.Context, tx pgx.Tx, campaignID, 
 	d.SpeedWalkFt = turn.SpeedFt
 	opts := combat.Options(d, combat.TurnState{
 		ActionUsed: turn.ActionUsed, BonusActionUsed: turn.BonusActionUsed, ReactionUsed: turn.ReactionUsed,
-		MovementUsedFt: turn.MovementUsedFt, Dashed: turn.Dashed, AttacksMade: turn.AttacksMade,
+		MovementUsedFt: turn.MovementUsedFt, Dashed: turn.Dashed, AttacksMade: turn.AttacksMade, ActionSurged: turn.ActionSurged,
 	}, usage)
 	out := turnOptionsToProto(opts)
 	// The movement is kept in tenths of a foot (RN-21): the feet fields are those
@@ -212,6 +212,7 @@ var reasonToProto = map[string]rulesv1.DisabledReasonCode{
 	combat.ReasonReactionUsed:        rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_REACTION_USED,
 	combat.ReasonNoSlot:              rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_NO_SLOT,
 	combat.ReasonNoUses:              rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_NO_USES,
+	combat.ReasonAlreadyUsedThisTurn: rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN,
 	combat.ReasonReactionOnlyWhenHit: rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_REACTION_ONLY_WHEN_HIT,
 	combat.ReasonReactionOnly:        rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_REACTION_ONLY,
 	combat.ReasonTooLong:             rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_CASTING_TIME_TOO_LONG,

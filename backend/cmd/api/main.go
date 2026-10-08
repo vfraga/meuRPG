@@ -332,7 +332,6 @@ func run(logger *slog.Logger, cfg config.Config) error {
 // tests). It runs right after each service's session interceptor, which is
 // what tells it the user (limitedSessions).
 func mountModules(handle func(string, http.Handler), m *modules, identityService *identity.Service, opts []connect.HandlerOption, rpcLimit *ratelimit.Limiter, logger *slog.Logger) {
-	identityService.Mount(handle, opts...)
 	sessions := limitedSessions{Service: identityService}
 	if rpcLimit != nil {
 		sessions.limit = ratelimit.Interceptor(rpcLimit,
@@ -341,6 +340,9 @@ func mountModules(handle func(string, http.Handler), m *modules, identityService
 				return id, err == nil
 			}, ratelimit.NewNotifier(logger, "rpc calls by user"))
 	}
+	// The identity service is limited like the others: its own interceptor
+	// finds the session, then the limit runs.
+	identityService.MountLimited(handle, sessions.limit, opts...)
 	// identityService is who is calling: its interceptor finds the session,
 	// and its UserID reads it back (authz.Caller). This mounts CampaignService
 	// and the campaign document's CampaignDocumentService (MR-018), with the

@@ -136,7 +136,11 @@ export class CampaignDetail {
     });
   }
 
+  /** The newest `load`: an answer of an older one (the page was reused for another campaign) is dropped. */
+  private loadSeq = 0;
+
   private load(campaignId: string): void {
+    const mine = ++this.loadSeq;
     this.state.set({ status: 'loading' });
     // One after the other, not in parallel: whether to ask for the members
     // at all depends on the campaign (a pending member may not list them).
@@ -153,6 +157,9 @@ export class CampaignDetail {
     });
     loaded.then(
       (state: PageState) => {
+        if (mine !== this.loadSeq) {
+          return;
+        }
         this.state.set(state);
         if (state.status === 'ready') {
           // A link with a fragment ("Abrir os mapas", in "Regras da mesa") lands on its section once the page has rendered it.
@@ -168,6 +175,9 @@ export class CampaignDetail {
         }
       },
       (err: unknown) => {
+        if (mine !== this.loadSeq) {
+          return;
+        }
         const connectErr = ConnectError.from(err, Code.Unavailable);
         if (connectErr.code === Code.NotFound) {
           // Same message for "does not exist" and "not a member": ADR-0011.

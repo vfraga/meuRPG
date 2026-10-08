@@ -1697,7 +1697,177 @@ func TestMR038_ConcurrentHintTriesRollOnce(t *testing.T) {
 	}
 }
 
+// A try's key stands for that try, and a key spent on a move or on a try is spent for the
+// other: the same key for another roll, or for the other kind of change, is refused and
+// changes nothing.
+func TestMR038_AKeyReusedForAnotherRollOrKindOfChangeIsRefused(t *testing.T) {
+	t.Parallel()
+	p := newPuzzleTable(t)
+	puz := p.lights(t, "O selo da Capela", 5, hintCheck("skill:investigation", 15))
+	p.show(t, puz.GetId())
+
+	tried := newKey()
+	if _, err := p.tryHintKey(t, p.caio, puz.GetId(), 1, tried); err != nil {
+		t.Fatalf("TryPuzzleHint() error = %v", err)
+	}
+	if again, err := p.tryHintKey(t, p.caio, puz.GetId(), 1, tried); err != nil || !again.GetReplayed() {
+		t.Fatalf("the retry = %v, %v; want the first answer", again, err)
+	}
+	_, err := p.tryHintKey(t, p.caio, puz.GetId(), 20, tried)
+	wantCode(t, "the key with another typed die", err, connect.CodeInvalidArgument)
+	_, err = p.tryHintKey(t, p.caio, puz.GetId(), 0, tried)
+	wantCode(t, "the key with a roll in the app", err, connect.CodeInvalidArgument)
+	_, err = p.moveKey(t, p.caio, puz.GetId(), lightsMove(2, 2), tried)
+	wantCode(t, "the key of a try on a move", err, connect.CodeInvalidArgument)
+
+	moved := newKey()
+	if _, err := p.moveKey(t, p.ana, puz.GetId(), lightsMove(2, 2), moved); err != nil {
+		t.Fatalf("MakePuzzleMove() error = %v", err)
+	}
+	_, err = p.tryHintKey(t, p.ana, puz.GetId(), 20, moved)
+	wantCode(t, "the key of a move on a try", err, connect.CodeInvalidArgument)
+
+	m := p.masterRun(t, puz.GetId())
+	if len(m.GetHintTries()) != 1 || m.GetMovesMade() != 1 {
+		t.Errorf("the master reads %d tries and %d moves, want 1 and 1: the refused calls change nothing", len(m.GetHintTries()), m.GetMovesMade())
+	}
+}
+
+// A closed puzzle is `not_found` to the players, whatever they ask, so the retry of a move made
+// before the master closed it is too: the answer to a retry is not a way to read what the master
+// took away. Shown again, the puzzle answers the retry with the first answer.
+func TestMR038_AMoveRetriedAfterThePuzzleWasClosedIsNotFound(t *testing.T) {
+	t.Parallel()
+	p := newPuzzleTable(t)
+	puz := p.lights(t, "O selo da Capela", 5)
+	p.show(t, puz.GetId())
+	key := newKey()
+	if _, err := p.moveKey(t, p.caio, puz.GetId(), lightsMove(2, 2), key); err != nil {
+		t.Fatalf("MakePuzzleMove() error = %v", err)
+	}
+	p.close(t, puz.GetId())
+	_, err := p.moveKey(t, p.caio, puz.GetId(), lightsMove(2, 2), key)
+	wantCode(t, "the retry of a move on a closed puzzle", err, connect.CodeNotFound)
+	p.show(t, puz.GetId())
+	if again, err := p.moveKey(t, p.caio, puz.GetId(), lightsMove(2, 2), key); err != nil || !again.GetReplayed() {
+		t.Errorf("the retry once shown again = %v, %v; want the first answer", again, err)
+	}
+}
+
+// The master's changes to a run name the revision they read: a retry of a change whose answer was
+// lost, or a change made after a player moved, finds the run on another revision and is refused,
+// so a hint is not released twice, a restart does not wipe the moves made after the first, and a
+// play of the sequence is not counted twice. Without a revision nothing is checked.
+func TestMR038_AMasterChangeForARunThatMovedOnIsRefused(t *testing.T) {
+	t.Parallel()
+	p := newPuzzleTable(t)
+	ctx := t.Context()
+	pc := p.pc(p.master)
+	stale := func(call string, err error) {
+		t.Helper()
+		wantCode(t, call, err, connect.CodeFailedPrecondition)
+		if got := blockedReason(err); got != playv1.PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_STALE_REVISION {
+			t.Errorf("%s reason = %v, want STALE_REVISION", call, got)
+		}
+	}
+	lights := p.lights(t, "O selo da Capela", 5, func(r *playv1.CreatePuzzleRequest) { r.Hints = []string{"a", "b", "c"} })
+	p.show(t, lights.GetId())
+	revision := func(id string) int32 { return p.masterRun(t, id).GetRun().GetRevision() }
+	release := func(rev int32) error {
+		_, err := pc.ReleaseNextPuzzleHint(ctx, connect.NewRequest(&playv1.ReleaseNextPuzzleHintRequest{CampaignId: p.campaignID, PuzzleId: lights.GetId(), ExpectedRevision: rev}))
+		return err
+	}
+	reset := func(rev int32) error {
+		_, err := pc.ResetPuzzle(ctx, connect.NewRequest(&playv1.ResetPuzzleRequest{CampaignId: p.campaignID, PuzzleId: lights.GetId(), ExpectedRevision: rev}))
+		return err
+	}
+	reseed := func(rev int32) error {
+		_, err := pc.ReseedPuzzle(ctx, connect.NewRequest(&playv1.ReseedPuzzleRequest{CampaignId: p.campaignID, PuzzleId: lights.GetId(), ExpectedRevision: rev}))
+		return err
+	}
+
+	// A hint released once, the retry of the call refused: one hint, not two.
+	read := revision(lights.GetId())
+	if err := release(read); err != nil {
+		t.Fatalf("ReleaseNextPuzzleHint() error = %v", err)
+	}
+	stale("the retry of a release", release(read))
+	if n := p.masterRun(t, lights.GetId()).GetReleasedHints(); n != 1 {
+		t.Errorf("released hints = %d, want 1", n)
+	}
+	// A move came in after the master read the run: a restart for the old revision is refused and
+	// keeps the move; for the revision now, it restarts, and its retry is refused.
+	p.mustMove(t, p.caio, lights.GetId(), lightsMove(2, 2))
+	stale("a restart for a run a player moved in", reset(read))
+	if n := p.masterRun(t, lights.GetId()).GetMovesMade(); n != 1 || p.masterRun(t, lights.GetId()).GetRun().GetLastMove() == nil {
+		t.Fatalf("the refused restart changed the run (moves made %d)", n)
+	}
+	read = revision(lights.GetId())
+	if err := reset(read); err != nil {
+		t.Fatalf("ResetPuzzle() error = %v", err)
+	}
+	p.mustMove(t, p.ana, lights.GetId(), lightsMove(0, 0))
+	stale("the retry of a restart", reset(read))
+	if p.masterRun(t, lights.GetId()).GetRun().GetLastMove() == nil {
+		t.Errorf("the refused retry of the restart wiped the move made after it")
+	}
+	stale("the retry of a new start", reseed(read))
+	// Without a revision nothing is checked, and the current one is accepted.
+	if err := reseed(0); err != nil {
+		t.Errorf("ReseedPuzzle() with no revision error = %v", err)
+	}
+	if err := reset(revision(lights.GetId())); err != nil {
+		t.Errorf("ResetPuzzle() for the current revision error = %v", err)
+	}
+
+	// A play of the sequence, once.
+	seq := p.sequence(t, "Os sinos")
+	p.show(t, seq.GetId())
+	play := func(rev int32) error {
+		_, err := pc.PlayPuzzleSequence(ctx, connect.NewRequest(&playv1.PlayPuzzleSequenceRequest{CampaignId: p.campaignID, PuzzleId: seq.GetId(), ExpectedRevision: rev}))
+		return err
+	}
+	read = revision(seq.GetId())
+	if err := play(read); err != nil {
+		t.Fatalf("PlayPuzzleSequence() error = %v", err)
+	}
+	stale("the retry of a play", play(read))
+	if n := p.masterRun(t, seq.GetId()).GetRun().GetSequence().GetPlays(); n != 1 {
+		t.Errorf("plays = %d, want 1", n)
+	}
+}
+
 // dcKey finds a field that holds a DC ("dc", "hintDc", "checkDc"...): a key made of
 // letters only. Searching the whole JSON for "dc" and "15" also matched the random
 // UUIDs in the answer, which carry both now and then.
 var dcKey = regexp.MustCompile(`"[A-Za-z]*[Dd][Cc][A-Za-z]*"\s*:`)
+
+// A wrong answer sent again answers wrong, as the first call did, even when another player's
+// move is the run's last one by then: the verdict is the move's own, not read from the run.
+func TestAReplayedWrongAnswerIsStillWrong(t *testing.T) {
+	t.Parallel()
+	p := newPuzzleTable(t)
+	puz := p.riddle(t, "Enigma")
+	p.show(t, puz.GetId())
+	key := newKey()
+	first, err := p.moveKey(t, p.caio, puz.GetId(), riddleMove("escuridão"), key)
+	if err != nil || first.GetReplayed() || !first.GetWrong() {
+		t.Fatalf("wrong answer = %v, %v; want wrong", first, err)
+	}
+	// Another player's wrong answer becomes the run's last move.
+	if other := p.mustMove(t, p.ana, puz.GetId(), riddleMove("nada")); !other.GetWrong() {
+		t.Fatalf("the other wrong answer = %v", other)
+	}
+	again, err := p.moveKey(t, p.caio, puz.GetId(), riddleMove("escuridão"), key)
+	if err != nil || !again.GetReplayed() || !again.GetWrong() {
+		t.Fatalf("replay = %v, %v; want replayed and wrong", again, err)
+	}
+	if again.GetRun().GetLastMove().GetCharacterName() == "Toren" {
+		t.Errorf("the run's last move is the replayed one, so the test proves nothing: %v", again.GetRun().GetLastMove())
+	}
+	// A right answer is not wrong.
+	right := p.mustMove(t, p.bia, puz.GetId(), riddleMove("sombra"))
+	if right.GetWrong() {
+		t.Errorf("a right answer came back wrong: %v", right)
+	}
+}

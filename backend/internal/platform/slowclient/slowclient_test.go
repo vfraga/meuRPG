@@ -137,3 +137,52 @@ func TestReadBodyEndsATrickledBody(t *testing.T) {
 		t.Fatal("the handler is still waiting for the body")
 	}
 }
+
+func TestWriteBodyEndsAWriteToAClientThatStoppedReading(t *testing.T) {
+	t.Parallel()
+	done := make(chan error, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		defer slowclient.WriteBody(w, 300*time.Millisecond)()
+		chunk := make([]byte, 64<<10)
+		for {
+			if _, err := w.Write(chunk); err != nil {
+				done <- err
+				return
+			}
+			if err := http.NewResponseController(w).Flush(); err != nil {
+				done <- err
+				return
+			}
+		}
+	}))
+	t.Cleanup(srv.Close)
+
+	conn, err := (&net.Dialer{}).DialContext(t.Context(), "tcp", srv.Listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+	if tc, ok := conn.(*net.TCPConn); ok {
+		_ = tc.SetReadBuffer(4 << 10)
+	}
+	// Asks for the response and never reads it.
+	_, _ = conn.Write([]byte("GET / HTTP/1.1\r\nHost: x\r\n\r\n"))
+
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Error("the write ended without an error")
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the handler is still blocked writing to a client that stopped reading")
+	}
+}
+
+func TestWriteBodyLeavesAWriterWithoutDeadlinesAlone(t *testing.T) {
+	t.Parallel()
+	rec := httptest.NewRecorder()
+	slowclient.WriteBody(rec, time.Second)()
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+}

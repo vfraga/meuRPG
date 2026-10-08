@@ -46,6 +46,11 @@ const ACCENTS: Readonly<Record<string, string>> = {
   œ: 'oe',
 };
 
+/** The simple lower case of one character, as Go's `unicode.ToLower`: no final sigma, and `İ` is a plain `i`. */
+function lower(code: string): string {
+  return code === 'İ' ? 'i' : code.toLowerCase();
+}
+
 /**
  * The form two texts are compared in: lower case, no accents, only letters and digits, each run of anything else counting as
  * one space ("  A Sombra! " and "a sombra" are the same). The same rule as the server's `Fold`.
@@ -53,9 +58,10 @@ const ACCENTS: Readonly<Record<string, string>> = {
 export function fold(text: string): string {
   let out = '';
   let space = true;
-  for (const raw of text.toLowerCase()) {
+  for (const code of text) {
+    const raw = lower(code);
     const ch = ACCENTS[raw] ?? raw;
-    if (/^[\p{L}\p{N}]+$/u.test(ch)) {
+    if (/^[\p{L}\p{Nd}]+$/u.test(ch)) {
       out += ch;
       space = false;
     } else if (!space) {

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, inject, signal, type Signal, viewChild } from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -19,8 +19,9 @@ import { injectSheet, openSheet } from '../../combat/sheet-host';
 export interface ScenePickerData {
   readonly campaignId: string;
   readonly mapName: string;
-  /** The current map's points; the picker keeps the scene ones. */
-  readonly points: readonly MapPoint[];
+  /** The current map's points, as the page's map state holds them now (a refresh in flight lands in the open
+   * picker); the picker keeps the scene ones. */
+  readonly points: Signal<readonly MapPoint[]>;
   /** The scene open now, marked when the picker opens ("Trocar cena"). */
   readonly openPointId: string | null;
   readonly state: SceneState;
@@ -63,7 +64,8 @@ export class ScenePicker {
   protected readonly inSheet = this.sheet.inSheet;
 
   protected readonly rows = computed(() =>
-    this.data.points
+    this.data
+      .points()
       .filter((p) => p.kind === MapPointKind.SCENE)
       .map((p) => ({
         id: p.id,
@@ -77,16 +79,27 @@ export class ScenePicker {
       })),
   );
   protected readonly anyHidden = computed(() => this.rows().some((r) => !r.revealed));
-  protected readonly choice = signal<string | null>(this.initialChoice());
+  private readonly picked = signal<string | null>(this.initialChoice());
+  /** The ticked point, or none when a refresh took it off the map. */
+  protected readonly choice = computed(() => {
+    const id = this.picked();
+    return this.rows().some((r) => r.id === id) ? id : null;
+  });
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
 
   private readonly frame = viewChild(SheetFrame);
 
   private initialChoice(): string | null {
-    const open = this.data.points.find((p) => p.id === this.data.openPointId);
-    const first = this.data.points.find((p) => p.kind === MapPointKind.SCENE);
+    const open = this.data.points().find((p) => p.id === this.data.openPointId);
+    const first = this.data.points().find((p) => p.kind === MapPointKind.SCENE);
     return (open ?? first)?.id ?? null;
+  }
+
+  protected pick(id: string): void {
+    this.picked.set(id);
   }
 
   protected close(): void {

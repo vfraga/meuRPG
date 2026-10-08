@@ -80,3 +80,56 @@ func TestCleanText(t *testing.T) {
 		})
 	}
 }
+
+func TestCleanRefusesInvisibleCharacters(t *testing.T) {
+	t.Parallel()
+	cases := map[string]string{
+		"only ZWSP":        "\u200b",
+		"only ZWNJ ZWJ":    "\u200c\u200d",
+		"only WJ":          "\u2060",
+		"only BOM":         "\uFEFF",
+		"only hangul fill": "\u3164",
+		"ZWSP inside":      "ab\u200bcd",
+		"U+2028 inside":    "ab\u2028cd",
+		"U+2029 inside":    "ab\u2029cd",
+	}
+	for name, in := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			if got, err := Clean(in, 40); err == nil {
+				t.Errorf("Clean(%q) accepted, returned %q; want an error", in, got)
+			}
+			if got, err := CleanText(in, 40); err == nil && strings.ContainsAny(got, "\u2028\u2029\u200b\u2060\uFEFF\u3164") {
+				t.Errorf("CleanText(%q) kept an invisible character: %q", in, got)
+			}
+		})
+	}
+	t.Run("only invisible is no visible character", func(t *testing.T) {
+		t.Parallel()
+		if _, err := Clean("\u200d\u200c", 40); !errors.Is(err, ErrNoVisible) {
+			t.Errorf("error = %v, want ErrNoVisible", err)
+		}
+	})
+	t.Run("emoji sequence with a joiner is kept", func(t *testing.T) {
+		t.Parallel()
+		in := "Família 👨\u200d👩\u200d👧"
+		if got, err := Clean(in, 40); err != nil || got != in {
+			t.Errorf("Clean(%q) = %q, %v; want it kept", in, got, err)
+		}
+	})
+}
+
+func TestCleanNormalizesToNFC(t *testing.T) {
+	t.Parallel()
+	const decomposed, composed = "e\u0301", "é"
+	if got, err := Clean(decomposed, 40); err != nil || got != composed {
+		t.Errorf("Clean(decomposed) = %q, %v; want %q", got, err, composed)
+	}
+	if got, err := CleanText("a\n"+decomposed, 40); err != nil || got != "a\n"+composed {
+		t.Errorf("CleanText(decomposed) = %q, %v; want NFC", got, err)
+	}
+	// The limit counts the normalized text, the same unit the database checks.
+	if _, err := Clean(strings.Repeat(decomposed, 20), 20); err != nil {
+		t.Errorf("20 composed characters refused by a limit of 20: %v", err)
+	}
+}

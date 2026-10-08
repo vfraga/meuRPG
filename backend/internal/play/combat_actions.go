@@ -16,6 +16,7 @@ import (
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/tablerules"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
@@ -85,7 +86,9 @@ func (s *Service) gate(ctx context.Context, tx pgx.Tx, campaignID string, e play
 }
 
 // isDown says whether a player's character is at 0 hit points ("Caído"): its
-// vitals say so. An NPC and a creature are never down: they are defeated.
+// vitals say so. A character that left the sheet's active state (it died, and the
+// combat was not told) is out of the fight too: down, never an error. An NPC and a
+// creature are never down: they are defeated.
 // A write passes its transaction, so it reads what it will overwrite; a read
 // passes nil.
 func (s *Service) isDown(ctx context.Context, tx pgx.Tx, campaignID string, c playdb.Combatant) (bool, error) {
@@ -98,6 +101,9 @@ func (s *Service) isDown(ctx context.Context, tx pgx.Tx, campaignID string, c pl
 		v, err = s.vitals.GetVitalsTx(ctx, tx, campaignID, c.CharacterID)
 	} else {
 		v, err = s.vitals.GetVitals(ctx, campaignID, c.CharacterID)
+	}
+	if connect.CodeOf(err) == connect.CodeNotFound {
+		return true, nil
 	}
 	if err != nil {
 		return false, err
@@ -118,6 +124,19 @@ func gateError(code rulesv1.DisabledReasonCode) error {
 	return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_YOUR_TURN, "it is not this combatant's turn")
 }
 
+// mustNotBeDown refuses a player's character at 0 hit points: a down character
+// does not move (RN-03, RN-21). tx is the open transaction, or nil for a read.
+func (s *Service) mustNotBeDown(ctx context.Context, tx pgx.Tx, campaignID string, who playdb.Combatant) error {
+	down, err := s.isDown(ctx, tx, campaignID, who)
+	if err != nil {
+		return err
+	}
+	if down {
+		return gateError(rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_COMBATANT_DOWN)
+	}
+	return nil
+}
+
 // mustActNow checks, inside a write, that the combatant is the one that may
 // act now (on turn, in a running combat, not down).
 func (s *Service) mustActNow(ctx context.Context, c *combatTx, who playdb.Combatant) error {
@@ -136,7 +155,7 @@ func (s *Service) mustActNow(ctx context.Context, c *combatTx, who playdb.Combat
 
 func turnOf(c playdb.Combatant) link.Turn {
 	return link.Turn{
-		ActionUsed: c.ActionUsed, BonusActionUsed: c.BonusActionUsed, ReactionUsed: c.ReactionUsed, AttacksMade: int(c.AttacksMade),
+		ActionUsed: c.ActionUsed, BonusActionUsed: c.BonusActionUsed, ReactionUsed: c.ReactionUsed, AttacksMade: int(c.AttacksMade), ActionSurged: c.ActionSurged,
 		Dashed: c.Dashed, SpeedFt: int(max(c.SpeedFt, c.SpeedFlyFt)), MovementUsedFt: int(c.MovementUsedDft) / 10,
 		MovementUsedDFt: int(c.MovementUsedDft), LastMoveDFt: int(c.LastMoveDft), Disengaged: c.Disengaged,
 		JumpLongDFt: int(c.JumpLongDft), JumpHighDFt: int(c.JumpHighDft),
@@ -556,7 +575,7 @@ func (s *Service) RollAttack(
 	v := viewerOf(m)
 
 	var made actionEvent
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventAttackRolled, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventAttackRolled, encounterID: encID}, func(c *combatTx) (any, error) {
 		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
 		if err != nil {
 			return nil, fmt.Errorf("list the combatants: %w", err)
@@ -895,7 +914,7 @@ func (s *Service) RollDamage(
 
 	var made actionEvent
 	var vitals []*playv1.CharacterVitals // the characters a heal or a death save touched
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventDamageRolled, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventDamageRolled, encounterID: encID}, func(c *combatTx) (any, error) {
 		vitals = nil
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
@@ -1222,7 +1241,7 @@ func (s *Service) ApplyPendingDamage(
 
 	var made actionEvent
 	var vitals *playv1.CharacterVitals // the target's, after
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventDamageApplied, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventDamageApplied, encounterID: encID}, func(c *combatTx) (any, error) {
 		vitals = nil
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
@@ -1403,7 +1422,7 @@ func (s *Service) DiscardPendingDamage(
 	}
 
 	var made actionEvent
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventDamageDiscarded, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventDamageDiscarded, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -1473,6 +1492,10 @@ func featureError(r *rulesv1.DisabledReason, master bool) error {
 		if !master {
 			return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_REACTION_USED, "the reaction is used")
 		}
+	case rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN:
+		if !master {
+			return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ALREADY_USED_THIS_TURN, "already used in this turn")
+		}
 	case rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_NO_USES:
 		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NO_USES, "no uses left",
 			func(b *playv1.EncounterBlocked) { b.Recharge = r.GetRecharge() })
@@ -1520,7 +1543,7 @@ func (s *Service) TakeAction(
 
 	var made actionEvent
 	var vitals *playv1.CharacterVitals // the resource spent, or the hit points healed
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventActionTaken, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventActionTaken, encounterID: encID}, func(c *combatTx) (any, error) {
 		vitals = nil
 		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
 		if err != nil {
@@ -1579,7 +1602,7 @@ func (s *Service) TakeAction(
 		made = actionEvent{
 			Round: c.enc.Round, Secret: who.Hidden, Actor: who.ID, Key: actionKey, RunBefore: run,
 			ActionBefore: who.ActionUsed, BonusBefore: who.BonusActionUsed, ReactionBefore: who.ReactionUsed, DashedBefore: who.Dashed,
-			AttacksBefore: who.AttacksMade, DisengagedBefore: who.Disengaged,
+			AttacksBefore: who.AttacksMade, DisengagedBefore: who.Disengaged, SurgedBefore: who.ActionSurged,
 		}
 		after := who
 		switch economy {
@@ -1595,6 +1618,9 @@ func (s *Service) TakeAction(
 		if actionKey == actionSurge {
 			// An additional action this turn, with the attacks of the Attack action.
 			after.ActionUsed = false
+			if err := c.q.SetCombatantActionSurged(ctx, playdb.SetCombatantActionSurgedParams{ID: who.ID, ActionSurged: true}); err != nil {
+				return nil, fmt.Errorf("mark the action surge: %w", err)
+			}
 			if err := c.q.SetCombatantAttacksMade(ctx, playdb.SetCombatantAttacksMadeParams{ID: who.ID, AttacksMade: 0}); err != nil {
 				return nil, fmt.Errorf("give the action back: %w", err)
 			}
@@ -1771,7 +1797,7 @@ func (s *Service) AdjustCombatantHitPoints(
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("hit_points_temporary must be 0 to %d", maxTempHitPoints))
 	}
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventHitPointsAdjusted, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventHitPointsAdjusted, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -1821,7 +1847,7 @@ func (s *Service) AdjustCombatantHitPoints(
 		return nil, s.dbError(ctx, "adjust a combatant's hit points", err)
 	}
 	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
-		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
+		s.publishEncounterChangedFor(ctx, m.CampaignID, d, combID)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, false) // the master's correction: his line only
 	})
 	if err != nil {

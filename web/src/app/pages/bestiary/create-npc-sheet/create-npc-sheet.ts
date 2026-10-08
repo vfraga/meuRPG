@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -108,6 +108,11 @@ export class CreateNpcSheet {
       : `Faz uma ficha básica de NPC com os números da criatura; os ataques dela ficam na ficha do bestiário. ${own}`;
   });
 
+  constructor() {
+    // While CreateNpc runs the sheet stays: closing would lose the answer and a reopened sheet is a new request.
+    effect(() => this.sheet.lock(this.busy()));
+  }
+
   protected setName(value: string): void {
     this.name.set(value);
     this.nameError.set('');
@@ -152,6 +157,9 @@ export class CreateNpcSheet {
   }
 
   protected close(): void {
+    if (this.busy()) {
+      return;
+    }
     this.sheet.close();
   }
 }

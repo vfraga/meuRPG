@@ -73,6 +73,10 @@ export class CampaignInvites implements OnInit {
   protected readonly inviteStateTag = inviteStateTag;
 
   protected readonly listState = signal<ListState>({ status: 'loading' });
+  /** Why a "Revogar" failed; the list stays on screen. */
+  protected readonly revokeError = signal('');
+  /** The invite whose "Revogar" is running. */
+  protected readonly revoking = signal<string | null>(null);
   protected readonly createState = signal<CreateState>({ status: 'idle' });
 
   /** The just-created invite's link, shown exactly once (CreateInvite's doc
@@ -163,6 +167,11 @@ export class CampaignInvites implements OnInit {
   }
 
   protected async revoke(invite: Invite): Promise<void> {
+    if (this.revoking() !== null) {
+      return;
+    }
+    this.revoking.set(invite.id);
+    this.revokeError.set('');
     try {
       const res = await this.campaigns.revokeInvite(this.campaignId(), invite.id);
       const current = this.listState();
@@ -173,10 +182,10 @@ export class CampaignInvites implements OnInit {
         });
       }
     } catch (err) {
-      this.listState.set({
-        status: 'error',
-        message: describeConnectError(err, MASTER_ONLY_MESSAGES),
-      });
+      // The list stays: only this action failed.
+      this.revokeError.set(describeConnectError(err, MASTER_ONLY_MESSAGES));
+    } finally {
+      this.revoking.set(null);
     }
   }
 }

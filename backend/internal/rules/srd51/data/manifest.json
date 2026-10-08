@@ -108,7 +108,7 @@
   },
   {
    "name": "equipment.json",
-   "sha256": "6087e9a0c4f05317dbaea976ae8645b796d9783a165d3cfec1f2337b582cf246"
+   "sha256": "119d1c3bf5dfa240c2f6fa10480fd0e9551e2fd4c3d2b5a4ca3b96be14e03e7d"
   },
   {
    "name": "features.json",
@@ -132,7 +132,7 @@
   },
   {
    "name": "monsters.json",
-   "sha256": "80be316be040f69642fdb59d693af6cbbfdbb7cbbba04cd0c862f5acb2dce99b"
+   "sha256": "c08b859a0abbd38121b3773433bc05d998f5fa693c23579395460ffc54bfc44e"
   },
   {
    "name": "proficiencies.json",

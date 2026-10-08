@@ -34,13 +34,13 @@
         @for (line of rolls(); track line) {
           <span class="res__formula">{{ line }}</span>
         }
-        <span class="mr-tag res__tag" [class.mr-tag--success]="r.names.length > 0">
-          <mat-icon aria-hidden="true">{{ r.names.length > 0 ? 'check' : 'close' }}</mat-icon>{{ r.names.length > 0 ? 'Achou' : 'Nada' }}
+        <span class="mr-tag res__tag" [class.mr-tag--success]="found()">
+          <mat-icon aria-hidden="true">{{ found() ? 'check' : 'close' }}</mat-icon>{{ found() ? 'Achou' : 'Nada' }}
         </span>
       </span>
     </div>
-    <div class="mr-notice" [class.mr-notice--success]="r.names.length > 0" [class.mr-notice--neutral]="r.names.length === 0" role="status">
-      <mat-icon aria-hidden="true">{{ r.names.length > 0 ? 'check' : 'info' }}</mat-icon>
+    <div class="mr-notice" [class.mr-notice--success]="found()" [class.mr-notice--neutral]="!found()" role="status">
+      <mat-icon aria-hidden="true">{{ found() ? 'check' : 'info' }}</mat-icon>
       <p>
         <strong>{{ message().title }}</strong>
         @if (message().detail) {

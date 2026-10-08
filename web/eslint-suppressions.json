@@ -276,9 +276,6 @@
   "src/app/core/maps/paint-queue.ts": {
     "@typescript-eslint/no-magic-numbers": {
       "count": 1
-    },
-    "max-depth": {
-      "count": 1
     }
   },
   "src/app/core/maps/paint-session.ts": {

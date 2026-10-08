@@ -95,4 +95,45 @@ describe('MapGrid, the older grid page, on a calibrated map (RN-25)', () => {
     expect(text(el)).toContain('O quadrado marcado tem 1,5 m.');
     expect(text(el)).toContain('De 5 a 60.');
   });
+
+  it('does not send the factor it read when the page opened after another tab recalibrated the map', async () => {
+    const { fixture, el, api } = await setup(
+      mapMessage('map-4', 'Torre', {
+        gridColumns: 80,
+        gridRows: 52,
+        drawnColumns: 20,
+        drawnRows: 13,
+        squareFactor: 4,
+      }),
+    );
+    // Another tab calibrates the map to 6 (9 m) while this page is open.
+    api.responses.set(
+      'map-4',
+      mapResponse(
+        mapMessage('map-4', 'Torre', {
+          gridColumns: 120,
+          gridRows: 78,
+          drawnColumns: 20,
+          drawnRows: 13,
+          squareFactor: 6,
+        }),
+      ),
+    );
+    Array.from(el.querySelectorAll('button'))
+      .find((b) => b.textContent?.includes('Salvar'))
+      ?.click();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(api.calls.some((c) => c.startsWith('setGrid'))).toBe(false);
+    // The page now shows the map as it is, and asks to be checked again.
+    expect(text(el)).toContain('O quadrado marcado tem 9 m.');
+    expect(text(el)).toContain('A calibração do mapa mudou em outra janela');
+    Array.from(el.querySelectorAll('button'))
+      .find((b) => b.textContent?.includes('Salvar'))
+      ?.click();
+    await new Promise((r) => setTimeout(r));
+    await fixture.whenStable();
+    expect(api.calls.some((c) => c === 'setGrid map-4 20 x6')).toBe(true);
+  });
 });

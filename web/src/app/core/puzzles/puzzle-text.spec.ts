@@ -58,3 +58,30 @@ describe('the text rules of the puzzle forms', () => {
     expect(cipherColumns('1, 2!')).toEqual([]);
   });
 });
+
+describe('fold against the Go Fold of the server', () => {
+  // Expected values come from the server's Fold: Nd digits only, simple lower case per character.
+  const cases: [string, string][] = [
+    ['m²', 'm'],
+    ['x³', 'x'],
+    ['a²b', 'a b'],
+    ['½', ''],
+    ['Ⅳ', ''],
+    ['ⅷ', ''],
+    ['①', ''],
+    ['İ', 'i'],
+    ['İstanbul', 'istanbul'],
+    ['ΑΣ', 'ασ'],
+    ['ΟΔΥΣΣΕΥΣ', 'οδυσσευσ'],
+    ['Σ', 'σ'],
+    ['ǅ', 'ǆ'],
+    ['ᾼ', 'ᾳ'],
+    ['  A Sombra! ', 'a sombra'],
+    ['Ação', 'acao'],
+  ];
+  for (const [input, expected] of cases) {
+    it(`folds ${JSON.stringify(input)} to ${JSON.stringify(expected)}`, () => {
+      expect(fold(input)).toBe(expected);
+    });
+  }
+});

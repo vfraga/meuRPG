@@ -92,4 +92,13 @@ describe('HitPointsRolls (E6-21)', () => {
     const { el } = setup();
     expect(el.querySelector('.hp__note')?.textContent).toContain('É uma prévia');
   });
+
+  it('says the bonuses of the race, the class and the features are left out of the preview, and added when saved', () => {
+    const { el } = setup();
+    const note = el.querySelector('.hp__note')?.textContent?.replace(/\s+/g, ' ');
+    expect(note).toContain(
+      'não conta os pontos de vida que a raça, a classe ou uma característica somam',
+    );
+    expect(note).toContain('entram na ficha ao salvar');
+  });
 });

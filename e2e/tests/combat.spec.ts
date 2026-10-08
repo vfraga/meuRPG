@@ -19,7 +19,7 @@ import {
 } from './combat-support';
 import type { CharacterBuild } from './support';
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';
-import { callRPC, layoutSize, newSignedInContext } from './support';
+import { boxOf, callRPC, layoutSize, newSignedInContext } from './support';
 
 // The combat on screen (Etapa 6, slice 6.5a, MR-013, RN-18 to RN-22): the
 // master sets the grid and starts a combat, everybody rolls initiative, the
@@ -136,7 +136,7 @@ test(
       await p.getByRole('button', { name: 'Mover' }).click();
       await expect(p.getByRole('heading', { name: 'Mover Pensantus' })).toBeVisible();
       const map = p.getByRole('group', { name: /Mapa de batalha/ });
-      const box = (await map.boundingBox())!;
+      const box = await boxOf(map);
       const w = box.width / 20;
       const h = box.height / 14;
       const start = enc.combatants.find((c) => c.label === 'Pensantus')!;
@@ -335,7 +335,11 @@ test('o jogador rola o ataque no app: o resultado mostra a conta e nunca a CA', 
     await sheet.getByRole('button', { name: 'Rolar no app' }).click();
     await expect(sheet.getByText(/1d20 \(\d+\) \+ 6 = \d+/)).toBeVisible();
     await expect(sheet.getByText(/Acertou|Crítico|Errou/).first()).toBeVisible();
-    if (await sheet.getByRole('button', { name: 'Rolar 1d10 no app' }).or(sheet.getByRole('button', { name: 'Rolar 2d10 no app' })).isVisible()) {
+    // The hit decides the next step: wait for either one before choosing, since isVisible() doesn't wait.
+    const rollDamage = sheet.getByRole('button', { name: /Rolar \dd10 no app/ });
+    const missed = sheet.getByText('Sem dano: o ataque errou.');
+    await expect(rollDamage.or(missed)).toBeVisible();
+    if (await rollDamage.isVisible()) {
       await sheet.getByRole('button', { name: /Rolar \dd10 no app/ }).click();
       await expect(sheet.getByText(/\d+d10 \([\d, ]+\) = \d+ de fogo/)).toBeVisible();
     } else {
@@ -563,9 +567,9 @@ test('numa tela de 320 × 568: a pergunta de encerrar cabe numa linha por botão
     await p.getByLabel(/Role 1d20/).fill('27');
     const alert = p.getByRole('alert').filter({ hasText: 'Digite um número de 1 a 20' });
     await expect(alert).toBeInViewport({ ratio: 1 });
-    const confirm = await p.getByRole('button', { name: 'Confirmar' }).boundingBox();
-    const err = await alert.boundingBox();
-    expect(err!.y + err!.height).toBeLessThanOrEqual(confirm!.y);
+    const confirm = await boxOf(p.getByRole('button', { name: 'Confirmar' }));
+    const err = await boxOf(alert);
+    expect(err.y + err.height).toBeLessThanOrEqual(confirm.y);
 
     // The result's footer has its own band: "Voltar à sua vez" is whole and in view.
     await p.getByLabel(/Role 1d20/).fill('20');

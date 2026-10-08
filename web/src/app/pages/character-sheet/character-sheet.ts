@@ -136,6 +136,8 @@ export class CharacterSheetPage {
 
   /** Bumped when the stream says the character's creatures changed (the panel reads its list again). */
   protected readonly creaturesTick = signal(0);
+  /** Bumped when this character's vitals or the combat changed: a Wild Shape form may have ended. */
+  protected readonly formTick = signal(0);
 
   /** How the campaign levels: decides whether the header has an XP block or only the tag. */
   protected readonly xpMode = signal<CampaignXpMode | null>(null);
@@ -180,13 +182,34 @@ export class CharacterSheetPage {
           () => this.creaturesTick.update((n) => n + 1),
           // The table's content changed (RN-23, "A classe mudou"): the same stream, one more kind of hint, the sheet read again.
           () => void this.reloadQuietly(),
+          (who) => {
+            if (who === null || who === this.characterId) {
+              this.formTick.update((n) => n + 1);
+            }
+          },
         ),
       );
     });
-    this.destroyRef.onDestroy(() => this.xpWatcher.follow(null, () => undefined));
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      this.xpWatcher.follow(null, () => undefined);
+    });
   }
 
   private characterId = '';
+  private destroyed = false;
+  /** Numbers every read and every answer that sets the sheet: an answer older than the latest one, or for a character the page left, is dropped. */
+  private sheetSeq = 0;
+
+  /** The answer of a write is the newest word on its character: reads still in flight no longer count. */
+  private applyWrite(characterId: string, vm: CharacterSheetVm): boolean {
+    if (this.destroyed || characterId !== this.characterId) {
+      return false;
+    }
+    this.sheetSeq++;
+    this.state.set({ status: 'ready', vm });
+    return true;
+  }
 
   /** Reads the character again without the loading state, so the page does not blink. */
   private async reloadQuietly(): Promise<void> {
@@ -194,9 +217,10 @@ export class CharacterSheetPage {
     if (!campaignId || !this.characterId) {
       return;
     }
+    const seq = ++this.sheetSeq;
     try {
       const vm = await this.source.getCharacterSheet(campaignId, this.characterId);
-      if (this.state().status === 'ready') {
+      if (seq === this.sheetSeq && this.state().status === 'ready') {
         this.state.set({ status: 'ready', vm });
       }
     } catch {
@@ -205,10 +229,23 @@ export class CharacterSheetPage {
   }
 
   private load(campaignId: string, characterId: string): void {
+    const seq = ++this.sheetSeq;
     this.state.set({ status: 'loading' });
+    this.confirmingDeath.set(false);
+    this.confirmingReject.set(false);
+    this.markDeadState.set({ status: 'idle' });
+    this.storyToggleState.set({ status: 'idle' });
+    this.approvalState.set({ status: 'idle' });
     this.source.getCharacterSheet(campaignId, characterId).then(
-      (vm) => this.state.set({ status: 'ready', vm }),
+      (vm) => {
+        if (seq === this.sheetSeq) {
+          this.state.set({ status: 'ready', vm });
+        }
+      },
       (err: unknown) => {
+        if (seq !== this.sheetSeq) {
+          return;
+        }
         if (ConnectError.from(err, Code.Unavailable).code === Code.NotFound) {
           // The same page for "does not exist" and "not yours to see" (RN-20, ADR-0011).
           this.state.set({ status: 'not-found' });
@@ -226,7 +263,7 @@ export class CharacterSheetPage {
 
   /** A child (the story panel) saved and got the updated character back. */
   protected replaceVm(vm: CharacterSheetVm): void {
-    this.state.set({ status: 'ready', vm });
+    this.applyWrite(vm.id, vm);
   }
 
   protected askToConfirmDeath(): void {
@@ -261,8 +298,10 @@ export class CharacterSheetPage {
     this.markDeadState.set({ status: 'saving' });
     try {
       const vm = await this.source.markCharacterDead(campaignId, characterId);
+      if (!this.applyWrite(characterId, vm)) {
+        return;
+      }
       this.confirmingDeath.set(false);
-      this.state.set({ status: 'ready', vm });
       this.markDeadState.set({ status: 'idle' });
     } catch (err) {
       this.confirmingDeath.set(false);
@@ -287,7 +326,9 @@ export class CharacterSheetPage {
         characterId,
         !currentlyAllowed,
       );
-      this.state.set({ status: 'ready', vm });
+      if (!this.applyWrite(characterId, vm)) {
+        return;
+      }
       this.storyToggleState.set({ status: 'idle' });
     } catch (err) {
       this.storyToggleState.set({ status: 'error', message: describeCharacterError(err) });
@@ -301,7 +342,9 @@ export class CharacterSheetPage {
     this.approvalState.set({ status: 'saving' });
     try {
       const vm = await this.source.approveCharacter(campaignId, characterId);
-      this.state.set({ status: 'ready', vm });
+      if (!this.applyWrite(characterId, vm)) {
+        return;
+      }
       this.approvalState.set({ status: 'idle' });
     } catch (err) {
       this.approvalState.set({ status: 'error', message: describeCharacterError(err) });
@@ -314,6 +357,9 @@ export class CharacterSheetPage {
     this.approvalState.set({ status: 'saving' });
     try {
       await this.source.rejectCharacter(campaignId, characterId);
+      if (this.destroyed || characterId !== this.characterId) {
+        return;
+      }
       this.approvalState.set({ status: 'idle' });
       await this.router.navigate(['/campaigns', campaignId]);
     } catch (err) {

@@ -14,6 +14,7 @@ import type { Attack } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import {
   type AttackStage,
+  awaitsReaction,
   isHit,
   outcomeWord,
   stageAfterRoll,
@@ -25,8 +26,8 @@ import {
   type AttackDie,
   type DamageDie,
   CombatClient,
-  newKey,
 } from '../../../../core/combat/combat-client';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import {
   damageFormula,
   diceName,
@@ -120,9 +121,10 @@ export class AttackSheet {
   /** The damage rolled, once it is. */
   protected readonly damage = signal<PendingDamage | null>(null);
 
-  /** Made again when the target changes: a new attack, not a retry. */
-  private attackKey = newKey();
-  private readonly damageKey = newKey();
+  /** One key per attack roll (target and die): the same values again are a retry, others a new attack. */
+  private readonly attackKeys = new ActionKey();
+  /** One key per damage roll: the same die again is a retry, another die (typed after an app roll was lost) is a new request. */
+  private readonly damageKeys = new ActionKey();
   private readonly body = viewChild<ElementRef<HTMLElement>>('body');
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
 
@@ -234,6 +236,8 @@ export class AttackSheet {
       target ? stateWord(target.state) : '',
     );
   });
+  /** The hit is made, but its damage waits for the target's reaction (Escudo). */
+  protected readonly waiting = computed(() => awaitsReaction(this.pending()));
   protected readonly defeated = computed(() => this.damage()?.targetDefeated ?? false);
   /** What the attack spent: the reaction, one of Extra Attack's attacks (the
    * action stays open for the rest) or the action. */
@@ -307,6 +311,8 @@ export class AttackSheet {
   constructor() {
     // After a result the focus goes to the one next action, as soon as it is drawn.
     effect(() => this.back()?.nativeElement.focus());
+    // The answer of a request in the air has to be shown: the sheet can't be dismissed meanwhile.
+    effect(() => this.sheet.lock(this.busy()));
     // An error opens at the top of the scrolling body, where it is seen.
     effect(() => {
       if (this.error()) {
@@ -335,9 +341,6 @@ export class AttackSheet {
   }
 
   protected pick(id: string): void {
-    if (id !== this.targetId()) {
-      this.attackKey = newKey();
-    }
     this.targetId.set(id);
     this.error.set('');
   }
@@ -369,7 +372,7 @@ export class AttackSheet {
         this.attack.key,
         id,
         die,
-        this.attackKey,
+        this.attackKeys.keyFor({ id, die }),
         this.data.asReaction ?? false,
         this.data.opportunity?.offerId ?? '',
       );
@@ -402,7 +405,7 @@ export class AttackSheet {
         this.data.encounterId,
         p.id,
         die,
-        this.damageKey,
+        this.damageKeys.keyFor(die),
       );
       this.data.state.apply(res.encounter);
       this.damage.set(res.pending);
@@ -424,6 +427,9 @@ export class AttackSheet {
   }
 
   protected close(): void {
+    if (this.busy()) {
+      return;
+    }
     this.sheet.close(this.stage() === 'done');
   }
 }

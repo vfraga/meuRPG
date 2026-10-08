@@ -98,8 +98,21 @@ export class EncounterDraft {
     }
   }
 
-  removeNpc(index: number): void {
-    this.npcs.set(this.npcs().filter((_, i) => i !== index));
+  /**
+   * Takes out the NPC a chip of the party stands for: the chips come from the last measure, which lags the draft, so a
+   * position in them is not a position in the draft. An NPC of the campaign is told by its `characterId`, one given by
+   * name alone by its name. An NPC no longer in the draft (a second click on the same chip) changes nothing.
+   */
+  removeNpc(member: { readonly characterId: string; readonly name: string }): void {
+    const at = this.npcs().findIndex((n) =>
+      member.characterId !== ''
+        ? n.characterId === member.characterId
+        : n.characterId === '' && n.name === member.name,
+    );
+    if (at < 0) {
+      return;
+    }
+    this.npcs.set(this.npcs().filter((_, i) => i !== at));
     this.touch();
   }
 

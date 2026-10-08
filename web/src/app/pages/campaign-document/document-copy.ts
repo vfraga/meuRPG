@@ -27,7 +27,7 @@ export function saveErrorMessage(err: unknown): string {
     [Code.PermissionDenied]: 'Só o mestre da campanha edita o documento.',
     [Code.NotFound]: 'Essa campanha não existe mais, ou você não é membro dela.',
     [Code.Unauthenticated]:
-      'Sua sessão expirou. Entre de novo; o texto continua aqui, no navegador.',
+      'Sua sessão expirou. Entre de novo em outra aba e volte a esta para salvar: entrar nesta aba recarrega a página e perde o texto.',
     [Code.Unavailable]:
       'Não deu para salvar: a conexão caiu. O texto continua aqui. Tente de novo.',
   });

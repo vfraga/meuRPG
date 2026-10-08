@@ -29,7 +29,7 @@ import { OpenSessions } from '../../../shell/live-notice/open-sessions';
 import { openSheet } from '../../live-session/combat/sheet-host';
 import { openWildShape } from '../../../shared/wild-shape/wild-shape-sheet';
 import { combatErrorMessage } from '../../../core/combat/combat-errors';
-import { newKey } from '../../../core/connect/idempotency';
+import { ActionKey } from '../../../core/connect/idempotency';
 import { CreatureCard } from './creature-card';
 import type { EditMode } from './creature-edit';
 import { SummonSheet, type SummonSheetData, type SummonSheetResult } from './summon-sheet';
@@ -77,6 +77,9 @@ export class CreaturesPanel {
   readonly wildShape = input(false);
   /** Bumped by the page when the stream says the creatures changed. */
   readonly reload = input(0);
+  /** Bumped by the page when the character's vitals or the combat changed: the Wild Shape form is read again (it ends
+   * by damage, by sleep or by the master's hand, none of which is a creature change). */
+  readonly formReload = input(0);
 
   protected readonly state = signal<ListState>('loading');
   protected readonly creatures = signal<readonly CharacterCreature[]>([]);
@@ -86,7 +89,12 @@ export class CreaturesPanel {
   private known = new Set<string>();
   private first = true;
   private castInFlight = false;
+  /** What a gift from the master said while a cast sheet was open: it is told once the sheet is closed. */
+  private heldGift = '';
+  /** A read of a list that was already shown failed: the list stays, and the panel says it may be out of date. */
+  protected readonly refreshFailed = signal(false);
   private seq = 0;
+  private wildSeq = 0;
 
   protected readonly live = computed(() =>
     this.openSessions.sessions().some((s) => s.campaignId === this.campaignId()),
@@ -118,6 +126,9 @@ export class CreaturesPanel {
     readonly recharge: string;
   } | null>(null);
   protected readonly wildError = signal('');
+  /** "Voltar à forma normal" is on its way. */
+  protected readonly leaving = signal(false);
+  private readonly leaveKey = new ActionKey();
   /** "restam 2 de 2 usos · volta no descanso curto ou longo", or what stops it outside a session. */
   protected readonly wildLine = computed(() => {
     const u = this.uses();
@@ -140,8 +151,12 @@ export class CreaturesPanel {
     if (!this.wildShape() || this.isMaster() || !this.live()) {
       return;
     }
+    const seq = ++this.wildSeq;
     try {
       const v = await this.client.vitalsOf(this.campaignId(), this.characterId());
+      if (seq !== this.wildSeq) {
+        return;
+      }
       const r = v?.resources.find((x) => x.key === 'wild_shape');
       this.uses.set(
         r
@@ -154,7 +169,9 @@ export class CreaturesPanel {
       );
       this.form.set(v?.wildShape?.beastNamePt ?? '');
     } catch {
-      this.uses.set(null);
+      if (seq === this.wildSeq) {
+        this.uses.set(null);
+      }
     }
   }
 
@@ -177,17 +194,37 @@ export class CreaturesPanel {
   }
 
   protected async leave(): Promise<void> {
+    // One request at a time: the server refuses a second one (the form has already ended) as a new action.
+    if (this.leaving()) {
+      return;
+    }
+    this.leaving.set(true);
     this.wildError.set('');
     try {
-      await this.client.leaveWildShape(this.campaignId(), this.characterId(), newKey());
+      await this.client.leaveWildShape(
+        this.campaignId(),
+        this.characterId(),
+        this.leaveKey.keyFor([this.campaignId(), this.characterId()]),
+      );
+      this.leaveKey.renew();
       this.notice.set('Você voltou à forma normal.');
       await this.loadWild();
     } catch (err) {
       this.wildError.set(combatErrorMessage(err, 'voltar à forma normal'));
+    } finally {
+      this.leaving.set(false);
     }
   }
 
   constructor() {
+    effect(() => {
+      const ticks = this.formReload();
+      untracked(() => {
+        if (ticks > 0) {
+          void this.loadWild();
+        }
+      });
+    });
     effect(() => {
       this.reload();
       this.live();
@@ -215,9 +252,12 @@ export class CreaturesPanel {
         this.state.set('hidden');
       } else if (this.state() !== 'ready') {
         this.state.set('failed');
+      } else {
+        this.refreshFailed.set(true);
       }
       return null;
     }
+    this.refreshFailed.set(false);
     this.spells.set(
       options.status === 'fulfilled' && options.value ? [...options.value.spells] : [],
     );
@@ -235,10 +275,17 @@ export class CreaturesPanel {
       this.first = false;
       return;
     }
-    if (fresh.length === 0 || this.castInFlight) {
+    if (fresh.length === 0) {
       return;
     }
     const gift = fresh.find((c) => c.source === CreatureSource.MASTER);
+    if (this.castInFlight) {
+      // What arrives from the cast is told by the cast; a gift made meanwhile is told after it.
+      if (gift) {
+        this.heldGift = `O mestre deu uma criatura a você: ${gift.name}.`;
+      }
+      return;
+    }
     this.notice.set(
       gift
         ? `O mestre deu uma criatura a você: ${gift.name}.`
@@ -259,6 +306,7 @@ export class CreaturesPanel {
       return;
     }
     this.notice.set('');
+    this.heldGift = '';
     this.castInFlight = true;
     openSheet<SummonSheet, SummonSheetData, SummonSheetResult>(
       this.dialog,
@@ -277,11 +325,14 @@ export class CreaturesPanel {
     ).subscribe((result) => {
       if (!result) {
         this.castInFlight = false;
+        this.notice.set(this.heldGift);
+        this.heldGift = '';
         return;
       }
       void this.load(this.campaignId(), this.characterId()).then(() => {
         this.castInFlight = false;
-        this.notice.set(this.confirmation(result));
+        this.notice.set([this.confirmation(result), this.heldGift].filter((t) => t).join(' '));
+        this.heldGift = '';
         this.focusAfterRender('.js-cast');
       });
     });
@@ -333,7 +384,9 @@ export class CreaturesPanel {
   }
 
   protected retry(): void {
-    this.state.set('loading');
+    if (this.state() === 'failed') {
+      this.state.set('loading');
+    }
     void this.load(this.campaignId(), this.characterId());
   }
 }

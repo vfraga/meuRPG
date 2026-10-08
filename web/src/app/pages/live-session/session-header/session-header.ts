@@ -101,6 +101,10 @@ export class SessionHeader implements OnDestroy {
   }
 
   protected cancelEnd(): void {
+    // The request is already on its way: it cannot be called back, so the confirmation stays until it answers.
+    if (this.endState() === 'saving') {
+      return;
+    }
     this.endState.set('idle');
     this.focusAfterRender('.js-end');
   }

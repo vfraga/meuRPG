@@ -482,6 +482,10 @@ func (noLive) ImageOnStage(context.Context, string, string) (bool, error) {
 	return false, errors.New("not in this test")
 }
 
+func (noLive) ImageShown(context.Context, pgx.Tx, string, string) (bool, error) {
+	return false, errors.New("not in this test")
+}
+
 func (noLive) OpenScenePoint(context.Context, string) (string, error) {
 	return "", errors.New("not in this test")
 }

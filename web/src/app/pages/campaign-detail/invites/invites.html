@@ -13,6 +13,12 @@
         </div>
       }
       @case ('ready') {
+        @if (revokeError() !== '') {
+          <div class="mr-notice mr-notice--danger" role="alert">
+            <mat-icon aria-hidden="true">error</mat-icon>
+            <p>{{ revokeError() }}</p>
+          </div>
+        }
         @if (l.invites.length === 0) {
           <p class="invites__hint">Nenhum convite ainda. Gere um link abaixo e mande para quem vai jogar.</p>
         } @else {
@@ -28,7 +34,7 @@
                 </span>
                 <span class="mr-tag invite__tag">{{ inviteStateTag(i.state) }}</span>
                 @if (i.state === InviteState.ACTIVE) {
-                  <button mat-stroked-button class="invite__revoke" type="button" (click)="revoke(i)">
+                  <button mat-stroked-button class="invite__revoke" type="button" [disabled]="revoking() !== null" (click)="revoke(i)">
                     Revogar
                   </button>
                 }

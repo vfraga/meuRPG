@@ -150,10 +150,16 @@ export class CombatXp {
   });
   protected readonly totalText = computed(() => tight(`${formatInt(this.total())} XP`));
 
+  /** The award given from here was undone since (elsewhere): it no longer stands. */
+  private readonly justUndone = computed(() => {
+    const id = this.just()?.award.id;
+    return !!id && this.store.awards().some((a) => a.id === id && a.undone);
+  });
+
   /** The award of this combat that still stands (given here, or earlier). */
   protected readonly award = computed<XPAward | null>(
     () =>
-      this.just()?.award ??
+      (this.justUndone() ? null : this.just()?.award) ??
       this.store
         .awards()
         .find(
@@ -346,6 +352,11 @@ export class CombatXp {
     const reason = `Combate: ${enc.name}`.slice(0, REASON_MAX);
     // The same people for the same combat are a retry; another set is a new award.
     const signature = JSON.stringify([enc.id, ids]);
+    if (this.justUndone()) {
+      // The earlier award is gone: giving again is a new action, not its retry.
+      this.just.set(null);
+      this.keyFor = '';
+    }
     if (signature !== this.keyFor) {
       this.keyFor = signature;
       this.key = newKey();

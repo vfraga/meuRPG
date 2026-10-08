@@ -106,4 +106,15 @@ describe('ShownImageBlock', () => {
     expect(el.querySelector('img')).not.toBeNull();
     expect(el.textContent).not.toContain('Não deu para carregar a imagem.');
   });
+
+  it('tries the picture again when the master shows it anew while the failed one is leaving', () => {
+    show(goblin);
+    (el.querySelector('img') as HTMLImageElement).dispatchEvent(new Event('error'));
+    fixture.detectChanges();
+    show(null);
+    expect(el.textContent).toContain('Não deu para carregar a imagem.');
+    show(goblin);
+    expect(el.querySelector('img')).not.toBeNull();
+    expect(el.textContent).not.toContain('Não deu para carregar a imagem.');
+  });
 });

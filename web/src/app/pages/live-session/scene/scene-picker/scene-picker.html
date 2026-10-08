@@ -25,7 +25,7 @@
           name="scene-point"
           [value]="r.id"
           [checked]="choice() === r.id"
-          (change)="choice.set(r.id)"
+          (change)="pick(r.id)"
         />
         <mat-icon class="pk__icon" aria-hidden="true">chat_bubble_outline</mat-icon>
         <span class="pk__text">

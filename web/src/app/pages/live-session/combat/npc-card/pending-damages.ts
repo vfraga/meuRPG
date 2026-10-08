@@ -190,7 +190,7 @@ export class PendingDamages {
         this.encounter().id,
         p.id,
         die,
-        this.keyFor(p.id),
+        this.keyFor(`roll:${p.id}:${JSON.stringify(die)}`),
       );
       this.state().apply(res.encounter);
     });
@@ -204,7 +204,7 @@ export class PendingDamages {
         this.encounter().id,
         p.id,
         slot,
-        this.keyFor(`reaction:${p.id}`),
+        this.keyFor(`reaction:${p.id}:use:${slot.level}:${slot.pact}`),
       );
       this.state().apply(res.encounter);
       const stopped = res.outcome === ReactionOutcome.STOPPED;
@@ -226,7 +226,7 @@ export class PendingDamages {
           this.campaignId(),
           this.encounter().id,
           p.id,
-          this.keyFor(`reaction:${p.id}`),
+          this.keyFor(`reaction:${p.id}:decline`),
         ),
       );
       this.reacted.emit('declined');

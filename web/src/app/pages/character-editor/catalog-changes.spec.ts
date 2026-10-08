@@ -1,4 +1,4 @@
-import { catalogChanged, offControlOf } from './catalog-changes';
+import { catalogChanged, offControlOf, offersChanged } from './catalog-changes';
 import type { RulesCatalogVm } from './character-editor.types';
 
 const base = (): RulesCatalogVm => ({
@@ -93,6 +93,32 @@ describe("catalogChanged: what the master's switches move in the pickers", () =>
         ],
       }),
     ).toBe(true);
+  });
+});
+
+describe('catalogChanged: what the editor computes from', () => {
+  const withClass = (over: object): RulesCatalogVm => ({
+    ...base(),
+    classes: [{ ...base().classes[0], ...over }],
+  });
+
+  it('sees a class whose hit die or skill count changed', () => {
+    expect(catalogChanged(base(), withClass({ hitDie: 10 }))).toBe(true);
+    expect(catalogChanged(base(), withClass({ skillChoose: 3 }))).toBe(true);
+  });
+
+  it('sees a spell that moved between cantrip and leveled', () => {
+    const moved = { ...base(), spells: [{ ...base().spells[0], level: 1 }] };
+    expect(catalogChanged(base(), moved)).toBe(true);
+  });
+
+  it('is false for the same catalog read again', () => {
+    expect(catalogChanged(base(), base())).toBe(false);
+  });
+
+  it('does not count those edits as a change of the offers the person picks from', () => {
+    expect(offersChanged(base(), withClass({ hitDie: 10 }))).toBe(false);
+    expect(offersChanged(base(), { ...base(), races: [] })).toBe(true);
   });
 });
 

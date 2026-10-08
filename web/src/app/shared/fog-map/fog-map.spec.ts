@@ -332,6 +332,7 @@ describe('FogMap', () => {
       kind: MapPointKind.TREASURE,
       xBp: 6000,
       yBp: 6000,
+      revealed: true,
       remembered: true,
     });
     const without = create({ points: [trap, old] });

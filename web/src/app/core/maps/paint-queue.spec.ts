@@ -151,3 +151,77 @@ describe('PaintQueue', () => {
     expect(isTransient(new ConnectError('x', Code.FailedPrecondition))).toBe(false);
   });
 });
+
+describe('PaintQueue.clear() while a send is in flight', () => {
+  const A: PaintTarget = { campaignId: 'c', mapId: 'a' };
+  const B: PaintTarget = { campaignId: 'c', mapId: 'b' };
+  let sent: { mapId: string; value: number; n: number }[];
+  let pending: { resolve: () => void; reject: (e: unknown) => void }[];
+  let queue: PaintQueue;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    sent = [];
+    pending = [];
+    queue = new PaintQueue(
+      (t, _l, value, sq) =>
+        new Promise<void>((resolve, reject) => {
+          sent.push({ mapId: t.mapId, value, n: sq.length });
+          pending.push({ resolve, reject });
+        }),
+      100,
+    );
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('still sends a stroke added after clear() when the in-flight send succeeds', async () => {
+    queue.add(A, MapLayer.WALL, 1, [{ col: 0, row: 0 }]);
+    const flushing = queue.flush();
+    expect(sent.map((s) => s.mapId)).toEqual(['a']);
+    queue.clear();
+    queue.add(B, MapLayer.WALL, 1, [{ col: 1, row: 1 }]);
+    pending[0].resolve();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(sent.map((s) => s.mapId)).toEqual(['a', 'b']);
+    pending[1].resolve();
+    await flushing;
+    expect(queue.status()).toBe('saved');
+  });
+
+  it('does not say "Tudo salvo" while the new stroke has not been sent', async () => {
+    queue.add(A, MapLayer.WALL, 1, [{ col: 0, row: 0 }]);
+    const flushing = queue.flush();
+    queue.clear();
+    queue.add(B, MapLayer.WALL, 2, [{ col: 1, row: 1 }]);
+    pending[0].resolve();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(queue.status() === 'saved' && !sent.some((s) => s.value === 2)).toBe(false);
+    pending[1]?.resolve();
+    await flushing;
+  });
+
+  it('keeps the new batch, not the old one, when the in-flight send fails transiently', async () => {
+    queue.add(A, MapLayer.WALL, 1, [{ col: 0, row: 0 }]);
+    const flushing = queue.flush();
+    queue.clear();
+    queue.add(B, MapLayer.WALL, 1, [{ col: 1, row: 1 }]);
+    pending[0].reject(new ConnectError('down', Code.Unavailable));
+    await flushing;
+    const retrying = queue.retry();
+    await vi.advanceTimersByTimeAsync(0);
+    pending.slice(1).forEach((p) => p.resolve());
+    await retrying;
+    expect(sent.map((s) => s.mapId)).toEqual(['a', 'b']);
+  });
+
+  it('does not resend the cleared squares when the in-flight send fails transiently', async () => {
+    queue.add(A, MapLayer.WALL, 1, [{ col: 1, row: 1 }]);
+    const flushing = queue.flush();
+    queue.clear();
+    pending[0].reject(new ConnectError('down', Code.Unavailable));
+    await flushing;
+    void queue.retry();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(sent.filter((s) => s.value === 1)).toHaveLength(1);
+  });
+});

@@ -32,6 +32,9 @@ export class MapState {
 
   private mapId: string | null = null;
   private generation = 0;
+  /** Moves with each in-place edit (a stream event, the answer of a call): a read that began before it may carry the
+   * state from before the edit, so it is dropped and the map is read once more. */
+  private edits = 0;
 
   constructor(private readonly load: (mapId: string) => Promise<GetMapResponse>) {}
 
@@ -60,14 +63,19 @@ export class MapState {
 
   private async read(mapId: string): Promise<void> {
     const generation = ++this.generation;
+    const edits = this.edits;
     try {
       const res = await this.load(mapId);
       if (generation !== this.generation) {
         return;
       }
+      if (edits !== this.edits) {
+        // Served before an edit that is already on screen: read again rather than undo it.
+        return await this.read(mapId);
+      }
       this.apply(res);
     } catch (err) {
-      if (generation !== this.generation) {
+      if (generation !== this.generation || edits !== this.edits) {
         return;
       }
       if (ConnectError.from(err).code === Code.NotFound) {
@@ -105,13 +113,20 @@ export class MapState {
     if (!this.tokens().some((t) => !t.creatureId && t.characterId === characterId)) {
       return false;
     }
+    this.edits++;
     this.tokens.update((list) =>
       list.map((t) => (!t.creatureId && t.characterId === characterId ? { ...t, xBp, yBp } : t)),
     );
     return true;
   }
 
+  /** Adds a point or replaces the one it names. A point of another map than the open one (a late answer after the
+   * map changed) is not this state's. */
   upsertPoint(point: MapPoint): void {
+    if (!this.isOpen(point.mapId)) {
+      return;
+    }
+    this.edits++;
     this.points.update((list) =>
       list.some((p) => p.id === point.id)
         ? list.map((p) => (p.id === point.id ? point : p))
@@ -121,6 +136,7 @@ export class MapState {
   }
 
   removePoint(pointId: string): void {
+    this.edits++;
     this.points.update((list) => list.filter((p) => p.id !== pointId));
     this.touchCount();
   }
@@ -128,6 +144,10 @@ export class MapState {
   /** Adds a token or replaces the one it names. A creature's token carries its owner's `character_id`, so a token
    * is told apart by `tokenKey`: the creature's ID when it is one, the character's otherwise. */
   upsertToken(token: MapToken): void {
+    if (!this.isOpen(token.mapId)) {
+      return;
+    }
+    this.edits++;
     const key = tokenKey(token);
     this.tokens.update((list) =>
       list.some((t) => tokenKey(t) === key)
@@ -136,12 +156,26 @@ export class MapState {
     );
   }
 
+  /** A creature's token goes off the map. */
+  removeCreatureToken(creatureId: string): void {
+    this.edits++;
+    this.tokens.update((list) => list.filter((t) => t.creatureId !== creatureId));
+  }
+
+  /** A character's own token goes off the map (a creature's, which carries its owner's `character_id`, stays). */
   removeToken(characterId: string): void {
+    this.edits++;
     this.tokens.update((list) => list.filter((t) => t.creatureId || t.characterId !== characterId));
   }
 
   setMap(map: MapMessage): void {
+    this.edits++;
     this.map.set(map);
+  }
+
+  /** Whether a row that names its map (`map_id`) belongs to the map on screen; a row that names none does. */
+  private isOpen(rowMapId: string): boolean {
+    return !rowMapId || rowMapId === this.map()?.id;
   }
 
   private touchCount(): void {

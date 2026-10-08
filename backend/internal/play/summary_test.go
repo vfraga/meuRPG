@@ -285,3 +285,79 @@ func TestMR032_SummaryIncludesTheCombatActiveAtTheEndAndTheDead(t *testing.T) {
 		t.Errorf("Toren's player's own result = %v, %v; want Toren's 7 damage", mine.GetMine(), err)
 	}
 }
+
+// bulkSceneRolls copies the latest real roll of the open session count times, as a
+// table could never roll them by hand.
+func (a *armed) bulkSceneRolls(t *testing.T, sessionID string, count int) {
+	t.Helper()
+	if _, err := a.h.pool.Exec(t.Context(), `
+INSERT INTO session_events (game_session_id, seq, kind, actor_user_id, character_id, payload, created_at)
+SELECT e.game_session_id, (SELECT max(seq) FROM session_events WHERE game_session_id = e.game_session_id) + g, e.kind, e.actor_user_id, e.character_id, e.payload, e.created_at
+FROM (SELECT * FROM session_events WHERE game_session_id = $1 AND kind = 'scene_check_rolled' ORDER BY seq DESC LIMIT 1) e, generate_series(1, $2) g`,
+		sessionID, count); err != nil {
+		t.Fatalf("bulk insert: %v", err)
+	}
+}
+
+func TestSummaryCountsAnyNumberOfSceneRolls(t *testing.T) {
+	a := newArmed(t)
+	point, actions := a.h.newScene(a.mapID, "A carroça", true, 0, sceneSpec{"skill:investigation", new(int32(12))})
+	a.openScene(t, point)
+	a.checkRoll(t, a.ana, actions[0], 20) // passes
+	for range 2 {
+		a.checkRoll(t, a.ana, actions[0], 1) // fails
+	}
+	listed, err := a.master.play.ListGameSessions(t.Context(), connect.NewRequest(&playv1.ListGameSessionsRequest{CampaignId: a.campaignID}))
+	if err != nil || len(listed.Msg.GetGameSessions()) != 1 {
+		t.Fatalf("ListGameSessions() = %v, %v", listed, err)
+	}
+	open := listed.Msg.GetGameSessions()[0]
+
+	// Many more rows than the roll cap lets through, as old data or a
+	// bug could leave: the summary still answers, and still counts them.
+	const extra = 5000
+	a.bulkSceneRolls(t, open.GetId(), extra)
+
+	ended := a.master.end(t, open)
+	for who, u := range map[string]*user{"master": a.master, "player": a.ana} {
+		sum, err := a.summary(t, u, ended.GetId())
+		if err != nil {
+			t.Errorf("%s: GetSessionSummary() code = %v, error = %v; want the summary", who, connect.CodeOf(err), err)
+			continue
+		}
+		if who == "player" {
+			// The copied roll is a failure, like the two real ones.
+			if got := sum.GetMine().GetChecksTried(); got != 3+extra {
+				t.Errorf("player: checks tried = %d, want %d", got, 3+extra)
+			}
+			if got := sum.GetMine().GetChecksPassed(); got != 1 {
+				t.Errorf("player: checks passed = %d, want 1", got)
+			}
+		}
+	}
+}
+
+func TestUnlimitedSceneActionHasARollCap(t *testing.T) {
+	a := newArmed(t)
+	point, actions := a.h.newScene(a.mapID, "A carroça", true, 0, sceneSpec{"skill:investigation", new(int32(12))})
+	a.openScene(t, point)
+	a.checkRoll(t, a.ana, actions[0], 10)
+	listed, err := a.master.play.ListGameSessions(t.Context(), connect.NewRequest(&playv1.ListGameSessionsRequest{CampaignId: a.campaignID}))
+	if err != nil || len(listed.Msg.GetGameSessions()) != 1 {
+		t.Fatalf("ListGameSessions() = %v, %v", listed, err)
+	}
+	// Up to the cap, an unlimited action never refuses (the control).
+	a.bulkSceneRolls(t, listed.Msg.GetGameSessions()[0].GetId(), maxUnlimitedSceneRolls-2)
+	a.checkRoll(t, a.ana, actions[0], 10)
+
+	a.h.roller.queue(10)
+	_, err = a.ana.play.RollSceneCheck(t.Context(), connect.NewRequest(&playv1.RollSceneCheckRequest{
+		CampaignId: a.campaignID, ActionId: actions[0], IdempotencyKey: newKey(), Roll: &playv1.RollSceneCheckRequest_RollInApp{RollInApp: true},
+	}))
+	if err == nil {
+		t.Fatalf("roll %d of an unlimited action was accepted, want it refused", maxUnlimitedSceneRolls+1)
+	}
+	if got := connect.CodeOf(err); got != connect.CodeFailedPrecondition {
+		t.Errorf("code = %v, want %v (%v)", got, connect.CodeFailedPrecondition, err)
+	}
+}

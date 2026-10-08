@@ -70,6 +70,21 @@ describe('the dungeon errors', () => {
     });
   });
 
+  it('says a rate-limited preview in the words of the limit, and does not retry it as a busy one', () => {
+    const limited = (code: Code) =>
+      new ConnectError('slow down', code, new Headers({ 'Retry-After': '3' }));
+    const waiting = 'Muitas ações em pouco tempo. Espere 3 segundos e tente de novo.';
+    expect(previewFailure(limited(Code.ResourceExhausted))).toEqual({
+      kind: 'failed',
+      text: waiting,
+    });
+    expect(previewFailure(limited(Code.Unavailable))).toEqual({ kind: 'failed', text: waiting });
+    expect(previewFailure(new ConnectError('gone', Code.Unauthenticated))).toMatchObject({
+      kind: 'failed',
+      text: expect.stringContaining('Entre de novo'),
+    });
+  });
+
   it('says a failed creation by its field or its code, with the rate limit in words', () => {
     expect(createFailure(refused('stairs'))).toMatchObject({ field: 'stairs' });
     expect(createFailure(new ConnectError('x', Code.ResourceExhausted)).text).toContain(

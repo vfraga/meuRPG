@@ -26,6 +26,11 @@ export class MilestonesStore {
   readonly reached = computed(() => reachedOf(this.list()));
 
   async load(campaignId: string): Promise<void> {
+    if (campaignId !== this.campaignId) {
+      // Another campaign: nothing of the last one may show, and an answer still on its way is dropped.
+      this.seq++;
+      this.list.set([]);
+    }
     this.campaignId = campaignId;
     this.state.set('loading');
     await this.refresh();

@@ -104,10 +104,11 @@ func (s *Service) SetShownImage(
 	}
 	keep := req.Msg.GetKeep() && imageID != nil
 	var shown *playv1.ShownImage
+	var shownCopy ShownCopy // the files of a fog map's image copy, its row not yet made
 	if imageID != nil {
 		// The image must be the campaign's. The foreign key keeps it from
 		// disappearing before the commit (below).
-		if shown, err = s.maps.ImageToShow(ctx, m.CampaignID, *imageID); err != nil {
+		if shown, shownCopy, err = s.maps.PrepareShow(ctx, m.CampaignID, *imageID); err != nil {
 			return nil, s.dbError(ctx, "find the image to show", err)
 		}
 		// What is shown is the image the maps module answered with: the copy, when
@@ -116,8 +117,10 @@ func (s *Service) SetShownImage(
 		imageID = &shownID
 	}
 
-	var moved bool   // an image went to the left list
-	var changed bool // another image (or none) is shown now
+	var moved bool       // an image went to the left list
+	var changed bool     // another image (or none) is shown now
+	var copyCreated bool // the shown copy's row is the one this call inserted
+	var showing string   // the image shown at the end of the transaction, "" for none
 	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.queries.WithTx(tx)
 		session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
@@ -131,18 +134,38 @@ func (s *Service) SetShownImage(
 		// replaced by another, or by nothing. The same image again only
 		// moves the switch.
 		moved = false
-		changed = !equal(session.ShownImageID, imageID)
-		if session.ShownImageKeep && session.ShownImageID != nil && !equal(session.ShownImageID, imageID) {
+		copyCreated = false
+		showID := imageID
+		if shownCopy != nil {
+			// The copy's row first: another show of the same image may have made it meanwhile.
+			id, created, err := shownCopy.Insert(ctx, tx)
+			if err != nil {
+				return err
+			}
+			showID, copyCreated = &id, created
+		}
+		showing = deref(showID)
+		changed = !equal(session.ShownImageID, showID)
+		if session.ShownImageKeep && session.ShownImageID != nil && !equal(session.ShownImageID, showID) {
 			if err := s.maps.LeaveImage(ctx, tx, m.CampaignID, *session.ShownImageID, s.now()); err != nil {
 				return err
 			}
 			moved = true
 		}
-		if _, err := q.SetShownImage(ctx, playdb.SetShownImageParams{ID: session.ID, ShownImageID: imageID, ShownImageKeep: keep}); err != nil {
+		if _, err := q.SetShownImage(ctx, playdb.SetShownImageParams{ID: session.ID, ShownImageID: showID, ShownImageKeep: keep}); err != nil {
 			return fmt.Errorf("set the shown image: %w", err)
 		}
 		return nil
 	})
+	if shownCopy != nil && (err != nil || !copyCreated) {
+		shownCopy.Discard(ctx) // no gallery row: the copy's files go
+	}
+	if err == nil && showing != shown.GetId() {
+		// Another show committed the copy first: its image is the one shown.
+		if shown, err = s.maps.ShownImage(ctx, m.CampaignID, showing); err != nil {
+			return nil, s.dbError(ctx, "find the shown image", err)
+		}
+	}
 	if isForeignKeyViolation(err) {
 		// The master deleted the image in another tab meanwhile.
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("image not found"))
@@ -231,6 +254,20 @@ func (s *Service) OnScreen(ctx context.Context, campaignID string) (currentMapID
 		return "", "", fmt.Errorf("read what the session shows: %w", err)
 	}
 	return deref(row.CurrentMapID), deref(row.ShownImageID), nil
+}
+
+// ImageShown says whether the image is the one the campaign's open session
+// shows the players, reading through tx, for a transaction that is about to
+// delete it. It implements maps.LiveSession.
+func (s *Service) ImageShown(ctx context.Context, tx pgx.Tx, campaignID, imageID string) (bool, error) {
+	row, err := s.queries.WithTx(tx).GetOnScreen(ctx, campaignID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil // no open session
+	}
+	if err != nil {
+		return false, fmt.Errorf("read what the session shows: %w", err)
+	}
+	return deref(row.ShownImageID) == imageID, nil
 }
 
 // Publish sends an event on the campaign's live streams: to the master's

@@ -1,10 +1,11 @@
 import {
-  Component,
-  ElementRef,
-  Injector,
   afterNextRender,
+  Component,
   computed,
+  effect,
+  ElementRef,
   inject,
+  Injector,
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -83,6 +84,8 @@ export class SaveSheet {
   protected readonly points = signal<readonly PointRow[] | null>(null);
   protected readonly pointId = signal('');
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
   protected readonly asking = signal(false);
 

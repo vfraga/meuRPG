@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -109,6 +110,7 @@ func (s *Service) AddMonsters(
 	asked := monstersEvent{CreatureKey: creatureKey, Count: count, NameHash: hex.EncodeToString(sum[:8]), Rolled: rolled, Hidden: hidden}
 
 	var done monstersEvent
+	// No request hash: the add is compared by its own digest, which reads the defaults written out as the same request.
 	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCombatantsAdded, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
@@ -152,13 +154,13 @@ func (s *Service) AddMonsters(
 		}
 		done = *ev.Monsters
 	}
-	out, err := s.finish(ctx, m, res, s.changed(m.CampaignID))
-	if err != nil {
-		return nil, err
-	}
 	ids := make([]string, len(done.Items))
 	for i, it := range done.Items {
 		ids[i] = it.ID
+	}
+	out, err := s.finish(ctx, m, res, s.changedFor(m.CampaignID, ids...))
+	if err != nil {
+		return nil, err
 	}
 	return connect.NewResponse(&playv1.AddMonstersResponse{Encounter: out, CombatantIds: ids}), nil
 }
@@ -318,8 +320,9 @@ func countPlanned(parts []planned) int {
 // joinStart puts the participants and the start's monsters into the new combat c.enc, inside the
 // start's transaction, and returns every combatant added. The monsters go through the same
 // planMonsters as AddMonsters; the master's line of their hit points ("Bandido 1: 9 PV") is
-// written as AddMonsters writes it (a combatants_added event with the monsters), with no
-// idempotency key of its own: the start's key covers the whole.
+// written as AddMonsters writes it (a combatants_added event with the monsters, in as many
+// events as the payload limit asks), with no idempotency key of its own: the start's key
+// covers the whole.
 func (s *Service) joinStart(ctx context.Context, c *combatTx, m authz.Membership, grid link.Grid, parts []planned, mon startMonsters) ([]playdb.Combatant, error) {
 	before := countPlanned(parts) // the combatants ahead of the monsters in the order of insertion
 	var items [][]monsterItem
@@ -337,17 +340,26 @@ func (s *Service) joinStart(ctx context.Context, c *combatTx, m authz.Membership
 	if len(items) == 0 {
 		return added, nil
 	}
-	ev := monstersEvent{Rolled: mon.rolled, Hidden: mon.hidden, Count: mon.count()}
-	at := before
+	var all []monsterItem
 	for _, batch := range items {
 		for _, it := range batch {
-			it.ID = added[at].ID
-			ev.Items = append(ev.Items, it)
-			at++
+			it.ID = added[before+len(all)].ID
+			all = append(all, it)
 		}
 	}
-	if err := insertEvent(ctx, c, eventCombatantsAdded, &m.UserID, nil, actionEvent{Round: c.enc.Round, Monsters: &ev}); err != nil {
-		return nil, err
+	// The master's line lists each monster with its dice and faces, which is more than
+	// one event's payload holds for a big start: it is written as several lines, each
+	// with as many monsters as fit.
+	for at := 0; at < len(all); {
+		n := fitPrefix(len(all)-at, func(count int) bool {
+			body, err := json.Marshal(actionEvent{Round: c.enc.Round, Monsters: &monstersEvent{Rolled: mon.rolled, Hidden: mon.hidden, Count: count, Items: all[at : at+count]}})
+			return err == nil && len(body) <= eventPayloadBudget
+		})
+		ev := monstersEvent{Rolled: mon.rolled, Hidden: mon.hidden, Count: n, Items: all[at : at+n]}
+		if err := insertEvent(ctx, c, eventCombatantsAdded, &m.UserID, nil, actionEvent{Round: c.enc.Round, Monsters: &ev}); err != nil {
+			return nil, err
+		}
+		at += n
 	}
 	return added, nil
 }

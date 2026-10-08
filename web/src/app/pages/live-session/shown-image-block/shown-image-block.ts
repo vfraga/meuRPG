@@ -90,7 +90,8 @@ export class ShownImageBlock {
     if (next) {
       const appears = previous === null || this.leaving();
       this.leaving.set(false);
-      if (previous?.id !== next.id) {
+      // A picture shown again while it was leaving, after its load failed, gets a new try.
+      if (previous?.id !== next.id || (appears && this.failed())) {
         this.failed.set(false);
         this.loaded.set(false);
       }

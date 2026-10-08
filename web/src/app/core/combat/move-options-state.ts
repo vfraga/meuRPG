@@ -36,8 +36,8 @@ export class MoveOptionsState {
         this.failed.set(false);
       }
     } catch {
+      // The last good answer stays: the page draws it, and the server still judges the move.
       if (mine === this.asked) {
-        this.data.set(null);
         this.failed.set(true);
       }
     }

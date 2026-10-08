@@ -168,6 +168,9 @@ function toFullSheetVm(full: GenFullSheet, derived: GenDerivedSheet): FullSheetV
       spellsPreparedMax: sc.preparedMax > 0 ? sc.preparedMax : sc.spellsKnown,
     })),
     spellSlots: toSpellSlotsVm(derived.spellSlots),
+    pactSlots: derived.pactMagic
+      ? { level: derived.pactMagic.slotLevel, count: derived.pactMagic.count }
+      : null,
     cantripNames: derived.spells
       .filter((cs) => (cs.spell?.level ?? 0) === 0)
       .map((cs) => cs.spell?.namePt ?? ''),

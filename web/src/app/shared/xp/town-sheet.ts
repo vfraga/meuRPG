@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, inject, signal, viewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -7,7 +7,7 @@ import {
   type TreasureToConvert,
   XPBlockedReason,
 } from '../../../gen/meurpg/progression/v1/progression_pb';
-import { newKey } from '../../core/connect/idempotency';
+import { ActionKey } from '../../core/connect/idempotency';
 import { joinDots } from '../../core/format/text';
 import type { ExperienceRow, LoadState } from '../../core/progression/experience-store';
 import { ProgressionClient } from '../../core/progression/progression-client';
@@ -80,6 +80,8 @@ export class TownSheet {
     new Set(this.data.rows.map((r) => r.id)),
   );
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
   private readonly frame = viewChild.required(SheetFrame);
 
@@ -130,8 +132,7 @@ export class TownSheet {
     joinDots([foundLine(t), ...(t.foundInSession ? [] : ['fora de uma sessão'])]);
   protected readonly po = po;
 
-  private key = newKey();
-  private keyFor = '';
+  private readonly key = new ActionKey();
 
   constructor() {
     // The master may have marked or converted treasures since the host read them (or not read them yet).
@@ -186,11 +187,7 @@ export class TownSheet {
     const ids = this.chosen().map((t) => t.pointId);
     const people = this.receivers().map((r) => r.id);
     // New choices are a new award; the same ones again are a retry.
-    const signature = JSON.stringify([ids, people]);
-    if (signature !== this.keyFor) {
-      this.keyFor = signature;
-      this.key = newKey();
-    }
+    const key = this.key.keyFor([ids, people]);
     this.busy.set(true);
     this.error.set('');
     try {
@@ -199,7 +196,7 @@ export class TownSheet {
         { mode: 'town', treasurePointIds: ids },
         TOWN_REASON,
         people,
-        this.key,
+        key,
       );
       this.sheet.close(
         res.award ? { award: res.award, xpEach: res.xpEach, lostXp: res.lostXp } : undefined,

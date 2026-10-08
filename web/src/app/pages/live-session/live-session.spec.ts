@@ -23,6 +23,7 @@ import {
 } from '../../core/puzzles/puzzles-testing';
 import { PuzzleRunStatus } from '../../../gen/meurpg/play/v1/puzzles_pb';
 import { create } from '@bufbuild/protobuf';
+import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { XpMode } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import {
   CharacterExperienceSchema,
@@ -36,6 +37,7 @@ import {
   mapToken,
 } from '../../core/maps/maps-testing';
 import { SceneClient } from '../../core/play/scene-client';
+import { SpellCatalog } from '../../core/combat/spell-catalog';
 import { SessionSummaryClient } from '../../core/play/session-summary';
 import { SessionSummarySchema } from '../../../gen/meurpg/play/v1/summary_pb';
 import {
@@ -44,7 +46,11 @@ import {
   playerScene,
   sceneRoll,
 } from '../../core/play/scene-testing';
-import { SceneActionSchema } from '../../../gen/meurpg/maps/v1/maps_pb';
+import {
+  MapPointKind,
+  SceneActionSchema,
+  TreasureFinderSchema,
+} from '../../../gen/meurpg/maps/v1/maps_pb';
 import { OpenSessions } from '../../shell/live-notice/open-sessions';
 import { LiveSession } from './live-session';
 import {
@@ -457,6 +463,37 @@ describe('LiveSession', () => {
     expect(el.textContent).not.toContain('Mirathel');
   });
 
+  it('stops asking, and says there is no access, when the server forbids the session snapshot', async () => {
+    source.snapshot = new KindError('forbidden') as never;
+    const getLiveSession = vi.spyOn(source, 'getLiveSession');
+    const el = await render();
+    expect(el.querySelector('h1')?.textContent).toContain('Peça um convite ao mestre');
+    expect(getLiveSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops asking, and offers "Tentar de novo", when the server calls the session snapshot request invalid', async () => {
+    source.snapshot = new KindError('invalid') as never;
+    const getLiveSession = vi.spyOn(source, 'getLiveSession');
+    const el = await render();
+    expect(el.textContent).toContain('Não foi possível abrir a sessão');
+    expect(button(el, 'Tentar de novo')).toBeDefined();
+    expect(getLiveSession).toHaveBeenCalledTimes(1);
+  });
+
+  it("forgets the spells it read when the table's content changes, and again on a reconnection", async () => {
+    const forget = vi.spyOn(TestBed.inject(SpellCatalog), 'forget');
+    const fixture = TestBed.createComponent(LiveSession);
+    await settle(fixture);
+    forget.mockClear();
+    source.push({ kind: 'contentChanged' });
+    await settle(fixture);
+    expect(forget).toHaveBeenCalledWith('mirathel');
+    forget.mockClear();
+    source.push({ kind: 'ready' });
+    await settle(fixture);
+    expect(forget).toHaveBeenCalledWith('mirathel');
+  });
+
   it('says the same to a pending member (RN-15)', async () => {
     source.campaign = {
       name: 'Mirathel',
@@ -712,6 +749,57 @@ describe('LiveSession', () => {
       expect(el.querySelector('[role="status"]:not(.status)')?.textContent?.trim() ?? '').toBe('');
     });
 
+    describe('two reads of the images left with the players in flight', () => {
+      const tower = {
+        id: 'img-2',
+        name: 'Planta da torre',
+        width: 800,
+        height: 600,
+        url: '/images/img-2',
+      };
+
+      function deferred() {
+        let resolve!: (v: ShownImageVm[]) => void;
+        const promise = new Promise<ShownImageVm[]>((r) => (resolve = r));
+        return { promise, resolve };
+      }
+
+      /** Two reads start (the master took the image back in between); they answer in the order given. */
+      async function twoReads(newerFirst: boolean) {
+        source.left = [tower];
+        const el = await render();
+        expect(el.querySelector('#left-title')).not.toBeNull();
+        const older = deferred();
+        const newer = deferred();
+        source.listLeftImages
+          .mockReset()
+          .mockReturnValueOnce(older.promise)
+          .mockReturnValueOnce(newer.promise);
+        source.push({ kind: 'leftImages' });
+        await new Promise((r) => setTimeout(r));
+        source.push({ kind: 'leftImages' });
+        await new Promise((r) => setTimeout(r));
+        expect(source.listLeftImages).toHaveBeenCalledTimes(2);
+        const answers = [() => older.resolve([tower]), () => newer.resolve([])];
+        for (const answer of newerFirst ? answers.reverse() : answers) {
+          answer();
+          await new Promise((r) => setTimeout(r));
+        }
+        TestBed.inject(ApplicationRef).tick();
+        return el;
+      }
+
+      it('leaves a taken-back image hidden when the replies arrive in order', async () => {
+        const el = await twoReads(false);
+        expect(el.querySelector('#left-title')).toBeNull();
+      });
+
+      it('keeps a taken-back image hidden when the older reply arrives last', async () => {
+        const el = await twoReads(true);
+        expect(el.querySelector('#left-title')).toBeNull();
+      });
+    });
+
     it('draws the block without announcing it when it comes with the snapshot (a reload)', async () => {
       source.snapshot = {
         ...(source.snapshot as LiveSnapshotVm),
@@ -878,6 +966,163 @@ describe('LiveSession', () => {
     });
   });
 
+  describe('the snapshot against the stream', () => {
+    const imageA: ShownImageVm = {
+      id: 'img-1',
+      name: 'Carta',
+      width: 800,
+      height: 500,
+      url: '/images/img-1',
+    };
+    // The component's state is protected; the test reads it to state what the player ends up with.
+    const state = (fixture: ComponentFixture<LiveSession>) =>
+      fixture.componentInstance as unknown as {
+        shownImage(): ShownImageVm | null;
+        currentMapId(): string | null;
+      };
+
+    /** Holds the snapshot read until the test lets it go. */
+    function deferSnapshot(): (snapshot: LiveSnapshotVm) => void {
+      let release!: (snapshot: LiveSnapshotVm) => void;
+      const pending = new Promise<LiveSnapshotVm>((resolve) => (release = resolve));
+      source.getLiveSession = () => pending;
+      return release;
+    }
+
+    /** With reduced motion the shown-image block leaves at once (no fade timer). */
+    function reducedMotion(): void {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query.includes('reduce'),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }));
+    }
+
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('shows an image the snapshot carries and drops it on the stop event after it', async () => {
+      reducedMotion();
+      const release = deferSnapshot();
+      const fixture = TestBed.createComponent(LiveSession);
+      const el = fixture.nativeElement as HTMLElement;
+      await settle(fixture);
+      release({ ...(source.snapshot as LiveSnapshotVm), shownImage: imageA });
+      await settle(fixture);
+      expect(el.querySelector('.block__name')?.textContent).toContain('Carta');
+      source.push({ kind: 'shownImage', image: null });
+      await settle(fixture);
+      expect(el.querySelector('.block__name')).toBeNull();
+    });
+
+    it('does not show again an image the master withdrew while the snapshot was in flight', async () => {
+      reducedMotion();
+      const release = deferSnapshot();
+      const fixture = TestBed.createComponent(LiveSession);
+      const el = fixture.nativeElement as HTMLElement;
+      await settle(fixture); // `ready` came; the snapshot is still being read
+      source.push({ kind: 'shownImage', image: null });
+      await settle(fixture);
+      // The snapshot, read before the stop, now answers with the image.
+      release({ ...(source.snapshot as LiveSnapshotVm), shownImage: imageA });
+      await settle(fixture);
+      expect(el.querySelector('h1')?.textContent).toContain('Sessão 4');
+      expect(state(fixture).shownImage()).toBeNull();
+      expect(el.querySelector('.block__name')).toBeNull();
+    });
+
+    it('stays on the map the master moved the table to while the snapshot was in flight', async () => {
+      const maps = TestBed.inject(MapsClient) as unknown as FakeMapsClient;
+      const a = mapMessage('map-a', 'Mapa A', { revealed: true, current: true });
+      const b = mapMessage('map-b', 'Mapa B', { revealed: true, current: true });
+      maps.maps = [a, b];
+      maps.responses.set('map-a', mapResponse(a));
+      maps.responses.set('map-b', mapResponse(b));
+      const release = deferSnapshot();
+      const fixture = TestBed.createComponent(LiveSession);
+      await settle(fixture);
+      source.push({ kind: 'currentMap', mapId: 'map-b' });
+      await settle(fixture);
+      release({ ...(source.snapshot as LiveSnapshotVm), currentMapId: 'map-a' });
+      const el = await settle(fixture);
+      expect(state(fixture).currentMapId()).toBe('map-b');
+      expect(el.querySelector('#session-map-heading')?.textContent).toContain('Mapa B');
+    });
+  });
+
+  describe('waiting for a session that is not open', () => {
+    it('does not open the stream again and again while the list still names the campaign', async () => {
+      source.events = [];
+      source.failWith = new KindError('no-session');
+      const watch = vi.spyOn(source, 'watch');
+      const getCampaign = vi.spyOn(source, 'getCampaign');
+      liveCampaignIds.set(new Set(['mirathel'])); // stale: the session already ended
+      const fixture = TestBed.createComponent(LiveSession);
+      for (let i = 0; i < 20; i++) {
+        await settle(fixture);
+        TestBed.tick();
+      }
+      expect(watch.mock.calls.length).toBeLessThanOrEqual(2);
+      expect(getCampaign.mock.calls.length).toBeLessThanOrEqual(2);
+    });
+
+    it('opens by itself when the campaign shows up in the list again after it left', async () => {
+      source.events = [];
+      source.failWith = new KindError('no-session');
+      liveCampaignIds.set(new Set(['mirathel']));
+      const fixture = TestBed.createComponent(LiveSession);
+      const el = await settle(fixture);
+      expect(el.querySelector('h1')?.textContent).toContain('Nenhuma sessão em andamento');
+
+      liveCampaignIds.set(new Set());
+      await settle(fixture);
+      source.events = [{ kind: 'ready' }];
+      source.failWith = null;
+      liveCampaignIds.set(new Set(['mirathel']));
+      await settle(fixture);
+      expect(el.querySelector('h1')?.textContent).toContain('Sessão 4');
+    });
+  });
+
+  describe('the treasure card after an XP change', () => {
+    const treasure = (converted: boolean) =>
+      mapPoint('t1', 'Baú de moedas', {
+        kind: MapPointKind.TREASURE,
+        treasureValuePo: 250,
+        treasureFoundAt: timestampFromDate(new Date(2026, 9, 4, 21, 40)),
+        treasureFoundBy: [
+          create(TreasureFinderSchema, { characterId: 'brisa', characterName: 'Brisa' }),
+        ],
+        treasureConverted: converted,
+      });
+    const card = (el: HTMLElement) => el.querySelector('app-treasure-card')?.textContent ?? '';
+
+    it('shows the treasure as converted after xp_changed when the server now has it converted', async () => {
+      source.campaign = {
+        name: 'Mirathel',
+        isMaster: true,
+        awaitingApproval: false,
+        diceMode: 1,
+        dicePreference: 1,
+      };
+      source.snapshot = { ...(source.snapshot as LiveSnapshotVm), currentMapId: 'map-1' };
+      const maps = TestBed.inject(MapsClient) as unknown as FakeMapsClient;
+      const map = mapMessage('map-1', 'Cripta', { revealed: true, current: true });
+      maps.maps = [map];
+      maps.responses.set('map-1', mapResponse(map, [treasure(false)]));
+      const fixture = TestBed.createComponent(LiveSession);
+      const el = await settle(fixture);
+      expect(card(el)).toContain('Desmarcar');
+      expect(card(el)).not.toContain('Convertido em XP');
+
+      maps.responses.set('map-1', mapResponse(map, [treasure(true)]));
+      source.push({ kind: 'xpChanged' });
+      await settle(fixture);
+      expect(card(el)).toContain('Convertido em XP');
+      expect(card(el)).not.toContain('Desmarcar');
+    });
+  });
+
   describe('the fog of war (MR-036, RN-10, E9-03)', () => {
     let maps: FakeMapsClient;
     const tick = async () => {
@@ -979,8 +1224,10 @@ describe('LiveSession', () => {
       await tick();
       source.push({ kind: 'visionChanged', mapId: 'map-1' });
       await tick();
-      await new Promise((r) => setTimeout(r, 250));
-      await tick();
+      await vi.waitFor(async () => {
+        await tick();
+        expect(reads()).toBeGreaterThan(before.reads);
+      });
       // Every hint costs one read of the vision (and the layers); a burst of them is one.
       expect(reads()).toBe(before.reads + 1);
       expect(maps.calls.filter((c) => c.startsWith('layers map-1 ')).length).toBe(
@@ -1072,8 +1319,13 @@ describe('LiveSession', () => {
 
       it('keeps his own map whole, and lists "Ver como" with the squares each character sees', async () => {
         const el = await render();
-        await new Promise((r) => setTimeout(r, 300));
-        await tick();
+        // The counts come with the vision read, a little after the page opens: wait for them.
+        await vi.waitFor(async () => {
+          await tick();
+          expect(textOf(el.querySelector('app-view-as-list'))).toContain(
+            'Brisa Ana 2 quadrados vistos',
+          );
+        });
         // The same map component as the players', with the whole image, and his tokens to drag.
         expect(el.querySelector('app-fog-map')).not.toBeNull();
         expect(el.querySelector('app-fog-base img.fb__img')).not.toBeNull();
@@ -1092,8 +1344,10 @@ describe('LiveSession', () => {
 
       it('shows the map as one character sees it, with the band and the badge, and comes back with "Todos"', async () => {
         const el = await render();
-        await new Promise((r) => setTimeout(r, 300));
-        await tick();
+        await vi.waitFor(async () => {
+          await tick();
+          expect(el.querySelector('app-view-as-list [data-character="brisa"]')).not.toBeNull();
+        });
         (
           el.querySelector('app-view-as-list [data-character="brisa"]') as HTMLButtonElement
         ).click();
@@ -1126,6 +1380,28 @@ describe('LiveSession', () => {
           Array.from(el.querySelectorAll('app-light-panel .row__name'), (n) => textOf(n)),
         ).toEqual(['Pensantus', 'Brisa']);
       });
+    });
+
+    it('reads the vision and its layers again when the stream says ready a second time', async () => {
+      const fixture = TestBed.createComponent(LiveSession);
+      await settle(fixture);
+      const count = (prefix: string) => maps.calls.filter((c) => c.startsWith(prefix)).length;
+      await vi.waitFor(() => expect(count('vision map-1')).toBeGreaterThan(0));
+      const before = {
+        vision: count('vision map-1'),
+        layers: count('layers map-1'),
+        gets: count('get map-1'),
+      };
+
+      // What a reconnection delivers: a new `ready` on the same stream.
+      source.push({ kind: 'ready' });
+      await settle(fixture);
+      await vi.waitFor(async () => {
+        await settle(fixture);
+        expect(count('vision map-1')).toBeGreaterThan(before.vision);
+        expect(count('layers map-1')).toBeGreaterThan(before.layers);
+      });
+      expect(count('get map-1')).toBe(before.gets + 1);
     });
   });
 });

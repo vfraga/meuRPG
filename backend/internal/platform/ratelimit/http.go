@@ -38,7 +38,8 @@ func IsRateLimited(err error) bool {
 
 // limitedPrefixes are the routes that reach the database for a request that
 // may carry no valid session. /auth/ has its own, stricter limit
-// (identity/login.go); the static app and the probes touch no database.
+// (identity/login.go); the static app and /healthz touch none, and /readyz
+// shares one database ping per window (httpserver/health.go).
 var limitedPrefixes = []string{"/meurpg.", "/images/", "/uploads/"}
 
 // Middleware limits the API routes by client IP, before anything else

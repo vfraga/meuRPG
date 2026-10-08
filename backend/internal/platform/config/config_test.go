@@ -456,6 +456,8 @@ func TestLoadLimits(t *testing.T) {
 		"a bad daily limit":  {"IMAGE_DAILY_LIMIT": "0"},
 		"a huge daily limit": {"IMAGE_DAILY_LIMIT": "999999"},
 		"a name, not e-mail": {"CAMPAIGN_CREATORS": "mestre"},
+		"only separators":    {"CAMPAIGN_CREATORS": ","},
+		"only blank entries": {"CAMPAIGN_CREATORS": " , ,"},
 	} {
 		if _, err := Load(env(vars)); err == nil {
 			t.Errorf("%s: Load() error = nil", name)

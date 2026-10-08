@@ -3,7 +3,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { setGridRPC } from './combat-support';
 import { squareBp, type FogTable } from './fog-support';
 import { canvasPng, createMapRPC, revealMapRPC, uploadImageRPC } from './maps-support';
-import { callRPC } from './support';
+import { boxOf, callRPC } from './support';
 
 // Setup for the map editor specs (Etapa 9, slice 9.12, MR-034, MR-035, MR-036, MR-041, RN-10): a map of the
 // campaign "Mirathel" to paint on, and the cave's traps, chests and light as the artboards (E9-01 and E9-02) draw
@@ -39,7 +39,7 @@ export function surfaceOf(page: Page): Locator {
 export async function squareOnScreen(page: Page, map: { columns: number; rows: number }, col: number, row: number): Promise<{ x: number; y: number }> {
   const surface = surfaceOf(page);
   await surface.scrollIntoViewIfNeeded();
-  const box = (await surface.boundingBox())!;
+  const box = await boxOf(surface);
   return { x: box.x + ((col + 0.5) / map.columns) * box.width, y: box.y + ((row + 0.5) / map.rows) * box.height };
 }
 

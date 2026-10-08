@@ -46,6 +46,12 @@ export function stageAfterRoll(
   return hit && pending?.status === PendingDamageStatus.AWAITING_ROLL ? 'damage' : 'done';
 }
 
+/** A hit whose damage waits for the target's reaction (Escudo): the attacker has nothing to roll yet,
+ * and the damage is not "none". */
+export function awaitsReaction(pending: PendingDamage | null | undefined): boolean {
+  return pending?.status === PendingDamageStatus.AWAITING_REACTION;
+}
+
 /** The word of the outcome pill. */
 export function outcomeWord(outcome: AttackOutcome): string {
   switch (outcome) {

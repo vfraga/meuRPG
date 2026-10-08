@@ -50,13 +50,23 @@ export function searchStep(hasResult: boolean, typing: boolean): 1 | 2 | 3 {
   return hasResult ? 3 : typing ? 2 : 1;
 }
 
-/** The answer in words: the same for "nothing there" and "the roll fell short" (the server's rule: the answer never says which). */
-export function resultMessage(found: readonly string[]): {
+/** The answer in words: the same for "nothing there" and "the roll fell short" (the server's rule: the answer never says which).
+ * `count` is how many traps the server said were found; `found` their names, read from the map afterwards. When the map
+ * could not be read (fewer names than traps), the answer still says how many were found and sends the player to the map. */
+export function resultMessage(
+  found: readonly string[],
+  count: number = found.length,
+): {
   readonly title: string;
   readonly detail: string;
 } {
-  if (found.length === 0) {
+  if (count === 0) {
     return { title: 'Você não encontrou nada.', detail: '' };
+  }
+  if (found.length < count) {
+    return count === 1
+      ? { title: 'Você achou uma armadilha.', detail: 'Veja no seu mapa.' }
+      : { title: `Você achou ${count} armadilhas.`, detail: 'Veja no seu mapa.' };
   }
   return found.length === 1
     ? { title: `Você achou uma armadilha: ${found[0]}.`, detail: 'Ela já aparece no seu mapa.' }

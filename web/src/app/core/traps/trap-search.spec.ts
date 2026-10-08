@@ -20,6 +20,11 @@ describe('trap search', () => {
       'Você achou uma armadilha: Fosso escondido.',
     );
     expect(resultMessage(['A', 'B']).title).toBe('Você achou 2 armadilhas: A, B.');
+    expect(resultMessage([], 1)).toEqual({
+      title: 'Você achou uma armadilha.',
+      detail: 'Veja no seu mapa.',
+    });
+    expect(resultMessage(['A'], 2).title).toBe('Você achou 2 armadilhas.');
   });
 
   it('sends the combat Search to the trap search only on a map with a grid, with the combatant placed on it', () => {

@@ -142,6 +142,20 @@ func setCurrent(ctx context.Context, c *combatTx, id string, round int32) error 
 	return nil
 }
 
+// othersActing lists the members of the running turn, other than but, whose part
+// has not ended and who can still take it. A defeated member (a death confirmed,
+// an NPC taken to 0 hit points) keeps its turn_state but has no part left to
+// take: it never holds the group back from passing.
+func othersActing(cs []playdb.Combatant, but string) []string {
+	var out []string
+	for _, o := range cs {
+		if o.ID != but && o.TurnState == turnActing && !o.Defeated {
+			out = append(out, o.ID)
+		}
+	}
+	return out
+}
+
 // leaveTurn settles the turn after a combatant leaves the fight (removed, or
 // dead) while the combat is ACTIVE. If it was in the turn, the others go on;
 // when nobody who acts is left, the turn passes to the next group. cs is the
@@ -156,13 +170,7 @@ func leaveTurn(ctx context.Context, c *combatTx, cs []playdb.Combatant, who play
 		}
 		return false, nil
 	}
-	var acting []string
-	for _, o := range cs {
-		if o.ID != who.ID && o.TurnState == turnActing {
-			acting = append(acting, o.ID)
-		}
-	}
-	if len(acting) > 0 {
+	if acting := othersActing(cs, who.ID); len(acting) > 0 {
 		// The group's turn goes on without it.
 		return false, setCurrent(ctx, c, acting[0], c.enc.Round)
 	}

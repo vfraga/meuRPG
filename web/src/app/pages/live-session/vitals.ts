@@ -19,7 +19,9 @@ export function applySnapshot(
 
 /**
  * Applies one `vitals_changed` (or a saved correction): only if its
- * revision is newer than the one on screen. A character not on screen yet
+ * revision is newer than the one on screen, or if it is the same copy
+ * without the familiar's sight: the server drops that sight on read when the
+ * familiar is dismissed, and nothing bumps the revision. A character not on screen yet
  * (approved during the session) joins the end of the list.
  */
 export function applyVitals(current: readonly VitalsVm[], incoming: VitalsVm): VitalsVm[] {
@@ -27,7 +29,10 @@ export function applyVitals(current: readonly VitalsVm[], incoming: VitalsVm): V
   if (index < 0) {
     return [...current, incoming];
   }
-  if (current[index].revision >= incoming.revision) {
+  const seen = current[index];
+  const sightDropped =
+    seen.revision === incoming.revision && !!seen.familiarSight && !incoming.familiarSight;
+  if (seen.revision >= incoming.revision && !sightDropped) {
     return [...current];
   }
   const next = [...current];

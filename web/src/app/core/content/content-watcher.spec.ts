@@ -31,10 +31,12 @@ class Call {
 describe('ContentWatcher (RN-23, RN-10: the live content hint)', () => {
   let calls: Call[];
   const sessions = signal<readonly { campaignId: string }[]>([]);
-  const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
-  const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+  // A clock the spec drives by hand: the debounce is crossed by advancing it, never by sleeping.
+  const tick = () => vi.advanceTimersByTimeAsync(0);
+  const pause = (ms: number) => vi.advanceTimersByTimeAsync(ms);
 
   beforeEach(() => {
+    vi.useFakeTimers();
     calls = [];
     sessions.set([]);
     const source = {

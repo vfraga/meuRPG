@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/PuraFome/meuRPG/backend/internal/rules/srd51"
@@ -106,7 +105,7 @@ func (c *content) loadSpellTargets(fsys fs.FS) error {
 		default:
 			return fail("the kind %q is not creature, creatures, area, self or none", in.Kind)
 		}
-		if utf8.RuneCountInString(in.LabelPT) > 80 || strings.ContainsFunc(in.LabelPT, unicode.IsControl) {
+		if utf8.RuneCountInString(in.LabelPT) > 80 || strings.ContainsFunc(in.LabelPT, isHiddenRune) {
 			return fail("label_pt is one line of at most 80 characters")
 		}
 		c.srdTargets[key] = t

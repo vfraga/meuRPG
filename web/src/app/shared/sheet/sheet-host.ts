@@ -78,6 +78,9 @@ export interface SheetHandle<D, R> {
   /** True in the phone's bottom sheet: it draws its grab bar. */
   readonly inSheet: boolean;
   close(result?: R): void;
+  /** While locked, Esc and a click on the backdrop do not dismiss the sheet (a request is in the air). Unlocking puts back what the
+   * sheet was opened with: an alert that must be answered stays so. */
+  lock(locked: boolean): void;
 }
 
 export function injectSheet<D, R = void>(): SheetHandle<D, R> {
@@ -85,12 +88,21 @@ export function injectSheet<D, R = void>(): SheetHandle<D, R> {
   const sheetRef = inject<MatBottomSheetRef<unknown, R>>(MatBottomSheetRef, { optional: true });
   const data =
     inject<D | null>(MAT_DIALOG_DATA, { optional: true }) ?? inject<D>(MAT_BOTTOM_SHEET_DATA);
+  const opened = dialogRef?.disableClose ?? sheetRef?.disableClose ?? false;
   return {
     data,
     inSheet: sheetRef !== null,
     close: (result) => {
       dialogRef?.close(result);
       sheetRef?.dismiss(result);
+    },
+    lock: (locked) => {
+      if (dialogRef) {
+        dialogRef.disableClose = locked || opened;
+      }
+      if (sheetRef) {
+        sheetRef.disableClose = locked || opened;
+      }
     },
   };
 }

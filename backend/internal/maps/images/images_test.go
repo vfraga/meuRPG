@@ -796,3 +796,18 @@ func TestCropFitRefusesAnAnswerThatBreaksTheMemoryBudget(t *testing.T) {
 		t.Errorf("a 4096 x 4096 answer into 16 megapixels: error = %v, want it to fit", err)
 	}
 }
+
+// Encode is for the server's own drawings, which are stored without a
+// reference image: an image that big would get one from Process.
+func TestEncodeMakesNoReferenceImage(t *testing.T) {
+	t.Parallel()
+	pal := color.Palette{color.RGBA{R: 255, A: 255}, color.RGBA{B: 255, A: 255}}
+	img := image.NewPaletted(image.Rect(0, 0, 2*ReferenceSide, ReferenceSide), pal)
+	res, err := Encode(img)
+	if err != nil {
+		t.Fatalf("Encode() error = %v", err)
+	}
+	if res.Reference != nil {
+		t.Errorf("Encode() made a reference image of %d bytes, want none", len(res.Reference))
+	}
+}

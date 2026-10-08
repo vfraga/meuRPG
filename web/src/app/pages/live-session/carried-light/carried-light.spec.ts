@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { textOf as text } from '../../../core/format/text-testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -97,7 +98,6 @@ describe('the sheet "Luz que você carrega" (E9-04)', () => {
 
   it('keeps the choice it had and says why when the server refuses', async () => {
     const { fixture, el } = setup();
-    const { ConnectError, Code } = await import('@connectrpc/connect');
     api.failWith = new ConnectError('x', Code.PermissionDenied);
     radios(el)[1].click();
     await fixture.whenStable();
@@ -231,5 +231,24 @@ describe('the master\'s "Luz dos personagens"', () => {
     expect(text(el.querySelector('.line'))).toContain(
       'Pensantus carrega lanterna coberta (9 m claro + 9 m de penumbra). Muda na hora no mapa de todos que enxergam esse lugar.',
     );
+  });
+
+  it('takes the line of the last change off the screen when the next one is refused', async () => {
+    const { fixture, el } = setup();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const select = el.querySelectorAll<HTMLSelectElement>('select')[0];
+    select.value = 'light:hooded-lantern';
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(text(el.querySelector('.line'))).toContain('Pensantus carrega');
+    api.failWith = new ConnectError('x', Code.PermissionDenied);
+    select.value = '';
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.querySelector('[role="alert"]')).not.toBeNull();
+    expect(el.querySelector<HTMLElement>('.line')?.hidden).toBe(true);
   });
 });
