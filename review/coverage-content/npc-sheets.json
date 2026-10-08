@@ -1,0 +1,3155 @@
+[
+ {
+  "key": "monster:aboleth",
+  "attacks_on_sheet": [
+   "Tentáculo",
+   "Cauda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:acolyte",
+  "attacks_on_sheet": [
+   "Porrete"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:adult-black-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:adult-blue-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:adult-brass-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:adult-bronze-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:adult-copper-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:adult-gold-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:adult-green-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:adult-red-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:adult-silver-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:adult-white-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:air-elemental",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ancient-black-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ancient-blue-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ancient-brass-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ancient-bronze-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ancient-copper-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ancient-gold-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ancient-green-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ancient-red-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ancient-silver-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ancient-white-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:androsphinx",
+  "attacks_on_sheet": [
+   "Garra"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:animated-armor",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ankheg",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ape",
+  "attacks_on_sheet": [
+   "Soco",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:archmage",
+  "attacks_on_sheet": [
+   "Adaga"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:assassin",
+  "attacks_on_sheet": [
+   "Espada curta",
+   "Besta leve"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:awakened-shrub",
+  "attacks_on_sheet": [
+   "Rasgar"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:awakened-tree",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:axe-beak",
+  "attacks_on_sheet": [
+   "Bico"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:azer",
+  "attacks_on_sheet": [
+   "Martelo de guerra"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:baboon",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:badger",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:balor",
+  "attacks_on_sheet": [
+   "Espada longa",
+   "Chicote"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:bandit",
+  "attacks_on_sheet": [
+   "Cimitarra",
+   "Besta leve"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:bandit-captain",
+  "attacks_on_sheet": [
+   "Cimitarra",
+   "Adaga"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:barbed-devil",
+  "attacks_on_sheet": [
+   "Garra",
+   "Cauda",
+   "Lançar chama"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:basilisk",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:bat",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:bearded-devil",
+  "attacks_on_sheet": [
+   "Barba",
+   "Glaive"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:behir",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Constrição"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:berserker",
+  "attacks_on_sheet": [
+   "Machado grande"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:black-bear",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:black-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:black-pudding",
+  "attacks_on_sheet": [
+   "Pseudópode"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:blink-dog",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:blood-hawk",
+  "attacks_on_sheet": [
+   "Bico"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:blue-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:boar",
+  "attacks_on_sheet": [
+   "Presa"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:bone-devil",
+  "attacks_on_sheet": [
+   "Garra",
+   "Ferroada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:brass-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:bronze-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:brown-bear",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:bugbear",
+  "attacks_on_sheet": [
+   "Maça estrela",
+   "Azagaia"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:bulette",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:camel",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:cat",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:centaur",
+  "attacks_on_sheet": [
+   "Lança longa",
+   "Cascos",
+   "Arco longo"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:chain-devil",
+  "attacks_on_sheet": [
+   "Corrente"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:chimera",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Chifres",
+   "Garras"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:chuul",
+  "attacks_on_sheet": [
+   "Pinça"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:clay-golem",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:cloaker",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Cauda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:cloud-giant",
+  "attacks_on_sheet": [
+   "Maça estrela",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:cockatrice",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:commoner",
+  "attacks_on_sheet": [
+   "Porrete"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:constrictor-snake",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Constrição"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:copper-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:couatl",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Constrição"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:crab",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:crocodile",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:cult-fanatic",
+  "attacks_on_sheet": [
+   "Adaga"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:cultist",
+  "attacks_on_sheet": [
+   "Cimitarra"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:darkmantle",
+  "attacks_on_sheet": [
+   "Esmagar"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:death-dog",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:deep-gnome-svirfneblin",
+  "attacks_on_sheet": [
+   "Picareta de guerra",
+   "Dardo envenenado"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:deer",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:deva",
+  "attacks_on_sheet": [
+   "Maça"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:dire-wolf",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:djinni",
+  "attacks_on_sheet": [
+   "Cimitarra"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:doppelganger",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:draft-horse",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:dragon-turtle",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:dretch",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:drider",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Espada longa",
+   "Arco longo"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:drow",
+  "attacks_on_sheet": [
+   "Espada curta",
+   "Besta de mão"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:druid",
+  "attacks_on_sheet": [
+   "Bordão"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:dryad",
+  "attacks_on_sheet": [
+   "Porrete"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:duergar",
+  "attacks_on_sheet": [
+   "Picareta de guerra",
+   "Azagaia"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:dust-mephit",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:eagle",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:earth-elemental",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:efreeti",
+  "attacks_on_sheet": [
+   "Cimitarra",
+   "Lançar chama"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:elephant",
+  "attacks_on_sheet": [
+   "Chifrada",
+   "Pisotear"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:elk",
+  "attacks_on_sheet": [
+   "Cabeçada",
+   "Cascos"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:erinyes",
+  "attacks_on_sheet": [
+   "Espada longa",
+   "Arco longo"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ettercap",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ettin",
+  "attacks_on_sheet": [
+   "Machado de batalha",
+   "Maça estrela"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:fire-elemental",
+  "attacks_on_sheet": [
+   "Toque"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:fire-giant",
+  "attacks_on_sheet": [
+   "Espada grande",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:flesh-golem",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:flying-snake",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:flying-sword",
+  "attacks_on_sheet": [
+   "Espada longa"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:frog",
+  "attacks_on_sheet": null,
+  "attack_actions": 0,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:frost-giant",
+  "attacks_on_sheet": [
+   "Machado grande",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gargoyle",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gelatinous-cube",
+  "attacks_on_sheet": [
+   "Pseudópode"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ghast",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ghost",
+  "attacks_on_sheet": [
+   "Toque definhante"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ghoul",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-ape",
+  "attacks_on_sheet": [
+   "Soco",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-badger",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-bat",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-boar",
+  "attacks_on_sheet": [
+   "Presa"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-centipede",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-constrictor-snake",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Constrição"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-crab",
+  "attacks_on_sheet": [
+   "Garra"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-crocodile",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Cauda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-eagle",
+  "attacks_on_sheet": [
+   "Bico",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-elk",
+  "attacks_on_sheet": [
+   "Cabeçada",
+   "Cascos"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-fire-beetle",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-frog",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-goat",
+  "attacks_on_sheet": [
+   "Cabeçada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-hyena",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-lizard",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-octopus",
+  "attacks_on_sheet": [
+   "Tentáculos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-owl",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-poisonous-snake",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-rat",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-rat-diseased",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-scorpion",
+  "attacks_on_sheet": [
+   "Garra",
+   "Ferroada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-sea-horse",
+  "attacks_on_sheet": [
+   "Cabeçada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-shark",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-spider",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-toad",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:giant-vulture",
+  "attacks_on_sheet": [
+   "Bico",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-wasp",
+  "attacks_on_sheet": [
+   "Ferroada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-weasel",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:giant-wolf-spider",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gibbering-mouther",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:glabrezu",
+  "attacks_on_sheet": [
+   "Pinça",
+   "Soco"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 4,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gladiator",
+  "attacks_on_sheet": [
+   "Lança",
+   "Golpe de escudo"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gnoll",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Lança",
+   "Arco longo"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:goat",
+  "attacks_on_sheet": [
+   "Cabeçada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:goblin",
+  "attacks_on_sheet": [
+   "Cimitarra",
+   "Arco curto"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gold-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gorgon",
+  "attacks_on_sheet": [
+   "Chifrada",
+   "Cascos"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gray-ooze",
+  "attacks_on_sheet": [
+   "Pseudópode"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:green-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:green-hag",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:grick",
+  "attacks_on_sheet": [
+   "Tentáculos",
+   "Bico"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:griffon",
+  "attacks_on_sheet": [
+   "Bico",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:grimlock",
+  "attacks_on_sheet": [
+   "Clava de osso com espinhos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:guard",
+  "attacks_on_sheet": [
+   "Lança"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:guardian-naga",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:gynosphinx",
+  "attacks_on_sheet": [
+   "Garra"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:half-red-dragon-veteran",
+  "attacks_on_sheet": [
+   "Espada longa",
+   "Espada curta",
+   "Besta pesada"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:harpy",
+  "attacks_on_sheet": [
+   "Garras",
+   "Porrete"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hawk",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hell-hound",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:hezrou",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hill-giant",
+  "attacks_on_sheet": [
+   "Clava grande",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hippogriff",
+  "attacks_on_sheet": [
+   "Bico",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hobgoblin",
+  "attacks_on_sheet": [
+   "Espada longa",
+   "Arco longo"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:homunculus",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:horned-devil",
+  "attacks_on_sheet": [
+   "Garfo",
+   "Cauda",
+   "Lançar chama"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hunter-shark",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hydra",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 5,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:hyena",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ice-devil",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras",
+   "Cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:ice-mephit",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:imp",
+  "attacks_on_sheet": [
+   "Ferroada (Mordida na forma de fera)"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:invisible-stalker",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:iron-golem",
+  "attacks_on_sheet": [
+   "Pancada",
+   "Espada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:jackal",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:killer-whale",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:knight",
+  "attacks_on_sheet": [
+   "Espada grande",
+   "Besta pesada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:kobold",
+  "attacks_on_sheet": [
+   "Adaga",
+   "Funda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:kraken",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Tentáculo"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:lamia",
+  "attacks_on_sheet": [
+   "Garras",
+   "Adaga"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:lemure",
+  "attacks_on_sheet": [
+   "Soco"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:lich",
+  "attacks_on_sheet": [
+   "Toque paralisante"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:lion",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:lizard",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:lizardfolk",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Clava pesada",
+   "Azagaia"
+  ],
+  "attack_actions": 4,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:mage",
+  "attacks_on_sheet": [
+   "Adaga"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:magma-mephit",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:magmin",
+  "attacks_on_sheet": [
+   "Toque"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:mammoth",
+  "attacks_on_sheet": [
+   "Chifrada",
+   "Pisotear"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:manticore",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Espinho da cauda"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:marilith",
+  "attacks_on_sheet": [
+   "Espada longa",
+   "Cauda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 7,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:mastiff",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:medusa",
+  "attacks_on_sheet": [
+   "Cabelo de serpentes",
+   "Espada curta",
+   "Arco longo"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:merfolk",
+  "attacks_on_sheet": [
+   "Lança"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:merrow",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras",
+   "Arpão"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:mimic",
+  "attacks_on_sheet": [
+   "Pseudópode",
+   "Mordida"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:minotaur",
+  "attacks_on_sheet": [
+   "Machado grande",
+   "Chifrada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:minotaur-skeleton",
+  "attacks_on_sheet": [
+   "Machado grande",
+   "Chifrada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:mule",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:mummy",
+  "attacks_on_sheet": [
+   "Soco apodrecido"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:mummy-lord",
+  "attacks_on_sheet": [
+   "Soco apodrecido"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:nalfeshnee",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:night-hag",
+  "attacks_on_sheet": [
+   "Garras (só na forma de bruxa)"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:nightmare",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:noble",
+  "attacks_on_sheet": [
+   "Rapieira"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ochre-jelly",
+  "attacks_on_sheet": [
+   "Pseudópode"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:octopus",
+  "attacks_on_sheet": null,
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ogre",
+  "attacks_on_sheet": [
+   "Clava grande",
+   "Azagaia"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:ogre-zombie",
+  "attacks_on_sheet": [
+   "Maça estrela"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:oni",
+  "attacks_on_sheet": [
+   "Garra (só na forma de oni)",
+   "Glaive"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:orc",
+  "attacks_on_sheet": [
+   "Machado grande",
+   "Azagaia"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:otyugh",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Tentáculo"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:owl",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:owlbear",
+  "attacks_on_sheet": [
+   "Bico",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:panther",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:pegasus",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:phase-spider",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:pit-fiend",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Maça"
+  ],
+  "attack_actions": 4,
+  "attacks_per_action": 4,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:planetar",
+  "attacks_on_sheet": [
+   "Espada grande"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:plesiosaurus",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:poisonous-snake",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:polar-bear",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:pony",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:priest",
+  "attacks_on_sheet": [
+   "Maça"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:pseudodragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Ferroada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:purple-worm",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Ferrão da cauda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:quasit",
+  "attacks_on_sheet": [
+   "Garra (Mordida na forma de fera)"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:quipper",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:rakshasa",
+  "attacks_on_sheet": [
+   "Garra"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:rat",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:raven",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:red-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:reef-shark",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:remorhaz",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:rhinoceros",
+  "attacks_on_sheet": [
+   "Chifrada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:riding-horse",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:roc",
+  "attacks_on_sheet": [
+   "Bico",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:roper",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 5,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:rug-of-smothering",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:rust-monster",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:saber-toothed-tiger",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:sahuagin",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras",
+   "Lança"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:salamander",
+  "attacks_on_sheet": [
+   "Lança",
+   "Cauda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:satyr",
+  "attacks_on_sheet": [
+   "Cabeçada",
+   "Espada curta",
+   "Arco curto"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:scorpion",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:scout",
+  "attacks_on_sheet": [
+   "Espada curta",
+   "Arco longo"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:sea-hag",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:sea-horse",
+  "attacks_on_sheet": null,
+  "attack_actions": 0,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:shadow",
+  "attacks_on_sheet": [
+   "Drenar força"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:shambling-mound",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:shield-guardian",
+  "attacks_on_sheet": [
+   "Soco"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:shrieker",
+  "attacks_on_sheet": null,
+  "attack_actions": 0,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:silver-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:skeleton",
+  "attacks_on_sheet": [
+   "Espada curta",
+   "Arco curto"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:solar",
+  "attacks_on_sheet": [
+   "Espada grande",
+   "Arco longo mortal"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:specter",
+  "attacks_on_sheet": [
+   "Drenar vida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:spider",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:spirit-naga",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:sprite",
+  "attacks_on_sheet": null,
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:spy",
+  "attacks_on_sheet": [
+   "Espada curta",
+   "Besta de mão"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:steam-mephit",
+  "attacks_on_sheet": [
+   "Garras"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:stirge",
+  "attacks_on_sheet": [
+   "Sucar sangue"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:stone-giant",
+  "attacks_on_sheet": [
+   "Clava grande",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:stone-golem",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:storm-giant",
+  "attacks_on_sheet": [
+   "Espada grande",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:succubus-incubus",
+  "attacks_on_sheet": [
+   "Garra (só na forma ínfera)"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-bats",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-beetles",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-centipedes",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-insects",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-poisonous-snakes",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-quippers",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-rats",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-ravens",
+  "attacks_on_sheet": [
+   "Bicos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-spiders",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:swarm-of-wasps",
+  "attacks_on_sheet": [
+   "Mordidas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:tarrasque",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Chifres"
+  ],
+  "attack_actions": 4,
+  "attacks_per_action": 5,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:thug",
+  "attacks_on_sheet": [
+   "Maça",
+   "Besta pesada"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:tiger",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:treant",
+  "attacks_on_sheet": [
+   "Pancada",
+   "Pedra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:tribal-warrior",
+  "attacks_on_sheet": [
+   "Lança"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:triceratops",
+  "attacks_on_sheet": [
+   "Chifrada",
+   "Pisotear"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:troll",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:tyrannosaurus-rex",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Cauda"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:unicorn",
+  "attacks_on_sheet": [
+   "Cascos",
+   "Chifre"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:vampire-bat",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:vampire-mist",
+  "attacks_on_sheet": null,
+  "attack_actions": 0,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:vampire-spawn",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:vampire-vampire",
+  "attacks_on_sheet": [
+   "Golpe desarmado",
+   "Mordida"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:veteran",
+  "attacks_on_sheet": [
+   "Espada longa",
+   "Espada curta",
+   "Besta pesada"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:violet-fungus",
+  "attacks_on_sheet": [
+   "Toque apodrecido"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:vrock",
+  "attacks_on_sheet": [
+   "Bico",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:vulture",
+  "attacks_on_sheet": [
+   "Bico"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:warhorse",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:warhorse-skeleton",
+  "attacks_on_sheet": [
+   "Cascos"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:water-elemental",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:weasel",
+  "attacks_on_sheet": null,
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:werebear-bear",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:werebear-human",
+  "attacks_on_sheet": [
+   "Machado grande"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:werebear-hybrid",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Machado grande"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wereboar-boar",
+  "attacks_on_sheet": [
+   "Presas"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wereboar-human",
+  "attacks_on_sheet": [
+   "Malho"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wereboar-hybrid",
+  "attacks_on_sheet": [
+   "Malho",
+   "Presas"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wererat-human",
+  "attacks_on_sheet": [
+   "Espada curta",
+   "Besta de mão"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wererat-hybrid",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Espada curta",
+   "Besta de mão"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wererat-rat",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:weretiger-human",
+  "attacks_on_sheet": [
+   "Cimitarra",
+   "Arco longo"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:weretiger-hybrid",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra",
+   "Cimitarra"
+  ],
+  "attack_actions": 4,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:weretiger-tiger",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:werewolf-human",
+  "attacks_on_sheet": [
+   "Lança"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:werewolf-hybrid",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:werewolf-wolf",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:white-dragon-wyrmling",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:wight",
+  "attacks_on_sheet": [
+   "Drenar vida",
+   "Espada longa",
+   "Arco longo"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:will-o-wisp",
+  "attacks_on_sheet": [
+   "Choque"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:winter-wolf",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wolf",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:worg",
+  "attacks_on_sheet": [
+   "Mordida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wraith",
+  "attacks_on_sheet": [
+   "Drenar vida"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:wyvern",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garras",
+   "Ferrão"
+  ],
+  "attack_actions": 3,
+  "attacks_per_action": 2,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:xorn",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 4,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:young-black-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:young-blue-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:young-brass-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:young-bronze-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:young-copper-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:young-gold-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:young-green-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:young-red-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:young-silver-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": false
+ },
+ {
+  "key": "monster:young-white-dragon",
+  "attacks_on_sheet": [
+   "Mordida",
+   "Garra"
+  ],
+  "attack_actions": 2,
+  "attacks_per_action": 3,
+  "extra_damage_in_description": true
+ },
+ {
+  "key": "monster:zombie",
+  "attacks_on_sheet": [
+   "Pancada"
+  ],
+  "attack_actions": 1,
+  "attacks_per_action": 1,
+  "extra_damage_in_description": false
+ }
+]
