@@ -16,7 +16,7 @@ import { tableForLevelUp } from './levelup-support';
 import { paintRPC, pickRadio, tapSquare } from './move-support';
 import { beginFogCombat, moveTo, sessionRoute, tableForFog } from './fog-support';
 import { beginCreatureCombat, hitAndApply, tableForCreatureCombat } from './creatures-combat-support';
-import { authStatePath, callRPC, characterRpcBody, createCharacterRPC, newSignedInContext, pensantus, showAllPicks, signIn } from './support';
+import { authStatePath, boxOf, callRPC, characterRpcBody, createCharacterRPC, newSignedInContext, pensantus, showAllPicks, signIn } from './support';
 import { beginJointCombat, endPartRPC, jointTable } from './joint-turn-support';
 import { tableForCaster, tableForCreatures } from './creatures-support';
 import { awardXpRPC, createEnemyRPC, tableForXp, tableForXpCombat, winCombatRPC } from './xp-support';
@@ -845,7 +845,7 @@ async function scanCombatScreens(browser: Browser, colorScheme: 'light' | 'dark'
     await expect(p.getByRole('heading', { name: 'Mover Pensantus' })).toBeVisible();
     await expectScreenPasses(p, `Mover, nada escolhido ${where}`);
     const map = p.getByRole('group', { name: /Mapa de batalha/ });
-    const box = (await map.boundingBox())!;
+    const box = await boxOf(map);
     const own = (await getEncounterRPC(p, campaignId)).combatants.find((c) => c.mine)!;
     const at = (dc: number, dr: number) => ({ x: ((own.col ?? 0) + dc + 0.5) * (box.width / 20), y: ((own.row ?? 0) + dr + 0.5) * (box.height / 14) });
     await map.click({ position: at(2, 1) });
@@ -2242,10 +2242,15 @@ async function scanSceneOptionsScreens(browser: Browser, colorScheme: 'light' | 
     await setAttemptsRPC(m, table, table.cartId, ids['Percepção'], 3);
     await setAttemptsRPC(m, table, table.cartId, ids['Acalmar os cavalos'], 0);
 
-    // The editor: the switch off and on, and every action with its attempts.
+    // The editor: the switch off and on, and every action with its attempts. On a phone the map is read-only (its
+    // points open nothing and the page says to edit them on a computer), so the editor is scanned at the desktop
+    // widths, and the phone checks that it gets the read-only map instead.
     await open(m, `/campaigns/${campaignId}/maps/${table.mapId}`);
     const cart = m.getByRole('button', { name: /^A carroça tombada, Cena de RP/ });
-    if (await cart.isVisible()) {
+    if (width < 768) {
+      await expect(m.getByText('Para mudar pontos e tokens de lugar, abra o mapa no computador.')).toBeVisible();
+      await expect(cart).toHaveCount(0);
+    } else {
       await cart.click();
       await expect(m.getByRole('switch', { name: 'Mostrar a CD aos jogadores' })).toBeVisible();
       await expectScreenPasses(m, `Ações da cena com o interruptor da CD desligado ${where}`);

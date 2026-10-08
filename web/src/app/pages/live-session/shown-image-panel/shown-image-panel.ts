@@ -100,6 +100,8 @@ export class ShownImagePanel {
   protected readonly error = signal<string | null>(null);
   protected readonly stopping = signal(false);
   protected readonly keeping = signal(false);
+  /** The images whose "Tirar" is on its way: a second click on one would find it already gone. */
+  private readonly takingBack = new Set<string>();
   protected readonly galleryEmpty = signal(false);
   protected readonly thumb = computed(() => {
     const s = this.shown();
@@ -167,6 +169,9 @@ export class ShownImagePanel {
   }
 
   protected async stop(): Promise<void> {
+    if (this.stopping() || this.keeping()) {
+      return;
+    }
     const leaving = this.keep() ? this.shown() : null;
     this.stopping.set(true);
     this.error.set(null);
@@ -192,7 +197,8 @@ export class ShownImagePanel {
   /** The switch: asks for the new state with the image already shown. */
   protected async setKeep(next: boolean): Promise<void> {
     const shown = this.shown();
-    if (!shown) {
+    // The server has no "keep only": a switch flipped during a stop would show the withdrawn image again.
+    if (!shown || this.keeping() || this.stopping()) {
       return;
     }
     this.keeping.set(true);
@@ -211,6 +217,10 @@ export class ShownImagePanel {
    * Focus goes to the next row's "Tirar", or the one before, or the panel's
    * main button when the list empties. */
   protected async takeBack(image: ShownImageVm): Promise<void> {
+    if (this.takingBack.has(image.id)) {
+      return;
+    }
+    this.takingBack.add(image.id);
     const ids = this.left().map((i) => i.id);
     const at = ids.indexOf(image.id);
     const neighbour = ids[at + 1] ?? ids[at - 1];
@@ -226,6 +236,8 @@ export class ShownImagePanel {
       }
       this.error.set(takeBackErrorMessage(err));
       return;
+    } finally {
+      this.takingBack.delete(image.id);
     }
     afterNextRender(
       () => {
@@ -255,5 +267,7 @@ export function showErrorMessage(err: unknown): string {
   return describeConnectError(err, {
     [Code.NotFound]: 'Essa imagem não está mais na galeria. Escolha outra.',
     [Code.PermissionDenied]: 'Só o mestre da campanha mostra imagens.',
+    [Code.ResourceExhausted]:
+      'A galeria da campanha está cheia: apague uma imagem para mostrar o fundo deste mapa.',
   });
 }

@@ -23,7 +23,7 @@ import {
   trapPointRPC,
 } from './puzzles-support';
 import { setCurrentMapRPC } from './maps-support';
-import { newSignedInContext } from './support';
+import { boxOf, newSignedInContext } from './support';
 
 // More puzzles on screen (Etapa 10, slice 10.15b: MR-038, RN-27, RN-10, RN-18; E10-12): the riddle, the sequence and the cipher, the
 // skill check that wins a hint, the split information and "Ao errar". The puzzles come through the API where the screen is not what is
@@ -537,7 +537,7 @@ test('os três quebra-cabeças novos cabem em 320 × 568: o enigma vem primeiro 
     // The riddle comes first, on the first screen, in spite of the part, the clue and the hint button; the field and "Responder" stay at the foot.
     const riddleText = player.getByText(RIDDLE.text);
     await expect(riddleText).toBeInViewport();
-    expect((await riddleText.boundingBox())!.y).toBeLessThan(200);
+    expect((await boxOf(riddleText)).y).toBeLessThan(200);
     await expect(player.getByRole('button', { name: 'Responder' })).toBeInViewport();
     await expect(player.getByLabel('Sua resposta')).toBeInViewport();
     // Only the field and the button are the foot: the counters and the notes scroll with the page.

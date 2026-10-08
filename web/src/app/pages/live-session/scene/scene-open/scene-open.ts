@@ -140,7 +140,7 @@ export class SceneOpen {
     openScenePicker(this.dialog, this.bottomSheet, {
       campaignId: this.campaignId(),
       mapName: this.mapState().map()?.name ?? '',
-      points: this.mapState().points(),
+      points: this.mapState().points,
       openPointId: scene.pointId,
       state: this.state(),
     }).subscribe();

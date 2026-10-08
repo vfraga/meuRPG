@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -29,6 +29,7 @@ import {
   type MonsterHp,
   newKey,
 } from '../../../../core/combat/combat-client';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import { becomesText } from '../../../../core/combat/monsters';
 import { HiddenSwitch } from '../../../../shared/hidden-switch/hidden-switch';
 import { type Segment, Segmented } from '../move-page/segmented';
@@ -124,6 +125,8 @@ export class StartCombatDialog {
   private readonly tableRules = inject(TableRulesClient);
   /** One key for this dialog: a second tap on the button can't start two. */
   private readonly key = newKey();
+  /** The key of "Adicionar": a tap after a lost answer is the same addition, other NPCs another. */
+  private readonly addKey = new ActionKey();
 
   protected readonly adding = this.data.mode === 'add';
   /** How the combat is played (RN-25), fixed once it starts: with the table's "combate com mapa" rule as the default, and "Sem mapa" when the session has no map. */
@@ -182,6 +185,8 @@ export class StartCombatDialog {
   }));
   protected readonly monsterTotal = (this.saved?.groups ?? []).reduce((sum, g) => sum + g.count, 0);
   protected readonly busy = signal(false);
+  /** The start is in the air: Esc and the backdrop do not close the dialog under it. */
+  protected readonly lockWhileBusy = effect(() => (this.ref.disableClose = this.busy()));
   protected readonly error = signal('');
   /** The server said the map has no grid (it may have been cleared meanwhile). */
   protected readonly noGridMap = signal<string | null>(null);
@@ -387,7 +392,12 @@ export class StartCombatDialog {
     ];
     try {
       const encounter = this.adding
-        ? await this.combat.add(this.data.campaignId, this.data.encounterId ?? '', specs)
+        ? await this.combat.add(
+            this.data.campaignId,
+            this.data.encounterId ?? '',
+            specs,
+            this.addKey.keyFor([this.data.encounterId, specs]),
+          )
         : await this.combat.start(
             this.data.campaignId,
             this.name().trim(),

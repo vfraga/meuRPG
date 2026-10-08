@@ -36,8 +36,10 @@ import {
   wizardOptions,
 } from '../../core/levelup/levelup-testing';
 import { LevelUpPage } from './level-up';
+import { QUIET_MS } from './level-up-preview';
 
-const settle = () => new Promise((r) => setTimeout(r, 220));
+/** Lets every pending answer land, quiet period of the preview included: the spec's fake clock moves, the wall clock does not. */
+const settle = () => vi.advanceTimersByTimeAsync(QUIET_MS * 2);
 
 function character(over: object = {}, derived = pensantus()) {
   return create(CharacterSchema, {
@@ -77,6 +79,7 @@ describe('LevelUpPage', () => {
   let watcher = fakeContentWatcher();
 
   beforeEach(() => {
+    vi.useFakeTimers();
     // jsdom has no layout: scrolling does nothing.
     Element.prototype.scrollIntoView = vi.fn();
     window.scrollTo = vi.fn();
@@ -427,6 +430,115 @@ describe('LevelUpPage', () => {
       expect(text(f)).toContain('16 → 18 (+3 → +4)');
       expect(text(f)).toContain('23 → 34');
     });
+
+    describe('after "Ler a ficha de novo"', () => {
+      const reread = (f: ComponentFixture<LevelUpPage>) =>
+        (f.componentInstance as unknown as { rereadSheet(): Promise<boolean> }).rereadSheet();
+
+      async function rolledInApp() {
+        const f = await atVida();
+        client.rollHitPoints.mockResolvedValue({ die: 6, value: 7, alreadyRolled: false });
+        await click(
+          f,
+          Array.from(el(f).querySelectorAll('.dice-choice__card')).find((c) =>
+            c.textContent?.includes('Rolar 1d6'),
+          ),
+        );
+        await click(f, button(f, /Rolar no app/));
+        expect(text(f)).toContain('Rolado no app: 7 no d6');
+        return f;
+      }
+
+      it('keeps the newest reading when two re-reads answer out of order', async () => {
+        const f = await atVida();
+        let older!: (o: LevelUpOptions) => void;
+        let newer!: (o: LevelUpOptions) => void;
+        client.options
+          .mockReset()
+          .mockReturnValueOnce(new Promise<LevelUpOptions>((r) => (older = r)))
+          .mockReturnValueOnce(new Promise<LevelUpOptions>((r) => (newer = r)));
+        client.character.mockResolvedValue(character({ revision: 6 }));
+        const first = reread(f);
+        const second = reread(f);
+        newer(wizardOptions({ fromLevel: 4, toLevel: 5, totalFromLevel: 4, totalToLevel: 5 }));
+        expect(await second).toBe(true);
+        older(wizardOptions({ preparedMaxAfter: 3 }));
+        expect(await first).toBe(false);
+        f.detectChanges();
+        expect(text(f)).toContain('Subir para o nível 5');
+      });
+
+      it('shows the reading of a re-read when it is the only one (positive control)', async () => {
+        const f = await atVida();
+        client.options.mockResolvedValue(
+          wizardOptions({ fromLevel: 4, toLevel: 5, totalFromLevel: 4, totalToLevel: 5 }),
+        );
+        expect(await reread(f)).toBe(true);
+        f.detectChanges();
+        expect(text(f)).toContain('Subir para o nível 5');
+      });
+
+      it('drops an app roll made for one level when the options are now for the next', async () => {
+        const f = await rolledInApp();
+        // Another tab confirmed the level: the sheet and the options are the next level's, with no kept roll.
+        client.character.mockResolvedValue(character({ revision: 6 }));
+        client.options.mockResolvedValue(
+          wizardOptions({
+            fromLevel: 4,
+            toLevel: 5,
+            totalFromLevel: 4,
+            totalToLevel: 5,
+            keptHitPointRoll: 0,
+          }),
+        );
+        await reread(f);
+        f.detectChanges();
+        expect(text(f)).not.toContain('Rolado no app: 7');
+        expect(el(f).querySelector('app-roll-picker')).not.toBeNull();
+      });
+
+      it('drops an app roll when the options are now for another class', async () => {
+        const f = await rolledInApp();
+        client.character.mockResolvedValue(character({ revision: 6 }));
+        client.options.mockResolvedValue(
+          fighterOptions({ fromLevel: 4, toLevel: 5, keptHitPointRoll: 0 }),
+        );
+        await reread(f);
+        f.detectChanges();
+        expect(text(f)).not.toContain('Rolado no app: 7');
+      });
+
+      it('drops an app roll on the Vida step that stays on screen when the class is another one', async () => {
+        const f = await rolledInApp();
+        client.character.mockResolvedValue(character({ revision: 6 }));
+        // Another class with the same steps, so the page is still on Vida; the server kept a 7 for the class that was left.
+        client.options.mockResolvedValue(
+          wizardOptions({
+            classKey: 'class:sorcerer',
+            classNamePt: 'Feiticeiro',
+            keptHitPointRoll: 7,
+            keptHitPointRollClassKey: 'class:wizard',
+          }),
+        );
+        await reread(f);
+        f.detectChanges();
+        expect(text(f)).toContain('Passo 2 de 4 · Vida');
+        expect(text(f)).not.toContain('Rolado no app: 7');
+        expect(el(f).querySelector('app-roll-picker')).not.toBeNull();
+      });
+
+      it('keeps the app roll on the Vida step when the server kept it for this class (positive control)', async () => {
+        const f = await rolledInApp();
+        client.character.mockResolvedValue(character({ revision: 6 }));
+        client.options.mockResolvedValue(
+          wizardOptions({ keptHitPointRoll: 7, keptHitPointRollClassKey: 'class:wizard' }),
+        );
+        await reread(f);
+        f.detectChanges();
+        expect(text(f)).toContain('Passo 2 de 4 · Vida');
+        expect(text(f)).toContain('Rolado no app: 7 no d6');
+      });
+    });
   });
 
   describe('Magias and Resumo', () => {
@@ -506,7 +618,7 @@ describe('LevelUpPage', () => {
       confirm.click();
       expect(client.levelUp).toHaveBeenCalledTimes(1);
       answer(character({ canLevelUp: false }, pensantus(true)));
-      await f.whenStable();
+      await settle();
     });
 
     it('does not send an incomplete level-up even when the button still gets the click', async () => {
@@ -545,6 +657,21 @@ describe('LevelUpPage', () => {
       expect(el(f).querySelector('.js-failure')).toBeNull();
       await click(f, button(f, 'Confirmar o nível 5'));
       expect(client.levelUp.mock.calls.at(-1)?.[2]).toBe(6);
+    });
+
+    it('takes the player to the sheet when a retry finds the level already applied', async () => {
+      const f = await atResumoOfToren();
+      // The first confirmation went through but its answer was lost: the retry is stale, and the sheet is already at level 5.
+      client.levelUp.mockRejectedValueOnce(new ConnectError('x', Code.Aborted));
+      client.character.mockResolvedValue(
+        character({ revision: 6, name: 'Toren' }, pensantus(true, { totalLevel: 5 })),
+      );
+      await click(f, button(f, 'Confirmar o nível 5'));
+      expect(navigate).toHaveBeenCalledWith(['/campaigns', 'camp-1', 'characters', 'ch-1'], {
+        replaceUrl: true,
+        state: { levelUp: { name: 'Toren', level: 5 } },
+      });
+      expect(el(f).querySelector('.js-failure')).toBeNull();
     });
 
     it('shows a refusal with its reason, and takes the player to the step that owns it', async () => {
@@ -730,6 +857,7 @@ describe('LevelUpPage with the real client: a content_changed hint really reads 
       },
     });
     vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    vi.useFakeTimers();
     const f = TestBed.createComponent(LevelUpPage);
     const go = async () => {
       f.detectChanges();

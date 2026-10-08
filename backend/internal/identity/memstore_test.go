@@ -126,12 +126,12 @@ func (m *memStore) touchSession(_ context.Context, sessionID string, now, staleB
 	return true, nil
 }
 
-func (m *memStore) revokeOtherSessions(_ context.Context, userID, keepID string, now, idleSince time.Time) (int64, error) {
+func (m *memStore) revokeOtherSessions(_ context.Context, userID, keepID string, now time.Time) (int64, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	var n int64
 	for id, s := range m.sessions {
-		if s.UserID == userID && id != keepID && s.ExpiresAt.After(now) && s.LastUsedAt.After(idleSince) {
+		if s.UserID == userID && id != keepID && s.ExpiresAt.After(now) {
 			delete(m.sessions, id)
 			n++
 		}

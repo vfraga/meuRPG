@@ -14,6 +14,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -47,6 +48,7 @@ func (s *Service) AdjustCharacterVitals(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key must be a UUID"))
 	}
 	keyText, charText := key.String(), characterID.String()
+	hash := idem.Hash(req.Msg)
 
 	var after *playv1.CharacterVitals
 	var repeated bool
@@ -68,7 +70,7 @@ func (s *Service) AdjustCharacterVitals(
 		})
 		switch {
 		case err == nil:
-			if done.Kind != eventCharacterVitalsAdjusted || done.CharacterID == nil || *done.CharacterID != charText {
+			if done.Kind != eventCharacterVitalsAdjusted || done.CharacterID == nil || *done.CharacterID != charText || hashDiffers(done.IdempotencyHash, hash) {
 				return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
 			}
 			repeated = true // a retry of a correction already made
@@ -92,14 +94,15 @@ func (s *Service) AdjustCharacterVitals(
 			return fmt.Errorf("next event number: %w", err)
 		}
 		if _, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
-			GameSessionID:  session.ID,
-			Seq:            seq,
-			Kind:           eventCharacterVitalsAdjusted,
-			ActorUserID:    &m.UserID,
-			CharacterID:    &charText,
-			Payload:        payload,
-			IdempotencyKey: &keyText,
-			CreatedAt:      s.now(),
+			GameSessionID:   session.ID,
+			Seq:             seq,
+			Kind:            eventCharacterVitalsAdjusted,
+			ActorUserID:     &m.UserID,
+			CharacterID:     &charText,
+			Payload:         payload,
+			IdempotencyKey:  &keyText,
+			IdempotencyHash: hash,
+			CreatedAt:       s.now(),
 		}); err != nil {
 			return fmt.Errorf("insert session event: %w", err)
 		}
@@ -137,26 +140,11 @@ func (s *Service) AdjustCharacterVitals(
 		// A combat in progress with this character shows its state ("Caído", the
 		// healing) from the vitals: its revision goes up in the same transaction, so
 		// every screen reads it again.
-		if enc, err := q.GetOpenEncounter(ctx, session.ID); err == nil {
-			cs, err := q.ListCombatants(ctx, enc.ID)
-			if err != nil {
-				return fmt.Errorf("list the combatants: %w", err)
-			}
-			if i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.Kind == kindPlayer && c.CharacterID == charText }); i >= 0 {
-				if ownBody != nil {
-					if err := applyBody(ctx, &combatTx{q: q}, cs[i], *ownBody); err != nil {
-						return err
-					}
-				}
-				visionMap = deref(enc.MapID)
-				t, err := q.TouchEncounter(ctx, enc.ID)
-				if err != nil {
-					return fmt.Errorf("touch the encounter: %w", err)
-				}
-				touched = &t
-			}
-		} else if !errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("find the open encounter: %w", err)
+		if touched, err = s.touchCombatOf(ctx, q, session.ID, charText, ownBody); err != nil {
+			return err
+		}
+		if touched != nil {
+			visionMap = deref(touched.MapID)
 		}
 		after = adjusted
 		return nil
@@ -186,6 +174,41 @@ func (s *Service) AdjustCharacterVitals(
 		s.maps.VisionChanged(ctx, m.CampaignID, visionMap)
 	}
 	return connect.NewResponse(&playv1.AdjustCharacterVitalsResponse{Vitals: after}), nil
+}
+
+// touchCombatOf tells the session's open combat that a character's vitals changed:
+// when the character is a player's combatant in it, the combat's revision goes up
+// (the "Caído" state and the healing show from the vitals, so every screen has to
+// read it again), after giving the combatant its own body back when ownBody is the
+// character's own numbers (its beast form ended). It returns the encounter as
+// touched, nil when the character is not in the combat; the caller publishes
+// encounter_changed after the commit. It runs in the change's transaction.
+func (s *Service) touchCombatOf(ctx context.Context, q *playdb.Queries, sessionID, characterID string, ownBody *link.Character) (*playdb.Encounter, error) {
+	enc, err := q.GetOpenEncounter(ctx, sessionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find the open encounter: %w", err)
+	}
+	cs, err := q.ListCombatants(ctx, enc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("list the combatants: %w", err)
+	}
+	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.Kind == kindPlayer && c.CharacterID == characterID })
+	if i < 0 {
+		return nil, nil
+	}
+	if ownBody != nil {
+		if err := applyBody(ctx, &combatTx{q: q}, cs[i], *ownBody); err != nil {
+			return nil, err
+		}
+	}
+	touched, err := q.TouchEncounter(ctx, enc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("touch the encounter: %w", err)
+	}
+	return &touched, nil
 }
 
 // vitalsNumbers are the numbers a session event keeps about a character's

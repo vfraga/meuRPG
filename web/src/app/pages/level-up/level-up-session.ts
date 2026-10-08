@@ -115,6 +115,8 @@ export class LevelUpSession {
     const name = (key: string) => d.names().get(key) ?? 'uma opção que saiu da lista';
     const prepared = d.prepared();
     return changeRows(this.before, this.after(), {
+      classKey: this.options.classKey,
+      spellListClassKey: d.effective().spellListClassKey,
       hpSub: this.preview.state().after ? this.hpSub() : '',
       cantrips: [...d.cantrips()].map(name),
       spells: [...d.spells()].map(name),

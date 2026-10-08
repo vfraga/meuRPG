@@ -10,7 +10,7 @@ import type { TrapsClient } from './traps-client';
  * did outside a combat (`ListTrapActivity`: the master reads every firing, search and notice; a
  * player their own), the damage that waits for the master (`ListTrapDamages`, master only) and
  * "Quem notaria" for the trap whose card is open. Plain TypeScript with signals: the page reads it
- * again on `map_changed`, `encounter_changed`, `combat_log_changed` and every `ready`, and a
+ * again on `map_changed`, `encounter_changed`, `combat_log_changed`, a token that moved and every `ready`, and a
  * stale answer never overwrites a newer one. Best effort: a failed read keeps what is on screen.
  */
 export class TrapBoard {
@@ -25,6 +25,8 @@ export class TrapBoard {
   private activityAsked = 0;
   private damagesAsked = 0;
   private readonly open = new Set<string>();
+  private movedReading = false;
+  private movedAgain = false;
 
   constructor(
     private readonly traps: TrapsClient,
@@ -85,6 +87,26 @@ export class TrapBoard {
     }
     void this.watchNoticers(pointId);
     return () => this.unwatchNoticers(pointId);
+  }
+
+  /**
+   * A token moved: who is near each open trap is not what it was. Moves come in bursts (a drag), so a read in flight
+   * is followed by one more, never by one for each move.
+   */
+  async tokensMoved(): Promise<void> {
+    if (this.movedReading) {
+      this.movedAgain = true;
+      return;
+    }
+    this.movedReading = true;
+    try {
+      do {
+        this.movedAgain = false;
+        await this.refreshNoticers();
+      } while (this.movedAgain);
+    } finally {
+      this.movedReading = false;
+    }
   }
 
   private async refreshNoticers(): Promise<void> {

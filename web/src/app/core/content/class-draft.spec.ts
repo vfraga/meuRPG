@@ -230,7 +230,7 @@ describe('the class request (E10-02 states 1 to 3)', () => {
         {
           ...emptyEffect('sense'),
           sense: 'darkvision',
-          rangeFt: 60,
+          rangeM: '18',
           target: 'speed.walk',
           value: '5',
         },

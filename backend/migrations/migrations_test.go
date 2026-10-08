@@ -441,3 +441,54 @@ func eventKindsInCode(t *testing.T, dir string) map[string]string {
 	}
 	return out
 }
+
+// A foreign key with ON DELETE CASCADE or SET NULL looks the child rows up by
+// the key when the parent goes. On the big tables (the session history, the
+// damage and the combatants of every combat) that lookup needs an index, or
+// deleting a character, an account or a combatant scans the whole table.
+func TestCascadeForeignKeysOfBigTablesAreIndexed(t *testing.T) {
+	sdb := freshDatabase(t)
+	provider, err := NewProvider(sdb)
+	if err != nil {
+		t.Fatalf("NewProvider: %v", err)
+	}
+	if _, err := provider.Up(t.Context()); err != nil {
+		t.Fatalf("Up: %v", err)
+	}
+	run := func(q string) []string {
+		t.Helper()
+		rows, err := sdb.QueryContext(t.Context(), q)
+		if err != nil {
+			t.Fatalf("%s: %v", q, err)
+		}
+		defer rows.Close()
+		var out []string
+		for rows.Next() {
+			var s string
+			if err := rows.Scan(&s); err != nil {
+				t.Fatalf("scan: %v", err)
+			}
+			out = append(out, s)
+		}
+		if err := rows.Err(); err != nil {
+			t.Fatalf("rows: %v", err)
+		}
+		return out
+	}
+	bigTables := []string{"session_events", "pending_damages", "combatants"}
+
+	rows := run(`
+		SELECT c.conrelid::regclass::string || '.' || a.attname
+		FROM pg_constraint c
+		JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+		WHERE c.contype = 'f' AND c.confdeltype IN ('c','n','d')
+		  AND NOT EXISTS (
+		    SELECT 1 FROM pg_index i
+		    WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1])
+		ORDER BY 1`)
+	for _, r := range rows {
+		if table, _, _ := strings.Cut(r, "."); slices.Contains(bigTables, table) {
+			t.Errorf("%s is a cascade or SET NULL foreign key of a big table without an index", r)
+		}
+	}
+}

@@ -118,6 +118,8 @@ export class ContentOptions {
   /** The Magias group's filters: the class (its spell list, asked of the server) and the circle. */
   protected readonly classFilter = signal('');
   protected readonly levelFilter = signal('');
+  /** Why the class filter was dropped, when its spell list could not be read. */
+  protected readonly classError = signal('');
   private readonly classSpells = signal<ReadonlyMap<string, ReadonlySet<string>>>(new Map());
   protected readonly isSpells = computed(() => this.current().slug === 'spells');
   protected readonly classOptions = computed<SelectOption[]>(() => [
@@ -179,9 +181,17 @@ export class ContentOptions {
   protected readonly bulkSuffix = computed(() =>
     this.narrowed() ? ` (${this.rows().length})` : '',
   );
-  /** "Ligar todas" and "Desligar todas" are off when they would change nothing in the rows in view. */
-  protected readonly turnOnDisabled = computed(() => this.rows().every((o) => !o.off));
-  protected readonly turnOffDisabled = computed(() => this.rows().every((o) => o.off));
+  /** The class filter is picked but the class's spell list has not come yet: the rows in view are not narrowed yet. */
+  protected readonly classPending = computed(
+    () => this.classFilter() !== '' && !this.classSpells().has(this.classFilter()),
+  );
+  /** "Ligar todas" and "Desligar todas" are off when they would change nothing in the rows in view, and while the class filter loads. */
+  protected readonly turnOnDisabled = computed(
+    () => this.classPending() || this.rows().every((o) => !o.off),
+  );
+  protected readonly turnOffDisabled = computed(
+    () => this.classPending() || this.rows().every((o) => o.off),
+  );
   protected readonly allWord = computed(() =>
     this.current().slug === 'backgrounds' ? 'todos' : 'todas',
   );
@@ -264,6 +274,7 @@ export class ContentOptions {
       this.slug.set(n.slug);
       this.query.set('');
       this.classFilter.set('');
+      this.classError.set('');
       this.levelFilter.set('');
     }
   }
@@ -273,6 +284,9 @@ export class ContentOptions {
   }
 
   protected setAll(off: boolean): void {
+    if (this.classPending()) {
+      return;
+    }
     void this.state?.setAll(this.rows(), off, this.current().plural);
   }
 
@@ -286,6 +300,7 @@ export class ContentOptions {
 
   protected setClass(key: string): void {
     this.classFilter.set(key);
+    this.classError.set('');
     if (key && !this.classSpells().has(key)) {
       // The class's own spell list, as the server serves it to the master (the SRD's and the table's spells alike).
       void this.spellsClient
@@ -295,7 +310,12 @@ export class ContentOptions {
             this.classSpells.update((m) =>
               new Map(m).set(key, new Set(res.spells.map((s) => s.key))),
             ),
-          () => this.classFilter.set(''),
+          (err) => {
+            if (this.classFilter() === key) {
+              this.classFilter.set('');
+            }
+            this.classError.set(contentErrorText(err, 'abrir as magias da classe'));
+          },
         );
     }
   }

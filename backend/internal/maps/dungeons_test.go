@@ -1006,7 +1006,7 @@ func TestMR010_RedrawNeverChangesTheSize(t *testing.T) {
 }
 
 // A failed creation leaves nothing: no map, no gallery image, no file. The map limit
-// is checked inside the transaction, after the files were written.
+// is checked before the dungeon is drawn and again inside the transaction.
 func TestMR010_AFailedCreationLeavesNothingBehind(t *testing.T) {
 	t.Parallel()
 	d := newDungeonTable(t, func(c *Config) { c.MaxMaps = 1 })
@@ -1301,6 +1301,56 @@ func TestMR010_RedrawToleratesADoorOpenedWhileItDraws(t *testing.T) {
 	}
 }
 
+// The window between a redraw's reads and its transaction: the master shows the old
+// image to the players there. The redraw must keep the image, as it does when the image
+// was already shown, instead of deleting it from under the screen.
+func TestMR010_RedrawKeepsAnOldImageShownWhileItDraws(t *testing.T) {
+	t.Parallel()
+	d := newDungeonTable(t)
+	m := d.master
+	seed, _ := testDungeonSeed(t)
+	m.start(d.campaign)
+	created := m.createDungeon(d.campaign, "Masmorra de Vesna", testDungeonOptions(), seed).GetMap()
+	oldImage := created.GetImage().GetId()
+	d.h.svc.beforeRedrawTx = func() {
+		d.h.svc.beforeRedrawTx = nil
+		if _, err := d.h.pool.Exec(t.Context(), `UPDATE game_sessions SET shown_image_id = $1 WHERE campaign_id = $2`, oldImage, d.campaign); err != nil {
+			t.Errorf("show the image: %v", err)
+		}
+	}
+	if _, err := m.redraw(d.campaign, created.GetId()); err != nil {
+		t.Fatalf("RedrawDungeonMap() error = %v", err)
+	}
+	var shown *string
+	if err := d.h.pool.QueryRow(t.Context(), `SELECT shown_image_id::text FROM game_sessions WHERE campaign_id = $1`, d.campaign).Scan(&shown); err != nil {
+		t.Fatal(err)
+	}
+	if shown == nil || *shown != oldImage {
+		t.Errorf("the screen shows %v after the redraw, want the old image %s kept", shown, oldImage)
+	}
+}
+
+// A calibration that keeps the grid's squares but changes the factor (13 drawn squares
+// of 3 for 39 of 1), done while the redraw draws, leaves a map that is no longer drawn
+// the dungeon's way (RN-25): the redraw is refused, as when the factor was already not 1.
+func TestMR010_RedrawRefusesAFactorChangedWhileItDraws(t *testing.T) {
+	t.Parallel()
+	d := newDungeonTable(t)
+	m := d.master
+	opts := testDungeonOptions()
+	opts.Width, opts.Height = proto.Int32(39), proto.Int32(27)
+	seed, _ := testDungeonSeed(t)
+	created := m.createDungeon(d.campaign, "Masmorra de lado múltiplo", opts, seed).GetMap()
+	d.h.svc.beforeRedrawTx = func() {
+		d.h.svc.beforeRedrawTx = nil
+		if _, err := m.setCalibration(d.campaign, created.GetId(), 13, 3); err != nil {
+			t.Errorf("calibrate: %v", err)
+		}
+	}
+	_, err := m.redraw(d.campaign, created.GetId())
+	wantMapBlocked(t, "a redraw with the factor changed meanwhile", err, mapsv1.MapBlockedReason_MAP_BLOCKED_REASON_IMAGE_CHANGED)
+}
+
 // The walls layer of a generated dungeon covers every square that is not open (the walls
 // and all the rock behind them), so one wall mark covers the mass and no token can be put on
 // rock; the image's plan is solid on exactly those squares, and nowhere else but a secret door.
@@ -1345,5 +1395,128 @@ func TestDungeonOptionsFromProtoWithoutOptionsIsTheDefault(t *testing.T) {
 	}
 	if got != empty || got != dungeon.DefaultOptions(7) {
 		t.Errorf("nil options = %+v, want the defaults %+v", got, dungeon.DefaultOptions(7))
+	}
+}
+
+// A campaign at its map limit or with a full gallery is refused before the
+// dungeon is drawn: the test holds the server's one processing slot, so a
+// refusal decided before the render answers at once, and one decided after it
+// would block waiting for the slot.
+func TestDungeonLimitsAreCheckedBeforeRendering(t *testing.T) {
+	t.Parallel()
+	cases := map[string]func(*Config){
+		"map cap":       func(c *Config) { c.MaxMaps = 1 },
+		"gallery quota": func(c *Config) { c.MaxImages = 1 },
+	}
+	for name, configure := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			d := newDungeonTable(t, configure)
+			seed, _ := testDungeonSeed(t)
+			if name == "map cap" {
+				d.master.createDungeon(d.campaign, "Primeira", testDungeonOptions(), seed)
+			} else {
+				d.master.newImage(d.campaign)
+			}
+			// Another request holds the server's one image-processing slot.
+			d.h.svc.processing <- struct{}{}
+			released := false
+			release := func() {
+				if !released {
+					released = true
+					<-d.h.svc.processing
+				}
+			}
+			defer release()
+
+			type result struct{ err error }
+			done := make(chan result, 1)
+			go func() {
+				_, err := d.master.tryCreateDungeon(d.campaign, "Segunda", testDungeonOptions(), &seed)
+				done <- result{err}
+			}()
+			select {
+			case r := <-done:
+				wantCode(t, "over the limit", r.err, connect.CodeResourceExhausted)
+				// The refused try did not spend a token of the dungeon limit.
+				if ok, _ := d.h.svc.dungeonLimit.Allow(d.campaign); !ok {
+					t.Error("the refused creation spent a token of the dungeon limit")
+				}
+			case <-time.After(2 * time.Second):
+				release()
+				r := <-done
+				t.Errorf("the refusal (%v) waited for the processing slot: the dungeon is rendered before the %s is checked", r.err, name)
+			}
+		})
+	}
+}
+
+// A redraw whose old image goes away with it does not grow the gallery, so a full
+// gallery allows it; the control is the same gallery with the old image kept (left with
+// the players), where the redraw would add an image and is refused.
+func TestRedrawInAFullGalleryIsAllowedWhenTheOldImageGoes(t *testing.T) {
+	t.Parallel()
+	d := newDungeonTable(t, func(c *Config) { c.MaxImages = 2 })
+	seed, _ := testDungeonSeed(t)
+	made := d.master.createDungeon(d.campaign, "Primeira", testDungeonOptions(), seed)
+	d.master.newImage(d.campaign) // the dungeon's image and this one fill the gallery
+	old := made.GetMap().GetImage().GetId()
+	d.master.start(d.campaign)
+	if _, err := d.h.pool.Exec(t.Context(), `INSERT INTO campaign_left_images (campaign_id, image_id, left_at) VALUES ($1, $2, now())`, d.campaign, old); err != nil {
+		t.Fatal(err)
+	}
+	_, err := d.master.redraw(d.campaign, made.GetMap().GetId())
+	wantCode(t, "a redraw that would grow a full gallery", err, connect.CodeResourceExhausted)
+
+	if _, err := d.h.pool.Exec(t.Context(), `DELETE FROM campaign_left_images WHERE campaign_id = $1`, d.campaign); err != nil {
+		t.Fatal(err)
+	}
+	res, err := d.master.redraw(d.campaign, made.GetMap().GetId())
+	if err != nil {
+		t.Fatalf("a redraw whose old image goes away, in a full gallery: %v", err)
+	}
+	if res.GetMap().GetImage().GetId() == old {
+		t.Error("the map kept its old image")
+	}
+	if n := len(d.master.list(d.campaign).GetImages()); n != 2 {
+		t.Errorf("the gallery has %d images after the redraw, want 2", n)
+	}
+}
+
+// A redraw that would grow a full gallery is refused before the image is drawn, too.
+func TestRedrawIsRefusedBeforeRenderingWhenTheGalleryIsFull(t *testing.T) {
+	t.Parallel()
+	d := newDungeonTable(t, func(c *Config) { c.MaxImages = 2 })
+	seed, _ := testDungeonSeed(t)
+	made := d.master.createDungeon(d.campaign, "Primeira", testDungeonOptions(), seed)
+	d.master.newImage(d.campaign) // the dungeon's image and this one fill the gallery
+	d.master.start(d.campaign)
+	// The old image stays (left with the players), so the redraw would add an image.
+	if _, err := d.h.pool.Exec(t.Context(), `INSERT INTO campaign_left_images (campaign_id, image_id, left_at) VALUES ($1, $2, now())`, d.campaign, made.GetMap().GetImage().GetId()); err != nil {
+		t.Fatal(err)
+	}
+
+	d.h.svc.processing <- struct{}{}
+	released := false
+	release := func() {
+		if !released {
+			released = true
+			<-d.h.svc.processing
+		}
+	}
+	defer release()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := d.master.redraw(d.campaign, made.GetMap().GetId())
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		wantCode(t, "redraw with a full gallery", err, connect.CodeResourceExhausted)
+	case <-time.After(2 * time.Second):
+		release()
+		err := <-done
+		t.Errorf("the refusal (%v) waited for the processing slot: the dungeon is drawn before the gallery is checked", err)
 	}
 }

@@ -23,6 +23,10 @@ export interface VitalsDraft {
   readonly slotsUsed: Readonly<Record<number, number>>;
   readonly pactSlotsUsed: number | null;
   readonly hitDiceUsed: number;
+  /** Used uses per resource key. */
+  readonly resourcesUsed: Readonly<Record<string, number>>;
+  /** The beast's hit points, while the druid is in Wild Shape; `null` otherwise. */
+  readonly wildShapeHitPoints: number | null;
 }
 
 /** The most temporary hit points the server takes (play.proto). */
@@ -35,6 +39,8 @@ export function draftFrom(v: VitalsVm): VitalsDraft {
     slotsUsed: Object.fromEntries(v.spellSlots.map((s) => [s.level, s.used])),
     pactSlotsUsed: v.pactSlots ? v.pactSlots.used : null,
     hitDiceUsed: v.hitDiceUsed,
+    resourcesUsed: Object.fromEntries((v.resources ?? []).map((r) => [r.key, r.used])),
+    wildShapeHitPoints: v.wildShape ? v.wildShape.hitPointsCurrent : null,
   };
 }
 
@@ -51,6 +57,8 @@ export function changeBetween(before: VitalsVm, draft: VitalsDraft): VitalsChang
     spellSlotsUsed?: { level: number; used: number }[];
     pactSlotsUsed?: number;
     hitDiceUsed?: number;
+    resourcesUsed?: { key: string; used: number }[];
+    wildShapeHitPointsCurrent?: number;
   } = {};
   if (draft.hitPointsCurrent !== before.hitPointsCurrent) {
     change.hitPointsCurrent = draft.hitPointsCurrent;
@@ -73,6 +81,21 @@ export function changeBetween(before: VitalsVm, draft: VitalsDraft): VitalsChang
   }
   if (draft.hitDiceUsed !== before.hitDiceUsed) {
     change.hitDiceUsed = draft.hitDiceUsed;
+  }
+  const resources = (before.resources ?? [])
+    .filter(
+      (r) => draft.resourcesUsed[r.key] !== undefined && draft.resourcesUsed[r.key] !== r.used,
+    )
+    .map((r) => ({ key: r.key, used: draft.resourcesUsed[r.key] }));
+  if (resources.length > 0) {
+    change.resourcesUsed = resources;
+  }
+  if (
+    before.wildShape &&
+    draft.wildShapeHitPoints !== null &&
+    draft.wildShapeHitPoints !== before.wildShape.hitPointsCurrent
+  ) {
+    change.wildShapeHitPointsCurrent = draft.wildShapeHitPoints;
   }
   return Object.keys(change).length > 0 ? change : null;
 }

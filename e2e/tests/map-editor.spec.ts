@@ -4,7 +4,7 @@ import { cavePoints, clickSquare, dragSquares, editorRoute, getMapRPC, layersOf,
 import { beginFogCombat, moveTo, sessionRoute, tableForFog, visionOf, type FogTable } from './fog-support';
 import { endOpenSessionRPC } from './live-session-support';
 import { tableForMaps } from './maps-support';
-import { callRPC, newSignedInContext } from './support';
+import { afterRender, boxOf, callRPC, newSignedInContext } from './support';
 
 // The map editor on a computer (Etapa 9, slice 9.12: MR-034, MR-035, MR-036, MR-041, RN-10; E9-01 and E9-02): painting the layers, the
 // fog's settings, the questions in place, the Luz, Armadilha and Tesouro points with their presets, and "Ver como". Setup goes through the
@@ -337,6 +337,7 @@ test('com um combate no mapa, pintar vale e a grade e a imagem ficam desligadas,
     await expect(change).toHaveAttribute('aria-disabled', 'true');
     await expect(mp.getByText('Há um combate neste mapa. Termine-o para mudar a grade.')).toBeVisible();
     await change.click({ force: true });
+    await afterRender(mp);
     await expect(mp.getByRole('heading', { name: 'Mudar a grade?' })).toHaveCount(0);
     const swap = mp.getByRole('button', { name: 'Trocar imagem' });
     await expect(swap).toHaveAttribute('aria-disabled', 'true');
@@ -362,7 +363,7 @@ test('uma armadilha nasce de uma predefinição do SRD, e "Quem notaria" mostra 
     // The pit: the kind, a click on the map, the preset fills the form.
     await mp.getByRole('group', { name: 'Adicionar ponto' }).getByRole('button', { name: 'Armadilha' }).click();
     const map = mp.getByRole('group', { name: /^Mapa / });
-    const box = (await map.boundingBox())!;
+    const box = await boxOf(map);
     await mp.mouse.click(box.x + box.width * (11.5 / 24), box.y + box.height * (7.5 / 16));
     await expect(mp.getByRole('heading', { name: 'Predefinições do SRD' })).toBeVisible();
     await expect(mp.getByLabel('Nome', { exact: true })).toBeFocused();
@@ -430,7 +431,7 @@ test('um ponto de Luz usa uma fonte do SRD ou os raios do mestre, e o jogador nu
   await atCave(browser, 'Luz', { noFog: true }, async ({ table, mp, ap }) => {
     await mp.goto(editorRoute(table.campaignId, table.mapId));
     await mp.getByRole('group', { name: 'Adicionar ponto' }).getByRole('button', { name: 'Luz', exact: true }).click();
-    const box = (await mp.getByRole('group', { name: /^Mapa / }).boundingBox())!;
+    const box = await boxOf(mp.getByRole('group', { name: /^Mapa / }));
     await mp.mouse.click(box.x + box.width * (13.5 / 24), box.y + box.height * (12.5 / 16));
     await expect(mp.getByLabel('Nome', { exact: true })).toBeFocused();
     await mp.getByLabel('Nome', { exact: true }).fill('Brasa do altar');
@@ -472,7 +473,7 @@ test('um tesouro marcado como encontrado fora de uma sessão: quem encontrou, a 
   await atMaps(browser, 'Tesouro', 20, async ({ master, player, campaignId, mapId, characterId }) => {
     await master.goto(editorRoute(campaignId, mapId));
     await master.getByRole('group', { name: 'Adicionar ponto' }).getByRole('button', { name: 'Tesouro' }).click();
-    const box = (await master.getByRole('group', { name: /^Mapa / }).boundingBox())!;
+    const box = await boxOf(master.getByRole('group', { name: /^Mapa / }));
     await master.mouse.click(box.x + box.width * 0.4, box.y + box.height * 0.6);
     await expect(master.getByLabel('Nome', { exact: true })).toBeFocused();
     await master.getByLabel('Nome', { exact: true }).fill('Baú de moedas');

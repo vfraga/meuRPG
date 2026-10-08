@@ -116,7 +116,7 @@ func effectHeader(ev actionEvent, v combatViewer, caster playdb.Combatant) (kind
 
 // castProto builds the SpellCast a cast event tells, for the viewer, who is the
 // caster's player or the master: the pending damages of the cast, with their
-// current state.
+// current state. A target the viewer does not see is left out.
 func (s *Service) castProto(ctx context.Context, res combatResult, ev actionEvent, v combatViewer) (*playv1.SpellCast, error) {
 	cs, err := s.queries.ListCombatants(ctx, res.encounterID)
 	if err != nil {
@@ -134,6 +134,9 @@ func (s *Service) castProto(ctx context.Context, res combatResult, ev actionEven
 	out.EffectKind, out.PoolRoll, out.EffectConditionKey, out.EffectThreshold = effectHeader(ev, v, caster)
 	for _, h := range ev.Hits {
 		target := byID[h.Target]
+		if !v.sees(target) { // a retry is built from the combat as it stands: a target hidden since is not told
+			continue
+		}
 		r := &playv1.SpellTargetResult{
 			CombatantId: h.Target, Darts: h.Darts, Outcome: outcomeToProto[h.Outcome],
 			AttackRoll: attackRollView(h, v, caster), Save: saveView(h.Save, v, caster, target),

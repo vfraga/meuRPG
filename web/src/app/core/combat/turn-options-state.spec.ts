@@ -34,4 +34,29 @@ describe('TurnOptionsState', () => {
     state.clear();
     expect(state.data()).toBeNull();
   });
+
+  it("does not show the last combatant's options while the next one's come", async () => {
+    const state = new TurnOptionsState();
+    const optionsA = { yourTurn: true } as GetTurnOptionsResponse;
+    const client = {
+      turnOptions: (_c: string, _e: string, id: string) =>
+        id === 'A' ? Promise.resolve(optionsA) : new Promise<GetTurnOptionsResponse>(() => {}),
+    } as unknown as CombatClient;
+    await state.load(client, 'c', 'e', 'A');
+    expect(state.data()).toBe(optionsA);
+    void state.load(client, 'c', 'e', 'B');
+    expect(state.data()).toBeNull();
+  });
+
+  it("does not keep the last combatant's options when the next one's read fails", async () => {
+    const state = new TurnOptionsState();
+    await state.load(
+      api([Promise.resolve({ yourTurn: true } as GetTurnOptionsResponse)]),
+      'c',
+      'e',
+      'A',
+    );
+    await state.load(api([Promise.reject(new Error('down'))]), 'c', 'e', 'B');
+    expect(state.data()).toBeNull();
+  });
 });

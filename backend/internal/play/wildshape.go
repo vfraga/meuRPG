@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strconv"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -81,8 +82,9 @@ func (s *Service) shapeLine(ctx context.Context, q *playdb.Queries, sessionID, c
 
 // formEnds ends a druid's form where only the vitals are at hand (it fell to 0 hit
 // points): the form goes, the combatant of the session's combat takes its own numbers
-// back, and a wild_shape_ended event says why. It returns the vitals after.
-func (s *Service) formEnds(ctx context.Context, q *playdb.Queries, tx pgx.Tx, sessionID, campaignID, characterID, beast, reason string) (*playv1.CharacterVitals, error) {
+// back, and a wild_shape_ended event says why, with the damage that carried over
+// to the druid, if any. It returns the vitals after.
+func (s *Service) formEnds(ctx context.Context, q *playdb.Queries, tx pgx.Tx, sessionID, campaignID, characterID, beast, reason string, carried int32) (*playv1.CharacterVitals, error) {
 	after, body, err := s.vitals.SetWildShape(ctx, tx, campaignID, characterID, "", 0)
 	if err != nil {
 		return nil, err
@@ -98,7 +100,7 @@ func (s *Service) formEnds(ctx context.Context, q *playdb.Queries, tx pgx.Tx, se
 		return nil, fmt.Errorf("next event number: %w", err)
 	}
 	encID, round, actor, hidden := s.shapeLine(ctx, q, sessionID, characterID)
-	payload, err := json.Marshal(actionEvent{OwnerCharacter: characterID, Beast: beast, Reason: reason, EncounterID: encID, Round: round, Actor: actor, Secret: hidden})
+	payload, err := json.Marshal(actionEvent{OwnerCharacter: characterID, Beast: beast, Carried: carried, Reason: reason, EncounterID: encID, Round: round, Actor: actor, Secret: hidden})
 	if err != nil {
 		return nil, fmt.Errorf("encode the event payload: %w", err)
 	}
@@ -197,17 +199,14 @@ func applyBody(ctx context.Context, c *combatTx, who playdb.Combatant, body link
 	return nil
 }
 
-// damageBeast lands a damage on a druid in a beast form (RN-02, SRD): the beast's
-// pool takes it, with no temporary hit points; at 0 the form ends and what is left
-// goes to the character through its own pool and temporary hit points. It records
-// the carried damage in ev, ends the combatant's form numbers and writes the
-// wild_shape_ended event before the damage's own, so the damage stays the last
-// thing an undo takes back. It returns the vitals before and after.
-func (s *Service) damageBeast(ctx context.Context, c *combatTx, target playdb.Combatant, now *playv1.CharacterVitals, amount int32, ev *actionEvent) (before, after *playv1.CharacterVitals, err error) {
+// beastDamageRequest is the vitals change a damage makes on a druid in a beast
+// form (RN-02, SRD): the beast's pool takes it, with no temporary hit points; when
+// the beast falls (left 0), what is left (carried) goes to the druid's own pool
+// and temporary hit points. It does not end the form.
+func beastDamageRequest(now *playv1.CharacterVitals, amount int32) (req *playv1.AdjustCharacterVitalsRequest, left, carried int32) {
 	w := now.GetWildShape()
-	left := clamp32(combat.ApplyDamage(int(w.GetHitPointsCurrent()), 0, int(amount)).HP, 0, math.MaxInt32)
-	req := &playv1.AdjustCharacterVitalsRequest{WildShapeHitPointsCurrent: &left}
-	var carried int32
+	left = clamp32(combat.ApplyDamage(int(w.GetHitPointsCurrent()), 0, int(amount)).HP, 0, math.MaxInt32)
+	req = &playv1.AdjustCharacterVitalsRequest{WildShapeHitPointsCurrent: &left}
 	if left == 0 {
 		carried = max(amount-w.GetHitPointsCurrent(), 0)
 		if carried > 0 {
@@ -216,6 +215,18 @@ func (s *Service) damageBeast(ctx context.Context, c *combatTx, target playdb.Co
 			req.HitPointsCurrent, req.HitPointsTemporary = &hp, &temp
 		}
 	}
+	return req, left, carried
+}
+
+// damageBeast lands a damage on a druid in a beast form (RN-02, SRD): the beast's
+// pool takes it, with no temporary hit points; at 0 the form ends and what is left
+// goes to the character through its own pool and temporary hit points. It records
+// the carried damage in ev, ends the combatant's form numbers and writes the
+// wild_shape_ended event before the damage's own, so the damage stays the last
+// thing an undo takes back. It returns the vitals before and after.
+func (s *Service) damageBeast(ctx context.Context, c *combatTx, target playdb.Combatant, now *playv1.CharacterVitals, amount int32, ev *actionEvent) (before, after *playv1.CharacterVitals, err error) {
+	w := now.GetWildShape()
+	req, left, carried := beastDamageRequest(now, amount)
 	if before, after, err = s.vitalsOf(ctx, c, target.CharacterID, req); err != nil {
 		return nil, nil, err
 	}
@@ -372,7 +383,7 @@ func (s *Service) shapeChange(ctx context.Context, campaignID, rawCharacter, raw
 	var made actionEvent
 	var vitals *playv1.CharacterVitals
 	var mapID string
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: kind}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: requestHash(campaignID, rawCharacter, beast, strconv.FormatBool(leave)), kind: kind}, func(c *combatTx) (any, error) {
 		made, vitals, mapID = actionEvent{}, nil, deref(c.session.CurrentMapID)
 		_, who, _, err := s.playerCharacterOf(ctx, c, m, characterID)
 		if err != nil {

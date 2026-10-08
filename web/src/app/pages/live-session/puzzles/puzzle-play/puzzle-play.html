@@ -143,7 +143,7 @@
           }
         </ol>
       }
-      @if (r.hintByCheck) {
+      @if (r.hintByCheck && !play.gone()) {
         <app-hint-try
           [skill]="hintSkill()"
           [canTry]="r.canTryHint"
@@ -165,6 +165,13 @@
     <mat-icon aria-hidden="true">visibility_off</mat-icon>
     <p><strong>O mestre não está mostrando este quebra-cabeça.</strong> Volte para a sessão: ele aparece lá quando for mostrado.</p>
   </div>
+} @else if (play.loadError()) {
+  <h1 class="mr-page-title">Quebra-cabeça</h1>
+  <div class="mr-notice mr-notice--danger" role="alert">
+    <mat-icon aria-hidden="true">error</mat-icon>
+    <p>{{ play.loadError() }}</p>
+  </div>
+  <button matButton="outlined" type="button" (click)="play.refresh()">Tentar de novo</button>
 } @else {
   <h1 class="mr-page-title">Quebra-cabeça</h1>
   <p class="page-status" role="status">

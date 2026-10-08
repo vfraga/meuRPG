@@ -171,6 +171,10 @@ type actionEvent struct {
 	// never get its line of the log, even after the master reveals the
 	// combatant (RN-10, RN-20).
 	Secret bool `json:"secret,omitempty"`
+	// AttackerHidden says the master had hidden the attacker of the blow a reaction
+	// answered: the line is the reactor's player's and the master's alone, even after a
+	// reveal, or it would tell the others a hidden NPC attacked (RN-10).
+	AttackerHidden bool `json:"attacker_hidden,omitempty"`
 	// Fogged says the event happened on a map with the fog of war on, with an NPC
 	// in it, and SeenBy lists the players (user IDs) who saw every NPC in it when it
 	// happened: the log gives the line to them and to nobody else, and never works it
@@ -246,6 +250,9 @@ type actionEvent struct {
 	// Escudo: the +5 the target had before, the reaction and what it did.
 	ACBonusBefore int32 `json:"ac_bonus_before,omitempty"`
 	Stopped       bool  `json:"stopped,omitempty"`
+	// AlsoStopped are the other hits on the same target that the Escudo's armor
+	// class stopped too, with the status each one had.
+	AlsoStopped []stoppedHit `json:"also_stopped,omitempty"`
 	// Extra Attack and the opportunity attack.
 	AttacksBefore int32 `json:"attacks_before,omitempty"`
 	AsReaction    bool  `json:"as_reaction,omitempty"`
@@ -329,6 +336,7 @@ type actionEvent struct {
 
 	// The Disengage action, which an undo of the action takes back.
 	DisengagedBefore bool `json:"disengaged_before,omitempty"`
+	SurgedBefore     bool `json:"surged_before,omitempty"`
 	// RunBefore is the running start (tenths of a foot) an action, an attack or a
 	// spell broke: the undo puts it back.
 	RunBefore int32 `json:"run_before,omitempty"`
@@ -356,6 +364,9 @@ type actionEvent struct {
 	// An undo: the event it took back.
 	Undone     string `json:"undone_id,omitempty"`
 	UndoneKind string `json:"undone_kind,omitempty"`
+	// UndoneAlso are the older events taken back with it: the other parts of a
+	// trap's firing that was written as several events.
+	UndoneAlso []string `json:"undone_also,omitempty"`
 
 	// The character's creatures (MR-037): the owner's character, the creatures a
 	// casting made (Created, with their MonsterKeys) and the ones it dismissed
@@ -472,4 +483,11 @@ func (s *Service) publishLogChanged(ctx context.Context, campaignID, encounterID
 		return
 	}
 	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: msg})
+}
+
+// stoppedHit is a pending damage that a later Escudo stopped: its id and the
+// status the undo puts back.
+type stoppedHit struct {
+	Pending    string `json:"pending"`
+	PrevStatus string `json:"prev_status"`
 }

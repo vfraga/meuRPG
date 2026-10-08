@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
@@ -1580,5 +1581,50 @@ func TestTableContentNeverNamesAnArchivedKeyToAPlayer(t *testing.T) {
 	m := master.entries(t, campaign)
 	if len(m) != 5 {
 		t.Errorf("the master's entries = %d, want 5", len(m))
+	}
+}
+
+// An entry with more features than the engine allows is refused with
+// invalid_argument before its keys are made: a body inside the request limit can
+// hold thousands of them.
+func TestTooManyFeaturesAreRefusedBeforeTheyAreKeyed(t *testing.T) {
+	h := newHarness(t)
+	master := h.newUser("Samuel")
+	campaign := h.newCampaign(master, "Mirathel")
+
+	raceOf := func(n int) *rulesv1.TableRace {
+		race := testRace("Raça enorme")
+		race.Traits = make([]*rulesv1.TableFeature, n)
+		for i := range race.Traits {
+			race.Traits[i] = &rulesv1.TableFeature{NamePt: "x"}
+		}
+		return race
+	}
+
+	// Control: a race at the limit is made, and its sixty traits named alike get sixty keys.
+	created, err := master.table.CreateTableEntry(t.Context(), connect.NewRequest(createReq(campaign, raceOf(rules.MaxTraits))))
+	if err != nil {
+		t.Fatalf("CreateTableEntry(%d traits) error = %v", rules.MaxTraits, err)
+	}
+	keys := map[string]bool{}
+	for _, f := range created.Msg.GetEntry().GetTableRace().GetTraits() {
+		keys[f.GetKey()] = true
+	}
+	if len(keys) != rules.MaxTraits {
+		t.Errorf("%d distinct trait keys, want %d", len(keys), rules.MaxTraits)
+	}
+
+	start := time.Now()
+	_, err = master.table.CreateTableEntry(t.Context(), connect.NewRequest(createReq(campaign, raceOf(5000))))
+	if got := connect.CodeOf(err); got != connect.CodeInvalidArgument {
+		t.Fatalf("CreateTableEntry(5000 traits) code = %v (%v), want invalid_argument", got, err)
+	}
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Errorf("the refusal took %v, want under 2s", elapsed)
+	}
+
+	_, err = master.table.UpdateTableEntry(t.Context(), connect.NewRequest(updateReq(campaign, created.Msg.GetEntry().GetKey(), created.Msg.GetEntry().GetRevision(), raceOf(5000))))
+	if got := connect.CodeOf(err); got != connect.CodeInvalidArgument {
+		t.Errorf("UpdateTableEntry(5000 traits) code = %v (%v), want invalid_argument", got, err)
 	}
 }

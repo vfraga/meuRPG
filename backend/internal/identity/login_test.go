@@ -1,13 +1,16 @@
 package identity
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -705,5 +708,42 @@ func assertAuthHeaders(t *testing.T, h http.Header) {
 	}
 	if got := h.Get("Referrer-Policy"); got != "no-referrer" {
 		t.Errorf("Referrer-Policy = %q, want no-referrer", got)
+	}
+}
+
+// failingCreateStore fails createSession while failCreate is set. fails createSession while failCreate is set.
+type failingCreateStore struct {
+	*memStore
+	failCreate atomic.Bool
+}
+
+func (s *failingCreateStore) createSession(ctx context.Context, ns NewSession) (Session, error) {
+	if s.failCreate.Load() {
+		return Session{}, errors.New("simulated DB blip")
+	}
+	return s.memStore.createSession(ctx, ns)
+}
+
+// A sign-in that cannot create its session leaves the one the browser had:
+// the old one is revoked only after the new one exists.
+func TestOldSessionSurvivesAFailedRelogin(t *testing.T) {
+	t.Parallel()
+	st := &failingCreateStore{memStore: newMemStore()}
+	h := newHarness(t, withStore(st))
+	old := h.signIn()
+	if st.sessionCount() != 1 {
+		t.Fatalf("sessions = %d, want 1", st.sessionCount())
+	}
+
+	st.failCreate.Store(true)
+	callbackURL, loginCookie := h.beginLogin("/")
+	rec := h.finishLogin(callbackURL, loginCookie, old)
+	if rec.Code == http.StatusSeeOther {
+		t.Fatalf("expected the relogin to fail, got 303")
+	}
+	st.failCreate.Store(false)
+
+	if _, err := h.getMe(old); err != nil {
+		t.Fatalf("old session no longer valid after failed re-login (user logged out): %v", err)
 	}
 }

@@ -11,11 +11,12 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import type { Map as MapMessage, MapPoint } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { describeConnectError } from '../../../core/connect/connect-errors';
 import type { DoorSquare } from '../../../core/maps/layers';
+import { wallUnderDoor } from '../../../core/maps/door-paint';
 import { lightKeyName } from '../../../core/maps/carried-light';
 import type { FogView } from '../../../core/maps/fog-view';
 import { mapErrorMessage } from '../../../core/maps/map-errors';
 import { MapReveals } from '../../../core/maps/map-reveals';
-import { MapState } from '../../../core/maps/map-state';
+import { MapState, tokenKey } from '../../../core/maps/map-state';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { MoveSaves } from '../../../core/maps/move-saves';
 import { SceneClient } from '../../../core/play/scene-client';
@@ -185,8 +186,12 @@ export class SessionMap {
       campaignId: this.campaignId(),
       mapId,
       door,
-      wall: (this.fog()?.layers().walls ?? []).some(
-        (w) => w.col === door.col && w.row === door.row,
+      wallSquares: wallUnderDoor(
+        this.fog()?.layers().walls ?? [],
+        this.fog()?.layers().columns ?? 0,
+        this.fog()?.layers().rows ?? 0,
+        this.map()?.squareFactor ?? 1,
+        door,
       ),
     };
     openDoorSheet(this.dialog, this.bottomSheet, data).subscribe();
@@ -233,19 +238,23 @@ export class SessionMap {
   protected async onMoved(move: MapMove): Promise<void> {
     const state = this.state();
     const mapId = state.map()?.id;
-    const before = state.tokens().find((t) => t.characterId === move.id);
+    const before = state.tokens().find((t) => tokenKey(t) === move.id);
     if (move.kind !== 'token' || !mapId || !before) {
       return;
     }
+    this.error.set(null);
     state.upsertToken({ ...before, xBp: move.xBp, yBp: move.yBp });
     await this.moves.move(
       `${mapId}/${move.id}`,
       before,
       { xBp: move.xBp, yBp: move.yBp },
       {
-        save: (to) => this.api.placeToken(this.campaignId(), mapId, move.id, to.xBp, to.yBp),
+        save: (to) =>
+          before.creatureId
+            ? this.api.placeToken(this.campaignId(), mapId, '', to.xBp, to.yBp, before.creatureId)
+            : this.api.placeToken(this.campaignId(), mapId, move.id, to.xBp, to.yBp),
         failed: (saved, err) => {
-          const now = state.tokens().find((t) => t.characterId === move.id);
+          const now = state.tokens().find((t) => tokenKey(t) === move.id);
           if (now) {
             state.upsertToken({ ...now, xBp: saved.xBp, yBp: saved.yBp });
           }

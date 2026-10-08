@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
@@ -73,5 +74,13 @@ func ReadTx(ctx context.Context, conn TxStarter, fn func(pgx.Tx) error) error {
 
 func readTx(ctx context.Context, conn TxStarter, policy crdb.RetryPolicy, fn func(pgx.Tx) error) error {
 	ctx = crdb.WithRetryPolicy(ctx, policy)
-	return crdbpgx.ExecuteTx(ctx, conn, pgx.TxOptions{AccessMode: pgx.ReadOnly}, fn)
+	// The READ ONLY option of BEGIN is not enough: cockroach-go restarts after
+	// a 40001 with ROLLBACK and a plain BEGIN, so the retry would run read-write.
+	// SET TRANSACTION as the first statement of every attempt keeps it read-only.
+	return crdbpgx.ExecuteTx(ctx, conn, pgx.TxOptions{AccessMode: pgx.ReadOnly}, func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, "SET TRANSACTION READ ONLY"); err != nil {
+			return fmt.Errorf("set the transaction read only: %w", err)
+		}
+		return fn(tx)
+	})
 }

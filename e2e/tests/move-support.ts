@@ -2,7 +2,7 @@ import { expect, type Browser, type BrowserContext, type Locator, type Page } fr
 
 import { beginAttackCombatRPC, tableForCombat, type CombatTable } from './combat-support';
 import { endOpenSessionRPC } from './live-session-support';
-import { callRPC, newSignedInContext, type CharacterBuild } from './support';
+import { boxOf, callRPC, newSignedInContext, type CharacterBuild } from './support';
 
 // Setup for the movement specs (Etapa 9, slice 9.15, MR-034, RN-21): a combat
 // on a 20 x 14 grid with the layers painted through `PaintMapCells`, and the
@@ -77,7 +77,7 @@ export async function movingTable(
 export async function tapSquare(page: Page, col: number, row: number): Promise<void> {
   const map: Locator = page.getByRole('group', { name: /Mapa de batalha/ });
   await expect(map).toBeVisible();
-  const box = (await map.boundingBox())!;
+  const box = await boxOf(map);
   await map.click({ position: { x: ((col + 0.5) * box.width) / 20, y: ((row + 0.5) * box.height) / 14 } });
 }
 

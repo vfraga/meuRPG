@@ -61,6 +61,7 @@ export function toVitalsVm(v: CharacterVitals): VitalsVm {
       : null,
     resources: v.resources.map((r) => ({
       key: r.key,
+      namePt: r.namePt,
       total: r.total,
       used: r.used,
       recharge: RECHARGE[r.recharge] ?? 'none',
@@ -278,6 +279,8 @@ export class LiveSessionSourceLive implements LiveSessionSource {
       spellSlotsUsed: (change.spellSlotsUsed ?? []).map((s) => ({ level: s.level, used: s.used })),
       pactSlotsUsed: change.pactSlotsUsed,
       hitDiceUsed: change.hitDiceUsed,
+      resourcesUsed: (change.resourcesUsed ?? []).map((r) => ({ key: r.key, used: r.used })),
+      wildShapeHitPointsCurrent: change.wildShapeHitPointsCurrent,
     });
     return toVitalsVm(res.vitals!);
   }

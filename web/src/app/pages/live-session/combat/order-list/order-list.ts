@@ -361,11 +361,18 @@ export class OrderList {
   }
 
   protected confirmLose(id: string): void {
+    // The page is busy with another change: the question stays, so its answer is not lost in silence.
+    if (this.busy()) {
+      return;
+    }
     this.losing.set(null);
     this.endConcentration.emit(id);
   }
 
   protected confirmRemove(id: string): void {
+    if (this.busy()) {
+      return;
+    }
     this.removing.set(null);
     this.remove.emit(id);
   }

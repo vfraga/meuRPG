@@ -31,6 +31,11 @@ interface Pending {
 export class MoveSaves {
   private readonly pending = new Map<string, Pending>();
 
+  /** Whether a save of `key` is in flight or waiting: what the screen shows for it is ahead of the server. */
+  isPending(key: string): boolean {
+    return this.pending.has(key);
+  }
+
   /**
    * Saves the move of `key` (one key per item and map) from `from`, where
    * the screen showed it before this move, to `to`. A move that waits

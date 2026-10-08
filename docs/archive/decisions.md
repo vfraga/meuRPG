@@ -4,14 +4,14 @@ Who decided what, when, and under which question. This is the history of the Meu
 
 Conventions used below:
 
-- Question numbers are the rows of the progress document ("MeuRPG — Como está o trabalho"). Samuel is the product owner and answered questions 1 to 65 (the first batches on 29/09, 02/10 and 03/10/2026); Vinicius answered 66 to 86 on his behalf (04/10 and 05/10/2026).
+- Question numbers are the rows of the progress document ("MeuRPG — Como está o trabalho"). Samuel is the product owner and answered questions 1 to 65 (the first batches on 29/09, 02/10 and 03/10/2026); Vinicius answered 66 to 87 on his behalf (04/10, 05/10 and 07/10/2026).
 - "Etapa" is a delivery stage of the [roadmap](../roadmap.md); "slice" ("fatia" in the original notes) is a numbered piece of an Etapa (for example 10.4b); PR numbers are those of `PuraFome/meuRPG`.
 - ADRs are the private architecture decision records in `docs/adr/` (not published).
 - Portuguese terms in quotes are UI strings or the names of the original sources.
 
 ## Contents
 
-1. [Questions answered](#questions-answered): by date, 29/09 to 05/10/2026 (questions 1 to 86).
+1. [Questions answered](#questions-answered): by date, 29/09 to 07/10/2026 (questions 1 to 87).
 2. [Roadmap and scope decisions](#roadmap-and-scope-decisions): what the MVP is and how it grew.
 3. [Decisions by document](#decisions-by-document): the decisions that used to sit in the product, privacy, architecture, data, operations and design docs.
 4. [Open at the time of archiving](#open-at-the-time-of-archiving).
@@ -145,6 +145,14 @@ Vinicius answered for Samuel all the questions of Etapa 10: six as we suggested,
 - **Question 76: the table style and house rules.** Accepted as we suggested, for the MVP: at the top of "Regras da mesa", three ready-made styles — "Tudo no app" (dice in the app, combat with a map, fog on in new maps), "Mesa física" (physical dice, combat without a map by default, fog off) and "Teatro da mente" (each player chooses the dice, combat without a map, no fog) — and "Personalizado"; a style only fills in the defaults, which stay editable, and the house rules go on (RN-24). The idea comes from different masters (the narrator, the physical-table one, the tactical one, the beginner, the improviser, the table without phones): the app should take away the biggest pain of each. The rest was kept for after the MVP in [MR-046](../product/stories.md#mr-046-table-style-feature-by-feature). See [RN-24](../product/rules.md).
 - **Question 79: what solving a puzzle gives.** Accepted as we suggested — the master is notified, and "Ao resolver" can open a door, reveal a map point or reveal a clue to whoever solved it —, with the hints the master releases and, so the MVP session is not repetitive, these further ideas already in the MVP: consequences (a wrong move triggers a trap, uses up an attempt or counts toward a limit of moves or time), a hint earned with a skill check, split information (each player sees a part of the clue) and three new types: the riddle, the sequence to repeat and the cipher. The rest was kept for after the MVP in [MR-047](../product/stories.md#mr-047-more-puzzles). See [MR-038](../product/stories.md#mr-038-puzzles) and [RN-27](../product/rules.md).
 - **Question 83: what the players see of the table content.** (a) Every playable option: the master has the "Opções para os jogadores" screen, with a switch per class, subclass, race, subrace, background and spell (from the SRD and from the table); (b) a spell lookup in the app, "Magias", with all the spells that are on, but on the sheet each person only chooses from their own class's list, also in multiclass (the master accepting a spell outside the list is left for after the MVP); (c) everything, the numbers and the effects; (d) what is off never appears to the players; (e) when an entry changes, only the owners of the sheets that use it are notified. See [RN-23](../product/rules.md) and [MR-045](../product/stories.md#mr-045-look-up-spells). The server for the switches and the live hint is done (slice 10.1d); the screen is 10.11c.
+
+### Answered on 07/10/2026
+
+The full code review of 07/10 raised one product question, which Vinicius answered for Samuel, and two choices about AI images, which Vinicius decided.
+
+- **Question 87: the name of a trap the master fires by hand.** It stays public: once the master fires a trap, every player reads its name in the combat log, even a player whose character does not see the square, as at a physical table, where everyone hears the trap go off. The map still hides the square. This was already the behaviour, written into RN-10 by PR #226. See [RN-10](../product/rules.md).
+- **The monthly image slot of a failed request.** The slot comes back only when the call was certainly not billed: the model refused, the key was refused (401 or 403), or the answer had no image. A timeout, a connection cut after the request left and an unreadable answer keep the slot spent, because Gemini may have billed them. A panic in our own code still gives the slot back: it is a bug of the server, and the server's daily cap still bounds the cost. See [RN-28](../product/rules.md) and [Operations](../operations.md#generated-images-the-gemini-api).
+- **"Redesenhar" with a full gallery.** A redraw of a generated dungeon's map is allowed with the gallery full when the old image goes away with it (it is not shown, not a portrait and not used elsewhere), because the gallery does not grow; it is still refused when the old image stays. See [Architecture](../architecture.md#generated-dungeon-maps).
 
 
 ## Roadmap and scope decisions

@@ -157,7 +157,7 @@ var menuTypes = []MenuType{
 	}},
 	{Type: "choice", NamePT: "Escolha", HintPT: "Algo que o jogador escolhe: perícias, especialização, truques, magias, idiomas, ferramentas ou uma opção de uma lista do SRD (como um estilo de luta).", Fields: []MenuField{
 		{Name: "choice", Required: true, Kind: "choice", List: ListChoiceKinds},
-		{Name: "count", Required: true, Kind: "number", Min: 1},
+		{Name: "count", Required: true, Kind: "number", Min: 1, Max: MaxChoiceCount},
 		{Name: "from", Kind: "choices"},
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},

@@ -7,7 +7,7 @@
       <h2 class="sheet__title" id="sheet-t" tabindex="-1">{{ title() }}</h2>
       <p class="sheet__sub">{{ subtitle() }}</p>
     </div>
-    <button type="button" class="sheet__close" aria-label="Fechar" (click)="close()">
+    <button type="button" class="sheet__close" aria-label="Fechar" [disabled]="busy()" (click)="close()">
       <mat-icon aria-hidden="true">close</mat-icon>
     </button>
   </div>
@@ -73,7 +73,7 @@
         </p>
       }
       <div class="sheet__foot">
-        <button mat-stroked-button type="button" class="sheet__done" (click)="close()">Cancelar</button>
+        <button mat-stroked-button type="button" class="sheet__done" [disabled]="busy()" (click)="close()">Cancelar</button>
       </div>
     }
     @case ('roll') {
@@ -110,6 +110,7 @@
         [outcome]="outcome()"
         [showDamage]="stage() === 'done'"
         [damage]="damage()"
+        [waiting]="waiting()"
         [damageLine]="damageLine()"
       />
 

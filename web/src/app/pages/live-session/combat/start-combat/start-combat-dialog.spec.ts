@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { provideRouter } from '@angular/router';
+import { Code, ConnectError } from '@connectrpc/connect';
 
 import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { CharacterKind } from '../../../../../gen/meurpg/characters/v1/characters_pb';
@@ -9,11 +10,12 @@ import { CampaignsService } from '../../../../core/campaigns/campaigns.service';
 import { TableRulesClient } from '../../../../core/campaigns/table-rules';
 import { CombatClient } from '../../../../core/combat/combat-client';
 import { encounter } from '../../../../core/combat/combat-testing';
+import { CONNECT_TRANSPORT } from '../../../../core/connect/transport';
+import { flat } from '../../../../core/creatures/creatures-testing';
 import { RosterClient } from '../../../../core/maps/roster-client';
 import { type CombatMapInfo, StartCombatDialog, type StartCombatData } from './start-combat-dialog';
 
-const plain = (t: string | null | undefined) =>
-  (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 
 const map: CombatMapInfo = {
   id: 'map',
@@ -213,5 +215,87 @@ describe('"Iniciar combate": how the combat is played (RN-25, E10-04 state 1)', 
     await settle(fixture);
     expect(radios(el).map((r) => r.checked)).toEqual([false, true]);
     expect(plain(el.textContent)).not.toContain('Carregando');
+  });
+});
+
+describe('"Adicionar combatente": the key of one addition', () => {
+  async function adding() {
+    const sent: { idempotencyKey: string }[] = [];
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        CombatClient,
+        { provide: CONNECT_TRANSPORT, useValue: {} },
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            campaignId: 'camp-1',
+            mode: 'add',
+            map: null,
+            encounterId: 'enc-1',
+            existing: 2,
+          },
+        },
+        { provide: MatDialogRef, useValue: { close: () => undefined } },
+        { provide: RosterClient, useValue: { list: async () => roster } },
+        {
+          provide: CampaignsService,
+          useValue: {
+            listMembers: async () => ({ members: [] }),
+            getCampaign: async () => ({
+              campaign: { diceMode: DiceMode.PLAYERS_CHOOSE, dicePreference: DicePreference.APP },
+            }),
+          },
+        },
+        {
+          provide: TableRulesClient,
+          useValue: { get: async () => ({ saved: { combatStartsWithMap: false } }) },
+        },
+      ],
+    });
+    (TestBed.inject(CombatClient) as unknown as { client: unknown }).client = {
+      addCombatants: async (req: { idempotencyKey: string }) => {
+        sent.push(req);
+        if (sent.length === 1) {
+          throw new ConnectError('timeout', Code.Unavailable); // committed, but the answer was lost
+        }
+        return { encounter: encounter({ id: 'enc-1' }) };
+      },
+    };
+    const fixture = TestBed.createComponent(StartCombatDialog);
+    fixture.detectChanges();
+    await settle(fixture);
+    const cmp = fixture.componentInstance as unknown as { setCount(id: string, n: number): void };
+    const press = async () => {
+      Array.from(
+        (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
+      )
+        .find((b) => /Adicionar/.test(flat(b) ?? ''))!
+        .click();
+      await settle(fixture);
+    };
+    return { fixture, cmp, press, sent, settle: () => settle(fixture) };
+  }
+
+  it('sends the same key when "Adicionar" is pressed again after a lost answer', async () => {
+    const { cmp, press, sent, settle: again } = await adding();
+    cmp.setCount('g', 3);
+    await again();
+    await press();
+    await press();
+    expect(sent).toHaveLength(2);
+    expect(sent[1].idempotencyKey).toBe(sent[0].idempotencyKey);
+  });
+
+  it('sends another key when the NPCs to add changed', async () => {
+    const { cmp, press, sent, settle: again } = await adding();
+    cmp.setCount('g', 3);
+    await again();
+    await press();
+    cmp.setCount('g', 4);
+    await again();
+    await press();
+    expect(sent).toHaveLength(2);
+    expect(sent[1].idempotencyKey).not.toBe(sent[0].idempotencyKey);
   });
 });

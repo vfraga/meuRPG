@@ -1,4 +1,13 @@
-import { Component, type Signal, computed, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  type Signal,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,7 +15,7 @@ import type { Observable } from 'rxjs';
 
 import type { MapPoint } from '../../../../../gen/meurpg/maps/v1/maps_pb';
 import type { TrapFiring } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import { newKey } from '../../../../core/connect/idempotency';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import { TrapsClient } from '../../../../core/traps/traps-client';
 import { trapErrorMessage } from '../../../../core/traps/trap-errors';
 import { firstLine } from '../../../../core/traps/trap-text';
@@ -83,7 +92,7 @@ export function fireLabel(picked: readonly string[], extend: boolean): string {
       <p class="lead">
         {{ extend ? 'Quem mais foi pego? O app rola o efeito e o dano para quem você marcar.' : 'O app rola o efeito e o dano. O dano de um personagem espera você aplicar.' }}
       </p>
-      <app-person-pick headingId="trap-fire-who" [heading]="extend ? 'Quem mais foi pego' : 'Quem foi pego'" [rows]="rows()" [(picked)]="picked" [empty]="emptyText()" />
+      <app-person-pick headingId="trap-fire-who" [heading]="extend ? 'Quem mais foi pego' : 'Quem foi pego'" [rows]="rows()" [picked]="picked()" (pickedChange)="pick($event)" [empty]="emptyText()" />
       <p class="note" role="status" aria-live="polite">{{ note() }}</p>
       <app-pair-foot
         foot
@@ -117,7 +126,7 @@ export class TrapFireSheet {
   protected readonly data = this.sheet.data;
   protected readonly inSheet = this.sheet.inSheet;
   private readonly frame = viewChild(SheetFrame);
-  private readonly key = newKey();
+  private readonly key = new ActionKey();
 
   protected readonly extend = this.data.extendFiringId !== '';
   protected readonly title = this.extend
@@ -125,6 +134,9 @@ export class TrapFireSheet {
     : `Disparar o\u00a0${this.data.point.name}`;
   protected readonly subtitle = firstLine(this.data.point.description);
   protected readonly picked = signal<ReadonlySet<string>>(new Set());
+  /** The names of ticked people who left the list since: an empty pick would fire for the whole area, so the master ticks again. */
+  protected readonly gone = signal<readonly string[]>([]);
+  private readonly seen = new Map<string, string>();
   protected readonly rows = computed(() => this.data.targets() ?? []);
   protected readonly emptyText = computed(() =>
     this.data.targetsFailed?.()
@@ -140,9 +152,14 @@ export class TrapFireSheet {
       this.extend,
     ),
   );
-  /** A new firing needs nobody (the area); adding to one needs someone. */
-  protected readonly ready = computed(() => !this.extend || this.chosen().length > 0);
+  /** A new firing needs nobody (the area); adding to one needs someone. Neither goes on while someone ticked has left the list. */
+  protected readonly ready = computed(
+    () => this.gone().length === 0 && (!this.extend || this.chosen().length > 0),
+  );
   protected readonly note = computed(() => {
+    if (this.gone().length > 0) {
+      return `${this.gone().join(', ')} saiu da lista. Marque de novo quem foi pego.`;
+    }
     if (this.extend) {
       return this.chosen().length === 0
         ? 'Ninguém marcado. Escolha quem entra no disparo que já aconteceu.'
@@ -153,7 +170,33 @@ export class TrapFireSheet {
       : 'Só quem você marcou é pego, esteja na área ou não.';
   });
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
+
+  constructor() {
+    // Whoever was ticked and is no longer listed (the token left, the combat ended) leaves the pick.
+    effect(() => {
+      const rows = this.rows();
+      untracked(() => {
+        rows.forEach((r) => this.seen.set(r.id, r.name));
+        const listed = new Set(rows.map((r) => r.id));
+        const left = [...this.picked()].filter((id) => !listed.has(id));
+        if (left.length > 0) {
+          this.picked.update((set) => new Set([...set].filter((id) => listed.has(id))));
+          this.gone.update((names) => [
+            ...names,
+            ...left.map((id) => this.seen.get(id) ?? 'Alguém'),
+          ]);
+        }
+      });
+    });
+  }
+
+  protected pick(next: ReadonlySet<string>): void {
+    this.picked.set(next);
+    this.gone.set([]);
+  }
 
   protected cancel(): void {
     this.sheet.close(undefined);
@@ -163,6 +206,7 @@ export class TrapFireSheet {
     if (!this.ready() || this.busy()) {
       return;
     }
+    const ids = this.chosen().map((t) => t.id);
     this.busy.set(true);
     this.error.set('');
     try {
@@ -170,8 +214,8 @@ export class TrapFireSheet {
         this.data.campaignId,
         this.data.mapId,
         this.data.point.id,
-        this.chosen().map((t) => t.id),
-        this.key,
+        ids,
+        this.key.keyFor({ ids, extend: this.data.extendFiringId }),
         this.data.extendFiringId,
       );
       this.sheet.close(res.firing);

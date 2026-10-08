@@ -3,11 +3,11 @@
 
 -- name: InsertXPAward :one
 INSERT INTO xp_awards
-    (campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, milestone_id, milestone_again)
+    (campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, milestone_id, milestone_again, idempotency_hash)
 VALUES (
     sqlc.arg(campaign_id)::UUID, sqlc.arg(given_by)::UUID, sqlc.arg(created_at), sqlc.arg(mode), sqlc.arg(reason),
     sqlc.narg(encounter_id)::UUID, sqlc.narg(gold), sqlc.arg(total_xp), sqlc.arg(idempotency_key)::UUID,
-    sqlc.narg(milestone_id)::UUID, sqlc.arg(milestone_again)::BOOL
+    sqlc.narg(milestone_id)::UUID, sqlc.arg(milestone_again)::BOOL, sqlc.narg(idempotency_hash)
 )
 RETURNING *;
 

@@ -6064,7 +6064,7 @@
   "passive_perception": 14,
   "languages": "Draconic",
   "challenge_rating": "1",
-  "xp": 100,
+  "xp": 200,
   "proficiency_bonus": 2,
   "actions": [
    {
@@ -7987,7 +7987,7 @@
   "passive_perception": 12,
   "languages": "Gnomish, Terran, Undercommon",
   "challenge_rating": "1/2",
-  "xp": 50,
+  "xp": 100,
   "proficiency_bonus": 2,
   "special_abilities": [
    {
@@ -8643,7 +8643,7 @@
   "passive_perception": 9,
   "languages": "Abyssal, telepathy 60 ft. (works only with creatures that understand Abyssal)",
   "challenge_rating": "1/4",
-  "xp": 25,
+  "xp": 50,
   "proficiency_bonus": 2,
   "actions": [
    {
@@ -20754,7 +20754,7 @@
   "cha": 7,
   "passive_perception": 10,
   "challenge_rating": "1/4",
-  "xp": 25,
+  "xp": 50,
   "proficiency_bonus": 2,
   "actions": [
    {

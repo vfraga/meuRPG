@@ -96,10 +96,13 @@ func maxima(content *rules.Content, characterID string, doc []byte, beast *strin
 }
 
 // liveFamiliar forgets the sight of a familiar that is not with the character any
-// more (dismissed, or deleted): the player looks through its own eyes again. It runs
-// only for a sight that is on, so the usual read asks nothing more.
+// more (dismissed, or deleted): the player looks through its own eyes again. A sight
+// that still holds the conditions it gave the combatant stays: play ends it with the
+// owner's next turn or the end of the combat and takes those conditions back, which it
+// can only do while it sees the sight. It runs only for a sight that is on, so the
+// usual read asks nothing more.
 func (s *Service) liveFamiliar(ctx context.Context, q *charactersdb.Queries, campaignID string, row *vitalsRow) error {
-	if row.FamiliarSightCreatureID == nil {
+	if row.FamiliarSightCreatureID == nil || len(row.FamiliarSightConditions) > 0 {
 		return nil
 	}
 	found, err := q.ListCreaturesByIDs(ctx, charactersdb.ListCreaturesByIDsParams{CampaignID: campaignID, Ids: []string{*row.FamiliarSightCreatureID}})
@@ -284,14 +287,31 @@ func (s *Service) AdjustVitals(ctx context.Context, tx pgx.Tx, campaignID, chara
 		return nil, nil, invalidArgument(err)
 	}
 
+	// Usage is stored as it was and changed only where req sets it: the view is cut to
+	// today's sheet, and writing that back would erase the usage of slots and
+	// resources the sheet has lost for now.
 	used := make([]int32, maxSpellLevel)
-	for _, slot := range after.GetSpellSlots() {
-		used[slot.GetLevel()-1] = slot.GetUsed()
+	copy(used, row.SpellSlotsUsed)
+	for _, change := range req.GetSpellSlotsUsed() {
+		used[change.GetLevel()-1] = change.GetUsed()
 	}
-	usedResources := make(map[string]int32, len(after.GetResources()))
-	for _, r := range after.GetResources() {
-		if r.GetUsed() > 0 {
-			usedResources[r.GetKey()] = r.GetUsed()
+	pactUsed, hitDiceUsed := derefInt(row.PactSlotsUsed), derefInt(row.HitDiceUsed)
+	if req.PactSlotsUsed != nil {
+		pactUsed = after.GetPactSlots().GetUsed()
+	}
+	if req.HitDiceUsed != nil {
+		hitDiceUsed = after.GetHitDiceUsed()
+	}
+	usedResources := map[string]int32{}
+	_ = json.Unmarshal(row.ResourcesUsed, &usedResources)
+	if usedResources == nil {
+		usedResources = map[string]int32{}
+	}
+	for _, change := range req.GetResourcesUsed() {
+		if change.GetUsed() > 0 {
+			usedResources[change.GetKey()] = change.GetUsed()
+		} else {
+			delete(usedResources, change.GetKey())
 		}
 	}
 	resourcesJSON, err := json.Marshal(usedResources)
@@ -303,8 +323,8 @@ func (s *Service) AdjustVitals(ctx context.Context, tx pgx.Tx, campaignID, chara
 		HitPointsCurrent:   after.GetHitPointsCurrent(),
 		HitPointsTemporary: after.GetHitPointsTemporary(),
 		SpellSlotsUsed:     used,
-		PactSlotsUsed:      after.GetPactSlots().GetUsed(),
-		HitDiceUsed:        after.GetHitDiceUsed(),
+		PactSlotsUsed:      pactUsed,
+		HitDiceUsed:        hitDiceUsed,
 		ResourcesUsed:      resourcesJSON,
 		Now:                s.now(),
 	})

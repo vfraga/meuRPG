@@ -156,6 +156,71 @@ func TestMR039_UseAnEditOfATexturedMap(t *testing.T) {
 	wantGenerationBlocked(t, "Use of an edit after a wall was painted", err, mapsv1.ImageGenerationBlockedReason_IMAGE_GENERATION_BLOCKED_REASON_MAP_CHANGED)
 }
 
+// An edit of a textured map that was used as the map's image can be used too, whichever was made
+// first: the map's image is then the picture "Usar" put there, not the original the edit started
+// from. The walls (and the size and grid) are still checked.
+func TestMR039_UseAnEditOfAPictureAlreadyUsed(t *testing.T) {
+	t.Parallel()
+	t.Run("edit made after the use", func(t *testing.T) {
+		t.Parallel()
+		c := newCave(t, withFake(&gen.Fake{}, 20))
+		m := c.master
+		t1 := wantDone(t, "textured map", m.mustGenerateFromMap(c.campaign, c.mapID, kindTexturedAPI, "Uma caverna"))
+		if _, err := m.useAsMapImage(c.campaign, t1.GetId()); err != nil {
+			t.Fatalf("Use of the picture error = %v", err)
+		}
+		t2 := wantDone(t, "edit", mustEdit(t, m, c.campaign, t1.GetId()))
+		used, err := m.useAsMapImage(c.campaign, t2.GetId())
+		if err != nil {
+			t.Fatalf("Use of the edit after the use of its picture error = %v", err)
+		}
+		if used.GetMap().GetImage().GetId() != t2.GetId() {
+			t.Errorf("the map's image = %s, want the edit %s", used.GetMap().GetImage().GetId(), t2.GetId())
+		}
+		// An edit of the edit, made over the same map image, fits as well.
+		t3 := wantDone(t, "edit of the edit", mustEdit(t, m, c.campaign, t2.GetId()))
+		if _, err := m.useAsMapImage(c.campaign, t3.GetId()); err != nil {
+			t.Errorf("Use of the edit of the edit error = %v", err)
+		}
+	})
+	t.Run("edit made before the use", func(t *testing.T) {
+		t.Parallel()
+		c := newCave(t, withFake(&gen.Fake{}, 20))
+		m := c.master
+		t1 := wantDone(t, "textured map", m.mustGenerateFromMap(c.campaign, c.mapID, kindTexturedAPI, "Uma caverna"))
+		t2 := wantDone(t, "edit", mustEdit(t, m, c.campaign, t1.GetId()))
+		if _, err := m.useAsMapImage(c.campaign, t1.GetId()); err != nil {
+			t.Fatalf("Use of the picture error = %v", err)
+		}
+		if _, err := m.useAsMapImage(c.campaign, t2.GetId()); err != nil {
+			t.Errorf("Use of the edit made before the use of its picture error = %v", err)
+		}
+	})
+	t.Run("walls painted since still refuse it", func(t *testing.T) {
+		t.Parallel()
+		c := newCave(t, withFake(&gen.Fake{}, 20))
+		m := c.master
+		t1 := wantDone(t, "textured map", m.mustGenerateFromMap(c.campaign, c.mapID, kindTexturedAPI, "Uma caverna"))
+		if _, err := m.useAsMapImage(c.campaign, t1.GetId()); err != nil {
+			t.Fatalf("Use of the picture error = %v", err)
+		}
+		t2 := wantDone(t, "edit", mustEdit(t, m, c.campaign, t1.GetId()))
+		m.mustPaint(c.campaign, c.mapID, mapsv1.MapLayer_MAP_LAYER_WALL, 1, [2]int32{10, 8})
+		_, err := m.useAsMapImage(c.campaign, t2.GetId())
+		wantGenerationBlocked(t, "Use of an edit after a wall was painted", err, mapsv1.ImageGenerationBlockedReason_IMAGE_GENERATION_BLOCKED_REASON_MAP_CHANGED)
+	})
+}
+
+// mustEdit adjusts a generated image and returns the generation.
+func mustEdit(t *testing.T, m *user, campaign, imageID string) *mapsv1.GetImageGenerationResponse {
+	t.Helper()
+	res, err := m.editImage(campaign, imageID, "mais clara")
+	if err != nil {
+		t.Fatalf("EditGeneratedImage() error = %v", err)
+	}
+	return res
+}
+
 // The picture is named by the master, or by a default that a player can read: never "Imagem N".
 func TestMR039_TheImageHasAMeaningfulName(t *testing.T) {
 	t.Parallel()

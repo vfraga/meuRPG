@@ -131,6 +131,60 @@ func (q *Queries) ClearStageSpeakers(ctx context.Context, gameSessionID string) 
 	return err
 }
 
+const countSceneRolls = `-- name: CountSceneRolls :many
+SELECT character_id, COALESCE(payload->>'action_id', '')::TEXT AS action_id, count(*)::INT8 AS rolls
+FROM session_events
+WHERE game_session_id = $1 AND kind = 'scene_check_rolled' AND seq > $2
+GROUP BY character_id, 2
+`
+
+type CountSceneRollsParams struct {
+	GameSessionID string
+	Seq           int32
+}
+
+type CountSceneRollsRow struct {
+	CharacterID *string
+	ActionID    string
+	Rolls       int64
+}
+
+// How many scene checks each character rolled at each action since the
+// opening (seq): what the attempts left are counted from, without reading the
+// rows.
+func (q *Queries) CountSceneRolls(ctx context.Context, arg CountSceneRollsParams) ([]CountSceneRollsRow, error) {
+	rows, err := q.db.Query(ctx, countSceneRolls, arg.GameSessionID, arg.Seq)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountSceneRollsRow
+	for rows.Next() {
+		var i CountSceneRollsRow
+		if err := rows.Scan(&i.CharacterID, &i.ActionID, &i.Rolls); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const countSessionScenesOpened = `-- name: CountSessionScenesOpened :one
+SELECT count(*)::INT8 FROM session_events
+WHERE game_session_id = $1 AND kind = 'scene_opened'
+`
+
+// The scenes the master opened in the session.
+func (q *Queries) CountSessionScenesOpened(ctx context.Context, gameSessionID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countSessionScenesOpened, gameSessionID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const countWrongPuzzleMoves = `-- name: CountWrongPuzzleMoves :many
 SELECT user_id, count(*)::int4 AS wrong FROM puzzle_moves
 WHERE run_id = $1 AND seq > $2 AND wrong AND user_id IS NOT NULL
@@ -325,7 +379,6 @@ func (q *Queries) GetBattleEncounter(ctx context.Context, arg GetBattleEncounter
 
 const getCampaignEncounterXP = `-- name: GetCampaignEncounterXP :one
 
-
 SELECT e.name, e.status,
        COALESCE(SUM(c.xp_value) FILTER (WHERE c.kind = 'npc' AND c.defeated), 0)::INT8 AS xp
 FROM encounters AS e
@@ -346,7 +399,6 @@ type GetCampaignEncounterXPRow struct {
 	Xp     int64
 }
 
-// one past maxSummaryEvents: the caller fails loudly rather than under-count
 // Progression (MR-016): what the XP awards read from the combats and the log.
 // A combat of the campaign (never another campaign's) with the XP its defeated
 // NPC combatants give. No row: no such combat in the campaign.
@@ -358,7 +410,7 @@ func (q *Queries) GetCampaignEncounterXP(ctx context.Context, arg GetCampaignEnc
 }
 
 const getCampaignTrapDamageForUpdate = `-- name: GetCampaignTrapDamageForUpdate :one
-SELECT d.id, d.game_session_id, d.trap_point_id, d.fire_id, d.character_id, d.status, d.critical, d.dice_count, d.dice_sides, d.dice_bonus, d.damage_type, d.faces, d.roll_total, d.half, d.amount, d.applied_amount, d.created_at, d.resolved_at, d.critical_max, g.session_number, g.started_at AS session_started_at FROM trap_damages AS d
+SELECT d.id, d.game_session_id, d.trap_point_id, d.fire_id, d.character_id, d.status, d.critical, d.dice_count, d.dice_sides, d.dice_bonus, d.damage_type, d.faces, d.roll_total, d.half, d.amount, d.applied_amount, d.created_at, d.resolved_at, d.critical_max, d.settle_key, d.settle_hash, g.session_number, g.started_at AS session_started_at FROM trap_damages AS d
 JOIN game_sessions AS g ON g.id = d.game_session_id
 WHERE g.campaign_id = $1 AND d.id = $2
 FOR UPDATE OF d
@@ -389,6 +441,8 @@ type GetCampaignTrapDamageForUpdateRow struct {
 	CreatedAt        time.Time
 	ResolvedAt       *time.Time
 	CriticalMax      int32
+	SettleKey        *string
+	SettleHash       *string
 	SessionNumber    int32
 	SessionStartedAt time.Time
 }
@@ -417,6 +471,8 @@ func (q *Queries) GetCampaignTrapDamageForUpdate(ctx context.Context, arg GetCam
 		&i.CreatedAt,
 		&i.ResolvedAt,
 		&i.CriticalMax,
+		&i.SettleKey,
+		&i.SettleHash,
 		&i.SessionNumber,
 		&i.SessionStartedAt,
 	)
@@ -580,7 +636,7 @@ const getLatestEncounter = `-- name: GetLatestEncounter :one
 
 SELECT id, game_session_id, map_id, map_point_id, name, status, round, current_combatant_id, grid_columns, grid_rows, revision, created_at, started_at, ended_at, mode FROM encounters
 WHERE game_session_id = $1
-ORDER BY created_at DESC, id DESC
+ORDER BY (status <> 'ended') DESC, created_at DESC, id DESC
 LIMIT 1
 `
 
@@ -588,7 +644,9 @@ LIMIT 1
 // session's row (GetOpenGameSessionForUpdate), so two changes to a combat take
 // turns, as for the vitals.
 // The session's latest combat, ended or not: GetEncounter shows it, so the app
-// can also show the end of a combat that just ended.
+// can also show the end of a combat that just ended. A session has at most one open
+// combat (encounters_one_open_per_session), and it is the latest whatever the clock that
+// stamped it said; the ended ones follow by the time they were made.
 func (q *Queries) GetLatestEncounter(ctx context.Context, gameSessionID string) (Encounter, error) {
 	row := q.db.QueryRow(ctx, getLatestEncounter, gameSessionID)
 	var i Encounter
@@ -1173,7 +1231,7 @@ func (q *Queries) GetSessionEventByID(ctx context.Context, arg GetSessionEventBy
 }
 
 const getSessionEventByIdempotencyKey = `-- name: GetSessionEventByIdempotencyKey :one
-SELECT id, seq, kind, actor_user_id, character_id, payload, created_at FROM session_events
+SELECT id, seq, kind, actor_user_id, character_id, payload, created_at, idempotency_hash FROM session_events
 WHERE game_session_id = $1 AND idempotency_key = $2
 `
 
@@ -1183,16 +1241,18 @@ type GetSessionEventByIdempotencyKeyParams struct {
 }
 
 type GetSessionEventByIdempotencyKeyRow struct {
-	ID          string
-	Seq         int32
-	Kind        string
-	ActorUserID *string
-	CharacterID *string
-	Payload     []byte
-	CreatedAt   time.Time
+	ID              string
+	Seq             int32
+	Kind            string
+	ActorUserID     *string
+	CharacterID     *string
+	Payload         []byte
+	CreatedAt       time.Time
+	IdempotencyHash *string
 }
 
-// The event a change with this key already wrote, if any.
+// The event a change with this key already wrote, if any, with the hash of the request that
+// wrote it (NULL on an event made without one).
 func (q *Queries) GetSessionEventByIdempotencyKey(ctx context.Context, arg GetSessionEventByIdempotencyKeyParams) (GetSessionEventByIdempotencyKeyRow, error) {
 	row := q.db.QueryRow(ctx, getSessionEventByIdempotencyKey, arg.GameSessionID, arg.IdempotencyKey)
 	var i GetSessionEventByIdempotencyKeyRow
@@ -1204,6 +1264,41 @@ func (q *Queries) GetSessionEventByIdempotencyKey(ctx context.Context, arg GetSe
 		&i.CharacterID,
 		&i.Payload,
 		&i.CreatedAt,
+		&i.IdempotencyHash,
+	)
+	return i, err
+}
+
+const getTrapDamageBySettleKey = `-- name: GetTrapDamageBySettleKey :one
+SELECT id, game_session_id, trap_point_id, fire_id, character_id, status, critical, dice_count, dice_sides, dice_bonus, damage_type, faces, roll_total, half, amount, applied_amount, created_at, resolved_at, critical_max, settle_key, settle_hash FROM trap_damages WHERE settle_key = $1
+`
+
+// The damage settled by the call with this (scoped) key, for a retry.
+func (q *Queries) GetTrapDamageBySettleKey(ctx context.Context, settleKey *string) (TrapDamage, error) {
+	row := q.db.QueryRow(ctx, getTrapDamageBySettleKey, settleKey)
+	var i TrapDamage
+	err := row.Scan(
+		&i.ID,
+		&i.GameSessionID,
+		&i.TrapPointID,
+		&i.FireID,
+		&i.CharacterID,
+		&i.Status,
+		&i.Critical,
+		&i.DiceCount,
+		&i.DiceSides,
+		&i.DiceBonus,
+		&i.DamageType,
+		&i.Faces,
+		&i.RollTotal,
+		&i.Half,
+		&i.Amount,
+		&i.AppliedAmount,
+		&i.CreatedAt,
+		&i.ResolvedAt,
+		&i.CriticalMax,
+		&i.SettleKey,
+		&i.SettleHash,
 	)
 	return i, err
 }
@@ -1238,7 +1333,7 @@ INSERT INTO combatants (
     $10, $11, $12, $13, $14, $15, $16, $17, $18,
     $19, $20, $21, $22, $23
 )
-RETURNING id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed
+RETURNING id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed, action_surged
 `
 
 type InsertCombatantParams struct {
@@ -1343,6 +1438,7 @@ func (q *Queries) InsertCombatant(ctx context.Context, arg InsertCombatantParams
 		&i.SummonAttack,
 		&i.SummonGroupID,
 		&i.Dismissed,
+		&i.ActionSurged,
 	)
 	return i, err
 }
@@ -1360,7 +1456,7 @@ INSERT INTO combatants (
     $15, $16, $17, $18,
     'party', $19, $20, $21, $22
 )
-RETURNING id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed
+RETURNING id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed, action_surged
 `
 
 type InsertCreatureCombatantParams struct {
@@ -1468,6 +1564,7 @@ func (q *Queries) InsertCreatureCombatant(ctx context.Context, arg InsertCreatur
 		&i.SummonAttack,
 		&i.SummonGroupID,
 		&i.Dismissed,
+		&i.ActionSurged,
 	)
 	return i, err
 }
@@ -1953,21 +2050,22 @@ func (q *Queries) InsertPuzzleRun(ctx context.Context, arg InsertPuzzleRunParams
 
 const insertSessionEvent = `-- name: InsertSessionEvent :one
 INSERT INTO session_events
-    (game_session_id, seq, kind, actor_user_id, character_id, payload, idempotency_key, created_at, encounter_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    (game_session_id, seq, kind, actor_user_id, character_id, payload, idempotency_key, created_at, encounter_id, idempotency_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING id, seq
 `
 
 type InsertSessionEventParams struct {
-	GameSessionID  string
-	Seq            int32
-	Kind           string
-	ActorUserID    *string
-	CharacterID    *string
-	Payload        []byte
-	IdempotencyKey *string
-	CreatedAt      time.Time
-	EncounterID    *string
+	GameSessionID   string
+	Seq             int32
+	Kind            string
+	ActorUserID     *string
+	CharacterID     *string
+	Payload         []byte
+	IdempotencyKey  *string
+	CreatedAt       time.Time
+	EncounterID     *string
+	IdempotencyHash *string
 }
 
 type InsertSessionEventRow struct {
@@ -1986,6 +2084,7 @@ func (q *Queries) InsertSessionEvent(ctx context.Context, arg InsertSessionEvent
 		arg.IdempotencyKey,
 		arg.CreatedAt,
 		arg.EncounterID,
+		arg.IdempotencyHash,
 	)
 	var i InsertSessionEventRow
 	err := row.Scan(&i.ID, &i.Seq)
@@ -2028,7 +2127,7 @@ INSERT INTO trap_damages (
     game_session_id, trap_point_id, fire_id, character_id, status, critical,
     dice_count, dice_sides, dice_bonus, damage_type, faces, roll_total, half, amount, created_at, critical_max
 ) VALUES ($1, $2, $3, $4, 'rolled', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-RETURNING id, game_session_id, trap_point_id, fire_id, character_id, status, critical, dice_count, dice_sides, dice_bonus, damage_type, faces, roll_total, half, amount, applied_amount, created_at, resolved_at, critical_max
+RETURNING id, game_session_id, trap_point_id, fire_id, character_id, status, critical, dice_count, dice_sides, dice_bonus, damage_type, faces, roll_total, half, amount, applied_amount, created_at, resolved_at, critical_max, settle_key, settle_hash
 `
 
 type InsertTrapDamageParams struct {
@@ -2089,6 +2188,8 @@ func (q *Queries) InsertTrapDamage(ctx context.Context, arg InsertTrapDamagePara
 		&i.CreatedAt,
 		&i.ResolvedAt,
 		&i.CriticalMax,
+		&i.SettleKey,
+		&i.SettleHash,
 	)
 	return i, err
 }
@@ -2261,7 +2362,7 @@ func (q *Queries) ListCampaignEncounterNames(ctx context.Context, arg ListCampai
 }
 
 const listCampaignTrapDamages = `-- name: ListCampaignTrapDamages :many
-SELECT d.id, d.game_session_id, d.trap_point_id, d.fire_id, d.character_id, d.status, d.critical, d.dice_count, d.dice_sides, d.dice_bonus, d.damage_type, d.faces, d.roll_total, d.half, d.amount, d.applied_amount, d.created_at, d.resolved_at, d.critical_max, g.session_number, g.started_at AS session_started_at FROM trap_damages AS d
+SELECT d.id, d.game_session_id, d.trap_point_id, d.fire_id, d.character_id, d.status, d.critical, d.dice_count, d.dice_sides, d.dice_bonus, d.damage_type, d.faces, d.roll_total, d.half, d.amount, d.applied_amount, d.created_at, d.resolved_at, d.critical_max, d.settle_key, d.settle_hash, g.session_number, g.started_at AS session_started_at FROM trap_damages AS d
 JOIN game_sessions AS g ON g.id = d.game_session_id
 WHERE g.campaign_id = $1 AND d.status = 'rolled'
 ORDER BY d.created_at, d.id
@@ -2287,6 +2388,8 @@ type ListCampaignTrapDamagesRow struct {
 	CreatedAt        time.Time
 	ResolvedAt       *time.Time
 	CriticalMax      int32
+	SettleKey        *string
+	SettleHash       *string
 	SessionNumber    int32
 	SessionStartedAt time.Time
 }
@@ -2322,6 +2425,8 @@ func (q *Queries) ListCampaignTrapDamages(ctx context.Context, campaignID string
 			&i.CreatedAt,
 			&i.ResolvedAt,
 			&i.CriticalMax,
+			&i.SettleKey,
+			&i.SettleHash,
 			&i.SessionNumber,
 			&i.SessionStartedAt,
 		); err != nil {
@@ -2395,7 +2500,7 @@ func (q *Queries) ListCastPendingDamages(ctx context.Context, arg ListCastPendin
 }
 
 const listCombatants = `-- name: ListCombatants :many
-SELECT id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed FROM combatants
+SELECT id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed, action_surged FROM combatants
 WHERE encounter_id = $1 AND NOT dismissed
 ORDER BY order_index, created_at, id
 `
@@ -2460,6 +2565,7 @@ func (q *Queries) ListCombatants(ctx context.Context, encounterID string) ([]Com
 			&i.SummonAttack,
 			&i.SummonGroupID,
 			&i.Dismissed,
+			&i.ActionSurged,
 		); err != nil {
 			return nil, err
 		}
@@ -2472,7 +2578,7 @@ func (q *Queries) ListCombatants(ctx context.Context, encounterID string) ([]Com
 }
 
 const listCombatantsWithDismissed = `-- name: ListCombatantsWithDismissed :many
-SELECT id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed FROM combatants
+SELECT id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed, action_surged FROM combatants
 WHERE encounter_id = $1
 ORDER BY order_index, created_at, id
 `
@@ -2536,6 +2642,7 @@ func (q *Queries) ListCombatantsWithDismissed(ctx context.Context, encounterID s
 			&i.SummonAttack,
 			&i.SummonGroupID,
 			&i.Dismissed,
+			&i.ActionSurged,
 		); err != nil {
 			return nil, err
 		}
@@ -2548,7 +2655,7 @@ func (q *Queries) ListCombatantsWithDismissed(ctx context.Context, encounterID s
 }
 
 const listCreatureCombatants = `-- name: ListCreatureCombatants :many
-SELECT id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed FROM combatants
+SELECT id, encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face, tie_ordered, order_index, grid_col, grid_row, speed_ft, movement_used_ft, dashed, action_used, bonus_action_used, reaction_used, hp_current, hp_max, hp_temp, defeated, death_successes, death_failures, conditions, concentration_spell, created_at, attacks_made, ac_bonus, death_save_rolled, xp_value, turn_state, movement_used_dft, last_move_dft, side, size, speed_fly_ft, jump_long_dft, jump_high_dft, cover_mark, disengaged, creature_id, monster_key, summon_attack, summon_group_id, dismissed, action_surged FROM combatants
 WHERE encounter_id = $1 AND kind = 'creature' AND NOT dismissed
 ORDER BY order_index, created_at, id
 `
@@ -2613,6 +2720,7 @@ func (q *Queries) ListCreatureCombatants(ctx context.Context, encounterID string
 			&i.SummonAttack,
 			&i.SummonGroupID,
 			&i.Dismissed,
+			&i.ActionSurged,
 		); err != nil {
 			return nil, err
 		}
@@ -2753,7 +2861,7 @@ func (q *Queries) ListGameSessions(ctx context.Context, campaignID string) ([]Ga
 }
 
 const listOpenCombatantsOfCreatures = `-- name: ListOpenCombatantsOfCreatures :many
-SELECT cb.id, cb.encounter_id, cb.character_id, cb.user_id, cb.label, cb.kind, cb.hidden, cb.initiative, cb.initiative_bonus, cb.initiative_face, cb.tie_ordered, cb.order_index, cb.grid_col, cb.grid_row, cb.speed_ft, cb.movement_used_ft, cb.dashed, cb.action_used, cb.bonus_action_used, cb.reaction_used, cb.hp_current, cb.hp_max, cb.hp_temp, cb.defeated, cb.death_successes, cb.death_failures, cb.conditions, cb.concentration_spell, cb.created_at, cb.attacks_made, cb.ac_bonus, cb.death_save_rolled, cb.xp_value, cb.turn_state, cb.movement_used_dft, cb.last_move_dft, cb.side, cb.size, cb.speed_fly_ft, cb.jump_long_dft, cb.jump_high_dft, cb.cover_mark, cb.disengaged, cb.creature_id, cb.monster_key, cb.summon_attack, cb.summon_group_id, cb.dismissed FROM combatants AS cb
+SELECT cb.id, cb.encounter_id, cb.character_id, cb.user_id, cb.label, cb.kind, cb.hidden, cb.initiative, cb.initiative_bonus, cb.initiative_face, cb.tie_ordered, cb.order_index, cb.grid_col, cb.grid_row, cb.speed_ft, cb.movement_used_ft, cb.dashed, cb.action_used, cb.bonus_action_used, cb.reaction_used, cb.hp_current, cb.hp_max, cb.hp_temp, cb.defeated, cb.death_successes, cb.death_failures, cb.conditions, cb.concentration_spell, cb.created_at, cb.attacks_made, cb.ac_bonus, cb.death_save_rolled, cb.xp_value, cb.turn_state, cb.movement_used_dft, cb.last_move_dft, cb.side, cb.size, cb.speed_fly_ft, cb.jump_long_dft, cb.jump_high_dft, cb.cover_mark, cb.disengaged, cb.creature_id, cb.monster_key, cb.summon_attack, cb.summon_group_id, cb.dismissed, cb.action_surged FROM combatants AS cb
 JOIN encounters AS e ON e.id = cb.encounter_id
 JOIN game_sessions AS gs ON gs.id = e.game_session_id
 WHERE gs.campaign_id = $1::UUID
@@ -2828,6 +2936,7 @@ func (q *Queries) ListOpenCombatantsOfCreatures(ctx context.Context, arg ListOpe
 			&i.SummonAttack,
 			&i.SummonGroupID,
 			&i.Dismissed,
+			&i.ActionSurged,
 		); err != nil {
 			return nil, err
 		}
@@ -3407,41 +3516,6 @@ func (q *Queries) ListSessionCombats(ctx context.Context, gameSessionID string) 
 	return items, nil
 }
 
-const listSessionSceneEvents = `-- name: ListSessionSceneEvents :many
-SELECT kind, character_id, payload FROM session_events
-WHERE game_session_id = $1 AND kind IN ('scene_opened', 'scene_check_rolled')
-ORDER BY seq
-LIMIT 20001
-`
-
-type ListSessionSceneEventsRow struct {
-	Kind        string
-	CharacterID *string
-	Payload     []byte
-}
-
-// The scenes opened and the checks rolled in them, oldest first: what the
-// summary counts outside combat.
-func (q *Queries) ListSessionSceneEvents(ctx context.Context, gameSessionID string) ([]ListSessionSceneEventsRow, error) {
-	rows, err := q.db.Query(ctx, listSessionSceneEvents, gameSessionID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []ListSessionSceneEventsRow
-	for rows.Next() {
-		var i ListSessionSceneEventsRow
-		if err := rows.Scan(&i.Kind, &i.CharacterID, &i.Payload); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listShownPuzzleIDs = `-- name: ListShownPuzzleIDs :many
 SELECT DISTINCT r.puzzle_id FROM puzzle_runs AS r
 JOIN puzzles AS p ON p.id = r.puzzle_id
@@ -3627,7 +3701,7 @@ func (q *Queries) ListTrapDamageStatuses(ctx context.Context, dollar_1 []string)
 const listTrapEventsOfSession = `-- name: ListTrapEventsOfSession :many
 SELECT id, kind, character_id, payload, created_at FROM session_events
 WHERE game_session_id = $1 AND encounter_id IS NULL AND kind IN ('trap_triggered', 'trap_searched', 'trap_noticed')
-ORDER BY seq
+ORDER BY seq DESC
 LIMIT 500
 `
 
@@ -3639,7 +3713,8 @@ type ListTrapEventsOfSessionRow struct {
 	CreatedAt   time.Time
 }
 
-// The trap firings, searches and passive notices of a session outside a combat, oldest first.
+// The trap firings, searches and passive notices of a session outside a combat, newest first,
+// at most 500: a long session keeps the latest ones, and the caller puts them back in order.
 // (A notice has no combat even in one: the maps module writes it after the move.)
 func (q *Queries) ListTrapEventsOfSession(ctx context.Context, gameSessionID string) ([]ListTrapEventsOfSessionRow, error) {
 	rows, err := q.db.Query(ctx, listTrapEventsOfSession, gameSessionID)
@@ -3780,7 +3855,7 @@ func (q *Queries) NextSessionNumber(ctx context.Context, campaignID string) (int
 
 const resetCombatantTurn = `-- name: ResetCombatantTurn :exec
 UPDATE combatants
-SET movement_used_ft = 0, movement_used_dft = 0, last_move_dft = 0, dashed = false, disengaged = false, action_used = false, bonus_action_used = false, reaction_used = false,
+SET movement_used_ft = 0, movement_used_dft = 0, last_move_dft = 0, dashed = false, disengaged = false, action_surged = false, action_used = false, bonus_action_used = false, reaction_used = false,
     attacks_made = 0, ac_bonus = 0, death_save_rolled = false, turn_state = 'acting'
 WHERE id = $1
 `
@@ -3920,6 +3995,23 @@ type SetCombatantAcBonusParams struct {
 // Escudo's +5 until the start of the combatant's next turn, or its undo.
 func (q *Queries) SetCombatantAcBonus(ctx context.Context, arg SetCombatantAcBonusParams) error {
 	_, err := q.db.Exec(ctx, setCombatantAcBonus, arg.ID, arg.AcBonus)
+	return err
+}
+
+const setCombatantActionSurged = `-- name: SetCombatantActionSurged :exec
+UPDATE combatants
+SET action_surged = $2
+WHERE id = $1
+`
+
+type SetCombatantActionSurgedParams struct {
+	ID           string
+	ActionSurged bool
+}
+
+// Action Surge was used in this turn (true), or its undo (false).
+func (q *Queries) SetCombatantActionSurged(ctx context.Context, arg SetCombatantActionSurgedParams) error {
+	_, err := q.db.Exec(ctx, setCombatantActionSurged, arg.ID, arg.ActionSurged)
 	return err
 }
 
@@ -4789,9 +4881,9 @@ func (q *Queries) SetStageSpeaker(ctx context.Context, arg SetStageSpeakerParams
 
 const setTrapDamageStatus = `-- name: SetTrapDamageStatus :one
 UPDATE trap_damages
-SET status = $2, resolved_at = $3, applied_amount = $4
+SET status = $2, resolved_at = $3, applied_amount = $4, settle_key = $5, settle_hash = $6
 WHERE id = $1
-RETURNING id, game_session_id, trap_point_id, fire_id, character_id, status, critical, dice_count, dice_sides, dice_bonus, damage_type, faces, roll_total, half, amount, applied_amount, created_at, resolved_at, critical_max
+RETURNING id, game_session_id, trap_point_id, fire_id, character_id, status, critical, dice_count, dice_sides, dice_bonus, damage_type, faces, roll_total, half, amount, applied_amount, created_at, resolved_at, critical_max, settle_key, settle_hash
 `
 
 type SetTrapDamageStatusParams struct {
@@ -4799,15 +4891,20 @@ type SetTrapDamageStatusParams struct {
 	Status        string
 	ResolvedAt    *time.Time
 	AppliedAmount *int32
+	SettleKey     *string
+	SettleHash    *string
 }
 
-// Applied (with the amount when it is not the rolled one) or discarded.
+// Applied (with the amount when it is not the rolled one) or discarded, with the key and the
+// request hash of the call that did it.
 func (q *Queries) SetTrapDamageStatus(ctx context.Context, arg SetTrapDamageStatusParams) (TrapDamage, error) {
 	row := q.db.QueryRow(ctx, setTrapDamageStatus,
 		arg.ID,
 		arg.Status,
 		arg.ResolvedAt,
 		arg.AppliedAmount,
+		arg.SettleKey,
+		arg.SettleHash,
 	)
 	var i TrapDamage
 	err := row.Scan(
@@ -4830,8 +4927,35 @@ func (q *Queries) SetTrapDamageStatus(ctx context.Context, arg SetTrapDamageStat
 		&i.CreatedAt,
 		&i.ResolvedAt,
 		&i.CriticalMax,
+		&i.SettleKey,
+		&i.SettleHash,
 	)
 	return i, err
+}
+
+const skipPendingOpportunityOffersBetweenAllies = `-- name: SkipPendingOpportunityOffersBetweenAllies :execrows
+UPDATE opportunity_offers AS o
+SET state = 'skipped', answered_at = $3
+FROM combatants AS mover, combatants AS reactor
+WHERE o.encounter_id = $1 AND o.state = 'pending' AND (o.mover_id = $2 OR o.reactor_id = $2)
+  AND mover.id = o.mover_id AND reactor.id = o.reactor_id AND mover.side = reactor.side
+`
+
+type SkipPendingOpportunityOffersBetweenAlliesParams struct {
+	EncounterID string
+	MoverID     string
+	AnsweredAt  *time.Time
+}
+
+// A combatant changed side: the offers it is in (as mover or as reactor) whose
+// two sides are now the same are passed over, since only a hostile reactor may
+// attack.
+func (q *Queries) SkipPendingOpportunityOffersBetweenAllies(ctx context.Context, arg SkipPendingOpportunityOffersBetweenAlliesParams) (int64, error) {
+	result, err := q.db.Exec(ctx, skipPendingOpportunityOffersBetweenAllies, arg.EncounterID, arg.MoverID, arg.AnsweredAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const skipPendingOpportunityOffersOfMover = `-- name: SkipPendingOpportunityOffersOfMover :execrows
@@ -4853,6 +4977,47 @@ func (q *Queries) SkipPendingOpportunityOffersOfMover(ctx context.Context, arg S
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const tallySessionSceneChecks = `-- name: TallySessionSceneChecks :many
+SELECT character_id,
+       count(*)::INT8 AS tried,
+       (count(*) FILTER (WHERE payload->>'passed' = 'true'))::INT8 AS passed
+FROM session_events
+WHERE game_session_id = $1 AND kind = 'scene_check_rolled'
+  AND character_id IS NOT NULL
+  AND payload->>'dc_shown' = 'true' AND payload ? 'passed'
+GROUP BY character_id
+`
+
+type TallySessionSceneChecksRow struct {
+	CharacterID *string
+	Tried       int64
+	Passed      int64
+}
+
+// The checks rolled outside combat, per character: tried and passed, counting
+// only a roll the players could see the DC of, on an action that had one
+// (RN-20). Done in SQL, so a session with any number of rolls costs one row
+// per character.
+func (q *Queries) TallySessionSceneChecks(ctx context.Context, gameSessionID string) ([]TallySessionSceneChecksRow, error) {
+	rows, err := q.db.Query(ctx, tallySessionSceneChecks, gameSessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []TallySessionSceneChecksRow
+	for rows.Next() {
+		var i TallySessionSceneChecksRow
+		if err := rows.Scan(&i.CharacterID, &i.Tried, &i.Passed); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const touchEncounter = `-- name: TouchEncounter :one

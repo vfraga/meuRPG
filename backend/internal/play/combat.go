@@ -18,6 +18,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -85,6 +86,7 @@ func (s *Service) StartEncounter(
 
 	digest := startDigest(req.Msg)
 	var newMap string // the map the point made current, if it changed
+	// No request hash: the start is compared by its own digest, which reads the defaults written out as the same request.
 	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventEncounterStarted}, func(c *combatTx) (any, error) {
 		newMap = ""
 		_, err := c.q.GetOpenEncounter(ctx, c.session.ID)
@@ -509,7 +511,7 @@ func (s *Service) SubmitInitiative(
 		}
 	}
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventInitiativeSubmitted, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventInitiativeSubmitted, encounterID: encID}, func(c *combatTx) (any, error) {
 		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
 		if err != nil {
 			return nil, fmt.Errorf("list the combatants: %w", err)
@@ -623,7 +625,7 @@ func (s *Service) SetInitiativeOrder(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("combatant_ids must name at least two combatants"))
 	}
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventInitiativeOrderSet, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventInitiativeOrderSet, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -680,7 +682,7 @@ func (s *Service) BeginCombat(
 		return nil, err
 	}
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCombatBegun, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCombatBegun, encounterID: encID}, func(c *combatTx) (any, error) {
 		if c.enc.Status != statusSetup {
 			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_IN_SETUP, "the combat already began or ended")
 		}
@@ -765,7 +767,7 @@ func (s *Service) EndTurn(
 	var dropped []playdb.PendingDamage // the damage the master passed the turn over
 	var passed bool                    // the turn passed to the next group (the last part ended)
 	var secret bool                    // the part that ended is a hidden member's: no line for the players
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventTurnEnded, altKind: eventTurnPartEnded, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventTurnEnded, altKind: eventTurnPartEnded, encounterID: encID}, func(c *combatTx) (any, error) {
 		dropped, passed, secret = nil, false, false
 		if c.enc.Status != statusActive {
 			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_ACTIVE, "the combat is not running")
@@ -872,13 +874,7 @@ func (s *Service) EndTurn(
 			return nil, fmt.Errorf("end the part: %w", err)
 		}
 		// Who still acts: the turn passes only when the last member ends.
-		var acting []string
-		for _, o := range cs {
-			if o.ID != current.ID && o.TurnState == turnActing {
-				acting = append(acting, o.ID)
-			}
-		}
-		if len(acting) > 0 {
+		if acting := othersActing(cs, current.ID); len(acting) > 0 {
 			// A part of a group of NPCs alone is the master's, like the group (RN-20),
 			// and so is a hidden member's: no line for the players.
 			holdsPlayer := slices.ContainsFunc(cs, func(o playdb.Combatant) bool { return o.TurnState != turnIdle && inParty(o) })
@@ -947,7 +943,7 @@ func (s *Service) SetCombatantHidden(
 	}
 	hidden := req.Msg.GetHidden()
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCombatantHiddenSet, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCombatantHiddenSet, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -1010,7 +1006,7 @@ func (s *Service) AddCombatants(
 		return nil, err
 	}
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCombatantsAdded, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCombatantsAdded, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -1074,7 +1070,7 @@ func (s *Service) RemoveCombatant(
 	}
 
 	var turnPassed bool
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCombatantRemoved, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCombatantRemoved, encounterID: encID}, func(c *combatTx) (any, error) {
 		turnPassed = false
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
@@ -1089,6 +1085,16 @@ func (s *Service) RemoveCombatant(
 		}
 		if target.Kind == kindPlayer && c.enc.Status == statusActive {
 			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_PLAYER_IN_COMBAT, "a player's combatant cannot leave a combat that is running")
+		}
+		// A damage still to roll or to apply that names the combatant (as the attacker or
+		// as the target) goes with it, and the log would keep an attack whose damage never
+		// lands: the master rolls, applies or discards it first.
+		open, err := c.q.ListOpenPendingDamages(ctx, c.enc.ID)
+		if err != nil {
+			return nil, fmt.Errorf("list the pending damage: %w", err)
+		}
+		if slices.ContainsFunc(open, func(p playdb.PendingDamage) bool { return p.TargetID == target.ID || deref(p.AttackerID) == target.ID }) {
+			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_PENDING_DAMAGE, "a damage is still to roll or to apply")
 		}
 		// A player's character that leaves a combat in SETUP takes its creatures out
 		// with it.
@@ -1158,7 +1164,7 @@ func (s *Service) EndEncounter(
 	}
 
 	var ended bool
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventEncounterEnded, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventEncounterEnded, encounterID: encID}, func(c *combatTx) (any, error) {
 		ended = false
 		if c.enc.Status == statusEnded {
 			return nil, nil // ended before: nothing changes, and no event

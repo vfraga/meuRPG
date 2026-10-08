@@ -45,6 +45,9 @@ const (
 	sourceCommit = "a8abc93b235c158bb8cbf042e54425b9c2fd79b8"
 )
 
+// reachWeaponFt is the reach of a melee weapon with the reach property.
+const reachWeaponFt = 10
+
 // inputHashes is the sha256 of every file the tool reads, at sourceCommit.
 var inputHashes = map[string]string{
 	"5e-SRD-Ability-Scores.json":    "23f08ea89e30f3d4e1cab80b3f57b61188b7894fbcab3b583177b66e9711e090",
@@ -897,6 +900,11 @@ func convertEquipment(in *inputs) (output, error) {
 			if r.Range != nil {
 				w.NormalRangeFt, w.LongRangeFt = r.Range.Normal, r.Range.Long
 			}
+			if w.Range == "melee" && slices.Contains(w.Properties, "weapon-property:reach") {
+				// The source gives a reach weapon the 5 ft of any melee
+				// weapon; the property is what makes it 10.
+				w.NormalRangeFt = reachWeaponFt
+			}
 			if r.ThrowRange != nil {
 				w.ThrowNormalFt, w.ThrowLongFt = r.ThrowRange.Normal, r.ThrowRange.Long
 			}
@@ -1187,6 +1195,31 @@ func challengeRating(v float64) (string, error) {
 	return strconv.Itoa(int(v)), nil
 }
 
+// xpByChallengeRating is the experience of each challenge rating, the SRD's table. The
+// importer takes a creature's XP from here, not from the source, which has the value
+// of four creatures at half of it.
+//
+//nolint:mnd // the SRD's table itself; rules.TestCreatureXPMatchesChallengeRatingTable checks every creature against effects/advancement.json
+var xpByChallengeRating = map[string]int{
+	"0": 10, "1/8": 25, "1/4": 50, "1/2": 100, "1": 200, "2": 450, "3": 700, "4": 1100, "5": 1800, "6": 2300, "7": 2900,
+	"8": 3900, "9": 5000, "10": 5900, "11": 7200, "12": 8400, "13": 10000, "14": 11500, "15": 13000, "16": 15000, "17": 18000,
+	"18": 20000, "19": 22000, "20": 25000, "21": 33000, "22": 41000, "23": 50000, "24": 62000, "25": 75000, "26": 90000,
+	"27": 105000, "28": 120000, "29": 135000, "30": 155000,
+}
+
+// monsterXP is the XP of a creature of the challenge rating. A challenge rating 0 creature
+// gives 0 by convention (the frog, the sea horse) or 10: the source's value is kept if it is one of these.
+func monsterXP(cr string, source int) (int, error) {
+	xp, ok := xpByChallengeRating[cr]
+	if !ok {
+		return 0, fmt.Errorf("challenge rating %q has no XP", cr)
+	}
+	if cr == "0" && source == 0 {
+		return 0, nil
+	}
+	return xp, nil
+}
+
 func monsterUsageText(u *monsterUsage) string {
 	switch {
 	case u == nil:
@@ -1276,13 +1309,17 @@ func convertMonster(r monstersSource) (srd51.Monster, error) {
 	if err != nil {
 		return srd51.Monster{}, err
 	}
+	xp, err := monsterXP(cr, r.XP)
+	if err != nil {
+		return srd51.Monster{}, err
+	}
 	m := srd51.Monster{
 		Key: "monster:" + r.Index, Name: r.Name, Size: r.Size, Type: r.Type, Subtype: r.Subtype, Alignment: r.Alignment,
 		HitPoints: r.HitPoints, HitDice: r.HitDice, HitPointsRoll: r.HitPointsRoll,
 		Str: r.Str, Dex: r.Dex, Con: r.Con, Int: r.Int, Wis: r.Wis, Cha: r.Cha,
 		Vulnerabilities: damageMods(r.Vulnerabilities), Resistances: damageMods(r.Resistances), Immunities: damageMods(r.Immunities),
 		ConditionImmunities: keys("condition:", r.ConditionImmunities),
-		Languages:           r.Languages, ChallengeRating: cr, XP: r.XP, ProficiencyBonus: r.ProficiencyBonus,
+		Languages:           r.Languages, ChallengeRating: cr, XP: xp, ProficiencyBonus: r.ProficiencyBonus,
 	}
 	if err := armorClass(r, &m); err != nil {
 		return srd51.Monster{}, err

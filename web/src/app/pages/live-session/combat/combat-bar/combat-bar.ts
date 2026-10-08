@@ -67,6 +67,9 @@ export class CombatBar {
   private readonly cancelButton = viewChild('safe', { read: ElementRef<HTMLButtonElement> });
 
   protected readonly setup = computed(() => this.encounter().status === EncounterStatus.SETUP);
+  protected readonly turnKey = computed(
+    () => `${this.encounter().currentCombatantId}:${this.encounter().round}`,
+  );
   protected readonly banner = computed(() => turnBanner(this.encounter()));
   protected readonly round = computed(() => roundLabel(this.encounter().round));
   protected readonly initial = computed(() => combatantInitial(this.banner().who?.label ?? ''));

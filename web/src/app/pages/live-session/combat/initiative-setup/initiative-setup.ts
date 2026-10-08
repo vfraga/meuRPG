@@ -6,6 +6,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -63,6 +64,8 @@ export class InitiativeSetup {
 
   protected readonly editing = signal<string | null>(null);
   protected readonly typed = signal('');
+  /** The face the combatant had when the field opened. */
+  private readonly editedFace = signal<number | undefined>(undefined);
   private readonly field = viewChild<ElementRef<HTMLInputElement>>('field');
 
   protected readonly groups = computed(() => tieGroups(this.encounter().combatants));
@@ -89,6 +92,19 @@ export class InitiativeSetup {
   constructor() {
     // Opening the edit puts the cursor in the field.
     effect(() => this.field()?.nativeElement.focus());
+    // The roll the field was opened over changed (the player rolled meanwhile):
+    // the field closes and the roll that stands is what the list shows.
+    effect(() => {
+      const combatants = this.encounter().combatants;
+      const id = untracked(this.editing);
+      if (id === null) {
+        return;
+      }
+      const c = combatants.find((x) => x.id === id);
+      if (!c || c.initiativeFace !== untracked(this.editedFace)) {
+        this.editing.set(null);
+      }
+    });
   }
 
   protected initial(c: Combatant): string {
@@ -138,12 +154,13 @@ export class InitiativeSetup {
 
   protected edit(c: Combatant): void {
     this.typed.set(c.initiativeFace === undefined ? '' : String(c.initiativeFace));
+    this.editedFace.set(c.initiativeFace);
     this.editing.set(c.id);
   }
 
   protected save(c: Combatant): void {
     const face = this.face();
-    if (face === null) {
+    if (face === null || this.busy()) {
       return;
     }
     this.editing.set(null);

@@ -184,7 +184,7 @@ type PuzzleServiceClient interface {
 	//
 	// Writes `puzzle_reset`.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN).
 	ResetPuzzle(context.Context, *connect.Request[v1.ResetPuzzleRequest]) (*connect.Response[v1.ResetPuzzleResponse], error)
 	// ReseedPuzzle ("Gerar outro começo") draws a new seed and a new start for the run,
 	// never already solved, and puts the run at it, as ResetPuzzle does. Lights and
@@ -194,7 +194,7 @@ type PuzzleServiceClient interface {
 	//
 	// Writes `puzzle_reset`.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NO_GENERATED_START).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NO_GENERATED_START).
 	ReseedPuzzle(context.Context, *connect.Request[v1.ReseedPuzzleRequest]) (*connect.Response[v1.ReseedPuzzleResponse], error)
 	// ClosePuzzle ("Fechar") hides the puzzle from the players. Closing a closed one
 	// changes nothing. Master only.
@@ -206,7 +206,7 @@ type PuzzleServiceClient interface {
 	// ReleaseNextPuzzleHint ("Mostrar a próxima dica") releases the next hint to the
 	// players. Master only.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN, NO_MORE_HINTS).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN, NO_MORE_HINTS).
 	ReleaseNextPuzzleHint(context.Context, *connect.Request[v1.ReleaseNextPuzzleHintRequest]) (*connect.Response[v1.ReleaseNextPuzzleHintResponse], error)
 	// PreviewPuzzleCipher ciphers a message for the form, as the players will read it
 	// ("Como os jogadores a veem"), and stores nothing. Master only.
@@ -222,8 +222,8 @@ type PuzzleServiceClient interface {
 	//
 	// Sends `puzzle_changed` now and at each step. Writes no session event.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN, NOT_A_SEQUENCE, SOLVED,
-	// STOPPED).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN, NOT_A_SEQUENCE,
+	// SOLVED, STOPPED).
 	PlayPuzzleSequence(context.Context, *connect.Request[v1.PlayPuzzleSequenceRequest]) (*connect.Response[v1.PlayPuzzleSequenceResponse], error)
 	// GetMasterPuzzleRun is the master's live view of a puzzle of the open session: what
 	// the players read, and the answer, the fewest moves left and the hints. Master only.
@@ -617,7 +617,7 @@ type PuzzleServiceHandler interface {
 	//
 	// Writes `puzzle_reset`.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN).
 	ResetPuzzle(context.Context, *connect.Request[v1.ResetPuzzleRequest]) (*connect.Response[v1.ResetPuzzleResponse], error)
 	// ReseedPuzzle ("Gerar outro começo") draws a new seed and a new start for the run,
 	// never already solved, and puts the run at it, as ResetPuzzle does. Lights and
@@ -627,7 +627,7 @@ type PuzzleServiceHandler interface {
 	//
 	// Writes `puzzle_reset`.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NO_GENERATED_START).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NO_GENERATED_START).
 	ReseedPuzzle(context.Context, *connect.Request[v1.ReseedPuzzleRequest]) (*connect.Response[v1.ReseedPuzzleResponse], error)
 	// ClosePuzzle ("Fechar") hides the puzzle from the players. Closing a closed one
 	// changes nothing. Master only.
@@ -639,7 +639,7 @@ type PuzzleServiceHandler interface {
 	// ReleaseNextPuzzleHint ("Mostrar a próxima dica") releases the next hint to the
 	// players. Master only.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN, NO_MORE_HINTS).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN, NO_MORE_HINTS).
 	ReleaseNextPuzzleHint(context.Context, *connect.Request[v1.ReleaseNextPuzzleHintRequest]) (*connect.Response[v1.ReleaseNextPuzzleHintResponse], error)
 	// PreviewPuzzleCipher ciphers a message for the form, as the players will read it
 	// ("Como os jogadores a veem"), and stores nothing. Master only.
@@ -655,8 +655,8 @@ type PuzzleServiceHandler interface {
 	//
 	// Sends `puzzle_changed` now and at each step. Writes no session event.
 	//
-	// Errors: `failed_precondition` (NO_OPEN_SESSION, NOT_SHOWN, NOT_A_SEQUENCE, SOLVED,
-	// STOPPED).
+	// Errors: `failed_precondition` (NO_OPEN_SESSION, STALE_REVISION, NOT_SHOWN, NOT_A_SEQUENCE,
+	// SOLVED, STOPPED).
 	PlayPuzzleSequence(context.Context, *connect.Request[v1.PlayPuzzleSequenceRequest]) (*connect.Response[v1.PlayPuzzleSequenceResponse], error)
 	// GetMasterPuzzleRun is the master's live view of a puzzle of the open session: what
 	// the players read, and the answer, the fewest moves left and the hints. Master only.

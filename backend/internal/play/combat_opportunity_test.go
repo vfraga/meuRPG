@@ -1054,3 +1054,39 @@ func TestMR034_AMoveThatClearsTheCoverMarkTellsEveryone(t *testing.T) {
 		t.Errorf("after the move a player reads the mark %v, want none", got)
 	}
 }
+
+// An offer waits for a hostile reactor: when the reactor changes to the
+// mover's side the offer is passed over, and no attack on its new ally is made.
+func TestAnOfferIsDroppedWhenItsReactorChangesSide(t *testing.T) {
+	t.Parallel()
+	c := newCave(t)
+	c.oppFight(t)
+	c.leaveGoblin(t)
+	offers := c.offersOf(t, c.master)
+	if len(offers) != 1 {
+		t.Fatalf("offers after leaving the reach = %v, want 1", offers)
+	}
+	offer := offers[0]
+
+	c.side(t, "Goblin 1", playv1.CombatantSide_COMBATANT_SIDE_PARTY)
+
+	if got := c.offersOf(t, c.master); len(got) != 0 {
+		t.Errorf("after Goblin 1 joined the party the offer on Toren still waits: %v", got)
+	}
+	if _, err := c.offerAttack(t, c.master, "Goblin 1", sword, "Toren", offer.GetId(), d20(15)); err == nil {
+		t.Errorf("an ally made an opportunity attack on its friend Toren")
+	}
+}
+
+// Positive control: a side change that keeps the reactor hostile leaves the
+// offer waiting.
+func TestAnOfferStaysWhileItsReactorIsStillHostile(t *testing.T) {
+	t.Parallel()
+	c := newCave(t)
+	c.oppFight(t)
+	c.leaveGoblin(t)
+	c.side(t, "Goblin 1", playv1.CombatantSide_COMBATANT_SIDE_ENEMY)
+	if got := c.offersOf(t, c.master); len(got) != 1 {
+		t.Errorf("offers after keeping the goblin an enemy = %v, want 1", got)
+	}
+}

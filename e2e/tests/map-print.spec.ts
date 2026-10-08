@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 import { pdfPages, printRoute, summary, tableForPrinting } from './print-support';
-import { newSignedInContext } from './support';
+import { afterRender, boxOf, newSignedInContext } from './support';
 
 // MR-033: print the map with its grid, to scale. The master chooses the
 // square's size and the paper; the page counts the sheets; the browser's
@@ -93,6 +93,7 @@ test('uma medida fora de 1 a 10 cm trava o Imprimir e o app mostra o motivo', { 
       window.print = () => void (window as unknown as { markPrinted(): void }).markPrinted();
     });
     await printButton.click({ force: true });
+    await afterRender(master);
     expect(printed).toBe(false);
 
     // A comma or a dot, shown as typed; "Imprimir" works again and prints.
@@ -197,16 +198,16 @@ test('no papel sai uma folha por página, com a grade em escala, e nenhum contro
 
     // A4 in landscape, 1 cm margins: each sheet prints 27,7 x 19,0 cm.
     const cm = 96 / 2.54;
-    const box = (await sheets.nth(4).boundingBox())!;
+    const box = await boxOf(sheets.nth(4));
     expect(box.width / cm).toBeCloseTo(27.7, 1);
     expect(box.height / cm).toBeCloseTo(19, 1);
     await expect(sheets.nth(4).locator('.label')).toHaveText('Página B2 · cole à direita da B1 e abaixo da A2');
     await expect(sheets.nth(0).locator('.label')).toContainText('Página A1');
     await expect(sheets.nth(4).getByText('5 cm · confira a escala')).toBeVisible();
     // The ruler is exactly 5 cm; the grid is drawn at 2,54 cm (a line each).
-    const ruler = (await sheets.nth(4).locator('.ruler__bar').boundingBox())!;
+    const ruler = await boxOf(sheets.nth(4).locator('.ruler__bar'));
     expect(ruler.width / cm).toBeCloseTo(5, 1);
-    const image = (await sheets.nth(0).locator('img').boundingBox())!;
+    const image = await boxOf(sheets.nth(0).locator('img'));
     expect(image.width / cm).toBeCloseTo(76.2, 1);
     expect(image.height / cm).toBeCloseTo(50.8, 1);
     // The image is the master's, one URL for every sheet; no points or tokens.

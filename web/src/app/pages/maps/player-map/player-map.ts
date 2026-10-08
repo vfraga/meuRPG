@@ -22,6 +22,7 @@ import { mapTokenInitial } from '../../../core/maps/token-initial';
 import { MapPins } from '../../../shared/map-pins/map-pins';
 import { MapLegend } from '../../../shared/map-view/map-legend/map-legend';
 import { pointKindIcon, pointKindLabel } from '../../../shared/map-view/map-labels';
+import { visiblePoints } from '../../../shared/map-view/map-geometry';
 import { MapSelection, MapView } from '../../../shared/map-view/map-view';
 import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
 import { PointSheet } from '../../../shared/point-sheet/point-sheet';
@@ -98,13 +99,11 @@ export class PlayerMap {
     own: true,
   }));
   protected readonly parent = computed(() => this.map()?.parentMaps[0] ?? null);
+  /** The points this player may see: the server sends no other, and this is the second lock (RN-10) for the pins, the legends, the list and the sheet. */
+  protected readonly points = computed(() => visiblePoints(this.state().points(), false));
   protected readonly selected = computed(() => {
     const s = this.selection();
-    return s
-      ? (this.state()
-          .points()
-          .find((p) => p.id === s.id) ?? null)
-      : null;
+    return s ? (this.points().find((p) => p.id === s.id) ?? null) : null;
   });
   protected readonly backLink = computed(() =>
     this.fromSession()

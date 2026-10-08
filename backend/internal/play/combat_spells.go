@@ -14,6 +14,7 @@ import (
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -247,7 +248,7 @@ func (s *Service) CastSpell(
 
 	var made actionEvent
 	var vitals []*playv1.CharacterVitals // the slot spent, if it was a player's, and the characters a hit point spell changed
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventSpellCast, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventSpellCast, encounterID: encID}, func(c *combatTx) (any, error) {
 		vitals = nil
 		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
 		if err != nil {

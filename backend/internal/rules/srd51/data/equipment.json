@@ -263,7 +263,7 @@
     "weapon-property:reach",
     "weapon-property:two-handed"
    ],
-   "normal_range_ft": 5
+   "normal_range_ft": 10
   }
  },
  {
@@ -332,7 +332,7 @@
     "weapon-property:reach",
     "weapon-property:two-handed"
    ],
-   "normal_range_ft": 5
+   "normal_range_ft": 10
   }
  },
  {
@@ -418,7 +418,7 @@
     "weapon-property:reach",
     "weapon-property:special"
    ],
-   "normal_range_ft": 5
+   "normal_range_ft": 10
   }
  },
  {
@@ -605,7 +605,7 @@
     "weapon-property:reach",
     "weapon-property:two-handed"
    ],
-   "normal_range_ft": 5
+   "normal_range_ft": 10
   }
  },
  {
@@ -910,7 +910,7 @@
     "weapon-property:finesse",
     "weapon-property:reach"
    ],
-   "normal_range_ft": 5
+   "normal_range_ft": 10
   }
  },
  {

@@ -9,7 +9,6 @@ import {
   type PuzzleRun,
   type TryPuzzleHintResponse,
 } from '../../../gen/meurpg/play/v1/puzzles_pb';
-import { timestampDate } from '@bufbuild/protobuf/wkt';
 import { newKey } from '../connect/idempotency';
 import { isTransient, puzzleBlocked, puzzleErrorMessage } from './puzzle-errors';
 import type { HintDie, MoveAnswer } from './puzzles-client';
@@ -88,6 +87,8 @@ export class PuzzlePlay {
   readonly hintBusy = signal(false);
   /** The last try for a hint, until the next one or the next change of the puzzle. */
   readonly hintTry = signal<HintTry | null>(null);
+  /** What to say when the first read of the run failed and nothing is on screen, or `''`; "Tentar de novo" reads again. */
+  readonly loadError = signal('');
   /** The server refused a try because the table rolls its dice the other way: the page reads the campaign's dice mode again. */
   readonly diceModeStale = signal(0);
 
@@ -97,8 +98,6 @@ export class PuzzlePlay {
     private readonly wait: (ms: number) => Promise<void> = (ms) =>
       new Promise((resolve) => setTimeout(resolve, ms)),
     private readonly makeKey: () => string = newKey,
-    /** The player's own character, to tell their wrong answer from another player's. */
-    private readonly ownName: () => string = () => '',
     private readonly schedule: Schedule = timeoutSchedule,
   ) {}
 
@@ -109,6 +108,8 @@ export class PuzzlePlay {
   private bellQueue: Promise<unknown> = Promise.resolve();
   /** Counts the wrong bells: taps made before the player knew a bell was wrong are dropped, not judged again. */
   private bellEpoch = 0;
+  /** Counts the puzzles opened: work that began for an earlier one (a tap, a hint, a read) never touches the one on screen. */
+  private openSeq = 0;
 
   /** Stops the timer that reads the sequence again (the page is leaving). */
   dispose(): void {
@@ -125,8 +126,14 @@ export class PuzzlePlay {
   async open(puzzleId: string): Promise<void> {
     this.disposed = false;
     this.stopReveal();
+    this.openSeq++;
+    this.bellQueue = Promise.resolve();
+    this.bellEpoch++;
+    this.pending.set(0);
+    this.hintBusy.set(false);
     this.run.set(null);
     this.gone.set(false);
+    this.loadError.set('');
     this.message.set('');
     this.hintTry.set(null);
     this.pendingId = puzzleId;
@@ -142,14 +149,25 @@ export class PuzzlePlay {
       return;
     }
     try {
-      this.apply(await this.api.run(this.campaignId(), id));
+      const next = await this.api.run(this.campaignId(), id);
+      if (id !== this.pendingId) {
+        return;
+      }
+      this.apply(next);
       this.gone.set(false);
+      this.loadError.set('');
     } catch (err) {
+      if (id !== this.pendingId) {
+        return;
+      }
       if (ConnectError.from(err, Code.Unavailable).code === Code.NotFound) {
         this.gone.set(true);
         return;
       }
-      // Any other failure keeps what is on screen: the next hint or "ready" reads again.
+      // Any other failure keeps what is on screen: the next hint or "ready" reads again. With nothing on screen, the page says so.
+      if (this.run() === null) {
+        this.loadError.set(puzzleErrorMessage(err, 'abrir o quebra-cabeça', 'player'));
+      }
     }
   }
 
@@ -198,7 +216,8 @@ export class PuzzlePlay {
 
   /**
    * Makes one move. Never rejects: a failure becomes `message`. The verdict says whether a typed answer or a bell was judged wrong:
-   * the server's answer has the run, and a wrong move of the player's own character is its `last_move` (never the answer itself).
+   * the server's answer carries the verdict of this very move (also on a replay), never read from the run's last move, which may be
+   * another player's.
    *
    * Bell taps go one at a time, in the order they were made, each after the answer to the one before; `pending` counts the taps still
    * waiting too, so the screen can say so. A wrong bell drops the taps queued behind it (they were made for a sequence that started over).
@@ -208,14 +227,19 @@ export class PuzzlePlay {
       return this.send(move);
     }
     const epoch = this.bellEpoch;
+    const seq = this.openSeq;
     this.pending.update((n) => n + 1);
     const turn = this.bellQueue.then(async () => {
+      if (seq !== this.openSeq) {
+        // Made for the puzzle that was open before: opening this one already cleared the count.
+        return { sent: false, wrong: false, solved: false } satisfies MoveVerdict;
+      }
       if (epoch !== this.bellEpoch) {
         this.pending.update((n) => n - 1);
         return { sent: false, wrong: false, solved: false } satisfies MoveVerdict;
       }
       const verdict = await this.send(move, true);
-      if (verdict.wrong) {
+      if (verdict.wrong && seq === this.openSeq) {
         this.bellEpoch++;
       }
       return verdict;
@@ -235,26 +259,32 @@ export class PuzzlePlay {
       }
       return { sent: false, wrong: false, solved: false };
     }
+    const kind = move.kind?.case;
+    // A typed answer spends an attempt: a second one made before the first is judged (Enter held, a double tap) is not sent.
+    if ((kind === 'riddle' || kind === 'cipher') && this.pending() > 0) {
+      return { sent: false, wrong: false, solved: false };
+    }
+    const seq = this.openSeq;
     const key = this.makeKey();
     if (!counted) {
       this.pending.update((n) => n + 1);
     }
     this.message.set('');
     try {
-      const before = run.lastMove?.at ? timestampDate(run.lastMove.at).getTime() : 0;
       const answer = await this.sendWithRetry(run.puzzleId, move, key);
+      if (seq !== this.openSeq) {
+        return { sent: false, wrong: false, solved: false };
+      }
       this.apply(answer.run);
-      const last = answer.run.lastMove;
-      const at = last?.at ? timestampDate(last.at).getTime() : 0;
-      const own = this.ownName();
-      const mine =
-        !!last && last.wrong && at !== before && (own === '' || last.characterName === own);
       return {
         sent: true,
-        wrong: !answer.run.solved && mine,
+        wrong: answer.wrong && !answer.run.solved,
         solved: answer.solvedByThisMove || answer.run.solved,
       };
     } catch (err) {
+      if (seq !== this.openSeq) {
+        return { sent: false, wrong: false, solved: false };
+      }
       this.message.set(puzzleErrorMessage(err, 'fazer essa jogada', 'player'));
       const blocked = puzzleBlocked(err);
       const notFound = ConnectError.from(err, Code.Unavailable).code === Code.NotFound;
@@ -263,7 +293,9 @@ export class PuzzlePlay {
       }
       return { sent: false, wrong: false, solved: false };
     } finally {
-      this.pending.update((n) => n - 1);
+      if (seq === this.openSeq) {
+        this.pending.update((n) => n - 1);
+      }
     }
   }
 
@@ -274,17 +306,24 @@ export class PuzzlePlay {
    */
   async tryHint(die: HintDie): Promise<void> {
     const run = this.run();
-    if (!run || !run.canTryHint || this.hintBusy()) {
+    if (!run || !run.canTryHint || this.hintBusy() || this.gone()) {
       return;
     }
+    const seq = this.openSeq;
     const key = this.makeKey();
     this.hintBusy.set(true);
     this.message.set('');
     try {
       const answer = await this.sendHintWithRetry(run.puzzleId, die, key);
+      if (seq !== this.openSeq) {
+        return;
+      }
       this.apply(answer.run ?? run);
       this.hintTry.set({ passed: answer.passed, roll: answer.roll });
     } catch (err) {
+      if (seq !== this.openSeq) {
+        return;
+      }
       this.message.set(puzzleErrorMessage(err, 'tentar a dica', 'player'));
       if (puzzleBlocked(err)?.reason === PuzzleBlockedReason.WRONG_DICE_MODE) {
         // The table's dice mode changed under the page: read it again, so the way to roll on screen is the one the server wants.
@@ -294,7 +333,9 @@ export class PuzzlePlay {
         await this.refresh();
       }
     } finally {
-      this.hintBusy.set(false);
+      if (seq === this.openSeq) {
+        this.hintBusy.set(false);
+      }
     }
   }
 

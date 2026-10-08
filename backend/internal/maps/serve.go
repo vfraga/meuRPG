@@ -13,6 +13,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/blob"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/slowclient"
 )
 
 // playersSeeImage says whether the campaign's players see the image now:
@@ -174,6 +175,7 @@ func (s *Service) serve(w http.ResponseWriter, r *http.Request, thumbnail bool) 
 	header.Set("Cross-Origin-Resource-Policy", "same-origin")
 	// ServeContent sets Content-Length, answers If-None-Match with 304
 	// (from the ETag above), HEAD and range requests.
+	defer slowclient.WriteBody(w, downloadWriteTimeout)()
 	http.ServeContent(w, r, "", time.Time{}, obj.Content)
 	return nil
 }

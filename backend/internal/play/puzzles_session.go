@@ -241,6 +241,16 @@ func needsVisibleRun(c *runTx) error {
 	return nil
 }
 
+// notStale is the refusal of a change whose caller read an older run than the one there is
+// (expected is the revision they read, 0 for no check): the change would act on a state the
+// master did not see, or repeat one that a call whose answer was lost already made.
+func notStale(c *runTx, expected int32) error {
+	if expected != 0 && (c.run == nil || c.run.Revision != expected) {
+		return puzzleBlocked(playv1.PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_STALE_REVISION, "the puzzle changed since you read it: read it again")
+	}
+	return nil
+}
+
 // ResetPuzzle implements playv1connect.PuzzleServiceHandler.
 func (s *Service) ResetPuzzle(
 	ctx context.Context,
@@ -251,6 +261,9 @@ func (s *Service) ResetPuzzle(
 		return nil, err
 	}
 	run, err := s.changeRun(ctx, m, req.Msg.GetPuzzleId(), func(c *runTx) error {
+		if err := notStale(c, req.Msg.GetExpectedRevision()); err != nil {
+			return err
+		}
 		if err := needsVisibleRun(c); err != nil {
 			return err
 		}
@@ -278,6 +291,9 @@ func (s *Service) ReseedPuzzle(
 		return nil, err
 	}
 	run, err := s.changeRun(ctx, m, req.Msg.GetPuzzleId(), func(c *runTx) error {
+		if err := notStale(c, req.Msg.GetExpectedRevision()); err != nil {
+			return err
+		}
 		if !c.def.kind.generates() {
 			return puzzleBlocked(playv1.PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_NO_GENERATED_START, "this kind has no generated start")
 		}
@@ -360,6 +376,9 @@ func (s *Service) ReleaseNextPuzzleHint(
 		return nil, err
 	}
 	run, err := s.changeRun(ctx, m, req.Msg.GetPuzzleId(), func(c *runTx) error {
+		if err := notStale(c, req.Msg.GetExpectedRevision()); err != nil {
+			return err
+		}
 		if err := needsVisibleRun(c); err != nil {
 			return err
 		}
@@ -390,6 +409,9 @@ func (s *Service) PlayPuzzleSequence(
 		return nil, err
 	}
 	run, err := s.changeRun(ctx, m, req.Msg.GetPuzzleId(), func(c *runTx) error {
+		if err := notStale(c, req.Msg.GetExpectedRevision()); err != nil {
+			return err
+		}
 		if c.def.row.Kind != (sequenceKind{}).stored() {
 			return puzzleBlocked(playv1.PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_NOT_A_SEQUENCE, "the puzzle is not a sequence")
 		}

@@ -77,6 +77,19 @@ describe('InviteAccept', () => {
     expect(setItem).not.toHaveBeenCalled();
   });
 
+  it('treats a malformed percent-escape in the fragment as an invalid link and still strips it', () => {
+    window.location.hash = '#t=abc%';
+    let fixture: ReturnType<typeof TestBed.createComponent<InviteAccept>> | undefined;
+    expect(() => {
+      fixture = TestBed.createComponent(InviteAccept);
+    }).not.toThrow();
+    fixture?.detectChanges();
+    expect(window.location.hash).toBe('');
+    expect((fixture?.nativeElement as HTMLElement).textContent).toContain(
+      'Link de convite inválido',
+    );
+  });
+
   it('shows a friendly message when there is no token at all', () => {
     window.location.hash = '';
     const fixture = TestBed.createComponent(InviteAccept);

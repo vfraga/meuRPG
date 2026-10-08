@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { of } from 'rxjs';
 
 import type { GetMapResponse } from '../../../../gen/meurpg/maps/v1/maps_pb';
@@ -16,7 +17,14 @@ import { CombatLaunch } from './combat-launch';
 })
 class Host {
   answer!: (r: GetMapResponse) => void;
-  state = new MapState(() => new Promise<GetMapResponse>((resolve) => (this.answer = resolve)));
+  fail!: (e: unknown) => void;
+  state = new MapState(
+    () =>
+      new Promise<GetMapResponse>((resolve, reject) => {
+        this.answer = resolve;
+        this.fail = reject;
+      }),
+  );
   started = signal('');
 }
 
@@ -86,5 +94,40 @@ describe('CombatLaunch: "Iniciar combate" on the master\'s session (MR-013)', ()
     button(el).click();
     expect(opened).toHaveLength(1);
     expect(opened[0].data.map).toBeNull();
+  });
+
+  it('does not start a combat in the theatre of the mind when the current map could not be read', async () => {
+    const { fixture, settle } = await setup();
+    const el = fixture.nativeElement as HTMLElement;
+    const read = fixture.componentInstance.state.open('map-1');
+    fixture.componentInstance.fail(new ConnectError('blip', Code.Unavailable));
+    await read;
+    await settle();
+    expect(fixture.componentInstance.state.status()).toBe('error');
+    expect(el.textContent).not.toContain('Sem um mapa atual');
+    expect(el.textContent).toContain('Não deu para ler o mapa atual');
+    expect(button(el).disabled).toBe(true);
+    button(el).click();
+    expect(opened).toHaveLength(0);
+  });
+
+  it('reads the map again with "Tentar de novo" and then starts on it', async () => {
+    const { fixture, settle } = await setup();
+    const host = fixture.componentInstance;
+    const el = fixture.nativeElement as HTMLElement;
+    const read = host.state.open('map-1');
+    host.fail(new ConnectError('blip', Code.Unavailable));
+    await read;
+    await settle();
+    Array.from(el.querySelectorAll('button'))
+      .find((b) => b.textContent?.includes('Tentar de novo'))!
+      .click();
+    host.answer(
+      mapResponse(mapMessage('map-1', 'Estrada do Vale', { gridColumns: 20, gridRows: 14 })),
+    );
+    await settle();
+    expect(button(el).disabled).toBe(false);
+    button(el).click();
+    expect(opened[0].data.map?.id).toBe('map-1');
   });
 });

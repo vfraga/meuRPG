@@ -192,7 +192,8 @@ const (
 	// secret). The target is a PuzzleDoorTarget.
 	PuzzleSolveAction_PUZZLE_SOLVE_ACTION_OPEN_DOOR PuzzleSolveAction = 2
 	// Reveal a point of a map to the players (the same as MapService.
-	// SetMapPointRevealed). The target is a PuzzlePointTarget.
+	// SetMapPointRevealed). The target is a PuzzlePointTarget; a light is refused, since
+	// the players never see one.
 	PuzzleSolveAction_PUZZLE_SOLVE_ACTION_REVEAL_POINT PuzzleSolveAction = 3
 	// Reveal a scene clue (MR-029) to the character whose move solved the puzzle,
 	// and to nobody else. The target is a PuzzleClueTarget.
@@ -481,6 +482,9 @@ const (
 	PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_WRONG_DICE_MODE PuzzleBlockedReason = 16
 	// The caller's character has no numbers for the hint's skill.
 	PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_NO_SKILL PuzzleBlockedReason = 17
+	// The master's change names a revision of the run that is not the run's any more
+	// (expected_revision): it was made already, or a player moved since the master read it.
+	PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_STALE_REVISION PuzzleBlockedReason = 18
 )
 
 // Enum value maps for PuzzleBlockedReason.
@@ -504,6 +508,7 @@ var (
 		15: "PUZZLE_BLOCKED_REASON_HINT_ALREADY_TRIED",
 		16: "PUZZLE_BLOCKED_REASON_WRONG_DICE_MODE",
 		17: "PUZZLE_BLOCKED_REASON_NO_SKILL",
+		18: "PUZZLE_BLOCKED_REASON_STALE_REVISION",
 	}
 	PuzzleBlockedReason_value = map[string]int32{
 		"PUZZLE_BLOCKED_REASON_UNSPECIFIED":         0,
@@ -524,6 +529,7 @@ var (
 		"PUZZLE_BLOCKED_REASON_HINT_ALREADY_TRIED":  15,
 		"PUZZLE_BLOCKED_REASON_WRONG_DICE_MODE":     16,
 		"PUZZLE_BLOCKED_REASON_NO_SKILL":            17,
+		"PUZZLE_BLOCKED_REASON_STALE_REVISION":      18,
 	}
 )
 
@@ -3495,7 +3501,8 @@ type PuzzleRun struct {
 	// What happened when the puzzle was solved, as the players read it: the master's
 	// own text of "Ao resolver" or, without one, a generic line for what the action
 	// did ("Uma porta se abriu.", "Salão do trono apareceu no mapa.", "Você ganhou uma
-	// pista."). Empty until solved, and when the action did nothing and the master wrote
+	// pista."). A point the players do not see (its map is hidden from them) is not named:
+	// "Algo apareceu no mapa.". Empty until solved, and when the action did nothing and the master wrote
 	// no text.
 	SolvedMessage string `protobuf:"bytes,15,opt,name=solved_message,json=solvedMessage,proto3" json:"solved_message,omitempty"`
 	// The limits of this puzzle: this player's attempts left, the moves and the time.
@@ -5553,11 +5560,16 @@ func (x *ShowPuzzleResponse) GetRun() *MasterPuzzleRun {
 
 // ResetPuzzleRequest names a puzzle.
 type ResetPuzzleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CampaignId    string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
-	PuzzleId      string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	PuzzleId   string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
+	// The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+	// set and the run has moved on (a player moved, tried for a hint, or this very change was
+	// made already by a call whose answer was lost), the call changes nothing and fails with
+	// STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+	ExpectedRevision int32 `protobuf:"varint,3,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ResetPuzzleRequest) Reset() {
@@ -5602,6 +5614,13 @@ func (x *ResetPuzzleRequest) GetPuzzleId() string {
 		return x.PuzzleId
 	}
 	return ""
+}
+
+func (x *ResetPuzzleRequest) GetExpectedRevision() int32 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
 }
 
 // ResetPuzzleResponse carries the puzzle as the master now sees it.
@@ -5651,11 +5670,16 @@ func (x *ResetPuzzleResponse) GetRun() *MasterPuzzleRun {
 
 // ReseedPuzzleRequest names a puzzle.
 type ReseedPuzzleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CampaignId    string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
-	PuzzleId      string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	PuzzleId   string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
+	// The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+	// set and the run has moved on (a player moved, tried for a hint, or this very change was
+	// made already by a call whose answer was lost), the call changes nothing and fails with
+	// STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+	ExpectedRevision int32 `protobuf:"varint,3,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ReseedPuzzleRequest) Reset() {
@@ -5700,6 +5724,13 @@ func (x *ReseedPuzzleRequest) GetPuzzleId() string {
 		return x.PuzzleId
 	}
 	return ""
+}
+
+func (x *ReseedPuzzleRequest) GetExpectedRevision() int32 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
 }
 
 // ReseedPuzzleResponse carries the puzzle as the master now sees it.
@@ -5847,11 +5878,16 @@ func (x *ClosePuzzleResponse) GetRun() *MasterPuzzleRun {
 
 // ReleaseNextPuzzleHintRequest names a puzzle.
 type ReleaseNextPuzzleHintRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CampaignId    string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
-	PuzzleId      string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	PuzzleId   string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
+	// The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+	// set and the run has moved on (a player moved, tried for a hint, or this very change was
+	// made already by a call whose answer was lost), the call changes nothing and fails with
+	// STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+	ExpectedRevision int32 `protobuf:"varint,3,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ReleaseNextPuzzleHintRequest) Reset() {
@@ -5896,6 +5932,13 @@ func (x *ReleaseNextPuzzleHintRequest) GetPuzzleId() string {
 		return x.PuzzleId
 	}
 	return ""
+}
+
+func (x *ReleaseNextPuzzleHintRequest) GetExpectedRevision() int32 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
 }
 
 // ReleaseNextPuzzleHintResponse carries the puzzle as the master now sees it.
@@ -6310,8 +6353,11 @@ type MakePuzzleMoveResponse struct {
 	Replayed bool `protobuf:"varint,2,opt,name=replayed,proto3" json:"replayed,omitempty"`
 	// True when this move is the one that solved the puzzle (also on a replay of it).
 	SolvedByThisMove bool `protobuf:"varint,3,opt,name=solved_by_this_move,json=solvedByThisMove,proto3" json:"solved_by_this_move,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// True when this move was judged wrong (it spent an attempt), also on a replay of it: the verdict is the
+	// move's own, not read from the run, which may carry another player's move by then.
+	Wrong         bool `protobuf:"varint,4,opt,name=wrong,proto3" json:"wrong,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MakePuzzleMoveResponse) Reset() {
@@ -6361,6 +6407,13 @@ func (x *MakePuzzleMoveResponse) GetReplayed() bool {
 func (x *MakePuzzleMoveResponse) GetSolvedByThisMove() bool {
 	if x != nil {
 		return x.SolvedByThisMove
+	}
+	return false
+}
+
+func (x *MakePuzzleMoveResponse) GetWrong() bool {
+	if x != nil {
+		return x.Wrong
 	}
 	return false
 }
@@ -6466,11 +6519,16 @@ func (x *PreviewPuzzleCipherResponse) GetCiphertext() string {
 
 // PlayPuzzleSequenceRequest names a puzzle.
 type PlayPuzzleSequenceRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CampaignId    string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
-	PuzzleId      string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	CampaignId string                 `protobuf:"bytes,1,opt,name=campaign_id,json=campaignId,proto3" json:"campaign_id,omitempty"`
+	PuzzleId   string                 `protobuf:"bytes,2,opt,name=puzzle_id,json=puzzleId,proto3" json:"puzzle_id,omitempty"`
+	// The revision of the run that the master's screen shows (PuzzleRun.revision). When it is
+	// set and the run has moved on (a player moved, tried for a hint, or this very change was
+	// made already by a call whose answer was lost), the call changes nothing and fails with
+	// STALE_REVISION: the master reads the run and chooses again. 0 makes no check.
+	ExpectedRevision int32 `protobuf:"varint,3,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PlayPuzzleSequenceRequest) Reset() {
@@ -6515,6 +6573,13 @@ func (x *PlayPuzzleSequenceRequest) GetPuzzleId() string {
 		return x.PuzzleId
 	}
 	return ""
+}
+
+func (x *PlayPuzzleSequenceRequest) GetExpectedRevision() int32 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
 }
 
 // PlayPuzzleSequenceResponse carries the puzzle as the master now sees it.
@@ -7092,17 +7157,19 @@ const file_meurpg_play_v1_puzzles_proto_rawDesc = "" +
 	"campaignId\x12\x1b\n" +
 	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\"G\n" +
 	"\x12ShowPuzzleResponse\x121\n" +
-	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"R\n" +
+	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"\x7f\n" +
 	"\x12ResetPuzzleRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x1b\n" +
-	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\"H\n" +
+	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\x12+\n" +
+	"\x11expected_revision\x18\x03 \x01(\x05R\x10expectedRevision\"H\n" +
 	"\x13ResetPuzzleResponse\x121\n" +
-	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"S\n" +
+	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"\x80\x01\n" +
 	"\x13ReseedPuzzleRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x1b\n" +
-	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\"I\n" +
+	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\x12+\n" +
+	"\x11expected_revision\x18\x03 \x01(\x05R\x10expectedRevision\"I\n" +
 	"\x14ReseedPuzzleResponse\x121\n" +
 	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"R\n" +
 	"\x12ClosePuzzleRequest\x12\x1f\n" +
@@ -7110,11 +7177,12 @@ const file_meurpg_play_v1_puzzles_proto_rawDesc = "" +
 	"campaignId\x12\x1b\n" +
 	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\"H\n" +
 	"\x13ClosePuzzleResponse\x121\n" +
-	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"\\\n" +
+	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"\x89\x01\n" +
 	"\x1cReleaseNextPuzzleHintRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x1b\n" +
-	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\"R\n" +
+	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\x12+\n" +
+	"\x11expected_revision\x18\x03 \x01(\x05R\x10expectedRevision\"R\n" +
 	"\x1dReleaseNextPuzzleHintResponse\x121\n" +
 	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"Y\n" +
 	"\x19GetMasterPuzzleRunRequest\x12\x1f\n" +
@@ -7139,11 +7207,12 @@ const file_meurpg_play_v1_puzzles_proto_rawDesc = "" +
 	"campaignId\x12\x1b\n" +
 	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\x12.\n" +
 	"\x04move\x18\x03 \x01(\v2\x1a.meurpg.play.v1.PuzzleMoveR\x04move\x12'\n" +
-	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"\x90\x01\n" +
+	"\x0fidempotency_key\x18\x04 \x01(\tR\x0eidempotencyKey\"\xa6\x01\n" +
 	"\x16MakePuzzleMoveResponse\x12+\n" +
 	"\x03run\x18\x01 \x01(\v2\x19.meurpg.play.v1.PuzzleRunR\x03run\x12\x1a\n" +
 	"\breplayed\x18\x02 \x01(\bR\breplayed\x12-\n" +
-	"\x13solved_by_this_move\x18\x03 \x01(\bR\x10solvedByThisMove\"y\n" +
+	"\x13solved_by_this_move\x18\x03 \x01(\bR\x10solvedByThisMove\x12\x14\n" +
+	"\x05wrong\x18\x04 \x01(\bR\x05wrong\"y\n" +
 	"\x1aPreviewPuzzleCipherRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12:\n" +
@@ -7151,11 +7220,12 @@ const file_meurpg_play_v1_puzzles_proto_rawDesc = "" +
 	"\x1bPreviewPuzzleCipherResponse\x12\x1e\n" +
 	"\n" +
 	"ciphertext\x18\x01 \x01(\tR\n" +
-	"ciphertext\"Y\n" +
+	"ciphertext\"\x86\x01\n" +
 	"\x19PlayPuzzleSequenceRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x1b\n" +
-	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\"O\n" +
+	"\tpuzzle_id\x18\x02 \x01(\tR\bpuzzleId\x12+\n" +
+	"\x11expected_revision\x18\x03 \x01(\x05R\x10expectedRevision\"O\n" +
 	"\x1aPlayPuzzleSequenceResponse\x121\n" +
 	"\x03run\x18\x01 \x01(\v2\x1f.meurpg.play.v1.MasterPuzzleRunR\x03run\"\xc4\x01\n" +
 	"\x14TryPuzzleHintRequest\x12\x1f\n" +
@@ -7210,7 +7280,7 @@ const file_meurpg_play_v1_puzzles_proto_rawDesc = "" +
 	"\x10PuzzleStopReason\x12\"\n" +
 	"\x1ePUZZLE_STOP_REASON_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18PUZZLE_STOP_REASON_MOVES\x10\x01\x12\x1b\n" +
-	"\x17PUZZLE_STOP_REASON_TIME\x10\x02*\xf4\x05\n" +
+	"\x17PUZZLE_STOP_REASON_TIME\x10\x02*\x9e\x06\n" +
 	"\x13PuzzleBlockedReason\x12%\n" +
 	"!PUZZLE_BLOCKED_REASON_UNSPECIFIED\x10\x00\x12)\n" +
 	"%PUZZLE_BLOCKED_REASON_NO_OPEN_SESSION\x10\x01\x12 \n" +
@@ -7230,7 +7300,8 @@ const file_meurpg_play_v1_puzzles_proto_rawDesc = "" +
 	"#PUZZLE_BLOCKED_REASON_NO_HINT_CHECK\x10\x0e\x12,\n" +
 	"(PUZZLE_BLOCKED_REASON_HINT_ALREADY_TRIED\x10\x0f\x12)\n" +
 	"%PUZZLE_BLOCKED_REASON_WRONG_DICE_MODE\x10\x10\x12\"\n" +
-	"\x1ePUZZLE_BLOCKED_REASON_NO_SKILL\x10\x11*\xc0\x04\n" +
+	"\x1ePUZZLE_BLOCKED_REASON_NO_SKILL\x10\x11\x12(\n" +
+	"$PUZZLE_BLOCKED_REASON_STALE_REVISION\x10\x12*\xc0\x04\n" +
 	"\x13PuzzleInvalidReason\x12%\n" +
 	"!PUZZLE_INVALID_REASON_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aPUZZLE_INVALID_REASON_NAME\x10\x01\x12\x1e\n" +

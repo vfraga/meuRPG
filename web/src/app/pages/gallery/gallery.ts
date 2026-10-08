@@ -132,6 +132,12 @@ export class GalleryPage {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const id = params.get('id');
       if (id) {
+        if (id !== this.campaignId()) {
+          // Files queued for the campaign left behind must not be sent to this one.
+          this.queue.reset();
+          this.images.set([]);
+          this.usage.set(null);
+        }
         this.campaignId.set(id);
         this.load(id);
       }
@@ -146,11 +152,17 @@ export class GalleryPage {
     this.state.set({ status: 'loading' });
     this.gallery.list(campaignId).then(
       ({ images, usage }) => {
+        if (campaignId !== this.campaignId()) {
+          return;
+        }
         this.images.set(images);
         this.usage.set(usage);
         this.state.set({ status: 'ready' });
       },
       (err: unknown) => {
+        if (campaignId !== this.campaignId()) {
+          return;
+        }
         const code = ConnectError.from(err, Code.Unavailable).code;
         if (code === Code.NotFound) {
           this.state.set({ status: 'not-found' });
@@ -165,8 +177,12 @@ export class GalleryPage {
 
   /** Reads the images again without the loading state (a picture was generated: it is in the gallery now). */
   protected refresh(): void {
-    this.gallery.list(this.campaignId()).then(
+    const campaignId = this.campaignId();
+    this.gallery.list(campaignId).then(
       ({ images, usage }) => {
+        if (campaignId !== this.campaignId()) {
+          return;
+        }
         this.images.set(images);
         this.usage.set(usage);
       },

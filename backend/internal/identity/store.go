@@ -57,12 +57,12 @@ type Store interface {
 	// revokeUserSessions deletes every session of a user: "sign out
 	// everywhere", or a suspected account takeover.
 	revokeUserSessions(ctx context.Context, userID string) error
-	// revokeOtherSessions deletes the user's sessions that still work
-	// (not expired before now, used since idleSince) except keepID, and
-	// returns how many it deleted: "sign out of other devices".
-	revokeOtherSessions(ctx context.Context, userID, keepID string, now, idleSince time.Time) (int64, error)
-	// countOtherSessions counts the same sessions revokeOtherSessions would
-	// delete.
+	// revokeOtherSessions deletes the user's sessions that have not expired
+	// at now, idle ones included, except keepID, and returns how many it
+	// deleted: "sign out of other devices".
+	revokeOtherSessions(ctx context.Context, userID, keepID string, now time.Time) (int64, error)
+	// countOtherSessions counts the other sessions that still work (not
+	// expired at now, used since idleSince).
 	countOtherSessions(ctx context.Context, userID, keepID string, now, idleSince time.Time) (int64, error)
 
 	// DisplayName returns the user's display name, or "" if they have not
@@ -313,8 +313,8 @@ func (s *PostgresStore) revokeUserSessions(ctx context.Context, userID string) e
 }
 
 // revokeOtherSessions implements Store.
-func (s *PostgresStore) revokeOtherSessions(ctx context.Context, userID, keepID string, now, idleSince time.Time) (int64, error) {
-	n, err := s.queries.DeleteOtherUserSessions(ctx, identitydb.DeleteOtherUserSessionsParams{UserID: userID, KeepID: keepID, Now: now, IdleSince: idleSince})
+func (s *PostgresStore) revokeOtherSessions(ctx context.Context, userID, keepID string, now time.Time) (int64, error) {
+	n, err := s.queries.DeleteOtherUserSessions(ctx, identitydb.DeleteOtherUserSessionsParams{UserID: userID, KeepID: keepID, Now: now})
 	if err != nil {
 		return 0, fmt.Errorf("delete other sessions: %w", err)
 	}

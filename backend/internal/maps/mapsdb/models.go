@@ -21,6 +21,7 @@ type GalleryImage struct {
 	Generated     bool
 	ParentImageID *string
 	GeneratedKind string
+	CopyOfImageID *string
 }
 
 type GeneratedDungeon struct {
@@ -37,40 +38,41 @@ type GeneratedDungeon struct {
 }
 
 type ImageRequest struct {
-	ID             string
-	CampaignID     string
-	RequestedBy    *string
-	IdempotencyKey string
-	Kind           string
-	Prompt         string
-	Style          string
-	AspectRatio    string
-	Model          string
-	ReferenceIds   []string
-	CharacterIds   []string
-	SourceImageID  *string
-	Number         int32
-	QuotaMonth     string
-	Status         string
-	Reason         string
-	Refunded       bool
-	ImageID        *string
-	CreatedAt      time.Time
-	SentAt         *time.Time
-	FinishedAt     *time.Time
-	MapID          *string
-	MapImageID     *string
-	MapGridColumns *int32
-	MapGridFactor  *int32
-	MapWidth       *int32
-	MapHeight      *int32
-	MapPlanHash    *string
-	PadX0          *float64
-	PadY0          *float64
-	PadX1          *float64
-	PadY1          *float64
-	UsedMapImageID *string
-	ImageName      string
+	ID              string
+	CampaignID      string
+	RequestedBy     *string
+	IdempotencyKey  string
+	Kind            string
+	Prompt          string
+	Style           string
+	AspectRatio     string
+	Model           string
+	ReferenceIds    []string
+	CharacterIds    []string
+	SourceImageID   *string
+	Number          int32
+	QuotaMonth      string
+	Status          string
+	Reason          string
+	Refunded        bool
+	ImageID         *string
+	CreatedAt       time.Time
+	SentAt          *time.Time
+	FinishedAt      *time.Time
+	MapID           *string
+	MapImageID      *string
+	MapGridColumns  *int32
+	MapGridFactor   *int32
+	MapWidth        *int32
+	MapHeight       *int32
+	MapPlanHash     *string
+	PadX0           *float64
+	PadY0           *float64
+	PadX1           *float64
+	PadY1           *float64
+	UsedMapImageID  *string
+	ImageName       string
+	IdempotencyHash *string
 }
 
 type Map struct {

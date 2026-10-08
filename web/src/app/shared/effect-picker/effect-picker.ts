@@ -7,8 +7,6 @@ import {
   type EffectDraft,
   type EffectMenuVm,
   emptyEffect,
-  rangeFeet,
-  rangeMeters,
 } from '../../core/content/effect-draft';
 import type { EffectMenuField } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { PickList } from '../form-fields/pick-list';
@@ -158,7 +156,7 @@ export class EffectPicker {
   }
 
   protected meters(): string {
-    return rangeMeters(this.effect().rangeFt);
+    return this.effect().rangeM;
   }
 
   protected setType(type: string): void {
@@ -181,7 +179,7 @@ export class EffectPicker {
   }
 
   protected setMeters(text: string): void {
-    this.effectChange.emit({ ...this.effect(), rangeFt: rangeFeet(text) });
+    this.effectChange.emit({ ...this.effect(), rangeM: text });
   }
 
   protected setChoice(f: EffectMenuField, value: string): void {

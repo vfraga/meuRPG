@@ -26,7 +26,7 @@ func (q *Queries) DeletePlannedMilestone(ctx context.Context, arg DeletePlannedM
 }
 
 const getLastXPAwardForUpdate = `-- name: GetLastXPAwardForUpdate :one
-SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again FROM xp_awards
+SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash FROM xp_awards
 WHERE campaign_id = $1::UUID AND undone_at IS NULL
 ORDER BY created_at DESC, id DESC
 LIMIT 1
@@ -54,6 +54,7 @@ func (q *Queries) GetLastXPAwardForUpdate(ctx context.Context, campaignID string
 		&i.UndoKey,
 		&i.MilestoneID,
 		&i.MilestoneAgain,
+		&i.IdempotencyHash,
 	)
 	return i, err
 }
@@ -144,7 +145,7 @@ func (q *Queries) GetPlannedMilestoneForUpdate(ctx context.Context, arg GetPlann
 }
 
 const getXPAwardByKey = `-- name: GetXPAwardByKey :one
-SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again FROM xp_awards
+SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash FROM xp_awards
 WHERE campaign_id = $1::UUID AND idempotency_key = $2::UUID
 `
 
@@ -173,12 +174,13 @@ func (q *Queries) GetXPAwardByKey(ctx context.Context, arg GetXPAwardByKeyParams
 		&i.UndoKey,
 		&i.MilestoneID,
 		&i.MilestoneAgain,
+		&i.IdempotencyHash,
 	)
 	return i, err
 }
 
 const getXPAwardByUndoKey = `-- name: GetXPAwardByUndoKey :one
-SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again FROM xp_awards
+SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash FROM xp_awards
 WHERE campaign_id = $1::UUID AND undo_key = $2::UUID
 `
 
@@ -207,6 +209,7 @@ func (q *Queries) GetXPAwardByUndoKey(ctx context.Context, arg GetXPAwardByUndoK
 		&i.UndoKey,
 		&i.MilestoneID,
 		&i.MilestoneAgain,
+		&i.IdempotencyHash,
 	)
 	return i, err
 }
@@ -297,27 +300,28 @@ func (q *Queries) InsertPlannedMilestone(ctx context.Context, arg InsertPlannedM
 const insertXPAward = `-- name: InsertXPAward :one
 
 INSERT INTO xp_awards
-    (campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, milestone_id, milestone_again)
+    (campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, milestone_id, milestone_again, idempotency_hash)
 VALUES (
     $1::UUID, $2::UUID, $3, $4, $5,
     $6::UUID, $7, $8, $9::UUID,
-    $10::UUID, $11::BOOL
+    $10::UUID, $11::BOOL, $12
 )
-RETURNING id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again
+RETURNING id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash
 `
 
 type InsertXPAwardParams struct {
-	CampaignID     string
-	GivenBy        string
-	CreatedAt      time.Time
-	Mode           string
-	Reason         string
-	EncounterID    *string
-	Gold           *int32
-	TotalXp        int32
-	IdempotencyKey string
-	MilestoneID    *string
-	MilestoneAgain bool
+	CampaignID      string
+	GivenBy         string
+	CreatedAt       time.Time
+	Mode            string
+	Reason          string
+	EncounterID     *string
+	Gold            *int32
+	TotalXp         int32
+	IdempotencyKey  string
+	MilestoneID     *string
+	MilestoneAgain  bool
+	IdempotencyHash *string
 }
 
 // Every query names the campaign next to the award: an award ID of another
@@ -335,6 +339,7 @@ func (q *Queries) InsertXPAward(ctx context.Context, arg InsertXPAwardParams) (X
 		arg.IdempotencyKey,
 		arg.MilestoneID,
 		arg.MilestoneAgain,
+		arg.IdempotencyHash,
 	)
 	var i XpAward
 	err := row.Scan(
@@ -353,6 +358,7 @@ func (q *Queries) InsertXPAward(ctx context.Context, arg InsertXPAwardParams) (X
 		&i.UndoKey,
 		&i.MilestoneID,
 		&i.MilestoneAgain,
+		&i.IdempotencyHash,
 	)
 	return i, err
 }
@@ -398,7 +404,7 @@ func (q *Queries) InsertXPShare(ctx context.Context, arg InsertXPShareParams) er
 }
 
 const listLiveMilestoneAwards = `-- name: ListLiveMilestoneAwards :many
-SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again FROM xp_awards
+SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash FROM xp_awards
 WHERE campaign_id = $1::UUID AND mode = 'milestone' AND undone_at IS NULL
 ORDER BY created_at, id
 `
@@ -431,6 +437,7 @@ func (q *Queries) ListLiveMilestoneAwards(ctx context.Context, campaignID string
 			&i.UndoKey,
 			&i.MilestoneID,
 			&i.MilestoneAgain,
+			&i.IdempotencyHash,
 		); err != nil {
 			return nil, err
 		}
@@ -443,7 +450,7 @@ func (q *Queries) ListLiveMilestoneAwards(ctx context.Context, campaignID string
 }
 
 const listLiveMilestoneAwardsOf = `-- name: ListLiveMilestoneAwardsOf :many
-SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again FROM xp_awards
+SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash FROM xp_awards
 WHERE campaign_id = $1::UUID AND milestone_id = $2::UUID AND undone_at IS NULL
 ORDER BY created_at, id
 `
@@ -479,6 +486,7 @@ func (q *Queries) ListLiveMilestoneAwardsOf(ctx context.Context, arg ListLiveMil
 			&i.UndoKey,
 			&i.MilestoneID,
 			&i.MilestoneAgain,
+			&i.IdempotencyHash,
 		); err != nil {
 			return nil, err
 		}
@@ -664,7 +672,7 @@ func (q *Queries) ListXPAwardTreasures(ctx context.Context, awardIds []string) (
 }
 
 const listXPAwardsPage = `-- name: ListXPAwardsPage :many
-SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again FROM xp_awards
+SELECT id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash FROM xp_awards
 WHERE campaign_id = $1::UUID
   AND (
       $2::TIMESTAMPTZ IS NULL
@@ -713,6 +721,7 @@ func (q *Queries) ListXPAwardsPage(ctx context.Context, arg ListXPAwardsPagePara
 			&i.UndoKey,
 			&i.MilestoneID,
 			&i.MilestoneAgain,
+			&i.IdempotencyHash,
 		); err != nil {
 			return nil, err
 		}
@@ -761,7 +770,7 @@ const markXPAwardUndone = `-- name: MarkXPAwardUndone :one
 UPDATE xp_awards
 SET undone_at = $1, undone_by = $2::UUID, undo_key = $3::UUID
 WHERE campaign_id = $4::UUID AND id = $5::UUID AND undone_at IS NULL
-RETURNING id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again
+RETURNING id, campaign_id, given_by, created_at, mode, reason, encounter_id, gold, total_xp, idempotency_key, undone_at, undone_by, undo_key, milestone_id, milestone_again, idempotency_hash
 `
 
 type MarkXPAwardUndoneParams struct {
@@ -799,6 +808,7 @@ func (q *Queries) MarkXPAwardUndone(ctx context.Context, arg MarkXPAwardUndonePa
 		&i.UndoKey,
 		&i.MilestoneID,
 		&i.MilestoneAgain,
+		&i.IdempotencyHash,
 	)
 	return i, err
 }

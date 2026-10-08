@@ -470,3 +470,78 @@ func TestRN18_PoolSpellsFollowTheDiceMode(t *testing.T) {
 		t.Errorf("after a pool of 22: goblin %v, Capitão %v; want only the goblin asleep", byLabel(t, now, "Goblin").GetConditions(), byLabel(t, now, "Capitão Goblin").GetConditions())
 	}
 }
+
+// newBeastFormCasters is a party with Pensantus, a level 17 wizard with Sono and
+// Palavra de Poder Matar, and Sálvia, a level 5 druid (38 hit points) already in
+// the wolf form (11 hit points). Pensantus is on turn.
+func newBeastFormCasters(t *testing.T) (a *armed, e *playv1.Encounter) {
+	t.Helper()
+	a = newArmedWith(t, func(a *armed) {
+		a.toren = a.caio.hero(t, a.campaignID, "Toren", "class:fighter", "race:human", 5,
+			&rulesv1.AbilityScores{Strength: 16, Dexterity: 13, Constitution: 14, Intelligence: 10, Wisdom: 10, Charisma: 8}, []string{battleaxe}, nil)
+		spells := []string{sleepSpell, wordKill}
+		a.pens = a.ana.caster(t, a.campaignID, "Pensantus", "class:wizard", "race:gnome", 17,
+			&rulesv1.AbilityScores{Strength: 10, Dexterity: 14, Constitution: 12, Intelligence: 20, Wisdom: 10, Charisma: 8}, nil, nil, spells, spells)
+		a.bri = a.bia.caster(t, a.campaignID, "Sálvia", "class:druid", "race:half-elf", 5,
+			&rulesv1.AbilityScores{Strength: 10, Dexterity: 12, Constitution: 14, Intelligence: 10, Wisdom: 16, Charisma: 8}, nil, nil, nil,
+			[]string{conjureAnimals})
+	})
+	a.start(t, plan{
+		npcs:     []*playv1.Participant{{CharacterId: a.capitao.GetId()}, {CharacterId: a.goblin.GetId()}},
+		npcRolls: []int{1, 1},
+		players:  map[string]int32{"Sálvia": 20, "Pensantus": 12, "Toren": 10},
+		reveal:   []string{"Capitão Goblin", "Goblin"},
+		at: map[string][2]int32{
+			"Sálvia": {6, 5}, "Capitão Goblin": {5, 5}, "Goblin": {6, 6}, "Pensantus": {12, 2}, "Toren": {2, 2},
+		},
+	})
+	e = a.mustAssume(t, a.bia, a.bri, wolfKey).GetEncounter()
+	w := a.vitals(t, a.bri)
+	if w.GetWildShape().GetHitPointsCurrent() != 11 || w.GetHitPointsCurrent() != 38 {
+		t.Fatalf("fixture: beast %v, own %d; want the wolf at 11 and her own 38", w.GetWildShape(), w.GetHitPointsCurrent())
+	}
+	e = a.passTo(t, e, "Pensantus")
+	return a, e
+}
+
+// A druid in a beast form has the beast's hit points for the spells that read
+// them, as damage and healing do (RN-02): Sono with a pool of 15 puts the
+// 11-hit-point wolf to sleep, though her own 38 are above the pool, and the
+// master sees the beast's numbers.
+func TestHPSpellsReadTheBeastPoolOfADruidInBeastForm(t *testing.T) {
+	t.Parallel()
+	a, _ := newBeastFormCasters(t)
+	a.h.roller.queue(2, 4, 1, 5, 3) // 5d8 = 15
+	res := a.mustCast(t, a.ana, a.get(t, a.ana), "Pensantus", sleepSpell, slotOfLevel(1), a.at(t, "Sálvia"), poolInApp)
+	pe := res.GetEncounter()
+	eff := effectOf(t, pe, res.GetCast().GetTargets(), "Sálvia")
+	if eff.GetOutcome() != playv1.SpellEffectOutcome_SPELL_EFFECT_OUTCOME_AFFECTED {
+		t.Errorf("Sleep (pool 15) on the druid in the 11-HP wolf form: outcome = %v, want affected (the creature's hit points are the beast's)", eff.GetOutcome())
+	}
+	master := logEffect(t, spellEntry(t, a.log(t, a.master, pe)), "Sálvia")
+	if master.GetHitPointsBefore() != 11 {
+		t.Errorf("hit points the master sees for the druid in the form = %d, want the beast's 11 (not her own 38)", master.GetHitPointsBefore())
+	}
+	if w := a.vitals(t, a.bri); w.GetWildShape() != nil || w.GetHitPointsCurrent() != 38 {
+		t.Errorf("after sleep the druid has form %v and %d own PV, want herself again with 38 (a druid put to sleep leaves the form)", w.GetWildShape(), w.GetHitPointsCurrent())
+	}
+}
+
+// Palavra de Poder Matar on a druid in a beast form takes the beast: the form
+// ends with nothing carried over, the druid keeps her own hit points (the death
+// of a character is the master's to confirm, RN-03) and the undo brings the
+// wolf back with its 11.
+func TestPowerWordKillOnADruidInBeastFormEndsTheForm(t *testing.T) {
+	t.Parallel()
+	a, e := newBeastFormCasters(t)
+	a.undoes(t, "Matar on the wolf form", func() {
+		a.mustCast(t, a.ana, e, "Pensantus", wordKill, slotOfLevel(9), a.at(t, "Sálvia"), noCastRoll)
+		v := a.vitals(t, a.bri)
+		if v.GetWildShape() != nil || v.GetHitPointsCurrent() != 38 {
+			t.Errorf("after Matar the druid has form %v and %d PV, want herself again with 38", v.GetWildShape(), v.GetHitPointsCurrent())
+		}
+	})
+	if v := a.vitals(t, a.bri); v.GetWildShape().GetHitPointsCurrent() != 11 || v.GetHitPointsCurrent() != 38 {
+		t.Errorf("after the undo the druid has beast %v and %d own PV, want the wolf at 11 and her own 38", v.GetWildShape(), v.GetHitPointsCurrent())
+	}
+}

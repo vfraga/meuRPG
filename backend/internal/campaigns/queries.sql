@@ -39,8 +39,11 @@ RETURNING *;
 
 -- name: GetMembership :one
 -- The query behind every authorization check (package authz): one read of
--- the primary key.
-SELECT role, status FROM campaign_members WHERE campaign_id = $1 AND user_id = $2;
+-- the primary key. A pending member past the 30-day deadline (RN-15) is
+-- no member, even before the daily TTL job deletes the row.
+SELECT role, status FROM campaign_members
+WHERE campaign_id = $1 AND user_id = $2
+  AND (pending_expires_at IS NULL OR pending_expires_at > sqlc.arg(now)::timestamptz);
 
 -- name: ListMembers :many
 -- The master first, then the players in the order they joined. Pending
@@ -60,17 +63,27 @@ WHERE campaign_id = $1 AND user_id = $2 AND status = 'pending';
 -- name: ClearPendingExpiry :execrows
 -- A pending member created their character (RN-15): the master decides on
 -- it now, so the 30-day deadline for a pending member without a character
--- no longer applies.
+-- no longer applies. A deadline that has already passed stays: that member
+-- is no member any more (GetMembership).
 UPDATE campaign_members
 SET pending_expires_at = NULL
-WHERE campaign_id = $1 AND user_id = $2 AND status = 'pending';
+WHERE campaign_id = $1 AND user_id = $2 AND status = 'pending'
+  AND (pending_expires_at IS NULL OR pending_expires_at > sqlc.arg(now)::timestamptz);
 
 -- name: ListPendingMembersWithoutCharacter :many
 -- The pending members who have not created a character, in the order they
 -- joined. pending_expires_at is set exactly for them (migration 00034).
 SELECT user_id, joined_at, pending_expires_at FROM campaign_members
-WHERE campaign_id = $1 AND status = 'pending' AND pending_expires_at IS NOT NULL
+WHERE campaign_id = $1 AND status = 'pending' AND pending_expires_at > sqlc.arg(now)::timestamptz
 ORDER BY joined_at, user_id;
+
+-- name: DeleteExpiredPendingMember :execrows
+-- A pending member who never created a character and whose deadline has
+-- passed, but whom the TTL job has not deleted yet, joins again with a new
+-- invite: the stale row goes first, so the new one does not clash with it.
+DELETE FROM campaign_members
+WHERE campaign_id = $1 AND user_id = $2 AND status = 'pending'
+  AND pending_expires_at IS NOT NULL AND pending_expires_at <= sqlc.arg(now)::timestamptz;
 
 -- name: DeletePendingMemberWithoutCharacter :execrows
 -- The master removed a pending member who has no character. The WHERE

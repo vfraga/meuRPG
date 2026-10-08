@@ -13,7 +13,8 @@ import {
 import { circleLabel } from '../../../../core/combat/combat-grid';
 import { joinDots } from '../../../../core/format/text';
 import { article } from '../../../../core/combat/combat-log';
-import { CombatClient, newKey } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { SlotPicker } from '../cast-sheet/slot-picker';
@@ -142,6 +143,8 @@ export class ShieldSheet {
   );
   protected readonly slot = signal<SlotRow | null>(defaultSlot(this.rows()));
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
   protected readonly outcome = signal<'stopped' | 'still' | null>(null);
   protected readonly decided = signal(false);
@@ -192,7 +195,8 @@ export class ShieldSheet {
       ? `Espaços de ${circleLabel(s.level)}: ${freeText(Math.max(0, s.free - 1), s.total)}`
       : '';
   });
-  private readonly key = newKey();
+  /** One key per answer ("Conjurar" with its slot, or "Não usar"): a repeated tap is a retry, the other answer is a new request. */
+  private readonly keys = new ActionKey();
   private readonly focus = viewChild('close', { read: ElementRef<HTMLButtonElement> });
 
   constructor() {
@@ -212,7 +216,7 @@ export class ShieldSheet {
         this.data.encounterId,
         this.data.prompt.pendingDamageId,
         { level: s.level, pact: s.pact },
-        this.key,
+        this.keys.keyFor({ use: [s.level, s.pact] }),
       );
       this.data.state.apply(res.encounter);
       this.outcome.set(res.outcome === ReactionOutcome.STOPPED ? 'stopped' : 'still');
@@ -235,7 +239,7 @@ export class ShieldSheet {
           this.data.campaignId,
           this.data.encounterId,
           this.data.prompt.pendingDamageId,
-          this.key,
+          this.keys.keyFor('decline'),
         ),
       );
       this.sheet.close(false);

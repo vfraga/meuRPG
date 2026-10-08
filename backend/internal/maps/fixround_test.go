@@ -255,3 +255,38 @@ func TestMR036_MastersSettingsLeaveNoTraceForPlayers(t *testing.T) {
 		t.Errorf("a change of the base light moved the map's updated_at the players read: %v to %v", before.GetUpdatedAt(), got)
 	}
 }
+
+// Changing the kind of a found treasure would erase its finders and the found mark without a
+// trace, so it is refused like a delete is; unmarked, the same change goes through.
+func TestAFoundTreasureCannotChangeItsKindUntilItIsUnmarked(t *testing.T) {
+	t.Parallel()
+	s := newScenes(t, false)
+	m := s.master
+	chest := s.newTreasure("Baú", "Moedas", 250, 100, 100)
+	if _, err := m.maps.MarkTreasureFound(t.Context(), connect.NewRequest(&mapsv1.MarkTreasureFoundRequest{
+		CampaignId: s.campaign, MapId: s.mapID, PointId: chest.GetId(), CharacterIds: []string{s.pens.GetId()},
+	})); err != nil {
+		t.Fatal(err)
+	}
+	toScene := &mapsv1.UpdateMapPointRequest{
+		CampaignId: s.campaign, MapId: s.mapID, PointId: chest.GetId(), Kind: mapsv1.MapPointKind_MAP_POINT_KIND_SCENE.Enum(),
+	}
+	_, err := m.updatePoint(toScene)
+	wantMapBlocked(t, "change the kind of a found treasure", err, mapsv1.MapBlockedReason_MAP_BLOCKED_REASON_TREASURE_FOUND)
+	var found int
+	if err := s.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM map_points WHERE id = $1 AND kind = 'treasure' AND treasure_found_at IS NOT NULL`, chest.GetId()).Scan(&found); err != nil {
+		t.Fatal(err)
+	}
+	if found != 1 {
+		t.Error("the found treasure is no longer a found treasure after the refused kind change")
+	}
+
+	if _, err := m.maps.UnmarkTreasureFound(t.Context(), connect.NewRequest(&mapsv1.UnmarkTreasureFoundRequest{
+		CampaignId: s.campaign, MapId: s.mapID, PointId: chest.GetId(),
+	})); err != nil {
+		t.Fatalf("UnmarkTreasureFound() error = %v", err)
+	}
+	if _, err := m.updatePoint(toScene); err != nil {
+		t.Errorf("change the kind of an unmarked treasure error = %v, want success", err)
+	}
+}

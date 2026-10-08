@@ -141,6 +141,7 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
       }),
       replayed: false,
       solvedByThisMove: false,
+      wrong: false,
     });
     (el.querySelector('[aria-label="Luz na linha 1, coluna 1, apagada"]') as HTMLElement).click();
     await settle();
@@ -302,7 +303,12 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
         'Quando todas as rodas estiverem certas, o mestre é avisado.',
       );
       expect(el.querySelector('[aria-label="Roda 3: Onda"]')).not.toBeNull();
-      api.moveResult = () => ({ run: lock(), replayed: false, solvedByThisMove: false });
+      api.moveResult = () => ({
+        run: lock(),
+        replayed: false,
+        solvedByThisMove: false,
+        wrong: false,
+      });
       (el.querySelector('[aria-label="Próximo símbolo: Roda 2"]') as HTMLElement).click();
       await settle();
       expect(api.calls.find((c) => c[0] === 'move')![3]).toEqual({
@@ -336,7 +342,12 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
       );
       expect(textOf(el.querySelector('.info__last'))).toContain('Lia girou o pilar 1');
       expect(textOf(el.querySelector('.info__last'))).toContain('Os pilares 1 e 2 mudaram.');
-      api.moveResult = () => ({ run: pillars(), replayed: false, solvedByThisMove: false });
+      api.moveResult = () => ({
+        run: pillars(),
+        replayed: false,
+        solvedByThisMove: false,
+        wrong: false,
+      });
       (el.querySelector('[aria-label="Girar o pilar 4"]') as HTMLElement).click();
       await settle();
       expect(api.calls.find((c) => c[0] === 'move')![3]).toEqual({
@@ -401,6 +412,7 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
         }),
         replayed: false,
         solvedByThisMove: false,
+        wrong: true,
       });
       typeInto(el.querySelector('input[name="answer"]'), 'escuridão');
       submit(el);
@@ -424,6 +436,7 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
         run: riddle({ revision: 2, lastMove: wrongMove('Lia') }),
         replayed: false,
         solvedByThisMove: false,
+        wrong: false,
       });
       typeInto(el.querySelector('input[name="answer"]'), 'x');
       submit(el);
@@ -493,7 +506,7 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
     });
 
     it("lets the time run down on its own, from the server's deadline", async () => {
-      const { el, fixture } = await render(
+      const { el } = await render(
         riddle({
           limits: {
             attemptsPerPlayer: 0,
@@ -507,7 +520,6 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
         }),
       );
       expect(textOf(el.querySelector('app-limit-counters'))).toMatch(/Tempo 4:[45]\d de 5:00/);
-      expect(fixture).toBeTruthy();
     });
   });
 
@@ -551,6 +563,7 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
         ),
         replayed: false,
         solvedByThisMove: false,
+        wrong: false,
       });
       (el.querySelector('[aria-label="Sino alto"]') as HTMLElement).click();
       await settle();
@@ -626,6 +639,7 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
         run: cipher({ revision: 2, lastMove: wrongMove('Toren') }),
         replayed: false,
         solvedByThisMove: false,
+        wrong: true,
       });
       typeInto(el.querySelector('textarea'), 'o tesouro esta sobre o altar');
       submit(el);
@@ -833,7 +847,12 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
       api.moveResult = () =>
         new Promise((resolve) =>
           release.push(() =>
-            resolve({ run: seqRun({ revision: 2 }), replayed: false, solvedByThisMove: false }),
+            resolve({
+              run: seqRun({ revision: 2 }),
+              replayed: false,
+              solvedByThisMove: false,
+              wrong: false,
+            }),
           ),
         );
       (el.querySelector('[aria-label="Sino redondo"]') as HTMLElement).click();

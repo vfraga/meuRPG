@@ -127,8 +127,12 @@ export function parseMarkdown(source: string): Block[] {
     // A plain line ends a list unless it is indented: then it continues the
     // last item.
     if (list && /^\s/.test(raw)) {
-      const last = list.items.length - 1;
-      list.items[last] = [...list.items[last], ...parseInline(' ' + line.trim(), budget)];
+      // Appended in place: copying the item's tokens for every line would be
+      // quadratic in the number of lines.
+      const item = list.items[list.items.length - 1];
+      for (const token of parseInline(' ' + line.trim(), budget)) {
+        item.push(token);
+      }
       continue;
     }
     flushList();

@@ -2,7 +2,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 
 import { DungeonOptionRefusedSchema } from '../../../gen/meurpg/maps/v1/dungeons_pb';
 import { MapBlockedReason } from '../../../gen/meurpg/maps/v1/maps_pb';
-import { describeConnectError } from '../connect/connect-errors';
+import { describeConnectError, isRateLimited } from '../connect/connect-errors';
 import { mapBlockedReason } from './map-errors';
 
 /** The options the page has a control for, by the name the server uses in `DungeonOptionRefused`. */
@@ -73,7 +73,7 @@ export function previewFailure(err: unknown): PreviewFailure {
     return { kind: 'refused', field, text: field ? OPTION_TEXT[field] : NO_ROOM_TEXT };
   }
   const code = ConnectError.from(err, Code.Unavailable).code;
-  if (code === Code.ResourceExhausted) {
+  if (code === Code.ResourceExhausted && !isRateLimited(err)) {
     // A preview of this campaign is already running: the page asks again with the last options.
     return { kind: 'busy' };
   }
@@ -83,7 +83,11 @@ export function previewFailure(err: unknown): PreviewFailure {
       text: 'O gerador demorou demais com essas opções. Diminua o tamanho ou mude o formato.',
     };
   }
-  return { kind: 'failed', text: 'Não deu para gerar a prévia.' };
+  // A rate limit says how long to wait; the other codes (and a plain network failure) say the preview could not be made.
+  return {
+    kind: 'failed',
+    text: describeConnectError(err, { [Code.Unavailable]: 'Não deu para gerar a prévia.' }),
+  };
 }
 
 /** The words of a failed "Criar o mapa": the refused option goes on its field (`field`), anything else is the notice's text. */

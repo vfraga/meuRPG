@@ -71,7 +71,15 @@ export class ExperienceStore {
    * master, the treasures waiting for "Voltar à cidade" when `withTreasures`. */
   async load(campaignId: string, withAwards: boolean, withTreasures = false): Promise<void> {
     if (campaignId !== this.campaignId) {
-      // Another campaign: nothing of the last one's treasures may show.
+      // Another campaign: nothing of the last one may show, and an answer still on its way is dropped.
+      this.rowsSeq++;
+      this.awardsSeq++;
+      this.treasuresSeq++;
+      this.xpMode.set(XpMode.UNSPECIFIED);
+      this.rows.set([]);
+      this.awards.set([]);
+      this.nextPageToken.set('');
+      this.loadingMore.set(false);
       this.treasures.set([]);
       this.treasuresTotal.set(0);
     }
@@ -176,8 +184,9 @@ export class ExperienceStore {
       );
       this.rowsState.set('ready');
     } catch {
-      if (seq === this.rowsSeq && this.rows().length === 0) {
-        this.rowsState.set('error');
+      // A list read before stays (stale); with none, say it could not read, never a spinner for good.
+      if (seq === this.rowsSeq) {
+        this.rowsState.set(this.rows().length > 0 ? 'ready' : 'error');
       }
     }
   }
@@ -192,8 +201,8 @@ export class ExperienceStore {
         this.awardsState.set('ready');
       }
     } catch {
-      if (seq === this.awardsSeq && this.awards().length === 0) {
-        this.awardsState.set('error');
+      if (seq === this.awardsSeq) {
+        this.awardsState.set(this.awards().length > 0 ? 'ready' : 'error');
       }
     }
   }

@@ -66,8 +66,8 @@ export class XpBlock {
         `Chegou aos ${formatInt(next)} XP d${target}. ${this.isMaster() ? 'Suba o nível na ficha.' : this.selfLevelUp() ? 'Suba o nível pelo botão abaixo.' : 'O mestre sobe o seu nível na ficha.'}`,
       );
     }
-    return tight(
-      `${formatInt(xp)} de ${formatInt(next)} XP para ${target}. Faltam ${formatInt(Math.max(0, next - xp))} XP.`,
-    );
+    // XP past the threshold without the level offered (a dead character): nothing is missing, so nothing is said to be.
+    const missing = xp < next ? ` Faltam ${formatInt(next - xp)} XP.` : '';
+    return tight(`${formatInt(xp)} de ${formatInt(next)} XP para ${target}.${missing}`);
   });
 }

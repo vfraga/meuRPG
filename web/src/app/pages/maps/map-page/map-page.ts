@@ -222,7 +222,7 @@ export class MapPage {
     try {
       await this.api.delete(this.campaignId(), map.id);
     } catch (err) {
-      throw new Error(mapErrorMessage(err, 'apagar o mapa'), { cause: err });
+      throw new Error(editorErrorMessage(err, 'delete', 'apagar o mapa'), { cause: err });
     }
     await this.router.navigate(['/campaigns', this.campaignId()]);
   };

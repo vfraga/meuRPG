@@ -13,6 +13,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -199,7 +200,7 @@ func (s *Service) CastSummon(
 	var made actionEvent
 	var vitals *playv1.CharacterVitals
 	var owner string // the character's player, for the stream
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCreatureSummoned}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCreatureSummoned}, func(c *combatTx) (any, error) {
 		vitals, owner = nil, ""
 		chars, err := s.roster.CombatCharacters(ctx, c.tx, m.CampaignID, []string{characterID})
 		if err != nil {
@@ -340,7 +341,7 @@ func (s *Service) EndConcentration(
 	}
 	v := viewerOf(m)
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventConditionsSet, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventConditionsSet, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}

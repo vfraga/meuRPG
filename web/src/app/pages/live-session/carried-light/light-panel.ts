@@ -70,6 +70,7 @@ export class LightPanel {
     }
     this.busyId.set(token.characterId);
     this.error.set('');
+    this.line.set('');
     try {
       const next = await this.api.setCarriedLight(this.campaignId(), mapId, token.characterId, key);
       this.state().upsertToken(next);

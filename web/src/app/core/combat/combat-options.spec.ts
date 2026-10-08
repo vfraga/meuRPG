@@ -39,6 +39,12 @@ describe('the reasons an option is disabled', () => {
     );
   });
 
+  it('says a once-per-turn feature was already used in the turn', () => {
+    expect(reasonText(reason(DisabledReasonCode.ALREADY_USED_THIS_TURN))).toBe(
+      'Já usado neste turno',
+    );
+  });
+
   it('has a word for every code, and an empty one for none', () => {
     expect(reasonText(undefined)).toBe('');
     for (const code of Object.values(DisabledReasonCode).filter(

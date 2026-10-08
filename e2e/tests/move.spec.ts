@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { combatRPC, getEncounterRPC, torenSheet, toren, pensantusCasting } from './combat-support';
 import { openSessionPage } from './live-session-support';
-import { layoutSize } from './support';
+import { boxOf, layoutSize } from './support';
 import { movingTable, paintRPC, pickRadio, tapSquare } from './move-support';
 
 // Movement, jumps, cover, "Aliado" and the opportunity attacks on screen (Etapa 9,
@@ -411,9 +411,9 @@ test(
       await openSessionPage(p, campaignId);
       await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
       const map = p.getByRole('group', { name: /Mapa de batalha/ });
-      const box = (await map.boundingBox())!;
+      const box = await boxOf(map);
       const token = p.locator('.cm__tk--movable').first();
-      const from = (await token.boundingBox())!;
+      const from = await boxOf(token);
       await p.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
       await p.mouse.down();
       // Two squares to the left of the token (it starts on column 5): out of the goblin's reach.

@@ -232,6 +232,9 @@ func prepare(key string, kind rulesv1.TableContentKind, body, old tableBody, lea
 	if v := checkShape(b); len(v) > 0 {
 		return stored{}, errRefusedContent(append(slices.Clone(lead), v...))
 	}
+	if v := checkFeatureCount(kind, b); len(v) > 0 {
+		return stored{}, errRefusedContent(append(slices.Clone(lead), v...))
+	}
 	if v := featureKeys(key, b, old); len(v) > 0 {
 		return stored{}, errRefusedContent(append(slices.Clone(lead), v...))
 	}
@@ -277,6 +280,11 @@ func (s *Service) CreateTableEntry(
 	body, kind := bodyOf(req.Msg)
 	if body == nil {
 		return nil, invalidArgument(fieldErr("body", "is required: exactly one of the table_* messages"))
+	}
+	// The cheap size refusal comes before the transaction, so a body over the
+	// limits never holds the campaign's content revision.
+	if v := checkFeatureCount(kind, body); len(v) > 0 {
+		return nil, errRefusedContent(v)
 	}
 	idemKey, err := idem.Clean(req.Msg.GetIdempotencyKey())
 	if err != nil {
@@ -399,6 +407,11 @@ func (s *Service) UpdateTableEntry(
 		return nil, errRefusedContent([]*rulesv1.TableContentViolation{{
 			Field: "body", Reason: reasonImmutable, Message: "the kind of an entry never changes",
 		}})
+	}
+	// The cheap size refusal comes before the transaction, so a body over the
+	// limits never holds the campaign's content revision.
+	if v := checkFeatureCount(kind, body); len(v) > 0 {
+		return nil, errRefusedContent(v)
 	}
 	var res *rulesv1.UpdateTableEntryResponse
 	var affected []affectedSheet

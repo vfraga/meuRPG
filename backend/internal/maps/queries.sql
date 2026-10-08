@@ -10,9 +10,22 @@ FROM gallery_images
 WHERE campaign_id = $1;
 
 -- name: InsertGalleryImage :one
-INSERT INTO gallery_images (id, campaign_id, uploaded_by, name, content_type, width, height, byte_size, created_at, generated, parent_image_id, generated_kind)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+INSERT INTO gallery_images (id, campaign_id, uploaded_by, name, content_type, width, height, byte_size, created_at, generated, parent_image_id, generated_kind, copy_of_image_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 RETURNING *;
+
+-- name: FindImageCopy :one
+-- The copy already made of a fog map's image to show it (or to be a portrait), unless
+-- it has become the background of a map with the fog on, which no player may receive
+-- (RN-10). The newest one when there are several.
+SELECT * FROM gallery_images g
+WHERE g.campaign_id = $1 AND g.copy_of_image_id = $2
+  AND NOT EXISTS (
+      SELECT 1 FROM maps m
+      WHERE m.campaign_id = g.campaign_id AND m.image_id = g.id AND m.fog_enabled
+  )
+ORDER BY g.created_at DESC, g.id DESC
+LIMIT 1;
 
 -- name: ListGalleryImages :many
 -- Newest first; id breaks ties, so the order never changes between calls.
@@ -631,10 +644,13 @@ ON CONFLICT (campaign_id, point_id) DO NOTHING;
 
 -- name: ListDiscoveredScenes :many
 -- The scenes the group discovered, with their current names, oldest discovery
--- first. A point that stopped being a scene is not listed.
+-- first. A point that stopped being a scene is not listed, nor is one of a map the
+-- players cannot open (not revealed, and not the session's current map).
 SELECT p.id, p.name FROM scene_discoveries AS d
 JOIN map_points AS p ON p.id = d.point_id
-WHERE d.campaign_id = $1 AND p.kind = 'scene'
+JOIN maps AS m ON m.id = p.map_id
+WHERE d.campaign_id = sqlc.arg(campaign_id) AND p.kind = 'scene'
+  AND (m.revealed_at IS NOT NULL OR m.id = sqlc.narg(current_map_id)::UUID)
 ORDER BY d.discovered_at, p.id;
 
 -- name: ListReceivedClues :many
@@ -866,10 +882,10 @@ INSERT INTO image_requests (
     id, campaign_id, requested_by, idempotency_key, kind, prompt, style, aspect_ratio, model,
     reference_ids, character_ids, source_image_id, number, quota_month, status, reason, refunded, created_at,
     map_id, map_image_id, map_grid_columns, map_grid_factor, map_width, map_height,
-    map_plan_hash, pad_x0, pad_y0, pad_x1, pad_y1, image_name
+    map_plan_hash, pad_x0, pad_y0, pad_x1, pad_y1, image_name, idempotency_hash
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending', '', false, $15,
-    $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+    $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
 RETURNING *;
 
 -- name: MarkImageRequestSent :execrows
@@ -898,6 +914,15 @@ WHERE campaign_id = $1 AND id = $2 AND status = 'pending' AND sent_at IS NOT NUL
 UPDATE image_requests
 SET status = CASE WHEN status = 'canceled' THEN status ELSE sqlc.arg(status) END,
     reason = sqlc.arg(reason), refunded = true, finished_at = sqlc.arg(now)
+WHERE campaign_id = sqlc.arg(campaign_id) AND id = sqlc.arg(id) AND status IN ('pending', 'canceled') AND NOT refunded;
+
+-- name: FinishImageRequestSpent :exec
+-- The model answered but the picture could not be stored (the gallery filled up
+-- meanwhile, or the answer cannot be used): the call was made and billed, so the slot
+-- stays spent. A request the master canceled in the meantime stays canceled.
+UPDATE image_requests
+SET status = CASE WHEN status = 'canceled' THEN status ELSE sqlc.arg(status) END,
+    reason = sqlc.arg(reason), finished_at = sqlc.arg(now)
 WHERE campaign_id = sqlc.arg(campaign_id) AND id = sqlc.arg(id) AND status IN ('pending', 'canceled') AND NOT refunded;
 
 -- name: FinishImageRequestDone :execrows

@@ -1,10 +1,11 @@
-import { Component, computed, effect, inject, input, model, signal } from '@angular/core';
+import { Component, computed, effect, inject, input, model, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 
+import { AbilityScoresRefusalReason } from '../../../../gen/meurpg/characters/v1/characters_pb';
 import { MapAsk } from '../../maps/map-ask/map-ask';
 
 import {
@@ -18,7 +19,10 @@ import {
   resultOfValue,
   typedInRange,
 } from '../../../core/characters/ability-methods';
-import { describeCharacterError } from '../../../core/characters/character-errors';
+import {
+  abilityRefusalReason,
+  describeCharacterError,
+} from '../../../core/characters/character-errors';
 import { abilityLabel } from '../../../core/characters/character-labels';
 import { ABILITY_KEYS, type AbilityKey } from '../../../core/characters/characters.types';
 import { emptyPlacement, freeCount, place, type Placement } from '../../../core/dice/dice';
@@ -89,6 +93,8 @@ export class TableAbilityScores {
     readonly method: AbilityMethodKey;
     readonly rolls: AbilityRollsVm | null;
   } | null>(null);
+  /** The server refused the way of rolling this table offers: the table's rules changed, so the page reads them again. */
+  readonly staleTable = output<void>();
   readonly method = model<AbilityMethodKey>('typed');
   readonly incomplete = model(false);
   readonly problem = model('');
@@ -362,14 +368,36 @@ export class TableAbilityScores {
     this.rolling.set(true);
     this.rollError.set('');
     try {
-      const rolls = await this.source.rollAbilityScores(this.campaignId(), typed);
-      this.rolls.set(rolls);
-      this.rollPlacement.set(emptyPlacement());
-      this.apply();
+      this.take(await this.source.rollAbilityScores(this.campaignId(), typed));
     } catch (err) {
       this.rollError.set(describeCharacterError(err));
+      await this.recover(abilityRefusalReason(err));
     } finally {
       this.rolling.set(false);
+    }
+  }
+
+  private take(rolls: AbilityRollsVm): void {
+    this.rolls.set(rolls);
+    this.rollPlacement.set(emptyPlacement());
+    this.apply();
+  }
+
+  /** What the page showed was out of date: the dice were stored from another tab (asking without typing returns the
+   * stored ones), or the master changed how the table rolls (the page reads the table again). */
+  private async recover(reason: AbilityScoresRefusalReason | null): Promise<void> {
+    if (reason === AbilityScoresRefusalReason.ROLLS_ALREADY_STORED) {
+      try {
+        this.take(await this.source.rollAbilityScores(this.campaignId(), undefined));
+        this.confirming.set(false);
+      } catch {
+        // The refusal above is already said; a second failure leaves it as it is.
+      }
+    } else if (
+      reason === AbilityScoresRefusalReason.DICE_FORCED_IN_APP ||
+      reason === AbilityScoresRefusalReason.DICE_FORCED_PHYSICAL
+    ) {
+      this.staleTable.emit();
     }
   }
 

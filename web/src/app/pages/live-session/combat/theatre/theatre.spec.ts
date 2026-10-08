@@ -22,8 +22,7 @@ import { OfferPanel } from './offer-panel';
 import { SpendSheet, type SpendSheetData } from './spend-sheet';
 import { TheatrePill } from './theatre-pill';
 
-const plain = (t: string | null | undefined) =>
-  (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const button = (el: HTMLElement, name: string) =>
   Array.from(el.querySelectorAll('button')).find(
     (b) => plain(b.textContent).includes(name) || b.getAttribute('aria-label') === name,

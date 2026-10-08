@@ -175,4 +175,23 @@ describe('GalleryPicker', () => {
     expect(names.some((n) => n?.includes('Capitão Goblin'))).toBe(false);
     expect(names.some((n) => n?.includes('Covil dos goblins'))).toBe(true);
   });
+
+  it('draws the images of the campaign it shows when an answer for the one before comes last', async () => {
+    const answers = new Map<string, (images: GalleryImage[]) => void>();
+    gallery.list = (campaignId: string) =>
+      new Promise((resolve) => {
+        answers.set(campaignId, (images) => resolve({ images, usage: galleryUsage(images) }));
+      });
+    fixture = TestBed.createComponent(GalleryPicker);
+    fixture.componentRef.setInput('campaignId', 'camp-1');
+    fixture.detectChanges();
+    fixture.componentRef.setInput('campaignId', 'camp-2');
+    fixture.detectChanges();
+    answers.get('camp-2')!([galleryImage('img-2', 'Da segunda')]);
+    await settle();
+    answers.get('camp-1')!([galleryImage('img-1', 'Da primeira')]);
+    await settle();
+    el = fixture.nativeElement as HTMLElement;
+    expect(radios().map((r) => r.textContent)).toEqual([expect.stringContaining('Da segunda')]);
+  });
 });
