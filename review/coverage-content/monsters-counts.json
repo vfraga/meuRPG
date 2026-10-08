@@ -1,0 +1,151 @@
+{
+ "monsters": 334,
+ "with_attack_action": 330,
+ "with_multiattack": 148,
+ "more_than_3_attack_actions": 4,
+ "attack_actions_total": 534,
+ "attack_actions_not_on_npc_sheet": 30,
+ "monsters_losing_an_attack": 28,
+ "attacks_with_second_damage_part_lost": 66,
+ "monsters_with_save_action": 143,
+ "save_actions_total": 206,
+ "monsters_with_recharge": 71,
+ "recharge_actions_total": 112,
+ "monsters_with_n_per_day_action": 14,
+ "monsters_with_legendary_actions": 32,
+ "legendary_actions_total": 99,
+ "monsters_with_reactions": 12,
+ "monsters_with_condition_immunities": 92,
+ "monsters_with_conditional_damage_notes": 70,
+ "monsters_with_condition_rider_in_actions": 129,
+ "trait_pack_tactics": 17,
+ "trait_magic_resistance": 31,
+ "trait_legendary_resistance": 25,
+ "trait_regeneration": 7,
+ "trait_undead_fortitude": 2,
+ "trait_innate_spellcasting": 24,
+ "trait_spellcasting": 12,
+ "trait_magic_weapons": 12,
+ "trait_sunlight_sensitivity": 8,
+ "trait_swarm": 10,
+ "trait_shapechanger": 23,
+ "trait_amphibious_or_water_breathing": 45,
+ "trait_keen_senses": 57,
+ "trait_charge_pounce_trample": 27,
+ "sense_darkvision": 181,
+ "sense_blindsight": 83,
+ "sense_tremorsense": 6,
+ "sense_truesight": 13,
+ "monsters_with_any_trait": 279,
+ "distinct_trait_names": 152,
+ "reaction_names": [
+  "Parry",
+  "Rock Catching",
+  "Shield",
+  "Shriek",
+  "Split",
+  "Unnerving Mask"
+ ],
+ "top_traits": [
+  [
+   "Magic Resistance",
+   31
+  ],
+  [
+   "Amphibious",
+   30
+  ],
+  [
+   "Legendary Resistance",
+   25
+  ],
+  [
+   "Innate Spellcasting",
+   24
+  ],
+  [
+   "Shapechanger",
+   23
+  ],
+  [
+   "Keen Smell",
+   22
+  ],
+  [
+   "Pack Tactics",
+   17
+  ],
+  [
+   "Keen Hearing and Smell",
+   17
+  ],
+  [
+   "False Appearance",
+   15
+  ],
+  [
+   "Spider Climb",
+   14
+  ],
+  [
+   "Spellcasting",
+   12
+  ],
+  [
+   "Magic Weapons",
+   12
+  ],
+  [
+   "Charge",
+   12
+  ],
+  [
+   "Swarm",
+   10
+  ],
+  [
+   "Water Breathing",
+   9
+  ],
+  [
+   "Devil's Sight",
+   8
+  ],
+  [
+   "Hold Breath",
+   8
+  ],
+  [
+   "Keen Sight",
+   7
+  ],
+  [
+   "Sunlight Sensitivity",
+   7
+  ],
+  [
+   "Web Walker",
+   7
+  ],
+  [
+   "Regeneration",
+   7
+  ],
+  [
+   "Pounce",
+   6
+  ],
+  [
+   "Echolocation",
+   5
+  ],
+  [
+   "Relentless",
+   5
+  ],
+  [
+   "Stone Camouflage",
+   5
+  ]
+ ]
+}

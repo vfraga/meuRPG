@@ -1,0 +1,704 @@
+[
+ {
+  "Race": "race:dragonborn",
+  "Sub": "",
+  "Speed": 30,
+  "Senses": null,
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:draconic-ancestry",
+   "trait:breath-weapon",
+   "trait:damage-resistance",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:breath-weapon: Arma de Sopro: CD 12; causa 2d6 (3d6 no 6º nível, 4d6 no 11º, 5d6 no 16º), metade se o alvo passar. Uma vez por descanso curto ou longo.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "breath_weapon",
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "trait:breath-weapon",
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:draconic"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:dwarf",
+  "Sub": "",
+  "Speed": 25,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:dwarven-resilience",
+   "trait:stonecunning",
+   "trait:dwarven-combat-training",
+   "trait:tool-proficiency",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:dwarven-resilience: Vantagem em testes de resistência contra veneno.",
+   "trait:dwarven-resilience: Resistência a dano de veneno.",
+   "trait:stonecunning: História +4 sobre a origem de trabalhos em pedra.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 31,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:dwarvish"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons",
+   "weapon:proficiency:handaxes",
+   "weapon:proficiency:battleaxes",
+   "weapon:proficiency:warhammers",
+   "weapon:proficiency:light-hammers"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:dwarf",
+  "Sub": "subrace:hill-dwarf",
+  "Speed": 25,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:dwarven-resilience",
+   "trait:stonecunning",
+   "trait:dwarven-combat-training",
+   "trait:tool-proficiency",
+   "trait:dwarven-toughness",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:dwarven-resilience: Vantagem em testes de resistência contra veneno.",
+   "trait:dwarven-resilience: Resistência a dano de veneno.",
+   "trait:stonecunning: História +4 sobre a origem de trabalhos em pedra.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 34,
+  "HPFromFx": 3,
+  "Languages": [
+   "language:common",
+   "language:dwarvish"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons",
+   "weapon:proficiency:handaxes",
+   "weapon:proficiency:battleaxes",
+   "weapon:proficiency:warhammers",
+   "weapon:proficiency:light-hammers"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:elf",
+  "Sub": "",
+  "Speed": 30,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:perception/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:fey-ancestry",
+   "trait:trance",
+   "trait:keen-senses",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:fey-ancestry: Vantagem em testes de resistência contra ficar enfeitiçado; magia não faz você dormir.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:elvish"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 13,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:elf",
+  "Sub": "subrace:high-elf",
+  "Speed": 30,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:perception/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:fey-ancestry",
+   "trait:trance",
+   "trait:keen-senses",
+   "trait:elf-weapon-training",
+   "trait:high-elf-cantrip",
+   "trait:extra-language",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:fey-ancestry: Vantagem em testes de resistência contra ficar enfeitiçado; magia não faz você dormir.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:elvish"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:shortbows",
+   "weapon:proficiency:longbows",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons",
+   "weapon:proficiency:shortswords",
+   "weapon:proficiency:longswords"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 13,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:gnome",
+  "Sub": "",
+  "Speed": 25,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:gnome-cunning",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:gnome-cunning: Vantagem em testes de resistência de INT, SAB e CAR contra magia.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:gnomish"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:gnome",
+  "Sub": "subrace:rock-gnome",
+  "Speed": 25,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:gnome-cunning",
+   "trait:artificers-lore",
+   "trait:tinker",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:gnome-cunning: Vantagem em testes de resistência de INT, SAB e CAR contra magia.",
+   "trait:artificers-lore: História +5 sobre itens mágicos, objetos alquímicos ou engenhocas.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:gnomish"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons",
+   "tool:proficiency:tinkers-tools"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:half-elf",
+  "Sub": "",
+  "Speed": 30,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:fey-ancestry",
+   "trait:skill-versatility",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "race:half-elf: Meio-elfo: some +1 em 2 habilidades à escolha (FOR, DES, CON, INT, SAB) nos bônus manuais.",
+   "trait:fey-ancestry: Vantagem em testes de resistência contra ficar enfeitiçado; magia não faz você dormir.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:elvish"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 4 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:half-orc",
+  "Sub": "",
+  "Speed": 30,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:intimidation/2",
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:savage-attacks",
+   "trait:relentless-endurance",
+   "trait:menacing",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:relentless-endurance: Resistência implacável: uma vez por descanso longo, ao cair a 0 PV sem morrer, fica com 1 PV.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "relentless_endurance",
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:orc"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:halfling",
+  "Sub": "",
+  "Speed": 25,
+  "Senses": null,
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:brave",
+   "trait:halfling-nimbleness",
+   "trait:lucky",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:brave: Vantagem em testes de resistência contra ficar amedrontado.",
+   "trait:lucky: Sortudo: ao tirar 1 no d20 de um ataque, teste ou teste de resistência, role de novo e fique com o novo resultado.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:halfling"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 13,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:halfling",
+  "Sub": "subrace:lightfoot-halfling",
+  "Speed": 25,
+  "Senses": null,
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:brave",
+   "trait:halfling-nimbleness",
+   "trait:lucky",
+   "trait:naturally-stealthy",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:brave: Vantagem em testes de resistência contra ficar amedrontado.",
+   "trait:lucky: Sortudo: ao tirar 1 no d20 de um ataque, teste ou teste de resistência, role de novo e fique com o novo resultado.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:halfling"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 13,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:human",
+  "Sub": "",
+  "Speed": 30,
+  "Senses": null,
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ },
+ {
+  "Race": "race:tiefling",
+  "Sub": "",
+  "Speed": 30,
+  "Senses": [
+   "darkvision:60 from trait:darkvision"
+  ],
+  "SkillProf": [
+   "skill:insight/2",
+   "skill:religion/2"
+  ],
+  "Features": [
+   "trait:darkvision",
+   "trait:hellish-resistance",
+   "trait:infernal-legacy",
+   "background-feature:shelter-of-the-faithful",
+   "feature:fighter-fighting-style",
+   "feature:second-wind",
+   "feature:action-surge-1-use",
+   "feature:martial-archetype"
+  ],
+  "Hints": [
+   "trait:hellish-resistance: Resistência a dano de fogo.",
+   "feature:second-wind: Retomar o fôlego: recupera 1d10+3 pontos de vida, uma vez por descanso curto ou longo."
+  ],
+  "Resources": [
+   "second_wind",
+   "action_surge"
+  ],
+  "Actions": [
+   "feature:second-wind",
+   "feature:action-surge-1-use"
+  ],
+  "HPMax": 28,
+  "HPFromFx": 0,
+  "Languages": [
+   "language:common",
+   "language:infernal"
+  ],
+  "Profs": [
+   "armor:proficiency:shields",
+   "armor:proficiency:all-armor",
+   "weapon:proficiency:martial-weapons",
+   "weapon:proficiency:simple-weapons"
+  ],
+  "Issues": [
+   "Faltam 2 perícias para escolher."
+  ],
+  "AC": 12,
+  "Spells": null,
+  "Choices": null
+ }
+]

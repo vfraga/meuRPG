@@ -1,0 +1,402 @@
+[
+ {
+  "key": "spell:flame-strike",
+  "name": "Flame Strike",
+  "level": 5,
+  "casting_time": "1 action",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "A vertical column of divine fire roars down from the heavens in a location you specify. Each creature in a 10-foot-radius, 40-foot-high cylinder centered on a point within range must make a dexterity saving throw. A creature takes 4d6 fire damage and 4d6 radiant damage on a failed save, or half as much damage on a successful one.",
+  "higher_level": "When you cast this spell using a spell slot of 6th level or higher, the fire damage or the radiant damage (your choice) increases by 1d6 for each slot level above 5th."
+ },
+ {
+  "key": "spell:flaming-sphere",
+  "name": "Flaming Sphere",
+  "level": 2,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "A 5-foot-diameter sphere of fire appears in an unoccupied space of your choice within range and lasts for the duration. Any creature that ends its turn within 5 feet of the sphere must make a dexterity saving throw. The creature takes 2d6 fire damage on a failed save, or half as much damage on a successful one. As a bonus action, you can move the sphere up to 30 feet. If you ram the sphere into a creature, that creature must make the saving throw against the sphere's damage, and the sphere stops moving this turn. When you move the sphere, you can direct it over barriers up to 5 feet tall and jump it across pits up to 10 feet wide. The sphere ignites flammable objects not being worn or carried, and it sheds bright light in a 20-foot radius and dim light for an additional 20 feet.",
+  "higher_level": "When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d6 for each slot level above 2nd."
+ },
+ {
+  "key": "spell:flesh-to-stone",
+  "name": "Flesh to Stone",
+  "level": 6,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "You attempt to turn one creature that you can see within range into stone. If the target's body is made of flesh, the creature must make a constitution saving throw. On a failed save, it is restrained as its flesh begins to harden. On a successful save, the creature isn't affected. A creature restrained by this spell must make another constitution saving throw at the end of each of its turns. If it successfully saves against this spell three times, the spell ends. If it fails its saves three times, it is turned to stone and subjected to the petrified condition for the duration. The successes and failures don't need to be consecutive; keep track of both until the target collects three of a kind. If the creature is physically broken while petrified, it suffers from similar deformities if it reverts to its original state. If you maintain your concentration on this spell for the entire possible duration, the creature is turned to stone until the effect is removed.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:floating-disk",
+  "name": "Floating Disk",
+  "level": 1,
+  "casting_time": "1 action",
+  "duration": "1 hour",
+  "concentration": false,
+  "desc": "This spell creates a circular, horizontal plane of force, 3 feet in diameter and 1 inch thick, that floats 3 feet above the ground in an unoccupied space of your choice that you can see within range. The disk remains for the duration, and can hold up to 500 pounds. If more weight is placed on it, the spell ends, and everything on the disk falls to the ground. The disk is immobile while you are within 20 feet of it. If you move more than 20 feet away from it, the disk follows you so that it remains within 20 feet of you. If can move across uneven terrain, up or down stairs, slopes and the like, but it can't cross an elevation change of 10 feet or more. For example, the disk can't move across a 10-foot-deep pit, nor could it leave such a pit if it was created at the bottom. If you move more than 100 feet away from the disk (typically because it can't move around an obstacle to follow you), the spell ends.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:fly",
+  "name": "Fly",
+  "level": 3,
+  "casting_time": "1 action",
+  "duration": "Up to 10 minutes",
+  "concentration": true,
+  "desc": "You touch a willing creature. The target gains a flying speed of 60 feet for the duration. When the spell ends, the target falls if it is still aloft, unless it can stop the fall.",
+  "higher_level": "When you cast this spell using a spell slot of 4th level or higher, you can target one additional creature for each slot level above 3rd."
+ },
+ {
+  "key": "spell:fog-cloud",
+  "name": "Fog Cloud",
+  "level": 1,
+  "casting_time": "1 action",
+  "duration": "Up to 1 hour",
+  "concentration": true,
+  "desc": "You create a 20-foot-radius sphere of fog centered on a point within range. The sphere spreads around corners, and its area is heavily obscured. It lasts for the duration or until a wind of moderate or greater speed (at least 10 miles per hour) disperses it.",
+  "higher_level": "When you cast this spell using a spell slot of 2nd level or higher, the radius of the fog increases by 20 feet for each slot level above 1st."
+ },
+ {
+  "key": "spell:forbiddance",
+  "name": "Forbiddance",
+  "level": 6,
+  "casting_time": "10 minutes",
+  "duration": "24 hours",
+  "concentration": false,
+  "desc": "You create a ward against magical travel that protects up to 40,000 square feet of floor space to a height of 30 feet above the floor. For the duration, creatures can't teleport into the area or use portals, such as those created by the gate spell, to enter the area. The spell proofs the area against planar travel, and therefore prevents creatures from accessing the area by way of the Astral Plane, Ethereal Plane, Feywild, Shadowfell, or the plane shift spell. In addition, the spell damages types of creatures that you choose when you cast it. Choose one or more of the following: celestials, elementals, fey, fiends, and undead. When a chosen creature enters the spell's area for the first time on a turn or starts its turn there, the creature takes 5d10 radiant or necrotic damage (your choice when you cast this spell). When you cast this spell, you can designate a password. A creature that speaks the password as it enters the area takes no damage from the spell. The spell's area can't overlap with the area of another forbiddance spell. If you cast forbiddance every day for 30 days in the same location, the spell lasts until it is dispelled, and the material components are consumed on the last casting.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:forcecage",
+  "name": "Forcecage",
+  "level": 7,
+  "casting_time": "1 action",
+  "duration": "1 hour",
+  "concentration": false,
+  "desc": "An immobile, invisible, cube-shaped prison composed of magical force springs into existence around an area you choose within range. The prison can be a cage or a solid box, as you choose. A prison in the shape of a cage can be up to 20 feet on a side and is made from 1/2-inch diameter bars spaced 1/2 inch apart. A prison in the shape of a box can be up to 10 feet on a side, creating a solid barrier that prevents any matter from passing through it and blocking any spells cast into or out from the area. When you cast the spell, any creature that is completely inside the cage's area is trapped. Creatures only partially within the area, or those too large to fit inside the area, are pushed away from the center of the area until they are completely outside the area. A creature inside the cage can't leave it by nonmagical means. If the creature tries to use teleportation or interplanar travel to leave the cage, it must first make a charisma saving throw. On a success, the creature can use that magic to exit the cage. On a failure, the creature can't exit the cage and wastes the use of the spell or effect. The cage also extends into the Ethereal Plane, blocking ethereal travel. This spell can't be dispelled by dispel magic.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:foresight",
+  "name": "Foresight",
+  "level": 9,
+  "casting_time": "1 minute",
+  "duration": "8 hours",
+  "concentration": false,
+  "desc": "You touch a willing creature and bestow a limited ability to see into the immediate future. For the duration, the target can't be surprised and has advantage on attack rolls, ability checks, and saving throws. Additionally, other creatures have disadvantage on attack rolls against the target for the duration. This spell immediately ends if you cast it again before its duration ends.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:freedom-of-movement",
+  "name": "Freedom of Movement",
+  "level": 4,
+  "casting_time": "1 action",
+  "duration": "1 hour",
+  "concentration": false,
+  "desc": "You touch a willing creature. For the duration, the target's movement is unaffected by difficult terrain, and spells and other magical effects can neither reduce the target's speed nor cause the target to be paralyzed or restrained. The target can also spend 5 feet of movement to automatically escape from nonmagical restraints, such as manacles or a creature that has it grappled. Finally, being underwater imposes no penalties on the target's movement or attacks.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:freezing-sphere",
+  "name": "Freezing Sphere",
+  "level": 6,
+  "casting_time": "1 action",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "A frigid globe of cold energy streaks from your fingertips to a point of your choice within range, where it explodes in a 60-foot-radius sphere. Each creature within the area must make a constitution saving throw. On a failed save, a creature takes 10d6 cold damage. On a successful save, it takes half as much damage. If the globe strikes a body of water or a liquid that is principally water (not including water-based creatures), it freezes the liquid to a depth of 6 inches over an area 30 feet square. This ice lasts for 1 minute. Creatures that were swimming on the surface of frozen water are trapped in the ice. A trapped creature can use an action to make a Strength check against your spell save DC to break free. You can refrain from firing the globe after completing the spell, if you wish. A small globe about the size of a sling stone, cool to the touch, appears in your hand. At any time, you or a creature you give the globe to can throw the globe (to a range of 40 feet) or hurl it with a sling (to the sling's normal range). It shatters on impact, with the same effect as the normal casting of the spell. You can also set the globe down without shattering it. After 1 minute, if the globe hasn't already shattered, it explodes.",
+  "higher_level": "When you cast this spell using a spell slot of 7th level or higher, the damage increases by 1d6 for each slot level above 6th."
+ },
+ {
+  "key": "spell:gaseous-form",
+  "name": "Gaseous Form",
+  "level": 3,
+  "casting_time": "1 action",
+  "duration": "Up to 1 hour",
+  "concentration": true,
+  "desc": "You transform a willing creature you touch, along with everything it's wearing and carrying, into a misty cloud for the duration. The spell ends if the creature drops to 0 hit points. An incorporeal creature isn't affected. While in this form, the target's only method of movement is a flying speed of 10 feet. The target can enter and occupy the space of another creature. The target has resistance to nonmagical damage, and it has advantage on Strength, Dexterity, and constitution saving throws. The target can pass through small holes, narrow openings, and even mere cracks, though it treats liquids as though they were solid surfaces. The target can't fall and remains hovering in the air even when stunned or otherwise incapacitated. While in the form of a misty cloud, the target can't talk or manipulate objects, and any objects it was carrying or holding can't be dropped, used, or otherwise interacted with. The target can't attack or cast spells.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:gate",
+  "name": "Gate",
+  "level": 9,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "You conjure a portal linking an unoccupied space you can see within range to a precise location on a different plane of existence. The portal is a circular opening, which you can make 5 to 20 feet in diameter. You can orient the portal in any direction you choose. The portal lasts for the duration. The portal has a front and a back on each plane where it appears. Travel through the portal is possible only by moving through its front. Anything that does so is instantly transported to the other plane, appearing in the unoccupied space nearest to the portal. Deities and other planar rulers can prevent portals created by this spell from opening in their presence or anywhere within their domains. When you cast this spell, you can speak the name of a specific creature (a pseudonym, title, or nickname doesn't work). If that creature is on a plane other than the one you are on, the portal opens in the named creature's immediate vicinity and draws the creature through it to the nearest unoccupied space on your side of the portal. You gain no special power over the creature, and it is free to act as the GM deems appropriate. It might leave, attack you, or help you.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:geas",
+  "name": "Geas",
+  "level": 5,
+  "casting_time": "1 minute",
+  "duration": "30 days",
+  "concentration": false,
+  "desc": "You place a magical command on a creature that you can see within range, forcing it to carry out some service or refrain from some action or course of activity as you decide. If the creature can understand you, it must succeed on a wisdom saving throw or become charmed by you for the duration. While the creature is charmed by you, it takes 5d10 psychic damage each time it acts in a manner directly counter to your instructions, but no more than once each day. A creature that can't understand you is unaffected by the spell. You can issue any command you choose, short of an activity that would result in certain death. Should you issue a suicidal command, the spell ends. You can end the spell early by using an action to dismiss it. A remove curse, greater restoration, or wish spell also ends it.",
+  "higher_level": "When you cast this spell using a spell slot of 7th or 8th level, the duration is 1 year. When you cast this spell using a spell slot of 9th level, the spell lasts until it is ended by one of the spells mentioned above."
+ },
+ {
+  "key": "spell:gentle-repose",
+  "name": "Gentle Repose",
+  "level": 2,
+  "casting_time": "1 action",
+  "duration": "10 days",
+  "concentration": false,
+  "desc": "You touch a corpse or other remains. For the duration, the target is protected from decay and can't become undead. The spell also effectively extends the time limit on raising the target from the dead, since days spent under the influence of this spell don't count against the time limit of spells such as raise dead.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:giant-insect",
+  "name": "Giant Insect",
+  "level": 4,
+  "casting_time": "1 action",
+  "duration": "Up to 10 minutes",
+  "concentration": true,
+  "desc": "You transform up to ten centipedes, three spiders, five wasps, or one scorpion within range into giant versions of their natural forms for the duration. A centipede becomes a giant centipede, a spider becomes a giant spider, a wasp becomes a giant wasp, and a scorpion becomes a giant scorpion. Each creature obeys your verbal commands, and in combat, they act on your turn each round. The GM has the statistics for these creatures and resolves their actions and movement. A creature remains in its giant size for the duration, until it drops to 0 hit points, or until you use an action to dismiss the effect on it. The GM might allow you to choose different targets. For example, if you transform a bee, its giant version might have the same statistics as a giant wasp.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:glibness",
+  "name": "Glibness",
+  "level": 8,
+  "casting_time": "1 action",
+  "duration": "1 hour",
+  "concentration": false,
+  "desc": "Until the spell ends, when you make a Charisma check, you can replace the number you roll with a 15. Additionally, no matter what you say, magic that would determine if you are telling the truth indicates that you are being truthful.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:globe-of-invulnerability",
+  "name": "Globe of Invulnerability",
+  "level": 6,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "An immobile, faintly shimmering barrier springs into existence in a 10-foot radius around you and remains for the duration. Any spell of 5th level or lower cast from outside the barrier can't affect creatures or objects within it, even if the spell is cast using a higher level spell slot. Such a spell can target creatures and objects within the barrier, but the spell has no effect on them. Similarly, the area within the barrier is excluded from the areas affected by such spells.",
+  "higher_level": "When you cast this spell using a spell slot of 7th level or higher, the barrier blocks spells of one level higher for each slot level above 6th."
+ },
+ {
+  "key": "spell:glyph-of-warding",
+  "name": "Glyph of Warding",
+  "level": 3,
+  "casting_time": "1 hour",
+  "duration": "Until dispelled",
+  "concentration": false,
+  "desc": "When you cast this spell, you inscribe a glyph that harms other creatures, either upon a surface (such as a table or a section of floor or wall) or within an object that can be closed (such as a book, a scroll, or a treasure chest) to conceal the glyph. If you choose a surface, the glyph can cover an area of the surface no larger than 10 feet in diameter. If you choose an object, that object must remain in its place; if the object is moved more than 10 feet from where you cast this spell, the glyph is broken, and the spell ends without being triggered. The glyph is nearly invisible and requires a successful Intelligence (Investigation) check against your spell save DC to be found. You decide what triggers the glyph when you cast the spell. For glyphs inscribed on a surface, the most typical triggers include touching or standing on the glyph, removing another object covering the glyph, approaching within a certain distance of the glyph, or manipulating the object on which the glyph is inscribed. For glyphs inscribed within an object, the most common triggers include opening that object, approaching within a certain distance of the object, or seeing or reading the glyph. Once a glyph is triggered, this spell ends. You can further refine the trigger so the spell activates only under certain circumstances or according to physical characteristics (such as height or weight), creature kind (for example, the ward could be set to affect aberrations or drow), or alignment. You can also set conditions for creatures that don't trigger the glyph, such as those who say a certain password. When you inscribe the glyph, choose *explosive runes* or a *spell glyph*. ***Explosive Runes.*** When triggered, the glyph erupts with magical energy in a 20-foot-radius sphere centered on the glyph. The sphere spreads around corners. Each creature in the area must make a Dexterity saving throw. A creature takes 5d8 acid, cold, fire, lightning, or thunder damage on a failed saving throw (your choice when you create the glyph), or half as much damage on a successful one. ***Spell Glyph.*** You can store a prepared spell of 3rd level or lower in the glyph by casting it as part of creating the glyph. The spell must target a single creature or an area. The spell being stored has no immediate effect when cast in this way. When the glyph is triggered, the stored spell is cast. If the spell has a target, it targets the creature that triggered the glyph. If the spell affects an area, the area is centered on that creature. If the spell summons hostile creatures or creates harmful objects or traps, they appear as close as possible to the intruder and attack it. If the spell requires concentration, it lasts until the end of its full duration.",
+  "higher_level": "When you cast this spell using a spell slot of 4th level or higher, the damage of an explosive runes glyph increases by 1d8 for each slot level above 3rd. If you create a spell glyph, you can store any spell of up to the same level as the slot you use for the glyph of warding."
+ },
+ {
+  "key": "spell:goodberry",
+  "name": "Goodberry",
+  "level": 1,
+  "casting_time": "1 action",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "Up to ten berries appear in your hand and are infused with magic for the duration. A creature can use its action to eat one berry. Eating a berry restores 1 hit point, and the berry provides enough nourishment to sustain a creature for a day. The berries lose their potency if they have not been consumed within 24 hours of the casting of this spell.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:grease",
+  "name": "Grease",
+  "level": 1,
+  "casting_time": "1 action",
+  "duration": "1 minute",
+  "concentration": false,
+  "desc": "Slick grease covers the ground in a 10-foot square centered on a point within range and turns it into difficult terrain for the duration. When the grease appears, each creature standing in its area must succeed on a dexterity saving throw or fall prone. A creature that enters the area or ends its turn there must also succeed on a dexterity saving throw or fall prone.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:greater-invisibility",
+  "name": "Greater Invisibility",
+  "level": 4,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "You or a creature you touch becomes invisible until the spell ends. Anything the target is wearing or carrying is invisible as long as it is on the target's person.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:greater-restoration",
+  "name": "Greater Restoration",
+  "level": 5,
+  "casting_time": "1 action",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "You imbue a creature you touch with positive energy to undo a debilitating effect. You can reduce the target's exhaustion level by one, or end one of the following effects on the target: - One effect that charmed or petrified the target - One curse, including the target's attunement to a cursed magic item - Any reduction to one of the target's ability scores - One effect reducing the target's hit point maximum",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:guardian-of-faith",
+  "name": "Guardian of Faith",
+  "level": 4,
+  "casting_time": "1 action",
+  "duration": "8 hours",
+  "concentration": false,
+  "desc": "A Large spectral guardian appears and hovers for the duration in an unoccupied space of your choice that you can see within range. The guardian occupies that space and is indistinct except for a gleaming sword and shield emblazoned with the symbol of your deity. Any creature hostile to you that moves to a space within 10 feet of the guardian for the first time on a turn must succeed on a dexterity saving throw. The creature takes 20 radiant damage on a failed save, or half as much damage on a successful one. The guardian vanishes when it has dealt a total of 60 damage.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:guards-and-wards",
+  "name": "Guards and Wards",
+  "level": 6,
+  "casting_time": "10 minutes",
+  "duration": "24 hours",
+  "concentration": false,
+  "desc": "You create a ward that protects up to 2,500 square feet of floor space (an area 50 feet square, or one hundred 5-foot squares or twenty-five 10-foot squares). The warded area can be up to 20 feet tall, and shaped as you desire. You can ward several stories of a stronghold by dividing the area among them, as long as you can walk into each contiguous area while you are casting the spell. When you cast this spell, you can specify individuals that are unaffected by any or all of the effects that you choose. You can also specify a password that, when spoken aloud, makes the speaker immune to these effects. Guards and wards creates the following effects within the warded area. ***Corridors.*** Fog fills all the warded corridors, making them heavily obscured. In addition, at each intersection or branching passage offering a choice of direction, there is a 50 percent chance that a creature other than you will believe it is going in the opposite direction from the one it chooses. ***Doors.*** All doors in the warded area are magically locked, as if sealed by an arcane lock spell. In addition, you can cover up to ten doors with an illusion (equivalent to the illusory object function of the minor illusion spell) to make them appear as plain sections of wall. ***Stairs.*** Webs fill all stairs in the warded area from top to bottom, as the web spell. These strands regrow in 10 minutes if they are burned or torn away while guards and wards lasts. ***Other Spell Effect.*** You can place your choice of one of the following magical effects within the warded area of the stronghold. - Place dancing lights in four corridors. You can designate a simple program that the lights repeat as long as guards and wards lasts. - Place magic mouth in two locations. - Place stinking cloud in two locations. The vapors appear in the places you designate; they return within 10 minutes if dispersed by wind while guards and wards lasts. - Place a constant gust of wind in one corridor or room. - Place a suggestion in one location. You select an area of up to 5 feet square, and any creature that enters or passes through the area receives the suggestion mentally. The whole warded area radiates magic. A dispel magic cast on a specific effect, if successful, removes only that effect. You can create a permanently guarded and warded structure by casting this spell there every day for one year.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:guidance",
+  "name": "Guidance",
+  "level": 0,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one ability check of its choice. It can roll the die before or after making the ability check. The spell then ends.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:guiding-bolt",
+  "name": "Guiding Bolt",
+  "level": 1,
+  "casting_time": "1 action",
+  "duration": "1 round",
+  "concentration": false,
+  "desc": "A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage, thanks to the mystical dim light glittering on the target until then.",
+  "higher_level": "When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st."
+ },
+ {
+  "key": "spell:gust-of-wind",
+  "name": "Gust of Wind",
+  "level": 2,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "A line of strong wind 60 feet long and 10 feet wide blasts from you in a direction you choose for the spell's duration. Each creature that starts its turn in the line must succeed on a strength saving throw or be pushed 15 feet away from you in a direction following the line. Any creature in the line must spend 2 feet of movement for every 1 foot it moves when moving closer to you. The gust disperses gas or vapor, and it extinguishes candles, torches, and similar unprotected flames in the area. It causes protected flames, such as those of lanterns, to dance wildly and has a 50 percent chance to extinguish them. As a bonus action on each of your turns before the spell ends, you can change the direction in which the line blasts from you.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:hallow",
+  "name": "Hallow",
+  "level": 5,
+  "casting_time": "24 hours",
+  "duration": "Until dispelled",
+  "concentration": false,
+  "desc": "You touch a point and infuse an area around it with holy (or unholy) power. The area can have a radius up to 60 feet, and the spell fails if the radius includes an area already under the effect a hallow spell. The affected area is subject to the following effects. First, celestials, elementals, fey, fiends, and undead can't enter the area, nor can such creatures charm, frighten, or possess creatures within it. Any creature charmed, frightened, or possessed by such a creature is no longer charmed, frightened, or possessed upon entering the area. You can exclude one or more of those types of creatures from this effect. Second, you can bind an extra effect to the area. Choose the effect from the following list, or choose an effect offered by the GM. Some of these effects apply to creatures in the area; you can designate whether the effect applies to all creatures, creatures that follow a specific deity or leader, or creatures of a specific sort, such as ores or trolls. When a creature that would be affected enters the spell's area for the first time on a turn or starts its turn there, it can make a charisma saving throw. On a success, the creature ignores the extra effect until it leaves the area. ***Courage.*** Affected creatures can't be frightened while in the area. ***Darkness.*** Darkness fills the area. Normal light, as well as magical light created by spells of a lower level than the slot you used to cast this spell, can't illuminate the area. ***Daylight.*** Bright light fills the area. Magical darkness created by spells of a lower level than the slot you used to cast this spell can't extinguish the light. ***Energy Protection.*** Affected creatures in the area have resistance to one damage type of your choice, except for bludgeoning, piercing, or slashing. ***Energy Vulnerability.*** Affected creatures in the area have vulnerability to one damage type of your choice, except for bludgeoning, piercing, or slashing. ***Everlasting Rest.*** Dead bodies interred in the area can't be turned into undead. ***Extradimensional Interference.*** Affected creatures can't move or travel using teleportation or by extradimensional or interplanar means. ***Fear.*** Affected creatures are frightened while in the area. ***Silence.*** No sound can emanate from within the area, and no sound can reach into it. ***Tongues.*** Affected creatures can communicate with any other creature in the area, even if they don't share a common language.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:hallucinatory-terrain",
+  "name": "Hallucinatory Terrain",
+  "level": 4,
+  "casting_time": "10 minutes",
+  "duration": "24 hours",
+  "concentration": false,
+  "desc": "You make natural terrain in a 150-foot cube in range look, sound, and smell like some other sort of natural terrain. Thus, open fields or a road can be made to resemble a swamp, hill, crevasse, or some other difficult or impassable terrain. A pond can be made to seem like a grassy meadow, a precipice like a gentle slope, or a rock-strewn gully like a wide and smooth road. Manufactured structures, equipment, and creatures within the area aren't changed in appearance. The tactile characteristics of the terrain are unchanged, so creatures entering the area are likely to see through the illusion. If the difference isn't obvious by touch, a creature carefully examining the illusion can attempt an Intelligence (Investigation) check against your spell save DC to disbelieve it. A creature who discerns the illusion for what it is, sees it as a vague image superimposed on the terrain.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:harm",
+  "name": "Harm",
+  "level": 6,
+  "casting_time": "1 action",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "You unleash a virulent disease on a creature that you can see within range. The target must make a constitution saving throw. On a failed save, it takes 14d6 necrotic damage, or half as much damage on a successful save. The damage can't reduce the target's hit points below 1. If the target fails the saving throw, its hit point maximum is reduced for 1 hour by an amount equal to the necrotic damage it took. Any effect that removes a disease allows a creature's hit point maximum to return to normal before that time passes.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:haste",
+  "name": "Haste",
+  "level": 3,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "Choose a willing creature that you can see within range. Until the spell ends, the target's speed is doubled, it gains a +2 bonus to AC, it has advantage on dexterity saving throws, and it gains an additional action on each of its turns. That action can be used only to take the Attack (one weapon attack only), Dash, Disengage, Hide, or Use an Object action. When the spell ends, the target can't move or take actions until after its next turn, as a wave of lethargy sweeps over it.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:heal",
+  "name": "Heal",
+  "level": 6,
+  "casting_time": "1 action",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "Choose a creature that you can see within range. A surge of positive energy washes through the creature, causing it to regain 70 hit points. This spell also ends blindness, deafness, and any diseases affecting the target. This spell has no effect on constructs or undead.",
+  "higher_level": "When you cast this spell using a spell slot of 7th level or higher, the amount of healing increases by 10 for each slot level above 6th."
+ },
+ {
+  "key": "spell:healing-word",
+  "name": "Healing Word",
+  "level": 1,
+  "casting_time": "1 bonus action",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs.",
+  "higher_level": "When you cast this spell using a spell slot of 2nd level or higher, the healing increases by 1d4 for each slot level above 1st."
+ },
+ {
+  "key": "spell:heat-metal",
+  "name": "Heat Metal",
+  "level": 2,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "Choose a manufactured metal object, such as a metal weapon or a suit of heavy or medium metal armor, that you can see within range. You cause the object to glow red-hot. Any creature in physical contact with the object takes 2d8 fire damage when you cast the spell. Until the spell ends, you can use a bonus action on each of your subsequent turns to cause this damage again. If a creature is holding or wearing the object and takes the damage from it, the creature must succeed on a constitution saving throw or drop the object if it can. If it doesn't drop the object, it has disadvantage on attack rolls and ability checks until the start of your next turn.",
+  "higher_level": "When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d8 for each slot level above 2nd."
+ },
+ {
+  "key": "spell:hellish-rebuke",
+  "name": "Hellish Rebuke",
+  "level": 1,
+  "casting_time": "1 reaction",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "You point your finger, and the creature that damaged you is momentarily surrounded by hellish flames. The creature must make a dexterity saving throw. It takes 2d10 fire damage on a failed save, or half as much damage on a successful one.",
+  "higher_level": "When you cast this spell using a spell slot of 2nd level or higher, the damage increases by 1d10 for each slot level above 1st."
+ },
+ {
+  "key": "spell:heroes-feast",
+  "name": "Heroes' Feast",
+  "level": 6,
+  "casting_time": "10 minutes",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "desc": "You bring forth a great feast, including magnificent food and drink. The feast takes 1 hour to consume and disappears at the end of that time, and the beneficial effects don't set in until this hour is over. Up to twelve other creatures can partake of the feast. A creature that partakes of the feast gains several benefits. The creature is cured of all diseases and poison, becomes immune to poison and being frightened, and makes all wisdom saving throws with advantage. Its hit point maximum also increases by 2d10, and it gains the same number of hit points. These benefits last for 24 hours.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:heroism",
+  "name": "Heroism",
+  "level": 1,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "A willing creature you touch is imbued with bravery. Until the spell ends, the creature is immune to being frightened and gains temporary hit points equal to your spellcasting ability modifier at the start of each of its turns. When the spell ends, the target loses any remaining temporary hit points from this spell.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:hideous-laughter",
+  "name": "Hideous Laughter",
+  "level": 1,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "A creature of your choice that you can see within range perceives everything as hilariously funny and falls into fits of laughter if this spell affects it. The target must succeed on a wisdom saving throw or fall prone, becoming incapacitated and unable to stand up for the duration. A creature with an Intelligence score of 4 or less isn't affected. At the end of each of its turns, and each time it takes damage, the target can make another wisdom saving throw. The target had advantage on the saving throw if it's triggered by damage. On a success, the spell ends.",
+  "higher_level": ""
+ },
+ {
+  "key": "spell:hold-monster",
+  "name": "Hold Monster",
+  "level": 5,
+  "casting_time": "1 action",
+  "duration": "Up to 1 minute",
+  "concentration": true,
+  "desc": "Choose a creature you can see and reach. The target must make a saving throw of Wisdom or be paralyzed for the duration of the spell. This spell has no effect against the undead. At the end of each round, the target can make a new saving throw of Wisdom. If successful, the spell ends for the creature.",
+  "higher_level": "When you cast this spell using a level 6 or higher location, you can target an additional creature for each level of location beyond the fifth. The creatures must be within 30 feet o f each other when you target them."
+ }
+]

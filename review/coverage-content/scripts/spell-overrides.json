@@ -1,0 +1,18 @@
+{
+ "spell:mass-heal": {"state": "partial", "gaps": ["pool_not_shared_out"], "why": "heal_at_slot_level is the flat 700: every target gets 700 (full heal), not a pool the caster divides; the ended conditions are not applied"},
+ "spell:suggestion": {"state": "partial", "gaps": ["effect_not_applied", "duration_not_tracked"], "why": "the save is rolled, the suggestion itself is the table's"},
+ "spell:mass-suggestion": {"state": "partial", "gaps": ["effect_not_applied", "duration_not_tracked"], "why": "the save is rolled, the suggestion itself is the table's"},
+ "spell:calm-emotions": {"state": "partial", "gaps": ["effect_not_applied", "duration_not_tracked"], "why": "the save is rolled; suppressing charm / fear (or making creatures indifferent) is not applied"},
+ "spell:vampiric-touch": {"state": "partial", "gaps": ["heal_half_not_applied", "repeat_attack_not_run"], "why": "the melee spell attack and 3d6 necrotic are rolled; the caster's healing (half the damage) and the later attacks are not"},
+ "spell:aid": {"state": "built", "gaps": ["duration_not_tracked"], "why": "max_hp effect raises maximum and current HP for up to three targets (effects/spells.json)"},
+ "spell:cone-of-cold": {"state": "built", "gaps": [], "why": "the frozen-statue clause is flavour"},
+ "spell:disintegrate": {"state": "built", "gaps": [], "why": "10d6+40 force with Dex save; the dust clause is flavour"},
+ "spell:shatter": {"state": "built", "gaps": [], "why": "3d8 thunder, Con save; the inorganic-object clause is flavour"},
+ "spell:eldritch-blast": {"state": "built", "gaps": [], "why": "beams are the cantrip's attack lines (rules/attacks.go beamsAt)"},
+ "spell:scorching-ray": {"state": "built", "gaps": [], "why": "one ray per target (several rays on one target are the master's, play/combat_spells.go:44)"},
+ "spell:magic-missile": {"state": "built", "gaps": [], "why": "darts shared among targets (combat_spells.go openDarts)"},
+ "spell:conjure-animals": {"state": "built", "gaps": [], "why": "CastSummon / summon choice with the SRD count by slot (rules/summon.go)"},
+ "spell:sleep": {"state": "built", "gaps": ["duration_not_tracked"], "why": "hp_pool effect: unconscious applied in ascending HP order; waking up is the table's"},
+ "spell:color-spray": {"state": "built", "gaps": ["duration_not_tracked"], "why": "hp_pool effect: blinded applied; end of the condition is the table's"},
+ "spell:shield": {"state": "built", "gaps": [], "why": "UseReaction: +5 AC until the next turn and the hit is judged again (play/combat_reactions.go)"}
+}

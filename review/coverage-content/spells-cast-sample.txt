@@ -1,0 +1,23 @@
+spell:fireball             slot=3 attack="" save=dex/half damage=[8d6 damage-type:fire parsed=true] heal=false() hpEffect=false() summon=false target=area/0 conc=false time=1 action
+spell:fireball             slot=5 attack="" save=dex/half damage=[10d6 damage-type:fire parsed=true] heal=false() hpEffect=false() summon=false target=area/0 conc=false time=1 action
+spell:cure-wounds          slot=1 attack="" save=- damage=[] heal=true(1d8 + MOD) hpEffect=false() summon=false target=creature/1 conc=false time=1 action
+spell:cure-wounds          slot=3 attack="" save=- damage=[] heal=true(3d8 + MOD) hpEffect=false() summon=false target=creature/1 conc=false time=1 action
+spell:hold-person          slot=2 attack="" save=wis/none damage=[] heal=false() hpEffect=false() summon=false target=creature/1 conc=true time=1 action
+spell:web                  slot=2 attack="" save=- damage=[2d4 damage-type:fire parsed=true] heal=false() hpEffect=false() summon=false target=area/0 conc=true time=1 action
+spell:sleep                slot=1 attack="" save=- damage=[5d8  parsed=true] heal=false() hpEffect=true(hp_pool) summon=false target=area/0 conc=false time=1 action
+spell:sleep                slot=3 attack="" save=- damage=[5d8  parsed=true] heal=false() hpEffect=true(hp_pool) summon=false target=area/0 conc=false time=1 action
+spell:guiding-bolt         slot=1 attack="ranged" save=- damage=[4d6 damage-type:radiant parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=false time=1 action
+spell:guiding-bolt         slot=3 attack="ranged" save=- damage=[6d6 damage-type:radiant parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=false time=1 action
+spell:eldritch-blast       slot=0 attack="ranged" save=- damage=[1d10 damage-type:force parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=false time=1 action
+spell:fire-bolt            slot=0 attack="ranged" save=- damage=[2d10 damage-type:fire parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=false time=1 action
+spell:hellish-rebuke       slot=1 attack="" save=dex/half damage=[2d10 damage-type:fire parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=false time=1 reaction
+spell:spirit-guardians     slot=3 attack="" save=wis/half damage=[3d8 damage-type:radiant parsed=true] heal=false() hpEffect=false() summon=false target=creatures/0 conc=true time=1 action
+spell:bless                slot=1 attack="" save=- damage=[] heal=false() hpEffect=false() summon=false target=creatures/3 conc=true time=1 action
+spell:haste                slot=3 attack="" save=- damage=[] heal=false() hpEffect=false() summon=false target=creature/1 conc=true time=1 action
+spell:flaming-sphere       slot=2 attack="" save=- damage=[2d6 damage-type:fire parsed=true] heal=false() hpEffect=false() summon=false target=creatures/0 conc=true time=1 action
+spell:vampiric-touch       slot=3 attack="melee" save=- damage=[3d6 damage-type:necrotic parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=true time=1 action
+spell:chromatic-orb        (not in the SRD content)
+spell:mass-heal            slot=9 attack="" save=- damage=[] heal=true(700) hpEffect=false() summon=false target=creatures/0 conc=false time=1 action
+spell:acid-arrow           slot=2 attack="ranged" save=- damage=[4d4 damage-type:acid parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=false time=1 action
+spell:thunderwave          slot=1 attack="" save=con/half damage=[2d8 damage-type:thunder parsed=true] heal=false() hpEffect=false() summon=false target=area/0 conc=false time=1 action
+spell:sacred-flame         slot=0 attack="" save=dex/none damage=[2d8 damage-type:radiant parsed=true] heal=false() hpEffect=false() summon=false target=creature/1 conc=false time=1 action

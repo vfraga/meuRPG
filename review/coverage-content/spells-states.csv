@@ -1,0 +1,320 @@
+key,name_pt,level,state,kind,engine_does,missing,impact,casting_time,concentration,note
+spell:acid-arrow,Flecha Ácida,2,partial,attack_damage,attack_roll damage upcast_dice,ongoing_damage,high,1 action,False,"Ranged spell attack; 4d4 acid now, 2d4 more at end of next turn."
+spell:acid-splash,Espirro Ácido,0,built,save_damage,save_roll damage,,low,1 action,False,Dex save for 1d6 acid to one or two nearby creatures.
+spell:aid,Ajuda,2,built,buff,hp_effect:max_hp upcast_dice,duration_not_tracked,low,1 action,False,Up to three allies gain +5 max and current HP for 8 hours.
+spell:alarm,Alarme,1,absent,utility,area_targets_picked_by_hand,zone duration_not_tracked,high,1 minute,False,Ward on a door or area alerting you to creatures entering for 8 hours.
+spell:alter-self,Alterar-se,2,reminder,buff,concentration_flag,movement stat_change duration_not_tracked,medium,1 action,True,"Choose aquatic, appearance, or natural weapon form for up to 1 hour."
+spell:animal-friendship,Amizade Animal,1,partial,condition,save_roll,condition:charmed duration_not_tracked,high,1 action,False,Beast with Int 3 or less must fail Wis save or be charmed for 24 hours.
+spell:animal-messenger,Mensageiro Animal,2,reminder,utility,,,low,1 action,False,Tiny beast carries a 25-word message up to 50 miles in 24 hours.
+spell:animal-shapes,Formas Animais,8,reminder,condition,concentration_flag,stat_change duration_not_tracked,low,1 action,True,Transform willing creatures into beasts of CR 4 or lower for up to 24 hours.
+spell:animate-dead,Animar Mortos,3,built,summon,summon area_targets_picked_by_hand,,low,1 minute,False,"Raises a skeleton or zombie you command for 24 hours, renewable."
+spell:animate-objects,Animar Objetos,5,reminder,summon,concentration_flag,creation,high,1 action,True,Up to ten objects become creatures you command for one minute.
+spell:antilife-shell,Cúpula Antivida,5,reminder,zone,concentration_flag area_targets_picked_by_hand,movement zone duration_not_tracked,medium,1 action,True,"10-foot barrier around you that blocks non-undead, non-construct creatures for up to 1 hour."
+spell:antimagic-field,Campo Antimagia,8,reminder,zone,concentration_flag area_targets_picked_by_hand,zone duration_not_tracked,low,1 action,True,10-foot invisible sphere around you suppressing magic for up to 1 hour.
+spell:antipathy-sympathy,Antipatia/Simpatia,8,absent,condition,area_targets_picked_by_hand,repeat_save movement zone condition:frightened duration_not_tracked,low,1 hour,False,Antipathy frightens or sympathy draws chosen creature kinds for 10 days.
+spell:arcane-eye,Olho Arcano,4,reminder,utility,concentration_flag,creation,low,1 action,True,Invisible sensor eye you move 30 feet per action for up to 1 hour.
+spell:arcane-hand,Mão Arcana,5,partial,attack_damage,attack_roll damage upcast_dice concentration_flag,ongoing_damage movement condition:grappled creation duration_not_tracked,medium,1 action,True,"Force hand strikes, pushes, grapples, or shields for up to 1 minute."
+spell:arcane-lock,Tranca Arcana,2,reminder,zone,,zone,medium,1 action,False,Locks an object until dispelled; you and chosen creatures can open it.
+spell:arcane-sword,Espada Arcana,7,partial,attack_damage,attack_roll damage concentration_flag,creation,low,1 action,True,"Sword of force: melee spell attack 3d10, repeatable by bonus action for 1 minute."
+spell:arcanists-magic-aura,Aura Mágica do Arcanista,2,reminder,utility,,,low,1 action,False,Alters divination results on a creature or object for 24 hours.
+spell:astral-projection,Projeção Astral,9,absent,utility,,,low,1 hour,False,Up to nine creatures project astral forms to the Astral Plane; 1 hour cast.
+spell:augury,Augúrio,2,absent,utility,,,medium,1 minute,False,"GM gives a weal, woe, both, or nothing omen about a planned action."
+spell:awaken,Despertar,5,absent,other,,stat_change condition:charmed,low,8 hours,False,Raises beast or plant to Int 10 and charms it 30 days; 8-hour cast.
+spell:bane,Perdição,1,partial,debuff,save_roll concentration_flag,stat_change duration_not_tracked,high,1 action,True,Three targets subtract 1d4 from attacks and saves for 1 minute.
+spell:banishment,Banimento,4,partial,condition,save_roll concentration_flag,movement condition:incapacitated duration_not_tracked,high,1 action,True,Cha save or banish a creature to another plane until concentration ends.
+spell:barkskin,Pele de Árvore,2,reminder,buff,concentration_flag,stat_change duration_not_tracked,high,1 action,True,Touched creature's AC cannot be below 16 for up to 1 hour.
+spell:beacon-of-hope,Sinal de Esperança,3,reminder,buff,concentration_flag,stat_change duration_not_tracked,medium,1 action,True,"Chosen creatures gain advantage on Wis and death saves, max healing for 1 minute."
+spell:bestow-curse,Rogar Maldição,3,partial,debuff,save_roll concentration_flag,repeat_save stat_change rider upcast_extra duration_not_tracked,high,1 action,True,"Touch curse with one chosen effect, concentration up to 1 minute."
+spell:black-tentacles,Tentáculos Negros,4,partial,condition,save_roll damage concentration_flag area_targets_picked_by_hand,repeat_save ongoing_damage movement zone condition:restrained duration_not_tracked,medium,1 action,True,Difficult terrain 20-foot square; Dex save or restrained and 3d6 bludgeoning each turn.
+spell:blade-barrier,Barreira de Lâminas,6,partial,save_damage,save_roll damage concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone duration_not_tracked,low,1 action,True,"Blade wall: 6d10 slashing on entry or turn start, difficult terrain."
+spell:bless,Bênção,1,reminder,buff,concentration_flag,stat_change duration_not_tracked,high,1 action,True,Up to three allies add 1d4 to attacks and saves for 1 minute.
+spell:blight,Malogro,4,built,save_damage,save_roll damage upcast_dice,,low,1 action,False,"Con save: 8d8 necrotic damage, half on success; plants take max."
+spell:blindness-deafness,Cegueira/Surdez,2,partial,condition,save_roll,repeat_save condition:blinded+deafened duration_not_tracked,high,1 action,False,"Con save blinds or deafens foe for 1 minute, repeatable each turn."
+spell:blink,Piscar,3,reminder,other,,movement,medium,1 action,False,"Each turn you roll d20; on 11+ you vanish to Ethereal Plane, returning later."
+spell:blur,Nublar,2,reminder,buff,concentration_flag,stat_change duration_not_tracked,high,1 action,True,Attackers have disadvantage on attacks against you for 1 minute.
+spell:branding-smite,Marca da Punição,2,reminder,auto_damage,damage_table_only upcast_dice concentration_flag,rider damage_not_rolled,medium,1 bonus action,True,Next weapon hit adds 2d6 radiant and marks the target for 1 minute.
+spell:burning-hands,Mãos Flamejantes,1,built,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,,low,1 action,False,"15-foot cone; Dex save for 3d6 fire damage, half on success."
+spell:call-lightning,Convocar Relâmpagos,3,partial,save_damage,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,repeat_save zone duration_not_tracked,high,1 action,True,Lightning strikes a point each turn for 10 minutes; Dex save for 3d10.
+spell:calm-emotions,Acalmar Emoções,2,partial,other,save_roll concentration_flag area_targets_picked_by_hand,effect_not_applied duration_not_tracked,high,1 action,True,Cha save; suppress charm/fright or make foes indifferent for 1 minute.
+spell:chain-lightning,Corrente de Relâmpagos,6,built,save_damage,save_roll damage,,low,1 action,False,Bolt jumps to three targets within 30 feet; Dex save for 10d8 lightning.
+spell:charm-person,Enfeitiçar Pessoa,1,partial,condition,save_roll,stat_change condition:charmed duration_not_tracked,high,1 action,False,Humanoid makes Wis save or is charmed for 1 hour; ends if harmed.
+spell:chill-touch,Toque Arrepiante,0,partial,attack_damage,attack_roll damage,stat_change rider duration_not_tracked,high,1 action,False,Ranged spell attack for 1d8 necrotic; blocks healing; undead have disadvantage.
+spell:circle-of-death,Círculo da Morte,6,built,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,,low,1 action,False,"Constitution save in 60-foot sphere: 8d6 necrotic damage, half on success."
+spell:clairvoyance,Clarividência,3,absent,utility,concentration_flag,zone duration_not_tracked,medium,10 minutes,True,"Invisible sensor grants seeing or hearing at a distant point; 10-minute cast, concentration."
+spell:clone,Clone,8,absent,other,,creation,low,1 hour,False,Grows inert clone that receives the soul when original dies; 1-hour cast.
+spell:cloudkill,Névoa Mortal,5,partial,save_damage,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,ongoing_damage zone duration_not_tracked,high,1 action,True,"Poison fog: Constitution save, 5d8 poison on entry or turn start; concentration."
+spell:color-spray,Leque Cromático,1,built,condition,hp_effect:hp_pool area_targets_picked_by_hand,duration_not_tracked,low,1 action,False,Blinds creatures in a cone by ascending hit point pool of 6d10 for one round.
+spell:command,Comando,1,partial,condition,save_roll,movement condition:prone duration_not_tracked,high,1 action,False,"Wisdom save; target obeys one-word command next turn, such as approach or flee."
+spell:commune,Comunhão,5,absent,utility,,,medium,1 minute,False,"Ask three yes-or-no questions to a deity; 1-minute cast, GM answers."
+spell:commune-with-nature,Comunhão com a Natureza,5,absent,utility,,,medium,1 minute,False,Learns up to three facts about nearby terrain and creatures; 1-minute cast.
+spell:comprehend-languages,Compreender Idiomas,1,reminder,utility,,,medium,1 action,False,Understand spoken and touched written languages for 1 hour; no combat use.
+spell:compulsion,Compulsão,4,partial,condition,save_roll concentration_flag area_targets_picked_by_hand,repeat_save movement duration_not_tracked,medium,1 action,True,Wisdom save; each turn you direct affected targets to move; repeat saves end it.
+spell:cone-of-cold,Cone de Frio,5,built,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,,low,1 action,False,"Constitution save in 60-foot cone: 8d8 cold damage, half on success."
+spell:confusion,Confusão,4,partial,condition,save_roll concentration_flag area_targets_picked_by_hand,repeat_save duration_not_tracked,high,1 action,True,Wisdom save in 10-foot sphere; d10 behavior table each turn; repeat saves.
+spell:conjure-animals,Conjurar Animais,3,built,summon,summon concentration_flag,,low,1 action,True,Summons fey beasts by challenge rating option; concentration up to 1 hour.
+spell:conjure-celestial,Conjurar Celestial,7,absent,summon,concentration_flag,creation upcast_extra,low,1 minute,True,Summons celestial up to CR 4 for up to 1 hour; concentration; 1-minute cast.
+spell:conjure-elemental,Conjurar Elemental,5,absent,summon,concentration_flag area_targets_picked_by_hand,creation upcast_extra,high,1 minute,True,Summons elemental up to CR 5; becomes hostile if concentration breaks.
+spell:conjure-fey,Conjurar Fada,6,absent,summon,concentration_flag,creation upcast_extra,high,1 minute,True,Summons fey creature up to CR 6 for up to 1 hour; concentration; 1-minute cast.
+spell:conjure-minor-elementals,Conjurar Elementais Menores,4,absent,summon,concentration_flag,creation upcast_extra,high,1 minute,True,"Summons elementals by CR option, up to eight; concentration up to 1 hour; 1-minute cast."
+spell:conjure-woodland-beings,Conjurar Seres da Floresta,4,reminder,summon,concentration_flag,creation upcast_extra,high,1 action,True,Summons fey creatures by challenge rating option; concentration up to 1 hour.
+spell:contact-other-plane,Contato Extraplanar,5,absent,utility,,rider,low,1 minute,False,Intelligence save or take 6d6 psychic and go insane; success allows five answers.
+spell:contagion,Praga,5,partial,condition,attack_roll save_roll,repeat_save stat_change condition:blinded+stunned duration_not_tracked,medium,1 action,False,Melee spell attack inflicts disease with repeat Con saves; some diseases blind or stun.
+spell:contingency,Contingência,6,absent,other,,,low,10 minutes,False,Stores a 5th-level-or-lower spell to trigger on a circumstance; 10-minute cast.
+spell:continual-flame,Chama Contínua,2,reminder,utility,,zone,low,1 action,False,Permanent torch-bright magical flame on an object; creates no heat.
+spell:control-water,Controlar a Água,4,partial,other,save_roll damage concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone duration_not_tracked,medium,1 action,True,"Choose flood, part, redirect or whirlpool water effects; up to 10 minutes."
+spell:control-weather,Controlar o Clima,8,absent,utility,concentration_flag,zone duration_not_tracked,low,10 minutes,True,"Alters precipitation, temperature and wind within 5 miles for up to 8 hours."
+spell:counterspell,Contramágica,3,absent,other,,upcast_extra,high,1 reaction,False,Reaction negates a spell of 3rd level or lower; higher needs ability check.
+spell:create-food-and-water,Criar Alimentos,3,reminder,utility,,creation,low,1 action,False,Creates food and water for fifteen humanoids for 24 hours.
+spell:create-or-destroy-water,Criar ou Destruir Água,1,reminder,utility,area_targets_picked_by_hand,upcast_extra,low,1 action,False,Create or destroy up to 10 gallons of water or fog in a 30-foot cube.
+spell:create-undead,Criar Mortos-Vivos,6,absent,summon,area_targets_picked_by_hand,creation upcast_extra,low,1 minute,False,Animates up to three corpses as ghouls for 24 hours; 1-minute cast.
+spell:creation,Criação,5,absent,utility,area_targets_picked_by_hand,creation upcast_extra,low,1 minute,False,Creates nonliving object up to 5-foot cube; lasts by material; 1-minute cast.
+spell:cure-wounds,Curar Ferimentos,1,built,heal,heal upcast_dice,,low,1 action,False,Touch heals 1d8 plus spellcasting modifier; no effect on undead or constructs.
+spell:dancing-lights,Globos de Luz,0,reminder,utility,concentration_flag,movement zone duration_not_tracked,low,1 action,True,Four floating lights shed dim light; bonus action moves them 60 feet.
+spell:darkness,Escuridão,2,reminder,zone,concentration_flag area_targets_picked_by_hand,zone duration_not_tracked,high,1 action,True,15-foot radius magical darkness up to 10 minutes; dispels overlapping light spells.
+spell:darkvision,Visão no Escuro,2,reminder,buff,,duration_not_tracked,medium,1 action,False,Touch grants willing creature 60-foot darkvision for 8 hours.
+spell:daylight,Luz do Dia,3,reminder,zone,area_targets_picked_by_hand,zone duration_not_tracked,medium,1 action,False,60-foot bright light sphere for 1 hour; dispels darkness of 3rd level or lower.
+spell:death-ward,Proteção contra a Morte,4,reminder,buff,,duration_not_tracked,high,1 action,False,Touch prevents first drop to 0 HP for 8 hours; negates instant-death effects.
+spell:delayed-blast-fireball,Bola de Fogo Controlável,7,partial,save_damage,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,movement zone duration_not_tracked,low,1 action,True,"Lingering bead explodes for 12d6 fire save damage, growing each turn."
+spell:demiplane,Semiplano,8,reminder,utility,,zone duration_not_tracked,low,1 action,False,Creates shadowy door to a 30-foot empty room demiplane for 1 hour.
+spell:detect-evil-and-good,Detectar o Bem e Mal,1,reminder,utility,concentration_flag,,low,1 action,True,Detects certain creature types and consecrated places within 30 feet.
+spell:detect-magic,Detectar Magia,1,reminder,utility,concentration_flag,,medium,1 action,True,Senses magic within 30 feet for 10 minutes; reveals magic school with action.
+spell:detect-poison-and-disease,Detectar Veneno e Doença,1,reminder,utility,concentration_flag,,low,1 action,True,"Senses and identifies poisons, poisonous creatures and diseases within 30 feet for 10 minutes."
+spell:detect-thoughts,Detectar Pensamentos,2,reminder,utility,concentration_flag,,low,1 action,True,Reads thoughts; deeper probe needs Wisdom save; target can end it.
+spell:dimension-door,Porta Dimensional,4,reminder,utility,damage_table_only,movement damage_not_rolled,low,1 action,False,Self-teleport plus one willing ally; collision deals 4d6 force.
+spell:disguise-self,Disfarçar-se,1,reminder,utility,,,medium,1 action,False,Changes appearance for 1 hour; Investigation check against save DC reveals.
+spell:disintegrate,Desintegrar,6,built,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,,low,1 action,False,Dex save for 10d6+40 force; 0 HP disintegrates target; upcast adds 3d6.
+spell:dispel-evil-and-good,Dissipar o Bem e Mal,5,partial,buff,save_roll concentration_flag area_targets_picked_by_hand,stat_change duration_not_tracked,medium,1 action,True,Enemies of listed types get disadvantage vs you; Dismissal can send them home.
+spell:dispel-magic,Dissipar Magia,3,reminder,other,,upcast_extra,high,1 action,False,Ends spell of 3rd level or lower automatically; higher ones need ability check.
+spell:divination,Adivinhação,4,reminder,utility,,,low,1 action,False,Ask GM one question about events within seven days; reliability varies on recasts.
+spell:divine-favor,Auxílio Divino,1,reminder,buff,damage_table_only concentration_flag,stat_change damage_not_rolled duration_not_tracked,medium,1 bonus action,True,Your weapon attacks deal extra 1d4 radiant damage for up to a minute.
+spell:divine-word,Palavra Divina,7,partial,condition,save_roll,rider condition:blinded+deafened+stunned,low,1 bonus action,False,"Charisma save; HP-based deafen, blind, stun, or instant kill; fey and fiends banished."
+spell:dominate-beast,Dominar Besta,4,partial,condition,save_roll concentration_flag,repeat_save condition:charmed upcast_extra duration_not_tracked,medium,1 action,True,Wisdom save charms beast; commands it; repeats after each damage instance.
+spell:dominate-monster,Dominar Monstro,8,partial,condition,save_roll concentration_flag,repeat_save condition:charmed upcast_extra duration_not_tracked,low,1 action,True,Wisdom save charms any creature; commands it; repeats after each damage instance.
+spell:dominate-person,Dominar Pessoa,5,partial,condition,save_roll concentration_flag,repeat_save condition:charmed upcast_extra duration_not_tracked,high,1 action,True,Wisdom save charms humanoid; commands it; repeats after each damage instance.
+spell:dream,Sonho,5,absent,utility,damage,rider,low,1 minute,False,"Messages a sleeping target; optional monstrous nightmare: Wisdom save, 3d6 psychic on waking."
+spell:druidcraft,Druidismo,0,reminder,utility,,,low,1 action,False,"Minor harmless effects: weather prediction, bloom flower, light or snuff candle."
+spell:earthquake,Terremoto,8,reminder,zone,damage_table_only concentration_flag area_targets_picked_by_hand,repeat_save movement zone condition:prone damage_not_rolled duration_not_tracked,low,1 action,True,Area becomes difficult terrain; Con save breaks concentration; Dex save knocks prone each turn.
+spell:eldritch-blast,Rajada Mística,0,built,attack_damage,attack_roll damage,,low,1 action,False,"Ranged spell attack for 1d10 force, with extra beams at higher character levels."
+spell:enhance-ability,Aprimorar Habilidade,2,reminder,buff,concentration_flag,stat_change duration_not_tracked,medium,1 action,True,Touched ally gains advantage on one ability's checks; Bear's Endurance adds temp HP.
+spell:enlarge-reduce,Aumentar/Reduzir,2,partial,buff,save_roll concentration_flag,stat_change duration_not_tracked,high,1 action,True,Enlarge or reduce a creature or object; attack damage and Strength checks change.
+spell:entangle,Constrição,1,partial,condition,save_roll concentration_flag area_targets_picked_by_hand,movement zone condition:restrained duration_not_tracked,high,1 action,True,Str save restrains creatures in 20-foot square; area becomes difficult terrain.
+spell:enthrall,Cativar,2,partial,debuff,save_roll area_targets_picked_by_hand,stat_change duration_not_tracked,high,1 action,False,Wisdom save; failure gives disadvantage on Perception of others.
+spell:etherealness,Forma Etérea,7,reminder,utility,,movement,low,1 action,False,Caster enters Ethereal Plane for 8 hours; returning causes force damage if blocked.
+spell:expeditious-retreat,Recuo Acelerado,1,reminder,buff,concentration_flag,movement duration_not_tracked,medium,1 bonus action,True,Dash as bonus action each turn for up to ten minutes.
+spell:eyebite,Ataque Visual,6,partial,condition,save_roll concentration_flag area_targets_picked_by_hand,repeat_save movement stat_change condition:unconscious+frightened duration_not_tracked,low,1 action,True,"Wisdom save; sleep, panic, or sicken one creature, retargetable each turn."
+spell:fabricate,Fabricar,4,absent,utility,,creation,low,10 minutes,False,Turns raw materials into objects over ten minutes; no creatures or magic items.
+spell:faerie-fire,Fogo das Fadas,1,partial,debuff,save_roll concentration_flag area_targets_picked_by_hand,stat_change zone duration_not_tracked,high,1 action,True,"Dex save outlines creatures; attacks against them have advantage, no invisibility."
+spell:faithful-hound,Cão Fiel,4,partial,summon,attack_roll damage,ongoing_damage creation,medium,1 action,False,Phantom hound bites a hostile creature each turn for 4d8 piercing.
+spell:false-life,Vitalidade Falsa,1,built,buff,hp_effect:temp_hp upcast_dice,duration_not_tracked,low,1 action,False,Gain 1d4+4 temporary HP for one hour; more with higher slots.
+spell:fear,Medo,3,partial,condition,save_roll concentration_flag area_targets_picked_by_hand,repeat_save movement rider condition:frightened duration_not_tracked,high,1 action,True,Wisdom save or frightened in 30-foot cone; flee; repeat save out of sight.
+spell:feather-fall,Queda Suave,1,absent,buff,,movement duration_not_tracked,medium,1 reaction,False,Reaction: slows up to five falling creatures to 60 feet per round.
+spell:feeblemind,Enfraquecer Intelecto,8,partial,save_damage,save_roll damage,repeat_save stat_change rider,low,1 action,False,Int save: 4d6 psychic; on fail Int and Cha become 1 until restored.
+spell:find-familiar,Convocar Familiar,1,built,summon,summon,,low,1 hour,False,Summons a familiar with chosen animal form; it can deliver touch spells.
+spell:find-steed,Convocar Montaria,2,absent,summon,,creation,medium,10 minutes,False,Summons a bonded steed mount; casting again restores it to full HP.
+spell:find-the-path,Encontrar o Caminho,6,absent,utility,concentration_flag,,low,1 minute,True,Reveals shortest route to a known fixed location on the same plane.
+spell:find-traps,Encontrar Armadilhas,2,reminder,utility,,,low,1 action,False,Reveals presence and general nature of traps in line of sight.
+spell:finger-of-death,Dedo da Morte,7,partial,save_damage,save_roll damage,rider creation,low,1 action,False,Con save for 7d8+30 necrotic; slain humanoid rises as your zombie.
+spell:fire-bolt,Raio de Fogo,0,built,attack_damage,attack_roll damage,,low,1 action,False,"Ranged spell attack for 1d10 fire, scaling damage dice with character level."
+spell:fire-shield,Escudo de Fogo,4,reminder,buff,damage_table_only area_targets_picked_by_hand,stat_change zone rider damage_not_rolled duration_not_tracked,medium,1 action,False,"Choose warm or cold shield: resistance, and melee attackers take 2d8 damage."
+spell:fire-storm,Tempestade de Fogo,7,built,save_damage,save_roll damage area_targets_picked_by_hand,,low,1 action,False,"Dex save; 7d10 fire in up to ten 10-foot cubes, half on success."
+spell:fireball,Bola de Fogo,3,built,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,,low,1 action,False,"Dex save, 8d6 fire in 20-foot radius; half on success."
+spell:flame-blade,Lâmina Flamejante,2,partial,attack_damage,damage upcast_dice concentration_flag,creation,high,1 bonus action,True,Bonus-action blade; melee spell attack for 3d6 fire; sheds light.
+spell:flame-strike,Coluna de Chamas,5,built,save_damage,save_roll damage damage_type_choice upcast_dice area_targets_picked_by_hand,,low,1 action,False,Dex save for 4d6 fire plus 4d6 radiant damage in a column; half on success.
+spell:flaming-sphere,Esfera Flamejante,2,reminder,save_damage,damage_table_only upcast_dice concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone damage_not_rolled duration_not_tracked,high,1 action,True,Persistent fire sphere: Dex save each turn adjacent; bonus action moves it 30 feet.
+spell:flesh-to-stone,Carne para Pedra,6,partial,condition,save_roll concentration_flag,repeat_save condition:restrained+petrified duration_not_tracked,low,1 action,True,Con save restrains target; three failures petrify it; repeat saves each turn.
+spell:floating-disk,Disco Flutuante,1,reminder,utility,,movement creation,low,1 action,False,Creates a 3-foot force disk holding 500 pounds that follows caster for an hour.
+spell:fly,Voo,3,reminder,buff,concentration_flag,movement duration_not_tracked,high,1 action,True,Touch grants willing creature 60-foot flying speed for up to 10 minutes.
+spell:fog-cloud,Névoa Obscurecente,1,reminder,zone,concentration_flag area_targets_picked_by_hand,zone upcast_extra duration_not_tracked,high,1 action,True,Heavily obscuring fog sphere up to an hour; higher slots widen radius.
+spell:forbiddance,Proibição,6,absent,zone,area_targets_picked_by_hand,ongoing_damage movement zone duration_not_tracked,low,10 minutes,False,24-hour ward blocking teleport; chosen creature types take 5d10 on entry.
+spell:forcecage,Prisão de Energia,7,reminder,condition,area_targets_picked_by_hand,movement zone duration_not_tracked,low,1 action,False,Immobile force cage or box traps creatures inside for an hour; Cha save escapes teleport.
+spell:foresight,Sexto Sentido,9,absent,buff,,stat_change duration_not_tracked,low,1 minute,False,"Target gets advantage on attacks, checks and saves; attackers get disadvantage for 8 hours."
+spell:freedom-of-movement,Movimentação Livre,4,reminder,buff,,movement duration_not_tracked,medium,1 action,False,"Touch ignores difficult terrain, magical slow and paralysis or restraint for an hour."
+spell:freezing-sphere,Esfera Congelante,6,partial,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,zone,low,1 action,False,Con save for 10d6 cold in 60-foot sphere; half on success; may freeze water.
+spell:gaseous-form,Forma Gasosa,3,reminder,buff,concentration_flag,movement stat_change duration_not_tracked,medium,1 action,True,"Touch turns creature to mist: flying 10 ft, resistance to nonmagical damage, save advantage."
+spell:gate,Portal,9,reminder,summon,concentration_flag,movement zone duration_not_tracked,low,1 action,True,Portal to another plane up to 1 minute; can pull a named creature through.
+spell:geas,Missão,5,absent,condition,,rider condition:charmed upcast_extra duration_not_tracked,low,1 minute,False,Wisdom save or charmed for 30 days; psychic damage when it defies commands.
+spell:gentle-repose,Repouso Tranquilo,2,reminder,utility,,,low,1 action,False,"Preserves a corpse for 10 days, preventing undead and extending raise dead limit."
+spell:giant-insect,Inseto Gigante,4,reminder,summon,concentration_flag,creation,medium,1 action,True,Transforms small beasts into giant versions obeying commands; GM runs stats.
+spell:glibness,Loquacidade,8,reminder,buff,,stat_change duration_not_tracked,low,1 action,False,"For an hour, Charisma checks can be replaced with 15; lies read as truthful."
+spell:globe-of-invulnerability,Globo de Invulnerabilidade,6,reminder,buff,concentration_flag area_targets_picked_by_hand,zone upcast_extra duration_not_tracked,low,1 action,True,10-foot barrier blocks spells of 5th level or lower cast from outside.
+spell:glyph-of-warding,Glifo de Vigilância,3,absent,save_damage,damage_table_only upcast_dice area_targets_picked_by_hand,zone rider damage_not_rolled upcast_extra,medium,1 hour,False,"Hidden trap: triggered Dex save for 5d8 damage, or stores a spell; 1-hour cast."
+spell:goodberry,Bom Fruto,1,reminder,heal,,creation,medium,1 action,False,"Creates ten berries, each healing 1 HP when eaten, potent for 24 hours."
+spell:grease,Área Escorregadia,1,partial,zone,save_roll area_targets_picked_by_hand,repeat_save movement zone condition:prone duration_not_tracked,high,1 action,False,"10-foot square of difficult terrain; Dex save or fall prone, repeated on entry."
+spell:greater-invisibility,Invisibilidade Maior,4,reminder,buff,concentration_flag,condition:invisible duration_not_tracked,high,1 action,True,Caster or touched creature becomes invisible for up to one minute; concentration.
+spell:greater-restoration,Restauração Maior,5,reminder,other,,,medium,1 action,False,"Touch removes one exhaustion level or one chosen curse, charm, petrification, or reduction."
+spell:guardian-of-faith,Guardião da Fé,4,partial,summon,save_roll damage area_targets_picked_by_hand,ongoing_damage zone duration_not_tracked,medium,1 action,False,Spectral guardian damages hostile creatures entering its reach; Dex save for 20 radiant.
+spell:guards-and-wards,Proteger Fortaleza,6,absent,zone,area_targets_picked_by_hand,zone duration_not_tracked,low,10 minutes,False,"Ten-minute ward over 2500 sq ft: fog, locked doors, webs, plus chosen effect."
+spell:guidance,Orientação,0,reminder,buff,concentration_flag,stat_change duration_not_tracked,high,1 action,True,"Touch grants a d4 bonus to one ability check, once, before it ends."
+spell:guiding-bolt,Raio Guiador,1,partial,attack_damage,attack_roll damage upcast_dice,stat_change rider duration_not_tracked,high,1 action,False,Ranged spell attack for 4d6 radiant; hit gives attackers advantage on next attack.
+spell:gust-of-wind,Lufada de Vento,2,partial,debuff,save_roll concentration_flag area_targets_picked_by_hand,movement zone duration_not_tracked,high,1 action,True,Strength save or pushed 15 feet in a 60-foot line; costs double movement toward caster.
+spell:hallow,Consagrar,5,absent,zone,area_targets_picked_by_hand,repeat_save zone condition:frightened,low,24 hours,False,"Consecrates 60-foot area; chosen effects such as fear, darkness, or silence persist."
+spell:hallucinatory-terrain,Terreno Alucinógeno,4,absent,utility,area_targets_picked_by_hand,zone duration_not_tracked,low,10 minutes,False,Makes 150-foot terrain look like other terrain for 24 hours; Investigation to disbelieve.
+spell:harm,Doença Plena,6,partial,save_damage,save_roll damage,stat_change,low,1 action,False,"Con save for 14d6 necrotic, half on success; failed save cuts max HP for an hour."
+spell:haste,Velocidade,3,reminder,buff,concentration_flag,movement stat_change duration_not_tracked,high,1 action,True,"Doubles speed, +2 AC, extra action each turn; lethargy after it ends."
+spell:heal,Cura Completa,6,built,heal,hp_effect:flat_heal upcast_dice,,low,1 action,False,"Restores 70 hit points and ends blindness, deafness, and disease."
+spell:healing-word,Palavra Curativa,1,built,heal,heal upcast_dice,,low,1 bonus action,False,Bonus action: heal chosen creature in range 1d4 plus spellcasting modifier.
+spell:heat-metal,Esquentar Metal,2,partial,auto_damage,save_roll damage upcast_dice concentration_flag,ongoing_damage stat_change rider duration_not_tracked,high,1 action,True,"2d8 fire contact damage, repeatable by bonus action; Con save or drop object or disadvantage."
+spell:hellish-rebuke,Repreensão Infernal,1,absent,save_damage,damage upcast_dice,,high,1 reaction,False,"Reaction to being damaged: Dex save for 2d10 fire, half on success."
+spell:heroes-feast,Banquete de Heróis,6,absent,buff,,stat_change,low,10 minutes,False,Ten-minute feast: up to 12 allies gain 2d10 max HP and Wisdom save advantage.
+spell:heroism,Heroísmo,1,reminder,buff,concentration_flag,duration_not_tracked,high,1 action,True,Touch grants frightened immunity and temp HP each turn; concentration up to a minute.
+spell:hideous-laughter,Riso Histérico,1,partial,condition,save_roll concentration_flag,repeat_save condition:prone+incapacitated duration_not_tracked,high,1 action,True,Wisdom save or prone and incapacitated; repeats save at turn end or on damage.
+spell:hold-monster,Imobilizar Monstro,5,partial,condition,save_roll concentration_flag,repeat_save condition:paralyzed duration_not_tracked,high,1 action,True,"Wisdom save or paralyzed; repeats save at end of each round, up to 1 minute."
+spell:hold-person,Imobilizar Pessoa,2,partial,condition,save_roll concentration_flag,repeat_save condition:paralyzed upcast_extra duration_not_tracked,high,1 action,True,"Wis save or paralyzed; repeat save each turn ends it; concentration, 1 minute."
+spell:holy-aura,Aura Sagrada,8,reminder,buff,concentration_flag area_targets_picked_by_hand,stat_change rider condition:blinded duration_not_tracked,low,1 action,True,Allies get advantage on saves; fiend/undead melee hitters risk blindness.
+spell:hunters-mark,Marca do Caçador,1,reminder,debuff,concentration_flag,upcast_extra duration_not_tracked,high,1 bonus action,True,"Extra 1d6 weapon damage on marked target; re-mark after kill, concentration."
+spell:hypnotic-pattern,Padrão Hipnótico,3,partial,condition,save_roll concentration_flag area_targets_picked_by_hand,condition:charmed+incapacitated duration_not_tracked,high,1 action,True,"Area Wisdom save or charmed, incapacitated, speed 0; ends on damage."
+spell:ice-storm,Tempestade de Gelo,4,partial,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,movement zone,medium,1 action,False,Dex save for 2d8 bludgeoning plus 4d6 cold; leaves difficult terrain.
+spell:identify,Identificação,1,absent,utility,,,high,1 minute,False,"Learn properties, attunement, charges, and spells on an item or creature."
+spell:illusory-script,Escrita Ilusória,1,absent,utility,,,low,1 minute,False,Writing hidden by illusion for 10 days; dispel removes it.
+spell:imprisonment,Aprisionamento,9,absent,condition,,movement condition:restrained creation,low,1 minute,False,Wis save or bound; several prison forms; ends by dispel or condition.
+spell:incendiary-cloud,Nuvem Incendiária,8,partial,save_damage,save_roll damage concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone duration_not_tracked,low,1 action,True,"10d8 fire save for half; cloud persists, moves 10 feet per turn."
+spell:inflict-wounds,Infligir Ferimentos,1,built,attack_damage,attack_roll damage upcast_dice,,low,1 action,False,Melee spell attack; 3d10 necrotic damage on hit.
+spell:insect-plague,Praga de Insetos,5,partial,save_damage,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone duration_not_tracked,medium,1 action,True,"Con save for 4d10 piercing; persistent sphere, difficult terrain, damage on entry."
+spell:instant-summons,Invocação Instantânea,6,absent,utility,,movement,low,1 minute,False,"Teleports marked item to your hand; sapphire material, action to trigger."
+spell:invisibility,Invisibilidade,2,reminder,buff,concentration_flag,condition:invisible upcast_extra duration_not_tracked,high,1 action,True,"Target invisible until it attacks or casts; concentration, 1 hour."
+spell:irresistible-dance,Dança Irresistível,6,reminder,condition,concentration_flag,repeat_save stat_change duration_not_tracked,low,1 action,True,Target dances with disadvantage on Dex saves and attacks; Wis save ends.
+spell:jump,Salto,1,reminder,buff,,movement duration_not_tracked,medium,1 action,False,"Touched creature's jump distance tripled for 1 minute, no concentration."
+spell:knock,Arrombar,2,reminder,utility,,,medium,1 action,False,Unlocks or unbars one object; audible knock up to 300 feet away.
+spell:legend-lore,Conhecimento Lendário,5,absent,utility,,,low,10 minutes,False,"10-minute lore recall about a named person, place, or object."
+spell:lesser-restoration,Restauração Menor,2,reminder,other,,,high,1 action,False,"Touch: end one disease or one blinded, deafened, paralyzed, or poisoned condition."
+spell:levitate,Levitação,2,reminder,debuff,concentration_flag,movement duration_not_tracked,medium,1 action,True,"Raises target up to 20 feet; unwilling Con save; concentration, 10 minutes."
+spell:light,Luz,0,reminder,utility,,zone duration_not_tracked,medium,1 action,False,Touched object sheds 20-foot bright light for 1 hour; save if hostile-held.
+spell:lightning-bolt,Relâmpago,3,built,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,,low,1 action,False,"Dex save; 8d6 lightning in 100-foot line, half on success."
+spell:locate-animals-or-plants,Localizar Animais ou Plantas,2,reminder,utility,,,low,1 action,False,"Direction and distance to nearest chosen beast or plant, 5 miles."
+spell:locate-creature,Localizar Criatura,4,reminder,utility,concentration_flag,,low,1 action,True,"Senses direction to a known creature within 1,000 feet; concentration, 1 hour."
+spell:locate-object,Localizar Objeto,2,reminder,utility,concentration_flag,,low,1 action,True,"Direction to known or nearest object kind within 1,000 feet; concentration."
+spell:longstrider,Passos Longos,1,reminder,buff,,movement upcast_extra duration_not_tracked,medium,1 action,False,Touched creature's speed +10 feet for 1 hour; upcast adds targets.
+spell:mage-armor,Armadura Arcana,1,reminder,buff,,stat_change duration_not_tracked,high,1 action,False,Willing unarmored creature gets AC 13 plus Dex modifier for 8 hours.
+spell:mage-hand,Mãos Mágicas,0,reminder,utility,,movement creation,medium,1 action,False,"Spectral hand manipulates objects within 30 feet; can't attack, 1 minute."
+spell:magic-circle,Círculo Mágico,3,absent,zone,area_targets_picked_by_hand,stat_change zone upcast_extra duration_not_tracked,medium,1 minute,False,10-foot cylinder restricts chosen creature types; 1 hour.
+spell:magic-jar,Recipiente Arcano,6,absent,condition,,,low,1 minute,False,Cha save to possess a humanoid within 100 feet; container-based soul-swap.
+spell:magic-missile,Mísseis Mágicos,1,built,auto_damage,darts damage upcast_dice,,low,1 action,False,Three auto-hitting 1d4+1 force darts split among creatures in range.
+spell:magic-mouth,Boca Encantada,2,absent,utility,,zone,medium,1 minute,False,"Plants a spoken message on an object, triggered by visible or audible conditions."
+spell:magic-weapon,Arma Mágica,2,reminder,buff,concentration_flag,stat_change upcast_extra duration_not_tracked,medium,1 bonus action,True,Touched nonmagical weapon gets +1 attack and damage; upcast +2/+3.
+spell:magnificent-mansion,Mansão Magnífica,7,absent,utility,,creation,low,1 minute,False,Creates 24-hour extradimensional mansion staffed by servants; no attacks.
+spell:major-image,Imagem Maior,3,reminder,utility,concentration_flag,creation upcast_extra,low,1 action,True,Illusory object or creature up to 20-foot cube; Investigation check reveals it.
+spell:mass-cure-wounds,Curar Ferimentos em Massa,5,built,heal,heal upcast_dice area_targets_picked_by_hand,,low,1 action,False,Six creatures in 30-foot sphere heal 3d8 plus modifier; not undead.
+spell:mass-heal,Cura Completa em Massa,9,partial,heal,heal area_targets_picked_by_hand,pool_not_shared_out,low,1 action,False,"Restores 700 HP split among visible creatures; cures disease, blindness, deafness."
+spell:mass-healing-word,Palavra Curativa em Massa,3,built,heal,heal upcast_dice,,low,1 bonus action,False,Six creatures heal 1d4 plus modifier; bonus action; no undead.
+spell:mass-suggestion,Sugestão em Massa,6,partial,condition,save_roll,effect_not_applied duration_not_tracked,low,1 action,False,Twelve creatures Wis save or follow suggestion for 24 hours.
+spell:maze,Labirinto,8,reminder,condition,concentration_flag,repeat_save movement duration_not_tracked,low,1 action,True,Banishes creature into maze; it escapes on DC 20 Int check; concentration.
+spell:meld-into-stone,Mesclar-se às Rochas,3,reminder,utility,,movement,low,1 action,False,"Hide inside stone 8 hours; expelled by destruction, dealing 6d6 bludgeoning."
+spell:mending,Consertar,0,absent,utility,,,medium,1 minute,False,Repairs a single object break up to 1 foot; out-of-combat utility.
+spell:message,Mensagem,0,reminder,utility,,,medium,1 action,False,Whispered communication to one creature within range; no mechanical effect.
+spell:meteor-swarm,Chuva de Meteoros,9,built,save_damage,save_roll damage area_targets_picked_by_hand,,low,1 action,False,"Four 40-foot spheres, Dex save, 20d6 fire and bludgeoning, half on save."
+spell:mind-blank,Limpar a Mente,8,reminder,buff,,stat_change duration_not_tracked,low,1 action,False,"Target gains immunities to psychic damage, mind-reading, divination, charm for 24h."
+spell:minor-illusion,Ilusão Menor,0,reminder,utility,,creation,medium,1 action,False,Creates a sound or small object image for 1 minute; out-of-combat utility.
+spell:mirage-arcane,Miragem,7,absent,zone,area_targets_picked_by_hand,movement zone duration_not_tracked,low,10 minutes,False,Disguises up to 1 mile of terrain for 10 days; can create difficult terrain.
+spell:mirror-image,Reflexos,2,reminder,buff,,stat_change creation duration_not_tracked,high,1 action,False,Creates three duplicates that absorb attacks targeting caster for 1 minute.
+spell:mislead,Despistar,5,reminder,buff,concentration_flag,movement condition:invisible+blinded+deafened creation duration_not_tracked,medium,1 action,True,Caster turns invisible and creates an illusory double that it moves by action.
+spell:misty-step,Passo Nebuloso,2,reminder,utility,,movement,high,1 bonus action,False,Bonus action teleport up to 30 feet to a visible unoccupied space.
+spell:modify-memory,Modificar Memória,5,partial,condition,save_roll concentration_flag,condition:charmed+incapacitated upcast_extra duration_not_tracked,medium,1 action,True,Wisdom save or charmed and incapacitated for 1 minute; caster edits memories.
+spell:moonbeam,Raio Lunar,2,partial,save_damage,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,ongoing_damage zone upcast_extra duration_not_tracked,high,1 action,True,Radiant damage save when entering or starting turn in beam; caster moves beam.
+spell:move-earth,Mover Terra,6,reminder,zone,concentration_flag area_targets_picked_by_hand,zone duration_not_tracked,low,1 action,True,Reshapes 40-foot terrain area over 10 minutes with concentration; no direct damage.
+spell:nondetection,Dificultar Detecção,3,reminder,utility,,,low,1 action,False,Hides touched creature or object from divination and scrying for 8 hours.
+spell:pass-without-trace,Passos sem Pegadas,2,reminder,buff,concentration_flag,stat_change duration_not_tracked,medium,1 action,True,"Chosen allies within 30 feet get +10 Stealth and leave no tracks, 1 hour."
+spell:passwall,Criar Passagem,5,reminder,zone,,movement zone duration_not_tracked,medium,1 action,False,"Creates a 5x8x20-foot passage through wooden, plaster, or stone surfaces for 1 hour."
+spell:phantasmal-killer,Assassino Fantasmagórico,4,partial,save_damage,save_roll damage upcast_dice concentration_flag,repeat_save ongoing_damage condition:frightened upcast_extra duration_not_tracked,medium,1 action,True,"Wis save or frightened; each turn, Wis save or 4d10 psychic damage."
+spell:phantom-steed,Montaria Fantasmagórica,3,absent,summon,,movement creation,medium,1 minute,False,Summons a riding horse with 100-foot speed for 1 hour.
+spell:planar-ally,Aliado Planar,6,absent,summon,,creation,low,10 minutes,False,10-minute cast summons an extraplanar creature for payment-based service.
+spell:planar-binding,Âncora Planar,5,absent,summon,,creation upcast_extra,low,1 hour,False,"1-hour cast; Charisma save binds celestial, elemental, fey, or fiend for 24 hours."
+spell:plane-shift,Viagem Planar,7,partial,utility,attack_roll save_roll,movement rider,low,1 action,False,Teleports up to 8 willing creatures to another plane; melee attack banishes foes.
+spell:plant-growth,Ampliar Plantas,3,reminder,zone,area_targets_picked_by_hand,movement zone,medium,1 action,False,100-foot area becomes difficult terrain; 8-hour casting enriches land for a year.
+spell:poison-spray,Rajada de Veneno,0,built,save_damage,save_roll damage,,low,1 action,False,"Con save or 1d12 poison damage, scaling with caster level."
+spell:polymorph,Metamorfose,4,partial,debuff,save_roll concentration_flag,stat_change duration_not_tracked,high,1 action,True,Wis save or transform into a beast of equal or lower CR for 1 hour.
+spell:power-word-kill,Palavra de Poder Matar,9,built,other,hp_effect:hp_threshold,,low,1 action,False,Instantly kills one visible creature with 100 or fewer hit points.
+spell:power-word-stun,Palavra de Poder Atordoar,8,partial,condition,hp_effect:hp_threshold,repeat_save,low,1 action,False,Stuns one creature with 150 or fewer HP; Con save ends it each turn.
+spell:prayer-of-healing,Oração Curativa,2,absent,heal,heal upcast_dice,,medium,10 minutes,False,Up to six creatures heal 2d8 plus spellcasting modifier; 10-minute cast.
+spell:prestidigitation,Prestidigitação,0,reminder,utility,,creation,medium,1 action,False,Minor non-combat trick chosen from a menu; lasts up to 1 hour.
+spell:prismatic-spray,Rajada Prismática,7,partial,save_damage,save_roll area_targets_picked_by_hand,repeat_save movement rider condition:restrained+blinded+petrified,low,1 action,False,"Random ray per target: five damage colors, plus restrain, blind, or planar banish."
+spell:prismatic-wall,Muralha Prismática,9,reminder,zone,area_targets_picked_by_hand,repeat_save zone rider condition:blinded+restrained+petrified duration_not_tracked,low,1 action,False,"10-minute opaque wall or sphere; seven damaging layers, blinding and petrifying effects."
+spell:private-sanctum,Santuário Particular,4,absent,zone,area_targets_picked_by_hand,zone upcast_extra duration_not_tracked,low,10 minutes,False,"10-minute cast seals a 5-to-100-foot cube against sound, sight, divination, teleport."
+spell:produce-flame,Criar Chamas,0,partial,attack_damage,attack_roll damage,zone duration_not_tracked,high,1 action,False,"Ranged spell attack for 1d8 fire, scaling with level; flame lasts 10 minutes."
+spell:programmed-illusion,Ilusão Programada,6,reminder,utility,area_targets_picked_by_hand,creation,low,1 action,False,"Illusion of up to 30-foot cube triggers on a set condition, then performs."
+spell:project-image,Projetar Imagem,7,reminder,summon,concentration_flag,movement creation,low,1 action,True,Intangible copy at a seen location; ends when damaged; concentration up to 24 hours.
+spell:protection-from-energy,Proteção contra Energia,3,reminder,buff,concentration_flag,stat_change duration_not_tracked,medium,1 action,True,"Touched ally gains resistance to acid, cold, fire, lightning, or thunder for 1 hour."
+spell:protection-from-evil-and-good,Proteção contra o Bem e Mal,1,reminder,buff,concentration_flag,stat_change duration_not_tracked,high,1 action,True,"Touched ally: listed creature types get disadvantage on attacks and can't charm, frighten, or possess."
+spell:protection-from-poison,Proteção contra Veneno,2,reminder,buff,,stat_change duration_not_tracked,medium,1 action,False,Neutralizes poison on touched creature; advantage vs poison and poison resistance for 1 hour.
+spell:purify-food-and-drink,Purificar Alimentos,1,reminder,utility,area_targets_picked_by_hand,,low,1 action,False,Removes poison and disease from food and drink in a 5-foot sphere.
+spell:raise-dead,Reviver os Mortos,5,absent,heal,,stat_change,high,1 hour,False,1-hour cast revives creature dead 10 days; -4 penalty fades per long rest.
+spell:ray-of-enfeeblement,Raio do Enfraquecimento,2,partial,debuff,attack_roll save_roll concentration_flag,repeat_save stat_change duration_not_tracked,high,1 action,True,Ranged spell attack halves target's Strength weapon damage until Con save ends it.
+spell:ray-of-frost,Raio de Gelo,0,partial,attack_damage,attack_roll damage,movement,high,1 action,False,Ranged spell attack for 1d8 cold and -10 speed until your next turn.
+spell:regenerate,Regeneração,7,absent,heal,heal,,low,1 minute,False,"Heals 4d8+15 HP now, then 1 HP per turn for an hour."
+spell:reincarnate,Reencarnação,5,absent,utility,,creation,medium,1 hour,False,"Revives a humanoid dead up to 10 days in a new body, GM-rolled race."
+spell:remove-curse,Remover Maldição,3,reminder,utility,,,low,1 action,False,Ends all curses on one creature or object; cursed item's curse remains.
+spell:resilient-sphere,Esfera Resiliente,4,partial,zone,save_roll concentration_flag,movement zone duration_not_tracked,medium,1 action,True,Dex save or enclosed in an immune force sphere for a minute.
+spell:resistance,Resistência,0,reminder,buff,concentration_flag,stat_change duration_not_tracked,medium,1 action,True,"Touched ally adds a d4 to one saving throw, once."
+spell:resurrection,Ressurreição,7,absent,heal,,stat_change,high,1 hour,False,Fully restores a dead creature; -4 penalty fades each long rest.
+spell:reverse-gravity,Inverter a Gravidade,7,partial,debuff,save_roll concentration_flag area_targets_picked_by_hand,movement zone duration_not_tracked,low,1 action,True,"Creatures in a 100-foot cylinder fall upward for a minute, Dex save to grab."
+spell:revivify,Revivificar,3,reminder,heal,,,high,1 action,False,Returns a creature dead under one minute to 1 hit point.
+spell:rope-trick,Truque de Corda,2,reminder,utility,,creation,low,1 action,False,Rope leads to an extradimensional hideout for eight creatures for an hour.
+spell:sacred-flame,Chama Sagrada,0,built,save_damage,save_roll damage,,low,1 action,False,"Dex save or 1d8 radiant damage, scaling with character level."
+spell:sanctuary,Santuário,1,reminder,buff,,duration_not_tracked,medium,1 bonus action,False,Attackers must Wis save or retarget; ends if ward attacks.
+spell:scorching-ray,Raio Ardente,2,built,attack_damage,attack_roll damage,,low,1 action,False,"Three fire ray spell attacks, 2d6 fire each on hit; more rays upcast."
+spell:scrying,Vidência,5,absent,utility,concentration_flag,,medium,10 minutes,True,Wis save or invisible sensor lets you see and hear the target.
+spell:secret-chest,Arca Secreta,4,reminder,utility,,creation,low,1 action,False,Stores a 12 cubic foot chest on the Ethereal Plane; recallable via replica.
+spell:see-invisibility,Ver o Invisível,2,reminder,utility,,,low,1 action,False,Lets caster see invisible creatures and Ethereal things for one hour.
+spell:seeming,Similaridade,5,reminder,utility,,,low,1 action,False,Cha save for unwilling targets to change appearance; lasts eight hours.
+spell:sending,Enviar Mensagem,3,reminder,utility,,,low,1 action,False,"Sends a 25-word telepathic message to a familiar creature, which can reply."
+spell:sequester,Isolamento,7,reminder,utility,,,low,1 action,False,Hides a willing creature or object in stasis until dispelled or triggered.
+spell:shapechange,Alterar Forma,9,reminder,buff,concentration_flag,stat_change duration_not_tracked,low,1 action,True,"Transform into a creature of CR up to your level, using its stats."
+spell:shatter,Despedaçar,2,built,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,,low,1 action,False,"Con save for 3d8 thunder in 10-foot sphere, half on success."
+spell:shield,Escudo Arcano,1,built,buff,,,low,1 reaction,False,"Reaction +5 AC until next turn, immune to magic missile."
+spell:shield-of-faith,Escudo da Fé,1,reminder,buff,concentration_flag,stat_change duration_not_tracked,high,1 bonus action,True,"Bonus action grants a creature +2 AC while concentrated, up to 10 minutes."
+spell:shillelagh,Bordão Místico,0,reminder,buff,,stat_change duration_not_tracked,medium,1 bonus action,False,Bonus action makes a club or staff use spellcasting ability and d8 damage.
+spell:shocking-grasp,Toque Chocante,0,partial,attack_damage,attack_roll damage,stat_change rider,high,1 action,False,"Melee spell attack, 1d8 lightning; target loses reactions until its next turn."
+spell:silence,Silêncio,2,reminder,zone,concentration_flag area_targets_picked_by_hand,zone condition:deafened duration_not_tracked,medium,1 action,True,"Silences a 20-foot sphere; creatures inside are deafened, no verbal spells."
+spell:silent-image,Imagem Silenciosa,1,reminder,utility,concentration_flag area_targets_picked_by_hand,creation,low,1 action,True,Creates a 15-foot-cube visual illusion you can move; Int check reveals it.
+spell:simulacrum,Simulacro,7,absent,summon,,creation,low,12 hours,False,Creates a half-HP duplicate of a beast or humanoid over 12 hours.
+spell:sleep,Sono,1,built,condition,hp_effect:hp_pool area_targets_picked_by_hand,duration_not_tracked,low,1 action,False,"Knocks creatures unconscious by total HP pool, 1 minute, no save."
+spell:sleet-storm,Nevasca,3,reminder,zone,concentration_flag area_targets_picked_by_hand,movement zone rider condition:prone duration_not_tracked,high,1 action,True,"Icy 40-foot cylinder: Dex save or fall prone, difficult terrain, obscures."
+spell:slow,Lentidão,3,partial,debuff,save_roll concentration_flag area_targets_picked_by_hand,repeat_save movement stat_change duration_not_tracked,high,1 action,True,"Up to six creatures: Wis save, halved speed, -2 AC, one attack, repeat save."
+spell:spare-the-dying,Estabilizar,0,built,heal,hp_effect:zero_hp_target,,low,1 action,False,Touch a 0 HP living creature to stabilize it; no effect on undead.
+spell:speak-with-animals,Falar com Animais,1,reminder,utility,,,medium,1 action,False,Lets caster talk with beasts for ten minutes; favors at GM's discretion.
+spell:speak-with-dead,Falar com os Mortos,3,reminder,utility,,,low,1 action,False,Corpse answers up to five questions for ten minutes; cannot be undead.
+spell:speak-with-plants,Falar com Plantas,3,reminder,utility,,movement zone duration_not_tracked,low,1 action,False,Talk to plants for info; can toggle terrain to difficult for ten minutes.
+spell:spider-climb,Patas de Aranha,2,reminder,buff,concentration_flag,movement duration_not_tracked,medium,1 action,True,"Touched ally climbs walls and ceilings at walking speed for an hour, concentration."
+spell:spike-growth,Crescer Espinhos,2,reminder,zone,damage_table_only concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone damage_not_rolled duration_not_tracked,medium,1 action,True,"Difficult spiky terrain; 2d4 piercing per 5 feet moved, for ten minutes."
+spell:spirit-guardians,Espíritos Guardiões,3,partial,zone,save_roll damage damage_type_choice upcast_dice concentration_flag area_targets_picked_by_hand,repeat_save ongoing_damage movement zone duration_not_tracked,high,1 action,True,Aura 15 ft around you: halved speed; Wis save or 3d8 radiant/necrotic.
+spell:spiritual-weapon,Arma Espiritual,2,partial,attack_damage,attack_roll damage upcast_dice,zone duration_not_tracked,high,1 bonus action,False,"Floating force weapon attacks for 1d8+mod on cast and each bonus action, one minute."
+spell:stinking-cloud,Névoa Fétida,3,partial,zone,save_roll concentration_flag area_targets_picked_by_hand,repeat_save zone duration_not_tracked,high,1 action,True,Con save each turn in 20-foot sphere; failure wastes the creature's action.
+spell:stone-shape,Moldar Rochas,4,reminder,utility,,,low,1 action,False,Reshapes a stone object or 5-foot section into any desired shape.
+spell:stoneskin,Pele de Pedra,4,reminder,buff,concentration_flag,stat_change duration_not_tracked,medium,1 action,True,Target gains resistance to nonmagical physical damage for up to 1 hour.
+spell:storm-of-vengeance,Tempestade da Vingança,9,partial,zone,save_roll damage concentration_flag area_targets_picked_by_hand,ongoing_damage zone rider condition:deafened duration_not_tracked,low,1 action,True,Storm cloud zone dealing damage each round for up to one minute.
+spell:suggestion,Sugestão,2,partial,condition,save_roll concentration_flag,effect_not_applied duration_not_tracked,high,1 action,True,Wisdom save; target pursues caster-described course for up to 8 hours.
+spell:sunbeam,Raio Solar,6,partial,save_damage,save_roll damage concentration_flag area_targets_picked_by_hand,stat_change zone rider condition:blinded duration_not_tracked,high,1 action,True,Radiant line damage save; blinds on fail; persistent light mote.
+spell:sunburst,Explosão Solar,8,partial,save_damage,save_roll damage area_targets_picked_by_hand,repeat_save stat_change rider condition:blinded,low,1 action,False,"Radiant damage save; blinds for 1 minute, repeatable each turn end."
+spell:symbol,Símbolo,7,absent,zone,area_targets_picked_by_hand,repeat_save movement stat_change zone rider condition:frightened+incapacitated+unconscious+stunned,low,1 minute,False,"Glyph that, when triggered, imposes one of several saving-throw effects."
+spell:telekinesis,Telecinésia,5,reminder,condition,concentration_flag,movement condition:restrained duration_not_tracked,medium,1 action,True,Contested check moves creature or object 30 feet; restrains moved creature.
+spell:telepathic-bond,Ligação Telepática,5,reminder,utility,,,low,1 action,False,Links up to eight willing creatures for telepathic communication for one hour.
+spell:teleport,Teletransporte,7,reminder,utility,damage_table_only area_targets_picked_by_hand,movement rider damage_not_rolled,low,1 action,False,Teleports up to nine willing creatures; off-target mishaps deal 3d10 force.
+spell:teleportation-circle,Círculo de Teletransporte,5,absent,utility,area_targets_picked_by_hand,zone duration_not_tracked,low,1 minute,False,One-minute cast creating a portal to a known teleportation circle.
+spell:thaumaturgy,Taumaturgia,0,reminder,utility,,,low,1 action,False,Cosmetic or minor sensory effects lasting up to one minute; no combat use.
+spell:thunderwave,Onda Trovejante,1,partial,save_damage,save_roll damage upcast_dice area_targets_picked_by_hand,movement,high,1 action,False,15-foot cube save: 2d8 thunder damage and 10-foot push on fail.
+spell:time-stop,Parar o Tempo,9,reminder,other,,,low,1 action,False,Caster takes 1d4+1 extra turns; ends if caster affects others.
+spell:tiny-hut,Pequena Cabana,3,absent,zone,area_targets_picked_by_hand,zone duration_not_tracked,high,1 minute,False,Immobile force dome for eight hours; creatures barred except nine inside.
+spell:tongues,Idiomas,3,reminder,utility,,,low,1 action,False,"Touched creature understands and is understood in any spoken language, one hour."
+spell:transport-via-plants,Teletransporte por Árvores,6,reminder,utility,,movement zone duration_not_tracked,low,1 action,False,Creates a one-round plant link for creatures to travel between plants.
+spell:tree-stride,Caminhar em Árvores,5,reminder,utility,concentration_flag,movement,low,1 action,True,"Move between same-kind trees within 500 feet, once per round, for one minute."
+spell:true-polymorph,Metamorfose Verdadeira,9,reminder,other,concentration_flag,stat_change creation duration_not_tracked,low,1 action,True,Transforms creature or object; lasts one hour or becomes permanent if concentrated.
+spell:true-resurrection,Ressurreição Verdadeira,9,absent,heal,,creation,low,1 hour,False,One-hour cast restoring a creature dead up to 200 years.
+spell:true-seeing,Visão da Verdade,6,reminder,buff,,duration_not_tracked,low,1 action,False,Touched ally gains truesight 120 feet for one hour.
+spell:true-strike,Ataque Certeiro,0,reminder,buff,concentration_flag,stat_change duration_not_tracked,medium,1 action,True,Grants advantage on your first attack against the target next turn.
+spell:unseen-servant,Servo Invisível,1,reminder,summon,,movement creation,medium,1 action,False,Creates invisible 1-HP servant for one hour; performs simple tasks.
+spell:vampiric-touch,Toque Vampírico,3,partial,attack_damage,attack_roll damage upcast_dice concentration_flag,heal_half_not_applied repeat_attack_not_run,high,1 action,True,Melee spell attack deals 3d6 necrotic and heals you half of it.
+spell:vicious-mockery,Zombaria Viciosa,0,partial,save_damage,save_roll damage,stat_change,high,1 action,False,Wisdom save: 1d4 psychic damage and next attack at disadvantage.
+spell:wall-of-fire,Muralha de Fogo,4,partial,zone,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,ongoing_damage zone duration_not_tracked,high,1 action,True,"Fire wall: Dex save damage, then ongoing fire damage near one chosen side."
+spell:wall-of-force,Muralha de Energia,5,reminder,zone,concentration_flag,movement zone duration_not_tracked,high,1 action,True,Invisible impassable barrier shaped by caster for up to ten minutes.
+spell:wall-of-ice,Muralha de Gelo,6,partial,zone,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone duration_not_tracked,low,1 action,True,Ice wall: Dex-save cold damage on creation; frigid air hurts passers.
+spell:wall-of-stone,Muralha de Pedra,5,reminder,zone,concentration_flag,movement zone duration_not_tracked,medium,1 action,True,"Solid stone wall of panels, up to ten minutes; permanent if concentration held."
+spell:wall-of-thorns,Muralha de Espinhos,6,partial,zone,save_roll damage upcast_dice concentration_flag area_targets_picked_by_hand,ongoing_damage movement zone duration_not_tracked,low,1 action,True,"Thorn wall: Dex-save piercing damage, slashing damage on entry, costs movement."
+spell:warding-bond,Vínculo Protetor,2,reminder,buff,,stat_change rider duration_not_tracked,medium,1 action,False,"Touched ally gets +1 AC and saves, resistance; caster shares damage."
+spell:water-breathing,Respirar na Água,3,reminder,utility,,,low,1 action,False,Up to ten creatures can breathe underwater for 24 hours.
+spell:water-walk,Andar na Água,3,reminder,utility,,movement,low,1 action,False,Up to ten creatures walk on liquids for one hour; can lift submerged creatures.
+spell:web,Teia,2,reminder,zone,damage_table_only concentration_flag area_targets_picked_by_hand,repeat_save ongoing_damage movement zone condition:restrained damage_not_rolled duration_not_tracked,high,1 action,True,"Webs restrain creatures in a 20-foot cube; difficult terrain, flammable, for one hour."
+spell:weird,Encarnação Fantasmagórica,9,partial,condition,save_roll concentration_flag area_targets_picked_by_hand,repeat_save ongoing_damage condition:frightened duration_not_tracked,low,1 action,True,Frightens creatures in 30-foot sphere; repeated Wisdom save or 4d10 psychic damage.
+spell:wind-walk,Caminhar no Vento,6,absent,buff,,movement stat_change condition:incapacitated duration_not_tracked,low,1 minute,False,"One-minute cast for cloud form: 300-foot flight and nonmagical resistance, eight hours."
+spell:wind-wall,Muralha de Vento,3,partial,zone,save_roll damage concentration_flag area_targets_picked_by_hand,movement zone duration_not_tracked,high,1 action,True,"Strength save for 3d8 bludgeoning; wall blocks flyers, gas and arrows."
+spell:wish,Desejo,9,reminder,other,,stat_change rider creation,low,1 action,False,Duplicates spell up to 8th level or gives many effects; costs stress and Strength.
+spell:word-of-recall,Palavra de Recordação,6,reminder,utility,area_targets_picked_by_hand,movement,low,1 action,False,Teleports you and five willing creatures to a prepared sanctuary.
+spell:zone-of-truth,Zona da Verdade,2,reminder,zone,area_targets_picked_by_hand,repeat_save zone duration_not_tracked,medium,1 action,False,"Charisma save each turn in a 15-foot sphere, or the creature cannot lie."

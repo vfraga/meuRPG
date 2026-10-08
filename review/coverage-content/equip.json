@@ -1,0 +1,1040 @@
+{
+ "armor": [
+  {
+   "Key": "equipment:breastplate",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 16,
+   "Desc": "Peitoral",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:breastplate",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 16,
+   "Desc": "Peitoral",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:breastplate",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 16,
+   "Desc": "Peitoral",
+   "Speed": 25,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:chain-mail",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 16,
+   "Desc": "Cota de malha",
+   "Speed": 20,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de malha.",
+    "Cota de malha pede FOR 13: com menos, o deslocamento cai 10 pés (anões não perdem)."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:chain-mail",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 16,
+   "Desc": "Cota de malha",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de malha."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:chain-mail",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 16,
+   "Desc": "Cota de malha",
+   "Speed": 25,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de malha.",
+    "Cota de malha pede FOR 13: com menos, o deslocamento cai 10 pés (anões não perdem)."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:chain-shirt",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 15,
+   "Desc": "Camisão de malha",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:chain-shirt",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 15,
+   "Desc": "Camisão de malha",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:chain-shirt",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 15,
+   "Desc": "Camisão de malha",
+   "Speed": 25,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:half-plate-armor",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 17,
+   "Desc": "Meia-armadura",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com meia-armadura."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:half-plate-armor",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 17,
+   "Desc": "Meia-armadura",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com meia-armadura."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:half-plate-armor",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 17,
+   "Desc": "Meia-armadura",
+   "Speed": 25,
+   "Hints": [
+    "Desvantagem em Furtividade com meia-armadura."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:hide-armor",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Gibão de peles",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:hide-armor",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 14,
+   "Desc": "Gibão de peles",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:hide-armor",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Gibão de peles",
+   "Speed": 25,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:leather-armor",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 13,
+   "Desc": "Armadura de couro",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:leather-armor",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 13,
+   "Desc": "Armadura de couro",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:leather-armor",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 13,
+   "Desc": "Armadura de couro",
+   "Speed": 25,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:padded-armor",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 13,
+   "Desc": "Armadura acolchoada",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com armadura acolchoada."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:padded-armor",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 13,
+   "Desc": "Armadura acolchoada",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com armadura acolchoada."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:padded-armor",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 13,
+   "Desc": "Armadura acolchoada",
+   "Speed": 25,
+   "Hints": [
+    "Desvantagem em Furtividade com armadura acolchoada."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:plate-armor",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 18,
+   "Desc": "Armadura de placas",
+   "Speed": 20,
+   "Hints": [
+    "Desvantagem em Furtividade com armadura de placas.",
+    "Armadura de placas pede FOR 15: com menos, o deslocamento cai 10 pés (anões não perdem)."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:plate-armor",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 18,
+   "Desc": "Armadura de placas",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com armadura de placas."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:plate-armor",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 18,
+   "Desc": "Armadura de placas",
+   "Speed": 25,
+   "Hints": [
+    "Desvantagem em Furtividade com armadura de placas.",
+    "Armadura de placas pede FOR 15: com menos, o deslocamento cai 10 pés (anões não perdem)."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:ring-mail",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Cota de anéis",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de anéis."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:ring-mail",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 14,
+   "Desc": "Cota de anéis",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de anéis."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:ring-mail",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Cota de anéis",
+   "Speed": 25,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de anéis."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:scale-mail",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 16,
+   "Desc": "Brunea",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com brunea."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:scale-mail",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 16,
+   "Desc": "Brunea",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com brunea."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:scale-mail",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 16,
+   "Desc": "Brunea",
+   "Speed": 25,
+   "Hints": [
+    "Desvantagem em Furtividade com brunea."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:shield",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Sem armadura + escudo",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:shield",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 14,
+   "Desc": "Sem armadura + escudo",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:shield",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Sem armadura + escudo",
+   "Speed": 25,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:splint-armor",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 17,
+   "Desc": "Cota de talas",
+   "Speed": 20,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de talas.",
+    "Cota de talas pede FOR 15: com menos, o deslocamento cai 10 pés (anões não perdem)."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:splint-armor",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 17,
+   "Desc": "Cota de talas",
+   "Speed": 30,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de talas."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:splint-armor",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 17,
+   "Desc": "Cota de talas",
+   "Speed": 25,
+   "Hints": [
+    "Desvantagem em Furtividade com cota de talas.",
+    "Cota de talas pede FOR 15: com menos, o deslocamento cai 10 pés (anões não perdem)."
+   ],
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:studded-leather-armor",
+   "Race": "race:human",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Armadura de couro batido",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:studded-leather-armor",
+   "Race": "race:human",
+   "STR": 15,
+   "AC": 14,
+   "Desc": "Armadura de couro batido",
+   "Speed": 30,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  },
+  {
+   "Key": "equipment:studded-leather-armor",
+   "Race": "race:dwarf",
+   "STR": 8,
+   "AC": 14,
+   "Desc": "Armadura de couro batido",
+   "Speed": 25,
+   "Hints": null,
+   "Issues": [
+    "Faltam 2 perícias para escolher."
+   ]
+  }
+ ],
+ "weapons": [
+  {
+   "Key": "equipment:battleaxe",
+   "Props": "versatile",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "1d10+3",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:blowgun",
+   "Props": "ammunition,loading",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "1+2",
+   "Versatile": "",
+   "Range": 25,
+   "Long": 100,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:club",
+   "Props": "light,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d4+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": true,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:crossbow-hand",
+   "Props": "ammunition,light,loading",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "1d6+2",
+   "Versatile": "",
+   "Range": 30,
+   "Long": 120,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:crossbow-heavy",
+   "Props": "ammunition,heavy,loading,two-handed",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "1d10+2",
+   "Versatile": "",
+   "Range": 100,
+   "Long": 400,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:crossbow-light",
+   "Props": "ammunition,loading,two-handed",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "1d8+2",
+   "Versatile": "",
+   "Range": 80,
+   "Long": 320,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:dagger",
+   "Props": "finesse,light,thrown,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d4+3",
+   "Versatile": "",
+   "Range": 20,
+   "Long": 60,
+   "Light": true,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:dart",
+   "Props": "finesse,thrown",
+   "Melee": false,
+   "Bonus": 5,
+   "Damage": "1d4+3",
+   "Versatile": "",
+   "Range": 20,
+   "Long": 60,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:flail",
+   "Props": "",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:glaive",
+   "Props": "heavy,reach,two-handed",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d10+3",
+   "Versatile": "",
+   "Range": 10,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:greataxe",
+   "Props": "heavy,two-handed",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d12+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:greatclub",
+   "Props": "two-handed",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:greatsword",
+   "Props": "heavy,two-handed",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "2d6+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:halberd",
+   "Props": "heavy,reach,two-handed",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d10+3",
+   "Versatile": "",
+   "Range": 10,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:handaxe",
+   "Props": "light,thrown,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "",
+   "Range": 20,
+   "Long": 60,
+   "Light": true,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:javelin",
+   "Props": "thrown,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "",
+   "Range": 30,
+   "Long": 120,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:lance",
+   "Props": "reach,special",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d12+3",
+   "Versatile": "",
+   "Range": 10,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:light-hammer",
+   "Props": "light,thrown,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d4+3",
+   "Versatile": "",
+   "Range": 20,
+   "Long": 60,
+   "Light": true,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:longbow",
+   "Props": "ammunition,heavy,two-handed",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "1d8+2",
+   "Versatile": "",
+   "Range": 150,
+   "Long": 600,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:longsword",
+   "Props": "versatile",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "1d10+3",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:mace",
+   "Props": "monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:maul",
+   "Props": "heavy,two-handed",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "2d6+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:morningstar",
+   "Props": "",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:net",
+   "Props": "thrown,special",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 15,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:pike",
+   "Props": "heavy,reach,two-handed",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d10+3",
+   "Versatile": "",
+   "Range": 10,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:quarterstaff",
+   "Props": "versatile,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "1d8+3",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:rapier",
+   "Props": "finesse",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:scimitar",
+   "Props": "finesse,light",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": true,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:shortbow",
+   "Props": "ammunition,two-handed",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "1d6+2",
+   "Versatile": "",
+   "Range": 80,
+   "Long": 320,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:shortsword",
+   "Props": "finesse,light,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": true,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:sickle",
+   "Props": "light,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d4+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": true,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:sling",
+   "Props": "ammunition",
+   "Melee": false,
+   "Bonus": 4,
+   "Damage": "1d4+2",
+   "Versatile": "",
+   "Range": 30,
+   "Long": 120,
+   "Light": false,
+   "Ability": "dex",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:spear",
+   "Props": "thrown,versatile,monk",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "1d8+3",
+   "Range": 20,
+   "Long": 60,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:trident",
+   "Props": "thrown,versatile",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d6+3",
+   "Versatile": "1d8+3",
+   "Range": 20,
+   "Long": 60,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:war-pick",
+   "Props": "",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:warhammer",
+   "Props": "versatile",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d8+3",
+   "Versatile": "1d10+3",
+   "Range": 5,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  },
+  {
+   "Key": "equipment:whip",
+   "Props": "finesse,reach",
+   "Melee": true,
+   "Bonus": 5,
+   "Damage": "1d4+3",
+   "Versatile": "",
+   "Range": 10,
+   "Long": 0,
+   "Light": false,
+   "Ability": "str",
+   "Notes": "",
+   "Hints": null
+  }
+ ]
+}
