@@ -1,11 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
 import {
-  Component,
-  ElementRef,
-  Injector,
   afterNextRender,
+  Component,
   computed,
+  effect,
+  ElementRef,
   inject,
+  Injector,
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -109,6 +110,8 @@ export class GenerateSheet {
   /** The seed the server used; `null` after a swap by hand. */
   protected readonly seed = signal<number | null>(null);
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
 
   /** The line being swapped, the creatures it can become and the one picked. */
@@ -212,8 +215,10 @@ export class GenerateSheet {
         // The first creature is the one the focus lands on, as in a radio group that has no choice yet.
       }
     } catch (err) {
-      this.swapError.set(encounterErrorMessage(err, 'swap'));
-      this.swaps.set([]);
+      if (this.swapping() === line) {
+        this.swapError.set(encounterErrorMessage(err, 'swap'));
+        this.swaps.set([]);
+      }
     }
   }
 
@@ -229,6 +234,7 @@ export class GenerateSheet {
     if (!line || !next || !current || this.swapBusy()) {
       return;
     }
+    const mine = this.version;
     this.swapBusy.set(true);
     this.swapError.set('');
     try {
@@ -236,11 +242,18 @@ export class GenerateSheet {
         creatureKey: l === line ? next.key : (l.creature?.key ?? ''),
         count: l.count,
       }));
-      this.result.set(await this.api.evaluate(this.data.campaignId, entries, this.data.party));
+      const swapped = await this.api.evaluate(this.data.campaignId, entries, this.data.party);
+      // A new draw (another band or type) while this answered is the encounter on screen: the swap was of the old one.
+      if (mine !== this.version) {
+        return;
+      }
+      this.result.set(swapped);
       this.seed.set(null);
       this.swapping.set(null);
     } catch (err) {
-      this.swapError.set(encounterErrorMessage(err, 'swap'));
+      if (mine === this.version) {
+        this.swapError.set(encounterErrorMessage(err, 'swap'));
+      }
     } finally {
       this.swapBusy.set(false);
     }

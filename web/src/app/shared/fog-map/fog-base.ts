@@ -2,7 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
+  inject,
   input,
   output,
   signal,
@@ -21,6 +23,12 @@ import {
   tileUrl,
 } from '../../core/maps/vision';
 import { MapLayersOverlay } from '../map-layers/map-layers';
+
+const MS_PER_SECOND = 1000;
+/** A tile that did not come (the server throttles tiles with a 429 or a 503; an `<img>` cannot read the `Retry-After`)
+ * is asked for again after 2, 4, 8, 16 and 30 s; after the last attempt the place stops waiting. */
+const TILE_RETRIES = 5;
+const TILE_RETRY_CAP_SECONDS = 30;
 
 /** The whole picture of a map the viewer reads whole (a master): its URL and size. */
 export interface FogImage {
@@ -44,6 +52,8 @@ export interface FogImage {
  *   place with a dashed border, still (no animation). A tile the viewer does not
  *   have is not asked for: its squares are solid black. The master reading the
  *   whole image (no tiles) passes `image` instead.
+ *   A tile the server did not give (throttled, or busy) is asked for again after a growing wait; it counts as
+ *   arrived only when it does, or when the last attempt has failed.
  * - **Shading.** One state per square (`GetMapVision`): penumbra under 25 % black,
  *   "no escuro, em cinza" without colour (a backdrop filter, so the layers go grey
  *   too), "já visto" under 60 % black with fine dots, "não visto" solid black.
@@ -85,13 +95,16 @@ export class FogBase {
 
   /** Whether the first load is still going: some tile of this map and viewer has not arrived yet. */
   readonly loadingChange = output<boolean>();
-  /** The places whose tile has arrived (or failed: a place that will never come is not waited for). */
+  /** The places whose tile has arrived (or failed every attempt: a place that will never come is not waited for). */
   readonly settledChange = output<ReadonlySet<string>>();
 
   /** The tiles that have settled at least once, by place. */
   private readonly settled = signal<ReadonlySet<string>>(new Set());
   /** True until every tile has arrived once; a map and a viewer start again at true. */
   private readonly initial = signal(true);
+  /** The attempts made again, by place: part of the tile's URL, so the browser asks again. */
+  private readonly retries = signal<ReadonlyMap<string, number>>(new Map());
+  private readonly timers = new Set<ReturnType<typeof setTimeout>>();
 
   /** The route of the tiles: another map is another set of tiles (a changed revision is not). */
   private readonly route = computed(() => this.vision().tilesPath);
@@ -129,11 +142,14 @@ export class FogBase {
   });
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.cancelRetries());
     // Another route, map or viewer is another set of tiles: nothing has arrived yet.
     effect(() => {
       this.route();
       this.forCharacter();
       untracked(() => {
+        this.cancelRetries();
+        this.retries.set(new Map());
         this.settled.set(new Set());
         this.initial.set(true);
       });
@@ -152,7 +168,9 @@ export class FogBase {
   }
 
   protected src(rect: TileRect): string {
-    return tileUrl(this.vision(), rect, this.forCharacter());
+    const url = tileUrl(this.vision(), rect, this.forCharacter());
+    const retry = this.retries().get(rect.key);
+    return retry ? `${url}&retry=${retry}` : url;
   }
 
   protected pending(rect: TileRect): boolean {
@@ -163,6 +181,28 @@ export class FogBase {
     if (!this.settled().has(rect.key)) {
       this.settled.update((set) => new Set(set).add(rect.key));
     }
+  }
+
+  /** The tile did not come: ask again after a wait, and give up (stop waiting for it) after the last attempt. */
+  protected fail(rect: TileRect): void {
+    const attempt = this.retries().get(rect.key) ?? 0;
+    if (attempt >= TILE_RETRIES) {
+      this.settle(rect);
+      return;
+    }
+    const timer = setTimeout(
+      () => {
+        this.timers.delete(timer);
+        this.retries.update((map) => new Map(map).set(rect.key, attempt + 1));
+      },
+      Math.min(2 * 2 ** attempt, TILE_RETRY_CAP_SECONDS) * MS_PER_SECOND,
+    );
+    this.timers.add(timer);
+  }
+
+  private cancelRetries(): void {
+    this.timers.forEach(clearTimeout);
+    this.timers.clear();
   }
 
   protected pct(value: number, of: number): number {

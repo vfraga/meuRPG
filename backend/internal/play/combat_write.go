@@ -2,10 +2,13 @@ package play
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 	"uuid"
 
@@ -110,8 +113,11 @@ const eventDoorOpened = "door_opened"
 // key, the kind of event it becomes, and the combat it is about (empty when
 // the change creates it).
 type combatWrite struct {
-	m           authz.Membership
-	key         string
+	m   authz.Membership
+	key string
+	// hash is the hash of the whole request but its key (idem.Hash): a retry of the key is
+	// the same request, and the same key for another one is refused.
+	hash        *string
 	kind        string
 	encounterID string
 	// altKind is the other kind the change may write instead of kind (EndTurn
@@ -153,6 +159,8 @@ type combatTx struct {
 	sight *fogSight
 	// stamped is the last event insertEvent stamped with who could see it.
 	stamped *actionEvent
+	// hash is the request hash kept with the event that carries the change's key.
+	hash *string
 	// rules are the table's rules (RN-24), read in this transaction when it
 	// opened: a critical hit and who sees the death saves follow them from the
 	// next roll on, and are never kept longer than the change.
@@ -246,6 +254,11 @@ func (s *Service) writeOnce(ctx context.Context, w combatWrite, sight *fogSight,
 			if done.Kind != w.kind && (w.altKind == "" || done.Kind != w.altKind) {
 				return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
 			}
+			// The key was used for another request of the same kind: a retry has the very same
+			// one. An event from before the hash was kept has none, and is replayed as it was.
+			if hashDiffers(done.IdempotencyHash, w.hash) {
+				return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+			}
 			// A key is its author's: another member replaying it would be handed the
 			// answer to a change that was not theirs (the vitals of someone else's
 			// character, a roll).
@@ -259,7 +272,7 @@ func (s *Service) writeOnce(ctx context.Context, w combatWrite, sight *fogSight,
 			return fmt.Errorf("find the event of this idempotency key: %w", err)
 		}
 
-		c := &combatTx{tx: tx, q: q, session: session, now: s.now(), kind: w.kind, actorUserID: w.m.UserID, svc: s, master: w.m.Role == authz.RoleMaster, sight: sight}
+		c := &combatTx{tx: tx, q: q, session: session, now: s.now(), kind: w.kind, actorUserID: w.m.UserID, svc: s, master: w.m.Role == authz.RoleMaster, sight: sight, hash: w.hash}
 		if c.rules, err = s.tableRules(ctx, tx, w.m.CampaignID); err != nil {
 			return err
 		}
@@ -362,66 +375,196 @@ func (s *Service) logCombatEvent(ctx context.Context, res combatResult) {
 	logging.Event(ctx, s.logger, name, attrs...)
 }
 
-// insertEvent appends a session event inside the change's transaction.
+// eventPayloadBudget is how many bytes of payload one event may take: the table
+// (session_events, migration 00024) refuses more than 4096, and an event that
+// lists every creature of a scene has to stay under it with room for the fog's
+// stamp. A list that does not fit is written as several events.
+const eventPayloadBudget = 3500
+
+// fitPrefix is how many of the first n items fit: the largest count from 1 to n
+// for which fits is true (1 when none does: an item cannot be split further).
+func fitPrefix(n int, fits func(count int) bool) int {
+	for count := n; count > 1; count-- {
+		if fits(count) {
+			return count
+		}
+	}
+	return min(n, 1)
+}
+
+// insertEvent appends a session event inside the change's transaction. A firing
+// of a trap whose caught creatures do not fit one event is written as several
+// (insertFiringInParts).
 func insertEvent(ctx context.Context, c *combatTx, kind string, actor, key *string, payload any) error {
 	if ev, ok := payload.(actionEvent); ok {
 		var err error
-		if kind != eventActionUndone { // an undo is no line: its hint goes to every player
+		if kind != eventActionUndone { // an undo keeps the stamp of the action it takes back
 			if ev, err = c.stamp(ctx, kind, ev); err != nil { // who could see it, on a fog map
 				return err
 			}
-			c.stamped = &ev
 		}
+		c.stamped = &ev
 		payload = ev
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("encode the event payload: %w", err)
 	}
+	if ev, ok := payload.(actionEvent); ok && len(body) > eventPayloadBudget && ev.Trap != nil && len(ev.Trap.Caught) > 1 {
+		_, err := insertFiringInParts(ctx, c, kind, actor, key, ev)
+		return err
+	}
+	_, err = insertRaw(ctx, c, kind, actor, key, body)
+	return err
+}
+
+// requestHash is the request hash of a change whose handler builds its inputs apart from the
+// request message: the hash of the values that tell it from another change, in order.
+func requestHash(parts ...string) *string {
+	sum := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
+	h := hex.EncodeToString(sum[:])
+	return &h
+}
+
+// hashDiffers says whether the hash kept with an event is not the request's: a change that
+// reuses a key for another request. An event from before the hash was kept has none, and is
+// replayed as it was.
+func hashDiffers(stored, hash *string) bool {
+	return stored != nil && (hash == nil || *stored != *hash)
+}
+
+// hashOf is the request hash to keep with an event: the change's own, on the event that
+// carries its key.
+func hashOf(c *combatTx, key *string) *string {
+	if key == nil {
+		return nil
+	}
+	return c.hash
+}
+
+// insertRaw writes an encoded event and returns its ID.
+func insertRaw(ctx context.Context, c *combatTx, kind string, actor, key *string, body []byte) (string, error) {
 	seq, err := c.q.NextSessionEventSeq(ctx, c.session.ID)
 	if err != nil {
-		return fmt.Errorf("next event number: %w", err)
+		return "", fmt.Errorf("next event number: %w", err)
 	}
 	// The combat log and the undo find the event by its combat.
 	var encounterID *string
 	if c.enc.ID != "" {
 		encounterID = &c.enc.ID
 	}
-	if _, err := c.q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	row, err := c.q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
 		GameSessionID: c.session.ID, Seq: seq, Kind: kind, ActorUserID: actor, CharacterID: c.characterID,
-		Payload: body, IdempotencyKey: key, CreatedAt: c.now, EncounterID: encounterID,
-	}); err != nil {
-		return fmt.Errorf("insert session event: %w", err)
+		Payload: body, IdempotencyKey: key, CreatedAt: c.now, EncounterID: encounterID, IdempotencyHash: hashOf(c, key),
+	})
+	if err != nil {
+		return "", fmt.Errorf("insert session event: %w", err)
 	}
-	return nil
+	return row.ID, nil
 }
+
+// insertFiringInParts writes a trap's firing whose creatures do not fit one event
+// as several, back to back: the first carries the firing (and the idempotency key,
+// so a retry finds it), and each next one adds the creatures that did not fit to
+// it, as the master's own "add creatures to a firing" does (ExtendsID), marked as a
+// part (trapFireEvent.Part) so that an undo takes the whole firing back at once. It
+// returns the ID of the first event, the firing's.
+func insertFiringInParts(ctx context.Context, c *combatTx, kind string, actor, key *string, ev actionEvent) (string, error) {
+	caught := ev.Trap.Caught
+	with := func(base actionEvent, trap trapFireEvent, from, to int) ([]byte, actionEvent, error) {
+		trap.Caught = caught[from:to]
+		base.Trap = &trap
+		body, err := json.Marshal(base)
+		if err != nil {
+			return nil, base, fmt.Errorf("encode the event payload: %w", err)
+		}
+		return body, base, nil
+	}
+	size := func(base actionEvent, trap trapFireEvent, from int) func(count int) bool {
+		return func(count int) bool {
+			body, _, err := with(base, trap, from, from+count)
+			return err == nil && len(body) <= eventPayloadBudget
+		}
+	}
+	n := fitPrefix(len(caught), size(ev, *ev.Trap, 0))
+	body, _, err := with(ev, *ev.Trap, 0, n)
+	if err != nil {
+		return "", err
+	}
+	hostID, err := insertRaw(ctx, c, kind, actor, key, body)
+	if err != nil {
+		return "", err
+	}
+	group := ev.Trap.ExtendsID // the firing the parts add to: this one, unless it extends another
+	if group == "" {
+		group = hostID
+	}
+	part := actionEvent{Round: ev.Round, Secret: ev.Secret, Fogged: ev.Fogged, SeenBy: ev.SeenBy, Actor: ev.Actor}
+	trap := trapFireEvent{PointID: ev.Trap.PointID, MapID: ev.Trap.MapID, Manual: ev.Trap.Manual, ExtendsID: group, Part: true}
+	for at := n; at < len(caught); at += n {
+		n = fitPrefix(len(caught)-at, size(part, trap, at))
+		body, _, err := with(part, trap, at, at+n)
+		if err != nil {
+			return "", err
+		}
+		if _, err := insertRaw(ctx, c, kind, actor, nil, body); err != nil {
+			return "", err
+		}
+	}
+	return hostID, nil
+}
+
+// publishTimeout bounds what finish reads and publishes after a commit, which
+// no longer depends on the caller's patience.
+const publishTimeout = 10 * time.Second
 
 // finish builds the handler's answer after a change: it reads the combat
 // the change was about (the session's latest, for a retried start), lets
-// publish tell the streams (unless the call was a retry, which changed
-// nothing), and returns the combat as the caller sees it.
+// publish tell the streams, and returns the combat as the caller sees it.
+//
+// The change is already committed, so the reading and the telling run on a
+// context that outlives the call: a client that hangs up, or a deadline that
+// passes, must not leave the master and the players without the hint. A retry
+// of a change already made (a repeated key) tells the streams too, with the
+// hints every change gives, because the first call may have died before
+// telling: a hint only says "read again", so a second one is harmless.
 func (s *Service) finish(ctx context.Context, m authz.Membership, res combatResult, publish func(ctx context.Context, d *encounterData)) (*playv1.Encounter, error) {
+	pctx, stop := context.WithTimeout(context.WithoutCancel(ctx), publishTimeout)
+	defer stop()
 	var enc playdb.Encounter
 	var err error
 	if res.encounterID != "" {
-		enc, err = s.queries.GetEncounterInSession(ctx, playdb.GetEncounterInSessionParams{GameSessionID: res.session.ID, ID: res.encounterID})
+		enc, err = s.queries.GetEncounterInSession(pctx, playdb.GetEncounterInSessionParams{GameSessionID: res.session.ID, ID: res.encounterID})
 	} else {
-		enc, err = s.queries.GetLatestEncounter(ctx, res.session.ID)
+		enc, err = s.queries.GetLatestEncounter(pctx, res.session.ID)
 	}
 	if err != nil {
 		return nil, s.dbError(ctx, "find the encounter", err)
 	}
-	d, err := loadEncounter(ctx, s.queries, enc)
+	d, err := loadEncounter(pctx, s.queries, enc)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the encounter", err)
 	}
 	// The sight read after the commit is read once for the publishers and the answer;
 	// the one read before it says who could see the old squares.
-	ctx = withFogMemo(ctx, res.sight, res.stamped)
-	if !res.repeated && publish != nil {
-		publish(ctx, d)
+	pctx = withFogMemo(pctx, res.sight, res.stamped)
+	switch {
+	case publish == nil:
+	case res.repeated:
+		s.publishRetried(pctx, m.CampaignID, res, d)
+	default:
+		publish(pctx, d)
 	}
-	return s.viewFor(ctx, m, d)
+	return s.viewFor(withFogMemo(ctx, res.sight, res.stamped), m, d)
+}
+
+// publishRetried is what a retry of a committed change tells the streams: the
+// combat changed and its log did, to the players only when the first call's
+// event was not one a hidden combatant is in.
+func (s *Service) publishRetried(ctx context.Context, campaignID string, res combatResult, d *encounterData) {
+	ev, err := readEvent(res.payload)
+	s.publishEncounterChanged(ctx, campaignID, d.enc)
+	s.publishLogChanged(ctx, campaignID, d.enc.ID, err == nil && !ev.Secret)
 }
 
 // changed is the usual publish: a hint that the combat changed.

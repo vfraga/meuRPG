@@ -41,6 +41,7 @@ import (
 	"net/http"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"connectrpc.com/connect"
@@ -147,6 +148,9 @@ type LiveSession interface {
 	// stage of the open scene of the campaign's open game session (MR-031).
 	// False when no session or no scene is open.
 	ImageOnStage(ctx context.Context, campaignID, imageID string) (bool, error)
+	// ImageShown reports whether the image is the one the open session shows the
+	// players. It reads through tx, for a transaction that is about to delete it.
+	ImageShown(ctx context.Context, tx pgx.Tx, campaignID, imageID string) (bool, error)
 	// PublishToUsers sends ev to the streams of those of userIDs who watch
 	// the campaign's session, and to nobody else: not the master, not the
 	// other players. Without an open session nothing happens.
@@ -320,6 +324,9 @@ type Service struct {
 	dailyImages   int32
 	generating    chan struct{}
 	generations   sync.WaitGroup
+	// pending counts the image requests alive: the one calling the model and the ones
+	// waiting for its slot (maxPendingRequests).
+	pending atomic.Int32
 	// baseCtx is what the generation goroutines derive from; CancelGenerations
 	// cancels it at shutdown. waiters wakes the long polls of GetImageGeneration.
 	baseCtx    context.Context

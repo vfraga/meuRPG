@@ -765,3 +765,39 @@ func BenchmarkDerive(b *testing.B) {
 		_ = Derive(build, c)
 	}
 }
+
+// A table's hp.max modifier that takes hit points away (or sets the maximum to
+// 0) stops at one hit point per level, so a character is never born "down".
+func TestHitPointsMaxNeverFallsBelowOnePerLevel(t *testing.T) {
+	t.Parallel()
+	srd := loadForTest(t)
+	derive := func(t *testing.T, e Effect) Derived {
+		t.Helper()
+		tc := genClass(srd, genKinds[0])
+		tc.Levels[0].Features = append(tc.Levels[0].Features, tf("drain", "Dreno", e))
+		c, err := srd.With(Overlay{Classes: []TableClass{tc}})
+		if err != nil {
+			t.Fatalf("With refused the effect: %v", err)
+		}
+		return Derive(sweepBase(t, c, tc.Key, ""), c)
+	}
+	for name, e := range map[string]Effect{
+		"add -1000": {Type: "modifier", Target: "hp.max", Mode: "add", Value: "-1000"},
+		"set 0":     {Type: "modifier", Target: "hp.max", Mode: "set", Value: "0"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			d := derive(t, e)
+			if d.HitPointsMax != d.TotalLevel {
+				t.Errorf("HitPointsMax = %d at level %d, want %d", d.HitPointsMax, d.TotalLevel, d.TotalLevel)
+			}
+		})
+	}
+	t.Run("control: a bonus still adds", func(t *testing.T) {
+		t.Parallel()
+		d := derive(t, Effect{Type: "modifier", Target: "hp.max", Mode: "add", Value: "5"})
+		if d.HitPointsMax <= d.TotalLevel {
+			t.Errorf("HitPointsMax = %d with +5, want more than %d", d.HitPointsMax, d.TotalLevel)
+		}
+	})
+}

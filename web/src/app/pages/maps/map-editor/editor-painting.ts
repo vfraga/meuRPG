@@ -17,7 +17,7 @@ import {
   type DoorPlan,
   NO_GAP_TEXT,
   hidesWhoStands,
-  planDoor,
+  planDoorBlock,
 } from '../../../core/maps/door-paint';
 import { PaintSession } from '../../../core/maps/paint-session';
 import {
@@ -38,7 +38,11 @@ export interface Occupant extends Square {
 
 /** A door stroke waiting for the master's answer: the squares and what each would do, and who stands on them. */
 interface DoorAsk {
-  readonly plans: readonly { readonly square: Square; readonly plan: DoorPlan }[];
+  readonly plans: readonly {
+    readonly square: Square;
+    readonly squares: readonly Square[];
+    readonly plan: DoorPlan;
+  }[];
   readonly names: readonly string[];
   /** "Tirar a porta": the wall comes back over them, not a door. */
   readonly erase: boolean;
@@ -82,6 +86,8 @@ export class EditorPainting {
 
   readonly columns = computed(() => this.map()?.gridColumns ?? 0);
   readonly rows = computed(() => this.map()?.gridRows ?? 0);
+  /** How many rules' squares a drawing square is wide: a door is painted and erased over the whole block. */
+  private readonly factor = computed(() => Math.max(1, this.map()?.squareFactor ?? 1));
   readonly hasGrid = computed(() => this.columns() > 0);
   /** Painting is on with a grid and the painted layers read once: before that a stroke would be drawn over an empty map. */
   readonly canPaint = computed(() => this.hasGrid() && this.session.readiness() === 'ready');
@@ -143,8 +149,18 @@ export class EditorPainting {
     }
     const s = this.settings();
     if (s.tool === 'door') {
-      // One square at a time, and the cursor says what the tap would do.
-      return { col: at.col, row: at.row, w: 1, h: 1, erase: s.erase, door: this.doorCursor(at, s) };
+      // One drawing square (its whole block on a calibrated map) at a time, and the cursor says what the tap would do.
+      const f = this.factor();
+      const col = Math.floor(at.col / f) * f;
+      const row = Math.floor(at.row / f) * f;
+      return {
+        col,
+        row,
+        w: Math.min(f, this.columns() - col),
+        h: Math.min(f, this.rows() - row),
+        erase: s.erase,
+        door: this.doorCursor(at, s),
+      };
     }
     const reach = s.brush === 3 ? 1 : 0;
     const col = Math.max(0, at.col - reach);
@@ -242,7 +258,10 @@ export class EditorPainting {
   /** The cursor of the door tool: the kind it would paint and the words, or "Aqui não dá" (no preview) where a tap would be refused. */
   private doorCursor(at: Square, s: PaintSettings): { state: DoorKind | null; label: string } {
     const read = (layer: MapLayer, col: number, row: number) => this.painted.value(layer, col, row);
-    if (!planDoor(read, this.columns(), this.rows(), at.col, at.row, s.erase ? 0 : s.door).ok) {
+    const kind = s.erase ? 0 : s.door;
+    if (
+      !planDoorBlock(read, this.columns(), this.rows(), this.factor(), at.col, at.row, kind).plan.ok
+    ) {
       return { state: null, label: 'Aqui não dá' };
     }
     return { state: s.door, label: this.doorCursorLabel(at, s) };
@@ -265,7 +284,15 @@ export class EditorPainting {
     const read = (layer: MapLayer, col: number, row: number) => this.painted.value(layer, col, row);
     const plans = centers.map((square) => ({
       square,
-      plan: planDoor(read, this.columns(), this.rows(), square.col, square.row, kind),
+      ...planDoorBlock(
+        read,
+        this.columns(),
+        this.rows(),
+        this.factor(),
+        square.col,
+        square.row,
+        kind,
+      ),
     }));
     const refused = plans.some((p) => !p.plan.ok);
     this.doorRefusal.set(refused && plans.every((p) => !p.plan.ok) ? NO_GAP_TEXT : '');
@@ -276,7 +303,7 @@ export class EditorPainting {
         .filter((p) => p.plan.ok && p.plan.writes.length > 0)
         .flatMap((p) =>
           this.occupants()
-            .filter((o) => o.col === p.square.col && o.row === p.square.row)
+            .filter((o) => p.squares.some((q) => q.col === o.col && q.row === o.row))
             .map((o) => o.name),
         );
       if (names.length > 0) {
@@ -289,12 +316,12 @@ export class EditorPainting {
 
   private applyDoors(plans: DoorAsk['plans'], mapId: string): void {
     const target = { campaignId: this.campaignId(), mapId };
-    for (const { square, plan } of plans) {
+    for (const { squares, plan } of plans) {
       if (!plan.ok) {
         continue;
       }
       for (const w of plan.writes) {
-        const changed = this.painted.paint(w.layer, w.value, [square]);
+        const changed = this.painted.paint(w.layer, w.value, squares);
         if (changed.length > 0) {
           this.queue.add(target, w.layer, w.value, changed);
         }

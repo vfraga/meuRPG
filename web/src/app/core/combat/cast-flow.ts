@@ -203,7 +203,9 @@ export function targetRule(
   if (st.maxTargets === 0) {
     return { kind: 'multi', max: MAX_CAST_TARGETS, min: 0 }; // an area: any number, even none
   }
-  const extra = st.extraTargetPerLevel ? Math.max(slotLevel - spellLevel, 0) : 0;
+  // The server says how many more targets each slot level above the spell's adds; a server that sets only the flag means one.
+  const perLevel = st.targetsPerLevel > 0 ? st.targetsPerLevel : st.extraTargetPerLevel ? 1 : 0;
+  const extra = perLevel * Math.max(slotLevel - spellLevel, 0);
   const max = Math.min(st.maxTargets + extra, MAX_CAST_TARGETS);
   return { kind: max === 1 ? 'single' : 'multi', max, min: 1 };
 }

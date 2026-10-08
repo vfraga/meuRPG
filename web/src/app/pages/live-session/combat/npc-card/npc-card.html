@@ -174,7 +174,7 @@
       </div>
     }
     @if (!joint()) {
-      <app-next-turn [pendingNote]="pendingNote()" [busy]="busy() || turnBusy()" (next)="next.emit($event)" />
+      <app-next-turn [turn]="turnKey()" [pendingNote]="pendingNote()" [busy]="busy() || turnBusy()" (next)="next.emit($event)" />
     }
   }
 </section>

@@ -277,3 +277,90 @@ describe('spellsErrorMessage', () => {
     );
   });
 });
+
+interface Deferred {
+  token: string;
+  resolve: (r: ReturnType<typeof page>) => void;
+}
+
+describe('SpellsState, refreshes that overlap', () => {
+  const calls: Deferred[] = [];
+  let initial = true;
+  const make = () =>
+    new SpellsState(
+      {
+        list: (req) => {
+          if (initial) {
+            return Promise.resolve(page(['a', 'b', 'c'], 3));
+          }
+          return new Promise((resolve) =>
+            calls.push({ token: (req as { pageToken: string }).pageToken, resolve }),
+          );
+        },
+      },
+      'camp-1',
+      () => null,
+    );
+
+  beforeEach(() => {
+    calls.length = 0;
+    initial = true;
+  });
+
+  it('a slow multi-page refresh does not overwrite the newer one', async () => {
+    const s = make();
+    await s.search();
+    initial = false;
+
+    const r1 = s.refresh(); // wants 3 rows: first page has 2 + token, needs a second page
+    const r2 = s.refresh(); // newer hint: one page is enough
+    expect(calls.length).toBe(2);
+    calls[0].resolve(page(['a', 'b'], 3, 'p2')); // refresh 1 page 1 (old content)
+    calls[1].resolve(page(['a', 'b', 'c', 'd'], 4)); // refresh 2 (new content) finishes first
+    await r2;
+    expect(s.spells().map((x) => x.key)).toEqual(['a', 'b', 'c', 'd']);
+
+    // The older refresh stops asking for pages once a newer one has been issued.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(calls.length).toBe(2);
+    await r1;
+
+    expect(s.spells().map((x) => x.key)).toEqual(['a', 'b', 'c', 'd']);
+    expect(s.total()).toBe(4);
+  });
+
+  it('a late page asked before a refresh is not appended to the fresh rows', async () => {
+    initial = false;
+    const s = new SpellsState(
+      {
+        list: (req) => {
+          const token = (req as { pageToken: string }).pageToken;
+          if (calls.length === 0 && token === '' && !s.spells().length) {
+            return Promise.resolve(page(['a', 'b'], 4, 'T1'));
+          }
+          return new Promise((resolve) => calls.push({ token, resolve }));
+        },
+      },
+      'camp-1',
+      () => null,
+    );
+    await s.search();
+    expect(s.nextToken()).toBe('T1');
+
+    const m = s.more(); // old-version page asked with T1
+    const r = s.refresh(); // content_changed hint
+    expect(calls.map((c) => c.token)).toEqual(['T1', '']);
+    calls[1].resolve(page(['x', 'a', 'b'], 5, 'T2')); // refresh finishes first
+    await r;
+    expect(s.spells().map((k) => k.key)).toEqual(['x', 'a', 'b']);
+    expect(s.nextToken()).toBe('T2');
+
+    calls[0].resolve(page(['c', 'd'], 4)); // late old page
+    await m;
+
+    expect(s.spells().map((k) => k.key)).toEqual(['x', 'a', 'b']);
+    expect(s.nextToken()).toBe('T2');
+    expect(s.total()).toBe(5);
+  });
+});

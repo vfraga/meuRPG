@@ -176,7 +176,8 @@ type CharacterServiceClient interface {
 	//
 	// Safe to retry when the request carries an idempotency_key: a second call with the same key and
 	// the same request returns what the first one made and makes nothing; the same key with another
-	// request is `invalid_argument`. Without a key the call is not deduplicated.
+	// request is `invalid_argument`. The key is the caller's: another member sending the same key
+	// makes a character of their own. Without a key the call is not deduplicated.
 	CreateCharacter(context.Context, *connect.Request[v1.CreateCharacterRequest]) (*connect.Response[v1.CreateCharacterResponse], error)
 	// GetAbilityRolls returns the six sets of "4d6, drop the lowest" the server
 	// stored for the caller's next new character in this campaign (RN-24), and
@@ -1044,7 +1045,8 @@ type CharacterServiceHandler interface {
 	//
 	// Safe to retry when the request carries an idempotency_key: a second call with the same key and
 	// the same request returns what the first one made and makes nothing; the same key with another
-	// request is `invalid_argument`. Without a key the call is not deduplicated.
+	// request is `invalid_argument`. The key is the caller's: another member sending the same key
+	// makes a character of their own. Without a key the call is not deduplicated.
 	CreateCharacter(context.Context, *connect.Request[v1.CreateCharacterRequest]) (*connect.Response[v1.CreateCharacterResponse], error)
 	// GetAbilityRolls returns the six sets of "4d6, drop the lowest" the server
 	// stored for the caller's next new character in this campaign (RN-24), and

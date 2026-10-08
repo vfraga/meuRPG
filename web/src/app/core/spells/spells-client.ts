@@ -55,8 +55,12 @@ export class SpellsClient {
     }
   }
 
-  details(campaignId: string, spellKey: string): Promise<SpellDetails> {
+  /** One spell's card; `fresh` drops what was read before (a `content_changed` told the card is out of date). */
+  details(campaignId: string, spellKey: string, fresh = false): Promise<SpellDetails> {
     const id = `${campaignId}/${spellKey}`;
+    if (fresh) {
+      this.detailsByKey.delete(id);
+    }
     let known = this.detailsByKey.get(id);
     if (!known) {
       known = this.client

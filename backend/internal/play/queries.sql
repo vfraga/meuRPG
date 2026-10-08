@@ -64,8 +64,9 @@ WHERE campaign_id = ANY(sqlc.arg(campaign_ids)::UUID[]) AND ended_at IS NULL
 ORDER BY started_at DESC, id;
 
 -- name: GetSessionEventByIdempotencyKey :one
--- The event a change with this key already wrote, if any.
-SELECT id, seq, kind, actor_user_id, character_id, payload, created_at FROM session_events
+-- The event a change with this key already wrote, if any, with the hash of the request that
+-- wrote it (NULL on an event made without one).
+SELECT id, seq, kind, actor_user_id, character_id, payload, created_at, idempotency_hash FROM session_events
 WHERE game_session_id = $1 AND idempotency_key = $2;
 
 -- name: NextSessionEventSeq :one
@@ -78,8 +79,8 @@ WHERE game_session_id = $1;
 
 -- name: InsertSessionEvent :one
 INSERT INTO session_events
-    (game_session_id, seq, kind, actor_user_id, character_id, payload, idempotency_key, created_at, encounter_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    (game_session_id, seq, kind, actor_user_id, character_id, payload, idempotency_key, created_at, encounter_id, idempotency_hash)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, sqlc.narg(idempotency_hash))
 RETURNING id, seq;
 
 -- name: GetOnScreen :one
@@ -108,10 +109,12 @@ RETURNING *;
 
 -- name: GetLatestEncounter :one
 -- The session's latest combat, ended or not: GetEncounter shows it, so the app
--- can also show the end of a combat that just ended.
+-- can also show the end of a combat that just ended. A session has at most one open
+-- combat (encounters_one_open_per_session), and it is the latest whatever the clock that
+-- stamped it said; the ended ones follow by the time they were made.
 SELECT * FROM encounters
 WHERE game_session_id = $1
-ORDER BY created_at DESC, id DESC
+ORDER BY (status <> 'ended') DESC, created_at DESC, id DESC
 LIMIT 1;
 
 -- name: GetOpenEncounter :one
@@ -225,7 +228,7 @@ WHERE id = $1;
 -- made come back, the Escudo bonus ends, a death save is due again, and the
 -- combatant acts ('acting') in the turn that starts.
 UPDATE combatants
-SET movement_used_ft = 0, movement_used_dft = 0, last_move_dft = 0, dashed = false, disengaged = false, action_used = false, bonus_action_used = false, reaction_used = false,
+SET movement_used_ft = 0, movement_used_dft = 0, last_move_dft = 0, dashed = false, disengaged = false, action_surged = false, action_used = false, bonus_action_used = false, reaction_used = false,
     attacks_made = 0, ac_bonus = 0, death_save_rolled = false, turn_state = 'acting'
 WHERE id = $1;
 
@@ -252,6 +255,12 @@ WHERE id = $1;
 -- The Disengage action of this turn (true), or its undo (false).
 UPDATE combatants
 SET disengaged = $2
+WHERE id = $1;
+
+-- name: SetCombatantActionSurged :exec
+-- Action Surge was used in this turn (true), or its undo (false).
+UPDATE combatants
+SET action_surged = $2
 WHERE id = $1;
 
 -- name: DeleteCombatant :exec
@@ -463,6 +472,15 @@ SELECT id, seq, character_id, payload, created_at FROM session_events
 WHERE game_session_id = $1 AND kind = 'scene_check_rolled' AND seq > $2
 ORDER BY seq DESC;
 
+-- name: CountSceneRolls :many
+-- How many scene checks each character rolled at each action since the
+-- opening (seq): what the attempts left are counted from, without reading the
+-- rows.
+SELECT character_id, COALESCE(payload->>'action_id', '')::TEXT AS action_id, count(*)::INT8 AS rolls
+FROM session_events
+WHERE game_session_id = $1 AND kind = 'scene_check_rolled' AND seq > $2
+GROUP BY character_id, 2;
+
 -- name: ListSceneAttemptGrantEvents :many
 -- The attempts the master granted since the opening (seq): which character, at
 -- which action (the payload's action_id).
@@ -536,13 +554,24 @@ SELECT * FROM encounters
 WHERE game_session_id = $1 AND started_at IS NOT NULL
 ORDER BY created_at, id;
 
--- name: ListSessionSceneEvents :many
--- The scenes opened and the checks rolled in them, oldest first: what the
--- summary counts outside combat.
-SELECT kind, character_id, payload FROM session_events
-WHERE game_session_id = $1 AND kind IN ('scene_opened', 'scene_check_rolled')
-ORDER BY seq
-LIMIT 20001; -- one past maxSummaryEvents: the caller fails loudly rather than under-count
+-- name: CountSessionScenesOpened :one
+-- The scenes the master opened in the session.
+SELECT count(*)::INT8 FROM session_events
+WHERE game_session_id = $1 AND kind = 'scene_opened';
+
+-- name: TallySessionSceneChecks :many
+-- The checks rolled outside combat, per character: tried and passed, counting
+-- only a roll the players could see the DC of, on an action that had one
+-- (RN-20). Done in SQL, so a session with any number of rolls costs one row
+-- per character.
+SELECT character_id,
+       count(*)::INT8 AS tried,
+       (count(*) FILTER (WHERE payload->>'passed' = 'true'))::INT8 AS passed
+FROM session_events
+WHERE game_session_id = $1 AND kind = 'scene_check_rolled'
+  AND character_id IS NOT NULL
+  AND payload->>'dc_shown' = 'true' AND payload ? 'passed'
+GROUP BY character_id;
 
 -- Progression (MR-016): what the XP awards read from the combats and the log.
 
@@ -692,11 +721,12 @@ WHERE encounter_id = $1 AND trap_point_id IS NOT NULL AND status = 'rolled'
 ORDER BY created_at, id;
 
 -- name: ListTrapEventsOfSession :many
--- The trap firings, searches and passive notices of a session outside a combat, oldest first.
+-- The trap firings, searches and passive notices of a session outside a combat, newest first,
+-- at most 500: a long session keeps the latest ones, and the caller puts them back in order.
 -- (A notice has no combat even in one: the maps module writes it after the move.)
 SELECT id, kind, character_id, payload, created_at FROM session_events
 WHERE game_session_id = $1 AND encounter_id IS NULL AND kind IN ('trap_triggered', 'trap_searched', 'trap_noticed')
-ORDER BY seq
+ORDER BY seq DESC
 LIMIT 500;
 
 -- name: GetSessionEventByID :one
@@ -704,11 +734,16 @@ SELECT id, kind, encounter_id, payload FROM session_events
 WHERE game_session_id = $1 AND id = $2;
 
 -- name: SetTrapDamageStatus :one
--- Applied (with the amount when it is not the rolled one) or discarded.
+-- Applied (with the amount when it is not the rolled one) or discarded, with the key and the
+-- request hash of the call that did it.
 UPDATE trap_damages
-SET status = $2, resolved_at = $3, applied_amount = $4
+SET status = $2, resolved_at = $3, applied_amount = $4, settle_key = $5, settle_hash = $6
 WHERE id = $1
 RETURNING *;
+
+-- name: GetTrapDamageBySettleKey :one
+-- The damage settled by the call with this (scoped) key, for a retry.
+SELECT * FROM trap_damages WHERE settle_key = $1;
 
 -- Opportunity offers (MR-034, RN-21): the right to one attack on a mover that
 -- left a reactor's reach.
@@ -745,6 +780,16 @@ RETURNING *;
 UPDATE opportunity_offers
 SET state = 'skipped', answered_at = $3
 WHERE encounter_id = $1 AND mover_id = $2 AND state = 'pending';
+
+-- name: SkipPendingOpportunityOffersBetweenAllies :execrows
+-- A combatant changed side: the offers it is in (as mover or as reactor) whose
+-- two sides are now the same are passed over, since only a hostile reactor may
+-- attack.
+UPDATE opportunity_offers AS o
+SET state = 'skipped', answered_at = $3
+FROM combatants AS mover, combatants AS reactor
+WHERE o.encounter_id = $1 AND o.state = 'pending' AND (o.mover_id = $2 OR o.reactor_id = $2)
+  AND mover.id = o.mover_id AND reactor.id = o.reactor_id AND mover.side = reactor.side;
 
 -- name: DeleteOpportunityOffersOfMove :exec
 -- The master's undo of the move that made them.

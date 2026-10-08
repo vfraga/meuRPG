@@ -77,4 +77,34 @@ describe('DocumentEditor: focus after "Descartar mudanças"', () => {
     expect(warn).not.toHaveBeenCalled();
     expect(errors).toEqual([]);
   });
+
+  it('does not take typing while a save is on its way, because the answer replaces the text with the saved one', async () => {
+    let answer!: (d: CampaignDocument) => void;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: DocumentClient,
+          useValue: { save: () => new Promise<CampaignDocument>((r) => (answer = r)) },
+        },
+      ],
+    });
+    fixture = TestBed.createComponent(DocumentEditor);
+    fixture.componentRef.setInput('campaignId', 'camp-1');
+    fixture.componentRef.setInput('doc', doc);
+    await fixture.whenStable();
+    const area = el().querySelector<HTMLTextAreaElement>('textarea')!;
+    expect(area.readOnly).toBe(false);
+    area.value = 'Texto novo';
+    area.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    button('Salvar documento').click();
+    await fixture.whenStable();
+    expect(area.readOnly).toBe(true);
+    answer({ body: 'Texto novo', revision: 2n } as unknown as CampaignDocument);
+    await Promise.resolve();
+    await Promise.resolve();
+    fixture.detectChanges();
+    expect(area.readOnly).toBe(false);
+  });
 });

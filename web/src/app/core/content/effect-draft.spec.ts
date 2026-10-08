@@ -8,6 +8,7 @@ import {
   emptyEffect,
   missingRequired,
   rangeFeet,
+  unreadableRange,
   rangeMeters,
   splitTags,
 } from './effect-draft';
@@ -37,7 +38,7 @@ describe("an effect from the server's menu (ADR-0018, section 4)", () => {
       target: 'ac',
       mode: 'add',
       value: '2',
-      rangeFt: 60,
+      rangeM: '18',
       sense: 'darkvision',
       count: 3,
       from: ['skill:arcana'],
@@ -67,9 +68,9 @@ describe("an effect from the server's menu (ADR-0018, section 4)", () => {
   });
 
   it('sends a sense with its range in feet, a choice with its list, a note with the text and the granted spells', () => {
-    expect(draftToEffect({ ...emptyEffect('sense'), sense: 'darkvision', rangeFt: 60 }, m)).toEqual(
-      { type: 'sense', sense: 'darkvision', rangeFt: 60 },
-    );
+    expect(
+      draftToEffect({ ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' }, m),
+    ).toEqual({ type: 'sense', sense: 'darkvision', rangeFt: 60 });
     expect(
       draftToEffect(
         {
@@ -106,6 +107,16 @@ describe("an effect from the server's menu (ADR-0018, section 4)", () => {
     });
   });
 
+  it('keeps a stored range as the metres it shows, and sends what was typed once, in feet', () => {
+    const d = effectToDraft(
+      create(TableEffectSchema, { type: 'sense', sense: 'darkvision', rangeFt: 60 }),
+    );
+    expect(d.rangeM).toBe('18');
+    expect(draftToEffect(d, m)).toMatchObject({ rangeFt: 60 });
+    // 4 m is not a whole number of feet at the table's rate: it is rounded once, on sending.
+    expect(draftToEffect({ ...d, rangeM: '4' }, m)).toMatchObject({ rangeFt: 13 });
+  });
+
   it('offers what a choice may list, by the kind of choice', () => {
     expect(m.fromOptions('skill').map((o) => o.key)).toEqual(['skill:arcana', 'skill:perception']);
     expect(m.fromOptions('language').map((o) => o.namePt)).toEqual(['Comum', 'Primordial']);
@@ -118,7 +129,7 @@ describe("an effect from the server's menu (ADR-0018, section 4)", () => {
   it('says which required field is still empty', () => {
     expect(missingRequired(emptyEffect('modifier'), m)).toEqual(['target', 'mode', 'value']);
     expect(
-      missingRequired({ ...emptyEffect('sense'), sense: 'darkvision', rangeFt: 60 }, m),
+      missingRequired({ ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' }, m),
     ).toEqual([]);
   });
 
@@ -131,5 +142,14 @@ describe("an effect from the server's menu (ADR-0018, section 4)", () => {
     expect(rangeMeters(15)).toBe('4,5');
     expect(rangeMeters(0)).toBe('');
     expect(splitTags(' a, ,b ')).toEqual(['a', 'b']);
+  });
+
+  it('tells a range field it cannot read from an empty one', () => {
+    for (const text of ['18 m', '18m', '1.000,5', 'abc', '-3']) {
+      expect(unreadableRange(text), text).toBe(true);
+    }
+    for (const text of ['', '  ', '0', '18', '4,5', '4.5']) {
+      expect(unreadableRange(text), text).toBe(false);
+    }
   });
 });

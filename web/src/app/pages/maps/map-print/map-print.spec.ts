@@ -1,6 +1,6 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 
 import { Role } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { CampaignsService } from '../../../core/campaigns/campaigns.service';
@@ -325,5 +325,51 @@ describe('MapPrint: o que o mestre vê e o que os outros veem', () => {
     expect(el).toBeTruthy();
     fixture.destroy();
     expect(css()).not.toContain('@page');
+  });
+});
+
+describe('MapPrint: a resposta atrasada de outra rota', () => {
+  it('não troca o mapa nem o nome da campanha que a página já mostra', async () => {
+    const params = new BehaviorSubject(convertToParamMap({ id: 'camp-1', mapId: 'map-1' }));
+    const answers = new Map<string, (value: unknown) => void>();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { paramMap: params } },
+        {
+          provide: CampaignsService,
+          useValue: {
+            getCampaign: (id: string) =>
+              new Promise((resolve) => {
+                answers.set(id, resolve);
+              }),
+          },
+        },
+        {
+          provide: MapsClient,
+          useValue: {
+            get: (_campaign: string, mapId: string) =>
+              Promise.resolve(mapResponse(mapMessage(mapId, `Mapa ${mapId}`))),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(MapPrint);
+    settle(fixture);
+    params.next(convertToParamMap({ id: 'camp-2', mapId: 'map-2' }));
+    settle(fixture);
+    const campaign = (name: string) => ({
+      campaign: { name, myRole: Role.MASTER, awaitingApproval: false },
+    });
+    answers.get('camp-2')!(campaign('Segunda'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    settle(fixture);
+    // The first campaign answers last: it is no longer the one on screen.
+    answers.get('camp-1')!(campaign('Primeira'));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    settle(fixture);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('Segunda');
+    expect(text).not.toContain('Primeira');
   });
 });

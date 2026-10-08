@@ -248,7 +248,14 @@ export class PuzzleForm {
       // Read outside `untracked`: the first start is asked for when the page turns ready, not before.
       const ready = this.load().status === 'ready';
       untracked(() => {
-        if (key === '' || key === this.lastKey || !ready) {
+        if (key === '') {
+          // A kind with no generated start: coming back to one with the same configuration asks for the start again.
+          this.lastKey = '';
+          this.ticket++;
+          clearTimeout(this.timer);
+          return;
+        }
+        if (key === this.lastKey || !ready) {
           return;
         }
         this.lastKey = key;

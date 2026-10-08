@@ -310,6 +310,10 @@ func pointsSig(points []mapsdb.MapPoint) uint64 {
 // source is a light on the map, before it is a vision.Source.
 type source = vision.Source
 
+// litCompileTimeout bounds the compile of a scene that many requests share
+// and none of them owns (see newSight).
+const litCompileTimeout = 30 * time.Second
+
 // newSight builds the scene of a fog map from what the caller already read: the
 // map's points (the Luz ones shine) and tokens (the carried lights, and where
 // the party stands). It reads the party's senses and, while a combat runs, the
@@ -354,7 +358,7 @@ func (s *Service) newSight(ctx context.Context, tx pgx.Tx, in fogInput, points [
 		return nil, err
 	}
 
-	compile := func(e *litEntry) {
+	compile := func(ctx context.Context, e *litEntry) {
 		stored, err := queriesIn(s.queries, tx).GetMapLayers(ctx, in.mapID)
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			e.err = fmt.Errorf("read the layers: %w", err)
@@ -370,14 +374,22 @@ func (s *Service) newSight(ctx context.Context, tx pgx.Tx, in fogInput, points [
 		// kept out of the cache: joining the cache's single flight would make a
 		// request that holds a connection wait for another that may be waiting for one.
 		sg.entry = &litEntry{key: litKeyOf(in, sources), views: map[vision.Viewer]*vision.View{}}
-		compile(sg.entry)
+		compile(ctx, sg.entry)
 		if sg.entry.err != nil {
 			return nil, sg.entry.err
 		}
 		return sg, nil
 	}
 	sg.entry = s.lits.entry(litKeyOf(in, sources))
-	sg.entry.once.Do(func() { compile(sg.entry) })
+	// The compiled scene is shared by everyone who asks for the same key, so
+	// it must not depend on the first asker: if that request hangs up halfway,
+	// the others would all receive its cancellation. It runs to the end under
+	// a timeout of its own.
+	sg.entry.once.Do(func() {
+		shared, cancel := context.WithTimeout(context.WithoutCancel(ctx), litCompileTimeout)
+		defer cancel()
+		compile(shared, sg.entry)
+	})
 	if sg.entry.err != nil {
 		s.lits.drop(sg.entry)
 		return nil, sg.entry.err

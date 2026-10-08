@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Code, ConnectError } from '@connectrpc/connect';
@@ -43,7 +44,7 @@ describe('ScenePicker', () => {
     const data: ScenePickerData = {
       campaignId: 'c1',
       mapName: 'Estrada do Vale',
-      points,
+      points: signal(points),
       openPointId,
       state,
     };

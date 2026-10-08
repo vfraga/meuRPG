@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { createClient } from '@connectrpc/connect';
+import { Code, ConnectError, createClient } from '@connectrpc/connect';
 
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
@@ -496,7 +496,16 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
       this.campaignClient
         .getCampaign({ campaignId })
         .then((r) => r.campaign?.myRole === Role.MASTER)
-        .catch(() => false),
+        .catch((err: unknown) => {
+          // Only a refusal means "not the master"; a blip must not hide the master's view, so it fails the load.
+          if (
+            err instanceof ConnectError &&
+            (err.code === Code.PermissionDenied || err.code === Code.NotFound)
+          ) {
+            return false;
+          }
+          throw err;
+        }),
     ]);
     const content = res.content!;
 

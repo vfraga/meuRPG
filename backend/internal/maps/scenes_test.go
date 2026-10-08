@@ -485,8 +485,8 @@ func TestMR015_OneRollPerActionWhileTheSceneIsOpen(t *testing.T) {
 	}
 	// The key belongs to that roll: another change with it is refused.
 	_, err = s.ana.rollWith(s.campaign, force.GetId(), 10, key)
-	if err != nil && connect.CodeOf(err) == connect.CodeInvalidArgument {
-		t.Errorf("a roll with a used key and another action = %v; the retry answer is the first roll", err)
+	if connect.CodeOf(err) != connect.CodeInvalidArgument {
+		t.Errorf("a roll with a used key and another action = %v, want invalid_argument", err)
 	}
 
 	// Another action, and another character, are free.

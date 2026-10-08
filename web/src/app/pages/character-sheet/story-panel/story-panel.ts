@@ -96,6 +96,9 @@ export class StoryPanel {
     allies: ['', Validators.maxLength(2000)],
   });
 
+  /** The revision the form was copied from: the server's lock must judge what the person actually read. */
+  private editedRevision = 0;
+
   protected startEditing(): void {
     const s = this.story();
     this.form.setValue({
@@ -113,6 +116,7 @@ export class StoryPanel {
       backstory: s.backstory,
       allies: s.allies,
     });
+    this.editedRevision = this.vm().revision;
     this.saveState.set({ status: 'idle' });
     this.editing.set(true);
   }
@@ -147,7 +151,7 @@ export class StoryPanel {
       const updated = await this.source.updateCharacterStory(
         vm.campaignId,
         vm.id,
-        vm.revision,
+        this.editedRevision,
         story,
       );
       this.saveState.set({ status: 'idle' });

@@ -3,7 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { MapToken } from '../../../gen/meurpg/maps/v1/maps_pb';
-import { tokenInitial } from '../map-view/map-geometry';
+import { tokenInitial, tokenKey } from '../map-view/map-geometry';
 import { tokenKindLabel } from '../map-view/map-labels';
 
 export interface TokenToggle {
@@ -51,6 +51,7 @@ export class MapTokensList {
   readonly headingLevel = input<2 | 3>(2);
   readonly toggle = output<TokenToggle>();
 
+  protected readonly key = tokenKey;
   protected readonly sub = (t: MapToken) => tokenSub(t, this.info(), this.ownerName(t));
 
   /** The owner's name for a creature's token, from the owner's own token on the map. */

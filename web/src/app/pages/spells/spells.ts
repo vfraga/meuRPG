@@ -187,15 +187,16 @@ export class Spells {
     // are read again with this person's role, so a spell that went off leaves the list and the card says so.
     this.watcher.whileLive(
       () => this.campaignId,
-      () => this.contentChanged(),
+      () => void this.contentChanged(),
     );
   }
 
-  private contentChanged(): void {
+  private async contentChanged(): Promise<void> {
     if (this.access().status !== 'ok') {
       return;
     }
-    void this.state.refresh();
+    // The list first: its answer carries the new content version, and the card is then read from the same moment.
+    await this.state.refresh();
     if (this.selected() !== '') {
       void this.loadCard(this.selected(), true);
     }
@@ -447,7 +448,7 @@ export class Spells {
       this.card.set({ status: 'loading', namePt });
     }
     try {
-      const details = spellDetailsFromGen(await this.client.details(this.campaignId, key));
+      const details = spellDetailsFromGen(await this.client.details(this.campaignId, key, quiet));
       if (seq === this.cardSeq) {
         this.card.set({ status: 'ready', details });
       }

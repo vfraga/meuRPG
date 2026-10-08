@@ -11,6 +11,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/formula"
 )
 
@@ -978,23 +979,29 @@ func slugOfKey(key string) string {
 func checkEntryName(key, name string) error {
 	switch {
 	case name == "" || strings.TrimSpace(name) != name:
-		return ovErr(key, "the name must not be empty or start or end with spaces")
+		return ovErr(key, "the name must not be empty or start or end with spaces").reason(ReasonName)
 	case utf8.RuneCountInString(name) > maxNameRunes:
-		return ovErr(key, "the name has more than %d characters", maxNameRunes)
-	case strings.ContainsFunc(name, unicode.IsControl):
-		return ovErr(key, "the name must be one line, without control characters")
+		return ovErr(key, "the name has more than %d characters", maxNameRunes).reason(ReasonName)
+	case strings.ContainsFunc(name, isHiddenRune):
+		return ovErr(key, "the name must be one line, without control or invisible characters").reason(ReasonName)
 	}
 	return nil
+}
+
+// isHiddenRune says whether a one-line text must refuse r: a control character,
+// a line or paragraph separator, or an invisible one (text direction, zero width).
+func isHiddenRune(r rune) bool {
+	return unicode.IsControl(r) || names.IsHidden(r)
 }
 
 // checkText bounds a text made of paragraphs.
 func checkText(key string, paragraphs []string) error {
 	if len(paragraphs) > maxTextParagraphs {
-		return ovErr(key, "the text has more than %d paragraphs", maxTextParagraphs)
+		return ovErr(key, "the text has more than %d paragraphs", maxTextParagraphs).reason(ReasonLimit)
 	}
 	for _, p := range paragraphs {
 		if utf8.RuneCountInString(p) > maxTextRunes {
-			return ovErr(key, "a paragraph has more than %d characters", maxTextRunes)
+			return ovErr(key, "a paragraph has more than %d characters", maxTextRunes).reason(ReasonText)
 		}
 	}
 	return nil

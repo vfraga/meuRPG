@@ -17,6 +17,14 @@
       }
     </div>
 
+    @if (refreshFailed() && state() === 'ready') {
+      <div class="mr-notice mr-notice--danger" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <p>Não deu para atualizar as criaturas agora.</p>
+      </div>
+      <button type="button" class="retry" (click)="retry()"><mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo</button>
+    }
+
     @if (state() === 'failed') {
       <div class="mr-notice mr-notice--danger" role="alert">
         <mat-icon aria-hidden="true">error</mat-icon>
@@ -68,7 +76,7 @@
     @if (wildShape() && !isMaster()) {
       <div class="cast">
         @if (form()) {
-          <button type="button" matButton="outlined" class="cast__btn js-wild" [class.mr-button--off]="!live()" [disabled]="!live()" disabledInteractive aria-describedby="wild-cost" (click)="leave()">
+          <button type="button" matButton="outlined" class="cast__btn js-wild" [class.mr-button--off]="!live() || leaving()" [disabled]="!live() || leaving()" disabledInteractive aria-describedby="wild-cost" (click)="leave()">
             <mat-icon aria-hidden="true">pets</mat-icon>Voltar à forma normal
           </button>
           <p class="cast__cost" id="wild-cost">Na forma de {{ form() }}. Fora de combate não gasta ação.</p>

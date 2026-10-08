@@ -3,7 +3,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { endOpenSessionRPC } from './live-session-support';
 import { generateSceneRPC, generateTextureRPC, liveSessionAsPlayer, mapRoute, referenceRPC, statusRPC, tableForImages, type ImagesTable } from './images-support';
 import { sessionRoute } from './fog-support';
-import { callRPC, newSignedInContext } from './support';
+import { afterRender, callRPC, newSignedInContext } from './support';
 
 // Generated images on screen (Etapa 10, slice 10.16: MR-039, RN-28, RN-10; E10-07). The server runs with the fake image generator, so a
 // picture comes in a moment and nothing leaves the machine. The table comes through the API; what is under test is the master's dialog
@@ -232,6 +232,7 @@ test('com a geração desligada o botão fica ao lado da razão e nenhum diálog
     await expect(mp.getByText('A geração de imagens não está ligada neste servidor.')).toBeVisible();
     // The button is dashed and does nothing: forced, since Playwright waits for an enabled one.
     await button.click({ force: true });
+    await afterRender(mp);
     await expect(dialog(mp)).toHaveCount(0);
   } finally {
     await master.close();

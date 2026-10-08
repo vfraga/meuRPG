@@ -3,7 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { EncounterBlockedReason } from '../../../gen/meurpg/play/v1/combat_pb';
 import { listWithE } from '../creatures/bestiary-format';
 import { describeConnectError } from '../connect/connect-errors';
-import { newKey } from '../connect/idempotency';
+import { ActionKey } from '../connect/idempotency';
 import { combatErrorMessage, encounterBlocked, sessionClosed } from './combat-errors';
 
 /** The most monsters of one creature one "Pôr no combate" puts in (`AddMonsters`: 1 to 10). */
@@ -51,23 +51,10 @@ export interface MonsterAdd {
  * try, it is a new add and takes a new key.
  */
 export class AddKeys {
-  private key = newKey();
-  private last = '';
+  private readonly key = new ActionKey();
 
   keyFor(add: MonsterAdd): string {
-    const print = JSON.stringify([
-      add.creatureKey,
-      add.count,
-      add.name,
-      add.hp,
-      add.hidden,
-      add.target,
-    ]);
-    if (this.last !== '' && print !== this.last) {
-      this.key = newKey();
-    }
-    this.last = print;
-    return this.key;
+    return this.key.keyFor([add.creatureKey, add.count, add.name, add.hp, add.hidden, add.target]);
   }
 }
 

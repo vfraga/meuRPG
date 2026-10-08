@@ -88,6 +88,8 @@ export function puzzleBlockedMessage(
       return 'O começo da fechadura é o que você escolheu: não há outro para gerar.';
     case PuzzleBlockedReason.STOPPED:
       return 'O quebra-cabeça parou. Ninguém joga mais até o mestre recomeçar ou fechar.';
+    case PuzzleBlockedReason.STALE_REVISION:
+      return 'O quebra-cabeça mudou desde que você olhou. Confira como ficou antes de escolher de novo.';
     case PuzzleBlockedReason.NO_ATTEMPTS_LEFT:
       return 'Você não tem mais tentativas nesta rodada.';
     default:

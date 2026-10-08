@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError } from '@connectrpc/connect';
 
 import { MapPointKind, MapPointSchema } from '../../../../../gen/meurpg/maps/v1/maps_pb';
 import { TrapsClient } from '../../../../core/traps/traps-client';
@@ -18,9 +19,17 @@ describe('fireLabel', () => {
 });
 
 describe('TrapFireSheet', () => {
-  function setup(extra: Partial<TrapFireData> = {}) {
+  function setup(extra: Partial<TrapFireData> = {}, firstCallFails = false) {
     const calls: unknown[][] = [];
-    const api = { fire: async (...a: unknown[]) => (calls.push(a), { firing: { caught: [] } }) };
+    const api = {
+      fire: async (...a: unknown[]) => {
+        calls.push(a);
+        if (firstCallFails && calls.length === 1) {
+          throw new ConnectError('lost', Code.Unavailable);
+        }
+        return { firing: { caught: [] } };
+      },
+    };
     const close = vi.fn();
     const data: TrapFireData = {
       campaignId: 'c',
@@ -97,5 +106,71 @@ describe('TrapFireSheet', () => {
     fixture.detectChanges();
     expect(el.textContent).toContain('Toren');
     expect(el.textContent).not.toContain('Lendo quem está no mapa');
+  });
+
+  const go = async (fixture: ComponentFixture<TrapFireSheet>, el: HTMLElement) => {
+    el.querySelector<HTMLButtonElement>('.pf__go')!.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  };
+  const toggle = (fixture: ComponentFixture<TrapFireSheet>, el: HTMLElement, i: number) => {
+    el.querySelectorAll<HTMLInputElement>('input[type=checkbox]')[i].click();
+    fixture.detectChanges();
+  };
+
+  it('keeps the key of a request that is retried as it was', async () => {
+    const { fixture, el, calls } = setup({}, true);
+    toggle(fixture, el, 0);
+    await go(fixture, el);
+    await go(fixture, el);
+    expect(calls).toHaveLength(2);
+    expect(calls[1][3]).toEqual(['t']);
+    expect(calls[1][4]).toBe(calls[0][4]);
+  });
+
+  it('takes a new key when the retry has other targets, so the server does not answer with the first request', async () => {
+    const { fixture, el, calls } = setup({}, true);
+    toggle(fixture, el, 0);
+    await go(fixture, el);
+    toggle(fixture, el, 0);
+    toggle(fixture, el, 1);
+    await go(fixture, el);
+    expect(calls[0][3]).toEqual(['t']);
+    expect(calls[1][3]).toEqual(['b']);
+    expect(calls[1][4]).not.toBe(calls[0][4]);
+  });
+
+  describe('when someone ticked leaves the list', () => {
+    function withToren() {
+      const targets = signal([
+        { id: 't', name: 'Toren', sub: 'Perto' },
+        { id: 'b', name: 'Brisa', sub: 'Longe' },
+      ]);
+      const s = setup({ targets });
+      toggle(s.fixture, s.el, 0);
+      return { ...s, targets };
+    }
+
+    it('fires for the ticked person while they are listed', async () => {
+      const { fixture, el, calls } = withToren();
+      await go(fixture, el);
+      expect(calls[0][3]).toEqual(['t']);
+    });
+
+    it('does not fire for the whole area: it names who left and waits for a new pick', async () => {
+      const { fixture, el, calls, targets } = withToren();
+      targets.set([{ id: 'b', name: 'Brisa', sub: 'Longe' }]);
+      fixture.detectChanges();
+      expect(el.textContent).toContain('Toren saiu da lista');
+      expect(el.querySelector('.pf__go')).toBeNull();
+      el.querySelector<HTMLButtonElement>('.pf__off')!.click();
+      await fixture.whenStable();
+      expect(calls).toEqual([]);
+
+      toggle(fixture, el, 0);
+      expect(el.textContent).not.toContain('saiu da lista');
+      await go(fixture, el);
+      expect(calls[0][3]).toEqual(['b']);
+    });
   });
 });

@@ -131,6 +131,8 @@ export function blockedMessage(blocked: EncounterBlocked): string {
         : 'Não há espaço de magia livre.';
     case EncounterBlockedReason.NO_USES:
       return `Sem usos: ${rechargeText(blocked.recharge)}.`;
+    case EncounterBlockedReason.ALREADY_USED_THIS_TURN:
+      return 'Esse recurso só pode ser usado uma vez por turno, e já foi usado neste.';
     case EncounterBlockedReason.DEATH_SAVE_DUE:
       return 'Role o teste contra a morte antes de encerrar o turno.';
     case EncounterBlockedReason.DEATH_SAVE_NOT_DUE:

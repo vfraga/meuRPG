@@ -1,4 +1,4 @@
-import { create } from '@bufbuild/protobuf';
+import { clone, create } from '@bufbuild/protobuf';
 import { describe, expect, it } from 'vitest';
 
 import { MapPointSchema, TrapState } from '../../../../gen/meurpg/maps/v1/maps_pb';
@@ -250,6 +250,22 @@ describe('what the point carries', () => {
     expect(trapChangesOf({ ...d, name: ' Fosso do corredor ' }, point)?.name).toBe(
       'Fosso do corredor',
     );
+  });
+
+  it('leaves the state to the server when the master did not touch it, so a trap that fired meanwhile stays fired', () => {
+    // The form was opened while the trap was armed; then it fired in play.
+    const opened = trapDraftOf(point);
+    const fired = clone(MapPointSchema, point);
+    fired.trap!.state = TrapState.TRIGGERED;
+    const edited = { ...opened, findDc: '12' };
+    const changes = trapChangesOf(edited, fired, opened.state);
+    expect(changes?.trap).toMatchObject({ findDc: 12, state: TrapState.UNSPECIFIED });
+    // Choosing a state is a change the master made.
+    expect(
+      trapChangesOf({ ...edited, state: TrapState.DISARMED }, fired, opened.state)?.trap,
+    ).toMatchObject({ state: TrapState.DISARMED });
+    // A form nobody edited is clean even though the trap moved on.
+    expect(trapChangesOf(opened, fired, opened.state)).toBeNull();
   });
 
   it('adding and removing a part is a change', () => {

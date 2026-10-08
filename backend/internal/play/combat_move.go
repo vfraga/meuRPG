@@ -14,6 +14,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -281,7 +282,7 @@ func (s *Service) MoveCombatant(
 	var moveID string        // the id of the opportunity offers the move made, if any
 	var opened []grid.Square // the closed doors the move opened (RN-26)
 	var lockedDoor bool      // a locked door stopped the move (a player only learns of one they know)
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCombatantMoved, altKind: eventTrapTriggered, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCombatantMoved, altKind: eventTrapTriggered, encounterID: encID}, func(c *combatTx) (any, error) {
 		logged, stoppedEarly, moveID, opened, lockedDoor = false, false, "", nil, false
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
@@ -321,6 +322,9 @@ func (s *Service) MoveCombatant(
 				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_YOUR_TURN, "it is not your turn")
 			case !placed(target):
 				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_PLACED, "you are not on the map yet; ask the master")
+			}
+			if err := s.mustNotBeDown(ctx, c.tx, m.CampaignID, target); err != nil {
+				return nil, err
 			}
 		}
 
@@ -762,7 +766,7 @@ func (s *Service) SetCombatantSide(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("side must be PARTY or ENEMY"))
 	}
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventSideSet, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventSideSet, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -780,6 +784,14 @@ func (s *Service) SetCombatantSide(
 		if err := c.q.SetCombatantSide(ctx, playdb.SetCombatantSideParams{ID: target.ID, Side: side}); err != nil {
 			return nil, fmt.Errorf("set the side: %w", err)
 		}
+		// An offer waits for a hostile reactor: one that is now an ally of the
+		// mover (or the mover, now an ally of the reactor) no longer attacks.
+		now := s.now()
+		if _, err := c.q.SkipPendingOpportunityOffersBetweenAllies(ctx, playdb.SkipPendingOpportunityOffersBetweenAlliesParams{
+			EncounterID: c.enc.ID, MoverID: target.ID, AnsweredAt: &now,
+		}); err != nil {
+			return nil, fmt.Errorf("pass over the offers between allies: %w", err)
+		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
 			return nil, fmt.Errorf("touch the encounter: %w", err)
 		}
@@ -789,7 +801,7 @@ func (s *Service) SetCombatantSide(
 	if err != nil {
 		return nil, s.dbError(ctx, "set a combatant's side", err)
 	}
-	out, err := s.finish(ctx, m, res, s.changed(m.CampaignID))
+	out, err := s.finish(ctx, m, res, s.changedFor(m.CampaignID, combID))
 	if err != nil {
 		return nil, err
 	}
@@ -822,7 +834,7 @@ func (s *Service) SetCombatantCover(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cover must be NONE, HALF, THREE_QUARTERS or TOTAL"))
 	}
 
-	res, err := s.write(ctx, combatWrite{m: m, key: key, kind: eventCoverSet, encounterID: encID}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCoverSet, encounterID: encID}, func(c *combatTx) (any, error) {
 		if err := notEnded(c.enc); err != nil {
 			return nil, err
 		}
@@ -846,7 +858,7 @@ func (s *Service) SetCombatantCover(
 	if err != nil {
 		return nil, s.dbError(ctx, "mark a combatant's cover", err)
 	}
-	out, err := s.finish(ctx, m, res, s.changed(m.CampaignID))
+	out, err := s.finish(ctx, m, res, s.changedFor(m.CampaignID, combID))
 	if err != nil {
 		return nil, err
 	}

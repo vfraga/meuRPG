@@ -65,6 +65,11 @@ export function xpBlockedMessage(blocked: XPBlocked): string {
   }
 }
 
+/** Whether an undo found no award to undo (`NOTHING_TO_UNDO`): the list on screen is stale. */
+export function xpNothingToUndo(err: unknown): boolean {
+  return xpBlocked(err)?.reason === XPBlockedReason.XP_BLOCKED_REASON_NOTHING_TO_UNDO;
+}
+
 /** Whether the server did not find something the call named (`not_found`). */
 export function xpNotFound(err: unknown): boolean {
   return ConnectError.from(err, Code.Unavailable).code === Code.NotFound;

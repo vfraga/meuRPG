@@ -191,7 +191,7 @@ describe('MasterRun (MR-038, E10-06 states 3 to 5)', () => {
       const { el, settle, host } = await render(liveLights(), (a) => a.runResults.set('a', next));
       button(el, 'Mostrar a próxima dica').click();
       await settle();
-      expect(api.calls[0]).toEqual(['releaseHint', 'camp-1', 'a']);
+      expect(api.calls[0]).toEqual(['releaseHint', 'camp-1', 'a', 1]);
       expect(host.updates).toEqual([next]);
       host.run.set(next);
       await settle();
@@ -218,7 +218,7 @@ describe('MasterRun (MR-038, E10-06 states 3 to 5)', () => {
       );
       button(el, 'Gerar outro começo').click();
       await settle();
-      expect(api.calls[0]).toEqual(['reseed', 'camp-1', 'a']);
+      expect(api.calls[0]).toEqual(['reseed', 'camp-1', 'a', 1]);
       expect(host.updates).toHaveLength(1);
     });
 
@@ -250,7 +250,7 @@ describe('MasterRun (MR-038, E10-06 states 3 to 5)', () => {
       await settle();
       button(el.querySelector('app-map-ask') as HTMLElement, 'Recomeçar').click();
       await settle();
-      expect(api.calls[0]).toEqual(['reset', 'camp-1', 'a']);
+      expect(api.calls[0]).toEqual(['reset', 'camp-1', 'a', 1]);
       expect(host.updates).toHaveLength(1);
       expect(el.querySelector('app-map-ask')).toBeNull();
       button(el, 'Fechar').click();
@@ -262,6 +262,92 @@ describe('MasterRun (MR-038, E10-06 states 3 to 5)', () => {
       button(el.querySelector('app-map-ask') as HTMLElement, 'Fechar').click();
       await settle();
       expect(api.calls[1]).toEqual(['close', 'camp-1', 'a']);
+    });
+
+    it('reads the puzzle again when the answer to a hint is lost, so a second tap is not a second hint', async () => {
+      const done = liveLights({ releasedHints: 1 });
+      const { el, settle, host } = await render(liveLights(), (a) => {
+        a.runResults.set('a', done);
+        a.releaseHint = () => Promise.reject(new ConnectError('x', Code.Unavailable));
+      });
+      button(el, 'Mostrar a próxima dica').click();
+      await settle();
+      expect(api.calls).toEqual([['masterRun', 'camp-1', 'a']]);
+      expect(host.updates).toEqual([done]);
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain('confira antes de tentar');
+    });
+
+    it('keeps the plain refusal when the card cannot be read either', async () => {
+      const { el, settle, host } = await render(liveLights(), (a) => {
+        a.releaseHint = () => Promise.reject(new ConnectError('x', Code.Unavailable));
+        a.masterRun = () => Promise.reject(new ConnectError('x', Code.Unavailable));
+      });
+      button(el, 'Mostrar a próxima dica').click();
+      await settle();
+      expect(host.updates).toEqual([]);
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain('o servidor não respondeu');
+    });
+
+    it('sends the revision of the run it shows on the hint, the new start, the restart and the sequence', async () => {
+      const shown = (revision: number) =>
+        liveLights({ run: { ...liveLights().run!, revision } as never });
+      const { el, settle } = await render(shown(7), (a) => a.runResults.set('a', shown(8)));
+      button(el, 'Mostrar a próxima dica').click();
+      await settle();
+      button(el, 'Gerar outro começo').click();
+      await settle();
+      button(el, 'Recomeçar').click();
+      await settle();
+      button(el, 'Recomeçar').click();
+      await settle();
+      expect(api.calls.map((c) => [c[0], c[3]])).toEqual([
+        ['releaseHint', 7],
+        ['reseed', 7],
+        ['reset', 7],
+      ]);
+    });
+
+    it('reads the run again and says it changed, without retrying, when the revision is stale', async () => {
+      const now = liveLights({ releasedHints: 1 });
+      const stale = new ConnectError('x', Code.FailedPrecondition, undefined, [
+        {
+          desc: PuzzleBlockedSchema,
+          value: create(PuzzleBlockedSchema, { reason: PuzzleBlockedReason.STALE_REVISION }),
+        },
+      ]);
+      const { el, settle, host } = await render(liveLights(), (a) => {
+        a.runResults.set('a', now);
+        a.releaseHint = vi.fn(() => Promise.reject(stale));
+      });
+      button(el, 'Mostrar a próxima dica').click();
+      await settle();
+      expect(api.calls).toEqual([['masterRun', 'camp-1', 'a']]);
+      expect(host.updates).toEqual([now]);
+      expect(el.querySelector('[role="alert"]')?.textContent).toContain(
+        'mudou desde que você olhou',
+      );
+    });
+
+    it('sends the new revision when the master chooses again after the re-read', async () => {
+      const stale = new ConnectError('x', Code.FailedPrecondition, undefined, [
+        {
+          desc: PuzzleBlockedSchema,
+          value: create(PuzzleBlockedSchema, { reason: PuzzleBlockedReason.STALE_REVISION }),
+        },
+      ]);
+      const newer = liveLights({ run: { ...liveLights().run!, revision: 5 } as never });
+      const { el, settle, host } = await render(liveLights(), (a) => {
+        a.runResults.set('a', newer);
+        a.releaseHint = vi.fn().mockRejectedValueOnce(stale).mockResolvedValue(newer) as never;
+      });
+      button(el, 'Mostrar a próxima dica').click();
+      await settle();
+      host.run.set(host.updates[0]);
+      await settle();
+      button(el, 'Mostrar a próxima dica').click();
+      await settle();
+      const calls = (api.releaseHint as unknown as ReturnType<typeof vi.fn>).mock.calls;
+      expect(calls.map((c) => c[2])).toEqual([1, 5]);
     });
 
     it('says why an action was refused and leaves the card as it is', async () => {
@@ -599,6 +685,33 @@ describe('MasterRun (MR-038, E10-06 states 3 to 5)', () => {
       );
     });
 
+    it('tells a second firing of the same trap from the first by the last move beside it', async () => {
+      const { el, settle, host } = await render(sequence());
+      const facts = () => textOf(el.querySelector('.facts'));
+      const notice = () => textOf(el.querySelector('.mr-notice--warning'));
+      expect(facts()).toContain('há 8 s');
+      const again = sequence(
+        {},
+        {
+          lastMove: {
+            characterName: 'Lia',
+            move: { kind: { case: 'sequence', value: { bell: 2 } } },
+            wrong: true,
+            step: 4,
+            changed: [],
+            at: at(2),
+            trapName: 'Dardos envenenados',
+          },
+        },
+      );
+      const before = notice();
+      host.run.set(again);
+      await settle();
+      expect(notice()).toBe(before);
+      expect(facts()).toContain('agora há pouco');
+      expect(facts()).not.toContain('há 8 s');
+    });
+
     it('plays it for the players with "Tocar a sequência", and the answer is the puzzle as it stands', async () => {
       const played = sequence();
       const { el, settle, host } = await render(played, (a) =>
@@ -613,6 +726,7 @@ describe('MasterRun (MR-038, E10-06 states 3 to 5)', () => {
         'playSequence',
         'camp-1',
         's',
+        1,
       ]);
       expect(host.updates[0].run?.sequence?.plays).toBe(3);
     });

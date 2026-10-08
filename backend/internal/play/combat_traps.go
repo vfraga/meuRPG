@@ -55,6 +55,10 @@ type trapFireEvent struct {
 	// undo takes back only the creatures it added.
 	Manual    bool   `json:"manual,omitempty"`
 	ExtendsID string `json:"extends_id,omitempty"`
+	// Part says this event holds the creatures that did not fit the firing's own
+	// event (the payload is capped): it extends the firing, and an undo takes it
+	// back together with the events of the same firing.
+	Part bool `json:"part,omitempty"`
 	// Caught is what happened to each creature the trap caught, in order. In a
 	// combat the target is a combatant; outside one, a character.
 	Caught []trapCaughtEvent `json:"caught,omitempty"`
@@ -66,7 +70,10 @@ type trapCaughtEvent struct {
 	Character string `json:"character_id,omitempty"`
 	// Player says the target is a player's character: its damage waits for the
 	// master.
-	Player  bool              `json:"player,omitempty"`
+	Player bool `json:"player,omitempty"`
+	// Hidden says the master had hidden the target when the trap fired: its line is
+	// never the players', even after the master reveals it (RN-10).
+	Hidden  bool              `json:"hidden,omitempty"`
 	Attacks []trapAttackEvent `json:"attacks,omitempty"`
 	Saves   []saveRoll        `json:"saves,omitempty"` // one, or one for each hit of a trap that asks it of the creatures it hit
 	Damages []trapDamageEvent `json:"damages,omitempty"`
@@ -178,7 +185,7 @@ func (s *Service) fireInCombat(ctx context.Context, c *combatTx, trap maplink.Tr
 	}
 	for i, o := range outcomes {
 		who := caught[i]
-		cc := trapCaughtEvent{Target: who.ID, Character: who.CharacterID, Player: who.Kind == kindPlayer}
+		cc := trapCaughtEvent{Target: who.ID, Character: who.CharacterID, Player: who.Kind == kindPlayer, Hidden: who.Hidden}
 		for _, a := range o.attacks {
 			outcome := outcomeMiss
 			switch {
@@ -521,7 +528,10 @@ func firingProto(ev *trapFireEvent, id, name string, v trapView) *playv1.TrapFir
 			continue // a combatant the players do not see stays out of their line
 		}
 		mine := v.master || (v.owns != nil && v.owns(cc.Target))
-		t := &playv1.TrapCaught{TargetId: cc.Target, CharacterId: cc.Character, ConditionKeys: cc.Conditions}
+		t := &playv1.TrapCaught{TargetId: cc.Target, ConditionKeys: cc.Conditions}
+		if mine || cc.Player { // an NPC's character is the master's secret
+			t.CharacterId = cc.Character
+		}
 		if v.label != nil {
 			t.TargetLabel = v.label(cc.Target)
 		}

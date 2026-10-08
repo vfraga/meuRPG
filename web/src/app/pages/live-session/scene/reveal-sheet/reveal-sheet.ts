@@ -107,6 +107,8 @@ export class RevealSheet {
   /** The pair stacks, both full width, when a label does not fit half the width. */
   protected readonly stacked = signal(false);
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
 
   private readonly frame = viewChild(SheetFrame);

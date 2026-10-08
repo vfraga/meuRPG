@@ -287,7 +287,7 @@ func (s *Service) SignOutOtherSessions(
 		return nil, err
 	}
 	now := s.now()
-	ended, err := s.store.revokeOtherSessions(ctx, session.UserID, session.ID, now, now.Add(-s.idleTimeout))
+	ended, err := s.store.revokeOtherSessions(ctx, session.UserID, session.ID, now)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "cannot revoke the other sessions", "error", err)
 		return nil, connect.NewError(connect.CodeUnavailable, errors.New("cannot sign out the other devices right now, please try again"))

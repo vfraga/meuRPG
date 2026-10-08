@@ -116,13 +116,22 @@ func (s *Service) applyHintTry(ctx context.Context, tx pgx.Tx, m authz.Membershi
 	done, err := q.GetPuzzleHintTryByKey(ctx, playdb.GetPuzzleHintTryByKeyParams{RunID: run.ID, IdempotencyKey: key})
 	switch {
 	case err == nil:
-		if done.UserID == nil || *done.UserID != m.UserID {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+		// The key stands for that try, of that player, rolled that way: in the app, or with
+		// that typed die.
+		sameRoll := done.Physical != in.inApp && (in.inApp || int(done.D20) == in.typed)
+		if done.UserID == nil || *done.UserID != m.UserID || !sameRoll {
+			return nil, errKeyReused()
 		}
 		res.try, res.replayed = done, true
 		return s.namesOfRuns(ctx, tx, m.CampaignID, run)
 	case !errors.Is(err, pgx.ErrNoRows):
 		return nil, fmt.Errorf("find the try of this idempotency key: %w", err)
+	}
+	// A key spent on a move of the run is spent: a try is another change.
+	if _, err := q.GetPuzzleMoveByKey(ctx, playdb.GetPuzzleMoveByKeyParams{RunID: run.ID, IdempotencyKey: key}); err == nil {
+		return nil, errKeyReused()
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("find the move of this idempotency key: %w", err)
 	}
 
 	now := s.now()

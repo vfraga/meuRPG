@@ -7,8 +7,16 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
+
+	"github.com/PuraFome/meuRPG/backend/internal/platform/slowclient"
 )
+
+// staticWriteTimeout is how long a client has to take one of the app's files,
+// which are a few megabytes at most; a client that stops reading is dropped.
+const staticWriteTimeout = 2 * time.Minute
 
 // cspHeader is as strict as the app allows:
 //
@@ -103,6 +111,11 @@ func isFile(p string) bool {
 	return err == nil && !info.IsDir()
 }
 
+// hashedName matches the names Angular's build gives its output: the name,
+// a dash and an 8-character content hash (upper-case letters and digits),
+// then the extension, as in "main-3QX7LZ2K.js" or "media/font-AB12CD34.woff2".
+var hashedName = regexp.MustCompile(`-[A-Z0-9]{8}\.[A-Za-z0-9]+(\.[A-Za-z0-9]+)*$`)
+
 type staticHandler struct {
 	dir               string
 	indexPath         string
@@ -136,10 +149,17 @@ func (h *staticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.setSecurityHeaders(w)
 
 	if fsPath, ok := h.existingAsset(cleanPath); ok {
-		// Angular's outputHashing:"all" puts a content hash in every
-		// filename except index.html, so any file found here is safe to
-		// cache forever: a change always ships under a new name.
-		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		// Angular's outputHashing:"all" puts a content hash in the name of
+		// every file it builds, so those are safe to cache forever: a
+		// change always ships under a new name. The files copied as they are
+		// (favicon.ico, material-symbols/*) keep their names, so the
+		// browser must ask again whether they changed.
+		if hashedName.MatchString(path.Base(cleanPath)) {
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		defer slowclient.WriteBody(w, staticWriteTimeout)()
 		http.ServeFile(w, r, fsPath)
 		return
 	}
@@ -148,6 +168,7 @@ func (h *staticHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// (e.g. a future "/campaigns/42"): serve the app shell and let the
 	// Angular router take over.
 	w.Header().Set("Cache-Control", "no-cache")
+	defer slowclient.WriteBody(w, staticWriteTimeout)()
 	http.ServeFile(w, r, h.indexPath)
 }
 

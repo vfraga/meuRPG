@@ -1422,6 +1422,9 @@ const (
 	// An attack: the Attack action made all its attacks this turn (Extra
 	// Attack). With a single attack per action the code is ACTION_USED.
 	DisabledReasonCode_DISABLED_REASON_CODE_ATTACKS_USED DisabledReasonCode = 13
+	// A feature that can be used once per turn (Action Surge, even at fighter
+	// level 17 with two uses) was already used in this turn.
+	DisabledReasonCode_DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN DisabledReasonCode = 14
 )
 
 // Enum value maps for DisabledReasonCode.
@@ -1441,6 +1444,7 @@ var (
 		11: "DISABLED_REASON_CODE_COMBATANT_DOWN",
 		12: "DISABLED_REASON_CODE_COMBATANT_DEFEATED",
 		13: "DISABLED_REASON_CODE_ATTACKS_USED",
+		14: "DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN",
 	}
 	DisabledReasonCode_value = map[string]int32{
 		"DISABLED_REASON_CODE_UNSPECIFIED":            0,
@@ -1457,6 +1461,7 @@ var (
 		"DISABLED_REASON_CODE_COMBATANT_DOWN":         11,
 		"DISABLED_REASON_CODE_COMBATANT_DEFEATED":     12,
 		"DISABLED_REASON_CODE_ATTACKS_USED":           13,
+		"DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN": 14,
 	}
 )
 
@@ -10501,7 +10506,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x14CREATURE_SIZE_MEDIUM\x10\x03\x12\x17\n" +
 	"\x13CREATURE_SIZE_LARGE\x10\x04\x12\x16\n" +
 	"\x12CREATURE_SIZE_HUGE\x10\x05\x12\x1c\n" +
-	"\x18CREATURE_SIZE_GARGANTUAN\x10\x06*\xd2\x04\n" +
+	"\x18CREATURE_SIZE_GARGANTUAN\x10\x06*\x83\x05\n" +
 	"\x12DisabledReasonCode\x12$\n" +
 	" DISABLED_REASON_CODE_UNSPECIFIED\x10\x00\x12$\n" +
 	" DISABLED_REASON_CODE_ACTION_USED\x10\x01\x12*\n" +
@@ -10517,7 +10522,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x12'\n" +
 	"#DISABLED_REASON_CODE_COMBATANT_DOWN\x10\v\x12+\n" +
 	"'DISABLED_REASON_CODE_COMBATANT_DEFEATED\x10\f\x12%\n" +
-	"!DISABLED_REASON_CODE_ATTACKS_USED\x10\r2\xd3\x05\n" +
+	"!DISABLED_REASON_CODE_ATTACKS_USED\x10\r\x12/\n" +
+	"+DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN\x10\x0e2\xd3\x05\n" +
 	"\x0eContentService\x12]\n" +
 	"\vListContent\x12#.meurpg.rules.v1.ListContentRequest\x1a$.meurpg.rules.v1.ListContentResponse\"\x03\x90\x02\x02\x12i\n" +
 	"\x0fGetSpellDetails\x12'.meurpg.rules.v1.GetSpellDetailsRequest\x1a(.meurpg.rules.v1.GetSpellDetailsResponse\"\x03\x90\x02\x02\x12Z\n" +

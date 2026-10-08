@@ -6050,8 +6050,9 @@ func (x *PreviewLevelUpRequest) GetChoices() *LevelUpChoices {
 // PreviewLevelUpResponse is the sheet the choices would make.
 type PreviewLevelUpResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Unset when the refusal is ARCHIVED_CHOICE or SWITCHED_OFF_CHOICE: a retired or
-	// switched off option is never built into a sheet a player reads.
+	// Unset when the choices include one the master archived or, for a player, switched
+	// off, whatever the refusal is: such an option is never built into a sheet a player
+	// reads.
 	// The derived numbers after the level up, as far as the choices go. The
 	// app compares it with Character.derived: level, abilities, hit points, hit
 	// dice, spell save DC and attack bonus, saves, skills, passive scores,

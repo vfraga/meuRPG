@@ -83,6 +83,7 @@ export class MapManage {
   /** The painted layers, read-only here. */
   protected readonly painted = new PaintedLayers();
   private readonly mapsApi = inject(MapsClient);
+  private layersRead = 0;
   protected readonly map = computed(() => this.state().map());
   private readonly mapId = computed(() => this.map()?.id ?? '');
   private readonly imageId = computed(() => this.map()?.image?.id ?? '');
@@ -123,13 +124,19 @@ export class MapManage {
       }
       // Read again when the grid or the layers change (a new grid clears them).
       void map.layersRevision;
+      // Counted per read: an answer that comes after a newer read was asked is not drawn.
+      const read = ++this.layersRead;
       untracked(() => {
         if (map.gridColumns <= 0) {
           this.painted.clear();
           return;
         }
         void this.mapsApi.layers(this.campaignId(), map.id).then(
-          (packed) => this.painted.load(packed),
+          (packed) => {
+            if (read === this.layersRead) {
+              this.painted.load(packed);
+            }
+          },
           () => undefined,
         );
       });

@@ -287,6 +287,9 @@ type Turn struct {
 	AttacksMade int
 	// Dashed says the Dash action doubled the speed.
 	Dashed bool
+	// ActionSurged says Action Surge was used this turn (once per turn, whatever
+	// the uses left).
+	ActionSurged bool
 	// SpeedFt is the combatant's best speed in a combat (walking, or flying when
 	// it can), and MovementUsedFt the feet walked this turn, rounded down.
 	SpeedFt, MovementUsedFt int

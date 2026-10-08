@@ -66,17 +66,28 @@ export class AuthService {
 
   readonly isSignedIn = computed(() => this.stateSignal().status === 'signed-in');
 
+  private refreshing: Promise<void> | null = null;
+
   constructor() {
     void this.refresh();
   }
 
   /**
    * Calls `GetMe` and updates `state` from the result. Safe to call again
-   * later (e.g. to retry after `unavailable`, or once a session's
-   * `sessionExpiresAt` has passed) — it always settles to one of the three
+   * later (e.g. to retry after `unavailable`, once a session's
+   * `sessionExpiresAt` has passed, or when any call answered `unauthenticated`) — it always settles to one of the three
    * resolved states, never throws.
    */
-  async refresh(): Promise<void> {
+  refresh(): Promise<void> {
+    // Calls that arrive while one is in flight share it, so a burst of
+    // `unauthenticated` answers asks `GetMe` once.
+    this.refreshing ??= this.readMe().finally(() => {
+      this.refreshing = null;
+    });
+    return this.refreshing;
+  }
+
+  private async readMe(): Promise<void> {
     try {
       const res = await this.client.getMe({});
       this.stateSignal.set({

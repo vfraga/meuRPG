@@ -24,7 +24,7 @@ import type { CluePlayer } from '../../../../core/maps/scene-clues';
 import { listNames } from '../../../../core/maps/scene-clues';
 import { trapMapErrorMessage } from '../../../../core/traps/trap-errors';
 import type { TrapBoard } from '../../../../core/traps/trap-board';
-import { clockOf, trapPoints } from '../../../../core/traps/trap-text';
+import { clockOf, trapPoints, trapVisibility } from '../../../../core/traps/trap-text';
 import type { PickRow } from '../../../../shared/person-pick/person-pick';
 import { isPlayer } from '../../../../core/combat/combat-view';
 import type { VitalsVm } from '../../live-session.types';
@@ -131,6 +131,10 @@ export class TrapPanel {
   }
 
   protected reveal(p: MapPoint): void {
+    // The card's button is only dimmed (it keeps focus), so a click still comes: nothing to reveal to a table that sees it.
+    if (this.busy() || trapVisibility(p).kind === 'all') {
+      return;
+    }
     const opener = this.document.activeElement as HTMLElement | null;
     openTrapReveal(this.dialog, this.bottomSheet, {
       campaignId: this.campaignId(),
@@ -142,6 +146,7 @@ export class TrapPanel {
       .subscribe((point) => {
         focusWithRing(opener);
         if (point) {
+          this.error.set('');
           this.state().upsertPoint(point);
           this.announcement.set(`${point.name}: revelada.`);
           void this.board().refresh();
@@ -174,6 +179,9 @@ export class TrapPanel {
   }
 
   protected fire(p: MapPoint, extend = false): void {
+    if (this.busy()) {
+      return;
+    }
     const firing = extend ? this.board().firingOf(p.id) : null;
     const opener = this.document.activeElement as HTMLElement | null;
     // The list follows the board: the dialog can open before the trap's "Quem notaria" arrives (a snapshot taken
@@ -200,6 +208,7 @@ export class TrapPanel {
   }
 
   private fired(p: MapPoint, firing: TrapFiring, extend: boolean): void {
+    this.error.set('');
     const names = firing.caught.map((c) => c.targetLabel).filter(Boolean);
     this.announcement.set(
       names.length > 0

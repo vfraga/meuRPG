@@ -378,4 +378,37 @@ describe('OrderList: the monsters of the bestiary (MR-042, RN-29, E10-08 state 5
     expect(subs).toEqual(['NPC · ND 1/8 · CA 12', 'NPC · ND 1/8 · CA 12', 'NPC · CA 15']);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Escondido');
   });
+
+  it('keeps the question to remove a combatant open, and sends nothing, while the page is busy', () => {
+    const fixture = TestBed.createComponent(OrderList);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        combatants: [
+          combatant({ id: 'cap', label: 'Capitão Goblin', initiative: 16 }),
+          combatant({ id: 'g3', label: 'Goblin 3', initiative: 9 }),
+        ],
+        currentCombatantId: 'cap',
+      }),
+    );
+    const removed: string[] = [];
+    fixture.componentInstance.remove.subscribe((id) => removed.push(id));
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance as unknown as {
+      ask(id: string): void;
+      confirmRemove(id: string): void;
+      removing(): string | null;
+    };
+    cmp.ask('g3');
+    fixture.componentRef.setInput('busy', true);
+    fixture.detectChanges();
+    cmp.confirmRemove('g3');
+    expect(removed).toEqual([]);
+    expect(cmp.removing()).toBe('g3');
+    fixture.componentRef.setInput('busy', false);
+    fixture.detectChanges();
+    cmp.confirmRemove('g3');
+    expect(removed).toEqual(['g3']);
+    expect(cmp.removing()).toBeNull();
+  });
 });

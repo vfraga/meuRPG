@@ -173,6 +173,55 @@ describe('ExperienceStore', () => {
     expect(api.experience).toHaveBeenLastCalledWith('c2');
   });
 
+  it('shows an error, not a spinner, when another campaign fails after one loaded', async () => {
+    const s = store();
+    await s.load('c1', true);
+    expect(s.rowsState()).toBe('ready');
+
+    api.experience.mockRejectedValue(new Error('x'));
+    api.listAwards.mockRejectedValue(new Error('x'));
+    await s.load('c2', true);
+
+    expect(s.rowsState()).toBe('error');
+    expect(s.awardsState()).toBe('error');
+  });
+
+  it("does not show the last campaign's rows, awards or page token while another loads", async () => {
+    const s = store();
+    await s.load('c1', true);
+
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    api.experience.mockImplementation(async () => {
+      await gate;
+      return experience(100);
+    });
+    const pending = s.load('c2', true);
+
+    expect(s.rowsState()).toBe('loading');
+    expect(s.rows()).toEqual([]);
+    expect(s.awards()).toEqual([]);
+    expect(s.nextPageToken()).toBe('');
+    expect(s.xpMode()).toBe(XpMode.UNSPECIFIED);
+
+    release();
+    await pending;
+    expect(s.rows()[0].xp).toBe(100);
+  });
+
+  it('drops the answer of the campaign it left', async () => {
+    const s = store();
+    let slow!: (v: unknown) => void;
+    api.experience.mockReturnValueOnce(new Promise((resolve) => (slow = resolve)));
+    const first = s.load('c1', false);
+    api.experience.mockResolvedValueOnce(experience(2716));
+    await s.load('c2', false);
+
+    slow(experience(100)); // the old campaign answers last
+    await first;
+    expect(s.rows()[0].xp).toBe(2716);
+  });
+
   describe('the treasures to convert (E9-09, master only)', () => {
     const found = create(TreasureToConvertSchema, {
       pointId: 'c',

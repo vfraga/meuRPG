@@ -34,7 +34,7 @@ import {
 } from '../../core/characters/character-errors';
 import { ContentWatcher } from '../../core/content/content-watcher';
 import { LiveSessionSourceLive } from '../live-session/live-session-source.live';
-import { catalogChanged, offControlOf } from './catalog-changes';
+import { catalogChanged, offControlOf, offersChanged } from './catalog-changes';
 import {
   abilityLabel,
   characterKindLabel,
@@ -85,6 +85,7 @@ import { openSpellDetails } from '../../shared/spell-details/open-spell-details'
 import type { SpellDetailsVm } from '../../shared/spell-details/spell-details.types';
 import { EditorStepper } from './editor-stepper/editor-stepper';
 import { HitPointsRolls } from './hit-points-rolls/hit-points-rolls';
+import { validRoll } from './hit-points-preview';
 import {
   EDITOR_STEP_LABELS,
   EditorField,
@@ -305,8 +306,8 @@ export class CharacterEditor {
   protected readonly selectedSpellsPrepared = signal<ReadonlySet<string>>(new Set());
   /** The search of each list, by `<section>:<list>`: "0:cantrips", "1:known", "1:prepared". */
   private readonly spellFilters = signal<Readonly<Record<string, string>>>({});
-  /** Spells the sheet has that no pick of this form gave it (a subclass's always-prepared spells):
-   * only known on an edit, from the server's own derived sheet. */
+  /** Spells the sheet has that neither a pick of this form nor its subclass gave it (a race's or a feature's spell):
+   * only known on an edit, from the server's own derived sheet, as it was when the sheet was opened. */
   protected readonly grantedSpells = signal<readonly SpellOptionVm[]>([]);
 
   protected readonly isFullSheetKind = isFullSheetKind;
@@ -703,10 +704,7 @@ export class CharacterEditor {
 
   /** What the sheet has that no pick of this form gave it and no subclass of the catalog explains (a race's or a
    * feature's spell): said apart, with where it comes from. */
-  protected readonly otherGranted = computed(() => {
-    const always = new Set(this.sections().flatMap((sec) => sec.alwaysPrepared));
-    return this.grantedSpells().filter((sp) => !always.has(sp.key));
-  });
+  protected readonly otherGranted = this.grantedSpells.asReadonly();
 
   protected setSpellFilter(
     section: number,
@@ -980,9 +978,43 @@ export class CharacterEditor {
         control.enable({ emitEvent: false });
       }
     });
+    this.destroyRef.onDestroy(() => {
+      this.destroyed = true;
+      this.loadSeq++;
+    });
     this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       this.resolveAndLoad(params);
     });
+  }
+
+  /** Counts the loads, so a late answer for a route the person left is dropped, and a save that outlives its route does not navigate. */
+  private loadSeq = 0;
+  /** Counts the reads of the lists after a `content_changed`, so an older answer never replaces a newer one. */
+  private catalogSeq = 0;
+  private destroyed = false;
+
+  /** A reused component starts every route from nothing: nothing of the previous character stays in the form or the pick sets. */
+  private resetEditing(): void {
+    this.fullForm.reset();
+    this.basicForm.reset();
+    this.selectedSkills.set(new Set());
+    this.customBackgroundSkills.set(new Set());
+    this.customBackgroundProficiencies.set([]);
+    this.extraClasses.set([]);
+    this.expertiseSkills.set(new Set());
+    this.hitPointsRolls.set([]);
+    this.selectedCantrips.set(new Set());
+    this.selectedSpellsKnown.set(new Set());
+    this.selectedSpellsPrepared.set(new Set());
+    this.spellFilters.set({});
+    this.grantedSpells.set([]);
+    this.preparedMaxByClass.set({});
+    this.abilityTable.set(null);
+    this.abilityMethod.set('typed');
+    this.lockedOrigin.set(null);
+    this.serverClassProblem.set(null);
+    this.saveState.set({ status: 'idle' });
+    this.contentNote.set('');
   }
 
   private resolveAndLoad(params: ParamMap): void {
@@ -1003,12 +1035,17 @@ export class CharacterEditor {
   }
 
   private loadForCreate(campaignId: string, kind: CharacterKind): void {
+    const seq = ++this.loadSeq;
+    this.resetEditing();
     this.state.set({ status: 'loading', title: titleFor('create', kind) });
     // A player (or a pending member) makes the scores the table's rules allow; the master's NPCs are free.
     const table =
       kind === 'player' ? this.source.loadAbilityTable(campaignId) : Promise.resolve(null);
     Promise.all([this.source.loadCatalog(campaignId), table]).then(
       ([catalog, abilityTable]) => {
+        if (seq !== this.loadSeq) {
+          return;
+        }
         this.abilityTable.set(abilityTable);
         if (abilityTable?.hitPoints === 'roll') {
           this.fullForm.controls.hitPointsMethod.setValue('rolled');
@@ -1033,17 +1070,41 @@ export class CharacterEditor {
           this.basicForm.patchValue({ challengeRating: '', xpValue: 0 });
         }
       },
-      (err: unknown) =>
+      (err: unknown) => {
+        if (seq !== this.loadSeq) {
+          return;
+        }
         this.state.set({
           status: 'error',
           message: describeCharacterError(err),
           backLink: ['/campaigns', campaignId],
           backLabel: 'Voltar para a campanha',
-        }),
+        });
+      },
     );
   }
 
+  /** The table's rules for the scores changed under the person (the server refused the way of rolling the step offered):
+   * they are read again, so the step offers what is allowed now. */
+  protected async rereadAbilityTable(): Promise<void> {
+    const s = this.state();
+    if (s.status !== 'ready' || !this.abilityTable()) {
+      return;
+    }
+    const seq = this.loadSeq;
+    try {
+      const table = await this.source.loadAbilityTable(s.campaignId);
+      if (seq === this.loadSeq && table) {
+        this.abilityTable.set(table);
+      }
+    } catch {
+      // The refusal the step already shows stays; the next try reads the table again.
+    }
+  }
+
   private loadForEdit(campaignId: string, characterId: string): void {
+    const seq = ++this.loadSeq;
+    this.resetEditing();
     this.state.set({ status: 'loading', title: titleFor('edit', 'player') });
     Promise.all([
       // With the sheet: what it has comes back even when the master retired it since.
@@ -1058,11 +1119,18 @@ export class CharacterEditor {
           origin && existing.kind === 'player'
             ? await this.source.loadAbilityTable(campaignId)
             : null;
+        if (seq !== this.loadSeq) {
+          return null;
+        }
         this.abilityTable.set(table);
         this.lockedOrigin.set(table ? origin : null);
         return [catalog, existing] as const;
       })
-      .then(([catalog, existing]) => {
+      .then((loaded) => {
+        if (loaded === null || seq !== this.loadSeq) {
+          return;
+        }
+        const [catalog, existing] = loaded;
         if (existing.blocked) {
           // Say it before the form: a player who opens the edit URL of a
           // locked sheet would otherwise fill it in and only learn at "Salvar".
@@ -1090,14 +1158,22 @@ export class CharacterEditor {
         if (existing.full) {
           this.patchFullForm(existing.full);
           this.preparedMaxByClass.set(existing.preparedMax ?? {});
+          // What the sheet has from outside the form is told once, as the sheet has it: a spell of the subclass it
+          // has now stays out of this list, and stays out when the subclass is changed (the save drops it with the subclass).
           const granted = new Set(existing.grantedSpellKeys ?? []);
-          this.grantedSpells.set(catalog.spells.filter((sp) => granted.has(sp.key)));
+          const fromSubclass = new Set(this.sections().flatMap((sec) => sec.alwaysPrepared));
+          this.grantedSpells.set(
+            catalog.spells.filter((sp) => granted.has(sp.key) && !fromSubclass.has(sp.key)),
+          );
         }
         if (existing.basic) {
           patchBasicForm(this.fb, this.basicForm, existing.basic);
         }
       })
       .catch((err: unknown) => {
+        if (seq !== this.loadSeq) {
+          return;
+        }
         this.state.set({
           status: 'error',
           message: describeCharacterError(err),
@@ -1344,10 +1420,32 @@ export class CharacterEditor {
     return problems;
   });
 
+  /** With "Rolado", the levels whose roll is empty or does not fit that level's die: the form keeps no control for
+   * them, so the page adds them to the invalid fields while they stand. */
+  private readonly rollProblems = computed<string[]>(() => {
+    const dice = this.levelDice();
+    const rolls = this.hitPointsRolls();
+    if (this.selectedHitPointsMethod() !== 'rolled' || this.hitDie() === 0) {
+      return [];
+    }
+    const problems: string[] = [];
+    for (let i = 0; i < this.rollsNeeded(); i++) {
+      if (validRoll(rolls[i], dice[i] || this.hitDie()) === null) {
+        problems.push(`Dado de vida do nível ${i + 2}`);
+      }
+    }
+    return problems;
+  });
+
   private currentInvalidFullFields(): EditorField[] {
     const fields: EditorField[] = [
       ...invalidFields(this.fullForm, FULL_SHEET_FIELDS),
       ...this.classProblems().map((label) => ({ path: 'classes', label, step: 'basico' as const })),
+      ...this.rollProblems().map((label) => ({
+        path: 'hitPointsRolls',
+        label,
+        step: 'atributos' as const,
+      })),
     ];
     if (!this.abilitiesIncomplete()) {
       return fields;
@@ -1391,7 +1489,10 @@ export class CharacterEditor {
     const form = isBasic ? this.basicForm : this.fullForm;
     if (
       form.invalid ||
-      (!isBasic && (this.abilitiesIncomplete() || this.classProblems().length > 0))
+      (!isBasic &&
+        (this.abilitiesIncomplete() ||
+          this.classProblems().length > 0 ||
+          this.rollProblems().length > 0))
     ) {
       form.markAllAsTouched();
       this.saveState.set({ status: 'idle' });
@@ -1403,6 +1504,9 @@ export class CharacterEditor {
     }
 
     this.saveState.set({ status: 'saving' });
+    // The save finishes on the server whatever the person does meanwhile; only the navigation depends on still being here.
+    const seq = this.loadSeq;
+    const stillHere = (): boolean => !this.destroyed && seq === this.loadSeq;
     try {
       if (s.mode === 'create') {
         const input = {
@@ -1418,6 +1522,9 @@ export class CharacterEditor {
           idempotencyKey: this.createKey.keyFor(input),
         });
         this.createKey.renew();
+        if (!stillHere()) {
+          return;
+        }
         await this.router.navigate(['/campaigns', s.campaignId, 'characters', res.characterId]);
       } else if (s.characterId) {
         await this.source.updateCharacter({
@@ -1428,10 +1535,16 @@ export class CharacterEditor {
           full: isBasic ? null : this.buildFullValue(),
           basic: isBasic ? basicFormToValue(this.basicForm) : null,
         });
+        if (!stillHere()) {
+          return;
+        }
         await this.router.navigate(['/campaigns', s.campaignId, 'characters', s.characterId]);
       }
       this.saveState.set({ status: 'idle' });
     } catch (err) {
+      if (!stillHere()) {
+        return;
+      }
       // A refusal that names a key says it by name; one that points at a class block marks that block.
       const field = invalidFieldPath(err);
       const block = field ? /^full\.classes\[(\d+)\]/.exec(field) : null;
@@ -1491,14 +1604,22 @@ export class CharacterEditor {
     if (s.status !== 'ready') {
       return;
     }
+    // The newest read is the one that counts, and an answer for a route the person left does not count at all.
+    const seq = ++this.catalogSeq;
+    const route = this.loadSeq;
     try {
       const catalog = await this.source.loadCatalog(s.campaignId, s.characterId ?? undefined);
+      if (seq !== this.catalogSeq || route !== this.loadSeq) {
+        return;
+      }
       const now = this.state();
       if (now.status === 'ready' && catalogChanged(now.catalog, catalog)) {
         this.state.set({ ...now, catalog });
-        this.contentNote.set(
-          'O mestre mudou as opções da mesa. As listas foram atualizadas: confira o que você escolheu antes de salvar.',
-        );
+        if (offersChanged(now.catalog, catalog)) {
+          this.contentNote.set(
+            'O mestre mudou as opções da mesa. As listas foram atualizadas: confira o que você escolheu antes de salvar.',
+          );
+        }
       }
     } catch {
       // Keep the lists on screen: the next change reads again.

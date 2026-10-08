@@ -118,6 +118,11 @@ export class RollPicker {
     this.text.set('');
   }
 
+  /** The typed number is dropped, the field stays open (what it was rolled for changed). */
+  clear(): void {
+    this.text.set('');
+  }
+
   /** "Digitar o resultado": the field opens focused and in view, above the
    * buttons that stick to the bottom of a sheet on a short screen. */
   protected startTyping(): void {

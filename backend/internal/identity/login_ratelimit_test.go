@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/PuraFome/meuRPG/backend/internal/platform/secret"
 )
 
 // loginFrom visits /auth/login as a client at remoteAddr, with the given
@@ -110,5 +112,33 @@ func TestLoginGlobalRateLimit(t *testing.T) {
 	h.clock.Advance(time.Second)
 	if rec := h.loginFrom("192.0.2.200:1"); rec.Code != http.StatusFound {
 		t.Errorf("after waiting: status = %d, want 302", rec.Code)
+	}
+}
+
+func TestCallbackIsRateLimitedPerClient(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	burst := loginRateLimit.PerClient.Burst
+	callback := func(remoteAddr string) int {
+		state, _ := secret.New()
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "https://meurpg.test/auth/callback?state="+state+"&code=x", nil)
+		req.RemoteAddr = remoteAddr
+		req.AddCookie(&http.Cookie{Name: loginCookieName, Value: state}) //nolint:gosec // G124: a request cookie in a test
+		rec := httptest.NewRecorder()
+		h.mux.ServeHTTP(rec, req)
+		return rec.Code
+	}
+
+	for i := range burst {
+		if code := callback("192.0.2.77:1234"); code == http.StatusTooManyRequests {
+			t.Fatalf("callback %d of %d was limited", i+1, burst)
+		}
+	}
+	if code := callback("192.0.2.77:4321"); code != http.StatusTooManyRequests {
+		t.Fatalf("callback over the limit: status = %d, want 429", code)
+	}
+	// Positive control: another client is not affected.
+	if code := callback("192.0.2.78:1234"); code == http.StatusTooManyRequests {
+		t.Fatal("another client was limited")
 	}
 }

@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal } from '@angular/core';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { MatButtonModule } from '@angular/material/button';
@@ -240,6 +240,8 @@ export class PlaceSheet {
   });
 
   constructor() {
+    // While PlaceTreasure runs the sheet stays: closing would lose the answer and a second try would be a new request.
+    effect(() => this.sheet.lock(this.busy()));
     void this.loadMaps();
   }
 
@@ -415,6 +417,9 @@ export class PlaceSheet {
   }
 
   protected cancel(): void {
+    if (this.busy()) {
+      return;
+    }
     this.sheet.close();
   }
 }

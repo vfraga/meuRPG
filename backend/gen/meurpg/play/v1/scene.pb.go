@@ -48,9 +48,10 @@ const (
 	// the scene has been open: it rolled as many times as the action's
 	// `max_attempts` allows, plus the attempts the master granted
 	// (GrantSceneAttempt). The master may grant one more, raise the limit, or
-	// close and open the scene again, which resets every count. The name stays
-	// from the time the limit was one roll ("already rolled"); the reason is
-	// the same.
+	// close and open the scene again, which resets every count. An unlimited
+	// action stops at 200 rolls per character in one opening, with this same
+	// reason. The name stays from the time the limit was one roll ("already
+	// rolled"); the reason is the same.
 	SceneBlockedReason_SCENE_BLOCKED_REASON_ALREADY_ROLLED SceneBlockedReason = 3
 	// RollSceneCheck: the campaign's dice setting does not allow this way of
 	// rolling (RN-18): the app's roll when everybody rolls real dice, a typed
@@ -711,8 +712,9 @@ type SceneActionView struct {
 	// Intuição, and only for a player's own character.
 	Passive *int32 `protobuf:"varint,7,opt,name=passive,proto3,oneof" json:"passive,omitempty"`
 	// How many times each player's character may roll this action while the
-	// scene stays open: 1 to 5, and 0 means unlimited (no counter on screen).
-	// Every member gets it.
+	// scene stays open: 1 to 5, and 0 means unlimited (no counter on screen;
+	// the server stops at 200 rolls per character in one opening). Every member
+	// gets it.
 	MaxAttempts int32 `protobuf:"varint,8,opt,name=max_attempts,json=maxAttempts,proto3" json:"max_attempts,omitempty"`
 	// How many attempts the caller's own character has left in this opening of
 	// the scene (MR-015, question 55): the limit minus their rolls of this

@@ -20,21 +20,22 @@ type PlannedMilestone struct {
 }
 
 type XpAward struct {
-	ID             string
-	CampaignID     string
-	GivenBy        *string
-	CreatedAt      time.Time
-	Mode           string
-	Reason         string
-	EncounterID    *string
-	Gold           *int32
-	TotalXp        int32
-	IdempotencyKey string
-	UndoneAt       *time.Time
-	UndoneBy       *string
-	UndoKey        *string
-	MilestoneID    *string
-	MilestoneAgain bool
+	ID              string
+	CampaignID      string
+	GivenBy         *string
+	CreatedAt       time.Time
+	Mode            string
+	Reason          string
+	EncounterID     *string
+	Gold            *int32
+	TotalXp         int32
+	IdempotencyKey  string
+	UndoneAt        *time.Time
+	UndoneBy        *string
+	UndoKey         *string
+	MilestoneID     *string
+	MilestoneAgain  bool
+	IdempotencyHash *string
 }
 
 type XpAwardShare struct {

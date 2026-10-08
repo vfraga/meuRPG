@@ -10,17 +10,24 @@ import (
 )
 
 // newTestBuild writes a minimal fake Angular build to a temp dir:
-// index.html plus one "hashed" asset, the way `ng build` would.
+// index.html plus "hashed" assets and files copied as they are, the way `ng build` would.
 func newTestBuild(t *testing.T) string {
 	t.Helper()
 	dir := t.TempDir()
 
 	writeFile(t, filepath.Join(dir, "index.html"), "<html>app shell</html>")
-	writeFile(t, filepath.Join(dir, "main-ABCDEF.js"), "console.log('app')")
+	writeFile(t, filepath.Join(dir, "main-ABCD1234.js"), "console.log('app')")
 	if err := os.Mkdir(filepath.Join(dir, "sub"), 0o750); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
-	writeFile(t, filepath.Join(dir, "sub", "nested.js"), "console.log('nested')")
+	writeFile(t, filepath.Join(dir, "sub", "nested-EFGH5678.js"), "console.log('nested')")
+	// Copied by the build as they are, so without a hash in the name.
+	writeFile(t, filepath.Join(dir, "favicon.ico"), "icon")
+	if err := os.Mkdir(filepath.Join(dir, "material-symbols"), 0o750); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	writeFile(t, filepath.Join(dir, "material-symbols", "outlined.css"), "css")
+	writeFile(t, filepath.Join(dir, "material-symbols", "material-symbols-outlined.woff2"), "font")
 
 	return dir
 }
@@ -79,12 +86,25 @@ func TestStaticHandler_Routing(t *testing.T) {
 	}{
 		{name: "root serves index", path: "/", wantStatus: http.StatusOK, wantBody: indexBody, wantCache: "no-cache"},
 		{
-			name: "hashed asset is served with immutable caching", path: "/main-ABCDEF.js",
+			name: "hashed asset is served with immutable caching", path: "/main-ABCD1234.js",
 			wantStatus: http.StatusOK, wantBody: "console.log('app')", wantCache: "public, max-age=31536000, immutable",
 		},
 		{
-			name: "nested asset is served too", path: "/sub/nested.js",
+			name: "nested asset is served too", path: "/sub/nested-EFGH5678.js",
 			wantStatus: http.StatusOK, wantBody: "console.log('nested')", wantCache: "public, max-age=31536000, immutable",
+		},
+		{
+			name: "an unhashed file is revalidated, not immutable", path: "/favicon.ico",
+			wantStatus: http.StatusOK, wantBody: "icon", wantCache: "no-cache",
+		},
+		{
+			name: "an unhashed stylesheet is revalidated", path: "/material-symbols/outlined.css",
+			wantStatus: http.StatusOK, wantBody: "css", wantCache: "no-cache",
+		},
+		{
+			// "-outlined." looks like a hash by length, but it is not upper-case.
+			name: "an unhashed font is revalidated", path: "/material-symbols/material-symbols-outlined.woff2",
+			wantStatus: http.StatusOK, wantBody: "font", wantCache: "no-cache",
 		},
 		{
 			// http.ServeFile's own well-known behavior: a request whose

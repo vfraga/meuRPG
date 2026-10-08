@@ -241,3 +241,26 @@ describe('collectReferences and outline', () => {
     ]);
   });
 });
+
+function timeParse(lines: number): number {
+  const body = '- a\n' + ' b\n'.repeat(lines);
+  const start = performance.now();
+  parseMarkdown(body);
+  return performance.now() - start;
+}
+
+describe('indented list continuation lines', () => {
+  it('parse 30k continuation lines (about 90KB, under the 200KB limit) quickly', () => {
+    timeParse(1000); // warm up
+    const ms = timeParse(30_000);
+    // Linear parsing takes tens of ms; the quadratic copy takes seconds.
+    expect(ms).toBeLessThan(1500);
+  }, 120_000);
+
+  it('take linear time: doubling them does not quadruple the time', () => {
+    timeParse(1000);
+    const t1 = timeParse(15_000);
+    const t2 = timeParse(30_000);
+    expect(t2).toBeLessThan(Math.max(t1, 50) * 3);
+  }, 120_000);
+});

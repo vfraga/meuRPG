@@ -246,8 +246,13 @@ export class FakeMapsClient {
     this.record('deletePoint', mapId, pointId);
   }
 
-  async removeToken(_c: string, mapId: string, characterId: string): Promise<void> {
-    this.record('removeToken', mapId, characterId);
+  async removeToken(
+    _c: string,
+    mapId: string,
+    characterId: string,
+    creatureId = '',
+  ): Promise<void> {
+    this.record('removeToken', mapId, creatureId ? `creature:${creatureId}` : characterId);
   }
 
   async setCarriedLight(
@@ -257,7 +262,7 @@ export class FakeMapsClient {
     lightKey: string,
   ): Promise<MapToken> {
     this.record('setCarriedLight', mapId, characterId, lightKey);
-    return mapToken(characterId, 'Token', { carriedLight: lightKey });
+    return mapToken(characterId, 'Token', { mapId, carriedLight: lightKey });
   }
 
   async get(_campaignId: string, mapId: string, asCharacterId = ''): Promise<GetMapResponse> {
@@ -303,9 +308,10 @@ export class FakeMapsClient {
     characterId: string,
     xBp: number,
     yBp: number,
+    creatureId = '',
   ): Promise<MapToken> {
-    this.record('placeToken', mapId, characterId, xBp, yBp);
-    return mapToken(characterId, 'Token', { xBp, yBp });
+    this.record('placeToken', mapId, characterId || `creature:${creatureId}`, xBp, yBp);
+    return mapToken(characterId, 'Token', { xBp, yBp, creatureId });
   }
 
   async updatePoint(

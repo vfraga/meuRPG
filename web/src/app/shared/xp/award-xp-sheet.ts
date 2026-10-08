@@ -1,4 +1,4 @@
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, effect, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
@@ -18,7 +18,7 @@ import {
   type XPAward,
   XPBlockedReason,
 } from '../../../gen/meurpg/progression/v1/progression_pb';
-import { newKey } from '../../core/connect/idempotency';
+import { ActionKey } from '../../core/connect/idempotency';
 import { formatInt, tight } from '../../core/format/text';
 import type { ExperienceRow } from '../../core/progression/experience-store';
 import { ProgressionClient } from '../../core/progression/progression-client';
@@ -146,6 +146,8 @@ export class AwardXpSheet {
     new Set(this.data.rows.map((r) => r.id)),
   );
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
 
   private readonly reasonField = viewChild.required(XpReason);
@@ -214,8 +216,7 @@ export class AwardXpSheet {
     this.data.treasures ? 'ready' : 'loading',
   );
 
-  private key = newKey();
-  private keyFor = '';
+  private readonly key = new ActionKey();
 
   constructor() {
     // The strip is only there for a gold campaign's own "Dar XP" (a combat's has none): no read for it otherwise.
@@ -291,15 +292,11 @@ export class AwardXpSheet {
         : ({ mode: 'manual', amount: total } as const);
 
     // New values are a new award; the same values again are a retry.
-    const signature = JSON.stringify([input, reason, ids]);
-    if (signature !== this.keyFor) {
-      this.keyFor = signature;
-      this.key = newKey();
-    }
+    const key = this.key.keyFor([input, reason, ids]);
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.api.award(this.data.campaignId, input, reason, ids, this.key);
+      const res = await this.api.award(this.data.campaignId, input, reason, ids, key);
       if (res.award) {
         this.sheet.close({ award: res.award, xpEach: res.xpEach, lostXp: res.lostXp });
       } else {

@@ -2,19 +2,24 @@ package maps
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5/pgconn"
 	"google.golang.org/protobuf/proto"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 )
 
 // The new kinds of point (Etapa 9): the trap (MR-035), the treasure (MR-041)
@@ -919,5 +924,93 @@ func TestMR036_CarriedLight(t *testing.T) {
 	}
 	if len(caioEvents) != 1 {
 		t.Errorf("Toren's player's stream = %v, want one hint: the master's lantern for his own character", caioEvents)
+	}
+}
+
+// The master's change to a trap locks the point and then the session (the event it
+// records); the play module's trigger locks the session and then the point. When a
+// move fires a trap while the master reveals it, the two wait for each other:
+// CockroachDB aborts one (40001) and the retry of its transaction goes on, so the
+// master's call still succeeds and the trap is revealed.
+func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
+	t.Parallel()
+	s := newScenes(t, true)
+	trap := s.newTrap("Fosso", 1000, 1000)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Minute)
+	defer cancel()
+	probe := dbtest.SideConnection(t, s.h.pool)
+	// The sessions of the two sides, to tell their statements from other tests' on the same server.
+	var masterSession, playSession string
+	if err := s.h.pool.QueryRow(ctx, `SHOW session_id`).Scan(&masterSession); err != nil {
+		t.Fatal(err)
+	}
+	// waiting counts the statements of the two sides asking for the trap's lock right now.
+	waiting := func() int {
+		var n int
+		err := probe.QueryRow(ctx, `SELECT count(*) FROM [SHOW CLUSTER STATEMENTS] WHERE session_id IN ($1, $2) AND query LIKE '%FROM map_points%FOR UPDATE%'`, masterSession, playSession).Scan(&n)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return n
+	}
+	waitFor := func(what string, n int) {
+		t.Helper()
+		for waiting() < n {
+			if ctx.Err() != nil {
+				t.Fatalf("%s never waited for the trap", what)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	// A transaction holds the point, so the master's call stops right at it.
+	holder, err := dbtest.SideConnection(t, s.h.pool).Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer holder.Rollback(ctx) //nolint:errcheck // rolled back unless it was committed
+	if _, err := holder.Exec(ctx, `SELECT id FROM map_points WHERE id = $1 FOR UPDATE`, trap.GetId()); err != nil {
+		t.Fatal(err)
+	}
+	revealed := make(chan error, 1)
+	go func() {
+		_, err := s.master.maps.RevealTrap(ctx, connect.NewRequest(&mapsv1.RevealTrapRequest{CampaignId: s.campaign, MapId: s.mapID, PointId: trap.GetId(), All: true}))
+		revealed <- err
+	}()
+	waitFor("the master's call", 1)
+	// The play module's transaction: the session row first, as every change in play
+	// does, then the trap the move fires. It queues behind the master's call.
+	play, err := dbtest.SideConnection(t, s.h.pool).Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer play.Rollback(ctx) //nolint:errcheck // rolled back unless it was committed
+	if err := play.QueryRow(ctx, `SHOW session_id`).Scan(&playSession); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := play.Exec(ctx, `SELECT id FROM game_sessions WHERE campaign_id = $1 AND ended_at IS NULL FOR UPDATE`, s.campaign); err != nil {
+		t.Fatal(err)
+	}
+	fired := make(chan error, 1)
+	go func() {
+		_, err := s.h.svc.TriggerTrap(ctx, play, s.campaign, s.mapID, trap.GetId(), time.Now())
+		fired <- err
+	}()
+	waitFor("the move", 2)
+	// The master's call takes the point first and then waits for the session, which the
+	// move holds while it waits for the point: one of them is aborted.
+	if err := holder.Rollback(ctx); err != nil {
+		t.Fatal(err)
+	}
+	err = <-fired
+	if err == nil {
+		err = play.Commit(ctx)
+	}
+	var pg *pgconn.PgError
+	if err != nil && (!errors.As(err, &pg) || pg.Code != "40001") {
+		t.Fatalf("the move ended with %v, want success or a retryable abort", err)
+	}
+	_ = play.Rollback(ctx)
+	if err := <-revealed; err != nil {
+		t.Errorf("RevealTrap() crossing a trigger = %v, want success", err)
 	}
 }

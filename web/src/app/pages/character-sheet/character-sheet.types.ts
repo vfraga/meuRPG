@@ -119,6 +119,11 @@ export interface CoinsVm {
 }
 
 /** A player, enemy or boss sheet (`FullSheet`, plan §4). */
+export interface PactSlotsVm {
+  readonly level: number;
+  readonly count: number;
+}
+
 export interface FullSheetVm {
   readonly kind: 'full';
   readonly abilities: readonly AbilityScoreVm[];
@@ -149,6 +154,8 @@ export interface FullSheetVm {
   readonly spellcasting: readonly SpellcastingVm[];
   /** Index 0 is level 1. */
   readonly spellSlots: readonly number[];
+  /** A Warlock's Pact Magic: the slots are all of one level, and are kept apart from `spellSlots` (null without the feature). */
+  readonly pactSlots: PactSlotsVm | null;
   readonly cantripNames: readonly string[];
   readonly spellNames: readonly string[];
   readonly features: readonly FeatureVm[];

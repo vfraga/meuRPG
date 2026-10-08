@@ -87,7 +87,7 @@ func (s *Service) CampaignDiceMode(ctx context.Context, tx pgx.Tx, campaignID, u
 	}
 	// A pending member (RN-15) makes a character too, and rolls its ability scores by
 	// the campaign's dice setting, so any membership counts, not only an active one.
-	if _, err := q.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: campaignID, UserID: userID}); errors.Is(err, pgx.ErrNoRows) {
+	if _, err := q.GetMembership(ctx, campaignsdb.GetMembershipParams{CampaignID: campaignID, UserID: userID, Now: s.now()}); errors.Is(err, pgx.ErrNoRows) {
 		return "", authz.ErrNotMember
 	} else if err != nil {
 		return "", fmt.Errorf("get membership: %w", err)

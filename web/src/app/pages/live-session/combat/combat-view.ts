@@ -45,6 +45,7 @@ import {
   type MoveResult,
   newKey,
 } from '../../../core/combat/combat-client';
+import { ActionKey } from '../../../core/connect/idempotency';
 import { combatErrorMessage } from '../../../core/combat/combat-errors';
 import {
   type FormEnded,
@@ -161,6 +162,7 @@ import { MineTabs } from './mine-tabs/mine-tabs';
 import { openSheet } from './sheet-host';
 import { type DoorSheetData, openDoorSheet } from '../door-sheet/door-sheet';
 import type { DoorSquare } from '../../../core/maps/layers';
+import { wallUnderDoor } from '../../../core/maps/door-paint';
 import { type StartCombatData, StartCombatDialog } from './start-combat/start-combat-dialog';
 import { TrapDamages } from '../traps/trap-damages/trap-damages';
 import { openTrapSearch } from '../traps/trap-search-sheet/trap-search-sheet';
@@ -241,6 +243,8 @@ export class CombatView {
   protected readonly wideLayout = mediaQuery('(min-width: 1280px)');
   /** One save in flight per combatant (see `MoveSaves`). */
   private readonly moves = new MoveSaves();
+  /** The key of a jump: the same jump again is a retry of it. */
+  private readonly jumpKey = new ActionKey();
 
   readonly campaignId = input.required<string>();
   readonly isMaster = input(false);
@@ -286,7 +290,9 @@ export class CombatView {
   private readonly settledTurn = signal('');
   /** The characters at three failures the master put away with "Ainda não". */
   protected readonly deathLater = signal<ReadonlySet<string>>(new Set());
-  private deathKey = newKey();
+  private readonly deathKey = new ActionKey();
+  private readonly confirmDeathKey = new ActionKey();
+  private readonly leaveFormKey = new ActionKey();
   private readonly shieldHandled = new Set<string>();
 
   protected readonly encounter = computed(() => this.state().shown());
@@ -442,8 +448,9 @@ export class CombatView {
       const res = await this.creaturesApi.leaveWildShape(
         this.campaignId(),
         own.characterId,
-        newKey(),
+        this.leaveFormKey.keyFor(own.characterId),
       );
+      this.leaveFormKey.renew();
       if (res.encounter) {
         this.state().apply(res.encounter);
       }
@@ -799,6 +806,12 @@ export class CombatView {
   });
 
   /** The table's rule on who sees the death saves (RN-24): read when a combat shows and again when someone falls, so a rule changed meanwhile is caught. */
+  /** Whose familiar to ask for: the character's id, so a re-read of the combat changes nothing. */
+  private readonly familiarOwner = computed(() =>
+    this.isMaster() || this.lookingThroughFamiliar() ? '' : (this.own()?.characterId ?? ''),
+  );
+  private familiarRequest = 0;
+
   private async readDeathRule(campaignId: string): Promise<void> {
     try {
       this.deathRule.set((await this.tableRules.get(campaignId)).saved.deathSaves);
@@ -819,6 +832,21 @@ export class CombatView {
         }
       });
     });
+    // "Ainda não" holds while the character stays dying: when they leave DYING the question is
+    // new the next time they fall.
+    effect(() => {
+      const dying = new Set(
+        (this.encounter()?.combatants ?? [])
+          .filter((c) => c.state === CombatantState.DYING)
+          .map((c) => c.id),
+      );
+      untracked(() => {
+        const later = this.deathLater();
+        if ([...later].some((id) => !dying.has(id))) {
+          this.deathLater.set(new Set([...later].filter((id) => dying.has(id))));
+        }
+      });
+    });
     // The offer's form belongs to a turn: when it passes, or the combat ends, it closes.
     effect(() => {
       void this.turnKey();
@@ -826,21 +854,28 @@ export class CombatView {
     });
     // The familiar's name, for the action "Ver pelos olhos do Nanquim" (the owner's list: RN-20).
     effect(() => {
-      const mine = this.own();
+      const characterId = this.familiarOwner();
       const campaignId = this.campaignId();
-      const looking = this.lookingThroughFamiliar();
-      if (this.isMaster() || !mine || looking) {
+      const request = ++this.familiarRequest;
+      if (!characterId) {
         untracked(() => this.familiar.set(null));
         return;
       }
       untracked(
         () =>
-          void this.creaturesApi.list(campaignId, mine.characterId).then(
-            (list) =>
-              this.familiar.set(
-                list.find((c) => c.source === CreatureSource.FAMILIAR)?.name ?? null,
-              ),
-            () => this.familiar.set(null),
+          void this.creaturesApi.list(campaignId, characterId).then(
+            (list) => {
+              if (request === this.familiarRequest) {
+                this.familiar.set(
+                  list.find((c) => c.source === CreatureSource.FAMILIAR)?.name ?? null,
+                );
+              }
+            },
+            () => {
+              if (request === this.familiarRequest) {
+                this.familiar.set(null);
+              }
+            },
           ),
       );
     });
@@ -1157,9 +1192,16 @@ export class CombatView {
 
   private async refreshAfter(err: unknown): Promise<void> {
     const code = ConnectError.from(err).code;
-    if (code === Code.Aborted || code === Code.FailedPrecondition || code === Code.NotFound) {
+    if (
+      code === Code.Aborted ||
+      code === Code.FailedPrecondition ||
+      code === Code.NotFound ||
+      code === Code.Unavailable ||
+      code === Code.DeadlineExceeded
+    ) {
+      const ticket = this.state().beginRead();
       try {
-        this.state().apply(await this.api.get(this.campaignId()));
+        this.state().applyRead(ticket, await this.api.get(this.campaignId()));
       } catch {
         // The stream's next `ready` reads it again.
       }
@@ -1435,7 +1477,13 @@ export class CombatView {
       campaignId: this.campaignId(),
       mapId: e.mapId,
       door,
-      wall: this.layers().walls.some((w) => w.col === door.col && w.row === door.row),
+      wallSquares: wallUnderDoor(
+        this.layers().walls,
+        this.layers().columns,
+        this.layers().rows,
+        this.mapState().map()?.squareFactor ?? 1,
+        door,
+      ),
     };
     openDoorSheet(this.dialog, this.bottomSheet, data).subscribe();
   }
@@ -1537,10 +1585,10 @@ export class CombatView {
     if (!own) {
       return;
     }
-    const key = this.deathKey;
     await this.run(async (e) => {
+      const key = this.deathKey.keyFor([e.id, own.id, die]);
       const res = await this.api.rollDeathSave(this.campaignId(), e.id, own.id, die, key);
-      this.deathKey = newKey();
+      this.deathKey.renew();
       const text = saveAnnouncement(res.save, own.label);
       this.deathResult.set(text);
       if (res.save.outcome === DeathSaveOutcome.REVIVED) {
@@ -1552,7 +1600,16 @@ export class CombatView {
 
   /** The master's "Confirmar a morte" (ConfirmDeath): the character is dead for good. */
   protected async confirmDeath(id: string): Promise<void> {
-    await this.run((e) => this.api.confirmDeath(this.campaignId(), e.id, id, newKey()));
+    await this.run(async (e) => {
+      const res = await this.api.confirmDeath(
+        this.campaignId(),
+        e.id,
+        id,
+        this.confirmDeathKey.keyFor([e.id, id]),
+      );
+      this.confirmDeathKey.renew();
+      return res;
+    });
   }
 
   protected deathLaterFor(id: string): void {
@@ -2030,17 +2087,34 @@ export class CombatView {
     }
     const before = own.movementUsedDft;
     this.moveError.set('');
-    const ok = await this.runMove((e) =>
-      req.kind === 'long'
-        ? this.api.move(this.campaignId(), e.id, own.id, req.square.col, req.square.row, {
-            kind: 'long',
-          })
-        : this.api.move(this.campaignId(), e.id, own.id, own.col, own.row, {
-            kind: 'high',
-            heightDft: req.heightDft,
-          }),
-    );
+    const ok = await this.runMove((e) => {
+      // The same jump again (a lost answer) is a retry: it keeps its key and is not charged twice.
+      const key = this.jumpKey.keyFor([e.id, own.id, req]);
+      return req.kind === 'long'
+        ? this.api.move(
+            this.campaignId(),
+            e.id,
+            own.id,
+            req.square.col,
+            req.square.row,
+            { kind: 'long' },
+            key,
+          )
+        : this.api.move(
+            this.campaignId(),
+            e.id,
+            own.id,
+            own.col,
+            own.row,
+            { kind: 'high', heightDft: req.heightDft },
+            key,
+          );
+    });
     if (ok) {
+      this.jumpKey.renew();
+    }
+    // A jump that stopped short already said so (runMove's note): that is not "saltou".
+    if (ok && !this.moveNote()) {
       const spent = (this.mover()?.movementUsedDft ?? before) - before;
       this.moveNote.set(
         req.kind === 'long'

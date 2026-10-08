@@ -369,6 +369,57 @@ describe('SummonSheet: casting a summon outside combat (E9-10, MR-037)', () => {
     );
   });
 
+  describe('the numbers of the forms of an option picked after another one', () => {
+    const spell = () =>
+      undeadSpell({
+        circles: [
+          {
+            circle: 3,
+            options: [
+              {
+                count: 1,
+                forms: [{ monsterKey: 'monster:skeleton', namePt: 'Esqueleto', attack: 3 }],
+              },
+            ],
+          },
+          {
+            circle: 5,
+            options: [
+              { count: 1, forms: [{ monsterKey: 'monster:zombie', namePt: 'Zumbi', attack: 3 }] },
+            ],
+          },
+        ] as never,
+      });
+    const slots: [number, number, number, boolean?][] = [
+      [3, 2, 1],
+      [5, 1, 1],
+    ];
+
+    it('never get replaced by a late answer for the option left', async () => {
+      const { el, pick, settle } = await setup('spell:animate-dead', [spell()], slots);
+      const zombie = api.blocks.get('monster:zombie')!;
+      let release!: () => void;
+      const slow = new Promise<void>((r) => (release = r));
+      api.statBlock.mockImplementationOnce(async () => {
+        await slow;
+        return zombie;
+      });
+      await pick('5º nível');
+      await pick('3º nível');
+      release();
+      await settle();
+      expect(flat(el.querySelector('.forms'))).toContain('Esqueleto');
+      expect(flat(el.querySelector('.forms'))).toContain('PV');
+    });
+
+    it('shows the numbers of the option that is picked (positive control)', async () => {
+      const { el, pick } = await setup('spell:animate-dead', [spell()], slots);
+      await pick('5º nível');
+      expect(flat(el.querySelector('.forms'))).toContain('Zumbi');
+      expect(flat(el.querySelector('.forms'))).toContain('PV');
+    });
+  });
+
   it('a spell the sheet no longer has is said in words, with nothing to cast', async () => {
     const { el } = await setup('spell:conjure-animals', [familiarSpell()]);
     expect(flat(el.querySelector('[role=alert]'))).toBe(

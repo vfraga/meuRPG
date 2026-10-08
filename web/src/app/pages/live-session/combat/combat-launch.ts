@@ -63,6 +63,8 @@ export function openStartCombat(
         <p class="mr-muted">
           @if (loading()) {
             Lendo o mapa atual…
+          } @else if (unreadable()) {
+            Não deu para ler o mapa atual. Sem ele o combate começaria no teatro da mente, e isso não muda depois de iniciado.
           } @else if (state().map()) {
             Escolha quem luta e o app pede a iniciativa de todos.
           } @else {
@@ -76,11 +78,16 @@ export function openStartCombat(
         mat-stroked-button
         type="button"
         class="launch__button"
-        [disabled]="loading()"
+        [disabled]="loading() || unreadable()"
         (click)="open()"
       >
         <mat-icon aria-hidden="true">swords</mat-icon>Iniciar combate
       </button>
+      @if (unreadable()) {
+        <button mat-stroked-button type="button" class="launch__button" (click)="retry()">
+          <mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo
+        </button>
+      }
     </section>
   `,
   styles: `
@@ -127,8 +134,15 @@ export class CombatLaunch {
   /** The session's current map is still being read: "Iniciar combate" waits for it. */
   protected readonly loading = computed(() => this.state().status() === 'loading');
 
+  /** The read of the current map failed: unlike a session without a map, its answer is unknown. */
+  protected readonly unreadable = computed(() => this.state().status() === 'error');
+
+  protected retry(): void {
+    void this.state().refresh();
+  }
+
   protected open(): void {
-    if (this.loading()) {
+    if (this.loading() || this.unreadable()) {
       return;
     }
     const map = this.map();

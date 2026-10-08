@@ -68,19 +68,39 @@ export class SolveTargets {
 
   /** Call once with the campaign before anything else. */
   use(campaignId: string): void {
+    if (campaignId !== this.campaign) {
+      this.layerCache.clear();
+      this.mapCache.clear();
+      this.mapsPromise = null;
+    }
     this.campaign = campaignId;
   }
 
   maps(): Promise<MapChoice[]> {
-    this.mapsPromise ??= this.api.list(this.campaign);
+    if (!this.mapsPromise) {
+      const read = this.api.list(this.campaign);
+      this.mapsPromise = read;
+      // A failed read is not kept: the next call asks the server again.
+      read.catch(() => {
+        if (this.mapsPromise === read) {
+          this.mapsPromise = null;
+        }
+      });
+    }
     return this.mapsPromise.then((maps) => maps.map((m) => ({ id: m.id, name: m.name })));
   }
 
   doors(mapId: string): Promise<readonly DoorChoice[]> {
     let doors = this.layerCache.get(mapId);
     if (!doors) {
-      doors = this.api.layers(this.campaign, mapId).then(doorsOf);
-      this.layerCache.set(mapId, doors);
+      const read = this.api.layers(this.campaign, mapId).then(doorsOf);
+      doors = read;
+      this.layerCache.set(mapId, read);
+      read.catch(() => {
+        if (this.layerCache.get(mapId) === read) {
+          this.layerCache.delete(mapId);
+        }
+      });
     }
     return doors;
   }
@@ -126,8 +146,14 @@ export class SolveTargets {
   private read(mapId: string): Promise<GetMapResponse> {
     let read = this.mapCache.get(mapId);
     if (!read) {
-      read = this.api.get(this.campaign, mapId);
-      this.mapCache.set(mapId, read);
+      const fetched = this.api.get(this.campaign, mapId);
+      read = fetched;
+      this.mapCache.set(mapId, fetched);
+      fetched.catch(() => {
+        if (this.mapCache.get(mapId) === fetched) {
+          this.mapCache.delete(mapId);
+        }
+      });
     }
     return read;
   }

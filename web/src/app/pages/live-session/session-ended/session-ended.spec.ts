@@ -358,6 +358,20 @@ describe('SessionEnded (MR-032, E8-11 states 4 and 5)', () => {
     expect(el.querySelector('#se-title')?.textContent).toBe('Sessão encerrada');
   });
 
+  it("opens the card of another session the player had not closed, though they closed the last one's", async () => {
+    const { fixture, el } = await setup(playerSummary, false);
+    el.querySelector<HTMLElement>('.card__close')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('.card')).toBeNull();
+    fixture.componentRef.setInput('sessionId', 's6');
+    fixture.detectChanges();
+    for (let i = 0; i < 3; i++) {
+      await fixture.whenStable();
+      fixture.detectChanges();
+    }
+    expect(el.querySelector('.card')).not.toBeNull();
+  });
+
   it('drops a late answer of an older read when the session changes', async () => {
     const { fixture, el } = await setup(masterSummary, true);
     let late!: (s: SessionSummary) => void;

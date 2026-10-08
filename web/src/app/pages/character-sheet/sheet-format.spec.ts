@@ -3,6 +3,7 @@ import {
   formatDate,
   issueTitle,
   spellLimitsText,
+  pactSlotRow,
   spellSlotRows,
   stateTagLabel,
 } from './sheet-format';
@@ -44,6 +45,17 @@ describe('sheet-format', () => {
       { level: 3, label: '3º nível', count: 1, countLabel: '1 espaço' },
     ]);
     expect(spellSlotRows([])).toEqual([]);
+  });
+
+  it("makes one row of a Warlock's pact slots, and none without them", () => {
+    expect(pactSlotRow({ level: 2, count: 2 })).toEqual({
+      level: 2,
+      label: '2º nível',
+      count: 2,
+      countLabel: '2 espaços',
+    });
+    expect(pactSlotRow({ level: 1, count: 0 })).toBeNull();
+    expect(pactSlotRow(null)).toBeNull();
   });
 
   it('says the class spell limits in one sentence', () => {

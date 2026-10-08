@@ -96,7 +96,8 @@ type NotesServiceClient interface {
 	DeleteNote(context.Context, *connect.Request[v1.DeleteNoteRequest]) (*connect.Response[v1.DeleteNoteResponse], error)
 	// ListNoteScenes returns the scenes the caller may tag a note with: only
 	// the ones the group discovered, with their names, oldest discovery first.
-	// It is the tag picker. A scene the group did not discover is not here,
+	// It is the tag picker. A scene the group did not discover is not here, nor is one
+	// on a map the players cannot open (not revealed, not the session's current one),
 	// and its name never reaches a player.
 	//
 	// Errors:
@@ -231,7 +232,8 @@ type NotesServiceHandler interface {
 	DeleteNote(context.Context, *connect.Request[v1.DeleteNoteRequest]) (*connect.Response[v1.DeleteNoteResponse], error)
 	// ListNoteScenes returns the scenes the caller may tag a note with: only
 	// the ones the group discovered, with their names, oldest discovery first.
-	// It is the tag picker. A scene the group did not discover is not here,
+	// It is the tag picker. A scene the group did not discover is not here, nor is one
+	// on a map the players cannot open (not revealed, not the session's current one),
 	// and its name never reaches a player.
 	//
 	// Errors:

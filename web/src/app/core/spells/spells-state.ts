@@ -32,6 +32,8 @@ export class SpellsState {
   readonly moreError = signal('');
 
   private seq = 0;
+  /** Moves with each `refresh()`: of two overlapping ones only the newest lands, and a page asked before it is dropped. */
+  private refreshes = 0;
 
   /** The filter and character the rows on screen answer: "Mostrar mais" asks the next page of THAT list, never of a newer filter. */
   private answered: { filter: SpellFilter; characterId: string | null } | null = null;
@@ -135,6 +137,7 @@ export class SpellsState {
       return;
     }
     const seq = this.seq;
+    const mine = ++this.refreshes;
     // The pages the person had opened with "Mostrar mais" stay: as many are read again as were on screen.
     const wanted = this.spells().length;
     try {
@@ -143,7 +146,7 @@ export class SpellsState {
       );
       let rows = [...res.spells];
       while (rows.length < wanted && res.nextPageToken) {
-        if (seq !== this.seq || this.answered !== answered) {
+        if (seq !== this.seq || mine !== this.refreshes || this.answered !== answered) {
           return;
         }
         res = await this.source.list(
@@ -151,7 +154,7 @@ export class SpellsState {
         );
         rows = [...rows, ...res.spells];
       }
-      if (seq !== this.seq || this.answered !== answered) {
+      if (seq !== this.seq || mine !== this.refreshes || this.answered !== answered) {
         return;
       }
       this.spells.set(rows);
@@ -172,20 +175,21 @@ export class SpellsState {
     }
     const { filter, characterId } = this.answered;
     const seq = this.seq;
+    const refreshes = this.refreshes;
     this.loadingMore.set(true);
     this.moreError.set('');
     try {
       const res = await this.source.list(
         toListRequest(this.campaignId, filter, characterId, token),
       );
-      if (seq !== this.seq) {
+      if (seq !== this.seq || refreshes !== this.refreshes) {
         return;
       }
       this.spells.update((rows) => [...rows, ...res.spells]);
       this.total.set(res.total);
       this.nextToken.set(res.nextPageToken);
     } catch (err) {
-      if (seq === this.seq) {
+      if (seq === this.seq && refreshes === this.refreshes) {
         this.moreError.set(spellsErrorMessage(err));
       }
     } finally {

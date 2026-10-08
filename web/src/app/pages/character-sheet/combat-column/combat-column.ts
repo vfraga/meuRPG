@@ -7,7 +7,7 @@ import {
 } from '../../../core/characters/character-labels';
 import { FullSheetVm } from '../character-sheet.types';
 import { CombatStats } from '../combat-stats/combat-stats';
-import { coinEntries, spellLimitsText, spellSlotRows } from '../sheet-format';
+import { coinEntries, pactSlotRow, spellLimitsText, spellSlotRows } from '../sheet-format';
 
 /**
  * The paper sheet's middle column: the combat numbers, "Ataques" (a real
@@ -36,6 +36,7 @@ export class CombatColumn {
     return classes.length === 1 ? `Magias de ${classes[0].className.toLowerCase()}` : 'Magias';
   });
   protected readonly slotRows = computed(() => spellSlotRows(this.sheet().spellSlots));
+  protected readonly pactRow = computed(() => pactSlotRow(this.sheet().pactSlots));
   protected readonly hasSaveAttack = computed(() => this.sheet().attacks.some((a) => a.saveDc > 0));
 
   /** The armour's own name, only when the stored sheet has armour: without

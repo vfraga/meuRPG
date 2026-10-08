@@ -204,3 +204,50 @@ func TestCreateTableEntryIsIdempotent(t *testing.T) {
 		t.Errorf("ListTableEntries() = %v, %v; want 2 entries", list, err)
 	}
 }
+
+// The create key is the caller's: another member sending the same key with an identical request
+// gets a character of their own, not the first member's, and neither sees the other's key as used.
+func TestCreateCharacterKeyIsPerCaller(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	master, a, b := h.newUser("Mestre"), h.newUser("Jogadora A"), h.newUser("Jogador B")
+	campaign := h.newCampaign(master, "Mirathel", a, b)
+
+	req := &charactersv1.CreateCharacterRequest{
+		CampaignId: campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: pensantusSheet(), IdempotencyKey: uuid.New().String(),
+	}
+	create := func(u *user, r *charactersv1.CreateCharacterRequest) (*charactersv1.Character, error) {
+		res, err := u.api.CreateCharacter(t.Context(), connect.NewRequest(r))
+		if err != nil {
+			return nil, err
+		}
+		return res.Msg.GetCharacter(), nil
+	}
+	charA, err := create(a, req)
+	if err != nil {
+		t.Fatalf("A CreateCharacter() error = %v", err)
+	}
+	charB, err := create(b, req)
+	if err != nil {
+		t.Fatalf("B CreateCharacter() with A's key error = %v", err)
+	}
+	if charB.GetId() == charA.GetId() {
+		t.Errorf("B got A's character %q as a replay; want a new character of B", charA.GetId())
+	}
+	if charB.GetPlayerUserId() != b.id {
+		t.Errorf("B's character player_user_id = %q, want B's %q; A is %q", charB.GetPlayerUserId(), b.id, a.id)
+	}
+	// B's own retry is B's character, and a different request with B's key is refused.
+	again, err := create(b, req)
+	if err != nil || again.GetId() != charB.GetId() {
+		t.Errorf("B's retry = %v, %v; want B's character %q", again.GetId(), err, charB.GetId())
+	}
+	other := proto.Clone(req).(*charactersv1.CreateCharacterRequest)
+	other.Name = "Outro"
+	_, err = create(b, other)
+	wantCode(t, "B CreateCharacter(same key, other name)", err, connect.CodeInvalidArgument)
+	// A's retry still finds A's character.
+	if again, err := create(a, req); err != nil || again.GetId() != charA.GetId() {
+		t.Errorf("A's retry = %v, %v; want A's character %q", again.GetId(), err, charA.GetId())
+	}
+}

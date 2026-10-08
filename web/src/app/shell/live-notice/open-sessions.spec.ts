@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { Code, ConnectError } from '@connectrpc/connect';
 
 import { AuthService, AuthState } from '../../core/auth/auth.service';
 import {
@@ -31,15 +32,21 @@ describe('OpenSessions (the RN-06 poll)', () => {
   const auth = signal<AuthState>({ status: 'unknown' });
   let fetch: ReturnType<typeof vi.fn<() => Promise<OpenSessionVm[]>>>;
   let service: OpenSessions;
+  let refresh: ReturnType<typeof vi.fn<() => Promise<void>>>;
 
   beforeEach(() => {
     vi.useFakeTimers();
     setVisibility('visible');
     auth.set({ status: 'unknown' });
     fetch = vi.fn(() => Promise.resolve([open('s1', 'c1')]));
+    // GetMe, read again, finds the session gone.
+    refresh = vi.fn(() => {
+      auth.set({ status: 'signed-out' });
+      return Promise.resolve();
+    });
     TestBed.configureTestingModule({
       providers: [
-        { provide: AuthService, useValue: { state: auth.asReadonly() } },
+        { provide: AuthService, useValue: { state: auth.asReadonly(), refresh } },
         { provide: OPEN_SESSIONS_FETCHER, useValue: () => Promise.resolve(fetch) },
       ],
     });
@@ -106,6 +113,24 @@ describe('OpenSessions (the RN-06 poll)', () => {
     expect(service.sessions().map((s) => s.sessionId)).toEqual(['s1']);
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
     expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('reads the login session again when the poll is unauthenticated, then stops', async () => {
+    await signIn();
+    fetch.mockRejectedValue(new ConnectError('no session', Code.Unauthenticated));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    TestBed.tick();
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(service.sessions()).toEqual([]);
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not read the login session again for a network failure', async () => {
+    await signIn();
+    fetch.mockRejectedValueOnce(new Error('network'));
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('forgets everything and stops on sign-out', async () => {

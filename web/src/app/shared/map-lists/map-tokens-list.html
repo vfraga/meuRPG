@@ -9,7 +9,7 @@
   </p>
 } @else {
   <ul class="lst" aria-labelledby="tokens-heading">
-    @for (t of tokens(); track t.characterId) {
+    @for (t of tokens(); track key(t)) {
       <li class="row">
         <span class="row__glyph row__glyph--disc" [class.row__glyph--hidden]="t.hidden" aria-hidden="true">
           {{ initial(t) }}
@@ -25,16 +25,19 @@
           <mat-icon aria-hidden="true">{{ t.hidden ? 'visibility_off' : 'visibility' }}</mat-icon>
           {{ t.hidden ? 'Escondido' : 'Visível' }}
         </span>
-        <button
-          matButton="outlined"
-          type="button"
-          class="row__action"
-          [disabled]="pendingId() === t.characterId"
-          [attr.aria-label]="(t.hidden ? 'Revelar aos jogadores ' : 'Esconder ') + t.name"
-          (click)="toggle.emit({ token: t, hidden: !t.hidden })"
-        >
-          {{ t.hidden ? 'Revelar aos jogadores' : 'Esconder' }}
-        </button>
+        <!-- A creature's token is a party token: it is never hidden. -->
+        @if (!t.creatureId) {
+          <button
+            matButton="outlined"
+            type="button"
+            class="row__action"
+            [disabled]="pendingId() === key(t)"
+            [attr.aria-label]="(t.hidden ? 'Revelar aos jogadores ' : 'Esconder ') + t.name"
+            (click)="toggle.emit({ token: t, hidden: !t.hidden })"
+          >
+            {{ t.hidden ? 'Revelar aos jogadores' : 'Esconder' }}
+          </button>
+        }
       </li>
     }
   </ul>

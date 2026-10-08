@@ -106,7 +106,7 @@ export class PlayerInitiative {
 
   protected confirm(): void {
     const face = this.face();
-    if (face !== null) {
+    if (face !== null && !this.busy()) {
       this.typeFace.emit(face);
     }
   }

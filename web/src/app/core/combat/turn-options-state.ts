@@ -12,6 +12,7 @@ import type { CombatClient } from './combat-client';
 export class TurnOptionsState {
   readonly data = signal<GetTurnOptionsResponse | null>(null);
   private asked = 0;
+  private subject = '';
 
   async load(
     api: CombatClient,
@@ -20,6 +21,11 @@ export class TurnOptionsState {
     combatantId: string,
   ): Promise<void> {
     const mine = ++this.asked;
+    // Another combatant's economy is never shown for this one while the answer comes.
+    if (this.subject !== combatantId) {
+      this.subject = combatantId;
+      this.data.set(null);
+    }
     try {
       const res = await api.turnOptions(campaignId, encounterId, combatantId);
       if (mine === this.asked) {
@@ -32,6 +38,7 @@ export class TurnOptionsState {
 
   clear(): void {
     this.asked++;
+    this.subject = '';
     this.data.set(null);
   }
 }

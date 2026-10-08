@@ -21,7 +21,7 @@ import type { SearchForTrapsResponse } from '../../../../../gen/meurpg/play/v1/t
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import type { DiceRoll } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { parseFace, typedTotal } from '../../../../core/combat/combat-dice';
-import { newKey } from '../../../../core/connect/idempotency';
+import { ActionKey } from '../../../../core/connect/idempotency';
 import type { MapState } from '../../../../core/maps/map-state';
 import { needsTwoDice, trapErrorMessage } from '../../../../core/traps/trap-errors';
 import {
@@ -100,12 +100,16 @@ export class TrapSearchSheet {
   /** The server asked for a second die: the first face typed waits here. */
   protected readonly firstFace = signal<number | null>(null);
   protected readonly busy = signal(false);
+  /** A request in the air: Esc and the backdrop do not close the sheet under it. */
+  protected readonly lockWhileBusy = effect(() => this.sheet.lock(this.busy()));
   protected readonly error = signal('');
   protected readonly result = signal<{
     res: SearchForTrapsResponse;
     names: readonly string[];
     skill: SearchSkill;
   } | null>(null);
+  /** The server said a trap was found, whether or not its name could be read. */
+  protected readonly found = computed(() => (this.result()?.res.foundPointIds.length ?? 0) > 0);
   protected readonly step = computed(() => searchStep(this.result() !== null, this.typing()));
 
   protected readonly canApp = this.data.diceMode !== DiceMode.PHYSICAL;
@@ -113,7 +117,9 @@ export class TrapSearchSheet {
   protected readonly preferApp =
     effectivePreference(this.data.diceMode, this.data.preference) === DicePreference.APP;
 
-  protected readonly message = computed(() => resultMessage(this.result()?.names ?? []));
+  protected readonly message = computed(() =>
+    resultMessage(this.result()?.names ?? [], this.result()?.res.foundPointIds.length ?? 0),
+  );
   /** What the server rolled, written as it counts: "1d20 (13) + 4 (Investigação) = 17". */
   protected readonly rolls = computed(() => {
     const r = this.result();
@@ -153,7 +159,7 @@ export class TrapSearchSheet {
     this.face() === null ? 'Confirmar' : `Confirmar ${this.face()}`,
   );
 
-  private readonly key = newKey();
+  private readonly key = new ActionKey();
   private readonly frame = viewChild(SheetFrame);
   private readonly done = viewChild('done', { read: ElementRef<HTMLButtonElement> });
   private readonly field = viewChild('field', { read: ElementRef<HTMLInputElement> });
@@ -212,7 +218,12 @@ export class TrapSearchSheet {
       const first = this.firstFace();
       const sent: SearchDie =
         'face' in die && first !== null ? { face: first, face2: die.face } : die;
-      const res = await this.api.search(this.data.campaignId, this.skill(), sent, this.key);
+      const res = await this.api.search(
+        this.data.campaignId,
+        this.skill(),
+        sent,
+        this.key.keyFor({ skill: this.skill(), die: sent }),
+      );
       // Read the map again: what was found now shows on it, and its name is the map's to give.
       await this.data.state.refresh();
       const names = this.data.state
