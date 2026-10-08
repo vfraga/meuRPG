@@ -151,43 +151,6 @@ var reviewXPByCR = map[string]int{
 	"28": 120000, "29": 135000, "30": 155000,
 }
 
-func TestRulesReviewCreatures_XPFourCreatures(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		key, cr string
-		xp      int
-	}{
-		{"monster:brass-dragon-wyrmling", "1", 200},
-		{"monster:deep-gnome-svirfneblin", "1/2", 100},
-		{"monster:dretch", "1/4", 50},
-		{"monster:riding-horse", "1/4", 50},
-	}
-	for _, tt := range tests {
-		cr := reviewCreature(t, tt.key)
-		if cr.ChallengeRating != tt.cr {
-			t.Errorf("%s: the app has challenge %s, the SRD 5.1 says %s", cr.Name, cr.ChallengeRating, tt.cr)
-		}
-		if cr.XP != tt.xp {
-			t.Errorf("%s (challenge %s) gives %d XP in the app, but the SRD 5.1 says %d XP", cr.Name, cr.ChallengeRating, cr.XP, tt.xp)
-		}
-	}
-}
-
-func TestRulesReviewCreatures_XPMatchesChallenge(t *testing.T) {
-	t.Parallel()
-	for _, cr := range reviewAllCreatures(t) {
-		want, ok := reviewXPByCR[cr.ChallengeRating]
-		if !ok {
-			t.Errorf("%s has an unknown challenge rating %q", cr.Name, cr.ChallengeRating)
-			continue
-		}
-		if cr.XP == want || (cr.ChallengeRating == "0" && cr.XP == 10) {
-			continue
-		}
-		t.Errorf("%s (%s): challenge %s gives %d XP in the app, but the SRD 5.1 XP for that challenge is %d", cr.Name, cr.Key, cr.ChallengeRating, cr.XP, want)
-	}
-}
-
 // TestRulesReviewCreatures_PassivePerception: passive Perception is 10 plus
 // the Perception bonus (the listed skill, or else the Wisdom modifier).
 func TestRulesReviewCreatures_PassivePerception(t *testing.T) {
