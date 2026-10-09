@@ -208,6 +208,7 @@ type user struct {
 	id         string
 	campaigns  campaignsv1connect.CampaignServiceClient
 	characters charactersv1connect.CharacterServiceClient
+	inventory  charactersv1connect.InventoryServiceClient
 	play       playv1connect.PlayServiceClient
 	combat     playv1connect.CombatServiceClient
 	encounters playv1connect.EncounterServiceClient
@@ -238,6 +239,7 @@ func (h *harness) clients(userID string) *user {
 		id:         userID,
 		campaigns:  campaignsv1connect.NewCampaignServiceClient(c, url),
 		characters: charactersv1connect.NewCharacterServiceClient(c, url),
+		inventory:  charactersv1connect.NewInventoryServiceClient(c, url),
 		play:       playv1connect.NewPlayServiceClient(c, url),
 		combat:     playv1connect.NewCombatServiceClient(c, url),
 		encounters: playv1connect.NewEncounterServiceClient(c, url),

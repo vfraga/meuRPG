@@ -158,6 +158,7 @@ type user struct {
 	id        string
 	campaigns campaignsv1connect.CampaignServiceClient
 	api       charactersv1connect.CharacterServiceClient
+	inventory charactersv1connect.InventoryServiceClient
 	content   rulesv1connect.ContentServiceClient
 	table     rulesv1connect.TableContentServiceClient
 }
@@ -197,6 +198,7 @@ func (h *harness) clients(userID string) *user {
 		id:        userID,
 		campaigns: campaignsv1connect.NewCampaignServiceClient(c, url, opts...),
 		api:       charactersv1connect.NewCharacterServiceClient(c, url, opts...),
+		inventory: charactersv1connect.NewInventoryServiceClient(c, url, opts...),
 		content:   rulesv1connect.NewContentServiceClient(c, url, opts...),
 		table:     rulesv1connect.NewTableContentServiceClient(c, url, opts...),
 	}

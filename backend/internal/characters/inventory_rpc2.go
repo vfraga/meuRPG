@@ -787,7 +787,12 @@ func itemLogName(content *rules.Content, sheets map[string]*charactersv1.Invento
 			if !master && it.GetUnidentified() {
 				return content.ItemName(rules.Item{Key: it.GetCatalogKey(), Unidentified: true, Look: it.GetLook()})
 			}
-			return content.ItemName(ruleItem(it))
+			ri := ruleItem(it)
+			ri.Unidentified = false // the master reads what it is
+			if !master {
+				ri.Unidentified = it.GetUnidentified()
+			}
+			return content.ItemName(ri)
 		}
 	}
 	if key != "" && (master || !wasHidden) {

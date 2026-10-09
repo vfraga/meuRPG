@@ -32,7 +32,7 @@ import (
 // matrix of the encounter (combat_test.go) leaves them to this file's.
 var actionRPCs = []string{
 	"GetTurnOptions", "RollAttack", "RollDamage", "ApplyPendingDamage", "DiscardPendingDamage",
-	"TakeAction", "AdjustCombatantHitPoints", "UndoLastAction", "ListCombatLog",
+	"TakeAction", "AdjustCombatantHitPoints", "UndoLastAction", "ListCombatLog", "UseItem",
 }
 
 // armed is a campaign ready to fight, with weapons: a master and three players
@@ -1570,6 +1570,13 @@ func TestMR012_CombatActionsAuthorizationMatrix(t *testing.T) {
 		},
 		"ListCombatLog": func(u *user, ctx context.Context) error {
 			_, err := u.combat.ListCombatLog(ctx, connect.NewRequest(&playv1.ListCombatLogRequest{CampaignId: campaign, EncounterId: enc}))
+			return err
+		},
+		"UseItem": func(u *user, ctx context.Context) error {
+			_, err := u.combat.UseItem(ctx, connect.NewRequest(&playv1.UseItemRequest{
+				CampaignId: campaign, EncounterId: enc, CombatantId: toren, ItemId: newKey(), Use: playv1.CombatItemUse_COMBAT_ITEM_USE_DRINK, IdempotencyKey: newKey(),
+				Roll: &playv1.UseItemRequest_RollInApp{RollInApp: true},
+			}))
 			return err
 		},
 	}

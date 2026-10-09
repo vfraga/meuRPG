@@ -828,6 +828,7 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 	_, combat["SetCombatantConditions"] = cc.SetCombatantConditions(ctx, connect.NewRequest(&playv1.SetCombatantConditionsRequest{CampaignId: id}))
 	_, combat["EndConcentration"] = cc.EndConcentration(ctx, connect.NewRequest(&playv1.EndConcentrationRequest{CampaignId: id}))
 	_, combat["ListCombatLog"] = cc.ListCombatLog(ctx, connect.NewRequest(&playv1.ListCombatLogRequest{CampaignId: id}))
+	_, combat["UseItem"] = cc.UseItem(ctx, connect.NewRequest(&playv1.UseItemRequest{CampaignId: id}))
 	_, combat["GetCombatHighlights"] = cc.GetCombatHighlights(ctx, connect.NewRequest(&playv1.GetCombatHighlightsRequest{CampaignId: id}))
 	combatMethods := playv1.File_meurpg_play_v1_combat_proto.Services().ByName("CombatService").Methods()
 	if len(combat) != combatMethods.Len() {

@@ -367,7 +367,7 @@ func (s *Service) diceFor(ctx context.Context, tx pgx.Tx, m authz.Membership, ex
 				return dice.Result{}, errBlocked(charactersv1.CharacterBlockedReason_CHARACTER_BLOCKED_REASON_DICE_FORCED_IN_APP, "")
 			}
 		}
-		res, err := dice.Physical(expr, int(roll.TypedSum)-expr.Modifier)
+		res, err := dice.Physical(expr, int(roll.TypedSum))
 		if err != nil {
 			return dice.Result{}, invalidArgument(fieldErr("typed_sum", "must be %d to %d", expr.Count, expr.Count*expr.Sides))
 		}
