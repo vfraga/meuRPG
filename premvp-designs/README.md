@@ -307,3 +307,49 @@ Quadro: `PM-09-pacote-da-campanha-e-links-de-personagem-…` (5915 px; terceira 
 1. A validade do link: 7 dias padrão com 1, 7 ou 30 dias à escolha. Serve?
 2. O pacote leva os retratos dos personagens? Assumi que sim (galeria).
 3. RN-03 no claim: assumi que o personagem vivo existente fica com o jogador e o mestre resolve; não há troca automática.
+
+## Lote 3 — correções (PM-09, decisões em `decisions-pm09.md`)
+
+`PM-09` agora tem 7700 px. O que mudou:
+- **O link é `/claim#t=<código>`** (fragmento, nunca caminho nem consulta); a página lê, faz `replaceState` e manda o código só em corpo de POST. Sai "a rota é mascarada".
+- **Saído, a página é idêntica para todo link** (o que é + "Entrar com Google"), sem campanha nem personagem. **Entrar não assume** (`intent=character_claim` só volta ao cartão); só "Assumir este personagem" assume.
+- Cartão com **"Enviado por Vinicius"** e **"Não é você? Entrar com outra conta"**; "Voltar para minhas campanhas" no lugar de "Agora não"; "Sair" no cabeçalho. Sem amarra de e-mail.
+- **"Devolver à reserva"** na linha de um personagem assumido (danger com confirmação no lugar; o jogador continua membro); **Editar** e **Excluir** nos reservados (excluir revoga o link vivo); "Revogar o link" sai do diálogo e confirma na linha, sobre o mesmo personagem; quadro da revogação perdida ("Este link já foi usado por Lia").
+- Casos de borda anotados e desenhados: o mestre abre o próprio link, pedido de entrada pendente, personagem morto, segundo uso, corrida com a revogação, RN-03 (única recusa específica).
+- **Importação de verdade tudo ou nada:** qualquer item recusado bloqueia "Criar campanha" (prévia só oferece "Escolher outro arquivo"); limites do pacote (200 MiB, 2.000 entradas, 10 MiB por entrada, sem extrair para caminho, manifesto estrito com SHA-256), envio amarrado ao mestre com partes por 1 hora, "Tentar de novo" reaproveita as partes, "Você já tem 10 campanhas", cópia sem jargão.
+- **Exportação:** lista "Nunca vai" completa (contas, donos e membros, convites e links, memória de névoa), imagens reencodadas, foto em uma transação, arquivo 24 h com "Baixar de novo", download que reconfere o mestre; `docs/privacy.md` (e a versão em português) ganham o pacote (trabalho do G1); lista de RN-10 dos reservados (lista, grupo, combate, mapas, resumo, retrato) para o teste de vazamento do G2.
+- **Diálogo do link:** "Válido por 1 / 7 / 30 dias" (padrão 7), link inteiro em campo só de leitura que quebra a linha, "Copiar link" com ícone de copiar e "Link copiado." em `aria-live`, "Pronto" virou "Fechar".
+- **Quadros a 320 px:** a linha de reservados, o diálogo e o cartão do cartão de assumir (e a página de entrada). Nenhum texto abaixo de 14 px; "NPCs e criaturas" em todo lugar.
+- Não feito: os links do cabeçalho do app seguem como no app real (36 a 40 px de altura, decisão do Vinicius); o editor do modo do mestre não foi redesenhado (só identificado).
+
+
+### Lote 2: Designer B, revisão aplicada
+
+Aplicada a revisão adversarial (`/tmp/pm-review3/review.md`) e as respostas de `decisions-batch2-B.md` a PM-05a a d e PM-08a a d. Alturas finais: PM-05a 7487, PM-05b 7091, PM-05c 6024, PM-05d 5018, PM-08a 6584, PM-08b 5256, PM-08c 6868, PM-08d 6714. `canvas.json` atualizado.
+
+**Decisões do Vinicius aplicadas (as perguntas 1 a 17 acima estão respondidas):**
+- Inimigo Favorito segue o SRD 5.1 (a versão de 5 tipos é o Patrulheiro Revisado de 2016: conteúdo da mesa, não a classe embutida). Os tipos usam os nomes do bestiário (`creature-types.ts`: Aberração, Fera, Ínfero, Limo, Fada...), nunca "Corruptores"; as entradas `creature-type:*` têm de ter exatamente esses nomes.
+- A ficha travada completa o "+1 em duas habilidades" do Meio-elfo (recalcula, e o mestre recebe o registro).
+- Multiclasse: o pré-requisito é a habilidade principal de todas as classes atuais e da nova; o jogador é recusado no subir de nível e na criação; o editor do mestre pode passar por cima, com aviso. Fonte citada: SRD 5.1 "Multiclassing" (não o Livro do Jogador).
+- "Recusar" segue o design.md (danger-outline, foco em "Cancelar"). Dados de vida por tipo, nesta etapa: descanso curto gasta por tipo; descanso longo devolve até metade do total (no mínimo 1), e o jogador escolhe os tipos.
+- Reviver: sem regra "sem turno nesta rodada"; o combatente fica na posição e age no próximo turno. Bloqueado enquanto há outro personagem vivo; o mestre arquiva ou marca o outro antes. O diamante é um lembrete que se marca. O jogador do morto mantém a visão do grupo, mapa incluído.
+
+**Regras e dados:**
+- Pré-requisitos das invocações (Dádiva, magia): não estão nos dados do servidor (só o nível); entram num arquivo de efeitos escrito à mão, com a fonte do SRD 5.1 em cada linha, revisão nova e um teste por invocação (PM-05d, linha "Dados").
+- Amostra de antecedente: Acólito (o Eremita só existe no pacote privado da mesa).
+- Revivificar só com regras do SRD: toca uma criatura morta no último minuto (o toque é o alcance); a frase "que o conjurador vê" saiu. Em combate o app conta as 10 rodadas; fora de combate o alvo aparece com "o mestre confirma que faz menos de 1 minuto" e a magia pergunta ao mestre (estado 2b). A linha de Fenwick saiu. A leitura "a janela vai até a iniciativa da morte" está marcada como leitura do app.
+- Lâmina Sedenta que não soma: marcada como interpretação fora do SRD. O instrumento do Bardo: nota, fora dos dados. Espaços: "132 pares ordenados" (os que não passam têm a recusa afirmada). Dominar Magia: uma magia de 1º e uma de 2º nível. O que pode mudar depois: a Dádiva não se troca (`CHOICE_ALREADY_MADE`); uma invocação se troca a cada subir de nível de Bruxo (regra do SRD, não desenhada). "Escolhas feitas" conta cada seleção em todas as telas (Kaelith: 6 de 7).
+
+**RN-10 e privacidade:**
+- A lista de alvos de Revivificar do jogador traz só quem pode ser revivido: criatura longe, vencida, escondida ou marcada não aparece e nenhum motivo (`NOT_SEEN`, `MASTER_BLOCKED`) chega ao jogador; os motivos são só do mestre. O interruptor "Revivificar não funciona nesta morte" está desenhado (PM-08d, estado 4).
+- A visão do jogador do morto é a união da visão dos vivos, dita como decisão deliberada; a frase falsa saiu. A página de um morto: dono e mestre a veem inteira; os outros, só o cartão público.
+- O motivo de "Pedir ajustes" é apagado ao aprovar, recusar, apagar o personagem, quando o jogador sai da campanha ou apaga a conta, quando a campanha é apagada e quando um novo pedido o substitui; depois do reenvio fica guardado para o histórico do mestre. `not_found` igual para o dono e o não membro (ReviveCharacter, ResubmitCharacter, CompleteCharacterChoices). `pending_choice_count` fica não definido (nunca 0) para quem não é dono nem mestre.
+
+**Layout e acessibilidade:** números inativos do stepper com `ink-muted` (4,5:1 ou mais nos dois temas); alvos de 44 px ("Reviver" e o link do alerta); `font-family` no "Menu" de todos os quadros de celular; cartões da direita até 1232; ficha de fundo desenhada em PM-08a; um só botão preenchido por tela (PM-05d estado 14, PM-08c estado 5); quadros de 320 px novos (PM-05b 6d, PM-05c 9b, PM-08b 3b, PM-08c 5b); fileira de classes completa no seletor de Segredos Mágicos; filtro e bloco "Ainda não disponíveis" na lista de invocações; sem anel de foco na barra de progresso; confirmação no lugar para uma classe nova no subir de nível (danger-outline, foco em "Voltar").
+
+**Cópia e amostras:** Goblin 1 em 2 de 7 e Brisa em 20 de 27 (coerentes com o registro e com "Ferido"/"Ferida"); o contador "125 de 500"; "Pode ser revivido" e "Quem morreu por perto"; sem texto em primeira pessoa nas notas (as decisões ficam aqui); Marlo (Força 12, Destreza 12) no lugar de Doran para o pré-requisito não cumprido.
+
+**Não aplicado, com o motivo:**
+- Foco desenhado nas linhas do painel "Personagens" (PM-05d, estado 14): com o aviso aberto o foco está no botão "Esperar os jogadores", e só há um foco por vez; as linhas ficam descritas na nota. O foco de "Reviver" e da linha de Toren está desenhado em PM-08d.
+- A troca de uma invocação a cada subir de nível de Bruxo (SRD) está só citada, não desenhada: o fluxo pertence ao subir de nível e foge do escopo destes quadros.
+- 320 px de PM-08b e PM-08c cobrem os cartões de classe e o resumo; a densidade do Bruxo a 320 está na lista de invocações (6d).
