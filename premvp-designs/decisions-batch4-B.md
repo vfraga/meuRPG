@@ -47,3 +47,37 @@ Binding for the boards' fix round and for the cloud sessions that build them. Th
    with physical dice; danger-outline confirmations for "Encerrar" on a concentration, exhaustion 6 and "Manter
    Paralisado"; focus on the switch and radios; no text under 14 px; no "sheet", "Desl." or mixed feet and metres
    (metres, as the app); the README "Lote 4 — Designer B" entry.
+
+## W7-X (contests and special actions), from `/tmp/pm-review5/review-W7X.md`, checked against SRD 5.1
+
+1. **Hiding and attacking (RN-20):** before the attack the player reads only "Você está escondida." (never per enemy, never
+   who noticed). The server decides the mode when the target is chosen, and the roll shows like any advantage roll (the
+   d20 pair, source "Atacante não visto"), as a master at the table would say "role com vantagem". **The attack gives
+   away the position: hiding ends for every creature**, hit or miss (SRD "Unseen Attackers and Targets").
+2. **Rules text:** Restrained gives disadvantage on **Dexterity saving throws**, not checks; a creature's grab with a
+   fixed "escape DC" (most SRD monsters) is escaped with Athletics or Acrobatics against that DC, so the contest model has
+   a kind and an `escape_dc`; the rogue's Cunning Action hides as a bonus action; passive Perception is 10 + the
+   Perception bonus, ±5 for advantage or disadvantage, and a tie keeps the hider noticed (the active check must beat it,
+   as in any contest the tie keeps the status quo; say so as the app's reading where the SRD is silent).
+3. **Every direction of a contest:** a player grappling or shoving an NPC, an NPC grappling or shoving a player (the
+   player picks Athletics or Acrobatics and rolls, app die or typed), and a player against a player (the defender
+   chooses and rolls). A contest waits through PM-04's reaction window mechanism with its own kind (`CONTEST`) and its own
+   waiting reason; players read "Esperando o mestre" or "Esperando <nome>" by the same rule as PM-04. No timeout (as
+   PM-04).
+4. **Sample data from the SRD only:** no "Capitão Goblin"; use Hobgoblin (passive Perception 10) or Bugbear; Brisa's
+   numbers from the README cast (a rogue 5 is proficient in Stealth, with expertise if the cast says so).
+5. **Surprise:** the master marks any creature, player characters included; the suggestion compares each hider's
+   Stealth with each creature's passive Perception (not the best Stealth), and a party member who is not hiding is
+   noticed. The bonus-action restriction on a surprised creature is the app's reading; say so.
+6. **Help:** the check form names the task and lasts until the ally's next check for that task or the end of the helper's
+   next turn in combat (outside combat, until the master clears it); the attack form is tied to the target and the 5 ft
+   rule.
+7. **Group check:** players see passou/falhou only when the master shows the DC (as the scene checks today); the master
+   sees who has not answered and can roll for them or close the check; "pelo menos metade" counts the characters asked.
+8. **Moving a grappled creature:** draw the map frame (the dragged token moves with the grappler, to the square behind
+   it), the halved speed shown as "Deslocamento: 4,5 m (metade, arrastando Goblin 1)".
+9. **The contract:** event kinds and the RN-10 classification of every new RPC (the leak test requires it), idempotency
+   keys, spending the action and the attack in one transaction, the shove's caller and its blocked square (refused with
+   the reason, the shove becomes "não sai do lugar"), the log line for a failed grapple.
+10. **Drawing:** the 320 px frames of states 2, 3, 5, 6b, 7 and 8, the "vê claramente" control and the refusal, focus
+    rings on player frames, no text under 14 px, one scenario per frame.
