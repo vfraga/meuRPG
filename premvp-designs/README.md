@@ -402,3 +402,34 @@ Aplicadas as revisões de `/tmp/pm-review5` como decididas em `decisions-batch4-
 ### Perguntas abertas
 - Nomes que faltam em `names_pt.json`: Flechas, Item maravilhoso, Pedra iônica (proteção), Presença Aterradora, Sopro de Fogo e o Book of Ancient Secrets (sem nome em português).
 - Arredondamento da munição recuperada: regra do app, a confirmar com Samuel.
+
+## Lote 4 — Designer B
+
+Linha y = 27000, x a partir de 13600. Nove placas de efeitos, disputas e zonas, mais as correções das revisões.
+
+| Placa | x | Altura | Conteúdo |
+| --- | --- | --- | --- |
+| W7-Ea, Eb, Ec (efeitos que duram) | 13600, 14960, 16320 | 6462, 7215, 6272 | Regras e as 15 condições, lista e turno, painel do mestre, visibilidade, dados de Bênção e Perdição, Velocidade, Teia, exaustão e o contrato. |
+| W7-Xa, Xb, Xc (disputas e ações especiais) | 17680, 19040, 20400 | 4675, 7808, 7824 | Regras e disputa de um jogador contra um NPC; o jogador como alvo, escapar, arrastar e empurrar; esconder, ajudar, teste em grupo, surpresa e o contrato (estado 12). |
+| W7-Za, Zb, Zc, Zd (zonas no mapa) | 21760, 23120, 24480, 25840 | 6258, 5578, 7051, 7263 | Regras das 12 magias; gatilhos e zonas que se movem; Muralha de Fogo, Crescer Espinhos, Silêncio, Escorregadia, Constrição e Névoa Mortal; lista do mestre, “Pôr uma zona”, teatro da mente e o contrato. |
+
+### Decisões (todas as que mudam o jogo estão nas placas, estas são as de desenho)
+- **Elenco único.** Brisa (Ladino 5, Furtividade +7, espada curta), Toren (Guerreiro 4, espada longa +5), Tavo, Nael, Orla, Ragna; nas zonas, Pensantus, Sálvia e Ilaria (PM-02). Inimigos só do SRD: Goblin, Hobgoblin, Capitão bandido, Cobra constritora gigante, Fanático do culto; “Zuk” é um goblin do mestre.
+- **RN-10 e RN-20 em tudo.** O jogador lê a habilidade de um teste de um NPC, nunca a CD; esperas dizem “Esperando o mestre”; um efeito ou zona com a visibilidade desligada não aparece em nenhum canal (espera, fonte de vantagem, crítico, registro, contagem).
+- **Um mecanismo.** Todo teste que espera resposta (fim de turno, disputa, zona) é uma janela de reação do PM-04 (`EFFECT_SAVE`, `CONTEST`, `ZONE_SAVE`), respondida com `AnswerReaction`, sem esperas novas.
+- **Esconder:** antes do ataque o jogador lê só “Você está escondida.”; atacar encerra o esconderijo para todos; empate mantém a criatura notada (leitura do app).
+- **Zonas:** simétrico para o muito obscurecido (ninguém vê dentro, fora ou através, nem quem está dentro); uma zona que se move sobre uma criatura conta como entrada (leitura do app); o raio de 1,5 m do Raio Lunar são 5 quadrados (regra do centro de PM-02, de propósito); um dano por criatura, zona e turno; Crescer Espinhos fica desconhecido até ser reconhecido; “Os jogadores veem esta zona” é uma chave por zona (desligada para o Silêncio).
+- **Metros e 14 px.** Distâncias em metros (5 pés = 1,5 m), nenhum texto de produto abaixo de 14 px, alvos de 44 px (48 px no botão cheio do celular), um quadro de 320 px para cada cartão novo.
+
+### Regras verificadas no SRD 5.1
+Conditions (as 15, mais exaustão), Duration e Concentration (o que for maior), Dodge, Help, Hide e Unseen Attackers and Targets, Contests, Grappling, Escaping a Grapple, Moving a Grappled Creature, Shoving a Creature, Group Checks, Surprise, Vision and Light, Areas of Effect, e o texto das magias Bênção, Perdição, Imobilizar Pessoa, Velocidade, Teia, Névoa Obscurecente, Muralha de Fogo, Crescer Espinhos, Escuridão, Névoa Fétida, Névoa Mortal, Silêncio, Espíritos Guardiões, Raio Lunar, Área Escorregadia e Constrição. Habilidades de criaturas conferidas na base 5e-database (Hobgoblin: Força 13, sem Atletismo).
+
+### Perguntas abertas
+- Leituras do app que o SRD não decide, a confirmar com Samuel: o empate no esconderijo mantém a criatura notada; a ação bônus de quem está surpreso; o empurrão contra parede vira “não sai do lugar”; o simétrico do muito obscurecido; a zona que se move conta como entrada; o custo de terreno difícil dentro de Espíritos Guardiões (quádruplo).
+- Crescer Espinhos junta os 2d4 de todo o movimento em uma rolagem (rapidez); uma rolagem por quadrado é a alternativa.
+- Conjuradores das zonas: Muralha de Fogo (4º nível) é de Maleck, mago do mestre (Mago 7); Névoa Mortal (5º nível) é de Vorn, feiticeiro do mestre; Área Escorregadia é de Pensantus; Constrição, de Sálvia; Zuk mantém a Névoa Fétida. A Teia presa ou solta é pergunta do mestre.
+- Placas de zonas sem terceira rodada de revisão depois desta.
+
+### PM-02, decisão de 09/10 (depois da verificação)
+
+- **"Perguntar a cada vez" segura o turno em TODA magia de área que um jogador conjura em combate**, e não só quando há uma criatura escondida na área: o mestre responde com um toque ("Sem escondidas" quando não há nenhuma). Se a espera só aparecesse com uma escondida atingida, o "Esperando o mestre" contaria ao jogador que havia algo ali (RN-10), o mesmo problema que a regra "Reações dos inimigos: Sempre" resolve. "Revelar" (o padrão) e "Manter escondidas" não seguram nada.
