@@ -574,6 +574,18 @@ func (noRoster) CombatSheet(context.Context, pgx.Tx, string, string) (link.Sheet
 	return link.Sheet{}, errors.New("not in this test")
 }
 
+func (noRoster) SpendAmmunition(context.Context, pgx.Tx, string, string, string) error {
+	return errors.New("not in this test")
+}
+
+func (noRoster) ItemForUse(context.Context, pgx.Tx, string, string, string) (link.UsableItem, error) {
+	return link.UsableItem{}, errors.New("not in this test")
+}
+
+func (noRoster) ApplyItemUse(context.Context, pgx.Tx, string, string, link.ItemUseWrite) error {
+	return errors.New("not in this test")
+}
+
 func (noRoster) CombatTurnOptions(context.Context, pgx.Tx, string, string, link.Turn) (*rulesv1.TurnOptions, error) {
 	return nil, errors.New("not in this test")
 }

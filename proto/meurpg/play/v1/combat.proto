@@ -774,6 +774,30 @@ service CombatService {
   //     comes back), WRONG_DICE_MODE and COMBATANT_DOWN.
   rpc TakeAction(TakeActionRequest) returns (TakeActionResponse);
 
+  // UseItem uses an item of the combatant's inventory as its action (SRD 5.1 "Use an Object",
+  // "Potions": administering a potion takes an action):
+  //   - COMBAT_ITEM_USE_DRINK: drinks a potion; a potion of healing rolls its dice (roll_in_app,
+  //     or typed_sum of the dice without the modifier) and heals the combatant, a potion of
+  //     heroism gives its temporary hit points;
+  //   - COMBAT_ITEM_USE_GIVE_TO_DRINK: the same for another combatant of a player's character
+  //     within 5 ft (target_combatant_id), who may be down;
+  //   - COMBAT_ITEM_USE_READ_SCROLL: reads a spell scroll, whose spell is on the reader's class
+  //     list (otherwise SCROLL_UNREADABLE and nothing is spent); a spell above the reader's
+  //     highest spell slot takes an ability check, DC 10 + the spell's level, rolled with
+  //     roll_in_app or d20_face. The scroll is spent and the cast is logged; the spell's effects
+  //     are resolved at the table;
+  //   - COMBAT_ITEM_USE_CHARGES: spends `charges` of an item (a wand); the last one rolls a d20
+  //     and a 1 destroys an item that says so (roll_in_app or d20_face);
+  //   - COMBAT_ITEM_USE_EQUIP_SHIELD / UNEQUIP_SHIELD: wears or takes off a shield (an action;
+  //     body armor is not changed in a combat).
+  //
+  // The combatant must be on turn and have its action. Its player may act for their own
+  // character, the master for any (an item that is not identified is the master's to use).
+  //
+  // Errors: as TakeAction, plus `failed_precondition` (EncounterBlocked) ITEM_NOT_USABLE,
+  // SCROLL_UNREADABLE, ITEM_NO_CHARGES and TARGET_OUT_OF_REACH.
+  rpc UseItem(UseItemRequest) returns (UseItemResponse);
+
   // AdjustCombatantHitPoints is the master's hand on an NPC's hit points:
   // "Dano/Cura" (MR-012). One of damage (temporary hit points first), heal
   // (up to the maximum) or hit_points (an exact value), and, apart or
@@ -1465,6 +1489,17 @@ enum EncounterBlockedReason {
   // with a weapon or an unarmed strike, and that action has not been taken yet
   // this turn. GetTurnOptions says it before, as ATTACK_ACTION_FIRST.
   ENCOUNTER_BLOCKED_REASON_ATTACK_ACTION_FIRST = 67;
+  // RollAttack: the weapon fires ammunition and the attacker has stacks of it but not a
+  // piece left (SRD 5.1 "Ammunition"). The attack's `ammunition_out` says it before.
+  ENCOUNTER_BLOCKED_REASON_NO_AMMUNITION = 90;
+  // UseItem: the item is not for that use (not a potion, a scroll, an item with charges or a
+  // shield), is not the combatant's, or is an item of the master's to use (unidentified).
+  ENCOUNTER_BLOCKED_REASON_ITEM_NOT_USABLE = 91;
+  // UseItem (a scroll): the spell is on none of the reader's class lists, so the scroll is
+  // unintelligible and stays.
+  ENCOUNTER_BLOCKED_REASON_SCROLL_UNREADABLE = 92;
+  // UseItem: the item has not that many charges left.
+  ENCOUNTER_BLOCKED_REASON_ITEM_NO_CHARGES = 93;
 }
 
 // FamiliarSightBlockedReason says why "Ver pelos olhos do familiar" was refused
@@ -2669,6 +2704,58 @@ message TakeActionRequest {
     // of Retomar o fôlego.
     int32 typed_sum = 7;
   }
+}
+
+// CombatItemUse says what a combatant does with an item.
+enum CombatItemUse {
+  COMBAT_ITEM_USE_UNSPECIFIED = 0;
+  COMBAT_ITEM_USE_DRINK = 1;
+  COMBAT_ITEM_USE_GIVE_TO_DRINK = 2;
+  COMBAT_ITEM_USE_READ_SCROLL = 3;
+  COMBAT_ITEM_USE_CHARGES = 4;
+  COMBAT_ITEM_USE_EQUIP_SHIELD = 5;
+  COMBAT_ITEM_USE_UNEQUIP_SHIELD = 6;
+}
+
+// UseItemRequest uses an item as an action (see CombatService.UseItem).
+message UseItemRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The combatant that uses it (a UUID).
+  string combatant_id = 3;
+  // The inventory line (a UUID, from InventoryService.GetInventory).
+  string item_id = 4;
+  CombatItemUse use = 5;
+  // GIVE_TO_DRINK: who drinks (a UUID of a combatant within 5 ft).
+  string target_combatant_id = 6;
+  // CHARGES: how many charges to spend, 1 to the item's charges.
+  int32 charges = 7;
+  string idempotency_key = 8;
+  // How the dice come: a potion's dice, the scroll's check, the d20 of the last charge.
+  oneof roll {
+    // True: the app rolls on the server.
+    bool roll_in_app = 9;
+    // The sum of the physical dice without the modifier (a potion), or the face of a
+    // physical d20 (a check, the last charge).
+    int32 typed_sum = 10;
+  }
+}
+
+// UseItemResponse returns the combat after the use.
+message UseItemResponse {
+  Encounter encounter = 1;
+  // A potion: the roll (dice, modifier and total) and the hit points healed.
+  DiceRoll roll = 2;
+  optional int32 healed = 3;
+  // A scroll: the spell and its level, and the ability check of a spell above the reader's
+  // highest slot.
+  string spell_key = 4;
+  int32 spell_level = 5;
+  DiceRoll ability_check = 6;
+  bool ability_check_passed = 7;
+  // CHARGES: the d20 rolled for the last charge (0 if none) and whether the item was destroyed.
+  int32 last_charge_d20 = 8;
+  bool destroyed = 9;
 }
 
 // TakeActionResponse returns the combat after the action.

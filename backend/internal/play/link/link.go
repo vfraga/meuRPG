@@ -183,6 +183,11 @@ type Attack struct {
 	// them.
 	Light, Unarmed, MartialArts bool
 	AbilityMod                  int
+	// AmmunitionItem is the inventory line a ranged attack spends a piece of, empty for an
+	// attack that needs none or a character with no counted ammunition. AmmunitionOut says the
+	// character has stacks of it and not a piece left: the attack cannot be made.
+	AmmunitionItem string
+	AmmunitionOut  bool
 }
 
 // Action is a standard action: its key ("standard:dash") and Portuguese name.
@@ -528,3 +533,49 @@ type ItemEvent struct {
 
 // ItemEventKinds are the session event kinds of the inventory's history.
 var ItemEventKinds = []string{"item_given", "item_transferred", "item_used", "item_attuned", "item_identified", "item_charges"}
+
+// UsableItem is an inventory line a combatant may use in a combat, as package characters
+// describes it to package play (the roster's ItemForUse): a potion to drink, a scroll to
+// read, an item with charges, or a shield to wear or take off. Every use is an action.
+type UsableItem struct {
+	ID, Key, NamePT string
+	// Kind is "potion", "scroll", "charges" or "shield".
+	Kind     string
+	Quantity int
+	// Unidentified items are for the master to use.
+	Unidentified bool
+	// A potion: HealDice is the dice it heals ("2d4+2"), TempHP the temporary hit points.
+	HealDice string
+	TempHP   int
+	// A scroll: the spell and its level, the saving throw DC and attack bonus the scroll
+	// gives, whether the reader can read it at all, whether the spell is above the reader's
+	// highest slot (an ability check, DC 10 + the level, with CheckAbility's modifier).
+	Spell, SpellNamePT  string
+	SpellLevel          int
+	SaveDC, AttackBonus int
+	Readable, TooHigh   bool
+	CheckAbility        string
+	CheckMod            int
+	// Charges: what is left, the maximum, whether the last one risks the item, and the
+	// spells it casts with their cost.
+	ChargesLeft, ChargesMax int
+	DestroyOnEmpty          bool
+	ChargeSpells            []ChargeSpell
+	// A shield: whether it is worn now.
+	Equipped bool
+}
+
+// ChargeSpell is a spell an item casts for charges at a level.
+type ChargeSpell struct {
+	Spell, NamePT string
+	Level, Cost   int
+}
+
+// ItemUseWrite is what a use does to the inventory: "consume" one piece, "spend" Charges
+// (the item is gone when Destroyed), "equip" or "unequip" a shield.
+type ItemUseWrite struct {
+	ItemID    string
+	Op        string
+	Charges   int
+	Destroyed bool
+}

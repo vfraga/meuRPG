@@ -223,6 +223,14 @@ type CombatRoster interface {
 	// attacks and the standard actions. Its armor class never goes to a
 	// player (RN-20). `not_found` for any other character.
 	CombatSheet(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (link.Sheet, error)
+	// SpendAmmunition spends one piece of the character's stack of ammunition for a ranged
+	// attack (SRD 5.1 "Ammunition"), counting it for the battle's recovery.
+	SpendAmmunition(ctx context.Context, tx pgx.Tx, campaignID, characterID, itemID string) error
+	// ItemForUse describes an inventory line the combatant may use as an action, and
+	// ApplyItemUse does what the use did to the inventory (a potion drunk, a scroll read,
+	// charges spent, a shield worn). See the inventory in docs/architecture.md.
+	ItemForUse(ctx context.Context, tx pgx.Tx, campaignID, characterID, itemID string) (link.UsableItem, error)
+	ApplyItemUse(ctx context.Context, tx pgx.Tx, campaignID, characterID string, w link.ItemUseWrite) error
 	// CombatTurnOptions works out what the character can do now (MR-014),
 	// from its sheet, what it used this turn and the slots it spent: the rules
 	// engine's TurnOptions. `not_found` for any other character.

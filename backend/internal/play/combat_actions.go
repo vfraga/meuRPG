@@ -574,6 +574,7 @@ func (s *Service) RollAttack(
 	asReaction := req.Msg.GetAsReaction() || offerID != ""
 	v := viewerOf(m)
 
+	var spentAmmo *playdb.Combatant // the attacker whose ammunition the attack spent
 	var made actionEvent
 	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventAttackRolled, encounterID: encID}, func(c *combatTx) (any, error) {
 		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
@@ -649,6 +650,11 @@ func (s *Service) RollAttack(
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("attack_key is not one of the attacker's attacks"))
 		}
 		attack := attackerSheet.Attacks[i]
+		// A ranged weapon that fires ammunition spends a piece (SRD 5.1 "Ammunition"); a
+		// character with stacks of it and none left cannot make the attack.
+		if attack.AmmunitionOut {
+			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NO_AMMUNITION, "the attacker has no ammunition left for this weapon")
+		}
 		terrain, err := s.terrainOf(ctx, c.tx, m.CampaignID, c.enc)
 		if err != nil {
 			return nil, err
@@ -780,6 +786,12 @@ func (s *Service) RollAttack(
 		}); err != nil {
 			return nil, fmt.Errorf("spend the action: %w", err)
 		}
+		if attack.AmmunitionItem != "" {
+			if err := s.roster.SpendAmmunition(ctx, c.tx, m.CampaignID, attacker.CharacterID, attack.AmmunitionItem); err != nil {
+				return nil, err
+			}
+			spentAmmo = &attacker
+		}
 		if result.Hit {
 			made.Outcome = outcomeHit
 			if result.Critical {
@@ -830,6 +842,9 @@ func (s *Service) RollAttack(
 	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
+		if spentAmmo != nil {
+			s.PublishInventoryChanged(m.CampaignID, spentAmmo.CharacterID, deref(spentAmmo.UserID))
+		}
 	})
 	if err != nil {
 		return nil, err

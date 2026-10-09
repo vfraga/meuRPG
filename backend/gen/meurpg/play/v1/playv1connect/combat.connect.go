@@ -112,6 +112,8 @@ const (
 	// CombatServiceTakeActionProcedure is the fully-qualified name of the CombatService's TakeAction
 	// RPC.
 	CombatServiceTakeActionProcedure = "/meurpg.play.v1.CombatService/TakeAction"
+	// CombatServiceUseItemProcedure is the fully-qualified name of the CombatService's UseItem RPC.
+	CombatServiceUseItemProcedure = "/meurpg.play.v1.CombatService/UseItem"
 	// CombatServiceAdjustCombatantHitPointsProcedure is the fully-qualified name of the CombatService's
 	// AdjustCombatantHitPoints RPC.
 	CombatServiceAdjustCombatantHitPointsProcedure = "/meurpg.play.v1.CombatService/AdjustCombatantHitPoints"
@@ -797,6 +799,29 @@ type CombatServiceClient interface {
 	//     the action costs), NO_USES (the resource is spent; recharge says when it
 	//     comes back), WRONG_DICE_MODE and COMBATANT_DOWN.
 	TakeAction(context.Context, *connect.Request[v1.TakeActionRequest]) (*connect.Response[v1.TakeActionResponse], error)
+	// UseItem uses an item of the combatant's inventory as its action (SRD 5.1 "Use an Object",
+	// "Potions": administering a potion takes an action):
+	//   - COMBAT_ITEM_USE_DRINK: drinks a potion; a potion of healing rolls its dice (roll_in_app,
+	//     or typed_sum of the dice without the modifier) and heals the combatant, a potion of
+	//     heroism gives its temporary hit points;
+	//   - COMBAT_ITEM_USE_GIVE_TO_DRINK: the same for another combatant of a player's character
+	//     within 5 ft (target_combatant_id), who may be down;
+	//   - COMBAT_ITEM_USE_READ_SCROLL: reads a spell scroll, whose spell is on the reader's class
+	//     list (otherwise SCROLL_UNREADABLE and nothing is spent); a spell above the reader's
+	//     highest spell slot takes an ability check, DC 10 + the spell's level, rolled with
+	//     roll_in_app or d20_face. The scroll is spent and the cast is logged; the spell's effects
+	//     are resolved at the table;
+	//   - COMBAT_ITEM_USE_CHARGES: spends `charges` of an item (a wand); the last one rolls a d20
+	//     and a 1 destroys an item that says so (roll_in_app or d20_face);
+	//   - COMBAT_ITEM_USE_EQUIP_SHIELD / UNEQUIP_SHIELD: wears or takes off a shield (an action;
+	//     body armor is not changed in a combat).
+	//
+	// The combatant must be on turn and have its action. Its player may act for their own
+	// character, the master for any (an item that is not identified is the master's to use).
+	//
+	// Errors: as TakeAction, plus `failed_precondition` (EncounterBlocked) ITEM_NOT_USABLE,
+	// SCROLL_UNREADABLE, ITEM_NO_CHARGES and TARGET_OUT_OF_REACH.
+	UseItem(context.Context, *connect.Request[v1.UseItemRequest]) (*connect.Response[v1.UseItemResponse], error)
 	// AdjustCombatantHitPoints is the master's hand on an NPC's hit points:
 	// "Dano/Cura" (MR-012). One of damage (temporary hit points first), heal
 	// (up to the maximum) or hit_points (an exact value), and, apart or
@@ -1284,6 +1309,12 @@ func NewCombatServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(combatServiceMethods.ByName("TakeAction")),
 			connect.WithClientOptions(opts...),
 		),
+		useItem: connect.NewClient[v1.UseItemRequest, v1.UseItemResponse](
+			httpClient,
+			baseURL+CombatServiceUseItemProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("UseItem")),
+			connect.WithClientOptions(opts...),
+		),
 		adjustCombatantHitPoints: connect.NewClient[v1.AdjustCombatantHitPointsRequest, v1.AdjustCombatantHitPointsResponse](
 			httpClient,
 			baseURL+CombatServiceAdjustCombatantHitPointsProcedure,
@@ -1393,6 +1424,7 @@ type combatServiceClient struct {
 	applyPendingDamage       *connect.Client[v1.ApplyPendingDamageRequest, v1.ApplyPendingDamageResponse]
 	discardPendingDamage     *connect.Client[v1.DiscardPendingDamageRequest, v1.DiscardPendingDamageResponse]
 	takeAction               *connect.Client[v1.TakeActionRequest, v1.TakeActionResponse]
+	useItem                  *connect.Client[v1.UseItemRequest, v1.UseItemResponse]
 	adjustCombatantHitPoints *connect.Client[v1.AdjustCombatantHitPointsRequest, v1.AdjustCombatantHitPointsResponse]
 	undoLastAction           *connect.Client[v1.UndoLastActionRequest, v1.UndoLastActionResponse]
 	castSpell                *connect.Client[v1.CastSpellRequest, v1.CastSpellResponse]
@@ -1526,6 +1558,11 @@ func (c *combatServiceClient) DiscardPendingDamage(ctx context.Context, req *con
 // TakeAction calls meurpg.play.v1.CombatService.TakeAction.
 func (c *combatServiceClient) TakeAction(ctx context.Context, req *connect.Request[v1.TakeActionRequest]) (*connect.Response[v1.TakeActionResponse], error) {
 	return c.takeAction.CallUnary(ctx, req)
+}
+
+// UseItem calls meurpg.play.v1.CombatService.UseItem.
+func (c *combatServiceClient) UseItem(ctx context.Context, req *connect.Request[v1.UseItemRequest]) (*connect.Response[v1.UseItemResponse], error) {
+	return c.useItem.CallUnary(ctx, req)
 }
 
 // AdjustCombatantHitPoints calls meurpg.play.v1.CombatService.AdjustCombatantHitPoints.
@@ -2238,6 +2275,29 @@ type CombatServiceHandler interface {
 	//     the action costs), NO_USES (the resource is spent; recharge says when it
 	//     comes back), WRONG_DICE_MODE and COMBATANT_DOWN.
 	TakeAction(context.Context, *connect.Request[v1.TakeActionRequest]) (*connect.Response[v1.TakeActionResponse], error)
+	// UseItem uses an item of the combatant's inventory as its action (SRD 5.1 "Use an Object",
+	// "Potions": administering a potion takes an action):
+	//   - COMBAT_ITEM_USE_DRINK: drinks a potion; a potion of healing rolls its dice (roll_in_app,
+	//     or typed_sum of the dice without the modifier) and heals the combatant, a potion of
+	//     heroism gives its temporary hit points;
+	//   - COMBAT_ITEM_USE_GIVE_TO_DRINK: the same for another combatant of a player's character
+	//     within 5 ft (target_combatant_id), who may be down;
+	//   - COMBAT_ITEM_USE_READ_SCROLL: reads a spell scroll, whose spell is on the reader's class
+	//     list (otherwise SCROLL_UNREADABLE and nothing is spent); a spell above the reader's
+	//     highest spell slot takes an ability check, DC 10 + the spell's level, rolled with
+	//     roll_in_app or d20_face. The scroll is spent and the cast is logged; the spell's effects
+	//     are resolved at the table;
+	//   - COMBAT_ITEM_USE_CHARGES: spends `charges` of an item (a wand); the last one rolls a d20
+	//     and a 1 destroys an item that says so (roll_in_app or d20_face);
+	//   - COMBAT_ITEM_USE_EQUIP_SHIELD / UNEQUIP_SHIELD: wears or takes off a shield (an action;
+	//     body armor is not changed in a combat).
+	//
+	// The combatant must be on turn and have its action. Its player may act for their own
+	// character, the master for any (an item that is not identified is the master's to use).
+	//
+	// Errors: as TakeAction, plus `failed_precondition` (EncounterBlocked) ITEM_NOT_USABLE,
+	// SCROLL_UNREADABLE, ITEM_NO_CHARGES and TARGET_OUT_OF_REACH.
+	UseItem(context.Context, *connect.Request[v1.UseItemRequest]) (*connect.Response[v1.UseItemResponse], error)
 	// AdjustCombatantHitPoints is the master's hand on an NPC's hit points:
 	// "Dano/Cura" (MR-012). One of damage (temporary hit points first), heal
 	// (up to the maximum) or hit_points (an exact value), and, apart or
@@ -2721,6 +2781,12 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(combatServiceMethods.ByName("TakeAction")),
 		connect.WithHandlerOptions(opts...),
 	)
+	combatServiceUseItemHandler := connect.NewUnaryHandler(
+		CombatServiceUseItemProcedure,
+		svc.UseItem,
+		connect.WithSchema(combatServiceMethods.ByName("UseItem")),
+		connect.WithHandlerOptions(opts...),
+	)
 	combatServiceAdjustCombatantHitPointsHandler := connect.NewUnaryHandler(
 		CombatServiceAdjustCombatantHitPointsProcedure,
 		svc.AdjustCombatantHitPoints,
@@ -2851,6 +2917,8 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 			combatServiceDiscardPendingDamageHandler.ServeHTTP(w, r)
 		case CombatServiceTakeActionProcedure:
 			combatServiceTakeActionHandler.ServeHTTP(w, r)
+		case CombatServiceUseItemProcedure:
+			combatServiceUseItemHandler.ServeHTTP(w, r)
 		case CombatServiceAdjustCombatantHitPointsProcedure:
 			combatServiceAdjustCombatantHitPointsHandler.ServeHTTP(w, r)
 		case CombatServiceUndoLastActionProcedure:
@@ -2980,6 +3048,10 @@ func (UnimplementedCombatServiceHandler) DiscardPendingDamage(context.Context, *
 
 func (UnimplementedCombatServiceHandler) TakeAction(context.Context, *connect.Request[v1.TakeActionRequest]) (*connect.Response[v1.TakeActionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.TakeAction is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) UseItem(context.Context, *connect.Request[v1.UseItemRequest]) (*connect.Response[v1.UseItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.UseItem is not implemented"))
 }
 
 func (UnimplementedCombatServiceHandler) AdjustCombatantHitPoints(context.Context, *connect.Request[v1.AdjustCombatantHitPointsRequest]) (*connect.Response[v1.AdjustCombatantHitPointsResponse], error) {
