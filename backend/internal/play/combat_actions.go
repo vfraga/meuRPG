@@ -250,6 +250,9 @@ func (s *Service) GetTurnOptions(
 	if code != rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_UNSPECIFIED {
 		disableAll(opts, code)
 	}
+	if err := s.markSilenced(ctx, m.CampaignID, d, who, opts); err != nil {
+		return nil, s.dbError(ctx, "work out the spells a silence stops", err)
+	}
 	terrain, err := s.terrainOf(ctx, nil, m.CampaignID, enc)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the terrain", err)
@@ -720,6 +723,13 @@ func (s *Service) RollAttack(
 			return nil, errCoverTotal()
 		}
 
+		// A cantrip with a verbal component cannot be cast inside a zone of silence (SRD, Silence).
+		if attack.Spell && silencedAt(c.zones, attacker, isTheatre(c.enc)) {
+			if sp, err := s.roster.CombatSpell(ctx, c.tx, m.CampaignID, attacker.CharacterID, attack.Key, 0, ""); err == nil && sp.Verbal {
+				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SILENCED, "a spell with a verbal component cannot be cast inside a zone of silence")
+			}
+		}
+
 		// The roll, and what it did against the target's armor class (with the
 		// +5 of an active Escudo and the cover). The class stays on the server (RN-20).
 		face, roll, err := s.d20(in, attack.ToHit)
@@ -1134,6 +1144,10 @@ func (s *Service) RollDamage(
 func (s *Service) afterResistance(ctx context.Context, c *combatTx, target playdb.Combatant, damageType string, amount int32) (int32, error) {
 	if !holdsHP(target) || damageType == "" || amount <= 0 {
 		return amount, nil
+	}
+	// A creature entirely inside a zone of silence is immune to thunder damage (SRD, Silence).
+	if damageType == "damage-type:thunder" && thunderImmune(c.zones, target, isTheatre(c.enc)) {
+		return 0, nil
 	}
 	mods, err := s.roster.DamageModifiers(ctx, c.tx, c.session.CampaignID, target.CharacterID, deref(target.MonsterKey))
 	if err != nil {

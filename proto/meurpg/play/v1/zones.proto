@@ -1,0 +1,508 @@
+syntax = "proto3";
+
+// Zones on the map (W7-Z): what a spell leaves on the combat's map for a while, and
+// what the master puts there himself. A zone covers squares, can block or dim sight,
+// can make the ground difficult or halve the speed of who is in it, and hurts or
+// hinders a creature when it enters, starts its turn in it or ends it there. The
+// calls that make, move and end zones are CombatService's (combat.proto); this file
+// holds their messages, so that they can grow without touching that file.
+//
+// A zone is the master's: a player gets the zones the master lets them see (the
+// `visible_to_players` switch) and the ones they recognised, and for each only its
+// shape, its squares, its kind of obscurity and the spell's name. Never the caster,
+// the DC, the damage, the duration, the list of who is excluded or who is inside
+// (RN-10, RN-20). A creature inside a zone that blocks sight is not drawn to a player
+// unless it is their own, and no line, wait or event names it to someone who does not
+// see it.
+package meurpg.play.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// ZoneShape is the form of a zone, as the SRD's "Areas of Effect" says it.
+enum ZoneShape {
+  ZONE_SHAPE_UNSPECIFIED = 0;
+  // A sphere: a radius around a point.
+  ZONE_SHAPE_SPHERE = 1;
+  // A cube or a square: a side, set on a point.
+  ZONE_SHAPE_CUBE = 2;
+  // A cylinder: a radius around a point (its height does not matter on a flat map).
+  ZONE_SHAPE_CYLINDER = 3;
+  // A straight wall of one square, from a point in a direction.
+  ZONE_SHAPE_WALL = 4;
+  // A wall bent into a ring around a point.
+  ZONE_SHAPE_RING = 5;
+}
+
+// ZoneObscurity is how a zone affects sight (SRD, "Vision and Light").
+enum ZoneObscurity {
+  // The zone does not touch sight.
+  ZONE_OBSCURITY_UNSPECIFIED = 0;
+  // Lightly obscured (the webs; the dim light of Moonbeam). It blocks nothing.
+  ZONE_OBSCURITY_LIGHT = 1;
+  // Heavily obscured: nobody sees into, out of or through it, and a creature inside
+  // sees nothing in it but itself.
+  ZONE_OBSCURITY_HEAVY = 2;
+  // Magical darkness: heavily obscured, and neither darkvision nor nonmagical light
+  // help.
+  ZONE_OBSCURITY_DARK = 3;
+  // An opaque wall (Wall of Fire).
+  ZONE_OBSCURITY_OPAQUE = 4;
+}
+
+// ZoneTriggerKind says when a zone acts on a creature.
+enum ZoneTriggerKind {
+  ZONE_TRIGGER_KIND_UNSPECIFIED = 0;
+  // The creature is in the area when the spell is cast.
+  ZONE_TRIGGER_KIND_AT_CAST = 1;
+  // Every time the creature enters the area.
+  ZONE_TRIGGER_KIND_ON_ENTER = 2;
+  // The first time on a turn that the creature enters the area.
+  ZONE_TRIGGER_KIND_ON_ENTER_FIRST_TIME_ON_A_TURN = 3;
+  // The creature starts its turn in the area.
+  ZONE_TRIGGER_KIND_START_OF_TURN = 4;
+  // The creature ends its turn in the area.
+  ZONE_TRIGGER_KIND_END_OF_TURN = 5;
+  // The creature ends its turn inside the wall or within reach of its damaging side.
+  ZONE_TRIGGER_KIND_END_OF_TURN_WITHIN = 6;
+  // The creature travels in the area: damage for every 5 ft, forced movement too.
+  ZONE_TRIGGER_KIND_PER_DISTANCE_MOVED = 7;
+}
+
+// ZoneFail is what a failed saving throw does to the creature besides the damage.
+enum ZoneFail {
+  ZONE_FAIL_UNSPECIFIED = 0;
+  // It is restrained (Web, Entangle).
+  ZONE_FAIL_RESTRAINED = 1;
+  // It falls prone (Grease).
+  ZONE_FAIL_PRONE = 2;
+  // It spends its action retching and reeling (Stinking Cloud).
+  ZONE_FAIL_LOSE_ACTION = 3;
+}
+
+// ZoneRule is a rule of a zone that asks no roll.
+enum ZoneRule {
+  ZONE_RULE_UNSPECIFIED = 0;
+  // A spell with a verbal component cannot be cast inside.
+  ZONE_RULE_NO_VERBAL_CAST = 1;
+  // A creature entirely inside is deafened.
+  ZONE_RULE_DEAF = 2;
+  // A creature or object entirely inside is immune to thunder damage.
+  ZONE_RULE_THUNDER_IMMUNE = 3;
+}
+
+// ZoneMovesWith says how a zone goes about the map by itself.
+enum ZoneMovesWith {
+  ZONE_MOVES_WITH_UNSPECIFIED = 0;
+  // It goes with its caster (Spirit Guardians).
+  ZONE_MOVES_WITH_CASTER = 1;
+  // It walks away from its caster at the start of the caster's turn (Cloudkill).
+  ZONE_MOVES_WITH_SELF_AT_TURN_START = 2;
+}
+
+// ZoneSide is the side of a wall: A is the left of the direction it runs, B the
+// right, seen from above with the rows counting down; for a ring, A is the inside
+// and B the outside.
+enum ZoneSide {
+  ZONE_SIDE_UNSPECIFIED = 0;
+  ZONE_SIDE_A = 1;
+  ZONE_SIDE_B = 2;
+}
+
+// ZoneWind is the strength of a wind that disperses a zone (SRD: moderate is at
+// least 16 km/h, strong at least 32 km/h).
+enum ZoneWind {
+  ZONE_WIND_UNSPECIFIED = 0;
+  ZONE_WIND_MODERATE = 1;
+  ZONE_WIND_STRONG = 2;
+}
+
+// ZoneSquare is a square of the grid: col 0 to grid_columns - 1 and row 0 to
+// grid_rows - 1, from the top left.
+message ZoneSquare {
+  int32 col = 1;
+  int32 row = 2;
+}
+
+// ZoneTrigger is one thing a zone does to a creature. Only the master gets it.
+message ZoneTrigger {
+  ZoneTriggerKind kind = 1;
+  // Only a creature entirely inside counts (Stinking Cloud, Silence).
+  bool requires_fully_inside = 2;
+  // The saving throw's ability ("dex", "con", "wis", "str"); empty when there is none.
+  string save_ability = 3;
+  // Whether the trigger deals the zone's damage.
+  bool damage = 4;
+  // Whether a success halves the damage; otherwise it avoids it.
+  bool half_on_success = 5;
+  ZoneFail on_fail = 6;
+}
+
+// MapZone is a zone on the map. The master gets every field; a player gets only
+// the ones marked "players". `id` is the zone's ID (a UUID).
+message MapZone {
+  // Players too.
+  string id = 1;
+  // The spell that left it ("spell:web"); empty for a zone the master put. Players too:
+  // the app writes the spell's name.
+  string spell_key = 2;
+  // The master's name for a zone he put ("Fumaça da fogueira"). Players get it only
+  // for a zone they see.
+  string name = 3;
+  // Players too.
+  ZoneShape shape = 4;
+  // Players too: the squares it covers, as col, row, col, row... in rows from the
+  // top. A combat without a map has none.
+  repeated int32 cells = 5;
+  // Players too.
+  ZoneObscurity obscurity = 6;
+  // Players too, for a zone they know: it is difficult terrain.
+  bool difficult = 7;
+  // Players too, for a zone they know: a creature in it moves at half speed.
+  bool halves_speed = 8;
+  // Whether the players see the zone on the map. The master's switch.
+  bool visible_to_players = 9;
+  // The point it was set on; a wall's first square, a ring's center. Master only.
+  ZoneSquare origin = 10;
+  // A wall's direction, dx and dy from -1 to 1. Master only.
+  int32 dir_dx = 11;
+  int32 dir_dy = 12;
+  // The radius, the side, the length or the diameter in feet. Master only.
+  int32 size_ft = 13;
+  // Master only: who cast it (a combatant ID); empty for a zone the master put, or
+  // when the caster left the combat.
+  string caster_id = 14;
+  bool concentration = 15;
+  int32 slot_level = 16;
+  // How long it lasts in rounds (a minute is 10); 0 until the master ends it. And how
+  // many are left. Master only.
+  int32 duration_rounds = 17;
+  int32 remaining_rounds = 18;
+  // The round a wind will disperse it, 0 when none will. Master only.
+  int32 disperse_round = 19;
+  ZoneMovesWith moves_with = 20;
+  // Whether an action of the caster moves it (Moonbeam); the most it moves, in feet.
+  bool caster_moves = 21;
+  int32 caster_move_ft = 22;
+  // The winds that disperse it. Master only.
+  repeated ZoneWind winds = 23;
+  repeated ZoneTrigger triggers = 24;
+  repeated ZoneRule rules = 25;
+  // The caster's save DC and the damage of the triggers. Master only.
+  int32 save_dc = 26;
+  int32 damage_count = 27;
+  int32 damage_sides = 28;
+  int32 damage_bonus = 29;
+  string damage_type = 30;
+  // A wall: the side that burns and how far it reaches, in squares. Master only.
+  ZoneSide damage_side = 31;
+  int32 reach_squares = 32;
+  // A Web is anchored or collapses at the start of the caster's next turn. Master only.
+  bool anchored = 33;
+  // Whether a Web's anchor is the caster's to say.
+  bool anchors = 34;
+  // The creatures the caster said it does not affect (combatant IDs). Master only.
+  repeated string excluded_combatant_ids = 35;
+  // The creatures that recognised a camouflaged zone (Spike Growth). Master only.
+  repeated string known_by = 36;
+  // A combat without a map: who the master says is inside. Master only.
+  repeated string members = 37;
+  // The zone looks like the ground until a creature recognises it (Spike Growth). Master
+  // only.
+  bool camouflaged = 38;
+  // The cells before the last move, so that the master's map draws where it was.
+  // Master only.
+  repeated int32 previous_cells = 39;
+  // The caster's side of the table: the zone is the master's (an NPC cast it or he put
+  // it). Master only.
+  bool master_cast = 40;
+  // Players too: this player's character is in it (for the line "Você está dentro").
+  bool self_inside = 41;
+}
+
+// ZoneSave is a saving throw a zone asks of a creature and waits for. It is the
+// zone's reaction window (the kind ZONE_SAVE of the reaction mechanism): the
+// creature's player rolls it, or the master for an NPC, and the turn waits.
+message ZoneSave {
+  string id = 1;
+  string zone_id = 2;
+  // The creature the save is asked of (a combatant ID).
+  string reactor_id = 3;
+  ZoneTriggerKind trigger_kind = 4;
+  // The spell's key, for the sheet's title ("Névoa Fétida").
+  string spell_key = 5;
+  // The saving throw's ability. Everyone who gets the window gets it.
+  string ability = 6;
+  // The save's modifier, for the one who rolls it.
+  int32 modifier = 7;
+  // The DC: only the master, and the player whose creature the caster is when the zone
+  // is a player's spell; never an NPC's (RN-20).
+  optional int32 dc = 8;
+  // What a failure does besides the damage.
+  ZoneFail on_fail = 9;
+  // Master only: the damage dice and type, and whether a success halves it.
+  int32 damage_count = 10;
+  int32 damage_sides = 11;
+  int32 damage_bonus = 12;
+  string damage_type = 13;
+  bool half_on_success = 14;
+  // Master only: the creature is immune to what the zone does, so the window opens
+  // only for the master to see it (Stinking Cloud and poison). A player never gets it.
+  bool immune = 15;
+  // Whether the caller answers it: the creature's player, or the master.
+  bool mine = 16;
+  google.protobuf.Timestamp opened_at = 17;
+}
+
+// ZoneSelf is a zone in a combat without a map, for a player: its name and whether
+// their character is in it. Nothing of who else is.
+message ZoneSelf {
+  string zone_id = 1;
+  string spell_key = 2;
+  string name = 3;
+  bool self_inside = 4;
+}
+
+// ZoneCost is what a square costs to enter because of a zone, for the move preview:
+// the zone it comes from, only for a creature that knows it.
+message ZoneCost {
+  int32 col = 1;
+  int32 row = 2;
+  string zone_id = 3;
+  // The spell's key or the zone's name, for the label ("Espíritos Guardiões").
+  string spell_key = 4;
+  string name = 5;
+  // Difficult terrain: +1 foot for each foot. The speed halved: the foot costs double.
+  bool difficult = 6;
+  bool halves_speed = 7;
+  // The cost of entering the square in tenths of a foot, with the zone's effect.
+  int32 cost_dft = 8;
+}
+
+// ZoneWarning is what a move that crosses a zone warns about before it is made,
+// for a creature that knows the zone and that it does not exclude: the saving
+// throw's ability, never the DC or the damage.
+message ZoneWarning {
+  string zone_id = 1;
+  string spell_key = 2;
+  string name = 3;
+  // The ability of the zone's saving throw; empty when it asks none.
+  string save_ability = 4;
+  bool halves_speed = 5;
+  // The zone hurts without a save (a wall, spikes).
+  bool damages = 6;
+}
+
+// CombatLogZone is the line of a zone in the combat log: what happened.
+message CombatLogZone {
+  string zone_id = 1;
+  string spell_key = 2;
+  string name = 3;
+  // What the line says.
+  CombatLogZoneEvent event = 4;
+  // Who the zone caught or whom the line is about (a combatant ID), with the label in
+  // the entry's target. Only for whoever sees that creature.
+  string combatant_id = 5;
+  // The squares a moved zone walked, in 5 ft steps.
+  int32 moved_squares = 6;
+  // The trigger that caught the creature.
+  ZoneTriggerKind trigger_kind = 7;
+  // The saving throw's ability; whether it passed. The d20 and the total are only the
+  // master's and the roller's; the DC is the master's, and the player's for the spell of
+  // a player's character.
+  string save_ability = 8;
+  bool saved = 9;
+  int32 d20 = 10;
+  int32 modifier = 11;
+  int32 total = 12;
+  optional int32 dc = 13;
+  // The squares travelled in the zone, for per-distance damage.
+  int32 distance_squares = 14;
+  // The reason a window closed (ZONE_ENDED...), for the one it was asked of.
+  string close_reason = 15;
+}
+
+// CombatLogZoneEvent says what happened to a zone.
+enum CombatLogZoneEvent {
+  COMBAT_LOG_ZONE_EVENT_UNSPECIFIED = 0;
+  COMBAT_LOG_ZONE_EVENT_ADDED = 1;
+  COMBAT_LOG_ZONE_EVENT_MOVED = 2;
+  COMBAT_LOG_ZONE_EVENT_ENDED = 3;
+  COMBAT_LOG_ZONE_EVENT_DISPERSED = 4;
+  COMBAT_LOG_ZONE_EVENT_CAUGHT = 5;
+  COMBAT_LOG_ZONE_EVENT_SAVE_ANSWERED = 6;
+}
+
+// ListMapZonesRequest lists the zones of a combat.
+message ListMapZonesRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+}
+
+// ListMapZonesResponse is the zones, as the caller sees them.
+message ListMapZonesResponse {
+  repeated MapZone zones = 1;
+}
+
+// ZoneEffects are what a zone made by the master does, in AddMapZone.
+message ZoneEffects {
+  ZoneObscurity obscurity = 1;
+  bool difficult = 2;
+  // Damage to a creature that enters or starts its turn in it, with or without a save.
+  bool damages = 3;
+  // The save's ability ("con"); empty for damage with no save. Its DC.
+  string save_ability = 4;
+  int32 save_dc = 5;
+  // The damage dice, "2d6" as count and sides, and the type key ("damage-type:poison").
+  int32 damage_count = 6;
+  int32 damage_sides = 7;
+  string damage_type_key = 8;
+  // Half the damage on a success.
+  bool half_on_success = 9;
+}
+
+// AddMapZoneRequest puts a zone of the scenario on the map: smoke, the gas of a trap.
+// The master only.
+message AddMapZoneRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The name, 1 to 80 characters.
+  string name = 3;
+  // SPHERE, CUBE or CYLINDER; the size is the radius or the side in squares.
+  ZoneShape shape = 4;
+  int32 size_squares = 5;
+  ZoneEffects effects = 6;
+  // How long it lasts in rounds; 0 until the master ends it.
+  int32 duration_rounds = 7;
+  // Whether the players see it.
+  bool visible_to_players = 8;
+  // The point it is set on. Required on a map; ignored without one.
+  ZoneSquare origin = 9;
+  string idempotency_key = 10;
+}
+
+// AddMapZoneResponse is the zone and the combat after it.
+message AddMapZoneResponse {
+  MapZone zone = 1;
+}
+
+// MoveMapZoneRequest moves a zone to another point. The master moves any zone; a
+// zone a caster can move (Moonbeam) the caster moves with their action, up to the
+// spell's distance from where it is now.
+message MoveMapZoneRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string zone_id = 3;
+  ZoneSquare origin = 4;
+  string idempotency_key = 5;
+}
+
+// MoveMapZoneResponse is the zone where it is now.
+message MoveMapZoneResponse {
+  MapZone zone = 1;
+}
+
+// EndMapZoneRequest ends a zone: the spell ends, the caster's concentration with it,
+// the conditions the zone put go, and the saves it was waiting for close. The master only.
+message EndMapZoneRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string zone_id = 3;
+  string idempotency_key = 4;
+}
+
+// EndMapZoneResponse says the zone is gone.
+message EndMapZoneResponse {}
+
+// DisperseMapZoneRequest has a wind disperse a zone, as the spell's text says. The
+// master only. A spell the wind does not disperse is refused.
+message DisperseMapZoneRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string zone_id = 3;
+  ZoneWind wind = 4;
+  string idempotency_key = 5;
+}
+
+// DisperseMapZoneResponse is the zone: ended, or marked to end at a round.
+message DisperseMapZoneResponse {
+  // Empty when the wind ended the zone at once.
+  MapZone zone = 1;
+  // The round it ends in; 0 when it ended.
+  int32 ends_in_round = 2;
+}
+
+// SetMapZoneVisibleRequest sets whether the players see a zone. The master only.
+message SetMapZoneVisibleRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string zone_id = 3;
+  bool visible_to_players = 4;
+  string idempotency_key = 5;
+}
+
+// SetMapZoneVisibleResponse is the zone after the change.
+message SetMapZoneVisibleResponse {
+  MapZone zone = 1;
+}
+
+// SetMapZoneKnownRequest says a creature recognised a camouflaged zone (it passed the
+// Wisdom (Perception) check, or saw the spell cast), or took it back. The master only.
+message SetMapZoneKnownRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string zone_id = 3;
+  string combatant_id = 4;
+  bool known = 5;
+  string idempotency_key = 6;
+}
+
+// SetMapZoneKnownResponse is the zone after the change.
+message SetMapZoneKnownResponse {
+  MapZone zone = 1;
+}
+
+// SetZoneMemberRequest says whether a creature is inside a zone, in a combat without a
+// map: the master marks it, and the zone's triggers run as they do on a map. The master only.
+message SetZoneMemberRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string zone_id = 3;
+  string combatant_id = 4;
+  bool inside = 5;
+  string idempotency_key = 6;
+}
+
+// SetZoneMemberResponse is the zone after the change.
+message SetZoneMemberResponse {
+  MapZone zone = 1;
+}
+
+// AnswerZoneSaveRequest answers a saving throw a zone asked (Encounter.zone_saves). The
+// creature's player answers for it, the master for any. Exactly one of the ways to roll
+// is set: the app's d20 (roll_in_app), a physical d20 (d20_face), or the master's choice
+// not to fire (skip).
+message AnswerZoneSaveRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string zone_save_id = 3;
+  oneof roll {
+    bool roll_in_app = 4;
+    int32 d20_face = 5;
+    // The master does not fire the trigger: the window closes and nothing happens.
+    bool skip = 6;
+  }
+  string idempotency_key = 7;
+}
+
+// AnswerZoneSaveResponse is the outcome of the save.
+message AnswerZoneSaveResponse {
+  // Whether it passed. A player reads passou or falhou, never the DC of an NPC's spell.
+  bool saved = 1;
+  int32 d20 = 2;
+  int32 modifier = 3;
+  int32 total = 4;
+  // What the failure did, when it did (restrained, prone, the action lost).
+  ZoneFail failed_with = 5;
+  // The damage that waits to be rolled for the zone (a PendingDamage ID), when it has any.
+  string pending_damage_id = 6;
+}

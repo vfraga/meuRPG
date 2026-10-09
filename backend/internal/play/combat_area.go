@@ -15,6 +15,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
+	"github.com/PuraFome/meuRPG/backend/internal/rules/zone"
 )
 
 // An area spell placed on the map (SRD 5.1, "Areas of Effect", "Spell Range",
@@ -45,6 +46,19 @@ import (
 // with a range of sight or Touch) stays on the caster's list: the SRD gives the
 // shape a point of origin the table does not lay out here.
 func placementOf(sp link.Spell) playv1.AreaPlacement {
+	if spec, ok := zone.Lookup(sp.Key); ok {
+		// A spell that leaves a zone is set at a point within range, or centered on the caster, or a
+		// wall from a point in a direction (zones_cast.go): the cube at a distance, which no other
+		// spell is placed by, too.
+		switch spec.Placement {
+		case zone.PlacementPoint:
+			return playv1.AreaPlacement_AREA_PLACEMENT_POINT
+		case zone.PlacementCaster:
+			return playv1.AreaPlacement_AREA_PLACEMENT_CASTER
+		case zone.PlacementPointDirection:
+			return playv1.AreaPlacement_AREA_PLACEMENT_POINT_DIRECTION
+		}
+	}
 	shape := grid.Shape(sp.AreaShape)
 	switch shape {
 	case grid.ShapeSphere, grid.ShapeCylinder:
@@ -70,7 +84,7 @@ func areaOf(sp link.Spell) grid.Area {
 // placedRangeFt is how far the point of origin may be from the caster: the spell's
 // range for a point, 0 for the rest.
 func placedRangeFt(sp link.Spell) int32 {
-	if placementOf(sp) != playv1.AreaPlacement_AREA_PLACEMENT_POINT {
+	if p := placementOf(sp); p != playv1.AreaPlacement_AREA_PLACEMENT_POINT && p != playv1.AreaPlacement_AREA_PLACEMENT_POINT_DIRECTION {
 		return 0
 	}
 	return clamp32(sp.RangeFt, 0, math.MaxInt32)
@@ -140,6 +154,19 @@ type areaInput struct {
 	sp      link.Spell
 	choice  areaChoice
 	cover   areaCoverFn
+	// slotLevel and zone are for a spell that leaves a zone: its size follows the slot, and a wall
+	// takes a direction, a length or a ring (zones_cast.go).
+	slotLevel int
+	zone      zoneRequest
+}
+
+// rawFromPoint is the squares of the area set on a point, before the walls: the shape of a
+// sphere or a cylinder, or, for a spell that leaves a zone, what its catalog lays out.
+func (in areaInput) rawFromPoint(area grid.Area, origin grid.Square) []grid.Square {
+	if _, ok := zone.Lookup(in.sp.Key); ok {
+		return zoneShapeFor(in.sp, in.slotLevel, origin, in.zone)
+	}
+	return area.FromPoint(origin)
 }
 
 func badArea(msg string) error { return connect.NewError(connect.CodeInvalidArgument, errors.New(msg)) }
@@ -158,7 +185,7 @@ func planArea(in areaInput) (areaPlan, error) {
 	plan := areaPlan{asked: from, origin: from, corners: in.sp.SpreadsAroundCorners}
 	var raw []grid.Square
 	switch placement {
-	case playv1.AreaPlacement_AREA_PLACEMENT_POINT:
+	case playv1.AreaPlacement_AREA_PLACEMENT_POINT, playv1.AreaPlacement_AREA_PLACEMENT_POINT_DIRECTION:
 		if in.choice.origin == nil || in.choice.dir != nil {
 			return areaPlan{}, badArea("this spell is placed at a point: set origin")
 		}
@@ -174,7 +201,7 @@ func planArea(in areaInput) (areaPlan, error) {
 		} else {
 			plan.origin = plan.asked
 		}
-		raw = area.FromPoint(plan.origin)
+		raw = in.rawFromPoint(area, plan.origin)
 	case playv1.AreaPlacement_AREA_PLACEMENT_DIRECTION:
 		if in.choice.dir == nil || in.choice.origin != nil {
 			return areaPlan{}, badArea("this spell comes out of the caster: set direction")
@@ -184,7 +211,7 @@ func planArea(in areaInput) (areaPlan, error) {
 		if in.choice.origin != nil || in.choice.dir != nil {
 			return areaPlan{}, badArea("this spell is centered on the caster: set neither origin nor direction")
 		}
-		raw = area.FromPoint(from)
+		raw = in.rawFromPoint(area, from)
 	}
 	plan.squares = in.terrain.OpenArea(plan.origin, raw, plan.corners)
 
@@ -350,8 +377,12 @@ func (s *Service) PreviewSpellArea(
 	// The player is shown the map as they know it: a wall they have not seen is no
 	// edge of an area they are told about (RN-10).
 	terrain = planOn(v, terrain, known)
+	zr, err := previewZoneRequest(req.Msg)
+	if err != nil {
+		return nil, err
+	}
 	plan, err := planArea(areaInput{
-		v: v, terrain: terrain, cs: d.cs, caster: caster, sp: sp, choice: choice,
+		v: v, terrain: terrain, cs: d.cs, caster: caster, sp: sp, choice: choice, slotLevel: slotLevel, zone: zr,
 		cover: func(origin, target playdb.Combatant) (coverPair, error) {
 			cv := coverAgainst(terrain, origin, target, coverPool(d.cs, v))
 			return coverPair{real: cv, shown: cv}, nil
@@ -366,7 +397,7 @@ func (s *Service) PreviewSpellArea(
 		RangeFt: placedRangeFt(sp), Moved: plan.origin != plan.asked,
 	}
 	for _, t := range plan.targets {
-		if v.sees(t.who) { // a hidden creature, or one in the dark, is not named or counted
+		if v.canSee(t.who) { // a hidden creature, or one in the dark, is not named or counted
 			out.Targets = append(out.Targets, previewTarget(t, caster, plan.origin, counts, v))
 		}
 	}
@@ -378,7 +409,7 @@ func (s *Service) PreviewSpellArea(
 // choice, so a retry's answer is drawn again from it. nil for a cast that is not a
 // placed area.
 func (s *Service) areaProto(ctx context.Context, res combatResult, ev actionEvent, v combatViewer) (*playv1.SpellArea, error) {
-	if !ev.Placed {
+	if !ev.Placed || ev.Zone != nil { // a zone's squares are the zone's (CastSpellResponse.zone)
 		return nil, nil
 	}
 	enc, err := s.queries.GetEncounterInSession(ctx, playdb.GetEncounterInSessionParams{GameSessionID: res.session.ID, ID: res.encounterID})
@@ -464,6 +495,7 @@ func areaShapeProto(sp link.Spell, theatre bool) rulesv1.SpellAreaShape {
 	if placementFor(sp, theatre) == playv1.AreaPlacement_AREA_PLACEMENT_UNSPECIFIED {
 		return rulesv1.SpellAreaShape_SPELL_AREA_SHAPE_UNSPECIFIED
 	}
+	sp = withZoneArea(sp)
 	switch grid.Shape(sp.AreaShape) {
 	case grid.ShapeCone:
 		return rulesv1.SpellAreaShape_SPELL_AREA_SHAPE_CONE
@@ -483,10 +515,11 @@ func areaSizeFor(sp link.Spell, theatre bool) int32 {
 	if placementFor(sp, theatre) == playv1.AreaPlacement_AREA_PLACEMENT_UNSPECIFIED {
 		return 0
 	}
-	return clamp32(sp.AreaSizeFt, 0, math.MaxInt32)
+	return clamp32(withZoneArea(sp).AreaSizeFt, 0, math.MaxInt32)
 }
 
 func areaWidthFor(sp link.Spell, theatre bool) int32 {
+	sp = withZoneArea(sp)
 	if placementFor(sp, theatre) == playv1.AreaPlacement_AREA_PLACEMENT_UNSPECIFIED || grid.Shape(sp.AreaShape) != grid.ShapeLine {
 		return 0
 	}

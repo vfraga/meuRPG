@@ -283,6 +283,11 @@ type Spell struct {
 	AreaSizeFt           int
 	AreaWidthFt          int
 	SpreadsAroundCorners bool
+	// Verbal says the spell has a verbal component: a zone of silence stops it (SRD,
+	// Silence). SpellDC is the caster's spell save DC, set even when the spell records no
+	// saving throw of its own (the saves a zone asks later, Web's).
+	Verbal  bool
+	SpellDC int
 }
 
 // HPEffect is what a spell that reads hit points does at the slot level, from

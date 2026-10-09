@@ -204,6 +204,13 @@ func (s *Service) UndoLastAction(
 		if vitals, err = s.takeBack(ctx, c, last.Kind, ev); err != nil {
 			return nil, err
 		}
+		if last.Kind == eventSpellCast || last.Kind == eventConditionsSet {
+			also, err := s.undoZones(ctx, c, recent, last, ev)
+			if err != nil {
+				return nil, err
+			}
+			alsoUndone = append(alsoUndone, also...)
+		}
 		if last.Kind == eventCombatantMoved {
 			undoneMove = &ev
 		}

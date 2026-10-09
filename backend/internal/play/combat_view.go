@@ -52,6 +52,10 @@ type combatViewer struct {
 	// character that is not theirs are not theirs to see. Never set for the
 	// master, and false when the table leaves them visible (the default).
 	hideDeath bool
+	// offMap are the player's characters and creatures a zone that blocks sight hides
+	// from this viewer (zones.go): they stay in the order, only the square they stand
+	// on is not told. Nil for the master and when no zone hides anyone.
+	offMap map[string]bool
 }
 
 // deathHiddenFrom says whether the table hides this character's death saves
@@ -108,6 +112,8 @@ func (v combatViewer) owns(c playdb.Combatant) bool {
 type encounterData struct {
 	enc playdb.Encounter
 	cs  []playdb.Combatant
+	// zones are the combat's live zones (zones.go), read in the same snapshot.
+	zones []playdb.MapZone
 }
 
 // loadEncounter reads a combat's combatants, in turn order.
@@ -116,7 +122,11 @@ func loadEncounter(ctx context.Context, q *playdb.Queries, enc playdb.Encounter)
 	if err != nil {
 		return nil, fmt.Errorf("list the combatants: %w", err)
 	}
-	return &encounterData{enc: enc, cs: cs}, nil
+	zones, err := q.ListMapZones(ctx, enc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("list the zones: %w", err)
+	}
+	return &encounterData{enc: enc, cs: cs, zones: zones}, nil
 }
 
 // turnView is the turn as one viewer sees it (RN-20, joint turns): who acts,
@@ -264,6 +274,9 @@ func (d *encounterData) view(v combatViewer, vitals map[string]*playv1.Character
 				shareEconomy(p, c)
 			}
 			p.TurnPartEnded = turn.flags && e.Status == statusActive && c.TurnState == turnEnded
+			if v.offMap[c.ID] { // a zone that blocks sight hides where it stands (zones.go)
+				p.Placed, p.Col, p.Row = false, 0, 0
+			}
 			out.Combatants = append(out.Combatants, p)
 		}
 	}
@@ -485,6 +498,15 @@ func (s *Service) viewFor(ctx context.Context, m authz.Membership, d *encounterD
 	if out.PendingHiddenReveals, out.TurnHeld, err = s.hiddenRevealsView(ctx, d, v); err != nil {
 		return nil, err
 	}
+	// The zones, and the saving throws they wait for, which also hold the turn.
+	if out.Zones, out.ZonesSelf, err = s.zonesView(ctx, d, v); err != nil {
+		return nil, err
+	}
+	var held bool
+	if out.ZoneSaves, held, err = s.zoneSavesView(ctx, m.CampaignID, d, v); err != nil {
+		return nil, err
+	}
+	out.TurnHeld = out.TurnHeld || held
 	return out, nil
 }
 

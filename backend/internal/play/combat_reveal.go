@@ -142,7 +142,8 @@ func (s *Service) mustNotHold(ctx context.Context, c *combatTx) error {
 	if len(pending) > 0 {
 		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_HIDDEN_REVEAL_PENDING, "the turn waits for the master")
 	}
-	return nil
+	// A saving throw a zone asked also holds the turn, until its answer (zones_save.go).
+	return s.mustNotWaitForZone(ctx, c)
 }
 
 // ResolveHiddenReveal implements playv1connect.CombatServiceHandler.

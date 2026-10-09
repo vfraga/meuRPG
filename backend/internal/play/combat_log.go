@@ -105,6 +105,7 @@ func (s *Service) ListCombatLog(
 		events []playdb.ListEncounterEventsRow
 		cs     []playdb.Combatant
 		recent []playdb.ListRecentSessionEventsRow
+		zones  []playdb.MapZone
 	)
 	err = db.ReadTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.queries.WithTx(tx)
@@ -117,6 +118,9 @@ func (s *Service) ListCombatLog(
 		}
 		if events, err = q.ListEncounterEvents(ctx, playdb.ListEncounterEventsParams{EncounterID: &enc.ID, Limit: logEventLimit}); err != nil {
 			return fmt.Errorf("list the combat's events: %w", err)
+		}
+		if zones, err = q.ListAllMapZones(ctx, enc.ID); err != nil {
+			return fmt.Errorf("list the zones: %w", err)
 		}
 		// With the dismissed creatures: their lines survive a concentration ending.
 		if cs, err = q.ListCombatantsWithDismissed(ctx, enc.ID); err != nil {
@@ -155,7 +159,10 @@ func (s *Service) ListCombatLog(
 		}
 	}
 
-	names := &keyNames{s: s, campaignID: m.CampaignID, byCharacter: map[string]link.Sheet{}}
+	names := &keyNames{s: s, campaignID: m.CampaignID, byCharacter: map[string]link.Sheet{}, zones: map[string]playdb.MapZone{}}
+	for _, z := range zones {
+		names.zones[z.ID] = z
+	}
 	byID := make(map[string]playdb.Combatant, len(cs))
 	for _, c := range cs {
 		byID[c.ID] = c
@@ -310,6 +317,12 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 					}
 				}
 			}
+		case eventMapZoneAdded, eventMapZoneMoved, eventMapZoneEnded, eventMapZoneTriggered, eventZoneSaveAnswered:
+			// What a zone did (zones_log.go): the master's own edits (map_zone_changed) are no line.
+			if ev.Zone == nil {
+				continue
+			}
+			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ZONE
 		case eventTrapSearched:
 			// A search is the Search action: the master's line only, with the roll in
 			// his history; the table sees nothing of it (RN-10).
@@ -429,6 +442,8 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 		target = playdb.Combatant{} // who attacked is not part of the line
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_DEATH_CONFIRMED, playv1.CombatLogKind_COMBAT_LOG_KIND_CONDITIONS_CHANGED:
 		actor, target = playdb.Combatant{}, byID[e.ev.Actor]
+	case playv1.CombatLogKind_COMBAT_LOG_KIND_ZONE:
+		actor, target = playdb.Combatant{}, byID[e.ev.Actor] // the creature the zone caught is the line's target
 	}
 	// What a player may see: nothing with a hidden combatant in it, when it
 	// happened or now (a combatant the master hides again takes its lines back).
@@ -536,6 +551,8 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 		}
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST:
 		out.Spell = e.spellView(v, byID)
+	case playv1.CombatLogKind_COMBAT_LOG_KIND_ZONE:
+		out.Zone = e.zoneEntry(v, byID, names.zones)
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_TRAP_TRIGGERED:
 		out.Trap = e.trapEntry(ctx, v, byID, names)
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE:
@@ -776,8 +793,9 @@ type keyNames struct {
 	s           *Service
 	campaignID  string
 	byCharacter map[string]link.Sheet
-	traps       map[string]string       // the names of the traps that fired, by point
-	content     func(key string) string // the names of the content, from the campaign's content
+	traps       map[string]string         // the names of the traps that fired, by point
+	content     func(key string) string   // the names of the content, from the campaign's content
+	zones       map[string]playdb.MapZone // the combat's zones, the ended ones too, by id (zones_log.go)
 }
 
 // of returns the name of the key on the combatant's sheet, or "" when the

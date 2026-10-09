@@ -150,6 +150,33 @@ const (
 	// CombatServiceEndConcentrationProcedure is the fully-qualified name of the CombatService's
 	// EndConcentration RPC.
 	CombatServiceEndConcentrationProcedure = "/meurpg.play.v1.CombatService/EndConcentration"
+	// CombatServiceListMapZonesProcedure is the fully-qualified name of the CombatService's
+	// ListMapZones RPC.
+	CombatServiceListMapZonesProcedure = "/meurpg.play.v1.CombatService/ListMapZones"
+	// CombatServiceAddMapZoneProcedure is the fully-qualified name of the CombatService's AddMapZone
+	// RPC.
+	CombatServiceAddMapZoneProcedure = "/meurpg.play.v1.CombatService/AddMapZone"
+	// CombatServiceMoveMapZoneProcedure is the fully-qualified name of the CombatService's MoveMapZone
+	// RPC.
+	CombatServiceMoveMapZoneProcedure = "/meurpg.play.v1.CombatService/MoveMapZone"
+	// CombatServiceEndMapZoneProcedure is the fully-qualified name of the CombatService's EndMapZone
+	// RPC.
+	CombatServiceEndMapZoneProcedure = "/meurpg.play.v1.CombatService/EndMapZone"
+	// CombatServiceDisperseMapZoneProcedure is the fully-qualified name of the CombatService's
+	// DisperseMapZone RPC.
+	CombatServiceDisperseMapZoneProcedure = "/meurpg.play.v1.CombatService/DisperseMapZone"
+	// CombatServiceSetMapZoneVisibleProcedure is the fully-qualified name of the CombatService's
+	// SetMapZoneVisible RPC.
+	CombatServiceSetMapZoneVisibleProcedure = "/meurpg.play.v1.CombatService/SetMapZoneVisible"
+	// CombatServiceSetMapZoneKnownProcedure is the fully-qualified name of the CombatService's
+	// SetMapZoneKnown RPC.
+	CombatServiceSetMapZoneKnownProcedure = "/meurpg.play.v1.CombatService/SetMapZoneKnown"
+	// CombatServiceSetZoneMemberProcedure is the fully-qualified name of the CombatService's
+	// SetZoneMember RPC.
+	CombatServiceSetZoneMemberProcedure = "/meurpg.play.v1.CombatService/SetZoneMember"
+	// CombatServiceAnswerZoneSaveProcedure is the fully-qualified name of the CombatService's
+	// AnswerZoneSave RPC.
+	CombatServiceAnswerZoneSaveProcedure = "/meurpg.play.v1.CombatService/AnswerZoneSave"
 	// CombatServiceListCombatLogProcedure is the fully-qualified name of the CombatService's
 	// ListCombatLog RPC.
 	CombatServiceListCombatLogProcedure = "/meurpg.play.v1.CombatService/ListCombatLog"
@@ -1169,6 +1196,49 @@ type CombatServiceClient interface {
 	//     (a creature does not concentrate).
 	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
 	EndConcentration(context.Context, *connect.Request[v1.EndConcentrationRequest]) (*connect.Response[v1.EndConcentrationResponse], error)
+	// ListMapZones lists the combat's zones (W7-Z): what spells and the master left on
+	// the map, with the clock of each. The master gets every field of every zone; a
+	// player only the zones they see, and for each its shape, squares, obscurity and
+	// the spell's name.
+	//
+	// Errors:
+	//   - `not_found`: the combat is not in this campaign's open session.
+	ListMapZones(context.Context, *connect.Request[v1.ListMapZonesRequest]) (*connect.Response[v1.ListMapZonesResponse], error)
+	// AddMapZone puts a zone of the scenario on the map (smoke, the gas of a trap). The
+	// master only; every call carries an idempotency key.
+	//
+	// Errors:
+	//   - `not_found`: not the master, or the combat is not in this campaign.
+	//   - `invalid_argument`: a shape, size, origin or effect that does not fit.
+	//   - `failed_precondition`: the combat is ended, or the combat already has 30 zones.
+	AddMapZone(context.Context, *connect.Request[v1.AddMapZoneRequest]) (*connect.Response[v1.AddMapZoneResponse], error)
+	// MoveMapZone moves a zone to another point. The master moves any zone; the caster
+	// moves a zone of their own that the spell lets them move (Moonbeam: an action, up to
+	// 60 ft from where it is now), and anyone else gets `not_found`. A creature the zone
+	// lands on counts as entering it: the trigger runs now.
+	MoveMapZone(context.Context, *connect.Request[v1.MoveMapZoneRequest]) (*connect.Response[v1.MoveMapZoneResponse], error)
+	// EndMapZone ends a zone, and the caster's concentration with it. The master only.
+	EndMapZone(context.Context, *connect.Request[v1.EndMapZoneRequest]) (*connect.Response[v1.EndMapZoneResponse], error)
+	// DisperseMapZone has a wind disperse a zone as the spell's text says, now or in a
+	// few rounds. The master only; `invalid_argument` for a zone that wind does not
+	// disperse.
+	DisperseMapZone(context.Context, *connect.Request[v1.DisperseMapZoneRequest]) (*connect.Response[v1.DisperseMapZoneResponse], error)
+	// SetMapZoneVisible sets whether the players see a zone. The master only.
+	SetMapZoneVisible(context.Context, *connect.Request[v1.SetMapZoneVisibleRequest]) (*connect.Response[v1.SetMapZoneVisibleResponse], error)
+	// SetMapZoneKnown says a creature recognised a camouflaged zone (or no longer).
+	// The master only.
+	SetMapZoneKnown(context.Context, *connect.Request[v1.SetMapZoneKnownRequest]) (*connect.Response[v1.SetMapZoneKnownResponse], error)
+	// SetZoneMember marks a creature inside a zone, or out of it, in a combat without a
+	// map. It runs the zone's triggers as a move does. The master only.
+	SetZoneMember(context.Context, *connect.Request[v1.SetZoneMemberRequest]) (*connect.Response[v1.SetZoneMemberResponse], error)
+	// AnswerZoneSave rolls the saving throw a zone asked of a creature
+	// (Encounter.zone_saves). The creature's player or the master. It is the answer of the
+	// zone's reaction window: the turn of the creature waits for it.
+	//
+	// Errors:
+	//   - `not_found`: not a window of this combat the caller may answer.
+	//   - `failed_precondition`: the window was closed (ZONE_SAVE_CLOSED).
+	AnswerZoneSave(context.Context, *connect.Request[v1.AnswerZoneSaveRequest]) (*connect.Response[v1.AnswerZoneSaveResponse], error)
 	// ListCombatLog returns the combat log ("Registro do combate"), latest
 	// first, grouped by round. Every entry is structured: the app writes the
 	// sentence. A player only gets the entries about what they see: nothing
@@ -1453,6 +1523,61 @@ func NewCombatServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(combatServiceMethods.ByName("EndConcentration")),
 			connect.WithClientOptions(opts...),
 		),
+		listMapZones: connect.NewClient[v1.ListMapZonesRequest, v1.ListMapZonesResponse](
+			httpClient,
+			baseURL+CombatServiceListMapZonesProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("ListMapZones")),
+			connect.WithIdempotency(connect.IdempotencyIdempotent),
+			connect.WithClientOptions(opts...),
+		),
+		addMapZone: connect.NewClient[v1.AddMapZoneRequest, v1.AddMapZoneResponse](
+			httpClient,
+			baseURL+CombatServiceAddMapZoneProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("AddMapZone")),
+			connect.WithClientOptions(opts...),
+		),
+		moveMapZone: connect.NewClient[v1.MoveMapZoneRequest, v1.MoveMapZoneResponse](
+			httpClient,
+			baseURL+CombatServiceMoveMapZoneProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("MoveMapZone")),
+			connect.WithClientOptions(opts...),
+		),
+		endMapZone: connect.NewClient[v1.EndMapZoneRequest, v1.EndMapZoneResponse](
+			httpClient,
+			baseURL+CombatServiceEndMapZoneProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("EndMapZone")),
+			connect.WithClientOptions(opts...),
+		),
+		disperseMapZone: connect.NewClient[v1.DisperseMapZoneRequest, v1.DisperseMapZoneResponse](
+			httpClient,
+			baseURL+CombatServiceDisperseMapZoneProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("DisperseMapZone")),
+			connect.WithClientOptions(opts...),
+		),
+		setMapZoneVisible: connect.NewClient[v1.SetMapZoneVisibleRequest, v1.SetMapZoneVisibleResponse](
+			httpClient,
+			baseURL+CombatServiceSetMapZoneVisibleProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("SetMapZoneVisible")),
+			connect.WithClientOptions(opts...),
+		),
+		setMapZoneKnown: connect.NewClient[v1.SetMapZoneKnownRequest, v1.SetMapZoneKnownResponse](
+			httpClient,
+			baseURL+CombatServiceSetMapZoneKnownProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("SetMapZoneKnown")),
+			connect.WithClientOptions(opts...),
+		),
+		setZoneMember: connect.NewClient[v1.SetZoneMemberRequest, v1.SetZoneMemberResponse](
+			httpClient,
+			baseURL+CombatServiceSetZoneMemberProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("SetZoneMember")),
+			connect.WithClientOptions(opts...),
+		),
+		answerZoneSave: connect.NewClient[v1.AnswerZoneSaveRequest, v1.AnswerZoneSaveResponse](
+			httpClient,
+			baseURL+CombatServiceAnswerZoneSaveProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("AnswerZoneSave")),
+			connect.WithClientOptions(opts...),
+		),
 		listCombatLog: connect.NewClient[v1.ListCombatLogRequest, v1.ListCombatLogResponse](
 			httpClient,
 			baseURL+CombatServiceListCombatLogProcedure,
@@ -1509,6 +1634,15 @@ type combatServiceClient struct {
 	confirmDeath             *connect.Client[v1.ConfirmDeathRequest, v1.ConfirmDeathResponse]
 	setCombatantConditions   *connect.Client[v1.SetCombatantConditionsRequest, v1.SetCombatantConditionsResponse]
 	endConcentration         *connect.Client[v1.EndConcentrationRequest, v1.EndConcentrationResponse]
+	listMapZones             *connect.Client[v1.ListMapZonesRequest, v1.ListMapZonesResponse]
+	addMapZone               *connect.Client[v1.AddMapZoneRequest, v1.AddMapZoneResponse]
+	moveMapZone              *connect.Client[v1.MoveMapZoneRequest, v1.MoveMapZoneResponse]
+	endMapZone               *connect.Client[v1.EndMapZoneRequest, v1.EndMapZoneResponse]
+	disperseMapZone          *connect.Client[v1.DisperseMapZoneRequest, v1.DisperseMapZoneResponse]
+	setMapZoneVisible        *connect.Client[v1.SetMapZoneVisibleRequest, v1.SetMapZoneVisibleResponse]
+	setMapZoneKnown          *connect.Client[v1.SetMapZoneKnownRequest, v1.SetMapZoneKnownResponse]
+	setZoneMember            *connect.Client[v1.SetZoneMemberRequest, v1.SetZoneMemberResponse]
+	answerZoneSave           *connect.Client[v1.AnswerZoneSaveRequest, v1.AnswerZoneSaveResponse]
 	listCombatLog            *connect.Client[v1.ListCombatLogRequest, v1.ListCombatLogResponse]
 	getCombatHighlights      *connect.Client[v1.GetCombatHighlightsRequest, v1.GetCombatHighlightsResponse]
 }
@@ -1696,6 +1830,51 @@ func (c *combatServiceClient) SetCombatantConditions(ctx context.Context, req *c
 // EndConcentration calls meurpg.play.v1.CombatService.EndConcentration.
 func (c *combatServiceClient) EndConcentration(ctx context.Context, req *connect.Request[v1.EndConcentrationRequest]) (*connect.Response[v1.EndConcentrationResponse], error) {
 	return c.endConcentration.CallUnary(ctx, req)
+}
+
+// ListMapZones calls meurpg.play.v1.CombatService.ListMapZones.
+func (c *combatServiceClient) ListMapZones(ctx context.Context, req *connect.Request[v1.ListMapZonesRequest]) (*connect.Response[v1.ListMapZonesResponse], error) {
+	return c.listMapZones.CallUnary(ctx, req)
+}
+
+// AddMapZone calls meurpg.play.v1.CombatService.AddMapZone.
+func (c *combatServiceClient) AddMapZone(ctx context.Context, req *connect.Request[v1.AddMapZoneRequest]) (*connect.Response[v1.AddMapZoneResponse], error) {
+	return c.addMapZone.CallUnary(ctx, req)
+}
+
+// MoveMapZone calls meurpg.play.v1.CombatService.MoveMapZone.
+func (c *combatServiceClient) MoveMapZone(ctx context.Context, req *connect.Request[v1.MoveMapZoneRequest]) (*connect.Response[v1.MoveMapZoneResponse], error) {
+	return c.moveMapZone.CallUnary(ctx, req)
+}
+
+// EndMapZone calls meurpg.play.v1.CombatService.EndMapZone.
+func (c *combatServiceClient) EndMapZone(ctx context.Context, req *connect.Request[v1.EndMapZoneRequest]) (*connect.Response[v1.EndMapZoneResponse], error) {
+	return c.endMapZone.CallUnary(ctx, req)
+}
+
+// DisperseMapZone calls meurpg.play.v1.CombatService.DisperseMapZone.
+func (c *combatServiceClient) DisperseMapZone(ctx context.Context, req *connect.Request[v1.DisperseMapZoneRequest]) (*connect.Response[v1.DisperseMapZoneResponse], error) {
+	return c.disperseMapZone.CallUnary(ctx, req)
+}
+
+// SetMapZoneVisible calls meurpg.play.v1.CombatService.SetMapZoneVisible.
+func (c *combatServiceClient) SetMapZoneVisible(ctx context.Context, req *connect.Request[v1.SetMapZoneVisibleRequest]) (*connect.Response[v1.SetMapZoneVisibleResponse], error) {
+	return c.setMapZoneVisible.CallUnary(ctx, req)
+}
+
+// SetMapZoneKnown calls meurpg.play.v1.CombatService.SetMapZoneKnown.
+func (c *combatServiceClient) SetMapZoneKnown(ctx context.Context, req *connect.Request[v1.SetMapZoneKnownRequest]) (*connect.Response[v1.SetMapZoneKnownResponse], error) {
+	return c.setMapZoneKnown.CallUnary(ctx, req)
+}
+
+// SetZoneMember calls meurpg.play.v1.CombatService.SetZoneMember.
+func (c *combatServiceClient) SetZoneMember(ctx context.Context, req *connect.Request[v1.SetZoneMemberRequest]) (*connect.Response[v1.SetZoneMemberResponse], error) {
+	return c.setZoneMember.CallUnary(ctx, req)
+}
+
+// AnswerZoneSave calls meurpg.play.v1.CombatService.AnswerZoneSave.
+func (c *combatServiceClient) AnswerZoneSave(ctx context.Context, req *connect.Request[v1.AnswerZoneSaveRequest]) (*connect.Response[v1.AnswerZoneSaveResponse], error) {
+	return c.answerZoneSave.CallUnary(ctx, req)
 }
 
 // ListCombatLog calls meurpg.play.v1.CombatService.ListCombatLog.
@@ -2719,6 +2898,49 @@ type CombatServiceHandler interface {
 	//     (a creature does not concentrate).
 	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
 	EndConcentration(context.Context, *connect.Request[v1.EndConcentrationRequest]) (*connect.Response[v1.EndConcentrationResponse], error)
+	// ListMapZones lists the combat's zones (W7-Z): what spells and the master left on
+	// the map, with the clock of each. The master gets every field of every zone; a
+	// player only the zones they see, and for each its shape, squares, obscurity and
+	// the spell's name.
+	//
+	// Errors:
+	//   - `not_found`: the combat is not in this campaign's open session.
+	ListMapZones(context.Context, *connect.Request[v1.ListMapZonesRequest]) (*connect.Response[v1.ListMapZonesResponse], error)
+	// AddMapZone puts a zone of the scenario on the map (smoke, the gas of a trap). The
+	// master only; every call carries an idempotency key.
+	//
+	// Errors:
+	//   - `not_found`: not the master, or the combat is not in this campaign.
+	//   - `invalid_argument`: a shape, size, origin or effect that does not fit.
+	//   - `failed_precondition`: the combat is ended, or the combat already has 30 zones.
+	AddMapZone(context.Context, *connect.Request[v1.AddMapZoneRequest]) (*connect.Response[v1.AddMapZoneResponse], error)
+	// MoveMapZone moves a zone to another point. The master moves any zone; the caster
+	// moves a zone of their own that the spell lets them move (Moonbeam: an action, up to
+	// 60 ft from where it is now), and anyone else gets `not_found`. A creature the zone
+	// lands on counts as entering it: the trigger runs now.
+	MoveMapZone(context.Context, *connect.Request[v1.MoveMapZoneRequest]) (*connect.Response[v1.MoveMapZoneResponse], error)
+	// EndMapZone ends a zone, and the caster's concentration with it. The master only.
+	EndMapZone(context.Context, *connect.Request[v1.EndMapZoneRequest]) (*connect.Response[v1.EndMapZoneResponse], error)
+	// DisperseMapZone has a wind disperse a zone as the spell's text says, now or in a
+	// few rounds. The master only; `invalid_argument` for a zone that wind does not
+	// disperse.
+	DisperseMapZone(context.Context, *connect.Request[v1.DisperseMapZoneRequest]) (*connect.Response[v1.DisperseMapZoneResponse], error)
+	// SetMapZoneVisible sets whether the players see a zone. The master only.
+	SetMapZoneVisible(context.Context, *connect.Request[v1.SetMapZoneVisibleRequest]) (*connect.Response[v1.SetMapZoneVisibleResponse], error)
+	// SetMapZoneKnown says a creature recognised a camouflaged zone (or no longer).
+	// The master only.
+	SetMapZoneKnown(context.Context, *connect.Request[v1.SetMapZoneKnownRequest]) (*connect.Response[v1.SetMapZoneKnownResponse], error)
+	// SetZoneMember marks a creature inside a zone, or out of it, in a combat without a
+	// map. It runs the zone's triggers as a move does. The master only.
+	SetZoneMember(context.Context, *connect.Request[v1.SetZoneMemberRequest]) (*connect.Response[v1.SetZoneMemberResponse], error)
+	// AnswerZoneSave rolls the saving throw a zone asked of a creature
+	// (Encounter.zone_saves). The creature's player or the master. It is the answer of the
+	// zone's reaction window: the turn of the creature waits for it.
+	//
+	// Errors:
+	//   - `not_found`: not a window of this combat the caller may answer.
+	//   - `failed_precondition`: the window was closed (ZONE_SAVE_CLOSED).
+	AnswerZoneSave(context.Context, *connect.Request[v1.AnswerZoneSaveRequest]) (*connect.Response[v1.AnswerZoneSaveResponse], error)
 	// ListCombatLog returns the combat log ("Registro do combate"), latest
 	// first, grouped by round. Every entry is structured: the app writes the
 	// sentence. A player only gets the entries about what they see: nothing
@@ -2999,6 +3221,61 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(combatServiceMethods.ByName("EndConcentration")),
 		connect.WithHandlerOptions(opts...),
 	)
+	combatServiceListMapZonesHandler := connect.NewUnaryHandler(
+		CombatServiceListMapZonesProcedure,
+		svc.ListMapZones,
+		connect.WithSchema(combatServiceMethods.ByName("ListMapZones")),
+		connect.WithIdempotency(connect.IdempotencyIdempotent),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceAddMapZoneHandler := connect.NewUnaryHandler(
+		CombatServiceAddMapZoneProcedure,
+		svc.AddMapZone,
+		connect.WithSchema(combatServiceMethods.ByName("AddMapZone")),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceMoveMapZoneHandler := connect.NewUnaryHandler(
+		CombatServiceMoveMapZoneProcedure,
+		svc.MoveMapZone,
+		connect.WithSchema(combatServiceMethods.ByName("MoveMapZone")),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceEndMapZoneHandler := connect.NewUnaryHandler(
+		CombatServiceEndMapZoneProcedure,
+		svc.EndMapZone,
+		connect.WithSchema(combatServiceMethods.ByName("EndMapZone")),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceDisperseMapZoneHandler := connect.NewUnaryHandler(
+		CombatServiceDisperseMapZoneProcedure,
+		svc.DisperseMapZone,
+		connect.WithSchema(combatServiceMethods.ByName("DisperseMapZone")),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceSetMapZoneVisibleHandler := connect.NewUnaryHandler(
+		CombatServiceSetMapZoneVisibleProcedure,
+		svc.SetMapZoneVisible,
+		connect.WithSchema(combatServiceMethods.ByName("SetMapZoneVisible")),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceSetMapZoneKnownHandler := connect.NewUnaryHandler(
+		CombatServiceSetMapZoneKnownProcedure,
+		svc.SetMapZoneKnown,
+		connect.WithSchema(combatServiceMethods.ByName("SetMapZoneKnown")),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceSetZoneMemberHandler := connect.NewUnaryHandler(
+		CombatServiceSetZoneMemberProcedure,
+		svc.SetZoneMember,
+		connect.WithSchema(combatServiceMethods.ByName("SetZoneMember")),
+		connect.WithHandlerOptions(opts...),
+	)
+	combatServiceAnswerZoneSaveHandler := connect.NewUnaryHandler(
+		CombatServiceAnswerZoneSaveProcedure,
+		svc.AnswerZoneSave,
+		connect.WithSchema(combatServiceMethods.ByName("AnswerZoneSave")),
+		connect.WithHandlerOptions(opts...),
+	)
 	combatServiceListCombatLogHandler := connect.NewUnaryHandler(
 		CombatServiceListCombatLogProcedure,
 		svc.ListCombatLog,
@@ -3089,6 +3366,24 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 			combatServiceSetCombatantConditionsHandler.ServeHTTP(w, r)
 		case CombatServiceEndConcentrationProcedure:
 			combatServiceEndConcentrationHandler.ServeHTTP(w, r)
+		case CombatServiceListMapZonesProcedure:
+			combatServiceListMapZonesHandler.ServeHTTP(w, r)
+		case CombatServiceAddMapZoneProcedure:
+			combatServiceAddMapZoneHandler.ServeHTTP(w, r)
+		case CombatServiceMoveMapZoneProcedure:
+			combatServiceMoveMapZoneHandler.ServeHTTP(w, r)
+		case CombatServiceEndMapZoneProcedure:
+			combatServiceEndMapZoneHandler.ServeHTTP(w, r)
+		case CombatServiceDisperseMapZoneProcedure:
+			combatServiceDisperseMapZoneHandler.ServeHTTP(w, r)
+		case CombatServiceSetMapZoneVisibleProcedure:
+			combatServiceSetMapZoneVisibleHandler.ServeHTTP(w, r)
+		case CombatServiceSetMapZoneKnownProcedure:
+			combatServiceSetMapZoneKnownHandler.ServeHTTP(w, r)
+		case CombatServiceSetZoneMemberProcedure:
+			combatServiceSetZoneMemberHandler.ServeHTTP(w, r)
+		case CombatServiceAnswerZoneSaveProcedure:
+			combatServiceAnswerZoneSaveHandler.ServeHTTP(w, r)
 		case CombatServiceListCombatLogProcedure:
 			combatServiceListCombatLogHandler.ServeHTTP(w, r)
 		case CombatServiceGetCombatHighlightsProcedure:
@@ -3248,6 +3543,42 @@ func (UnimplementedCombatServiceHandler) SetCombatantConditions(context.Context,
 
 func (UnimplementedCombatServiceHandler) EndConcentration(context.Context, *connect.Request[v1.EndConcentrationRequest]) (*connect.Response[v1.EndConcentrationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.EndConcentration is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) ListMapZones(context.Context, *connect.Request[v1.ListMapZonesRequest]) (*connect.Response[v1.ListMapZonesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.ListMapZones is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) AddMapZone(context.Context, *connect.Request[v1.AddMapZoneRequest]) (*connect.Response[v1.AddMapZoneResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.AddMapZone is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) MoveMapZone(context.Context, *connect.Request[v1.MoveMapZoneRequest]) (*connect.Response[v1.MoveMapZoneResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.MoveMapZone is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) EndMapZone(context.Context, *connect.Request[v1.EndMapZoneRequest]) (*connect.Response[v1.EndMapZoneResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.EndMapZone is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) DisperseMapZone(context.Context, *connect.Request[v1.DisperseMapZoneRequest]) (*connect.Response[v1.DisperseMapZoneResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.DisperseMapZone is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) SetMapZoneVisible(context.Context, *connect.Request[v1.SetMapZoneVisibleRequest]) (*connect.Response[v1.SetMapZoneVisibleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.SetMapZoneVisible is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) SetMapZoneKnown(context.Context, *connect.Request[v1.SetMapZoneKnownRequest]) (*connect.Response[v1.SetMapZoneKnownResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.SetMapZoneKnown is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) SetZoneMember(context.Context, *connect.Request[v1.SetZoneMemberRequest]) (*connect.Response[v1.SetZoneMemberResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.SetZoneMember is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) AnswerZoneSave(context.Context, *connect.Request[v1.AnswerZoneSaveRequest]) (*connect.Response[v1.AnswerZoneSaveResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.AnswerZoneSave is not implemented"))
 }
 
 func (UnimplementedCombatServiceHandler) ListCombatLog(context.Context, *connect.Request[v1.ListCombatLogRequest]) (*connect.Response[v1.ListCombatLogResponse], error) {

@@ -20,6 +20,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
+	"github.com/PuraFome/meuRPG/backend/internal/rules/zone"
 )
 
 // Casting a spell (MR-014, RN-02, RN-18, RN-22, Etapa 6, slice 6.4b). The cast
@@ -240,6 +241,10 @@ func (s *Service) CastSpell(
 		}
 		targets = append(targets, target{id: id, darts: int(t.GetDarts())})
 	}
+	zr, err := zoneRequestOf(req.Msg)
+	if err != nil {
+		return nil, err
+	}
 	var in rollInput
 	var rolled bool
 	switch roll := req.Msg.GetRoll().(type) {
@@ -333,6 +338,14 @@ func (s *Service) CastSpell(
 		if pick := req.Msg.GetDamageTypeKey(); pick != "" && !slices.Contains(sp.DamageTypes, pick) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("damage_type_key must be one of the damage types of a spell that lets the caster choose"))
 		}
+		zoneSpec, isZone := zone.Lookup(spellKey)
+		if err := checkZoneRequest(zoneSpec, isZone, zr, v.master); err != nil {
+			return nil, err
+		}
+		// A spell with a verbal component cannot be cast inside a zone of silence (SRD, Silence).
+		if sp.Verbal && silencedAt(c.zones, caster, isTheatre(c.enc)) {
+			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SILENCED, "a spell with a verbal component cannot be cast inside a zone of silence")
+		}
 
 		// Who it touches.
 		known, err := c.sight.knownTerrain(ctx, c.tx, v) // what the player knows of the map, for the cover they are told
@@ -354,7 +367,7 @@ func (s *Service) CastSpell(
 				return nil, err
 			}
 			if plan, err = planArea(areaInput{
-				v: v, terrain: terrain, cs: cs, caster: caster, sp: sp, choice: choice,
+				v: v, terrain: terrain, cs: cs, caster: caster, sp: sp, choice: choice, slotLevel: slotLevel, zone: zr,
 				cover: func(origin, target playdb.Combatant) (coverPair, error) {
 					return c.coverOf(ctx, v, terrain, known, origin, target, cs)
 				},
@@ -461,6 +474,9 @@ func (s *Service) CastSpell(
 			if made.Dismissed, err = s.endSummons(ctx, c, caster); err != nil {
 				return nil, err
 			}
+			if made.ZonesEnded, err = s.endConcentrationZones(ctx, c, caster.ID); err != nil {
+				return nil, err
+			}
 			if err := c.q.SetCombatantConcentration(ctx, playdb.SetCombatantConcentrationParams{ID: caster.ID, ConcentrationSpell: &spellKey}); err != nil {
 				return nil, fmt.Errorf("set the concentration: %w", err)
 			}
@@ -493,12 +509,23 @@ func (s *Service) CastSpell(
 				} else if cp, err = c.coverOf(ctx, v, terrain, known, caster, t, cs); err != nil {
 					return nil, err
 				}
-				if err := s.resolveOnTarget(ctx, c, m, sp, caster, t, slotLevel, in, cp, &hit); err != nil {
-					return nil, err
+				// A spell that leaves a zone rolls nothing at the cast: the zone's triggers ask the saving
+				// throws, as the spell's text says (a creature in the area when it is cast, or later).
+				if !isZone {
+					if err := s.resolveOnTarget(ctx, c, m, sp, caster, t, slotLevel, in, cp, &hit); err != nil {
+						return nil, err
+					}
 				}
 				made.Hits = append(made.Hits, hit)
 				hidden = hidden || t.Hidden
 			}
+		}
+		if isZone {
+			z, err := s.leaveZone(ctx, c, zoneCast{spec: zoneSpec, sp: sp, caster: caster, slotLevel: slotLevel, plan: plan, placed: placedArea, req: zr, cs: cs, viewer: v})
+			if err != nil {
+				return nil, err
+			}
+			made.Zone = &zoneNote{ID: z.row.ID, Key: spellKey, What: "added"}
 		}
 		packCoverSeen(&made)
 		made.Secret = hidden
@@ -528,6 +555,11 @@ func (s *Service) CastSpell(
 	if v, err = s.viewerAfter(ctx, m, res, v); err != nil { // a replay never ran the closure: the fog filter still holds
 		return nil, s.dbError(ctx, "work out what the player sees", err)
 	}
+	if made.Zone != nil && !res.repeated { // the zone the cast left hides creatures from the viewer: the answer is told with it
+		if v, err = s.viewerNow(ctx, m, res); err != nil {
+			return nil, s.dbError(ctx, "work out what the player sees", err)
+		}
+	}
 	ev, err := resultEvent(res, made)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the spell", err)
@@ -554,6 +586,9 @@ func (s *Service) CastSpell(
 	}
 	resp := &playv1.CastSpellResponse{Encounter: out, Cast: spell, SummonedCombatantIds: s.combatantsOfCreatures(ctx, res, ev.Created)}
 	if resp.Area, err = s.areaProto(ctx, res, ev, v); err != nil {
+		return nil, err
+	}
+	if resp.Zone, err = s.castZoneProto(ctx, m, res, ev, v); err != nil {
 		return nil, err
 	}
 	if v.master { // what the hidden creatures the cast hit are is the master's alone (RN-10)

@@ -172,6 +172,9 @@ type combatTx struct {
 	// opened: a critical hit and who sees the death saves follow them from the
 	// next roll on, and are never kept longer than the change.
 	rules tablerules.Rules
+	// zones are the live zones of the combat (zones.go), read once when the change needs them.
+	zones       []zoneState
+	zonesLoaded bool
 }
 
 // combatResult is what a change leaves for the handler: the session, and
@@ -294,6 +297,11 @@ func (s *Service) writeOnce(ctx context.Context, w combatWrite, sight *fogSight,
 			}
 			if sight != nil && c.enc.Revision != sight.rev {
 				return errSightStale
+			}
+		}
+		if w.encounterID != "" { // the zones hide creatures from a player, so a change needs them to tell it what it did
+			if err := c.loadZones(ctx); err != nil {
+				return err
 			}
 		}
 		payload, err := do(c)

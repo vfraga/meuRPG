@@ -122,7 +122,15 @@ func startTurn(ctx context.Context, c *combatTx, ids []string, round int32) erro
 			return err
 		}
 	}
-	return setCurrent(ctx, c, ids[0], round)
+	if err := setCurrent(ctx, c, ids[0], round); err != nil {
+		return err
+	}
+	// The zones act before the creatures do: the ones whose time has run end, a zone that walks
+	// walks, and whoever starts the turn in one is caught by it (zones_engine.go).
+	if c.svc != nil {
+		return c.svc.zonesAtTurnStart(ctx, c, ids, round)
+	}
+	return nil
 }
 
 // setCurrent saves where the combat is: the round and the member that the

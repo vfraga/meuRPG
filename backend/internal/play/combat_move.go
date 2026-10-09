@@ -317,6 +317,8 @@ func (s *Service) MoveCombatant(
 		if err != nil {
 			return nil, err
 		}
+		ground := terrain
+		terrain = withZones(ground, c.zones, target, false) // the ground the zones leave: the real move costs all of it
 		onTurn := actsNow(c.enc, target)
 		if !v.master {
 			// RN-21: a player walks only on their own turn.
@@ -366,7 +368,7 @@ func (s *Service) MoveCombatant(
 			if err != nil {
 				return nil, err
 			}
-			plan := planOn(v, terrain, known) // the walls and rubble the player knows; the rest is floor to them
+			plan := withZones(planOn(v, ground, known), c.zones, target, true) // the walls and rubble the player knows, and the zones their creature knows; the rest is floor to them
 			mover, origin := moverOf(target), squareOfCombatant(target)
 			left := movementLeftDFt(target)
 			switch jump {
@@ -504,6 +506,13 @@ func (s *Service) MoveCombatant(
 		logged = onTurn && (length > 0 || made.Jump == jumpHigh)
 		if v.master && squareChanged {
 			th.landed(to) // the master's move is not a walk: only where it ends counts
+		}
+		// A creature that enters a zone, or travels in one that hurts by the distance, is caught by it;
+		// a zone its caster carries goes with it (zones_engine.go).
+		if squareChanged && jump != playv1.JumpKind_JUMP_KIND_HIGH && placed(moved) {
+			if err := s.zonesAfterMove(ctx, c, cs, moved, squareOfState(from), ground); err != nil {
+				return nil, err
+			}
 		}
 		return th.finish(ctx, c, made, cs, moved)
 	})
@@ -696,7 +705,9 @@ func (s *Service) GetMoveOptions(
 	if err != nil {
 		return nil, s.dbError(ctx, "read the terrain the player knows", err)
 	}
-	out := moveOptions(planOn(v, terrain, known), who, occupantsFor(d.cs, who, v))
+	zones := zoneStatesOf(d.zones)
+	out := moveOptions(withZones(planOn(v, terrain, known), zones, who, !v.master), who, occupantsFor(d.cs, who, v))
+	zoneMoveOptions(out, zones, who, terrain)
 	if err := s.markProvokes(ctx, m, enc, d.cs, who, v, sight, out); err != nil {
 		return nil, s.dbError(ctx, "work out the opportunity attacks", err)
 	}

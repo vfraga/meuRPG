@@ -400,6 +400,10 @@ func (s *Service) stopConcentrating(ctx context.Context, c *combatTx, target pla
 	}
 	ev.ConcBefore, ev.ConcEnded = *target.ConcentrationSpell, *target.ConcentrationSpell
 	var err error
-	ev.Dismissed, err = s.endSummons(ctx, c, target)
+	if ev.Dismissed, err = s.endSummons(ctx, c, target); err != nil {
+		return err
+	}
+	// The zones the concentration held end with it, in the same transaction (SRD, "Concentration").
+	ev.ZonesEnded, err = s.endConcentrationZones(ctx, c, target.ID)
 	return err
 }

@@ -61,7 +61,9 @@ func (s *Service) CombatSpell(ctx context.Context, tx pgx.Tx, campaignID, charac
 			out.ToHit = sc.AttackBonus
 		}
 		out.SaveDC = sc.SaveDC
+		out.SpellDC = sc.SaveDC
 	}
+	out.Verbal = det.Components.Verbal
 	if det.Save != nil {
 		out.SaveAbility, out.SaveOnSuccess = string(det.Save.Ability), det.Save.OnSuccess
 	} else {

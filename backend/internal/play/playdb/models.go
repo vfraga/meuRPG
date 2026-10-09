@@ -120,6 +120,57 @@ type HiddenReveal struct {
 	AnsweredAt   *time.Time
 }
 
+type MapZone struct {
+	ID               string
+	EncounterID      string
+	Seq              int32
+	SpellKey         string
+	Name             string
+	CasterID         *string
+	Shape            string
+	OriginCol        *int32
+	OriginRow        *int32
+	DirDx            int16
+	DirDy            int16
+	SizeFt           int32
+	RingRadius       int16
+	Cells            []int32
+	Obscurity        string
+	Difficult        bool
+	HalvesSpeed      bool
+	Camouflaged      bool
+	VisibleToPlayers bool
+	Concentration    bool
+	SlotLevel        int16
+	CastRound        int32
+	DurationRounds   int32
+	DisperseRound    *int32
+	MovesWith        string
+	StepSquares      int16
+	CasterMoves      bool
+	Triggers         []byte
+	Rules            []string
+	SaveDc           int32
+	DamageCount      int32
+	DamageSides      int32
+	DamageBonus      int32
+	DamageType       string
+	DamageSide       string
+	ReachSquares     int16
+	Anchored         bool
+	ExcludedIds      []string
+	KnownBy          []string
+	Members          []string
+	CreatedAt        time.Time
+	EndedAt          *time.Time
+}
+
+type MapZoneEffect struct {
+	ZoneID      string
+	CombatantID string
+	Condition   string
+}
+
 type OpportunityOffer struct {
 	ID              string
 	EncounterID     string
@@ -277,4 +328,35 @@ type TrapDamage struct {
 	CriticalMax   int32
 	SettleKey     *string
 	SettleHash    *string
+}
+
+type ZoneSaveWindow struct {
+	ID          string
+	EncounterID string
+	ZoneID      *string
+	ReactorID   string
+	CasterID    *string
+	Seq         int32
+	TriggerKind string
+	Round       int32
+	TurnOf      *string
+	SpellKey    string
+	Ability     string
+	Dc          int32
+	DamageCount int32
+	DamageSides int32
+	DamageBonus int32
+	DamageType  string
+	OnSuccess   string
+	OnFail      string
+	CoverBonus  int32
+	State       string
+	CloseReason string
+	D20         *int32
+	Modifier    *int32
+	Total       *int32
+	Saved       *bool
+	Physical    bool
+	CreatedAt   time.Time
+	AnsweredAt  *time.Time
 }

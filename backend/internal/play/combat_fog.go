@@ -220,6 +220,14 @@ func (s *Service) viewerWith(ctx context.Context, m authz.Membership, enc playdb
 	if f != nil {
 		v.unseen, v.sight = f.unseenFor(v.userID, cs), f
 	}
+	// The zones that block sight hide creatures from a player (zones.go).
+	if enc.ID != "" {
+		rows, err := s.queries.ListMapZones(ctx, enc.ID)
+		if err != nil {
+			return v, nil, fmt.Errorf("list the zones: %w", err)
+		}
+		v = v.withZoneSight(zoneStatesOf(rows), cs)
+	}
 	return v, f, nil
 }
 
@@ -232,7 +240,7 @@ func (c *combatTx) viewer(m authz.Membership, cs []playdb.Combatant) combatViewe
 	if !v.master && c.sight != nil {
 		v.unseen, v.sight = c.sight.unseenFor(v.userID, cs), c.sight
 	}
-	return v
+	return v.withZoneSight(c.zones, cs)
 }
 
 // ---- the move: what a player plans on ----
@@ -293,6 +301,15 @@ func (f *fogSight) reactorSees(r playdb.Combatant, sheet link.Sheet, at grid.Squ
 // view that has changed. A Secret event (a hidden combatant is in it) is seen by no
 // player: their revision does not count it and their stream does not hear it.
 func (c *combatTx) stamp(ctx context.Context, kind string, ev actionEvent) (actionEvent, error) {
+	ev, err := c.stampFog(ctx, kind, ev)
+	if err != nil {
+		return ev, err
+	}
+	return c.stampZones(ctx, kind, ev)
+}
+
+// stampFog is the fog's half of stamp: who could see the NPCs in the event.
+func (c *combatTx) stampFog(ctx context.Context, kind string, ev actionEvent) (actionEvent, error) {
 	if c.sight == nil {
 		return ev, nil
 	}
@@ -457,14 +474,21 @@ func combatantMovedMessage(e playdb.Encounter, c playdb.Combatant) *playv1.Watch
 // every change of the turn also publishes.
 func (s *Service) publishTurnChangedToPlayers(ctx context.Context, campaignID string, d *encounterData) {
 	f, err := s.fogSightOf(ctx, campaignID, d.enc)
+	zs := zoneStatesOf(d.zones)
 	switch {
 	case err != nil:
 		s.logger.ErrorContext(ctx, "play: cannot work out what the players see in a combat", "error", err)
-	case f == nil:
+	case f == nil && !hasBlocking(zs):
 		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: turnChangedMessage(d.enc, d.turnFor(combatViewer{}))})
+	case f == nil:
+		// The zones that block sight hide NPCs from some players and not from others.
+		for _, u := range playerUsers(d.cs) {
+			turn := d.turnFor(combatViewer{userID: u}.withZoneSight(zs, d.cs))
+			s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: turnChangedMessage(d.enc, turn)})
+		}
 	default:
 		for _, u := range f.sight.Users() {
-			turn := d.turnFor(combatViewer{userID: u, unseen: f.unseenFor(u, d.cs)})
+			turn := d.turnFor(combatViewer{userID: u, unseen: f.unseenFor(u, d.cs)}.withZoneSight(zs, d.cs))
 			s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: turnChangedMessage(d.enc, turn)})
 		}
 	}
@@ -478,6 +502,12 @@ func (s *Service) publishTurnChangedToPlayers(ctx context.Context, campaignID st
 // again and find it gone; the others hear nothing. from is where it stood.
 func (s *Service) publishMovedToPlayers(ctx context.Context, campaignID string, e playdb.Encounter, c playdb.Combatant, from *grid.Square) {
 	all := live.Event{Audience: live.Audience{Players: true}, Message: combatantMovedMessage(e, c)}
+	if s.zonesHide(ctx, e) {
+		// A zone that blocks sight hides the squares of some creatures from some players: nobody is told
+		// where a creature went, they read the combat again and find what they see (zones_sight.go).
+		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: encounterChangedMessage(playdb.Encounter{ID: e.ID, Mode: e.Mode})})
+		return
+	}
 	if c.Kind != kindNPC {
 		s.hub.Publish(campaignID, all)
 		return

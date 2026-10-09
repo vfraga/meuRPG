@@ -1498,6 +1498,9 @@ const (
 	// Flurry of Blows: it comes right after the Attack action, taken with a weapon
 	// or an unarmed strike, and that action has not been taken yet this turn.
 	DisabledReasonCode_DISABLED_REASON_CODE_ATTACK_ACTION_FIRST DisabledReasonCode = 16
+	// The spell has a verbal component and the caster is inside a zone of silence
+	// (Silêncio): casting it is impossible there.
+	DisabledReasonCode_DISABLED_REASON_CODE_SILENCED DisabledReasonCode = 40
 )
 
 // Enum value maps for DisabledReasonCode.
@@ -1520,6 +1523,7 @@ var (
 		14: "DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN",
 		15: "DISABLED_REASON_CODE_BONUS_ACTION_SPELL_LIMIT",
 		16: "DISABLED_REASON_CODE_ATTACK_ACTION_FIRST",
+		40: "DISABLED_REASON_CODE_SILENCED",
 	}
 	DisabledReasonCode_value = map[string]int32{
 		"DISABLED_REASON_CODE_UNSPECIFIED":              0,
@@ -1539,6 +1543,7 @@ var (
 		"DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN":   14,
 		"DISABLED_REASON_CODE_BONUS_ACTION_SPELL_LIMIT": 15,
 		"DISABLED_REASON_CODE_ATTACK_ACTION_FIRST":      16,
+		"DISABLED_REASON_CODE_SILENCED":                 40,
 	}
 )
 
@@ -10781,7 +10786,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x14CREATURE_SIZE_MEDIUM\x10\x03\x12\x17\n" +
 	"\x13CREATURE_SIZE_LARGE\x10\x04\x12\x16\n" +
 	"\x12CREATURE_SIZE_HUGE\x10\x05\x12\x1c\n" +
-	"\x18CREATURE_SIZE_GARGANTUAN\x10\x06*\xe4\x05\n" +
+	"\x18CREATURE_SIZE_GARGANTUAN\x10\x06*\x87\x06\n" +
 	"\x12DisabledReasonCode\x12$\n" +
 	" DISABLED_REASON_CODE_UNSPECIFIED\x10\x00\x12$\n" +
 	" DISABLED_REASON_CODE_ACTION_USED\x10\x01\x12*\n" +
@@ -10800,7 +10805,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"!DISABLED_REASON_CODE_ATTACKS_USED\x10\r\x12/\n" +
 	"+DISABLED_REASON_CODE_ALREADY_USED_THIS_TURN\x10\x0e\x121\n" +
 	"-DISABLED_REASON_CODE_BONUS_ACTION_SPELL_LIMIT\x10\x0f\x12,\n" +
-	"(DISABLED_REASON_CODE_ATTACK_ACTION_FIRST\x10\x10*\x9f\x01\n" +
+	"(DISABLED_REASON_CODE_ATTACK_ACTION_FIRST\x10\x10\x12!\n" +
+	"\x1dDISABLED_REASON_CODE_SILENCED\x10(*\x9f\x01\n" +
 	"\x0fBonusAttackRule\x12!\n" +
 	"\x1dBONUS_ATTACK_RULE_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aBONUS_ATTACK_RULE_OFF_HAND\x10\x01\x12\"\n" +

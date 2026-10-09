@@ -89,6 +89,10 @@ type Terrain struct {
 	// and closed, locked and secret ones are walls for cover (and, through
 	// SightWalls, for sight and light).
 	Doors *DoorLayer
+	// Slow is the squares where the mover's speed is halved (a zone such as Spirit Guardians'):
+	// entering one costs twice what it would, difficult terrain's extra included. May be nil. It
+	// is not a stored layer: the caller puts the zones that slow the mover in.
+	Slow Set
 }
 
 // ErrBadGrid is returned for a grid a map cannot have, or a layer sized for
@@ -165,6 +169,21 @@ func (m Mover) canEnd(o Occupant) bool {
 func lengthDFt(from, to Square) int {
 	dc, dr := to.Col-from.Col, to.Row-from.Row
 	return int(math.Round(math.Sqrt(float64(dc*dc+dr*dr)) * DFtPerSquare))
+}
+
+// entryExtraDFt is what entering a square costs beyond its length, in tenths of a foot: 5 ft for
+// difficult terrain (not for a flier) or for a square another creature holds, once (SRD: they do
+// not add up), and, in a square where the speed is halved, the same again as the square itself
+// costs: a halved speed makes every foot cost two.
+func (t Terrain) entryExtraDFt(sq Square, occupied bool, m Mover) int {
+	extra := 0
+	if (!m.Flier && t.Difficult.Has(sq)) || occupied {
+		extra = DFtPerSquare
+	}
+	if inSet(t.Slow, sq) {
+		extra += DFtPerSquare + extra
+	}
+	return extra
 }
 
 // blocked says whether a step cannot be entered: its square blocks movement,
@@ -248,8 +267,8 @@ func (t Terrain) walk(from, to Square, occ Occupants, m Mover, clears bool) Move
 		o, occupied := occupantAt(occ, s.Square)
 		// Difficult terrain costs 5 ft once, even if several things in the square
 		// count as it (SRD): rubble and a creature standing on it.
-		if !clears && ((!m.Flier && t.Difficult.Has(s.Square)) || occupied) {
-			res.CostDFt += DFtPerSquare
+		if !clears {
+			res.CostDFt += t.entryExtraDFt(s.Square, occupied, m)
 		}
 		if occupied {
 			// A jump clears the creatures on the way, and only the landing
@@ -361,9 +380,7 @@ walk:
 			reason = StopOccupied
 			break walk
 		}
-		if (!m.Flier && t.Difficult.Has(s.Square)) || occupied {
-			extras += DFtPerSquare
-		}
+		extras += t.entryExtraDFt(s.Square, occupied, m)
 		cost := max(floor, lengthDFt(from, s.Square)+extras)
 		if cost > left {
 			reason = StopMovement

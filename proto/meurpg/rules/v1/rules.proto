@@ -1752,6 +1752,9 @@ enum DisabledReasonCode {
   // Flurry of Blows: it comes right after the Attack action, taken with a weapon
   // or an unarmed strike, and that action has not been taken yet this turn.
   DISABLED_REASON_CODE_ATTACK_ACTION_FIRST = 16;
+  // The spell has a verbal component and the caster is inside a zone of silence
+  // (Silêncio): casting it is impossible there.
+  DISABLED_REASON_CODE_SILENCED = 40;
 }
 
 // BonusAttackRule is the rule that makes an attack a bonus action attack right

@@ -49,6 +49,68 @@ func (q *Queries) AnswerHiddenReveal(ctx context.Context, arg AnswerHiddenReveal
 	return i, err
 }
 
+const answerZoneSaveWindow = `-- name: AnswerZoneSaveWindow :one
+UPDATE zone_save_windows
+SET state = 'answered', d20 = $1, modifier = $2, total = $3, saved = $4,
+    physical = $5, answered_at = $6
+WHERE id = $7 AND state = 'open'
+RETURNING id, encounter_id, zone_id, reactor_id, caster_id, seq, trigger_kind, round, turn_of, spell_key, ability, dc, damage_count, damage_sides, damage_bonus, damage_type, on_success, on_fail, cover_bonus, state, close_reason, d20, modifier, total, saved, physical, created_at, answered_at
+`
+
+type AnswerZoneSaveWindowParams struct {
+	D20        *int32
+	Modifier   *int32
+	Total      *int32
+	Saved      *bool
+	Physical   bool
+	AnsweredAt *time.Time
+	ID         string
+}
+
+func (q *Queries) AnswerZoneSaveWindow(ctx context.Context, arg AnswerZoneSaveWindowParams) (ZoneSaveWindow, error) {
+	row := q.db.QueryRow(ctx, answerZoneSaveWindow,
+		arg.D20,
+		arg.Modifier,
+		arg.Total,
+		arg.Saved,
+		arg.Physical,
+		arg.AnsweredAt,
+		arg.ID,
+	)
+	var i ZoneSaveWindow
+	err := row.Scan(
+		&i.ID,
+		&i.EncounterID,
+		&i.ZoneID,
+		&i.ReactorID,
+		&i.CasterID,
+		&i.Seq,
+		&i.TriggerKind,
+		&i.Round,
+		&i.TurnOf,
+		&i.SpellKey,
+		&i.Ability,
+		&i.Dc,
+		&i.DamageCount,
+		&i.DamageSides,
+		&i.DamageBonus,
+		&i.DamageType,
+		&i.OnSuccess,
+		&i.OnFail,
+		&i.CoverBonus,
+		&i.State,
+		&i.CloseReason,
+		&i.D20,
+		&i.Modifier,
+		&i.Total,
+		&i.Saved,
+		&i.Physical,
+		&i.CreatedAt,
+		&i.AnsweredAt,
+	)
+	return i, err
+}
+
 const clearCombatTurns = `-- name: ClearCombatTurns :exec
 UPDATE combatants
 SET turn_state = 'idle'
@@ -59,6 +121,16 @@ WHERE encounter_id = $1 AND turn_state <> 'idle'
 // turn starts with this and then ResetCombatantTurn for each of its members.
 func (q *Queries) ClearCombatTurns(ctx context.Context, encounterID string) error {
 	_, err := q.db.Exec(ctx, clearCombatTurns, encounterID)
+	return err
+}
+
+const clearMapZoneCaster = `-- name: ClearMapZoneCaster :exec
+UPDATE map_zones SET caster_id = NULL WHERE caster_id = $1
+`
+
+// The caster left the combat: the zone goes on without one.
+func (q *Queries) ClearMapZoneCaster(ctx context.Context, casterID *string) error {
+	_, err := q.db.Exec(ctx, clearMapZoneCaster, casterID)
 	return err
 }
 
@@ -169,6 +241,36 @@ WHERE game_session_id = $1 AND speaking
 
 func (q *Queries) ClearStageSpeakers(ctx context.Context, gameSessionID string) error {
 	_, err := q.db.Exec(ctx, clearStageSpeakers, gameSessionID)
+	return err
+}
+
+const closeZoneSaveWindow = `-- name: CloseZoneSaveWindow :exec
+UPDATE zone_save_windows SET state = 'closed', close_reason = $2, answered_at = $3 WHERE id = $1 AND state = 'open'
+`
+
+type CloseZoneSaveWindowParams struct {
+	ID          string
+	CloseReason string
+	AnsweredAt  *time.Time
+}
+
+func (q *Queries) CloseZoneSaveWindow(ctx context.Context, arg CloseZoneSaveWindowParams) error {
+	_, err := q.db.Exec(ctx, closeZoneSaveWindow, arg.ID, arg.CloseReason, arg.AnsweredAt)
+	return err
+}
+
+const closeZoneSaveWindowsOfZone = `-- name: CloseZoneSaveWindowsOfZone :exec
+UPDATE zone_save_windows SET state = 'closed', close_reason = $2, answered_at = $3 WHERE zone_id = $1 AND state = 'open'
+`
+
+type CloseZoneSaveWindowsOfZoneParams struct {
+	ZoneID      *string
+	CloseReason string
+	AnsweredAt  *time.Time
+}
+
+func (q *Queries) CloseZoneSaveWindowsOfZone(ctx context.Context, arg CloseZoneSaveWindowsOfZoneParams) error {
+	_, err := q.db.Exec(ctx, closeZoneSaveWindowsOfZone, arg.ZoneID, arg.CloseReason, arg.AnsweredAt)
 	return err
 }
 
@@ -312,6 +414,26 @@ func (q *Queries) DeleteHiddenRevealsOfEncounter(ctx context.Context, encounterI
 	return err
 }
 
+const deleteMapZone = `-- name: DeleteMapZone :exec
+DELETE FROM map_zones WHERE id = $1
+`
+
+// A zone whose cast an undo took back never was.
+func (q *Queries) DeleteMapZone(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, deleteMapZone, id)
+	return err
+}
+
+const deleteMapZonesOfEncounter = `-- name: DeleteMapZonesOfEncounter :exec
+DELETE FROM map_zones WHERE encounter_id = $1
+`
+
+// Ending a combat discards its zones and the saves they waited for.
+func (q *Queries) DeleteMapZonesOfEncounter(ctx context.Context, encounterID string) error {
+	_, err := q.db.Exec(ctx, deleteMapZonesOfEncounter, encounterID)
+	return err
+}
+
 const deleteOpportunityOffersOfMove = `-- name: DeleteOpportunityOffersOfMove :exec
 DELETE FROM opportunity_offers
 WHERE move_id = $1
@@ -363,6 +485,39 @@ func (q *Queries) DeleteStageNPC(ctx context.Context, arg DeleteStageNPCParams) 
 	return result.RowsAffected(), nil
 }
 
+const deleteZoneEffect = `-- name: DeleteZoneEffect :exec
+DELETE FROM map_zone_effects WHERE zone_id = $1 AND combatant_id = $2 AND condition = $3
+`
+
+type DeleteZoneEffectParams struct {
+	ZoneID      string
+	CombatantID string
+	Condition   string
+}
+
+func (q *Queries) DeleteZoneEffect(ctx context.Context, arg DeleteZoneEffectParams) error {
+	_, err := q.db.Exec(ctx, deleteZoneEffect, arg.ZoneID, arg.CombatantID, arg.Condition)
+	return err
+}
+
+const deleteZoneFiredOfZone = `-- name: DeleteZoneFiredOfZone :exec
+DELETE FROM map_zone_fired WHERE zone_id = $1
+`
+
+func (q *Queries) DeleteZoneFiredOfZone(ctx context.Context, zoneID string) error {
+	_, err := q.db.Exec(ctx, deleteZoneFiredOfZone, zoneID)
+	return err
+}
+
+const deleteZoneSaveWindowsOfEncounter = `-- name: DeleteZoneSaveWindowsOfEncounter :exec
+DELETE FROM zone_save_windows WHERE encounter_id = $1
+`
+
+func (q *Queries) DeleteZoneSaveWindowsOfEncounter(ctx context.Context, encounterID string) error {
+	_, err := q.db.Exec(ctx, deleteZoneSaveWindowsOfEncounter, encounterID)
+	return err
+}
+
 const endCombatantTurnPart = `-- name: EndCombatantTurnPart :exec
 UPDATE combatants
 SET turn_state = 'ended'
@@ -409,6 +564,21 @@ func (q *Queries) EndGameSession(ctx context.Context, arg EndGameSessionParams) 
 		&i.CreateHash,
 	)
 	return i, err
+}
+
+const endMapZone = `-- name: EndMapZone :exec
+UPDATE map_zones SET ended_at = $2 WHERE id = $1
+`
+
+type EndMapZoneParams struct {
+	ID      string
+	EndedAt *time.Time
+}
+
+// Ending a zone keeps its row, for the log; its ledger and the conditions it put go with the caller.
+func (q *Queries) EndMapZone(ctx context.Context, arg EndMapZoneParams) error {
+	_, err := q.db.Exec(ctx, endMapZone, arg.ID, arg.EndedAt)
+	return err
 }
 
 const getBattleEncounter = `-- name: GetBattleEncounter :one
@@ -756,6 +926,65 @@ func (q *Queries) GetLatestEncounter(ctx context.Context, gameSessionID string) 
 		&i.StartedAt,
 		&i.EndedAt,
 		&i.Mode,
+	)
+	return i, err
+}
+
+const getMapZone = `-- name: GetMapZone :one
+SELECT id, encounter_id, seq, spell_key, name, caster_id, shape, origin_col, origin_row, dir_dx, dir_dy, size_ft, ring_radius, cells, obscurity, difficult, halves_speed, camouflaged, visible_to_players, concentration, slot_level, cast_round, duration_rounds, disperse_round, moves_with, step_squares, caster_moves, triggers, rules, save_dc, damage_count, damage_sides, damage_bonus, damage_type, damage_side, reach_squares, anchored, excluded_ids, known_by, members, created_at, ended_at FROM map_zones WHERE encounter_id = $1 AND id = $2 AND ended_at IS NULL
+`
+
+type GetMapZoneParams struct {
+	EncounterID string
+	ID          string
+}
+
+func (q *Queries) GetMapZone(ctx context.Context, arg GetMapZoneParams) (MapZone, error) {
+	row := q.db.QueryRow(ctx, getMapZone, arg.EncounterID, arg.ID)
+	var i MapZone
+	err := row.Scan(
+		&i.ID,
+		&i.EncounterID,
+		&i.Seq,
+		&i.SpellKey,
+		&i.Name,
+		&i.CasterID,
+		&i.Shape,
+		&i.OriginCol,
+		&i.OriginRow,
+		&i.DirDx,
+		&i.DirDy,
+		&i.SizeFt,
+		&i.RingRadius,
+		&i.Cells,
+		&i.Obscurity,
+		&i.Difficult,
+		&i.HalvesSpeed,
+		&i.Camouflaged,
+		&i.VisibleToPlayers,
+		&i.Concentration,
+		&i.SlotLevel,
+		&i.CastRound,
+		&i.DurationRounds,
+		&i.DisperseRound,
+		&i.MovesWith,
+		&i.StepSquares,
+		&i.CasterMoves,
+		&i.Triggers,
+		&i.Rules,
+		&i.SaveDc,
+		&i.DamageCount,
+		&i.DamageSides,
+		&i.DamageBonus,
+		&i.DamageType,
+		&i.DamageSide,
+		&i.ReachSquares,
+		&i.Anchored,
+		&i.ExcludedIds,
+		&i.KnownBy,
+		&i.Members,
+		&i.CreatedAt,
+		&i.EndedAt,
 	)
 	return i, err
 }
@@ -1394,6 +1623,51 @@ func (q *Queries) GetTrapDamageBySettleKey(ctx context.Context, settleKey *strin
 	return i, err
 }
 
+const getZoneSaveWindow = `-- name: GetZoneSaveWindow :one
+SELECT id, encounter_id, zone_id, reactor_id, caster_id, seq, trigger_kind, round, turn_of, spell_key, ability, dc, damage_count, damage_sides, damage_bonus, damage_type, on_success, on_fail, cover_bonus, state, close_reason, d20, modifier, total, saved, physical, created_at, answered_at FROM zone_save_windows WHERE encounter_id = $1 AND id = $2
+`
+
+type GetZoneSaveWindowParams struct {
+	EncounterID string
+	ID          string
+}
+
+func (q *Queries) GetZoneSaveWindow(ctx context.Context, arg GetZoneSaveWindowParams) (ZoneSaveWindow, error) {
+	row := q.db.QueryRow(ctx, getZoneSaveWindow, arg.EncounterID, arg.ID)
+	var i ZoneSaveWindow
+	err := row.Scan(
+		&i.ID,
+		&i.EncounterID,
+		&i.ZoneID,
+		&i.ReactorID,
+		&i.CasterID,
+		&i.Seq,
+		&i.TriggerKind,
+		&i.Round,
+		&i.TurnOf,
+		&i.SpellKey,
+		&i.Ability,
+		&i.Dc,
+		&i.DamageCount,
+		&i.DamageSides,
+		&i.DamageBonus,
+		&i.DamageType,
+		&i.OnSuccess,
+		&i.OnFail,
+		&i.CoverBonus,
+		&i.State,
+		&i.CloseReason,
+		&i.D20,
+		&i.Modifier,
+		&i.Total,
+		&i.Saved,
+		&i.Physical,
+		&i.CreatedAt,
+		&i.AnsweredAt,
+	)
+	return i, err
+}
+
 const hasTriedPuzzleHint = `-- name: HasTriedPuzzleHint :one
 SELECT EXISTS (
     SELECT 1 FROM puzzle_hint_tries WHERE run_id = $1 AND user_id = $2 AND hint_index = $3
@@ -1811,6 +2085,159 @@ func (q *Queries) InsertHiddenReveal(ctx context.Context, arg InsertHiddenReveal
 		&i.State,
 		&i.CreatedAt,
 		&i.AnsweredAt,
+	)
+	return i, err
+}
+
+const insertMapZone = `-- name: InsertMapZone :one
+INSERT INTO map_zones (
+    encounter_id, seq, spell_key, name, caster_id, shape, origin_col, origin_row, dir_dx, dir_dy, size_ft, ring_radius, cells,
+    obscurity, difficult, halves_speed, camouflaged, visible_to_players, concentration, slot_level, cast_round, duration_rounds,
+    moves_with, step_squares, caster_moves, triggers, rules, save_dc, damage_count, damage_sides, damage_bonus, damage_type,
+    damage_side, reach_squares, anchored, excluded_ids, known_by, members, created_at
+) VALUES (
+    $1, $2, $3, $4, $5, $6,
+    $7, $8, $9, $10, $11, $12,
+    $13::INT4[], $14, $15, $16, $17,
+    $18, $19, $20, $21, $22,
+    $23, $24, $25, $26::JSONB, $27::TEXT[],
+    $28, $29, $30, $31, $32,
+    $33, $34, $35, $36::TEXT[], $37::TEXT[],
+    $38::TEXT[], $39
+)
+RETURNING id, encounter_id, seq, spell_key, name, caster_id, shape, origin_col, origin_row, dir_dx, dir_dy, size_ft, ring_radius, cells, obscurity, difficult, halves_speed, camouflaged, visible_to_players, concentration, slot_level, cast_round, duration_rounds, disperse_round, moves_with, step_squares, caster_moves, triggers, rules, save_dc, damage_count, damage_sides, damage_bonus, damage_type, damage_side, reach_squares, anchored, excluded_ids, known_by, members, created_at, ended_at
+`
+
+type InsertMapZoneParams struct {
+	EncounterID      string
+	Seq              int32
+	SpellKey         string
+	Name             string
+	CasterID         *string
+	Shape            string
+	OriginCol        *int32
+	OriginRow        *int32
+	DirDx            int16
+	DirDy            int16
+	SizeFt           int32
+	RingRadius       int16
+	Cells            []int32
+	Obscurity        string
+	Difficult        bool
+	HalvesSpeed      bool
+	Camouflaged      bool
+	VisibleToPlayers bool
+	Concentration    bool
+	SlotLevel        int16
+	CastRound        int32
+	DurationRounds   int32
+	MovesWith        string
+	StepSquares      int16
+	CasterMoves      bool
+	Triggers         []byte
+	Rules            []string
+	SaveDc           int32
+	DamageCount      int32
+	DamageSides      int32
+	DamageBonus      int32
+	DamageType       string
+	DamageSide       string
+	ReachSquares     int16
+	Anchored         bool
+	ExcludedIds      []string
+	KnownBy          []string
+	Members          []string
+	CreatedAt        time.Time
+}
+
+// A zone a spell or the master left on the map. The squares it covers were worked out
+// by the server from the shape and the walls.
+func (q *Queries) InsertMapZone(ctx context.Context, arg InsertMapZoneParams) (MapZone, error) {
+	row := q.db.QueryRow(ctx, insertMapZone,
+		arg.EncounterID,
+		arg.Seq,
+		arg.SpellKey,
+		arg.Name,
+		arg.CasterID,
+		arg.Shape,
+		arg.OriginCol,
+		arg.OriginRow,
+		arg.DirDx,
+		arg.DirDy,
+		arg.SizeFt,
+		arg.RingRadius,
+		arg.Cells,
+		arg.Obscurity,
+		arg.Difficult,
+		arg.HalvesSpeed,
+		arg.Camouflaged,
+		arg.VisibleToPlayers,
+		arg.Concentration,
+		arg.SlotLevel,
+		arg.CastRound,
+		arg.DurationRounds,
+		arg.MovesWith,
+		arg.StepSquares,
+		arg.CasterMoves,
+		arg.Triggers,
+		arg.Rules,
+		arg.SaveDc,
+		arg.DamageCount,
+		arg.DamageSides,
+		arg.DamageBonus,
+		arg.DamageType,
+		arg.DamageSide,
+		arg.ReachSquares,
+		arg.Anchored,
+		arg.ExcludedIds,
+		arg.KnownBy,
+		arg.Members,
+		arg.CreatedAt,
+	)
+	var i MapZone
+	err := row.Scan(
+		&i.ID,
+		&i.EncounterID,
+		&i.Seq,
+		&i.SpellKey,
+		&i.Name,
+		&i.CasterID,
+		&i.Shape,
+		&i.OriginCol,
+		&i.OriginRow,
+		&i.DirDx,
+		&i.DirDy,
+		&i.SizeFt,
+		&i.RingRadius,
+		&i.Cells,
+		&i.Obscurity,
+		&i.Difficult,
+		&i.HalvesSpeed,
+		&i.Camouflaged,
+		&i.VisibleToPlayers,
+		&i.Concentration,
+		&i.SlotLevel,
+		&i.CastRound,
+		&i.DurationRounds,
+		&i.DisperseRound,
+		&i.MovesWith,
+		&i.StepSquares,
+		&i.CasterMoves,
+		&i.Triggers,
+		&i.Rules,
+		&i.SaveDc,
+		&i.DamageCount,
+		&i.DamageSides,
+		&i.DamageBonus,
+		&i.DamageType,
+		&i.DamageSide,
+		&i.ReachSquares,
+		&i.Anchored,
+		&i.ExcludedIds,
+		&i.KnownBy,
+		&i.Members,
+		&i.CreatedAt,
+		&i.EndedAt,
 	)
 	return i, err
 }
@@ -2437,6 +2864,184 @@ func (q *Queries) InsertTrapPendingDamage(ctx context.Context, arg InsertTrapPen
 	return i, err
 }
 
+const insertZoneEffect = `-- name: InsertZoneEffect :execrows
+INSERT INTO map_zone_effects (zone_id, combatant_id, condition) VALUES ($1, $2, $3)
+ON CONFLICT (zone_id, combatant_id, condition) DO NOTHING
+`
+
+type InsertZoneEffectParams struct {
+	ZoneID      string
+	CombatantID string
+	Condition   string
+}
+
+func (q *Queries) InsertZoneEffect(ctx context.Context, arg InsertZoneEffectParams) (int64, error) {
+	result, err := q.db.Exec(ctx, insertZoneEffect, arg.ZoneID, arg.CombatantID, arg.Condition)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const insertZoneSaveWindow = `-- name: InsertZoneSaveWindow :one
+INSERT INTO zone_save_windows (
+    encounter_id, zone_id, reactor_id, caster_id, seq, trigger_kind, round, turn_of, spell_key, ability, dc,
+    damage_count, damage_sides, damage_bonus, damage_type, on_success, on_fail, cover_bonus, created_at
+) VALUES (
+    $1, $2, $3, $4, $5, $6,
+    $7, $8, $9, $10, $11, $12,
+    $13, $14, $15, $16, $17, $18, $19
+)
+RETURNING id, encounter_id, zone_id, reactor_id, caster_id, seq, trigger_kind, round, turn_of, spell_key, ability, dc, damage_count, damage_sides, damage_bonus, damage_type, on_success, on_fail, cover_bonus, state, close_reason, d20, modifier, total, saved, physical, created_at, answered_at
+`
+
+type InsertZoneSaveWindowParams struct {
+	EncounterID string
+	ZoneID      *string
+	ReactorID   string
+	CasterID    *string
+	Seq         int32
+	TriggerKind string
+	Round       int32
+	TurnOf      *string
+	SpellKey    string
+	Ability     string
+	Dc          int32
+	DamageCount int32
+	DamageSides int32
+	DamageBonus int32
+	DamageType  string
+	OnSuccess   string
+	OnFail      string
+	CoverBonus  int32
+	CreatedAt   time.Time
+}
+
+// A saving throw a zone asks of a creature: the turn of the one it is asked of waits.
+func (q *Queries) InsertZoneSaveWindow(ctx context.Context, arg InsertZoneSaveWindowParams) (ZoneSaveWindow, error) {
+	row := q.db.QueryRow(ctx, insertZoneSaveWindow,
+		arg.EncounterID,
+		arg.ZoneID,
+		arg.ReactorID,
+		arg.CasterID,
+		arg.Seq,
+		arg.TriggerKind,
+		arg.Round,
+		arg.TurnOf,
+		arg.SpellKey,
+		arg.Ability,
+		arg.Dc,
+		arg.DamageCount,
+		arg.DamageSides,
+		arg.DamageBonus,
+		arg.DamageType,
+		arg.OnSuccess,
+		arg.OnFail,
+		arg.CoverBonus,
+		arg.CreatedAt,
+	)
+	var i ZoneSaveWindow
+	err := row.Scan(
+		&i.ID,
+		&i.EncounterID,
+		&i.ZoneID,
+		&i.ReactorID,
+		&i.CasterID,
+		&i.Seq,
+		&i.TriggerKind,
+		&i.Round,
+		&i.TurnOf,
+		&i.SpellKey,
+		&i.Ability,
+		&i.Dc,
+		&i.DamageCount,
+		&i.DamageSides,
+		&i.DamageBonus,
+		&i.DamageType,
+		&i.OnSuccess,
+		&i.OnFail,
+		&i.CoverBonus,
+		&i.State,
+		&i.CloseReason,
+		&i.D20,
+		&i.Modifier,
+		&i.Total,
+		&i.Saved,
+		&i.Physical,
+		&i.CreatedAt,
+		&i.AnsweredAt,
+	)
+	return i, err
+}
+
+const listAllMapZones = `-- name: ListAllMapZones :many
+SELECT id, encounter_id, seq, spell_key, name, caster_id, shape, origin_col, origin_row, dir_dx, dir_dy, size_ft, ring_radius, cells, obscurity, difficult, halves_speed, camouflaged, visible_to_players, concentration, slot_level, cast_round, duration_rounds, disperse_round, moves_with, step_squares, caster_moves, triggers, rules, save_dc, damage_count, damage_sides, damage_bonus, damage_type, damage_side, reach_squares, anchored, excluded_ids, known_by, members, created_at, ended_at FROM map_zones WHERE encounter_id = $1 ORDER BY seq
+`
+
+// Every zone of a combat, the ended ones too: the combat log names them.
+func (q *Queries) ListAllMapZones(ctx context.Context, encounterID string) ([]MapZone, error) {
+	rows, err := q.db.Query(ctx, listAllMapZones, encounterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MapZone
+	for rows.Next() {
+		var i MapZone
+		if err := rows.Scan(
+			&i.ID,
+			&i.EncounterID,
+			&i.Seq,
+			&i.SpellKey,
+			&i.Name,
+			&i.CasterID,
+			&i.Shape,
+			&i.OriginCol,
+			&i.OriginRow,
+			&i.DirDx,
+			&i.DirDy,
+			&i.SizeFt,
+			&i.RingRadius,
+			&i.Cells,
+			&i.Obscurity,
+			&i.Difficult,
+			&i.HalvesSpeed,
+			&i.Camouflaged,
+			&i.VisibleToPlayers,
+			&i.Concentration,
+			&i.SlotLevel,
+			&i.CastRound,
+			&i.DurationRounds,
+			&i.DisperseRound,
+			&i.MovesWith,
+			&i.StepSquares,
+			&i.CasterMoves,
+			&i.Triggers,
+			&i.Rules,
+			&i.SaveDc,
+			&i.DamageCount,
+			&i.DamageSides,
+			&i.DamageBonus,
+			&i.DamageType,
+			&i.DamageSide,
+			&i.ReachSquares,
+			&i.Anchored,
+			&i.ExcludedIds,
+			&i.KnownBy,
+			&i.Members,
+			&i.CreatedAt,
+			&i.EndedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listBattleEncounters = `-- name: ListBattleEncounters :many
 SELECT e.map_point_id, e.campaign_id, e.map_id, e.encounter, e.created_at, e.updated_at FROM battle_encounters AS e
 JOIN map_points AS p ON p.id = e.map_point_id
@@ -3027,6 +3632,74 @@ func (q *Queries) ListGameSessions(ctx context.Context, campaignID string) ([]Ga
 	return items, nil
 }
 
+const listMapZones = `-- name: ListMapZones :many
+SELECT id, encounter_id, seq, spell_key, name, caster_id, shape, origin_col, origin_row, dir_dx, dir_dy, size_ft, ring_radius, cells, obscurity, difficult, halves_speed, camouflaged, visible_to_players, concentration, slot_level, cast_round, duration_rounds, disperse_round, moves_with, step_squares, caster_moves, triggers, rules, save_dc, damage_count, damage_sides, damage_bonus, damage_type, damage_side, reach_squares, anchored, excluded_ids, known_by, members, created_at, ended_at FROM map_zones WHERE encounter_id = $1 AND ended_at IS NULL ORDER BY seq
+`
+
+// The zones of a combat, in the order they were put.
+func (q *Queries) ListMapZones(ctx context.Context, encounterID string) ([]MapZone, error) {
+	rows, err := q.db.Query(ctx, listMapZones, encounterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MapZone
+	for rows.Next() {
+		var i MapZone
+		if err := rows.Scan(
+			&i.ID,
+			&i.EncounterID,
+			&i.Seq,
+			&i.SpellKey,
+			&i.Name,
+			&i.CasterID,
+			&i.Shape,
+			&i.OriginCol,
+			&i.OriginRow,
+			&i.DirDx,
+			&i.DirDy,
+			&i.SizeFt,
+			&i.RingRadius,
+			&i.Cells,
+			&i.Obscurity,
+			&i.Difficult,
+			&i.HalvesSpeed,
+			&i.Camouflaged,
+			&i.VisibleToPlayers,
+			&i.Concentration,
+			&i.SlotLevel,
+			&i.CastRound,
+			&i.DurationRounds,
+			&i.DisperseRound,
+			&i.MovesWith,
+			&i.StepSquares,
+			&i.CasterMoves,
+			&i.Triggers,
+			&i.Rules,
+			&i.SaveDc,
+			&i.DamageCount,
+			&i.DamageSides,
+			&i.DamageBonus,
+			&i.DamageType,
+			&i.DamageSide,
+			&i.ReachSquares,
+			&i.Anchored,
+			&i.ExcludedIds,
+			&i.KnownBy,
+			&i.Members,
+			&i.CreatedAt,
+			&i.EndedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOpenCombatantsOfCreatures = `-- name: ListOpenCombatantsOfCreatures :many
 SELECT cb.id, cb.encounter_id, cb.character_id, cb.user_id, cb.label, cb.kind, cb.hidden, cb.initiative, cb.initiative_bonus, cb.initiative_face, cb.tie_ordered, cb.order_index, cb.grid_col, cb.grid_row, cb.speed_ft, cb.movement_used_ft, cb.dashed, cb.action_used, cb.bonus_action_used, cb.reaction_used, cb.hp_current, cb.hp_max, cb.hp_temp, cb.defeated, cb.death_successes, cb.death_failures, cb.conditions, cb.concentration_spell, cb.created_at, cb.attacks_made, cb.ac_bonus, cb.death_save_rolled, cb.xp_value, cb.turn_state, cb.movement_used_dft, cb.last_move_dft, cb.side, cb.size, cb.speed_fly_ft, cb.jump_long_dft, cb.jump_high_dft, cb.cover_mark, cb.disengaged, cb.creature_id, cb.monster_key, cb.summon_attack, cb.summon_group_id, cb.dismissed, cb.action_surged, cb.spell_cast, cb.bonus_spell_cast, cb.action_attack_key, cb.bonus_attacks_left FROM combatants AS cb
 JOIN encounters AS e ON e.id = cb.encounter_id
@@ -3318,6 +3991,59 @@ func (q *Queries) ListOpenTrapPendingDamagesOfEncounter(ctx context.Context, enc
 			&i.CriticalMax,
 			&i.CriticalMaxRule,
 			&i.Taken,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listOpenZoneSaveWindows = `-- name: ListOpenZoneSaveWindows :many
+SELECT id, encounter_id, zone_id, reactor_id, caster_id, seq, trigger_kind, round, turn_of, spell_key, ability, dc, damage_count, damage_sides, damage_bonus, damage_type, on_success, on_fail, cover_bonus, state, close_reason, d20, modifier, total, saved, physical, created_at, answered_at FROM zone_save_windows WHERE encounter_id = $1 AND state = 'open' ORDER BY seq
+`
+
+func (q *Queries) ListOpenZoneSaveWindows(ctx context.Context, encounterID string) ([]ZoneSaveWindow, error) {
+	rows, err := q.db.Query(ctx, listOpenZoneSaveWindows, encounterID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ZoneSaveWindow
+	for rows.Next() {
+		var i ZoneSaveWindow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EncounterID,
+			&i.ZoneID,
+			&i.ReactorID,
+			&i.CasterID,
+			&i.Seq,
+			&i.TriggerKind,
+			&i.Round,
+			&i.TurnOf,
+			&i.SpellKey,
+			&i.Ability,
+			&i.Dc,
+			&i.DamageCount,
+			&i.DamageSides,
+			&i.DamageBonus,
+			&i.DamageType,
+			&i.OnSuccess,
+			&i.OnFail,
+			&i.CoverBonus,
+			&i.State,
+			&i.CloseReason,
+			&i.D20,
+			&i.Modifier,
+			&i.Total,
+			&i.Saved,
+			&i.Physical,
+			&i.CreatedAt,
+			&i.AnsweredAt,
 		); err != nil {
 			return nil, err
 		}
@@ -3996,6 +4722,54 @@ func (q *Queries) ListWaitingOpportunityOffers(ctx context.Context, encounterID 
 	return items, nil
 }
 
+const listZoneEffects = `-- name: ListZoneEffects :many
+SELECT zone_id, combatant_id, condition FROM map_zone_effects WHERE zone_id = $1 ORDER BY combatant_id, condition
+`
+
+func (q *Queries) ListZoneEffects(ctx context.Context, zoneID string) ([]MapZoneEffect, error) {
+	rows, err := q.db.Query(ctx, listZoneEffects, zoneID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MapZoneEffect
+	for rows.Next() {
+		var i MapZoneEffect
+		if err := rows.Scan(&i.ZoneID, &i.CombatantID, &i.Condition); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listZoneEffectsOfCombatant = `-- name: ListZoneEffectsOfCombatant :many
+SELECT zone_id, combatant_id, condition FROM map_zone_effects WHERE combatant_id = $1 ORDER BY zone_id, condition
+`
+
+func (q *Queries) ListZoneEffectsOfCombatant(ctx context.Context, combatantID string) ([]MapZoneEffect, error) {
+	rows, err := q.db.Query(ctx, listZoneEffectsOfCombatant, combatantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MapZoneEffect
+	for rows.Next() {
+		var i MapZoneEffect
+		if err := rows.Scan(&i.ZoneID, &i.CombatantID, &i.Condition); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const markCombatantDashed = `-- name: MarkCombatantDashed :exec
 UPDATE combatants
 SET dashed = true
@@ -4033,6 +4807,33 @@ func (q *Queries) MarkDeathSaveRolledOnTurn(ctx context.Context, arg MarkDeathSa
 	return err
 }
 
+const markZoneFired = `-- name: MarkZoneFired :execrows
+INSERT INTO map_zone_fired (zone_id, combatant_id, round, turn_of) VALUES ($1, $2, $3, $4)
+ON CONFLICT (zone_id, combatant_id, round, turn_of) DO NOTHING
+`
+
+type MarkZoneFiredParams struct {
+	ZoneID      string
+	CombatantID string
+	Round       int32
+	TurnOf      string
+}
+
+// Notes that a zone hurt a creature in a turn. One row was inserted when the creature
+// had not been hurt yet in that turn of that zone: that is the answer.
+func (q *Queries) MarkZoneFired(ctx context.Context, arg MarkZoneFiredParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markZoneFired,
+		arg.ZoneID,
+		arg.CombatantID,
+		arg.Round,
+		arg.TurnOf,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const nextHiddenRevealSeq = `-- name: NextHiddenRevealSeq :one
 SELECT (COALESCE(MAX(seq), 0) + 1)::INT4 FROM hidden_reveals WHERE encounter_id = $1
 `
@@ -4040,6 +4841,18 @@ SELECT (COALESCE(MAX(seq), 0) + 1)::INT4 FROM hidden_reveals WHERE encounter_id 
 // The place of the next question of the combat in the order they are answered.
 func (q *Queries) NextHiddenRevealSeq(ctx context.Context, encounterID string) (int32, error) {
 	row := q.db.QueryRow(ctx, nextHiddenRevealSeq, encounterID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const nextMapZoneSeq = `-- name: NextMapZoneSeq :one
+SELECT (COALESCE(MAX(seq), 0) + 1)::INT4 FROM map_zones WHERE encounter_id = $1
+`
+
+// The order the zones of a combat were put in, for the next one.
+func (q *Queries) NextMapZoneSeq(ctx context.Context, encounterID string) (int32, error) {
+	row := q.db.QueryRow(ctx, nextMapZoneSeq, encounterID)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -4075,6 +4888,32 @@ func (q *Queries) NextSessionNumber(ctx context.Context, campaignID string) (int
 	var next int32
 	err := row.Scan(&next)
 	return next, err
+}
+
+const nextZoneSaveSeq = `-- name: NextZoneSaveSeq :one
+SELECT (COALESCE(MAX(seq), 0) + 1)::INT4 FROM zone_save_windows WHERE encounter_id = $1
+`
+
+func (q *Queries) NextZoneSaveSeq(ctx context.Context, encounterID string) (int32, error) {
+	row := q.db.QueryRow(ctx, nextZoneSaveSeq, encounterID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const pruneZoneFired = `-- name: PruneZoneFired :exec
+DELETE FROM map_zone_fired WHERE round < $2 AND zone_id IN (SELECT id FROM map_zones WHERE encounter_id = $1)
+`
+
+type PruneZoneFiredParams struct {
+	EncounterID string
+	Round       int32
+}
+
+// Turns of earlier rounds are over for good.
+func (q *Queries) PruneZoneFired(ctx context.Context, arg PruneZoneFiredParams) error {
+	_, err := q.db.Exec(ctx, pruneZoneFired, arg.EncounterID, arg.Round)
+	return err
 }
 
 const resetCombatantTurn = `-- name: ResetCombatantTurn :exec
@@ -4827,6 +5666,147 @@ func (q *Queries) SetGroupInitiative(ctx context.Context, arg SetGroupInitiative
 	return err
 }
 
+const setMapZoneDisperseRound = `-- name: SetMapZoneDisperseRound :exec
+UPDATE map_zones SET disperse_round = $2 WHERE id = $1
+`
+
+type SetMapZoneDisperseRoundParams struct {
+	ID            string
+	DisperseRound *int32
+}
+
+func (q *Queries) SetMapZoneDisperseRound(ctx context.Context, arg SetMapZoneDisperseRoundParams) error {
+	_, err := q.db.Exec(ctx, setMapZoneDisperseRound, arg.ID, arg.DisperseRound)
+	return err
+}
+
+const setMapZoneDuration = `-- name: SetMapZoneDuration :exec
+UPDATE map_zones SET cast_round = $2, duration_rounds = $3 WHERE id = $1
+`
+
+type SetMapZoneDurationParams struct {
+	ID             string
+	CastRound      int32
+	DurationRounds int32
+}
+
+// A zone that collapses (a Web not anchored) ends at the start of the caster's next turn.
+func (q *Queries) SetMapZoneDuration(ctx context.Context, arg SetMapZoneDurationParams) error {
+	_, err := q.db.Exec(ctx, setMapZoneDuration, arg.ID, arg.CastRound, arg.DurationRounds)
+	return err
+}
+
+const setMapZoneKnownBy = `-- name: SetMapZoneKnownBy :exec
+UPDATE map_zones SET known_by = $1::TEXT[] WHERE id = $2
+`
+
+type SetMapZoneKnownByParams struct {
+	KnownBy []string
+	ID      string
+}
+
+func (q *Queries) SetMapZoneKnownBy(ctx context.Context, arg SetMapZoneKnownByParams) error {
+	_, err := q.db.Exec(ctx, setMapZoneKnownBy, arg.KnownBy, arg.ID)
+	return err
+}
+
+const setMapZoneMembers = `-- name: SetMapZoneMembers :exec
+UPDATE map_zones SET members = $1::TEXT[] WHERE id = $2
+`
+
+type SetMapZoneMembersParams struct {
+	Members []string
+	ID      string
+}
+
+func (q *Queries) SetMapZoneMembers(ctx context.Context, arg SetMapZoneMembersParams) error {
+	_, err := q.db.Exec(ctx, setMapZoneMembers, arg.Members, arg.ID)
+	return err
+}
+
+const setMapZonePlace = `-- name: SetMapZonePlace :one
+UPDATE map_zones SET origin_col = $1, origin_row = $2, cells = $3::INT4[]
+WHERE id = $4
+RETURNING id, encounter_id, seq, spell_key, name, caster_id, shape, origin_col, origin_row, dir_dx, dir_dy, size_ft, ring_radius, cells, obscurity, difficult, halves_speed, camouflaged, visible_to_players, concentration, slot_level, cast_round, duration_rounds, disperse_round, moves_with, step_squares, caster_moves, triggers, rules, save_dc, damage_count, damage_sides, damage_bonus, damage_type, damage_side, reach_squares, anchored, excluded_ids, known_by, members, created_at, ended_at
+`
+
+type SetMapZonePlaceParams struct {
+	OriginCol *int32
+	OriginRow *int32
+	Cells     []int32
+	ID        string
+}
+
+// A zone moved: its new point and the squares it covers.
+func (q *Queries) SetMapZonePlace(ctx context.Context, arg SetMapZonePlaceParams) (MapZone, error) {
+	row := q.db.QueryRow(ctx, setMapZonePlace,
+		arg.OriginCol,
+		arg.OriginRow,
+		arg.Cells,
+		arg.ID,
+	)
+	var i MapZone
+	err := row.Scan(
+		&i.ID,
+		&i.EncounterID,
+		&i.Seq,
+		&i.SpellKey,
+		&i.Name,
+		&i.CasterID,
+		&i.Shape,
+		&i.OriginCol,
+		&i.OriginRow,
+		&i.DirDx,
+		&i.DirDy,
+		&i.SizeFt,
+		&i.RingRadius,
+		&i.Cells,
+		&i.Obscurity,
+		&i.Difficult,
+		&i.HalvesSpeed,
+		&i.Camouflaged,
+		&i.VisibleToPlayers,
+		&i.Concentration,
+		&i.SlotLevel,
+		&i.CastRound,
+		&i.DurationRounds,
+		&i.DisperseRound,
+		&i.MovesWith,
+		&i.StepSquares,
+		&i.CasterMoves,
+		&i.Triggers,
+		&i.Rules,
+		&i.SaveDc,
+		&i.DamageCount,
+		&i.DamageSides,
+		&i.DamageBonus,
+		&i.DamageType,
+		&i.DamageSide,
+		&i.ReachSquares,
+		&i.Anchored,
+		&i.ExcludedIds,
+		&i.KnownBy,
+		&i.Members,
+		&i.CreatedAt,
+		&i.EndedAt,
+	)
+	return i, err
+}
+
+const setMapZoneVisible = `-- name: SetMapZoneVisible :exec
+UPDATE map_zones SET visible_to_players = $2 WHERE id = $1
+`
+
+type SetMapZoneVisibleParams struct {
+	ID               string
+	VisibleToPlayers bool
+}
+
+func (q *Queries) SetMapZoneVisible(ctx context.Context, arg SetMapZoneVisibleParams) error {
+	_, err := q.db.Exec(ctx, setMapZoneVisible, arg.ID, arg.VisibleToPlayers)
+	return err
+}
+
 const setOpenScene = `-- name: SetOpenScene :one
 
 UPDATE game_sessions
@@ -5348,6 +6328,37 @@ func (q *Queries) TouchEncounter(ctx context.Context, id string) (Encounter, err
 		&i.Mode,
 	)
 	return i, err
+}
+
+const unendMapZone = `-- name: UnendMapZone :exec
+UPDATE map_zones SET ended_at = NULL WHERE id = $1
+`
+
+// A zone an ended concentration took with it comes back with the undo.
+func (q *Queries) UnendMapZone(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, unendMapZone, id)
+	return err
+}
+
+const unmarkZoneFired = `-- name: UnmarkZoneFired :exec
+DELETE FROM map_zone_fired WHERE zone_id = $1 AND combatant_id = $2 AND round = $3 AND turn_of = $4
+`
+
+type UnmarkZoneFiredParams struct {
+	ZoneID      string
+	CombatantID string
+	Round       int32
+	TurnOf      string
+}
+
+func (q *Queries) UnmarkZoneFired(ctx context.Context, arg UnmarkZoneFiredParams) error {
+	_, err := q.db.Exec(ctx, unmarkZoneFired,
+		arg.ZoneID,
+		arg.CombatantID,
+		arg.Round,
+		arg.TurnOf,
+	)
+	return err
 }
 
 const updatePuzzle = `-- name: UpdatePuzzle :one

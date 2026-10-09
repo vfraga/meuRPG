@@ -143,7 +143,7 @@ func (s *Service) castProto(ctx context.Context, res combatResult, ev actionEven
 	out.EffectKind, out.PoolRoll, out.EffectConditionKey, out.EffectThreshold = effectHeader(ev, v, caster)
 	for _, h := range ev.Hits {
 		target := byID[h.Target]
-		if !v.sees(target) || (!v.master && h.HiddenAtCast) { // a retry is built from the combat as it stands: a target hidden since is not told, and one that was hidden when the area hit it never is
+		if !v.canSee(target) || (!v.master && h.HiddenAtCast) { // a retry is built from the combat as it stands: a target hidden since is not told, and one that was hidden when the area hit it never is
 			continue
 		}
 		r := &playv1.SpellTargetResult{

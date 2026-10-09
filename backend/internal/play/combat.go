@@ -887,6 +887,10 @@ func (s *Service) EndTurn(
 		if err := c.q.EndCombatantTurnPart(ctx, current.ID); err != nil {
 			return nil, fmt.Errorf("end the part: %w", err)
 		}
+		// A zone that hurts whoever ends its turn in it, or near it, catches the creature now.
+		if err := s.zonesAtTurnEnd(ctx, c, current); err != nil {
+			return nil, err
+		}
 		// Who still acts: the turn passes only when the last member ends.
 		if acting := othersActing(cs, current.ID); len(acting) > 0 {
 			// A part of a group of NPCs alone is the master's, like the group (RN-20),
@@ -1134,6 +1138,10 @@ func (s *Service) RemoveCombatant(
 			return nil, err
 		}
 		turnPassed = turnPassed || inTurn(c.enc, target)
+		// The zones its concentration held end with it (SRD, "Concentration"); the others go on without a caster.
+		if _, err := s.endConcentrationZones(ctx, c, target.ID); err != nil {
+			return nil, err
+		}
 		if err := c.q.DeleteCombatant(ctx, target.ID); err != nil {
 			return nil, fmt.Errorf("delete the combatant: %w", err)
 		}
@@ -1227,6 +1235,13 @@ func (s *Service) endEncounter(ctx context.Context, c *combatTx, cs []playdb.Com
 	// combat: nothing moves on it any more, so there is nothing to decide.
 	if err := c.q.DeleteHiddenRevealsOfEncounter(ctx, c.enc.ID); err != nil {
 		return fmt.Errorf("drop the hidden reveals: %w", err)
+	}
+	// The zones the spells left, and the saving throws they waited for, go with the combat.
+	if err := c.q.DeleteZoneSaveWindowsOfEncounter(ctx, c.enc.ID); err != nil {
+		return fmt.Errorf("drop the zones' saves: %w", err)
+	}
+	if err := c.q.DeleteMapZonesOfEncounter(ctx, c.enc.ID); err != nil {
+		return fmt.Errorf("drop the zones: %w", err)
 	}
 	ended := c.now
 	enc, err := c.q.SetEncounterState(ctx, playdb.SetEncounterStateParams{

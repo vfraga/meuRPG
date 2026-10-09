@@ -1046,3 +1046,146 @@ DELETE FROM hidden_reveals WHERE id = $1;
 -- name: DeleteHiddenRevealsOfEncounter :exec
 -- Ending the combat drops what was still to answer.
 DELETE FROM hidden_reveals WHERE encounter_id = $1;
+
+-- name: NextMapZoneSeq :one
+-- The order the zones of a combat were put in, for the next one.
+SELECT (COALESCE(MAX(seq), 0) + 1)::INT4 FROM map_zones WHERE encounter_id = $1;
+
+-- name: InsertMapZone :one
+-- A zone a spell or the master left on the map. The squares it covers were worked out
+-- by the server from the shape and the walls.
+INSERT INTO map_zones (
+    encounter_id, seq, spell_key, name, caster_id, shape, origin_col, origin_row, dir_dx, dir_dy, size_ft, ring_radius, cells,
+    obscurity, difficult, halves_speed, camouflaged, visible_to_players, concentration, slot_level, cast_round, duration_rounds,
+    moves_with, step_squares, caster_moves, triggers, rules, save_dc, damage_count, damage_sides, damage_bonus, damage_type,
+    damage_side, reach_squares, anchored, excluded_ids, known_by, members, created_at
+) VALUES (
+    sqlc.arg(encounter_id), sqlc.arg(seq), sqlc.arg(spell_key), sqlc.arg(name), sqlc.narg(caster_id), sqlc.arg(shape),
+    sqlc.narg(origin_col), sqlc.narg(origin_row), sqlc.arg(dir_dx), sqlc.arg(dir_dy), sqlc.arg(size_ft), sqlc.arg(ring_radius),
+    sqlc.arg(cells)::INT4[], sqlc.arg(obscurity), sqlc.arg(difficult), sqlc.arg(halves_speed), sqlc.arg(camouflaged),
+    sqlc.arg(visible_to_players), sqlc.arg(concentration), sqlc.arg(slot_level), sqlc.arg(cast_round), sqlc.arg(duration_rounds),
+    sqlc.arg(moves_with), sqlc.arg(step_squares), sqlc.arg(caster_moves), sqlc.arg(triggers)::JSONB, sqlc.arg(rules)::TEXT[],
+    sqlc.arg(save_dc), sqlc.arg(damage_count), sqlc.arg(damage_sides), sqlc.arg(damage_bonus), sqlc.arg(damage_type),
+    sqlc.arg(damage_side), sqlc.arg(reach_squares), sqlc.arg(anchored), sqlc.arg(excluded_ids)::TEXT[], sqlc.arg(known_by)::TEXT[],
+    sqlc.arg(members)::TEXT[], sqlc.arg(created_at)
+)
+RETURNING *;
+
+-- name: ListMapZones :many
+-- The zones of a combat, in the order they were put.
+SELECT * FROM map_zones WHERE encounter_id = $1 AND ended_at IS NULL ORDER BY seq;
+
+-- name: ListAllMapZones :many
+-- Every zone of a combat, the ended ones too: the combat log names them.
+SELECT * FROM map_zones WHERE encounter_id = $1 ORDER BY seq;
+
+-- name: GetMapZone :one
+SELECT * FROM map_zones WHERE encounter_id = $1 AND id = $2 AND ended_at IS NULL;
+
+-- name: EndMapZone :exec
+-- Ending a zone keeps its row, for the log; its ledger and the conditions it put go with the caller.
+UPDATE map_zones SET ended_at = $2 WHERE id = $1;
+
+-- name: DeleteMapZonesOfEncounter :exec
+-- Ending a combat discards its zones and the saves they waited for.
+DELETE FROM map_zones WHERE encounter_id = $1;
+
+-- name: DeleteZoneFiredOfZone :exec
+DELETE FROM map_zone_fired WHERE zone_id = $1;
+
+-- name: SetMapZonePlace :one
+-- A zone moved: its new point and the squares it covers.
+UPDATE map_zones SET origin_col = sqlc.narg(origin_col), origin_row = sqlc.narg(origin_row), cells = sqlc.arg(cells)::INT4[]
+WHERE id = sqlc.arg(id)
+RETURNING *;
+
+-- name: SetMapZoneVisible :exec
+UPDATE map_zones SET visible_to_players = $2 WHERE id = $1;
+
+-- name: SetMapZoneKnownBy :exec
+UPDATE map_zones SET known_by = sqlc.arg(known_by)::TEXT[] WHERE id = sqlc.arg(id);
+
+-- name: SetMapZoneMembers :exec
+UPDATE map_zones SET members = sqlc.arg(members)::TEXT[] WHERE id = sqlc.arg(id);
+
+-- name: SetMapZoneDisperseRound :exec
+UPDATE map_zones SET disperse_round = $2 WHERE id = $1;
+
+-- name: SetMapZoneDuration :exec
+-- A zone that collapses (a Web not anchored) ends at the start of the caster's next turn.
+UPDATE map_zones SET cast_round = $2, duration_rounds = $3 WHERE id = $1;
+
+-- name: ClearMapZoneCaster :exec
+-- The caster left the combat: the zone goes on without one.
+UPDATE map_zones SET caster_id = NULL WHERE caster_id = $1;
+
+-- name: MarkZoneFired :execrows
+-- Notes that a zone hurt a creature in a turn. One row was inserted when the creature
+-- had not been hurt yet in that turn of that zone: that is the answer.
+INSERT INTO map_zone_fired (zone_id, combatant_id, round, turn_of) VALUES ($1, $2, $3, $4)
+ON CONFLICT (zone_id, combatant_id, round, turn_of) DO NOTHING;
+
+-- name: UnmarkZoneFired :exec
+DELETE FROM map_zone_fired WHERE zone_id = $1 AND combatant_id = $2 AND round = $3 AND turn_of = $4;
+
+-- name: PruneZoneFired :exec
+-- Turns of earlier rounds are over for good.
+DELETE FROM map_zone_fired WHERE round < $2 AND zone_id IN (SELECT id FROM map_zones WHERE encounter_id = $1);
+
+-- name: InsertZoneEffect :execrows
+INSERT INTO map_zone_effects (zone_id, combatant_id, condition) VALUES ($1, $2, $3)
+ON CONFLICT (zone_id, combatant_id, condition) DO NOTHING;
+
+-- name: ListZoneEffects :many
+SELECT * FROM map_zone_effects WHERE zone_id = $1 ORDER BY combatant_id, condition;
+
+-- name: ListZoneEffectsOfCombatant :many
+SELECT * FROM map_zone_effects WHERE combatant_id = $1 ORDER BY zone_id, condition;
+
+-- name: DeleteZoneEffect :exec
+DELETE FROM map_zone_effects WHERE zone_id = $1 AND combatant_id = $2 AND condition = $3;
+
+-- name: NextZoneSaveSeq :one
+SELECT (COALESCE(MAX(seq), 0) + 1)::INT4 FROM zone_save_windows WHERE encounter_id = $1;
+
+-- name: InsertZoneSaveWindow :one
+-- A saving throw a zone asks of a creature: the turn of the one it is asked of waits.
+INSERT INTO zone_save_windows (
+    encounter_id, zone_id, reactor_id, caster_id, seq, trigger_kind, round, turn_of, spell_key, ability, dc,
+    damage_count, damage_sides, damage_bonus, damage_type, on_success, on_fail, cover_bonus, created_at
+) VALUES (
+    sqlc.arg(encounter_id), sqlc.narg(zone_id), sqlc.arg(reactor_id), sqlc.narg(caster_id), sqlc.arg(seq), sqlc.arg(trigger_kind),
+    sqlc.arg(round), sqlc.narg(turn_of), sqlc.arg(spell_key), sqlc.arg(ability), sqlc.arg(dc), sqlc.arg(damage_count),
+    sqlc.arg(damage_sides), sqlc.arg(damage_bonus), sqlc.arg(damage_type), sqlc.arg(on_success), sqlc.arg(on_fail), sqlc.arg(cover_bonus), sqlc.arg(created_at)
+)
+RETURNING *;
+
+-- name: ListOpenZoneSaveWindows :many
+SELECT * FROM zone_save_windows WHERE encounter_id = $1 AND state = 'open' ORDER BY seq;
+
+-- name: GetZoneSaveWindow :one
+SELECT * FROM zone_save_windows WHERE encounter_id = $1 AND id = $2;
+
+-- name: AnswerZoneSaveWindow :one
+UPDATE zone_save_windows
+SET state = 'answered', d20 = sqlc.arg(d20), modifier = sqlc.arg(modifier), total = sqlc.arg(total), saved = sqlc.arg(saved),
+    physical = sqlc.arg(physical), answered_at = sqlc.arg(answered_at)
+WHERE id = sqlc.arg(id) AND state = 'open'
+RETURNING *;
+
+-- name: CloseZoneSaveWindow :exec
+UPDATE zone_save_windows SET state = 'closed', close_reason = $2, answered_at = $3 WHERE id = $1 AND state = 'open';
+
+-- name: CloseZoneSaveWindowsOfZone :exec
+UPDATE zone_save_windows SET state = 'closed', close_reason = $2, answered_at = $3 WHERE zone_id = $1 AND state = 'open';
+
+-- name: DeleteMapZone :exec
+-- A zone whose cast an undo took back never was.
+DELETE FROM map_zones WHERE id = $1;
+
+-- name: UnendMapZone :exec
+-- A zone an ended concentration took with it comes back with the undo.
+UPDATE map_zones SET ended_at = NULL WHERE id = $1;
+
+-- name: DeleteZoneSaveWindowsOfEncounter :exec
+DELETE FROM zone_save_windows WHERE encounter_id = $1;

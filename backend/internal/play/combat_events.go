@@ -456,6 +456,10 @@ type actionEvent struct {
 	// D20B is the second d20 of a Perception search with disadvantage.
 	D20B  int32    `json:"d20_b,omitempty"`
 	Found []string `json:"found,omitempty"`
+	// Zone is what a line about a zone tells (zones_engine.go): ids and numbers only.
+	Zone *zoneNote `json:"zone,omitempty"`
+	// ZonesEnded are the zones a concentration that ended took with it: an undo brings them back.
+	ZonesEnded []string `json:"zones_ended,omitempty"`
 }
 
 // readEvent decodes an event's payload. A payload of this module never fails

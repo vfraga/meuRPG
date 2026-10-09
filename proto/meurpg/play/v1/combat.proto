@@ -11,6 +11,7 @@ syntax = "proto3";
 package meurpg.play.v1;
 
 import "google/protobuf/timestamp.proto";
+import "meurpg/play/v1/zones.proto";
 import "meurpg/rules/v1/rules.proto";
 
 // CombatService runs a combat (an "encounter") inside the campaign's open
@@ -1153,6 +1154,60 @@ service CombatService {
   //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
   rpc EndConcentration(EndConcentrationRequest) returns (EndConcentrationResponse);
 
+  // ListMapZones lists the combat's zones (W7-Z): what spells and the master left on
+  // the map, with the clock of each. The master gets every field of every zone; a
+  // player only the zones they see, and for each its shape, squares, obscurity and
+  // the spell's name.
+  //
+  // Errors:
+  //   - `not_found`: the combat is not in this campaign's open session.
+  rpc ListMapZones(ListMapZonesRequest) returns (ListMapZonesResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // AddMapZone puts a zone of the scenario on the map (smoke, the gas of a trap). The
+  // master only; every call carries an idempotency key.
+  //
+  // Errors:
+  //   - `not_found`: not the master, or the combat is not in this campaign.
+  //   - `invalid_argument`: a shape, size, origin or effect that does not fit.
+  //   - `failed_precondition`: the combat is ended, or the combat already has 30 zones.
+  rpc AddMapZone(AddMapZoneRequest) returns (AddMapZoneResponse);
+
+  // MoveMapZone moves a zone to another point. The master moves any zone; the caster
+  // moves a zone of their own that the spell lets them move (Moonbeam: an action, up to
+  // 60 ft from where it is now), and anyone else gets `not_found`. A creature the zone
+  // lands on counts as entering it: the trigger runs now.
+  rpc MoveMapZone(MoveMapZoneRequest) returns (MoveMapZoneResponse);
+
+  // EndMapZone ends a zone, and the caster's concentration with it. The master only.
+  rpc EndMapZone(EndMapZoneRequest) returns (EndMapZoneResponse);
+
+  // DisperseMapZone has a wind disperse a zone as the spell's text says, now or in a
+  // few rounds. The master only; `invalid_argument` for a zone that wind does not
+  // disperse.
+  rpc DisperseMapZone(DisperseMapZoneRequest) returns (DisperseMapZoneResponse);
+
+  // SetMapZoneVisible sets whether the players see a zone. The master only.
+  rpc SetMapZoneVisible(SetMapZoneVisibleRequest) returns (SetMapZoneVisibleResponse);
+
+  // SetMapZoneKnown says a creature recognised a camouflaged zone (or no longer).
+  // The master only.
+  rpc SetMapZoneKnown(SetMapZoneKnownRequest) returns (SetMapZoneKnownResponse);
+
+  // SetZoneMember marks a creature inside a zone, or out of it, in a combat without a
+  // map. It runs the zone's triggers as a move does. The master only.
+  rpc SetZoneMember(SetZoneMemberRequest) returns (SetZoneMemberResponse);
+
+  // AnswerZoneSave rolls the saving throw a zone asked of a creature
+  // (Encounter.zone_saves). The creature's player or the master. It is the answer of the
+  // zone's reaction window: the turn of the creature waits for it.
+  //
+  // Errors:
+  //   - `not_found`: not a window of this combat the caller may answer.
+  //   - `failed_precondition`: the window was closed (ZONE_SAVE_CLOSED).
+  rpc AnswerZoneSave(AnswerZoneSaveRequest) returns (AnswerZoneSaveResponse);
+
   // ListCombatLog returns the combat log ("Registro do combate"), latest
   // first, grouped by round. Every entry is structured: the app writes the
   // sentence. A player only gets the entries about what they see: nothing
@@ -1495,6 +1550,16 @@ enum EncounterBlockedReason {
   // nothing in the answer says why: the reason is the same as a wait for an
   // opportunity attack to the player's eyes, and the master reads the question.
   ENCOUNTER_BLOCKED_REASON_HIDDEN_REVEAL_PENDING = 47;
+  // The zones (W7-Z). MoveCombatant, RollAttack, TakeAction, CastSpell, EndTurn: a saving
+  // throw a zone asked of the creature waits for its answer (Encounter.zone_saves). A
+  // player whose creature is not the one asked reads only "Esperando o mestre".
+  ENCOUNTER_BLOCKED_REASON_ZONE_SAVE_PENDING = 90;
+  // CastSpell: the spell has a verbal component and the caster is inside a zone of silence.
+  ENCOUNTER_BLOCKED_REASON_SILENCED = 91;
+  // AnswerZoneSave: the window was closed (the zone ended, the creature left the combat).
+  ENCOUNTER_BLOCKED_REASON_ZONE_SAVE_CLOSED = 92;
+  // AddMapZone, CastSpell: the combat has as many zones as it may.
+  ENCOUNTER_BLOCKED_REASON_TOO_MANY_ZONES = 93;
   // The traps (MR-035, PlayService.SearchForTraps and FireTrap). The first three
   // are 9.8's; 53 and 54 are free.
   //
@@ -1705,6 +1770,16 @@ message Encounter {
   // them, empty for a player. The app opens its card from this after each
   // `encounter_changed`, also after a reload.
   repeated HiddenRevealQuestion pending_hidden_reveals = 21;
+  // The zones of the combat the caller sees (W7-Z): all of them for the master; for a
+  // player the ones the master lets them see or they recognised, with their shape,
+  // squares, obscurity and the spell's name and nothing else.
+  repeated MapZone zones = 60;
+  // The saving throws a zone waits for: the master all; a player the ones asked of their
+  // own characters. The app opens its sheet from this after each `encounter_changed`.
+  repeated ZoneSave zone_saves = 61;
+  // A combat without a map, for a player: the zones their character knows and whether it
+  // is inside each. Empty with a map.
+  repeated ZoneSelf zones_self = 62;
 }
 
 // HiddenRevealQuestion is one question the master has to answer: the area spell
@@ -2241,6 +2316,13 @@ message GetMoveOptionsResponse {
   repeated RefusedSquare refused = 3;
   // True when the mover moves as a flier: difficult terrain costs it nothing.
   bool flier = 4;
+  // What the zones the mover knows add to a square's cost (W7-Z): difficult terrain, the
+  // speed halved. Only for squares the caller's creature knows the zone of (a camouflaged
+  // zone is not there), and only for the ones that cost something.
+  repeated ZoneCost cost_per_square = 60;
+  // The zones the straight moves across warn about, once each: the creature knows them and
+  // they do not exclude it.
+  repeated ZoneWarning zone_warnings = 61;
 }
 
 // ReachableSquare is a square a combatant can go to, and what the move costs.
@@ -2623,6 +2705,9 @@ enum AreaPlacement {
   // A sphere or a cylinder that is Self: centered on the caster, nothing to
   // choose.
   AREA_PLACEMENT_CASTER = 3;
+  // A wall that begins at a point within range and runs in a direction (Wall of Fire):
+  // the caster sets `origin` and `zone_direction`.
+  AREA_PLACEMENT_POINT_DIRECTION = 4;
 }
 
 // DartsAtSlot is how many darts a slot level makes.
@@ -2940,6 +3025,24 @@ message CastSpellRequest {
   // players, for this cast. Without it the table rule decides. A player who sends
   // it gets `permission_denied`, before anything else is checked.
   optional bool reveal_hidden = 15;
+  // The zone a spell leaves on the map (W7-Z). The creatures the caster designates
+  // to be unaffected (Spirit Guardians): only creatures the caster sees. Refused for
+  // a spell that has no such list.
+  repeated string excluded_combatant_ids = 60;
+  // Web: whether the webs are anchored (the master says it). Unset takes anchored;
+  // a Web not anchored collapses and ends at the start of the caster's next turn. Only
+  // the master sends it; a player who does gets `permission_denied`.
+  optional bool anchored = 61;
+  // Wall of Fire: the side of the wall that burns. Required for that spell.
+  ZoneSide damage_side = 62;
+  // A zone that is a wall begins at `origin` and runs in this direction (one of the
+  // eight). Required for Wall of Fire.
+  SpellDirection zone_direction = 63;
+  // Wall of Fire: the wall's length in squares, 1 to 12 (60 ft); unset takes 12. Wall
+  // of Fire as a ring takes `zone_ring`.
+  int32 zone_length_squares = 64;
+  // Wall of Fire as a ringed wall of 20 ft in diameter, centered on `origin`.
+  bool zone_ring = 65;
 }
 
 // SpellOrigin is a square of the grid the caster chose as the point of origin of an
@@ -2980,6 +3083,11 @@ message PreviewSpellAreaRequest {
     SpellOrigin origin = 6;
     SpellDirection direction = 7;
   }
+  // A wall (Wall of Fire) begins at `origin` and runs in this direction.
+  SpellDirection zone_direction = 60;
+  // The wall's length in squares, and whether it is a ring (as in CastSpellRequest).
+  int32 zone_length_squares = 61;
+  bool zone_ring = 62;
 }
 
 // PreviewSpellAreaResponse is who an area reaches.
@@ -3224,6 +3332,9 @@ message CastSpellResponse {
   // when the table rule is "Perguntar a cada vez" and a player cast. Only the master
   // gets it.
   string pending_reveal_id = 6;
+  // The zone this cast left on the map, as the caller sees it (W7-Z). Unset for a spell
+  // that leaves none, and for a player when the zone is not one they see.
+  MapZone zone = 60;
 }
 
 // SpellCast is a cast, as the caller may see it.
@@ -3511,6 +3622,10 @@ enum CombatLogKind {
   // (2d8 + 2: 3, 4)"). Only the master gets the line, and it also comes from
   // before the combat begins (round 0).
   COMBAT_LOG_KIND_MONSTERS_ADDED = 24;
+  // A zone was put, moved, ended, dispersed, or caught a creature (W7-Z): `zone`. A
+  // creature is named only to whoever saw it when it happened; the caster, the DC and
+  // the dice of an NPC's zone are never a player's (RN-10, RN-20).
+  COMBAT_LOG_KIND_ZONE = 25;
 }
 
 // WildShapeEndReason says why a druid's beast form ended.
@@ -3624,6 +3739,8 @@ message CombatLogEntry {
   CombatLogDoor door = 42;
   // MONSTERS_ADDED: the new monsters, in the order of their names.
   repeated CombatLogMonster monsters = 43;
+  // ZONE: what happened to the zone.
+  CombatLogZone zone = 44;
 }
 
 // CombatLogMonster is a monster of a MONSTERS_ADDED line, only the master's.
