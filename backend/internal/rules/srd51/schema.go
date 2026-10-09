@@ -238,10 +238,22 @@ type Proficiency struct {
 type Equipment struct {
 	Key  string `json:"key"`
 	Name string `json:"name"`
-	// Kind is "armor", "weapon" or "tool".
+	// Kind is "armor", "weapon", "tool" or "gear".
 	Kind   string  `json:"kind"`
 	Armor  *Armor  `json:"armor,omitempty"`
 	Weapon *Weapon `json:"weapon,omitempty"`
+	Gear   *Gear   `json:"gear,omitempty"`
+}
+
+// Gear is the part of an Equipment that is adventuring gear: the ordinary goods
+// that are neither weapon, armor nor tool (a rope, a backpack, an arrow).
+type Gear struct {
+	// Ammunition says it is ammunition: arrows, bolts, sling bullets and
+	// blowgun needles.
+	Ammunition bool `json:"ammunition,omitempty"`
+	// PackQuantity is how many pieces one purchase holds (20 arrows), or 0 for
+	// a single piece.
+	PackQuantity int `json:"pack_quantity,omitempty"`
 }
 
 // Armor is the armor part of an Equipment.

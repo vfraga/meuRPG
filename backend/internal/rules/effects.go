@@ -53,6 +53,10 @@ type Effect struct {
 	// with RangeFt.
 	Sense   string `json:"sense,omitempty"`
 	RangeFt int    `json:"range_ft,omitempty"`
+	// Extend, on a sense, adds RangeFt to the range the character already has
+	// from another source instead of competing with it (Goggles of Night); with
+	// no other source it gives RangeFt. Only an item's sense takes it.
+	Extend bool `json:"-"`
 
 	// spellcasting: how a class casts. Progression is full, half or pact;
 	// PreparedMax is an Int formula for classes that prepare; Spellbook
@@ -201,7 +205,11 @@ func (c *content) compileEffect(key string, e *Effect) error {
 		if e.Value == "" {
 			return fail("value is required")
 		}
-		if _, isScore := strings.CutPrefix(e.Target, "score."); isScore != (e.Cap != 0) || (isScore && (e.Mode != "add" || e.Cap <= MaxNormalScore || e.Cap > MaxScore)) {
+		// An item may cap a score at or below the normal maximum (Gauntlets of Ogre
+		// Power lift Strength to 19): a feature's cap is above it.
+		_, isScore := strings.CutPrefix(e.Target, "score.")
+		lowCap := strings.HasPrefix(key, "item:")
+		if isScore != (e.Cap != 0) || (isScore && (e.Mode != "add" || (e.Cap <= MaxNormalScore && !lowCap) || e.Cap > MaxScore)) {
 			return fail("a score modifier is an add with a cap above %d, and nothing else has a cap", MaxNormalScore)
 		}
 		if e.value, err = compile(e.Value, formula.Int); err != nil {

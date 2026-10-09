@@ -34,10 +34,16 @@ func (x *deriver) attacks() {
 	// Martial Arts holds only while the monk wears no armor and no shield.
 	martialArts := x.hasHandler("monk.martial_arts") && x.armorCategory == "none" && !x.b.Shield
 	martialDie := x.martialArtsDie()
-	for i, key := range x.b.Weapons {
-		eq, ok := c.equipment[key]
+	lines := make([]weaponLine, 0, len(x.b.Weapons)+len(x.items))
+	for i, k := range x.b.Weapons {
+		lines = append(lines, weaponLine{key: k, eqKey: k, field: fmt.Sprintf("full.weapon_keys[%d]", i)})
+	}
+	lines = append(lines, x.itemWeapons()...)
+	for _, line := range lines {
+		key := line.key
+		eq, ok := c.equipment[line.eqKey]
 		if !ok || eq.Weapon == nil {
-			x.issue(IssueUnknownKey, fmt.Sprintf("full.weapon_keys[%d]", i), "A arma escolhida não existe no conteúdo %s.", c.version)
+			x.issue(IssueUnknownKey, line.field, "A arma escolhida não existe no conteúdo %s.", c.version)
 			continue
 		}
 		w := eq.Weapon
@@ -47,7 +53,7 @@ func (x *deriver) attacks() {
 			ab = DEX
 		}
 		monkWeapon := martialArts && slices.Contains(w.Properties, "weapon-property:monk")
-		if slices.Contains(w.Properties, "weapon-property:finesse") || monkWeapon {
+		if slices.Contains(w.Properties, "weapon-property:finesse") || line.finesse || monkWeapon {
 			ab = STR
 			if x.mods[DEX] > x.mods[STR] {
 				ab = DEX
@@ -56,25 +62,34 @@ func (x *deriver) attacks() {
 		if slices.Contains(w.Properties, "weapon-property:heavy") && x.race != nil && x.race.Size == "Small" {
 			x.d.Hints = append(x.d.Hints, Hint{
 				Source: key, Target: "attack.weapon." + kind, Targets: []string{"attack.weapon." + kind}, Mode: "disadvantage",
-				TextPT: fmt.Sprintf("Desvantagem nas jogadas de ataque com %s: arma pesada para criaturas Pequenas.", strings.ToLower(c.namePT(key))),
+				TextPT: fmt.Sprintf("Desvantagem nas jogadas de ataque com %s: arma pesada para criaturas Pequenas.", strings.ToLower(line.displayName(c))),
 			})
 		}
-		proficient := x.weaponProficient(key, w.Category)
+		proficient := x.weaponProficient(line.eqKey, w.Category)
 		bonus := x.mods[ab]
 		if proficient {
 			bonus += x.prof
 		}
-		dmg := x.modifiers("damage.weapon."+kind, x.mods[ab])
+		// The +N of a magic weapon, and of the magic ammunition it fires.
+		magicBonus := line.bonus
+		ammo := x.ammunitionAttack(line.eqKey, kind)
+		magicBonus += ammo.bonus
+		bonus += magicBonus
+		dmg := x.modifiers("damage.weapon."+kind, x.mods[ab]+magicBonus)
 		dice := w.Damage
 		if monkWeapon && martialDie > 0 {
 			dice = biggerDie(dice, martialDie)
 		}
 		a := Attack{
-			Key: key, Name: eq.Name, NamePT: c.namePT(key), Kind: "weapon", Ability: ab,
+			Key: key, Name: eq.Name, NamePT: line.displayName(c), Kind: "weapon", Ability: ab,
 			AttackBonus: x.modifiers("attack.weapon."+kind, bonus), Proficient: proficient,
 			DamageType: w.DamageType, DamageTypeNamePT: c.namePT(w.DamageType),
+			Ammunition: ammo.kind, AmmunitionItem: ammo.item, AmmunitionOut: ammo.out,
 			Melee: kind == "melee", MartialArts: monkWeapon, AbilityMod: x.mods[ab],
 			Light: kind == "melee" && slices.Contains(w.Properties, "weapon-property:light"),
+		}
+		if line.damageType != "" {
+			a.DamageType, a.DamageTypeNamePT = line.damageType, c.namePT(line.damageType)
 		}
 		if dice != "" {
 			a.Damage = withModifier(dice, dmg)

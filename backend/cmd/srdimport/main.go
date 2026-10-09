@@ -861,6 +861,8 @@ func convertEquipment(in *inputs) (output, error) {
 		} `json:"armor_class"`
 		StrMinimum          int  `json:"str_minimum"`
 		StealthDisadvantage bool `json:"stealth_disadvantage"`
+		GearCategory        ref  `json:"gear_category"`
+		Quantity            int  `json:"quantity"`
 	}
 	rows, err := decode[src](in, "5e-SRD-Equipment.json")
 	if err != nil {
@@ -911,8 +913,11 @@ func convertEquipment(in *inputs) (output, error) {
 			e.Weapon = w
 		case "tools":
 			e.Kind = "tool"
+		case "adventuring-gear":
+			e.Kind = "gear"
+			e.Gear = &srd51.Gear{Ammunition: r.GearCategory.Index == "ammunition", PackQuantity: r.Quantity}
 		default:
-			continue
+			continue // mounts and vehicles
 		}
 		out = append(out, e)
 	}

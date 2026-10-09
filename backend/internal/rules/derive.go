@@ -32,6 +32,13 @@ type deriver struct {
 	armor         *srd51.Armor
 	armorCategory string
 
+	// items are the equipped inventory lines, resolved; armorItem and shieldItem
+	// are the worn armor and the shield among them, and itemSpellAttack and
+	// itemSpellDC what the items add to the spell attack and the save DC.
+	items                        []*itemRuntime
+	armorItem, shieldItem        *itemRuntime
+	itemSpellAttack, itemSpellDC int
+
 	// active are the effects of everything the character has, in a stable
 	// order.
 	active []activeEffect
@@ -71,11 +78,14 @@ func derive(b Build, c *content) Derived {
 	x := &deriver{b: b, c: c, d: d, proficient: map[string]bool{}, conditions: map[*Effect]bool{}}
 
 	x.resolve()
+	x.resolveItems()
 	x.resolveArmor()
+	x.adjustItemArmor()
 	x.names()
 	x.abilities()
 	x.levelAndProficiency()
 	x.collectEffects()
+	x.addItemEffects()
 	x.buildEnv()
 	x.abilityEffects()
 	x.proficiencies()

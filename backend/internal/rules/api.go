@@ -151,6 +151,12 @@ type Build struct {
 	// invocation. Derive applies an option only while the build has the
 	// feature or trait it belongs to.
 	FeatureChoices []string
+	// Items are the inventory's lines, in the sheet's order. Only equipped items
+	// change the numbers: a worn armor replaces Armor, a shield sets Shield and
+	// an equipped weapon is one more attack. Alignment is AlignmentGood,
+	// AlignmentEvil or "", for the attunement restrictions.
+	Items     []Item
+	Alignment string
 }
 
 // ClassLevel is one class of a Build and its level in that class.
@@ -645,6 +651,8 @@ type Derived struct {
 	// Hints are situational bonuses the engine shows but does not apply
 	// (ADR-0008: "vantagem se a fonte for mágica").
 	Hints []Hint
+	// ItemResistances are the damage types the equipped items give resistance to.
+	ItemResistances []ItemResistance
 	// Issues are problems found while deriving: unknown keys, unusual
 	// choices, a broken formula. They never stop the sheet from opening.
 	Issues []Issue
@@ -810,6 +818,13 @@ type Attack struct {
 	// The engine rolls the to-hit and the first damage part; the master reads
 	// the rest here. Empty for a character's weapon or cantrip.
 	Notes string
+	// Ammunition is the ammunition the weapon fires ("equipment:arrow"), or "" for
+	// a weapon that needs none. AmmunitionItem is the inventory line the next shot
+	// spends a piece of, or "" when the character carries no counted ammunition of
+	// the kind (a sheet from before the inventory fires without limit). AmmunitionOut
+	// says the character has stacks of it but no piece left.
+	Ammunition, AmmunitionItem string
+	AmmunitionOut              bool
 }
 
 // SaveAction is a creature's action that asks for a saving throw: a dragon's

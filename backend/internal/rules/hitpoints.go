@@ -81,10 +81,17 @@ func (x *deriver) speedAndSenses() {
 
 	best := map[string]int{}
 	source := map[string]string{}
+	extend := map[string]int{}
+	extendSource := map[string]string{}
 	var order []string
 	for _, a := range x.active {
 		e := a.effect
 		if e.Type != "sense" || !x.applies(a) {
+			continue
+		}
+		if e.Extend {
+			extend[e.Sense] += e.RangeFt
+			extendSource[e.Sense] = a.owner
 			continue
 		}
 		if _, seen := best[e.Sense]; !seen {
@@ -94,6 +101,17 @@ func (x *deriver) speedAndSenses() {
 			best[e.Sense] = e.RangeFt
 			source[e.Sense] = a.owner
 		}
+	}
+	// A sense an item extends grows by the extension, or is the extension alone.
+	for _, s := range senses {
+		if extend[s] == 0 {
+			continue
+		}
+		if _, seen := best[s]; !seen {
+			order = append(order, s)
+			source[s] = extendSource[s]
+		}
+		best[s] += extend[s]
 	}
 	for _, s := range order {
 		x.d.Senses = append(x.d.Senses, Sense{

@@ -1,13 +1,82 @@
 [
  {
+  "key": "equipment:abacus",
+  "name": "Abacus",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:acid-vial",
+  "name": "Acid (vial)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:alchemists-fire-flask",
+  "name": "Alchemist's fire (flask)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:alchemists-supplies",
   "name": "Alchemist's Supplies",
   "kind": "tool"
  },
  {
+  "key": "equipment:alms-box",
+  "name": "Alms box",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:amulet",
+  "name": "Amulet",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:antitoxin-vial",
+  "name": "Antitoxin (vial)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:arrow",
+  "name": "Arrow",
+  "kind": "gear",
+  "gear": {
+   "ammunition": true,
+   "pack_quantity": 20
+  }
+ },
+ {
+  "key": "equipment:backpack",
+  "name": "Backpack",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:bagpipes",
   "name": "Bagpipes",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:ball-bearings-bag-of-1000",
+  "name": "Ball bearings (bag of 1,000)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:barrel",
+  "name": "Barrel",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:basket",
+  "name": "Basket",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:battleaxe",
@@ -24,6 +93,36 @@
    ],
    "normal_range_ft": 5
   }
+ },
+ {
+  "key": "equipment:bedroll",
+  "name": "Bedroll",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:bell",
+  "name": "Bell",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:blanket",
+  "name": "Blanket",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:block-and-tackle",
+  "name": "Block and tackle",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:block-of-incense",
+  "name": "Block of incense",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:blowgun",
@@ -43,6 +142,27 @@
   }
  },
  {
+  "key": "equipment:blowgun-needle",
+  "name": "Blowgun needle",
+  "kind": "gear",
+  "gear": {
+   "ammunition": true,
+   "pack_quantity": 50
+  }
+ },
+ {
+  "key": "equipment:book",
+  "name": "Book",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:bottle-glass",
+  "name": "Bottle, glass",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:breastplate",
   "name": "Breastplate",
   "kind": "armor",
@@ -59,9 +179,33 @@
   "kind": "tool"
  },
  {
+  "key": "equipment:bucket",
+  "name": "Bucket",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:burglars-pack",
+  "name": "Burglar's Pack",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:calligraphers-supplies",
   "name": "Calligrapher's Supplies",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:caltrops",
+  "name": "Caltrops",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:candle",
+  "name": "Candle",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:carpenters-tools",
@@ -72,6 +216,30 @@
   "key": "equipment:cartographers-tools",
   "name": "Cartographer's Tools",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:case-crossbow-bolt",
+  "name": "Case, crossbow bolt",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:case-map-or-scroll",
+  "name": "Case, map or scroll",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:censer",
+  "name": "Censer",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:chain-10-feet",
+  "name": "Chain (10 feet)",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:chain-mail",
@@ -97,6 +265,48 @@
   }
  },
  {
+  "key": "equipment:chalk-1-piece",
+  "name": "Chalk (1 piece)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:chest",
+  "name": "Chest",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:climbers-kit",
+  "name": "Climber's Kit",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:clothes-common",
+  "name": "Clothes, common",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:clothes-costume",
+  "name": "Clothes, costume",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:clothes-fine",
+  "name": "Clothes, fine",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:clothes-travelers",
+  "name": "Clothes, traveler's",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:club",
   "name": "Club",
   "kind": "weapon",
@@ -118,9 +328,24 @@
   "kind": "tool"
  },
  {
+  "key": "equipment:component-pouch",
+  "name": "Component pouch",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:cooks-utensils",
   "name": "Cook's utensils",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:crossbow-bolt",
+  "name": "Crossbow bolt",
+  "kind": "gear",
+  "gear": {
+   "ammunition": true,
+   "pack_quantity": 20
+  }
  },
  {
   "key": "equipment:crossbow-hand",
@@ -178,6 +403,18 @@
   }
  },
  {
+  "key": "equipment:crowbar",
+  "name": "Crowbar",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:crystal",
+  "name": "Crystal",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:dagger",
   "name": "Dagger",
   "kind": "weapon",
@@ -222,6 +459,18 @@
   "kind": "tool"
  },
  {
+  "key": "equipment:diplomats-pack",
+  "name": "Diplomat's Pack",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:disguise-kit",
+  "name": "Disguise Kit",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:drum",
   "name": "Drum",
   "kind": "tool"
@@ -230,6 +479,36 @@
   "key": "equipment:dulcimer",
   "name": "Dulcimer",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:dungeoneers-pack",
+  "name": "Dungeoneer's Pack",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:emblem",
+  "name": "Emblem",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:entertainers-pack",
+  "name": "Entertainer's Pack",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:explorers-pack",
+  "name": "Explorer's Pack",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:fishing-tackle",
+  "name": "Fishing tackle",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:flail",
@@ -245,9 +524,21 @@
   }
  },
  {
+  "key": "equipment:flask-or-tankard",
+  "name": "Flask or tankard",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:flute",
   "name": "Flute",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:forgery-kit",
+  "name": "Forgery Kit",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:glaive",
@@ -270,6 +561,12 @@
   "key": "equipment:glassblowers-tools",
   "name": "Glassblower's Tools",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:grappling-hook",
+  "name": "Grappling hook",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:greataxe",
@@ -348,6 +645,18 @@
   }
  },
  {
+  "key": "equipment:hammer",
+  "name": "Hammer",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:hammer-sledge",
+  "name": "Hammer, sledge",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:handaxe",
   "name": "Handaxe",
   "kind": "weapon",
@@ -367,6 +676,18 @@
   }
  },
  {
+  "key": "equipment:healers-kit",
+  "name": "Healer's Kit",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:herbalism-kit",
+  "name": "Herbalism Kit",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:hide-armor",
   "name": "Hide Armor",
   "kind": "armor",
@@ -378,9 +699,39 @@
   }
  },
  {
+  "key": "equipment:holy-water-flask",
+  "name": "Holy water (flask)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:horn",
   "name": "Horn",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:hourglass",
+  "name": "Hourglass",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:hunting-trap",
+  "name": "Hunting trap",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:ink-1-ounce-bottle",
+  "name": "Ink (1 ounce bottle)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:ink-pen",
+  "name": "Ink pen",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:javelin",
@@ -406,6 +757,24 @@
   "kind": "tool"
  },
  {
+  "key": "equipment:jug-or-pitcher",
+  "name": "Jug or pitcher",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:ladder-10-foot",
+  "name": "Ladder (10-foot)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:lamp",
+  "name": "Lamp",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:lance",
   "name": "Lance",
   "kind": "weapon",
@@ -420,6 +789,18 @@
    ],
    "normal_range_ft": 10
   }
+ },
+ {
+  "key": "equipment:lantern-bullseye",
+  "name": "Lantern, bullseye",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:lantern-hooded",
+  "name": "Lantern, hooded",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:leather-armor",
@@ -454,6 +835,18 @@
    "throw_normal_ft": 20,
    "throw_long_ft": 60
   }
+ },
+ {
+  "key": "equipment:little-bag-of-sand",
+  "name": "Little bag of sand",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:lock",
+  "name": "Lock",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:longbow",
@@ -515,6 +908,18 @@
   }
  },
  {
+  "key": "equipment:magnifying-glass",
+  "name": "Magnifying glass",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:manacles",
+  "name": "Manacles",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:masons-tools",
   "name": "Mason's Tools",
   "kind": "tool"
@@ -534,6 +939,18 @@
    ],
    "normal_range_ft": 5
   }
+ },
+ {
+  "key": "equipment:mess-kit",
+  "name": "Mess Kit",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:mirror-steel",
+  "name": "Mirror, steel",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:morningstar",
@@ -571,6 +988,18 @@
   }
  },
  {
+  "key": "equipment:oil-flask",
+  "name": "Oil (flask)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:orb",
+  "name": "Orb",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:padded-armor",
   "name": "Padded Armor",
   "kind": "armor",
@@ -592,6 +1021,30 @@
   "kind": "tool"
  },
  {
+  "key": "equipment:paper-one-sheet",
+  "name": "Paper (one sheet)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:parchment-one-sheet",
+  "name": "Parchment (one sheet)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:perfume-vial",
+  "name": "Perfume (vial)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:pick-miners",
+  "name": "Pick, miner's",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:pike",
   "name": "Pike",
   "kind": "weapon",
@@ -607,6 +1060,12 @@
    ],
    "normal_range_ft": 10
   }
+ },
+ {
+  "key": "equipment:piton",
+  "name": "Piton",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:plate-armor",
@@ -626,9 +1085,45 @@
   "kind": "tool"
  },
  {
+  "key": "equipment:poison-basic-vial",
+  "name": "Poison, basic (vial)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:poisoners-kit",
+  "name": "Poisoner's Kit",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:pole-10-foot",
+  "name": "Pole (10-foot)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:pot-iron",
+  "name": "Pot, iron",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:potters-tools",
   "name": "Potter's Tools",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:pouch",
+  "name": "Pouch",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:priests-pack",
+  "name": "Priest's Pack",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:quarterstaff",
@@ -648,6 +1143,18 @@
   }
  },
  {
+  "key": "equipment:quiver",
+  "name": "Quiver",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:ram-portable",
+  "name": "Ram, portable",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:rapier",
   "name": "Rapier",
   "kind": "weapon",
@@ -663,6 +1170,18 @@
   }
  },
  {
+  "key": "equipment:rations-1-day",
+  "name": "Rations (1 day)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:reliquary",
+  "name": "Reliquary",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:ring-mail",
   "name": "Ring Mail",
   "kind": "armor",
@@ -672,6 +1191,36 @@
    "dex_bonus": false,
    "stealth_disadvantage": true
   }
+ },
+ {
+  "key": "equipment:robes",
+  "name": "Robes",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:rod",
+  "name": "Rod",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:rope-hempen-50-feet",
+  "name": "Rope, hempen (50 feet)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:rope-silk-50-feet",
+  "name": "Rope, silk (50 feet)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:sack",
+  "name": "Sack",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:scale-mail",
@@ -684,6 +1233,18 @@
    "max_dex_bonus": 2,
    "stealth_disadvantage": true
   }
+ },
+ {
+  "key": "equipment:scale-merchants",
+  "name": "Scale, merchant's",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:scholars-pack",
+  "name": "Scholar's Pack",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:scimitar",
@@ -700,6 +1261,12 @@
    ],
    "normal_range_ft": 5
   }
+ },
+ {
+  "key": "equipment:sealing-wax",
+  "name": "Sealing wax",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:shawm",
@@ -751,6 +1318,12 @@
   }
  },
  {
+  "key": "equipment:shovel",
+  "name": "Shovel",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:sickle",
   "name": "Sickle",
   "kind": "weapon",
@@ -765,6 +1338,18 @@
    ],
    "normal_range_ft": 5
   }
+ },
+ {
+  "key": "equipment:signal-whistle",
+  "name": "Signal whistle",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:signet-ring",
+  "name": "Signet ring",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:sling",
@@ -783,9 +1368,30 @@
   }
  },
  {
+  "key": "equipment:sling-bullet",
+  "name": "Sling bullet",
+  "kind": "gear",
+  "gear": {
+   "ammunition": true,
+   "pack_quantity": 20
+  }
+ },
+ {
+  "key": "equipment:small-knife",
+  "name": "Small knife",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:smiths-tools",
   "name": "Smith's Tools",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:soap",
+  "name": "Soap",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:spear",
@@ -808,6 +1414,18 @@
   }
  },
  {
+  "key": "equipment:spellbook",
+  "name": "Spellbook",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:spike-iron",
+  "name": "Spike, iron",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:splint-armor",
   "name": "Splint Armor",
   "kind": "armor",
@@ -820,6 +1438,30 @@
   }
  },
  {
+  "key": "equipment:sprig-of-mistletoe",
+  "name": "Sprig of mistletoe",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:spyglass",
+  "name": "Spyglass",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:staff",
+  "name": "Staff",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:string-10-feet",
+  "name": "String (10 feet)",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:studded-leather-armor",
   "name": "Studded Leather Armor",
   "kind": "armor",
@@ -830,14 +1472,38 @@
   }
  },
  {
+  "key": "equipment:tent-two-person",
+  "name": "Tent, two-person",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:thieves-tools",
   "name": "Thieves' Tools",
   "kind": "tool"
  },
  {
+  "key": "equipment:tinderbox",
+  "name": "Tinderbox",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:tinkers-tools",
   "name": "Tinker's Tools",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:torch",
+  "name": "Torch",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:totem",
+  "name": "Totem",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:trident",
@@ -859,9 +1525,27 @@
   }
  },
  {
+  "key": "equipment:vestments",
+  "name": "Vestments",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:vial",
+  "name": "Vial",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:viol",
   "name": "Viol",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:wand",
+  "name": "Wand",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:war-pick",
@@ -893,9 +1577,21 @@
   }
  },
  {
+  "key": "equipment:waterskin",
+  "name": "Waterskin",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
   "key": "equipment:weavers-tools",
   "name": "Weaver's Tools",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:whetstone",
+  "name": "Whetstone",
+  "kind": "gear",
+  "gear": {}
  },
  {
   "key": "equipment:whip",
@@ -917,5 +1613,17 @@
   "key": "equipment:woodcarvers-tools",
   "name": "Woodcarver's Tools",
   "kind": "tool"
+ },
+ {
+  "key": "equipment:wooden-staff",
+  "name": "Wooden staff",
+  "kind": "gear",
+  "gear": {}
+ },
+ {
+  "key": "equipment:yew-wand",
+  "name": "Yew wand",
+  "kind": "gear",
+  "gear": {}
  }
 ]

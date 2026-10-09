@@ -1,6 +1,6 @@
 {
   "level 1": {
-    "ContentVersion": "srd51@a8abc93b235c+fx.24+mesa.7",
+    "ContentVersion": "srd51@a8abc93b235c+fx.25+mesa.7",
     "RaceNamePT": "Anão das Brumas",
     "SubraceNamePT": "Da Colina Nevoenta",
     "BackgroundNamePT": "Guarda de farol",
@@ -459,7 +459,10 @@
         "Light": false,
         "MartialArts": false,
         "AbilityMod": 0,
-        "Notes": ""
+        "Notes": "",
+        "Ammunition": "",
+        "AmmunitionItem": "",
+        "AmmunitionOut": false
       },
       {
         "Key": "attack:unarmed-strike",
@@ -495,7 +498,10 @@
         "Light": false,
         "MartialArts": false,
         "AbilityMod": 2,
-        "Notes": ""
+        "Notes": "",
+        "Ammunition": "",
+        "AmmunitionItem": "",
+        "AmmunitionOut": false
       }
     ],
     "Resources": null,
@@ -689,10 +695,11 @@
         "TextPT": "Luz-guia: conhece a rota dos navios."
       }
     ],
+    "ItemResistances": null,
     "Issues": null
   },
   "level 11": {
-    "ContentVersion": "srd51@a8abc93b235c+fx.24+mesa.7",
+    "ContentVersion": "srd51@a8abc93b235c+fx.25+mesa.7",
     "RaceNamePT": "Anão das Brumas",
     "SubraceNamePT": "Da Colina Nevoenta",
     "BackgroundNamePT": "Guarda de farol",
@@ -1472,7 +1479,10 @@
         "Light": false,
         "MartialArts": false,
         "AbilityMod": 0,
-        "Notes": ""
+        "Notes": "",
+        "Ammunition": "",
+        "AmmunitionItem": "",
+        "AmmunitionOut": false
       },
       {
         "Key": "attack:unarmed-strike",
@@ -1508,7 +1518,10 @@
         "Light": false,
         "MartialArts": false,
         "AbilityMod": 2,
-        "Notes": ""
+        "Notes": "",
+        "Ammunition": "",
+        "AmmunitionItem": "",
+        "AmmunitionOut": false
       }
     ],
     "Resources": [
@@ -1822,10 +1835,11 @@
         "TextPT": "Olhos"
       }
     ],
+    "ItemResistances": null,
     "Issues": null
   },
   "level 5": {
-    "ContentVersion": "srd51@a8abc93b235c+fx.24+mesa.7",
+    "ContentVersion": "srd51@a8abc93b235c+fx.25+mesa.7",
     "RaceNamePT": "Anão das Brumas",
     "SubraceNamePT": "Da Colina Nevoenta",
     "BackgroundNamePT": "Guarda de farol",
@@ -2432,7 +2446,10 @@
         "Light": false,
         "MartialArts": false,
         "AbilityMod": 0,
-        "Notes": ""
+        "Notes": "",
+        "Ammunition": "",
+        "AmmunitionItem": "",
+        "AmmunitionOut": false
       },
       {
         "Key": "attack:unarmed-strike",
@@ -2468,7 +2485,10 @@
         "Light": false,
         "MartialArts": false,
         "AbilityMod": 2,
-        "Notes": ""
+        "Notes": "",
+        "Ammunition": "",
+        "AmmunitionItem": "",
+        "AmmunitionOut": false
       }
     ],
     "Resources": [
@@ -2737,6 +2757,7 @@
         "TextPT": "Olhos"
       }
     ],
+    "ItemResistances": null,
     "Issues": null
   }
 }

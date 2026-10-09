@@ -1,5 +1,5 @@
 {
-  "ContentVersion": "srd51@a8abc93b235c+fx.24",
+  "ContentVersion": "srd51@a8abc93b235c+fx.25",
   "RaceNamePT": "Gnomo",
   "SubraceNamePT": "Gnomo das Rochas",
   "BackgroundNamePT": "Sábio",
@@ -644,7 +644,10 @@
       "Light": false,
       "MartialArts": false,
       "AbilityMod": 1,
-      "Notes": ""
+      "Notes": "",
+      "Ammunition": "",
+      "AmmunitionItem": "",
+      "AmmunitionOut": false
     },
     {
       "Key": "spell:fire-bolt",
@@ -680,7 +683,10 @@
       "Light": false,
       "MartialArts": false,
       "AbilityMod": 0,
-      "Notes": ""
+      "Notes": "",
+      "Ammunition": "",
+      "AmmunitionItem": "",
+      "AmmunitionOut": false
     },
     {
       "Key": "spell:ray-of-frost",
@@ -716,7 +722,10 @@
       "Light": false,
       "MartialArts": false,
       "AbilityMod": 0,
-      "Notes": ""
+      "Notes": "",
+      "Ammunition": "",
+      "AmmunitionItem": "",
+      "AmmunitionOut": false
     },
     {
       "Key": "attack:unarmed-strike",
@@ -752,7 +761,10 @@
       "Light": false,
       "MartialArts": false,
       "AbilityMod": 1,
-      "Notes": ""
+      "Notes": "",
+      "Ammunition": "",
+      "AmmunitionItem": "",
+      "AmmunitionOut": false
     }
   ],
   "Resources": [
@@ -1034,5 +1046,6 @@
       "TextPT": "Recuperação arcana: uma vez por dia, depois de um descanso curto, recupera espaços de magia que somem até 2 níveis (nenhum de 6º nível ou mais)."
     }
   ],
+  "ItemResistances": null,
   "Issues": null
 }

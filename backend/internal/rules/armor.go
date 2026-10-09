@@ -22,6 +22,9 @@ func (x *deriver) armorClass() {
 	name := "Sem armadura"
 	if x.armor != nil {
 		name = c.namePT(x.b.Armor)
+		if x.armorItem != nil {
+			name = x.armorItem.name
+		}
 	}
 
 	base := 10 + x.mods[DEX]
@@ -34,7 +37,8 @@ func (x *deriver) armorClass() {
 			}
 			base += dex
 		}
-		if !x.armorProficient(x.armorCategory, x.b.Armor) {
+		base += x.armorItemBonus()
+		if !x.armorProficient(x.armorCategory, x.b.Armor) && !x.armorItemProficient() {
 			x.issue(IssueArmorProficiency, "full.armor_key", "Sem proficiência em %s: desvantagem em testes, ataques e testes de resistência de FOR e DES, e não conjura magias.", strings.ToLower(name))
 		}
 		if a.StealthDisadvantage {
@@ -73,8 +77,11 @@ func (x *deriver) armorClass() {
 
 	ac := base
 	if x.b.Shield {
-		ac += 2
+		ac += 2 + x.shieldItemBonus()
 		name += " + escudo"
+		if x.shieldItem != nil && x.shieldItem.def != nil {
+			name = strings.TrimSuffix(name, " + escudo") + " + " + x.shieldItem.name
+		}
 		if !x.armorProficient("shield", "equipment:shield") {
 			x.issue(IssueArmorProficiency, "full.shield", "Sem proficiência em escudos.")
 		}

@@ -71,6 +71,8 @@ type content struct {
 	magicUnits map[string][]MagicItemUnit
 	// consumables are the keys of the single-use items (effects/consumables.json).
 	consumables map[string]bool
+	// items are the magic items the engine applies (effects/items.json).
+	items *itemsContent
 	// treasure is the generator's content: the SRD 5.2.1 values of the magic
 	// items and our tables of coins, gems and art (effects/magic_item_values.json
 	// and effects/treasure.json).
@@ -275,6 +277,9 @@ func load(fsys fs.FS) (*content, error) {
 	if err := c.loadMagicItemEffects(fsys); err != nil {
 		return nil, err
 	}
+	if err := c.loadItems(fsys); err != nil {
+		return nil, err
+	}
 	if err := c.indexCasting(); err != nil {
 		return nil, err
 	}
@@ -424,7 +429,7 @@ func (c *content) loadEffects(fsys fs.FS) error {
 	}
 	for _, name := range files {
 		switch path.Base(name) {
-		case "names_pt.json", "revision.json", "standard_actions.json", "advancement.json", "spells.json", "spell_targets.json", "corrections.json", "traps.json", "lights.json", "consumables.json", "encounter_budget.json", "magic_item_values.json", "treasure.json":
+		case "names_pt.json", "revision.json", "standard_actions.json", "advancement.json", "spells.json", "spell_targets.json", "corrections.json", "traps.json", "lights.json", "consumables.json", "items.json", "encounter_budget.json", "magic_item_values.json", "treasure.json":
 			continue
 		}
 		var f struct {

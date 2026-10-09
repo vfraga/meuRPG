@@ -52,7 +52,7 @@ func (x *deriver) spellcasting() {
 		}
 		sc := Spellcasting{
 			Class: oc.key, ClassNamePT: c.namePT(oc.key), Ability: a,
-			SaveDC: 8 + x.prof + x.mods[a], AttackBonus: x.prof + x.mods[a],
+			SaveDC: 8 + x.prof + x.mods[a] + x.itemSpellDC, AttackBonus: x.prof + x.mods[a] + x.itemSpellAttack,
 			PreparesSpells: e.Prepares, Ritual: e.Ritual, SpellList: cast.list,
 		}
 		if s := row.Spellcasting; s != nil {

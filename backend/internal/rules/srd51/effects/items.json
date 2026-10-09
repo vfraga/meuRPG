@@ -1,0 +1,1665 @@
+{
+ "source": "SRD 5.1, \"Magic Items\" (the description of each item) and \"Equipment\" (Ammunition); the typed effects and the Portuguese reminders are ours. The Spell Scroll numbers are the SRD table. The groups of swords and axes and the ammunition each weapon fires are our reading of the SRD names.",
+ "groups": {
+  "sword": [
+   "equipment:greatsword",
+   "equipment:longsword",
+   "equipment:rapier",
+   "equipment:scimitar",
+   "equipment:shortsword"
+  ],
+  "sword_slashing": [
+   "equipment:greatsword",
+   "equipment:longsword",
+   "equipment:scimitar"
+  ],
+  "axe": [
+   "equipment:battleaxe",
+   "equipment:greataxe",
+   "equipment:handaxe"
+  ],
+  "axe_or_sword": [
+   "equipment:battleaxe",
+   "equipment:greataxe",
+   "equipment:handaxe",
+   "equipment:greatsword",
+   "equipment:longsword",
+   "equipment:rapier",
+   "equipment:scimitar",
+   "equipment:shortsword"
+  ],
+  "armor_medium_heavy": [
+   "equipment:breastplate",
+   "equipment:chain-mail",
+   "equipment:chain-shirt",
+   "equipment:half-plate-armor",
+   "equipment:ring-mail",
+   "equipment:scale-mail",
+   "equipment:splint-armor",
+   "equipment:plate-armor"
+  ]
+ },
+ "ammunition": {
+  "equipment:shortbow": "equipment:arrow",
+  "equipment:longbow": "equipment:arrow",
+  "equipment:crossbow-hand": "equipment:crossbow-bolt",
+  "equipment:crossbow-light": "equipment:crossbow-bolt",
+  "equipment:crossbow-heavy": "equipment:crossbow-bolt",
+  "equipment:sling": "equipment:sling-bullet",
+  "equipment:blowgun": "equipment:blowgun-needle"
+ },
+ "items": {
+  "item:adamantine-armor": {
+   "slot": "body",
+   "base": {
+    "group": "armor_medium_heavy"
+   },
+   "note_pt": "Um acerto crítico contra quem a veste vira acerto normal: o mestre aplica."
+  },
+  "item:ammunition-1": {
+   "base": {
+    "group": "@ammunition"
+   },
+   "effects": [
+    {
+     "type": "ammunition_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "A munição deixa de ser mágica depois de acertar um alvo: o mestre reduz a quantidade ou troca por munição comum."
+  },
+  "item:ammunition-2": {
+   "base": {
+    "group": "@ammunition"
+   },
+   "effects": [
+    {
+     "type": "ammunition_bonus",
+     "value": 2
+    }
+   ],
+   "note_pt": "A munição deixa de ser mágica depois de acertar um alvo: o mestre reduz a quantidade ou troca por munição comum."
+  },
+  "item:ammunition-3": {
+   "base": {
+    "group": "@ammunition"
+   },
+   "effects": [
+    {
+     "type": "ammunition_bonus",
+     "value": 3
+    }
+   ],
+   "note_pt": "A munição deixa de ser mágica depois de acertar um alvo: o mestre reduz a quantidade ou troca por munição comum."
+  },
+  "item:amulet-of-health": {
+   "slot": "neck",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "con",
+     "value": 19,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:animated-shield": {
+   "slot": "shield",
+   "base": {
+    "fixed": "equipment:shield"
+   },
+   "note_pt": "O escudo animado (ação bônus, 1 minuto) é lembrete."
+  },
+  "item:armor-1": {
+   "slot": "body",
+   "base": {
+    "group": "@armor"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    }
+   ]
+  },
+  "item:armor-2": {
+   "slot": "body",
+   "base": {
+    "group": "@armor"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 2
+    }
+   ]
+  },
+  "item:armor-3": {
+   "slot": "body",
+   "base": {
+    "group": "@armor"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 3
+    }
+   ]
+  },
+  "item:armor-of-invulnerability": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:plate-armor"
+   },
+   "note_pt": "Resistência a dano não mágico e a ação de imunidade são lembretes."
+  },
+  "item:armor-of-resistance": {
+   "slot": "body",
+   "base": {
+    "group": "@armor"
+   },
+   "option": {
+    "damage_types": [
+     "damage-type:acid",
+     "damage-type:cold",
+     "damage-type:fire",
+     "damage-type:force",
+     "damage-type:lightning",
+     "damage-type:necrotic",
+     "damage-type:poison",
+     "damage-type:psychic",
+     "damage-type:radiant",
+     "damage-type:thunder"
+    ]
+   },
+   "effects": [
+    {
+     "type": "option_resistance"
+    }
+   ]
+  },
+  "item:armor-of-vulnerability": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:plate-armor"
+   },
+   "option": {
+    "damage_types": [
+     "damage-type:bludgeoning",
+     "damage-type:piercing",
+     "damage-type:slashing"
+    ]
+   },
+   "effects": [
+    {
+     "type": "option_resistance"
+    }
+   ],
+   "note_pt": "Maldita: vulnerabilidade aos outros dois tipos de dano físico. Lembrete."
+  },
+  "item:arrow-catching-shield": {
+   "slot": "shield",
+   "base": {
+    "fixed": "equipment:shield"
+   },
+   "note_pt": "+2 de CA contra ataques à distância e a reação para atrair o ataque são lembretes."
+  },
+  "item:belt-of-dwarvenkind": {
+   "slot": "belt",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "con",
+     "value": 2,
+     "mode": "add",
+     "cap": 20
+    }
+   ],
+   "note_pt": "A vantagem em Persuasão com anões, a barba e os benefícios para quem não é anão são lembretes."
+  },
+  "item:belt-of-giant-strength-cloud": {
+   "slot": "belt",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "str",
+     "value": 27,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:belt-of-giant-strength-fire": {
+   "slot": "belt",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "str",
+     "value": 25,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:belt-of-giant-strength-frost": {
+   "slot": "belt",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "str",
+     "value": 23,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:belt-of-giant-strength-hill": {
+   "slot": "belt",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "str",
+     "value": 21,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:belt-of-giant-strength-stone": {
+   "slot": "belt",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "str",
+     "value": 23,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:belt-of-giant-strength-storm": {
+   "slot": "belt",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "str",
+     "value": 29,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:berserker-axe": {
+   "slot": "hand",
+   "base": {
+    "group": "axe"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    },
+    {
+     "type": "hp_per_level"
+    }
+   ],
+   "note_pt": "Maldito: não se desfaz do machado e tem desvantagem com outras armas; o bônus de pontos de vida só vale sintonizado. Lembretes da maldição."
+  },
+  "item:boots-of-striding-and-springing": {
+   "slot": "boots",
+   "effects": [
+    {
+     "type": "speed",
+     "value": 30,
+     "mode": "at_least"
+    }
+   ],
+   "note_pt": "Não perder deslocamento por carga ou armadura pesada e o salto triplo são lembretes."
+  },
+  "item:boots-of-the-winterlands": {
+   "slot": "boots",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:cold"
+    }
+   ],
+   "note_pt": "Ignorar terreno difícil de gelo e neve e suportar frio extremo são lembretes."
+  },
+  "item:bracers-of-defense": {
+   "slot": "bracers",
+   "effects": [
+    {
+     "type": "ac",
+     "value": 2,
+     "when": "no_armor_no_shield"
+    }
+   ]
+  },
+  "item:brooch-of-shielding": {
+   "slot": "neck",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:force"
+    }
+   ],
+   "note_pt": "A imunidade ao dano da magia mísseis mágicos é lembrete."
+  },
+  "item:cloak-of-protection": {
+   "slot": "cloak",
+   "effects": [
+    {
+     "type": "ac",
+     "value": 1
+    },
+    {
+     "type": "save",
+     "value": 1
+    }
+   ]
+  },
+  "item:dagger-of-venom": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:dagger"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "O veneno (uma vez por amanhecer) é lembrete."
+  },
+  "item:dancing-sword": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "note_pt": "A espada dançante (ação bônus) é lembrete."
+  },
+  "item:defender": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 3
+    }
+   ],
+   "note_pt": "Passar parte do bônus para a CA no início do turno é lembrete."
+  },
+  "item:demon-armor": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:plate-armor"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "Maldita: não se tira sem remover maldição; desvantagem contra demônios; as manoplas dão golpes desarmados mágicos. Lembretes."
+  },
+  "item:dragon-scale-mail-black": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:acid"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-blue": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:lightning"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-brass": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:fire"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-bronze": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:lightning"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-copper": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:acid"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-gold": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:fire"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-green": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:poison"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-red": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:fire"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-silver": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:cold"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-scale-mail-white": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:scale-mail"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:cold"
+    }
+   ],
+   "note_pt": "Vantagem contra a Presença Aterradora e o sopro de dragões e a ação de sentir o dragão mais próximo são lembretes."
+  },
+  "item:dragon-slayer": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "O dano extra contra dragões é lembrete."
+  },
+  "item:dwarven-plate": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:plate-armor"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 2
+    }
+   ],
+   "note_pt": "A reação que reduz em até 3 m um empurrão forçado no chão é lembrete."
+  },
+  "item:dwarven-thrower": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:warhammer"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 3
+    }
+   ],
+   "note_pt": "Arremesso (alcance 6/18 m), dano extra e retorno à mão são lembretes."
+  },
+  "item:elven-chain": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:chain-shirt"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    },
+    {
+     "type": "armor_proficiency"
+    }
+   ]
+  },
+  "item:flame-tongue": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "note_pt": "As chamas (ação bônus) e os 2d6 de dano de fogo extra são lembretes."
+  },
+  "item:frost-brand": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:fire"
+    }
+   ],
+   "note_pt": "O dano de frio extra, a luz e apagar chamas são lembretes."
+  },
+  "item:gauntlets-of-ogre-power": {
+   "slot": "gloves",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "str",
+     "value": 19,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:giant-slayer": {
+   "slot": "hand",
+   "base": {
+    "group": "axe_or_sword"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "O dano extra e a queda contra gigantes são lembretes."
+  },
+  "item:glamoured-studded-leather-armor": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:studded-leather-armor"
+   },
+   "effects": [
+    {
+     "type": "armor_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "A palavra de comando que muda a aparência da armadura é lembrete."
+  },
+  "item:goggles-of-night": {
+   "slot": "head",
+   "effects": [
+    {
+     "type": "sense",
+     "sense": "darkvision",
+     "value": 60,
+     "mode": "extend"
+    }
+   ]
+  },
+  "item:hammer-of-thunderbolts": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:maul"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "A Ruína dos Gigantes (sintonização, FOR +4, cargas) é lembrete."
+  },
+  "item:headband-of-intellect": {
+   "slot": "head",
+   "effects": [
+    {
+     "type": "ability",
+     "ability": "int",
+     "value": 19,
+     "mode": "set"
+    }
+   ]
+  },
+  "item:holy-avenger": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 3
+    }
+   ],
+   "note_pt": "O dano radiante extra e a aura de vantagem em testes contra magias são lembretes."
+  },
+  "item:javelin-of-lightning": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:javelin"
+   },
+   "note_pt": "A transformação em relâmpago (uma vez por amanhecer) é lembrete."
+  },
+  "item:luck-blade": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    },
+    {
+     "type": "save",
+     "value": 1
+    }
+   ],
+   "note_pt": "Sorte (repetir uma jogada) e Desejo (cargas) são lembretes."
+  },
+  "item:mace-of-disruption": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:mace"
+   },
+   "note_pt": "O dano radiante extra e a destruição de mortos-vivos e ínferos são lembretes."
+  },
+  "item:mace-of-smiting": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:mace"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    }
+   ],
+   "note_pt": "O bônus +3 e o dano extra contra constructos, e o dano extra no 20 natural, são lembretes."
+  },
+  "item:mace-of-terror": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:mace"
+   },
+   "charges": {
+    "max": 3,
+    "regain_dice": "1d3"
+   },
+   "note_pt": "A onda de terror (1 carga) é lembrete."
+  },
+  "item:mithral-armor": {
+   "slot": "body",
+   "base": {
+    "group": "armor_medium_heavy"
+   },
+   "effects": [
+    {
+     "type": "armor_light"
+    }
+   ]
+  },
+  "item:nine-lives-stealer": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 2
+    }
+   ],
+   "note_pt": "As cargas e a morte instantânea num crítico são lembretes."
+  },
+  "item:oathbow": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:longbow"
+   },
+   "note_pt": "O inimigo jurado (vantagem, sem cobertura, dano extra) é lembrete."
+  },
+  "item:plate-armor-of-etherealness": {
+   "slot": "body",
+   "base": {
+    "fixed": "equipment:plate-armor"
+   },
+   "note_pt": "A ação de se tornar etéreo (uma vez por amanhecer) é lembrete."
+  },
+  "item:potion-of-healing-common": {
+   "use": {
+    "heal": "2d4+2"
+   }
+  },
+  "item:potion-of-healing-greater": {
+   "use": {
+    "heal": "4d4+4"
+   }
+  },
+  "item:potion-of-healing-superior": {
+   "use": {
+    "heal": "8d4+8"
+   }
+  },
+  "item:potion-of-healing-supreme": {
+   "use": {
+    "heal": "10d4+20"
+   }
+  },
+  "item:potion-of-heroism": {
+   "use": {
+    "temp_hp": 10
+   },
+   "note_pt": "A magia bênção por 1 hora é lembrete."
+  },
+  "item:ring-of-evasion": {
+   "slot": "ring",
+   "charges": {
+    "max": 3,
+    "regain_dice": "1d3"
+   },
+   "note_pt": "A reação que transforma uma falha em sucesso num teste de DES (1 carga) é lembrete."
+  },
+  "item:ring-of-protection": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "ac",
+     "value": 1
+    },
+    {
+     "type": "save",
+     "value": 1
+    }
+   ]
+  },
+  "item:ring-of-resistance-acid": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:acid"
+    }
+   ]
+  },
+  "item:ring-of-resistance-cold": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:cold"
+    }
+   ]
+  },
+  "item:ring-of-resistance-fire": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:fire"
+    }
+   ]
+  },
+  "item:ring-of-resistance-force": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:force"
+    }
+   ]
+  },
+  "item:ring-of-resistance-lightning": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:lightning"
+    }
+   ]
+  },
+  "item:ring-of-resistance-necrotic": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:necrotic"
+    }
+   ]
+  },
+  "item:ring-of-resistance-poison": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:poison"
+    }
+   ]
+  },
+  "item:ring-of-resistance-psychic": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:psychic"
+    }
+   ]
+  },
+  "item:ring-of-resistance-radiant": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:radiant"
+    }
+   ]
+  },
+  "item:ring-of-resistance-thunder": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:thunder"
+    }
+   ]
+  },
+  "item:ring-of-warmth": {
+   "slot": "ring",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:cold"
+    }
+   ],
+   "note_pt": "Suportar frio extremo é lembrete."
+  },
+  "item:robe-of-the-archmagi": {
+   "slot": "cloak",
+   "effects": [
+    {
+     "type": "ac_base",
+     "value": 15,
+     "dex": true,
+     "when": "no_armor"
+    },
+    {
+     "type": "spell_dc",
+     "value": 2
+    },
+    {
+     "type": "spell_attack",
+     "value": 2
+    }
+   ],
+   "note_pt": "Vantagem em testes de resistência contra magias e a restrição de tendência da túnica são lembretes."
+  },
+  "item:scimitar-of-speed": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:scimitar"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 2
+    }
+   ],
+   "note_pt": "O ataque extra com ação bônus é lembrete."
+  },
+  "item:shield-of-missile-attraction": {
+   "slot": "shield",
+   "base": {
+    "fixed": "equipment:shield"
+   },
+   "note_pt": "Maldito: resistência a dano de ataques à distância com armas e atração dos ataques próximos. Lembretes."
+  },
+  "item:spell-scroll-1st": {
+   "use": {
+    "scroll": 1
+   }
+  },
+  "item:spell-scroll-2nd": {
+   "use": {
+    "scroll": 2
+   }
+  },
+  "item:spell-scroll-3rd": {
+   "use": {
+    "scroll": 3
+   }
+  },
+  "item:spell-scroll-4th": {
+   "use": {
+    "scroll": 4
+   }
+  },
+  "item:spell-scroll-5th": {
+   "use": {
+    "scroll": 5
+   }
+  },
+  "item:spell-scroll-6th": {
+   "use": {
+    "scroll": 6
+   }
+  },
+  "item:spell-scroll-7th": {
+   "use": {
+    "scroll": 7
+   }
+  },
+  "item:spell-scroll-8th": {
+   "use": {
+    "scroll": 8
+   }
+  },
+  "item:spell-scroll-9th": {
+   "use": {
+    "scroll": 9
+   }
+  },
+  "item:spell-scroll-cantrip": {
+   "use": {
+    "scroll": 0
+   }
+  },
+  "item:spellguard-shield": {
+   "slot": "shield",
+   "base": {
+    "fixed": "equipment:shield"
+   },
+   "note_pt": "Vantagem em testes de resistência contra magias e desvantagem nos ataques mágicos contra você são lembretes."
+  },
+  "item:staff-of-charming": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:quarterstaff"
+   },
+   "charges": {
+    "max": 10,
+    "regain_dice": "1d8+2",
+    "spells": [
+     {
+      "spell": "spell:charm-person",
+      "level": 1,
+      "cost": 1
+     },
+     {
+      "spell": "spell:command",
+      "level": 1,
+      "cost": 1
+     },
+     {
+      "spell": "spell:comprehend-languages",
+      "level": 1,
+      "cost": 1
+     }
+    ]
+   },
+   "note_pt": "Virar contra o conjurador uma magia de encantamento e as demais propriedades são lembretes."
+  },
+  "item:staff-of-fire": {
+   "slot": "hand",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:fire"
+    }
+   ],
+   "charges": {
+    "max": 10,
+    "regain_dice": "1d6+4",
+    "spells": [
+     {
+      "spell": "spell:burning-hands",
+      "level": 1,
+      "cost": 1
+     },
+     {
+      "spell": "spell:fireball",
+      "level": 3,
+      "cost": 3
+     },
+     {
+      "spell": "spell:wall-of-fire",
+      "level": 4,
+      "cost": 4
+     }
+    ]
+   },
+   "note_pt": "O que acontece ao gastar a última carga é lembrete."
+  },
+  "item:staff-of-frost": {
+   "slot": "hand",
+   "effects": [
+    {
+     "type": "resistance",
+     "damage_type": "damage-type:cold"
+    }
+   ],
+   "charges": {
+    "max": 10,
+    "regain_dice": "1d6+4",
+    "spells": [
+     {
+      "spell": "spell:cone-of-cold",
+      "level": 5,
+      "cost": 5
+     },
+     {
+      "spell": "spell:fog-cloud",
+      "level": 1,
+      "cost": 1
+     },
+     {
+      "spell": "spell:ice-storm",
+      "level": 4,
+      "cost": 4
+     },
+     {
+      "spell": "spell:wall-of-ice",
+      "level": 6,
+      "cost": 4
+     }
+    ]
+   },
+   "note_pt": "O que acontece ao gastar a última carga é lembrete."
+  },
+  "item:staff-of-healing": {
+   "slot": "hand",
+   "charges": {
+    "max": 10,
+    "regain_dice": "1d6+4",
+    "spells": [
+     {
+      "spell": "spell:cure-wounds",
+      "level": 1,
+      "cost": 1,
+      "cost_per_level": 1,
+      "max_level": 4
+     },
+     {
+      "spell": "spell:lesser-restoration",
+      "level": 2,
+      "cost": 2
+     },
+     {
+      "spell": "spell:mass-cure-wounds",
+      "level": 5,
+      "cost": 5
+     }
+    ]
+   },
+   "note_pt": "O que acontece ao gastar a última carga é lembrete."
+  },
+  "item:staff-of-power": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:quarterstaff"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 2
+    },
+    {
+     "type": "ac",
+     "value": 2
+    },
+    {
+     "type": "save",
+     "value": 2
+    },
+    {
+     "type": "spell_attack",
+     "value": 2
+    }
+   ],
+   "charges": {
+    "max": 20,
+    "regain_dice": "2d8+4",
+    "spells": [
+     {
+      "spell": "spell:cone-of-cold",
+      "level": 5,
+      "cost": 5
+     },
+     {
+      "spell": "spell:fireball",
+      "level": 5,
+      "cost": 5
+     },
+     {
+      "spell": "spell:globe-of-invulnerability",
+      "level": 6,
+      "cost": 6
+     },
+     {
+      "spell": "spell:hold-monster",
+      "level": 5,
+      "cost": 5
+     },
+     {
+      "spell": "spell:levitate",
+      "level": 2,
+      "cost": 2
+     },
+     {
+      "spell": "spell:lightning-bolt",
+      "level": 5,
+      "cost": 5
+     },
+     {
+      "spell": "spell:magic-missile",
+      "level": 1,
+      "cost": 1
+     },
+     {
+      "spell": "spell:ray-of-enfeeblement",
+      "level": 2,
+      "cost": 1
+     },
+     {
+      "spell": "spell:wall-of-force",
+      "level": 5,
+      "cost": 5
+     }
+    ]
+   },
+   "note_pt": "O golpe de poder, o golpe retributivo e o que acontece ao gastar a última carga são lembretes."
+  },
+  "item:staff-of-striking": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:quarterstaff"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 3
+    }
+   ],
+   "charges": {
+    "max": 10,
+    "regain_dice": "1d6+4"
+   },
+   "note_pt": "Gastar até 3 cargas por 1d6 de dano de energia extra por carga é lembrete."
+  },
+  "item:staff-of-swarming-insects": {
+   "slot": "hand",
+   "charges": {
+    "max": 10,
+    "regain_dice": "1d6+4",
+    "spells": [
+     {
+      "spell": "spell:giant-insect",
+      "level": 4,
+      "cost": 4
+     },
+     {
+      "spell": "spell:insect-plague",
+      "level": 5,
+      "cost": 5
+     }
+    ]
+   },
+   "note_pt": "A nuvem de insetos (1 carga) e o que acontece ao gastar a última carga são lembretes."
+  },
+  "item:staff-of-the-woodlands": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:quarterstaff"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 2
+    },
+    {
+     "type": "spell_attack",
+     "value": 2
+    }
+   ],
+   "charges": {
+    "max": 10,
+    "regain_dice": "1d6+4"
+   },
+   "note_pt": "As magias do cajado, a forma de árvore e passos sem rastro são lembretes."
+  },
+  "item:staff-of-thunder-and-lightning": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:quarterstaff"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 2
+    }
+   ],
+   "note_pt": "Relâmpago, trovão, golpe de relâmpago e bola de trovão são lembretes (cada um uma vez por amanhecer)."
+  },
+  "item:staff-of-withering": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:quarterstaff"
+   },
+   "charges": {
+    "max": 3,
+    "regain_dice": "1d3"
+   },
+   "note_pt": "O dano necrótico extra de 2d10 (1 carga) e a desvantagem do alvo são lembretes."
+  },
+  "item:stone-of-good-luck-luckstone": {
+   "effects": [
+    {
+     "type": "save",
+     "value": 1
+    }
+   ],
+   "note_pt": "O +1 também vale para testes de habilidade: o mestre aplica."
+  },
+  "item:sun-blade": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:longsword"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 2
+    },
+    {
+     "type": "weapon_damage_type",
+     "damage_type": "damage-type:radiant"
+    },
+    {
+     "type": "weapon_finesse"
+    }
+   ],
+   "note_pt": "A lâmina de luz (ação bônus), o dano extra contra mortos-vivos e a proficiência com espadas curtas ou longas são lembretes."
+  },
+  "item:sword-of-life-stealing": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "note_pt": "O dano necrótico extra no 20 natural e os pontos de vida temporários são lembretes."
+  },
+  "item:sword-of-sharpness": {
+   "slot": "hand",
+   "base": {
+    "group": "sword_slashing"
+   },
+   "note_pt": "Os dados máximos contra objetos, o dano extra e a decepação são lembretes."
+  },
+  "item:sword-of-wounding": {
+   "slot": "hand",
+   "base": {
+    "group": "sword"
+   },
+   "note_pt": "As feridas que não se curam e o dano necrótico por turno são lembretes."
+  },
+  "item:trident-of-fish-command": {
+   "slot": "hand",
+   "base": {
+    "fixed": "equipment:trident"
+   },
+   "charges": {
+    "max": 3,
+    "regain_dice": "1d3",
+    "spells": [
+     {
+      "spell": "spell:dominate-beast",
+      "level": 4,
+      "cost": 1,
+      "dc": 15
+     }
+    ]
+   },
+   "note_pt": "A magia só vale contra feras com deslocamento de natação inato."
+  },
+  "item:vicious-weapon": {
+   "slot": "hand",
+   "base": {
+    "group": "@weapons"
+   },
+   "note_pt": "O dano extra de 2d6 num acerto crítico é lembrete."
+  },
+  "item:vorpal-sword": {
+   "slot": "hand",
+   "base": {
+    "group": "sword_slashing"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 3
+    }
+   ],
+   "note_pt": "Ignorar resistência a cortante e decapitar no 20 natural são lembretes."
+  },
+  "item:wand-of-binding": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1",
+    "spells": [
+     {
+      "spell": "spell:hold-monster",
+      "level": 5,
+      "cost": 5,
+      "dc": 17
+     },
+     {
+      "spell": "spell:hold-person",
+      "level": 2,
+      "cost": 2,
+      "dc": 17
+     }
+    ]
+   },
+   "note_pt": "A fuga assistida (1 carga) e a última carga são lembretes."
+  },
+  "item:wand-of-enemy-detection": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1"
+   },
+   "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."
+  },
+  "item:wand-of-fear": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1"
+   },
+   "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."
+  },
+  "item:wand-of-fireballs": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1",
+    "spells": [
+     {
+      "spell": "spell:fireball",
+      "level": 3,
+      "cost": 1,
+      "cost_per_level": 1,
+      "max_level": 9,
+      "dc": 15
+     }
+    ]
+   },
+   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+  },
+  "item:wand-of-lightning-bolts": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1",
+    "spells": [
+     {
+      "spell": "spell:lightning-bolt",
+      "level": 3,
+      "cost": 1,
+      "cost_per_level": 1,
+      "max_level": 9,
+      "dc": 15
+     }
+    ]
+   },
+   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+  },
+  "item:wand-of-magic-detection": {
+   "slot": "hand",
+   "charges": {
+    "max": 3,
+    "regain_dice": "1d3",
+    "spells": [
+     {
+      "spell": "spell:detect-magic",
+      "level": 1,
+      "cost": 1
+     }
+    ]
+   }
+  },
+  "item:wand-of-magic-missiles": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1",
+    "spells": [
+     {
+      "spell": "spell:magic-missile",
+      "level": 1,
+      "cost": 1,
+      "cost_per_level": 1,
+      "max_level": 9
+     }
+    ]
+   },
+   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+  },
+  "item:wand-of-paralysis": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1"
+   },
+   "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."
+  },
+  "item:wand-of-polymorph": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1",
+    "spells": [
+     {
+      "spell": "spell:polymorph",
+      "level": 4,
+      "cost": 1,
+      "dc": 15
+     }
+    ]
+   },
+   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+  },
+  "item:wand-of-secrets": {
+   "slot": "hand",
+   "charges": {
+    "max": 3,
+    "regain_dice": "1d3"
+   },
+   "note_pt": "O efeito de gastar uma carga é lembrete."
+  },
+  "item:wand-of-the-war-mage-1": {
+   "slot": "hand",
+   "effects": [
+    {
+     "type": "spell_attack",
+     "value": 1
+    }
+   ],
+   "note_pt": "Ignorar meia cobertura nos ataques de magia é lembrete."
+  },
+  "item:wand-of-the-war-mage-2": {
+   "slot": "hand",
+   "effects": [
+    {
+     "type": "spell_attack",
+     "value": 2
+    }
+   ],
+   "note_pt": "Ignorar meia cobertura nos ataques de magia é lembrete."
+  },
+  "item:wand-of-the-war-mage-3": {
+   "slot": "hand",
+   "effects": [
+    {
+     "type": "spell_attack",
+     "value": 3
+    }
+   ],
+   "note_pt": "Ignorar meia cobertura nos ataques de magia é lembrete."
+  },
+  "item:wand-of-web": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1",
+    "spells": [
+     {
+      "spell": "spell:web",
+      "level": 2,
+      "cost": 1,
+      "dc": 15
+     }
+    ]
+   },
+   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+  },
+  "item:wand-of-wonder": {
+   "slot": "hand",
+   "charges": {
+    "max": 7,
+    "regain_dice": "1d6+1"
+   },
+   "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."
+  },
+  "item:weapon-1": {
+   "slot": "hand",
+   "base": {
+    "group": "@weapons"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 1
+    }
+   ]
+  },
+  "item:weapon-2": {
+   "slot": "hand",
+   "base": {
+    "group": "@weapons"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 2
+    }
+   ]
+  },
+  "item:weapon-3": {
+   "slot": "hand",
+   "base": {
+    "group": "@weapons"
+   },
+   "effects": [
+    {
+     "type": "weapon_bonus",
+     "value": 3
+    }
+   ]
+  }
+ }
+}
