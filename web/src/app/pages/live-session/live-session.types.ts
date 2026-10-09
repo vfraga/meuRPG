@@ -162,6 +162,8 @@ export type LiveEventVm =
   | { readonly kind: 'trapNoticed'; readonly mapId: string; readonly pointId: string }
   /** `creatures_changed` (MR-037): the character's creatures changed outside a combat; read them again. */
   | { readonly kind: 'creaturesChanged' }
+  /** `inventory_changed` (W7-I): a character's items changed (the hint names the character, no item). */
+  | { readonly kind: 'inventoryChanged'; readonly characterId: string }
   /** `content_changed` (10.1d): the table's content changed; read the catalog again with this member's role. */
   | { readonly kind: 'contentChanged' };
 

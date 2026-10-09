@@ -1,0 +1,69 @@
+// The look the inventory's sheets share: a stack of fields, a notice, the footer's buttons.
+:host {
+  display: block;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+}
+
+.lead {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--mr-ink-muted);
+}
+
+.err {
+  display: flex;
+  gap: var(--mr-space-2);
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--mr-danger-text, var(--mr-ink));
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mr-space-3);
+}
+
+.big {
+  min-height: 48px;
+  width: 100%;
+}
+
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+}
+
+.why {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

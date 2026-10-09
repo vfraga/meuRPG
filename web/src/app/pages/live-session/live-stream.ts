@@ -54,6 +54,8 @@ export interface LiveStreamHandlers {
   onTrapNoticed?(notice: { mapId: string; pointId: string }): void;
   /** `creatures_changed` (MR-037): a character's creatures changed outside a combat, read them again. */
   onCreaturesChanged?(): void;
+  /** `inventory_changed` (W7-I): a character's inventory changed; read it again. */
+  onInventoryChanged?(characterId: string): void;
   /** `content_changed` (10.1d): the table's content changed; a screen that shows the catalog reads it again. */
   onContentChanged?(): void;
   /** `puzzle_changed` (MR-038): a puzzle changed; the page reads it again (the server already throttles the hint). */
@@ -236,6 +238,9 @@ export class LiveStream {
             break;
           case 'creaturesChanged':
             this.options.handlers.onCreaturesChanged?.();
+            break;
+          case 'inventoryChanged':
+            this.options.handlers.onInventoryChanged?.(event.characterId);
             break;
           case 'contentChanged':
             this.options.handlers.onContentChanged?.();

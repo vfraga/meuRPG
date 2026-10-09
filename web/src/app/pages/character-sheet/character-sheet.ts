@@ -136,6 +136,8 @@ export class CharacterSheetPage {
 
   /** Bumped when the stream says the character's creatures changed (the panel reads its list again). */
   protected readonly creaturesTick = signal(0);
+  /** Bumped when the stream says this character's items changed (W7-I): the inventory panel reads them again. */
+  protected readonly inventoryTick = signal(0);
   /** Bumped when this character's vitals or the combat changed: a Wild Shape form may have ended. */
   protected readonly formTick = signal(0);
 
@@ -185,6 +187,12 @@ export class CharacterSheetPage {
           (who) => {
             if (who === null || who === this.characterId) {
               this.formTick.update((n) => n + 1);
+            }
+          },
+          (who) => {
+            if (who === null || who === this.characterId) {
+              this.inventoryTick.update((n) => n + 1);
+              void this.reloadQuietly();
             }
           },
         ),

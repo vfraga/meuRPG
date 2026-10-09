@@ -26,13 +26,15 @@ export class XpWatcher {
    * `onCreatures`, when given, on every `creatures_changed` and on a reconnection too, and `onContent` on every
    * `content_changed` (the table's content moved: the editor and the level-up read their catalog again), and
    * `onForm` when a character's hit points or the combat changed (a Wild Shape form ends that way), with the
-   * character of a vitals event, or `null` when it is the combat that changed. */
+   * character of a vitals event, or `null` when it is the combat that changed, and `onInventory` on every
+   * `inventory_changed` (the character whose items changed, or `null` after a reconnection). */
   follow(
     campaignId: string | null,
     onChange: () => void,
     onCreatures?: () => void,
     onContent?: () => void,
     onForm?: (characterId: string | null) => void,
+    onInventory?: (characterId: string | null) => void,
   ): void {
     if (campaignId === this.campaignId) {
       return;
@@ -57,6 +59,7 @@ export class XpWatcher {
             onCreatures?.();
             onContent?.();
             onForm?.(null);
+            onInventory?.(null);
           }
           first = false;
         },
@@ -64,6 +67,7 @@ export class XpWatcher {
         onEncounterChanged: () => onForm?.(null),
         onXpChanged: onChange,
         onCreaturesChanged: onCreatures,
+        onInventoryChanged: (characterId) => onInventory?.(characterId),
         onContentChanged: onContent,
         onEnded: () => this.stop(stream),
         onFatal: () => this.stop(stream),

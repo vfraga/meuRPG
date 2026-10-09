@@ -170,6 +170,8 @@ export interface FullSheetVm {
   readonly languages: readonly string[];
   readonly proficiencies: readonly string[];
   readonly equipment: readonly EquipmentItemVm[];
+  /** The numbers the equipped items change, one line each, for "por causa de" (W7-I). */
+  readonly itemModifiers: readonly ItemModifierVm[];
   /** The background's equipment as text: a table background's, or what the
    * player wrote for a custom ("Outro") background; empty otherwise. */
   readonly backgroundEquipment: string;
@@ -185,6 +187,14 @@ export interface FullSheetVm {
   /** Internal: never shown on the page (docs/design.md, "Nada interno na
    * tela"). */
   readonly contentVersion: string;
+}
+
+/** One number an item changes: what, by how much, and the item as the table calls it. */
+export interface ItemModifierVm {
+  readonly target: string;
+  readonly value: number;
+  readonly sourceItemId: string;
+  readonly label: string;
 }
 
 /** A minion or story-NPC sheet (`BasicSheet`, plan §4). */

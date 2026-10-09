@@ -190,6 +190,12 @@ function toFullSheetVm(full: GenFullSheet, derived: GenDerivedSheet): FullSheetV
       ...(derived.proficiencies?.weapons ?? []),
       ...(derived.proficiencies?.tools ?? []),
     ],
+    itemModifiers: derived.itemModifiers.map((m) => ({
+      target: m.target,
+      value: m.value,
+      sourceItemId: m.sourceItemId,
+      label: m.labelPt,
+    })),
     equipment: full.equipment.map((item) => ({ name: item.name, quantity: item.quantity || 1 })),
     backgroundEquipment: derived.backgroundEquipmentPt,
     coins: {
