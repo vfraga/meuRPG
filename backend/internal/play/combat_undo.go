@@ -31,6 +31,7 @@ var undoableKinds = []string{
 	eventAttackRolled, eventDamageRolled, eventDamageApplied, eventDamageDiscarded, eventActionTaken, eventHitPointsAdjusted,
 	eventSpellCast, eventReactionUsed, eventReactionDeclined, eventDeathSaveRolled, eventConditionsSet,
 	eventCombatantMoved, eventTrapTriggered, eventWildShapeStarted, eventWildShapeEnded, eventFamiliarSight,
+	eventLegendaryResistance,
 }
 
 // recentEvents is how many of the session's latest events the search for the
@@ -76,6 +77,11 @@ func lastAction(recent []playdb.ListRecentSessionEventsRow, encounterID string) 
 		// the move leaves the door open (a door opened stays opened), and the line
 		// stays: it never closes the chain either.
 		if e.Kind == eventDoorOpened {
+			continue
+		}
+		// A check the master rolled for a monster changes nothing an undo could put back, and
+		// closes no chain: the action before it is still the one to take back.
+		if e.Kind == eventCombatantCheck {
 			continue
 		}
 		// A puzzle shown, solved, reset or closed is no action of the combat (MR-038), and
@@ -396,6 +402,10 @@ func (s *Service) takeBack(ctx context.Context, c *combatTx, kind string, ev act
 		if v != nil {
 			vitals = append(vitals, v)
 		}
+	}
+	// What a monster's stat block spent or gave: its state, the conditions, the pending damages.
+	if err := s.takeBackMonster(ctx, c, ev, find); err != nil {
+		return nil, err
 	}
 
 	switch kind {
@@ -741,6 +751,8 @@ func (s *Service) takeBack(ctx context.Context, c *combatTx, kind string, ev act
 		if err := s.sightUndo(ctx, c, ev, find, keep); err != nil {
 			return nil, err
 		}
+	case eventLegendaryResistance:
+		// Everything it changed is put back above (takeBackMonster).
 	default:
 		return nil, fmt.Errorf("event kind %q cannot be undone", kind)
 	}

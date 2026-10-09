@@ -280,7 +280,9 @@ func (s *Service) GetTurnOptions(
 	}
 	for _, p := range open {
 		if deref(p.AttackerID) == who.ID && pendingVisible(p, d.cs, v) {
-			res.PendingDamages = append(res.PendingDamages, pendingProto(p, d.cs))
+			pd := pendingProto(p, d.cs)
+			pd.AttackKey = v.attackKey(pd.AttackKey)
+			res.PendingDamages = append(res.PendingDamages, pd)
 		}
 	}
 	return connect.NewResponse(res), nil
@@ -572,6 +574,11 @@ func (s *Service) RollAttack(
 	}
 	// An opportunity attack is a reaction attack (MR-034).
 	asReaction := req.Msg.GetAsReaction() || offerID != ""
+	// A monster's legendary action is taken off its turn, and is no action of it.
+	legendaryKey := req.Msg.GetLegendaryOptionKey()
+	if legendaryKey != "" && (asReaction || m.Role != authz.RoleMaster) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("legendary_option_key is the master's, and not for an opportunity attack"))
+	}
 	v := viewerOf(m)
 
 	var made actionEvent
@@ -622,7 +629,7 @@ func (s *Service) RollAttack(
 		}
 		if asReaction {
 			err = s.mustReactNow(ctx, c, attacker, offerID != "")
-		} else {
+		} else if legendaryKey == "" { // a legendary action is checked by startMonsterAttack
 			err = s.mustActNow(ctx, c, attacker)
 		}
 		if err != nil {
@@ -649,6 +656,11 @@ func (s *Service) RollAttack(
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("attack_key is not one of the attacker's attacks"))
 		}
 		attack := attackerSheet.Attacks[i]
+		// A monster's attack: the limit of its action and its legendary cost (combat_monster_attack.go).
+		mattack, err := s.startMonsterAttack(ctx, c, attacker, attackerSheet, attackKey, legendaryKey)
+		if err != nil {
+			return nil, err
+		}
 		terrain, err := s.terrainOf(ctx, c.tx, m.CampaignID, c.enc)
 		if err != nil {
 			return nil, err
@@ -753,6 +765,8 @@ func (s *Service) RollAttack(
 			CoverRestricted: cp.restricted, CoverSeenBy: cp.seenBy,
 		}
 		switch {
+		case legendaryKey != "":
+			// The attack is a legendary action: it takes none of the creature's action.
 		case asReaction:
 			after.ReactionUsed = true
 		case bonusKind == combat.BonusFlurry:
@@ -791,12 +805,17 @@ func (s *Service) RollAttack(
 				// it is negative, or the character fights with two weapons).
 				bonus = combat.OffHandBonus(bonus, attack.AbilityMod, attackerSheet.TwoWeaponFighting)
 			}
-			p, err := s.openHit(ctx, c, m.CampaignID, attacker, target, attackKey,
-				link.Dice{Count: attack.DiceCount, Sides: attack.DiceSides, Bonus: bonus, DamageType: attack.DamageType}, result.Critical, result.Total, targetAC)
-			if err != nil {
-				return nil, err
+			if attack.DamageType != "" { // an attack with no damage has nothing to roll (a web)
+				p, err := s.openHit(ctx, c, m.CampaignID, attacker, target, attackKey,
+					link.Dice{Count: attack.DiceCount, Sides: attack.DiceSides, Bonus: bonus, DamageType: attack.DamageType}, result.Critical, result.Total, targetAC)
+				if err != nil {
+					return nil, err
+				}
+				made.Pending = p.ID
 			}
-			made.Pending = p.ID
+		}
+		if err := s.finishMonsterAttack(ctx, c, attacker, mattack, result.Hit, result.Critical, target, attack.DamageType != "", &made); err != nil {
+			return nil, err
 		}
 		if offerID != "" {
 			var damage *string // the damage the attack opened: the 0 hit points rule finds the offer by it
@@ -848,7 +867,7 @@ func (s *Service) RollAttack(
 	if v.master {
 		roll.TargetArmorClass = new(ev.TargetAC) // "Acertou contra CA 18": never a player's
 	}
-	return connect.NewResponse(&playv1.RollAttackResponse{Encounter: out, PendingDamage: pending, Roll: roll}), nil
+	return connect.NewResponse(&playv1.RollAttackResponse{Encounter: out, PendingDamage: pending, Roll: roll, Rider: s.riderResponse(ctx, m, v, ev)}), nil
 }
 
 // faceList is the face of the d20 of an attack roll; none for a physical one,
@@ -889,6 +908,7 @@ func (s *Service) pendingFor(ctx context.Context, res combatResult, id string, v
 		return nil, nil
 	}
 	out := pendingProto(p, cs)
+	out.AttackKey = v.attackKey(out.AttackKey)
 	if p.TrapPointID != nil && v.master && s.traps != nil { // a fired trap is public; its name is the master's card's
 		if names, err := s.traps.TrapNames(ctx, res.session.CampaignID, []string{*p.TrapPointID}); err == nil {
 			out.TrapName = names[*p.TrapPointID]
@@ -1069,6 +1089,11 @@ func (s *Service) RollDamage(
 				made.Settled = append(made.Settled, hit)
 			}
 		}
+		// The rest of a monster's hit: its other damage parts, the saving throw and the
+		// condition (combat_monster_hit.go).
+		if err := s.afterMonsterHit(ctx, c, p, attacker, target, &made); err != nil {
+			return nil, err
+		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
 			return nil, fmt.Errorf("touch the encounter: %w", err)
 		}
@@ -1114,6 +1139,10 @@ func (s *Service) RollDamage(
 			resp.CastPendingDamages = append(resp.CastPendingDamages, other)
 		}
 	}
+	if resp.FollowUpPendingDamages, err = s.monsterFollowUps(ctx, res, ev, v); err != nil {
+		return nil, err
+	}
+	resp.Rider = s.riderResponse(ctx, m, v, ev)
 	return connect.NewResponse(resp), nil
 }
 

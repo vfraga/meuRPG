@@ -91,6 +91,11 @@ type saveRoll struct {
 	// Unknown says the target is a basic-sheet NPC with no saving throw bonus:
 	// the roll is d20 + 0 and the master may overrule it.
 	Unknown bool `json:"bonus_unknown,omitempty"`
+	// OnSuccess is what a success still takes ("none", "half", "other"): a Legendary
+	// Resistance that turns a failure into a success reads it.
+	OnSuccess string `json:"on_success,omitempty"`
+	// Ability is the saving throw's ability ("dex"), which the prompt for a Legendary Resistance names.
+	Ability string `json:"ability,omitempty"`
 }
 
 // castHit is what a cast did to one target.
@@ -434,6 +439,9 @@ type actionEvent struct {
 	// D20B is the second d20 of a Perception search with disadvantage.
 	D20B  int32    `json:"d20_b,omitempty"`
 	Found []string `json:"found,omitempty"`
+	// Monster is what a monster's stat block added to the event: what it spent, the recharge
+	// rolls, the legendary action, the rider of a hit, a Legendary Resistance (combat_monster.go).
+	Monster *monsterEvent `json:"monster,omitempty"`
 }
 
 // readEvent decodes an event's payload. A payload of this module never fails

@@ -42,7 +42,7 @@ func (c *content) planSpellcasting(m *srd51.Monster, a srd51.MonsterAbility) (Sp
 	fail := func(format string, args ...any) (SpellcastingPlan, error) {
 		return SpellcastingPlan{}, fmt.Errorf("%s: %s", a.Name, fmt.Sprintf(format, args...))
 	}
-	sc := SpellcastingPlan{Innate: a.Name == "Innate Spellcasting", Name: a.Name, Text: a.Desc}
+	sc := SpellcastingPlan{Key: m.Key + "#" + slugOf(a.Name), Innate: a.Name == "Innate Spellcasting", Name: a.Name, Text: a.Desc}
 	am := spellAbilityRe.FindStringSubmatch(a.Desc)
 	if am == nil {
 		return fail("no spellcasting ability")

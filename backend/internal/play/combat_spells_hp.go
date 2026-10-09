@@ -248,6 +248,10 @@ func (s *Service) giveCondition(ctx context.Context, c *combatTx, t playdb.Comba
 	if key == "" || slices.Contains(t.Conditions, key) || len(t.Conditions) >= maxConditions {
 		return nil
 	}
+	// A creature immune to a condition cannot suffer it (SRD 5.1, Monsters: condition immunities).
+	if immune, err := s.conditionImmune(ctx, c.tx, c.session.CampaignID, t, key); err != nil || immune {
+		return err
+	}
 	return s.setCondition(ctx, c, t, append(slices.Clone(t.Conditions), key), h)
 }
 

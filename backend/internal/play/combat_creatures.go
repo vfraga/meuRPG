@@ -83,6 +83,10 @@ func (s *Service) optionsOf(ctx context.Context, tx pgx.Tx, campaignID string, c
 	if opts.GetEconomy() != nil {
 		opts.Economy.Movement = movementLeftOf(c)
 	}
+	// A monster's slots and uses are what it has spent in this combat (combat_monster_cast.go).
+	if err := s.monsterCasting(ctx, tx, campaignID, c, opts); err != nil {
+		return nil, err
+	}
 	return opts, nil
 }
 

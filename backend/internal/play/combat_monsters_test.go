@@ -232,7 +232,7 @@ func TestMR042_AMonstersCriticalFollowsTheTablesRule(t *testing.T) {
 		if e.GetCurrentCombatantId() != a.id(t, "Bandido") {
 			t.Fatalf("%s: %s is on turn, want the Bandido", tc.name, e.GetCurrentCombatantId())
 		}
-		hit := a.mustAttack(t, a.master, e, "Bandido", sword, "Toren", d20(20))
+		hit := a.mustAttack(t, a.master, e, "Bandido", banditScimitar, "Toren", d20(20))
 		if hit.GetRoll().GetOutcome() != playv1.AttackOutcome_ATTACK_OUTCOME_CRITICAL_HIT {
 			t.Fatalf("%s: the Bandido's roll = %v, want a critical hit", tc.name, hit.GetRoll())
 		}
@@ -296,7 +296,7 @@ func TestRN20_PlayersNeverReceiveAMonstersNumbers(t *testing.T) {
 	if e.GetCurrentCombatantId() != a.id(t, "Bandido 2") {
 		t.Fatalf("on turn = %s, want Bandido 2", e.GetCurrentCombatantId())
 	}
-	a.mustAttack(t, a.master, e, "Bandido 2", sword, "Toren", d20(15))
+	a.mustAttack(t, a.master, e, "Bandido 2", banditScimitar, "Toren", d20(15))
 	for who, u := range map[string]*user{"Caio": a.caio, "Ana": a.ana} {
 		logs, err := protojson.Marshal(a.log(t, u, a.get(t, u)))
 		if err != nil {
@@ -657,6 +657,9 @@ func TestMR042_TheStreamCarriesNoMonster(t *testing.T) {
 	}
 }
 
+// banditScimitar is the Bandit's attack action: a monster of the combat attacks with its stat block's actions.
+const banditScimitar = "monster:bandit#scimitar"
+
 // TestMR042_MultiattackFollowsTheSRDCount: the turn options of a monster count as many
 // attacks to the Attack action as the creature's Multiattack (the SRD's count: the
 // Veterano 3, the Urso Pardo 2, the Montículo Movediço 2) and run out after the last.
@@ -666,10 +669,11 @@ func TestMR042_MultiattackFollowsTheSRDCount(t *testing.T) {
 	t.Parallel()
 	a := newArmed(t)
 	for _, tc := range []struct {
-		key  string
-		name string
-		n    int
-	}{{"monster:veteran", "Veterano", 3}, {"monster:brown-bear", "Urso", 2}, {"monster:shambling-mound", "Monticulo", 2}} {
+		key    string
+		name   string
+		n      int
+		attack string
+	}{{"monster:veteran", "Veterano", 3, "monster:veteran#longsword"}, {"monster:brown-bear", "Urso", 2, "monster:brown-bear#bite"}, {"monster:shambling-mound", "Monticulo", 2, "monster:shambling-mound#slam"}} {
 		e := a.monsterSetup(t, true)
 		a.h.roller.queue(20)
 		a.mustAddMonsters(t, e, func(r *playv1.AddMonstersRequest) { r.CreatureKey, r.Count, r.Name = tc.key, 1, tc.name })
@@ -682,7 +686,7 @@ func TestMR042_MultiattackFollowsTheSRDCount(t *testing.T) {
 			t.Fatalf("%s: %d attacks per action, %d left at the start; want %d", tc.name, per, atLeft, tc.n)
 		}
 		for i := 1; i <= tc.n; i++ {
-			if _, err := a.attack(t, a.master, e, tc.name, sword, "Toren", d20(1)); err != nil {
+			if _, err := a.attack(t, a.master, e, tc.name, tc.attack, "Toren", d20(1)); err != nil {
 				t.Fatalf("%s: attack %d of %d error = %v", tc.name, i, tc.n, err)
 			}
 			if _, atLeft := left(); int(atLeft) != tc.n-i {

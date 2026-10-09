@@ -49,9 +49,12 @@ type content struct {
 	legendaryPerRound map[string]int
 	innateUses        map[string]int
 	monsterPlans      map[string]*MonsterPlan
-	magicItems        map[string]*srd51.MagicItem
-	languages         map[string]*srd51.Language
-	named             map[string]*srd51.Named
+	// engineTraits are the traits of a stat block the engine applies, by the SRD's name
+	// (effects/monster_traits.json).
+	engineTraits map[string]bool
+	magicItems   map[string]*srd51.MagicItem
+	languages    map[string]*srd51.Language
+	named        map[string]*srd51.Named
 
 	// classLevels[class][n-1] is row n of the class table, and
 	// subclassLevels[subclass][n] the subclass row at class level n.
@@ -289,6 +292,9 @@ func load(fsys fs.FS) (*content, error) {
 	c.multiclassTable = c.findMulticlassTable()
 	c.buildCatalog(nil)
 	c.buildCreatures()
+	if err := c.loadMonsterTraits(fsys); err != nil {
+		return nil, err
+	}
 	if err := c.buildPlans(); err != nil {
 		return nil, err
 	}
@@ -426,7 +432,7 @@ func (c *content) indexLevels(fsys fs.FS) error {
 }
 
 // loadEffects reads every effects file except names_pt.json, revision.json,
-// standard_actions.json, advancement.json, spells.json, traps.json, lights.json, encounter_budget.json, consumables.json, magic_item_values.json and treasure.json (tables, not effects), checks
+// standard_actions.json, advancement.json, spells.json, traps.json, lights.json, encounter_budget.json, consumables.json, magic_item_values.json treasure.json and monster_traits.json (tables, not effects), checks
 // and compiles each effect.
 func (c *content) loadEffects(fsys fs.FS) error {
 	files, err := fs.Glob(fsys, "effects/*.json")
@@ -435,7 +441,7 @@ func (c *content) loadEffects(fsys fs.FS) error {
 	}
 	for _, name := range files {
 		switch path.Base(name) {
-		case "names_pt.json", "revision.json", "standard_actions.json", "advancement.json", "spells.json", "spell_targets.json", "corrections.json", "traps.json", "lights.json", "consumables.json", "encounter_budget.json", "magic_item_values.json", "treasure.json":
+		case "names_pt.json", "revision.json", "standard_actions.json", "advancement.json", "spells.json", "spell_targets.json", "corrections.json", "traps.json", "lights.json", "consumables.json", "encounter_budget.json", "magic_item_values.json", "treasure.json", "monster_traits.json":
 			continue
 		}
 		var f struct {
@@ -1203,8 +1209,9 @@ func (c *content) correctCreatureLists(key string, m *srd51.Monster, field strin
 	return fmt.Errorf("field %q cannot be corrected", field)
 }
 
-// isAttackName reports whether key is "attack:<slug>" for the name of an attack
-// action of some SRD creature (the Portuguese names of creature attacks).
+// isAttackName reports whether key is "attack:<slug>" for the name of an action, a legendary
+// action, a trait or a reaction of some SRD creature (the Portuguese names of what a stat block
+// does; the prefix is from the attacks, the first to be named).
 func (c *content) isAttackName(key string) bool {
 	slug, ok := strings.CutPrefix(key, "attack:")
 	if !ok {
@@ -1212,8 +1219,15 @@ func (c *content) isAttackName(key string) bool {
 	}
 	for _, m := range c.monsters {
 		for _, a := range m.Actions {
-			if a.HasAttack && slugOf(a.Name) == slug {
+			if slugOf(a.Name) == slug {
 				return true
+			}
+		}
+		for _, list := range [][]srd51.MonsterAbility{m.SpecialAbilities, m.Reactions, m.LegendaryActions} {
+			for _, a := range list {
+				if slugOf(costRe.ReplaceAllString(a.Name, "")) == slug {
+					return true
+				}
 			}
 		}
 	}

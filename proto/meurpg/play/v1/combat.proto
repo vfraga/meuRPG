@@ -11,6 +11,7 @@ syntax = "proto3";
 package meurpg.play.v1;
 
 import "google/protobuf/timestamp.proto";
+import "meurpg/play/v1/creature_types.proto";
 import "meurpg/rules/v1/rules.proto";
 
 // CombatService runs a combat (an "encounter") inside the campaign's open
@@ -1465,6 +1466,29 @@ enum EncounterBlockedReason {
   // with a weapon or an unarmed strike, and that action has not been taken yet
   // this turn. GetTurnOptions says it before, as ATTACK_ACTION_FIRST.
   ENCOUNTER_BLOCKED_REASON_ATTACK_ACTION_FIRST = 67;
+  // The stat block's actions (MonsterService, RollAttack with a legendary action).
+  // 80 to 89 are the monsters'.
+  //
+  // UseMonsterAction, RollAttack: the action recharges ("Recharge 5-6") and has
+  // not recharged yet. The master only; a player never gets it.
+  ENCOUNTER_BLOCKED_REASON_MONSTER_ACTION_RECHARGING = 80;
+  // UseMonsterAction, RollAttack with `legendary_option_key`: the creature has
+  // fewer legendary actions left than the option costs.
+  ENCOUNTER_BLOCKED_REASON_LEGENDARY_ACTIONS_SPENT = 81;
+  // UseMonsterAction, RollAttack with `legendary_option_key`: a legendary action
+  // is taken at the end of another creature's turn, by a creature that can act:
+  // not on its own turn, not incapacitated (paralyzed, stunned, unconscious,
+  // petrified or incapacitated), in a running combat.
+  ENCOUNTER_BLOCKED_REASON_LEGENDARY_NOT_NOW = 82;
+  // SetCombatantConditions: the creature cannot suffer the condition (its stat
+  // block's condition immunities); `condition_key` says which. Only the master
+  // calls it, so only the master reads the reason.
+  ENCOUNTER_BLOCKED_REASON_CONDITION_IMMUNE = 83;
+  // UseLegendaryResistance: the creature has used all its Legendary Resistance.
+  ENCOUNTER_BLOCKED_REASON_LEGENDARY_RESISTANCE_SPENT = 84;
+  // UseLegendaryResistance: the damage of the failed save has been rolled
+  // already; the master corrects it with the amount of ApplyPendingDamage.
+  ENCOUNTER_BLOCKED_REASON_SAVE_SETTLED = 85;
 }
 
 // FamiliarSightBlockedReason says why "Ver pelos olhos do familiar" was refused
@@ -1519,6 +1543,8 @@ message EncounterBlocked {
   bool jump_running_start = 9;
   // FAMILIAR_SIGHT_BLOCKED: the cause.
   FamiliarSightBlockedReason familiar_sight_reason = 20;
+  // CONDITION_IMMUNE: the condition the creature is immune to ("condition:charmed").
+  string condition_key = 21;
 }
 
 // Encounter is a combat as the caller may see it.
@@ -1595,6 +1621,11 @@ message Encounter {
   // they see it). Nobody else gets any. Empty when nothing waits. The app opens
   // its prompt from this after each `encounter_changed`.
   repeated OpportunityOffer opportunity_offers = 18;
+  // The chances a creature has to take a legendary action, at the end of another creature's
+  // turn, and the failed saving throws that wait for a Legendary Resistance answer. Only the
+  // master gets them; a player's are empty (RN-10, RN-20). 60 to 69 are the monsters'.
+  repeated LegendaryOffer legendary_offers = 60;
+  repeated LegendaryResistancePrompt legendary_resistance_prompts = 61;
   // How the combat is played (RN-25): GRID draws the map, THEATRE draws a list
   // (no map, no positions, movement by number). Chosen when the combat started;
   // it never changes, so a screen can trust it for the whole combat. Never
@@ -1814,6 +1845,12 @@ message Combatant {
   // It took the Disengage action this turn (like `dashed`): leaving a hostile
   // creature's reach provokes no opportunity attack. Same audience as `dashed`.
   bool disengaged = 45;
+  // A monster made from an SRD creature, only for the master (RN-20): its sheet (saving throws,
+  // skills, immunities, resistances, vulnerabilities, condition immunities, spellcasting, traits)
+  // and its legendary actions and Legendary Resistance. Unset for anyone else and for every player.
+  // 70 to 79 are the monsters'.
+  CreatureSheet creature_sheet = 70;
+  CreatureLegendaryState legendary = 71;
   // Whether the caller's player plays this combatant: their own character, or
   // one of its creatures. Always false for the master. `mine` stays true only
   // for the player's own character, so a screen that finds "my" combatant with
@@ -2558,6 +2595,14 @@ message RollAttackRequest {
   // is `failed_precondition` (REACTION_USED). The cover is measured with the
   // mover on the square it left the reach at, not where it stands now.
   string opportunity_offer_id = 10;
+  // Takes the attack as a legendary action of the attacker: the key of one of the
+  // creature's legendary options (MonsterLegendaryOption.key) that makes this attack
+  // ("The dragon makes a tail attack"). Only the master. The attack is made off the
+  // attacker's turn, spends the option's cost from the creature's legendary actions
+  // and none of its action, and needs the attacker not to be on turn and able to act
+  // (LEGENDARY_NOT_NOW, LEGENDARY_ACTIONS_SPENT). `invalid_argument`: the option is
+  // not the attacker's or does not make `attack_key`.
+  string legendary_option_key = 11;
 }
 
 // AttackRoll is the attack roll and what it did.
@@ -2589,6 +2634,9 @@ message RollAttackResponse {
   // Set when the attack hit: the damage to roll. For the master and the
   // attacker's player only.
   PendingDamage pending_damage = 3;
+  // A monster's hit that has no damage to roll (a grapple, a web) gives its rider now: what the
+  // target's saving throw and the condition it got. The master's only.
+  CombatLogRider rider = 4;
 }
 
 // RollDamageRequest rolls the damage of a hit.
@@ -2618,6 +2666,15 @@ message RollDamageResponse {
   // The other pending damages of the same cast that this roll settled too
   // (an area spell's damage is one roll for all), as the caller may see them.
   repeated PendingDamage cast_pending_damages = 3;
+  // The pending damages this roll opened for the rest of a monster's hit, as the caller
+  // may see them: the other damage parts of the attack (a dragon's bite plus fire) and the
+  // damage of a failed saving throw the hit asked of its target (a spider's poison). Each is
+  // its own roll (RollDamage), and the ones against a player's character wait for the
+  // master as any damage does. Empty for any other roll.
+  repeated PendingDamage follow_up_pending_damages = 4;
+  // What the first damage of a monster's hit gave its target besides the damage (a saving
+  // throw, a condition). The master's only.
+  CombatLogRider rider = 5;
 }
 
 // ApplyPendingDamageRequest applies a rolled damage.
@@ -3236,6 +3293,19 @@ enum CombatLogKind {
   // (2d8 + 2: 3, 4)"). Only the master gets the line, and it also comes from
   // before the combat begins (round 0).
   COMBAT_LOG_KIND_MONSTERS_ADDED = 24;
+  // The lines of a monster's stat block (MonsterService). 40 to 49 are the monsters'.
+  //
+  // At the start of a monster's turn the server rolled the d6 of the actions that
+  // wait for their recharge: `monster_event.recharges`. Only the master gets the line
+  // (a monster's recharge is the master's secret).
+  COMBAT_LOG_KIND_MONSTER_RECHARGE = 40;
+  // The master used the creature's Legendary Resistance on the failed save of a cast:
+  // the actor is the creature, `key` the cast's spell or action. Only the master gets
+  // the line; the players' line of the cast says the creature saved.
+  COMBAT_LOG_KIND_LEGENDARY_RESISTANCE = 41;
+  // The master rolled a check of a monster (RollCombatantCheck):
+  // `monster_event.check_pt` and `monster_event.check_roll`. Only the master.
+  COMBAT_LOG_KIND_COMBATANT_CHECK = 42;
 }
 
 // WildShapeEndReason says why a druid's beast form ended.
@@ -3349,6 +3419,61 @@ message CombatLogEntry {
   CombatLogDoor door = 42;
   // MONSTERS_ADDED: the new monsters, in the order of their names.
   repeated CombatLogMonster monsters = 43;
+  // ATTACK by a monster, once its damage was rolled: what the hit gave besides the damage
+  // (a saving throw the target made, a condition it got). Unset when the hit gave none.
+  CombatLogRider rider = 60;
+  // ATTACK by a monster: the damage of the attack's other parts and of a failed saving throw
+  // the hit asked (a spider's poison), in the order they were opened, once the master rolled them.
+  repeated CombatLogDamage more_damages = 62;
+  // ATTACK and ACTION and SPELL_CAST by a monster: taken as a legendary action, off the creature's
+  // turn. The players see that it happened, not how many legendary actions are left.
+  bool legendary = 63;
+  // MONSTER_RECHARGE, LEGENDARY_RESISTANCE and COMBATANT_CHECK: the details. Only the master.
+  CombatLogMonsterEvent monster_event = 61;
+}
+
+// CombatLogRider is what a monster's hit gave its target besides the damage: the saving
+// throw the target made against the hit's rider, and the condition a failure gave or a
+// grapple. The target's player and everyone who sees the attack read that the target
+// saved or failed and the condition; the dice, the DC and the immunity are the master's.
+message CombatLogRider {
+  // The saving throw of the target against the rider (outcome for all; the roll for the
+  // master and the target's own player; the DC for the master).
+  SaveResult save = 1;
+  // The condition the target got ("condition:paralyzed") with its Portuguese name; empty
+  // when it got none.
+  string condition_key = 2;
+  string condition_pt = 3;
+  // Only the master: the target would have got the condition but is immune to it.
+  bool immune = 4;
+  // The grapple's escape DC (only the master and the target's own player); 0 for no grapple.
+  int32 escape_dc = 5;
+  // The damage a failed save dealt (a poison bite): the pending damages it opened, which
+  // RollDamage settles. Only the master and the attacker's player.
+  repeated string pending_damage_ids = 6;
+}
+
+// CombatLogMonsterEvent is the details of a line of a monster's stat block. Only the
+// master gets it.
+message CombatLogMonsterEvent {
+  // MONSTER_RECHARGE: the d6 of each action that was waiting.
+  repeated CombatLogRecharge recharges = 1;
+  // LEGENDARY_RESISTANCE: the uses left after this one.
+  int32 resistance_left = 2;
+  // COMBATANT_CHECK: the check ("Percepção", "Força") and the roll.
+  string check_pt = 3;
+  DiceRoll check_roll = 4;
+}
+
+// CombatLogRecharge is the recharge roll of one action at the start of the monster's turn.
+message CombatLogRecharge {
+  string action_key = 1;
+  // The action's name in Portuguese when the content has one, else the SRD's.
+  string action_name = 2;
+  // The d6, the lowest face that recharges it and whether it did.
+  int32 face = 3;
+  int32 min = 4;
+  bool recharged = 5;
 }
 
 // CombatLogMonster is a monster of a MONSTERS_ADDED line, only the master's.

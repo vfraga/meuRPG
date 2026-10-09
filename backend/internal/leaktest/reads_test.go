@@ -433,6 +433,14 @@ var reads = []read{
 		},
 	},
 
+	// ===== CreatureService (the stat block of a monster in a combat: all of it is the master's)
+	{
+		procedure: playv1connect.CreatureServiceGetCreatureTurnProcedure, allow: masterOnlyRead,
+		req: func(w *world) proto.Message {
+			return &playv1.GetCreatureTurnRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: w.monsterCombatant().GetId()}
+		},
+	},
+
 	// ===== MapService
 	{
 		procedure: mapsv1connect.MapServiceListMapsProcedure, allow: members,

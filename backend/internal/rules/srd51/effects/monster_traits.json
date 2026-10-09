@@ -1,0 +1,4 @@
+{
+  "_comment": "The traits of a stat block that the engine applies (a trait that gives advantage on a roll, say). Every other trait is a reminder the master reads: the app does not apply its text. A trait enters here when the engine reads it, with the SRD 5.1 text it follows in `source`; loading refuses a trait no creature has, one listed twice and one without a source. Nothing is read yet: the advantage and disadvantage sources (Pack Tactics, Magic Resistance, Sunlight Sensitivity) come with the attack rolls' unit.",
+  "engine_reads": []
+}

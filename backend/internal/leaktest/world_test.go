@@ -1,6 +1,7 @@
 package leaktest
 
 import (
+	"strings"
 	"testing"
 	"time"
 	"uuid"
@@ -659,4 +660,20 @@ func (w *world) buildStreamTargets() {
 	ms := must(m.xp.AddMilestone(ctx, rq(&progressionv1.AddMilestoneRequest{CampaignId: w.campaign, Text: w.secrets.marker("milestone-stream")}))).GetMilestone()
 	w.milestoneStream = ms.GetId()
 	w.secrets.id("milestone", ms.GetId())
+}
+
+// monsterCombatant is the first monster the master put in the combat with "Pôr no combate": a
+// goblin, named by the marker of its group.
+func (w *world) monsterCombatant() *playv1.Combatant {
+	for _, cn := range w.secrets.list {
+		if cn.kind != "mon-group" {
+			continue
+		}
+		for _, c := range w.encounter.GetCombatants() {
+			if strings.HasPrefix(c.GetLabel(), cn.needle) {
+				return c
+			}
+		}
+	}
+	panic("no monster in the combat")
 }

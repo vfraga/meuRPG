@@ -563,6 +563,9 @@ type Derived struct {
 	Classes []DerivedClass
 	// Abilities has the six abilities, in AllAbilities order.
 	Abilities []AbilityScore
+	// MonsterKey is the SRD creature a monster of a combat is made from ("monster:ghoul");
+	// empty for a character. Kept out of the sheet's JSON, which the golden pins.
+	MonsterKey string `json:",omitempty"`
 	// TotalLevel is the sum of all class levels.
 	TotalLevel       int
 	ProficiencyBonus int

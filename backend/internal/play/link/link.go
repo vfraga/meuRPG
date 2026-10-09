@@ -124,6 +124,11 @@ type Sheet struct {
 	// AttacksPerAction is how many attacks the Attack action makes: 1, or more
 	// with Extra Attack.
 	AttacksPerAction int
+	// MonsterKey is the SRD creature a monster of a combat is made from ("monster:ghoul"),
+	// whose whole stat block it fights with: its Attacks are the stat block's attack
+	// actions (keyed by action) and its Actions the others, with the legendary options.
+	// Empty for a character.
+	MonsterKey string
 	// CriticalRange is the lowest natural d20 that is a critical hit with a
 	// weapon attack: 20, 19 with Improved Critical, 18 with Superior Critical.
 	// 0 (a basic sheet) is 20.

@@ -658,6 +658,10 @@ func (noRoster) CreatureEyes(context.Context, pgx.Tx, string, string) (maplink.E
 	return maplink.Eyes{}, false, nil
 }
 
+func (noRoster) CreatureStatBlock(context.Context, pgx.Tx, string, string) (*rulesv1.Creature, bool, error) {
+	return nil, false, nil
+}
+
 func (noRoster) MonsterHitPoints(context.Context, pgx.Tx, string, string) (link.MonsterHitPoints, bool, error) {
 	return link.MonsterHitPoints{}, false, nil
 }

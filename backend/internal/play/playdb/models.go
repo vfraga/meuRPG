@@ -71,6 +71,7 @@ type Combatant struct {
 	BonusSpellCast     bool
 	ActionAttackKey    *string
 	BonusAttacksLeft   int32
+	MonsterState       []byte
 }
 
 type Encounter struct {

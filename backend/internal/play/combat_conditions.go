@@ -82,6 +82,21 @@ func (s *Service) SetCombatantConditions(
 		ev := actionEvent{Round: c.enc.Round, Secret: target.Hidden, Actor: target.ID}
 		changed := false
 		if setConditions && !slices.Equal(conditions, target.Conditions) {
+			// A creature immune to a condition cannot suffer it (SRD 5.1, Monsters): the master is
+			// told which, and a condition it already had stays on it.
+			for _, k := range conditions {
+				if slices.Contains(target.Conditions, k) {
+					continue
+				}
+				immune, err := s.conditionImmune(ctx, c.tx, m.CampaignID, target, k)
+				if err != nil {
+					return nil, err
+				}
+				if immune {
+					return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_CONDITION_IMMUNE, "the creature is immune to this condition",
+						func(b *playv1.EncounterBlocked) { b.ConditionKey = k })
+				}
+			}
 			if err := c.q.SetCombatantConditions(ctx, playdb.SetCombatantConditionsParams{ID: target.ID, Conditions: conditions}); err != nil {
 				return nil, fmt.Errorf("set the conditions: %w", err)
 			}

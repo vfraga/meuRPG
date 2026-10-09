@@ -1,0 +1,530 @@
+syntax = "proto3";
+
+// The turn of a monster with its whole SRD 5.1 stat block: the master runs any SRD creature from
+// the app. A monster that joined a combat from the bestiary ("Pôr no combate", the encounter
+// builder) acts with every action of its stat block: each attack with all its damage parts, the
+// saving throws of breath weapons and the like, what a hit or a failed save gives (a condition, a
+// grapple), the limits of its actions (Recharge 5-6, x/day), its legendary actions and Legendary
+// Resistance, its spellcasting, its traits and reactions as reminders, and the checks it rolls.
+//
+// Everything here is the master's secret (RN-10, RN-20): a player, a pending member and someone who
+// is not in the campaign get `not_found`, and nothing of a stat block (its numbers, type,
+// immunities, recharge state or legendary actions left) is in any response, stream event or log
+// line to a player. A player reads what happens: the attack, the damage they take, the save they
+// make. The attacks of a monster also go through CombatService (RollAttack and RollDamage, with the
+// action's key as the attack key) and its spells through CastSpell, with the creature as the caster.
+package meurpg.play.v1;
+
+import "meurpg/play/v1/combat.proto";
+import "meurpg/play/v1/creature_types.proto";
+import "meurpg/rules/v1/rules.proto";
+
+// CreatureService is the master's tools for a monster of a combat.
+service CreatureService {
+  // GetCreatureTurn reads the turn of a monster: its stat block, every action with how the server
+  // reads it and whether it can be used now (what recharged, the uses left), its legendary actions
+  // and Legendary Resistance, its spellcasting with the slots and uses left, its traits as
+  // reminders, the Multiattack sequence of this turn and the d6 the server rolled for each action
+  // that waited for its recharge at the start of the turn.
+  //
+  // Only the master may call it.
+  //
+  // Errors:
+  //   - `not_found`: the combat or the combatant is not in this campaign, or the caller is not its
+  //     master.
+  //   - `invalid_argument`: the combatant is not a monster made from an SRD creature (a player's
+  //     character, or an NPC the master typed).
+  rpc GetCreatureTurn(GetCreatureTurnRequest) returns (GetCreatureTurnResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // UseCreatureAction uses one action of the stat block on the monster's turn.
+  //
+  // An attack (ATTACK) is made whole: the server rolls the attack roll against the target
+  // (RollAttack), and, on a hit, the damage of every part of the attack (RollDamage), one roll
+  // for each part (a dragon's bite deals piercing and fire damage). A target that is an NPC takes
+  // the damage at once, with its resistances, vulnerabilities and immunities to each damage type
+  // worked out in the order of SRD 5.1 ("Damage Resistance and Vulnerability": the modifiers
+  // first, then the resistance, then the vulnerability), and the result lists the steps of each
+  // part, to the master alone. The damage against a player's character waits for the master
+  // (ApplyPendingDamage). A hit that asks the target a saving throw (the ghoul's claws), or
+  // gives a condition (a grapple), does it as the damage is rolled.
+  //
+  // An action that asks a saving throw (SAVE: a breath weapon, Frightful Presence) rolls each
+  // target's saving throw (the d20 is always the app's), with the bonus of the target's sheet (a
+  // monster's is its stat block's) and, for a Dexterity save, the help of cover. It opens the damage
+  // as CastSpell does: one pending damage for each damage type, one roll for the whole cast
+  // (RollDamage settles every target at once), all of it for a target that failed and half of it,
+  // rounded down, for one that saved when `half_on_success`. A target that fails gets the
+  // condition the action gives, as a label the master takes off, unless it is immune to it. A
+  // creature immune to the condition and to every damage type of the action is never asked for the
+  // saving throw: it is in `immune_target_ids`, a reason the master alone reads.
+  //
+  // The action spends the creature's action (the master may use an action again) and its limit: a
+  // recharging action waits for the server's d6 at the start of the creature's next turn, an x/day
+  // action counts the use of the combat. Multiattack (`routine`) spends the action and starts the
+  // guided sequence: GetCreatureTurn tells which step is next. An action with no roll (TEXT_ONLY)
+  // only spends the action and the limit, and goes to the log.
+  //
+  // `origin` or `direction` say where an area starts or where it points. The master picks the
+  // targets; until the area spells are on the map, both are only checked and shown.
+  //
+  // Every stream gets `encounter_changed`; the master's gets `combat_log_changed`.
+  //
+  // Errors:
+  //   - `not_found`: as GetCreatureTurn, or a target the master cannot see.
+  //   - `permission_denied`: the caller is a player.
+  //   - `invalid_argument`: action_key is not an action of the creature (or is a spell: use
+  //     CastSpell); a target is missing for an attack or a saving throw, repeated, the creature
+  //     itself, or more than 10 for a saving throw; `routine` is not a routine of the Multiattack
+  //     action; the idempotency key was used for another request.
+  //   - `failed_precondition` (EncounterBlocked): NOT_ACTIVE, NOT_YOUR_TURN, TARGET_DEFEATED,
+  //     MONSTER_ACTION_RECHARGING, NO_USES (the uses of the combat are spent) and the attack's own
+  //     (REACTION_PENDING when the target's Shield is awaited: the attack roll is in the result and
+  //     the damage waits).
+  rpc UseCreatureAction(UseCreatureActionRequest) returns (UseCreatureActionResponse);
+
+  // UseLegendaryAction takes a legendary action of the creature (SRD 5.1, "Legendary Creatures"):
+  // it is taken at the end of another creature's turn, one for each offer
+  // (Encounter.legendary_offers), never while the creature is incapacitated, and costs what the
+  // option costs of the creature's legendary actions, which it regains at the start of its own
+  // turn. The offer closes. The option is made as UseCreatureAction makes an action (an attack,
+  // its own saving throw, or a reminder); its flight (Wing Attack) is the master's to move.
+  //
+  // Errors: as UseCreatureAction, plus `failed_precondition` LEGENDARY_NOT_NOW (no offer, the
+  // creature is incapacitated, defeated, or it is its own turn) and LEGENDARY_ACTIONS_SPENT (the
+  // option costs more than is left), and `invalid_argument` for an option_key that is not one of
+  // the creature's.
+  rpc UseLegendaryAction(UseLegendaryActionRequest) returns (UseLegendaryActionResponse);
+
+  // DeclineLegendary lets an offer pass: the creature takes no legendary action at the end of this
+  // turn. Only the master. It is a no-op for a creature without an offer.
+  rpc DeclineLegendary(DeclineLegendaryRequest) returns (DeclineLegendaryResponse);
+
+  // AnswerLegendaryResistance answers a LegendaryResistancePrompt: `use` turns the failed saving
+  // throw of the cast into a success and spends one use of the creature (SRD 5.1, Legendary
+  // Resistance (x/day)): the damage of the cast still to be rolled becomes half (or is dropped
+  // when a success takes none) and the condition the failure gave comes off; the players' line of
+  // the cast says the creature succeeded, and nothing of its uses. Without `use` the save stays
+  // failed and the prompt closes ("Deixar falhar"; rolling the damage does the same).
+  //
+  // Only the master.
+  //
+  // Errors:
+  //   - `not_found`: as GetCreatureTurn, or the cast has no saving throw of the creature.
+  //   - `permission_denied`: the caller is a player.
+  //   - `invalid_argument`: the creature has no Legendary Resistance, or its save was not failed.
+  //   - `failed_precondition` (EncounterBlocked): LEGENDARY_RESISTANCE_SPENT and SAVE_SETTLED (the
+  //     damage was rolled: the master corrects the amount of ApplyPendingDamage).
+  rpc AnswerLegendaryResistance(AnswerLegendaryResistanceRequest) returns (AnswerLegendaryResistanceResponse);
+
+  // RollCombatantCheck rolls an ability check or a skill check of a monster, with the bonus of the
+  // stat block it was made from: the skill bonus it lists (Perception +4), and the ability's
+  // modifier for a skill it does not list or for a plain ability check. The d20 is the app's. The
+  // result goes to the master and to the log of the master alone.
+  //
+  // Only the master.
+  //
+  // Errors:
+  //   - `not_found`: as GetCreatureTurn.
+  //   - `permission_denied`: the caller is a player.
+  //   - `invalid_argument`: neither `skill_key` nor `ability` is set, or both; the skill is not an
+  //     SRD skill; the combatant is not a monster made from an SRD creature.
+  rpc RollCombatantCheck(RollCombatantCheckRequest) returns (RollCombatantCheckResponse);
+}
+
+// GetCreatureTurnRequest asks for the turn of a combatant.
+message GetCreatureTurnRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The combatant (a UUID).
+  string combatant_id = 3;
+}
+
+// GetCreatureTurnResponse carries the turn.
+message GetCreatureTurnResponse {
+  CreatureTurn turn = 1;
+}
+
+// CreatureActionKind is what an action of a stat block is.
+enum CreatureActionKind {
+  CREATURE_ACTION_KIND_UNSPECIFIED = 0;
+  // An attack roll (UseCreatureAction, or RollAttack with `key` as the attack key).
+  CREATURE_ACTION_KIND_ATTACK = 1;
+  // Asks a saving throw of the creatures it affects.
+  CREATURE_ACTION_KIND_SAVE = 2;
+  // The Multiattack action: a routine of other actions.
+  CREATURE_ACTION_KIND_MULTIATTACK = 3;
+  // Nothing to roll: the text is a reminder, and using it only spends the action.
+  CREATURE_ACTION_KIND_TEXT_ONLY = 4;
+}
+
+// CreatureReading says how far the server reads an action: the numbers and the conditions its text
+// states.
+enum CreatureReading {
+  CREATURE_READING_UNSPECIFIED = 0;
+  // Every attack roll, damage part, saving throw and condition of the text is read and rolled; the
+  // text adds only what the table rules on (a duration, a size).
+  CREATURE_READING_STRUCTURED = 1;
+  // The attack, the damage or the saving throw is rolled, but the text has a number or a condition
+  // the server does not hold: the master reads the text for it.
+  CREATURE_READING_PARTIAL = 2;
+  // Nothing to roll: the text is a reminder.
+  CREATURE_READING_TEXT = 3;
+}
+
+// CreatureUsageKind is how often an action can be used.
+enum CreatureUsageKind {
+  CREATURE_USAGE_KIND_UNSPECIFIED = 0;
+  CREATURE_USAGE_KIND_AT_WILL = 1;
+  // "Recharge 5-6": after it is used, a d6 at the start of each of the creature's turns brings it
+  // back on `recharge_min` or more.
+  CREATURE_USAGE_KIND_RECHARGE = 2;
+  // "3/day": `uses_max` times; a combat counts them.
+  CREATURE_USAGE_KIND_PER_DAY = 3;
+  // "Recharges after a short or long rest": once in the combat.
+  CREATURE_USAGE_KIND_REST = 4;
+}
+
+// CreatureUsage is the limit of an action and what is left of it.
+message CreatureUsage {
+  CreatureUsageKind kind = 1;
+  // RECHARGE: the lowest d6 that recharges it (5 for "Recharge 5-6").
+  int32 recharge_min = 2;
+  // PER_DAY: the uses a day; REST: 1.
+  int32 uses_max = 3;
+  // PER_DAY and REST: the uses left in this combat.
+  int32 uses_left = 4;
+  // RECHARGE: true while it waits for its recharge.
+  bool recharging = 5;
+  // RECHARGE: the d6 the server rolled for it at the start of this turn, 0 when it did not roll
+  // (it was available). Only the master gets it.
+  int32 recharge_roll = 6;
+  // The SRD's words, such as "Recharge 5-6" or "3/day".
+  string text = 7;
+}
+
+// CreatureDamagePart is a damage part: its dice and its type.
+message CreatureDamagePart {
+  // Dice and bonus as written, "2d10+8", "18d6", or a flat "1".
+  string dice = 1;
+  string damage_type_key = 2;
+  string damage_type_pt = 3;
+}
+
+// CreatureArea is the area an action affects, as the SRD says it.
+message CreatureArea {
+  // "cone", "line", "sphere", "cube", "cylinder" or "radius".
+  string shape = 1;
+  // The cone's or the line's length, the cube's edge or the radius, in feet (5 ft is one square).
+  int32 length_ft = 2;
+  // A line's width.
+  int32 width_ft = 3;
+}
+
+// CreatureSavePlan is the saving throw an action asks.
+message CreatureSavePlan {
+  meurpg.rules.v1.Ability ability = 1;
+  int32 dc = 2;
+  // True when a creature that saves takes half of the damage. `on_success` says it in the SRD's
+  // words: "none", "half" or "other" (the text says).
+  bool half_on_success = 3;
+  string on_success = 4;
+  // The damage the save governs: all of it for a creature that fails.
+  repeated CreatureDamagePart damage = 5;
+  // The condition a failed save gives ("condition:paralyzed"), empty when none.
+  string condition_key = 6;
+  string condition_pt = 7;
+  // How long it lasts in the SRD's words ("1 minute"), empty when the text gives another end, and
+  // whether the target repeats the saving throw at the end of each of its turns. The app keeps the
+  // label; the master takes it off.
+  string duration = 8;
+  bool repeat_save = 9;
+  CreatureArea area = 10;
+}
+
+// CreatureRider is what an attack gives its target when it hits besides the damage: a saving
+// throw (with the damage and the condition of a failure) or a condition with no saving throw (a
+// grapple).
+message CreatureRider {
+  // The saving throw asked of the target once the damage is rolled. Unset for a grapple.
+  CreatureSavePlan save = 1;
+  // The condition a hit gives with no saving throw ("condition:grappled"), with the DC to escape
+  // and the biggest size of the target ("Large", for "Large or smaller").
+  string condition_key = 2;
+  string condition_pt = 3;
+  int32 escape_dc = 4;
+  string max_size = 5;
+}
+
+// CreatureMultiattackStep is one attack of a Multiattack routine.
+message CreatureMultiattackStep {
+  string name = 1;
+  // The action it makes; empty for a step that is the creature's spellcasting.
+  string action_key = 2;
+  int32 count = 3;
+  // The SRD's words for a count that is not a number ("Number of Heads").
+  string count_text = 4;
+  // "melee", "ranged", "ability" or "magic".
+  string kind = 5;
+}
+
+// CreatureRoutine is a Multiattack routine.
+message CreatureRoutine {
+  repeated CreatureMultiattackStep steps = 1;
+}
+
+// CreatureAction is an action of the stat block, or a legendary option, with what the server reads
+// of it and its state now.
+message CreatureAction {
+  // The key: "monster:ghoul#claws". The attack key of an attack, the action_key of
+  // UseCreatureAction; for a legendary option, the option's key.
+  string key = 1;
+  // The SRD's name (English) and ours when the content has one.
+  string name = 2;
+  string name_pt = 3;
+  CreatureActionKind kind = 4;
+  CreatureReading reading = 5;
+  CreatureUsage usage = 6;
+  // True when the action can be used now as far as its limit goes (not recharging, uses left) and,
+  // for a legendary option, as far as the creature's legendary actions go. It says nothing of the
+  // action economy.
+  bool available = 7;
+  // ATTACK: the bonus, the reach (melee) or the range and the long range (ranged or thrown), in
+  // feet, and what a hit deals, every part in order.
+  int32 attack_bonus = 8;
+  bool melee = 9;
+  bool spell_attack = 10;
+  int32 reach_ft = 11;
+  int32 range_ft = 12;
+  int32 long_range_ft = 13;
+  repeated CreatureDamagePart damage_parts = 14;
+  // SAVE: the saving throw of the action. ATTACK: unset (see `rider`).
+  CreatureSavePlan save = 15;
+  CreatureRider rider = 16;
+  // MULTIATTACK: the routines, and, while the sequence of this turn is the action's, the 1-based
+  // position of the next step that makes this action (0: none).
+  repeated CreatureRoutine routines = 17;
+  int32 sequence_step = 18;
+  // Legendary options: what the option costs of the creature's legendary actions (1 to 3), and the
+  // action of the stat block it makes ("The dragon makes a tail attack"), empty for another.
+  int32 legendary_cost = 19;
+  string linked_action_key = 20;
+  // The SRD's text, in English: the reminder of everything the server does not roll.
+  string text = 21;
+}
+
+// CreatureSequence is the Multiattack sequence of this turn: the steps of the routine chosen,
+// flattened ("1. Frightful Presence 2. Bite 3. Claw 4. Claw"), and which one is next.
+message CreatureSequence {
+  string action_key = 1;
+  int32 routine = 2;
+  repeated CreatureSequenceStep steps = 3;
+  // The 1-based position of the next step; 0 when the sequence is done.
+  int32 next = 4;
+}
+
+// CreatureSequenceStep is one attack of the sequence.
+message CreatureSequenceStep {
+  string name = 1;
+  string action_key = 2;
+  bool done = 3;
+}
+
+// CreatureLegendary is the creature's legendary actions and the state of the turn.
+message CreatureLegendary {
+  CreatureLegendaryState state = 1;
+  // The options, each as an action with its `legendary_cost`.
+  repeated CreatureAction options = 2;
+  // Why the creature cannot take one now (LEGENDARY_NOT_NOW), or UNSPECIFIED when it can.
+  EncounterBlockedReason blocked_reason = 3;
+}
+
+// CreatureTurn is the turn of a monster, for the master.
+message CreatureTurn {
+  string combatant_id = 1;
+  // The SRD stat block: the header, the abilities, the speeds, the senses, the languages and the
+  // challenge. The sheet below has the numbers a roll reads.
+  meurpg.rules.v1.Creature creature = 2;
+  CreatureSheet sheet = 3;
+  repeated CreatureAction actions = 4;
+  // Unset when the creature has no legendary actions.
+  CreatureLegendary legendary = 5;
+  // Unset until a Multiattack is used this turn.
+  CreatureSequence sequence = 6;
+}
+
+// CreatureActionStepKind is a step of the damage of a part.
+enum CreatureActionStepKind {
+  CREATURE_ACTION_STEP_KIND_UNSPECIFIED = 0;
+  CREATURE_ACTION_STEP_KIND_RESISTANCE = 1;
+  CREATURE_ACTION_STEP_KIND_VULNERABILITY = 2;
+  CREATURE_ACTION_STEP_KIND_IMMUNITY = 3;
+}
+
+// CreatureDamageStep is a step of the damage of a part against its target: the damage before and
+// after a resistance, a vulnerability or an immunity of the target to the type. The steps go to the
+// master always, and to the target's player when the target is a character of theirs (a character's
+// resistances are the master's and its player's); a monster's are the master's alone.
+message CreatureDamageStep {
+  CreatureActionStepKind kind = 1;
+  // The damage type the step is about ("damage-type:fire").
+  string source_key = 2;
+  int32 before = 3;
+  int32 after = 4;
+}
+
+// CreatureDamageRoll is the damage of one part of an attack: what was rolled and what landed.
+message CreatureDamageRoll {
+  string damage_type_key = 1;
+  string damage_type_pt = 2;
+  // The roll of the part: `2d10 + 8 (6, 5)`.
+  DiceRoll rolled = 3;
+  // The damage after the steps; for a character target, what waits for ApplyPendingDamage.
+  int32 amount = 4;
+  repeated CreatureDamageStep steps = 5;
+  string pending_damage_id = 6;
+  PendingDamageStatus status = 7;
+}
+
+// CreatureActionResult is what a use of an action did.
+message CreatureActionResult {
+  // ATTACK: the attack roll and what it did. The armor class of the target is the master's.
+  AttackRoll attack_roll = 1;
+  AttackOutcome outcome = 2;
+  // ATTACK: the damage of each part, in order, once rolled; the first part's pending damage is
+  // `pending_damage_id`. A hit whose damage waits for a reaction has none yet.
+  repeated CreatureDamageRoll damage_parts = 3;
+  string pending_damage_id = 4;
+  // What the hit gave besides the damage: the target's saving throw against the rider and the
+  // condition it got, or a grapple.
+  CombatLogRider rider = 5;
+  // SAVE: what the action did to each target, as a spell cast does.
+  SpellCast cast = 6;
+  // SAVE: the targets that are immune to what the action does, or to the condition it gives and
+  // failed. Only the master gets this.
+  repeated string immune_target_ids = 7;
+}
+
+// UseCreatureActionRequest uses an action of a monster.
+message UseCreatureActionRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The monster that acts (a UUID).
+  string combatant_id = 3;
+  // The action's key (CreatureAction.key).
+  string action_key = 4;
+  // The creatures it affects (UUIDs): one for an attack, up to 10 for a saving throw, none for
+  // Multiattack and an action with no roll.
+  repeated string target_ids = 5;
+  // Multiattack: the routine, from 0.
+  int32 routine = 6;
+  // Where an area starts, or where it points.
+  oneof anchor {
+    GridPoint origin = 7;
+    CompassDirection direction = 8;
+  }
+  string idempotency_key = 9;
+}
+
+// GridPoint is a square of the map.
+message GridPoint {
+  int32 col = 1;
+  int32 row = 2;
+}
+
+// CompassDirection is where a cone or a line points.
+enum CompassDirection {
+  COMPASS_DIRECTION_UNSPECIFIED = 0;
+  COMPASS_DIRECTION_N = 1;
+  COMPASS_DIRECTION_NE = 2;
+  COMPASS_DIRECTION_E = 3;
+  COMPASS_DIRECTION_SE = 4;
+  COMPASS_DIRECTION_S = 5;
+  COMPASS_DIRECTION_SW = 6;
+  COMPASS_DIRECTION_W = 7;
+  COMPASS_DIRECTION_NW = 8;
+}
+
+// UseCreatureActionResponse returns the combat and what the action did.
+message UseCreatureActionResponse {
+  Encounter encounter = 1;
+  CreatureActionResult result = 2;
+}
+
+// UseLegendaryActionRequest takes a legendary action.
+message UseLegendaryActionRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The creature (a UUID) and the option (CreatureAction.key of CreatureLegendary.options).
+  string combatant_id = 3;
+  string option_key = 4;
+  repeated string target_ids = 5;
+  oneof anchor {
+    GridPoint origin = 6;
+    CompassDirection direction = 7;
+  }
+  string idempotency_key = 8;
+}
+
+// UseLegendaryActionResponse returns the combat and what the legendary action did.
+message UseLegendaryActionResponse {
+  Encounter encounter = 1;
+  CreatureActionResult result = 2;
+}
+
+// DeclineLegendaryRequest lets an offer pass.
+message DeclineLegendaryRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string combatant_id = 3;
+  string idempotency_key = 4;
+}
+
+// DeclineLegendaryResponse returns the combat.
+message DeclineLegendaryResponse {
+  Encounter encounter = 1;
+}
+
+// AnswerLegendaryResistanceRequest answers a prompt.
+message AnswerLegendaryResistanceRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The creature (a UUID) and the cast whose save it failed (SpellCast.cast_id).
+  string combatant_id = 3;
+  string cast_id = 4;
+  // True: use one Legendary Resistance. False: "Deixar falhar".
+  bool use = 5;
+  string idempotency_key = 6;
+}
+
+// AnswerLegendaryResistanceResponse returns the combat.
+message AnswerLegendaryResistanceResponse {
+  Encounter encounter = 1;
+  // The uses left after the answer.
+  int32 uses_left = 2;
+}
+
+// RollCombatantCheckRequest rolls a check of a monster.
+message RollCombatantCheckRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string combatant_id = 3;
+  // A skill check ("skill:perception") or an ability check: exactly one.
+  oneof check {
+    string skill_key = 4;
+    meurpg.rules.v1.Ability ability = 5;
+  }
+  string idempotency_key = 6;
+}
+
+// RollCombatantCheckResponse returns the roll.
+message RollCombatantCheckResponse {
+  Encounter encounter = 1;
+  // The d20 (the face is the natural roll), the bonus as the modifier and the total.
+  int32 d20 = 2;
+  int32 bonus = 3;
+  int32 total = 4;
+  // The check's name in Portuguese ("Percepção", "Força").
+  string check_pt = 5;
+}

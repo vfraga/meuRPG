@@ -121,6 +121,10 @@ func startTurn(ctx context.Context, c *combatTx, ids []string, round int32) erro
 		if err := c.svc.endFamiliarSights(ctx, c, ids); err != nil {
 			return err
 		}
+		// A monster rolls the recharge of its actions and regains its legendary actions.
+		if err := c.svc.startMonsterTurns(ctx, c, ids, round); err != nil {
+			return err
+		}
 	}
 	return setCurrent(ctx, c, ids[0], round)
 }

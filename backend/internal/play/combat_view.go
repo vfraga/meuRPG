@@ -480,6 +480,9 @@ func (s *Service) viewFor(ctx context.Context, m authz.Membership, d *encounterD
 	if out.OpportunityOffers, err = s.opportunityOffers(ctx, m, d, v); err != nil {
 		return nil, err
 	}
+	if err := s.creatureView(ctx, m, d, out); err != nil {
+		return nil, err
+	}
 	return out, nil
 }
 

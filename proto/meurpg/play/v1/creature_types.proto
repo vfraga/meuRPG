@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+// The pieces of a creature's stat block that the combat itself carries (Combatant,
+// Encounter): the master's copy of a monster's sheet, its legendary actions, the offers to take
+// one at the end of another creature's turn and the Legendary Resistance prompt. The service
+// that uses them is in creatures.proto.
+//
+// Everything here is the master's secret (RN-10, RN-20): a player never receives any of it, not
+// the fields, not the ids, and the combat log says to a player only what happens.
+package meurpg.play.v1;
+
+import "meurpg/rules/v1/rules.proto";
+
+// CreatureSheet is what the master reads of a monster's sheet in the combat: the numbers the
+// stat block gives its saving throws, skills, immunities and spells, and its traits. It is in
+// `Combatant.creature_sheet` of the master's copy only.
+message CreatureSheet {
+  // The saving throws and skills the stat block lists (the total bonus); the ones it does not
+  // list are the ability modifier. A monster rolls with these (RollCombatantCheck, a saving
+  // throw against a spell).
+  repeated meurpg.rules.v1.CreatureBonus saves = 1;
+  repeated meurpg.rules.v1.CreatureBonus skills = 2;
+  // Damage it takes none of, half of and double (SRD 5.1, "Damage Resistance and
+  // Vulnerability"), and the conditions it cannot suffer. An immune creature is never asked for a
+  // saving throw against what it is immune to, and a condition it is immune to is refused
+  // (CONDITION_IMMUNE).
+  repeated meurpg.rules.v1.CreatureDamageModifier immunities = 3;
+  repeated meurpg.rules.v1.CreatureDamageModifier resistances = 4;
+  repeated meurpg.rules.v1.CreatureDamageModifier vulnerabilities = 5;
+  repeated meurpg.rules.v1.CreatureNamedKey condition_immunities = 6;
+  // Its Spellcasting and Innate Spellcasting traits, with what is left of the slots and the
+  // uses of this combat.
+  repeated CreatureSpellcasting spellcasting = 7;
+  // Its traits, as reminders: the ones the engine does not read say so.
+  repeated CreatureTrait traits = 8;
+  // Its reactions (Parry), which the master answers.
+  repeated CreatureTrait reactions = 9;
+  // The passive Perception the stat block gives.
+  int32 passive_perception = 10;
+}
+
+// CreatureTrait is a trait or a reaction of the stat block.
+message CreatureTrait {
+  string key = 1;
+  // The SRD's name (English) and ours when the content has one.
+  string name = 2;
+  string name_pt = 3;
+  // The SRD's text, in English.
+  string text = 4;
+  // The SRD's limit, "3/day", when it has one.
+  string usage = 5;
+  // True when the engine applies the trait (effects/monster_traits.json: it gives advantage on
+  // a roll, say); false when it is a reminder the app does not apply.
+  bool engine_reads = 6;
+}
+
+// CreatureSpell is a spell of a creature's spellcasting.
+message CreatureSpell {
+  string key = 1;
+  string name = 2;
+  string name_pt = 3;
+  // The spell's level, 0 for a cantrip.
+  int32 level = 4;
+  // The SRD's remark ("self only"), or ours ("conjurada antes do combate"); empty for none.
+  string note = 5;
+  // A spell cast without limit ("at will"). Otherwise, for a spell cast N times a day, the uses
+  // and what is left in this combat (the group's, when the uses are shared).
+  bool at_will = 6;
+  int32 uses = 7;
+  int32 uses_left = 8;
+}
+
+// CreatureSpellLevel is the spells of a spell level and its slots.
+message CreatureSpellLevel {
+  int32 level = 1;
+  int32 slots = 2;
+  int32 slots_left = 3;
+  repeated CreatureSpell spells = 4;
+}
+
+// CreatureSpellcasting is a Spellcasting or Innate Spellcasting trait. Its spells are cast with
+// CastSpell, with the creature as the caster: the turn options list them.
+message CreatureSpellcasting {
+  bool innate = 1;
+  string name = 2;
+  meurpg.rules.v1.Ability ability = 3;
+  int32 save_dc = 4;
+  int32 attack_bonus = 5;
+  // A creature that casts with slots: its spellcaster level and the class whose list it uses
+  // ("class:wizard").
+  int32 caster_level = 6;
+  string class_key = 7;
+  // The spells it casts without limit (the cantrips, "At will"), the spells with slots by spell
+  // level, and the spells with a number of uses a day.
+  repeated CreatureSpell at_will = 8;
+  repeated CreatureSpellLevel levels = 9;
+  repeated CreatureSpell per_day = 10;
+  string text = 11;
+}
+
+// CreatureLegendaryState is a creature's legendary actions: how many it takes between its turns
+// and how many are left until its next turn. Only the master (`Combatant.legendary`).
+message CreatureLegendaryState {
+  int32 per_round = 1;
+  int32 left = 2;
+  // The uses of Legendary Resistance (x/day) and what is left; 0 and 0 for a creature with none.
+  int32 resistance_uses = 3;
+  int32 resistance_left = 4;
+}
+
+// LegendaryOffer is the chance a creature has to take a legendary action: it opens at the end of
+// another creature's turn and closes when one is taken, when the master lets it pass or when the
+// next turn begins (SRD 5.1, "Legendary Creatures"). Only the master gets it, in
+// `Encounter.legendary_offers`, and only for a creature that can take one: it is not
+// incapacitated and has legendary actions left.
+message LegendaryOffer {
+  // The creature (a UUID) and the combatant whose turn ended.
+  string combatant_id = 1;
+  string after_combatant_id = 2;
+  // The creature's legendary actions left and the options it has, each with whether it can pay
+  // for it (`available` is false when its cost is more than what is left).
+  int32 left = 3;
+  int32 per_round = 4;
+  repeated LegendaryOfferOption options = 5;
+}
+
+// LegendaryOfferOption is one legendary action of an offer.
+message LegendaryOfferOption {
+  string key = 1;
+  string name = 2;
+  string name_pt = 3;
+  int32 cost = 4;
+  // The action of the stat block it makes (an attack goes through UseLegendaryAction too), or
+  // empty.
+  string action_key = 5;
+  string text = 6;
+  bool available = 7;
+}
+
+// LegendaryResistancePrompt asks the master whether a creature that failed a saving throw uses
+// its Legendary Resistance (SRD 5.1: "If the creature fails a saving throw, it can choose to
+// succeed instead"). It lives as long as the damage of the failed save has not been rolled: it
+// survives a reload, there is one for each failed save, and rolling the damage without answering
+// is "Deixar falhar". Only the master gets it, in `Encounter.legendary_resistance_prompts`.
+message LegendaryResistancePrompt {
+  // The creature that failed, and the cast whose save it was (SpellCast.cast_id).
+  string combatant_id = 1;
+  string cast_id = 2;
+  // The spell or the action that asked for the save, its Portuguese name when the content has one,
+  // and who cast it (a combatant, a UUID).
+  string spell_key = 3;
+  string spell_name_pt = 4;
+  string caster_id = 5;
+  // The saving throw: its ability, the DC, and the d20 with the bonus and the total.
+  meurpg.rules.v1.Ability ability = 6;
+  int32 dc = 7;
+  int32 d20 = 8;
+  int32 bonus = 9;
+  int32 total = 10;
+  // The uses of the day before the choice.
+  int32 uses_left = 11;
+  int32 uses = 12;
+}

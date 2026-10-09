@@ -395,6 +395,10 @@ func (s *Service) CastSpell(
 			}
 			vitals = append(vitals, slotVitals)
 		}
+		// A monster spends a slot of its stat block, or one of the uses of an innate spell.
+		if err := s.spendMonsterCast(ctx, c, caster, spellKey, slot, &made); err != nil {
+			return nil, err
+		}
 		after := caster
 		switch sp.Economy {
 		case rules.EconomyBonusAction:
@@ -462,6 +466,9 @@ func (s *Service) CastSpell(
 		}
 		packCoverSeen(&made)
 		made.Secret = hidden
+		if err := s.openResistancePrompts(ctx, c, caster, cs, &made); err != nil {
+			return nil, err
+		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
 			return nil, fmt.Errorf("touch the encounter: %w", err)
 		}
@@ -650,7 +657,7 @@ func (s *Service) spellSave(ctx context.Context, c *combatTx, m authz.Membership
 	saved := combat.SaveSucceeded(roll.Total, sp.SaveDC)
 	hit.Save = &saveRoll{
 		D20: clamp32(face, 1, 20), Bonus: clamp32(save.Bonus, math.MinInt32, math.MaxInt32), Total: clamp32(roll.Total, math.MinInt32, math.MaxInt32),
-		DC: clamp32(sp.SaveDC, 0, math.MaxInt32), Saved: saved, Unknown: !save.Known,
+		DC: clamp32(sp.SaveDC, 0, math.MaxInt32), Saved: saved, Unknown: !save.Known, OnSuccess: sp.SaveOnSuccess, Ability: sp.SaveAbility,
 	}
 	if len(sp.Damages) == 0 || (saved && sp.SaveOnSuccess != "half" && sp.SaveOnSuccess != "other") {
 		return nil

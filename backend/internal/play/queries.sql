@@ -432,6 +432,15 @@ SET status = $2, resolved_at = $3
 WHERE id = $1
 RETURNING *;
 
+-- name: SetPendingDamageHalf :one
+-- A Legendary Resistance turned a failed save into a success: the damage of the cast that
+-- is still to be rolled becomes half, or is dropped when a success takes none; or the
+-- undo of it.
+UPDATE pending_damages
+SET status = $2, half = $3, resolved_at = $4
+WHERE id = $1
+RETURNING *;
+
 -- name: SetPendingDamageApplied :one
 -- Applied by the master, with the amount when it is not the rolled one.
 UPDATE pending_damages
@@ -1011,3 +1020,10 @@ SELECT e.* FROM battle_encounters AS e
 JOIN map_points AS p ON p.id = e.map_point_id
 WHERE e.campaign_id = $1 AND e.map_id = $2 AND p.kind = 'battle'
 ORDER BY e.created_at, e.map_point_id;
+
+-- name: SetCombatantMonsterState :exec
+-- What a monster has spent of its stat block (recharge, uses, legendary actions,
+-- slots, the Multiattack routine), or its undo.
+UPDATE combatants
+SET monster_state = $2
+WHERE id = $1;

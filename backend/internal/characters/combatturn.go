@@ -1,8 +1,10 @@
 package characters
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -76,10 +78,13 @@ func basicDerived(content *rules.Content, b *charactersv1.BasicSheet) rules.Deri
 	if m, ok := content.MonsterDerived(b.GetMonsterKey()); ok {
 		d.AttacksPerAction = max(m.AttacksPerAction, 1)
 	}
-	creature, _ := content.MonsterDerived(b.GetMonsterKey())
+	creature, isCreature := content.MonsterDerived(b.GetMonsterKey())
 	// Its saving throws are the stat block's (the ability modifier plus the
 	// proficiency the creature lists); a basic sheet with no creature has none.
 	d.SavingThrows = creature.SavingThrows
+	if b.GetCombatOnly() && isCreature {
+		return monsterDerived(content, b.GetMonsterKey(), creature, d)
+	}
 	for i, a := range b.GetAttacks() {
 		typeKey := "damage-type:" + strings.ToLower(strings.TrimPrefix(a.GetDamageType().String(), "DAMAGE_TYPE_"))
 		dice := rules.DiceFormula{Count: int(a.GetDamageDiceCount()), Sides: int(a.GetDamageDiceSides()), Bonus: int(a.GetDamageBonus())}
@@ -96,6 +101,23 @@ func basicDerived(content *rules.Content, b *charactersv1.BasicSheet) rules.Deri
 			attack.Melee, attack.LongRangeFt = true, from.LongRangeFt
 		}
 		d.Attacks = append(d.Attacks, attack)
+	}
+	return d
+}
+
+// monsterDerived is the Derived of a monster of "Pôr no combate": it fights with its whole
+// SRD stat block, not with the three attacks a basic sheet holds. Every attack action is an
+// attack (the key is the action's, "monster:ghoul#claws"), the skills and abilities are the
+// stat block's, and its Spellcasting and Innate Spellcasting give the spells, the slots and
+// the damaging cantrips the spell flow of an NPC reads (CombatSpell, CombatTurnOptions).
+func monsterDerived(content *rules.Content, key string, creature, d rules.Derived) rules.Derived {
+	d.MonsterKey = key
+	d.Attacks = slices.Clone(creature.Attacks)
+	d.Abilities, d.Skills, d.ProficiencyBonus = creature.Abilities, creature.Skills, creature.ProficiencyBonus
+	d.PassivePerception, d.Senses = creature.PassivePerception, creature.Senses
+	if mc, ok := content.MonsterCasting(key); ok {
+		d.Spellcasting, d.Spells, d.SpellSlots, d.TotalLevel = mc.Spellcasting, mc.Spells, mc.Slots, mc.Level
+		d.Attacks = append(d.Attacks, mc.Cantrips...)
 	}
 	return d
 }
@@ -128,7 +150,7 @@ func diceText(f rules.DiceFormula) string {
 // character's sheet. It takes no caller: it runs after play's authorization
 // check, and its armor class never goes to a player.
 func (s *Service) CombatSheet(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (link.Sheet, error) {
-	_, d, _, err := s.fighter(ctx, tx, campaignID, characterID)
+	_, d, content, err := s.fighter(ctx, tx, campaignID, characterID)
 	if err != nil {
 		return link.Sheet{}, err
 	}
@@ -149,6 +171,10 @@ func (s *Service) CombatSheet(ctx context.Context, tx pgx.Tx, campaignID, charac
 		out.Actions = append(out.Actions, link.Action{Key: a.Key, Name: a.NamePT})
 	}
 	out.AttacksPerAction = max(d.AttacksPerAction, 1)
+	out.MonsterKey = d.MonsterKey
+	if plan, ok := content.MonsterPlan(d.MonsterKey); ok {
+		out.Actions = append(out.Actions, monsterActionNames(plan)...)
+	}
 	out.CriticalRange, out.TwoWeaponFighting = d.CriticalRange, d.TwoWeaponFighting
 	for _, a := range d.Actions {
 		out.FeatureActions = append(out.FeatureActions, link.FeatureAction{
@@ -161,6 +187,23 @@ func (s *Service) CombatSheet(ctx context.Context, tx pgx.Tx, campaignID, charac
 		}
 	}
 	return out, nil
+}
+
+// monsterActionNames lists the actions of a stat block that are no attack roll, and its
+// legendary options, with their names, so the combat log can name what the monster did.
+func monsterActionNames(plan *rules.MonsterPlan) []link.Action {
+	var out []link.Action
+	for _, a := range plan.Actions {
+		if a.Attack == nil {
+			out = append(out, link.Action{Key: a.Key, Name: cmp.Or(a.NamePT, a.Name)})
+		}
+	}
+	if plan.Legendary != nil {
+		for _, o := range plan.Legendary.Options {
+			out = append(out, link.Action{Key: o.Key, Name: o.Name})
+		}
+	}
+	return out
 }
 
 // poolResources are the resources that count points, not uses: Cura pelas mãos

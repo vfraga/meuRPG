@@ -69,6 +69,10 @@ type logEntry struct {
 	// hosts are the events the entry shows: an attack's own and the ones of its
 	// damage, so the entry of the last action is the one to undo.
 	hosts []string
+	// extras are the pending damages a monster's hit opened for the rest of its damage (in
+	// pend), in order, and rider what the hit gave besides damage (combat_monster_hit.go).
+	extras []string
+	rider  *riderEv
 }
 
 // damageLog is what became of one pending damage of a spell: where it is, the
@@ -195,6 +199,7 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 	var out []*logEntry
 	byPending := map[string]*logEntry{}
 	byFiring := map[string]*logEntry{}
+	byCast := map[string]*logEntry{}
 	// An opportunity offer's answer without an attack (a decline, a skip) is no
 	// line, but the master's undo can take it back: it belongs to the entry of
 	// the move that made the offer, so that entry is the one to undo.
@@ -250,12 +255,33 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_TURN_PART_ENDED
 		case eventAttackRolled:
 			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK
+			if ev.Monster != nil && ev.Monster.Rider != nil { // a hit with no damage to roll gave its rider at once
+				entry.addMonsterParts(ev, byPending)
+			}
 			if ev.Pending != "" {
 				entry.status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_ROLL
 				byPending[ev.Pending] = entry
 			}
+		case eventMonsterRecharge:
+			entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_MONSTER_RECHARGE, true
+		case eventCombatantCheck:
+			if ev.Monster != nil && ev.Monster.Passed {
+				continue // a prompt or an offer let go is no line of the fight
+			}
+			entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_COMBATANT_CHECK, true
+		case eventLegendaryResistance:
+			entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_LEGENDARY_RESISTANCE, true
+			// The save the creature failed is a success now, in every line that shows it.
+			if host, ok := byCast[ev.CastID]; ok {
+				for i := range host.ev.Hits {
+					if h := &host.ev.Hits[i]; h.Target == ev.Actor && h.Save != nil {
+						h.Save.Saved = true
+					}
+				}
+			}
 		case eventSpellCast:
 			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST
+			byCast[ev.CastID] = entry
 			entry.pend = map[string]*damageLog{}
 			for _, h := range ev.Hits {
 				for _, id := range append([]string{h.Pending}, h.More...) {
@@ -359,6 +385,7 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 			}
 			host.hosts = append(host.hosts, e.ID)
 			host.land(e.Kind, ev)
+			host.addMonsterParts(ev, byPending)
 			continue
 		default:
 			continue // initiative, turns, reinforcements: not lines of the log
@@ -375,6 +402,27 @@ func (e *logEntry) setStatus(pending string, status playv1.PendingDamageStatus) 
 		return
 	}
 	e.status = status
+}
+
+// addMonsterParts registers the pending damages a monster's hit opened when its damage was
+// rolled, so their rolls land in the same entry, and keeps the rider.
+func (e *logEntry) addMonsterParts(ev actionEvent, byPending map[string]*logEntry) {
+	if ev.Monster == nil || e.kind != playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK {
+		return
+	}
+	if e.pend == nil {
+		e.pend = map[string]*damageLog{}
+	}
+	ids := append([]string{}, ev.Monster.Extras...)
+	if ev.Monster.Rider != nil {
+		ids = append(ids, ev.Monster.Rider.Pending...)
+		e.rider = ev.Monster.Rider
+	}
+	for _, id := range ids {
+		e.pend[id] = &damageLog{status: playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_ROLL}
+		byPending[id] = e
+		e.extras = append(e.extras, id)
+	}
 }
 
 // land puts a damage event on the entry of the attack or the spell it belongs
@@ -462,7 +510,7 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 	out := &playv1.CombatLogEntry{
 		Id: e.id, Kind: e.kind, At: timestamppb.New(e.at), Round: e.ev.Round,
 		ActorId: actor.ID, ActorLabel: actor.Label, TargetId: target.ID, TargetLabel: target.Label,
-		Key: e.ev.Key,
+		Key: v.attackKey(e.ev.Key),
 	}
 	if v.master {
 		out.Hidden = !visible || (e.ev.Fogged && len(e.ev.SeenBy) == 0)
@@ -520,7 +568,14 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 		} else if e.ev.Pending != "" {
 			out.Damage = e.damage(dice, v.master, v.master || v.owns(target), out)
 		}
+		out.Legendary = e.ev.Monster != nil && e.ev.Monster.Cost > 0
+		if len(e.stopped) == 0 {
+			e.monsterHitView(ctx, v, actor, target, names, out)
+		}
+	case playv1.CombatLogKind_COMBAT_LOG_KIND_MONSTER_RECHARGE, playv1.CombatLogKind_COMBAT_LOG_KIND_LEGENDARY_RESISTANCE, playv1.CombatLogKind_COMBAT_LOG_KIND_COMBATANT_CHECK:
+		out.MonsterEvent = e.monsterEventView(ctx, actor, names)
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION:
+		out.Legendary = e.ev.Monster != nil && e.ev.Monster.Cost > 0
 		if e.ev.Heal { // Retomar o fôlego: only the master and its own player see the numbers
 			if v.master || v.owns(actor) {
 				out.Damage = &playv1.CombatLogDamage{
@@ -531,6 +586,7 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 		}
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST:
 		out.Spell = e.spellView(v, byID)
+		out.Legendary = e.ev.Monster != nil && e.ev.Monster.Cost > 0
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_TRAP_TRIGGERED:
 		out.Trap = e.trapEntry(ctx, v, byID, names)
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE:

@@ -304,6 +304,10 @@ type CombatRoster interface {
 
 	// The monsters of "Pôr no combate" (MR-042, RN-29).
 
+	// CreatureStatBlock is the SRD stat block of a creature as the bestiary shows it, for
+	// the master's view of a monster in a combat (CreatureService); false for a key that is
+	// not an SRD creature.
+	CreatureStatBlock(ctx context.Context, tx pgx.Tx, campaignID, monsterKey string) (*rulesv1.Creature, bool, error)
 	// MonsterHitPoints is the creature's average hit points and hit dice; false
 	// for a key that is not an SRD creature.
 	MonsterHitPoints(ctx context.Context, tx pgx.Tx, campaignID, monsterKey string) (link.MonsterHitPoints, bool, error)
@@ -597,6 +601,7 @@ func (s *Service) Mount(handle func(pattern string, handler http.Handler), sessi
 	handle(playv1connect.NewCombatServiceHandler(s, opts...))
 	handle(playv1connect.NewPuzzleServiceHandler(s, opts...))
 	handle(playv1connect.NewEncounterServiceHandler(s, opts...))
+	handle(playv1connect.NewCreatureServiceHandler(s, opts...))
 }
 
 // queriesIn is the queries on the transaction, or on the pool when tx is nil. A

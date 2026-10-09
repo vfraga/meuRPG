@@ -101,6 +101,12 @@ type ActionSave struct {
 	Damage []ActionDamage
 	// ConditionKey is the condition a failed save gives ("condition:paralyzed"), or "".
 	ConditionKey string
+	// Duration is how long the condition lasts, in the SRD's words ("1 minute", "24 hours"), or
+	// "" when the text gives another end (a round, a trigger); RepeatSave says the target repeats
+	// the saving throw at the end of each of its turns. The app keeps the label until the master
+	// takes it off; the duration is his to count (conditions with a duration are another unit's).
+	Duration   string
+	RepeatSave bool
 	// OnHit says the save is the rider of an attack: it is asked of the target
 	// once the attack hits. Without it the action asks it directly of the
 	// creatures it affects.
@@ -166,16 +172,22 @@ type ActionPlan struct {
 
 // TraitPlan is a trait or a reaction: a name, the SRD's text, and the limit.
 type TraitPlan struct {
-	Key   string
-	Name  string
-	Usage ActionUsage
-	Text  string
+	Key  string
+	Name string
+	// NamePT is the Portuguese name when the content has one.
+	NamePT string
+	// EngineReads says the engine applies the trait (effects/monster_traits.json); without it the
+	// trait is a reminder the app does not apply.
+	EngineReads bool
+	Usage       ActionUsage
+	Text        string
 }
 
 // LegendaryOption is one legendary action.
 type LegendaryOption struct {
-	Key  string
-	Name string
+	Key    string
+	Name   string
+	NamePT string
 	// Cost is how many of the creature's legendary actions the option spends.
 	Cost int
 	// ActionKey is the action of the stat block the option makes ("The dragon makes
@@ -224,6 +236,8 @@ type InnateGroup struct {
 
 // SpellcastingPlan is a creature's Spellcasting or Innate Spellcasting trait.
 type SpellcastingPlan struct {
+	// Key is "<creature key>#spellcasting" or "#innate-spellcasting".
+	Key string
 	// Innate says it is the Innate Spellcasting trait (no slots: at will, or a
 	// number of times a day); otherwise it casts with slots.
 	Innate  bool
@@ -436,6 +450,21 @@ func failedSaveCondition(text string) string {
 	return ""
 }
 
+var (
+	durationRe   = regexp.MustCompile(`\bfor (\d+ (?:minute|hour)s?)\b`)
+	repeatSaveRe = regexp.MustCompile(`repeat the saving throw (?:at the end of|on) each of its turns`)
+)
+
+// conditionDuration reads how long the condition of a failed save lasts and whether the target
+// repeats the saving throw each turn, from the SRD's words ("or become frightened for 1 minute",
+// "can repeat the saving throw at the end of each of its turns").
+func conditionDuration(text string) (duration string, repeat bool) {
+	if m := durationRe.FindStringSubmatch(text); m != nil {
+		duration = m[1]
+	}
+	return duration, repeatSaveRe.MatchString(text)
+}
+
 // areaOf reads the area of an action that affects every creature in it: "60-foot cone",
 // "a 90-foot line that is 10 feet wide", "each creature within 10 ft". An action that
 // picks one target ("one creature within 60 ft.") has no area.
@@ -500,6 +529,7 @@ func (c *content) planAction(m *srd51.Monster, a rawAction) ActionPlan {
 	if hasSave {
 		s := &ActionSave{Ability: Ability(a.save.Ability), DC: a.save.DC, OnSuccess: a.save.OnSuccess, OnHit: p.Attack != nil}
 		s.ConditionKey = failedSaveCondition(a.desc)
+		s.Duration, s.RepeatSave = conditionDuration(a.desc)
 		if p.Attack == nil {
 			p.Kind = ActionKindSave
 			s.Damage = dataDamage()
@@ -507,9 +537,6 @@ func (c *content) planAction(m *srd51.Monster, a rawAction) ActionPlan {
 		// The damage the data leaves out: a bite's poison that a failed save deals.
 		if len(s.Damage) == 0 {
 			s.Damage = c.failedSaveDamage(a.desc)
-		}
-		if s.OnSuccess == "none" && len(s.Damage) > 0 && halfDamageRe.MatchString(a.desc) {
-			s.OnSuccess = "half"
 		}
 		// The data lists the damage of a failed save with the damage of the hit for some
 		// attacks (the assassin's poison); it is rolled once, with the save.
@@ -604,7 +631,7 @@ func (c *content) planMonster(m *srd51.Monster) (*MonsterPlan, error) {
 		plan.Actions = append(plan.Actions, ap)
 	}
 	for _, a := range m.SpecialAbilities {
-		t := TraitPlan{Key: m.Key + "#" + slugOf(a.Name), Name: a.Name, Usage: parseUsage(a.Usage), Text: a.Desc}
+		t := TraitPlan{Key: m.Key + "#" + slugOf(a.Name), Name: a.Name, NamePT: c.namesPT["attack:"+slugOf(a.Name)], Usage: parseUsage(a.Usage), Text: a.Desc, EngineReads: c.engineTraits[a.Name]}
 		switch {
 		case strings.HasPrefix(a.Name, "Legendary Resistance"):
 			plan.LegendaryResistance = max(t.Usage.Uses, 1)
@@ -619,13 +646,14 @@ func (c *content) planMonster(m *srd51.Monster) (*MonsterPlan, error) {
 		}
 	}
 	for _, a := range m.Reactions {
-		plan.Reactions = append(plan.Reactions, TraitPlan{Key: m.Key + "#" + slugOf(a.Name), Name: a.Name, Usage: parseUsage(a.Usage), Text: a.Desc})
+		plan.Reactions = append(plan.Reactions, TraitPlan{Key: m.Key + "#" + slugOf(a.Name), Name: a.Name, NamePT: c.namesPT["attack:"+slugOf(a.Name)], Usage: parseUsage(a.Usage), Text: a.Desc})
 	}
 	if len(m.LegendaryActions) > 0 {
 		lp := &LegendaryPlan{PerRound: c.legendaryPerRound[m.Key]}
 		for _, a := range m.LegendaryActions {
 			opt := LegendaryOption{Key: m.Key + "#legendary-" + slugOf(costRe.ReplaceAllString(a.Name, "")), Cost: 1, Text: a.Desc}
 			opt.Name = costRe.ReplaceAllString(a.Name, "")
+			opt.NamePT = c.namesPT["attack:"+slugOf(opt.Name)]
 			if cm := costRe.FindStringSubmatch(a.Name); cm != nil {
 				opt.Cost, _ = strconv.Atoi(cm[1])
 			}
@@ -666,6 +694,7 @@ func legendarySave(text string) *srd51.MonsterSave {
 
 func (c *content) legendarySavePlan(sv *srd51.MonsterSave, text string) *ActionSave {
 	s := &ActionSave{Ability: Ability(sv.Ability), DC: sv.DC, OnSuccess: "none", ConditionKey: failedSaveCondition(text)}
+	s.Duration, s.RepeatSave = conditionDuration(text)
 	s.Damage = c.failedSaveDamage(text)
 	if len(s.Damage) == 0 {
 		// "must succeed on a DC 19 Dexterity saving throw or take 13 (2d6 + 6) bludgeoning damage".
