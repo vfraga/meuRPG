@@ -109,3 +109,201 @@ Os números dos estados continuam entre os arquivos de PM-02: 1 a 3 em PM-02a, 4
 11. **Salto fora do alcance:** nenhum campo novo para o ataque de oportunidade (o servidor já resolve); só o aviso e a palavra "saltou". Serve para esta etapa?
 12. **Data das sessões** ("qui., 1 de out., 19h05 às 22h47"): num formatador novo. Desenhei o aviso da sessão aberta também no formato novo ("desde qui., 8 de out., 19h05"). Trocar o "30/09 às 20:05" que existe hoje por ele em todo o app?
 13. **PM-04** (reações) não foi desenhado, como pedido.
+
+## Lote 2: Designer A (PM-04, PM-06, PM-07)
+
+Quadros: `PM-04a` 4019 px, `PM-04b` 4068, `PM-04c` 5532 (reações e teste de concentração); `PM-06a` 4855, `PM-06b` 6332
+(vantagem e desvantagem; o que se soma ao dano); `PM-07a` 4059, `PM-07b` 4246, `PM-07c` 5366 (estados, resistências,
+contadores e diálogos de recursos). Ferramentas: `build_pm04a.py` a `build_pm07c.py`, `pm4lib.py`.
+
+### Decisões
+
+**PM-04**
+1. **Uma só janela de reação** para as sete reações, o ataque de oportunidade, a pergunta de revelar de PM-02 e o teste de concentração: `Encounter.reaction_windows[]`, `AnswerReaction`, motivo de espera `REACTION_PENDING` (e `CONCENTRATION_SAVE_PENDING`). A ação que a provocou fica `AWAITING_REACTION`.
+2. **O que o jogador lê:** "Esperando o mestre" para qualquer reator NPC ou não visto; "Esperando a reação de Sálvia" só para um reator **jogador que ele vê**. Nunca qual NPC nem por quê.
+3. **Uma reação por rodada** (SRD, "Reactions"); incapacitado não reage (SRD, Incapacitado): janelas que deixam de valer **fecham sozinhas**, com a razão só do próprio reator (PM-04c 11).
+4. **O prompt chega depois do acerto e antes do dano** (Esquiva Sobrenatural, Defletir Projéteis, Escudo Arcano) e **sem o total** (RN-20). Contramágica chega **sem o nome nem o nível da magia**.
+5. **Palavras de Interrupção** (o nome em `names_pt.json`) gasta **1 uso de Inspiração de Bardo** (hoje não gasta); o prompt vem antes de o mestre dizer o resultado.
+6. **Repreensão Infernal** oferece o Legado Infernal do tiefling (1 uso, 2º nível) e o espaço de pacto; a CD é a de quem conjura; o teste do agressor NPC é do mestre.
+7. **Defletir Projéteis:** o chi só se gasta na devolução; a devolução faz parte da mesma reação.
+8. **A espera segura o andamento do turno, não as reações**: uma reação de outro jogador pode abrir uma segunda janela durante a espera; o mestre responde na ordem da iniciativa.
+9. **Concentração:** prompt ao dono com a CD (maior entre 10 e metade do dano), dado do app, digitado ou "Deixar o mestre rolar por mim"; a ação que deu o dano espera; a 0 PV a concentração acaba sem teste; vários danos do mesmo ataque são uma fonte, fontes diferentes são janelas separadas.
+10. O registro ganha uma linha por reação; o dos jogadores sem números de NPC e sem nomear um reator que eles não veem (`ReactionWindow.log_text_pt` com `for_master` / `for_players`).
+
+**PM-06**
+11. As fontes de vantagem e desvantagem vêm do servidor (`AdvantageSource`) e a tela as lista; o resultado é o do SRD (qualquer número de fontes de um lado + uma do outro = Normal). Entram também as desvantagens de alcance (SRD, "Ranged Attacks") que o servidor já conhece.
+12. Mudar a sugestão exige **motivo** (1 a 120 caracteres) e vai ao registro; vale para jogador e mestre.
+13. Com vantagem/desvantagem, **os dois d20** aparecem, o que vale com borda e "vale", o outro riscado e "descartado"; dados físicos: dois campos, `d20_faces[]`.
+14. O Sentido de Perigo **não aparece** como fonte contra uma armadilha que o personagem não vê (RN-10).
+15. Dano: `PendingDamage.parts[]`; extras oferecidos (Ataque Furtivo, Destruição Divina, Marca do Caçador, Matador de Colossos) com a condição escrita; **condição que falha = linha desativada com o motivo**, nunca some; automáticas (Fúria, Duelismo, Armas Grandes, Crítico Brutal) como linhas escritas. O crítico dobra os **dados** dos extras, não os valores fixos (SRD, "Damage Rolls").
+16. Dados físicos: **um campo por grupo de dados** (`typed_parts[]`), com a contagem e a faixa. O rerrolar do Combate com Armas Grandes é à mão.
+17. O mestre vê o dano separado por parte e pode tirar um extra com motivo.
+
+**PM-07**
+18. Estados: `Combatant.states[]` (Em fúria, Marcado, Esquivando, Ataque descuidado); Atordoado usa a condição existente com origem e fim.
+19. **O fim da fúria é uma pergunta ao jogador** ("Voltar e atacar" ou "Deixar a fúria acabar") quando o turno termina sem ataque a hostil nem dano; o servidor decide o fato. Em fúria o app recusa conjurar.
+20. Resistências na prévia do dano: cada passo com a origem (`DamageStep`); arredonda para baixo (PHB); resistências repetidas ao mesmo tipo contam uma só vez (SRD). A de um **NPC** é só do mestre (RN-20).
+21. Contadores com a recarga escrita e **reposição no descanso** (`recharge`, `TakeRest`), conforme o SRD recurso a recurso (PM-07b 8).
+22. Cura pelas Mãos: alvo, quantia (1 até a reserva) ou curar doença/veneno (5 cada); recusa morto-vivo e constructo; nenhum tipo de NPC é dito ao jogador.
+23. Conjuração Flexível: custos 2/3/5/6/7 (SRD), espaço criado some no descanso longo; converter dá o nível em pontos, até o máximo.
+24. Metamagia na folha de conjurar: só as opções conhecidas, com custo; a que a magia não aceita fica desativada com o motivo; a Duplicada custa o nível da magia (1 para um truque).
+25. Inspiração de Bardo: alvo que não é o bardo, a 18 m, que o ouve; um dado por vez; o jogador usa o dado **depois de rolar e antes do resultado**; cartão de dado na ficha.
+
+### Regras verificadas (SRD 5.1 no commit fixado; PHB brasileiro só para nomes, gatilhos e arredondamento)
+
+| Regra | Onde |
+| --- | --- |
+| Uma reação por rodada; reação como resposta a um gatilho | "Reactions" |
+| Incapacitado não age nem reage; Atordoado, Paralisado, Inconsciente | Condições |
+| Escudo Arcano, Repreensão Infernal, Contramágica, Queda Suave (efeito) | Magias (gatilho: PHB, "Tempo de Conjuração") |
+| Esquiva Sobrenatural | Ladino 5 |
+| Palavras de Interrupção, Inspiração de Bardo | Bardo 1 e Colégio do Conhecimento 3 |
+| Defletir Projéteis, Ataque Atordoante, Defesa Paciente, Passo do Vento (para a ação bônus) | Monge 2, 3 e 5 |
+| Concentração e o teste de Constituição | "Duration" |
+| Vantagem e desvantagem, fontes que não se somam, uma de cada se anula | "Advantage and Disadvantage" |
+| Derrubado, Impedido, Cego, Envenenado, Amedrontado, Invisível | Condições |
+| Esquivar; Ataque Descuidado; Sentido de Perigo; Fúria | "Dodge"; Bárbaro 1 e 2 |
+| Táticas de Matilha | Lobo, Lobo atroz, Chacal |
+| Atacante não visto | "Unseen Attackers and Targets" |
+| Alcance normal e longo; ataque à distância em combate corpo a corpo | "Ranged Attacks" |
+| Ataque Furtivo; Destruição Divina; Marca do Caçador; Matador de Colossos; Duelismo; Armas Grandes | Ladino 1; Paladino 2; magia; Caçador 3; Estilos de Luta |
+| O crítico dobra todos os dados de dano | "Damage Rolls" |
+| Resistência, vulnerabilidade, ordem e "contam como uma vez" | "Damage Resistance and Vulnerability" |
+| Resistências raciais | tiefling (Hellish Resistance), anão (Dwarven Resilience), draconato (Damage Resistance) |
+| Descansos de cada recurso | Bárbaro 1, Monge 2, Feiticeiro 2, Clérigo 2, Paladino 1, Bardo 1 e 5, Druida 2, Guerreiro 1 e 2; "Spell Slots" |
+| Cura pelas Mãos; Conjuração Flexível (tabela de custos); Metamagia (custos) | Paladino 1; Feiticeiro 2 e 3 |
+| Arredondar para baixo ao dividir | PHB ("Arredonde para baixo"); o SRD só o diz do modificador |
+
+### Perguntas para o Vinicius (Lote 2, Designer A)
+
+1. **Prazo para a janela de reação:** nenhum (espera o mestre ou o fim do combate), como a pergunta de revelar. Quer um "Pular" depois de algum tempo?
+2. **Palavras de Interrupção** pode abrir uma pergunta a cada rolagem inimiga (ataque, teste, dano). Proponho uma escolha na ficha: "perguntar em todas / só nos ataques / nunca". Serve?
+3. **Contramágica:** o espaço do conjurador cuja magia foi anulada **se gasta** (a magia foi conjurada; o SRD não diz o contrário). Confere?
+4. **Imunidade de Palavras de Interrupção** (a criatura não ouve ou é imune a enfeitiçar): o servidor não abre a janela e o jogador não vê nada. Aceita que um jogador não saiba por que não houve prompt?
+5. **Destruição Divina e o tipo do alvo:** a linha escreve "+1d8: o alvo é morto-vivo" depois do acerto; isso revela o tipo de um NPC. Prefere só "+1d8" sem a razão?
+6. **Desvantagens de alcance** (além do alcance normal, hostil a 1,5 m) entram como fontes porque o servidor as conhece; o pedido listava só condições. Mantém?
+7. **Nomes que faltam em `names_pt.json`:** "Táticas de Matilha", "Em fúria", "Esquivando", "Marcado". Posso pedir as entradas?
+8. **Mudar a rolagem sugerida** (PM-06 4): um jogador pode mudar para um modo melhor para ele? Hoje o motivo é só escrito; talvez deva exigir o mestre.
+9. **Recarga automática no descanso** (PM-07b 8): hoje os descansos são à mão. Concorda em o servidor repor os contadores?
+10. **Fúria:** perguntar ao fim do turno só quando não houve ataque nem dano, ou nunca perguntar (acabar sozinha)? O pedido dizia "o app pergunta ou acaba".
+11. **Conjuração Flexível acima do máximo de pontos:** o excesso se perde com aviso; ou recusar a conversão?
+
+
+## Lote 2: Designer B (PM-05 e PM-08)
+
+| Quadro | Largura × altura | O que tem |
+| --- | --- | --- |
+| `PM-05a` as escolhas da classe e da raça: o passo | 1280 × 7451 | a tabela de tudo o que a etapa pergunta, com o SRD ao lado; o passo no nível 1 (Tharn, Guerreiro 1, Draconato) em desktop e celular; escolha pendente que trava "Criar personagem"; o nível 5 (Kaelith, Patrulheiro 5, Meio-elfo) |
+| `PM-05b` as escolhas do Bruxo e do Feiticeiro | 1280 × 5746 | Dádiva do Pacto e Invocações Místicas com o pré-requisito à vista, a troca de Dádiva, o botão "Escolher Rajada Mística agora", o Pacto do Tomo, o Ancestral Dracônico e a Metamagia |
+| `PM-05c` Patrulheiro, Druida, elfos e seletores | 1280 × 4909 | Inimigo Favorito e idioma, o terreno do Círculo da Terra com as magias dele, o truque do Alto Elfo, as magias do patrono (Corruptor) e os Segredos Mágicos nos seletores |
+| `PM-05d` a ficha, a ficha travada, o subir de nível e o servidor | 1280 × 4921 | o que a ficha mostra (Arma de Sopro, resistência, invocações), "Completar escolhas pendentes", o subir de nível com escolhas atrasadas, o aviso ao iniciar a sessão e o contrato do servidor |
+| `PM-08a` pedir ajustes | 1280 × 5596 | os três botões do mestre, o motivo obrigatório, o que o mestre e o jogador veem, "Enviar de novo", a recusa que continua apagando, o servidor |
+| `PM-08b` multiclasse: regras e o passo da classe | 1280 × 4312 | as regras do SRD uma a uma, "Subir em qual classe?" em desktop e celular, o pré-requisito recusado |
+| `PM-08c` multiclasse: passos, resumo e servidor | 1280 × 5822 | Vida e Magias da classe nova, o resumo de Guerreiro 5 e Mago 1, o segundo subir de nível e a tabela de espaços, as proficiências do Ladino e as exceções, as recusas e os testes |
+| `PM-08d` Reviver, Revivificar e o jogador do morto | 1280 × 5656 | "Reviver" do mestre (com o bloqueio de um personagem vivo), Revivificar (alvo, material, resultado), a lista de mortos na ordem do mestre, a página do jogador do personagem morto, o servidor |
+
+Os estados de PM-05 vão de 1 a 15 (a: 1 a 5; b: 6 a 7; c: 8 a 10b; d: 11 a 15). PM-08a tem 1 a 6; PM-08b, 1 a 3; PM-08c, 4 a 8; PM-08d, 1 a 6. Os `build_pm05*.py`, `build_pm08*.py` e `pm05lib.py` são só as ferramentas que desenharam os quadros.
+
+### Decisões
+
+**PM-05**
+
+1. **Onde fica o passo.** Passo 3 de 6, entre "Habilidades" e "Perícias" (o pedido dizia "entre as habilidades e as magias": Perícias vem depois porque as escolhas de raça e classe mexem nelas). Só existe quando a ficha tem alguma escolha; sem escolha, ficam os 5 passos de hoje.
+2. **Uma seção por origem** (Raça, Classe nível N, Subclasse), com a etiqueta "Feita" ou "Pendente" e um contador "Escolhas feitas: 4 de 5". Cada opção é um cartão de 56 px com o nome e a regra em uma linha. Escolher mostra o que a escolha dá (a Arma de Sopro com CD, dano, forma e resistência).
+3. **"Criar personagem" não desabilita mudo.** Fica pontilhado e focável, com a razão em texto ("Falta uma escolha: Estilo de Luta (Patrulheiro, nível 2)"), e o passo ganha "!". O servidor também recusa (`CHOICES_MISSING`), só para personagem de jogador; o NPC curto e a ficha travada editada pelo mestre não bloqueiam.
+4. **"+1 em duas habilidades" do Meio-elfo sai do campo "Bônus manuais"** e vira uma escolha deste passo.
+5. **Opção que não vale fica na lista, pontilhada, com o motivo** (cadeado e frase: "Exige o nível 7 de Bruxo. Você está no 5."). Nunca some. Pré-requisito de magia (Rajada Mística) tem o botão "Escolher Rajada Mística agora", que acrescenta o truque, porque os truques vêm no passo seguinte.
+6. **Trocar a Dádiva do Pacto** pergunta antes e diz quais invocações saem; o foco abre na escolha segura.
+7. **Inimigo Favorito:** 13 tipos de criatura ou duas raças de humanoides (texto livre), e um idioma ou "Nenhum". Os nomes dos tipos não estão em `names_pt.json`: entram como `creature-type:*` (pergunta 3).
+8. **Ficha travada: "Completar escolhas pendentes"** numa página só, sem stepper, só os grupos abertos; as já feitas ficam numa linha tracejada e nunca viram campo. O mestre recebe um registro. "+1 em duas habilidades" conta como escolha completável (a ficha muda: aviso na tela).
+9. **Subir de nível:** o passo "Escolhas" ganha, no alto, "Escolhas que ficaram para trás"; "Próximo" fica bloqueado até todas estarem feitas. Nenhum passo novo.
+10. **"Iniciar sessão" avisa** quando há escolha em aberto (lista de personagens e o que falta), com "Esperar os jogadores" (foco) e "Iniciar mesmo assim". O servidor não recusa; o aviso é do navegador. O contador "N escolhas em aberto" aparece só para o mestre e o dono (RN-10).
+11. **O Círculo da Terra** precisa de uma correção nos dados do servidor (a característica não está em nenhuma linha de nível), não só da tela.
+12. **O SRD acrescentou ao pedido:** truque extra do Círculo da Terra (druida 2), as escolhas do Caçador nos níveis 7, 11 e 15, Arcana Mística, Dominar Magia e Assinatura Mágica. O Estilo de Luta do Paladino e o do Patrulheiro têm 4 opções, mas não as mesmas.
+
+**PM-08**
+
+13. **Pedir ajustes:** o personagem continua "Pendente" (o jogador já edita um personagem pendente); ganha uma revisão `REVIEW_CHANGES_REQUESTED` com o motivo (1 a 500 caracteres, obrigatório), e o jogador tem "Enviar de novo". O mestre pode aprovar ou recusar a qualquer momento. O motivo é dado pessoal do mestre sobre o jogador: só mestre e dono o leem, e o servidor o apaga ao aprovar, ao recusar ou ao substituir.
+14. **Recusar continua apagando**, com a confirmação desenhada como ação sem volta (botão contornado em danger-ink, foco em "Cancelar"). A tela de hoje usa o botão vermelho cheio (pergunta 9).
+15. **Multiclasse:** o passo de classe abre sempre ("Subir em qual classe?") e ganha "Uma classe nova", com as 11 outras classes, o pré-requisito e o que o personagem tem em cada uma. O pré-requisito da classe atual conta (e das classes que o personagem já tem). No subir de nível o servidor recusa; na criação continua só avisando.
+16. **Resumo da multiclasse** com "Antes → Depois" e o porquê de cada número; sem diálogo extra de confirmação (como o subir de nível de hoje).
+17. **Dados de vida por tipo** (5d10 e 1d6): hoje o gasto é um número só; passa a ser por tipo.
+18. **Reviver** (mestre): 1 PV, sem Inconsciente, testes contra a morte zerados; com combate aberto volta à ordem **sem turno na rodada atual**. Bloqueado enquanto o jogador tiver outro personagem vivo (RN-03).
+19. **Revivificar** (SRD: "Revivify"; no app, **Revivificar**): só criaturas **mortas confirmadas pelo mestre**, que o conjurador vê, ao toque, e **até 10 rodadas** depois da morte (1 rodada = 6 s). Só em combate (é 1 ação). O material é um lembrete que se marca (o app não tem inventário de pedras); o registro diz que foi gasto.
+20. **O jogador do personagem morto** continua na sessão, com a visão do grupo (a dos personagens vivos somada), sem agir, e vê "Criar um novo personagem", que passa pela aprovação do mestre como qualquer ficha nova.
+
+### Regras verificadas
+
+| Regra | Onde | O que diz (resumo) |
+| --- | --- | --- |
+| Estilo de Luta: 6 do Guerreiro, 4 do Paladino (Defesa, Duelismo, Armas Grandes, Proteção), 4 do Patrulheiro (Arquearia, Defesa, Duelismo, Duas Armas) | SRD 5.1, Fighter, Paladin, Ranger: "Fighting Style" | cada estilo com o seu texto |
+| Ancestral Dracônico: dano, forma e teste de cada dragão | SRD 5.1, Dragonborn: "Draconic Ancestry" e "Breath Weapon" (5e-database, traços `draconic-ancestry-*`) | Negro, Cobre: ácido; Azul, Bronze: elétrico; Latão: fogo (linha de 9 m por 1,5 m, Destreza); Ouro, Vermelho: fogo; Prata, Branco: frio (cone de 4,5 m); Verde: veneno, Constituição |
+| Dragon Ancestor do Feiticeiro | SRD 5.1, Sorcerer: "Dragon Ancestor", "Elemental Affinity" | a mesma tabela de tipos de dano |
+| Invocações Místicas por nível; pré-requisitos | SRD 5.1, Warlock: tabela e "Eldritch Invocations" (5e-database `features`, campo `prerequisites`) | 2, 3, 4, 5, 6, 7 e 8 nos níveis 2, 5, 7, 9, 12, 15 e 18; 32 opções, cada uma com nível, magia ou Dádiva |
+| Dádiva do Pacto | SRD 5.1, Warlock: "Pact Boon", "Pact of the Chain/Blade/Tome" | Corrente, Lâmina, Tomo (3 truques de qualquer classe) |
+| Metamagia | SRD 5.1, Sorcerer: "Metamagic" | 2, 3 e 4 nos níveis 3, 10 e 17; 8 opções com o custo |
+| Inimigo Favorito, Explorador Natural, Presa do Caçador | SRD 5.1, Ranger e Hunter | 13 tipos ou 2 raças; 7 terrenos; 3 presas |
+| Círculo da Terra: terreno, magias do círculo, truque extra | SRD 5.1, Druid, "Circle of the Land", "Circle Spells", "Bonus Cantrip" | 7 terrenos; magias nos níveis 3, 5, 7 e 9 |
+| Meio-elfo; Alto Elfo | SRD 5.1, Half-Elf "Ability Score Increase"; High Elf "Cantrip" | +1 em duas habilidades que não Carisma; um truque de Mago |
+| Magias do patrono; Segredos Mágicos | SRD 5.1, Warlock, The Fiend, "Expanded Spell List"; Bard, "Magical Secrets"; Lore, "Additional Magical Secrets" | dez magias a mais na lista; 2 magias de qualquer classe |
+| Multiclasse: pré-requisitos e proficiências | 5e-database `multi_classing` (a tabela do SRD); Livro do Jogador, cap. 6 | 13 na habilidade; tabela reduzida de proficiências |
+| Multiclasse: XP, PV, dados de vida, bônus de proficiência, características, conjuração, espaços | Livro do Jogador, cap. 6 (o capítulo não está no 5e-database) | pelo nível total; dados por tipo; quatro exceções; nível de conjurador com metade e um terço; tabela de espaços |
+| Revivify | SRD 5.1, spell Revivify | 3º nível, 1 ação, toque, diamantes de 300 PO consumidos, morto há até 1 minuto, volta com 1 PV |
+| Um minuto são 10 rodadas | SRD 5.1, "Combat", "The Order of Combat" | uma rodada é cerca de 6 segundos |
+| Voltar a 0 PV, e acordar | SRD 5.1, "Dropping to 0 Hit Points" | a inconsciência termina com qualquer PV; os testes contra a morte zeram |
+| Um personagem vivo por jogador por campanha | RN-03 (regras do produto) | o índice único do servidor |
+
+### Perguntas para o Vinicius (Lote 2, Designer B)
+
+1. **Livro do Jogador x SRD 5.1 no Inimigo Favorito.** O livro impresso que o Vinicius tem traz outro Inimigo Favorito (5 tipos, +2 de dano, "Inimigo Favorito Maior", Conclaves). O app segue o SRD 5.1 (13 tipos, vantagem em rastrear, idioma). Serve?
+2. **Passo novo "entre as habilidades e as perícias"** em vez de "entre as habilidades e as magias". Concorda com a ordem?
+3. **Nomes dos 13 tipos de criatura** (Inimigo Favorito) não estão em `names_pt.json`; usei os do livro ("Corruptores", "Fadas", "Limos"). Posso pedir as entradas, com esses nomes?
+4. **"+1 em duas habilidades" completável numa ficha travada.** Muda números (Destreza 15 → 16 sobe o modificador, e uma Constituição maior sobe os PV). Deixo completável, com aviso, ou fica só com o mestre?
+5. **Rajada Mística pelo botão no passo das invocações:** acrescenta o truque aos truques da ficha. Se os truques do Bruxo já estão cheios, o botão vira "Trocar um truque por Rajada Mística…". Serve?
+6. **Pedir ajustes mantém o personagem "Pendente"** (o jogador já edita um pendente). O pedido falava em "volta a rascunho editável"; para o jogador dá no mesmo. O mestre ainda pode aprovar durante o pedido. Confere?
+7. **O motivo do pedido** entra no inventário de dados pessoais (`docs/privacy.md`) e é apagado ao aprovar, recusar ou substituir. Aceita?
+8. **Pré-requisito da multiclasse com duas classes:** a regra diz "classe atual e a nova"; exijo o de todas as classes que o personagem tem. Prefere só a classe em que ele sobe? E no subir de nível o servidor recusa, na criação só avisa: manter?
+9. **A confirmação "Recusar personagem" de hoje** é um botão vermelho cheio; o desenho segue o design.md (contornado em danger-ink, foco em "Cancelar"). Troco a tela de hoje também?
+10. **Multiclasse sem diálogo de confirmação**, como o subir de nível de hoje. Quer um diálogo "Isto não se desfaz"?
+11. **Dados de vida por tipo** pedem um campo novo e migração (hoje é um número só). Faz parte desta etapa?
+12. **Reviver não tem prazo e não gasta nada** e é bloqueado quando o jogador já tem outro personagem vivo (RN-03). Em vez de bloquear, quer que o app peça ao mestre para marcar o novo como morto ali mesmo?
+13. **Revivificar só em combate** (1 ação; a janela de 10 rodadas). Fora de combate, o tempo não é contado: só o "Reviver" do mestre. Serve?
+14. **Quem volta com Revivificar ou Reviver fica sem turno na rodada atual.** O SRD não diz. Aceita?
+15. **Material (diamantes de 300 PO):** um lembrete que se marca, sem descontar da bolsa. Quer que desconte 300 PO da bolsa ao conjurar?
+16. **Uma morte que Revivificar não desfaz** (velhice, sem a cabeça): o app não sabe. Quer um interruptor do mestre na confirmação da morte ("Revivificar não funciona")?
+17. **O jogador do personagem morto vê a visão do grupo** (a dos personagens vivos somada). Serve, ou prefere só a ordem e o registro, sem o mapa?
+
+### Lote 2: revisão aplicada (Designer A)
+
+Alturas novas: `PM-04a` 4099, `PM-04b` 4364, `PM-04c` 5532, **`PM-04d` 1856 (novo)**, `PM-06a` 5562, `PM-06b` 6572,
+`PM-07a` 4059, `PM-07b` 4952, `PM-07c` 5912.
+
+- **As respostas do Vinicius** (`decisions-batch2-A.md`) estão aplicadas: sem "Pular" na janela; Palavras de Interrupção com a escolha "em todos / só em ataques / nunca" (padrão: só em ataques); o espaço de uma magia anulada se gasta; "+1d8" sem razão; descansos que repõem recursos (PM-07b 9, com a confirmação do que volta); Conjuração Flexível **recusa** acima do máximo (PM-07c 10, terceiro quadro); as desvantagens de alcance ficam; "Em fúria", "Esquivando" e "Marcado" são rótulos da tela; "Táticas de Matilha" fica marcado para conferir no Livro dos Monstros em português.
+- **Vantagem escolhida por um jogador** (PM-06a 4): aceitar a sugestão ou escolher Desvantagem é livre; **Vantagem que o servidor não sugeriu** vira um pedido na fila do mestre, com o motivo ("Aprovar Vantagem", "Recusar: rola Normal", "Desvantagem"); o mestre define qualquer modo. Substitui a decisão 6 do arquivo dele.
+- **Nova regra da mesa "Reações dos inimigos"** (PM-04d): "Só quando um inimigo pode reagir" (padrão; a ajuda diz que uma pausa pode sugerir que alguém reage) ou "Sempre" (toda ação contra um inimigo espera o toque "Sem reação" do mestre; não vaza nada). O quadro desenha a regra em "Regras da mesa" e o toque do mestre. `TableRules.enemy_reactions`, `ReactionKind.MASTER_CHECK`.
+- **RN-10:** a ausência de um prompt não vaza: Palavras de Interrupção abre para qualquer NPC hostil visível (reação e uso se gastam; "sem efeito" nas mesmas palavras); Cura pelas Mãos aceita qualquer alvo e, se a regra nega, "Nada acontece", sem nomear o tipo; "+1d8" aparece em toda linha de Destruição Divina e o d8 a mais está sempre em "Você vai rolar" (o servidor só o conta quando vale); o registro dos jogadores nunca imprime números ou resistências de NPC ("caiu pela metade", dano final apenas); o prompt da Esquiva mostra o dano do **próprio personagem**.
+- **Regras corrigidas:** Tavo é Paladino 5 com 4 espaços de 1º e 2 de 2º (sem 3º); o crítico da Destruição Divina é 6d8 contra o Esqueleto (8 dados, 6 a 48); o segundo ataque de Brisa é a mão secundária com duas armas leves (Adaga 1d4, sem modificador); a Esquiva Sobrenatural saiu da fila da Bola de Fogo (só responde a um ataque que acerta) e as filas são duas; Ragna só tem Fúria; Nael conhece exatamente 2 opções de Metamagia (Duplicada e Cuidadosa); o Hobgoblin causa 1d8 + 1; Táticas de Matilha vem do bloco do monstro (17 criaturas no SRD, sem lista no app); o Petrificado entra nas fontes.
+- **Elenco único:** Kai Monge 5 (CA 16, Chi 5, +3 Des, CD 14), Ragna Bárbaro 3 (CA 14, 35 PV, +5 com o machado grande), Orla Bardo 5 (d8, 3 usos), Toren Guerreiro 4 (+5 com a espada longa e com o machado grande), Tavo Paladino 5 (reserva de 25), Nael Feiticeiro 5 (5 pontos), Brisa Ladino 5 (+7, Espada curta 1d6 + 4). **O app imprime uma forma por classe** (Ladino, Bárbaro, Patrulheiro, Feiticeiro): as telas usam a forma do arquivo, não o feminino.
+- **Acessibilidade:** anel de foco desenhado em cada família (linhas de rádio, caixas de marcar, campos de dados físicos, passo de quantidade, linha da ordem, "Usar por ele", "Cancelar"); `font-family` em todos os "Fechar"; as seis combinações de contraste corrigidas (texto em `ink-muted`; nada de opacidade em texto de informação); quadros a 320 px para as três folhas mais densas (PM-04b 5, PM-06b 10, PM-07c 11); **as etiquetas não são interativas** (a linha toda é um botão de 44 px, decisão única); confirmações em contorno `danger-ink` para "Converter o espaço", "Deixar a fúria acabar" e "Tirar o Ataque Furtivo" (com o campo de motivo e o foco em "Cancelar" quando a confirmação é no lugar).
+- **Cópia:** "teste de resistência" em lugar de "salvaguarda"; a espera da concentração diz "Esperando o teste de Constituição de Sálvia"; PM-04c 11 corrigido ("Vez do Toren"; "Você está inconsciente…"); "Metamagia" para a característica.
+- **Não aplicado:** os estados "que faltam" da seção E da revisão que **não** entraram na lista de decisões do Vinicius: a desvantagem de alcance e do hostil a 1,5 m desenhadas, a folha de dados físicos do Matador de Colossos, a Marca do Caçador com o alvo morto no meio do turno, a contagem do Atordoado, o fim da Fúria por "inconsciente", a Inspiração de Bardo em teste e a sua expiração, a concentração de um NPC levada a 0 PV (todos descritos nas notas, nenhum com quadro próprio); o conteúdo permanece como está.
+
+**Perguntas do Lote 2 já respondidas:** 1 a 11 em `decisions-batch2-A.md`; as respostas 4 e 6 foram revistas pela revisão (acima).
+
+## Lote 3: PM-09, o pacote da campanha e os links de personagem
+
+Quadro: `PM-09-pacote-da-campanha-e-links-de-personagem-…` (5915 px; terceira fileira, y = 18000).
+
+### Decisões
+1. **Exportar** (configurações da campanha, só o mestre): lista do que vai (documento, galeria, mapas com grade/camadas/portas/luzes/armadilhas/pontos, NPCs, cenas com ações, pistas e ganchos, quebra-cabeças, pontos de batalha e encontros, pontos de tesouro, regras e conteúdo da mesa, personagens **reservados**) e do que nunca vai (anotações privadas, histórico e registros, contas). `<campanha>.meurpg.zip` com o tamanho estimado e o exato; a exportação roda no servidor com progresso e o arquivo fica 24 h.
+2. **Importar** (lista de campanhas): escolher → envio **em partes e retomável** (limite de 32 MiB por pedido) → prévia (contagens, imagens, o que foi **recusado com a razão**) → "Criar campanha". Tudo ou nada; falha no meio não cria nada; pacote de versão mais nova é recusado com a razão.
+3. **Reservados à parte** na lista de personagens, com o estado do link (sem link, enviado até…, assumido por…, revogado); "Criar personagem para um jogador" abre o editor de sempre em modo mestre e salva como reservado, sem aprovação.
+4. **Gerar link** (7 dias por padrão; 1, 7 ou 30), uso único, mostrado **uma vez**, "Copiar link"; "Revogar" é ação irreversível (contorno danger, confirmação no lugar, foco em "Cancelar").
+5. **/claim/<token>:** saído (o que é + "Entrar com Google", nada do personagem), entrado (cartão público + "Assumir este personagem"), resultado (membro e dono, link da ficha). **Uma página de erro só** para inválido/expirado/usado/revogado (mesma frase, mesmo código, mesmo tempo); a **única recusa específica** é RN-03 (já tem um personagem vivo), só depois do login, dizendo o que fazer.
+6. **Segurança e RN-10:** token aleatório de 256 bits, uso único, guardado só como hash, nunca em registro; assumir entra na campanha **sem a aprovação**; um reservado é invisível aos jogadores até ser assumido e o link mostra só o cartão público; limite de taxa por IP.
+7. **Novo no servidor:** `StartCampaignExport`/`GetCampaignExport`/download; `BeginCampaignImport`, `UploadImportPart`, `PreviewCampaignImport`, `CreateCampaignFromImport`; `Character.reserved`, `CreateCharacter.for_player`; `CreateClaimLink`, `RevokeClaimLink`, `claim_state`; `PreviewClaim`, `ClaimCharacter`.
+
+### Perguntas
+1. A validade do link: 7 dias padrão com 1, 7 ou 30 dias à escolha. Serve?
+2. O pacote leva os retratos dos personagens? Assumi que sim (galeria).
+3. RN-03 no claim: assumi que o personagem vivo existente fica com o jogador e o mestre resolve; não há troca automática.
