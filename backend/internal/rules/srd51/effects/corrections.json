@@ -226,6 +226,250 @@
       "field": "passive_perception",
       "value": 13,
       "source": "SRD 5.1, Blink Dog: passive Perception 13 (Perception +3; the snapshot has 10)"
+    },
+    {
+      "creature": "monster:adult-red-dragon",
+      "action": "Fire Breath",
+      "field": "action_save_success",
+      "value": "half",
+      "source": "SRD 5.1, Adult Red Dragon, Fire Breath: a creature that succeeds on the saving throw takes half as much damage (the snapshot has no damage on a success)"
+    },
+    {
+      "creature": "monster:ancient-white-dragon",
+      "action": "Cold Breath",
+      "field": "action_save_success",
+      "value": "half",
+      "source": "SRD 5.1, Ancient White Dragon, Cold Breath: a creature that succeeds on the saving throw takes half as much damage (the snapshot has no damage on a success)"
+    },
+    {
+      "creature": "monster:green-dragon-wyrmling",
+      "action": "Poison Breath",
+      "field": "action_save_success",
+      "value": "half",
+      "source": "SRD 5.1, Green Dragon Wyrmling, Poison Breath: a creature that succeeds on the saving throw takes half as much damage (the snapshot has no damage on a success)"
+    },
+    {
+      "creature": "monster:winter-wolf",
+      "action": "Cold Breath",
+      "field": "action_save_success",
+      "value": "half",
+      "source": "SRD 5.1, Winter Wolf, Cold Breath: a creature that succeeds on the saving throw takes half as much damage (the snapshot has no damage on a success)"
+    },
+    {
+      "creature": "monster:dust-mephit",
+      "field": "innate_spell_uses",
+      "value": 1,
+      "source": "SRD 5.1, Dust Mephit, Innate Spellcasting (1/Day): the snapshot's text for its one spell leaves the limit out (its spellcasting data says 1 a day)"
+    },
+    {
+      "creature": "monster:ice-mephit",
+      "field": "innate_spell_uses",
+      "value": 1,
+      "source": "SRD 5.1, Ice Mephit, Innate Spellcasting (1/Day): the snapshot's text for its one spell leaves the limit out (its spellcasting data says 1 a day)"
+    },
+    {
+      "creature": "monster:magma-mephit",
+      "field": "innate_spell_uses",
+      "value": 1,
+      "source": "SRD 5.1, Magma Mephit, Innate Spellcasting (1/Day): the snapshot's text for its one spell leaves the limit out (its spellcasting data says 1 a day)"
+    },
+    {
+      "creature": "monster:steam-mephit",
+      "field": "innate_spell_uses",
+      "value": 1,
+      "source": "SRD 5.1, Steam Mephit, Innate Spellcasting (1/Day): the snapshot's text for its one spell leaves the limit out (its spellcasting data says 1 a day)"
+    },
+    {
+      "creature": "monster:aboleth",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Aboleth, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-black-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Black Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-blue-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Blue Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-brass-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Brass Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-bronze-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Bronze Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-copper-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Copper Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-gold-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Gold Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-green-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Green Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-red-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Red Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-silver-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult Silver Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:adult-white-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Adult White Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-black-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Black Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-blue-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Blue Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-brass-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Brass Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-bronze-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Bronze Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-copper-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Copper Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-gold-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Gold Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-green-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Green Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-red-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Red Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-silver-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient Silver Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:ancient-white-dragon",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Ancient White Dragon, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:androsphinx",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Androsphinx, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:gynosphinx",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Gynosphinx, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:kraken",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Kraken, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:lich",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Lich, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:mummy-lord",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Mummy Lord, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:solar",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Solar, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:tarrasque",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Tarrasque, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:unicorn",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Unicorn, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:vampire-bat",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Vampire Bat, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:vampire-mist",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Vampire Mist, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
+    },
+    {
+      "creature": "monster:vampire-vampire",
+      "field": "legendary_actions",
+      "value": 3,
+      "source": "SRD 5.1, Vampire Vampire, Legendary Actions: the creature can take 3 legendary actions, choosing from the options (the snapshot keeps the options and not the number)"
     }
   ],
   "spell_corrections": [

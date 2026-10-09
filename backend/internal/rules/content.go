@@ -41,9 +41,17 @@ type content struct {
 	// attacksPerAction holds the creature corrections of effects/corrections.json:
 	// the Multiattack count the snapshot has wrong, by creature key.
 	attacksPerAction map[string]int
-	magicItems       map[string]*srd51.MagicItem
-	languages        map[string]*srd51.Language
-	named            map[string]*srd51.Named
+	// legendaryPerRound and innateUses are the other creature corrections that
+	// are not a field of the snapshot: how many legendary actions a creature takes
+	// between its turns, and the uses a day of the single spell of an innate
+	// spellcaster (effects/corrections.json), by creature key. monsterPlans are the
+	// stat blocks as a combat reads them (monsterplan.go), built after the corrections.
+	legendaryPerRound map[string]int
+	innateUses        map[string]int
+	monsterPlans      map[string]*MonsterPlan
+	magicItems        map[string]*srd51.MagicItem
+	languages         map[string]*srd51.Language
+	named             map[string]*srd51.Named
 
 	// classLevels[class][n-1] is row n of the class table, and
 	// subclassLevels[subclass][n] the subclass row at class level n.
@@ -281,6 +289,9 @@ func load(fsys fs.FS) (*content, error) {
 	c.multiclassTable = c.findMulticlassTable()
 	c.buildCatalog(nil)
 	c.buildCreatures()
+	if err := c.buildPlans(); err != nil {
+		return nil, err
+	}
 	c.buildMagicItems()
 	if err := c.loadTreasure(fsys); err != nil {
 		return nil, err
@@ -796,6 +807,7 @@ var creatureCorrectionFields = []string{
 	"speed_walk", "speed_fly", "speed_swim", "speed_climb", "speed_burrow",
 	"darkvision", "blindsight", "tremorsense", "truesight", "passive_perception",
 	"skills", "damage_immunities", "condition_immunities",
+	"action_save_success", "legendary_actions", "innate_spell_uses",
 }
 
 // correctionFields are the class table columns effects/corrections.json may
@@ -814,6 +826,13 @@ const (
 	// DamageChoiceAlternative: only the type the caster picks is dealt (Spirit
 	// Guardians: radiant or necrotic).
 	DamageChoiceAlternative = "alternative"
+)
+
+// maxLegendaryPerRound and maxInnateUses bound the numbers a creature correction may
+// give for the legendary actions of a round and the uses a day of an innate spell.
+const (
+	maxLegendaryPerRound = 5
+	maxInnateUses        = 9
 )
 
 // minChoiceDamageTypes is how many damage types a spell needs for the caster to
@@ -843,10 +862,13 @@ func (c *content) applyCorrections(fsys fs.FS) error {
 			ByLevel map[string]int `json:"by_level"`
 		} `json:"corrections"`
 		Creatures []struct {
-			Creature string          `json:"creature"`
-			Field    string          `json:"field"`
-			Value    json.RawMessage `json:"value"`
-			Source   string          `json:"source"`
+			Creature string `json:"creature"`
+			// Action names the action of the stat block an action_save_success
+			// correction is about; no other field takes one.
+			Action string          `json:"action"`
+			Field  string          `json:"field"`
+			Value  json.RawMessage `json:"value"`
+			Source string          `json:"source"`
 		} `json:"creature_corrections"`
 		Spells []struct {
 			Spell       string `json:"spell"`
@@ -875,6 +897,7 @@ func (c *content) applyCorrections(fsys fs.FS) error {
 		return err
 	}
 	c.attacksPerAction = map[string]int{}
+	c.legendaryPerRound, c.innateUses = map[string]int{}, map[string]int{}
 	seen := map[string]bool{}
 	for _, corr := range f.Creatures {
 		m, ok := c.monsters[corr.Creature]
@@ -887,11 +910,14 @@ func (c *content) applyCorrections(fsys fs.FS) error {
 		if corr.Source == "" {
 			return fmt.Errorf("%s: %s: %s needs a source", name, corr.Creature, corr.Field)
 		}
-		if seen[corr.Creature+"/"+corr.Field] {
+		if (corr.Action != "") != (corr.Field == "action_save_success") {
+			return fmt.Errorf("%s: %s: %s needs an action exactly when it is action_save_success", name, corr.Creature, corr.Field)
+		}
+		if seen[corr.Creature+"/"+corr.Field+"/"+corr.Action] {
 			return fmt.Errorf("%s: %s: %s is corrected twice", name, corr.Creature, corr.Field)
 		}
-		seen[corr.Creature+"/"+corr.Field] = true
-		if err := c.correctCreature(corr.Creature, m, corr.Field, corr.Value); err != nil {
+		seen[corr.Creature+"/"+corr.Field+"/"+corr.Action] = true
+		if err := c.correctCreature(corr.Creature, m, corr.Field, corr.Action, corr.Value); err != nil {
 			return fmt.Errorf("%s: %s: %s: %w", name, corr.Creature, corr.Field, err)
 		}
 	}
@@ -1035,7 +1061,7 @@ func (c *content) applyCorrections(fsys fs.FS) error {
 
 // correctCreature writes one corrected field of a stat block. raw is the
 // field's JSON value: a number, a hit point roll, a skill map or a key list.
-func (c *content) correctCreature(key string, m *srd51.Monster, field string, raw json.RawMessage) error {
+func (c *content) correctCreature(key string, m *srd51.Monster, field, action string, raw json.RawMessage) error {
 	number := func(lo, hi int) (int, error) {
 		var v int
 		if err := json.Unmarshal(raw, &v); err != nil || v < lo || v > hi {
@@ -1070,6 +1096,37 @@ func (c *content) correctCreature(key string, m *srd51.Monster, field string, ra
 		return err
 	}
 	switch field {
+	case "legendary_actions":
+		if len(m.LegendaryActions) == 0 {
+			return fmt.Errorf("%s has no legendary actions", key)
+		}
+		v, err := number(1, maxLegendaryPerRound)
+		if err != nil {
+			return err
+		}
+		c.legendaryPerRound[key] = v
+		return nil
+	case "innate_spell_uses":
+		if !slices.ContainsFunc(m.SpecialAbilities, func(a srd51.MonsterAbility) bool { return a.Name == "Innate Spellcasting" }) {
+			return fmt.Errorf("%s has no Innate Spellcasting", key)
+		}
+		v, err := number(1, maxInnateUses)
+		if err != nil {
+			return err
+		}
+		c.innateUses[key] = v
+		return nil
+	case "action_save_success":
+		var outcome string
+		if err := json.Unmarshal(raw, &outcome); err != nil || !slices.Contains(spellCorrectionSaveSuccess, outcome) {
+			return fmt.Errorf("needs half, none or other")
+		}
+		i := slices.IndexFunc(m.Actions, func(a srd51.MonsterAction) bool { return a.Name == action })
+		if i < 0 || m.Actions[i].Save == nil {
+			return fmt.Errorf("%s has no action %q with a saving throw", key, action)
+		}
+		m.Actions[i].Save.OnSuccess = outcome
+		return nil
 	case "attacks_per_action":
 		if !slices.ContainsFunc(m.Actions, func(a srd51.MonsterAction) bool { return len(a.Multiattack) > 0 }) {
 			return fmt.Errorf("%s has no Multiattack to correct", key)
