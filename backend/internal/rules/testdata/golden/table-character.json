@@ -696,6 +696,7 @@
       }
     ],
     "ItemResistances": null,
+    "ItemModifiers": null,
     "Issues": null
   },
   "level 11": {
@@ -1836,6 +1837,7 @@
       }
     ],
     "ItemResistances": null,
+    "ItemModifiers": null,
     "Issues": null
   },
   "level 5": {
@@ -2758,6 +2760,7 @@
       }
     ],
     "ItemResistances": null,
+    "ItemModifiers": null,
     "Issues": null
   }
 }
