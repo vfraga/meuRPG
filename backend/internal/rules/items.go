@@ -77,6 +77,9 @@ type ItemCharges struct {
 	// RegainDice is what the item regains each dawn, as dice ("1d6+1"), or "" when
 	// it regains none (the item's text says what else happens).
 	RegainDice string
+	// DestroyOnEmpty says that spending the last charge risks the item: roll a d20 and
+	// on a 1 it is destroyed (a wand crumbles to ashes, SRD 5.1 "Wand of Fireballs").
+	DestroyOnEmpty bool
 	// Spells are what the item casts by spending charges.
 	Spells []ChargeSpell
 }
@@ -222,9 +225,10 @@ type itemEffect struct {
 }
 
 type itemChargesJSON struct {
-	Max        int               `json:"max"`
-	RegainDice string            `json:"regain_dice,omitempty"`
-	Spells     []chargeSpellJSON `json:"spells,omitempty"`
+	Max            int               `json:"max"`
+	RegainDice     string            `json:"regain_dice,omitempty"`
+	DestroyOnEmpty bool              `json:"destroy_on_empty,omitempty"`
+	Spells         []chargeSpellJSON `json:"spells,omitempty"`
 }
 
 type chargeSpellJSON struct {
@@ -294,9 +298,32 @@ func (c *content) loadItems(fsys fs.FS) error {
 		}
 		out.defs[k] = def
 	}
+	// The labels the inventory's lists show for a magic item category and an equipment
+	// kind: one for each, and none for anything else.
+	for _, cat := range magicCategories {
+		if strings.TrimSpace(c.namesPT["item-category:"+cat]) == "" {
+			return fmt.Errorf("effects/names_pt.json: no Portuguese label \"item-category:%s\"", cat)
+		}
+	}
+	for _, kind := range equipmentKinds {
+		if strings.TrimSpace(c.namesPT["equipment-kind:"+kind]) == "" {
+			return fmt.Errorf("effects/names_pt.json: no Portuguese label \"equipment-kind:%s\"", kind)
+		}
+	}
+	for k := range c.namesPT {
+		if cat, ok := strings.CutPrefix(k, "item-category:"); ok && !slices.Contains(magicCategories, cat) {
+			return fmt.Errorf("effects/names_pt.json: %q is not a magic item category", k)
+		}
+		if kind, ok := strings.CutPrefix(k, "equipment-kind:"); ok && !slices.Contains(equipmentKinds, kind) {
+			return fmt.Errorf("effects/names_pt.json: %q is not an equipment kind", k)
+		}
+	}
 	c.items = out
 	return nil
 }
+
+// equipmentKinds are the kinds of SRD equipment the inventory lists.
+var equipmentKinds = []string{"armor", "shield", "weapon", "tool", "gear"}
 
 func (c *content) loadItemGroups(name string, f *itemsFile, out *itemsContent) error {
 	var weapons, armor, ammo []string
@@ -604,7 +631,7 @@ func (c *content) compileItemCharges(e *itemEntry, d *ItemDef) error {
 			return fmt.Errorf("charges: regain_dice %q is not dice", ch.RegainDice)
 		}
 	}
-	out := &ItemCharges{Max: ch.Max, RegainDice: ch.RegainDice}
+	out := &ItemCharges{Max: ch.Max, RegainDice: ch.RegainDice, DestroyOnEmpty: ch.DestroyOnEmpty}
 	for i, s := range ch.Spells {
 		sp, ok := c.spells[s.Spell]
 		if !ok {

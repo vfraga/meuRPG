@@ -76,10 +76,10 @@ func TestMR004_SheetComesWithServerCalculatedValues(t *testing.T) {
 			d.GetArmorClass(), d.GetHitPointsMax(), d.GetSpeedWalkFt(), d.GetProficiencyBonus())
 	}
 	// Every section of the official sheet has its data: abilities, skills,
-	// combat, spells, equipment, features.
+	// combat, spells, features (the equipment is the inventory's: inventory_test.go).
 	sections := map[string]int{
 		"habilidades": len(d.GetAbilities()), "perícias": len(d.GetSkills()), "ataques": len(d.GetAttacks()),
-		"magias": len(d.GetSpells()), "equipamento": len(c.GetSheet().GetFull().GetEquipment()), "características": len(d.GetFeatures()),
+		"magias": len(d.GetSpells()), "características": len(d.GetFeatures()),
 	}
 	for section, n := range sections {
 		if n == 0 {

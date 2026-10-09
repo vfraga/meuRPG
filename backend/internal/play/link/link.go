@@ -514,3 +514,17 @@ type MonsterHitPoints struct {
 	Average                         int
 	DiceCount, DiceSides, DiceBonus int
 }
+
+// ItemEvent is one line of the inventory's history in a session, as package play keeps
+// it and package characters shows it to the master: the kind of the session event
+// (item_given, item_transferred, item_used, item_attuned, item_identified,
+// item_charges), who did it, the payload (IDs and numbers) and when.
+type ItemEvent struct {
+	Kind        string
+	ActorUserID string
+	Payload     []byte
+	At          time.Time
+}
+
+// ItemEventKinds are the session event kinds of the inventory's history.
+var ItemEventKinds = []string{"item_given", "item_transferred", "item_used", "item_attuned", "item_identified", "item_charges"}

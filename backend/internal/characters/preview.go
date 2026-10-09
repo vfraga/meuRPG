@@ -90,5 +90,6 @@ func (s *Service) checkEditedSheet(ctx context.Context, m authz.Membership, cont
 	if err := refuseNewChoices(content, m, row.ID, stored.GetFull(), sheet.GetFull()); err != nil {
 		return nil, err
 	}
+	keepInventory(row.ID, stored, sheet) // the preview wears what the character wears
 	return sheet, nil
 }

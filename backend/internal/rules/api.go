@@ -653,6 +653,9 @@ type Derived struct {
 	Hints []Hint
 	// ItemResistances are the damage types the equipped items give resistance to.
 	ItemResistances []ItemResistance
+	// ItemModifiers are the numbers the equipped items change, one line each, for the
+	// sheet's "por causa de".
+	ItemModifiers []ItemModifier
 	// Issues are problems found while deriving: unknown keys, unusual
 	// choices, a broken formula. They never stop the sheet from opening.
 	Issues []Issue

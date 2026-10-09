@@ -133,6 +133,12 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 	for _, a := range d.Attacks {
 		out.Attacks = append(out.Attacks, attackToProto(a))
 	}
+	for _, m := range d.ItemModifiers {
+		out.ItemModifiers = append(out.ItemModifiers, &rulesv1.ItemModifier{Target: m.Target, Value: i32(m.Value), SourceItemId: m.ItemID, LabelPt: m.SourceNamePT})
+	}
+	for _, r := range d.ItemResistances {
+		out.ItemResistances = append(out.ItemResistances, &rulesv1.ItemResistance{DamageType: r.DamageType, SourceItemId: r.ItemID, LabelPt: r.SourceNamePT})
+	}
 	for _, r := range d.Resources {
 		out.Resources = append(out.Resources, &rulesv1.Resource{
 			Key: r.Key, NamePt: r.NamePT, Max: i32(r.Max), Recharge: rechargeToProto[r.Recharge], SourceKey: r.Source,
@@ -220,6 +226,9 @@ func attackToProto(a rules.Attack) *rulesv1.Attack {
 		Notes:               a.Notes,
 		Beams:               i32(a.Beams),
 		SpellDice:           a.SpellDice,
+		AmmunitionKey:       a.Ammunition,
+		AmmunitionItemId:    a.AmmunitionItem,
+		AmmunitionOut:       a.AmmunitionOut,
 	}
 }
 

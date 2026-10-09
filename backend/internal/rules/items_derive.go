@@ -3,6 +3,7 @@ package rules
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/PuraFome/meuRPG/backend/internal/rules/srd51"
@@ -42,9 +43,21 @@ const (
 	AlignmentEvil = "evil"
 )
 
+// ItemModifier is one number an equipped item changes: Target is "ac", "save.all",
+// "score.str", "attack:<attack key>", "speed.walk", "hp.max", "sense:darkvision",
+// "spell_attack" or "spell_dc"; Value the amount (the score an ability is set to).
+type ItemModifier struct {
+	Target       string
+	Value        int
+	ItemID       string
+	SourceNamePT string
+}
+
 // ItemResistance is a resistance an item gives and the item it comes from.
 type ItemResistance struct {
 	DamageType, Source string
+	// ItemID and SourceNamePT say which line gives it and how the table calls it.
+	ItemID, SourceNamePT string
 }
 
 // itemRuntime is an equipped item resolved against the content.
@@ -201,7 +214,8 @@ func (x *deriver) resolveItems() {
 			if !x.itemBase(r, field) {
 				continue
 			}
-			r.magic = !m.Attunement || (it.Attuned && ParseRestriction(m.AttunementBy).Met(who))
+			// An item nobody has identified yet works as its base alone: its magic waits.
+			r.magic = !it.Unidentified && (!m.Attunement || (it.Attuned && ParseRestriction(m.AttunementBy).Met(who)))
 		default:
 			continue // a free-text line is only text
 		}
@@ -348,7 +362,7 @@ func (x *deriver) ammunitionFor(ammo string) (stack *Item, bonus int, out bool) 
 	if stack == nil {
 		return nil, 0, true
 	}
-	if d := x.c.items.defs[stack.Key]; d != nil {
+	if d := x.c.items.defs[stack.Key]; d != nil && !stack.Unidentified {
 		bonus = d.AmmoBonus
 	}
 	return stack, bonus, false
@@ -381,12 +395,14 @@ func (x *deriver) addItemEffects() {
 		d := r.def
 		for _, e := range d.Effects {
 			x.active = append(x.active, activeEffect{owner: r.item.Key, effect: e})
+			x.noteModifier(r, e)
 		}
+		x.noteBonuses(r)
 		for _, t := range d.Resistances {
-			x.addResistance(t, r.item.Key)
+			x.addResistance(t, r)
 		}
 		if d.OptionResistance && r.item.Option != "" && slices.Contains(d.OptionDamageTypes, r.item.Option) {
-			x.addResistance(r.item.Option, r.item.Key)
+			x.addResistance(r.item.Option, r)
 		}
 		x.itemSpellAttack += d.SpellAttack
 		x.itemSpellDC += d.SpellDC
@@ -396,9 +412,9 @@ func (x *deriver) addItemEffects() {
 	}
 }
 
-func (x *deriver) addResistance(damageType, source string) {
+func (x *deriver) addResistance(damageType string, from *itemRuntime) {
 	if !slices.ContainsFunc(x.d.ItemResistances, func(r ItemResistance) bool { return r.DamageType == damageType }) {
-		x.d.ItemResistances = append(x.d.ItemResistances, ItemResistance{DamageType: damageType, Source: source})
+		x.d.ItemResistances = append(x.d.ItemResistances, ItemResistance{DamageType: damageType, Source: from.item.Key, ItemID: from.item.ID, SourceNamePT: from.name})
 	}
 }
 
@@ -481,4 +497,53 @@ func (r *itemRuntime) slot() string {
 		return r.def.Slot
 	}
 	return ""
+}
+
+// CharacterOf reads the build the way an attunement restriction does: its classes,
+// race, whether it casts spells and its alignment.
+func CharacterOf(b Build, c *Content) Character {
+	x := &deriver{b: b, c: c.c, d: &Derived{}, proficient: map[string]bool{}, conditions: map[*Effect]bool{}}
+	x.resolve()
+	return x.characterOf()
+}
+
+// noteModifier records the number an engine effect of an item changes.
+func (x *deriver) noteModifier(r *itemRuntime, e *Effect) {
+	add := func(target string, value int) {
+		x.d.ItemModifiers = append(x.d.ItemModifiers, ItemModifier{Target: target, Value: value, ItemID: r.item.ID, SourceNamePT: r.name})
+	}
+	n, _ := strconv.Atoi(e.Value)
+	switch {
+	case e.Type == "sense":
+		add("sense:"+e.Sense, e.RangeFt)
+	case e.Type != "modifier":
+	case strings.HasPrefix(e.Target, "score."):
+		add(e.Target, min(e.Cap, MaxScore)) // the score the item sets or lifts it to
+	case e.Target == "hp.max":
+		add(e.Target, x.d.TotalLevel)
+	case e.Target == "ac.base":
+		add("ac.base", n)
+	default:
+		add(e.Target, n)
+	}
+}
+
+// noteBonuses records the +N of magic armor, shield and weapon and the spell bonuses.
+func (x *deriver) noteBonuses(r *itemRuntime) {
+	d := r.def
+	add := func(target string, value int) {
+		x.d.ItemModifiers = append(x.d.ItemModifiers, ItemModifier{Target: target, Value: value, ItemID: r.item.ID, SourceNamePT: r.name})
+	}
+	if d.ArmorBonus != 0 {
+		add("ac", d.ArmorBonus)
+	}
+	if d.WeaponBonus != 0 && r.eq != nil && r.eq.Weapon != nil {
+		add("attack:inv:"+r.item.ID, d.WeaponBonus)
+	}
+	if d.SpellAttack != 0 {
+		add("spell_attack", d.SpellAttack)
+	}
+	if d.SpellDC != 0 {
+		add("spell_dc", d.SpellDC)
+	}
 }

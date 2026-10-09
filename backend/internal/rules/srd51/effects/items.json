@@ -728,6 +728,15 @@
    ],
    "note_pt": "O dano radiante extra e a aura de vantagem em testes contra magias são lembretes."
   },
+  "item:ioun-stone-of-protection": {
+   "effects": [
+    {
+     "type": "ac",
+     "value": 1
+    }
+   ],
+   "note_pt": "A pedra só vale orbitando a cabeça de quem a lançou ao ar: lembrete."
+  },
   "item:javelin-of-lightning": {
    "slot": "hand",
    "base": {
@@ -1103,6 +1112,7 @@
    ],
    "charges": {
     "max": 10,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+4",
     "spells": [
      {
@@ -1121,8 +1131,7 @@
       "cost": 4
      }
     ]
-   },
-   "note_pt": "O que acontece ao gastar a última carga é lembrete."
+   }
   },
   "item:staff-of-frost": {
    "slot": "hand",
@@ -1134,6 +1143,7 @@
    ],
    "charges": {
     "max": 10,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+4",
     "spells": [
      {
@@ -1157,13 +1167,13 @@
       "cost": 4
      }
     ]
-   },
-   "note_pt": "O que acontece ao gastar a última carga é lembrete."
+   }
   },
   "item:staff-of-healing": {
    "slot": "hand",
    "charges": {
     "max": 10,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+4",
     "spells": [
      {
@@ -1184,8 +1194,7 @@
       "cost": 5
      }
     ]
-   },
-   "note_pt": "O que acontece ao gastar a última carga é lembrete."
+   }
   },
   "item:staff-of-power": {
    "slot": "hand",
@@ -1284,6 +1293,7 @@
    "slot": "hand",
    "charges": {
     "max": 10,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+4",
     "spells": [
      {
@@ -1298,7 +1308,7 @@
      }
     ]
    },
-   "note_pt": "A nuvem de insetos (1 carga) e o que acontece ao gastar a última carga são lembretes."
+   "note_pt": "A nuvem de insetos (1 carga) é lembrete."
   },
   "item:staff-of-the-woodlands": {
    "slot": "hand",
@@ -1438,6 +1448,7 @@
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1",
     "spells": [
      {
@@ -1454,12 +1465,13 @@
      }
     ]
    },
-   "note_pt": "A fuga assistida (1 carga) e a última carga são lembretes."
+   "note_pt": "A fuga assistida (1 carga) é lembrete."
   },
   "item:wand-of-enemy-detection": {
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1"
    },
    "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."
@@ -1468,6 +1480,7 @@
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1"
    },
    "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."
@@ -1476,6 +1489,7 @@
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1",
     "spells": [
      {
@@ -1487,13 +1501,13 @@
       "dc": 15
      }
     ]
-   },
-   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+   }
   },
   "item:wand-of-lightning-bolts": {
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1",
     "spells": [
      {
@@ -1505,8 +1519,7 @@
       "dc": 15
      }
     ]
-   },
-   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+   }
   },
   "item:wand-of-magic-detection": {
    "slot": "hand",
@@ -1526,6 +1539,7 @@
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1",
     "spells": [
      {
@@ -1536,13 +1550,13 @@
       "max_level": 9
      }
     ]
-   },
-   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+   }
   },
   "item:wand-of-paralysis": {
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1"
    },
    "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."
@@ -1551,6 +1565,7 @@
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1",
     "spells": [
      {
@@ -1560,8 +1575,7 @@
       "dc": 15
      }
     ]
-   },
-   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+   }
   },
   "item:wand-of-secrets": {
    "slot": "hand",
@@ -1605,6 +1619,7 @@
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1",
     "spells": [
      {
@@ -1614,13 +1629,13 @@
       "dc": 15
      }
     ]
-   },
-   "note_pt": "Se gastar a última carga, role 1d20: com 1, a varinha vira cinzas."
+   }
   },
   "item:wand-of-wonder": {
    "slot": "hand",
    "charges": {
     "max": 7,
+    "destroy_on_empty": true,
     "regain_dice": "1d6+1"
    },
    "note_pt": "O efeito de gastar cargas é lembrete: leia o texto do item."

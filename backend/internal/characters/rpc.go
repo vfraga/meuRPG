@@ -424,6 +424,9 @@ func (s *Service) UpdateCharacter(
 		if err := keepAbilityOrigin(m, content, storedSheet, sheet); err != nil {
 			return err
 		}
+		// The inventory is the server's too: the stored one stays, and the equipment
+		// lines the client sent join it as free text.
+		keepInventory(current.ID, storedSheet, sheet)
 		// A save never clears an issue that a change of the table's content flagged
 		// and that still stands.
 		carryFlags(content, storedSheet.GetFull(), sheet.GetFull())
@@ -748,6 +751,7 @@ func checkNewSheet(content *rules.Content, m authz.Membership, kind string, raw 
 	}
 	if sheet.GetFull() != nil {
 		sheet.GetFull().AbilityOrigin = nil // the server's record, set later for a player
+		keepInventory("", nil, sheet)       // equipment lines become the inventory's free text
 	}
 	if err := refuseNewChoices(content, m, "", nil, sheet.GetFull()); err != nil {
 		return nil, err

@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+// The inventory of a character (SRD 5.1 "Equipment" and "Magic Items"): what the
+// character carries, wears and wields, the magic items it is attuned to, the
+// charges of a wand, the potions and scrolls it can use, the ammunition it
+// fires, and its coins.
+//
+// Where it lives. The inventory is part of the character's full sheet
+// (FullSheet.inventory), stored with it, so every number the sheet derives
+// (armor class, attacks, ability scores, saving throws, speed, senses,
+// resistances) reads it. It is the server's: the sheet calls never take it from
+// the client, and a player's UpdateCharacter keeps the stored one. Only the calls
+// below change it, whatever the sheet's lock (RN-01), because the table plays
+// with it: the master gives and takes items, the player wears, uses and trades
+// theirs. The free-text equipment lines a sheet had before the inventory
+// (FullSheet.equipment) are read as free-text items of the inventory, word for
+// word.
+//
+// What an item is. A line of the inventory is one of:
+//   - free text ("Corda de cânhamo (15 m)", the player's own words), which does
+//     nothing;
+//   - an item of the SRD equipment ("equipment:longsword", "equipment:arrow"): a
+//     weapon or armor works as its base while worn, ammunition is counted;
+//   - a magic item of the SRD ("item:ring-of-protection"). A generic one is a
+//     family's variant that needs a base ("item:weapon-1" is a +1 weapon of a
+//     chosen type) and some offer an option ("item:armor-of-resistance": the
+//     damage type).
+//
+// What the engine applies. Of the 362 SRD magic items, effects/items.json lists
+// the ones whose properties are numbers the sheet can compute (a bonus to attack
+// and damage, to the armor class or to saving throws, a fixed ability score, a
+// resistance, a speed, darkvision, charges, a potion's healing, a scroll's
+// spell). The rest of an item is a reminder, in the SRD's own text. Coverage says
+// which an item is.
+//
+// What the player may not know (RN-10). The master may give a magic item
+// unidentified: the player sees only its look ("Uma espada com runas"), never its
+// name, its properties, its rarity, its charges or the key it is. An item is
+// identified by the master, by a short rest focused on it that the master
+// confirms, or by attuning to it (SRD 5.1 "Magic Items"). The server blanks every
+// field above for the player, in every response and stream, as long as the item is
+// unidentified. The bonuses it gives are still applied: the player feels the
+// numbers, as at the table.
+//
+// Attunement (SRD 5.1 "Attunement"). A character attunes to at most three magic
+// items, only to an item that requires it, only if it meets the item's
+// restriction (a class, a spellcaster, a race, an alignment), never to two copies
+// of the same item, and only outside combat, because it takes a short rest. The
+// app has no clock for rests, so a short rest is the master's word: the player
+// asks (RequestItemRest) and the master approves (ResolveItemRest), or the master
+// does it directly. An item that requires attunement and is not attuned gives only
+// its nonmagical benefits. Attunement ends when the character no longer meets the
+// restriction, or when it asks to end it and the master confirms, unless the item
+// is cursed.
+//
+// Text fields follow the rules of characters.proto. Limits: at most 200 lines in
+// an inventory, a name or a look of 1 to 100 characters, one line, a quantity of
+// 1 to 9,999.
+package meurpg.characters.v1;
+
+// ItemRequestKind is what a player asked the master to confirm with a short rest.
+enum ItemRequestKind {
+  ITEM_REQUEST_KIND_UNSPECIFIED = 0;
+  // Attune to the item.
+  ITEM_REQUEST_KIND_ATTUNE = 1;
+  // End the attunement to the item.
+  ITEM_REQUEST_KIND_END_ATTUNEMENT = 2;
+  // Learn the item's properties (identify it) with a short rest.
+  ITEM_REQUEST_KIND_IDENTIFY = 3;
+}
+
+// InventoryItem is one line of the inventory, as the server stores it in the
+// sheet. The calls return InventoryEntry instead, which is what the viewer may
+// know.
+message InventoryItem {
+  // A UUID the server makes. A weapon item's attack key is "inv:" + this ID.
+  string id = 1;
+  // "equipment:..." for the SRD's equipment, "item:..." for a magic item, empty for
+  // free text.
+  string catalog_key = 2;
+  // The equipment a generic magic item is ("equipment:longsword" for
+  // "item:weapon-1"), or the kind of ammunition of magic ammunition.
+  string base_key = 3;
+  // The damage type chosen for an item that offers one ("damage-type:fire" for
+  // "item:armor-of-resistance").
+  string option_key = 4;
+  // A free-text line's name, 1 to 100 characters.
+  string name = 5;
+  // 1 to 9,999.
+  int32 quantity = 6;
+  // Worn or wielded (a stack of ammunition: in the quiver).
+  bool equipped = 7;
+  // The character is attuned to it.
+  bool attuned = 8;
+  // The master has not revealed what it is. Only a magic item is ever unidentified.
+  bool unidentified = 9;
+  // How an unidentified magic item shows, 1 to 100 characters ("Uma espada com
+  // runas"). Empty shows a generic sentence.
+  string look = 10;
+  // Charges spent since it was last full.
+  int32 charges_used = 11;
+  // The spell on a spell scroll, "spell:fireball".
+  string scroll_spell_key = 12;
+  // What the player asked the master to confirm, if anything.
+  ItemRequestKind request = 13;
+  // Pieces of this stack of ammunition fired in the combat that is not over.
+  int32 ammunition_spent = 14;
+}
+
+// Inventory is the sheet's list of items.
+message Inventory {
+  // At most 200 lines.
+  repeated InventoryItem items = 1;
+  // The idempotency keys of the last calls that changed the inventory, each with
+  // the hash of its request, so a retry is answered and another request under the
+  // same key is refused. Server only: never sent to the app.
+  repeated string operations = 2;
+  // The free-text lines that "Transformar em itens" replaced, kept as the player wrote
+  // them (at most 20, the latest). The master and the owner read them.
+  repeated string converted_texts = 3;
+}

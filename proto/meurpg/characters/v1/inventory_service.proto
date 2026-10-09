@@ -1,0 +1,894 @@
+syntax = "proto3";
+
+// InventoryService, the calls that read and change a character's inventory (see
+// inventory.proto for what the inventory is, who sees what and the rules it keeps).
+//
+// The inventory of a character (SRD 5.1 "Equipment" and "Magic Items"): what the
+// character carries, wears and wields, the magic items it is attuned to, the
+// charges of a wand, the potions and scrolls it can use, the ammunition it
+// fires, and its coins.
+//
+// Where it lives. The inventory is part of the character's full sheet
+// (FullSheet.inventory), stored with it, so every number the sheet derives
+// (armor class, attacks, ability scores, saving throws, speed, senses,
+// resistances) reads it. It is the server's: the sheet calls never take it from
+// the client, and a player's UpdateCharacter keeps the stored one. Only the calls
+// below change it, whatever the sheet's lock (RN-01), because the table plays
+// with it: the master gives and takes items, the player wears, uses and trades
+// theirs. The free-text equipment lines a sheet had before the inventory
+// (FullSheet.equipment) are read as free-text items of the inventory, word for
+// word.
+//
+// What an item is. A line of the inventory is one of:
+//   - free text ("Corda de cânhamo (15 m)", the player's own words), which does
+//     nothing;
+//   - an item of the SRD equipment ("equipment:longsword", "equipment:arrow"): a
+//     weapon or armor works as its base while worn, ammunition is counted;
+//   - a magic item of the SRD ("item:ring-of-protection"). A generic one is a
+//     family's variant that needs a base ("item:weapon-1" is a +1 weapon of a
+//     chosen type) and some offer an option ("item:armor-of-resistance": the
+//     damage type).
+//
+// What the engine applies. Of the 362 SRD magic items, effects/items.json lists
+// the ones whose properties are numbers the sheet can compute (a bonus to attack
+// and damage, to the armor class or to saving throws, a fixed ability score, a
+// resistance, a speed, darkvision, charges, a potion's healing, a scroll's
+// spell). The rest of an item is a reminder, in the SRD's own text. Coverage says
+// which an item is.
+//
+// What the player may not know (RN-10). The master may give a magic item
+// unidentified: the player sees only its look ("Uma espada com runas"), never its
+// name, its properties, its rarity, its charges or the key it is. An item is
+// identified by the master, by a short rest focused on it that the master
+// confirms, or by attuning to it (SRD 5.1 "Magic Items"). The server blanks every
+// field above for the player, in every response and stream, as long as the item is
+// unidentified. The bonuses it gives are still applied: the player feels the
+// numbers, as at the table.
+//
+// Attunement (SRD 5.1 "Attunement"). A character attunes to at most three magic
+// items, only to an item that requires it, only if it meets the item's
+// restriction (a class, a spellcaster, a race, an alignment), never to two copies
+// of the same item, and only outside combat, because it takes a short rest. The
+// app has no clock for rests, so a short rest is the master's word: the player
+// asks (RequestItemRest) and the master approves (ResolveItemRest), or the master
+// does it directly. An item that requires attunement and is not attuned gives only
+// its nonmagical benefits. Attunement ends when the character no longer meets the
+// restriction, or when it asks to end it and the master confirms, unless the item
+// is cursed.
+//
+// Text fields follow the rules of characters.proto. Limits: at most 200 lines in
+// an inventory, a name or a look of 1 to 100 characters, one line, a quantity of
+// 1 to 9,999.
+package meurpg.characters.v1;
+
+import "google/protobuf/timestamp.proto";
+import "meurpg/characters/v1/characters.proto";
+import "meurpg/characters/v1/inventory.proto";
+
+// ItemKind says what kind of line an InventoryEntry is.
+enum ItemKind {
+  ITEM_KIND_UNSPECIFIED = 0;
+  // Free text.
+  ITEM_KIND_FREE_TEXT = 1;
+  // An item of the SRD equipment: a weapon, armor, shield, tool or piece of gear.
+  ITEM_KIND_EQUIPMENT = 2;
+  // A magic item of the SRD.
+  ITEM_KIND_MAGIC = 3;
+}
+
+// ItemCoverage says how much of an item the engine applies.
+enum ItemCoverage {
+  ITEM_COVERAGE_UNSPECIFIED = 0;
+  // Everything the item does that a number can say is applied.
+  ITEM_COVERAGE_APPLIED = 1;
+  // Some properties are applied; `note_pt` lists what stays a reminder.
+  ITEM_COVERAGE_PARTIAL = 2;
+  // Nothing is applied; the SRD text is the reminder.
+  ITEM_COVERAGE_REMINDER = 3;
+}
+
+// InventoryEntry is a line of the inventory as the viewer may know it. For an
+// unidentified magic item and a viewer who is not the master, only the id, the look in
+// `name_pt`, the quantity, the equipped flag, `unidentified` and a request to identify it
+// are set: nothing else, not even the attunement. Its magic does not work until it is
+// identified, and identical unidentified items never share a line.
+message InventoryEntry {
+  string id = 1;
+  ItemKind kind = 2;
+  // The name the table calls it by: a free-text name, the Portuguese name of the
+  // equipment or magic item ("Espada longa +1" for a generic one), or the look of an
+  // unidentified item.
+  string name_pt = 3;
+  int32 quantity = 4;
+  bool equipped = 5;
+  bool attuned = 6;
+  // The magic item is not identified. The master sees the true fields of it, too.
+  bool unidentified = 7;
+  // Identified only (the master always): the content key, the base and the option.
+  string catalog_key = 8;
+  string base_key = 9;
+  string option_key = 10;
+  // The look the master gave an unidentified item, for the master to edit.
+  string look = 11;
+  // Identified only: the magic item's SRD category ("weapon", "armor", "ring",
+  // "wand"...) and rarity ("common"... "artifact"), as in ListContent.
+  string category = 12;
+  string rarity = 13;
+  // Identified only: the item requires attunement, and by whom, in Portuguese
+  // ("por um paladino"); empty when anyone may.
+  bool requires_attunement = 14;
+  string attunement_by_pt = 15;
+  // Identified only: where the item is worn ("ring", "cloak"...), empty for one worn
+  // nowhere.
+  string slot = 16;
+  // Identified only: the charges.
+  int32 charges_max = 17;
+  int32 charges_used = 18;
+  // Identified only: how much of the item the engine applies, and what it leaves to
+  // the table, in Portuguese.
+  ItemCoverage coverage = 19;
+  string note_pt = 20;
+  // Identified only: the spell on a scroll, and its Portuguese name.
+  string scroll_spell_key = 21;
+  string scroll_spell_name_pt = 22;
+  // What the player asked the master to confirm.
+  ItemRequestKind request = 23;
+  // Identified only: the item can be drunk or read (a potion, a scroll), and a
+  // potion's healing dice ("2d4+2").
+  bool usable = 24;
+  string heal_dice = 25;
+  // Identified only: the item can be worn or wielded.
+  bool equippable = 26;
+  // Identified only: the item is cursed, so its attunement cannot be ended by the
+  // player's own wish.
+  bool cursed = 27;
+  // The attack key of an equipped weapon item ("inv:<id>"), empty for any other line.
+  string attack_key = 28;
+  // Ammunition: pieces fired in the combat that is not over.
+  int32 ammunition_spent = 29;
+  // A line the server cannot read against the rules content (an old key); shown as
+  // text.
+  bool unknown = 30;
+  // Master only: the item is unidentified and has effects that wait for it to be identified.
+  bool effects_pending = 31;
+  // Ammunition: pieces that can be recovered after the battle (half of what was spent,
+  // rounded down: the app's rule, SRD 5.1 only says "half").
+  int32 ammunition_recoverable = 32;
+}
+
+// InventoryView is a character's inventory as the caller may see it.
+message InventoryView {
+  string character_id = 1;
+  repeated InventoryEntry items = 2;
+  Coins coins = 3;
+  // How many magic items the character is attuned to, and the most it can be
+  // (three).
+  int32 attuned_count = 4;
+  int32 attunement_max = 5;
+  // The caller may add and remove items on this inventory: the master always; the
+  // owner while the sheet is a draft.
+  bool can_edit = 6;
+  // The campaign is in combat now: attuning and changing body armor wait.
+  bool in_combat = 7;
+  // The free-text lines "Transformar em itens" replaced, as the player wrote them.
+  repeated string converted_texts = 8;
+}
+
+// ItemBlockedReason says why the inventory refused a call that the rules do not
+// allow now.
+enum ItemBlockedReason {
+  ITEM_BLOCKED_REASON_UNSPECIFIED = 0;
+  // The slot is full: the item to take off first is in `item_id`.
+  ITEM_BLOCKED_REASON_SLOT_TAKEN = 1;
+  // Not a thing to wear or wield.
+  ITEM_BLOCKED_REASON_NOT_EQUIPPABLE = 2;
+  // The item does not require attunement.
+  ITEM_BLOCKED_REASON_NOT_ATTUNABLE = 3;
+  // Already attuned to three items.
+  ITEM_BLOCKED_REASON_ATTUNEMENT_FULL = 4;
+  // The character does not meet the item's restriction.
+  ITEM_BLOCKED_REASON_ATTUNEMENT_RESTRICTION = 5;
+  // Already attuned to another copy of the item.
+  ITEM_BLOCKED_REASON_COPY_ATTUNED = 6;
+  // The character is already attuned to it, or is not.
+  ITEM_BLOCKED_REASON_ALREADY_ATTUNED = 7;
+  ITEM_BLOCKED_REASON_NOT_ATTUNED = 8;
+  // The item is cursed: the attunement cannot be ended.
+  ITEM_BLOCKED_REASON_ITEM_CURSED = 9;
+  // Attuning, identifying by rest and changing body armor wait for a moment out of combat.
+  ITEM_BLOCKED_REASON_IN_COMBAT = 10;
+  // Not enough of it: pieces of the item, charges, coins.
+  ITEM_BLOCKED_REASON_NOT_ENOUGH = 11;
+  // The item is not for drinking or reading (or the call is for another kind).
+  ITEM_BLOCKED_REASON_NOT_USABLE = 12;
+  // The item is already identified; or there is no request to answer.
+  ITEM_BLOCKED_REASON_ALREADY_IDENTIFIED = 13;
+  ITEM_BLOCKED_REASON_NOTHING_TO_ANSWER = 14;
+  // A request is waiting for the master.
+  ITEM_BLOCKED_REASON_REQUEST_WAITING = 15;
+  // The scroll's spell is not on the reader's class lists (the scroll is
+  // unintelligible), or its level is above what the reader can cast (an ability
+  // check the master rolls at the table).
+  ITEM_BLOCKED_REASON_SCROLL_UNREADABLE = 16;
+  ITEM_BLOCKED_REASON_SCROLL_TOO_HIGH = 17;
+  // The inventory has 200 lines.
+  ITEM_BLOCKED_REASON_FULL = 18;
+  // The item must be used through the combat (a potion in a fight is an action).
+  ITEM_BLOCKED_REASON_USE_IN_COMBAT = 19;
+  // The item is cast through the spell flow (a scroll, a wand's spell).
+  ITEM_BLOCKED_REASON_CAST_IT = 20;
+  // The receiver cannot take it (not a living character of the campaign).
+  ITEM_BLOCKED_REASON_CANNOT_RECEIVE = 21;
+  // The inventory belongs to a character the caller may only read.
+  ITEM_BLOCKED_REASON_DEAD = 22;
+  // Body armor is not donned or doffed in a combat (SRD 5.1 "Armor": 1, 5 or 10 minutes);
+  // a shield takes an action, so it goes through CombatService.UseItem.
+  ITEM_BLOCKED_REASON_ARMOR_IN_COMBAT = 23;
+  // Not that much to recover: ammunition recovers half of what was spent.
+  ITEM_BLOCKED_REASON_NOTHING_SPENT = 24;
+}
+
+// ItemBlocked is the error detail of a `failed_precondition` of InventoryService.
+message ItemBlocked {
+  ItemBlockedReason reason = 1;
+  // The item that blocks the call or the one it was about; empty when none.
+  string item_id = 2;
+  // For NOT_ENOUGH: how many the character has.
+  int32 have = 3;
+}
+
+// ItemGrant is one thing the master gives (or a player adds while the sheet is a
+// draft).
+message ItemGrant {
+  // "equipment:..." or "item:...". Empty for free text, which takes `name`.
+  string catalog_key = 1;
+  // Required for a generic magic item (any of ListItemCatalog's base_choices), refused
+  // for any other.
+  string base_key = 2;
+  // Required for an item that offers an option (ListItemCatalog's option_damage_types).
+  string option_key = 3;
+  // A free-text item's name, 1 to 100 characters.
+  string name = 4;
+  // 1 to 9,999; 0 means 1. A magic item that is not ammunition, a potion or a scroll is
+  // one only: more is `invalid_argument`.
+  int32 quantity = 5;
+  // Magic item only, master only: give it unidentified, with the look to show.
+  bool unidentified = 6;
+  string look = 7;
+  // A spell scroll's spell, required for a "item:spell-scroll-*": the spell's level
+  // must be the scroll's.
+  string scroll_spell_key = 8;
+  // Give it already worn or wielded. Master only, and the slot must be free.
+  bool equipped = 9;
+}
+
+// UseOutcome is what using an item did.
+message UseOutcome {
+  // A potion of healing: the dice that were rolled, the total, and the hit points
+  // the character has now.
+  string dice = 1;
+  int32 healed = 2;
+  int32 hit_points = 3;
+  // Temporary hit points the item gave and the character has now.
+  int32 temp_hit_points_given = 4;
+  int32 temp_hit_points = 5;
+  // The item was used up and left the inventory.
+  bool consumed = 6;
+}
+
+// A call that changes the inventory carries an `idempotency_key` (1 to 64
+// characters). The key is the caller's: a retry with the same key and the same
+// request returns the current inventory and changes nothing; the same key with
+// another request is `invalid_argument`. The server keeps the last 100 keys of a
+// character.
+//
+// Errors every method can return, besides those listed on each method:
+//   - `unauthenticated`: no valid session cookie.
+//   - `invalid_argument`: a field breaks its rules; the message names the field,
+//     never its value.
+//   - `not_found`: the campaign or the character does not exist, or the caller may
+//     not see it (another player's character, any NPC for a player).
+//   - `permission_denied`: the caller may see the character but not do this.
+//   - `failed_precondition`: the rules do not allow it now: an ItemBlocked detail
+//     says why.
+//   - `aborted`, `unavailable`: as in CharacterService.
+//
+// Responses carry `Cache-Control: no-store`. Reads carry IDs, so they are
+// IDEMPOTENT and POST-only.
+service InventoryService {
+  // GetInventory returns the character's inventory. The master reads any
+  // character's (an NPC's included); a player only their own (a pending member their
+  // own pending one). For a player, an unidentified item shows only its look.
+  rpc GetInventory(GetInventoryRequest) returns (GetInventoryResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // ListItemCatalog returns what can be given: the SRD equipment and, to the master only,
+  // the 362 magic items, with their Portuguese names, categories, rarities,
+  // attunement, the bases and options a generic one asks for and how much the engine
+  // applies of each. A player gets the equipment alone.
+  rpc ListItemCatalog(ListItemCatalogRequest) returns (ListItemCatalogResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // GiveItems adds items to a character's inventory, up to 20 grants at once. The
+  // master gives anything to any character with a full sheet. A player gives
+  // themselves free-text lines and SRD equipment (never a magic item, never
+  // unidentified) while the sheet is a draft, as they filled the equipment before;
+  // after the first session starts it is `permission_denied`. An item that stacks
+  // (equipment, ammunition, potions, scrolls of the same kind and look) joins the
+  // line it matches.
+  //
+  // Errors: `invalid_argument` for a key that does not exist, a family without its
+  // variant, a base or an option the item does not take, a scroll without a spell or
+  // with a spell of another level; `failed_precondition` ITEM_BLOCKED_REASON_FULL.
+  rpc GiveItems(GiveItemsRequest) returns (GiveItemsResponse);
+
+  // SetEquipped wears or wields an item, or takes it off. The slot must be free
+  // (SRD 5.1 "Multiple Items of the Same Kind": one suit of armor, one pair of boots,
+  // one pair of gloves, one pair of bracers, one item of headwear, one cloak, plus an
+  // amulet, a belt and two rings; weapons and wands are held without limit). Body
+  // armor is not changed in combat (donning takes minutes): the master may.
+  // Idempotent: setting what it already is changes nothing.
+  //
+  // Errors: ITEM_BLOCKED_REASON_NOT_EQUIPPABLE, SLOT_TAKEN (with the item in the
+  // way), IN_COMBAT.
+  rpc SetEquipped(SetEquippedRequest) returns (SetEquippedResponse);
+
+  // RemoveItem takes an item, or some of its quantity, out of the inventory. The master
+  // always; the owner while the sheet is a draft.
+  rpc RemoveItem(RemoveItemRequest) returns (RemoveItemResponse);
+
+  // TransferItem hands an item, or some of its quantity, to another character: the owner
+  // gives their own to another player's living character of the campaign; the master moves
+  // any item between any two characters with a full sheet. The item arrives
+  // not equipped and not attuned (SRD 5.1: attunement ends when another creature attunes,
+  // and a magic item changes hands), and an unidentified item stays unidentified. The
+  // session history records it for the master (ListItemLog).
+  rpc TransferItem(TransferItemRequest) returns (TransferItemResponse);
+
+  // AdjustCoins adds the given coins to the character's purse, or takes them away
+  // (negative numbers), never below zero. The master and the owner.
+  //
+  // Errors: ITEM_BLOCKED_REASON_NOT_ENOUGH when a coin would fall below zero.
+  rpc AdjustCoins(AdjustCoinsRequest) returns (AdjustCoinsResponse);
+
+  // RequestItemRest is the owner's mark, for the master's next short rest, that the
+  // character will spend it focused on an item (SRD 5.1 "Attunement", "Identifying a Magic
+  // Item"): to attune to it, to end the attunement or to learn what it is. It only marks:
+  // the master's short rest does it (ConfirmItemRests), or the master answers one item with
+  // ResolveItemRest. Outside combat. For an identified item the request is checked at
+  // once (an item that needs no attunement, a fourth item, a restriction not met...); for an
+  // unidentified one it is taken as it is, so the answer does not reveal the item.
+  rpc RequestItemRest(RequestItemRestRequest) returns (RequestItemRestResponse);
+
+  // ResolveItemRest is the master's answer to one request, or the master doing it directly
+  // (a kind with no request waiting). Approving attunes, ends the attunement or identifies,
+  // under the same rules (three items, the restriction, no other copy, outside
+  // combat); attuning also identifies the item. Refusing clears the request.
+  //
+  // Errors: ITEM_BLOCKED_REASON_NOTHING_TO_ANSWER when the item has no such request and no
+  // kind was given.
+  rpc ResolveItemRest(ResolveItemRestRequest) returns (ResolveItemRestResponse);
+
+  // UseItem drinks a potion: a potion of healing rolls its dice and heals (never above
+  // the maximum), a potion of heroism gives its temporary hit points. The owner and the
+  // master, out of combat; in a combat the potion is an action and goes through
+  // CombatService.UseItem (ITEM_BLOCKED_REASON_USE_IN_COMBAT). A scroll or a wand's spell
+  // is cast through the spell flow (CAST_IT). Uses up one potion. A potion with dice needs
+  // `roll_in_app` or `typed_sum`, and the campaign dice setting binds a player here as on
+  // every roll.
+  rpc UseItem(UseItemRequest) returns (UseItemResponse);
+
+  // SpendCharges spends charges of an item (SRD 5.1 "Charges"), for a property that stays a
+  // reminder: the table resolves it. The owner and the master.
+  //
+  // Errors: ITEM_BLOCKED_REASON_NOT_ENOUGH (with how many are left).
+  rpc SpendCharges(SpendChargesRequest) returns (SpendChargesResponse);
+
+  // ConfirmItemRests is the master's short rest for the items: every attunement, end of
+  // attunement and identification the players marked (RequestItemRest) on the characters
+  // given, or on all of the campaign's when none is, is done at once, under the rules of
+  // ResolveItemRest. What cannot be done (a fourth item, a restriction not met, a cursed
+  // item) stays marked and comes back in `blocked`. The short rest of the party
+  // (resources and hit dice) calls the same code in the same transaction, so the item part
+  // never happens without the rest. Master only; refused with IN_COMBAT in a combat.
+  rpc ConfirmItemRests(ConfirmItemRestsRequest) returns (ConfirmItemRestsResponse);
+
+  // ListItemRests lists what the players marked for the next short rest (attunements, ends of
+  // attunement and identifications), with the names as the master knows the items, the count of
+  // attunements before and after and the refusal each would get now. It is the items' part of
+  // the short rest's preview. Master only.
+  rpc ListItemRests(ListItemRestsRequest) returns (ListItemRestsResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // RegainCharges is dawn for the items: every item with charges that regains them
+  // rolls the dice its description gives and gets that many back (never above the
+  // maximum). One character, or all the characters of the campaign when
+  // character_id is empty. Master only.
+  rpc RegainCharges(RegainChargesRequest) returns (RegainChargesResponse);
+
+  // SetCoins sets the character's purse to the given coins, the owner's or the master's edit
+  // ("Editar moedas"); each coin 0 to 1,000,000.
+  rpc SetCoins(SetCoinsRequest) returns (SetCoinsResponse);
+
+  // UseScroll reads a spell scroll outside a combat (SRD 5.1 "Spell Scroll"): the spell must be
+  // on the reader's class list, otherwise ITEM_BLOCKED_REASON_SCROLL_UNREADABLE and the scroll
+  // stays; a spell of a level above the reader's highest spell slot takes an ability check with
+  // the spellcasting ability, DC 10 + the spell's level, rolled with `roll` (a failure loses the
+  // spell, the scroll is spent either way). The result says the spell, the save DC and attack
+  // bonus the scroll gives (13/+5 to 19/+11 by level) and the check. In a combat the reading is
+  // an action and goes through CombatService.UseItem. Casting the spell's effects is the spell
+  // flow's: the result names what was cast.
+  rpc UseScroll(UseScrollRequest) returns (UseScrollResponse);
+
+  // RecoverAmmunition gives back pieces of a stack of ammunition after a battle (SRD 5.1
+  // "Ammunition": a minute of searching recovers half of what was expended): up to half of the
+  // pieces spent since the last recovery, rounded down (the app's rule, the SRD does not say
+  // how). The spent count restarts afterwards. The owner and the master, outside a combat.
+  //
+  // Errors: ITEM_BLOCKED_REASON_NOTHING_SPENT, NOT_ENOUGH (with the most that can be recovered).
+  rpc RecoverAmmunition(RecoverAmmunitionRequest) returns (RecoverAmmunitionResponse);
+
+  // PreviewTextToItems reads a free-text line of the inventory ("Corda de cânhamo (15 m), 10
+  // rações, tochas") and proposes the items it holds, matched against the SRD equipment by
+  // their Portuguese names. It changes nothing. A piece with no number in the text comes back
+  // with a guess (10 for a plural, 1 otherwise) flagged `quantity_guessed`, for the player to
+  // correct; a piece that matches no equipment is proposed as free text.
+  rpc PreviewTextToItems(PreviewTextToItemsRequest) returns (PreviewTextToItemsResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // ConfirmTextToItems replaces the free-text line with the lines the owner confirmed (the
+  // proposals, with the quantities corrected). The original text is kept
+  // (InventoryView.converted_texts). The owner and the master.
+  rpc ConfirmTextToItems(ConfirmTextToItemsRequest) returns (ConfirmTextToItemsResponse);
+
+  // UpdateItem is the master's correction of a line: its quantity, charges, look,
+  // scroll spell or whether it is identified. Fields not set stay as they are.
+  rpc UpdateItem(UpdateItemRequest) returns (UpdateItemResponse);
+
+  // ListItemLog returns what the inventories went through in the open session, newest
+  // first: items given, handed over, attuned, used and recharged. The master reads every line
+  // with the items as they are (a line says "Uma espada com runas" when it was given and "era
+  // Espada longa +1" when it was identified); a player reads the same lines with each item named as
+  // the character sees it: the look of an item that is still unidentified, never its name.
+  rpc ListItemLog(ListItemLogRequest) returns (ListItemLogResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+}
+
+message GetInventoryRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+}
+
+message GetInventoryResponse {
+  InventoryView inventory = 1;
+}
+
+// CatalogItem is something that can be given.
+message CatalogItem {
+  // "equipment:..." or "item:...".
+  string key = 1;
+  ItemKind kind = 2;
+  string name_pt = 3;
+  // The SRD's English name.
+  string name = 4;
+  // Equipment: "armor", "shield", "weapon", "tool", "gear" or "ammunition". Magic item:
+  // the SRD category.
+  string category = 5;
+  // Magic items: the rarity, attunement and the restriction in Portuguese.
+  string rarity = 6;
+  bool requires_attunement = 7;
+  string attunement_by_pt = 8;
+  // A family (Armor +1, +2 or +3; the Ring of Resistance) cannot be given: give its
+  // variants.
+  bool is_family = 9;
+  repeated string variants = 10;
+  // The equipment a generic item can be, and the damage types an item offers.
+  repeated string base_choices = 11;
+  repeated string option_damage_types = 12;
+  // How much of the item the engine applies.
+  ItemCoverage coverage = 13;
+  // The item stacks (equipment, ammunition, potions, scrolls).
+  bool stackable = 14;
+  // A pack of ammunition has this many pieces in one purchase (20 arrows), 0 otherwise.
+  int32 pack_quantity = 15;
+  // A spell scroll: the spell level it holds (0 for a cantrip), -1 for any other item.
+  int32 scroll_level = 16;
+}
+
+message ListItemCatalogRequest {
+  string campaign_id = 1;
+}
+
+message ListItemCatalogResponse {
+  repeated CatalogItem items = 1;
+}
+
+message GiveItemsRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  // 1 to 20 grants.
+  repeated ItemGrant grants = 3;
+  string idempotency_key = 4;
+  // The treasure point of a map the items come from, when the master gives them from it
+  // (a UUID of the campaign's map point; recorded in the history, nothing else).
+  string source_treasure_point_id = 5;
+}
+
+message GiveItemsResponse {
+  InventoryView inventory = 1;
+}
+
+message SetEquippedRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  bool equipped = 4;
+  string idempotency_key = 5;
+}
+
+message SetEquippedResponse {
+  InventoryView inventory = 1;
+}
+
+message RemoveItemRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  // How many pieces to take out; 0 takes the whole line.
+  int32 quantity = 4;
+  string idempotency_key = 5;
+}
+
+message RemoveItemResponse {
+  InventoryView inventory = 1;
+}
+
+message TransferItemRequest {
+  string campaign_id = 1;
+  // The giver. The master may name any character with a full sheet; a player only their own.
+  string from_character_id = 2;
+  string to_character_id = 3;
+  string item_id = 4;
+  // How many pieces; 0 gives the whole line.
+  int32 quantity = 5;
+  string idempotency_key = 6;
+}
+
+message TransferItemResponse {
+  // The giver's inventory, as the caller may see it.
+  InventoryView from = 1;
+  // The receiver's, only for the master (a player does not see another's inventory).
+  InventoryView to = 2;
+}
+
+message AdjustCoinsRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  // What to add (negative: take away), per coin; each -1,000,000 to 1,000,000. A coin
+  // never ends above 1,000,000 or below 0.
+  Coins delta = 3;
+  string idempotency_key = 4;
+}
+
+message AdjustCoinsResponse {
+  InventoryView inventory = 1;
+}
+
+message RequestItemRestRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  // What to mark for the next short rest. ITEM_REQUEST_KIND_UNSPECIFIED takes back the
+  // request on the item.
+  ItemRequestKind kind = 4;
+  string idempotency_key = 5;
+}
+
+message RequestItemRestResponse {
+  InventoryView inventory = 1;
+}
+
+message ResolveItemRestRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  // The kind to do directly. Empty answers the request waiting on the item.
+  ItemRequestKind kind = 4;
+  // True to do it, false to refuse the request (only with a request waiting).
+  bool approve = 5;
+  string idempotency_key = 6;
+}
+
+message ResolveItemRestResponse {
+  InventoryView inventory = 1;
+}
+
+message UseItemRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  string idempotency_key = 4;
+  // Give the potion to another character to drink (SRD 5.1: administering a potion to
+  // another creature takes an action, like drinking it): a living character of the
+  // campaign. Empty: the character drinks it.
+  string target_character_id = 7;
+  // How the potion's dice come (RN-18); ignored by a potion with no dice.
+  oneof roll {
+    // True: the app rolls the dice on the server.
+    bool roll_in_app = 5;
+    // The sum of the physical dice, without the modifier: from the number of dice
+    // to the most they can show ("2d4+2": 2 to 8).
+    int32 typed_sum = 6;
+  }
+}
+
+message UseItemResponse {
+  InventoryView inventory = 1;
+  UseOutcome outcome = 2;
+}
+
+message SpendChargesRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  // 1 to the item's maximum.
+  int32 charges = 4;
+  string idempotency_key = 5;
+}
+
+message SpendChargesResponse {
+  InventoryView inventory = 1;
+  // When the last charge went and the item risks being lost (a wand, SRD 5.1: roll a d20,
+  // and on a 1 it crumbles): the d20 rolled, and whether the item was destroyed.
+  // Zero and false otherwise.
+  int32 d20 = 2;
+  bool destroyed = 3;
+}
+
+message ConfirmItemRestsRequest {
+  string campaign_id = 1;
+  // What the master chose to do in this rest (ListItemRests shows the options). Empty:
+  // everything marked.
+  repeated ItemRestChoice choices = 2;
+  string idempotency_key = 3;
+}
+
+// ItemRestChoice names one marked item.
+message ItemRestChoice {
+  string character_id = 1;
+  string item_id = 2;
+}
+
+message ListItemRestsRequest {
+  string campaign_id = 1;
+}
+
+// PendingItemRest is something the players marked for the next short rest, with what
+// would happen. The names are the master's.
+message PendingItemRest {
+  string character_id = 1;
+  string character_name = 2;
+  string item_id = 3;
+  ItemRequestKind kind = 4;
+  string item_name_pt = 5;
+  string rarity = 6;
+  // The character's attunements now and after this is done (an ATTUNE adds one, an
+  // END_ATTUNEMENT frees one).
+  int32 attuned_now = 7;
+  int32 attuned_after = 8;
+  // Why it would be refused if confirmed now, if it would (a fourth item, a restriction
+  // not met, a cursed item).
+  ItemBlockedReason blocked = 9;
+}
+
+message ListItemRestsResponse {
+  repeated PendingItemRest pending = 1;
+}
+
+// ItemRestDone is something a short rest did to an item.
+message ItemRestDone {
+  string character_id = 1;
+  string item_id = 2;
+  ItemRequestKind kind = 3;
+  // The item as the master knows it ("Espada longa +1").
+  string name_pt = 4;
+  // Set when the request could not be done and stays marked.
+  ItemBlockedReason blocked = 5;
+}
+
+message ConfirmItemRestsResponse {
+  repeated ItemRestDone done = 1;
+}
+
+message SetCoinsRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  Coins coins = 3;
+  string idempotency_key = 4;
+}
+
+message SetCoinsResponse {
+  InventoryView inventory = 1;
+}
+
+message UseScrollRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  string idempotency_key = 4;
+  // How the ability check's d20 comes, required when the spell is above the reader's highest
+  // spell slot (RN-18).
+  oneof roll {
+    bool roll_in_app = 5;
+    int32 d20_face = 6;
+  }
+}
+
+// AbilityCheck is a d20 plus a modifier against a DC.
+message AbilityCheck {
+  int32 d20 = 1;
+  int32 modifier = 2;
+  int32 total = 3;
+  int32 dc = 4;
+  bool passed = 5;
+  // The ability, "int", "wis" or "cha".
+  string ability = 6;
+}
+
+message UseScrollResponse {
+  InventoryView inventory = 1;
+  // The spell on the scroll and its level.
+  string spell_key = 2;
+  string spell_name_pt = 3;
+  int32 spell_level = 4;
+  // The saving throw DC and the attack bonus the scroll gives.
+  int32 save_dc = 5;
+  int32 attack_bonus = 6;
+  // Set when the spell was above the reader's highest slot.
+  AbilityCheck ability_check = 7;
+  // The spell was cast (false: the check failed and the spell disappeared).
+  bool cast = 8;
+}
+
+message RecoverAmmunitionRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  // 1 to half of the pieces spent, rounded down.
+  int32 count = 4;
+  string idempotency_key = 5;
+}
+
+message RecoverAmmunitionResponse {
+  InventoryView inventory = 1;
+}
+
+// TextProposal is one piece of a free-text line, as it would become an item.
+message TextProposal {
+  // The words of the text it came from.
+  string source = 1;
+  // The SRD equipment it matched, empty for free text.
+  string catalog_key = 2;
+  // The name of the line: the equipment's Portuguese name, or the words kept as free text.
+  string name = 3;
+  int32 quantity = 4;
+  // The text had no number: the quantity is the app's guess.
+  bool quantity_guessed = 5;
+}
+
+message PreviewTextToItemsRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  // The free-text line (an item with no catalog key).
+  string item_id = 3;
+}
+
+message PreviewTextToItemsResponse {
+  string text = 1;
+  repeated TextProposal proposals = 2;
+}
+
+message ConfirmTextToItemsRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  // 1 to 20 lines; a catalog_key is an SRD equipment, otherwise `name` is free text.
+  repeated TextProposal lines = 4;
+  string idempotency_key = 5;
+}
+
+message ConfirmTextToItemsResponse {
+  InventoryView inventory = 1;
+}
+
+message RegainChargesRequest {
+  string campaign_id = 1;
+  // Empty for every character of the campaign with a full sheet.
+  string character_id = 2;
+  string idempotency_key = 3;
+}
+
+// ChargesRegained is what one item got back.
+message ChargesRegained {
+  string character_id = 1;
+  string item_id = 2;
+  string name_pt = 3;
+  int32 regained = 4;
+  int32 charges_used = 5;
+}
+
+message RegainChargesResponse {
+  repeated ChargesRegained regained = 1;
+}
+
+message UpdateItemRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  string item_id = 3;
+  // A new quantity, 1 to 9,999.
+  optional int32 quantity = 4;
+  // Charges spent, 0 to the item's maximum.
+  optional int32 charges_used = 5;
+  // Reveal an item (false) or hide it again (true); hiding needs a look or the
+  // generic sentence stands in.
+  optional bool unidentified = 6;
+  optional string look = 7;
+  optional string scroll_spell_key = 8;
+  // A free-text line's new name.
+  optional string name = 9;
+  string idempotency_key = 10;
+}
+
+message UpdateItemResponse {
+  InventoryView inventory = 1;
+}
+
+message ListItemLogRequest {
+  string campaign_id = 1;
+  // Only this character's; empty for all.
+  string character_id = 2;
+  // 1 to 100; 0 means 50.
+  int32 limit = 3;
+}
+
+// ItemLogKind is what happened to an inventory.
+enum ItemLogKind {
+  ITEM_LOG_KIND_UNSPECIFIED = 0;
+  ITEM_LOG_KIND_GIVEN = 1;
+  ITEM_LOG_KIND_TRANSFERRED = 2;
+  ITEM_LOG_KIND_USED = 3;
+  ITEM_LOG_KIND_ATTUNED = 4;
+  ITEM_LOG_KIND_CHARGES = 5;
+  ITEM_LOG_KIND_IDENTIFIED = 6;
+}
+
+// ItemLogEntry is one line of the master's item log.
+message ItemLogEntry {
+  ItemLogKind kind = 1;
+  google.protobuf.Timestamp at = 2;
+  // Who did it (the player's or master's user, as the campaign knows them is not sent: the
+  // character the line is about is).
+  string character_id = 3;
+  string character_name = 4;
+  // For TRANSFERRED: the receiver.
+  string to_character_id = 5;
+  string to_character_name = 6;
+  // The item as the master knows it, with the quantity: "Espada longa +1".
+  string item_name_pt = 7;
+  int32 quantity = 8;
+  // The item was unidentified when it happened.
+  bool unidentified = 9;
+  // The master did it (given, identified), not a player.
+  bool by_master = 11;
+  // For USED and CHARGES: the hit points healed or the charges spent or regained.
+  int32 amount = 10;
+}
+
+message ListItemLogResponse {
+  repeated ItemLogEntry entries = 1;
+}

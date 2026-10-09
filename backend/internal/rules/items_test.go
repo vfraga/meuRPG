@@ -340,27 +340,40 @@ func TestSpellBonusesAndHitPointsFromItems(t *testing.T) {
 	}
 }
 
-func TestUnidentifiedItemsAreNamedByTheirLook(t *testing.T) {
+func TestUnidentifiedItemsAreNamedByTheirLookAndTheirMagicWaits(t *testing.T) {
 	t.Parallel()
 	sword := withBase(worn("sword", "item:weapon-1"), "equipment:longsword")
 	sword.Unidentified, sword.Look = true, "Uma espada com runas"
 	armor := withBase(worn("armor", "item:armor-1"), "equipment:chain-mail")
 	armor.Unidentified, armor.Look = true, "Uma armadura com runas"
 	d := derived(t, fighter5(sword, armor))
+	plain := fighter5()
+	plain.Weapons = []string{"equipment:longsword"}
+	plainSword, _ := attackOf(derived(t, plain), "equipment:longsword")
 	a, ok := attackOf(d, "inv:sword")
 	if !ok || a.NamePT != "Uma espada com runas" {
 		t.Fatalf("attack name = %q, want the look", a.NamePT)
+	}
+	if a.AttackBonus != plainSword.AttackBonus || a.Damage != plainSword.Damage {
+		t.Errorf("an unidentified +1 sword attacks %d / %s, want the plain longsword's %d / %s: its magic waits", a.AttackBonus, a.Damage, plainSword.AttackBonus, plainSword.Damage)
+	}
+	if d.ArmorClass != 16 {
+		t.Errorf("AC = %d, want the plain chain mail's 16", d.ArmorClass)
 	}
 	if !strings.HasPrefix(d.ArmorClassDescription, "Uma armadura com runas") || strings.Contains(strings.ToLower(d.ArmorClassDescription), "cota") {
 		t.Errorf("AC description %q names the armor", d.ArmorClassDescription)
 	}
 	for _, h := range d.Hints {
-		if strings.Contains(h.TextPT, "Espada longa") || strings.Contains(h.TextPT, "+1") && strings.Contains(h.TextPT, "Armadura") {
+		if strings.Contains(h.TextPT, "Espada longa") || strings.Contains(h.TextPT, "Cota de malha") {
 			t.Errorf("a hint names the unidentified item: %q", h.TextPT)
 		}
 	}
-	// Without a look, a generic sentence stands in; the bonus still counts.
-	sword.Look = ""
+	// Once identified, the bonus counts.
+	sword.Unidentified = false
+	if a, _ := attackOf(derived(t, fighter5(sword)), "inv:sword"); a.AttackBonus != plainSword.AttackBonus+1 {
+		t.Errorf("identified: attack bonus %d, want +1 over the plain sword", a.AttackBonus)
+	}
+	sword.Unidentified, sword.Look = true, ""
 	if a, _ := attackOf(derived(t, fighter5(sword)), "inv:sword"); a.NamePT != unidentifiedLook {
 		t.Errorf("attack name = %q, want the default look", a.NamePT)
 	}
@@ -468,7 +481,7 @@ func TestItemNames(t *testing.T) {
 		{Item{Name: "Corda de cânhamo"}, "Corda de cânhamo"},
 		{Item{Key: "equipment:chain-mail"}, "Cota de malha"},
 		{Item{Key: "item:weapon-3", Base: "equipment:rapier"}, "Rapieira +3"},
-		{Item{Key: "item:ammunition-1", Base: "equipment:arrow"}, "Flecha +1"},
+		{Item{Key: "item:ammunition-1", Base: "equipment:arrow"}, "Flechas +1"},
 		{Item{Key: "item:ring-of-protection"}, c.c.namePT("item:ring-of-protection")},
 		{Item{Key: "item:ring-of-protection", Unidentified: true, Look: "Um anel liso"}, "Um anel liso"},
 		{Item{Key: "equipment:chain-mail", Unidentified: true, Look: "não vale para o mundano"}, "Cota de malha"},
@@ -609,7 +622,7 @@ func TestItemCoverageOfTheSRD(t *testing.T) {
 			t.Errorf("%s = %s, want applied", key, got)
 		}
 	}
-	for _, key := range []string{"item:dwarven-plate", "item:wand-of-fireballs", "item:sun-blade"} {
+	for _, key := range []string{"item:dwarven-plate", "item:wand-of-binding", "item:sun-blade"} {
 		if got := c.ItemCoverage(key); got != CoveragePartial {
 			t.Errorf("%s = %s, want partial", key, got)
 		}
@@ -679,5 +692,83 @@ func TestPotionsOfHealing(t *testing.T) {
 		if d, ok := c.ItemDef(key); !ok || d.Use == nil || d.Use.HealDice != want {
 			t.Errorf("%s heals %+v, want %s", key, d, want)
 		}
+	}
+}
+
+func TestEquipmentTextBecomesItems(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	for _, tc := range []struct {
+		text string
+		want []TextPiece
+	}{
+		{"Corda de cânhamo (15 m), 10 rações, tochas", []TextPiece{
+			{Source: "Corda de cânhamo (15 m)", Key: "equipment:rope-hempen-50-feet", Name: c.c.namePT("equipment:rope-hempen-50-feet"), Quantity: 1},
+			{Source: "10 rações", Key: "equipment:rations-1-day", Name: c.c.namePT("equipment:rations-1-day"), Quantity: 10},
+			{Source: "tochas", Key: "equipment:torch", Name: c.c.namePT("equipment:torch"), Quantity: 10, Guessed: true},
+		}},
+		{"Flechas (20); 2x Adaga\nUm cantil de vinho", []TextPiece{
+			{Source: "Flechas (20)", Key: "equipment:arrow", Name: "Flechas", Quantity: 20},
+			{Source: "2x Adaga", Key: "equipment:dagger", Name: c.c.namePT("equipment:dagger"), Quantity: 2},
+			{Source: "Um cantil de vinho", Name: "Um cantil de vinho", Quantity: 1},
+		}},
+		{"  ,, ", nil},
+	} {
+		got := c.ParseEquipmentText(tc.text)
+		if len(got) != len(tc.want) {
+			t.Errorf("%q = %+v, want %d pieces", tc.text, got, len(tc.want))
+			continue
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Errorf("%q piece %d = %+v, want %+v", tc.text, i, got[i], tc.want[i])
+			}
+		}
+	}
+	long := strings.Repeat("corda, ", 30)
+	if n := len(c.ParseEquipmentText(long)); n != MaxTextPieces {
+		t.Errorf("a long line gave %d pieces, want the limit %d", n, MaxTextPieces)
+	}
+}
+
+func TestItemModifiersSayWhereANumberCameFrom(t *testing.T) {
+	t.Parallel()
+	d := derived(t, fighter5(
+		attuned(worn("g", "item:gauntlets-of-ogre-power")),
+		attuned(worn("c", "item:cloak-of-protection")),
+		attuned(worn("p", "item:ioun-stone-of-protection")),
+		withBase(worn("s", "item:weapon-1"), "equipment:longsword"),
+		worn("a", "equipment:chain-mail"),
+	))
+	has := func(target, id string, value int) bool {
+		return slices.ContainsFunc(d.ItemModifiers, func(m ItemModifier) bool { return m.Target == target && m.ItemID == id && m.Value == value })
+	}
+	for _, w := range []struct {
+		target, id string
+		value      int
+	}{{"score.str", "g", 19}, {"ac", "c", 1}, {"save.all", "c", 1}, {"ac", "p", 1}, {"attack:inv:s", "s", 1}} {
+		if !has(w.target, w.id, w.value) {
+			t.Errorf("no modifier %+v in %+v", w, d.ItemModifiers)
+		}
+	}
+	// The Ioun Stone of Protection gives the armor class and nothing else.
+	for _, m := range d.ItemModifiers {
+		if m.ItemID == "p" && m.Target != "ac" {
+			t.Errorf("ioun stone of protection changes %s", m.Target)
+		}
+	}
+	// Fighter 4 with Strength 19 and a longsword +1: attack +7, damage 1d8+5.
+	f4 := standard("class:fighter", 4)
+	f4.BaseScores[STR] = 14 // 15 with the human +1
+	f4.Items = []Item{attuned(worn("g", "item:gauntlets-of-ogre-power")), withBase(worn("s", "item:weapon-1"), "equipment:longsword")}
+	a, _ := attackOf(derived(t, f4), "inv:s")
+	if a.AttackBonus != 2+4+1 || a.Damage != "1d8+5" {
+		t.Errorf("Toren: attack %+d, damage %s; want +7 and 1d8+5", a.AttackBonus, a.Damage)
+	}
+	// An unidentified item changes nothing, and is not a modifier.
+	hidden := withBase(worn("s", "item:weapon-1"), "equipment:longsword")
+	hidden.Unidentified = true
+	if got := derived(t, fighter5(hidden)).ItemModifiers; len(got) != 0 {
+		t.Errorf("an unidentified item produced modifiers %+v", got)
 	}
 }

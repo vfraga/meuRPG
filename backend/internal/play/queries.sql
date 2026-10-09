@@ -1011,3 +1011,11 @@ SELECT e.* FROM battle_encounters AS e
 JOIN map_points AS p ON p.id = e.map_point_id
 WHERE e.campaign_id = $1 AND e.map_id = $2 AND p.kind = 'battle'
 ORDER BY e.created_at, e.map_point_id;
+
+-- name: ListItemEventsOfSession :many
+-- The inventory events of a session (items given, handed over, attuned, used and
+-- recharged), newest first, at most the limit: the master's item log.
+SELECT kind, actor_user_id, payload, created_at FROM session_events
+WHERE game_session_id = sqlc.arg(game_session_id) AND kind = ANY(sqlc.arg(kinds)::TEXT[])
+ORDER BY seq DESC
+LIMIT sqlc.arg(row_limit);

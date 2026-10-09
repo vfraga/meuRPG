@@ -1183,6 +1183,18 @@ message WatchGameSessionResponse {
     // queue is not queued twice; at most one goes out per campaign every 250 ms, and
     // the last change is never left unannounced.
     ContentChanged content_changed = 23;
+    // A character's inventory changed (an item given, worn, used, handed over,
+    // attuned or identified): read InventoryService.GetInventory again, and the
+    // sheet when the numbers matter (armor class, attacks). A hint with no content
+    // (RN-10): the item, its name and what changed never travel on the stream. Only
+    // the master and the character's player get it.
+    InventoryChanged inventory_changed = 45;
+  }
+
+  // InventoryChanged is the content-free hint that a character's inventory changed.
+  message InventoryChanged {
+    // The character (a UUID).
+    string character_id = 1;
   }
 
   // ContentChanged is the content-free hint that the table's content changed.

@@ -33,6 +33,7 @@ var appendableKinds = []string{
 	eventXPAwarded, eventXPAwardUndone, eventMilestoneMarked, eventClueRevealed,
 	eventTrapRevealed, eventTrapNoticed, eventTrapDisarmed, eventTreasureFound, eventTreasureUnfound,
 	eventCreatureSummoned, eventCreatureDismissed,
+	eventItemGiven, eventItemTransferred, eventItemUsed, eventItemAttuned, eventItemIdentified, eventItemCharges,
 }
 
 // CampaignEncounter returns what an enemies award needs from the campaign's

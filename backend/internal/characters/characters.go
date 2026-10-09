@@ -237,6 +237,7 @@ func (s *Service) Mount(handle func(pattern string, handler http.Handler), sessi
 		authz.Interceptor(sessions, members, s.logger), // what they may do, memoized per request
 	))
 	handle(charactersv1connect.NewCharacterServiceHandler(s, opts...))
+	handle(charactersv1connect.NewInventoryServiceHandler(s, opts...))
 	handle(rulesv1connect.NewContentServiceHandler(s, opts...))
 	handle(rulesv1connect.NewTableContentServiceHandler(s, opts...))
 }

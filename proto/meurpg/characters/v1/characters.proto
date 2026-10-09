@@ -20,6 +20,7 @@ syntax = "proto3";
 package meurpg.characters.v1;
 
 import "google/protobuf/timestamp.proto";
+import "meurpg/characters/v1/inventory.proto";
 import "meurpg/rules/v1/rules.proto";
 
 // CharacterService creates, reads and edits a campaign's characters.
@@ -999,7 +1000,11 @@ message FullSheet {
   // Content keys of the spells prepared for the day (levels 1 to 9), for a
   // Cleric, Druid, Paladin or Wizard. At most 100, no repeats.
   repeated string prepared_spell_keys = 16;
-  // Equipment and treasure as free text: at most 100 items.
+  // Equipment and treasure as free text: at most 100 items. The inventory
+  // (`inventory`) replaces it: the server reads these lines as free-text items of
+  // the inventory, word for word, and answers an empty list. A write that sends
+  // lines adds them to the inventory as free text (a line with the name of one
+  // already there is not added twice).
   repeated Item equipment = 17;
   Coins coins = 18;
   // Languages the player adds, as free text; the ones from race and
@@ -1068,6 +1073,12 @@ message FullSheet {
   // fit it at. Set by the server and ignored from the client; an entry not here
   // uses `content_revision`.
   map<string, int32> content_baselines = 31;
+  // The character's inventory (inventory.proto), as the server stores it. It is the
+  // server's: a write by a client ignores what it sends here and keeps the stored
+  // one, and no call answers it (the sheet's responses leave it empty, so an item the
+  // master has not identified cannot leak through the sheet). The app reads it with
+  // InventoryService.GetInventory and changes it only through that service.
+  Inventory inventory = 40;
 }
 
 // AbilityOrigin is the way a player made a sheet's base scores, as the server

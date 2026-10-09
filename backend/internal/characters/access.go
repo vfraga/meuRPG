@@ -152,6 +152,7 @@ func (s *Service) characterToProto(content *rules.Content, row charactersdb.Char
 		der := rules.Derive(build, content)
 		c.Derived = derivedToProto(der)
 		addChangedContent(c.Derived, der.Issues, content, build, full)
+		hideInventory(sheet) // the app reads the inventory with InventoryService, as the caller may know it
 	}
 	return c, nil
 }

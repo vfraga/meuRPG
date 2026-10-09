@@ -714,9 +714,26 @@ func TestStoredDocuments(t *testing.T) {
 			t.Errorf("stored sheet %s lacks %s", doc, want)
 		}
 	}
+	// The free-text equipment of a stored sheet is read as the inventory's lines, word
+	// for word, and the equipment list is left empty.
 	got, err := loadSheet("c", doc)
-	if err != nil || !proto.Equal(got, pensantusSheet()) {
-		t.Errorf("loadSheet(stored) = %v, %v; want the same sheet", got, err)
+	want := pensantusSheet()
+	lines := want.GetFull().GetEquipment()
+	foldEquipment("c", want.GetFull())
+	if err != nil || !proto.Equal(got, want) {
+		t.Errorf("loadSheet(stored) = %v, %v; want the same sheet with the equipment as inventory", got, err)
+	}
+	if len(got.GetFull().GetEquipment()) != 0 || len(got.GetFull().GetInventory().GetItems()) != len(lines) || len(lines) == 0 {
+		t.Fatalf("equipment %v, inventory %v: want the %d lines moved", got.GetFull().GetEquipment(), got.GetFull().GetInventory(), len(lines))
+	}
+	for i, line := range lines {
+		if it := got.GetFull().GetInventory().GetItems()[i]; it.GetName() != line.GetName() || it.GetQuantity() != max(line.GetQuantity(), 1) || it.GetCatalogKey() != "" {
+			t.Errorf("inventory line %d = %v, want the free-text %q", i, it, line.GetName())
+		}
+	}
+	again, _ := loadSheet("c", doc)
+	if !proto.Equal(got, again) {
+		t.Error("reading the same stored sheet twice gave different inventory ids")
 	}
 	if _, err := loadSheet("c", []byte(`{"full":{"race_key":"race:gnome","from_the_future":1}}`)); err != nil {
 		t.Errorf("loadSheet() with an unknown field error = %v, want it ignored", err)

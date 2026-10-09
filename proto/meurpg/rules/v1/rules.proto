@@ -586,6 +586,13 @@ message DerivedSheet {
   // beast form (Wild Shape). The character editor adds it to the per-level
   // rows it shows, so the box never copies effect maths.
   int32 hit_points_from_effects = 43;
+  // The numbers the equipped inventory items change, one line each, so the sheet can
+  // say "por causa de": a +1 to the armor class from the Cloak of Protection, Strength 19
+  // from the Gauntlets of Ogre Power, +1 to attack and damage from a Longsword +1. Only items
+  // whose magic works are here (equipped and, where required, attuned and identified).
+  repeated ItemModifier item_modifiers = 60;
+  // The damage types the equipped items give resistance to.
+  repeated ItemResistance item_resistances = 61;
 }
 
 // ChangedContent is a table entry a sheet uses that changed after the sheet was
@@ -836,6 +843,28 @@ message CharacterSpell {
 }
 
 // Attack is an attack with a weapon on the sheet.
+// ItemModifier is one number an inventory item changes.
+message ItemModifier {
+  // What it changes: "ac", "save.all", "score.str", "attack:<attack key>", "speed.walk",
+  // "hp.max", "sense:darkvision", "spell_attack", "spell_dc".
+  string target = 1;
+  // The amount (the +1 of a ring, the score an ability is set to, the feet of a sense).
+  int32 value = 2;
+  // The inventory line it comes from (a UUID) and its name as the table calls it
+  // ("Manto de proteção"): never the true name of an item the master has not identified,
+  // because an unidentified item changes nothing.
+  string source_item_id = 3;
+  string label_pt = 4;
+}
+
+// ItemResistance is a damage type an equipped item gives resistance to.
+message ItemResistance {
+  // "damage-type:fire".
+  string damage_type = 1;
+  string source_item_id = 2;
+  string label_pt = 3;
+}
+
 message Attack {
   // Content key of the weapon or the spell, such as "equipment:quarterstaff"
   // or "spell:fire-bolt".
@@ -890,6 +919,14 @@ message Attack {
   // reads the caster's row here instead of choosing one. Empty for a weapon and
   // for a creature's attack.
   string spell_dice = 19;
+  // The ammunition the weapon fires ("equipment:arrow"), empty for a weapon that needs
+  // none. ammunition_item_id is the inventory line the next shot spends a piece of, empty
+  // when the character carries no counted ammunition of the kind (it fires without limit,
+  // as the sheets from before the inventory did). ammunition_out says the character has
+  // stacks of it but not a piece left.
+  string ammunition_key = 60;
+  string ammunition_item_id = 61;
+  bool ammunition_out = 62;
 }
 
 // AttackKind says whether an attack is a weapon or a spell.

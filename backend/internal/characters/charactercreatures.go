@@ -93,6 +93,16 @@ type CreatureHost interface {
 	// PublishEncounterChanged tells every stream that the combat changed.
 	// Call it after the commit.
 	PublishEncounterChanged(ctx context.Context, campaignID, encounterID string)
+	// CampaignInCombat says whether the campaign has a combat that is not ended,
+	// inside tx: attuning to an item and changing body armor wait for a moment out
+	// of one.
+	CampaignInCombat(ctx context.Context, tx pgx.Tx, campaignID string) (bool, error)
+	// PublishInventoryChanged tells the master and the character's player that the
+	// inventory changed, with no content (RN-10). Call it after the commit.
+	PublishInventoryChanged(campaignID, characterID, ownerUserID string)
+	// ItemEvents returns the inventory's history in the campaign's open session,
+	// newest first, for the master's item log.
+	ItemEvents(ctx context.Context, campaignID string, limit int) ([]link.ItemEvent, error)
 }
 
 // SetCreatureHost connects the play module.

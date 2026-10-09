@@ -2886,6 +2886,53 @@ func (q *Queries) ListGameSessions(ctx context.Context, campaignID string) ([]Ga
 	return items, nil
 }
 
+const listItemEventsOfSession = `-- name: ListItemEventsOfSession :many
+SELECT kind, actor_user_id, payload, created_at FROM session_events
+WHERE game_session_id = $1 AND kind = ANY($2::TEXT[])
+ORDER BY seq DESC
+LIMIT $3
+`
+
+type ListItemEventsOfSessionParams struct {
+	GameSessionID string
+	Kinds         []string
+	RowLimit      int32
+}
+
+type ListItemEventsOfSessionRow struct {
+	Kind        string
+	ActorUserID *string
+	Payload     []byte
+	CreatedAt   time.Time
+}
+
+// The inventory events of a session (items given, handed over, attuned, used and
+// recharged), newest first, at most the limit: the master's item log.
+func (q *Queries) ListItemEventsOfSession(ctx context.Context, arg ListItemEventsOfSessionParams) ([]ListItemEventsOfSessionRow, error) {
+	rows, err := q.db.Query(ctx, listItemEventsOfSession, arg.GameSessionID, arg.Kinds, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListItemEventsOfSessionRow
+	for rows.Next() {
+		var i ListItemEventsOfSessionRow
+		if err := rows.Scan(
+			&i.Kind,
+			&i.ActorUserID,
+			&i.Payload,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listOpenCombatantsOfCreatures = `-- name: ListOpenCombatantsOfCreatures :many
 SELECT cb.id, cb.encounter_id, cb.character_id, cb.user_id, cb.label, cb.kind, cb.hidden, cb.initiative, cb.initiative_bonus, cb.initiative_face, cb.tie_ordered, cb.order_index, cb.grid_col, cb.grid_row, cb.speed_ft, cb.movement_used_ft, cb.dashed, cb.action_used, cb.bonus_action_used, cb.reaction_used, cb.hp_current, cb.hp_max, cb.hp_temp, cb.defeated, cb.death_successes, cb.death_failures, cb.conditions, cb.concentration_spell, cb.created_at, cb.attacks_made, cb.ac_bonus, cb.death_save_rolled, cb.xp_value, cb.turn_state, cb.movement_used_dft, cb.last_move_dft, cb.side, cb.size, cb.speed_fly_ft, cb.jump_long_dft, cb.jump_high_dft, cb.cover_mark, cb.disengaged, cb.creature_id, cb.monster_key, cb.summon_attack, cb.summon_group_id, cb.dismissed, cb.action_surged, cb.spell_cast, cb.bonus_spell_cast, cb.action_attack_key, cb.bonus_attacks_left FROM combatants AS cb
 JOIN encounters AS e ON e.id = cb.encounter_id

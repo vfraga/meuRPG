@@ -427,6 +427,8 @@ func buildOf(f *charactersv1.FullSheet) rules.Build {
 		SpellsKnown:         f.GetKnownSpellKeys(),
 		SpellsPrepared:      f.GetPreparedSpellKeys(),
 		FeatureChoices:      f.GetFeatureChoiceKeys(),
+		Items:               itemsOf(f.GetInventory()),
+		Alignment:           alignmentOf(f.GetAlignment()),
 	}
 	for _, c := range f.GetClasses() {
 		b.Classes = append(b.Classes, rules.ClassLevel{
@@ -491,6 +493,12 @@ func loadSheet(characterID string, doc []byte) (*charactersv1.CharacterSheet, er
 	}
 	if basic := sheet.GetBasic(); basic != nil {
 		upgradeLegacyAttack(basic)
+	}
+	// The free-text equipment of a sheet saved before the inventory is read as the
+	// inventory's free-text lines. As with the attack above, the stored JSON changes
+	// when the sheet is saved next.
+	if full := sheet.GetFull(); full != nil {
+		foldEquipment(characterID, full)
 	}
 	return sheet, nil
 }
