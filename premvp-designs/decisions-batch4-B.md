@@ -81,3 +81,45 @@ Binding for the boards' fix round and for the cloud sessions that build them. Th
    the reason, the shove becomes "não sai do lugar"), the log line for a failed grapple.
 10. **Drawing:** the 320 px frames of states 2, 3, 5, 6b, 7 and 8, the "vê claramente" control and the refusal, focus
     rings on player frames, no text under 14 px, one scenario per frame.
+
+## W7-Z (zones on the map), from the review at
+`/private/tmp/claude-501/-Users-viniciusf-personal-rpg-computer-use/69dba37a-c35b-49a0-ac40-e32d4ed74ae1/scratchpad/review-W7Z.md`
+
+1. **No NPC DC on any player surface** (as W7-E): the zone's save prompt names the ability, the result says passou/falhou.
+   A creature immune to the effect (Stinking Cloud and poison) shows to players exactly as a success, never "imune".
+2. **One mechanism:** a zone's save is a PM-04 reaction window, kind `ZONE_SAVE`, answered with `AnswerReaction`; no
+   `ZoneTriggerWindow` and no new waiting reason. A creature never gets two windows for one trigger: the Web's save is
+   the zone's trigger; the restrained creature escapes with an action (W7-Ec), with no end-of-turn save.
+3. **Triggers per spell, as each SRD text says:** `triggers[]` with the kinds `at_cast`, `on_enter_first_time_on_a_turn`,
+   `start_of_turn`, `end_of_turn_within` (Wall of Fire: the damaging side, within 10 ft), `per_distance_moved` (Spike
+   Growth: 2d4 per 5 ft), and the non-damage rules (Silence: no spell with a verbal component cast inside, creatures
+   inside are deafened and immune to thunder damage). Web and Grease follow their own text (no "first time" limit where
+   the SRD has none). Draw the frames for Wall of Fire, Spike Growth, Silence, Grease, Entangle and Cloudkill.
+4. **A zone moving onto a creature counts as the creature entering it** (Moonbeam moved, Spirit Guardians carried by
+   its caster, Cloudkill drifting): the app's reading of the SRD's "enters the area", written as such in the note.
+5. **The once-per-turn ledger:** keyed by zone, creature, round and the combatant whose turn it is; "on a turn" means
+   that combatant's turn; one damage per creature per zone per turn across entering and starting there; start-of-turn
+   triggers resolve before the creature acts; a zone that ends closes its open windows with the reason "zone_ended".
+6. **Heavily obscured is symmetric (SRD "Vision and Light"):** nobody sees into, out of or through a heavily obscured
+   zone, including creatures inside it, who see nothing in it but themselves; magical Darkness also stops darkvision and
+   nonmagical light. Fix the outside player's sentence (third person, the app's voice).
+7. **RN-10 beyond the token filter:** logs, waits, move events and cast results name a creature in a zone only to those
+   who see it; hidden creatures in a zone follow PM-02c's reveal; each zone has `visible_to_players` (default on for a
+   spell with a visible form, off for Silence; the master's switch on "Pôr uma zona"); Spike Growth stays unknown to a
+   character who has not recognised it (the SRD's Perception check), and the move preview never shows its cost to them.
+8. **Movement:** difficult terrain costs 1 extra foot per foot and does not stack with itself; Spirit Guardians halves
+   the creature's speed; both appear in the move preview with their source (for those who know the zone).
+9. **Spell details:** Spirit Guardians' damage is radiant (good or neutral caster) or necrotic (evil caster), 3d8, with
+   its exclusion list; Moonbeam is radiant 2d10, +1d10 per slot level above 2nd, disadvantage for shapechangers, moved up
+   to 60 ft as an action (not checked against the cast range); a Web not anchored collapses (the master marks it at the
+   cast); a creature larger than one square is in a zone when any of its squares is; dispersal by wind is the master's
+   "Dispersar" (`DisperseMapZone`) where the spell's text allows it.
+10. **Squares:** the Moonbeam plus shape is PM-02's centre-of-square rule, kept on purpose; write it in the legend and
+    the README as the app's reading (with a test in the server task). Even-sized shapes follow PM-02's cube placement.
+11. **Timeline and cast:** durations as the SRD (Web 1 hour, Spirit Guardians 10 minutes; "Restam N" only in rounds for
+    spells measured in rounds, otherwise the game-time duration); Spirit Guardians cast before it is shown active; the
+    excluded Pensantus never warned; Toren in the same place on the master's and player's side; SRD creatures only.
+12. **Drawing:** the danger-outline "Encerrar" confirmation, "Pôr uma zona" with every option and the visibility switch,
+    size labels as the SRD gives them (radius or side), zone labels at 14 px, the 320 px frames of Za 3 and 4, Zb 6, the
+    Zb 7 cards and "Pôr uma zona", Zb 8, and Za 2b not clipped; Zb 6's before and after must differ; the Zb 9 table must
+    not overlap; the master's theatre-of-mind chips list every creature in the zone.
