@@ -16,6 +16,17 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
 
+// parseCreatureIDs checks the combat and the combatant a request names.
+func parseCreatureIDs(encounterID, combatantID string) (enc, who string, err error) {
+	if enc, err = parseCombatID(encounterID, "encounter"); err != nil {
+		return "", "", err
+	}
+	if who, err = parseCombatID(combatantID, "combatant"); err != nil {
+		return "", "", err
+	}
+	return enc, who, nil
+}
+
 // AnswerLegendaryResistance implements playv1connect.CreatureServiceHandler.
 func (s *Service) AnswerLegendaryResistance(
 	ctx context.Context,
@@ -29,11 +40,7 @@ func (s *Service) AnswerLegendaryResistance(
 	if err != nil {
 		return nil, err
 	}
-	encID, err := parseCombatID(req.Msg.GetEncounterId(), "encounter")
-	if err != nil {
-		return nil, err
-	}
-	combID, err := parseCombatID(req.Msg.GetCombatantId(), "combatant")
+	encID, combID, err := parseCreatureIDs(req.Msg.GetEncounterId(), req.Msg.GetCombatantId())
 	if err != nil {
 		return nil, err
 	}
@@ -71,99 +78,15 @@ func (s *Service) AnswerLegendaryResistance(
 		if err != nil {
 			return nil, err
 		}
-		before := st.Clone()
 		c.characterID = &who.CharacterID
-		if !use { // "Deixar falhar": the prompt goes, the save stays failed
-			st.DropPrompt(castID)
-			if !statesEqual(before, st) {
-				if err := saveMonsterState(ctx, c, who, st); err != nil {
-					return nil, err
-				}
-			}
-			c.kind = eventCombatantCheck
-			if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-				return nil, fmt.Errorf("touch the encounter: %w", err)
-			}
-			made = actionEvent{Round: c.enc.Round, Secret: true, Actor: who.ID, CastID: castID, Monster: &monsterEvent{Passed: true, Left: clamp32(st.ResistanceLeft(mon.plan), 0, 10)}}
-			return made, nil
+		if use {
+			made, err = s.useLegendaryResistance(ctx, c, who, mon.plan, st, castID)
+		} else {
+			made, err = s.letTheSaveFail(ctx, c, who, mon.plan, st, castID)
 		}
-		if err := st.SpendResistance(mon.plan); err != nil {
-			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_LEGENDARY_RESISTANCE_SPENT, "the creature has used all its Legendary Resistance")
-		}
-		st.DropPrompt(castID)
-
-		// The cast whose save it failed, among the session's latest events.
-		recent, err := c.q.ListRecentSessionEvents(ctx, playdb.ListRecentSessionEventsParams{GameSessionID: c.session.ID, Limit: recentEvents})
 		if err != nil {
-			return nil, fmt.Errorf("read the latest events: %w", err)
-		}
-		var cast *actionEvent
-		for _, e := range recent {
-			ev, err := readEvent(e.Payload)
-			if err != nil {
-				continue
-			}
-			switch {
-			case e.Kind == eventSpellCast && ev.CastID == castID && e.EncounterID != nil && *e.EncounterID == c.enc.ID:
-				cast = &ev
-			case e.Kind == eventLegendaryResistance && ev.Monster != nil && ev.Monster.Resist != nil && ev.Monster.Resist.Cast == castID && ev.Actor == who.ID:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("the creature used its Legendary Resistance on this cast already"))
-			}
-		}
-		if cast == nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("cast not found"))
-		}
-		i := slices.IndexFunc(cast.Hits, func(h castHit) bool { return h.Target == who.ID && h.Save != nil })
-		if i < 0 {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("the cast has no saving throw of the creature"))
-		}
-		hit := cast.Hits[i]
-		if hit.Save.Saved {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("the creature's saving throw was not failed"))
-		}
-
-		// The damage of the failed save, while it has not been rolled: half of it, or none.
-		resist := &resistEv{Cast: castID, Left: clamp32(st.ResistanceLeft(mon.plan), 0, 10)}
-		made = actionEvent{
-			Round: c.enc.Round, Secret: true, Actor: who.ID, Key: cast.Key, CastID: castID, Monster: &monsterEvent{Resist: resist},
-		}
-		for _, id := range append([]string{hit.Pending}, hit.More...) {
-			if id == "" {
-				continue
-			}
-			p, err := c.q.GetPendingDamage(ctx, playdb.GetPendingDamageParams{EncounterID: c.enc.ID, ID: id})
-			if err != nil {
-				continue // an undo took it away
-			}
-			if p.Status != pendingAwaitingRoll {
-				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SAVE_SETTLED, "the damage of the failed save was rolled already")
-			}
-			switch hit.Save.OnSuccess {
-			case "half":
-				if _, err := c.q.SetPendingDamageHalf(ctx, playdb.SetPendingDamageHalfParams{ID: p.ID, Status: pendingAwaitingRoll, Half: true}); err != nil {
-					return nil, fmt.Errorf("halve the pending damage: %w", err)
-				}
-			case "none":
-				if _, err := c.q.SetPendingDamageHalf(ctx, playdb.SetPendingDamageHalfParams{ID: p.ID, Status: pendingDiscarded, Half: false, ResolvedAt: &c.now}); err != nil {
-					return nil, fmt.Errorf("drop the pending damage: %w", err)
-				}
-			default: // the stat block leaves a success to the table: the master rules on the amount
-				continue
-			}
-			resist.Pending = append(resist.Pending, resistedPending{ID: p.ID, Status: p.Status, Half: p.Half})
-		}
-		// The condition the failure gave comes off.
-		if ch := slices.IndexFunc(cast.Monster.conds(), func(ch condChange) bool { return ch.Target == who.ID }); ch >= 0 {
-			now := slices.Clone(who.Conditions)
-			if err := c.q.SetCombatantConditions(ctx, playdb.SetCombatantConditionsParams{ID: who.ID, Conditions: nonNil(cast.Monster.Conds[ch].Before)}); err != nil {
-				return nil, fmt.Errorf("take the condition off: %w", err)
-			}
-			made.Monster.Conds = append(made.Monster.Conds, condChange{Target: who.ID, Before: now})
-		}
-		if err := saveMonsterState(ctx, c, who, st); err != nil {
 			return nil, err
 		}
-		made.Monster.Before = &before
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
 			return nil, fmt.Errorf("touch the encounter: %w", err)
 		}
@@ -191,6 +114,124 @@ func (s *Service) AnswerLegendaryResistance(
 		left = ev.Monster.Left
 	}
 	return connect.NewResponse(&playv1.AnswerLegendaryResistanceResponse{Encounter: out, UsesLeft: left}), nil
+}
+
+// letTheSaveFail is "Deixar falhar": the prompt goes, no use is spent and the save stays failed.
+func (s *Service) letTheSaveFail(ctx context.Context, c *combatTx, who playdb.Combatant, plan *rules.MonsterPlan, st combat.MonsterState, castID string) (actionEvent, error) {
+	before := st.Clone()
+	st.DropPrompt(castID)
+	if !statesEqual(before, st) {
+		if err := saveMonsterState(ctx, c, who, st); err != nil {
+			return actionEvent{}, err
+		}
+	}
+	c.kind = eventCombatantCheck
+	return actionEvent{
+		Round: c.enc.Round, Secret: true, Actor: who.ID, CastID: castID,
+		Monster: &monsterEvent{Passed: true, Left: clamp32(st.ResistanceLeft(plan), 0, 10)},
+	}, nil
+}
+
+// failedSaveOf finds, among the session's latest events, the cast whose saving throw the
+// creature failed. A cast it already answered with a use is refused.
+func (s *Service) failedSaveOf(ctx context.Context, c *combatTx, who playdb.Combatant, castID string) (*actionEvent, castHit, error) {
+	recent, err := c.q.ListRecentSessionEvents(ctx, playdb.ListRecentSessionEventsParams{GameSessionID: c.session.ID, Limit: recentEvents})
+	if err != nil {
+		return nil, castHit{}, fmt.Errorf("read the latest events: %w", err)
+	}
+	var cast *actionEvent
+	for _, e := range recent {
+		ev, err := readEvent(e.Payload)
+		if err != nil {
+			continue
+		}
+		switch {
+		case e.Kind == eventSpellCast && ev.CastID == castID && e.EncounterID != nil && *e.EncounterID == c.enc.ID:
+			cast = &ev
+		case e.Kind == eventLegendaryResistance && ev.Monster != nil && ev.Monster.Resist != nil && ev.Monster.Resist.Cast == castID && ev.Actor == who.ID:
+			return nil, castHit{}, connect.NewError(connect.CodeInvalidArgument, errors.New("the creature used its Legendary Resistance on this cast already"))
+		}
+	}
+	if cast == nil {
+		return nil, castHit{}, connect.NewError(connect.CodeNotFound, errors.New("cast not found"))
+	}
+	i := slices.IndexFunc(cast.Hits, func(h castHit) bool { return h.Target == who.ID && h.Save != nil })
+	if i < 0 {
+		return nil, castHit{}, connect.NewError(connect.CodeNotFound, errors.New("the cast has no saving throw of the creature"))
+	}
+	if cast.Hits[i].Save.Saved {
+		return nil, castHit{}, connect.NewError(connect.CodeInvalidArgument, errors.New("the creature's saving throw was not failed"))
+	}
+	return cast, cast.Hits[i], nil
+}
+
+// useLegendaryResistance turns the failed save of a cast into a success (SRD 5.1, "Legendary
+// Resistance"): the damage of the failure, while it is not rolled, becomes half of it or none, and
+// the condition the failure gave comes off.
+func (s *Service) useLegendaryResistance(ctx context.Context, c *combatTx, who playdb.Combatant, plan *rules.MonsterPlan, st combat.MonsterState, castID string) (actionEvent, error) {
+	before := st.Clone()
+	if err := st.SpendResistance(plan); err != nil {
+		return actionEvent{}, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_LEGENDARY_RESISTANCE_SPENT, "the creature has used all its Legendary Resistance")
+	}
+	st.DropPrompt(castID)
+	cast, hit, err := s.failedSaveOf(ctx, c, who, castID)
+	if err != nil {
+		return actionEvent{}, err
+	}
+	resist := &resistEv{Cast: castID, Left: clamp32(st.ResistanceLeft(plan), 0, 10)}
+	made := actionEvent{
+		Round: c.enc.Round, Secret: true, Actor: who.ID, Key: cast.Key, CastID: castID, Monster: &monsterEvent{Resist: resist},
+	}
+	for _, id := range append([]string{hit.Pending}, hit.More...) {
+		if id == "" {
+			continue
+		}
+		changed, err := s.passPending(ctx, c, id, hit.Save.OnSuccess)
+		if err != nil {
+			return actionEvent{}, err
+		}
+		if changed != nil {
+			resist.Pending = append(resist.Pending, *changed)
+		}
+	}
+	if ch := slices.IndexFunc(cast.Monster.conds(), func(ch condChange) bool { return ch.Target == who.ID }); ch >= 0 {
+		now := slices.Clone(who.Conditions)
+		if err := c.q.SetCombatantConditions(ctx, playdb.SetCombatantConditionsParams{ID: who.ID, Conditions: nonNil(cast.Monster.Conds[ch].Before)}); err != nil {
+			return actionEvent{}, fmt.Errorf("take the condition off: %w", err)
+		}
+		made.Monster.Conds = append(made.Monster.Conds, condChange{Target: who.ID, Before: now})
+	}
+	if err := saveMonsterState(ctx, c, who, st); err != nil {
+		return actionEvent{}, err
+	}
+	made.Monster.Before = &before
+	return made, nil
+}
+
+// passPending changes the damage of a failed save, while it is not rolled, to what a success
+// takes (half, or none); nil when the stat block leaves a success to the table, or an undo took
+// the damage away.
+func (s *Service) passPending(ctx context.Context, c *combatTx, id, onSuccess string) (*resistedPending, error) {
+	p, err := c.q.GetPendingDamage(ctx, playdb.GetPendingDamageParams{EncounterID: c.enc.ID, ID: id})
+	if err != nil {
+		return nil, nil //nolint:nilerr // an undo took it away
+	}
+	if p.Status != pendingAwaitingRoll {
+		return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SAVE_SETTLED, "the damage of the failed save was rolled already")
+	}
+	switch onSuccess {
+	case "half":
+		if _, err := c.q.SetPendingDamageHalf(ctx, playdb.SetPendingDamageHalfParams{ID: p.ID, Status: pendingAwaitingRoll, Half: true}); err != nil {
+			return nil, fmt.Errorf("halve the pending damage: %w", err)
+		}
+	case "none":
+		if _, err := c.q.SetPendingDamageHalf(ctx, playdb.SetPendingDamageHalfParams{ID: p.ID, Status: pendingDiscarded, Half: false, ResolvedAt: &c.now}); err != nil {
+			return nil, fmt.Errorf("drop the pending damage: %w", err)
+		}
+	default: // the stat block leaves a success to the table: the master rules on the amount
+		return nil, nil
+	}
+	return &resistedPending{ID: p.ID, Status: p.Status, Half: p.Half}, nil
 }
 
 // DeclineLegendary implements playv1connect.CreatureServiceHandler.

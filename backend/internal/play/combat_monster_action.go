@@ -177,11 +177,11 @@ func (s *Service) runCreatureAction(ctx context.Context, use creatureUse) (*play
 	}
 	if opt != nil && opt.ActionKey != "" {
 		if linked, ok := mon.plan.Action(opt.ActionKey); ok && linked.Kind == rules.ActionKindAttack {
-			return s.useAttack(ctx, use, mon, linked, opt)
+			return s.useAttack(ctx, use, linked, opt)
 		}
 	}
 	if opt == nil && ap.Kind == rules.ActionKindAttack {
-		return s.useAttack(ctx, use, mon, ap, nil)
+		return s.useAttack(ctx, use, ap, nil)
 	}
 	return s.useThroughWrite(ctx, use)
 }
@@ -189,7 +189,7 @@ func (s *Service) runCreatureAction(ctx context.Context, use creatureUse) (*play
 // useAttack makes an attack of a monster whole: the attack roll, then the damage of every part,
 // each its own roll, rolled by the app (the master's NPC rolls either way, and the damage of a
 // monster is the server's roll). The steps are the master's own calls, replayed by a retry.
-func (s *Service) useAttack(ctx context.Context, use creatureUse, mon *monsterRef, ap rules.ActionPlan, opt *rules.LegendaryOption) (*playv1.Encounter, *playv1.CreatureActionResult, error) {
+func (s *Service) useAttack(ctx context.Context, use creatureUse, ap rules.ActionPlan, opt *rules.LegendaryOption) (*playv1.Encounter, *playv1.CreatureActionResult, error) {
 	if len(use.targetIDs) != 1 {
 		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.New("an attack takes exactly one target"))
 	}
@@ -337,115 +337,31 @@ func (s *Service) useThroughWrite(ctx context.Context, use creatureUse) (*playv1
 	var made actionEvent
 	res, err := s.write(ctx, combatWrite{m: m, key: use.key, hash: use.hash, kind: eventSpellCast, altKind: eventActionTaken, encounterID: use.encID}, func(c *combatTx) (any, error) {
 		made = actionEvent{}
-		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
-		if err != nil {
-			return nil, fmt.Errorf("list the combatants: %w", err)
-		}
-		v = c.viewer(m, cs)
-		actor, err := findCombatant(cs, use.actorID, v)
+		p, err := s.planUse(ctx, c, m, use)
 		if err != nil {
 			return nil, err
 		}
-		mon, err := s.monsterOf(ctx, c.tx, m.CampaignID, actor)
-		if err != nil {
+		v = p.v
+		if made, err = s.spendUse(ctx, c, use, p); err != nil {
 			return nil, err
-		}
-		if mon == nil {
-			return nil, errNotAMonster()
-		}
-		st, err := monsterStateOf(actor)
-		if err != nil {
-			return nil, err
-		}
-		before := st.Clone()
-
-		ap, opt, err := resolveMonsterAction(mon.plan, use.actionKey, use.legendary)
-		if err != nil {
-			return nil, err
-		}
-		if ap.Kind == rules.ActionKindAttack {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("an attack roll is made with an attack target: set exactly one target"))
-		}
-		if opt == nil && ap.Kind == rules.ActionKindOther && isSpellcastingAction(ap) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a spell is cast with CastSpell"))
-		}
-		if opt != nil {
-			err = s.legendaryGate(c, actor, st, mon.plan, opt.Cost)
-		} else {
-			err = s.mustActNow(ctx, c, actor)
-		}
-		if err != nil {
-			return nil, err
-		}
-		targs := make([]playdb.Combatant, len(use.targetIDs))
-		for i, id := range use.targetIDs {
-			if targs[i], err = findCombatant(cs, id, v); err != nil {
-				return nil, err
-			}
-			if targs[i].ID == actor.ID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a creature does not target itself"))
-			}
-			if targs[i].Defeated {
-				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_TARGET_DEFEATED, "a target is defeated")
-			}
-		}
-		switch {
-		case ap.Kind == rules.ActionKindSave && len(targs) == 0:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("target_ids needs the creatures the action affects"))
-		case ap.Kind != rules.ActionKindSave && len(targs) > 0:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("this action takes no targets"))
-		}
-		made = actionEvent{
-			Round: c.enc.Round, Actor: actor.ID, Key: ap.Key, CastID: uuid.New().String(),
-			ActionBefore: actor.ActionUsed, BonusBefore: actor.BonusActionUsed, ReactionBefore: actor.ReactionUsed, DashedBefore: actor.Dashed,
-			SpellCastBefore: actor.SpellCast, BonusSpellBefore: actor.BonusSpellCast, DisengagedBefore: actor.Disengaged,
-			SurgedBefore: actor.ActionSurged, AttacksBefore: actor.AttacksMade, AttackKeyBefore: deref(actor.ActionAttackKey), FlurryBefore: actor.BonusAttacksLeft,
-			Monster: &monsterEvent{},
-		}
-		if opt != nil {
-			made.Key = opt.Key
-			made.Monster.Option, made.Monster.Cost = opt.Key, clamp32(opt.Cost, 0, maxLegendaryCost)
-			if err := st.SpendLegendary(mon.plan, opt.Cost); err != nil {
-				return nil, err
-			}
-			st.Offer = nil // one for each offer
-		} else {
-			if err := st.Spend(ap.Usage, ap.Key); err != nil {
-				return nil, limitError(err)
-			}
-			if made.RunBefore, err = breakRun(ctx, c, actor); err != nil {
-				return nil, err
-			}
-			// The action is spent; the master may act again with it used.
-			if err := c.q.SetCombatantEconomy(ctx, playdb.SetCombatantEconomyParams{
-				ID: actor.ID, ActionUsed: true, BonusActionUsed: actor.BonusActionUsed, ReactionUsed: actor.ReactionUsed, Dashed: actor.Dashed,
-			}); err != nil {
-				return nil, fmt.Errorf("spend the action: %w", err)
-			}
-		}
-		if ap.Kind == rules.ActionKindMultiattack {
-			if err := st.StartMultiattack(ap, use.routine); err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("routine is not a routine of the Multiattack action"))
-			}
-			made.Monster.Routine, made.Monster.Routined = clamp32(use.routine, 0, maxMonsterRoutines), true
 		}
 		c.kind = eventActionTaken
-		if ap.Kind == rules.ActionKindSave {
+		if p.ap.Kind == rules.ActionKindSave {
 			c.kind = eventSpellCast
-			if err := s.rollMonsterSave(ctx, c, m, v, cs, actor, targs, ap, &made); err != nil {
+			if err := s.rollMonsterSave(ctx, c, m, v, p.cs, p.actor, p.targs, p.ap, &made); err != nil {
 				return nil, err
 			}
 		}
-		if !statesEqual(before, st) {
-			if err := saveMonsterState(ctx, c, actor, st); err != nil {
+		if !statesEqual(p.before, p.st) {
+			if err := saveMonsterState(ctx, c, p.actor, p.st); err != nil {
 				return nil, err
 			}
-			made.Monster.Before = &before
+			made.Monster.Before = &p.before
 		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
 			return nil, fmt.Errorf("touch the encounter: %w", err)
 		}
-		c.characterID = &actor.CharacterID
+		c.characterID = &p.actor.CharacterID
 		return made, nil
 	})
 	if err != nil {
@@ -475,6 +391,129 @@ func (s *Service) useThroughWrite(ctx context.Context, use creatureUse) (*playv1
 		}
 	}
 	return out, result, nil
+}
+
+// usePlan is a use of an action once checked: who acts, what it spends and who it affects.
+type usePlan struct {
+	cs     []playdb.Combatant
+	v      combatViewer
+	actor  playdb.Combatant
+	mon    *monsterRef
+	st     combat.MonsterState
+	before combat.MonsterState
+	ap     rules.ActionPlan
+	opt    *rules.LegendaryOption
+	targs  []playdb.Combatant
+}
+
+// planUse checks, inside the write, that the monster may use the action now on these targets.
+func (s *Service) planUse(ctx context.Context, c *combatTx, m authz.Membership, use creatureUse) (*usePlan, error) {
+	cs, err := c.q.ListCombatants(ctx, c.enc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("list the combatants: %w", err)
+	}
+	p := &usePlan{cs: cs, v: c.viewer(m, cs)}
+	if p.actor, err = findCombatant(cs, use.actorID, p.v); err != nil {
+		return nil, err
+	}
+	if p.mon, err = s.monsterOf(ctx, c.tx, m.CampaignID, p.actor); err != nil {
+		return nil, err
+	}
+	if p.mon == nil {
+		return nil, errNotAMonster()
+	}
+	if p.st, err = monsterStateOf(p.actor); err != nil {
+		return nil, err
+	}
+	p.before = p.st.Clone()
+	if p.ap, p.opt, err = resolveMonsterAction(p.mon.plan, use.actionKey, use.legendary); err != nil {
+		return nil, err
+	}
+	switch {
+	case p.ap.Kind == rules.ActionKindAttack:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("an attack roll is made with an attack target: set exactly one target"))
+	case p.opt == nil && p.ap.Kind == rules.ActionKindOther && isSpellcastingAction(p.ap):
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a spell is cast with CastSpell"))
+	case p.opt != nil:
+		err = s.legendaryGate(c, p.actor, p.st, p.mon.plan, p.opt.Cost)
+	default:
+		err = s.mustActNow(ctx, c, p.actor)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if p.targs, err = s.useTargets(p, use); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+// useTargets finds the creatures a use affects and checks their number against the action's kind.
+func (s *Service) useTargets(p *usePlan, use creatureUse) ([]playdb.Combatant, error) {
+	targs := make([]playdb.Combatant, len(use.targetIDs))
+	for i, id := range use.targetIDs {
+		t, err := findCombatant(p.cs, id, p.v)
+		if err != nil {
+			return nil, err
+		}
+		if t.ID == p.actor.ID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a creature does not target itself"))
+		}
+		if t.Defeated {
+			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_TARGET_DEFEATED, "a target is defeated")
+		}
+		targs[i] = t
+	}
+	switch {
+	case p.ap.Kind == rules.ActionKindSave && len(targs) == 0:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("target_ids needs the creatures the action affects"))
+	case p.ap.Kind != rules.ActionKindSave && len(targs) > 0:
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("this action takes no targets"))
+	}
+	return targs, nil
+}
+
+// spendUse spends what the use costs (the action, or the legendary actions of the option, and the
+// action's own limit) and starts the Multiattack routine the action chooses; the event it returns
+// keeps what an undo puts back.
+func (s *Service) spendUse(ctx context.Context, c *combatTx, use creatureUse, p *usePlan) (actionEvent, error) {
+	actor := p.actor
+	made := actionEvent{
+		Round: c.enc.Round, Actor: actor.ID, Key: p.ap.Key, CastID: uuid.New().String(),
+		ActionBefore: actor.ActionUsed, BonusBefore: actor.BonusActionUsed, ReactionBefore: actor.ReactionUsed, DashedBefore: actor.Dashed,
+		SpellCastBefore: actor.SpellCast, BonusSpellBefore: actor.BonusSpellCast, DisengagedBefore: actor.Disengaged,
+		SurgedBefore: actor.ActionSurged, AttacksBefore: actor.AttacksMade, AttackKeyBefore: deref(actor.ActionAttackKey), FlurryBefore: actor.BonusAttacksLeft,
+		Monster: &monsterEvent{},
+	}
+	if p.opt != nil {
+		made.Key = p.opt.Key
+		made.Monster.Option, made.Monster.Cost = p.opt.Key, clamp32(p.opt.Cost, 0, maxLegendaryCost)
+		if err := p.st.SpendLegendary(p.mon.plan, p.opt.Cost); err != nil {
+			return actionEvent{}, err
+		}
+		p.st.Offer = nil // one for each offer
+	} else {
+		if err := p.st.Spend(p.ap.Usage, p.ap.Key); err != nil {
+			return actionEvent{}, limitError(err)
+		}
+		var err error
+		if made.RunBefore, err = breakRun(ctx, c, actor); err != nil {
+			return actionEvent{}, err
+		}
+		// The action is spent; the master may act again with it used.
+		if err := c.q.SetCombatantEconomy(ctx, playdb.SetCombatantEconomyParams{
+			ID: actor.ID, ActionUsed: true, BonusActionUsed: actor.BonusActionUsed, ReactionUsed: actor.ReactionUsed, Dashed: actor.Dashed,
+		}); err != nil {
+			return actionEvent{}, fmt.Errorf("spend the action: %w", err)
+		}
+	}
+	if p.ap.Kind == rules.ActionKindMultiattack {
+		if err := p.st.StartMultiattack(p.ap, use.routine); err != nil {
+			return actionEvent{}, connect.NewError(connect.CodeInvalidArgument, errors.New("routine is not a routine of the Multiattack action"))
+		}
+		made.Monster.Routine, made.Monster.Routined = clamp32(use.routine, 0, maxMonsterRoutines), true
+	}
+	return made, nil
 }
 
 // isSpellcastingAction says an action with no roll is the creature's casting of a spell, which

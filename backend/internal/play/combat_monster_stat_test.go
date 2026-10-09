@@ -41,7 +41,8 @@ func monsterFight(t *testing.T, creature string, init int) (*armed, *playv1.Enco
 	if label == "" {
 		t.Fatalf("%s is not in the combat", creature)
 	}
-	return a, a.begin(t, a.get(t, a.master)), label
+	e = a.begin(t, a.get(t, a.master))
+	return a, e, label
 }
 
 func (a *armed) creatureTurn(t *testing.T, u *user, e *playv1.Encounter, label string) (*playv1.CreatureTurn, error) {

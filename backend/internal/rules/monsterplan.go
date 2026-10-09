@@ -59,9 +59,6 @@ const (
 	UsageRest = "rest"
 )
 
-// rechargeDie is the die a recharge rolls (SRD: "Recharge 5-6" is a d6).
-const rechargeDie = 6
-
 // ActionUsage is the limit of an action.
 type ActionUsage struct {
 	Kind        string
@@ -329,9 +326,9 @@ var (
 // sizeOrder ranks the sizes, for "Large or smaller".
 var sizeOrder = []string{"Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"}
 
-// SizeAtMost says whether size is the same as or smaller than max.
-func SizeAtMost(size, max string) bool {
-	a, b := slices.Index(sizeOrder, size), slices.Index(sizeOrder, max)
+// SizeAtMost says whether size is the same as or smaller than largest.
+func SizeAtMost(size, largest string) bool {
+	a, b := slices.Index(sizeOrder, size), slices.Index(sizeOrder, largest)
 	return a >= 0 && b >= 0 && a <= b
 }
 

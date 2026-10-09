@@ -1,15 +1,14 @@
 package play
 
 import (
-	"slices"
-
 	"context"
 	"fmt"
-	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"math"
+	"slices"
 	"strings"
 	"uuid"
 
+	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -17,7 +16,7 @@ import (
 
 // What a monster's hit gives besides the damage of the attack's first part (SRD 5.1,
 // "Monsters": actions; the data's attack actions): the other damage parts (a dragon's bite
-// plus fire), a saving throw asked of the target (the ghoul's claws paralyse, a spider's poison
+// plus fire), a saving throw asked of the target (the ghoul's claws paralyze, a spider's poison
 // deals more damage), and a condition with no save (a grapple). The hit is settled when its
 // first damage is rolled, not when the attack roll lands: a Shield that stops the hit
 // stops all of it, and an undo of the attack roll takes none of this away because none of it

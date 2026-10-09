@@ -206,7 +206,8 @@ func TestMonsterMultiattackRoutine(t *testing.T) {
 	if !slices.Equal(s.Multiattack.Left, []int{1, 2}) {
 		t.Fatalf("left = %v, want [1 2]", s.Multiattack.Left)
 	}
-	if !s.CountAttack(plan, "monster:wyrm#claw") || !s.CountAttack(plan, "monster:wyrm#claw") {
+	firstClaw, secondClaw := s.CountAttack(plan, "monster:wyrm#claw"), s.CountAttack(plan, "monster:wyrm#claw")
+	if !firstClaw || !secondClaw {
 		t.Error("the two claws of the routine were not counted")
 	}
 	if s.CountAttack(plan, "monster:wyrm#claw") {

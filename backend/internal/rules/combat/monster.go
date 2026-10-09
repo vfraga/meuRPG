@@ -3,6 +3,7 @@ package combat
 import (
 	"errors"
 	"slices"
+	"strconv"
 
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -108,7 +109,7 @@ type MultiattackState struct {
 // InnateGroupKey is the key of the uses a group of innate spells shares ("3/day: enlarge/
 // reduce, tongues"): the spellcasting trait's key and the group's place in it.
 func InnateGroupKey(traitKey string, group int) string {
-	return traitKey + "@" + string(rune('a'+group))
+	return traitKey + "@" + strconv.Itoa(group)
 }
 
 // Clone copies the state, so a change never touches the one it was read from.

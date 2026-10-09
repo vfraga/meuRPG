@@ -62,7 +62,7 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 	t.Parallel()
 	c := loadForTest(t)
 
-	t.Run("Ghoul's Claws paralyse on a failed save, and are fully read", func(t *testing.T) {
+	t.Run("Ghoul's Claws paralyze on a failed save, and are fully read", func(t *testing.T) {
 		t.Parallel()
 		a := planActionOf(t, c, "ghoul", "Claws")
 		if a.Kind != ActionKindAttack || a.Class != ActionStructured || a.Attack == nil || a.Attack.Bonus != 4 || !a.Attack.Melee || a.Attack.ReachFt != 5 {

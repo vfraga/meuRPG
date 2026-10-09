@@ -237,7 +237,7 @@ func sequenceOf(ms *combat.MultiattackState, a rules.ActionPlan) *playv1.Creatur
 	}
 	for i, st := range out.Steps {
 		if !st.Done {
-			out.Next = int32(i + 1) //nolint:gosec // a step of a routine, a few at most
+			out.Next = int32(i + 1)
 			break
 		}
 	}
