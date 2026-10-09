@@ -1,0 +1,66 @@
+@for (p of prompts(); track p.prompt.castId + p.prompt.combatantId) {
+  <section class="card card--danger" [attr.aria-label]="'Resistência Lendária de ' + p.who" role="group">
+    <h3 class="card__title">{{ p.who }} falhou no teste</h3>
+    <p class="card__line">{{ p.who }} {{ p.line }}</p>
+    <p class="card__line">Resistência Lendária: {{ p.prompt.usesLeft }} de {{ p.prompt.uses }} antes da escolha.</p>
+    <p class="card__ask">Usar a Resistência Lendária?</p>
+    <p class="card__line">Ele passa em vez de falhar e gasta 1 dos {{ p.prompt.uses }} usos do dia.</p>
+    <div class="buttons">
+      <button mat-stroked-button type="button" class="danger" [disabled]="busy()" (click)="answer(p.prompt, true)">
+        Usar Resistência Lendária
+      </button>
+      <button mat-flat-button type="button" [disabled]="busy()" (click)="answer(p.prompt, false)">Deixar falhar</button>
+    </div>
+  </section>
+}
+
+@for (o of offers(); track o.offer.combatantId) {
+  <section class="card" [attr.aria-label]="'Ação lendária de ' + o.who" role="group">
+    <h3 class="card__title">Fim da vez de {{ o.after }}: {{ o.who }} pode usar uma ação lendária</h3>
+    <p class="card__line">Disponíveis <strong>{{ o.offer.left }} de {{ o.offer.perRound }}</strong></p>
+
+    <mat-form-field appearance="outline" class="targets" subscriptSizing="dynamic">
+      <mat-label>Alvos (se a ação pedir)</mat-label>
+      <mat-select multiple [value]="targetIds()" (valueChange)="pickTargets($event)">
+        @for (t of targets(); track t.id) {
+          <mat-option [value]="t.id">{{ t.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @for (opt of o.options; track opt.key) {
+      <div class="option">
+        <div class="option__text">
+          <p class="option__name">{{ opt.name }}</p>
+          <p class="option__line">custa {{ opt.cost }} · <span lang="en">{{ opt.text }}</span></p>
+          @if (opt.why) {
+            <p class="option__why" [id]="'why-' + opt.key">{{ opt.why }}</p>
+          }
+        </div>
+        <button
+          mat-stroked-button
+          type="button"
+          [class.mr-button--off]="!opt.available"
+          [disabled]="!opt.available || busy()"
+          disabledInteractive
+          [attr.aria-describedby]="opt.why ? 'why-' + opt.key : null"
+          (click)="opt.available && use(o.offer, opt.key)"
+        >
+          {{ opt.button }}
+        </button>
+      </div>
+    }
+    <p class="card__line">
+      <strong>Uma por oferta, só no fim do turno de outra criatura.</strong> Depois de usar uma, a oferta fecha.
+      Não vale com a criatura incapacitada.
+    </p>
+    <button mat-button type="button" [disabled]="busy()" (click)="pass(o.offer)">Deixar passar</button>
+  </section>
+}
+
+@if (error()) {
+  <div class="mr-notice mr-notice--danger" role="alert">
+    <mat-icon aria-hidden="true">error</mat-icon>
+    <p>{{ error() }}</p>
+  </div>
+}

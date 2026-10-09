@@ -1,0 +1,96 @@
+<section class="actions" aria-labelledby="actions-title">
+  <h3 class="actions__cap" id="actions-title">Ações</h3>
+
+  <mat-form-field appearance="outline" class="actions__targets" subscriptSizing="dynamic">
+    <mat-label>Alvos</mat-label>
+    <mat-select multiple [value]="targetIds()" (valueChange)="pickTargets($event)">
+      @for (t of targets(); track t.id) {
+        <mat-option [value]="t.id">{{ t.label }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  @for (r of rows(); track r.action.key) {
+    <article class="action" [class.action--multi]="r.multi">
+      <div class="action__head">
+        <h4 class="action__name">{{ r.name }}</h4>
+        @if (r.limit) {
+          <span class="action__limit" [class.action__limit--wait]="!r.action.available">{{ r.limit }}</span>
+        }
+      </div>
+      @if (r.multi) {
+        <p class="action__line" lang="en">{{ r.action.text }}</p>
+        @if (sequence(); as seq) {
+          <ol class="seq" aria-label="Sequência do ataque múltiplo">
+            @for (s of seq.steps; track $index) {
+              <li class="seq__step" [class.seq__step--done]="s.done">{{ $index + 1 }}. {{ stepName(s.actionKey, s.name) }}</li>
+            }
+          </ol>
+        } @else {
+          <ol class="seq" aria-label="Sequência do ataque múltiplo">
+            @for (name of previewSteps(r.action); track $index) {
+              <li class="seq__step">{{ $index + 1 }}. {{ name }}</li>
+            }
+          </ol>
+        }
+      } @else {
+        <p class="action__line">{{ r.line }}</p>
+      }
+      @if (r.rechargeRoll; as rc) {
+        <p class="action__recharge" role="status" aria-live="polite">
+          <span class="action__d6">{{ rc.roll }}</span> d6 · {{ rc.word }} {{ rc.detail }}
+        </p>
+      }
+      <button
+        mat-stroked-button
+        type="button"
+        class="action__button"
+        [class.mr-button--off]="!!r.why"
+        [class.action__button--multi]="r.multi"
+        [disabled]="!!r.why || busy()"
+        disabledInteractive
+        [attr.aria-describedby]="r.why ? 'why-' + r.action.key : null"
+        (click)="!r.why && use(r.action)"
+      >
+        {{ r.multi ? 'Começar a sequência' : r.button }}
+      </button>
+      @if (r.why) {
+        <p class="action__why" [id]="'why-' + r.action.key">{{ r.why }}</p>
+      }
+    </article>
+  }
+
+  @if (error()) {
+    <div class="mr-notice mr-notice--danger" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <p>{{ error() }}</p>
+    </div>
+  }
+
+  @if (last(); as l) {
+    <div class="done" role="status" aria-live="polite">
+      <h4 class="done__title">{{ l.action }}</h4>
+      @if (l.result.attackRoll) {
+        <p class="done__line">
+          {{ outcomeWord(l.result.outcome) }}
+        </p>
+      }
+      <app-damage-steps [result]="l.result" />
+      @if (l.result.rider?.save; as save) {
+        <p class="done__line">
+          Teste de resistência do alvo: {{ saveWord(save.outcome) }}{{
+            l.result.rider?.conditionPt ? ' · ' + l.result.rider?.conditionPt : ''
+          }}
+        </p>
+      }
+      @for (o of lastOutcomes(); track o.id) {
+        <p class="done__line">{{ o.label }}: {{ o.word }}</p>
+      }
+      @for (name of immune(); track name) {
+        <p class="done__line done__line--secret">
+          {{ name }} é imune: nenhum teste é pedido e a condição não é aplicada. (Só você vê este motivo.)
+        </p>
+      }
+    </div>
+  }
+</section>

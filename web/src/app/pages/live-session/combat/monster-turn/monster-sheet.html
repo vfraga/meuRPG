@@ -1,0 +1,101 @@
+<section class="sheet" aria-labelledby="sheet-title">
+  <h3 class="sheet__cap" id="sheet-title">Ficha do monstro</h3>
+  <div class="sheet__who">
+    <app-combatant-token [initial]="initial()" [npc]="true" [current]="true" [size]="40" />
+    <div>
+      <h4 class="sheet__name">{{ name() }}</h4>
+      <p class="sheet__sub">{{ subtitle() }}</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat__cap">Classe de Armadura</span>
+      <span class="stat__val">{{ creature()?.armorClass }}</span>
+    </div>
+    <div class="stat">
+      <span class="stat__cap">Pontos de vida</span>
+      <span class="stat__val">{{ hp().now }} <small>de {{ hp().max }}</small></span>
+    </div>
+  </div>
+
+  <ul class="abilities" aria-label="Habilidades">
+    @for (a of abilities(); track a.ability) {
+      <li class="ability">
+        <span class="ability__cap">{{ abbreviation(a.namePt) }}</span>
+        <span class="ability__val">{{ a.score }}</span>
+      </li>
+    }
+  </ul>
+
+  <dl class="rows">
+    <div class="row"><dt>Deslocamento</dt><dd>{{ speeds() }}</dd></div>
+    @if (saves()) {
+      <div class="row"><dt>Testes de resistência</dt><dd>{{ saves() }}</dd></div>
+    }
+    @if (skills()) {
+      <div class="row"><dt>Perícias</dt><dd>{{ skills() }}</dd></div>
+    }
+    <div class="row"><dt>Imunidades a dano</dt><dd>{{ immunities() }}</dd></div>
+    @if (resistances() !== 'nenhuma') {
+      <div class="row"><dt>Resistências a dano</dt><dd>{{ resistances() }}</dd></div>
+    }
+    @if (vulnerabilities() !== 'nenhuma') {
+      <div class="row"><dt>Vulnerabilidades a dano</dt><dd>{{ vulnerabilities() }}</dd></div>
+    }
+    <div class="row"><dt>Imunidades a condição</dt><dd>{{ conditionImmunities() }}</dd></div>
+    <div class="row"><dt>Sentidos</dt><dd>{{ senses() }}</dd></div>
+  </dl>
+
+  @if (resistance(); as r) {
+    <div class="note">
+      <mat-icon aria-hidden="true">info</mat-icon>
+      <p>
+        <strong>Resistência Lendária ({{ r.resistanceUses }}/dia).</strong> O app aplica.
+        Se a criatura falha em um teste de resistência, pode escolher ter sucesso: o app oferece a
+        escolha quando ela falha.
+      </p>
+    </div>
+  }
+
+  @if (legendary(); as l) {
+    <h4 class="sheet__sub-cap">Ações lendárias ({{ l.state?.perRound }} por rodada)</h4>
+    <ul class="list">
+      @for (o of legendaryOptions(); track o.key) {
+        <li><strong>{{ o.name }}</strong> <span lang="en">{{ o.text }}</span></li>
+      }
+    </ul>
+  }
+
+  @for (t of traits(); track t.key) {
+    <div class="reminder" [class.reminder--read]="t.engineReads">
+      <p class="reminder__name">{{ t.namePt || t.name }}.</p>
+      @if (t.engineReads) {
+        <p class="reminder__tag">O app aplica como fonte de vantagem.</p>
+      } @else {
+        <p class="reminder__tag">Lembrete: o app não aplica este texto.</p>
+      }
+      <p class="reminder__text" lang="en">{{ t.text }}</p>
+    </div>
+  }
+
+  @for (sc of casting(); track sc.name) {
+    <section class="casting" [attr.aria-label]="sc.innate ? 'Conjuração inata' : 'Magias'">
+      <h4 class="sheet__sub-cap">{{ sc.innate ? 'Conjuração inata' : 'Magias' }}</h4>
+      @if (sc.atWill.length) {
+        <p class="casting__line"><strong>À vontade:</strong> {{ spellNames(sc.atWill) }}</p>
+      }
+      @for (lv of sc.levels; track lv.level) {
+        <p class="casting__line">
+          <strong>{{ lv.level }}º nível</strong> · {{ lv.slotsLeft }} de {{ lv.slots }} espaços:
+          {{ spellNames(lv.spells) }}
+        </p>
+      }
+      @for (s of sc.perDay; track s.key) {
+        <p class="casting__line">
+          <strong>{{ s.namePt || s.name }}</strong> · {{ s.usesLeft }} de {{ s.uses }} ({{ s.uses }}/dia)
+        </p>
+      }
+    </section>
+  }
+</section>

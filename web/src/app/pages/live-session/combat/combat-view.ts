@@ -133,6 +133,7 @@ import { CombatBar } from './combat-bar/combat-bar';
 import { CombatMapCard } from './combat-map-card/combat-map-card';
 import { CombatSummary } from './combat-summary/combat-summary';
 import { JointCard } from './joint-turn/joint-card';
+import { LegendaryOffers } from './monster-turn/legendary-offers';
 import { InitiativeSetup } from './initiative-setup/initiative-setup';
 import { InitiativeSide } from './initiative-side/initiative-side';
 import { type JumpRequest, MovePage } from './move-page/move-page';
@@ -207,6 +208,7 @@ import { SpendSheet, type SpendSheetData } from './theatre/spend-sheet';
     InitiativeSetup,
     InitiativeSide,
     JointCard,
+    LegendaryOffers,
     MatButtonModule,
     MatIconModule,
     MineTabs,

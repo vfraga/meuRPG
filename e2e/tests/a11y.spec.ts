@@ -50,6 +50,7 @@ import {
 } from './puzzles-support';
 import { createInkBladeRPC, tableForSpells } from './spells-support';
 import { beginTheatreRPC, secondPlayer } from './theatre-support';
+import { DRAGON, dragonFight } from './monster-stat-support';
 import { brisa, brisaSheet } from './combat-support';
 import { archiveEntryRPC, createEntryRPC, entryRoute, raceBody, spellBody, updateEntryRPC } from './content-support';
 import { generateSceneRPC, mapRoute, tableForImages } from './images-support';
@@ -5629,4 +5630,70 @@ test('as opções para os jogadores passam no axe e nas conferências de layout 
 
 test('as opções para os jogadores passam no axe e nas conferências de layout no tema claro, no celular de 320', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
   await scanOptions(browser, 'light', 320);
+});
+
+/**
+ * A monster's whole stat block (W7-M, E10 boards W7-Ma, W7-Mb): the master's turn card with the sheet and the actions, an attack
+ * and Fire Breath used (the recharge waiting), and the legendary offer at the end of another creature's turn; the player's screen
+ * of the same combat. The sheets are drawn at 320 x 568 on the narrowest phone.
+ */
+async function scanMonsterStatBlocks(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const height = width === 320 ? 568 : 900;
+  const context = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height } });
+  const playerContext = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height } });
+  const m = await context.newPage();
+  const p = await playerContext.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableForCombat(m, p, `Acessibilidade ficha ${Date.now()}`);
+    const campaignId = table.campaignId;
+    let enc = await dragonFight(m, table);
+
+    // The dragon on turn: the sheet and the actions.
+    await openSessionPage(m, campaignId);
+    await expect(m.getByRole('region', { name: 'Ficha do monstro' })).toContainText(DRAGON);
+    await expectScreenPasses(m, `A vez do monstro, a ficha e as ações ${where}`);
+
+    // An attack, then the actions that cannot be used say why.
+    await m.getByRole('combobox', { name: 'Alvos' }).click();
+    await m.getByRole('option', { name: 'Pensantus' }).click();
+    await m.keyboard.press('Escape');
+    const actions = m.getByRole('region', { name: 'Ações', exact: true });
+    await actions.locator('article', { has: m.getByRole('heading', { name: 'Mordida' }) }).getByRole('button', { name: 'Atacar' }).click();
+    await expect(actions.getByRole('status').filter({ hasText: 'Mordida' })).toBeVisible();
+    await expectScreenPasses(m, `O resultado do ataque do monstro ${where}`);
+
+    // The player's screen of the same turn: the dragon's name and the word of its state, nothing of the sheet.
+    await openSessionPage(p, campaignId);
+    await expect(p.getByText('Ficha do monstro')).toHaveCount(0);
+    await expectScreenPasses(p, `A vez do monstro, o jogador ${where}`);
+
+    // The end of another creature's turn offers a legendary action.
+    enc = await getEncounterRPC(m, campaignId);
+    enc = await combatRPC(m, 'EndTurn', { campaignId, encounterId: enc.id, expectedCombatantId: enc.currentCombatantId, discardPendingDamage: true });
+    await combatRPC(m, 'EndTurn', { campaignId, encounterId: enc.id, expectedCombatantId: enc.currentCombatantId, discardPendingDamage: true });
+    await openSessionPage(m, campaignId);
+    await expect(m.getByRole('group', { name: `Ação lendária de ${DRAGON}` })).toBeVisible();
+    await expectScreenPasses(m, `A oferta de ação lendária ${where}`);
+  } finally {
+    await context.close();
+    await playerContext.close();
+  }
+}
+
+test('a ficha do monstro passa no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@W7-M'] }, async ({ browser }) => {
+  test.setTimeout(600_000);
+  await scanMonsterStatBlocks(browser, 'light', 1280);
+});
+
+test('a ficha do monstro passa no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@W7-M'] }, async ({ browser }) => {
+  test.setTimeout(600_000);
+  await scanMonsterStatBlocks(browser, 'dark', 390);
+});
+
+test('a ficha do monstro passa no axe e nas conferências de layout no tema claro, no celular de 320', { tag: ['@a11y', '@W7-M'] }, async ({ browser }) => {
+  test.setTimeout(600_000);
+  await scanMonsterStatBlocks(browser, 'light', 320);
 });

@@ -439,6 +439,7 @@
       (later)="deathLaterFor($event)"
     />
     <app-joint-card [encounter]="e" [info]="info()" [busy]="busy()" (endPart)="endPart($event)" />
+    <app-legendary-offers [campaignId]="campaignId()" [encounter]="e" [state]="state()" />
     @if ((!laptop() || cardVisible() || theatre()) && masterCard(); as who) {
       <app-npc-card
         [campaignId]="campaignId()"

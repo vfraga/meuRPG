@@ -93,6 +93,9 @@
 
     @if (!isNpc()) {
       <!-- A player's own turn, seen by the master in a combat without a map: the movement he may spend for them, and the damage below. -->
+    } @else if (subject().creatureSheet) {
+      <!-- A monster of the bestiary: its whole stat block and its actions (W7-M). -->
+      <app-monster-turn [campaignId]="campaignId()" [encounter]="encounter()" [subject]="subject()" [state]="state()" />
     } @else if (attacks().length) {
       <p class="card__cap">Ataque</p>
       <app-attack-choice [attacks]="attacks()" [selected]="attackKey()" (pick)="pickAttack($event)" />

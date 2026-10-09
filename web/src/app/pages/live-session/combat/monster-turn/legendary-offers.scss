@@ -1,0 +1,89 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+:host:empty {
+  display: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-lg);
+  background: var(--mr-surface);
+}
+
+// A spent resource of the day: the outline is the danger one.
+.card--danger {
+  border-color: var(--mr-danger-ink);
+}
+
+.card__title {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.card__line {
+  margin: 0;
+  font-size: 15px;
+}
+
+.card__ask {
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+
+.targets {
+  width: 100%;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--mr-line);
+
+  button {
+    flex: none;
+    min-width: 96px;
+    min-height: 44px;
+  }
+}
+
+.option__name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.option__line,
+.option__why {
+  margin: 0;
+  font-size: 14px;
+  color: var(--mr-ink-muted);
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  button {
+    min-height: 44px;
+  }
+}
+
+.danger {
+  --mat-button-outlined-label-text-color: var(--mr-danger-ink);
+  --mat-button-outlined-outline-color: var(--mr-danger-ink);
+}

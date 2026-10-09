@@ -1,0 +1,133 @@
+:host {
+  display: block;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-lg);
+  background: var(--mr-surface);
+}
+
+.actions__cap {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.actions__targets {
+  width: 100%;
+}
+
+.action {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mr-line);
+}
+
+.action__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.action__name {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.action__limit {
+  padding: 2px 10px;
+  border-radius: var(--mr-radius-pill);
+  background: var(--mr-success-surface);
+  color: var(--mr-success-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.action__limit--wait {
+  background: var(--mr-ground);
+  color: var(--mr-ink-muted);
+}
+
+.action__line,
+.action__why,
+.action__recharge {
+  margin: 0;
+  font-size: 14px;
+  color: var(--mr-ink-muted);
+}
+
+.action__d6 {
+  display: inline-block;
+  min-width: 28px;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--mr-ink);
+}
+
+.action__button {
+  --mat-button-outlined-container-height: 44px;
+  align-self: flex-start;
+  min-width: 112px;
+}
+
+.action__button--multi {
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+}
+
+.seq {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seq__step {
+  padding: 4px 12px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-pill);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.seq__step--done {
+  border-style: dashed;
+  color: var(--mr-ink-muted);
+  text-decoration: line-through;
+}
+
+.done {
+  padding: 12px 14px;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-ground);
+}
+
+.done__title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.done__line {
+  margin: 4px 0 0;
+  font-size: 15px;
+}
+
+.done__line--secret {
+  color: var(--mr-ink-muted);
+}

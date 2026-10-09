@@ -1,0 +1,193 @@
+:host {
+  display: block;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-lg);
+  background: var(--mr-surface);
+}
+
+.sheet__cap {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 26px;
+}
+
+.sheet__who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sheet__name {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 26px;
+}
+
+.sheet__sub {
+  margin: 0;
+  font-size: 14px;
+  color: var(--mr-ink-muted);
+}
+
+.sheet__sub-cap {
+  margin: 4px 0 0;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+}
+
+.stat__cap {
+  font-size: 13px;
+  color: var(--mr-ink-muted);
+}
+
+.stat__val {
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 30px;
+
+  small {
+    font-family: var(--mr-font-sans);
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--mr-ink-muted);
+  }
+}
+
+.abilities {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ability {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 2px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+}
+
+.ability__cap {
+  font-size: 12px;
+  color: var(--mr-ink-muted);
+}
+
+.ability__val {
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 12px;
+  font-size: 15px;
+
+  dt {
+    color: var(--mr-ink-muted);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 700;
+    text-align: right;
+  }
+}
+
+.note {
+  display: flex;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px dashed var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+  font-size: 14px;
+
+  p {
+    margin: 0;
+  }
+
+  .mat-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+
+.list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
+
+// What the engine does not apply: a dashed card the master reads.
+.reminder {
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px dashed var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+  font-size: 14px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.reminder--read {
+  border-style: solid;
+}
+
+.reminder__name {
+  font-weight: 700;
+}
+
+.reminder__tag {
+  color: var(--mr-ink-muted);
+}
+
+.casting__line {
+  margin: 4px 0 0;
+  font-size: 14px;
+}

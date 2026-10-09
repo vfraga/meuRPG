@@ -48,6 +48,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
 import { Portrait } from '../../../../shared/portrait/portrait';
 import { NextTurn } from '../combat-bar/next-turn';
 import { RollPicker } from '../roll-picker/roll-picker';
+import { MonsterTurn } from '../monster-turn/monster-turn';
 import { MasterSpend } from '../theatre/master-spend';
 import { TheatrePill } from '../theatre/theatre-pill';
 import { AttackChoice } from './attack-choice';
@@ -76,6 +77,7 @@ import { PendingDamages } from './pending-damages';
     MatFormFieldModule,
     MatIconModule,
     MatSelectModule,
+    MonsterTurn,
     NextTurn,
     PendingDamages,
     Portrait,

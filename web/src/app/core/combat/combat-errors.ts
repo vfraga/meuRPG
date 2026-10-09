@@ -179,6 +179,19 @@ export function blockedMessage(blocked: EncounterBlocked): string {
       return 'Um combate sem mapa não leva um mapa. Escolha "Com mapa" ou tire o mapa.';
     case EncounterBlockedReason.NO_OPPORTUNITY:
       return 'Esse ataque de oportunidade não pode ser oferecido agora: quem ia reagir não pode atacar, está do mesmo lado, ou a oferta já espera.';
+    // A monster's stat block (W7-M): what the server refused, in words.
+    case EncounterBlockedReason.MONSTER_ACTION_RECHARGING:
+      return 'Essa ação ainda está recarregando: o servidor rola o d6 no início da vez dele.';
+    case EncounterBlockedReason.LEGENDARY_ACTIONS_SPENT:
+      return 'Não restam ações lendárias para isso até a vez da criatura.';
+    case EncounterBlockedReason.LEGENDARY_NOT_NOW:
+      return 'Uma ação lendária só vale no fim do turno de outra criatura, e nunca com a criatura incapacitada.';
+    case EncounterBlockedReason.CONDITION_IMMUNE:
+      return 'A criatura é imune a essa condição: ela não é aplicada.';
+    case EncounterBlockedReason.LEGENDARY_RESISTANCE_SPENT:
+      return 'A criatura já gastou toda a Resistência Lendária do dia.';
+    case EncounterBlockedReason.SAVE_SETTLED:
+      return 'O dano desse teste já foi rolado: a Resistência Lendária não vale mais.';
     default:
       return 'O combate não está num estado que aceite isso. A tela foi atualizada.';
   }
