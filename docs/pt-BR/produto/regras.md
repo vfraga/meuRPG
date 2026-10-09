@@ -411,6 +411,7 @@ O servidor reserva a vaga do mês numa transação curta, chama o modelo fora de
 
 Um monstro do bestiário (MR-042) entra no combate como um NPC: o jogador vê só a palavra do estado (RN-20), o mestre vê a ficha de criatura do SRD, e ele conta no XP por inimigos pelo ND. Os PV são os médios da criatura, ou rolados pelo mestre.
 
+Um monstro luta com a ficha completa do SRD (W7-M). O mestre usa as ações da ficha (`CreatureService`); o servidor rola o ataque, o dano de cada parte, os testes de resistência que o golpe ou a ação pedem e as condições que eles dão. Recarga, usos "N/dia", espaços de magia, ações lendárias (no fim do turno de outra criatura, uma para cada oferta, nunca com a criatura incapacitada) e Resistência Lendária são contados para o mestre. Uma criatura imune à condição ou ao dano de uma ação nunca recebe o teste de resistência. Tudo o que uma ficha gasta, as rolagens de recarga, os passos de resistência de um NPC e o motivo de uma imunidade são só do mestre (RN-10, RN-20): o jogador lê a palavra do estado, o que o próprio personagem rola e que uma ação lendária foi usada. Os traços que o motor não aplica aparecem ao mestre como lembretes.
 
 **Como o sistema cumpre**
 

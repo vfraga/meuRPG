@@ -411,6 +411,7 @@ The server reserves the month's slot in a short transaction, calls the model out
 
 A monster from the bestiary (MR-042) enters combat as an NPC: the player sees only the state word (RN-20), the master sees the SRD creature sheet, and it counts in the XP by enemies by its challenge rating (CR, ND). The hit points are the creature's average, or rolled by the master.
 
+A monster fights with its whole SRD stat block (W7-M). The master uses the actions of the stat block (`CreatureService`); the server rolls the attack, the damage of every part, the saving throws the hit or the action asks and the conditions they give. Recharge, "N/day" uses, spell slots, legendary actions (at the end of another creature's turn, one for each offer, never while the creature is incapacitated) and Legendary Resistance are counted for the master. A creature immune to the condition or to the damage of an action is never offered the saving throw. Everything a stat block spends, the recharge rolls, the resistance steps of an NPC and the reason for an immunity are the master's only (RN-10, RN-20): a player reads the state word, what their own character rolls and that a legendary action was taken. The traits the engine does not apply are shown to the master as reminders.
 
 **How the system meets it**
 
