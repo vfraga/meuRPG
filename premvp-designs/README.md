@@ -353,3 +353,52 @@ Aplicada a revisão adversarial (`/tmp/pm-review3/review.md`) e as respostas de 
 - Foco desenhado nas linhas do painel "Personagens" (PM-05d, estado 14): com o aviso aberto o foco está no botão "Esperar os jogadores", e só há um foco por vez; as linhas ficam descritas na nota. O foco de "Reviver" e da linha de Toren está desenhado em PM-08d.
 - A troca de uma invocação a cada subir de nível de Bruxo (SRD) está só citada, não desenhada: o fluxo pertence ao subir de nível e foge do escopo destes quadros.
 - 320 px de PM-08b e PM-08c cobrem os cartões de classe e o resumo; a densidade do Bruxo a 320 está na lista de invocações (6d).
+
+## Lote 4 — Designer A
+
+### W7-M (o monstro com a ficha inteira): `W7-Ma` (ficha, ações, dano) e `W7-Mb` (estados, lendárias, testes, magias, o jogador)
+- A ficha e as ações do monstro são **só do mestre**; "Ataque múltiplo" é uma sequência guiada; o ataque mostra **cada parte de dano** com a resistência de cada tipo separada (SRD, "Damage Resistance and Vulnerability").
+- Contagem das 884 ações das 334 criaturas: 527 ataque com dano estruturado, 58 teste com dano, 148 ataque múltiplo, 77 em parte, 74 só texto (lembrete); 130 com recarga ou "x/dia"; 32 criaturas com ações lendárias (99 ações); 36 conjuram.
+- Recarga: o **servidor rola** no começo da vez e mostra o d6; ação cinza com o motivo. "x/dia" é contador do encontro.
+- Lendárias: oferta no fim do turno de outro (só mestre), custo, voltam no começo da vez dele; Resistência Lendária é um prompt quando falha, com o foco em "Deixar falhar".
+- Condição de que a criatura é imune é recusada com o motivo **só ao mestre**; o jogador vê só o que acontece (RN-10, RN-20).
+
+### W7-C (conjurar fora do combate): `W7-Ca` (lista, alvo, resultado) e `W7-Cb` (rituais, longas, ativas, mestre)
+- Alvos são só quem o personagem vê; um NPC escondido nunca aparece nem tem PV mostrado. O que o motor aplica (cura rolada, PV temporários, Ajuda, Armadura Arcana) tem resultado; o resto é uma conjuração **registrada**, dita assim na tela.
+- **Rituais:** seletor só para magia com a etiqueta e classe que pode (Mago do grimório, Clérigo e Druida preparadas, Bardo conhecidas); +10 minutos, sem espaço.
+- **Longa:** concentração desde o início; se o combate começa antes, a conjuração se perde e o espaço não se gasta (SRD, "Longer Casting Times"). Segunda concentração pergunta antes ("Isso encerra Bênção"), danger-outline, foco em "Cancelar".
+- Magias ativas com o fim e o que o descanso longo termina; o registro dos jogadores nunca mostra a conjuração de um NPC escondido.
+
+### W7-I (o inventário na ficha): `W7-Ia` (equipamento, sintonia, números, cargas) e `W7-Ib` (dar, não identificado, dar a outro)
+- **Sintonia: o jogador pede, o mestre confirma** (o descanso curto é decisão do mestre na mesa e não acontece em combate); limite de 3 e restrição de classe checados, com o motivo escrito.
+- Cada número que um item muda diz "por causa de"; só com o item equipado (e sintonizado onde requer); o resto é lembrete. Os números de personagens existentes não mudam (teste dourado).
+- Texto livre de hoje vira um item de texto sem perder nada, com "Transformar em itens".
+- Item não identificado: o jogador lê só o aspecto ("Uma espada com runas"); o servidor não manda nome nem efeitos.
+- Cargas (varinha, volta ao amanhecer), poção (ação em combate), munição (recuperar metade depois do combate, SRD).
+- Perguntas: (1) "Flechas" e "Arma, +1" não têm entrada em `names_pt.json`; (2) o mestre prefere sintonizar direto em vez de aprovar?
+
+
+## Lote 4 — Designer A, correções
+
+Aplicadas as revisões de `/tmp/pm-review5` como decididas em `decisions-batch4-A.md` (a decisão vence a revisão). Scripts: `build_w7m.py`, `build_w7c.py`, `build_w7i.py` (importam `w7alib`, não `w7lib`, que é do Designer B). Todos os quadros novos têm a versão de 320 px desenhada, texto de 14 px ou mais, nota "Servidor" e os estados vazio/carregando/erro onde há lista.
+
+**Quadros (linha y=27000, x de 0; B começa em 13600):** W7-Ma 3987, W7-Mb 4147, W7-Mc 4207, W7-Ca 2388, W7-Cb 4560, W7-Cc 4304, W7-Ia 5451, W7-Ib 4115, W7-Ic 2587, W7-Id 7563 (todos abaixo de 8000 px). Os antigos W7-Ca/Cb/Ia/Ib foram substituídos.
+
+### W7-M
+- Resistências seguem **quem é dono** da criatura (passos do jogador x do mestre); dano de Ragna 19 → 9 + fogo 7 = 16; esqueleto com veneno imune; lendárias 3/3, 1 restante, 0 de 3 gastos; Resistência Lendária com foco em "Deixar falhar"; o jogador vê só nome (ou "Criatura desconhecida") e a faixa de estado.
+
+### W7-C
+- Elenco: Ilaria (Clérigo 5, Domínio da Vida) e Pensantus (Mago 5); Curar Ferimentos com a linha "1d8 (6) + 3 + 3 (Discípulo da Vida) = 12"; Ajuda (+5, até 3 alvos, 9 m); Armadura Arcana recusa quem está de armadura.
+- **Começar o combate não cancela a conjuração longa**; ela usa a ação do conjurador a cada turno; a concentração quebrada a faz falhar sem gastar o espaço (exemplo com Glifo de Vigilância, não ritual). Fora do combate o mestre toca "Concluir conjuração".
+- **Durações são tempo de jogo**, nunca hora do relógio ("dura 8 horas"). Uma concentração só, com confirmação danger ("Isso encerra Bênção"); o mestre "Encerra" com confirmação; o mestre conjura por um NPC e a conjuração de NPC escondido nunca chega aos jogadores (RN-10). Sem "Ação usada" fora do combate.
+- Rituais: tempo da magia + 10 minutos (Alarme 11 minutos); tabela de quem conjura rituais.
+
+### W7-I
+- Números: Toren Guerreiro 4, Força 19, Espada longa +1 = +7 e 1d8 + 5; Pedra iônica (proteção) só +1 de CA; "Cajado do arcano" com o rótulo `attunement:*`.
+- **Sintonia e identificação entram no descanso curto do mestre** (mesmo fluxo e mesma transação do PM-07b); o jogador marca "Sintonizar no próximo descanso curto" ou "Encerrar a sintonia"; máximo 3; item amaldiçoado não se solta.
+- **Não identificado:** o jogador recebe só o aspecto, a quantidade e se está equipado; os efeitos só valem após identificar (o mestre vê "efeitos esperando"); itens iguais não identificados nunca se juntam; "Identificar" gera linha no registro, que nomeia o item como o ator o vê.
+- Pergaminho de magia (lista da classe, tempo normal, teste CD 10 + nível da magia, mantém-se se interrompido), quatro poções de cura, "Dar a alguém para beber" (ação) x "Dar", varinha com d20 na última carga, armadura recusada em combate e escudo = ação, munição recupera metade (arredondar para baixo é regra do app), editar moedas, "Transformar em itens" com prévia e confirmação.
+
+### Perguntas abertas
+- Nomes que faltam em `names_pt.json`: Flechas, Item maravilhoso, Pedra iônica (proteção), Presença Aterradora, Sopro de Fogo e o Book of Ancient Secrets (sem nome em português).
+- Arredondamento da munição recuperada: regra do app, a confirmar com Samuel.
