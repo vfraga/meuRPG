@@ -102,6 +102,8 @@ func updateIdentity(t *invTx, it *charactersv1.InventoryItem, tr rules.ItemTrait
 }
 
 // TransferItem implements charactersv1connect.InventoryServiceHandler.
+//
+//nolint:gocognit // one transaction that checks both owners, the item and the rules in order
 func (s *Service) TransferItem(
 	ctx context.Context,
 	req *connect.Request[charactersv1.TransferItemRequest],
@@ -471,6 +473,8 @@ func (s *Service) ItemShortRest(ctx context.Context, tx pgx.Tx, m authz.Membersh
 
 // itemShortRest does the work for ConfirmItemRests and ItemShortRest. A key makes it
 // idempotent: it is recorded on the first character only, as the call's mark.
+//
+//nolint:gocognit // the short rest does each kind of marked request in turn, in one transaction
 func (s *Service) itemShortRest(ctx context.Context, tx pgx.Tx, m authz.Membership, content *rules.Content, choices map[restChoice]bool, key, hash string) ([]*charactersv1.ItemRestDone, *invTx, error) {
 	if s.creatureHost != nil {
 		if err := s.creatureHost.LockSession(ctx, tx, m.CampaignID); err != nil {
@@ -591,7 +595,7 @@ func (s *Service) RegainCharges(
 	var last *invTx
 	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
 		regained, last = nil, nil
-		inner := &invTx{}
+		var inner *invTx
 		var err error
 		regained, inner, err = s.regainCharges(ctx, tx, m, content, only, key, hash)
 		last = inner
@@ -674,7 +678,7 @@ func (s *Service) regainCharges(ctx context.Context, tx pgx.Tx, m authz.Membersh
 			if err != nil {
 				return nil, nil, wrap("roll the charges an item regains", err)
 			}
-			got := min(int32(max(res.Total, 0)), it.GetChargesUsed())
+			got := min(clamp32(max(res.Total, 0)), it.GetChargesUsed())
 			it.ChargesUsed -= got
 			d.changed = true
 			out = append(out, &charactersv1.ChargesRegained{
@@ -734,8 +738,10 @@ func (s *Service) itemLog(ctx context.Context, m authz.Membership, req *characte
 	}
 	sheets := map[string]*charactersv1.Inventory{}
 	charNames := map[string]string{}
+	own := map[string]bool{}
 	for _, r := range rows {
 		charNames[r.ID] = r.Name
+		own[r.ID] = r.PlayerUserID != nil && *r.PlayerUserID == m.UserID
 		if sh, err := loadSheet(r.ID, r.Sheet); err == nil && sh.GetFull() != nil {
 			sheets[r.ID] = sh.GetFull().GetInventory()
 		}
@@ -755,6 +761,9 @@ func (s *Service) itemLog(ctx context.Context, m authz.Membership, req *characte
 		}
 		if json.Unmarshal(e.Payload, &p) != nil || (only != "" && p.CharacterID != only && p.ToCharacter != only) {
 			continue
+		}
+		if !isMaster(m) && !own[p.CharacterID] && !own[p.ToCharacter] {
+			continue // a player reads what happened to their own characters
 		}
 		ent := &charactersv1.ItemLogEntry{
 			Kind: logKinds[e.Kind], At: timestamppb.New(e.At), CharacterId: p.CharacterID, CharacterName: charNames[p.CharacterID],

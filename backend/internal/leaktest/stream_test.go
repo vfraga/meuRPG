@@ -245,6 +245,9 @@ func (w *world) streamScript() {
 	w.secrets.allowNeedle(w.milestoneStream, w.ana, w.caio)
 	cr := must(m.characters.GiveCreature(ctx, rq(&charactersv1.GiveCreatureRequest{CampaignId: w.campaign, CharacterId: w.toren.GetId(), MonsterKey: "monster:wolf", Name: w.secrets.marker("creature-caio", w.caio)}))).GetCreature()
 	w.secrets.id("creature", cr.GetId(), w.caio)
+	// an item the master gives Caio's character: the stream says that an inventory changed, not what
+	must(m.inventory.GiveItems(ctx, rq(&charactersv1.GiveItemsRequest{CampaignId: w.campaign, CharacterId: w.toren.GetId(), IdempotencyKey: newKey(), Grants: []*charactersv1.ItemGrant{{CatalogKey: "item:cloak-of-protection", Unidentified: true, Look: w.secrets.marker("item-look-stream", w.caio)}}})))
+	w.secrets.add(&canary{needle: "item:cloak-of-protection", kind: "item-identity-Caio"})
 	// the table's content changes: an entry goes away and comes back
 	live := w.keyOf("race-live")
 	must(m.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: live})))

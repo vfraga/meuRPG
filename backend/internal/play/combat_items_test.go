@@ -68,8 +68,13 @@ func TestARangedAttackSpendsAPieceOfAmmunition(t *testing.T) {
 	if res.GetPendingDamage() == nil {
 		t.Errorf("the shot did not hit: %v", res)
 	}
-	if got := a.itemOf(t, a.toren.GetId(), "equipment:arrow"); got != nil {
-		t.Errorf("arrows after the shot = %v, want the last one spent", got)
+	if got := a.itemOf(t, a.toren.GetId(), "equipment:arrow"); got.GetQuantity() != 0 || got.GetAmmunitionSpent() != 1 {
+		t.Errorf("arrows after the shot = %v, want none left and one counted as spent", got)
+	}
+	if _, err := a.master.combat.DiscardPendingDamage(t.Context(), connect.NewRequest(&playv1.DiscardPendingDamageRequest{
+		CampaignId: a.campaignID, EncounterId: e.GetId(), PendingDamageId: res.GetPendingDamage().GetId(), IdempotencyKey: newKey(),
+	})); err != nil {
+		t.Fatalf("DiscardPendingDamage() error = %v", err)
 	}
 	// His next turn: nothing to shoot.
 	e = a.mustEndTurn(t, a.caio, e)

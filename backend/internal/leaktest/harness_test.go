@@ -259,6 +259,7 @@ type person struct {
 	campaigns  campaignsv1connect.CampaignServiceClient
 	document   campaignsv1connect.CampaignDocumentServiceClient
 	characters charactersv1connect.CharacterServiceClient
+	inventory  charactersv1connect.InventoryServiceClient
 	content    rulesv1connect.ContentServiceClient
 	table      rulesv1connect.TableContentServiceClient
 	play       playv1connect.PlayServiceClient
@@ -295,6 +296,7 @@ func (s *stack) personWith(name, id string) *person {
 		campaigns:  campaignsv1connect.NewCampaignServiceClient(c, url),
 		document:   campaignsv1connect.NewCampaignDocumentServiceClient(c, url),
 		characters: charactersv1connect.NewCharacterServiceClient(c, url),
+		inventory:  charactersv1connect.NewInventoryServiceClient(c, url),
 		content:    rulesv1connect.NewContentServiceClient(c, url),
 		table:      rulesv1connect.NewTableContentServiceClient(c, url),
 		play:       playv1connect.NewPlayServiceClient(c, url),

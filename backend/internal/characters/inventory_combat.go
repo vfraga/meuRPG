@@ -123,7 +123,7 @@ func (s *Service) ApplyItemUse(ctx context.Context, tx pgx.Tx, campaignID, chara
 			it.Quantity--
 		}
 	case "spend":
-		it.ChargesUsed += int32(w.Charges)
+		it.ChargesUsed += clamp32(w.Charges)
 		if w.Destroyed {
 			d.inv.Items = slices.DeleteFunc(d.inv.Items, func(o *charactersv1.InventoryItem) bool { return o == it })
 		}

@@ -88,7 +88,7 @@ func (s *Service) ListItemCatalog(
 	for _, e := range content.EquipmentList() {
 		out.Items = append(out.Items, &charactersv1.CatalogItem{
 			Key: e.Key, Kind: charactersv1.ItemKind_ITEM_KIND_EQUIPMENT, NamePt: e.NamePT, Name: e.Name,
-			Category: content.CategoryNamePT("equipment", e.Kind), Stackable: true, PackQuantity: int32(e.PackQuantity), ScrollLevel: -1,
+			Category: content.CategoryNamePT("equipment", e.Kind), Stackable: true, PackQuantity: clamp32(e.PackQuantity), ScrollLevel: -1,
 		})
 	}
 	if isMaster(m) {
@@ -112,7 +112,7 @@ func catalogMagic(content *rules.Content, e rules.MagicItemEntry) *charactersv1.
 		c.BaseChoices = slices.Clone(d.BaseChoices)
 		c.OptionDamageTypes = slices.Clone(d.OptionDamageTypes)
 		if d.Use != nil && d.Use.Scroll {
-			c.ScrollLevel = int32(d.Use.ScrollLevel)
+			c.ScrollLevel = clamp32(d.Use.ScrollLevel)
 		}
 	}
 	return c
@@ -236,7 +236,6 @@ func (s *Service) RemoveItem(
 			if n > it.GetQuantity() {
 				return (&itemBlock{reason: charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_NOT_ENOUGH, itemID: it.GetId(), have: it.GetQuantity()}).err()
 			}
-			n = it.GetQuantity()
 			t.doc.inv.Items = slices.DeleteFunc(t.doc.inv.Items, func(o *charactersv1.InventoryItem) bool { return o == it })
 		} else {
 			it.Quantity -= n
@@ -467,12 +466,12 @@ func (s *Service) drink(t *invTx, it *charactersv1.InventoryItem, use *rules.Ite
 		if err != nil {
 			return nil, err
 		}
-		out.Dice, out.Healed = use.HealDice, int32(res.Total)
+		out.Dice, out.Healed = use.HealDice, clamp32(res.Total)
 		hp = min(before.GetHitPointsMax(), hp+out.Healed)
 	}
 	if use.TempHP > 0 {
-		temp = max(temp, int32(use.TempHP)) // temporary hit points do not add up (SRD 5.1 "Temporary Hit Points")
-		out.TempHitPointsGiven = int32(use.TempHP)
+		temp = max(temp, clamp32(use.TempHP)) // temporary hit points do not add up (SRD 5.1 "Temporary Hit Points")
+		out.TempHitPointsGiven = clamp32(use.TempHP)
 	}
 	adjust := &playv1.AdjustCharacterVitalsRequest{HitPointsCurrent: &hp, HitPointsTemporary: &temp}
 	_, after, err := s.AdjustVitals(t.ctx, t.tx, t.m.CampaignID, targetID, adjust)
@@ -532,15 +531,15 @@ func (s *Service) spendCharges(t *invTx, it *charactersv1.InventoryItem, n int) 
 	}
 	left := tr.Def.Charges.Max - int(it.GetChargesUsed())
 	if n > left {
-		return (&itemBlock{reason: charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_NOT_ENOUGH, itemID: it.GetId(), have: int32(left)}).err()
+		return (&itemBlock{reason: charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_NOT_ENOUGH, itemID: it.GetId(), have: clamp32(left)}).err()
 	}
-	it.ChargesUsed += int32(n)
+	it.ChargesUsed += clamp32(n)
 	if n == left && tr.Def.Charges.DestroyOnEmpty {
-		res, err := dice.Roll(s.roller, dice.Expr{Count: 1, Sides: 20})
+		res, err := dice.Roll(s.roller, dice.Expr{Count: 1, Sides: d20Sides})
 		if err != nil {
 			return wrap("roll the last charge", err)
 		}
-		t.d20 = int32(res.Total)
+		t.d20 = clamp32(res.Total)
 		if res.Total == 1 {
 			t.destroyed = true
 			t.doc.inv.Items = slices.DeleteFunc(t.doc.inv.Items, func(o *charactersv1.InventoryItem) bool { return o == it })

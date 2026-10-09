@@ -86,7 +86,7 @@ func fillMagicEntry(content *rules.Content, it *charactersv1.InventoryItem, t ru
 	if d := t.Def; d != nil {
 		e.NotePt = d.NotePT
 		if d.Charges != nil {
-			e.ChargesMax, e.ChargesUsed = int32(d.Charges.Max), it.GetChargesUsed()
+			e.ChargesMax, e.ChargesUsed = clamp32(d.Charges.Max), it.GetChargesUsed()
 		}
 		if d.Use != nil {
 			e.HealDice = d.Use.HealDice
@@ -112,7 +112,7 @@ func isWeaponLine(content *rules.Content, ri rules.Item, t rules.ItemTraits) boo
 func viewOf(content *rules.Content, rl invRules, full *charactersv1.FullSheet, characterID string, master, canEdit bool) *charactersv1.InventoryView {
 	inv := full.GetInventory()
 	v := &charactersv1.InventoryView{
-		CharacterId: characterID, Coins: full.GetCoins(), AttunedCount: int32(rl.attunements(inv)),
+		CharacterId: characterID, Coins: full.GetCoins(), AttunedCount: clamp32(rl.attunements(inv)),
 		AttunementMax: attunementMax, CanEdit: canEdit, InCombat: rl.inCombat,
 	}
 	if v.Coins == nil {
@@ -129,14 +129,19 @@ func viewOf(content *rules.Content, rl invRules, full *charactersv1.FullSheet, c
 	return v
 }
 
+const (
+	rankItem     = 1
+	rankFreeText = 2
+)
+
 func rankOfKind(e *charactersv1.InventoryEntry) int {
 	switch {
 	case e.GetEquipped():
 		return 0
 	case e.GetKind() == charactersv1.ItemKind_ITEM_KIND_FREE_TEXT:
-		return 2
+		return rankFreeText
 	}
-	return 1
+	return rankItem
 }
 
 func cmpFold(a, b string) int { return cmp.Compare(strings.ToLower(a), strings.ToLower(b)) }

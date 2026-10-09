@@ -37,9 +37,11 @@ func (*itemHost) LockSession(context.Context, pgx.Tx, string) error { return nil
 func (*itemHost) CreatureRenamed(context.Context, pgx.Tx, string, string, string) (string, error) {
 	return "", nil
 }
+
 func (*itemHost) CreatureInCombat(context.Context, pgx.Tx, string, string) (bool, error) {
 	return false, nil
 }
+
 func (h *itemHost) AppendEvent(_ context.Context, _ pgx.Tx, _, kind, actor string, payload []byte, at time.Time) (bool, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -53,11 +55,13 @@ func (h *itemHost) CampaignInCombat(context.Context, pgx.Tx, string) (bool, erro
 	defer h.mu.Unlock()
 	return h.combat, nil
 }
+
 func (h *itemHost) PublishInventoryChanged(_, characterID, _ string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.published = append(h.published, characterID)
 }
+
 func (h *itemHost) ItemEvents(context.Context, string, int) ([]link.ItemEvent, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -401,9 +405,6 @@ func TestAttunementIsMarkedByThePlayerAndDoneInTheMastersShortRest(t *testing.T)
 	if len(done) != 1 || done[0].GetBlocked() != 0 || done[0].GetKind() != attuneKind {
 		t.Fatalf("the rest did %v, want the attunement", done)
 	}
-	if got := tb.ac(t, id); got != base+1+1-1 && got != base+2 {
-		// the cloak: +1 to the armor class
-	}
 	if got := tb.ac(t, id); got != base+1 {
 		t.Errorf("AC after attuning to the cloak = %d, want %d", got, base+1)
 	}
@@ -503,7 +504,7 @@ func TestUnidentifiedItemsShowOnlyTheirLookAndTheirMagicWaits(t *testing.T) {
 	t.Parallel()
 	tb := newInvTable(t)
 	id := tb.pensA.GetId()
-	base := tb.ac(t, id)
+	_ = tb.ac(t, id)
 	v := tb.give(t, tb.master, id,
 		&charactersv1.ItemGrant{CatalogKey: "item:armor-1", BaseKey: "equipment:chain-mail", Unidentified: true, Look: "Uma armadura com runas"},
 		&charactersv1.ItemGrant{CatalogKey: "item:wand-of-fireballs", Unidentified: true, Look: "Uma varinha de osso"},
@@ -569,7 +570,7 @@ func TestUnidentifiedItemsShowOnlyTheirLookAndTheirMagicWaits(t *testing.T) {
 	if len(done) != 1 || done[0].GetKind() != identifyKind || done[0].GetNamePt() != "Cota de malha +1" {
 		t.Fatalf("the rest did %v, want the identification, named for the master", done)
 	}
-	if got := tb.ac(t, id); got != base-base+17 {
+	if got := tb.ac(t, id); got != 17 {
 		t.Errorf("AC = %d, want 17 once identified", got)
 	}
 	pv = tb.view(t, tb.ana, id)
@@ -795,22 +796,22 @@ func TestAmmunitionIsRecoveredHalfRoundedDown(t *testing.T) {
 	if got.GetQuantity() != 9 || got.GetAmmunitionRecoverable() != 5 {
 		t.Fatalf("after the fight: %d arrows, %d recoverable; want 9 and 5 (half of 11, rounded down)", got.GetQuantity(), got.GetAmmunitionRecoverable())
 	}
-	recover := func(n int32) error {
+	recoverArrows := func(n int32) error {
 		_, err := tb.ana.inventory.RecoverAmmunition(t.Context(), connect.NewRequest(&charactersv1.RecoverAmmunitionRequest{
 			CampaignId: tb.campaign, CharacterId: id, ItemId: arrows.GetId(), Count: n, IdempotencyKey: nextKey(),
 		}))
 		return err
 	}
-	if reason := refused(t, "recover too many", recover(6)); reason != charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_NOT_ENOUGH {
+	if reason := refused(t, "recover too many", recoverArrows(6)); reason != charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_NOT_ENOUGH {
 		t.Errorf("reason = %v, want NOT_ENOUGH", reason)
 	}
-	if err := recover(5); err != nil {
+	if err := recoverArrows(5); err != nil {
 		t.Fatalf("recover 5: %v", err)
 	}
 	if got = entry(tb.view(t, tb.ana, id), "equipment:arrow"); got.GetQuantity() != 14 || got.GetAmmunitionRecoverable() != 0 {
 		t.Errorf("after the search: %v, want 14 arrows and nothing more to recover", got)
 	}
-	if reason := refused(t, "recover twice", recover(1)); reason != charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_NOTHING_SPENT {
+	if reason := refused(t, "recover twice", recoverArrows(1)); reason != charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_NOTHING_SPENT {
 		t.Errorf("reason = %v, want NOTHING_SPENT", reason)
 	}
 }

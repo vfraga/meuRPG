@@ -63,7 +63,6 @@ type invTx struct {
 	outcome   *charactersv1.UseOutcome
 	d20       int32
 	destroyed bool
-	rested    []*charactersv1.ItemRestDone
 }
 
 // lockInventory reads and locks a character's row and its sheet. The character must
@@ -309,12 +308,4 @@ func (t *invTx) itemOf(d *inventoryDoc, id string) (*charactersv1.InventoryItem,
 // once it is identified.
 func (t *invTx) knownToCaller(it *charactersv1.InventoryItem) bool {
 	return t.master || !it.GetUnidentified()
-}
-
-// blockedErr turns a rules refusal into the error, or nil.
-func blockedErr(b *itemBlock) error {
-	if b == nil {
-		return nil
-	}
-	return b.err()
 }

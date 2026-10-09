@@ -38,6 +38,7 @@ func newWorld(t *testing.T) *world {
 	w.buildCombat()
 	w.buildPuzzles()
 	w.buildNotesAndProgress()
+	w.buildItems()
 	w.buildTableContent()
 	w.buildGenerated()
 	w.buildStreamTargets()
@@ -659,4 +660,32 @@ func (w *world) buildStreamTargets() {
 	ms := must(m.xp.AddMilestone(ctx, rq(&progressionv1.AddMilestoneRequest{CampaignId: w.campaign, Text: w.secrets.marker("milestone-stream")}))).GetMilestone()
 	w.milestoneStream = ms.GetId()
 	w.secrets.id("milestone", ms.GetId())
+}
+
+// buildItems gives each player an item the master has not identified. What it looks like is
+// the owner's to read; what it is (its name, key and numbers) is the master's, and so is the
+// id of the line for everyone else.
+func (w *world) buildItems() {
+	ctx := w.t.Context()
+	for _, g := range []struct {
+		owner *person
+		hero  *charactersv1.Character
+		key   string
+		name  string
+	}{
+		{w.ana, w.pens, "item:wand-of-fireballs", "Varinha de bolas de fogo"},
+		{w.caio, w.toren, "item:ring-of-protection", "Anel de proteção"},
+	} {
+		res := must(w.master.inventory.GiveItems(ctx, rq(&charactersv1.GiveItemsRequest{
+			CampaignId: w.campaign, CharacterId: g.hero.GetId(), IdempotencyKey: newKey(),
+			Grants: []*charactersv1.ItemGrant{{CatalogKey: g.key, Unidentified: true, Look: w.secrets.marker("item-look-"+g.owner.name, g.owner)}},
+		})))
+		for _, e := range res.GetInventory().GetItems() {
+			if e.GetCatalogKey() == g.key {
+				w.secrets.id("item-"+g.owner.name, e.GetId(), g.owner)
+			}
+		}
+		w.secrets.add(&canary{needle: g.name, kind: "item-identity-" + g.owner.name})
+		w.secrets.add(&canary{needle: g.key, kind: "item-identity-" + g.owner.name})
+	}
 }

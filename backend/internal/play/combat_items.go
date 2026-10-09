@@ -30,6 +30,8 @@ const itemReach = 5
 const scrollCheckBase = 10
 
 // UseItem implements playv1connect.CombatServiceHandler.
+//
+//nolint:gocognit,gocyclo // one use of an item in a combat: the checks and the effect of each kind of use
 func (s *Service) UseItem(
 	ctx context.Context,
 	req *connect.Request[playv1.UseItemRequest],
@@ -167,7 +169,7 @@ func (s *Service) UseItem(
 		for _, vit := range vitals {
 			s.publishVitals(m.CampaignID, vit)
 		}
-		s.publishInventoryOf(ctx, m.CampaignID, ev.Actor, d)
+		s.publishInventoryOf(m.CampaignID, ev.Actor, d)
 	})
 	if err != nil {
 		return nil, err
@@ -184,7 +186,7 @@ func (s *Service) UseItem(
 }
 
 // publishInventoryOf tells the master and the combatant's player that the inventory changed.
-func (s *Service) publishInventoryOf(ctx context.Context, campaignID, combatantID string, d *encounterData) {
+func (s *Service) publishInventoryOf(campaignID, combatantID string, d *encounterData) {
 	for _, c := range d.cs {
 		if c.ID == combatantID && c.CharacterID != "" {
 			s.PublishInventoryChanged(campaignID, c.CharacterID, deref(c.UserID))
@@ -285,8 +287,8 @@ func (st *itemState) drink(target playdb.Combatant) error {
 		if err != nil {
 			return err
 		}
-		st.made.Heal, st.made.DiceCount, st.made.DiceSides, st.made.Faces = true, int32(expr.Count), int32(expr.Sides), faces32(roll.Faces)
-		st.made.Modifier, st.made.Total, st.made.Physical = int32(expr.Modifier), clamp32(roll.Total, 0, math.MaxInt32), roll.Physical
+		st.made.Heal, st.made.DiceCount, st.made.DiceSides, st.made.Faces = true, clamp32(expr.Count, 0, math.MaxInt32), clamp32(expr.Sides, 0, math.MaxInt32), faces32(roll.Faces)
+		st.made.Modifier, st.made.Total, st.made.Physical = clamp32(expr.Modifier, math.MinInt32, math.MaxInt32), clamp32(roll.Total, 0, math.MaxInt32), roll.Physical
 		st.made.Amount, st.made.Before, st.made.After, st.made.DeathBefore = hit.Amount, hit.Before, hit.After, hit.DeathBefore
 		if vit != nil {
 			*st.vitals = append(*st.vitals, vit)
@@ -322,7 +324,7 @@ func (st *itemState) read() error {
 	if !it.Readable {
 		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SCROLL_UNREADABLE, "the scroll's spell is on none of the reader's class lists")
 	}
-	st.out.spell, st.out.level = it.Spell, int32(it.SpellLevel)
+	st.out.spell, st.out.level = it.Spell, clamp32(it.SpellLevel, 0, math.MaxInt32)
 	if it.TooHigh {
 		if !st.rolled {
 			return connect.NewError(connect.CodeInvalidArgument, errors.New("set roll_in_app or typed_sum (the d20) for the scroll's ability check"))
@@ -338,7 +340,7 @@ func (st *itemState) read() error {
 		if passed {
 			st.made.Outcome = outcomeHit
 		}
-		st.out.check, st.out.checkPassed = diceRoll(1, 20, []int32{int32(face)}, int32(it.CheckMod), int32(roll.Total), roll.Physical), passed
+		st.out.check, st.out.checkPassed = diceRoll(1, 20, []int32{clamp32(face, 0, math.MaxInt32)}, clamp32(it.CheckMod, math.MinInt32, math.MaxInt32), clamp32(roll.Total, math.MinInt32, math.MaxInt32), roll.Physical), passed
 	}
 	st.made.Key = it.Spell // the log names the spell that was read
 	return st.apply(link.ItemUseWrite{Op: "consume"})
@@ -366,7 +368,7 @@ func (st *itemState) charges(n int) error {
 		st.out.destroyed = destroyed
 		st.made.D20, st.made.Physical = st.out.lastD20, roll.Physical
 	}
-	st.made.Amount = int32(n)
+	st.made.Amount = clamp32(n, 0, math.MaxInt32)
 	return st.apply(link.ItemUseWrite{Op: "spend", Charges: n, Destroyed: destroyed})
 }
 

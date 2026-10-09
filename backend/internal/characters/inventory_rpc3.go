@@ -25,6 +25,13 @@ const scrollCheckBase = 10
 // maxConvertedTexts is how many replaced free-text lines an inventory keeps.
 const maxConvertedTexts = 20
 
+// d20Sides is the d20 of the last charge and of a scroll's ability check; ammunitionRecoveredDivisor
+// is the "half" of SRD 5.1 "Ammunition".
+const (
+	d20Sides                   = 20
+	ammunitionRecoveredDivisor = 2
+)
+
 // SetCoins implements charactersv1connect.InventoryServiceHandler.
 func (s *Service) SetCoins(
 	ctx context.Context,
@@ -76,7 +83,7 @@ func (s *Service) d20For(ctx context.Context, tx pgx.Tx, m authz.Membership, req
 				return 0, errBlocked(charactersv1.CharacterBlockedReason_CHARACTER_BLOCKED_REASON_DICE_FORCED_PHYSICAL, "")
 			}
 		}
-		res, err := dice.Roll(s.roller, dice.Expr{Count: 1, Sides: 20})
+		res, err := dice.Roll(s.roller, dice.Expr{Count: 1, Sides: d20Sides})
 		if err != nil {
 			return 0, wrap("roll the d20", err)
 		}
@@ -142,8 +149,8 @@ func (s *Service) readScroll(t *invTx, it *charactersv1.InventoryItem, use *rule
 	if !readable {
 		return block(charactersv1.ItemBlockedReason_ITEM_BLOCKED_REASON_SCROLL_UNREADABLE, it.GetId()).err()
 	}
-	resp.SpellKey, resp.SpellNamePt, resp.SpellLevel = spell, t.content.NamePT(spell), int32(use.ScrollLevel)
-	resp.SaveDc, resp.AttackBonus = int32(use.ScrollDC), int32(use.ScrollAttack)
+	resp.SpellKey, resp.SpellNamePt, resp.SpellLevel = spell, t.content.NamePT(spell), clamp32(use.ScrollLevel)
+	resp.SaveDc, resp.AttackBonus = clamp32(use.ScrollDC), clamp32(use.ScrollAttack)
 	resp.Cast = true
 	if tooHigh {
 		face, err := s.d20For(t.ctx, t.tx, t.m, req)
@@ -151,7 +158,7 @@ func (s *Service) readScroll(t *invTx, it *charactersv1.InventoryItem, use *rule
 			return err
 		}
 		dc := scrollCheckBase + use.ScrollLevel
-		check := &charactersv1.AbilityCheck{D20: int32(face), Modifier: int32(mod), Total: int32(face + mod), Dc: int32(dc), Ability: string(ability)}
+		check := &charactersv1.AbilityCheck{D20: clamp32(face), Modifier: clamp32(mod), Total: clamp32(face + mod), Dc: clamp32(dc), Ability: string(ability)}
 		check.Passed = int(check.Total) >= dc
 		resp.AbilityCheck, resp.Cast = check, check.Passed
 	}
@@ -169,7 +176,7 @@ func (s *Service) readScroll(t *invTx, it *charactersv1.InventoryItem, use *rule
 
 // ammunitionRecoverable is half of what was spent, rounded down: SRD 5.1 "Ammunition" says
 // half and not how to round, so the app rounds down.
-func ammunitionRecoverable(spent int32) int32 { return max(spent, 0) / 2 }
+func ammunitionRecoverable(spent int32) int32 { return max(spent, 0) / ammunitionRecoveredDivisor }
 
 // RecoverAmmunition implements charactersv1connect.InventoryServiceHandler.
 func (s *Service) RecoverAmmunition(
@@ -255,7 +262,7 @@ func (s *Service) PreviewTextToItems(
 		resp = &charactersv1.PreviewTextToItemsResponse{Text: it.GetName()}
 		for _, p := range content.ParseEquipmentText(it.GetName()) {
 			resp.Proposals = append(resp.Proposals, &charactersv1.TextProposal{
-				Source: p.Source, CatalogKey: p.Key, Name: p.Name, Quantity: int32(p.Quantity), QuantityGuessed: p.Guessed,
+				Source: p.Source, CatalogKey: p.Key, Name: p.Name, Quantity: clamp32(p.Quantity), QuantityGuessed: p.Guessed,
 			})
 		}
 		return nil
@@ -380,7 +387,7 @@ func (s *Service) ListItemRests(
 				}
 				p := &charactersv1.PendingItemRest{
 					CharacterId: r.ID, CharacterName: r.Name, ItemId: it.GetId(), Kind: kind,
-					ItemNamePt: content.ItemName(ruleItem(it)), AttunedNow: int32(now), AttunedAfter: int32(now),
+					ItemNamePt: content.ItemName(ruleItem(it)), AttunedNow: clamp32(now), AttunedAfter: clamp32(now),
 				}
 				if m, ok := content.MagicItem(it.GetCatalogKey()); ok {
 					p.Rarity = m.Rarity

@@ -287,8 +287,10 @@ type InventoryServiceClient interface {
 	// ListItemLog returns what the inventories went through in the open session, newest
 	// first: items given, handed over, attuned, used and recharged. The master reads every line
 	// with the items as they are (a line says "Uma espada com runas" when it was given and "era
-	// Espada longa +1" when it was identified); a player reads the same lines with each item named as
-	// the character sees it: the look of an item that is still unidentified, never its name.
+	// Espada longa +1" when it was identified). A player reads only the lines about their own
+	// characters (given to them, handed over by them or to them, used by them), with each item
+	// named as the character sees it: the look of an item that is still unidentified, never
+	// its name.
 	ListItemLog(context.Context, *connect.Request[v1.ListItemLogRequest]) (*connect.Response[v1.ListItemLogResponse], error)
 }
 
@@ -698,8 +700,10 @@ type InventoryServiceHandler interface {
 	// ListItemLog returns what the inventories went through in the open session, newest
 	// first: items given, handed over, attuned, used and recharged. The master reads every line
 	// with the items as they are (a line says "Uma espada com runas" when it was given and "era
-	// Espada longa +1" when it was identified); a player reads the same lines with each item named as
-	// the character sees it: the look of an item that is still unidentified, never its name.
+	// Espada longa +1" when it was identified). A player reads only the lines about their own
+	// characters (given to them, handed over by them or to them, used by them), with each item
+	// named as the character sees it: the look of an item that is still unidentified, never
+	// its name.
 	ListItemLog(context.Context, *connect.Request[v1.ListItemLogRequest]) (*connect.Response[v1.ListItemLogResponse], error)
 }
 

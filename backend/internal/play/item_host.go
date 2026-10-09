@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/jackc/pgx/v5"
 
@@ -71,7 +72,7 @@ func (s *Service) ItemEvents(ctx context.Context, campaignID string, limit int) 
 	if err != nil {
 		return nil, fmt.Errorf("find the open session: %w", err)
 	}
-	rows, err := q.ListItemEventsOfSession(ctx, playdb.ListItemEventsOfSessionParams{GameSessionID: session.ID, Kinds: link.ItemEventKinds, RowLimit: int32(limit)})
+	rows, err := q.ListItemEventsOfSession(ctx, playdb.ListItemEventsOfSessionParams{GameSessionID: session.ID, Kinds: link.ItemEventKinds, RowLimit: clamp32(limit, 0, math.MaxInt32)})
 	if err != nil {
 		return nil, fmt.Errorf("list the item events: %w", err)
 	}

@@ -3,9 +3,9 @@ package characters
 import (
 	"crypto/sha256"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
-
 	"uuid"
 
 	"google.golang.org/protobuf/proto"
@@ -159,13 +159,7 @@ func recordOperation(inv *charactersv1.Inventory, userID, key, hash string) {
 	}
 }
 
-// attunedCount is how many lines the character is attuned to.
-func attunedCount(inv *charactersv1.Inventory) int {
-	n := 0
-	for _, it := range inv.GetItems() {
-		if it.GetAttuned() {
-			n++
-		}
-	}
-	return n
+// clamp32 is n as an int32, held inside its range.
+func clamp32(n int) int32 {
+	return int32(min(max(n, math.MinInt32), math.MaxInt32))
 }

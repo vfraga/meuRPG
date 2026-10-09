@@ -71,6 +71,39 @@ var reads = []read{
 		},
 	},
 
+	// ===== InventoryService
+	{
+		procedure: charactersv1connect.InventoryServiceGetInventoryProcedure, label: "Ana's inventory", allow: onlyAna, why: "an unidentified item shows its owner only its look (RN-10)",
+		req: func(w *world) proto.Message {
+			return &charactersv1.GetInventoryRequest{CampaignId: w.campaign, CharacterId: w.pens.GetId()}
+		},
+	},
+	{
+		procedure: charactersv1connect.InventoryServiceGetInventoryProcedure, label: "Caio's inventory", allow: onlyCaio,
+		req: func(w *world) proto.Message {
+			return &charactersv1.GetInventoryRequest{CampaignId: w.campaign, CharacterId: w.toren.GetId()}
+		},
+	},
+	{
+		procedure: charactersv1connect.InventoryServiceListItemCatalogProcedure, allow: members, why: "the catalog is the SRD's and names every item; the table's own unidentified ones are in it as the book has them",
+		ignore: []string{"item-identity-Ana", "item-identity-Caio"},
+		req: func(w *world) proto.Message {
+			return &charactersv1.ListItemCatalogRequest{CampaignId: w.campaign}
+		},
+	},
+	{
+		procedure: charactersv1connect.InventoryServiceListItemLogProcedure, allow: members, why: "a player reads the lines about their own characters, with the look of what is unidentified",
+		req: func(w *world) proto.Message {
+			return &charactersv1.ListItemLogRequest{CampaignId: w.campaign}
+		},
+	},
+	{
+		procedure: charactersv1connect.InventoryServiceListItemRestsProcedure, allow: masterOnlyRead, why: "the short rest's list names the items to attune and to identify",
+		req: func(w *world) proto.Message {
+			return &charactersv1.ListItemRestsRequest{CampaignId: w.campaign}
+		},
+	},
+
 	// ===== CharacterService
 	{
 		procedure: charactersv1connect.CharacterServiceListCharactersProcedure, allow: membersAndPending, why: "a pending member reads their own pending character",

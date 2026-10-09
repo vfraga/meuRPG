@@ -521,8 +521,8 @@ func (x *deriver) noteModifier(r *itemRuntime, e *Effect) {
 		add(e.Target, min(e.Cap, MaxScore)) // the score the item sets or lifts it to
 	case e.Target == "hp.max":
 		add(e.Target, x.d.TotalLevel)
-	case e.Target == "ac.base":
-		add("ac.base", n)
+	case e.Target == targetACBase:
+		add(targetACBase, n)
 	default:
 		add(e.Target, n)
 	}

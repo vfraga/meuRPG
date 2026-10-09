@@ -46,6 +46,15 @@ const (
 
 var itemSlots = []string{SlotBody, SlotShield, SlotHead, SlotCloak, SlotBoots, SlotGloves, SlotBracers, SlotNeck, SlotRing, SlotBelt, SlotHand}
 
+// ringsWorn is how many rings a character wears.
+const ringsWorn = 2
+
+// The effect targets the item effects compile to.
+const (
+	targetACBase    = "ac.base"
+	targetSpeedWalk = "speed.walk"
+)
+
 // SlotCapacity is how many items fit in a slot at once. SRD 5.1 "Multiple Items
 // of the Same Kind" allows one pair of footwear, one pair of gloves, one pair of
 // bracers, one suit of armor, one item of headwear and one cloak, and says to use
@@ -55,7 +64,7 @@ var itemSlots = []string{SlotBody, SlotShield, SlotHead, SlotCloak, SlotBoots, S
 func SlotCapacity(slot string) int {
 	switch slot {
 	case SlotRing:
-		return 2
+		return ringsWorn
 	case SlotHand, "":
 		return 0 // no limit
 	}
@@ -264,8 +273,10 @@ var (
 
 // The Spell Scroll table of SRD 5.1: the saving throw DC and the attack bonus of
 // a scroll, by the level of its spell (index 0 is a cantrip).
-var scrollDC = [...]int{13, 13, 13, 15, 15, 17, 17, 18, 18, 19}
-var scrollAttack = [...]int{5, 5, 5, 7, 7, 9, 9, 10, 10, 11}
+var (
+	scrollDC     = [...]int{13, 13, 13, 15, 15, 17, 17, 18, 18, 19}
+	scrollAttack = [...]int{5, 5, 5, 7, 7, 9, 9, 10, 10, 11}
+)
 
 // itemsContent is the loaded effects/items.json.
 type itemsContent struct {
@@ -373,6 +384,7 @@ func (c *content) loadItemGroups(name string, f *itemsFile, out *itemsContent) e
 	return nil
 }
 
+//nolint:gocyclo // the item file's fields, each checked in turn
 func (c *content) compileItem(file, key string, e *itemEntry, out *itemsContent) (*ItemDef, error) {
 	fail := func(format string, a ...any) error {
 		return fmt.Errorf("%s: %s: %s", file, key, fmt.Sprintf(format, a...))
@@ -453,7 +465,7 @@ func (c *content) isDamageType(k string) bool {
 	return ok && strings.HasPrefix(k, "damage-type:")
 }
 
-func (c *content) compileItemBase(key string, e *itemEntry, d *ItemDef, out *itemsContent) error {
+func (c *content) compileItemBase(_ string, e *itemEntry, d *ItemDef, out *itemsContent) error {
 	if e.Base == nil {
 		return nil
 	}
@@ -477,6 +489,7 @@ func (c *content) compileItemBase(key string, e *itemEntry, d *ItemDef, out *ite
 	return nil
 }
 
+//nolint:gocognit,gocyclo // a table of the effect kinds, one case each
 func (c *content) compileItemEffect(key string, fx itemEffect, d *ItemDef) error {
 	if !slices.Contains(itemEffectTypes, fx.Type) {
 		return fmt.Errorf("unknown effect type")
@@ -532,7 +545,7 @@ func (c *content) compileItemEffect(key string, fx itemEffect, d *ItemDef) error
 		if fx.Dex {
 			formula += ` + mod("dex")`
 		}
-		eff = &Effect{Type: "modifier", Target: "ac.base", Mode: "max", Value: formula, When: when}
+		eff = &Effect{Type: "modifier", Target: targetACBase, Mode: "max", Value: formula, When: when}
 	case "save":
 		use("value")
 		if fx.Value < 1 || fx.Value > itemBonusMax {
@@ -569,7 +582,7 @@ func (c *content) compileItemEffect(key string, fx itemEffect, d *ItemDef) error
 		if fx.Mode == "add" {
 			mode = "add"
 		}
-		eff = &Effect{Type: "modifier", Target: "speed.walk", Mode: mode, Value: fmt.Sprint(fx.Value)}
+		eff = &Effect{Type: "modifier", Target: targetSpeedWalk, Mode: mode, Value: fmt.Sprint(fx.Value)}
 	case "sense":
 		use("sense", "value", "mode")
 		if !slices.Contains(senses, fx.Sense) || !slices.Contains(itemSenseModes, fx.Mode) || fx.Value < 5 || fx.Value%5 != 0 {
@@ -646,7 +659,7 @@ func (c *content) compileItemCharges(e *itemEntry, d *ItemDef) error {
 			s.CostPerLevel < 0 || s.DC < 0 || s.DC > maxItemDC:
 			return fmt.Errorf("charges.spells[%d]: cost_per_level and max_level go together, above the level, and the DC is 0 to %d", i, maxItemDC)
 		}
-		out.Spells = append(out.Spells, ChargeSpell{Spell: s.Spell, Level: s.Level, Cost: s.Cost, CostPerLevel: s.CostPerLevel, MaxLevel: s.MaxLevel, DC: s.DC})
+		out.Spells = append(out.Spells, ChargeSpell(s))
 	}
 	d.Charges = out
 	return nil
