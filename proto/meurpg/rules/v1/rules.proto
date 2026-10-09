@@ -983,6 +983,10 @@ message Content {
   repeated NamedKey proficiencies = 15;
   // The SRD's damage types, with their Portuguese names ("damage-type:fire").
   repeated NamedKey damage_types = 16;
+  // The SRD's experience needed to reach each level: the first entry is level 1
+  // (0 XP), the last level 20. The editor starts a character made above level 1
+  // at its level's XP in a campaign that levels by XP.
+  repeated int32 level_xp = 17;
 }
 
 // NamedKey is a content key with its Portuguese name.
@@ -1052,6 +1056,10 @@ message Race {
   // a master sees it with this mark, a player never receives it. Every `off`
   // below is the same. A sheet that already has it keeps it.
   bool off = 8;
+  // Content keys of the skills the race gives, such as the half-orc's
+  // "skill:intimidation". The player does not choose them and they are not a
+  // class pick: a pick on the same skill adds nothing.
+  repeated string skill_keys = 9;
 }
 
 // Subrace is a subrace of one race.
@@ -1069,6 +1077,9 @@ message Subrace {
   // Switched off for the players (see Race.off). Its own switch: a subrace of an
   // off race is hidden from the players too, and keeps this mark false.
   bool off = 7;
+  // Content keys of the skills the subrace gives, added to the race's (see
+  // Race.skill_keys).
+  repeated string skill_keys = 8;
 }
 
 // CharacterClass is a class from the rules content.
@@ -1184,7 +1195,9 @@ message Background {
   string key = 1;
   string name = 2;
   string name_pt = 3;
-  // Content keys of the skills the background grants.
+  // Content keys of the skills the background grants. The player does not
+  // choose them and they are not a class pick: a pick on the same skill adds
+  // nothing.
   repeated string skill_keys = 4;
   // The table retired it (see Race.archived).
   bool archived = 5;

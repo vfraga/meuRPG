@@ -656,6 +656,195 @@ describe('CharacterEditor', () => {
     });
   });
 
+  describe('the spell limits of the class', () => {
+    const PAUSE = 300;
+    afterEach(() => vi.useRealTimers());
+
+    async function openSpells(limits: {
+      cantripsKnown: number;
+      spellsKnown: number;
+      preparedMax: number;
+    }) {
+      configure({ id: 'camp-1' });
+      fake.previewCharacterFn = () =>
+        Promise.resolve({
+          hitPointsMax: 10,
+          hitPointsFromEffects: 0,
+          spellcasting: [{ classKey: 'class:wizard', ...limits }],
+        });
+      const view = await render();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cmp = view.fixture.componentInstance as any;
+      vi.useFakeTimers();
+      cmp.fullForm.patchValue({ race: 'race:gnome', className: 'class:wizard', level: 5 });
+      view.fixture.detectChanges();
+      await openStep(view.fixture, 'Magias');
+      await vi.advanceTimersByTimeAsync(PAUSE);
+      view.fixture.detectChanges();
+      return { ...view, cmp };
+    }
+    const chosenLines = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll('.picker__chosen')).map((n) => n.textContent?.trim());
+
+    it('counts the cantrips and the prepared spells against the numbers the server derives', async () => {
+      const { el, cmp, fixture } = await openSpells({
+        cantripsKnown: 4,
+        spellsKnown: 0,
+        preparedMax: 7,
+      });
+
+      expect(chosenLines(el)).toContain('0 de 4 truques escolhidos');
+      expect(chosenLines(el)).toContain('0 de 7 magias escolhidas');
+      cmp.toggleCantrip('spell:fire-bolt');
+      cmp.toggleSpellPrepared('spell:shield');
+      fixture.detectChanges();
+      expect(chosenLines(el)).toContain('1 de 4 truques escolhidos: Raio de Fogo');
+      expect(chosenLines(el)).toContain('1 de 7 magias escolhidas: Escudo Arcano');
+    });
+
+    it('warns "Prepare até N" while a preparing class has fewer spells than it takes, and stops at the limit', async () => {
+      const { el, cmp, fixture } = await openSpells({
+        cantripsKnown: 2,
+        spellsKnown: 0,
+        preparedMax: 2,
+      });
+      const warning = () => el.querySelector('.picker__warn')?.textContent?.trim();
+
+      expect(warning()).toBe('Prepare até 2');
+      cmp.toggleSpellPrepared('spell:shield');
+      cmp.toggleSpellPrepared('spell:magic-missile');
+      fixture.detectChanges();
+      expect(warning()).toBeUndefined();
+    });
+
+    it('shows no limit before the server has answered', async () => {
+      configure({ id: 'camp-1' });
+      const { fixture, el } = await render();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cmp = fixture.componentInstance as any;
+      cmp.fullForm.patchValue({ race: 'race:gnome', className: 'class:wizard', level: 5 });
+      fixture.detectChanges();
+      await openStep(fixture, 'Magias');
+
+      expect(chosenLines(el)).toContain('Nenhum truque escolhido');
+      expect(el.querySelector('.picker__warn')).toBeNull();
+    });
+  });
+
+  describe('the skills the race and the background give', () => {
+    async function openSkills() {
+      configure({ id: 'camp-1' });
+      fake.loadCatalogFn = () => {
+        const c = catalog();
+        return Promise.resolve({
+          ...c,
+          races: c.races.map((r) => ({ ...r, skillKeys: ['skill:arcana'] })),
+          backgrounds: c.backgrounds.map((b) => ({ ...b, skillKeys: ['skill:history'] })),
+        });
+      };
+      const view = await render();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cmp = view.fixture.componentInstance as any;
+      cmp.fullForm.patchValue({
+        race: 'race:gnome',
+        background: 'background:acolyte',
+        className: 'class:wizard',
+      });
+      view.fixture.detectChanges();
+      await openStep(view.fixture, 'Perícias');
+      return { ...view, cmp };
+    }
+
+    it('shows them taken and locked, with where each comes from', async () => {
+      const { el } = await openSkills();
+
+      const rows = Array.from(el.querySelectorAll('app-skill-picker .skill__name'));
+      expect(rows.map((r) => r.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
+        'Arcanismo da raça',
+        'História do antecedente',
+      ]);
+      const boxes = Array.from(
+        el.querySelectorAll<HTMLInputElement>('app-skill-picker .skill__name input'),
+      );
+      expect(boxes.map((b) => [b.checked, b.disabled])).toEqual([
+        [true, true],
+        [true, true],
+      ]);
+    });
+
+    it('does not take a pick on a given skill, and does not send it as a pick', async () => {
+      const { cmp } = await openSkills();
+
+      cmp.toggleSkill('skill:arcana');
+
+      expect(cmp.chosenSkills().size).toBe(0);
+      expect(cmp.buildFullValue().skillProficiencies).toEqual([]);
+    });
+
+    it('drops a pick that the race starts to give', async () => {
+      const { cmp, fixture } = await openSkills();
+      cmp.fullForm.patchValue({ race: '' });
+      fixture.detectChanges();
+      cmp.toggleSkill('skill:arcana');
+      expect(cmp.buildFullValue().skillProficiencies).toEqual(['skill:arcana']);
+
+      cmp.fullForm.patchValue({ race: 'race:gnome' });
+      fixture.detectChanges();
+
+      expect(cmp.buildFullValue().skillProficiencies).toEqual([]);
+    });
+  });
+
+  describe('the XP of a new player character above level 1', () => {
+    const LEVEL_XP = [0, 300, 900, 2700, 6500, 14000];
+
+    async function openCreate(xpMode: 'enemies' | 'gold' | 'milestones') {
+      configure({ id: 'camp-1' });
+      fake.loadCatalogFn = () => Promise.resolve({ ...catalog(), xpMode, levelXp: LEVEL_XP });
+      const view = await render();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cmp = view.fixture.componentInstance as any;
+      return { ...view, cmp };
+    }
+    const xpOf = (cmp: { fullForm: { controls: { experiencePoints: { value: number } } } }) =>
+      cmp.fullForm.controls.experiencePoints.value;
+
+    it('starts at the XP of its level when the campaign levels by enemies, and follows the level', async () => {
+      const { cmp, fixture } = await openCreate('enemies');
+      expect(xpOf(cmp)).toBe(0);
+
+      cmp.fullForm.patchValue({ className: 'class:wizard', level: 5 });
+      fixture.detectChanges();
+      expect(xpOf(cmp)).toBe(6500);
+
+      cmp.fullForm.patchValue({ level: 3 });
+      fixture.detectChanges();
+      expect(xpOf(cmp)).toBe(900);
+    });
+
+    it('leaves it alone once the person types in the field', async () => {
+      const { cmp, fixture } = await openCreate('enemies');
+      cmp.fullForm.patchValue({ className: 'class:wizard', level: 5 });
+      fixture.detectChanges();
+
+      cmp.fullForm.controls.experiencePoints.setValue(7000);
+      cmp.fullForm.controls.experiencePoints.markAsDirty();
+      cmp.fullForm.patchValue({ level: 4 });
+      fixture.detectChanges();
+
+      expect(xpOf(cmp)).toBe(7000);
+    });
+
+    it('keeps 0 in a milestone campaign', async () => {
+      const { cmp, fixture } = await openCreate('milestones');
+
+      cmp.fullForm.patchValue({ className: 'class:wizard', level: 5 });
+      fixture.detectChanges();
+
+      expect(xpOf(cmp)).toBe(0);
+    });
+  });
+
   it('sends chosen armor, weapons and cantrips as content keys, never typed text', async () => {
     configure({ id: 'camp-1' });
     const { fixture } = await render();
@@ -1434,7 +1623,11 @@ describe('CharacterEditor', () => {
       it('adds what the effects give, names it and drops the note that the server will check', async () => {
         configure({ id: 'camp-1' });
         fake.previewCharacterFn = () =>
-          Promise.resolve({ hitPointsMax: DICE_ONLY + 3, hitPointsFromEffects: 3 });
+          Promise.resolve({
+            hitPointsMax: DICE_ONLY + 3,
+            hitPointsFromEffects: 3,
+            spellcasting: [],
+          });
         const { fixture, el } = await openBox();
         expect(sum(el)).toBe(`${DICE_ONLY} PV máximos até agora`);
         expect(note(el)).toContain('É uma prévia');
@@ -1459,7 +1652,7 @@ describe('CharacterEditor', () => {
       it('asks once for a run of changes, after the pause', async () => {
         configure({ id: 'camp-1' });
         fake.previewCharacterFn = () =>
-          Promise.resolve({ hitPointsMax: 20, hitPointsFromEffects: 1 });
+          Promise.resolve({ hitPointsMax: 20, hitPointsFromEffects: 1, spellcasting: [] });
         const { cmp } = await openBox();
         await vi.advanceTimersByTimeAsync(PAUSE - 1);
         cmp.hitPointsRolls.set([5, 3]);
@@ -1494,10 +1687,10 @@ describe('CharacterEditor', () => {
         await vi.advanceTimersByTimeAsync(PAUSE); // call 2
         expect(answers.length).toBe(2);
 
-        answers[1]({ hitPointsMax: 0, hitPointsFromEffects: 2 });
+        answers[1]({ hitPointsMax: 0, hitPointsFromEffects: 2, spellcasting: [] });
         await vi.advanceTimersByTimeAsync(0);
         fixture.detectChanges();
-        answers[0]({ hitPointsMax: 0, hitPointsFromEffects: 9 }); // the answer of the older draft arrives last
+        answers[0]({ hitPointsMax: 0, hitPointsFromEffects: 9, spellcasting: [] }); // the answer of the older draft arrives last
         await vi.advanceTimersByTimeAsync(0);
         fixture.detectChanges();
         expect(el.querySelector('app-hit-points-rolls .hp__effects')?.textContent?.trim()).toBe(
@@ -1515,7 +1708,7 @@ describe('CharacterEditor', () => {
       it('asks nothing while the draft has no race or no class', async () => {
         configure({ id: 'camp-1' });
         fake.previewCharacterFn = () =>
-          Promise.resolve({ hitPointsMax: 20, hitPointsFromEffects: 1 });
+          Promise.resolve({ hitPointsMax: 20, hitPointsFromEffects: 1, spellcasting: [] });
         const { fixture, cmp } = await openBox();
         await vi.advanceTimersByTimeAsync(PAUSE);
         expect(fake.previewCharacterCalls.length).toBe(1);

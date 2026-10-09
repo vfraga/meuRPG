@@ -24,7 +24,12 @@ import { LivePill } from '../../../shared/live-pill/live-pill';
 import { COPIED_FOR_MS, copyText, sessionLink } from '../../../shared/session-link/session-link';
 import { formatDayAt } from '../../../shared/session-time/session-time';
 import { OpenSessions } from '../../../shell/live-notice/open-sessions';
-import { GameSessionSource, GameSessionVm } from './game-session-card.types';
+import {
+  GameSessionSource,
+  GameSessionVm,
+  OpenChoiceKindVm,
+  OpenChoicesVm,
+} from './game-session-card.types';
 
 type CardState =
   | { status: 'loading' }
@@ -36,6 +41,14 @@ type ActionState = { status: 'idle' } | { status: 'saving' } | { status: 'error'
 /** `copied`: the button says "Link copiado". `manual`: the Clipboard API
  * failed, so the link shows in a read-only field, selected. */
 type CopyState = 'idle' | 'copied' | 'manual';
+
+/** What a sheet lacks, as "faltam 2 perícias". */
+const OPEN_CHOICE_WORDS: Record<OpenChoiceKindVm, readonly [string, string]> = {
+  skills: ['perícia', 'perícias'],
+  cantrips: ['truque', 'truques'],
+  spellsKnown: ['magia conhecida', 'magias conhecidas'],
+  spellsPrepared: ['magia preparada', 'magias preparadas'],
+};
 
 const MASTER_ONLY_MESSAGES = {
   [Code.PermissionDenied]: 'Só o mestre da campanha pode gerenciar sessões.',
@@ -78,6 +91,8 @@ export class GameSessionCard implements OnInit, OnDestroy {
   protected readonly state = signal<CardState>({ status: 'loading' });
   protected readonly actionState = signal<ActionState>({ status: 'idle' });
   protected readonly confirmingEnd = signal(false);
+  /** The characters with choices open, asked about before the session starts; `null` while nothing is asked. */
+  protected readonly confirmingStart = signal<readonly OpenChoicesVm[] | null>(null);
   protected readonly copyState = signal<CopyState>('idle');
   /** The locked-sheet count from the last `StartGameSession` call in this
    * component's lifetime — cleared on reload, shown via
@@ -154,7 +169,45 @@ export class GameSessionCard implements OnInit, OnDestroy {
     );
   }
 
+  /** "Ilaria: faltam 1 perícia e 2 truques". */
+  protected openChoicesLine(c: OpenChoicesVm): string {
+    const parts = c.choices.map((o) => {
+      const [one, many] = OPEN_CHOICE_WORDS[o.kind];
+      return `${o.missing} ${o.missing === 1 ? one : many}`;
+    });
+    return `${c.name}: faltam ${new Intl.ListFormat('pt-BR', { type: 'conjunction' }).format(parts)}`;
+  }
+
+  /** "Iniciar sessão": starting locks every living player's sheet as it is (RN-01), so the master is told first
+   * which sheets still have skills or spells to choose, and decides. */
+  protected async requestStart(): Promise<void> {
+    this.actionState.set({ status: 'saving' });
+    let open: readonly OpenChoicesVm[];
+    try {
+      open = await this.source.listOpenChoices(this.campaignId());
+    } catch (err) {
+      this.actionState.set({
+        status: 'error',
+        message: describeConnectError(err, MASTER_ONLY_MESSAGES),
+      });
+      return;
+    }
+    if (open.length === 0) {
+      await this.startSession();
+      return;
+    }
+    this.actionState.set({ status: 'idle' });
+    this.confirmingStart.set(open);
+    this.focusAfterRender('.js-confirm-start');
+  }
+
+  protected cancelStart(): void {
+    this.confirmingStart.set(null);
+    this.focusAfterRender('.js-start');
+  }
+
   protected async startSession(): Promise<void> {
+    this.confirmingStart.set(null);
     this.actionState.set({ status: 'saving' });
     try {
       // A retry of the same start (a lost answer, a second tap) sends the same key and starts one session.

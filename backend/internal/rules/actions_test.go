@@ -355,3 +355,99 @@ func TestMonkBonusActionsSpendKi(t *testing.T) {
 		}
 	}
 }
+
+func actionOf(d Derived, key string) (Action, bool) {
+	for _, a := range d.Actions {
+		if a.Key == key {
+			return a, true
+		}
+	}
+	return Action{}, false
+}
+
+// TestChannelDivinityAndCuttingWordsSpendTheirUses: the actions that come from
+// Channel Divinity and from Bardic Inspiration spend the shared pool, which another
+// feature owns (SRD 5.1, Cleric, Channel Divinity; Paladin, Channel Divinity; Bard,
+// College of Lore, Cutting Words).
+func TestChannelDivinityAndCuttingWordsSpendTheirUses(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	cleric := standard("class:cleric", 2)
+	cleric.Classes[0].Subclass = "subclass:life"
+	paladin := standard("class:paladin", 3)
+	paladin.Classes[0].Subclass = "subclass:devotion"
+	bard := standard("class:bard", 3)
+	bard.Classes[0].Subclass = "subclass:lore"
+	for _, tc := range []struct {
+		name     string
+		build    Build
+		action   string
+		resource string
+	}{
+		{"Turn Undead", cleric, "feature:channel-divinity-turn-undead", "channel_divinity"},
+		{"Preserve Life", cleric, "feature:channel-divinity-preserve-life", "channel_divinity"},
+		{"Sacred Weapon", paladin, "feature:channel-divinity-sacred-weapon", "channel_divinity"},
+		{"Turn the Unholy", paladin, "feature:channel-divinity-turn-the-unholy", "channel_divinity"},
+		{"Cutting Words", bard, "feature:cutting-words", "bardic_inspiration"},
+	} {
+		d := Derive(tc.build, c)
+		a, ok := actionOf(d, tc.action)
+		if !ok {
+			t.Errorf("%s: no action %s in %+v", tc.name, tc.action, d.Actions)
+			continue
+		}
+		if a.Resource != tc.resource {
+			t.Errorf("%s spends %q, want %q", tc.name, a.Resource, tc.resource)
+		}
+		if !hasResource(d, tc.resource) {
+			t.Errorf("%s: the sheet has no %s resource to spend", tc.name, tc.resource)
+		}
+	}
+}
+
+// TestScalingFeatureListsOnlyItsCurrentTier: a feature that grows with the level is
+// on the sheet once, at its current tier (SRD 5.1, Cleric Channel Divinity: once, then
+// twice from 6th level, three times from 18th).
+func TestScalingFeatureListsOnlyItsCurrentTier(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	cleric := func(level int) Derived {
+		b := standard("class:cleric", level)
+		b.Classes[0].Subclass = "subclass:life"
+		return Derive(b, c)
+	}
+	for _, tc := range []struct {
+		d    Derived
+		have string
+		not  []string
+	}{
+		{cleric(2), "feature:channel-divinity-1-rest", []string{"feature:channel-divinity-2-rest", "feature:channel-divinity-3-rest"}},
+		{cleric(6), "feature:channel-divinity-2-rest", []string{"feature:channel-divinity-1-rest", "feature:channel-divinity-3-rest"}},
+		{cleric(18), "feature:channel-divinity-3-rest", []string{"feature:channel-divinity-1-rest", "feature:channel-divinity-2-rest"}},
+		{Derive(standard("class:fighter", 11), c), "feature:extra-attack-2", []string{"feature:extra-attack-1"}},
+		{Derive(standard("class:fighter", 17), c), "feature:indomitable-3-uses", []string{"feature:indomitable-1-use", "feature:indomitable-2-uses"}},
+		{Derive(standard("class:fighter", 17), c), "feature:action-surge-2-uses", []string{"feature:action-surge-1-use"}},
+		{Derive(standard("class:bard", 5), c), "feature:bardic-inspiration-d8", []string{"feature:bardic-inspiration-d6"}},
+		{Derive(standard("class:bard", 9), c), "feature:song-of-rest-d8", []string{"feature:song-of-rest-d6"}},
+		{Derive(standard("class:barbarian", 13), c), "feature:brutal-critical-2-dice", []string{"feature:brutal-critical-1-die"}},
+		{Derive(standard("class:ranger", 6), c), "feature:favored-enemy-2-types", []string{"feature:favored-enemy-1-type"}},
+		{Derive(standard("class:monk", 9), c), "feature:unarmored-movement-2", []string{"feature:unarmored-movement-1"}},
+		{Derive(standard("class:druid", 8), c), "feature:wild-shape-cr-1-or-below", []string{"feature:wild-shape-cr-1-2-or-below-no-flying-speed", "feature:wild-shape-cr-1-4-or-below-no-flying-or-swim-speed"}},
+	} {
+		if !hasFeature(tc.d, tc.have) {
+			t.Errorf("%s is not on the sheet", tc.have)
+		}
+		for _, k := range tc.not {
+			if hasFeature(tc.d, k) {
+				t.Errorf("%s stays on the sheet beside %s", k, tc.have)
+			}
+		}
+	}
+	// What the lower tier gave still counts: the cleric at 6 has two uses and the fighter at 11 three attacks.
+	if got := resourceMax(cleric(6), "channel_divinity"); got != 2 {
+		t.Errorf("Channel Divinity uses at cleric 6 = %d, want 2", got)
+	}
+	if got := Derive(standard("class:fighter", 11), c).AttacksPerAction; got != 3 {
+		t.Errorf("attacks at fighter 11 = %d, want 3", got)
+	}
+}

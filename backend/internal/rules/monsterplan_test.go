@@ -19,7 +19,7 @@ func planOf(t *testing.T, c *Content, creature string) *MonsterPlan {
 	return p
 }
 
-func actionOf(t *testing.T, c *Content, creature, action string) ActionPlan {
+func planActionOf(t *testing.T, c *Content, creature, action string) ActionPlan {
 	t.Helper()
 	p := planOf(t, c, creature)
 	a, ok := p.Action("monster:" + creature + "#" + slugOf(action))
@@ -64,7 +64,7 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 
 	t.Run("Ghoul's Claws paralyse on a failed save, and are fully read", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "ghoul", "Claws")
+		a := planActionOf(t, c, "ghoul", "Claws")
 		if a.Kind != ActionKindAttack || a.Class != ActionStructured || a.Attack == nil || a.Attack.Bonus != 4 || !a.Attack.Melee || a.Attack.ReachFt != 5 {
 			t.Fatalf("Claws = %+v, want a structured melee attack at +4, reach 5", a)
 		}
@@ -78,7 +78,7 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 	})
 	t.Run("a poison bite has the poison a failed save deals, half on a success", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "giant-spider", "Bite")
+		a := planActionOf(t, c, "giant-spider", "Bite")
 		if got := dmgText(a.Damage); got != "1d8+3 piercing" {
 			t.Errorf("hit damage = %q, want 1d8+3 piercing", got)
 		}
@@ -89,7 +89,7 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 	})
 	t.Run("the assassin's poison is rolled once, with the save", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "assassin", "Shortsword")
+		a := planActionOf(t, c, "assassin", "Shortsword")
 		if got := dmgText(a.Damage); got != "1d6+3 piercing" {
 			t.Errorf("hit damage = %q, want 1d6+3 piercing only", got)
 		}
@@ -99,7 +99,7 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 	})
 	t.Run("a dragon's breath: save, damage, half and area, and it recharges", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "adult-red-dragon", "Fire Breath")
+		a := planActionOf(t, c, "adult-red-dragon", "Fire Breath")
 		s := a.Save
 		if a.Kind != ActionKindSave || a.Class != ActionStructured || s == nil || s.OnHit || s.Ability != DEX || s.DC != 21 || dmgText(s.Damage) != "18d6 fire" {
 			t.Fatalf("Fire Breath = %+v, want a structured save: DC 21 Dexterity, 18d6 fire", a)
@@ -117,7 +117,7 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 	})
 	t.Run("a bite that grapples", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "giant-toad", "Bite")
+		a := planActionOf(t, c, "giant-toad", "Bite")
 		if got := dmgText(a.Damage); got != "1d10+2 piercing + 1d10 poison" {
 			t.Errorf("damage = %q, want both parts", got)
 		}
@@ -128,47 +128,47 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 	})
 	t.Run("a grapple only of a smaller target keeps the size", func(t *testing.T) {
 		t.Parallel()
-		h := actionOf(t, c, "constrictor-snake", "Constrict").HitCondition
+		h := planActionOf(t, c, "constrictor-snake", "Constrict").HitCondition
 		if h == nil || h.EscapeDC != 14 {
 			t.Fatalf("hit condition = %+v, want escape DC 14", h)
 		}
-		h = actionOf(t, c, "crocodile", "Bite").HitCondition
+		h = planActionOf(t, c, "crocodile", "Bite").HitCondition
 		if h == nil || h.EscapeDC != 12 {
 			t.Errorf("crocodile hit condition = %+v, want escape DC 12", h)
 		}
-		h = actionOf(t, c, "chuul", "Pincer").HitCondition
+		h = planActionOf(t, c, "chuul", "Pincer").HitCondition
 		if h == nil || h.MaxSize != "Large" || h.EscapeDC != 14 {
 			t.Errorf("chuul hit condition = %+v, want escape DC 14 for a Large or smaller target", h)
 		}
 	})
 	t.Run("a thrown weapon is an attack in melee and at range", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "goblin", "Shortbow")
+		a := planActionOf(t, c, "goblin", "Shortbow")
 		if a.Attack == nil || a.Attack.Melee || a.Attack.RangeFt != 80 || a.Attack.LongRangeFt != 320 {
 			t.Errorf("Shortbow = %+v, want a ranged attack 80/320", a.Attack)
 		}
-		a = actionOf(t, c, "bugbear", "Javelin")
+		a = planActionOf(t, c, "bugbear", "Javelin")
 		if a.Attack == nil || !a.Attack.Melee || a.Attack.ReachFt != 5 || a.Attack.RangeFt != 30 || a.Attack.LongRangeFt != 120 {
 			t.Errorf("Javelin = %+v, want melee reach 5 and range 30/120", a.Attack)
 		}
 	})
 	t.Run("a two-handed damage stays in the text, not in the plan", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "hobgoblin", "Longsword")
+		a := planActionOf(t, c, "hobgoblin", "Longsword")
 		if got := dmgText(a.Damage); got != "1d8+1 slashing" || a.Class != ActionStructured {
 			t.Errorf("Longsword = %q %s, want 1d8+1 slashing, structured", got, a.Class)
 		}
 	})
 	t.Run("an action with no roll is a reminder", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "ancient-brass-dragon", "Change Shape")
+		a := planActionOf(t, c, "ancient-brass-dragon", "Change Shape")
 		if a.Kind != ActionKindOther || a.Class != ActionText || a.Attack != nil || a.Save != nil {
 			t.Errorf("Change Shape = %+v, want text only", a)
 		}
 	})
 	t.Run("Multiattack keeps its routines, with the action of each step", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "adult-red-dragon", "Multiattack")
+		a := planActionOf(t, c, "adult-red-dragon", "Multiattack")
 		if a.Kind != ActionKindMultiattack || len(a.Routines) != 1 || len(a.Routines[0]) != 3 {
 			t.Fatalf("Multiattack = %+v, want one routine of three steps", a.Routines)
 		}
@@ -179,14 +179,14 @@ func TestMonsterPlanReadsTheActionsAsWritten(t *testing.T) {
 	})
 	t.Run("a creature with several routines keeps each one", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "drider", "Multiattack")
+		a := planActionOf(t, c, "drider", "Multiattack")
 		if len(a.Routines) != 4 || len(a.Routines[2]) != 2 || a.Routines[2][0].Name != "Longsword" || a.Routines[2][0].Count != 2 || a.Routines[2][1].Name != "Bite" {
 			t.Errorf("drider routines = %+v, want 3 swords, 3 bows, 2 swords and a bite, 2 bows and a bite", a.Routines)
 		}
 	})
 	t.Run("a step that casts has no action of its own", func(t *testing.T) {
 		t.Parallel()
-		a := actionOf(t, c, "glabrezu", "Multiattack")
+		a := planActionOf(t, c, "glabrezu", "Multiattack")
 		step := a.Routines[1][1]
 		if step.Name != "Innate Spellcasting" || step.ActionKey != "" || step.Kind != "magic" {
 			t.Errorf("step = %+v, want Innate Spellcasting as a magic step with no action", step)

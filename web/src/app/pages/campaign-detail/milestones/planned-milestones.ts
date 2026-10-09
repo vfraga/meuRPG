@@ -69,7 +69,8 @@ export class PlannedMilestones {
   protected readonly editing = signal<string | null>(null);
   protected readonly removing = signal<string | null>(null);
   /** Milestones the server refused to remove because they were reached once
-   * and undone: "Remover" is not offered again for them. */
+   * and undone, before the list said so (`hasHistory`): "Remover" is not offered
+   * again for them. */
   protected readonly kept = signal<ReadonlySet<string>>(new Set());
   protected readonly busy = signal(false);
   protected readonly error = signal('');

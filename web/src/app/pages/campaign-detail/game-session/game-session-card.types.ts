@@ -20,6 +20,16 @@ export interface StartGameSessionResultVm {
   readonly lockedSheetCount: number;
 }
 
+/** The kinds of choice a sheet can still lack. */
+export type OpenChoiceKindVm = 'skills' | 'cantrips' | 'spellsKnown' | 'spellsPrepared';
+
+/** A living player character whose sheet has choices open: starting a session locks it as it is. */
+export interface OpenChoicesVm {
+  readonly characterId: string;
+  readonly name: string;
+  readonly choices: readonly { readonly kind: OpenChoiceKindVm; readonly missing: number }[];
+}
+
 /**
  * The port `GameSessionCard` depends on, provided at the route level for
  * `/campaigns/:id` (`campaign-detail.routes.ts`) by `GameSessionSourceLive`,
@@ -40,4 +50,7 @@ export abstract class GameSessionSource {
     idempotencyKey: string,
   ): Promise<StartGameSessionResultVm>;
   abstract endGameSession(campaignId: string, gameSessionId: string): Promise<GameSessionVm>;
+  /** The characters that starting a session would lock with skills or spells still to choose
+   * (`ListCharacters`' `open_choices`, which only the master gets). */
+  abstract listOpenChoices(campaignId: string): Promise<readonly OpenChoicesVm[]>;
 }

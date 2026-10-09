@@ -1305,6 +1305,30 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     expect(el.textContent).toContain('Editar ficha');
   });
 
+  it('a pending character shows no notes and no creatures panel, only when they will appear', async () => {
+    fake.getCharacterSheetFn = () => Promise.resolve(vm({ state: 'pending', canApprove: false }));
+    const el = (await render()).nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-notes-panel')).toBeNull();
+    expect(el.querySelector('app-creatures-panel')).toBeNull();
+    const notes = Array.from(el.querySelectorAll('.sheet__pending-note')).map((n) =>
+      n.textContent?.trim(),
+    );
+    expect(notes).toEqual([
+      'Aparece quando o mestre aprovar o personagem.',
+      'Aparece quando o mestre aprovar o personagem.',
+    ]);
+  });
+
+  it('an approved character shows the notes and the creatures panels', async () => {
+    fake.getCharacterSheetFn = () => Promise.resolve(vm({ state: 'draft', canApprove: false }));
+    const el = (await render()).nativeElement as HTMLElement;
+
+    expect(el.querySelector('app-notes-panel')).not.toBeNull();
+    expect(el.querySelector('app-creatures-panel')).not.toBeNull();
+    expect(el.querySelector('.sheet__pending-note')).toBeNull();
+  });
+
   it('"Aprovar personagem" approves and shows the character as a draft', async () => {
     fake.getCharacterSheetFn = () => Promise.resolve(pendingForMaster());
     fake.approveCharacterFn = () =>

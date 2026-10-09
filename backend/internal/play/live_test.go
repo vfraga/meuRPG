@@ -593,6 +593,38 @@ func TestPlayersSeeOnlyTheirOwnVitals(t *testing.T) {
 	}
 }
 
+// TestPublishVitalsChangedGoesToTheMasterAndTheOwnerOnly: the vitals a level-up
+// sends (PublishVitalsChanged) reach the master and the player of the character,
+// and no other player.
+func TestPublishVitalsChangedGoesToTheMasterAndTheOwnerOnly(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	master, ana, bruno := h.newUser("Mestre"), h.newUser("Ana"), h.newUser("Bruno")
+	campaign := h.newCampaign(master, "Mirathel", ana, bruno)
+	anaPC := ana.createCharacter(t, campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Pensantus")
+	brunoPC := bruno.createCharacter(t, campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Lia")
+	master.start(t, campaign)
+	masterStream, anaStream, brunoStream := master.watch(t, campaign), ana.watch(t, campaign), bruno.watch(t, campaign)
+	for _, s := range []*watcher{masterStream, anaStream, brunoStream} {
+		s.ready(t)
+	}
+
+	h.svc.PublishVitalsChanged(t.Context(), campaign, anaPC.GetId())
+	h.svc.PublishVitalsChanged(t.Context(), campaign, brunoPC.GetId()) // after Ana's: proves her stream did not skip a message
+
+	changed := func(w *watcher) string { return w.nextChange(t).GetVitalsChanged().GetVitals().GetCharacterId() }
+	if first, second := changed(masterStream), changed(masterStream); first != anaPC.GetId() || second != brunoPC.GetId() {
+		t.Errorf("master's stream = %s, %s; want Ana's character then Bruno's", first, second)
+	}
+	if got := changed(anaStream); got != anaPC.GetId() {
+		t.Errorf("Ana's stream got %s, want only her character's vitals", got)
+	}
+	if got := changed(brunoStream); got != brunoPC.GetId() {
+		t.Errorf("Bruno's stream got %s, want only his character's vitals", got)
+	}
+	h.svc.PublishVitalsChanged(t.Context(), campaign, "not-a-character") // sends nothing, and does not panic
+}
+
 // RN-11 on the live session: nothing the live session sends, to the
 // player or to the master, carries the master's notes, and neither does
 // the session's history.

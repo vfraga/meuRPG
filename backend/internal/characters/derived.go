@@ -4,6 +4,7 @@ import (
 	"math"
 	"strings"
 
+	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -299,13 +300,13 @@ func catalogToProto(c rules.Catalog) *rulesv1.Content {
 	for _, r := range c.Races {
 		out.Races = append(out.Races, &rulesv1.Race{
 			Key: r.Key, Name: r.Name, NamePt: r.NamePT, SpeedFt: i32(r.SpeedFt), AbilityBonuses: abilityScores(r.AbilityBonuses),
-			Archived: r.Archived, Off: r.Off, ChoiceBonuses: int32s(r.ChoiceBonuses),
+			Archived: r.Archived, Off: r.Off, ChoiceBonuses: int32s(r.ChoiceBonuses), SkillKeys: r.SkillProficiencies,
 		})
 	}
 	for _, s := range c.Subraces {
 		out.Subraces = append(out.Subraces, &rulesv1.Subrace{
 			Key: s.Key, Name: s.Name, NamePt: s.NamePT, RaceKey: s.Race, AbilityBonuses: abilityScores(s.AbilityBonuses),
-			Archived: s.Archived, Off: s.Off,
+			Archived: s.Archived, Off: s.Off, SkillKeys: s.SkillProficiencies,
 		})
 	}
 	for _, cl := range c.Classes {
@@ -370,6 +371,9 @@ func catalogToProto(c rules.Catalog) *rulesv1.Content {
 	for _, r := range c.ChallengeRatings {
 		out.ChallengeRatings = append(out.ChallengeRatings, &rulesv1.ChallengeRating{Rating: r.Rating, Xp: i32(r.XP)})
 	}
+	for _, xp := range c.LevelXP {
+		out.LevelXp = append(out.LevelXp, i32(xp))
+	}
 	named := func(in []rules.NamedEntry) []*rulesv1.NamedKey {
 		var list []*rulesv1.NamedKey
 		for _, n := range in {
@@ -403,4 +407,22 @@ func i32(n int) int32 {
 		return math.MinInt32
 	}
 	return int32(n)
+}
+
+// openChoiceKinds maps the engine's kinds of open choice to the API's.
+var openChoiceKinds = map[string]charactersv1.OpenChoiceKind{
+	rules.OpenChoiceSkills:         charactersv1.OpenChoiceKind_OPEN_CHOICE_KIND_SKILLS,
+	rules.OpenChoiceCantrips:       charactersv1.OpenChoiceKind_OPEN_CHOICE_KIND_CANTRIPS,
+	rules.OpenChoiceSpellsKnown:    charactersv1.OpenChoiceKind_OPEN_CHOICE_KIND_SPELLS_KNOWN,
+	rules.OpenChoiceSpellsPrepared: charactersv1.OpenChoiceKind_OPEN_CHOICE_KIND_SPELLS_PREPARED,
+}
+
+// openChoices are the choices a derived sheet still lacks, for the master's
+// list.
+func openChoices(d rules.Derived) []*charactersv1.OpenChoice {
+	var out []*charactersv1.OpenChoice
+	for _, o := range d.OpenChoices {
+		out = append(out, &charactersv1.OpenChoice{Kind: openChoiceKinds[o.Kind], Missing: i32(o.Missing)})
+	}
+	return out
 }

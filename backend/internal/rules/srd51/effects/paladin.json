@@ -43,10 +43,10 @@
       {"type": "choice", "choice": "subclass", "count": 1}
     ],
     "feature:channel-divinity-sacred-weapon": [
-      {"type": "grant_action", "economy": "action"}
+      {"type": "grant_action", "economy": "action", "resource": "channel_divinity"}
     ],
     "feature:channel-divinity-turn-the-unholy": [
-      {"type": "grant_action", "economy": "action"}
+      {"type": "grant_action", "economy": "action", "resource": "channel_divinity"}
     ],
     "feature:paladin-ability-score-improvement-1": [
       {"type": "choice", "choice": "ability_score_improvement", "count": 1}

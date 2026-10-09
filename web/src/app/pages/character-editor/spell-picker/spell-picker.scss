@@ -19,6 +19,14 @@
   color: var(--mr-ink-muted);
 }
 
+// Fewer spells prepared than the class takes.
+.picker__warn {
+  margin: 0 0 var(--mr-space-3);
+  font-size: 14px;
+  line-height: 19px;
+  color: var(--mr-warning-ink);
+}
+
 .picker__search {
   width: 100%;
 }

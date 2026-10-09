@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 
 import {
   Ability,
+  AttackSchema,
   CharacterSpellSchema,
   DerivedClassSchema,
   HitDiceSchema,
@@ -377,5 +378,62 @@ describe('changeRows: the spells a class knows count the ones taken from another
       spellbook: true,
     });
     expect(rows.find((r) => r.key === 'spells')).toMatchObject({ before: '1', after: '2' });
+  });
+});
+
+describe('changeRows: the attacks a level moves', () => {
+  const sword = (bonus: number, damage: string) =>
+    create(AttackSchema, {
+      key: 'equipment:longsword',
+      namePt: 'Espada Longa',
+      attackBonus: bonus,
+      damage,
+      damageTypePt: 'cortante',
+    });
+  const bolt = (damage: string) =>
+    create(AttackSchema, {
+      key: 'spell:fire-bolt',
+      namePt: 'Raio de Fogo',
+      attackBonus: 6,
+      damage,
+      damageTypePt: 'fogo',
+    });
+
+  it('lists a weapon whose to-hit and damage rise with the score, with its damage type', () => {
+    const before = pensantus(false, { attacks: [sword(5, '1d8+3'), bolt('1d10')] });
+    const after = pensantus(true, { attacks: [sword(7, '1d8+5'), bolt('1d10')] });
+
+    const rows = changeRows(before, after, ctx).filter((r) => r.key.startsWith('attack-'));
+
+    expect(rows).toEqual([
+      {
+        key: 'attack-equipment:longsword',
+        label: 'Espada Longa',
+        before: '+5 · 1d8+3',
+        after: '+7 · 1d8+5',
+        sub: 'cortante',
+      },
+    ]);
+  });
+
+  it('lists a cantrip that rolls more dice', () => {
+    const before = pensantus(false, { attacks: [bolt('1d10')] });
+    const after = pensantus(true, { attacks: [bolt('2d10')] });
+
+    const rows = changeRows(before, after, ctx).filter((r) => r.key.startsWith('attack-'));
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      label: 'Raio de Fogo',
+      before: '+6 · 1d10',
+      after: '+6 · 2d10',
+    });
+  });
+
+  it('leaves out an attack that does not change and one the sheet had no line for', () => {
+    const before = pensantus(false, { attacks: [sword(5, '1d8+3')] });
+    const after = pensantus(true, { attacks: [sword(5, '1d8+3'), bolt('1d10')] });
+
+    expect(changeRows(before, after, ctx).some((r) => r.key.startsWith('attack-'))).toBe(false);
   });
 });

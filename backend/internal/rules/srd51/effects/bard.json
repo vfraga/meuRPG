@@ -24,16 +24,32 @@
       {"type": "choice", "choice": "skill", "count": 3}
     ],
     "feature:cutting-words": [
-      {"type": "grant_action", "economy": "reaction"}
+      {"type": "grant_action", "economy": "reaction", "resource": "bardic_inspiration"}
     ],
     "feature:bard-ability-score-improvement-1": [
       {"type": "choice", "choice": "ability_score_improvement", "count": 1}
     ],
     "feature:bardic-inspiration-d8": [
-      {"type": "note"}
+      {"type": "note"},
+      {"type": "replaces", "replaces": "feature:bardic-inspiration-d6"}
     ],
     "feature:font-of-inspiration": [
       {"type": "note", "text_pt": "A Inspiração de Bardo volta também num descanso curto."}
+    ],
+    "feature:bardic-inspiration-d10": [
+      {"type": "replaces", "replaces": "feature:bardic-inspiration-d8"}
+    ],
+    "feature:bardic-inspiration-d12": [
+      {"type": "replaces", "replaces": "feature:bardic-inspiration-d10"}
+    ],
+    "feature:song-of-rest-d8": [
+      {"type": "replaces", "replaces": "feature:song-of-rest-d6"}
+    ],
+    "feature:song-of-rest-d10": [
+      {"type": "replaces", "replaces": "feature:song-of-rest-d8"}
+    ],
+    "feature:song-of-rest-d12": [
+      {"type": "replaces", "replaces": "feature:song-of-rest-d10"}
     ]
   }
 }

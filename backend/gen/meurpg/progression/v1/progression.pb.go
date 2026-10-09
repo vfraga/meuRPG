@@ -1672,7 +1672,12 @@ type Milestone struct {
 	// um marco fora da lista"): it was never planned, it has one mark, and `id`
 	// is that mark's award ID, not a planned milestone's: no call that takes a
 	// milestone_id accepts it, and it cannot be given to more characters.
-	OffList       bool `protobuf:"varint,6,opt,name=off_list,json=offList,proto3" json:"off_list,omitempty"`
+	OffList bool `protobuf:"varint,6,opt,name=off_list,json=offList,proto3" json:"off_list,omitempty"`
+	// Whether any award, an undone one included, names this milestone: it was
+	// reached once, so RemoveMilestone refuses it (MILESTONE_HAS_HISTORY). True
+	// for every reached milestone, and for a planned one whose marks were all
+	// undone; false for a milestone never reached and for one marked off the list.
+	HasHistory    bool `protobuf:"varint,7,opt,name=has_history,json=hasHistory,proto3" json:"has_history,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1745,6 +1750,13 @@ func (x *Milestone) GetMarks() []*XPAward {
 func (x *Milestone) GetOffList() bool {
 	if x != nil {
 		return x.OffList
+	}
+	return false
+}
+
+func (x *Milestone) GetHasHistory() bool {
+	if x != nil {
+		return x.HasHistory
 	}
 	return false
 }
@@ -2639,7 +2651,7 @@ const file_meurpg_progression_v1_progression_proto_rawDesc = "" +
 	"\rnext_level_xp\x18\a \x01(\x05R\vnextLevelXp\x12 \n" +
 	"\fcan_level_up\x18\b \x01(\bR\n" +
 	"canLevelUp\x12K\n" +
-	"\x0flevel_up_reason\x18\t \x01(\x0e2#.meurpg.characters.v1.LevelUpReasonR\rlevelUpReason\"\xd5\x01\n" +
+	"\x0flevel_up_reason\x18\t \x01(\x0e2#.meurpg.characters.v1.LevelUpReasonR\rlevelUpReason\"\xf6\x01\n" +
 	"\tMilestone\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04text\x18\x02 \x01(\tR\x04text\x12\x18\n" +
@@ -2647,7 +2659,9 @@ const file_meurpg_progression_v1_progression_proto_rawDesc = "" +
 	"\n" +
 	"reached_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\treachedAt\x124\n" +
 	"\x05marks\x18\x05 \x03(\v2\x1e.meurpg.progression.v1.XPAwardR\x05marks\x12\x19\n" +
-	"\boff_list\x18\x06 \x01(\bR\aoffList\"8\n" +
+	"\boff_list\x18\x06 \x01(\bR\aoffList\x12\x1f\n" +
+	"\vhas_history\x18\a \x01(\bR\n" +
+	"hasHistory\"8\n" +
 	"\x15ListMilestonesRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\"Z\n" +

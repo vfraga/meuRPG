@@ -232,6 +232,8 @@ export interface SubraceOptionVm extends TableMark {
   /** The subrace's Constitution increase, added to the race's: the HP
    * preview needs the final score. The other abilities are not read here. */
   readonly constitutionBonus: number;
+  /** The skills its traits give (`Subrace.skill_keys`), which the player does not choose; absent means none. */
+  readonly skillKeys?: readonly string[];
 }
 
 export interface RaceOptionVm extends TableMark {
@@ -241,6 +243,8 @@ export interface RaceOptionVm extends TableMark {
   readonly constitutionBonus: number;
   /** "+2 and +1 to your choice" as [2, 1]: the player places them in the manual bonuses; empty for the SRD's races. */
   readonly choiceBonuses: readonly number[];
+  /** The skills its traits give (`Race.skill_keys`), which the player does not choose; absent means none. */
+  readonly skillKeys?: readonly string[];
   readonly subraces: readonly SubraceOptionVm[];
 }
 
@@ -303,6 +307,8 @@ export interface BackgroundOptionVm extends TableMark {
   readonly namePt: string;
   /** A table background's equipment, as text; empty for the SRD's. */
   readonly equipmentPt: string;
+  /** The skills it gives (`Background.skill_keys`), which the player does not choose; absent means none. */
+  readonly skillKeys?: readonly string[];
 }
 
 export interface SkillOptionVm {
@@ -363,6 +369,10 @@ export interface RulesCatalogVm {
   /** The ND to XP table, in order (0, 1/8, 1/4, 1/2, 1 to 30), for the NPC's
    * "Nível de desafio (ND)" picker. */
   readonly challengeRatings: readonly ChallengeRatingVm[];
+  /** The campaign's way of earning XP (`Campaign.xp_mode`). */
+  readonly xpMode?: 'enemies' | 'gold' | 'milestones';
+  /** The XP that reaches each level, from level 1 (0) to level 20 (`Content.level_xp`). */
+  readonly levelXp?: readonly number[];
 }
 
 /** How a player made the base scores of a new sheet (`AbilityMethod`, RN-24), as a string key so this file stays gen-free. */
@@ -442,6 +452,18 @@ export interface CharacterPreviewVm {
   readonly hitPointsMax: number;
   /** `DerivedSheet.hit_points_from_effects`: what race, class and feature effects add (negative if one takes away). */
   readonly hitPointsFromEffects: number;
+  /** `DerivedSheet.spellcasting`: what each casting class of the draft knows and prepares at its level. */
+  readonly spellcasting: readonly SpellLimitsVm[];
+}
+
+/** How many cantrips and spells a casting class has at its level (`Spellcasting`); 0 where the class has no such number. */
+export interface SpellLimitsVm {
+  readonly classKey: string;
+  readonly cantripsKnown: number;
+  /** Spells a "known" caster (bard, ranger, sorcerer, warlock) knows; 0 for a class that prepares. */
+  readonly spellsKnown: number;
+  /** Spells a preparing class (cleric, druid, paladin, wizard) prepares each day; 0 for the others. */
+  readonly preparedMax: number;
 }
 
 export interface CharacterForEdit {

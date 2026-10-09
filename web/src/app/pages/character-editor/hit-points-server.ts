@@ -6,9 +6,10 @@ import type { CharacterPreviewVm } from './character-editor.types';
 const PAUSE_MS = 300;
 
 /**
- * The hit points the server derives for the draft on screen (`PreviewCharacter`). The browser has no rules
- * engine, so the "Pontos de vida" box adds the server's `hit_points_from_effects` (Dwarven Toughness, a table's
- * own effect) to the rows it writes itself. Each change of the draft asks once, after a pause; only the newest
+ * What the server derives for the draft on screen (`PreviewCharacter`): the hit points and the spell numbers of each
+ * casting class. The browser has no rules engine, so the "Pontos de vida" box adds the server's
+ * `hit_points_from_effects` (Dwarven Toughness, a table's own effect) to the rows it writes itself, and the "Magias"
+ * step counts its picks against the server's numbers. Each change of the draft asks once, after a pause; only the newest
  * answer counts (a slow one overtaken by a newer one is dropped); while an answer is on the way the last one
  * stays; a draft the server cannot take yet (no race or class) asks nothing and shows none, and a call that
  * fails shows none, so the box falls back to its own arithmetic.

@@ -1,4 +1,5 @@
 import type {
+  Attack,
   DerivedSheet,
   DerivedSkill,
   SavingThrow,
@@ -125,6 +126,24 @@ function skillsChanged(before: DerivedSheet, after: DerivedSheet): ChangeRow[] {
     after: g.after,
     sub: '',
   }));
+}
+
+/**
+ * The attacks whose bonus or damage moved (a Strength increase raises the weapon's to-hit and damage; a cantrip
+ * rolls more dice), one line each: "+5 · 1d8+3" → "+7 · 1d8+5", with the damage type under it. A spell that asks
+ * for a saving throw has no to-hit, so it shows the damage alone.
+ */
+function attacksChanged(before: DerivedSheet, after: DerivedSheet): ChangeRow[] {
+  const was = new Map<string, Attack>(before.attacks.map((a) => [a.key, a]));
+  const text = (a: Attack) =>
+    [a.saveDc > 0 ? '' : formatModifier(a.attackBonus), a.damage]
+      .filter((p) => p !== '')
+      .join(' · ');
+  return after.attacks.flatMap((a) => {
+    const b = was.get(a.key);
+    const r = b ? row(`attack-${a.key}`, a.namePt, text(b), text(a), a.damageTypePt) : null;
+    return r ? [r] : [];
+  });
 }
 
 /**
@@ -275,6 +294,7 @@ export function changeRows(
     });
   }
   rows.push(...savesChanged(before, after));
+  rows.push(...attacksChanged(before, after));
   rows.push(...skillsChanged(before, after));
   rows.push(
     row(

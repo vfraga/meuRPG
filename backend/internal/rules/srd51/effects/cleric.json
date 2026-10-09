@@ -25,20 +25,26 @@
       {"type": "resource", "resource": "channel_divinity", "max": "classLevel(\"cleric\") >= 18 ? 3 : classLevel(\"cleric\") >= 6 ? 2 : 1", "recharge": "short_rest"}
     ],
     "feature:channel-divinity-turn-undead": [
-      {"type": "grant_action", "economy": "action"},
+      {"type": "grant_action", "economy": "action", "resource": "channel_divinity"},
       {"type": "note", "value": "8 + prof() + mod(\"wis\")", "text_pt": "Expulsar mortos-vivos: teste de resistência de SAB contra CD {n}."}
     ],
     "feature:divine-domain-improvement-1": [
       {"type": "note"}
     ],
     "feature:channel-divinity-preserve-life": [
-      {"type": "grant_action", "economy": "action"}
+      {"type": "grant_action", "economy": "action", "resource": "channel_divinity"}
     ],
     "feature:cleric-ability-score-improvement-1": [
       {"type": "choice", "choice": "ability_score_improvement", "count": 1}
     ],
     "feature:destroy-undead-cr-1-2-or-below": [
       {"type": "note"}
+    ],
+    "feature:channel-divinity-2-rest": [
+      {"type": "replaces", "replaces": "feature:channel-divinity-1-rest"}
+    ],
+    "feature:channel-divinity-3-rest": [
+      {"type": "replaces", "replaces": "feature:channel-divinity-2-rest"}
     ]
   }
 }

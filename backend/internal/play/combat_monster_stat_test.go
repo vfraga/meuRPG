@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
@@ -423,9 +424,9 @@ func TestW7M_UndoGivesBackWhatTheActionSpentAndARetryIsTheSame(t *testing.T) {
 	if first.Msg.GetResult().GetCast().GetCastId() != again.Msg.GetResult().GetCast().GetCastId() {
 		t.Errorf("a retry made another cast: %v and %v", first.Msg.GetResult().GetCast().GetCastId(), again.Msg.GetResult().GetCast().GetCastId())
 	}
-	other := *req.ProtoReflect().Interface().(*playv1.UseCreatureActionRequest)
+	other := proto.Clone(req).(*playv1.UseCreatureActionRequest)
 	other.ActionKey = redDragon + "#frightful-presence"
-	if _, err := a.master.creatures.UseCreatureAction(t.Context(), connect.NewRequest(&other)); err == nil {
+	if _, err := a.master.creatures.UseCreatureAction(t.Context(), connect.NewRequest(other)); err == nil {
 		t.Error("the key of one change was taken for another")
 	}
 

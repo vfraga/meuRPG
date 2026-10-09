@@ -50,6 +50,13 @@ type liveSpy struct {
 	mu      sync.Mutex
 	calls   []string
 	content []string // the campaigns that got content_changed
+	vitals  []string // the characters whose vitals were sent
+}
+
+func (l *liveSpy) PublishVitalsChanged(_ context.Context, _, characterID string) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.vitals = append(l.vitals, characterID)
 }
 
 func (l *liveSpy) PublishXPChanged(campaignID string) {
@@ -461,8 +468,31 @@ func TestMR040_TheRulesRefuseWhatTheLevelDoesNotGive(t *testing.T) {
 	if got := tb.owner.get(t, tb.campaign, pc.GetId()); !proto.Equal(got, pc) {
 		t.Error("a refused level-up changed the character")
 	}
-	if tb.live.count() != 0 {
+	if tb.live.count() != 0 || len(tb.live.vitals) != 0 {
 		t.Error("a refused level-up sent the live hint")
+	}
+}
+
+// TestMR040_ALevelUpSendsTheNewVitalsToTheOpenSession: the new maximum and
+// current hit points go out as the character's vitals once the level-up is
+// committed, so an open session shows them without reading again; a refused
+// level-up sends none.
+func TestMR040_ALevelUpSendsTheNewVitalsToTheOpenSession(t *testing.T) {
+	t.Parallel()
+	tb := newLevelUpTable(t, 2700)
+	bad := pensantusLevelUp()
+	bad.ClassKey = "class:fighter"
+	if _, err := tb.levelUp(tb.owner, tb.pc, bad); err == nil {
+		t.Fatal("LevelUpCharacter(another class) = nil, want a refusal")
+	}
+	if len(tb.live.vitals) != 0 {
+		t.Fatalf("vitals sent by a refused level-up = %v, want none", tb.live.vitals)
+	}
+	if _, err := tb.levelUp(tb.owner, tb.pc, pensantusLevelUp()); err != nil {
+		t.Fatalf("LevelUpCharacter() error = %v", err)
+	}
+	if got := tb.live.vitals; !slices.Equal(got, []string{tb.pc.GetId()}) {
+		t.Errorf("vitals sent = %v, want the leveled character once", got)
 	}
 }
 

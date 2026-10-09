@@ -272,3 +272,24 @@ func vitalsPayload(before, after *playv1.CharacterVitals) ([]byte, error) {
 	}
 	return b, nil
 }
+
+// PublishVitalsChanged sends a character's vitals as they are now, the way the
+// master's correction does: to the master and to the player who plays the
+// character, nobody else (RN-10). The characters module calls it after a
+// level-up, which changes the maximum and the current hit points. A character
+// that is not a living player character of the campaign, or vitals that cannot
+// be read, send nothing. Call it after the commit.
+func (s *Service) PublishVitalsChanged(ctx context.Context, campaignID, characterID string) {
+	pctx, stop := afterCommit(ctx)
+	defer stop()
+	v, err := s.vitals.GetVitals(pctx, campaignID, characterID)
+	if err != nil {
+		return
+	}
+	s.hub.Publish(campaignID, live.Event{
+		Audience: vitalsAudience(v),
+		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_VitalsChanged_{
+			VitalsChanged: &playv1.WatchGameSessionResponse_VitalsChanged{Vitals: v},
+		}},
+	})
+}

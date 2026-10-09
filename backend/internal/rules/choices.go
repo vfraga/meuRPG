@@ -35,6 +35,9 @@ func (x *deriver) effectHints() {
 			v := x.mods[Ability(s.Ability)] + x.profBonus(lvl)
 			x.hint(a, []string{e.Proficiency}, "bonus", v)
 		case e.Type == "modifier" && len(e.Tags) > 0:
+			if x.appliedTagged[e] {
+				continue
+			}
 			v, ok := x.value(a)
 			if ok {
 				x.hint(a, []string{hintTarget(e.Target)}, "bonus", v)
@@ -143,6 +146,7 @@ func (x *deriver) checkChoices() {
 			x.issueChange(IssueSkillCount, "full.skill_proficiency_keys", subject, change,
 				fmt.Sprintf("Há %d perícias escolhidas; o personagem escolhe %d.", n, allowed))
 		case n < allowed:
+			x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceSkills, Missing: allowed - n})
 			subject, change := x.skillChange(allowed, n)
 			x.issueChange(IssueSkillCount, "full.skill_proficiency_keys", subject, change,
 				fmt.Sprintf("Faltam %d perícias para escolher.", allowed-n))

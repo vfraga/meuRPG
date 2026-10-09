@@ -706,3 +706,44 @@ func TestPreviewCharacterRefusesWhatTheSaveRefuses(t *testing.T) {
 		t.Errorf("the master previewing a locked character error = %v", err)
 	}
 }
+
+// TestListCharactersTellsTheMasterWhichSheetsHaveChoicesOpen: starting a session locks
+// every living player's sheet as it is, so the master's list says which of them still
+// lack skills or spells. A player never gets it, and a locked sheet has none.
+func TestListCharactersTellsTheMasterWhichSheetsHaveChoicesOpen(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	master, ana, bia := h.newUser("Samuel"), h.newUser("Ana"), h.newUser("Bia")
+	campaign := h.newCampaign(master, "Mirathel", ana, bia)
+	player := charactersv1.CharacterKind_CHARACTER_KIND_PLAYER
+	complete := ana.create(t, campaign, player, "Pensantus", pensantusSheet())
+	unfinished := proto.Clone(pensantusSheet()).(*charactersv1.CharacterSheet)
+	unfinished.GetFull().PreparedSpellKeys = unfinished.GetFull().PreparedSpellKeys[:4]
+	partial := bia.create(t, campaign, player, "Ilaria", unfinished)
+
+	openOf := func(who *user, id string) []*charactersv1.OpenChoice {
+		for _, s := range who.list(t, campaign) {
+			if s.GetId() == id {
+				return s.GetOpenChoices()
+			}
+		}
+		t.Fatalf("%s does not list %s", who.id, id)
+		return nil
+	}
+	if got := openOf(master, complete.GetId()); len(got) != 0 {
+		t.Errorf("a complete sheet has open choices %v", got)
+	}
+	got := openOf(master, partial.GetId())
+	if len(got) != 1 || got[0].GetKind() != charactersv1.OpenChoiceKind_OPEN_CHOICE_KIND_SPELLS_PREPARED || got[0].GetMissing() != 3 {
+		t.Errorf("master sees open choices %v, want 3 prepared spells missing", got)
+	}
+	// RN-10 and the master's say alone: the player does not get the list of what is missing.
+	if got := openOf(bia, partial.GetId()); len(got) != 0 {
+		t.Errorf("the player sees open choices %v", got)
+	}
+	// A locked sheet is no longer one that starting would lock.
+	h.lockSheets(campaign)
+	if got := openOf(master, partial.GetId()); len(got) != 0 {
+		t.Errorf("a locked sheet has open choices %v", got)
+	}
+}

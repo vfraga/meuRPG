@@ -216,6 +216,27 @@ func (s *Service) viewsOf(ctx context.Context, m authz.Membership, d awardData, 
 	}
 	lastID := d.lastID
 
+	// RN-10: the text of a milestone is its reason, and a planned milestone is the
+	// master's alone. A milestone that was marked and undone is planned again, so a
+	// player does not read the reason of its undone awards until it is reached again.
+	var reached map[string]bool
+	if m.Role != authz.RoleMaster {
+		for _, a := range awards {
+			if a.MilestoneID == nil || a.UndoneAt == nil {
+				continue
+			}
+			live, err := s.queries.ListLiveMilestoneAwards(ctx, m.CampaignID)
+			if err != nil {
+				return nil, fmt.Errorf("list the marks: %w", err)
+			}
+			reached = map[string]bool{}
+			for _, l := range live {
+				reached[deref(l.MilestoneID)] = true
+			}
+			break
+		}
+	}
+
 	out := make([]*progressionv1.XPAward, 0, len(awards))
 	for _, a := range awards {
 		v := &progressionv1.XPAward{
@@ -231,6 +252,9 @@ func (s *Service) viewsOf(ctx context.Context, m authz.Membership, d awardData, 
 			UndoneByDisplayName: userNames[deref(a.UndoneBy)],
 			CanUndo:             m.Role == authz.RoleMaster && a.ID == lastID && a.UndoneAt == nil,
 			TreasureCount:       int32(len(treasuresOf[a.ID])), //nolint:gosec // at most maxAwardTreasures
+		}
+		if m.Role != authz.RoleMaster && a.MilestoneID != nil && a.UndoneAt != nil && !reached[*a.MilestoneID] {
+			v.Reason = ""
 		}
 		if m.Role == authz.RoleMaster {
 			v.Treasures = treasuresOf[a.ID] // RN-10: a player gets the count, never which treasures

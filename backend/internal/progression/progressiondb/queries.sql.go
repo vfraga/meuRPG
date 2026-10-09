@@ -498,6 +498,33 @@ func (q *Queries) ListLiveMilestoneAwardsOf(ctx context.Context, arg ListLiveMil
 	return items, nil
 }
 
+const listMilestoneIDsWithAwards = `-- name: ListMilestoneIDsWithAwards :many
+SELECT DISTINCT milestone_id::UUID AS milestone_id FROM xp_awards
+WHERE campaign_id = $1::UUID AND milestone_id IS NOT NULL
+`
+
+// The planned milestones any award names, undone ones included: HasMilestoneAwards
+// for the whole list, so the list can say which ones RemoveMilestone refuses.
+func (q *Queries) ListMilestoneIDsWithAwards(ctx context.Context, campaignID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listMilestoneIDsWithAwards, campaignID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var milestone_id string
+		if err := rows.Scan(&milestone_id); err != nil {
+			return nil, err
+		}
+		items = append(items, milestone_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMilestoneMarkedCharacters = `-- name: ListMilestoneMarkedCharacters :many
 SELECT s.character_id
 FROM xp_award_shares AS s

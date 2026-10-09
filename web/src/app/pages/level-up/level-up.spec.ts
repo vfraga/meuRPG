@@ -763,6 +763,22 @@ describe('LevelUpPage', () => {
       expect(button(f, 'Próximo').getAttribute('aria-disabled')).toBeNull();
     });
 
+    it('says how many spells are left to prepare, and drops the line once none is', async () => {
+      const f = await throughSpells();
+      await click(f, pickRow(f, 'Prestidigitação').querySelector('input'));
+      await click(f, pickRow(f, 'Passo Nebuloso').querySelector('input'));
+      await click(f, pickRow(f, 'Reflexos').querySelector('input'));
+      const lead = () =>
+        el(f).querySelector('#pick-prepared .list__lead--strong')?.textContent?.trim();
+
+      expect(lead()).toBe('Prepare mais 2.');
+      await click(f, el(f).querySelector('#pick-prepared .row__input'));
+      expect(lead()).toBe('Prepare mais 1.');
+      await click(f, el(f).querySelectorAll('#pick-prepared .row__input')[1]);
+      expect(lead()).toBeUndefined();
+      expect(text(f)).not.toContain('Prepare mais');
+    });
+
     it('confirms with the choices only, never the sheet, and tells the sheet what to say', async () => {
       const f = await throughSpells();
       await click(f, pickRow(f, 'Prestidigitação').querySelector('input'));

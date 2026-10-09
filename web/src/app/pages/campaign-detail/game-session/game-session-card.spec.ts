@@ -8,6 +8,7 @@ import { GameSessionCard } from './game-session-card';
 import {
   GameSessionSource,
   GameSessionVm,
+  OpenChoicesVm,
   StartGameSessionResultVm,
 } from './game-session-card.types';
 
@@ -16,6 +17,11 @@ class FakeGameSessionSource {
   getCurrentSessionResult: Promise<GameSessionVm | null> = Promise.resolve(null);
   readonly startGameSession = vi.fn();
   readonly endGameSession = vi.fn();
+  openChoices: Promise<readonly OpenChoicesVm[]> = Promise.resolve([]);
+
+  listOpenChoices(): Promise<readonly OpenChoicesVm[]> {
+    return this.openChoices;
+  }
 
   getCurrentSession(): Promise<GameSessionVm | null> {
     return this.getCurrentSessionResult;
@@ -100,6 +106,61 @@ describe('GameSessionCard', () => {
     expect(fake.startGameSession).toHaveBeenCalledWith('camp-1', expect.any(String));
     expect(el.textContent).toContain('Sessão 1 em andamento');
     expect(el.textContent).toContain('4 fichas travadas.');
+  });
+
+  describe('a sheet with choices still open', () => {
+    const ilaria: OpenChoicesVm = {
+      characterId: 'char-1',
+      name: 'Ilaria',
+      choices: [
+        { kind: 'skills', missing: 1 },
+        { kind: 'spellsPrepared', missing: 3 },
+      ],
+    };
+
+    it('lists the sheets with choices open and asks before starting, without starting', async () => {
+      fake.openChoices = Promise.resolve([ilaria]);
+      const { el, fixture } = await render();
+
+      buttonNamed(el, 'Iniciar sessão').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(el.textContent).toContain('Ilaria: faltam 1 perícia e 3 magias preparadas');
+      expect(el.textContent).toContain('Iniciar mesmo assim?');
+      expect(fake.startGameSession).not.toHaveBeenCalled();
+    });
+
+    it('starts when the master confirms', async () => {
+      fake.openChoices = Promise.resolve([ilaria]);
+      fake.startGameSession.mockResolvedValue(startResult(1, 2));
+      const { el, fixture } = await render();
+
+      buttonNamed(el, 'Iniciar sessão').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      buttonNamed(el, 'Iniciar mesmo assim').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(fake.startGameSession).toHaveBeenCalledTimes(1);
+      expect(el.textContent).toContain('Sessão 1 em andamento');
+    });
+
+    it('goes back to "Iniciar sessão" when the master cancels', async () => {
+      fake.openChoices = Promise.resolve([ilaria]);
+      const { el, fixture } = await render();
+
+      buttonNamed(el, 'Iniciar sessão').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      buttonNamed(el, 'Cancelar').click();
+      fixture.detectChanges();
+
+      expect(fake.startGameSession).not.toHaveBeenCalled();
+      expect(el.textContent).not.toContain('Iniciar mesmo assim?');
+      expect(buttonNamed(el, 'Iniciar sessão')).toBeTruthy();
+    });
   });
 
   it('says "1 ficha travada." — singular, not "1 fichas travadas." (integrator fix)', async () => {

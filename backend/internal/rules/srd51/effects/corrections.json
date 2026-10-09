@@ -1,5 +1,5 @@
 {
-  "_comment": "Corrections to data/ (never edited by hand): values the 5e-database snapshot has wrong or lacks against the SRD 5.1's own text and tables. The loader applies them over the class table rows (corrections), over a creature's stat block (creature_corrections), over a spell's attack, saving throw and damage table (spell_corrections) over the spells a subclass always has (subclass_corrections) and over the subclasses whose spells only join the class list (expanded_list_corrections); it refuses an unknown class, creature, spell, subclass, field or level, a value that does not fit its field, and a correction without a source. A spell correction's damage replaces the spell's whole damage table, and its damage_choice (\"scale\" or \"alternative\") says what the caster picks among the damage types; a spell with a damage table and no saving throw records the dice for display and for the master, and rolls nothing at cast.",
+  "_comment": "Corrections to data/ (never edited by hand): values the 5e-database snapshot has wrong or lacks against the SRD 5.1's own text and tables. The loader applies them over the class table rows (corrections), over a creature's stat block (creature_corrections), over a spell's attack, saving throw and damage table (spell_corrections) over the spells a subclass always has (subclass_corrections) and over the subclasses whose spells only join the class list (expanded_list_corrections), over a class's spell list (spell_list_corrections) and over the features a subclass has at a level (subclass_feature_corrections); it refuses an unknown class, creature, spell, subclass, field or level, a value that does not fit its field, and a correction without a source. A spell correction's damage replaces the spell's whole damage table, and its damage_choice (\"scale\" or \"alternative\") says what the caster picks among the damage types; a spell with a damage table and no saving throw records the dice for display and for the master, and rolls nothing at cast.",
   "corrections": [
     {
       "class": "class:warlock",
@@ -761,6 +761,57 @@
     {
       "subclass": "subclass:fiend",
       "source": "SRD 5.1, The Fiend, Expanded Spell List: the patron's spells are added to the warlock spell list, to choose from when the warlock learns a spell; they are not given and not always prepared (the snapshot lists them as the subclass's spells)"
+    }
+  ],
+  "spell_list_corrections": [
+    {
+      "class": "class:bard",
+      "add": ["spell:faerie-fire"],
+      "source": "SRD 5.1, Spellcasting chapter, Spells, Spell Lists, Bard Spells, 1st Level: Faerie Fire is on the list (the snapshot lacks it)"
+    },
+    {
+      "class": "class:cleric",
+      "add": ["spell:divination"],
+      "remove": ["spell:arcane-eye"],
+      "source": "SRD 5.1, Spellcasting chapter, Spells, Spell Lists, Cleric Spells: Divination (4th level) is on the list and Arcane Eye is not (the snapshot has it the other way round)"
+    },
+    {
+      "class": "class:druid",
+      "add": ["spell:meld-into-stone"],
+      "remove": ["spell:create-food-and-water", "spell:divination"],
+      "source": "SRD 5.1, Spellcasting chapter, Spells, Spell Lists, Druid Spells: Meld into Stone (3rd level) is on the list; Create Food and Water and Divination are not (the snapshot has them the other way round)"
+    }
+  ],
+  "subclass_feature_corrections": [
+    {
+      "subclass": "subclass:land",
+      "level": 2,
+      "add_features": ["feature:circle-of-the-land"],
+      "source": "SRD 5.1, Druid, Circle of the Land, Circle Spells: the druid chooses the land (arctic, coast, desert, forest, grassland, mountain or swamp) whose circle spells it gets; the app asks at 2nd level, when the circle is chosen (the snapshot has the feature but in no level row)"
+    },
+    {
+      "subclass": "subclass:land",
+      "level": 3,
+      "add_features": ["feature:circle-spells-1"],
+      "source": "SRD 5.1, Druid, Circle of the Land, Circle Spells: at 3rd level the druid gains the circle spells of the chosen land, always prepared and not counted against the spells prepared (the snapshot has the feature but in no level row)"
+    },
+    {
+      "subclass": "subclass:land",
+      "level": 5,
+      "add_features": ["feature:circle-spells-2"],
+      "source": "SRD 5.1, Druid, Circle of the Land, Circle Spells: at 5th level the druid gains the circle spells of the chosen land, always prepared and not counted against the spells prepared (the snapshot has the feature but in no level row)"
+    },
+    {
+      "subclass": "subclass:land",
+      "level": 7,
+      "add_features": ["feature:circle-spells-3"],
+      "source": "SRD 5.1, Druid, Circle of the Land, Circle Spells: at 7th level the druid gains the circle spells of the chosen land, always prepared and not counted against the spells prepared (the snapshot has the feature but in no level row)"
+    },
+    {
+      "subclass": "subclass:land",
+      "level": 9,
+      "add_features": ["feature:circle-spells-4"],
+      "source": "SRD 5.1, Druid, Circle of the Land, Circle Spells: at 9th level the druid gains the circle spells of the chosen land, always prepared and not counted against the spells prepared (the snapshot has the feature but in no level row)"
     }
   ]
 }

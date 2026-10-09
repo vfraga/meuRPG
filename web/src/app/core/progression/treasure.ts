@@ -1,6 +1,10 @@
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
-import type { TreasureToConvert, XPAward } from '../../../gen/meurpg/progression/v1/progression_pb';
+import {
+  type TreasureToConvert,
+  type XPAward,
+  XPAwardMode,
+} from '../../../gen/meurpg/progression/v1/progression_pb';
 import { formatClock, formatDayAt } from '../../shared/session-time/session-time';
 import { formatInt, tight } from '../format/text';
 import { nameList } from './xp-labels';
@@ -96,9 +100,16 @@ export function townTitle(count: number, poTotal: number): string {
 
 /** The title of a history line: what the master wrote, except for "Voltar à
  * cidade", whose line says the treasures and their PO (the same for everyone:
- * a player reads the count and the total, never which treasures). */
+ * a player reads the count and the total, never which treasures). A player gets
+ * no text for a milestone that was undone and is planned again: the line says
+ * only "Marco". */
 export function awardTitle(award: XPAward): string {
-  return award.treasureCount > 0 ? townTitle(award.treasureCount, award.gold) : award.reason;
+  if (award.treasureCount > 0) {
+    return townTitle(award.treasureCount, award.gold);
+  }
+  return award.reason === '' && award.mode === XPAwardMode.XP_AWARD_MODE_MILESTONE
+    ? 'Marco'
+    : award.reason;
 }
 
 /** What the master reads right after "Voltar à cidade": "Voltar à cidade:

@@ -48,6 +48,9 @@
     ],
     "feature:wholeness-of-body": [
       {"type": "resource", "resource": "wholeness_of_body", "max": "1", "recharge": "long_rest"}
+    ],
+    "feature:unarmored-movement-2": [
+      {"type": "replaces", "replaces": "feature:unarmored-movement-1"}
     ]
   }
 }

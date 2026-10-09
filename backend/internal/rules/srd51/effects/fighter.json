@@ -46,19 +46,26 @@
       {"type": "extra_attack", "count": 2}
     ],
     "feature:extra-attack-2": [
-      {"type": "extra_attack", "count": 3}
+      {"type": "extra_attack", "count": 3},
+      {"type": "replaces", "replaces": "feature:extra-attack-1"}
     ],
     "feature:extra-attack-3": [
-      {"type": "extra_attack", "count": 4}
+      {"type": "extra_attack", "count": 4},
+      {"type": "replaces", "replaces": "feature:extra-attack-2"}
     ],
     "feature:indomitable-1-use": [
       {"type": "resource", "resource": "indomitable", "max": "classLevel(\"fighter\") >= 17 ? 3 : classLevel(\"fighter\") >= 13 ? 2 : 1", "recharge": "long_rest"}
     ],
     "feature:indomitable-2-uses": [
-      {"type": "resource", "resource": "indomitable", "max": "classLevel(\"fighter\") >= 17 ? 3 : classLevel(\"fighter\") >= 13 ? 2 : 1", "recharge": "long_rest"}
+      {"type": "resource", "resource": "indomitable", "max": "classLevel(\"fighter\") >= 17 ? 3 : classLevel(\"fighter\") >= 13 ? 2 : 1", "recharge": "long_rest"},
+      {"type": "replaces", "replaces": "feature:indomitable-1-use"}
     ],
     "feature:indomitable-3-uses": [
-      {"type": "resource", "resource": "indomitable", "max": "classLevel(\"fighter\") >= 17 ? 3 : classLevel(\"fighter\") >= 13 ? 2 : 1", "recharge": "long_rest"}
+      {"type": "resource", "resource": "indomitable", "max": "classLevel(\"fighter\") >= 17 ? 3 : classLevel(\"fighter\") >= 13 ? 2 : 1", "recharge": "long_rest"},
+      {"type": "replaces", "replaces": "feature:indomitable-2-uses"}
+    ],
+    "feature:action-surge-2-uses": [
+      {"type": "replaces", "replaces": "feature:action-surge-1-use"}
     ]
   }
 }

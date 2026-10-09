@@ -9,6 +9,7 @@ import {
   DicePreference,
   HitPointsRule,
   Role,
+  XpMode,
 } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import {
   AbilityMethod as GenAbilityMethod,
@@ -493,23 +494,27 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
 
   async loadCatalog(campaignId: string, characterId?: string): Promise<RulesCatalogVm> {
     // With the character, the entries the sheet already has come back even when the master retired them, marked.
-    const [res, viewerIsMaster] = await Promise.all([
+    const [res, campaignRead] = await Promise.all([
       this.contentClient.listContent({ campaignId, characterId: characterId ?? '' }),
       this.campaignClient
         .getCampaign({ campaignId })
-        .then((r) => r.campaign?.myRole === Role.MASTER)
+        .then((r) => ({
+          viewerIsMaster: r.campaign?.myRole === Role.MASTER,
+          xpMode: r.campaign?.xpMode,
+        }))
         .catch((err: unknown) => {
           // Only a refusal means "not the master"; a blip must not hide the master's view, so it fails the load.
           if (
             err instanceof ConnectError &&
             (err.code === Code.PermissionDenied || err.code === Code.NotFound)
           ) {
-            return false;
+            return { viewerIsMaster: false, xpMode: undefined };
           }
           throw err;
         }),
     ]);
     const content = res.content!;
+    const viewerIsMaster = campaignRead.viewerIsMaster;
 
     const subracesByRace = new Map<string, SubraceOptionVm[]>();
     for (const sr of content.subraces) {
@@ -518,6 +523,7 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
         key: sr.key,
         namePt: sr.namePt,
         constitutionBonus: sr.abilityBonuses?.constitution ?? 0,
+        skillKeys: sr.skillKeys,
         fromTable: isTableKey(sr.key),
         archived: sr.archived,
         off: sr.off,
@@ -557,6 +563,7 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
         constitutionBonus: r.abilityBonuses?.constitution ?? 0,
         subraces: subracesByRace.get(r.key) ?? [],
         choiceBonuses: r.choiceBonuses,
+        skillKeys: r.skillKeys,
         fromTable: isTableKey(r.key),
         archived: r.archived,
         off: r.off,
@@ -586,6 +593,7 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
         archived: b.archived,
         off: b.off,
         equipmentPt: b.equipmentPt,
+        skillKeys: b.skillKeys,
       })),
       skills: content.skills.map((s) => ({
         key: s.key,
@@ -618,6 +626,15 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
       ],
       viewerIsMaster,
       challengeRatings: content.challengeRatings.map((c) => ({ rating: c.rating, xp: c.xp })),
+      xpMode:
+        campaignRead.xpMode === XpMode.ENEMIES
+          ? 'enemies'
+          : campaignRead.xpMode === XpMode.GOLD
+            ? 'gold'
+            : campaignRead.xpMode === XpMode.MILESTONES
+              ? 'milestones'
+              : undefined,
+      levelXp: content.levelXp,
     };
   }
 
@@ -743,6 +760,12 @@ export class CharacterEditorSourceLive implements CharacterEditorSource {
     return {
       hitPointsMax: res.derived?.hitPointsMax ?? 0,
       hitPointsFromEffects: res.derived?.hitPointsFromEffects ?? 0,
+      spellcasting: (res.derived?.spellcasting ?? []).map((sc) => ({
+        classKey: sc.classKey,
+        cantripsKnown: sc.cantripsKnown,
+        spellsKnown: sc.spellsKnown,
+        preparedMax: sc.preparedMax,
+      })),
     };
   }
 

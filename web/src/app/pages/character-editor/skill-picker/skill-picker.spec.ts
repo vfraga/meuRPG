@@ -10,12 +10,17 @@ const SKILLS: SkillOptionVm[] = [
 ];
 
 describe('SkillPicker', () => {
-  function render(proficient: string[], expertise: string[] = []) {
+  function render(
+    proficient: string[],
+    expertise: string[] = [],
+    granted: [string, string][] = [],
+  ) {
     TestBed.configureTestingModule({ imports: [SkillPicker] });
     const fixture = TestBed.createComponent(SkillPicker);
     fixture.componentRef.setInput('skills', SKILLS);
     fixture.componentRef.setInput('proficient', new Set(proficient));
     fixture.componentRef.setInput('expertise', new Set(expertise));
+    fixture.componentRef.setInput('granted', new Map(granted));
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
   }
@@ -51,5 +56,32 @@ describe('SkillPicker', () => {
     el.querySelector<HTMLInputElement>('.skill__name input')?.click();
 
     expect(toggled).toEqual(['skill:acrobatics']);
+  });
+
+  it('shows a skill the race or the background gives as taken and locked, with where it comes from, and leaves it out of the picks', () => {
+    const { el } = render(
+      ['skill:arcana'],
+      [],
+      [
+        ['skill:history', 'do antecedente'],
+        ['skill:acrobatics', 'da raça'],
+      ],
+    );
+
+    const boxes = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__name input'));
+    expect(boxes.map((i) => i.checked)).toEqual([true, true, true]);
+    expect(boxes.map((i) => i.disabled)).toEqual([true, false, true]);
+    const sources = Array.from(el.querySelectorAll('.skill__source')).map((n) =>
+      n.textContent?.trim(),
+    );
+    expect(sources).toEqual(['da raça', 'do antecedente']);
+    expect(el.textContent).toContain('1 perícia marcada, 2 já concedidas');
+  });
+
+  it('lets a granted skill take expertise', () => {
+    const { el } = render([], [], [['skill:history', 'do antecedente']]);
+
+    const expertise = Array.from(el.querySelectorAll<HTMLInputElement>('.skill__expertise input'));
+    expect(expertise.map((i) => i.disabled)).toEqual([true, true, false]);
   });
 });

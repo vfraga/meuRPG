@@ -107,6 +107,11 @@ type Effect struct {
 	NoFly  bool   `json:"no_fly,omitempty"`
 	NoSwim bool   `json:"no_swim,omitempty"`
 
+	// replaces: the feature this one takes over from, a lower tier of the same
+	// feature (Channel Divinity twice between rests replaces once). The
+	// sheet lists only the newest tier; the older one's effects still apply.
+	Replaces string `json:"replaces,omitempty"`
+
 	// handler: the name of a Go function for what data cannot say, from
 	// handlers.
 	Handler string `json:"handler,omitempty"`
@@ -130,7 +135,7 @@ type Effect struct {
 var (
 	effectTypes = []string{
 		"modifier", "proficiency", "roll_mode", "sense", "spellcasting",
-		"resource", "choice", "grant_action", "extra_attack", "note", "handler", "wild_shape", "beast_spells",
+		"resource", "choice", "grant_action", "extra_attack", "note", "handler", "wild_shape", "beast_spells", "replaces",
 	}
 	modifierTargets = []string{
 		"ac.base", "ac", "hp.max", "speed.walk", "initiative",
@@ -190,7 +195,23 @@ func (c *content) compileEffect(key string, e *Effect) error {
 		return fail("max_cr, no_fly and no_swim belong to wild_shape")
 	}
 
+	if e.Type != "replaces" && e.Replaces != "" {
+		return fail("replaces belongs to the replaces effect")
+	}
+
 	switch e.Type {
+	case "replaces":
+		other := *e
+		other.Type, other.Replaces = "", ""
+		if !reflect.DeepEqual(other, Effect{}) {
+			return fail("replaces takes the feature key only")
+		}
+		if _, ok := c.features[e.Replaces]; !ok {
+			return fail("replaces needs the key of a feature")
+		}
+		if e.Replaces == key {
+			return fail("a feature cannot replace itself")
+		}
 	case "modifier":
 		if !c.validModifierTarget(e.Target) {
 			return fail("unknown target %q", e.Target)

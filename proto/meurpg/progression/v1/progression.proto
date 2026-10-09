@@ -585,6 +585,11 @@ message Milestone {
   // is that mark's award ID, not a planned milestone's: no call that takes a
   // milestone_id accepts it, and it cannot be given to more characters.
   bool off_list = 6;
+  // Whether any award, an undone one included, names this milestone: it was
+  // reached once, so RemoveMilestone refuses it (MILESTONE_HAS_HISTORY). True
+  // for every reached milestone, and for a planned one whose marks were all
+  // undone; false for a milestone never reached and for one marked off the list.
+  bool has_history = 7;
 }
 
 message ListMilestonesRequest {
