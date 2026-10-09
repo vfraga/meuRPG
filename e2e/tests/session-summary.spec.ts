@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { endOpenSessionRPC, openSessionPage } from './live-session-support';
+import { endOpenSessionRPC, openSessionPage, startSessionRPC, tableWithPensantus } from './live-session-support';
 import { addActionRPC, openSceneRPC, rollTyped, sceneActionIdsRPC, setAttemptsRPC, setShowDcRPC, tableForScenes } from './scene-support';
 import { newSignedInContext } from './support';
 
@@ -95,6 +95,85 @@ test(
       }
       await masterContext.close();
       await playerContext.close();
+    }
+  },
+);
+
+// PM-01: the summary of an ended session is not a one-time card. After the session ends, and after a reload, the
+// campaign page lists it under "Sessões anteriores" and "Ver resumo" opens `/campaigns/<id>/sessions/<n>`, for the master
+// and for a player; a number that does not exist and someone outside the campaign each get a page that says only what
+// they may know.
+
+test(
+  'depois de encerrar a sessão e recarregar, o mestre e o jogador reabrem o resumo pela campanha; quem não é da mesa e um número que não existe veem só o que podem saber',
+  { tag: ['@MR-032', '@RN-20'] },
+  async ({ browser }) => {
+    test.setTimeout(180_000);
+    const masterContext = await newSignedInContext(browser, 'Mestre Teste');
+    const playerContext = await newSignedInContext(browser, 'Jogador Teste');
+    const strangerContext = await newSignedInContext(browser, 'E-mail Não Verificado');
+    const master = await masterContext.newPage();
+    const player = await playerContext.newPage();
+    const stranger = await strangerContext.newPage();
+    await master.goto('/');
+    await player.goto('/');
+    const campaignName = `Sessões anteriores ${Date.now()}`;
+    const table = await tableWithPensantus(master, player, campaignName);
+    const campaignId = table.campaignId;
+    try {
+      await startSessionRPC(master, campaignId);
+
+      // The master ends it from the campaign page: the session moves to "Sessões anteriores" without a reload.
+      await master.goto(`/campaigns/${campaignId}`);
+      await master.getByRole('button', { name: 'Encerrar sessão' }).click();
+      await master.getByRole('button', { name: 'Confirmar encerramento' }).click();
+      const panel = master.getByRole('region', { name: 'Sessões anteriores' });
+      await expect(panel.getByText('1 encerrada')).toBeVisible();
+
+      // After a reload the summary is one click away, and the page is the archive's, not the ending's.
+      await master.reload();
+      await expect(panel.getByText('Sessão 1', { exact: true })).toBeVisible();
+      await panel.getByRole('link', { name: 'Ver resumo da Sessão 1' }).click();
+      await expect(master).toHaveURL(`/campaigns/${campaignId}/sessions/1`);
+      await expect(master.getByRole('heading', { level: 1, name: 'Sessão 1' })).toBeFocused();
+      await expect(master).toHaveTitle(`Sessão 1 · ${campaignName} · Resumo da sessão · MeuRPG`);
+      await expect(master.getByRole('heading', { name: 'Em números' })).toBeVisible();
+      await expect(master.locator('.stat').filter({ hasText: 'Combates' })).toContainText('0');
+      await expect(master.getByText('Ninguém causou, curou, sofreu dano nem passou em testes nesta sessão.')).toBeVisible();
+      await expect(master.getByRole('heading', { name: 'Sessão encerrada' })).toHaveCount(0);
+      await master.reload();
+      await expect(master.getByRole('heading', { name: 'Em números' })).toBeVisible();
+      await master.getByRole('link', { name: 'Voltar para a campanha' }).click();
+      await expect(master).toHaveURL(`/campaigns/${campaignId}`);
+
+      // A player reads the same list and gets the card, as a page: nothing to close, no table, no counts.
+      await player.goto(`/campaigns/${campaignId}`);
+      await player.getByRole('region', { name: 'Sessões anteriores' }).getByRole('link', { name: 'Ver resumo da Sessão 1' }).click();
+      await expect(player).toHaveURL(`/campaigns/${campaignId}/sessions/1`);
+      await expect(player.getByRole('heading', { name: 'A sessão acabou' })).toBeVisible();
+      await expect(player.getByText('Seu personagem não aparece nos números desta sessão.')).toBeVisible();
+      await expect(player.getByRole('region', { name: 'Resumo da sessão' }).getByRole('button')).toHaveCount(0);
+      await expect(player.getByRole('table')).toHaveCount(0);
+      await expect(player.getByText('Em números')).toHaveCount(0);
+
+      // A number that does not exist: a member is told which was the last one.
+      await master.goto(`/campaigns/${campaignId}/sessions/9`);
+      await expect(master.getByRole('heading', { level: 1, name: 'Não há Sessão 9' })).toBeVisible();
+      await master.getByRole('link', { name: 'Ver a Sessão 1' }).click();
+      await expect(master.getByRole('heading', { level: 1, name: 'Sessão 1' })).toBeVisible();
+
+      // Someone outside the campaign, and an address that holds no number, get one generic page without its name.
+      for (const address of [`/campaigns/${campaignId}/sessions/1`, `/campaigns/${campaignId}/sessions/abc`]) {
+        await stranger.goto(address);
+        await expect(stranger.getByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeVisible();
+        await expect(stranger.getByText('Esta página não existe ou é só para quem está na campanha.')).toBeVisible();
+        await expect(stranger.getByText(campaignName)).toHaveCount(0);
+      }
+    } finally {
+      await endOpenSessionRPC(master, campaignId);
+      await masterContext.close();
+      await playerContext.close();
+      await strangerContext.close();
     }
   },
 );

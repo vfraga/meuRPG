@@ -59,8 +59,11 @@ test(
       await expect(master.getByTestId('treasure-seed')).not.toHaveText(seed);
 
       // A hoard of level 4 has magic items (the table always gives some): each has a description, with the SRD's text in English.
-      const name = (await master.locator('.item__name').first().textContent())!.replace(/^\d+ × /, '').trim();
-      await master.getByRole('button', { name: `Ver descrição: ${name}` }).click();
+      // The same item can come twice in a hoard (two rows of "Poção de cura"), so everything is read inside the first row.
+      const firstRow = master.locator('app-treasure-item-row').first();
+      const name = (await firstRow.locator('.item__name').textContent())!.replace(/^\d+ × /, '').trim();
+      const openFirst = firstRow.getByRole('button', { name: `Ver descrição: ${name}` });
+      await openFirst.click();
       const dialog = master.getByRole('dialog', { name });
       await expect(dialog).toContainText('Valores do SRD 5.2.1 (regras de 2024)');
       await expect(dialog.getByRole('link', { name: 'Créditos' })).toBeVisible();
@@ -69,7 +72,7 @@ test(
       await expect(dialog.locator('button[data-initial-focus]')).toBeFocused();
       await master.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
-      await expect(master.getByRole('button', { name: `Ver descrição: ${name}` })).toBeFocused();
+      await expect(openFirst).toBeFocused();
 
       // A player has no page: a notice, and the server answers `not_found`.
       await player.goto(treasureRoute(campaignId));

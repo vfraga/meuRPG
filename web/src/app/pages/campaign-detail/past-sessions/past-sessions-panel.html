@@ -1,0 +1,58 @@
+@if (visible()) {
+  @let s = sessions.state();
+  <section class="mr-panel past" aria-labelledby="past-sessions-heading">
+    <div class="past__head">
+      <h2 class="mr-panel__title" id="past-sessions-heading">Sessões anteriores</h2>
+      @if (s.status === 'ready' && rows().length > 0) {
+        <span class="past__count">{{ count() }}</span>
+      }
+    </div>
+
+    @switch (s.status) {
+      @case ('loading') {
+        <p class="mr-muted past__text" role="status">Carregando as sessões...</p>
+      }
+      @case ('error') {
+        <div class="mr-notice mr-notice--danger" role="alert">
+          <mat-icon aria-hidden="true">error</mat-icon>
+          <p>Não foi possível carregar as sessões. Tente de novo.</p>
+        </div>
+        <div>
+          <button matButton="outlined" type="button" (click)="retry()">Tentar de novo</button>
+        </div>
+      }
+      @case ('ready') {
+        @if (rows().length === 0) {
+          <p class="past__empty">
+            Nenhuma sessão encerrada ainda. Quando você encerrar a primeira, o resumo dela fica guardado aqui.
+          </p>
+        } @else {
+          <ul class="mr-list past__list">
+            @for (r of rows(); track r.id; let i = $index) {
+              <li class="row">
+                <span class="row__name">Sessão {{ r.number }}</span>
+                <span class="row__when">{{ r.span }}</span>
+                <span class="row__duration">{{ r.duration }}</span>
+                <a
+                  class="row__link"
+                  [class.js-first-extra]="i === shown"
+                  [routerLink]="['/campaigns', campaignId(), 'sessions', r.number]"
+                  [attr.aria-label]="'Ver resumo da Sessão ' + r.number"
+                >
+                  Ver resumo<mat-icon aria-hidden="true">chevron_right</mat-icon>
+                </a>
+              </li>
+            }
+          </ul>
+          @if (hidden() > 0) {
+            <div>
+              <button matButton type="button" class="past__more" (click)="showAll()">
+                Mostrar as outras {{ hidden() }}
+              </button>
+            </div>
+          }
+        }
+      }
+    }
+  </section>
+}

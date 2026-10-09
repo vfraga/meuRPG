@@ -5630,3 +5630,89 @@ test('as opções para os jogadores passam no axe e nas conferências de layout 
 test('as opções para os jogadores passam no axe e nas conferências de layout no tema claro, no celular de 320', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
   await scanOptions(browser, 'light', 320);
 });
+
+/**
+ * "Sessões anteriores" (PM-01): the campaign page's panel with a long list (the master's, the player's, and a
+ * player's before any session ended, where it does not exist), the summary page of the master (with a combat's
+ * table, without it) and of a player, the neighbours' links, a number that does not exist, and the generic page.
+ */
+async function scanPastSessions(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = { width, height: width <= 390 ? 700 : 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableWithPensantus(m, p, `Acessibilidade sessões anteriores ${Date.now()}`);
+    campaignId = table.campaignId;
+    const route = `/campaigns/${campaignId}`;
+
+    // Nothing ended yet: the master's empty box, and no panel for the player.
+    await open(m, route);
+    await expect(m.getByRole('region', { name: 'Sessões anteriores' })).toContainText('Nenhuma sessão encerrada ainda');
+    await expectScreenPasses(m, `Sessões anteriores, vazio do mestre ${where}`);
+    await open(p, route);
+    await expect(p.getByRole('region', { name: 'Sessões anteriores' })).toHaveCount(0);
+    await expectScreenPasses(p, `Sessões anteriores, o jogador sem nenhuma ${where}`);
+
+    // Six ended sessions: five show and "Mostrar as outras 1".
+    for (let i = 0; i < 6; i++) {
+      await endSessionRPC(m, campaignId, await startSessionRPC(m, campaignId));
+    }
+    await open(m, route);
+    const panel = (page: Page) => page.getByRole('region', { name: 'Sessões anteriores' });
+    await expect(panel(m)).toContainText('6 encerradas');
+    await expect(panel(m).getByRole('button', { name: 'Mostrar as outras 1' })).toBeVisible();
+    await expectScreenPasses(m, `Sessões anteriores, lista do mestre ${where}`);
+    await panel(m).getByRole('button', { name: 'Mostrar as outras 1' }).click();
+    await expect(panel(m).getByRole('link', { name: 'Ver resumo da Sessão 1' })).toBeFocused();
+    await expectScreenPasses(m, `Sessões anteriores, a lista inteira ${where}`);
+    await open(p, route);
+    await expect(panel(p)).toContainText('6 encerradas');
+    await expectScreenPasses(p, `Sessões anteriores, lista do jogador ${where}`);
+
+    // The summary page, as the master and as the player, and the pager.
+    await open(m, `${route}/sessions/3`);
+    await expect(m.getByRole('heading', { name: 'Em números' })).toBeVisible();
+    await expect(m.getByRole('navigation', { name: 'Outras sessões' })).toContainText('Sessão 4');
+    await expectScreenPasses(m, `O resumo da sessão, mestre ${where}`);
+    await m.getByRole('navigation', { name: 'Outras sessões' }).getByRole('link', { name: 'Sessão 4' }).focus();
+    await expectScreenPasses(m, `O resumo da sessão, foco na sessão vizinha ${where}`);
+    await open(p, `${route}/sessions/3`);
+    await expect(p.getByRole('heading', { name: 'A sessão acabou' })).toBeVisible();
+    await expectScreenPasses(p, `O resumo da sessão, jogador ${where}`);
+
+    // A number that does not exist, and the page for anyone who may not know.
+    await open(m, `${route}/sessions/9`);
+    await expect(m.getByRole('heading', { level: 1, name: 'Não há Sessão 9' })).toBeVisible();
+    await expectScreenPasses(m, `O resumo da sessão, número que não existe ${where}`);
+    await open(p, `${route}/sessions/abc`);
+    await expect(p.getByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeVisible();
+    await expectScreenPasses(p, `O resumo da sessão, página genérica ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+test('as sessões anteriores e o resumo passam no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@MR-032'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanPastSessions(browser, 'light', 1280);
+});
+
+test('as sessões anteriores e o resumo passam no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@MR-032'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanPastSessions(browser, 'dark', 390);
+});
+
+test('as sessões anteriores e o resumo passam no axe e nas conferências de layout no tema claro, no celular de 320', { tag: ['@a11y', '@MR-032'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanPastSessions(browser, 'light', 320);
+});

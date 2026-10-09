@@ -116,6 +116,36 @@ func TestSnapshot(t *testing.T) {
 			t.Error("NOTICE must name the pinned 5e-srd-api commit")
 		}
 	})
+
+	t.Run("the credits page shows the attribution the content carries", func(t *testing.T) {
+		t.Parallel()
+		page, err := os.ReadFile("../../../web/src/app/pages/credits/credits.ts")
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, ok := creditsAttribution(string(page))
+		if !ok {
+			t.Fatal("credits.ts has no SRD_ATTRIBUTION string to compare")
+		}
+		if got != c.Catalog().Attribution {
+			t.Errorf("credits.ts SRD_ATTRIBUTION differs from Content.attribution:\n web:    %q\n server: %q", got, c.Catalog().Attribution)
+		}
+		// The check can fail: a copy with one word changed is not the attribution.
+		changed := strings.Replace(string(page), "Wizards of the Coast LLC", "Wizards of the Coast", 1)
+		if other, _ := creditsAttribution(changed); other == c.Catalog().Attribution {
+			t.Error("a changed web copy still equals the server's attribution: the comparison does not look at the text")
+		}
+	})
+}
+
+// creditsAttribution reads the SRD_ATTRIBUTION string literal of the web's
+// credits page.
+func creditsAttribution(src string) (string, bool) {
+	m := regexp.MustCompile(`(?s)export const SRD_ATTRIBUTION =\s*'((?:[^'\\]|\\.)*)'`).FindStringSubmatch(src)
+	if m == nil {
+		return "", false
+	}
+	return strings.ReplaceAll(m[1], `\'`, `'`), true
 }
 
 // effectsHash is the sha256 of every file in effects/ but revision.json, by
@@ -592,5 +622,71 @@ func TestSpellAndSubclassCorrectionsAreClosed(t *testing.T) {
 	}
 	if got := c.subclasses["subclass:life"].Spells; len(got) != 2 || got[1].Spell != "spell:ward" || got[1].ClassLevel != 7 {
 		t.Errorf("corrected subclass spells = %+v, want the new spell at level 7 after the old one", got)
+	}
+}
+
+// TestSpellListAndSubclassFeatureCorrectionsAreClosed: the loader refuses a spell
+// list or subclass feature correction it does not know, and writes a good one over
+// the snapshot.
+func TestSpellListAndSubclassFeatureCorrectionsAreClosed(t *testing.T) {
+	t.Parallel()
+	newContent := func() *content {
+		return &content{
+			classLevels: map[string][]*srd51.Level{},
+			classes:     map[string]*srd51.Class{"class:bard": {}, "class:cleric": {}},
+			spells: map[string]*srd51.Spell{
+				"spell:fire":  {Classes: []string{"class:cleric"}},
+				"spell:light": {Classes: []string{"class:bard", "class:cleric"}},
+			},
+			subclasses: map[string]*srd51.Subclass{"subclass:land": {Class: "class:druid"}, "subclass:life": {Class: "class:cleric"}},
+			features: map[string]*srd51.Feature{
+				"feature:terrain":  {Subclass: "subclass:land"},
+				"feature:domain":   {Subclass: "subclass:life"},
+				"feature:circle-2": {Subclass: "subclass:land"},
+			},
+			subclassLevels: map[string]map[int]*srd51.Level{"subclass:land": {2: {Features: []string{"feature:circle-2"}}}},
+		}
+	}
+	for name, doc := range map[string]string{
+		"list of an unknown class":     `{"spell_list_corrections":[{"class":"class:nope","add":["spell:fire"],"source":"SRD"}]}`,
+		"list with an unknown spell":   `{"spell_list_corrections":[{"class":"class:bard","add":["spell:nope"],"source":"SRD"}]}`,
+		"list without a source":        `{"spell_list_corrections":[{"class":"class:bard","add":["spell:fire"]}]}`,
+		"list that corrects nothing":   `{"spell_list_corrections":[{"class":"class:bard","source":"SRD"}]}`,
+		"spell added that is on it":    `{"spell_list_corrections":[{"class":"class:bard","add":["spell:light"],"source":"SRD"}]}`,
+		"spell removed that is not on": `{"spell_list_corrections":[{"class":"class:bard","remove":["spell:fire"],"source":"SRD"}]}`,
+		"spell added and removed":      `{"spell_list_corrections":[{"class":"class:bard","add":["spell:fire"],"remove":["spell:fire"],"source":"SRD"}]}`,
+		"list corrected twice":         `{"spell_list_corrections":[{"class":"class:bard","add":["spell:fire"],"source":"SRD"},{"class":"class:bard","remove":["spell:light"],"source":"SRD"}]}`,
+		"features of an unknown class": `{"subclass_feature_corrections":[{"subclass":"subclass:nope","level":2,"add_features":["feature:terrain"],"source":"SRD"}]}`,
+		"unknown feature":              `{"subclass_feature_corrections":[{"subclass":"subclass:land","level":2,"add_features":["feature:nope"],"source":"SRD"}]}`,
+		"feature of another subclass":  `{"subclass_feature_corrections":[{"subclass":"subclass:land","level":2,"add_features":["feature:domain"],"source":"SRD"}]}`,
+		"features at a level out":      `{"subclass_feature_corrections":[{"subclass":"subclass:land","level":21,"add_features":["feature:terrain"],"source":"SRD"}]}`,
+		"feature the row has":          `{"subclass_feature_corrections":[{"subclass":"subclass:land","level":2,"add_features":["feature:circle-2"],"source":"SRD"}]}`,
+		"features without a source":    `{"subclass_feature_corrections":[{"subclass":"subclass:land","level":2,"add_features":["feature:terrain"]}]}`,
+		"features corrected twice":     `{"subclass_feature_corrections":[{"subclass":"subclass:land","level":3,"add_features":["feature:terrain"],"source":"SRD"},{"subclass":"subclass:land","level":3,"add_features":["feature:circle-2"],"source":"SRD"}]}`,
+		"features with none to add":    `{"subclass_feature_corrections":[{"subclass":"subclass:land","level":3,"source":"SRD"}]}`,
+	} {
+		if err := newContent().applyCorrections(fstest.MapFS{"effects/corrections.json": {Data: []byte(doc)}}); err == nil {
+			t.Errorf("%s: the loader accepted it", name)
+		}
+	}
+	c := newContent()
+	doc := `{"spell_list_corrections":[{"class":"class:bard","add":["spell:fire"],"remove":["spell:light"],"source":"SRD"}],
+		"subclass_feature_corrections":[
+			{"subclass":"subclass:land","level":2,"add_features":["feature:terrain"],"source":"SRD"},
+			{"subclass":"subclass:land","level":3,"add_features":["feature:terrain"],"source":"SRD"}]}`
+	if err := c.applyCorrections(fstest.MapFS{"effects/corrections.json": {Data: []byte(doc)}}); err != nil {
+		t.Fatalf("good corrections: %v", err)
+	}
+	if got := c.spells["spell:fire"].Classes; !slices.Equal(got, []string{"class:cleric", "class:bard"}) {
+		t.Errorf("Fire's classes = %v, want the bard added", got)
+	}
+	if got := c.spells["spell:light"].Classes; !slices.Equal(got, []string{"class:cleric"}) {
+		t.Errorf("Light's classes = %v, want the bard removed", got)
+	}
+	if got := c.subclassLevels["subclass:land"][2].Features; !slices.Equal(got, []string{"feature:circle-2", "feature:terrain"}) {
+		t.Errorf("land features at 2 = %v, want the terrain added after the old one", got)
+	}
+	if row := c.subclassLevels["subclass:land"][3]; row == nil || row.Class != "class:druid" || row.Subclass != "subclass:land" || row.Level != 3 || !slices.Equal(row.Features, []string{"feature:terrain"}) {
+		t.Errorf("land row at 3 = %+v, want one made for the subclass", row)
 	}
 }

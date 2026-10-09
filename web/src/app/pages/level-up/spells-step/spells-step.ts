@@ -68,10 +68,12 @@ export class SpellsStep {
     );
     const book = d.effective().spellsKind === LevelUpSpellsKind.SPELLBOOK;
     const n = d.preparedAsked();
+    // The line follows the picks: it counts what is left to prepare, and goes once none is.
+    const left = Math.max(0, n - d.prepared().size);
     return {
       n,
       base: d.have.prepared.length,
-      strong: `Prepare mais ${n}.`,
+      strong: left > 0 ? `Prepare mais ${left}.` : '',
       note:
         `Você prepara até ${d.preparedMaxAfter()} magias${book ? ' do livro' : ''} (eram ${s.options.preparedMax}).` +
         (names.length > 0 ? ` Já preparadas: ${LIST.format(names)}.` : ''),

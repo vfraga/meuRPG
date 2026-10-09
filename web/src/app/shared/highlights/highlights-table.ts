@@ -23,7 +23,7 @@ let nextId = 0;
 @Component({
   selector: 'app-highlights-table',
   template: `
-    <div class="tbl" [style.--cols]="columns().length">
+    <div class="tbl" [class.tbl--spread]="layout() === 'spread'" [style.--cols]="columns().length">
       <h3 class="tbl__title" [id]="id + '-title'">{{ title() }}</h3>
       @if (caption()) {
         <p class="tbl__caption">{{ caption() }}</p>
@@ -53,6 +53,9 @@ export class HighlightsTable {
   readonly columns = input.required<readonly string[]>();
   readonly rows = input.required<readonly HighlightsTableRow[]>();
   readonly nameHeader = input('Personagem');
+  /** On a phone: `pairs` puts the numbers in two columns, each beside its label; `spread` puts them in one
+   * row (wrapping when it must), each label above its number. */
+  readonly layout = input<'pairs' | 'spread'>('pairs');
   /** A line under the title that says what the numbers count. */
   readonly caption = input('');
 

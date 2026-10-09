@@ -44,8 +44,8 @@ class FakeCampaignCharactersSource {
 @Injectable()
 class FakeGameSessionSource {
   getCurrentSessionResult: Promise<GameSessionVm | null> = Promise.resolve(null);
-  getCurrentSession(): Promise<GameSessionVm | null> {
-    return this.getCurrentSessionResult;
+  listSessions(): Promise<readonly GameSessionVm[]> {
+    return this.getCurrentSessionResult.then((open) => (open ? [open] : []));
   }
 }
 
@@ -454,14 +454,17 @@ describe('CampaignDetail', () => {
       expect(listAwards).toHaveBeenCalledTimes(1);
     });
 
-    it('puts it right after "Sessão", and gives only the master "Dar XP"', async () => {
+    it('puts it after "Sessão" and "Sessões anteriores", and gives only the master "Dar XP"', async () => {
       asRole(Role.MASTER);
       const el = await render();
       await flush();
       const column = el.querySelector('.campaign-layout__column')!;
       const order = Array.from(column.children).map((c) => c.tagName.toLowerCase());
-      expect(order.indexOf('app-experience-panel')).toBe(
+      expect(order.indexOf('app-past-sessions-panel')).toBe(
         order.indexOf('app-game-session-card') + 1,
+      );
+      expect(order.indexOf('app-experience-panel')).toBe(
+        order.indexOf('app-past-sessions-panel') + 1,
       );
       expect(
         Array.from(el.querySelectorAll('app-experience-panel button')).some(

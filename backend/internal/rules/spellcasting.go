@@ -296,6 +296,10 @@ func (x *deriver) characterSpells(casters []caster) {
 			fmt.Sprintf("Há %d truques; o personagem conhece %d.", n, cantripsMax))
 	}
 
+	if n := notGranted(x.b.Cantrips); n < cantripsMax {
+		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceCantrips, Missing: cantripsMax - n})
+	}
+
 	// Spells known (a wizard's spellbook, or a known caster's spells) and
 	// prepared.
 	checkSpell := func(field, key string, offList bool) (*srd51.Spell, bool) {
@@ -363,6 +367,12 @@ func (x *deriver) characterSpells(casters []caster) {
 		subject, change := whoCasts("conhece", countPT(knownMax+extraKnown, "magia", "magias"), "magias conhecidas", knownMax+extraKnown, n, extraKnown > 0)
 		x.issueChange(IssueSpellCount, "full.known_spell_keys", subject, change,
 			fmt.Sprintf("Há %d magias conhecidas; o personagem conhece %d.", n, knownMax+extraKnown))
+	}
+	if n := notGranted(x.b.SpellsKnown); hasKnownCaster && !hasSpellbook && n < knownMax {
+		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceSpellsKnown, Missing: knownMax - n})
+	}
+	if counted < preparedMax {
+		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceSpellsPrepared, Missing: preparedMax - counted})
 	}
 	if preparedMax > 0 && counted > preparedMax {
 		subject, change := whoCasts("prepara", countPT(preparedMax, "magia", "magias"), "magias preparadas", preparedMax, counted, false)

@@ -945,3 +945,159 @@ func TestLevel20FeaturesRaiseScoresUpTo24(t *testing.T) {
 		t.Errorf("a score already above 24 = %d, want 29 (the feature never lowers it)", got)
 	}
 }
+
+// landDruid is a human Circle of the Land druid of the level, in the terrain.
+func landDruid(level int, terrain string) Build {
+	b := standard("class:druid", level)
+	b.Classes[0].Subclass = "subclass:land"
+	b.FeatureChoices = []string{"feature:circle-of-the-land-" + terrain}
+	b.BaseScores[WIS] = 15
+	return b
+}
+
+// TestLandDruidCircleSpells: the circle spells of the chosen land come at druid
+// levels 3, 5, 7 and 9, always prepared, off the druid's own list when the land has
+// them there or not, and none of them counts against the spells prepared (SRD 5.1,
+// Druid, Circle of the Land, Circle Spells).
+func TestLandDruidCircleSpells(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	spellsOf := func(d Derived) map[string]bool {
+		out := map[string]bool{}
+		for _, s := range d.Spells {
+			if s.Prepared {
+				out[s.Spell.Key] = true
+			}
+		}
+		return out
+	}
+	for _, tc := range []struct {
+		level int
+		have  []string
+		not   []string
+	}{
+		{2, nil, []string{"spell:hold-person", "spell:spike-growth"}},
+		{3, []string{"spell:hold-person", "spell:spike-growth"}, []string{"spell:sleet-storm", "spell:slow"}},
+		{5, []string{"spell:hold-person", "spell:sleet-storm", "spell:slow"}, []string{"spell:ice-storm"}},
+		{9, []string{"spell:ice-storm", "spell:freedom-of-movement", "spell:cone-of-cold", "spell:commune-with-nature"}, nil},
+	} {
+		d := Derive(landDruid(tc.level, "arctic"), c)
+		got := spellsOf(d)
+		for _, k := range tc.have {
+			if !got[k] {
+				t.Errorf("Land druid %d, arctic: %s is not prepared; prepared = %v", tc.level, k, got)
+			}
+		}
+		for _, k := range tc.not {
+			if got[k] {
+				t.Errorf("Land druid %d, arctic: %s is prepared before its level", tc.level, k)
+			}
+		}
+		if hasIssue(d, IssueSpellCount) {
+			t.Errorf("Land druid %d: circle spells counted against the prepared spells: %v", tc.level, d.Issues)
+		}
+	}
+	// Another land gives its own spells, and none of the arctic's.
+	desert := spellsOf(Derive(landDruid(3, "desert"), c))
+	if !desert["spell:blur"] || !desert["spell:silence"] || desert["spell:hold-person"] {
+		t.Errorf("Land druid 3, desert: prepared = %v, want blur and silence only", desert)
+	}
+	// Without a terrain there are no circle spells.
+	b := landDruid(3, "arctic")
+	b.FeatureChoices = nil
+	if got := spellsOf(Derive(b, c)); got["spell:hold-person"] {
+		t.Errorf("Land druid with no terrain has circle spells: %v", got)
+	}
+	// The circle spells feature is on the sheet from level 3, and the terrain from level 2.
+	d := Derive(landDruid(3, "arctic"), c)
+	if !hasFeature(d, "feature:circle-of-the-land") || !hasFeature(d, "feature:circle-spells-1") {
+		t.Errorf("Land druid 3 features lack the terrain or the circle spells")
+	}
+}
+
+// TestSkillsTheRaceAndBackgroundGiveAreNoPicks: a skill the race or the background
+// already gives is not one of the class's picks, so choosing it again leaves a pick
+// unmade (SRD 5.1, Backgrounds: a repeated proficiency is traded for another).
+func TestSkillsTheRaceAndBackgroundGiveAreNoPicks(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	b := standard("class:fighter", 1)
+	b.Race = "race:half-orc"
+	b.Background = "background:acolyte" // Insight and Religion
+	// Fighters choose two: Intimidation comes from the half-orc, Insight from the acolyte.
+	b.SkillProficiencies = []string{"skill:intimidation", "skill:insight"}
+	d := Derive(b, c)
+	if !hasIssue(d, IssueSkillCount) {
+		t.Fatalf("both picks repeat a given skill: issues = %v, want the two picks missing", d.Issues)
+	}
+	if len(d.OpenChoices) != 1 || d.OpenChoices[0] != (OpenChoice{Kind: OpenChoiceSkills, Missing: 2}) {
+		t.Errorf("open choices = %+v, want 2 skills missing", d.OpenChoices)
+	}
+	b.SkillProficiencies = []string{"skill:athletics", "skill:perception"}
+	d = Derive(b, c)
+	if hasIssue(d, IssueSkillCount) || len(d.OpenChoices) != 0 {
+		t.Errorf("two new skills: issues = %v, open choices = %+v, want a complete sheet", d.Issues, d.OpenChoices)
+	}
+	// The catalog tells the editor which skills are given.
+	cat := c.Catalog()
+	var orc, acolyte, elf []string
+	for _, r := range cat.Races {
+		switch r.Key {
+		case "race:half-orc":
+			orc = r.SkillProficiencies
+		case "race:elf":
+			elf = r.SkillProficiencies
+		}
+	}
+	for _, bg := range cat.Backgrounds {
+		if bg.Key == "background:acolyte" {
+			acolyte = bg.SkillProficiencies
+		}
+	}
+	if !slices.Equal(orc, []string{"skill:intimidation"}) || !slices.Equal(elf, []string{"skill:perception"}) || !slices.Equal(acolyte, []string{"skill:insight", "skill:religion"}) {
+		t.Errorf("given skills: half-orc %v, elf %v, acolyte %v", orc, elf, acolyte)
+	}
+}
+
+// TestOpenChoicesNameWhatASheetLacks: a caster that picked no cantrip or prepared
+// no spell, and a class that picked no skill, has the choices open; a complete
+// sheet has none.
+func TestOpenChoicesNameWhatASheetLacks(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	w := standard("class:wizard", 6)
+	d := Derive(w, c)
+	want := map[string]int{OpenChoiceSkills: 2, OpenChoiceCantrips: 4, OpenChoiceSpellsPrepared: 7}
+	got := map[string]int{}
+	for _, o := range d.OpenChoices {
+		got[o.Kind] = o.Missing
+	}
+	if len(got) != len(want) {
+		t.Fatalf("open choices = %+v, want %v", d.OpenChoices, want)
+	}
+	for k, n := range want {
+		if got[k] != n {
+			t.Errorf("open %s = %d, want %d (%+v)", k, got[k], n, d.OpenChoices)
+		}
+	}
+	// A Sorcerer learns a fixed number of spells.
+	s := Derive(standard("class:sorcerer", 3), c)
+	var known int
+	for _, o := range s.OpenChoices {
+		if o.Kind == OpenChoiceSpellsKnown {
+			known = o.Missing
+		}
+	}
+	if known != 4 {
+		t.Errorf("a level 3 sorcerer with no spell has %d spells known open, want 4: %+v", known, s.OpenChoices)
+	}
+	// Picking them closes them.
+	w.SkillProficiencies = []string{"skill:arcana", "skill:history"}
+	w.Cantrips = []string{"spell:fire-bolt", "spell:light", "spell:mage-hand", "spell:prestidigitation"}
+	w.SpellsKnown = []string{"spell:magic-missile", "spell:shield", "spell:sleep", "spell:burning-hands", "spell:detect-magic", "spell:mage-armor", "spell:fireball", "spell:fly"}
+	w.SpellsPrepared = []string{"spell:magic-missile", "spell:shield", "spell:sleep", "spell:burning-hands", "spell:detect-magic", "spell:mage-armor", "spell:fireball", "spell:fly"}
+	d = Derive(w, c)
+	if len(d.OpenChoices) != 0 {
+		t.Errorf("a complete wizard has open choices %+v (issues %v)", d.OpenChoices, d.Issues)
+	}
+}

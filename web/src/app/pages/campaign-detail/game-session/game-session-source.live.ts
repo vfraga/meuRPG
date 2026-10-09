@@ -2,13 +2,26 @@ import { Injectable, inject } from '@angular/core';
 import { createClient } from '@connectrpc/connect';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
+import {
+  CharacterService,
+  OpenChoiceKind,
+} from '../../../../gen/meurpg/characters/v1/characters_pb';
 import { GameSession, PlayService } from '../../../../gen/meurpg/play/v1/play_pb';
 import { CONNECT_TRANSPORT } from '../../../core/connect/transport';
 import {
   GameSessionSource,
   GameSessionVm,
+  OpenChoiceKindVm,
+  OpenChoicesVm,
   StartGameSessionResultVm,
 } from './game-session-card.types';
+
+const OPEN_CHOICE_KINDS: Partial<Record<OpenChoiceKind, OpenChoiceKindVm>> = {
+  [OpenChoiceKind.SKILLS]: 'skills',
+  [OpenChoiceKind.CANTRIPS]: 'cantrips',
+  [OpenChoiceKind.SPELLS_KNOWN]: 'spellsKnown',
+  [OpenChoiceKind.SPELLS_PREPARED]: 'spellsPrepared',
+};
 
 function toVm(gameSession: GameSession): GameSessionVm {
   return {
@@ -28,11 +41,11 @@ function toVm(gameSession: GameSession): GameSessionVm {
 @Injectable()
 export class GameSessionSourceLive implements GameSessionSource {
   private readonly client = createClient(PlayService, inject(CONNECT_TRANSPORT));
+  private readonly characters = createClient(CharacterService, inject(CONNECT_TRANSPORT));
 
-  async getCurrentSession(campaignId: string): Promise<GameSessionVm | null> {
+  async listSessions(campaignId: string): Promise<readonly GameSessionVm[]> {
     const res = await this.client.listGameSessions({ campaignId });
-    const open = res.gameSessions.find((gs) => !gs.endedAt);
-    return open ? toVm(open) : null;
+    return res.gameSessions.map(toVm);
   }
 
   async startGameSession(
@@ -46,5 +59,19 @@ export class GameSessionSourceLive implements GameSessionSource {
   async endGameSession(campaignId: string, gameSessionId: string): Promise<GameSessionVm> {
     const res = await this.client.endGameSession({ campaignId, gameSessionId });
     return toVm(res.gameSession!);
+  }
+
+  async listOpenChoices(campaignId: string): Promise<readonly OpenChoicesVm[]> {
+    const res = await this.characters.listCharacters({ campaignId });
+    return res.characters
+      .filter((c) => c.openChoices.length > 0)
+      .map((c) => ({
+        characterId: c.id,
+        name: c.name,
+        choices: c.openChoices.flatMap((o) => {
+          const kind = OPEN_CHOICE_KINDS[o.kind];
+          return kind ? [{ kind, missing: o.missing }] : [];
+        }),
+      }));
   }
 }

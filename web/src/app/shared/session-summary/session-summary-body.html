@@ -1,0 +1,68 @@
+@if (isMaster()) {
+  <section class="mr-panel sum" aria-labelledby="se-sum">
+    <div class="sum__head">
+      <h2 class="sum__title" id="se-sum">Resumo da sessão</h2>
+      <span class="sum__lead">Os jogadores veem os destaques e o resultado de cada um.</span>
+    </div>
+    @if (masterTiles().length === 0) {
+      <p class="sum__note">Ninguém causou, curou, sofreu dano nem passou em testes nesta sessão.</p>
+    } @else {
+      <h3 class="sum__h">Destaques</h3>
+      <app-highlight-tiles [tiles]="masterTiles()" [players]="players()" />
+      @if (archive() && summary().combats === 0) {
+        <p class="sum__note">Não houve combate nesta sessão.</p>
+      }
+    }
+    @if (archive() && combat().length > 0) {
+      <app-highlights-table
+        title="Números de cada jogador"
+        caption="Do combate de toda a sessão."
+        [columns]="COMBAT_COLUMNS"
+        [rows]="combat()"
+        layout="spread"
+      />
+    }
+    @if (rows().length > 0) {
+      <app-highlights-table
+        title="Testes passados fora do combate"
+        caption="Só contam testes de cenas que mostraram a CD aos jogadores; cenas com a CD escondida não entram na conta."
+        [columns]="['Testes passados']"
+        [rows]="rows()"
+      />
+    }
+    <!-- "Mais tesouro encontrado" (MR-041): every character that found something, or the line that none did. -->
+    @if (treasure().length === 0) {
+      <h3 class="sum__h">Mais tesouro encontrado</h3>
+      <p class="sum__none">
+        <mat-icon aria-hidden="true">paid</mat-icon>Nenhum tesouro registrado nesta sessão.
+      </p>
+    } @else {
+      <app-highlights-table
+        title="Mais tesouro encontrado"
+        caption="Só conta o que foi marcado durante a sessão."
+        [columns]="['Tesouro encontrado']"
+        [rows]="treasure()"
+      />
+      <p class="sum__note">
+        Quem não encontrou nada não aparece. Um tesouro encontrado por duas pessoas divide o valor, arredondado para baixo.
+      </p>
+    }
+  </section>
+} @else {
+  <app-highlights-frame
+    ariaLabel="Resumo da sessão"
+    [tag]="archive() ? '' : 'Sessão encerrada'"
+    title="A sessão acabou"
+    [subtitle]="cardSub()"
+    [heading]="archive() ? 'Destaques' : 'Resumo da sessão'"
+    [tiles]="tiles()"
+    none="Ninguém causou, curou, sofreu dano nem passou em testes nesta sessão."
+    [characterId]="characterId()"
+    [ownTitle]="own().length > 0 ? 'Seu resultado, ' + characterName() : ''"
+    [own]="own()"
+    [ownNone]="archive() && !summary().mine ? 'Seu personagem não aparece nos números desta sessão.' : ''"
+    [closable]="!archive()"
+    [notice]="!archive()"
+    (closed)="closed.emit()"
+  />
+}

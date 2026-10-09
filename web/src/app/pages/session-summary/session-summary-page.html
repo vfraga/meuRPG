@@ -1,0 +1,118 @@
+@let s = state();
+@if (s.status === 'denied') {
+  <h1 class="mr-page-title">Página não encontrada</h1>
+  <div class="mr-notice mr-notice--neutral page-notice" role="note">
+    <mat-icon aria-hidden="true">search_off</mat-icon>
+    <p>
+      <strong>Esta página não existe ou é só para quem está na campanha.</strong>
+      Um convite do mestre coloca você na mesa.
+    </p>
+  </div>
+  <div class="actions">
+    <a matButton="filled" routerLink="/">Ir para o início</a>
+  </div>
+} @else {
+  <a class="back" [routerLink]="['/campaigns', campaignId()]">
+    <mat-icon aria-hidden="true">arrow_back</mat-icon>Voltar para a campanha
+  </a>
+
+  @switch (s.status) {
+    @case ('ready') {
+      <header class="head">
+        <div class="head__text">
+          <h1 class="mr-page-title js-title" tabindex="-1">Sessão {{ number() }}</h1>
+          <p class="mr-page-lead">{{ s.campaignName }} · {{ when() }}</p>
+        </div>
+        @if (s.previous || s.next) {
+          <nav class="pager" aria-label="Outras sessões">
+            @if (s.previous; as p) {
+              <a matButton="outlined" [routerLink]="['/campaigns', campaignId(), 'sessions', p.number]">
+                <mat-icon aria-hidden="true">chevron_left</mat-icon>{{ p.label }}
+              </a>
+            }
+            @if (s.next; as n) {
+              <a
+                matButton="outlined"
+                [routerLink]="n.open ? ['/campaigns', campaignId(), 'session'] : ['/campaigns', campaignId(), 'sessions', n.number]"
+              >
+                {{ n.label }}<mat-icon iconPositionEnd aria-hidden="true">chevron_right</mat-icon>
+              </a>
+            }
+          </nav>
+        }
+      </header>
+
+      <div class="stack">
+        @if (s.isMaster) {
+          <section class="mr-panel" aria-labelledby="numbers-title">
+            <h2 class="numbers__title" id="numbers-title">Em números</h2>
+            <app-session-stats
+              [duration]="duration()"
+              [combats]="s.summary.combats"
+              [scenes]="s.summary.scenesOpened"
+              [checks]="checks()"
+            />
+          </section>
+        }
+        <app-session-summary-body
+          [summary]="s.summary"
+          [isMaster]="s.isMaster"
+          [players]="s.players"
+          [characterId]="ownCharacterId()"
+          [characterName]="ownCharacterName()"
+          [archive]="true"
+        />
+      </div>
+    }
+    @case ('loading') {
+      <h1 class="mr-page-title js-title" tabindex="-1">Sessão {{ number() }}</h1>
+      @if (campaignName()) {
+        <p class="mr-page-lead">{{ campaignName() }}</p>
+      }
+      <p class="mr-muted" role="status">Abrindo o resumo da sessão...</p>
+    }
+    @case ('error') {
+      <h1 class="mr-page-title js-title" tabindex="-1">Sessão {{ number() }}</h1>
+      @if (campaignName()) {
+        <p class="mr-page-lead">{{ campaignName() }}</p>
+      }
+      <div class="mr-notice mr-notice--danger page-notice" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <p>{{ s.message }}</p>
+      </div>
+      <div class="actions">
+        <button matButton="outlined" type="button" class="js-retry" (click)="retry()">Tentar de novo</button>
+      </div>
+    }
+    @case ('open') {
+      <h1 class="mr-page-title js-title" tabindex="-1">Sessão {{ number() }}</h1>
+      <p class="mr-page-lead">{{ s.campaignName }}</p>
+      <div class="mr-notice mr-notice--neutral page-notice" role="status">
+        <mat-icon aria-hidden="true">schedule</mat-icon>
+        <p>A Sessão {{ number() }} ainda não acabou. O resumo aparece quando o mestre a encerrar.</p>
+      </div>
+      <div class="actions">
+        <a matButton="filled" [routerLink]="['/campaigns', campaignId(), 'session']">Entrar na sessão</a>
+      </div>
+    }
+    @case ('missing') {
+      <h1 class="mr-page-title js-title" tabindex="-1">Não há Sessão {{ number() }}</h1>
+      <p class="mr-page-lead">{{ s.campaignName }}</p>
+      <div class="mr-notice mr-notice--neutral page-notice">
+        <mat-icon aria-hidden="true">search_off</mat-icon>
+        <p>
+          Esta campanha não tem uma Sessão {{ number() }}.
+          @if (s.last !== null) {
+            A última sessão encerrada é a {{ s.last }}.
+          }
+        </p>
+      </div>
+      <div class="actions">
+        @if (s.last !== null) {
+          <a matButton="filled" [routerLink]="['/campaigns', campaignId(), 'sessions', s.last]">Ver a Sessão {{ s.last }}</a>
+        }
+        <a matButton="outlined" [routerLink]="['/campaigns', campaignId()]">Voltar para a campanha</a>
+      </div>
+    }
+  }
+}

@@ -15,64 +15,20 @@
           </div>
           <a matButton="outlined" class="end__leave" [routerLink]="['/campaigns', campaignId()]">Voltar à campanha</a>
         </div>
-        <dl class="end__stats">
-          <div class="stat"><dt>Duração</dt><dd>{{ duration() }}</dd></div>
-          <div class="stat"><dt>Combates</dt><dd>{{ combats() }}</dd></div>
-          <div class="stat"><dt>Cenas abertas</dt><dd>{{ scenes() }}</dd></div>
-          <div class="stat"><dt>Testes passados fora do combate</dt><dd>{{ checks() }}</dd></div>
-        </dl>
+        <app-session-stats [duration]="duration()" [combats]="combats()" [scenes]="scenes()" [checks]="checks()" />
       </section>
 
-      <section class="mr-panel sum" aria-labelledby="se-sum">
-        <div class="sum__head">
-          <h2 class="sum__title" id="se-sum">Resumo da sessão</h2>
-          <span class="sum__lead">Os jogadores veem os destaques e o resultado de cada um.</span>
-        </div>
-        @if (masterTiles().length === 0) {
-          <p class="sum__note">Ninguém causou, curou, sofreu dano nem passou em testes nesta sessão.</p>
-        } @else {
-          <h3 class="sum__h">Destaques</h3>
-          <app-highlight-tiles [tiles]="masterTiles()" [players]="players()" />
-        }
-        @if (rows().length > 0) {
-          <app-highlights-table
-            title="Testes passados fora do combate"
-            caption="Só contam testes de cenas que mostraram a CD aos jogadores; cenas com a CD escondida não entram na conta."
-            [columns]="['Testes passados']"
-            [rows]="rows()"
-          />
-        }
-        <!-- "Mais tesouro encontrado" (MR-041): every character that found something, or the line that none did. -->
-        @if (treasure().length === 0) {
-          <h3 class="sum__h">Mais tesouro encontrado</h3>
-          <p class="sum__none">
-            <mat-icon aria-hidden="true">paid</mat-icon>Nenhum tesouro registrado nesta sessão.
-          </p>
-        } @else {
-          <app-highlights-table
-            title="Mais tesouro encontrado"
-            caption="Só conta o que foi marcado durante a sessão."
-            [columns]="['Tesouro encontrado']"
-            [rows]="treasure()"
-          />
-          <p class="sum__note">
-            Quem não encontrou nada não aparece. Um tesouro encontrado por duas pessoas divide o valor, arredondado para baixo.
-          </p>
-        }
-      </section>
+      <app-session-summary-body
+        [summary]="summary()!"
+        [isMaster]="true"
+        [players]="players()"
+      />
     </div>
   } @else {
-    <app-highlights-frame
-      ariaLabel="Resumo da sessão"
-      tag="Sessão encerrada"
-      title="A sessão acabou"
-      [subtitle]="cardSub()"
-      heading="Resumo da sessão"
-      [tiles]="tiles()"
-      none="Ninguém causou, curou, sofreu dano nem passou em testes nesta sessão."
+    <app-session-summary-body
+      [summary]="summary()!"
       [characterId]="characterId()"
-      [ownTitle]="own().length > 0 ? 'Seu resultado, ' + characterName() : ''"
-      [own]="own()"
+      [characterName]="characterName()"
       (closed)="closed.set(true)"
     />
   }

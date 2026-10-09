@@ -1,6 +1,9 @@
 package rules
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func monkBuild(level, str, dex int) Build {
 	b := standard("class:monk", level)
@@ -350,5 +353,75 @@ func TestTwoWeaponFightingStyleIsOnTheSheet(t *testing.T) {
 	r.FeatureChoices = []string{"feature:ranger-fighting-style-two-weapon-fighting"}
 	if !Derive(r, c).TwoWeaponFighting {
 		t.Error("a ranger with the style lacks TwoWeaponFighting")
+	}
+}
+
+// duelist is a human fighter of the level with the Dueling style and the weapons.
+func duelist(weapons ...string) Build {
+	b := standard("class:fighter", 1)
+	b.FeatureChoices = []string{"feature:fighter-fighting-style-dueling"}
+	b.Weapons = weapons
+	return b
+}
+
+// TestDuelingAddsTwoDamageToTheOneMeleeWeaponInOneHand: SRD 5.1 Dueling gives +2 to
+// damage while a melee weapon is wielded in one hand and no other weapon is. The sheet
+// lists the weapons carried, not the ones in hand, so the bonus is applied to the
+// sole weapon of the sheet, in the damage it rolls in one hand, and left as a note for
+// the master when there are other weapons.
+func TestDuelingAddsTwoDamageToTheOneMeleeWeaponInOneHand(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	damageOf := func(d Derived, key string) string {
+		a, ok := attackOf(d, key)
+		if !ok {
+			t.Fatalf("no attack for %s in %+v", key, d.Attacks)
+		}
+		return a.Damage
+	}
+	dueling := func(d Derived) bool {
+		return slices.ContainsFunc(d.Hints, func(h Hint) bool { return h.Source == "feature:fighter-fighting-style-dueling" })
+	}
+
+	// STR 16 (+3): a longsword rolls 1d8 + 3, +2 for Dueling.
+	d := Derive(duelist("equipment:longsword"), c)
+	if got := damageOf(d, "equipment:longsword"); got != "1d8+5" {
+		t.Errorf("longsword damage with Dueling = %q, want 1d8+5", got)
+	}
+	if a, _ := attackOf(d, "equipment:longsword"); a.VersatileDamage != "1d10+3" {
+		t.Errorf("longsword two-handed damage = %q, want 1d10+3 (no Dueling with two hands)", a.VersatileDamage)
+	}
+	if dueling(d) {
+		t.Error("the applied bonus is also a hint for the master to apply again")
+	}
+
+	// A weapon wielded with two hands gets nothing.
+	d = Derive(duelist("equipment:greatsword"), c)
+	if got := damageOf(d, "equipment:greatsword"); got != "2d6+3" {
+		t.Errorf("greatsword damage = %q, want 2d6+3", got)
+	}
+	if !dueling(d) {
+		t.Error("with no weapon to apply it to, the bonus should stay a hint")
+	}
+
+	// Another weapon on the sheet: the app cannot tell what is in hand, so it applies nothing and leaves the hint.
+	d = Derive(duelist("equipment:longsword", "equipment:dagger"), c)
+	if got := damageOf(d, "equipment:longsword"); got != "1d8+3" {
+		t.Errorf("longsword damage with two weapons carried = %q, want 1d8+3", got)
+	}
+	if !dueling(d) {
+		t.Error("two weapons carried: the Dueling bonus should stay a hint for the master")
+	}
+
+	// A ranged weapon is not melee.
+	if got := damageOf(Derive(duelist("equipment:longbow"), c), "equipment:longbow"); got != "1d8+2" {
+		t.Errorf("longbow damage = %q, want 1d8+2 (DEX 14 +2, no Dueling)", got)
+	}
+
+	// Without the style there is no bonus.
+	b := duelist("equipment:longsword")
+	b.FeatureChoices = nil
+	if got := damageOf(Derive(b, c), "equipment:longsword"); got != "1d8+3" {
+		t.Errorf("longsword damage without Dueling = %q, want 1d8+3", got)
 	}
 }

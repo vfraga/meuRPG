@@ -15,10 +15,12 @@
       {"type": "wild_shape", "max_cr": "1/4", "no_fly": true, "no_swim": true}
     ],
     "feature:wild-shape-cr-1-2-or-below-no-flying-speed": [
-      {"type": "wild_shape", "max_cr": "1/2", "no_fly": true}
+      {"type": "wild_shape", "max_cr": "1/2", "no_fly": true},
+      {"type": "replaces", "replaces": "feature:wild-shape-cr-1-4-or-below-no-flying-or-swim-speed"}
     ],
     "feature:wild-shape-cr-1-or-below": [
-      {"type": "wild_shape", "max_cr": "1"}
+      {"type": "wild_shape", "max_cr": "1"},
+      {"type": "replaces", "replaces": "feature:wild-shape-cr-1-2-or-below-no-flying-speed"}
     ],
     "feature:bonus-cantrip": [
       {"type": "choice", "choice": "cantrip", "count": 1, "from": ["class:druid"]}
@@ -55,6 +57,12 @@
       {"type": "note"}
     ],
     "feature:circle-spells-2": [
+      {"type": "note"}
+    ],
+    "feature:circle-spells-3": [
+      {"type": "note"}
+    ],
+    "feature:circle-spells-4": [
       {"type": "note"}
     ],
     "feature:druid-ability-score-improvement-1": [

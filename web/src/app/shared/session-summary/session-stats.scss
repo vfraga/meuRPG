@@ -1,0 +1,54 @@
+:host {
+  display: block;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+
+  @media (min-width: 768px) {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-template-columns: none;
+  }
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+
+  dt {
+    // The height of two labels, so the numbers line up when a long label wraps.
+    min-height: 32px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    color: var(--mr-ink-muted);
+  }
+
+  dd {
+    // The number sits at the bottom of its tile, so the numbers of a row line up when a label wraps.
+    margin: auto 0 0;
+    font-family: var(--mr-font-display);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 30px;
+    white-space: nowrap;
+
+    // Two tiles to a line on a phone: "menos de 1 min" wraps (the unit stays tied to its number)
+    // and the number shrinks a little, so it never runs under the next tile.
+    @media (max-width: 767.98px) {
+      font-size: 24px;
+      line-height: 26px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  }
+}

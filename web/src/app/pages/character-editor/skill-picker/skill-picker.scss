@@ -76,3 +76,11 @@
   justify-self: center;
   text-align: center;
 }
+
+// Where a granted skill comes from, under its name.
+.skill__source {
+  display: block;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--mr-ink-muted);
+}

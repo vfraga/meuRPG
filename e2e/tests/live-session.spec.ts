@@ -41,7 +41,10 @@ test(
 
       // The master starts the session from the campaign page.
       await masterPage.goto(`/campaigns/${campaignId}`);
+      // Pensantus has no cantrip and no prepared spell yet: the master is told, and starts anyway.
       await masterPage.getByRole('button', { name: 'Iniciar sessão' }).click();
+      await expect(masterPage.getByText('Pensantus: faltam 3 truques e 7 magias preparadas')).toBeVisible();
+      await masterPage.getByRole('button', { name: 'Iniciar mesmo assim' }).click();
       await expect(masterPage.getByText('Sessão 1 em andamento')).toBeVisible();
 
       // The player's open tab shows the notice, without a reload…

@@ -1,12 +1,24 @@
 <section class="card" [attr.aria-label]="ariaLabel()">
-  <div class="card__head">
-    <span class="card__tag"><mat-icon aria-hidden="true">check</mat-icon>{{ tag() }}</span>
-    <button type="button" class="card__x" aria-label="Fechar" (click)="closed.emit()">
-      <mat-icon aria-hidden="true">close</mat-icon>
-    </button>
-  </div>
+  @if (tag() || closable()) {
+    <div class="card__head">
+      <span class="card__tag">
+        @if (tag()) {
+          <mat-icon aria-hidden="true">check</mat-icon>{{ tag() }}
+        }
+      </span>
+      @if (closable()) {
+        <button type="button" class="card__x" aria-label="Fechar" (click)="closed.emit()">
+          <mat-icon aria-hidden="true">close</mat-icon>
+        </button>
+      }
+    </div>
+  }
   <div class="card__titles">
-    <div role="status"><h2 class="card__title">{{ title() }}</h2></div>
+    @if (notice()) {
+      <div role="status"><h2 class="card__title">{{ title() }}</h2></div>
+    } @else {
+      <h2 class="card__title">{{ title() }}</h2>
+    }
     @if (subtitle()) {
       <p class="card__sub">{{ subtitle() }}</p>
     }
@@ -53,5 +65,11 @@
     </ul>
   }
 
-  <button matButton="outlined" type="button" class="card__close" (click)="closed.emit()">Fechar</button>
+  @if (own().length === 0 && ownNone()) {
+    <p class="card__none">{{ ownNone() }}</p>
+  }
+
+  @if (closable()) {
+    <button matButton="outlined" type="button" class="card__close" (click)="closed.emit()">Fechar</button>
+  }
 </section>

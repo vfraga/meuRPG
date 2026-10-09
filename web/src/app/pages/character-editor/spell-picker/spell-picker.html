@@ -1,6 +1,9 @@
 <section class="picker" [attr.aria-labelledby]="titleId()">
   <h3 class="picker__title" [id]="titleId()">{{ title() }}</h3>
   <p class="picker__chosen">{{ chosenLine() }}</p>
+  @if (prepareWarning()) {
+    <p class="picker__warn" role="status">{{ prepareWarning() }}</p>
+  }
 
   <!-- E6-22: the icon and the words inside the box, with no floating label.
        An outlined field's resting label is placed by measuring the prefix

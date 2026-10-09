@@ -57,6 +57,12 @@ type Live interface {
 	// each app answers by reading the content as its own role. Call it after the
 	// commit. The play module throttles it per campaign.
 	PublishContentChanged(campaignID string)
+	// PublishVitalsChanged sends the character's vitals as they are now, as the
+	// master's correction of them does, to the streams that already receive that
+	// character's hit points (the master and the player who plays it). A level-up
+	// changes the maximum and the current hit points, so every open screen shows
+	// them at once. Call it after the commit.
+	PublishVitalsChanged(ctx context.Context, campaignID, characterID string)
 }
 
 // SetLive connects the live stream. Without it, a level-up still works and
@@ -544,6 +550,7 @@ func (s *Service) LevelUpCharacter(
 	}
 	if leveled && s.live != nil {
 		s.live.PublishXPChanged(m.CampaignID)
+		s.live.PublishVitalsChanged(ctx, m.CampaignID, id)
 	}
 	// The response is derived from the content the level-up was checked with.
 	c, err := s.character(ctx, leveledContent, row, m)

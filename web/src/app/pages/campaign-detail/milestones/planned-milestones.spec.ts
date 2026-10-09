@@ -195,6 +195,18 @@ describe('PlannedMilestones (E8-14)', () => {
     expect(document.activeElement).toBe(el.querySelector('[data-id="c"][data-act="reach"]'));
   });
 
+  it('does not offer to remove a milestone the list says has history, other rows keep it', async () => {
+    const withHistory = create(MilestoneSchema, {
+      id: 'b',
+      text: 'Chegar ao Vale Seco',
+      hasHistory: true,
+    });
+    const { el } = await setup([three[0], withHistory, three[2]]);
+    expect(el.querySelector('[data-id="b"][data-act="remove"]')).toBeNull();
+    expect(el.querySelector('[data-id="a"][data-act="remove"]')).not.toBeNull();
+    expect(el.querySelector('[data-id="c"][data-act="remove"]')).not.toBeNull();
+  });
+
   it('says why a milestone reached once and undone stays, and stops offering to remove it', async () => {
     const { el, settle } = await setup();
     api.removeMilestone.mockRejectedValue(

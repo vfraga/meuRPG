@@ -11,16 +11,20 @@
         <div class="skill">
           <mat-checkbox
             class="skill__name"
-            [checked]="proficient().has(skill.key)"
+            [checked]="isProficient(skill.key)"
+            [disabled]="granted().has(skill.key)"
             (change)="toggleSkill.emit(skill.key)"
           >
             {{ skill.namePt }}
+            @if (granted().get(skill.key); as source) {
+              <span class="skill__source">{{ source }}</span>
+            }
           </mat-checkbox>
           <span class="skill__ability">{{ abilityAbbreviation(skill.ability) }}</span>
           <mat-checkbox
             class="skill__expertise"
             [checked]="expertise().has(skill.key)"
-            [disabled]="!proficient().has(skill.key)"
+            [disabled]="!isProficient(skill.key)"
             [aria-label]="'Especialização em ' + skill.namePt"
             (change)="toggleExpertise.emit(skill.key)"
           />

@@ -422,6 +422,7 @@ func (s *Service) milestoneViews(ctx context.Context, m authz.Membership) ([]*pr
 	// another one.
 	var rows []progressiondb.PlannedMilestone
 	var live []progressiondb.XpAward
+	var withHistory []string
 	var data awardData
 	err := db.ReadTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.queries.WithTx(tx)
@@ -431,6 +432,9 @@ func (s *Service) milestoneViews(ctx context.Context, m authz.Membership) ([]*pr
 		}
 		if live, err = q.ListLiveMilestoneAwards(ctx, m.CampaignID); err != nil {
 			return fmt.Errorf("list the marks: %w", err)
+		}
+		if withHistory, err = q.ListMilestoneIDsWithAwards(ctx, m.CampaignID); err != nil {
+			return fmt.Errorf("list the milestones with history: %w", err)
 		}
 		if len(live) > 0 {
 			data, err = s.loadAwardData(ctx, q, m, live)
@@ -464,7 +468,7 @@ func (s *Service) milestoneViews(ctx context.Context, m authz.Membership) ([]*pr
 	}
 	out := make([]*progressionv1.Milestone, 0, len(rows))
 	for _, r := range rows {
-		v := &progressionv1.Milestone{Id: r.ID, Text: r.Text, Reached: len(byMilestone[r.ID]) > 0, Marks: byMilestone[r.ID]}
+		v := &progressionv1.Milestone{Id: r.ID, Text: r.Text, Reached: len(byMilestone[r.ID]) > 0, Marks: byMilestone[r.ID], HasHistory: slices.Contains(withHistory, r.ID)}
 		if v.Reached {
 			v.ReachedAt = timestamppb.New(reachedAt[r.ID])
 		} else if m.Role != authz.RoleMaster {

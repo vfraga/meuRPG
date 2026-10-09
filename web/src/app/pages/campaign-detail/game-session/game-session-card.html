@@ -22,7 +22,7 @@
           @if (s.session; as session) {
             <p class="session__text">
               <strong>Sessão {{ session.sessionNumber }} em andamento</strong>, desde
-              {{ formatDayAt(session.startedAt) }}.
+              {{ formatSessionStart(session.startedAt) }}.
             </p>
             @if (lastLockedSheetCount() !== null) {
               <p class="session__locked" role="status">
@@ -95,15 +95,39 @@
             <p class="session__text">
               Nenhuma sessão em andamento. Ao iniciar, a ficha dos jogadores trava.
             </p>
-            <button
-              mat-flat-button
-              class="session__action"
-              type="button"
-              [disabled]="actionState().status === 'saving'"
-              (click)="startSession()"
-            >
-              Iniciar sessão
-            </button>
+            @if (confirmingStart(); as open) {
+              <div class="session__confirm" role="group" aria-labelledby="confirm-start-text">
+                <p id="confirm-start-text" class="session__confirm-text">
+                  Estas fichas ainda têm escolhas em aberto e travam do jeito que estão:
+                </p>
+                <ul class="session__open">
+                  @for (c of open; track c.characterId) {
+                    <li>{{ openChoicesLine(c) }}</li>
+                  }
+                </ul>
+                <p class="session__confirm-text">Iniciar mesmo assim?</p>
+                <button
+                  mat-flat-button
+                  class="session__action js-confirm-start"
+                  type="button"
+                  [disabled]="actionState().status === 'saving'"
+                  (click)="startSession()"
+                >
+                  Iniciar mesmo assim
+                </button>
+                <button mat-button type="button" (click)="cancelStart()">Cancelar</button>
+              </div>
+            } @else {
+              <button
+                mat-flat-button
+                class="session__action js-start"
+                type="button"
+                [disabled]="actionState().status === 'saving'"
+                (click)="requestStart()"
+              >
+                Iniciar sessão
+              </button>
+            }
           }
         }
       }

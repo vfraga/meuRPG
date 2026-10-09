@@ -1,5 +1,5 @@
 {
-  "ContentVersion": "srd51@a8abc93b235c+fx.25",
+  "ContentVersion": "srd51@a8abc93b235c+fx.26",
   "RaceNamePT": "Gnomo",
   "SubraceNamePT": "Gnomo das Rochas",
   "BackgroundNamePT": "Sábio",
@@ -1048,5 +1048,6 @@
   ],
   "ItemResistances": null,
   "ItemModifiers": null,
+  "OpenChoices": null,
   "Issues": null
 }

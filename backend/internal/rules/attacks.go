@@ -76,6 +76,10 @@ func (x *deriver) attacks() {
 		magicBonus += ammo.bonus
 		bonus += magicBonus
 		dmg := x.modifiers("damage.weapon."+kind, x.mods[ab]+magicBonus)
+		oneHanded := dmg
+		if kind == "melee" && len(lines) == 1 && !slices.Contains(w.Properties, "weapon-property:two-handed") {
+			oneHanded += x.oneMeleeWeaponBonus()
+		}
 		dice := w.Damage
 		if monkWeapon && martialDie > 0 {
 			dice = biggerDie(dice, martialDie)
@@ -92,7 +96,7 @@ func (x *deriver) attacks() {
 			a.DamageType, a.DamageTypeNamePT = line.damageType, c.namePT(line.damageType)
 		}
 		if dice != "" {
-			a.Damage = withModifier(dice, dmg)
+			a.Damage = withModifier(dice, oneHanded)
 		}
 		if w.TwoHandedDamage != "" {
 			two := w.TwoHandedDamage
@@ -142,6 +146,32 @@ func (x *deriver) attacks() {
 
 	// Last, so the weapons and cantrips stay the first lines of the sheet.
 	x.unarmedStrike(martialArts, martialDie)
+}
+
+// wieldingOneMeleeWeapon is the tag of a damage bonus that holds while the
+// character wields one melee weapon in one hand and no other weapon (the
+// Dueling fighting style, SRD 5.1).
+const wieldingOneMeleeWeapon = "wielding:one-melee-weapon"
+
+// oneMeleeWeaponBonus is the sum of the damage bonuses that need one melee
+// weapon wielded in one hand and no other weapon. The sheet lists the weapons
+// carried, not the ones in hand, so the caller grants it only to the sole
+// weapon of the sheet, in the damage it rolls in one hand; with other weapons
+// carried, the bonus stays a Hint for the master to apply. An applied effect is
+// recorded so effectHints does not repeat it.
+func (x *deriver) oneMeleeWeaponBonus() int {
+	total := 0
+	for _, a := range x.active {
+		e := a.effect
+		if e.Type != "modifier" || e.Target != "damage.weapon.melee" || e.Mode != "add" || !slices.Equal(e.Tags, []string{wieldingOneMeleeWeapon}) || !x.applies(a) {
+			continue
+		}
+		if v, ok := x.value(a); ok {
+			total += v
+			x.appliedTagged[e] = true
+		}
+	}
+	return total
 }
 
 // unarmedReachFt is the reach of an unarmed strike.

@@ -91,7 +91,7 @@
           >
             <mat-icon aria-hidden="true">edit</mat-icon>
           </button>
-          @if (!kept().has(m.id)) {
+          @if (!m.hasHistory && !kept().has(m.id)) {
             <button
               type="button"
               class="tool tool--remove"

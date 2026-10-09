@@ -3,6 +3,7 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 
 import {
   TreasureToConvertSchema,
+  XPAwardMode,
   XPAwardSchema,
 } from '../../../gen/meurpg/progression/v1/progression_pb';
 import {
@@ -106,6 +107,14 @@ describe('treasure texts (E9-09)', () => {
       expect(
         awardTitle(create(XPAwardSchema, { reason: 'Venda do cálice de prata', gold: 60 })),
       ).toBe('Venda do cálice de prata');
+    });
+
+    it('titles a milestone award that came without its text just "Marco"', () => {
+      expect(
+        awardTitle(
+          create(XPAwardSchema, { mode: XPAwardMode.XP_AWARD_MODE_MILESTONE, undone: true }),
+        ),
+      ).toBe('Marco');
     });
 
     it('says what the master reads after giving and after undoing', () => {

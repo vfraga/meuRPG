@@ -1,0 +1,127 @@
+:host {
+  display: block;
+}
+
+// A player with nothing ended sees no panel, and no gap where it was.
+:host(.is-empty) {
+  display: none;
+}
+
+.past {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+
+  .mr-panel__title {
+    margin: 0;
+  }
+}
+
+.past__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--mr-space-3);
+}
+
+.past__count {
+  font-size: 14px;
+  color: var(--mr-ink-muted);
+}
+
+.past__text {
+  margin: 0;
+}
+
+// The master's empty panel: a dashed box with the sentence, nothing to press.
+.past__empty {
+  margin: 0;
+  padding: var(--mr-space-3) var(--mr-space-4);
+  color: var(--mr-ink-muted);
+  border: 1px dashed var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+}
+
+.past__list {
+  margin: 0;
+}
+
+// One row never wraps. Name, date and duration stack in the left column (on a phone the duration sits under the
+// date); the link takes the right column, centred on the whole row. From 600 px the duration moves beside the link.
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name link'
+    'when link'
+    'duration link';
+  align-items: center;
+  column-gap: var(--mr-space-3);
+  padding: 4px 0;
+  border-top: 1px solid var(--mr-rule);
+
+  &:first-child {
+    border-top: 0;
+  }
+
+  @media (min-width: 600px) {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'name duration link'
+      'when duration link';
+    column-gap: var(--mr-space-4);
+  }
+}
+
+.row__name {
+  grid-area: name;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--mr-font-display);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 26px;
+}
+
+.row__when {
+  grid-area: when;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.row__duration {
+  grid-area: duration;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+  white-space: nowrap;
+}
+
+.row__link {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--mr-accent-text);
+  text-decoration: none;
+  white-space: nowrap;
+  grid-area: link;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  .mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+
+.past__more {
+  min-height: 44px;
+  color: var(--mr-accent-text);
+}

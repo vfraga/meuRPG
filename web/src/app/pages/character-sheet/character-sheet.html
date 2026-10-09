@@ -191,7 +191,11 @@
         <app-proficiency-column class="sheet__proficiencies" [sheet]="full" />
         <app-combat-column class="sheet__combat" [sheet]="full">
           <!-- MR-037: the character's creatures, right after Combate and Magias (E9-10). -->
-          @if (vm.characterKind === 'player') {
+          @if (vm.characterKind === 'player' && vm.state === 'pending') {
+            <p creatures class="mr-muted sheet__pending-note">
+              Aparece quando o mestre aprovar o personagem.
+            </p>
+          } @else if (vm.characterKind === 'player') {
             <app-creatures-panel
               creatures
               [campaignId]="vm.campaignId"
@@ -206,7 +210,11 @@
         </app-combat-column>
         <div class="sheet__traits">
           <!-- The player's own notes (E8-07); the master never gets this panel (RN-20). -->
-          @if (!vm.isMaster) {
+          @if (!vm.isMaster && vm.state === 'pending') {
+            <p class="mr-muted sheet__pnotes sheet__pending-note">
+              Aparece quando o mestre aprovar o personagem.
+            </p>
+          } @else if (!vm.isMaster) {
             <app-notes-panel class="sheet__pnotes" [campaignId]="vm.campaignId" />
           }
           <app-features-panel class="sheet__features" [sheet]="full" />

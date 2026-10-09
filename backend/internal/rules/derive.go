@@ -56,6 +56,9 @@ type deriver struct {
 	// not change during one Derive, and a broken condition must report one
 	// Issue, not one per use.
 	conditions map[*Effect]bool
+	// appliedTagged are the tagged modifiers the engine applied to an attack, so
+	// no Hint repeats them.
+	appliedTagged map[*Effect]bool
 }
 
 type ownedClass struct {
@@ -75,7 +78,7 @@ type activeEffect struct {
 
 func derive(b Build, c *content) Derived {
 	d := &Derived{ContentVersion: c.version}
-	x := &deriver{b: b, c: c, d: d, proficient: map[string]bool{}, conditions: map[*Effect]bool{}}
+	x := &deriver{b: b, c: c, d: d, proficient: map[string]bool{}, conditions: map[*Effect]bool{}, appliedTagged: map[*Effect]bool{}}
 
 	x.resolve()
 	x.resolveItems()
@@ -100,6 +103,7 @@ func derive(b Build, c *content) Derived {
 	x.resourcesAndActions()
 	x.effectHints()
 	x.checkChoices()
+	x.dropReplacedTiers()
 	// Only an issue tied to a table entry is ever blamed on a change.
 	for i := range d.Issues {
 		if len(d.Issues[i].Keys) == 0 {
@@ -107,6 +111,23 @@ func derive(b Build, c *content) Derived {
 		}
 	}
 	return *d
+}
+
+// dropReplacedTiers takes out of Features the lower tiers that a higher one
+// the character has replaces, so the sheet lists a scaling feature once, at
+// its current tier. It runs last: the lower tier's effects, choices and
+// options are all counted before it goes.
+func (x *deriver) dropReplacedTiers() {
+	replaced := map[string]bool{}
+	for _, a := range x.active {
+		if a.effect.Type == "replaces" {
+			replaced[a.effect.Replaces] = true
+		}
+	}
+	if len(replaced) == 0 {
+		return
+	}
+	x.d.Features = slices.DeleteFunc(x.d.Features, func(f Feature) bool { return replaced[f.Key] })
 }
 
 // issue records a problem on the sheet.

@@ -375,12 +375,31 @@ func (c *combatTx) stampDoor(ctx context.Context, ev actionEvent, cs []playdb.Co
 	door := grid.Square{Col: int(ev.Col), Row: int(ev.Row)}
 	ev.Fogged, ev.SeenBy = true, nil
 	own := ""
-	if i := slices.IndexFunc(cs, func(o playdb.Combatant) bool { return o.ID == ev.Actor }); i >= 0 && cs[i].UserID != nil {
-		own = *cs[i].UserID
+	// An NPC that opened the door is named in the line, so a player who only knows the
+	// door must also have seen the NPC, on the square it came from or the one it stands
+	// on, like any other line with an NPC in it.
+	var npcSquares []grid.Square
+	npcMover := false
+	if i := slices.IndexFunc(cs, func(o playdb.Combatant) bool { return o.ID == ev.Actor }); i >= 0 {
+		if cs[i].UserID != nil {
+			own = *cs[i].UserID
+		}
+		if cs[i].Kind == kindNPC {
+			npcMover = true
+			if placed(cs[i]) {
+				npcSquares = append(npcSquares, squareOfCombatant(cs[i]))
+			}
+			if ev.From != nil && ev.From.Placed {
+				npcSquares = append(npcSquares, grid.Square{Col: int(ev.From.Col), Row: int(ev.From.Row)})
+			}
+		}
 	}
 	for _, u := range c.sight.sight.Users() {
 		if u == own {
 			ev.SeenBy = append(ev.SeenBy, u)
+			continue
+		}
+		if npcMover && !slices.ContainsFunc(npcSquares, func(sq grid.Square) bool { return c.sight.sight.Sees(u, sq) }) {
 			continue
 		}
 		known, err := c.sight.knownTerrain(ctx, c.tx, combatViewer{userID: u})

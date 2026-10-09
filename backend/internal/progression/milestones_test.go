@@ -433,6 +433,7 @@ func TestRN20_PlayersSeeOnlyReachedMilestones(t *testing.T) {
 		t.Error("the player can undo a mark")
 	}
 	readEverything()
+	reachedReads := len(seen)
 	// Undone: it is planned again, and gone from the player's list.
 	if _, err := tb.master.undo(tb.campaign, newKey()); err != nil {
 		t.Fatalf("UndoLastXPAward() error = %v", err)
@@ -441,6 +442,16 @@ func TestRN20_PlayersSeeOnlyReachedMilestones(t *testing.T) {
 		t.Errorf("the player's list = %v after the undo, want empty", got)
 	}
 	readEverything()
+	// Positive control: while it was reached, the player's history read its text.
+	if !slices.ContainsFunc(seen[:reachedReads], func(s string) bool { return strings.Contains(s, "Chegar ao Vale Seco") }) {
+		t.Error("the reached milestone's text is in none of the player's reads, so the check below proves nothing")
+	}
+	// Planned again, its text is the master's alone: the undone award's reason too.
+	for _, s := range seen[reachedReads:] {
+		if strings.Contains(s, "Chegar ao Vale Seco") {
+			t.Errorf("a player's response has the text of a milestone planned again: %s", s)
+		}
+	}
 
 	for _, s := range seen {
 		for _, secret := range secrets {
@@ -577,9 +588,29 @@ func TestMR016_AMilestoneWithHistoryIsNotRemoved(t *testing.T) {
 	tb := newTable(t, milestones, 1)
 	ctx := t.Context()
 	ms := tb.master.plan(t, tb.campaign, "Chegar ao Vale Seco")
+	fresh := tb.master.plan(t, tb.campaign, "Voltar à cidade")
+	hasHistory := func(id string) bool {
+		t.Helper()
+		for _, m := range tb.master.milestones(t, tb.campaign) {
+			if m.GetId() == id {
+				return m.GetHasHistory()
+			}
+		}
+		t.Fatalf("milestone %s is not in the list", id)
+		return false
+	}
+	if hasHistory(ms.GetId()) {
+		t.Error("has_history before any mark, want false")
+	}
 	tb.master.reach(t, tb.campaign, ms.GetId(), tb.ids(1)...)
+	if !hasHistory(ms.GetId()) {
+		t.Error("has_history of a reached milestone = false, want true")
+	}
 	if _, err := tb.master.undo(tb.campaign, newKey()); err != nil {
 		t.Fatalf("UndoLastXPAward() error = %v", err)
+	}
+	if !hasHistory(ms.GetId()) || hasHistory(fresh.GetId()) {
+		t.Errorf("has_history after the undo = %v (reached once), %v (never reached), want true, false", hasHistory(ms.GetId()), hasHistory(fresh.GetId()))
 	}
 	_, err := tb.master.xp.RemoveMilestone(ctx, connect.NewRequest(&progressionv1.RemoveMilestoneRequest{CampaignId: tb.campaign, MilestoneId: ms.GetId()}))
 	wantBlocked(t, "RemoveMilestone(reached before)", err, progressionv1.XPBlockedReason_XP_BLOCKED_REASON_MILESTONE_HAS_HISTORY)

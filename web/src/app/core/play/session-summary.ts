@@ -2,13 +2,19 @@ import { Injectable, inject } from '@angular/core';
 import { createClient } from '@connectrpc/connect';
 import { timestampDate } from '@bufbuild/protobuf/wkt';
 
+import { CharacterService } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { PlayService } from '../../../gen/meurpg/play/v1/play_pb';
 import { HighlightKind } from '../../../gen/meurpg/play/v1/combat_pb';
 import type {
   SessionCharacterSummary,
   SessionSummary,
 } from '../../../gen/meurpg/play/v1/summary_pb';
-import { type OwnNumber, highlightTiles, ownNumbers } from '../combat/combat-highlights';
+import {
+  type OwnNumber,
+  highlightRows,
+  highlightTiles,
+  ownNumbers,
+} from '../combat/combat-highlights';
 import type { HighlightTile } from '../combat/combat-highlights';
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import { formatInt, tight } from '../format/text';
@@ -25,7 +31,21 @@ const NBSP = '\u00a0';
  */
 @Injectable({ providedIn: 'root' })
 export class SessionSummaryClient {
-  private readonly client = createClient(PlayService, inject(CONNECT_TRANSPORT));
+  private readonly transport = inject(CONNECT_TRANSPORT);
+  private readonly client = createClient(PlayService, this.transport);
+  private readonly characters = createClient(CharacterService, this.transport);
+
+  /** The players' display names by character (`ListCharacters`), for "de Caio" on the master's tiles.
+   * A player without a display name is left out. */
+  async playerNames(campaignId: string): Promise<ReadonlyMap<string, string>> {
+    const res = await this.characters.listCharacters({ campaignId });
+    return new Map(
+      res.characters.flatMap((c) => {
+        const name = c.playerDisplayName.trim();
+        return name ? [[c.id, name] as const] : [];
+      }),
+    );
+  }
 
   async get(campaignId: string, gameSessionId: string): Promise<SessionSummary> {
     const res = await this.client.getSessionSummary({ campaignId, gameSessionId });
@@ -118,6 +138,29 @@ export function summaryRows(summary: SessionSummary): HighlightsTableRow[] {
       cells: [p.checksTried === 0 ? 'nenhum teste' : checksRatio(p.checksPassed, p.checksTried)],
       muted: p.checksTried === 0,
     }));
+}
+
+/** The columns of the master's "Números de cada jogador", the combat's own order. */
+export const COMBAT_COLUMNS = [
+  'Dano causado',
+  'Cura',
+  'Dano recebido',
+  'Golpes finais',
+  'Acertos críticos',
+] as const;
+
+/** The master's "Números de cada jogador": the combat numbers of every player's
+ * character that fought in the session, zeros included. A character that only
+ * rolled a check or found treasure has no row here. */
+export function combatRows(summary: SessionSummary): HighlightsTableRow[] {
+  const fought = summary.players
+    .filter(foughtIn)
+    .flatMap((p) => (p.highlights ? [p.highlights] : []));
+  return highlightRows(fought).map((r) => ({
+    id: r.characterId,
+    name: r.name,
+    cells: [r.damageDealt, r.healingDone, r.damageTaken, r.finalBlows, r.criticalHits].map(String),
+  }));
 }
 
 function foughtIn(p: SessionCharacterSummary): boolean {

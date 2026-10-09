@@ -107,3 +107,38 @@
   font-size: 15px;
   color: var(--mr-ink-muted);
 }
+
+// A phone's `spread` block: the numbers in a row, the label (12px) above each (20px); a fifth
+// that does not fit wraps, never a number cut or a sideways scroll.
+@media (max-width: 719.98px) {
+  .tbl--spread {
+    .tbl__row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 20px;
+      padding: 10px 0 12px;
+    }
+
+    b {
+      flex: 1 0 100%;
+    }
+
+    [role='cell'] {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 0;
+    }
+
+    .tbl__lbl {
+      font-size: 12px;
+      line-height: 16px;
+    }
+
+    .tbl__num {
+      font-size: 20px;
+      line-height: 26px;
+    }
+  }
+}

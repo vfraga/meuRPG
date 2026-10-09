@@ -51,6 +51,11 @@ export class SpellPicker {
    * was lowered): it stays so it can be unchecked, and is marked. */
   readonly maxSpellLevel = input<number | null>(null);
 
+  /** The most the class takes in this list, or `null` for no limit to show. The count reads "2 de 3". */
+  readonly limit = input<number | null>(null);
+  /** Warn "Prepare até N" while fewer than the limit are chosen (the prepared list of a preparing class). */
+  readonly warnBelowLimit = input(false);
+
   /** What the search finds that no list of the sheet has: greyed, with the reason. */
   readonly outside = input<readonly OutsideSpell[]>([]);
   /** Where "Ver em Magias" goes. */
@@ -79,9 +84,23 @@ export class SpellPicker {
 
   protected readonly count = computed(() => {
     const n = this.chosen().length;
+    const limit = this.limit();
+    if (limit !== null) {
+      return this.noun() === 'truque'
+        ? `${n} de ${limit} ${limit === 1 ? 'truque escolhido' : 'truques escolhidos'}`
+        : `${n} de ${limit} ${limit === 1 ? 'magia escolhida' : 'magias escolhidas'}`;
+    }
     return this.noun() === 'truque'
       ? countLabel(n, 'truque escolhido', 'truques escolhidos', 'Nenhum truque escolhido')
       : countLabel(n, 'magia escolhida', 'magias escolhidas', 'Nenhuma magia escolhida');
+  });
+
+  /** "Prepare até 4": fewer are chosen than the class prepares. */
+  protected readonly prepareWarning = computed(() => {
+    const limit = this.limit();
+    return this.warnBelowLimit() && limit !== null && this.chosen().length < limit
+      ? `Prepare até ${limit}`
+      : '';
   });
 
   /** "2 truques escolhidos: Mãos Mágicas, Raio de Fogo". */

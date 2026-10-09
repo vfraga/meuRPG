@@ -839,6 +839,32 @@ message CharacterSummary {
   // it (MR-031): the app draws "Pôr em cena" with it, with no read of each
   // sheet.
   string portrait_url = 10;
+  // The choices this player character's sheet still lacks (skills, cantrips and
+  // spells), each with how many are missing. Only the master gets it, and only
+  // for a living player character whose sheet is not locked yet, which is the
+  // one that starting a game session locks (RN-01); empty otherwise, and for a
+  // complete sheet.
+  repeated OpenChoice open_choices = 11;
+}
+
+// OpenChoiceKind is what a sheet has not picked yet.
+enum OpenChoiceKind {
+  OPEN_CHOICE_KIND_UNSPECIFIED = 0;
+  // Skills the class gives.
+  OPEN_CHOICE_KIND_SKILLS = 1;
+  // Cantrips the class knows.
+  OPEN_CHOICE_KIND_CANTRIPS = 2;
+  // Spells a caster that learns a fixed number knows.
+  OPEN_CHOICE_KIND_SPELLS_KNOWN = 3;
+  // Spells a caster that prepares spells prepares.
+  OPEN_CHOICE_KIND_SPELLS_PREPARED = 4;
+}
+
+// OpenChoice is a choice a sheet has not made yet.
+message OpenChoice {
+  OpenChoiceKind kind = 1;
+  // How many picks are left, at least 1.
+  int32 missing = 2;
 }
 
 // CharacterBlockedReason says why a character cannot be changed now.

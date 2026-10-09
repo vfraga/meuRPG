@@ -11,15 +11,9 @@ import {
   durationSeconds,
   formatDuration,
   sessionSpan,
-  summaryOwn,
-  masterTiles,
-  summaryRows,
-  summaryTiles,
-  treasureRows,
 } from '../../../core/play/session-summary';
-import { HighlightTiles } from '../../../shared/highlights/highlight-tiles';
-import { HighlightsFrame } from '../../../shared/highlights/highlights-frame';
-import { HighlightsTable } from '../../../shared/highlights/highlights-table';
+import { SessionStats } from '../../../shared/session-summary/session-stats';
+import { SessionSummaryBody } from '../../../shared/session-summary/session-summary-body';
 import { SessionBlocked } from '../session-blocked/session-blocked';
 
 type Load = 'loading' | 'ready' | 'failed';
@@ -27,7 +21,8 @@ type Load = 'loading' | 'ready' | 'failed';
 /**
  * What the session page shows once the session has ended (MR-032, E8-11 states
  * 4 and 5, question 64): it reads `GetSessionSummary` for the session that
- * just ended.
+ * just ended and draws it with `SessionSummaryBody`, the same body the kept
+ * page (`/campaigns/:id/sessions/:n`) uses.
  *
  * - **The master** lands on "Sessão encerrada": the duration, the combats, the
  *   scenes opened and "Testes passados fora do combate N de M"; then "Resumo da
@@ -51,13 +46,12 @@ type Load = 'loading' | 'ready' | 'failed';
 @Component({
   selector: 'app-session-ended',
   imports: [
-    HighlightTiles,
-    HighlightsFrame,
-    HighlightsTable,
     MatButtonModule,
     MatIconModule,
     RouterLink,
     SessionBlocked,
+    SessionStats,
+    SessionSummaryBody,
   ],
   templateUrl: './session-ended.html',
   styleUrl: './session-ended.scss',
@@ -81,30 +75,10 @@ export class SessionEnded {
   /** The player closed the card. */
   protected readonly closed = signal(false);
 
-  protected readonly tiles = computed(() => {
-    const s = this.summary();
-    return s ? summaryTiles(s) : [];
-  });
-  /** The master's tiles: the player's card has the treasure tile, this page its own block. */
-  protected readonly masterTiles = computed(() => {
-    const s = this.summary();
-    return s ? masterTiles(s) : [];
-  });
-  protected readonly treasure = computed(() => {
-    const s = this.summary();
-    return s ? treasureRows(s) : [];
-  });
-  protected readonly rows = computed(() => {
-    const s = this.summary();
-    return s ? summaryRows(s) : [];
-  });
-  protected readonly own = computed(() => summaryOwn(this.summary()?.mine));
   protected readonly duration = computed(() => {
     const s = this.summary();
     return s ? formatDuration(durationSeconds(s)) : '';
   });
-  /** The player's card line: the duration, with the combats too when the server counts them (master only). */
-  protected readonly cardSub = computed(() => (this.duration() ? `Durou ${this.duration()}` : ''));
   protected readonly span = computed(() => {
     const s = this.summary();
     return s ? sessionSpan(s) : '';

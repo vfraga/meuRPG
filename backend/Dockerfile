@@ -14,7 +14,7 @@
 # image; a digest cannot. Refresh them with:
 #   docker buildx imagetools inspect <image:tag> --format '{{.Manifest.Digest}}'
 # The Node major (22) must match .node-version, and the Go version
-# (1.27.1) must match backend/go.mod: CI tests on the versions in those two
+# (1.27.2) must match backend/go.mod: CI tests on the versions in those two
 # files and ships what is pinned here. The `# syntax` line above is pinned
 # by digest too, so the build does not depend on a moving frontend image.
 
@@ -34,7 +34,7 @@ COPY web/ .
 RUN npm run build
 
 # ---- build stage: compile static binaries -----------------------------------
-FROM golang:1.27.1-trixie@sha256:433790e515d27dc6003e847e644cc0af956985cf315c1c58a3b73ee2dd305183 AS build
+FROM golang:1.27.2-trixie@sha256:e58d6f83b3416618d8bcac2b3dde1b7f7e3c4a77d25e88637f8bbae81536c48d AS build
 
 WORKDIR /src
 

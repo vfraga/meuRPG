@@ -33,8 +33,8 @@ const WIDE_ROW_MAX = 5;
 })
 export class HighlightsFrame {
   readonly ariaLabel = input.required<string>();
-  /** The green word with the check: "Combate encerrado". */
-  readonly tag = input.required<string>();
+  /** The green word with the check: "Combate encerrado". Empty for a card that is a page, with no tag. */
+  readonly tag = input('');
   readonly title = input.required<string>();
   /** "Emboscada na estrada · 4 rodadas". */
   readonly subtitle = input('');
@@ -47,6 +47,12 @@ export class HighlightsFrame {
   readonly characterId = input('');
   readonly ownTitle = input('');
   readonly own = input<readonly OwnNumber[]>([]);
+  /** Said in place of "Seu resultado" when the reader's character has no numbers (the kept page). */
+  readonly ownNone = input('');
+  /** False for a card that is a page: nothing to close, no ✕ and no "Fechar". */
+  readonly closable = input(true);
+  /** True for the notice of an ending, whose title a screen reader says (polite live region). */
+  readonly notice = input(true);
 
   /** How many tiles share a row when the card is wide: all of them up to five,
    * else two even rows, so no tile stands alone on its row. */

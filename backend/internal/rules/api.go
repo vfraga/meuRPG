@@ -321,6 +321,9 @@ type Catalog struct {
 	Spells      []SpellEntry
 	// ChallengeRatings are the SRD's 34 ratings with their XP, in order.
 	ChallengeRatings []ChallengeRating
+	// LevelXP is the XP that reaches each level: LevelXP[0] is level 1 (0 XP), the
+	// last is level 20.
+	LevelXP []int
 	// Languages, Proficiencies and DamageTypes name the SRD's keys a table entry
 	// points at, sorted by Portuguese name (the master's effect menu carries the
 	// same names; a player has no menu).
@@ -369,6 +372,9 @@ type RaceEntry struct {
 	// their choice (a table race's "+2 and +1 to your choice"), largest first;
 	// nil for an SRD race (the half-elf's choice is in the SRD data).
 	ChoiceBonuses []int
+	// SkillProficiencies are the skills its traits give (the half-orc's
+	// Intimidation), which the player does not choose.
+	SkillProficiencies []string
 	// Archived says the table has retired it: sheets that have it keep it,
 	// but it is not offered as a new choice. Every Archived below is the same.
 	Archived bool
@@ -383,8 +389,10 @@ type SubraceEntry struct {
 	// Race is the key of the parent race.
 	Race           string
 	AbilityBonuses map[Ability]int
-	Archived       bool
-	Off            bool
+	// SkillProficiencies are the skills its traits give, besides the race's.
+	SkillProficiencies []string
+	Archived           bool
+	Off                bool
 }
 
 // ClassEntry is a class in the Catalog.
@@ -656,6 +664,10 @@ type Derived struct {
 	// ItemModifiers are the numbers the equipped items change, one line each, for the
 	// sheet's "por causa de".
 	ItemModifiers []ItemModifier
+	// OpenChoices are the choices the sheet still lacks, each with how many
+	// are missing: skills, cantrips, spells known and spells prepared. A
+	// sheet with none is complete.
+	OpenChoices []OpenChoice
 	// Issues are problems found while deriving: unknown keys, unusual
 	// choices, a broken formula. They never stop the sheet from opening.
 	Issues []Issue
@@ -888,6 +900,23 @@ type Hint struct {
 	Tags []string
 	// TextPT is a ready-to-show sentence in Portuguese.
 	TextPT string
+}
+
+// The kinds of OpenChoice.
+const (
+	OpenChoiceSkills         = "skills"
+	OpenChoiceCantrips       = "cantrips"
+	OpenChoiceSpellsKnown    = "spells_known"
+	OpenChoiceSpellsPrepared = "spells_prepared"
+)
+
+// OpenChoice is a choice the character's class gives and the sheet has not
+// made yet.
+type OpenChoice struct {
+	// Kind is one of the OpenChoice constants.
+	Kind string
+	// Missing is how many picks are left, at least 1.
+	Missing int
 }
 
 // Issue is a problem Derive found. Code is stable (see the Issue* codes),

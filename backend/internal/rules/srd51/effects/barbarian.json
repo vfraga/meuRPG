@@ -32,6 +32,12 @@
     "feature:primal-champion": [
       {"type": "modifier", "target": "score.str", "mode": "add", "value": "4", "cap": 24},
       {"type": "modifier", "target": "score.con", "mode": "add", "value": "4", "cap": 24}
+    ],
+    "feature:brutal-critical-2-dice": [
+      {"type": "replaces", "replaces": "feature:brutal-critical-1-die"}
+    ],
+    "feature:brutal-critical-3-dice": [
+      {"type": "replaces", "replaces": "feature:brutal-critical-2-dice"}
     ]
   }
 }

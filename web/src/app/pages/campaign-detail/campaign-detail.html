@@ -59,6 +59,7 @@
         <div class="campaign-layout__column">
           <!-- For a player, only while a session is open (it's empty otherwise). -->
           <app-game-session-card [campaignId]="s.campaign.id" [isMaster]="isMaster" />
+          <app-past-sessions-panel [campaignId]="s.campaign.id" [isMaster]="isMaster" />
           <app-experience-panel [campaignId]="s.campaign.id" [campaignName]="s.campaign.name" [isMaster]="isMaster" />
           @if (isMaster) {
             <app-dice-panel [campaignId]="s.campaign.id" [savedMode]="s.campaign.diceMode" [members]="members()" />

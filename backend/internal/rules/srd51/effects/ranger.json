@@ -47,6 +47,18 @@
     ],
     "feature:ranger-extra-attack": [
       {"type": "extra_attack", "count": 2}
+    ],
+    "feature:favored-enemy-2-types": [
+      {"type": "replaces", "replaces": "feature:favored-enemy-1-type"}
+    ],
+    "feature:favored-enemy-3-enemies": [
+      {"type": "replaces", "replaces": "feature:favored-enemy-2-types"}
+    ],
+    "feature:natural-explorer-2-terrain-types": [
+      {"type": "replaces", "replaces": "feature:natural-explorer-1-terrain-type"}
+    ],
+    "feature:natural-explorer-3-terrain-types": [
+      {"type": "replaces", "replaces": "feature:natural-explorer-2-terrain-types"}
     ]
   }
 }

@@ -13,7 +13,9 @@ import {
   SessionSummarySchema,
 } from '../../../gen/meurpg/play/v1/summary_pb';
 import {
+  COMBAT_COLUMNS,
   checksRatio,
+  combatRows,
   formatDuration,
   sessionSpan,
   summaryOwn,
@@ -190,5 +192,34 @@ describe('session summary (MR-032)', () => {
       'Acertos críticos',
       'Tesouro encontrado',
     ]);
+  });
+
+  it('gives "Números de cada jogador" a row for each character that fought, in the combat\'s column order, and none for one that only rolled', () => {
+    const summary = create(SessionSummarySchema, {
+      players: [
+        player('toren', 'Toren', 0, 0, {
+          damageDealt: 41,
+          healingDone: 2,
+          damageTaken: 19,
+          finalBlows: 3,
+          criticalHits: 1,
+        }),
+        player('pens', 'Pensantus', 3, 4),
+      ],
+    });
+    expect(COMBAT_COLUMNS).toEqual([
+      'Dano causado',
+      'Cura',
+      'Dano recebido',
+      'Golpes finais',
+      'Acertos críticos',
+    ]);
+    expect(combatRows(summary)).toEqual([
+      { id: 'toren', name: 'Toren', cells: ['41', '2', '19', '3', '1'] },
+    ]);
+  });
+
+  it('gives no row to players who only rolled checks', () => {
+    expect(combatRows(master)).toEqual([]);
   });
 });

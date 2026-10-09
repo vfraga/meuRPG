@@ -61,3 +61,32 @@ func TestCatalogMaxSpellLevelByLevel(t *testing.T) {
 		t.Errorf("fighter = %v, want none", got)
 	}
 }
+
+// TestClassSpellListsFollowTheSRD: the spell lists of the bard, the cleric and the
+// druid are the SRD 5.1's (Spellcasting chapter, Spell Lists), not the snapshot's.
+func TestClassSpellListsFollowTheSRD(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t).c
+	for _, tc := range []struct {
+		class, spell string
+		want         bool
+	}{
+		{"class:bard", "spell:faerie-fire", true},
+		{"class:cleric", "spell:divination", true},
+		{"class:cleric", "spell:arcane-eye", false},
+		{"class:druid", "spell:meld-into-stone", true},
+		{"class:druid", "spell:create-food-and-water", false},
+		{"class:druid", "spell:divination", false},
+		// What was right stays right.
+		{"class:cleric", "spell:create-food-and-water", true},
+		{"class:wizard", "spell:arcane-eye", true},
+	} {
+		s, ok := c.spells[tc.spell]
+		if !ok {
+			t.Fatalf("no spell %s", tc.spell)
+		}
+		if got := c.onList(s, tc.class); got != tc.want {
+			t.Errorf("%s on the list of %s = %v, want %v", tc.spell, tc.class, got, tc.want)
+		}
+	}
+}

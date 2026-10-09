@@ -41,6 +41,18 @@ export const routes: Routes = [
       import('./pages/live-session/live-session.routes').then((m) => m.LIVE_SESSION_ROUTES),
   },
   {
+    // An ended session's summary (PM-01), kept for anyone in the campaign to reopen. The
+    // number is the session's number in the campaign, not its id. `loadChildren` for the
+    // same reason as `campaigns/:id` above — see session-summary.routes.ts.
+    path: 'campaigns/:id/sessions/:number',
+    title: 'Resumo da sessão',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./pages/session-summary/session-summary.routes').then(
+        (m) => m.SESSION_SUMMARY_ROUTES,
+      ),
+  },
+  {
     // The player creates their own character (MR-003, character half).
     // `loadChildren` for the same reason as `campaigns/:id` above — see
     // character-editor.routes.ts.

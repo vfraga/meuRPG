@@ -1,0 +1,93 @@
+:host {
+  display: block;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--mr-ink-muted);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--mr-ink);
+  }
+
+  .mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+
+// The title takes the focus when the page opens or changes session: no ring for a heading the person did not tab to.
+.js-title:focus {
+  outline: none;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--mr-space-5);
+  }
+}
+
+// "Sessão 1" and "Sessão 3": the two sessions around this one. On a phone each sits at a corner of the row.
+.pager {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  gap: var(--mr-space-2);
+
+  a {
+    min-height: 44px;
+  }
+
+  @media (min-width: 768px) {
+    margin-top: var(--mr-space-2);
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-5);
+  margin-top: var(--mr-space-5);
+}
+
+.numbers__title {
+  margin: 0 0 var(--mr-space-3);
+  font-family: var(--mr-font-display);
+  font-size: 21px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.page-notice {
+  box-sizing: border-box;
+  max-width: 640px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mr-space-3);
+  margin-top: var(--mr-space-4);
+
+  a,
+  button {
+    min-height: 48px;
+  }
+
+  // The buttons take the whole row on a phone, 48 px each.
+  @media (max-width: 599.98px) {
+    flex-direction: column;
+  }
+}

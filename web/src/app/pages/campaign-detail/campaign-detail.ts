@@ -34,7 +34,9 @@ import { DocumentPanel } from './document-panel/document-panel';
 import { ExperiencePanel } from './experience/experience-panel';
 import { GalleryPanel } from './gallery-panel/gallery-panel';
 import { MapsPanel } from './maps-panel/maps-panel';
+import { CampaignSessions } from './game-session/campaign-sessions';
 import { GameSessionCard } from './game-session/game-session-card';
+import { PastSessionsPanel } from './past-sessions/past-sessions-panel';
 import { CampaignInvites } from './invites/invites';
 import { PendingMembers } from './pending-members/pending-members';
 
@@ -85,6 +87,7 @@ type PageState =
     GalleryPanel,
     MapsPanel,
     GameSessionCard,
+    PastSessionsPanel,
     LevelUpNotice,
     PendingMembers,
     MatButtonModule,
@@ -94,7 +97,8 @@ type PageState =
   ],
   // One XP store for the page: the "Experiência" panel and the characters' "Pode subir de nível" tag read it.
   // And one feed of the master's level-ups: the status line and the characters' "O que mudou" read it.
-  providers: [ExperienceStore, LevelUpFeed],
+  // And one list of the sessions: "Sessão" and "Sessões anteriores" draw the same answer.
+  providers: [ExperienceStore, LevelUpFeed, CampaignSessions],
   templateUrl: './campaign-detail.html',
   styleUrl: './campaign-detail.scss',
 })

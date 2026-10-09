@@ -5109,7 +5109,11 @@ type Content struct {
 	// rest (the same values the master's GetEffectMenu lists carry).
 	Proficiencies []*NamedKey `protobuf:"bytes,15,rep,name=proficiencies,proto3" json:"proficiencies,omitempty"`
 	// The SRD's damage types, with their Portuguese names ("damage-type:fire").
-	DamageTypes   []*NamedKey `protobuf:"bytes,16,rep,name=damage_types,json=damageTypes,proto3" json:"damage_types,omitempty"`
+	DamageTypes []*NamedKey `protobuf:"bytes,16,rep,name=damage_types,json=damageTypes,proto3" json:"damage_types,omitempty"`
+	// The SRD's experience needed to reach each level: the first entry is level 1
+	// (0 XP), the last level 20. The editor starts a character made above level 1
+	// at its level's XP in a campaign that levels by XP.
+	LevelXp       []int32 `protobuf:"varint,17,rep,packed,name=level_xp,json=levelXp,proto3" json:"level_xp,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5252,6 +5256,13 @@ func (x *Content) GetProficiencies() []*NamedKey {
 func (x *Content) GetDamageTypes() []*NamedKey {
 	if x != nil {
 		return x.DamageTypes
+	}
+	return nil
+}
+
+func (x *Content) GetLevelXp() []int32 {
+	if x != nil {
+		return x.LevelXp
 	}
 	return nil
 }
@@ -5470,7 +5481,11 @@ type Race struct {
 	// The master switched it off for the players ("Opções para os jogadores", RN-23):
 	// a master sees it with this mark, a player never receives it. Every `off`
 	// below is the same. A sheet that already has it keeps it.
-	Off           bool `protobuf:"varint,8,opt,name=off,proto3" json:"off,omitempty"`
+	Off bool `protobuf:"varint,8,opt,name=off,proto3" json:"off,omitempty"`
+	// Content keys of the skills the race gives, such as the half-orc's
+	// "skill:intimidation". The player does not choose them and they are not a
+	// class pick: a pick on the same skill adds nothing.
+	SkillKeys     []string `protobuf:"bytes,9,rep,name=skill_keys,json=skillKeys,proto3" json:"skill_keys,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5561,6 +5576,13 @@ func (x *Race) GetOff() bool {
 	return false
 }
 
+func (x *Race) GetSkillKeys() []string {
+	if x != nil {
+		return x.SkillKeys
+	}
+	return nil
+}
+
 // Subrace is a subrace of one race.
 type Subrace struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -5576,7 +5598,10 @@ type Subrace struct {
 	Archived bool `protobuf:"varint,6,opt,name=archived,proto3" json:"archived,omitempty"`
 	// Switched off for the players (see Race.off). Its own switch: a subrace of an
 	// off race is hidden from the players too, and keeps this mark false.
-	Off           bool `protobuf:"varint,7,opt,name=off,proto3" json:"off,omitempty"`
+	Off bool `protobuf:"varint,7,opt,name=off,proto3" json:"off,omitempty"`
+	// Content keys of the skills the subrace gives, added to the race's (see
+	// Race.skill_keys).
+	SkillKeys     []string `protobuf:"bytes,8,rep,name=skill_keys,json=skillKeys,proto3" json:"skill_keys,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5658,6 +5683,13 @@ func (x *Subrace) GetOff() bool {
 		return x.Off
 	}
 	return false
+}
+
+func (x *Subrace) GetSkillKeys() []string {
+	if x != nil {
+		return x.SkillKeys
+	}
+	return nil
 }
 
 // CharacterClass is a class from the rules content.
@@ -6181,7 +6213,9 @@ type Background struct {
 	Key    string `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Name   string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	NamePt string `protobuf:"bytes,3,opt,name=name_pt,json=namePt,proto3" json:"name_pt,omitempty"`
-	// Content keys of the skills the background grants.
+	// Content keys of the skills the background grants. The player does not
+	// choose them and they are not a class pick: a pick on the same skill adds
+	// nothing.
 	SkillKeys []string `protobuf:"bytes,4,rep,name=skill_keys,json=skillKeys,proto3" json:"skill_keys,omitempty"`
 	// The table retired it (see Race.archived).
 	Archived bool `protobuf:"varint,5,opt,name=archived,proto3" json:"archived,omitempty"`
@@ -10409,7 +10443,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x05Issue\x12\x12\n" +
 	"\x04code\x18\x01 \x01(\tR\x04code\x12\x14\n" +
 	"\x05field\x18\x02 \x01(\tR\x05field\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage\"\xf0\x06\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\"\x8b\a\n" +
 	"\aContent\x12'\n" +
 	"\x0fcontent_version\x18\x01 \x01(\tR\x0econtentVersion\x12 \n" +
 	"\vattribution\x18\x02 \x01(\tR\vattribution\x12:\n" +
@@ -10429,7 +10463,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x11challenge_ratings\x18\r \x03(\v2 .meurpg.rules.v1.ChallengeRatingR\x10challengeRatings\x127\n" +
 	"\tlanguages\x18\x0e \x03(\v2\x19.meurpg.rules.v1.NamedKeyR\tlanguages\x12?\n" +
 	"\rproficiencies\x18\x0f \x03(\v2\x19.meurpg.rules.v1.NamedKeyR\rproficiencies\x12<\n" +
-	"\fdamage_types\x18\x10 \x03(\v2\x19.meurpg.rules.v1.NamedKeyR\vdamageTypes\"h\n" +
+	"\fdamage_types\x18\x10 \x03(\v2\x19.meurpg.rules.v1.NamedKeyR\vdamageTypes\x12\x19\n" +
+	"\blevel_xp\x18\x11 \x03(\x05R\alevelXp\"h\n" +
 	"\bNamedKey\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x121\n" +
@@ -10441,7 +10476,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\aability\x18\x01 \x01(\x0e2\x18.meurpg.rules.v1.AbilityR\aability\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
 	"\aname_pt\x18\x03 \x01(\tR\x06namePt\x12'\n" +
-	"\x0fabbreviation_pt\x18\x04 \x01(\tR\x0eabbreviationPt\"\xfe\x01\n" +
+	"\x0fabbreviation_pt\x18\x04 \x01(\tR\x0eabbreviationPt\"\x9d\x02\n" +
 	"\x04Race\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
@@ -10450,7 +10485,9 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x0fability_bonuses\x18\x05 \x01(\v2\x1e.meurpg.rules.v1.AbilityScoresR\x0eabilityBonuses\x12\x1a\n" +
 	"\barchived\x18\x06 \x01(\bR\barchived\x12%\n" +
 	"\x0echoice_bonuses\x18\a \x03(\x05R\rchoiceBonuses\x12\x10\n" +
-	"\x03off\x18\b \x01(\bR\x03off\"\xda\x01\n" +
+	"\x03off\x18\b \x01(\bR\x03off\x12\x1d\n" +
+	"\n" +
+	"skill_keys\x18\t \x03(\tR\tskillKeys\"\xf9\x01\n" +
 	"\aSubrace\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +
@@ -10458,7 +10495,9 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\brace_key\x18\x04 \x01(\tR\araceKey\x12G\n" +
 	"\x0fability_bonuses\x18\x05 \x01(\v2\x1e.meurpg.rules.v1.AbilityScoresR\x0eabilityBonuses\x12\x1a\n" +
 	"\barchived\x18\x06 \x01(\bR\barchived\x12\x10\n" +
-	"\x03off\x18\a \x01(\bR\x03off\"\x85\x03\n" +
+	"\x03off\x18\a \x01(\bR\x03off\x12\x1d\n" +
+	"\n" +
+	"skill_keys\x18\b \x03(\tR\tskillKeys\"\x85\x03\n" +
 	"\x0eCharacterClass\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x17\n" +

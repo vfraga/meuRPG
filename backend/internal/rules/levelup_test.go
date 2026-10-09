@@ -3,6 +3,7 @@ package rules
 import (
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -594,5 +595,42 @@ func TestLevelUpRefusesDuplicates(t *testing.T) {
 		if _, ok := errors.AsType[*LevelUpError](err); !ok {
 			t.Errorf("%s: error = %v, want a refusal", name, err)
 		}
+	}
+}
+
+// TestLevelUpOffersTheLandDruidsTerrain: choosing the Circle of the Land at level 2
+// asks which land the druid belongs to, with the SRD's seven (SRD 5.1, Druid, Circle
+// of the Land, Circle Spells).
+func TestLevelUpOffersTheLandDruidsTerrain(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	d1 := sweepBase(t, c, "class:druid", "subclass:land")
+	o, err := LevelUpOptions(d1, "class:druid", c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var land *LevelUpSubclass
+	for i := range o.Subclasses {
+		if o.Subclasses[i].Key == "subclass:land" {
+			land = &o.Subclasses[i]
+		}
+	}
+	if land == nil {
+		t.Fatalf("subclasses = %+v, want the Land", o.Subclasses)
+	}
+	var terrain *LevelUpFeatureChoice
+	for i := range land.FeatureChoices {
+		if land.FeatureChoices[i].Feature.Key == "feature:circle-of-the-land" {
+			terrain = &land.FeatureChoices[i]
+		}
+	}
+	if terrain == nil || terrain.Choose != 1 || len(terrain.Options) != 7 {
+		t.Fatalf("Land feature choices = %+v, want one terrain out of seven", land.FeatureChoices)
+	}
+
+	// A level taken with the choices the options asked for carries a terrain.
+	ch := satisfy(t, c, d1, "class:druid", "subclass:land")
+	if !slices.ContainsFunc(ch.FeatureChoices, func(k string) bool { return strings.HasPrefix(k, "feature:circle-of-the-land-") }) {
+		t.Errorf("satisfy chose %v, want a terrain", ch.FeatureChoices)
 	}
 }

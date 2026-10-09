@@ -162,6 +162,12 @@ FROM xp_award_shares AS s
 JOIN xp_awards AS a ON a.id = s.award_id
 WHERE a.campaign_id = sqlc.arg(campaign_id)::UUID AND a.milestone_id = sqlc.arg(milestone_id)::UUID AND a.undone_at IS NULL;
 
+-- name: ListMilestoneIDsWithAwards :many
+-- The planned milestones any award names, undone ones included: HasMilestoneAwards
+-- for the whole list, so the list can say which ones RemoveMilestone refuses.
+SELECT DISTINCT milestone_id::UUID AS milestone_id FROM xp_awards
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND milestone_id IS NOT NULL;
+
 -- name: HasMilestoneAwards :one
 -- Whether any award, undone ones included, names the milestone: a milestone
 -- with history is never removed (ADR-0007: awards are never rewritten).
