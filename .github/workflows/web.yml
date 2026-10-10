@@ -75,11 +75,9 @@ jobs:
         run: npm run build
 
   # The coverage report, in its own job so it can never decide the verdict or
-  # cancel the build: with --coverage the run is 5 to 6 times slower (v8
-  # instrumentation: 509 s against 81 s on run 38037185741, and the 5 s test
-  # timeout fires on about 340 tests that wait on a timer), and it kept growing
-  # until it ate the 15 minutes of "test and build". The job is report only
-  # (continue-on-error); the plain `npm test` in "test and build" is the verdict.
+  # cancel the build: the v8 instrumentation makes the run about 3 times slower
+  # than the plain `npm test`. The job keeps continue-on-error and stays out of
+  # the required checks, but its test step is honest: a failing test turns it red.
   coverage:
     name: coverage (report only)
     timeout-minutes: 25
@@ -107,12 +105,11 @@ jobs:
       - name: Install dependencies (no install scripts)
         run: npm ci --ignore-scripts
 
-      # With --coverage the setup file (src/test-setup.ts) runs once per
-      # worker, not once per spec file, so its own spec (test-setup.spec.ts) is
-      # left out. No threshold yet: the numbers are only reported.
+      # The same tests as `npm test`, test-setup.spec.ts included (the hooks of
+      # src/test-setup.ts are registered per file by src/test-hooks.ts). No
+      # threshold yet: the numbers are only reported.
       - name: Measure coverage (report only)
-        continue-on-error: true
-        run: npx ng test --watch=false --coverage --exclude src/test-setup.spec.ts
+        run: npx ng test --watch=false --coverage
 
       - name: Coverage summary
         if: ${{ !cancelled() }}

@@ -97,6 +97,7 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "providersFile": "src/test-providers.ts",
+            "runnerConfig": true,
             "setupFiles": ["src/test-setup.ts"],
             "coverageExclude": ["src/gen/**", "**/*.spec.ts", "src/test-*.ts"],
             "coverageReporters": ["text-summary", "lcov", "json-summary"]
