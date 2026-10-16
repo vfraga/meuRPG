@@ -1,0 +1,93 @@
+[
+ {
+  "key": "item:attuned",
+  "name": "attuned",
+  "category": "ring",
+  "rarity": "rare",
+  "attunement": true,
+  "desc": [
+   "Ring, rare (requires attunement)"
+  ]
+ },
+ {
+  "key": "item:crystal-ball",
+  "name": "crystal-ball",
+  "category": "ring",
+  "rarity": "very_rare",
+  "attunement": true,
+  "attunement_by": "by a bard",
+  "standalone": true,
+  "variants": [
+   "item:crystal-ball-x"
+  ],
+  "desc": [
+   "Ring, Very Rare (requires attunement by a bard)",
+   "Text."
+  ]
+ },
+ {
+  "key": "item:crystal-ball-x",
+  "name": "crystal-ball-x",
+  "category": "ring",
+  "rarity": "legendary",
+  "attunement": true,
+  "attunement_by": "by a bard",
+  "variant_of": "item:crystal-ball",
+  "desc": [
+   "Ring, Legendary (requires attunement by a bard)",
+   "Text."
+  ]
+ },
+ {
+  "key": "item:fam",
+  "name": "fam",
+  "category": "ring",
+  "rarity": "varies",
+  "attunement": true,
+  "attunement_by": "by a bard",
+  "variants": [
+   "item:fam-1",
+   "item:fam-2"
+  ],
+  "desc": [
+   "Ring, Varies (requires attunement by a bard)",
+   "Text."
+  ]
+ },
+ {
+  "key": "item:fam-1",
+  "name": "fam-1",
+  "category": "ring",
+  "rarity": "uncommon",
+  "attunement": true,
+  "attunement_by": "by a bard",
+  "variant_of": "item:fam",
+  "desc": [
+   "Ring, Uncommon (requires attunement by a bard)",
+   "Text."
+  ]
+ },
+ {
+  "key": "item:fam-2",
+  "name": "fam-2",
+  "category": "ring",
+  "rarity": "rare",
+  "attunement": true,
+  "attunement_by": "by a bard",
+  "variant_of": "item:fam",
+  "desc": [
+   "Ring, Rare (requires attunement by a bard)",
+   "Text."
+  ]
+ },
+ {
+  "key": "item:plain",
+  "name": "Plain",
+  "category": "wondrous-item",
+  "rarity": "common",
+  "desc": [
+   "Wondrous item, common",
+   "Text."
+  ]
+ }
+]

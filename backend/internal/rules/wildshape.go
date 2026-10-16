@@ -3,6 +3,8 @@ package rules
 import (
 	"fmt"
 	"slices"
+
+	"github.com/PuraFome/meuRPG/backend/internal/rules/srd51"
 )
 
 // Wild Shape (MR-037, Etapa 9). The druid's Wild Shape features carry a
@@ -97,20 +99,44 @@ func (c *Content) WildShapeDerived(character Derived, beast string) (Derived, er
 	d.Attacks, d.AttacksPerAction, d.SaveActions = b.Attacks, b.AttacksPerAction, b.SaveActions
 
 	// The physical scores are the beast's; the mental ones stay.
-	oldMod := map[Ability]int{}
-	newMod := map[Ability]int{}
+	oldMod, newMod := beastScores(&d, character, b)
+	beastSaves(&d, character, m, oldMod, newMod)
+	beastSkills(&d, character, m, oldMod, newMod)
+	d.Initiative = character.Initiative - oldMod[DEX] + newMod[DEX]
+	d.Senses = beastSenses(character.Senses, b.Senses)
+
+	// No spells in beast form, unless Beast Spells (druid 18) keeps them; the
+	// beast's traits join the features.
+	hint := fmt.Sprintf("Em forma de fera (%s) você não pode conjurar magias, e falar ou usar as mãos fica limitado ao que a fera consegue.", c.c.namePT(beast))
+	if c.CastsInBeastForm(character) {
+		hint = fmt.Sprintf("Em forma de fera (%s) você conjura magias de druida e dispensa os materiais delas (Magias da Besta).", c.c.namePT(beast))
+	} else {
+		d.Spellcasting, d.Spells, d.PactMagic = nil, nil, nil
+	}
+	d.Features = append(slices.Clone(character.Features), b.Features...)
+	d.Hints = append(slices.Clone(character.Hints), Hint{Source: "wild_shape", Mode: "note", TextPT: hint})
+	return d, nil
+}
+
+// beastScores puts the beast's Strength, Dexterity and Constitution on d and
+// returns each ability's modifier before and after.
+func beastScores(d *Derived, character, beast Derived) (oldMod, newMod map[Ability]int) {
+	oldMod, newMod = map[Ability]int{}, map[Ability]int{}
 	d.Abilities = slices.Clone(character.Abilities)
 	for i, a := range d.Abilities {
 		oldMod[a.Ability] = a.Modifier
 		newMod[a.Ability] = a.Modifier
 		if a.Ability == STR || a.Ability == DEX || a.Ability == CON {
-			d.Abilities[i] = b.Abilities[i]
-			newMod[a.Ability] = b.Abilities[i].Modifier
+			d.Abilities[i] = beast.Abilities[i]
+			newMod[a.Ability] = beast.Abilities[i].Modifier
 		}
 	}
+	return oldMod, newMod
+}
 
-	// Saves and skills: the character's bonus on the new modifier, or the
-	// beast's listed bonus; the higher one where both are proficient.
+// beastSaves gives each saving throw the character's bonus on the new modifier,
+// or the beast's listed bonus; the higher one where both are proficient.
+func beastSaves(d *Derived, character Derived, m *srd51.Monster, oldMod, newMod map[Ability]int) {
 	d.SavingThrows = slices.Clone(character.SavingThrows)
 	for i, s := range d.SavingThrows {
 		own := s.Bonus - oldMod[s.Ability] + newMod[s.Ability]
@@ -124,6 +150,10 @@ func (c *Content) WildShapeDerived(character Derived, beast string) (Derived, er
 			d.SavingThrows[i].Bonus = own
 		}
 	}
+}
+
+// beastSkills does the same for the skills, and sets the three passives.
+func beastSkills(d *Derived, character Derived, m *srd51.Monster, oldMod, newMod map[Ability]int) {
 	d.Skills = slices.Clone(character.Skills)
 	bonus := map[string]int{}
 	for i, s := range d.Skills {
@@ -142,33 +172,25 @@ func (c *Content) WildShapeDerived(character Derived, beast string) (Derived, er
 	d.PassivePerception = 10 + bonus["skill:perception"]
 	d.PassiveInvestigation = 10 + bonus["skill:investigation"]
 	d.PassiveInsight = 10 + bonus["skill:insight"]
-	d.Initiative = character.Initiative - oldMod[DEX] + newMod[DEX]
+}
 
-	// Senses are the beast's.
-	d.Senses = slices.Clone(b.Senses)
-	var own *Sense
-	for i := range character.Senses {
-		if character.Senses[i].Key == "darkvision" {
-			own = &character.Senses[i]
+// beastSenses are the beast's senses; the character's darkvision comes along
+// only where the beast has darkvision too, at the larger range.
+func beastSenses(own, beast []Sense) []Sense {
+	out := slices.Clone(beast)
+	var dark *Sense
+	for i := range own {
+		if own[i].Key == "darkvision" {
+			dark = &own[i]
 		}
 	}
-	if own != nil {
-		for i := range d.Senses {
-			if d.Senses[i].Key == "darkvision" && own.RangeFt > d.Senses[i].RangeFt {
-				d.Senses[i].RangeFt = own.RangeFt
-			}
+	if dark == nil {
+		return out
+	}
+	for i := range out {
+		if out[i].Key == "darkvision" && dark.RangeFt > out[i].RangeFt {
+			out[i].RangeFt = dark.RangeFt
 		}
 	}
-
-	// No spells in beast form, unless Beast Spells (druid 18) keeps them; the
-	// beast's traits join the features.
-	hint := fmt.Sprintf("Em forma de fera (%s) você não pode conjurar magias, e falar ou usar as mãos fica limitado ao que a fera consegue.", c.c.namePT(beast))
-	if c.CastsInBeastForm(character) {
-		hint = fmt.Sprintf("Em forma de fera (%s) você conjura magias de druida e dispensa os materiais delas (Magias da Besta).", c.c.namePT(beast))
-	} else {
-		d.Spellcasting, d.Spells, d.PactMagic = nil, nil, nil
-	}
-	d.Features = append(slices.Clone(character.Features), b.Features...)
-	d.Hints = append(slices.Clone(character.Hints), Hint{Source: "wild_shape", Mode: "note", TextPT: hint})
-	return d, nil
+	return out
 }

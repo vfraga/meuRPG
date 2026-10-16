@@ -1,0 +1,71 @@
+[
+ {
+  "key": "feature:both",
+  "name": "Both",
+  "class": "class:warlock",
+  "level": 2,
+  "desc": [],
+  "options": [
+   "feature:kept"
+  ],
+  "options_choose": 3
+ },
+ {
+  "key": "feature:expertise",
+  "name": "Expertise",
+  "class": "class:rogue",
+  "level": 1,
+  "desc": [],
+  "expertise_choices": 3
+ },
+ {
+  "key": "feature:invocations",
+  "name": "Invocations",
+  "class": "class:warlock",
+  "level": 2,
+  "desc": [],
+  "options": [
+   "feature:agonizing",
+   "feature:devils-sight"
+  ]
+ },
+ {
+  "key": "feature:other",
+  "name": "Other",
+  "class": "class:rogue",
+  "level": 3,
+  "desc": []
+ },
+ {
+  "key": "feature:plain",
+  "name": "Plain",
+  "class": "class:fighter",
+  "level": 1,
+  "desc": [
+   "Text."
+  ]
+ },
+ {
+  "key": "feature:style",
+  "name": "Style",
+  "class": "class:fighter",
+  "level": 1,
+  "desc": [],
+  "options": [
+   "feature:style-archery",
+   "feature:style-defense"
+  ],
+  "options_choose": 1
+ },
+ {
+  "key": "feature:sub",
+  "name": "Sub",
+  "class": "class:cleric",
+  "subclass": "subclass:life",
+  "level": 2,
+  "desc": [
+   "Text."
+  ],
+  "parent": "feature:plain"
+ }
+]

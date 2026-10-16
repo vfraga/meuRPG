@@ -1,0 +1,242 @@
+[
+ {
+  "key": "monster:bare",
+  "name": "X",
+  "size": "Medium",
+  "type": "humanoid",
+  "subtype": "any race",
+  "alignment": "any",
+  "armor_class": 15,
+  "armor_class_type": "armor",
+  "armor_class_items": [
+   "equipment:leather-armor",
+   "equipment:shield"
+  ],
+  "armor_class_alts": [
+   {
+    "value": 18,
+    "spell": "spell:shield"
+   }
+  ],
+  "hit_points": 11,
+  "hit_dice": "2d8",
+  "hit_points_roll": "2d8+2",
+  "speed": {},
+  "str": 10,
+  "dex": 12,
+  "con": 12,
+  "int": 10,
+  "wis": 10,
+  "cha": 10,
+  "passive_perception": 0,
+  "languages": "Common",
+  "challenge_rating": "1/2",
+  "xp": 100,
+  "proficiency_bonus": 2
+ },
+ {
+  "key": "monster:full",
+  "name": "X",
+  "size": "Medium",
+  "type": "humanoid",
+  "subtype": "any race",
+  "alignment": "any",
+  "armor_class": 13,
+  "armor_class_type": "natural",
+  "armor_class_desc": "natural armor",
+  "armor_class_alts": [
+   {
+    "value": 16,
+    "condition": "condition:x"
+   }
+  ],
+  "hit_points": 11,
+  "hit_dice": "2d8",
+  "hit_points_roll": "2d8+2",
+  "speed": {
+   "walk": 30,
+   "fly": 60,
+   "swim": 40,
+   "climb": 20,
+   "burrow": 10,
+   "hover": true
+  },
+  "str": 10,
+  "dex": 12,
+  "con": 12,
+  "int": 10,
+  "wis": 10,
+  "cha": 10,
+  "saves": {
+   "dex": 3,
+   "wis": 4
+  },
+  "skills": {
+   "skill:perception": 5,
+   "skill:stealth": 6
+  },
+  "vulnerabilities": [
+   {
+    "types": [
+     "damage-type:fire"
+    ]
+   }
+  ],
+  "resistances": [
+   {
+    "types": [
+     "damage-type:cold",
+     "damage-type:lightning"
+    ]
+   }
+  ],
+  "immunities": [
+   {
+    "types": [
+     "damage-type:poison"
+    ]
+   }
+  ],
+  "condition_immunities": [
+   "condition:poisoned"
+  ],
+  "darkvision": 60,
+  "blindsight": 10,
+  "tremorsense": 30,
+  "truesight": 120,
+  "passive_perception": 14,
+  "languages": "Common",
+  "challenge_rating": "0",
+  "xp": 0,
+  "proficiency_bonus": 2,
+  "special_abilities": [
+   {
+    "name": "Innate",
+    "desc": "Text.",
+    "usage": "3/day"
+   },
+   {
+    "name": "Keen",
+    "desc": "Text."
+   }
+  ],
+  "actions": [
+   {
+    "name": "Multiattack",
+    "desc": "x",
+    "multiattack": [
+     [
+      {
+       "name": "Bite",
+       "count": 1,
+       "kind": "melee"
+      },
+      {
+       "name": "Claw",
+       "count": 2,
+       "kind": "melee"
+      },
+      {
+       "name": "Tail",
+       "count": 1,
+       "kind": "melee"
+      },
+      {
+       "name": "Gore (Beast Form Only)",
+       "count": 1,
+       "kind": "melee"
+      },
+      {
+       "name": "Spell",
+       "count": 1,
+       "kind": "melee"
+      }
+     ]
+    ]
+   },
+   {
+    "name": "Bite",
+    "desc": "Melee.",
+    "has_attack": true,
+    "attack_bonus": 4,
+    "damage": [
+     {
+      "dice": "1d6",
+      "damage_type": "damage-type:piercing"
+     }
+    ]
+   },
+   {
+    "name": "Claw",
+    "desc": "Melee.",
+    "has_attack": true,
+    "attack_bonus": 4
+   },
+   {
+    "name": "Tail",
+    "desc": "Melee.",
+    "has_attack": true,
+    "attack_bonus": 4
+   },
+   {
+    "name": "Gore (Beast Form Only)",
+    "desc": "Melee.",
+    "has_attack": true,
+    "attack_bonus": 4
+   },
+   {
+    "name": "Breath Weapons",
+    "desc": "It uses one.\nFire Breath. Fire.\nSleep Breath. Sleep.",
+    "usage": "Recharge 5-6"
+   },
+   {
+    "name": "Sleep Breath",
+    "desc": "Sleep Breath. Sleep.",
+    "usage": "Recharge 5-6",
+    "save": {
+     "ability": "con",
+     "dc": 13,
+     "on_success": "none"
+    }
+   },
+   {
+    "name": "Fire Breath",
+    "desc": "Fire Breath. Fire.",
+    "usage": "Recharge 5-6",
+    "damage": [
+     {
+      "dice": "4d6",
+      "damage_type": "damage-type:fire"
+     }
+    ],
+    "save": {
+     "ability": "dex",
+     "dc": 13,
+     "on_success": "half"
+    }
+   },
+   {
+    "name": "Missing Breath",
+    "desc": "It uses one.\nFire Breath. Fire.\nSleep Breath. Sleep.",
+    "usage": "Recharge 5-6",
+    "save": {
+     "ability": "con",
+     "dc": 13,
+     "on_success": "none"
+    }
+   }
+  ],
+  "reactions": [
+   {
+    "name": "Parry",
+    "desc": "Text."
+   }
+  ],
+  "legendary_actions": [
+   {
+    "name": "Detect",
+    "desc": "Text."
+   }
+  ]
+ }
+]

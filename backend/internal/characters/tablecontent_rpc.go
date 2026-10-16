@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
@@ -116,75 +117,112 @@ func (s *Service) ListTableEntries(
 	if err != nil {
 		return nil, err
 	}
-	master := isMaster(m)
 	res := &rulesv1.ListTableEntriesResponse{}
 	// One transaction: the revision, the rows and the counts are one snapshot.
 	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		q := s.queries.WithTx(tx)
-		rev, err := contentRevision(ctx, q, m.CampaignID)
+		listing, err := s.readTableListing(ctx, tx, m)
 		if err != nil {
 			return err
 		}
-		rows, err := q.ListCampaignContent(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("list the table's content", err)
-		}
-		entries, err := readEntries(rows)
-		if err != nil {
-			return err
-		}
-		var uses map[string]int
-		if master {
-			sheets, err := q.ListCampaignSheets(ctx, m.CampaignID)
-			if err != nil {
-				return wrap("list the campaign's sheets", err)
-			}
-			if uses, err = characterUses(sheets); err != nil {
-				return err
-			}
-		}
-		content, err := s.contentFor(ctx, tx, m.CampaignID)
-		if err != nil {
-			return err
-		}
-		res = &rulesv1.ListTableEntriesResponse{TableRevision: rev, ContentVersion: content.Version()}
-		// What a player never receives (RN-23): retired or switched off, SRD or table.
-		var hidden func(string) bool
-		if content.AnyHidden() {
-			hidden = content.Hidden
-		}
-		var mine map[string]bool // the keys the player's own sheets use (read in this transaction)
-		if !master {
-			if mine, err = callerKeys(ctx, q, m); err != nil {
-				return wrap("read the caller's sheets", err)
-			}
-		}
-		for _, e := range entries {
-			if !master {
-				switch {
-				case e.row.ArchivedAt != nil || content.Off(e.row.ContentKey):
-					continue // a player never receives a retired or switched off entry, or a draft
-				case hidden != nil && (parentHidden(e, hidden) || hidden(e.row.ContentKey)) && !mine[e.row.ContentKey]:
-					continue // nor an entry whose class or race is retired or off, unless their sheet uses it
-				}
-				e = forPlayer(e, hidden)
-			}
-			pe := entryToProto(e, uses[e.row.ContentKey])
-			pe.Off = content.Off(e.row.ContentKey)
-			res.Entries = append(res.Entries, pe)
-		}
-		slices.SortStableFunc(res.Entries, func(a, b *rulesv1.TableEntry) int {
-			if d := tableKindOrder(a.GetKind()) - tableKindOrder(b.GetKind()); d != 0 {
-				return d
-			}
-			return strings.Compare(a.GetNamePt(), b.GetNamePt())
-		})
+		res = listing.response()
 		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "list the table's content", err)
 	}
 	return connect.NewResponse(res), nil
+}
+
+// tableListing is what ListTableEntries read for one viewer, in its transaction.
+type tableListing struct {
+	master   bool
+	revision int32
+	entries  []entryRow
+	content  *rules.Content
+	// uses are the master's counts of the characters that use each entry (nil for a player).
+	uses map[string]int
+	// hidden is what a player never receives (RN-23): retired or switched off, SRD or
+	// table; nil when nothing is.
+	hidden func(string) bool
+	// mine are the keys the player's own sheets use (nil for the master).
+	mine map[string]bool
+}
+
+// readTableListing reads, in tx, the revision, the entries, the master's counts, the
+// content and the player's own keys, in that order.
+func (s *Service) readTableListing(ctx context.Context, tx pgx.Tx, m authz.Membership) (*tableListing, error) {
+	q := s.queries.WithTx(tx)
+	l := &tableListing{master: isMaster(m)}
+	var err error
+	if l.revision, err = contentRevision(ctx, q, m.CampaignID); err != nil {
+		return nil, err
+	}
+	rows, err := q.ListCampaignContent(ctx, m.CampaignID)
+	if err != nil {
+		return nil, wrap("list the table's content", err)
+	}
+	if l.entries, err = readEntries(rows); err != nil {
+		return nil, err
+	}
+	if l.master {
+		if l.uses, err = sheetUses(ctx, q, m.CampaignID); err != nil {
+			return nil, err
+		}
+	}
+	if l.content, err = s.contentFor(ctx, tx, m.CampaignID); err != nil {
+		return nil, err
+	}
+	if l.content.AnyHidden() {
+		l.hidden = l.content.Hidden
+	}
+	if !l.master {
+		if l.mine, err = callerKeys(ctx, q, m); err != nil {
+			return nil, wrap("read the caller's sheets", err)
+		}
+	}
+	return l, nil
+}
+
+// sheetUses counts, in q's transaction, the campaign's characters that use each table key.
+func sheetUses(ctx context.Context, q *charactersdb.Queries, campaignID string) (map[string]int, error) {
+	sheets, err := q.ListCampaignSheets(ctx, campaignID)
+	if err != nil {
+		return nil, wrap("list the campaign's sheets", err)
+	}
+	return characterUses(sheets)
+}
+
+// response is the listing as the viewer reads it, by kind then name.
+func (l *tableListing) response() *rulesv1.ListTableEntriesResponse {
+	res := &rulesv1.ListTableEntriesResponse{TableRevision: l.revision, ContentVersion: l.content.Version()}
+	for _, e := range l.entries {
+		if !l.master {
+			if !l.playerReads(e) {
+				continue
+			}
+			e = forPlayer(e, l.hidden)
+		}
+		pe := entryToProto(e, l.uses[e.row.ContentKey])
+		pe.Off = l.content.Off(e.row.ContentKey)
+		res.Entries = append(res.Entries, pe)
+	}
+	slices.SortStableFunc(res.Entries, func(a, b *rulesv1.TableEntry) int {
+		if d := tableKindOrder(a.GetKind()) - tableKindOrder(b.GetKind()); d != 0 {
+			return d
+		}
+		return strings.Compare(a.GetNamePt(), b.GetNamePt())
+	})
+	return res
+}
+
+// playerReads says whether a player receives the entry.
+func (l *tableListing) playerReads(e entryRow) bool {
+	key := e.row.ContentKey
+	if e.row.ArchivedAt != nil || l.content.Off(key) {
+		return false // a player never receives a retired or switched off entry, or a draft
+	}
+	// Nor an entry whose class or race is retired or off, unless their sheet uses it.
+	return l.hidden == nil || (!parentHidden(e, l.hidden) && !l.hidden(key)) || l.mine[key]
 }
 
 // duplicateName is a violation when another entry of the kind has the name, in
@@ -288,13 +326,8 @@ func (s *Service) CreateTableEntry(
 		return nil, err
 	}
 	body, kind := bodyOf(req.Msg)
-	if body == nil {
-		return nil, invalidArgument(fieldErr("body", "is required: exactly one of the table_* messages"))
-	}
-	// The cheap size refusal comes before the transaction, so a body over the
-	// limits never holds the campaign's content revision.
-	if v := checkFeatureCount(kind, body); len(v) > 0 {
-		return nil, errRefusedContent(v)
+	if err := checkWriteBody(body, kind); err != nil {
+		return nil, err
 	}
 	idemKey, err := idem.Clean(req.Msg.GetIdempotencyKey())
 	if err != nil {
@@ -302,98 +335,148 @@ func (s *Service) CreateTableEntry(
 	}
 	// The key is unique in the campaign, and kept with a hash of the whole request: a retry
 	// returns the first entry only when it is the same request.
-	scopedKey, requestHash := idem.Scope(m.CampaignID, idemKey), idem.Hash(req.Msg)
-	var res *rulesv1.CreateTableEntryResponse
-	replayed := false
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		q := s.queries.WithTx(tx)
-		replayed = false
-		rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: m.CampaignID, Now: s.now()})
-		if err != nil {
-			return wrap("bump the content revision", err)
-		}
-		// The bump holds the campaign's content until this transaction ends, so a call with the
-		// same key waits here for the first one, and then finds its entry.
-		if scopedKey != nil {
-			prior, err := q.GetCampaignContentByCreateKey(ctx, scopedKey)
-			switch {
-			case err == nil:
-				if err := idem.SameRequest(prior.CreateHash, requestHash); err != nil {
-					return err
-				}
-				entry, err := decodeRow(prior)
-				if err != nil {
-					return err
-				}
-				// The table's revision as it is now. The read sees this transaction's own bump, which
-				// the rollback below undoes, so the revision is one less: a retry changes nothing.
-				current, err := q.GetContentRevision(ctx, m.CampaignID)
-				if err != nil {
-					return wrap("read the content revision", err)
-				}
-				res = &rulesv1.CreateTableEntryResponse{Entry: entryToProto(entry, 0), TableRevision: current - 1}
-				replayed = true
-				return errReplayed
-			case !errors.Is(err, pgx.ErrNoRows):
-				return wrap("find the entry of the key", err)
-			}
-		}
-		rows, err := q.ListCampaignContent(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("list the table's content", err)
-		}
-		entries, err := readEntries(rows)
-		if err != nil {
-			return err
-		}
-		key := entryKey(kind, body.GetNamePt(), rows)
-		// A name another entry has is one more violation of this entry, listed with the ones the rules find (not instead of them).
-		var lead []*rulesv1.TableContentViolation
-		if v := duplicateName(entries, kind, key, body.GetNamePt()); v != nil {
-			lead = append(lead, v)
-		}
-		st, err := prepare(key, kind, body, nil, lead...)
-		if err != nil {
-			return err
-		}
-		now := s.now()
-		row := charactersdb.CampaignContent{
-			CampaignID: m.CampaignID, ContentKey: key, Kind: kindPrefix(kind), NamePt: body.GetNamePt(), Data: st.data,
-			Revision: rev, CreatedAt: now, UpdatedAt: now,
-		}
-		if _, err := s.checkOverlay(withRow(entries, st, row), int(rev), key, lead...); err != nil {
-			return err
-		}
-		if scopedKey != nil {
-			row, err = q.InsertCampaignContentWithKey(ctx, charactersdb.InsertCampaignContentWithKeyParams{
-				CampaignID: m.CampaignID, ContentKey: key, Kind: kindPrefix(kind), NamePt: body.GetNamePt(), Data: st.data,
-				Revision: rev, CreateKey: scopedKey, CreateHash: requestHash, Now: now,
-			})
-		} else {
-			row, err = q.InsertCampaignContent(ctx, charactersdb.InsertCampaignContentParams{
-				CampaignID: m.CampaignID, ContentKey: key, Kind: kindPrefix(kind), NamePt: body.GetNamePt(), Data: st.data,
-				Revision: rev, Now: now,
-			})
-		}
-		if err != nil {
-			return wrap("insert a table entry", err)
-		}
-		res = &rulesv1.CreateTableEntryResponse{
-			// No sheet can use an entry that did not exist a moment ago: the count is 0, set
-			// for the master as every write response does.
-			Entry: entryToProto(entryRow{row: row, kind: kind, body: st.body}, 0), TableRevision: rev,
-		}
-		return nil
-	})
-	if replayed && errors.Is(err, errReplayed) {
-		return connect.NewResponse(res), nil // the first call wrote and announced the entry
+	call := &createCall{s: s, campaignID: m.CampaignID, body: body, kind: kind}
+	call.scopedKey, call.requestHash = idem.Scope(m.CampaignID, idemKey), idem.Hash(req.Msg)
+	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return call.run(ctx, tx) })
+	if call.replayed && errors.Is(err, errReplayed) {
+		return connect.NewResponse(call.res), nil // the first call wrote and announced the entry
 	}
 	if err != nil {
 		return nil, s.dbError(ctx, "create a table entry", err)
 	}
+	res := call.res
 	logging.Event(ctx, s.logger, "content.entry_written", slog.String("entry_key", res.GetEntry().GetKey()), slog.String("kind", kindPrefix(kind)), slog.Int("table_revision", int(res.GetTableRevision())), slog.Bool("created", true))
 	s.publishContentChanged(m.CampaignID)
 	return connect.NewResponse(res), nil
+}
+
+// checkWriteBody refuses, before the transaction, a write without a body, and one over the
+// feature limits: the cheap size refusal never holds the campaign's content revision.
+func checkWriteBody(body tableBody, kind rulesv1.TableContentKind) error {
+	if body == nil {
+		return invalidArgument(fieldErr("body", "is required: exactly one of the table_* messages"))
+	}
+	if v := checkFeatureCount(kind, body); len(v) > 0 {
+		return errRefusedContent(v)
+	}
+	return nil
+}
+
+// createCall is one CreateTableEntry: the request and what its transaction found. The
+// transaction's closure runs again when CockroachDB retries it, so run starts it all again.
+type createCall struct {
+	s          *Service
+	campaignID string
+	body       tableBody
+	kind       rulesv1.TableContentKind
+	// scopedKey and requestHash are the idempotency key (nil without one) and the request's hash.
+	scopedKey, requestHash *string
+
+	res      *rulesv1.CreateTableEntryResponse
+	replayed bool
+}
+
+// run is the transaction of the call: bump the revision, answer a replay, check the entry
+// against the whole campaign, and insert it.
+func (c *createCall) run(ctx context.Context, tx pgx.Tx) error {
+	q := c.s.queries.WithTx(tx)
+	c.replayed = false
+	rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: c.campaignID, Now: c.s.now()})
+	if err != nil {
+		return wrap("bump the content revision", err)
+	}
+	// The bump holds the campaign's content until this transaction ends, so a call with the
+	// same key waits here for the first one, and then finds its entry.
+	if done, err := c.replay(ctx, q); done {
+		return err
+	}
+	rows, err := q.ListCampaignContent(ctx, c.campaignID)
+	if err != nil {
+		return wrap("list the table's content", err)
+	}
+	entries, err := readEntries(rows)
+	if err != nil {
+		return err
+	}
+	key := entryKey(c.kind, c.body.GetNamePt(), rows)
+	// A name another entry has is one more violation of this entry, listed with the ones the rules find (not instead of them).
+	lead := duplicateLead(entries, c.kind, key, c.body.GetNamePt())
+	st, err := prepare(key, c.kind, c.body, nil, lead...)
+	if err != nil {
+		return err
+	}
+	now := c.s.now()
+	row := charactersdb.CampaignContent{
+		CampaignID: c.campaignID, ContentKey: key, Kind: kindPrefix(c.kind), NamePt: c.body.GetNamePt(), Data: st.data,
+		Revision: rev, CreatedAt: now, UpdatedAt: now,
+	}
+	if _, err := c.s.checkOverlay(withRow(entries, st, row), int(rev), key, lead...); err != nil {
+		return err
+	}
+	if row, err = c.insert(ctx, q, st, rev, now); err != nil {
+		return wrap("insert a table entry", err)
+	}
+	c.res = &rulesv1.CreateTableEntryResponse{
+		// No sheet can use an entry that did not exist a moment ago: the count is 0, set
+		// for the master as every write response does.
+		Entry: entryToProto(entryRow{row: row, kind: c.kind, body: st.body}, 0), TableRevision: rev,
+	}
+	return nil
+}
+
+// replay finds the entry an earlier call with the same idempotency key made. It reports
+// whether the transaction ends here: with errReplayed (the bump is rolled back) when it found
+// one, or with the error of the search or of another request under the key.
+func (c *createCall) replay(ctx context.Context, q *charactersdb.Queries) (bool, error) {
+	if c.scopedKey == nil {
+		return false, nil
+	}
+	prior, err := q.GetCampaignContentByCreateKey(ctx, c.scopedKey)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return false, nil
+	case err != nil:
+		return true, wrap("find the entry of the key", err)
+	}
+	if err := idem.SameRequest(prior.CreateHash, c.requestHash); err != nil {
+		return true, err
+	}
+	entry, err := decodeRow(prior)
+	if err != nil {
+		return true, err
+	}
+	// The table's revision as it is now. The read sees this transaction's own bump, which
+	// the rollback undoes, so the revision is one less: a retry changes nothing.
+	current, err := q.GetContentRevision(ctx, c.campaignID)
+	if err != nil {
+		return true, wrap("read the content revision", err)
+	}
+	c.res = &rulesv1.CreateTableEntryResponse{Entry: entryToProto(entry, 0), TableRevision: current - 1}
+	c.replayed = true
+	return true, errReplayed
+}
+
+// insert writes the new row, with the idempotency key when the call has one.
+func (c *createCall) insert(ctx context.Context, q *charactersdb.Queries, st stored, rev int32, now time.Time) (charactersdb.CampaignContent, error) {
+	if c.scopedKey != nil {
+		return q.InsertCampaignContentWithKey(ctx, charactersdb.InsertCampaignContentWithKeyParams{
+			CampaignID: c.campaignID, ContentKey: st.key, Kind: kindPrefix(c.kind), NamePt: c.body.GetNamePt(), Data: st.data,
+			Revision: rev, CreateKey: c.scopedKey, CreateHash: c.requestHash, Now: now,
+		})
+	}
+	return q.InsertCampaignContent(ctx, charactersdb.InsertCampaignContentParams{
+		CampaignID: c.campaignID, ContentKey: st.key, Kind: kindPrefix(c.kind), NamePt: c.body.GetNamePt(), Data: st.data,
+		Revision: rev, Now: now,
+	})
+}
+
+// duplicateLead is the violations an entry has before the rules run: its name, when another
+// entry of the kind has it.
+func duplicateLead(entries []entryRow, kind rulesv1.TableContentKind, key, name string) []*rulesv1.TableContentViolation {
+	if v := duplicateName(entries, kind, key, name); v != nil {
+		return []*rulesv1.TableContentViolation{v}
+	}
+	return nil
 }
 
 // UpdateTableEntry implements rulesv1connect.TableContentServiceHandler.
@@ -406,108 +489,174 @@ func (s *Service) UpdateTableEntry(
 		return nil, err
 	}
 	key := req.Msg.GetKey()
-	if !rules.IsTableKey(key) {
-		return nil, errNoTableEntry()
+	body, kind, err := checkUpdateRequest(req.Msg)
+	if err != nil {
+		return nil, err
 	}
-	body, kind := bodyOf(req.Msg)
-	if body == nil {
-		return nil, invalidArgument(fieldErr("body", "is required: exactly one of the table_* messages"))
-	}
-	if kindPrefix(kind) != keyKind(key) {
-		return nil, errRefusedContent([]*rulesv1.TableContentViolation{{
-			Field: "body", Reason: reasonImmutable, Message: "the kind of an entry never changes",
-		}})
-	}
-	// The cheap size refusal comes before the transaction, so a body over the
-	// limits never holds the campaign's content revision.
-	if v := checkFeatureCount(kind, body); len(v) > 0 {
-		return nil, errRefusedContent(v)
-	}
-	var res *rulesv1.UpdateTableEntryResponse
-	var affected []affectedSheet
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		q := s.queries.WithTx(tx)
-		rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: m.CampaignID, Now: s.now()})
-		if err != nil {
-			return wrap("bump the content revision", err)
-		}
-		cur, err := q.GetCampaignContent(ctx, charactersdb.GetCampaignContentParams{CampaignID: m.CampaignID, ContentKey: key})
-		if errors.Is(err, pgx.ErrNoRows) {
-			return errNoTableEntry()
-		}
-		if err != nil {
-			return wrap("read a table entry", err)
-		}
-		// An archived entry can still be edited (it stays archived).
-		if cur.Revision != req.Msg.GetExpectedRevision() {
-			return errBlockedContent(connect.CodeAborted, rulesv1.TableContentBlockedReason_TABLE_CONTENT_BLOCKED_REASON_STALE, key, "the entry changed since you opened it; reload it and try again")
-		}
-		old, err := decodeRow(cur)
-		if err != nil {
-			return err
-		}
-		if v := immutableChange(kind, old.body, body); v != nil {
-			return errRefusedContent([]*rulesv1.TableContentViolation{v})
-		}
-		rows, err := q.ListCampaignContent(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("list the table's content", err)
-		}
-		entries, err := readEntries(rows)
-		if err != nil {
-			return err
-		}
-		var lead []*rulesv1.TableContentViolation
-		if v := duplicateName(entries, kind, key, body.GetNamePt()); v != nil {
-			lead = append(lead, v)
-		}
-		st, err := prepare(key, kind, body, old.body, lead...)
-		if err != nil {
-			return err
-		}
-		now := s.now()
-		next := cur
-		next.NamePt, next.Data, next.Revision, next.UpdatedAt = body.GetNamePt(), st.data, rev, now
-		content, err := s.checkOverlay(withRow(entries, st, next), int(rev), key, lead...)
-		if err != nil {
-			return err
-		}
-		row, err := q.UpdateCampaignContent(ctx, charactersdb.UpdateCampaignContentParams{
-			CampaignID: m.CampaignID, ContentKey: key, NamePt: body.GetNamePt(), Data: st.data, Revision: rev, Now: now,
-		})
-		if err != nil {
-			return wrap("update a table entry", err)
-		}
-		sheets, err := q.ListCampaignSheets(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("list the campaign's sheets", err)
-		}
-		if affected, err = affectedSheets(sheets, content, key); err != nil {
-			return err
-		}
-		uses, err := characterUses(sheets)
-		if err != nil {
-			return err
-		}
-		res = &rulesv1.UpdateTableEntryResponse{
-			Entry: entryToProto(entryRow{row: row, kind: kind, body: st.body}, uses[key]), TableRevision: rev,
-		}
-		offKeys, err := q.ListContentOff(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("read the options switched off", err)
-		}
-		res.Entry.Off = slices.Contains(offKeys, key)
-		return nil
-	})
+	call := &updateCall{s: s, campaignID: m.CampaignID, key: key, expected: req.Msg.GetExpectedRevision(), body: body, kind: kind}
+	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return call.run(ctx, tx) })
 	if err != nil {
 		return nil, s.dbError(ctx, "update a table entry", err)
 	}
+	res := call.res
 	logging.Event(ctx, s.logger, "content.entry_written", slog.String("entry_key", key), slog.Int("table_revision", int(res.GetTableRevision())), slog.Bool("created", false))
 	s.publishContentChanged(m.CampaignID)
-	if res.AffectedCharacters, err = s.affectedToProto(ctx, affected); err != nil {
+	if res.AffectedCharacters, err = s.affectedToProto(ctx, call.affected); err != nil {
 		return nil, s.dbError(ctx, "read display names", err)
 	}
 	return connect.NewResponse(res), nil
+}
+
+// checkUpdateRequest refuses, before the transaction, a key that is not the table's, a
+// write without a body, a change of kind, and a body over the feature limits.
+func checkUpdateRequest(msg *rulesv1.UpdateTableEntryRequest) (tableBody, rulesv1.TableContentKind, error) {
+	key := msg.GetKey()
+	if !rules.IsTableKey(key) {
+		return nil, rulesv1.TableContentKind_TABLE_CONTENT_KIND_UNSPECIFIED, errNoTableEntry()
+	}
+	body, kind := bodyOf(msg)
+	if body == nil {
+		return nil, rulesv1.TableContentKind_TABLE_CONTENT_KIND_UNSPECIFIED, invalidArgument(fieldErr("body", "is required: exactly one of the table_* messages"))
+	}
+	if kindPrefix(kind) != keyKind(key) {
+		return nil, rulesv1.TableContentKind_TABLE_CONTENT_KIND_UNSPECIFIED, errRefusedContent([]*rulesv1.TableContentViolation{{
+			Field: "body", Reason: reasonImmutable, Message: "the kind of an entry never changes",
+		}})
+	}
+	if err := checkWriteBody(body, kind); err != nil {
+		return nil, rulesv1.TableContentKind_TABLE_CONTENT_KIND_UNSPECIFIED, err
+	}
+	return body, kind, nil
+}
+
+// updateCall is one UpdateTableEntry: the request and what its transaction found. The
+// transaction's closure runs again when CockroachDB retries it, so run sets it all again.
+type updateCall struct {
+	s          *Service
+	campaignID string
+	key        string
+	expected   int32
+	body       tableBody
+	kind       rulesv1.TableContentKind
+
+	res      *rulesv1.UpdateTableEntryResponse
+	affected []affectedSheet
+}
+
+// run is the transaction of the call: bump the revision, read the entry as stored, check
+// the new body against the whole campaign, write it, and find the sheets it leaves with
+// issues.
+func (c *updateCall) run(ctx context.Context, tx pgx.Tx) error {
+	q := c.s.queries.WithTx(tx)
+	rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: c.campaignID, Now: c.s.now()})
+	if err != nil {
+		return wrap("bump the content revision", err)
+	}
+	cur, err := c.current(ctx, q)
+	if err != nil {
+		return err
+	}
+	plan, err := c.check(ctx, q, cur, rev)
+	if err != nil {
+		return err
+	}
+	row, err := q.UpdateCampaignContent(ctx, charactersdb.UpdateCampaignContentParams{
+		CampaignID: c.campaignID, ContentKey: c.key, NamePt: c.body.GetNamePt(), Data: plan.st.data, Revision: rev, Now: plan.now,
+	})
+	if err != nil {
+		return wrap("update a table entry", err)
+	}
+	sheets, err := q.ListCampaignSheets(ctx, c.campaignID)
+	if err != nil {
+		return wrap("list the campaign's sheets", err)
+	}
+	if c.affected, err = affectedSheets(sheets, plan.content, c.key); err != nil {
+		return err
+	}
+	uses, err := characterUses(sheets)
+	if err != nil {
+		return err
+	}
+	c.res = &rulesv1.UpdateTableEntryResponse{
+		Entry: entryToProto(entryRow{row: row, kind: c.kind, body: plan.st.body}, uses[c.key]), TableRevision: rev,
+	}
+	c.res.Entry.Off, err = switchedOff(ctx, q, c.campaignID, c.key)
+	return err
+}
+
+// current reads the entry as stored, refusing a missing one and an editor's stale revision.
+// An archived entry can still be edited (it stays archived).
+func (c *updateCall) current(ctx context.Context, q *charactersdb.Queries) (charactersdb.CampaignContent, error) {
+	cur, err := tableRow(ctx, q, c.campaignID, c.key)
+	if err != nil {
+		return cur, err
+	}
+	if cur.Revision != c.expected {
+		return cur, errBlockedContent(connect.CodeAborted, rulesv1.TableContentBlockedReason_TABLE_CONTENT_BLOCKED_REASON_STALE, c.key, "the entry changed since you opened it; reload it and try again")
+	}
+	return cur, nil
+}
+
+// updatePlan is an update that passed its checks: the body to store, the campaign's content
+// with it, and the time of the write.
+type updatePlan struct {
+	st      stored
+	content *rules.Content
+	now     time.Time
+}
+
+// check refuses what never changes, then checks the new body (its name among the kind's,
+// its shape and keys) and the whole campaign's overlay with it.
+func (c *updateCall) check(ctx context.Context, q *charactersdb.Queries, cur charactersdb.CampaignContent, rev int32) (updatePlan, error) {
+	old, err := decodeRow(cur)
+	if err != nil {
+		return updatePlan{}, err
+	}
+	if v := immutableChange(c.kind, old.body, c.body); v != nil {
+		return updatePlan{}, errRefusedContent([]*rulesv1.TableContentViolation{v})
+	}
+	rows, err := q.ListCampaignContent(ctx, c.campaignID)
+	if err != nil {
+		return updatePlan{}, wrap("list the table's content", err)
+	}
+	entries, err := readEntries(rows)
+	if err != nil {
+		return updatePlan{}, err
+	}
+	lead := duplicateLead(entries, c.kind, c.key, c.body.GetNamePt())
+	st, err := prepare(c.key, c.kind, c.body, old.body, lead...)
+	if err != nil {
+		return updatePlan{}, err
+	}
+	now := c.s.now()
+	next := cur
+	next.NamePt, next.Data, next.Revision, next.UpdatedAt = c.body.GetNamePt(), st.data, rev, now
+	content, err := c.s.checkOverlay(withRow(entries, st, next), int(rev), c.key, lead...)
+	if err != nil {
+		return updatePlan{}, err
+	}
+	return updatePlan{st: st, content: content, now: now}, nil
+}
+
+// tableRow reads the stored row of a table key: not_found when the campaign has none.
+func tableRow(ctx context.Context, q *charactersdb.Queries, campaignID, key string) (charactersdb.CampaignContent, error) {
+	cur, err := q.GetCampaignContent(ctx, charactersdb.GetCampaignContentParams{CampaignID: campaignID, ContentKey: key})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return cur, errNoTableEntry()
+	}
+	if err != nil {
+		return cur, wrap("read a table entry", err)
+	}
+	return cur, nil
+}
+
+// switchedOff says whether the master switched the key off, read in q's transaction.
+func switchedOff(ctx context.Context, q *charactersdb.Queries, campaignID, key string) (bool, error) {
+	offKeys, err := q.ListContentOff(ctx, campaignID)
+	if err != nil {
+		return false, wrap("read the options switched off", err)
+	}
+	return slices.Contains(offKeys, key), nil
 }
 
 // immutableChange is a violation when an edit changes what never changes: the
@@ -633,65 +782,9 @@ func (s *Service) setArchived(ctx context.Context, m authz.Membership, key strin
 	var out *rulesv1.TableEntry
 	var revision int32
 	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		q := s.queries.WithTx(tx)
-		rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: m.CampaignID, Now: s.now()})
-		if err != nil {
-			return wrap("bump the content revision", err)
-		}
-		cur, err := q.GetCampaignContent(ctx, charactersdb.GetCampaignContentParams{CampaignID: m.CampaignID, ContentKey: key})
-		if errors.Is(err, pgx.ErrNoRows) {
-			return errNoTableEntry()
-		}
-		if err != nil {
-			return wrap("read a table entry", err)
-		}
-		switch {
-		case archive && cur.ArchivedAt != nil:
-			return errBlockedContent(connect.CodeFailedPrecondition, rulesv1.TableContentBlockedReason_TABLE_CONTENT_BLOCKED_REASON_ARCHIVED, key, "the entry is already archived")
-		case !archive && cur.ArchivedAt == nil:
-			return errBlockedContent(connect.CodeFailedPrecondition, rulesv1.TableContentBlockedReason_TABLE_CONTENT_BLOCKED_REASON_NOT_ARCHIVED, key, "the entry is not archived")
-		}
-		now := s.now()
-		row, err := q.SetCampaignContentArchived(ctx, charactersdb.SetCampaignContentArchivedParams{
-			CampaignID: m.CampaignID, ContentKey: key, Archived: archive, Now: now,
-		})
-		if err != nil {
-			return wrap("archive a table entry", err)
-		}
-		if !archive {
-			rows, err := q.ListCampaignContent(ctx, m.CampaignID)
-			if err != nil {
-				return wrap("list the table's content", err)
-			}
-			entries, err := readEntries(rows) // the list already has the entry unarchived
-			if err != nil {
-				return err
-			}
-			if _, err := s.checkOverlay(entries, int(rev), key); err != nil {
-				return err
-			}
-		}
-		e, err := decodeRow(row)
-		if err != nil {
-			return err
-		}
-		// The master's count: archiving does not change who uses the entry, and the
-		// editor shows it ("Arquivado · 2 fichas usam").
-		sheets, err := q.ListCampaignSheets(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("list the campaign's sheets", err)
-		}
-		uses, err := characterUses(sheets)
-		if err != nil {
-			return err
-		}
-		out, revision = entryToProto(e, uses[key]), rev
-		offKeys, err := q.ListContentOff(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("read the options switched off", err)
-		}
-		out.Off = slices.Contains(offKeys, key)
-		return nil
+		var err error
+		out, revision, err = s.setArchivedIn(ctx, s.queries.WithTx(tx), m.CampaignID, key, archive)
+		return err
 	})
 	if err == nil {
 		event := "content.entry_archived"
@@ -702,4 +795,73 @@ func (s *Service) setArchived(ctx context.Context, m authz.Membership, key strin
 		s.publishContentChanged(m.CampaignID)
 	}
 	return out, revision, err
+}
+
+// setArchivedIn is the transaction of setArchived: bump the revision, check the entry's
+// state, write the mark, check the overlay of an entry brought back, and answer the entry as
+// the master reads it.
+func (s *Service) setArchivedIn(ctx context.Context, q *charactersdb.Queries, campaignID, key string, archive bool) (*rulesv1.TableEntry, int32, error) {
+	rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: campaignID, Now: s.now()})
+	if err != nil {
+		return nil, 0, wrap("bump the content revision", err)
+	}
+	cur, err := tableRow(ctx, q, campaignID, key)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := checkArchiveState(cur, key, archive); err != nil {
+		return nil, 0, err
+	}
+	row, err := q.SetCampaignContentArchived(ctx, charactersdb.SetCampaignContentArchivedParams{
+		CampaignID: campaignID, ContentKey: key, Archived: archive, Now: s.now(),
+	})
+	if err != nil {
+		return nil, 0, wrap("archive a table entry", err)
+	}
+	if !archive {
+		if err := s.recheckOverlay(ctx, q, campaignID, rev, key); err != nil {
+			return nil, 0, err
+		}
+	}
+	e, err := decodeRow(row)
+	if err != nil {
+		return nil, 0, err
+	}
+	// The master's count: archiving does not change who uses the entry, and the
+	// editor shows it ("Arquivado · 2 fichas usam").
+	uses, err := sheetUses(ctx, q, campaignID)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := entryToProto(e, uses[key])
+	if out.Off, err = switchedOff(ctx, q, campaignID, key); err != nil {
+		return out, rev, err
+	}
+	return out, rev, nil
+}
+
+// checkArchiveState refuses archiving an archived entry, and bringing back one that is not.
+func checkArchiveState(cur charactersdb.CampaignContent, key string, archive bool) error {
+	switch {
+	case archive && cur.ArchivedAt != nil:
+		return errBlockedContent(connect.CodeFailedPrecondition, rulesv1.TableContentBlockedReason_TABLE_CONTENT_BLOCKED_REASON_ARCHIVED, key, "the entry is already archived")
+	case !archive && cur.ArchivedAt == nil:
+		return errBlockedContent(connect.CodeFailedPrecondition, rulesv1.TableContentBlockedReason_TABLE_CONTENT_BLOCKED_REASON_NOT_ARCHIVED, key, "the entry is not archived")
+	}
+	return nil
+}
+
+// recheckOverlay runs the whole campaign's overlay again, as the transaction sees it (the
+// list already has the entry brought back).
+func (s *Service) recheckOverlay(ctx context.Context, q *charactersdb.Queries, campaignID string, rev int32, key string) error {
+	rows, err := q.ListCampaignContent(ctx, campaignID)
+	if err != nil {
+		return wrap("list the table's content", err)
+	}
+	entries, err := readEntries(rows)
+	if err != nil {
+		return err
+	}
+	_, err = s.checkOverlay(entries, int(rev), key)
+	return err
 }

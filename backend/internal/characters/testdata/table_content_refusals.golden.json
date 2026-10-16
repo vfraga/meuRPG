@@ -1,0 +1,222 @@
+[
+  {
+    "step": "create as a player",
+    "value": "permission_denied: only the campaign's master can do this"
+  },
+  {
+    "step": "create as a pending member",
+    "value": "not_found: campaign not found"
+  },
+  {
+    "step": "create as an outsider",
+    "value": "not_found: campaign not found"
+  },
+  {
+    "step": "create as nobody",
+    "value": "unauthenticated: sign in to continue"
+  },
+  {
+    "step": "create without a body",
+    "value": "invalid_argument: body is required: exactly one of the table_* messages | invalid field=\"body\""
+  },
+  {
+    "step": "create with too many features",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_race\" reason=\"limit\" key=\"\" message=\"62 traits; the limit is 60\""
+  },
+  {
+    "step": "create with a bad idempotency key",
+    "value": "invalid_argument: idempotency_key must be 1 to 64 characters"
+  },
+  {
+    "step": "create with a duplicate name",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_race.name_pt\" reason=\"duplicate_name\" key=\"\" message=\"another entry of this kind has this name\""
+  },
+  {
+    "step": "create with a duplicate name and a made-up feature key",
+    "value": "invalid_argument: the table's content was refused: 2 violation(s), see the details | violation field=\"table_race.name_pt\" reason=\"duplicate_name\" key=\"\" message=\"another entry of this kind has this name\" | violation field=\"table_race.features[0].key\" reason=\"immutable\" key=\"\" message=\"a feature key is made by the server; send back only the ones the entry has\""
+  },
+  {
+    "step": "create with a made-up feature key",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_race.features[0].key\" reason=\"immutable\" key=\"\" message=\"a feature key is made by the server; send back only the ones the entry has\""
+  },
+  {
+    "step": "create a subrace of an unknown race",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_subrace.race_key\" reason=\"dangling_reference\" key=\"\" message=\"the race \\\"race:nada@mesa\\\" does not exist\""
+  },
+  {
+    "step": "create with a duplicate name the rules also refuse",
+    "value": "invalid_argument: the table's content was refused: 2 violation(s), see the details | violation field=\"table_subrace.name_pt\" reason=\"duplicate_name\" key=\"\" message=\"another entry of this kind has this name\" | violation field=\"table_subrace.race_key\" reason=\"dangling_reference\" key=\"\" message=\"the race \\\"race:nada@mesa\\\" does not exist\""
+  },
+  {
+    "step": "update as a player",
+    "value": "permission_denied: only the campaign's master can do this"
+  },
+  {
+    "step": "update as an outsider",
+    "value": "not_found: campaign not found"
+  },
+  {
+    "step": "update an SRD key",
+    "value": "not_found: table entry not found"
+  },
+  {
+    "step": "update without a body",
+    "value": "invalid_argument: body is required: exactly one of the table_* messages | invalid field=\"body\""
+  },
+  {
+    "step": "update with another kind",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"body\" reason=\"immutable\" key=\"\" message=\"the kind of an entry never changes\""
+  },
+  {
+    "step": "update with too many features",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_race\" reason=\"limit\" key=\"\" message=\"62 traits; the limit is 60\""
+  },
+  {
+    "step": "update a key the table does not have",
+    "value": "not_found: table entry not found"
+  },
+  {
+    "step": "update with a stale revision",
+    "value": "aborted: the entry changed since you opened it; reload it and try again | blocked reason=TABLE_CONTENT_BLOCKED_REASON_STALE key=\"race:anao-das-brumas@mesa\""
+  },
+  {
+    "step": "update a cantrip to a leveled spell",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_spell.level\" reason=\"immutable\" key=\"\" message=\"a spell never goes between cantrip and leveled: make a new one\""
+  },
+  {
+    "step": "update a subrace's race",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_subrace.race_key\" reason=\"immutable\" key=\"\" message=\"the parent of an entry never changes\""
+  },
+  {
+    "step": "update a subclass's class",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_subclass.class_key\" reason=\"immutable\" key=\"\" message=\"the parent of an entry never changes\""
+  },
+  {
+    "step": "update with a duplicate name",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_race.name_pt\" reason=\"duplicate_name\" key=\"\" message=\"another entry of this kind has this name\""
+  },
+  {
+    "step": "update to the name of an entry of another kind",
+    "value": "\u003cnil\u003e"
+  },
+  {
+    "step": "update with a made-up feature key",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_race.features[0].key\" reason=\"immutable\" key=\"\" message=\"a feature key is made by the server; send back only the ones the entry has\""
+  },
+  {
+    "step": "archive as a player",
+    "value": "permission_denied: only the campaign's master can do this"
+  },
+  {
+    "step": "unarchive as a player",
+    "value": "permission_denied: only the campaign's master can do this"
+  },
+  {
+    "step": "archive an SRD key",
+    "value": "not_found: table entry not found"
+  },
+  {
+    "step": "unarchive an SRD key",
+    "value": "not_found: table entry not found"
+  },
+  {
+    "step": "archive a key the table does not have",
+    "value": "not_found: table entry not found"
+  },
+  {
+    "step": "unarchive a key the table does not have",
+    "value": "not_found: table entry not found"
+  },
+  {
+    "step": "unarchive an entry that is not archived",
+    "value": "failed_precondition: the entry is not archived | blocked reason=TABLE_CONTENT_BLOCKED_REASON_NOT_ARCHIVED key=\"race:anao-das-brumas@mesa\""
+  },
+  {
+    "step": "archive the race",
+    "value": "\u003cnil\u003e"
+  },
+  {
+    "step": "archive the race again",
+    "value": "failed_precondition: the entry is already archived | blocked reason=TABLE_CONTENT_BLOCKED_REASON_ARCHIVED key=\"race:anao-das-brumas@mesa\""
+  },
+  {
+    "step": "archive the background",
+    "value": "\u003cnil\u003e"
+  },
+  {
+    "step": "unarchive an entry stored with a stray field",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_background.feature.effects[0].recharge\" reason=\"bad_value\" key=\"\" message=\"the field recharge is not used by a note effect\""
+  },
+  {
+    "step": "switches as a player",
+    "value": "permission_denied: only the campaign's master can do this"
+  },
+  {
+    "step": "switches as a pending member",
+    "value": "not_found: campaign not found"
+  },
+  {
+    "step": "switches as an outsider",
+    "value": "not_found: campaign not found"
+  },
+  {
+    "step": "no switches",
+    "value": "invalid_argument: switches must have at least one switch | invalid field=\"switches\""
+  },
+  {
+    "step": "too many switches",
+    "value": "invalid_argument: switches must have at most 700 switches | invalid field=\"switches\""
+  },
+  {
+    "step": "a switch twice",
+    "value": "invalid_argument: switches switches[2]: the key \"class:druid\" is there twice | invalid field=\"switches\""
+  },
+  {
+    "step": "a twice key before an unknown one",
+    "value": "invalid_argument: switches switches[1]: the key \"nada\" is there twice | invalid field=\"switches\""
+  },
+  {
+    "step": "a key that is not an option",
+    "value": "invalid_argument: switches switches[1].key: \"equipment:longsword\" is not a class, subclass, race, subrace, background, spell or feat of this campaign | invalid field=\"switches\""
+  },
+  {
+    "step": "a feature key",
+    "value": "invalid_argument: switches switches[0].key: \"feature:fighter-fighting-style-defense\" is not a class, subclass, race, subrace, background, spell or feat of this campaign | invalid field=\"switches\""
+  },
+  {
+    "step": "import as a player",
+    "value": "permission_denied: only the campaign's master can do this"
+  },
+  {
+    "step": "import without a mode",
+    "value": "invalid_argument: mode must be preview or apply | invalid field=\"mode\""
+  },
+  {
+    "step": "import with pack and pack_json",
+    "value": "invalid_argument: pack_json and pack are alternatives: send one | invalid field=\"pack_json\""
+  },
+  {
+    "step": "import a file with an unknown pack field",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"pack.nome\" reason=\"unknown_field\" key=\"\" message=\"the field \\\"nome\\\" does not exist\""
+  },
+  {
+    "step": "import a file that is not a pack",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"pack\" reason=\"bad_value\" key=\"\" message=\"the file is not a content pack in proto JSON\""
+  },
+  {
+    "step": "import without a pack",
+    "value": "invalid_argument: pack is required | invalid field=\"pack\""
+  },
+  {
+    "step": "import with a bad idempotency key",
+    "value": "invalid_argument: idempotency_key must be 1 to 64 characters"
+  },
+  {
+    "step": "import a pack of another format",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"pack.format\" reason=\"bad_value\" key=\"\" message=\"the format is \\\"meurpg.table-content\\\"\""
+  },
+  {
+    "step": "import a file whose entry has an unknown field",
+    "value": "invalid_argument: the table's content was refused: 1 violation(s), see the details | violation field=\"table_feat.bogus\" reason=\"unknown_field\" key=\"feat:um@mesa\" message=\"the field \\\"bogus\\\" does not exist\""
+  }
+]

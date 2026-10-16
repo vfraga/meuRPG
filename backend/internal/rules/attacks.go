@@ -30,117 +30,161 @@ const UnarmedStrikeKey = "attack:unarmed-strike"
 // level (Fire Bolt: 1d10, then 2d10 at level 5) and the spell attack or
 // save DC of a class that has it on its list.
 func (x *deriver) attacks() {
-	c := x.c
 	// Martial Arts holds only while the monk wears no armor and no shield.
 	martialArts := x.hasHandler("monk.martial_arts") && x.armorCategory == "none" && !x.b.Shield
 	martialDie := x.martialArtsDie()
 	for i, key := range x.b.Weapons {
-		eq, ok := c.equipment[key]
-		if !ok || eq.Weapon == nil {
-			x.issue(IssueUnknownKey, fmt.Sprintf("full.weapon_keys[%d]", i), "A arma escolhida não existe no conteúdo %s.", c.version)
-			continue
-		}
-		w := eq.Weapon
-		kind := w.Range // "melee" or "ranged"
-		ab := STR
-		if kind == "ranged" {
-			ab = DEX
-		}
-		monkWeapon := martialArts && slices.Contains(w.Properties, "weapon-property:monk")
-		if slices.Contains(w.Properties, "weapon-property:finesse") || monkWeapon {
-			ab = STR
-			if x.mods[DEX] > x.mods[STR] {
-				ab = DEX
-			}
-		}
-		if slices.Contains(w.Properties, "weapon-property:heavy") && x.race != nil && x.race.Size == "Small" {
-			x.d.Hints = append(x.d.Hints, Hint{
-				Source: key, Target: "attack.weapon." + kind, Targets: []string{"attack.weapon." + kind}, Mode: "disadvantage",
-				TextPT: fmt.Sprintf("Desvantagem nas jogadas de ataque com %s: arma pesada para criaturas Pequenas.", strings.ToLower(c.namePT(key))),
-			})
-		}
-		proficient := x.weaponProficient(key, w.Category)
-		bonus := x.mods[ab]
-		if proficient {
-			bonus += x.prof
-		}
-		dmg := x.modifiers("damage.weapon."+kind, x.mods[ab])
-		oneHanded, note := dmg, ""
-		if kind == "melee" && !slices.Contains(w.Properties, "weapon-property:two-handed") {
-			bonus, source := x.oneMeleeWeaponBonus()
-			if source != "" {
-				oneHanded += bonus
-				note = fmt.Sprintf("Inclui %s de %s (sem outra arma na mão)", signed(bonus), x.c.namePT(source))
-			}
-		}
-		dice := w.Damage
-		if monkWeapon && martialDie > 0 {
-			dice = biggerDie(dice, martialDie)
-		}
-		a := Attack{
-			Key: key, Name: eq.Name, NamePT: c.namePT(key), Kind: "weapon", Ability: ab,
-			AttackBonus: x.modifiers("attack.weapon."+kind, bonus), Proficient: proficient,
-			DamageType: w.DamageType, DamageTypeNamePT: c.namePT(w.DamageType),
-			Melee: kind == "melee", MartialArts: monkWeapon, AbilityMod: x.mods[ab],
-			Light:        kind == "melee" && slices.Contains(w.Properties, "weapon-property:light"),
-			Finesse:      slices.Contains(w.Properties, "weapon-property:finesse"),
-			TwoHanded:    slices.Contains(w.Properties, "weapon-property:two-handed"),
-			DamageNotePT: note,
-		}
-		if dice != "" {
-			a.Damage = withModifier(dice, oneHanded)
-		}
-		if w.TwoHandedDamage != "" {
-			two := w.TwoHandedDamage
-			if monkWeapon && martialDie > 0 {
-				two = biggerDie(two, martialDie)
-			}
-			a.VersatileDamage = withModifier(two, dmg)
-		}
-		switch {
-		case w.ThrowNormalFt > 0:
-			a.RangeFt, a.LongRangeFt = w.ThrowNormalFt, w.ThrowLongFt
-		default:
-			a.RangeFt, a.LongRangeFt = w.NormalRangeFt, w.LongRangeFt
-		}
-		a.DamageDice, _ = ParseDice(a.Damage)
-		a.VersatileDice, _ = ParseDice(a.VersatileDamage)
-		x.d.Attacks = append(x.d.Attacks, a)
+		x.weaponAttack(i, key, martialArts, martialDie)
 	}
-
 	for _, key := range x.b.Cantrips {
-		s, ok := c.spells[key]
-		if !ok || s.Level != 0 || len(s.Damage) == 0 || len(s.Damage[0].AtCharacterLevel) == 0 {
-			continue
-		}
-		sc := x.casterFor(s)
-		if sc == nil {
-			continue
-		}
-		dmg := x.modifiers("damage.spell."+strings.TrimPrefix(key, "spell:"), 0)
-		dice := damageAt(s.Damage[0].AtCharacterLevel, x.d.TotalLevel)
-		a := Attack{
-			Key: key, Name: s.Name, NamePT: c.namePT(key), Kind: "spell", Ability: sc.Ability,
-			Damage: withModifier(dice, dmg), SpellDice: dice,
-			DamageType: s.Damage[0].DamageType, DamageTypeNamePT: c.namePT(s.Damage[0].DamageType),
-			Proficient: true, RangeFt: feet(s.Range), Beams: beamsAt(key, x.d.TotalLevel),
-		}
-		switch {
-		case s.AttackType != "":
-			a.AttackBonus = sc.AttackBonus
-			// A ranged_attack effect may multiply the range of a spell that needs an
-			// attack roll (a range in feet only: feet gives 0 for touch and self).
-			a.RangeFt = x.d.SpellRangeFt(s.AttackType, RangeRanged, a.RangeFt)
-		case s.SaveAbility != "":
-			a.SaveDC = sc.SaveDC
-			a.SaveAbility = Ability(s.SaveAbility)
-		}
-		a.DamageDice, _ = ParseDice(a.Damage)
-		x.d.Attacks = append(x.d.Attacks, a)
+		x.cantripAttack(key)
 	}
-
 	// Last, so the weapons and cantrips stay the first lines of the sheet.
 	x.unarmedStrike(martialArts, martialDie)
+}
+
+// weaponAttack adds the line of the i-th carried weapon, or an Issue when the
+// key is not a weapon of the content.
+func (x *deriver) weaponAttack(i int, key string, martialArts bool, martialDie int) {
+	c := x.c
+	eq, ok := c.equipment[key]
+	if !ok || eq.Weapon == nil {
+		x.issue(IssueUnknownKey, fmt.Sprintf("full.weapon_keys[%d]", i), "A arma escolhida não existe no conteúdo %s.", c.version)
+		return
+	}
+	w := eq.Weapon
+	kind := w.Range // "melee" or "ranged"
+	has := func(property string) bool { return slices.Contains(w.Properties, "weapon-property:"+property) }
+	monkWeapon := martialArts && has("monk")
+	ab := x.weaponAbility(kind, has("finesse") || monkWeapon)
+	if has("heavy") {
+		x.heavyWeaponHint(key, kind)
+	}
+	proficient := x.weaponProficient(key, w.Category)
+	bonus := x.mods[ab]
+	if proficient {
+		bonus += x.prof
+	}
+	dmg := x.modifiers("damage.weapon."+kind, x.mods[ab])
+	oneHanded, note := dmg, ""
+	if kind == "melee" && !has("two-handed") {
+		oneHanded, note = x.oneHandedDamage(dmg)
+	}
+	a := Attack{
+		Key: key, Name: eq.Name, NamePT: c.namePT(key), Kind: "weapon", Ability: ab,
+		AttackBonus: x.modifiers("attack.weapon."+kind, bonus), Proficient: proficient,
+		DamageType: w.DamageType, DamageTypeNamePT: c.namePT(w.DamageType),
+		Melee: kind == "melee", MartialArts: monkWeapon, AbilityMod: x.mods[ab],
+		Light:        kind == "melee" && has("light"),
+		Finesse:      has("finesse"),
+		TwoHanded:    has("two-handed"),
+		DamageNotePT: note,
+	}
+	monkDie := 0
+	if monkWeapon {
+		monkDie = martialDie
+	}
+	if w.Damage != "" {
+		a.Damage = withModifier(monkDice(w.Damage, monkDie), oneHanded)
+	}
+	if w.TwoHandedDamage != "" {
+		a.VersatileDamage = withModifier(monkDice(w.TwoHandedDamage, monkDie), dmg)
+	}
+	a.RangeFt, a.LongRangeFt = weaponRange(w)
+	a.DamageDice, _ = ParseDice(a.Damage)
+	a.VersatileDice, _ = ParseDice(a.VersatileDamage)
+	x.d.Attacks = append(x.d.Attacks, a)
+}
+
+// weaponAbility is the ability a weapon attacks with: STR, or DEX if it is
+// ranged; the better of the two when either may be used (finesse, or a monk
+// weapon under Martial Arts).
+func (x *deriver) weaponAbility(kind string, either bool) Ability {
+	if either {
+		if x.mods[DEX] > x.mods[STR] {
+			return DEX
+		}
+		return STR
+	}
+	if kind == "ranged" {
+		return DEX
+	}
+	return STR
+}
+
+// heavyWeaponHint reminds a Small character of the disadvantage with a heavy
+// weapon.
+func (x *deriver) heavyWeaponHint(key, kind string) {
+	if x.race == nil || x.race.Size != "Small" {
+		return
+	}
+	x.d.Hints = append(x.d.Hints, Hint{
+		Source: key, Target: "attack.weapon." + kind, Targets: []string{"attack.weapon." + kind}, Mode: "disadvantage",
+		TextPT: fmt.Sprintf("Desvantagem nas jogadas de ataque com %s: arma pesada para criaturas Pequenas.", strings.ToLower(x.c.namePT(key))),
+	})
+}
+
+// oneHandedDamage is the damage modifier of a melee weapon held in one hand,
+// with the bonuses that need no other weapon (oneMeleeWeaponBonus), and the
+// note that says so on the line ("" without such a bonus).
+func (x *deriver) oneHandedDamage(dmg int) (int, string) {
+	bonus, source := x.oneMeleeWeaponBonus()
+	if source == "" {
+		return dmg, ""
+	}
+	return dmg + bonus, fmt.Sprintf("Inclui %s de %s (sem outra arma na mão)", signed(bonus), x.c.namePT(source))
+}
+
+// monkDice is a weapon's damage dice with the Martial Arts die when it is
+// bigger; monkDie is 0 when Martial Arts does not apply to the weapon.
+func monkDice(dice string, monkDie int) string {
+	if monkDie > 0 {
+		return biggerDie(dice, monkDie)
+	}
+	return dice
+}
+
+// weaponRange is a weapon's normal and long range: the thrown range when it
+// has one, else the ranged one (0 for a melee weapon).
+func weaponRange(w *srd51.Weapon) (normal, long int) {
+	if w.ThrowNormalFt > 0 {
+		return w.ThrowNormalFt, w.ThrowLongFt
+	}
+	return w.NormalRangeFt, w.LongRangeFt
+}
+
+// cantripAttack adds the line of a cantrip that deals damage and that a class
+// of the character casts; any other cantrip adds nothing.
+func (x *deriver) cantripAttack(key string) {
+	c := x.c
+	s, ok := c.spells[key]
+	if !ok || s.Level != 0 || len(s.Damage) == 0 || len(s.Damage[0].AtCharacterLevel) == 0 {
+		return
+	}
+	sc := x.casterFor(s)
+	if sc == nil {
+		return
+	}
+	dmg := x.modifiers("damage.spell."+strings.TrimPrefix(key, "spell:"), 0)
+	dice := damageAt(s.Damage[0].AtCharacterLevel, x.d.TotalLevel)
+	a := Attack{
+		Key: key, Name: s.Name, NamePT: c.namePT(key), Kind: "spell", Ability: sc.Ability,
+		Damage: withModifier(dice, dmg), SpellDice: dice,
+		DamageType: s.Damage[0].DamageType, DamageTypeNamePT: c.namePT(s.Damage[0].DamageType),
+		Proficient: true, RangeFt: feet(s.Range), Beams: beamsAt(key, x.d.TotalLevel),
+	}
+	switch {
+	case s.AttackType != "":
+		a.AttackBonus = sc.AttackBonus
+		// A ranged_attack effect may multiply the range of a spell that needs an
+		// attack roll (a range in feet only: feet gives 0 for touch and self).
+		a.RangeFt = x.d.SpellRangeFt(s.AttackType, RangeRanged, a.RangeFt)
+	case s.SaveAbility != "":
+		a.SaveDC = sc.SaveDC
+		a.SaveAbility = Ability(s.SaveAbility)
+	}
+	a.DamageDice, _ = ParseDice(a.Damage)
+	x.d.Attacks = append(x.d.Attacks, a)
 }
 
 // wieldingOneMeleeWeapon is the tag of a damage bonus that holds while the

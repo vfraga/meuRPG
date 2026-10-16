@@ -125,31 +125,24 @@ func (s *Service) characterToProto(content *rules.Content, row charactersdb.Char
 	master := isMaster(m)
 	player := row.Kind == kindPlayer
 	c := &charactersv1.Character{
-		Id:                   row.ID,
-		CampaignId:           deref(row.CampaignID),
-		Kind:                 kindFromDB[row.Kind],
-		State:                state,
-		Name:                 row.Name,
-		PlayerUserId:         deref(row.PlayerUserID),
-		PlayerDisplayName:    playerDisplayName,
-		Sheet:                sheet,
-		Story:                story,
-		Revision:             row.Revision,
-		SheetLockedAt:        timestamp(row.SheetLockedAt),
-		DiedAt:               diedAt(row),
-		CreatedAt:            timestamppb.New(row.CreatedAt),
-		UpdatedAt:            timestamppb.New(row.UpdatedAt),
-		CanEdit:              master || playerEditsSheet(state),
-		CanEditStory:         master || playerEditsStory(state, row.StoryEditingAllowed),
-		Reserved:             row.Reserved,
-		CanMarkDead:          master && player && !row.Reserved && state != charactersv1.CharacterState_CHARACTER_STATE_DEAD && state != charactersv1.CharacterState_CHARACTER_STATE_PENDING,
-		CanAccessMasterNotes: master,
-		StoryEditingAllowed:  row.StoryEditingAllowed,
-		CanSetStoryEditing:   master && player && !row.Reserved,
-		CanApprove:           master && state == charactersv1.CharacterState_CHARACTER_STATE_PENDING,
-		CanRequestChanges:    master && player && state == charactersv1.CharacterState_CHARACTER_STATE_PENDING,
-		CanRevive:            master && player && state == charactersv1.CharacterState_CHARACTER_STATE_DEAD,
+		Id:                  row.ID,
+		CampaignId:          deref(row.CampaignID),
+		Kind:                kindFromDB[row.Kind],
+		State:               state,
+		Name:                row.Name,
+		PlayerUserId:        deref(row.PlayerUserID),
+		PlayerDisplayName:   playerDisplayName,
+		Sheet:               sheet,
+		Story:               story,
+		Revision:            row.Revision,
+		SheetLockedAt:       timestamp(row.SheetLockedAt),
+		DiedAt:              diedAt(row),
+		CreatedAt:           timestamppb.New(row.CreatedAt),
+		UpdatedAt:           timestamppb.New(row.UpdatedAt),
+		Reserved:            row.Reserved,
+		StoryEditingAllowed: row.StoryEditingAllowed,
 	}
+	setPermissions(c, row, state, master)
 	if player && mayReadReview(m, row) {
 		c.RevivedAt = timestamp(row.RevivedAt)
 		if state == charactersv1.CharacterState_CHARACTER_STATE_DEAD {
@@ -166,6 +159,25 @@ func (s *Service) characterToProto(content *rules.Content, row charactersdb.Char
 		addChangedContent(c.Derived, der.Issues, content, build, full)
 	}
 	return c, nil
+}
+
+// setPermissions sets what the caller may do with the character: master says whether
+// the caller is the campaign's master, state is the character's.
+func setPermissions(c *charactersv1.Character, row charactersdb.Character, state charactersv1.CharacterState, master bool) {
+	player := row.Kind == kindPlayer
+	dead := state == charactersv1.CharacterState_CHARACTER_STATE_DEAD
+	pending := state == charactersv1.CharacterState_CHARACTER_STATE_PENDING
+	c.CanEdit = master || playerEditsSheet(state)
+	c.CanEditStory = master || playerEditsStory(state, row.StoryEditingAllowed)
+	c.CanAccessMasterNotes = master
+	c.CanApprove = master && pending
+	if !master || !player {
+		return // what follows is the master's, on a player's character
+	}
+	c.CanMarkDead = !row.Reserved && !dead && !pending
+	c.CanSetStoryEditing = !row.Reserved
+	c.CanRequestChanges = pending
+	c.CanRevive = dead
 }
 
 func deref(s *string) string {

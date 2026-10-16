@@ -24,21 +24,25 @@ func WallsMask(d *Dungeon) (open, wall []bool) {
 	}
 	for y := range h {
 		for x := range w {
-			if open[y*w+x] {
-				continue
-			}
-			for oy := -1; oy <= 1 && !wall[y*w+x]; oy++ {
-				for ox := -1; ox <= 1; ox++ {
-					nx, ny := x+ox, y+oy
-					if nx >= 0 && ny >= 0 && nx < w && ny < h && open[ny*w+nx] {
-						wall[y*w+x] = true
-						break
-					}
-				}
+			if !open[y*w+x] {
+				wall[y*w+x] = touchesOpen(open, w, h, x, y)
 			}
 		}
 	}
 	return open, wall
+}
+
+// touchesOpen reports whether one of the 8 neighbors of (x, y) inside the
+// w by h grid is open.
+func touchesOpen(open []bool, w, h, x, y int) bool {
+	for ny := max(0, y-1); ny <= min(h-1, y+1); ny++ {
+		for nx := max(0, x-1); nx <= min(w-1, x+1); nx++ {
+			if open[ny*w+nx] {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Marker is one editable object of spec 1.5 b: a door or a stairway.
@@ -246,7 +250,6 @@ func PromptOf(d *Dungeon) *Prompt {
 // one pass over the doors, which gives the direct connections and the rooms
 // of each network.
 func connectionsAndNetworks(d *Dungeon) ([]PromptConnection, []PromptNetwork) {
-	w := d.Width
 	net := make([]int32, len(d.Kinds)) // network ID per corridor square, 0 elsewhere
 	var nets []PromptNetwork
 	var queue []int
@@ -254,28 +257,8 @@ func connectionsAndNetworks(d *Dungeon) ([]PromptConnection, []PromptNetwork) {
 		if k != KindCorridor || net[i0] != 0 {
 			continue
 		}
-		id := int32(len(nets) + 1) //nolint:gosec // G115: at most one network per square
-		n := PromptNetwork{ID: int(id), Corridors: []int{}, Rooms: []int{}}
-		net[i0] = id
-		queue = append(queue[:0], i0)
-		for head := 0; head < len(queue); head++ {
-			u := queue[head]
-			if c := int(d.CorridorIDs[u]); !slices.Contains(n.Corridors[max(0, len(n.Corridors)-1):], c) {
-				n.Corridors = append(n.Corridors, c)
-			}
-			x, y := u%w, u/w
-			for dd := range 4 {
-				nx, ny := x+dx[dd], y+dy[dd]
-				if nx < 0 || ny < 0 || nx >= w || ny >= d.Height {
-					continue
-				}
-				if v := ny*w + nx; d.Kinds[v] == KindCorridor && net[v] == 0 {
-					net[v] = id
-					queue = append(queue, v)
-				}
-			}
-		}
-		n.LengthSquares = len(queue)
+		var n PromptNetwork
+		n, queue = floodNetwork(d, net, queue, i0, int32(len(nets)+1)) //nolint:gosec // G115: at most one network per square
 		nets = append(nets, n)
 	}
 	conns := []PromptConnection{}
@@ -285,7 +268,7 @@ func connectionsAndNetworks(d *Dungeon) ([]PromptConnection, []PromptNetwork) {
 			continue
 		}
 		x, y := corridorEnd(d, dr)
-		if id := net[y*w+x]; id != 0 {
+		if id := net[y*d.Width+x]; id != 0 {
 			nets[id-1].Rooms = append(nets[id-1].Rooms, dr.RoomA)
 		}
 	}
@@ -296,6 +279,34 @@ func connectionsAndNetworks(d *Dungeon) ([]PromptConnection, []PromptNetwork) {
 		nets[i].Corridors = slices.Compact(nets[i].Corridors)
 	}
 	return conns, nets
+}
+
+// floodNetwork labels the network of corridor square i0 with id
+// (breadth-first, reusing queue) and lists its corridors as met.
+func floodNetwork(d *Dungeon, net []int32, queue []int, i0 int, id int32) (PromptNetwork, []int) {
+	w := d.Width
+	n := PromptNetwork{ID: int(id), Corridors: []int{}, Rooms: []int{}}
+	net[i0] = id
+	queue = append(queue[:0], i0)
+	for head := 0; head < len(queue); head++ {
+		u := queue[head]
+		if c := int(d.CorridorIDs[u]); !slices.Contains(n.Corridors[max(0, len(n.Corridors)-1):], c) {
+			n.Corridors = append(n.Corridors, c)
+		}
+		x, y := u%w, u/w
+		for dd := range 4 {
+			nx, ny := x+dx[dd], y+dy[dd]
+			if nx < 0 || ny < 0 || nx >= w || ny >= d.Height {
+				continue
+			}
+			if v := ny*w + nx; d.Kinds[v] == KindCorridor && net[v] == 0 {
+				net[v] = id
+				queue = append(queue, v)
+			}
+		}
+	}
+	n.LengthSquares = len(queue)
+	return n, queue
 }
 
 // ASCII draws the level for a human: '#' rock or wall, '.' room floor, ',' corridor,
@@ -311,37 +322,46 @@ func ASCII(d *Dungeon) string {
 	}
 	for y := range d.Height {
 		for x := range w {
-			i := y*w + x
-			c := byte('#')
-			switch d.Kinds[i] {
-			case KindRock:
-				if !d.Mask[i] {
-					c = ' '
-				}
-			case KindRoom:
-				c = '.'
-			case KindCorridor:
-				c = ','
-			case KindDoor:
-				dr := doorAt[i]
-				c = "/+BLS"[dr.Kind]
-				if dr.Trapped {
-					c = 'T'
-				}
-			}
-			if s, ok := d.StairAt(x, y); ok {
-				c = '<'
-				if s.Kind == StairDown {
-					c = '>'
-				}
-			} else if x == d.Entrance.X && y == d.Entrance.Y {
-				c = '@'
-			}
-			b.WriteByte(c)
+			b.WriteByte(asciiOverlay(d, x, y, asciiSquare(d, doorAt, y*w+x)))
 		}
 		b.WriteByte('\n')
 	}
 	return b.String()
+}
+
+// asciiSquare is the character of a square's kind.
+func asciiSquare(d *Dungeon, doorAt map[int]Door, i int) byte {
+	switch d.Kinds[i] {
+	case KindRock:
+		if !d.Mask[i] {
+			return ' '
+		}
+	case KindRoom:
+		return '.'
+	case KindCorridor:
+		return ','
+	case KindDoor:
+		dr := doorAt[i]
+		if dr.Trapped {
+			return 'T'
+		}
+		return "/+BLS"[dr.Kind]
+	}
+	return '#'
+}
+
+// asciiOverlay puts a stair, else the entrance, over the character c.
+func asciiOverlay(d *Dungeon, x, y int, c byte) byte {
+	if s, ok := d.StairAt(x, y); ok {
+		if s.Kind == StairDown {
+			return '>'
+		}
+		return '<'
+	}
+	if x == d.Entrance.X && y == d.Entrance.Y {
+		return '@'
+	}
+	return c
 }
 
 // corridorEnd is the square of a corridor door that is not a room floor: the

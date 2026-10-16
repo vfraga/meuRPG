@@ -839,41 +839,53 @@ func (a *keyAssigner) assignOptions(path, prefix, stem string, f *rulesv1.TableF
 	a.assignIn(path+".options", prefix, stem, optionScope(f.GetKey()), f.GetOptions())
 }
 
+// assignIn sets the keys of one list of features, whose old names are looked up in scope:
+// first the keys the features came with are claimed, then the others get theirs.
 func (a *keyAssigner) assignIn(path, prefix, stem, scope string, features []*rulesv1.TableFeature) {
 	for i, f := range features {
-		if f.GetKey() == "" {
-			continue
+		if f.GetKey() != "" {
+			a.claim(path, i, prefix+stem, f.GetKey())
 		}
-		if !a.owned[f.GetKey()] && a.foreign && strings.HasPrefix(f.GetKey(), prefix+stem) {
-			a.owned[f.GetKey()] = true // the pack's key: from here on it is the entry's
-			a.take(f.GetKey())
-			continue
-		}
-		if !a.owned[f.GetKey()] {
-			*a.violations = append(*a.violations, &rulesv1.TableContentViolation{
-				Field: fmt.Sprintf("%s[%d].key", path, i), Reason: reasonImmutable,
-				Message: "a feature key is made by the server; send back only the ones the entry has",
-			})
-			continue
-		}
-		a.take(f.GetKey())
 	}
+	// Then the features without a key, once every key sent is claimed: a key sent but
+	// refused stays as it is.
 	for _, f := range features {
-		if f.GetKey() != "" && a.owned[f.GetKey()] {
-			continue
-		}
 		if f.GetKey() == "" {
-			if k := a.byName[scope+"\x00"+f.GetNamePt()]; k != "" && !a.taken[k] {
-				f.Key = k
-				a.take(k)
-				continue
-			}
-			slug := slugify(f.GetNamePt())
-			full := strings.Trim(truncate(stem+safeSlug(slug, "feature"), rules.MaxSlugLength), "-")
-			f.Key = prefix + uniqueSlug(safeSlug(full, "feature"), a.slugs) + "@mesa" // marks the slug in a.slugs
-			a.take(f.Key)
+			a.keyNew(prefix, stem, scope, f)
 		}
 	}
+}
+
+// claim takes a key a feature came with: one the stored entry has, or, from a pack, one with
+// the entry's own start. Any other is refused, at the path of the i-th feature.
+func (a *keyAssigner) claim(path string, i int, start, key string) {
+	if !a.owned[key] && a.foreign && strings.HasPrefix(key, start) {
+		a.owned[key] = true // the pack's key: from here on it is the entry's
+		a.take(key)
+		return
+	}
+	if !a.owned[key] {
+		*a.violations = append(*a.violations, &rulesv1.TableContentViolation{
+			Field: fmt.Sprintf("%s[%d].key", path, i), Reason: reasonImmutable,
+			Message: "a feature key is made by the server; send back only the ones the entry has",
+		})
+		return
+	}
+	a.take(key)
+}
+
+// keyNew gives a feature without a key the key its name had in the stored entry, when no
+// other feature took it, or a new one made from its name.
+func (a *keyAssigner) keyNew(prefix, stem, scope string, f *rulesv1.TableFeature) {
+	if k := a.byName[scope+"\x00"+f.GetNamePt()]; k != "" && !a.taken[k] {
+		f.Key = k
+		a.take(k)
+		return
+	}
+	slug := slugify(f.GetNamePt())
+	full := strings.Trim(truncate(stem+safeSlug(slug, "feature"), rules.MaxSlugLength), "-")
+	f.Key = prefix + uniqueSlug(safeSlug(full, "feature"), a.slugs) + "@mesa" // marks the slug in a.slugs
+	a.take(f.Key)
 }
 
 // parentHidden says whether an entry's required parent (a subclass's class, a
@@ -897,49 +909,82 @@ func forPlayer(e entryRow, hidden func(string) bool) entryRow {
 		return e // nothing is hidden: the entry goes as it is
 	}
 	body := proto.Clone(e.body).(tableBody)
-	var dropEffects func(fs []*rulesv1.TableFeature)
-	dropEffects = func(fs []*rulesv1.TableFeature) {
-		for _, f := range fs {
-			for _, ef := range f.GetEffects() {
-				ef.Spells = slices.DeleteFunc(ef.Spells, func(k string) bool { return hidden(k) })
-				ef.From = slices.DeleteFunc(ef.From, func(k string) bool { return hidden(k) })
-			}
-			dropEffects(f.GetOptions())
-		}
-	}
-	casting := func(c *rulesv1.TableCasting) {
-		if c != nil && hidden(c.GetListFrom()) {
-			c.ListFrom = ""
-		}
-	}
-	switch b := body.(type) {
-	case *rulesv1.TableClass:
-		casting(b.GetCasting())
-		for _, l := range b.GetLevels() {
-			dropEffects(l.GetFeatures())
-		}
-	case *rulesv1.TableSubclass:
-		casting(b.GetCasting())
-		b.AlwaysPrepared = slices.DeleteFunc(b.AlwaysPrepared, func(ap *rulesv1.TableAlwaysPrepared) bool { return hidden(ap.GetSpellKey()) })
-		for _, l := range b.GetLevels() {
-			dropEffects(l.GetFeatures())
-		}
-	case *rulesv1.TableRace:
-		dropEffects(b.GetTraits())
-	case *rulesv1.TableSubrace:
-		dropEffects(b.GetTraits())
-	case *rulesv1.TableBackground:
-		if b.GetFeature() != nil {
-			dropEffects([]*rulesv1.TableFeature{b.GetFeature()})
-		}
-	case *rulesv1.TableSpell:
-		b.ClassKeys = slices.DeleteFunc(b.ClassKeys, func(k string) bool { return hidden(k) })
-	case *rulesv1.TableFeat:
-		dropEffects([]*rulesv1.TableFeature{{Effects: b.GetEffects()}})
-		if p := b.GetPrerequisite(); hidden(p.GetRaceKey()) {
-			p.RaceKey = "" // a race or subrace the players do not see is not named to them
-		}
-	}
+	playerView{hidden: hidden}.strip(body)
 	e.body = body
 	return e
+}
+
+// playerView takes the hidden keys out of a body a player receives.
+type playerView struct{ hidden func(string) bool }
+
+// strip takes the hidden keys out of body, in place, by its kind.
+func (v playerView) strip(body tableBody) {
+	switch b := body.(type) {
+	case *rulesv1.TableClass:
+		v.stripClass(b)
+	case *rulesv1.TableSubclass:
+		v.stripSubclass(b)
+	case *rulesv1.TableRace:
+		v.dropEffects(b.GetTraits())
+	case *rulesv1.TableSubrace:
+		v.dropEffects(b.GetTraits())
+	case *rulesv1.TableBackground:
+		if b.GetFeature() != nil {
+			v.dropEffects([]*rulesv1.TableFeature{b.GetFeature()})
+		}
+	case *rulesv1.TableSpell:
+		b.ClassKeys = v.visible(b.ClassKeys)
+	case *rulesv1.TableFeat:
+		v.stripFeat(b)
+	}
+}
+
+// stripClass takes the hidden keys out of a class: its casting list and its features.
+func (v playerView) stripClass(b *rulesv1.TableClass) {
+	v.casting(b.GetCasting())
+	for _, l := range b.GetLevels() {
+		v.dropEffects(l.GetFeatures())
+	}
+}
+
+// stripSubclass takes the hidden keys out of a subclass: its casting list, the spells it
+// always prepares and its features.
+func (v playerView) stripSubclass(b *rulesv1.TableSubclass) {
+	v.casting(b.GetCasting())
+	b.AlwaysPrepared = slices.DeleteFunc(b.AlwaysPrepared, func(ap *rulesv1.TableAlwaysPrepared) bool { return v.hidden(ap.GetSpellKey()) })
+	for _, l := range b.GetLevels() {
+		v.dropEffects(l.GetFeatures())
+	}
+}
+
+// stripFeat takes the hidden keys out of a feat: its effects and the race it asks for.
+func (v playerView) stripFeat(b *rulesv1.TableFeat) {
+	v.dropEffects([]*rulesv1.TableFeature{{Effects: b.GetEffects()}})
+	if p := b.GetPrerequisite(); v.hidden(p.GetRaceKey()) {
+		p.RaceKey = "" // a race or subrace the players do not see is not named to them
+	}
+}
+
+// visible is keys without the hidden ones, in place.
+func (v playerView) visible(keys []string) []string {
+	return slices.DeleteFunc(keys, func(k string) bool { return v.hidden(k) })
+}
+
+// dropEffects takes the hidden spells and choices out of the effects of the features and of
+// their options.
+func (v playerView) dropEffects(fs []*rulesv1.TableFeature) {
+	for _, f := range fs {
+		for _, ef := range f.GetEffects() {
+			ef.Spells = v.visible(ef.Spells)
+			ef.From = v.visible(ef.From)
+		}
+		v.dropEffects(f.GetOptions())
+	}
+}
+
+// casting forgets the list a casting reads from when that class is hidden.
+func (v playerView) casting(c *rulesv1.TableCasting) {
+	if c != nil && v.hidden(c.GetListFrom()) {
+		c.ListFrom = ""
+	}
 }

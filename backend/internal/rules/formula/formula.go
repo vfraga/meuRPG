@@ -258,15 +258,9 @@ func checkTokens(source string) error {
 func (c *Compiler) check(node ast.Node) error {
 	switch n := node.(type) {
 	case *ast.IntegerNode:
-		if n.Value > MaxLiteral || n.Value < -MaxLiteral {
-			return fmt.Errorf("number %d is out of range (at most %d)", n.Value, MaxLiteral)
-		}
-		return nil
+		return checkInteger(n)
 	case *ast.FloatNode:
-		if math.IsNaN(n.Value) || math.Abs(n.Value) > MaxLiteral {
-			return errors.New("number is out of range")
-		}
-		return nil
+		return checkFloat(n)
 	case *ast.BoolNode:
 		return nil
 	case *ast.StringNode:
@@ -274,30 +268,11 @@ func (c *Compiler) check(node ast.Node) error {
 		// armor(); both are checked where they appear.
 		return errors.New("a text value can only be an argument of mod, score or classLevel, or compared with armor()")
 	case *ast.UnaryNode:
-		if !slices.Contains(unaryOperators, n.Operator) {
-			return fmt.Errorf("operator %q is not allowed", n.Operator)
-		}
-		return c.check(n.Node)
+		return c.checkUnary(n)
 	case *ast.BinaryNode:
-		if !slices.Contains(binaryOperators, n.Operator) {
-			return fmt.Errorf("operator %q is not allowed", n.Operator)
-		}
-		if n.Operator == "==" || n.Operator == "!=" {
-			if ok, err := checkArmorComparison(n); ok || err != nil {
-				return err
-			}
-		}
-		if err := c.check(n.Left); err != nil {
-			return err
-		}
-		return c.check(n.Right)
+		return c.checkBinary(n)
 	case *ast.ConditionalNode:
-		for _, part := range []ast.Node{n.Cond, n.Exp1, n.Exp2} {
-			if err := c.check(part); err != nil {
-				return err
-			}
-		}
-		return nil
+		return c.checkEach(n.Cond, n.Exp1, n.Exp2)
 	case *ast.CallNode:
 		return c.checkCall(n)
 	default:
@@ -305,67 +280,138 @@ func (c *Compiler) check(node ast.Node) error {
 	}
 }
 
+func checkInteger(n *ast.IntegerNode) error {
+	if n.Value > MaxLiteral || n.Value < -MaxLiteral {
+		return fmt.Errorf("number %d is out of range (at most %d)", n.Value, MaxLiteral)
+	}
+	return nil
+}
+
+func checkFloat(n *ast.FloatNode) error {
+	if math.IsNaN(n.Value) || math.Abs(n.Value) > MaxLiteral {
+		return errors.New("number is out of range")
+	}
+	return nil
+}
+
+func (c *Compiler) checkUnary(n *ast.UnaryNode) error {
+	if !slices.Contains(unaryOperators, n.Operator) {
+		return fmt.Errorf("operator %q is not allowed", n.Operator)
+	}
+	return c.check(n.Node)
+}
+
+// checkBinary checks the operator, then a comparison with armor() as a whole,
+// then each side as arithmetic.
+func (c *Compiler) checkBinary(n *ast.BinaryNode) error {
+	if !slices.Contains(binaryOperators, n.Operator) {
+		return fmt.Errorf("operator %q is not allowed", n.Operator)
+	}
+	if n.Operator == "==" || n.Operator == "!=" {
+		if ok, err := checkArmorComparison(n); ok || err != nil {
+			return err
+		}
+	}
+	return c.checkEach(n.Left, n.Right)
+}
+
+// checkEach checks the nodes in order and returns the first refusal.
+func (c *Compiler) checkEach(nodes ...ast.Node) error {
+	for _, part := range nodes {
+		if err := c.check(part); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // reach is the largest magnitude a checked node can take: a literal is itself,
 // a call is at most MaxLiteral (no function returns more in a 5e sheet), and an
 // operator combines its operands'. It refuses a node that could pass
 // maxIntermediate, so no step of the arithmetic can wrap.
 func reach(node ast.Node) (float64, error) {
-	var out float64
-	switch n := node.(type) {
-	case *ast.IntegerNode:
-		out = math.Abs(float64(n.Value))
-	case *ast.FloatNode:
-		out = math.Abs(n.Value)
-	case *ast.UnaryNode:
-		x, err := reach(n.Node)
-		if err != nil {
-			return 0, err
-		}
-		out = x
-	case *ast.BinaryNode:
-		l, err := reach(n.Left)
-		if err != nil {
-			return 0, err
-		}
-		r, err := reach(n.Right)
-		if err != nil {
-			return 0, err
-		}
-		switch n.Operator {
-		case "+", "-":
-			out = l + r
-		case "*":
-			out = l * r
-		case "/", "%":
-			out = l
-		default: // a comparison or a logical operator gives true or false
-			out = 1
-		}
-	case *ast.ConditionalNode:
-		for _, part := range []ast.Node{n.Exp1, n.Exp2} {
-			x, err := reach(part)
-			if err != nil {
-				return 0, err
-			}
-			out = max(out, x)
-		}
-		if _, err := reach(n.Cond); err != nil {
-			return 0, err
-		}
-	case *ast.CallNode:
-		out = MaxLiteral
-		if id, ok := n.Callee.(*ast.IdentifierNode); ok && (id.Value == "floor" || id.Value == "ceil" || id.Value == "min" || id.Value == "max") {
-			for _, arg := range n.Arguments {
-				x, err := reach(arg)
-				if err != nil {
-					return 0, err
-				}
-				out = max(out, x)
-			}
-		}
+	out, err := reachOf(node)
+	if err != nil {
+		return 0, err
 	}
 	if out > maxIntermediate {
 		return 0, errors.New("a step of the formula could grow past the limit; use smaller numbers")
+	}
+	return out, nil
+}
+
+// reachOf is reach before the bound: one function per kind of node, 0 for the
+// kinds that hold no number (true, a text).
+func reachOf(node ast.Node) (float64, error) {
+	switch n := node.(type) {
+	case *ast.IntegerNode:
+		return math.Abs(float64(n.Value)), nil
+	case *ast.FloatNode:
+		return math.Abs(n.Value), nil
+	case *ast.UnaryNode:
+		return reach(n.Node)
+	case *ast.BinaryNode:
+		return reachBinary(n)
+	case *ast.ConditionalNode:
+		return reachConditional(n)
+	case *ast.CallNode:
+		return reachCall(n)
+	default:
+		return 0, nil
+	}
+}
+
+func reachBinary(n *ast.BinaryNode) (float64, error) {
+	l, err := reach(n.Left)
+	if err != nil {
+		return 0, err
+	}
+	r, err := reach(n.Right)
+	if err != nil {
+		return 0, err
+	}
+	switch n.Operator {
+	case "+", "-":
+		return l + r, nil
+	case "*":
+		return l * r, nil
+	case "/", "%":
+		return l, nil
+	default: // a comparison or a logical operator gives true or false
+		return 1, nil
+	}
+}
+
+// reachConditional is the larger of the two branches; the condition is
+// checked last.
+func reachConditional(n *ast.ConditionalNode) (float64, error) {
+	out, err := reachMax(0, n.Exp1, n.Exp2)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := reach(n.Cond); err != nil {
+		return 0, err
+	}
+	return out, nil
+}
+
+// reachCall is MaxLiteral, or more for floor, ceil, min and max when an
+// argument can be more.
+func reachCall(n *ast.CallNode) (float64, error) {
+	if id, ok := n.Callee.(*ast.IdentifierNode); ok && (id.Value == "floor" || id.Value == "ceil" || id.Value == "min" || id.Value == "max") {
+		return reachMax(MaxLiteral, n.Arguments...)
+	}
+	return MaxLiteral, nil
+}
+
+// reachMax is the largest of out and the reach of the nodes, in order.
+func reachMax(out float64, nodes ...ast.Node) (float64, error) {
+	for _, part := range nodes {
+		x, err := reach(part)
+		if err != nil {
+			return 0, err
+		}
+		out = max(out, x)
 	}
 	return out, nil
 }

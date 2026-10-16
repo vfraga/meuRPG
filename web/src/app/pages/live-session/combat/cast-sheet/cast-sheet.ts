@@ -20,15 +20,10 @@ import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1
 import {
   AreaPlacement,
   type CombatantState,
+  type Encounter,
   type PendingDamage,
   type SpellCast,
-  type SpellTargetResult,
   type SpellTargets,
-  AttackOutcome,
-  type DiceRoll,
-  type Encounter,
-  type LuckyOffer,
-  type OutsideInspirationOffer,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
   ActionEconomy,
@@ -36,8 +31,6 @@ import {
   type SlotChoice,
   type SpellDetails,
   SpellAreaShape,
-  SpellDamageChoice,
-  SpellRangeKind,
 } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
@@ -46,27 +39,21 @@ import {
   type SlotRow,
   castRows,
   castSubtitle,
-  castTargetRows,
   dartTargets,
   dartsAt,
-  dartsPlaced,
   dartsStatus,
   dealOne,
   defaultSlot,
   effectSentence,
-  freeText,
   lastSlotWarning,
-  rollGroups,
   saveAbility,
   slotRows,
   spellKind,
-  spentLine,
   targetRule,
   toggled,
 } from '../../../../core/combat/cast-flow';
 import {
   type AttackDie,
-  type DamageDie,
   type PairDie,
   type PoolDie,
   CombatClient,
@@ -92,17 +79,13 @@ import { AreaList } from '../../../../shared/area-picker/area-list';
 import { AreaMap } from '../../../../shared/area-picker/area-map';
 import { AreaStep } from '../../../../shared/area-picker/area-step';
 import type { CombatMapImage } from '../../../../shared/combat-map/combat-map';
-import { diceName, sumRange } from '../../../../core/combat/combat-dice';
-import { criticalHint, criticalTypedHint, fixedParts } from '../../../../core/combat/critical';
 import { poolDice, poolRollText } from '../../../../core/combat/hp-effects';
-import { article } from '../../../../core/combat/combat-log';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
-import { circleLabel } from '../../../../core/combat/combat-grid';
 import { isPlayer } from '../../../../core/combat/combat-view';
-import { groupFeminine, groupName, isCreature } from '../../../../core/combat/creature-names';
+import { isCreature } from '../../../../core/combat/creature-names';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
-import { abilityMissing, needsAbility } from '../../../../core/effects/ability-choice';
+import { needsAbility } from '../../../../core/effects/ability-choice';
 import {
   type MetamagicPicks,
   NO_PICKS,
@@ -110,27 +93,16 @@ import {
   chosenLine,
   metamagicChoices,
   metamagicCost,
-  metamagicMissing,
   metamagicRows,
-  metamagicSpentLine,
   toggledOption,
 } from '../../../../core/resources/metamagic';
-import { isHit, outcomeWord } from '../../../../core/combat/attack-flow';
-import {
-  RollAnimator,
-  type RollShow,
-  showOfDice,
-  showOfDie,
-} from '../../../../shared/roll-overlay/roll-animator';
-import { InspirationQuestion } from '../../../../core/resources/bardic-inspiration';
-import { LuckyQuestion, luckyHeldLine, luckyReroll } from '../../../../core/combat/lucky-question';
+import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import type { Pool } from '../../../../core/resources/pools';
 import {
   ResourceClient,
   type InspirationRoll,
   type LuckyRoll,
 } from '../../../../core/resources/resources-client';
-import { classResourceErrorMessage } from '../../../../core/resources/resources-errors';
 import { InspirationOffer } from '../../inspiration/inspiration-offer';
 import { LuckyPrompt } from '../lucky-prompt/lucky-prompt';
 import { openSpellDetails } from '../../../../shared/spell-details/open-spell-details';
@@ -142,12 +114,41 @@ import { RollModePicker } from '../roll-mode/roll-mode-picker';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { CastDamage } from './cast-damage';
+import { CastQuestions } from './cast-questions';
 import { CastResult, CastSlots, type SlotAfter } from './cast-result';
 import { CastTargets } from './cast-targets';
 import { SculptPicker, type SculptRow } from './sculpt-picker';
 import { MetamagicPicker } from './metamagic-picker';
 import { DamageTypePicker } from './damage-type-picker';
 import { SlotPicker } from '../../../../shared/slot-picker/slot-picker';
+import {
+  castMissing,
+  castNotes,
+  castRowsOf,
+  castShow,
+  castTargetsOf,
+  castTitle,
+  concentrationEnd,
+  coverNoteOf,
+  damageChoicesOf,
+  damageTypeOf,
+  dartsAfterChange,
+  doneSubtitle,
+  idsWhere,
+  isPlainCast,
+  keptTargets,
+  nextRollOf,
+  picksAfterTargets,
+  reachFtOf,
+  resumedCastOf,
+  sculptRowsOf,
+  sculptedIdsOf,
+  shieldLostText,
+  slotAfter,
+  targetsMissingText,
+  toggledSculpt,
+} from './cast-sheet-view';
 
 /** The battle map an area spell is placed on (a combat with a grid): what the page already draws. */
 export interface CastMapData {
@@ -285,21 +286,34 @@ export class CastSheet {
   protected readonly busy = signal(false);
   protected readonly error = signal('');
   protected readonly cast = signal<SpellCast | null>(null);
-  /** The spell attack's d20 was rolled and kept: the character holds a Bardic Inspiration die, and the player decides
-   * before the result is told. Nothing was spent yet. */
-  protected readonly offer = signal<OutsideInspirationOffer | null>(null);
-  private readonly answerKey = new ActionKey();
-  /** The spell attack's d20 was rolled and kept because it shows a 1 and the caster is a halfling: the Lucky question
-   * ("Tirou 1: rolar de novo?") comes first, before the die's. Nothing was spent yet. */
-  protected readonly luckyOffer = signal<LuckyOffer | null>(null);
-  /** The held d20, above the Lucky question: the sheet has no result to show it in yet. */
-  protected readonly luckyHeld = computed(() => luckyHeldLine(this.luckyOffer()));
-  /** One key per Lucky answer (roll again this way, or keep the 1): the same answer again is a retry. */
-  private readonly luckyKey = new ActionKey();
-  /** Every damage and heal of the cast as it is now, by ID. */
-  protected readonly pendings = signal<ReadonlyMap<string, PendingDamage>>(
-    new Map((this.data.resume ?? []).map((p) => [p.id, p])),
-  );
+  /** The cast of a spell attack held for a question (Lucky's, then the Bardic Inspiration die's): the sheet asks it before
+   * the result is told (`CastQuestions`). */
+  private readonly questions = new CastQuestions({
+    resources: () => this.resources,
+    campaignId: this.data.campaignId,
+    name: this.data.name,
+    state: this.data.state,
+    animator: this.animator,
+    busy: this.busy,
+    error: this.error,
+    typing: this.typing,
+    showCast: (encounter, cast) => this.showCast(encounter, cast),
+  });
+  protected readonly offer = this.questions.offer;
+  protected readonly luckyOffer = this.questions.luckyOffer;
+  protected readonly luckyHeld = this.questions.luckyHeld;
+  /** The damage of the cast still to roll, with every damage and heal of the cast by ID (`CastDamage`). */
+  protected readonly damage = new CastDamage({
+    api: this.api,
+    campaignId: this.data.campaignId,
+    encounterId: this.data.encounterId,
+    resume: this.data.resume ?? [],
+    state: this.data.state,
+    animator: this.animator,
+    busy: this.busy,
+    error: this.error,
+  });
+  protected readonly pendings = this.damage.pendings;
   /** The Metamagic options the sorcerer knows for this spell, and the ones marked: at most one, or Empowered Spell
    * with one other; each may ask for creatures (`picks`). */
   protected readonly metaOptions = this.data.metamagic ?? [];
@@ -316,8 +330,6 @@ export class CastSheet {
 
   /** Made again when the choice changes: a new cast, not a retry. */
   private castKey = newKey();
-  /** One key per damage roll of a pending (its die): the same die again is a retry, another die a new request. */
-  private readonly damageKeys = new Map<string, ActionKey>();
   private readonly pickers = viewChildren(RollPicker);
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
   private readonly frame = viewChild(SheetFrame);
@@ -327,21 +339,13 @@ export class CastSheet {
   protected readonly canTypeDamage = this.data.diceMode !== DiceMode.APP;
   protected readonly preferApp =
     effectivePreference(this.data.diceMode, this.data.preference) === DicePreference.APP;
-
   /** The damage types a spell lets the caster pick among; empty when it offers no choice. */
-  protected readonly damageChoices = computed(() => {
-    const d = this.details();
-    return d && d.damageChoice !== SpellDamageChoice.UNSPECIFIED && d.damage.length > 1
-      ? d.damage.map((x) => ({ key: x.damageTypeKey, name: x.damageTypePt }))
-      : [];
-  });
+  protected readonly damageChoices = computed(() => damageChoicesOf(this.details()));
   /** The picked damage type; the first until the caster picks another. */
   private readonly pickedType = signal('');
-  protected readonly damageType = computed(() => {
-    const choices = this.damageChoices();
-    const picked = this.pickedType();
-    return choices.find((c) => c.key === picked)?.key ?? choices[0]?.key ?? '';
-  });
+  protected readonly damageType = computed(() =>
+    damageTypeOf(this.damageChoices(), this.pickedType()),
+  );
   /** Aprimorar Habilidade names the ability it is cast for; empty until picked, and for every other spell. */
   protected readonly asksAbility = needsAbility(this.data.spellKey);
   protected readonly ability = signal('');
@@ -367,102 +371,54 @@ export class CastSheet {
   protected readonly dartsTotal = computed(() =>
     dartsAt(this.data.targets?.darts ?? [], this.slotLevel()),
   );
-  protected readonly reachFt = computed(() => {
-    const r = this.details()?.range;
-    return r?.kind === SpellRangeKind.RANGED ? r.distanceFt : null;
-  });
-  /** The caster is a target only of a heal or a spell the app has no effect for
-   * (a blessing): a dart, a ray or a fireball at oneself is never the choice. */
-  protected readonly targetRows = computed(() => {
-    const self = this.kind() === 'heal' || this.kind() === 'plain';
-    const list = (this.data.targets?.targets ?? []).filter(
-      (t) => self || t.combatantId !== this.data.casterId,
-    );
-    return castTargetRows(list, this.data.casterId, this.reachFt());
-  });
-  protected readonly npcs = computed(() => {
-    const combatants = this.data.state.encounter()?.combatants ?? [];
-    return new Set(combatants.filter((c) => !isPlayer(c)).map((c) => c.id));
-  });
-  protected readonly creatures = computed(() => {
-    const combatants = this.data.state.encounter()?.combatants ?? [];
-    return new Set(combatants.filter(isCreature).map((c) => c.id));
-  });
-  /**
-   * "Constrição encerra a concentração em Conjurar Animais.", and "Os 2 Lobos atrozes somem." when that concentration holds the
-   * caster's creatures: only when this spell needs concentration and the caster holds another one, from the combat's own data.
-   */
-  protected readonly endsConcentration = computed(() => {
-    const e = this.data.state.encounter();
-    const caster = e?.combatants.find((c) => c.id === this.data.casterId);
-    if (
-      !e ||
-      !caster ||
-      !this.data.concentration ||
-      !caster.concentrationSpell ||
-      caster.concentrationSpell === this.data.spellKey
-    ) {
-      return null;
-    }
-    const held = e.combatants.filter(
-      (c) =>
-        isCreature(c) &&
-        c.ownerCharacterId === caster.characterId &&
-        !!c.summonGroupId &&
-        !c.defeated,
-    );
-    let goes = '';
-    if (held.length === 1) {
-      goes = `${article(held[0].label) === 'a' ? 'A' : 'O'} ${held[0].label} some.`;
-    } else if (held.length > 1) {
-      goes = `${groupFeminine(held) ? 'As' : 'Os'} ${held.length} ${groupName(held)} somem.`;
-    }
-    return {
-      ends: `${this.data.name} encerra a concentração em ${caster.concentrationSpellNamePt || 'a magia'}.`,
-      goes,
-    };
-  });
+  protected readonly reachFt = computed(() => reachFtOf(this.details()));
+  protected readonly targetRows = computed(() =>
+    castRowsOf(this.data.targets, this.kind(), this.data.casterId, this.reachFt()),
+  );
+  protected readonly npcs = computed(() =>
+    idsWhere(this.data.state.encounter()?.combatants ?? [], (c) => !isPlayer(c)),
+  );
+  protected readonly creatures = computed(() =>
+    idsWhere(this.data.state.encounter()?.combatants ?? [], isCreature),
+  );
+  /** "Constrição encerra a concentração em Conjurar Animais.", and what goes with it (`concentrationEnd`). */
+  protected readonly endsConcentration = computed(() =>
+    concentrationEnd(this.data.state.encounter(), {
+      casterId: this.data.casterId,
+      concentration: this.data.concentration,
+      key: this.data.spellKey,
+      name: this.data.name,
+    }),
+  );
   protected readonly warning = computed(() =>
     lastSlotWarning(this.slot(), this.data.shieldFree, this.data.shieldName),
   );
   /** Why "Conjurar" is not ready yet, in words; empty when it is. */
-  protected readonly missing = computed(() => {
-    if (!this.details() && !this.detailsFailed()) {
-      return 'Lendo a magia…';
-    }
-    if (this.detailsFailed()) {
-      return 'Não deu para ler a magia. Feche e tente de novo.';
-    }
-    if (this.data.level > 0 && !this.slot()) {
-      return 'Escolha o espaço de magia.';
-    }
-    const ability = abilityMissing(this.data.spellKey, this.ability());
-    if (ability) {
-      return ability;
-    }
-    // A placed area takes no target: the server works out who is inside from the point.
-    const target = this.flow ? '' : this.targetsMissing();
-    return (
-      target ||
-      metamagicMissing(this.metaOptions, this.chosenMeta(), this.picks(), this.sorceryPoints)
-    );
-  });
+  protected readonly missing = computed(() =>
+    castMissing({
+      detailsRead: !!this.details(),
+      detailsFailed: this.detailsFailed(),
+      level: this.data.level,
+      slotChosen: !!this.slot(),
+      spellKey: this.data.spellKey,
+      ability: this.ability(),
+      placedArea: !!this.flow,
+      targets: () => this.targetsMissing(),
+      metaOptions: this.metaOptions,
+      chosenMeta: this.chosenMeta(),
+      picks: this.picks(),
+      sorceryPoints: this.sorceryPoints,
+    }),
+  );
 
   /** What the target step still needs, in words; `''` when it is complete. */
   private targetsMissing(): string {
-    const r = this.rule();
-    if (r.kind === 'darts') {
-      return dartsPlaced(this.dealt()) === this.dartsTotal()
-        ? ''
-        : dartsStatus(this.dartsTotal(), this.dealt());
-    }
-    if ((r.kind === 'single' || r.kind === 'multi') && this.chosen().length < r.min) {
-      return r.kind === 'single' ? 'Escolha o alvo.' : 'Escolha pelo menos um alvo.';
-    }
-    if (this.kind() === 'attack' && this.chosen().length > 1 && !this.canApp) {
-      return 'Com dados físicos, escolha um alvo por vez.';
-    }
-    return '';
+    return targetsMissingText(
+      this.rule(),
+      this.kind(),
+      { chosen: this.chosen().length, dealt: this.dealt(), darts: this.dartsTotal() },
+      this.canApp,
+    );
   }
   protected readonly ready = computed(() => this.missing() === '');
 
@@ -474,37 +430,18 @@ export class CastSheet {
   /** 1 + the level the spell is cast at (a cantrip is level 0). */
   protected readonly sculptLimit = computed(() => 1 + (this.data.level > 0 ? this.slotLevel() : 0));
   /** The creatures the caster can spare: the others in the placed area, or the ones ticked in the list; allies first. */
-  protected readonly sculptRows = computed<SculptRow[]>(() => {
-    if (!this.sculptOffered) {
-      return [];
-    }
-    const preview = this.flow?.preview();
-    const rows: SculptRow[] = this.flow
-      ? (preview?.targets ?? [])
-          .filter((t) => !t.self)
-          .map((t) => ({ id: t.combatantId, label: t.label, ally: t.ally }))
-      : this.targetRows()
-          .filter((t) => !t.blocked && this.chosen().includes(t.id))
-          .map((t) => ({ id: t.id, label: t.label, ally: false }));
-    return [...rows.filter((r) => r.ally), ...rows.filter((r) => !r.ally)];
-  });
-  /** What the cast sends: the ones marked that are still listed, no more than the limit. */
-  private sculptedIds(): string[] {
-    const listed = new Set(this.sculptRows().map((r) => r.id));
-    return this.sculpted()
-      .filter((id) => listed.has(id))
-      .slice(0, this.sculptLimit());
-  }
+  protected readonly sculptRows = computed<SculptRow[]>(() =>
+    sculptRowsOf(
+      this.sculptOffered,
+      this.flow?.preview(),
+      !!this.flow,
+      this.targetRows(),
+      this.chosen(),
+    ),
+  );
 
   protected toggleSculpt(id: string): void {
-    const now = this.sculpted();
-    this.sculpted.set(
-      now.includes(id)
-        ? now.filter((x) => x !== id)
-        : now.length < this.sculptLimit()
-          ? [...now, id]
-          : now,
-    );
+    this.sculpted.set(toggledSculpt(this.sculpted(), id, this.sculptLimit()));
     this.choiceChanged();
     this.error.set('');
   }
@@ -561,15 +498,7 @@ export class CastSheet {
       this.data.economy === ActionEconomy.BONUS_ACTION,
     ),
   );
-  protected readonly coverNote = computed(() => {
-    const p = this.flow?.preview();
-    if (!p || p.targets.length === 0) {
-      return '';
-    }
-    return p.coverCounts
-      ? `A cobertura é medida do ponto de origem, não de você, e só conta quando o teste é de Destreza (como o ${article(this.data.name) === 'a' ? 'da' : 'do'} ${this.data.name}).`
-      : '';
-  });
+  protected readonly coverNote = computed(() => coverNoteOf(this.flow?.preview(), this.data.name));
   /** The area waits for the caster's "Conjurar mesmo assim" (nobody in it) before the cast can be sent. */
   protected readonly areaAsks = computed(
     () => !!this.flow && this.flow.nobody() && !this.flow.nobodyAccepted(),
@@ -591,8 +520,7 @@ export class CastSheet {
     if (this.rule().kind !== 'darts' || this.dartsTotal() === 0) {
       return '';
     }
-    const n = this.dartsTotal();
-    return dartsStatus(n, this.dealt());
+    return dartsStatus(this.dartsTotal(), this.dealt());
   });
   /** The targets chosen for a spell attack, with the circumstances of each. */
   private readonly attacked = computed(() =>
@@ -638,34 +566,30 @@ export class CastSheet {
       (this.kind() !== 'attack' || this.chosen().length <= 1),
   );
 
-  protected readonly title = computed(() => {
-    if (this.data.resume) {
-      return `Role o dano de ${this.data.name}`;
-    }
-    if (this.hpDone() || (this.flow && this.done())) {
-      return `${this.data.name} conjurad${article(this.data.name) === 'a' ? 'a' : 'o'}`;
-    }
-    if (this.done()) {
-      return `Você conjurou ${this.data.name}`;
-    }
-    return this.typing() ? 'Digite o resultado' : `Conjurar ${this.data.name}`;
-  });
   /** "Sono conjurado", "Palavra de Poder Atordoar conjurada": the sheet of a spell that
    * reads hit points says what was done, then who it touched. */
   private readonly hpDone = computed(
     () => this.done() && (this.kind() === 'pool' || this.kind() === 'hp'),
   );
+  protected readonly title = computed(() =>
+    castTitle({
+      name: this.data.name,
+      resume: !!this.data.resume,
+      done: this.done(),
+      hpDone: this.hpDone(),
+      placedArea: !!this.flow,
+      typing: this.typing(),
+    }),
+  );
   protected readonly subtitle = computed(() => {
     if (this.done()) {
-      const s = this.cast()?.slot;
-      const circle = s ? circleLabel(s.level) : this.data.level === 0 ? 'Truque' : '';
-      const n = this.cast()?.targets.length ?? 0;
-      if (this.flow) {
-        return this.areaResultLine(circle, n);
-      }
-      return this.kind() === 'pool' && n > 0
-        ? `${circle} · ${n} ${n === 1 ? 'criatura' : 'criaturas'} na área`
-        : circle;
+      return doneSubtitle({
+        cast: this.cast(),
+        level: this.data.level,
+        kind: this.kind(),
+        placedArea: !!this.flow,
+        details: this.details(),
+      });
     }
     if (this.typing()) {
       return `${this.data.name} · Rodada ${this.data.round}`;
@@ -681,18 +605,6 @@ export class CastSheet {
       this.flow ? shapeText(this.areaShape) : '',
     );
   });
-
-  /** "3º nível · 4 criaturas · teste de resistência de Destreza (CD 16)": what an area hit, counted from the cast's own targets
-   * (a player's never holds a hidden creature, RN-10). */
-  private areaResultLine(circle: string, n: number): string {
-    const parts = [circle, `${n} ${n === 1 ? 'criatura' : 'criaturas'}`];
-    const ability = saveAbility(this.details());
-    if (ability) {
-      const dc = this.cast()?.targets.find((t) => (t.save?.dc ?? 0) > 0)?.save?.dc ?? 0;
-      parts.push(`teste de resistência de ${ability}${dc > 0 ? ` (CD ${dc})` : ''}`);
-    }
-    return parts.filter((p) => p !== '').join(' · ');
-  }
 
   // ---- the result ----
 
@@ -717,97 +629,26 @@ export class CastSheet {
     const roll = this.cast()?.poolRoll;
     return roll ? poolRollText(roll) : '';
   });
-  protected readonly groups = computed(() => rollGroups([...this.pendings().values()]));
-  protected readonly owed = computed(() => this.groups().length > 0);
-  protected readonly plain = computed(() => {
-    const c = this.cast();
-    return (
-      !!c &&
-      this.kind() === 'plain' &&
-      c.targets.every(
-        (t) => !t.pendingDamageId && t.outcome === AttackOutcome.UNSPECIFIED && !t.save,
-      )
-    );
-  });
-  protected readonly after = computed<SlotAfter | null>(() => {
-    const s = this.cast()?.slot;
-    const row = s ? this.rows().find((r) => r.level === s.level && r.pact === s.pact) : undefined;
-    if (!s || !row) {
-      return null;
-    }
-    const free = Math.max(0, row.free - 1);
-    return {
-      level: s.level,
-      total: row.total,
-      used: row.total === null ? 0 : row.total - free,
-      text: `Espaços de ${circleLabel(s.level)}: ${freeText(free, row.total)}`,
-    };
-  });
-  protected readonly shieldLost = computed(() => {
-    const s = this.cast()?.slot;
-    return s && this.data.shieldFree === 1
-      ? `${this.data.shieldName} indisponível: sem espaço de ${circleLabel(s.level)}.`
-      : '';
-  });
-  protected readonly notes = computed(() => {
-    const c = this.cast();
-    if (!c) {
-      return [];
-    }
-    const out: string[] = [];
-    if (c.concentrating) {
-      out.push(`Você está concentrado em ${this.data.name}.`);
-    }
-    if (c.concentrationEndedSpellKey) {
-      out.push('A sua concentração anterior acabou.');
-    }
-    if (c.metamagicKeys.length > 0) {
-      const names = c.metamagicKeys.map(
-        (k) => this.metaOptions.find((o) => o.key === k)?.namePt ?? 'Metamagia',
-      );
-      out.push(`${metamagicSpentLine(names, c.sorceryPointsSpent, this.sorceryPoints)}.`);
-    }
-    out.push(spentLine(this.data.economy));
-    return out;
-  });
+  protected readonly groups = this.damage.groups;
+  protected readonly owed = this.damage.owed;
+  protected readonly plain = computed(() => isPlainCast(this.cast(), this.kind()));
+  protected readonly after = computed<SlotAfter | null>(() => slotAfter(this.cast(), this.rows()));
+  protected readonly shieldLost = computed(() =>
+    shieldLostText(this.cast(), this.data.shieldFree, this.data.shieldName),
+  );
+  protected readonly notes = computed(() =>
+    castNotes(this.cast(), {
+      name: this.data.name,
+      economy: this.data.economy,
+      metaOptions: this.metaOptions,
+      sorceryPoints: this.sorceryPoints,
+    }),
+  );
 
   // ---- the damage still to roll ----
 
   /** The roll of the first damage group: its dice, the sum a typed roll may be. */
-  protected readonly nextRoll = computed(() => {
-    const g = this.groups()[0];
-    if (!g) {
-      return null;
-    }
-    const p = g[0];
-    const labels = this.labels();
-    const who = g.map((x) => labels.get(x.targetId)?.label ?? 'alvo');
-    const name = diceName(p.diceCount, p.diceSides);
-    return {
-      pending: p,
-      name,
-      range: sumRange(p.diceCount, p.diceSides),
-      label:
-        p.diceCount > 1 ? `Role ${name} para o dano: some os dois` : `Role ${name} para o dano`,
-      what: p.healing ? `Cura em ${who.join(', ')}` : `Dano em ${who.join(', ')}`,
-      count: this.groups().length,
-      // A critical spell attack follows the table's rule: what to roll, said the way it asks (RN-24).
-      crit: p.critical
-        ? (criticalHint(p.criticalRule, p.diceCount, p.diceSides, p.criticalMax)?.line ??
-          'Acerto crítico: os dados dobram.')
-        : '',
-      typedHint: criticalTypedHint(
-        p.criticalRule,
-        name,
-        sumRange(p.diceCount, p.diceSides).min,
-        sumRange(p.diceCount, p.diceSides).max,
-        p.criticalMax,
-      ),
-      // The modifier and the critical's fixed maximum, the server's numbers, added in the total before it is sent.
-      modifier: p.bonus + p.criticalMax,
-      fixedText: fixedParts(p.criticalMax, p.bonus),
-    };
-  });
+  protected readonly nextRoll = computed(() => nextRollOf(this.groups(), this.labels()));
 
   constructor() {
     void this.catalog.details(this.data.campaignId, this.data.spellKey).then((d) => {
@@ -831,26 +672,15 @@ export class CastSheet {
           .filter((t) => !t.blocked)
           .map((t) => t.id),
       );
-      const kept = this.chosen()
-        .filter((id) => ok.has(id))
-        .slice(0, Math.max(r.max, 0));
-      if (kept.length !== this.chosen().length) {
+      const kept = keptTargets(this.chosen(), ok, r.max);
+      if (kept) {
         this.chosen.set(kept);
         untracked(() => this.choiceChanged());
       }
       if (r.kind === 'darts') {
-        const only = [...ok];
-        if (
-          only.length === 1 &&
-          dartsPlaced(this.dealt()) === 0 &&
-          this.dartsTotal() > 0 &&
-          !this.cast()
-        ) {
-          this.dealt.set(new Map([[only[0], this.dartsTotal()]]));
-          untracked(() => this.choiceChanged());
-        }
-        if (dartsPlaced(this.dealt()) > this.dartsTotal()) {
-          this.dealt.set(new Map());
+        const dealt = dartsAfterChange(this.dealt(), [...ok], this.dartsTotal(), !!this.cast());
+        if (dealt) {
+          this.dealt.set(dealt);
           untracked(() => this.choiceChanged());
         }
       }
@@ -903,16 +733,7 @@ export class CastSheet {
   /** A cast sheet that opens on a damage the player never rolled has no cast to
    * read: its rows are made from the damages themselves. */
   private resumedCast(): SpellCast {
-    const targets = [...this.pendings().values()].map(
-      (p) =>
-        ({
-          combatantId: p.targetId,
-          darts: p.attackKey === 'spell:magic-missile' ? p.diceCount : 0,
-          outcome: AttackOutcome.UNSPECIFIED,
-          pendingDamageId: p.id,
-        }) as unknown as SpellTargetResult,
-    );
-    return { targets } as unknown as SpellCast;
+    return resumedCastOf(this.pendings().values());
   }
 
   /** A new slot, target or dart changes what a typed roll was for (its dice, its target): the key is a new cast's and the typed text is dropped (RN-18). */
@@ -967,11 +788,7 @@ export class CastSheet {
     this.listAsking.set(false);
     this.chosen.set(toggled(this.rule(), this.chosen(), id));
     // A creature no longer a target cannot stay the second target or the one with disadvantage.
-    this.picks.update((p) => ({
-      twinned: p.twinned === this.chosen()[0] ? '' : p.twinned,
-      careful: p.careful,
-      heightened: this.chosen().includes(p.heightened) ? p.heightened : '',
-    }));
+    this.picks.update((p) => picksAfterTargets(p, this.chosen()));
     this.choiceChanged();
     this.error.set('');
   }
@@ -1031,6 +848,11 @@ export class CastSheet {
     return this.doCast(die);
   }
 
+  /** The Sculpt Spells ids the cast sends. */
+  private sculptedIds(): string[] {
+    return sculptedIdsOf(this.sculpted(), this.sculptRows(), this.sculptLimit());
+  }
+
   private async doCast(die: AttackDie | PoolDie | PairDie | null): Promise<void> {
     if (this.busy() || !this.ready()) {
       return;
@@ -1069,7 +891,7 @@ export class CastSheet {
       );
       this.showCast(res.encounter, res.cast);
     } catch (err) {
-      if (!this.asks(err)) {
+      if (!this.questions.asks(err)) {
         this.error.set(combatErrorMessage(err, 'conjurar a magia'));
       }
     } finally {
@@ -1077,218 +899,41 @@ export class CastSheet {
     }
   }
 
-  /** A cast that answered a question instead of the cast (nothing was spent, the d20 is kept on the server): the sheet
-   * shows it, Lucky's about a 1 first, else the Bardic Inspiration die's. False for any other error. */
-  private asks(err: unknown): boolean {
-    const question =
-      err instanceof LuckyQuestion || err instanceof InspirationQuestion ? err : null;
-    if (!question) {
-      return false;
-    }
-    this.data.state.apply(question.encounter);
-    if (question instanceof LuckyQuestion) {
-      this.luckyOffer.set(question.offer);
-    } else {
-      this.offer.set(question.offer);
-    }
-    this.typing.set(false);
-    // The d20 alone, no total and no word: the result is told after the answer.
-    const held = showOfDice(this.data.name, question.offer.d20);
-    if (held) {
-      this.animator.play(held);
-    }
-    return true;
-  }
-
   /** The cast as the result step shows it. */
   private showCast(encounter: Encounter, cast: SpellCast): void {
     this.data.state.apply(encounter);
     this.cast.set(cast);
-    this.animateCast(cast);
-    this.pendings.set(new Map(cast.pendingDamages.map((p) => [p.id, p])));
+    const show = castShow(this.data.name, cast);
+    if (show) {
+      this.animator.play(show);
+    }
+    this.damage.set(cast.pendingDamages);
     this.typing.set(false);
   }
 
-  /** "Rolar de novo" (rolled in the app, or the typed face) or "Ficar com o 1": the spell is cast now with the new d20
-   * (or the 1), or, when the caster holds a Bardic Inspiration die, the die's question comes next, on the new roll. */
-  protected async answerLucky(reroll: boolean, die: LuckyRoll | null): Promise<void> {
-    const offer = this.luckyOffer();
-    if (!offer || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const res = await this.resources.answerOutsideLucky(
-        this.data.campaignId,
-        offer.holdId,
-        reroll,
-        die,
-        this.luckyKey.keyFor({ hold: offer.holdId, reroll, die }),
-      );
-      const settled = res.result.case === 'spellCast' ? res.result.value : null;
-      if (!settled?.encounter || (!settled.cast && !settled.inspirationOffer)) {
-        throw new Error('AnswerOutsideLucky answered without its cast');
-      }
-      this.luckyKey.renew();
-      this.luckyOffer.set(null);
-      this.typing.set(false);
-      if (settled.inspirationOffer) {
-        this.data.state.apply(settled.encounter);
-        this.offer.set(settled.inspirationOffer);
-        this.animateLucky(settled.inspirationOffer.d20, die);
-        return;
-      }
-      this.showCast(settled.encounter, settled.cast!);
-    } catch (err) {
-      this.error.set(classResourceErrorMessage(err, 'responder ao Sortudo'));
-    } finally {
-      this.busy.set(false);
-    }
+  /** "Rolar de novo" or "Ficar com o 1" (`CastQuestions`). */
+  protected answerLucky(reroll: boolean, die: LuckyRoll | null): Promise<void> {
+    return this.questions.answerLucky(reroll, die);
   }
 
-  /** The d20 the app rolled again for Lucky, tumbling, when the die's question comes next (a cast that is told animates
-   * its own d20): the new face alone, "1 → 14". */
-  private animateLucky(roll: DiceRoll | undefined, die: LuckyRoll | null): void {
-    const again = die && 'inApp' in die ? luckyReroll(roll) : undefined;
-    const show = again
-      ? showOfDie('Sortudo', roll?.diceSides ?? 0, again.to, `${again.from} → ${again.to}`)
-      : null;
-    if (show) {
-      this.animator.play(show);
-    }
-  }
-
-  /** The answer about the die: the spell is cast now, with the d20 it rolled and the die when it was used. */
-  protected async answerDie(use: boolean, die: InspirationRoll | null): Promise<void> {
-    const offer = this.offer();
-    if (!offer || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const res = await this.resources.answerOutsideInspiration(
-        this.data.campaignId,
-        offer.holdId,
-        use,
-        die,
-        this.answerKey.keyFor({ hold: offer.holdId, use, die }),
-      );
-      if (
-        res.result.case !== 'spellCast' ||
-        !res.result.value.encounter ||
-        !res.result.value.cast
-      ) {
-        throw new Error('AnswerOutsideInspiration answered without its cast');
-      }
-      this.offer.set(null);
-      this.showCast(res.result.value.encounter, res.result.value.cast);
-    } catch (err) {
-      this.error.set(classResourceErrorMessage(err, 'responder sobre a Inspiração de Bardo'));
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  /**
-   * The dice the cast just rolled in the app, as the result step shows them: the pool of a spell that reads hit points, or the
-   * spell attack d20 (one die per target in the same overlay; with a single target, the total and the word too). The targets'
-   * saving throws are not animated: they are not the caster's roll.
-   */
-  private animateCast(cast: SpellCast): void {
-    const name = this.data.name;
-    let show: RollShow | null = showOfDice(name, cast.poolRoll, { withTotal: true });
-    if (!show) {
-      const attacks = cast.targets.filter((t) => t.attackRoll);
-      const told = (t: (typeof attacks)[number]) => t.outcome !== AttackOutcome.UNSPECIFIED;
-      if (attacks.length === 1) {
-        const t = attacks[0];
-        const hit = isHit(t.outcome);
-        show = showOfDice(`Ataque com ${name}`, t.attackRoll, {
-          withTotal: true,
-          outcome: told(t) ? { word: outcomeWord(t.outcome), good: hit } : undefined,
-          critical: t.outcome === AttackOutcome.CRITICAL_HIT,
-          fumble: told(t) && !hit,
-        });
-      } else if (attacks.length > 1) {
-        const dice = attacks.flatMap((t) => showOfDice(name, t.attackRoll)?.dice ?? []);
-        show = dice.length > 0 ? { label: `Ataque com ${name}`, dice } : null;
-      }
-    }
-    if (show) {
-      this.animator.play(show);
-    }
+  /** The answer about the die (`CastQuestions`). */
+  protected answerDie(use: boolean, die: InspirationRoll | null): Promise<void> {
+    return this.questions.answerDie(use, die);
   }
 
   /** Who the cast names: nobody for a placed area (the server works it out), the darts, or the targets ticked. */
   private castTargets(): { combatantId: string; darts: number }[] {
-    if (this.flow || this.rule().kind === 'none') {
-      return [];
-    }
-    return this.rule().kind === 'darts'
-      ? dartTargets(this.dealt())
-      : this.chosen().map((combatantId) => ({ combatantId, darts: 0 }));
+    return castTargetsOf(!!this.flow, this.rule(), () => dartTargets(this.dealt()), this.chosen());
   }
 
   /** "Rolar no app": every damage still owed is rolled, one call each. */
-  protected async rollAll(): Promise<void> {
-    for (const group of this.groups()) {
-      if (!(await this.rollGroup(group, { inApp: true }))) {
-        return;
-      }
-    }
+  protected rollAll(): Promise<void> {
+    return this.damage.rollAll();
   }
 
   protected async rollTyped(sum: number): Promise<void> {
-    const group = this.groups()[0];
-    if (group) {
-      if (await this.rollGroup(group, { sum })) {
-        this.typing.set(false);
-      }
-    }
-  }
-
-  private async rollGroup(group: readonly PendingDamage[], die: DamageDie): Promise<boolean> {
-    const p = group[0];
-    if (this.busy()) {
-      return false;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      let keys = this.damageKeys.get(p.id);
-      if (!keys) {
-        keys = new ActionKey();
-        this.damageKeys.set(p.id, keys);
-      }
-      const key = keys.keyFor(die);
-      const res = await this.api.rollDamage(
-        this.data.campaignId,
-        this.data.encounterId,
-        p.id,
-        die,
-        key,
-      );
-      this.data.state.apply(res.encounter);
-      const next = new Map(this.pendings());
-      for (const settled of [res.pending, ...res.cast]) {
-        next.set(settled.id, settled);
-      }
-      this.pendings.set(next);
-      const show = showOfDice('Dano', res.pending.roll, {
-        withTotal: true,
-        note: res.pending.damageTypePt || undefined,
-      });
-      if (show) {
-        this.animator.play(show);
-      }
-      return true;
-    } catch (err) {
-      this.error.set(combatErrorMessage(err, 'rolar o dano'));
-      return false;
-    } finally {
-      this.busy.set(false);
+    if (await this.damage.rollTyped(sum)) {
+      this.typing.set(false);
     }
   }
 

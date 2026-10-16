@@ -1,0 +1,178 @@
+1000	kind=0	ok: 1000 <nil>
+1000	kind=1	refused: formula does not compile: expected bool, but got int
+1001	kind=0	refused: number 1001 is out of range (at most 1000)
+1001	kind=1	refused: number 1001 is out of range (at most 1000)
+-1001	kind=0	refused: number 1001 is out of range (at most 1000)
+-1001	kind=1	refused: number 1001 is out of range (at most 1000)
+1000.5	kind=0	refused: number is out of range
+1000.5	kind=1	refused: number is out of range
+999.5	kind=0	ok: 999 <nil>
+999.5	kind=1	refused: formula does not compile: expected bool, but got float64
+true	kind=0	refused: formula does not compile: expected float64, but got bool
+true	kind=1	ok: true <nil>
+"heavy"	kind=0	refused: a text value can only be an argument of mod, score or classLevel, or compared with armor()
+"heavy"	kind=1	refused: a text value can only be an argument of mod, score or classLevel, or compared with armor()
+-mod("str")	kind=0	ok: -1 <nil>
+-mod("str")	kind=1	refused: formula does not compile: expected bool, but got int
++3	kind=0	ok: 3 <nil>
++3	kind=1	refused: formula does not compile: expected bool, but got int
+!true	kind=0	refused: formula does not compile: expected float64, but got bool
+!true	kind=1	ok: false <nil>
+not shield()	kind=0	refused: formula does not compile: expected float64, but got bool
+not shield()	kind=1	ok: true <nil>
+1 + 2	kind=0	ok: 3 <nil>
+1 + 2	kind=1	refused: formula does not compile: expected bool, but got int
+5 % 2	kind=0	ok: 1 <nil>
+5 % 2	kind=1	refused: formula does not compile: expected bool, but got int
+3 / 2	kind=0	ok: 1 <nil>
+3 / 2	kind=1	refused: formula does not compile: expected bool, but got float64
+1 < 2	kind=0	refused: formula does not compile: expected float64, but got bool
+1 < 2	kind=1	ok: true <nil>
+1 <= 2 and 2 >= 1	kind=0	refused: formula does not compile: expected float64, but got bool
+1 <= 2 and 2 >= 1	kind=1	ok: true <nil>
+true || false	kind=0	refused: formula does not compile: expected float64, but got bool
+true || false	kind=1	ok: true <nil>
+1 ** 2	kind=0	refused: operator "**" is not allowed
+1 ** 2	kind=1	refused: operator "**" is not allowed
+1 in 2	kind=0	refused: operator "in" is not allowed
+1 in 2	kind=1	refused: operator "in" is not allowed
+armor() == "heavy"	kind=0	refused: formula does not compile: expected float64, but got bool
+armor() == "heavy"	kind=1	ok: false <nil>
+"heavy" == armor()	kind=0	refused: formula does not compile: expected float64, but got bool
+"heavy" == armor()	kind=1	ok: false <nil>
+armor() != "none"	kind=0	refused: formula does not compile: expected float64, but got bool
+armor() != "none"	kind=1	ok: false <nil>
+armor() == "mithral"	kind=0	refused: armor() is never "mithral"
+armor() == "mithral"	kind=1	refused: armor() is never "mithral"
+level() == "x"	kind=0	refused: text can only be compared with armor()
+level() == "x"	kind=1	refused: text can only be compared with armor()
+"x" == "y"	kind=0	refused: text can only be compared with armor()
+"x" == "y"	kind=1	refused: text can only be compared with armor()
+armor(1) == "none"	kind=0	refused: text can only be compared with armor()
+armor(1) == "none"	kind=1	refused: text can only be compared with armor()
+shield() == "none"	kind=0	refused: text can only be compared with armor()
+shield() == "none"	kind=1	refused: text can only be compared with armor()
+1 == 1	kind=0	refused: formula does not compile: expected float64, but got bool
+1 == 1	kind=1	ok: true <nil>
+level() != 1001	kind=0	refused: number 1001 is out of range (at most 1000)
+level() != 1001	kind=1	refused: number 1001 is out of range (at most 1000)
+1001 == level()	kind=0	refused: number 1001 is out of range (at most 1000)
+1001 == level()	kind=1	refused: number 1001 is out of range (at most 1000)
+true ? 1 : 2	kind=0	ok: 1 <nil>
+true ? 1 : 2	kind=1	refused: formula does not compile: expected bool, but got int
+1001 ? 1 : 2	kind=0	refused: number 1001 is out of range (at most 1000)
+1001 ? 1 : 2	kind=1	refused: number 1001 is out of range (at most 1000)
+true ? 1001 : 2	kind=0	refused: number 1001 is out of range (at most 1000)
+true ? 1001 : 2	kind=1	refused: number 1001 is out of range (at most 1000)
+true ? 1 : 1001	kind=0	refused: number 1001 is out of range (at most 1000)
+true ? 1 : 1001	kind=1	refused: number 1001 is out of range (at most 1000)
+level() > 3 ? "a" : 2	kind=0	refused: a text value can only be an argument of mod, score or classLevel, or compared with armor()
+level() > 3 ? "a" : 2	kind=1	refused: a text value can only be an argument of mod, score or classLevel, or compared with armor()
+a.b	kind=0	refused: operator "." is not allowed
+a.b	kind=1	refused: operator "." is not allowed
+x	kind=0	refused: the name "x" (call it, as in x()) is not allowed in a formula
+x	kind=1	refused: the name "x" (call it, as in x()) is not allowed in a formula
+[1]	kind=0	refused: "[" is not allowed
+[1]	kind=1	refused: "[" is not allowed
+{"a": 1}	kind=0	refused: "{" is not allowed
+{"a": 1}	kind=1	refused: "{" is not allowed
+nil	kind=0	refused: nil is not allowed in a formula
+nil	kind=1	refused: nil is not allowed in a formula
+let x = 1; x	kind=0	refused: operator "let" is not allowed
+let x = 1; x	kind=1	refused: operator "let" is not allowed
+1; 2	kind=0	refused: operator ";" is not allowed
+1; 2	kind=1	refused: operator ";" is not allowed
+$env	kind=0	refused: the name "$env" (call it, as in $env()) is not allowed in a formula
+$env	kind=1	refused: the name "$env" (call it, as in $env()) is not allowed in a formula
+mod("str")	kind=0	ok: 1 <nil>
+mod("str")	kind=1	refused: formula does not compile: expected bool, but got int
+mod(str)	kind=0	refused: the argument of mod must be written as text, such as mod("str")
+mod(str)	kind=1	refused: the argument of mod must be written as text, such as mod("str")
+mod("xyz")	kind=0	refused: mod does not accept "xyz"
+mod("xyz")	kind=1	refused: mod does not accept "xyz"
+score("cha")	kind=0	ok: 12 <nil>
+score("cha")	kind=1	refused: formula does not compile: expected bool, but got int
+classLevel("wizard")	kind=0	ok: 3 <nil>
+classLevel("wizard")	kind=1	refused: formula does not compile: expected bool, but got int
+classLevel("bard")	kind=0	refused: classLevel does not accept "bard"
+classLevel("bard")	kind=1	refused: classLevel does not accept "bard"
+classLevel(1)	kind=0	refused: the argument of classLevel must be written as text, such as classLevel("barbarian")
+classLevel(1)	kind=1	refused: the argument of classLevel must be written as text, such as classLevel("barbarian")
+level(1)	kind=0	refused: level takes 0 argument(s), got 1
+level(1)	kind=1	refused: level takes 0 argument(s), got 1
+prof()	kind=0	ok: 2 <nil>
+prof()	kind=1	refused: formula does not compile: expected bool, but got int
+armor()	kind=0	refused: formula does not compile: expected float64, but got string
+armor()	kind=1	refused: formula does not compile: expected bool, but got string
+shield(1)	kind=0	refused: shield takes 0 argument(s), got 1
+shield(1)	kind=1	refused: shield takes 0 argument(s), got 1
+foo()	kind=0	refused: function "foo" does not exist in formulas
+foo()	kind=1	refused: function "foo" does not exist in formulas
+(level)()	kind=0	refused: formula does not parse: unexpected token Bracket("(") (1:8)
+ | (level)()
+ | .......^
+(level)()	kind=1	refused: formula does not parse: unexpected token Bracket("(") (1:8)
+ | (level)()
+ | .......^
+floor(level() / 2)	kind=0	ok: 1 <nil>
+floor(level() / 2)	kind=1	refused: formula does not compile: expected bool, but got int
+ceil(1001)	kind=0	refused: number 1001 is out of range (at most 1000)
+ceil(1001)	kind=1	refused: number 1001 is out of range (at most 1000)
+floor()	kind=0	refused: floor takes 1 argument(s), got 0
+floor()	kind=1	refused: floor takes 1 argument(s), got 0
+min(1)	kind=0	refused: min takes 2 argument(s), got 1
+min(1)	kind=1	refused: min takes 2 argument(s), got 1
+max(1, 2)	kind=0	ok: 2 <nil>
+max(1, 2)	kind=1	refused: formula does not compile: expected bool, but got int
+min(1, 1001)	kind=0	refused: number 1001 is out of range (at most 1000)
+min(1, 1001)	kind=1	refused: number 1001 is out of range (at most 1000)
+max("a", 1)	kind=0	refused: a text value can only be an argument of mod, score or classLevel, or compared with armor()
+max("a", 1)	kind=1	refused: a text value can only be an argument of mod, score or classLevel, or compared with armor()
+1000 * 1000 * 1000	kind=0	ok: 0 formula returned 1e+09, out of range
+1000 * 1000 * 1000	kind=1	refused: formula does not compile: expected bool, but got int
+1000 * 1000 * 1000 * 1000	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 + 1000 * 1000 * 1000 + 1000 * 1000 * 1000	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 + 1000 * 1000 * 1000 + 1000 * 1000 * 1000	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 3 / 2	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 3 / 2	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+1 + 1000 * 1000 * 1000 * 1000	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1 + 1000 * 1000 * 1000 * 1000	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 - 1	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 - 1	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+-(1000 * 1000 * 1000 * 1000)	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+-(1000 * 1000 * 1000 * 1000)	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+(1000 * 1000 * 1000 * 1000) % 7	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+(1000 * 1000 * 1000 * 1000) % 7	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+7 % (1000 * 1000 * 1000 * 1000)	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+7 % (1000 * 1000 * 1000 * 1000)	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 == 1	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 == 1	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 > 1 and true	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 > 1 and true	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+true ? 1000 * 1000 * 1000 * 1000 : 1	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+true ? 1000 * 1000 * 1000 * 1000 : 1	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+true ? 1 : 1000 * 1000 * 1000 * 1000	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+true ? 1 : 1000 * 1000 * 1000 * 1000	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 > 1 ? 1 : 2	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+1000 * 1000 * 1000 * 1000 > 1 ? 1 : 2	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+max(1000 * 1000 * 1000 * 1000, 1)	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+max(1000 * 1000 * 1000 * 1000, 1)	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+min(1, 1000 * 1000 * 1000 * 1000)	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+min(1, 1000 * 1000 * 1000 * 1000)	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+floor(1000.0 * 1000 * 1000 * 1000)	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+floor(1000.0 * 1000 * 1000 * 1000)	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+ceil(1000 * 1000 * 1000 * 3)	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+ceil(1000 * 1000 * 1000 * 3)	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+level() * 1000 * 1000 * 1000	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+level() * 1000 * 1000 * 1000	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+level() * 1000 * 1000 * 1000 * 3	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+level() * 1000 * 1000 * 1000 * 3	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+mod("str") * 1000 * 1000	kind=0	ok: 0 formula returned 1e+06, out of range
+mod("str") * 1000 * 1000	kind=1	refused: formula does not compile: expected bool, but got int
+prof() * prof() * prof() * prof()	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+prof() * prof() * prof() * prof()	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers
+true ? level() * 1000 * 1000 : 1000 * 1000 * 1000	kind=0	ok: 0 formula returned 3e+06, out of range
+true ? level() * 1000 * 1000 : 1000 * 1000 * 1000	kind=1	refused: formula does not compile: expected bool, but got int
+999.9 * 999.9 * 999.9 * 999.9	kind=0	refused: a step of the formula could grow past the limit; use smaller numbers
+999.9 * 999.9 * 999.9 * 999.9	kind=1	refused: a step of the formula could grow past the limit; use smaller numbers

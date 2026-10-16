@@ -240,36 +240,56 @@ func (t Terrain) walk(from, to Square, occ Occupants, m Mover, clears bool) Move
 	line := Line(from, to)
 	res := Move{CostDFt: lengthDFt(from, to), Entered: make([]Square, 0, len(line))}
 	for _, s := range line {
-		if t.blocked(s) {
-			by := StopWall
-			if t.door(s.Square) == DoorLocked && !t.solidGround(s.Square) {
-				by = StopLocked
-			}
+		if by := t.walkStep(&res, s, to, occ, m, clears); by != StopNone {
 			return Move{Blocked: true, By: by}
-		}
-		if t.door(s.Square) == DoorClosed {
-			if clears {
-				return Move{Blocked: true, By: StopWall}
-			}
-			res.Opens = append(res.Opens, s.Square)
-		}
-		res.Entered = append(res.Entered, s.Square)
-		o, occupied := occupantAt(occ, s.Square)
-		// Difficult terrain costs 5 ft once, even if several things in the square
-		// count as it (SRD): rubble and a creature standing on it.
-		if !clears && ((!m.Flier && t.Difficult.Has(s.Square)) || occupied) {
-			res.CostDFt += DFtPerSquare
-		}
-		if occupied {
-			// A jump clears the creatures on the way, and only the landing
-			// square matters; a walk has to get through each one.
-			switch {
-			case s.Square == to && !m.canEnd(o), s.Square != to && !clears && !m.passes(o):
-				return Move{Blocked: true, By: StopOccupied}
-			}
 		}
 	}
 	return res
+}
+
+// walkStep enters one square of a straight move or a jump into res, and says
+// what blocks the move there, or StopNone when it goes on.
+func (t Terrain) walkStep(res *Move, s Step, to Square, occ Occupants, m Mover, clears bool) StopReason {
+	if t.blocked(s) {
+		return t.blockedBy(s.Square)
+	}
+	if t.door(s.Square) == DoorClosed {
+		if clears {
+			return StopWall
+		}
+		res.Opens = append(res.Opens, s.Square)
+	}
+	res.Entered = append(res.Entered, s.Square)
+	o, occupied := occupantAt(occ, s.Square)
+	if !clears {
+		res.CostDFt += t.extraDFt(s.Square, occupied, m)
+	}
+	// A jump clears the creatures on the way, and only the landing square
+	// matters; a walk has to get through each one.
+	if occupied && (s.Square == to && !m.canEnd(o) || s.Square != to && !clears && !m.passes(o)) {
+		return StopOccupied
+	}
+	return StopNone
+}
+
+// blockedBy is why a square that blocks movement stops a move: a locked door
+// on open ground says so, anything else is a wall.
+func (t Terrain) blockedBy(sq Square) StopReason {
+	if t.door(sq) == DoorLocked && !t.solidGround(sq) {
+		return StopLocked
+	}
+	return StopWall
+}
+
+// extraDFt is what entering a square costs on top of the line: 5 ft for
+// difficult terrain (not for a flier) or another creature's space, once even
+// if several things in the square count as it (SRD): rubble and a creature
+// standing on it.
+func (t Terrain) extraDFt(sq Square, occupied bool, m Mover) int {
+	if (!m.Flier && t.Difficult.Has(sq)) || occupied {
+		return DFtPerSquare
+	}
+	return 0
 }
 
 // StopReason says why a move was blocked or ended early.
@@ -346,72 +366,110 @@ type Stopped struct {
 // mover can afford is a stretch from the start. A start or a destination
 // outside the grid gives a move that never leaves the start.
 func (t Terrain) MoveUntil(from, to Square, occ Occupants, m Mover, stopAt Set, left int) Stopped {
-	res := Stopped{Reached: from}
 	if !t.Grid.Valid() || !t.Grid.Contains(from) || !t.Grid.Contains(to) {
-		res.Reason = StopWall
-		return res
+		return Stopped{Reached: from, Reason: StopWall}
 	}
 	line := Line(from, to)
-	entered := make([]Square, 0, len(line))
-	costs := make([]int, 0, len(line)) // the cost of the move up to each entered square
-	reason := StopNone
-	extras, floor := 0, 0
-walk:
+	u := untilWalk{
+		t: t, from: from, to: to, occ: occ, m: m, stopAt: stopAt, left: left,
+		res:     Stopped{Reached: from},
+		entered: make([]Square, 0, len(line)),
+		costs:   make([]int, 0, len(line)),
+	}
 	for _, s := range line {
-		o, occupied := occupantAt(occ, s.Square)
-		switch {
-		case t.blocked(s):
-			reason = StopWall
-			if t.door(s.Square) == DoorLocked && !t.solidGround(s.Square) {
-				reason, res.LockedAt = StopLocked, s.Square
-			}
-			break walk
-		case occupied && !m.passes(o):
-			reason = StopOccupied
-			break walk
-		}
-		if (!m.Flier && t.Difficult.Has(s.Square)) || occupied {
-			extras += DFtPerSquare
-		}
-		cost := max(floor, lengthDFt(from, s.Square)+extras)
-		if cost > left {
-			reason = StopMovement
-			break walk
-		}
-		floor = cost
-		entered = append(entered, s.Square)
-		costs = append(costs, cost)
-		if !res.Marked && inSet(stopAt, s.Square) {
-			res.Marked, res.MarkedAt = true, s.Square
-			if s.Square != to {
-				reason = StopMarked
-			}
+		if u.step(s) {
 			break
 		}
 	}
-	// The mover never ends in a square it may not share: back up to the last
-	// square it may end in.
-	for len(entered) > 0 {
-		o, ok := occupantAt(occ, entered[len(entered)-1])
-		if !ok || m.canEnd(o) {
-			break
+	u.backUp()
+	return u.result()
+}
+
+// untilWalk is one MoveUntil on its way along the line.
+type untilWalk struct {
+	t        Terrain
+	from, to Square
+	occ      Occupants
+	m        Mover
+	stopAt   Set
+	left     int
+	res      Stopped
+	entered  []Square
+	costs    []int // the cost of the move up to each entered square
+	reason   StopReason
+	extras   int // the extra cost of the squares entered so far
+	floor    int // the cost up to the last square entered
+}
+
+// step enters one square of the line, or stops before it, and says whether
+// the move ends there.
+func (u *untilWalk) step(s Step) bool {
+	o, occupied := occupantAt(u.occ, s.Square)
+	if u.t.blocked(s) {
+		u.reason = u.t.blockedBy(s.Square)
+		if u.reason == StopLocked {
+			u.res.LockedAt = s.Square
 		}
-		entered, costs = entered[:len(entered)-1], costs[:len(costs)-1]
-		if !res.Marked && reason != StopLocked { // the lock is the better answer
-			reason = StopOccupied
+		return true
+	}
+	if occupied && !u.m.passes(o) {
+		u.reason = StopOccupied
+		return true
+	}
+	u.extras += u.t.extraDFt(s.Square, occupied, u.m)
+	cost := max(u.floor, lengthDFt(u.from, s.Square)+u.extras)
+	if cost > u.left {
+		u.reason = StopMovement
+		return true
+	}
+	u.floor = cost
+	u.entered = append(u.entered, s.Square)
+	u.costs = append(u.costs, cost)
+	return u.mark(s.Square)
+}
+
+// mark stops the move on the first square of the stop set it enters (the
+// trap fires there); on the destination the move simply ends.
+func (u *untilWalk) mark(sq Square) bool {
+	if u.res.Marked || !inSet(u.stopAt, sq) {
+		return false
+	}
+	u.res.Marked, u.res.MarkedAt = true, sq
+	if sq != u.to {
+		u.reason = StopMarked
+	}
+	return true
+}
+
+// backUp takes the mover back to the last square it may end in: it never
+// ends in a square it may not share.
+func (u *untilWalk) backUp() {
+	for len(u.entered) > 0 {
+		o, ok := occupantAt(u.occ, u.entered[len(u.entered)-1])
+		if !ok || u.m.canEnd(o) {
+			return
+		}
+		u.entered, u.costs = u.entered[:len(u.entered)-1], u.costs[:len(u.costs)-1]
+		if !u.res.Marked && u.reason != StopLocked { // the lock is the better answer
+			u.reason = StopOccupied
 		}
 	}
-	if res.Marked && reason == StopNone {
-		reason = StopMarked // the destination is in the area too
+}
+
+// result is where the move ended, what it cost and the doors it opened.
+func (u *untilWalk) result() Stopped {
+	res := u.res
+	if res.Marked && u.reason == StopNone {
+		u.reason = StopMarked // the destination is in the area too
 	}
-	if len(entered) > 0 {
-		res.Reached = entered[len(entered)-1]
-		res.CostDFt = costs[len(costs)-1]
+	if len(u.entered) > 0 {
+		res.Reached = u.entered[len(u.entered)-1]
+		res.CostDFt = u.costs[len(u.costs)-1]
 	}
-	res.Reason = reason
-	res.Entered = entered
-	for _, sq := range entered {
-		if t.door(sq) == DoorClosed {
+	res.Reason = u.reason
+	res.Entered = u.entered
+	for _, sq := range u.entered {
+		if u.t.door(sq) == DoorClosed {
 			res.Opens = append(res.Opens, sq)
 		}
 	}

@@ -791,18 +791,26 @@ func byKey[T any](items []T, key func(*T) string) []int {
 	return idx
 }
 
+// overlayOrder is the indexes of each kind of entry in the order of their keys
+// (byKey): the order build claims and adds them in.
+type overlayOrder struct {
+	spells, races, subraces, classes, subclasses, backgrounds, feats []int
+}
+
+func orderOf(o *Overlay) overlayOrder {
+	return overlayOrder{
+		spells:      byKey(o.Spells, func(e *TableSpell) string { return e.Key }),
+		races:       byKey(o.Races, func(e *TableRace) string { return e.Key }),
+		subraces:    byKey(o.Subraces, func(e *TableSubrace) string { return e.Key }),
+		classes:     byKey(o.Classes, func(e *TableClass) string { return e.Key }),
+		subclasses:  byKey(o.Subclasses, func(e *TableSubclass) string { return e.Key }),
+		backgrounds: byKey(o.Backgrounds, func(e *TableBackground) string { return e.Key }),
+		feats:       byKey(o.Feats, func(e *TableFeat) string { return e.Key }),
+	}
+}
+
 func (b *overlayBuilder) build(o Overlay) error {
-	if b.base.table {
-		return ovErr("", "the content already has a table layer").at("", ReasonOverlay)
-	}
-	if o.Revision < 0 {
-		return ovErr("", "the revision cannot be negative").at("revision", ReasonOverlay)
-	}
-	total := len(o.Classes) + len(o.Subclasses) + len(o.Races) + len(o.Subraces) + len(o.Backgrounds) + len(o.Spells) + len(o.Feats)
-	if total > MaxOverlayEntries {
-		return ovErr("", "%d entries; the limit is %d per table", total, MaxOverlayEntries).at("", ReasonLimit)
-	}
-	if err := checkBudgets(&o); err != nil {
+	if err := b.checkOverlay(&o); err != nil {
 		return err
 	}
 	b.entries, b.used = map[string]bool{}, map[string]bool{}
@@ -811,86 +819,15 @@ func (b *overlayBuilder) build(o Overlay) error {
 		b.strict[k] = true
 	}
 	b.classListFrom, b.classCasts, b.classSubLevel = map[string]string{}, map[string]string{}, map[string]int{}
-	spells := byKey(o.Spells, func(e *TableSpell) string { return e.Key })
-	races := byKey(o.Races, func(e *TableRace) string { return e.Key })
-	subraces := byKey(o.Subraces, func(e *TableSubrace) string { return e.Key })
-	classes := byKey(o.Classes, func(e *TableClass) string { return e.Key })
-	subclasses := byKey(o.Subclasses, func(e *TableSubclass) string { return e.Key })
-	backgrounds := byKey(o.Backgrounds, func(e *TableBackground) string { return e.Key })
-	feats := byKey(o.Feats, func(e *TableFeat) string { return e.Key })
-	if err := b.claimKeys(o, classes, subclasses, races, subraces, backgrounds, spells, feats); err != nil {
+	order := orderOf(&o)
+	if err := b.claimKeys(o, order); err != nil {
 		return err
 	}
 
-	b.n = b.base.cloneForOverlay()
-	n := b.n
-	n.table, n.tableRevision = true, o.Revision
-	n.version = b.base.version + "+mesa." + strconv.Itoa(o.Revision)
-	classIndexes := make([]string, 0, len(n.classes)+len(o.Classes))
-	for k := range b.base.classes {
-		classIndexes = append(classIndexes, strings.TrimPrefix(k, "class:"))
-	}
-	for _, tc := range o.Classes {
-		classIndexes = append(classIndexes, strings.TrimPrefix(tc.Key, "class:"))
-	}
-	slices.Sort(classIndexes)
-	n.compiler = formula.NewCompiler(classIndexes)
-	n.programs = map[programKey]*formula.Program{}
+	n := b.startClone(&o)
 	defer func() { n.programs = nil }()
-
-	// An entry that fails reports everything wrong with it: its own fields, and the
-	// effects of its features and traits (which are compiled once every entry exists).
-	fail := func(err error, path string) error {
-		err = locate(err, path)
-		var oe *OverlayError
-		if errors.As(err, &oe) && oe.Key != "" {
-			if extra, ok := errors.AsType[*OverlayError](b.compileEffectsOf(oe.Key)); ok {
-				oe.More = append(oe.More, extra.Violations()...)
-			}
-		}
+	if err := b.addEntries(&o, order); err != nil {
 		return err
-	}
-	for _, i := range spells {
-		path := fmt.Sprintf("spells[%d]", i)
-		if err := b.addSpell(&o.Spells[i], path); err != nil {
-			return fail(err, path)
-		}
-	}
-	for _, i := range races {
-		path := fmt.Sprintf("races[%d]", i)
-		if err := b.addRace(&o.Races[i], path); err != nil {
-			return fail(err, path)
-		}
-	}
-	for _, i := range subraces {
-		path := fmt.Sprintf("subraces[%d]", i)
-		if err := b.addSubrace(&o.Subraces[i], path); err != nil {
-			return fail(err, path)
-		}
-	}
-	for _, i := range classes {
-		path := fmt.Sprintf("classes[%d]", i)
-		if err := b.addClass(&o.Classes[i], path); err != nil {
-			return fail(err, path)
-		}
-	}
-	for _, i := range subclasses {
-		path := fmt.Sprintf("subclasses[%d]", i)
-		if err := b.addSubclass(&o.Subclasses[i], path); err != nil {
-			return fail(err, path)
-		}
-	}
-	for _, i := range backgrounds {
-		path := fmt.Sprintf("backgrounds[%d]", i)
-		if err := b.addBackground(&o.Backgrounds[i], path); err != nil {
-			return fail(err, path)
-		}
-	}
-	for _, i := range feats {
-		path := fmt.Sprintf("feats[%d]", i)
-		if err := b.addFeat(&o.Feats[i], path); err != nil {
-			return fail(err, path)
-		}
 	}
 	if err := b.compileEffects(); err != nil {
 		return err
@@ -909,59 +846,136 @@ func (b *overlayBuilder) build(o Overlay) error {
 	return nil
 }
 
-// claimKeys is the first pass: it checks the form of every entry key, that none
-// repeats or exists, and learns the facts the references need.
-func (b *overlayBuilder) claimKeys(o Overlay, classes, subclasses, races, subraces, backgrounds, spells, feats []int) error {
-	claim := func(prefix, path string, e TableEntry) error {
-		if err := checkTableKey(prefix, e.Key); err != nil {
-			return locate(err, path)
-		}
-		if err := b.claim(e.Key); err != nil {
-			return locate(err, path)
-		}
-		b.entries[e.Key] = true
-		return locate(checkEntryName(e.Key, e.NamePT), path)
+// checkOverlay refuses an overlay as a whole: on a content that already has a
+// table layer, with a negative revision, too many entries or over a budget.
+func (b *overlayBuilder) checkOverlay(o *Overlay) error {
+	if b.base.table {
+		return ovErr("", "the content already has a table layer").at("", ReasonOverlay)
 	}
-	for _, i := range classes {
-		e := &o.Classes[i]
-		if err := claim("class:", fmt.Sprintf("classes[%d]", i), e.TableEntry); err != nil {
-			return err
-		}
-		b.classListFrom[e.Key] = e.Casting.ListFrom
-		b.classCasts[e.Key] = e.Casting.Kind
-		b.classSubLevel[e.Key] = e.SubclassLevel
+	if o.Revision < 0 {
+		return ovErr("", "the revision cannot be negative").at("revision", ReasonOverlay)
 	}
-	for _, i := range subclasses {
-		if err := claim("subclass:", fmt.Sprintf("subclasses[%d]", i), o.Subclasses[i].TableEntry); err != nil {
-			return err
-		}
+	total := len(o.Classes) + len(o.Subclasses) + len(o.Races) + len(o.Subraces) + len(o.Backgrounds) + len(o.Spells) + len(o.Feats)
+	if total > MaxOverlayEntries {
+		return ovErr("", "%d entries; the limit is %d per table", total, MaxOverlayEntries).at("", ReasonLimit)
 	}
-	for _, i := range races {
-		if err := claim("race:", fmt.Sprintf("races[%d]", i), o.Races[i].TableEntry); err != nil {
-			return err
-		}
+	return checkBudgets(o)
+}
+
+// startClone makes the clone the entries go into, with its version and a
+// formula compiler that knows every class, the base's and the overlay's. The
+// compile cache it opens is the caller's to drop.
+func (b *overlayBuilder) startClone(o *Overlay) *content {
+	b.n = b.base.cloneForOverlay()
+	n := b.n
+	n.table, n.tableRevision = true, o.Revision
+	n.version = b.base.version + "+mesa." + strconv.Itoa(o.Revision)
+	classIndexes := make([]string, 0, len(n.classes)+len(o.Classes))
+	for k := range b.base.classes {
+		classIndexes = append(classIndexes, strings.TrimPrefix(k, "class:"))
 	}
-	for _, i := range subraces {
-		if err := claim("subrace:", fmt.Sprintf("subraces[%d]", i), o.Subraces[i].TableEntry); err != nil {
-			return err
-		}
+	for _, tc := range o.Classes {
+		classIndexes = append(classIndexes, strings.TrimPrefix(tc.Key, "class:"))
 	}
-	for _, i := range backgrounds {
-		if err := claim("background:", fmt.Sprintf("backgrounds[%d]", i), o.Backgrounds[i].TableEntry); err != nil {
-			return err
-		}
+	slices.Sort(classIndexes)
+	n.compiler = formula.NewCompiler(classIndexes)
+	n.programs = map[programKey]*formula.Program{}
+	return n
+}
+
+// entryStep adds the entries of one kind, in key order; list is the kind's
+// name in the Overlay's paths.
+type entryStep struct {
+	list  string
+	order []int
+	add   func(i int, path string) error
+}
+
+// addEntries adds every entry, kind by kind, and stops at the first that fails.
+func (b *overlayBuilder) addEntries(o *Overlay, order overlayOrder) error {
+	steps := []entryStep{
+		{"spells", order.spells, func(i int, path string) error { return b.addSpell(&o.Spells[i], path) }},
+		{"races", order.races, func(i int, path string) error { return b.addRace(&o.Races[i], path) }},
+		{"subraces", order.subraces, func(i int, path string) error { return b.addSubrace(&o.Subraces[i], path) }},
+		{"classes", order.classes, func(i int, path string) error { return b.addClass(&o.Classes[i], path) }},
+		{"subclasses", order.subclasses, func(i int, path string) error { return b.addSubclass(&o.Subclasses[i], path) }},
+		{"backgrounds", order.backgrounds, func(i int, path string) error { return b.addBackground(&o.Backgrounds[i], path) }},
+		{"feats", order.feats, func(i int, path string) error { return b.addFeat(&o.Feats[i], path) }},
 	}
-	for _, i := range spells {
-		if err := claim("spell:", fmt.Sprintf("spells[%d]", i), o.Spells[i].TableEntry); err != nil {
-			return err
-		}
-	}
-	for _, i := range feats {
-		if err := claim("feat:", fmt.Sprintf("feats[%d]", i), o.Feats[i].TableEntry); err != nil {
-			return err
+	for _, s := range steps {
+		for _, i := range s.order {
+			path := fmt.Sprintf("%s[%d]", s.list, i)
+			if err := s.add(i, path); err != nil {
+				return b.failEntry(err, path)
+			}
 		}
 	}
 	return nil
+}
+
+// failEntry is the refusal of an entry, with everything wrong with it: its own
+// fields, and the effects of its features and traits (which are otherwise
+// compiled once every entry exists).
+func (b *overlayBuilder) failEntry(err error, path string) error {
+	err = locate(err, path)
+	var oe *OverlayError
+	if errors.As(err, &oe) && oe.Key != "" {
+		if extra, ok := errors.AsType[*OverlayError](b.compileEffectsOf(oe.Key)); ok {
+			oe.More = append(oe.More, extra.Violations()...)
+		}
+	}
+	return err
+}
+
+// claimStep claims the keys of one kind of entry; learn, when set, records
+// what the later checks need of the entry once its key is claimed.
+type claimStep struct {
+	prefix, list string
+	order        []int
+	entry        func(i int) TableEntry
+	learn        func(i int)
+}
+
+// claimKeys is the first pass: it checks the form of every entry key, that none
+// repeats or exists, and learns the facts the references need.
+func (b *overlayBuilder) claimKeys(o Overlay, order overlayOrder) error {
+	steps := []claimStep{
+		{"class:", "classes", order.classes, func(i int) TableEntry { return o.Classes[i].TableEntry }, func(i int) {
+			e := &o.Classes[i]
+			b.classListFrom[e.Key] = e.Casting.ListFrom
+			b.classCasts[e.Key] = e.Casting.Kind
+			b.classSubLevel[e.Key] = e.SubclassLevel
+		}},
+		{"subclass:", "subclasses", order.subclasses, func(i int) TableEntry { return o.Subclasses[i].TableEntry }, nil},
+		{"race:", "races", order.races, func(i int) TableEntry { return o.Races[i].TableEntry }, nil},
+		{"subrace:", "subraces", order.subraces, func(i int) TableEntry { return o.Subraces[i].TableEntry }, nil},
+		{"background:", "backgrounds", order.backgrounds, func(i int) TableEntry { return o.Backgrounds[i].TableEntry }, nil},
+		{"spell:", "spells", order.spells, func(i int) TableEntry { return o.Spells[i].TableEntry }, nil},
+		{"feat:", "feats", order.feats, func(i int) TableEntry { return o.Feats[i].TableEntry }, nil},
+	}
+	for _, s := range steps {
+		for _, i := range s.order {
+			if err := b.claimEntry(s.prefix, fmt.Sprintf("%s[%d]", s.list, i), s.entry(i)); err != nil {
+				return err
+			}
+			if s.learn != nil {
+				s.learn(i)
+			}
+		}
+	}
+	return nil
+}
+
+// claimEntry checks an entry's key and claims it, then checks its name.
+func (b *overlayBuilder) claimEntry(prefix, path string, e TableEntry) error {
+	if err := checkTableKey(prefix, e.Key); err != nil {
+		return locate(err, path)
+	}
+	if err := b.claim(e.Key); err != nil {
+		return locate(err, path)
+	}
+	b.entries[e.Key] = true
+	return locate(checkEntryName(e.Key, e.NamePT), path)
 }
 
 // claim reserves a key: it must be new to the overlay and to the base.

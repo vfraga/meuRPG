@@ -113,34 +113,41 @@ func (g *gen) placeTiled(r *rng) {
 			if len(g.rooms) >= roomCap {
 				return
 			}
-			x, y := 2*i+1, 2*j+1
-			if g.kind[g.idx(x, y)] != KindRock {
-				continue
-			}
-			if !r.chance(pct) { // DRAW: attempt chance (none at 100)
-				continue
-			}
-			w, h, ok := g.drawSize(r)
-			if !ok {
-				continue
-			}
-			for {
-				if g.aspectOK(w, h) && g.roomFits(x, y, w, h) {
-					g.addRoom(x, y, w, h)
-					break
-				}
-				switch {
-				case w > g.o.RoomSideMin:
-					w -= 2
-				case h > g.o.RoomSideMin:
-					h -= 2
-				default:
-					w = 0
-				}
-				if w == 0 {
-					break
-				}
-			}
+			g.tiledAttempt(r, 2*i+1, 2*j+1, pct)
+		}
+	}
+}
+
+// tiledAttempt is the attempt at the node (x, y), when it is not inside a
+// room yet.
+func (g *gen) tiledAttempt(r *rng, x, y, pct int) {
+	if g.kind[g.idx(x, y)] != KindRock {
+		return
+	}
+	if !r.chance(pct) { // DRAW: attempt chance (none at 100)
+		return
+	}
+	if w, h, ok := g.drawSize(r); ok {
+		g.addShrunkRoom(x, y, w, h)
+	}
+}
+
+// addShrunkRoom adds the room at (x, y), shrinking the width and then the
+// height in steps of 2 down to RoomSideMin until it fits; it gives up below
+// that.
+func (g *gen) addShrunkRoom(x, y, w, h int) {
+	for {
+		if g.aspectOK(w, h) && g.roomFits(x, y, w, h) {
+			g.addRoom(x, y, w, h)
+			return
+		}
+		switch {
+		case w > g.o.RoomSideMin:
+			w -= 2
+		case h > g.o.RoomSideMin:
+			h -= 2
+		default:
+			return
 		}
 	}
 }

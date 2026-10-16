@@ -290,6 +290,39 @@ describe('CreaturesPanel (E9-10, MR-037, RN-20)', () => {
     expect(flat(el.querySelector('.live'))).toContain('O mestre deu uma criatura a você: Mastim.');
   });
 
+  it('when the stream reloads the list while a cast reads it, the notice is still the whole cast line', async () => {
+    const { fixture, el, flat, settle } = await setup({ access: FAMILIAR() });
+    const closed = new Subject<unknown>();
+    dialogOpen.mockReturnValue({ afterClosed: () => closed });
+    el.querySelector<HTMLButtonElement>('.cast__btn')!.click();
+    // The cast's read and the stream's newer read are both in flight; the older answers first.
+    let answerCast!: (list: ReturnType<typeof creature>[]) => void;
+    let answerReload!: (list: ReturnType<typeof creature>[]) => void;
+    api.list
+      .mockImplementationOnce(() => new Promise((resolve) => (answerCast = resolve)))
+      .mockImplementationOnce(() => new Promise((resolve) => (answerReload = resolve)));
+    closed.next({
+      spellName: 'Convocar Familiar',
+      ritual: true,
+      castingTime: '1 hora',
+      names: ['Nanquim'],
+      count: 1,
+      dismissed: 0,
+    });
+    closed.complete();
+    fixture.componentRef.setInput('reload', 1);
+    fixture.detectChanges();
+    await settle();
+    const arrived = [creature('cr-1', 'Nanquim')];
+    answerCast(arrived);
+    await settle();
+    answerReload(arrived);
+    await settle();
+    expect(flat(el.querySelector('.live'))).toBe(
+      'Nanquim chegou. Convocar Familiar, ritual de 1 hora. Nenhum espaço de magia foi gasto.',
+    );
+  });
+
   it('a creature the master gives while a cast sheet is open is told when the sheet is closed without casting', async () => {
     const { fixture, el, flat, settle } = await setup({ access: FAMILIAR() });
     const closed = new Subject<unknown>();

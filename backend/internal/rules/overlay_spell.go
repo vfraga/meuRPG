@@ -38,6 +38,23 @@ func extraDice(s string, base DiceFormula) (int, bool) {
 	return f.Count, true
 }
 
+// The bounds of a table spell's damage and target.
+const (
+	// maxSpellDamageTypes is the most damage types a table spell has.
+	maxSpellDamageTypes = 4
+	// maxTargetPerSlot is the most creatures a target gains per slot level.
+	maxTargetPerSlot = 10
+	// minTargetCreatures and maxTargetCreatures bound "several creatures".
+	minTargetCreatures = 2
+	maxTargetCreatures = 20
+	// maxAreaFt is the largest area, in feet (on the feetStep grid).
+	maxAreaFt = 300
+	// maxTriggerRunes bounds a reaction's trigger.
+	maxTriggerRunes = 200
+	// maxCastingAmount is the most minutes or hours a casting time takes.
+	maxCastingAmount = 60
+)
+
 // addSpell registers a table spell and its structured details: the SRD's own
 // strings are written from the structured fields and parsed back by the SRD's
 // builder, so the table's spell is exactly as the combat code reads an SRD spell.
@@ -46,36 +63,73 @@ func extraDice(s string, base DiceFormula) (int, bool) {
 func (b *overlayBuilder) addSpell(ts *TableSpell, path string) error {
 	key := ts.Key
 	var c entryErrors
-	if ts.Level < 0 || ts.Level > 9 {
+	sp := b.spellHead(&c, ts, path)
+	target := checkTarget(&c, key, path, ts.Target)
+	checkSpellReach(&c, key, path, ts, target.Kind)
+	checkSpellAttack(&c, key, path, ts, sp)
+	b.spellDamageAndHeal(&c, key, path, ts, sp)
+	if err := c.err(); err != nil {
+		return err
+	}
+
+	b.register(ts.TableEntry)
+	b.n.spells[key] = sp
+	b.n.spellTargets[key] = target
+	return nil
+}
+
+// spellHead checks a spell's level, school, casting time, range, duration,
+// components, texts and classes, and writes the SRD spell from them.
+func (b *overlayBuilder) spellHead(c *entryErrors, ts *TableSpell, path string) *srd51.Spell {
+	key := ts.Key
+	if ts.Level < 0 || ts.Level > maxSpellLevel {
 		c.at(key, path, ".level", ReasonValue, "the spell level is 0 to 9")
 	}
 	if sch, ok := b.base.named[ts.School]; !ok || sch == nil || !strings.HasPrefix(ts.School, "school:") {
 		c.at(key, path, ".school_key", ReasonReference, "school %q is not in the SRD", ts.School)
 	}
-	castingTime := castingTimeText(&c, key, path, ts.CastingTime)
-	rng := rangeText(&c, key, path, ts.Range)
-	duration := durationText(&c, key, path, ts.Duration, ts.Concentration)
+	castingTime := castingTimeText(c, key, path, ts.CastingTime)
+	rng := rangeText(c, key, path, ts.Range)
+	duration := durationText(c, key, path, ts.Duration, ts.Concentration)
 	if ts.Ritual && ts.Level == 0 {
 		c.at(key, path, ".ritual", ReasonValue, "a cantrip is not a ritual")
 	}
+	comps := spellComponents(c, key, path, ts.Components)
+	checkTextAt(c, key, path, ".desc_pt", ts.DescPT)
+	checkTextAt(c, key, path, ".higher_level_pt", ts.HigherLevelPT)
+	checkTextAt(c, key, path, ".components.material_pt", []string{ts.Components.MaterialPT})
+	classes := b.spellClasses(c, key, path, ts.Classes)
+	return &srd51.Spell{
+		Key: key, Name: ts.NamePT, Level: ts.Level, School: ts.School, Classes: classes,
+		Ritual: ts.Ritual, Concentration: ts.Concentration, CastingTime: castingTime, Range: rng,
+		Duration: duration, Components: comps, Material: ts.Components.MaterialPT,
+		Desc: slices.Clone(ts.DescPT), HigherLevel: slices.Clone(ts.HigherLevelPT),
+	}
+}
+
+// spellComponents writes the components as the SRD's letters and checks that
+// the material text goes with the material component.
+func spellComponents(c *entryErrors, key, path string, tc TableComponents) []string {
 	comps := []string{}
-	if ts.Components.Verbal {
-		comps = append(comps, "V")
+	for _, part := range []struct {
+		has    bool
+		letter string
+	}{{tc.Verbal, "V"}, {tc.Somatic, "S"}, {tc.Material, "M"}} {
+		if part.has {
+			comps = append(comps, part.letter)
+		}
 	}
-	if ts.Components.Somatic {
-		comps = append(comps, "S")
-	}
-	if ts.Components.Material {
-		comps = append(comps, "M")
-	}
-	if ts.Components.Material != (ts.Components.MaterialPT != "") {
+	if tc.Material != (tc.MaterialPT != "") {
 		c.at(key, path, ".components.material_pt", ReasonValue, "the material text goes with the M component, and only with it")
 	}
-	checkTextAt(&c, key, path, ".desc_pt", ts.DescPT)
-	checkTextAt(&c, key, path, ".higher_level_pt", ts.HigherLevelPT)
-	checkTextAt(&c, key, path, ".components.material_pt", []string{ts.Components.MaterialPT})
+	return comps
+}
+
+// spellClasses checks the classes whose list has the spell and returns them,
+// without the ones that do not exist or repeat.
+func (b *overlayBuilder) spellClasses(c *entryErrors, key, path string, in []string) []string {
 	var classes []string
-	for i, cl := range ts.Classes {
+	for i, cl := range in {
 		switch {
 		case !b.isClass(cl):
 			c.at(key, path, fmt.Sprintf(".class_keys[%d]", i), ReasonReference, "the class %q of the spell list does not exist", cl)
@@ -85,25 +139,26 @@ func (b *overlayBuilder) addSpell(ts *TableSpell, path string) error {
 			classes = append(classes, cl)
 		}
 	}
-	target := checkTarget(&c, key, path, ts.Target)
-	if target.Kind == TargetSelf && ts.Range.Kind != RangeSelf {
+	return classes
+}
+
+// checkSpellReach checks the range against whom the spell reaches.
+func checkSpellReach(c *entryErrors, key, path string, ts *TableSpell, kind string) {
+	if kind == TargetSelf && ts.Range.Kind != RangeSelf {
 		c.at(key, path, ".range.kind", ReasonValue, "a spell that only affects the caster has the range Self (Pessoal)")
 	}
-	if ts.Range.Kind == RangeSelf && (target.Kind == TargetCreature || target.Kind == TargetCreatures) {
+	if ts.Range.Kind == RangeSelf && (kind == TargetCreature || kind == TargetCreatures) {
 		// Pessoal reaches the caster, or an area that comes out of the caster
 		// (Mãos Flamejantes): a spell that picks creatures has a distance or Toque.
 		c.at(key, path, ".range.kind", ReasonValue, "a spell with the range Self (Pessoal) reaches only the caster or an area; one that picks creatures has a distance or Touch (Toque)")
 	}
-	if target.Kind == TargetArea && ts.Attack != "" {
+	if kind == TargetArea && ts.Attack != "" {
 		c.at(key, path, ".attack", ReasonValue, "a spell attack hits one creature: it cannot have an area target")
 	}
+}
 
-	sp := &srd51.Spell{
-		Key: key, Name: ts.NamePT, Level: ts.Level, School: ts.School, Classes: classes,
-		Ritual: ts.Ritual, Concentration: ts.Concentration, CastingTime: castingTime, Range: rng,
-		Duration: duration, Components: comps, Material: ts.Components.MaterialPT,
-		Desc: slices.Clone(ts.DescPT), HigherLevel: slices.Clone(ts.HigherLevelPT),
-	}
+// checkSpellAttack checks the spell attack and the saving throw, and writes them.
+func checkSpellAttack(c *entryErrors, key, path string, ts *TableSpell, sp *srd51.Spell) {
 	switch ts.Attack {
 	case "":
 	case "melee", "ranged":
@@ -111,23 +166,28 @@ func (b *overlayBuilder) addSpell(ts *TableSpell, path string) error {
 	default:
 		c.at(key, path, ".attack", ReasonValue, "the spell attack is melee or ranged")
 	}
-	if ts.Save != nil {
-		if sp.AttackType != "" {
-			c.at(key, path, ".save", ReasonValue, "a spell has an attack or a saving throw, not both")
-		}
-		if _, ok := abilityIndex[ts.Save.Ability]; !ok {
-			c.at(key, path, ".save.ability", ReasonValue, "the saving throw is not one of the six abilities")
-		}
-		if ts.Save.OnSuccess != "half" && ts.Save.OnSuccess != "none" {
-			c.at(key, path, ".save.on_success", ReasonValue, "on a successful save the spell does half or nothing")
-		}
-		sp.SaveAbility, sp.SaveSuccess = string(ts.Save.Ability), ts.Save.OnSuccess
+	if ts.Save == nil {
+		return
 	}
-	if len(ts.Damage) > 4 {
+	if sp.AttackType != "" {
+		c.at(key, path, ".save", ReasonValue, "a spell has an attack or a saving throw, not both")
+	}
+	if _, ok := abilityIndex[ts.Save.Ability]; !ok {
+		c.at(key, path, ".save.ability", ReasonValue, "the saving throw is not one of the six abilities")
+	}
+	if ts.Save.OnSuccess != "half" && ts.Save.OnSuccess != "none" {
+		c.at(key, path, ".save.on_success", ReasonValue, "on a successful save the spell does half or nothing")
+	}
+	sp.SaveAbility, sp.SaveSuccess = string(ts.Save.Ability), ts.Save.OnSuccess
+}
+
+// spellDamageAndHeal checks and writes the damage types and the healing.
+func (b *overlayBuilder) spellDamageAndHeal(c *entryErrors, key, path string, ts *TableSpell, sp *srd51.Spell) {
+	if len(ts.Damage) > maxSpellDamageTypes {
 		c.at(key, path, ".damage", ReasonLimit, "a spell has at most 4 damage types")
 	}
 	for i, d := range ts.Damage {
-		if sd, ok := b.spellDamage(&c, key, path, i, ts.Level, d); ok {
+		if sd, ok := b.spellDamage(c, key, path, i, ts.Level, d); ok {
 			sp.Damage = append(sp.Damage, sd)
 		}
 	}
@@ -135,16 +195,8 @@ func (b *overlayBuilder) addSpell(ts *TableSpell, path string) error {
 		c.at(key, path, ".save.on_success", ReasonValue, "a save for half damage needs damage")
 	}
 	if ts.Heal != nil {
-		sp.HealAtSlotLevel = spellHeal(&c, key, path, ts.Level, *ts.Heal)
+		sp.HealAtSlotLevel = spellHeal(c, key, path, ts.Level, *ts.Heal)
 	}
-	if err := c.err(); err != nil {
-		return err
-	}
-
-	b.register(ts.TableEntry)
-	b.n.spells[key] = sp
-	b.n.spellTargets[key] = target
-	return nil
 }
 
 // spellDamage writes one damage type as the SRD's table: by slot level for a
@@ -233,67 +285,76 @@ func checkTarget(c *entryErrors, key, path string, t SpellTarget) SpellTarget {
 	if t.Label != "" {
 		c.at(key, path, ".target.label", ReasonValue, "a table spell's target has no text of its own: the server writes it")
 	}
-	perSlot := func() {
-		if t.PerSlotLevel < 0 || t.PerSlotLevel > 10 {
-			c.at(key, path, ".target.per_slot_level", ReasonLimit, "0 to 10 more per slot level")
-		}
-	}
 	switch t.Kind {
 	case TargetSelf:
-		if t.Count != 0 || t.PerSlotLevel != 0 || t.Shape != "" || t.SizeFt != 0 {
-			c.at(key, path, ".target.kind", ReasonValue, "a %s target takes nothing else", t.Kind)
-		}
+		checkSelfTarget(c, key, path, t)
 	case TargetCreature:
-		// One creature, and, if the master wants, one more for each circle above
-		// ("uma criatura, mais uma por nível", as Hold Person).
-		perSlot()
-		if t.Count != 0 || t.Shape != "" || t.SizeFt != 0 {
-			c.at(key, path, ".target.kind", ReasonValue, "one creature takes only 0 to 10 more per slot level")
-		}
+		checkCreatureTarget(c, key, path, t)
 	case TargetCreatures:
-		if t.Count < 2 || t.Count > 20 {
-			c.at(key, path, ".target.count", ReasonLimit, "several creatures: a count of 2 to 20")
-		}
-		perSlot()
-		if t.Shape != "" || t.SizeFt != 0 {
-			c.at(key, path, ".target.kind", ReasonValue, "several creatures take no shape or size")
-		}
+		checkCreaturesTarget(c, key, path, t)
 	case TargetArea:
-		if !slices.Contains([]string{ShapeCone, ShapeCube, ShapeCylinder, ShapeLine, ShapeSphere}, t.Shape) {
-			c.at(key, path, ".target.shape", ReasonValue, "an area is a cone, cube, cylinder, line or sphere")
-		}
-		if t.SizeFt < 5 || t.SizeFt > 300 || t.SizeFt%5 != 0 {
-			c.at(key, path, ".target.size_ft", ReasonLimit, "an area is 5 to 300 feet, in steps of 5")
-		}
-		if t.Count != 0 || t.PerSlotLevel != 0 {
-			c.at(key, path, ".target.kind", ReasonValue, "an area takes no count")
-		}
+		checkAreaTarget(c, key, path, t)
 	default:
 		c.at(key, path, ".target.kind", ReasonValue, "the target is self, creature, creatures or area")
 	}
 	return t
 }
 
+// checkTargetPerSlot checks the creatures a target gains per slot level.
+func checkTargetPerSlot(c *entryErrors, key, path string, t SpellTarget) {
+	if t.PerSlotLevel < 0 || t.PerSlotLevel > maxTargetPerSlot {
+		c.at(key, path, ".target.per_slot_level", ReasonLimit, "0 to 10 more per slot level")
+	}
+}
+
+func checkSelfTarget(c *entryErrors, key, path string, t SpellTarget) {
+	if t.Count != 0 || t.PerSlotLevel != 0 || t.Shape != "" || t.SizeFt != 0 {
+		c.at(key, path, ".target.kind", ReasonValue, "a %s target takes nothing else", t.Kind)
+	}
+}
+
+// checkCreatureTarget checks one creature, and, if the master wants, one more
+// for each circle above ("uma criatura, mais uma por nível", as Hold Person).
+func checkCreatureTarget(c *entryErrors, key, path string, t SpellTarget) {
+	checkTargetPerSlot(c, key, path, t)
+	if t.Count != 0 || t.Shape != "" || t.SizeFt != 0 {
+		c.at(key, path, ".target.kind", ReasonValue, "one creature takes only 0 to 10 more per slot level")
+	}
+}
+
+func checkCreaturesTarget(c *entryErrors, key, path string, t SpellTarget) {
+	if t.Count < minTargetCreatures || t.Count > maxTargetCreatures {
+		c.at(key, path, ".target.count", ReasonLimit, "several creatures: a count of 2 to 20")
+	}
+	checkTargetPerSlot(c, key, path, t)
+	if t.Shape != "" || t.SizeFt != 0 {
+		c.at(key, path, ".target.kind", ReasonValue, "several creatures take no shape or size")
+	}
+}
+
+func checkAreaTarget(c *entryErrors, key, path string, t SpellTarget) {
+	if !slices.Contains([]string{ShapeCone, ShapeCube, ShapeCylinder, ShapeLine, ShapeSphere}, t.Shape) {
+		c.at(key, path, ".target.shape", ReasonValue, "an area is a cone, cube, cylinder, line or sphere")
+	}
+	if t.SizeFt < feetStep || t.SizeFt > maxAreaFt || t.SizeFt%feetStep != 0 {
+		c.at(key, path, ".target.size_ft", ReasonLimit, "an area is 5 to 300 feet, in steps of 5")
+	}
+	if t.Count != 0 || t.PerSlotLevel != 0 {
+		c.at(key, path, ".target.kind", ReasonValue, "an area takes no count")
+	}
+}
+
+// castingTimeText checks a casting time and writes it as the SRD's text ("1
+// reaction, <trigger>", "10 minutes"), or "" when it is wrong.
 func castingTimeText(c *entryErrors, key, path string, ct TableCastingTime) string {
 	if ct.TriggerPT != "" && ct.Unit != CastReaction {
 		c.at(key, path, ".casting_time.trigger_pt", ReasonValue, "only a reaction has a trigger in its casting time")
 	}
 	switch ct.Unit {
 	case CastAction, CastBonusAction, CastReaction:
-		if ct.Amount != 1 && ct.Amount != 0 {
-			c.at(key, path, ".casting_time.amount", ReasonLimit, "an action, bonus action or reaction takes 1")
-		}
-		text := "1 " + strings.ReplaceAll(ct.Unit, "_", " ")
-		if ct.TriggerPT != "" && ct.Unit == CastReaction {
-			if utf8.RuneCountInString(ct.TriggerPT) > 200 || strings.ContainsFunc(ct.TriggerPT, isHiddenRune) || strings.TrimSpace(ct.TriggerPT) != ct.TriggerPT {
-				c.at(key, path, ".casting_time.trigger_pt", ReasonText, "the casting time trigger is one line of at most 200 characters")
-			}
-			// parseCastingTime reads what follows the first comma as the trigger.
-			text += ", " + ct.TriggerPT
-		}
-		return text
+		return actionCastingText(c, key, path, ct)
 	case CastMinute, CastHour:
-		if ct.Amount < 1 || ct.Amount > 60 {
+		if ct.Amount < 1 || ct.Amount > maxCastingAmount {
 			c.at(key, path, ".casting_time.amount", ReasonLimit, "casting time is 1 to 60 %ss", ct.Unit)
 			return ""
 		}
@@ -301,6 +362,29 @@ func castingTimeText(c *entryErrors, key, path string, ct TableCastingTime) stri
 	}
 	c.at(key, path, ".casting_time.unit", ReasonValue, "the casting time is an action, bonus action, reaction, minutes or hours")
 	return ""
+}
+
+// actionCastingText is castingTimeText for an action, a bonus action or a
+// reaction, which takes 1 (0 is read as 1), with a reaction's trigger.
+func actionCastingText(c *entryErrors, key, path string, ct TableCastingTime) string {
+	if ct.Amount != 1 && ct.Amount != 0 {
+		c.at(key, path, ".casting_time.amount", ReasonLimit, "an action, bonus action or reaction takes 1")
+	}
+	text := "1 " + strings.ReplaceAll(ct.Unit, "_", " ")
+	if ct.TriggerPT == "" || ct.Unit != CastReaction {
+		return text
+	}
+	if !oneLineTrigger(ct.TriggerPT) {
+		c.at(key, path, ".casting_time.trigger_pt", ReasonText, "the casting time trigger is one line of at most 200 characters")
+	}
+	// parseCastingTime reads what follows the first comma as the trigger.
+	return text + ", " + ct.TriggerPT
+}
+
+// oneLineTrigger says whether a trigger is one trimmed line of at most
+// maxTriggerRunes characters.
+func oneLineTrigger(s string) bool {
+	return utf8.RuneCountInString(s) <= maxTriggerRunes && !strings.ContainsFunc(s, isHiddenRune) && strings.TrimSpace(s) == s
 }
 
 func rangeText(c *entryErrors, key, path string, r TableRange) string {

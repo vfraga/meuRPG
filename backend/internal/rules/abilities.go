@@ -33,21 +33,7 @@ func modifier(score int) int {
 
 // abilities computes the six scores and modifiers.
 func (x *deriver) abilities() {
-	raceBonus := map[Ability]int{}
-	if x.race != nil {
-		for k, v := range x.race.AbilityBonuses {
-			if a, ok := ability(k); ok {
-				raceBonus[a] += v
-			}
-		}
-	}
-	if x.subrace != nil {
-		for k, v := range x.subrace.AbilityBonuses {
-			if a, ok := ability(k); ok {
-				raceBonus[a] += v
-			}
-		}
-	}
+	raceBonus := x.raceBonuses()
 	// The abilities the player picked for the race (the half-elf's two +1).
 	picked := x.pickedAbilities()
 	for _, a := range picked {
@@ -56,41 +42,77 @@ func (x *deriver) abilities() {
 	x.scores = map[Ability]int{}
 	x.mods = map[Ability]int{}
 	for _, a := range AllAbilities() {
-		field := "full.base_scores." + protoAbility[a]
-		base, ok := x.b.BaseScores[a]
-		if !ok || base < MinScore || base > MaxScore {
-			x.issue(IssueMissing, field, "%s precisa de um valor de %d a %d; os cálculos usam 10.", x.c.namePT(string(a)), MinScore, MaxScore)
-			base = 10
-		}
-		manual := min(max(x.b.ExtraAbilityBonuses[a], -MaxManualBonus), MaxManualBonus)
-		score := base + raceBonus[a] + manual
-		x.scores[a] = score
-		x.mods[a] = modifier(score)
-		x.d.Abilities = append(x.d.Abilities, AbilityScore{
-			Ability: a, NamePT: x.c.namePT(string(a)),
-			Base: base, RaceBonus: raceBonus[a], ManualBonus: manual, Bonus: raceBonus[a] + manual,
-			Score: score, Modifier: x.mods[a],
-		})
+		x.abilityScore(a, raceBonus[a])
 	}
 	x.checkRaceBonus()
-	// Increases the race lets the player choose (the half-elf's +1 to two
-	// abilities) go in the manual bonuses; remind the player while no
-	// manual bonus is positive.
-	hasManualIncrease := false
-	for _, v := range x.b.ExtraAbilityBonuses {
-		hasManualIncrease = hasManualIncrease || v > 0
-	}
-	if x.race != nil && x.race.AbilityBonusChoices != nil && !hasManualIncrease && len(picked) < x.race.AbilityBonusChoices.Choose {
-		ch := x.race.AbilityBonusChoices
-		names := make([]string, 0, len(ch.From))
-		for _, k := range ch.From {
-			names = append(names, abbreviationPT[Ability(k)])
+	x.abilityChoiceHint(len(picked))
+}
+
+// raceBonuses are the fixed ability bonuses of the race and the subrace.
+func (x *deriver) raceBonuses() map[Ability]int {
+	raceBonus := map[Ability]int{}
+	add := func(bonuses map[string]int) {
+		for k, v := range bonuses {
+			if a, ok := ability(k); ok {
+				raceBonus[a] += v
+			}
 		}
-		x.d.Hints = append(x.d.Hints, Hint{
-			Source: x.race.Key, Mode: "note",
-			TextPT: fmt.Sprintf("%s: escolha +1 em %d habilidades (%s) no passo Escolhas.", x.c.namePT(x.race.Key), ch.Choose, strings.Join(names, ", ")),
-		})
 	}
+	if x.race != nil {
+		add(x.race.AbilityBonuses)
+	}
+	if x.subrace != nil {
+		add(x.subrace.AbilityBonuses)
+	}
+	return raceBonus
+}
+
+// abilityScore computes one ability's score and modifier from the base score
+// (10 with an Issue when it is missing or out of range), the race's bonus and
+// the manual bonus (held to ±MaxManualBonus).
+func (x *deriver) abilityScore(a Ability, raceBonus int) {
+	field := "full.base_scores." + protoAbility[a]
+	base, ok := x.b.BaseScores[a]
+	if !ok || base < MinScore || base > MaxScore {
+		x.issue(IssueMissing, field, "%s precisa de um valor de %d a %d; os cálculos usam 10.", x.c.namePT(string(a)), MinScore, MaxScore)
+		base = 10
+	}
+	manual := min(max(x.b.ExtraAbilityBonuses[a], -MaxManualBonus), MaxManualBonus)
+	score := base + raceBonus + manual
+	x.scores[a] = score
+	x.mods[a] = modifier(score)
+	x.d.Abilities = append(x.d.Abilities, AbilityScore{
+		Ability: a, NamePT: x.c.namePT(string(a)),
+		Base: base, RaceBonus: raceBonus, ManualBonus: manual, Bonus: raceBonus + manual,
+		Score: score, Modifier: x.mods[a],
+	})
+}
+
+// abilityChoiceHint reminds the player of the increases the race lets them
+// choose (the half-elf's +1 to two abilities), which go in the manual bonuses,
+// while fewer than the race's count were picked and no manual bonus is
+// positive.
+func (x *deriver) abilityChoiceHint(picked int) {
+	if x.race == nil || x.race.AbilityBonusChoices == nil {
+		return
+	}
+	for _, v := range x.b.ExtraAbilityBonuses {
+		if v > 0 {
+			return
+		}
+	}
+	ch := x.race.AbilityBonusChoices
+	if picked >= ch.Choose {
+		return
+	}
+	names := make([]string, 0, len(ch.From))
+	for _, k := range ch.From {
+		names = append(names, abbreviationPT[Ability(k)])
+	}
+	x.d.Hints = append(x.d.Hints, Hint{
+		Source: x.race.Key, Mode: "note",
+		TextPT: fmt.Sprintf("%s: escolha +1 em %d habilidades (%s) no passo Escolhas.", x.c.namePT(x.race.Key), ch.Choose, strings.Join(names, ", ")),
+	})
 }
 
 // abilityEffects adds the features that raise a score (Primal Champion) to the
@@ -140,53 +162,64 @@ func (x *deriver) ownedTraits() []*srd51.Trait {
 // class's (a later class gives its smaller multiclass set), the race's, the
 // background's and those granted by effects.
 func (x *deriver) proficiencies() {
-	c := x.c
-	grant := func(key string) {
-		if _, ok := c.proficiencies[key]; ok {
-			x.proficient[key] = true
-		}
-	}
-	for i, oc := range x.classes {
-		list := oc.class.Proficiencies
-		if i > 0 {
-			list = oc.class.Multiclass.Proficiencies
-		}
-		for _, p := range list {
-			grant(p)
-		}
-	}
-	for _, t := range x.ownedTraits() {
-		for _, p := range t.Proficiencies {
-			grant(p)
-		}
-	}
-	if bg, ok := c.backgrounds[x.b.Background]; ok {
-		for _, p := range bg.Proficiencies {
-			grant(p)
-		}
-	} else if x.b.Background == "" {
-		// A custom background's tools; its languages are listed by languages().
-		for _, p := range x.b.CustomBackgroundProficiencies {
-			grant(p)
+	for _, p := range x.grantedProficiencies() {
+		if _, ok := x.c.proficiencies[p]; ok {
+			x.proficient[p] = true
 		}
 	}
 	for _, a := range x.active {
 		e := a.effect
 		if e.Type == "proficiency" && strings.HasPrefix(e.Proficiency, "proficiency:") && len(e.Tags) == 0 && x.applies(a) {
-			grant(e.Proficiency)
+			if _, ok := x.c.proficiencies[e.Proficiency]; ok {
+				x.proficient[e.Proficiency] = true
+			}
 		}
 	}
+	x.listProficiencies()
+}
 
-	kindOrder := map[string]int{"armor": 0, "weapon": 1, "tool": 2, "other": 3}
+// grantedProficiencies are the proficiency keys the classes, the traits and the
+// background give, known or not.
+func (x *deriver) grantedProficiencies() []string {
+	var out []string
+	for i, oc := range x.classes {
+		list := oc.class.Proficiencies
+		if i > 0 {
+			list = oc.class.Multiclass.Proficiencies
+		}
+		out = append(out, list...)
+	}
+	for _, t := range x.ownedTraits() {
+		out = append(out, t.Proficiencies...)
+	}
+	if bg, ok := x.c.backgrounds[x.b.Background]; ok {
+		out = append(out, bg.Proficiencies...)
+	} else if x.b.Background == "" {
+		// A custom background's tools; its languages are listed by languages().
+		out = append(out, x.b.CustomBackgroundProficiencies...)
+	}
+	return out
+}
+
+// proficiencyKinds is the order of the kinds in Derived.Proficiencies.
+var proficiencyKinds = []string{"armor", "weapon", "tool", "other"}
+
+// proficiencyKindRank is a kind's place in proficiencyKinds; a kind not listed
+// sorts with the first.
+func proficiencyKindRank(kind string) int { return max(slices.Index(proficiencyKinds, kind), 0) }
+
+// listProficiencies fills Derived.Proficiencies from x.proficient, without the
+// skills and saving throws (they have their own lists), by kind and name.
+func (x *deriver) listProficiencies() {
 	for key := range x.proficient {
-		p := c.proficiencies[key]
+		p := x.c.proficiencies[key]
 		if p.Kind == "skill" || p.Kind == "saving-throw" {
 			continue
 		}
 		x.d.Proficiencies = append(x.d.Proficiencies, Proficiency{Kind: p.Kind, Key: key, NamePT: x.proficiencyName(key)})
 	}
 	slices.SortFunc(x.d.Proficiencies, func(a, b Proficiency) int {
-		return cmp.Or(cmp.Compare(kindOrder[a.Kind], kindOrder[b.Kind]), comparePT(a.NamePT, b.NamePT))
+		return cmp.Or(cmp.Compare(proficiencyKindRank(a.Kind), proficiencyKindRank(b.Kind)), comparePT(a.NamePT, b.NamePT))
 	})
 }
 
@@ -241,39 +274,14 @@ func (x *deriver) savingThrows() {
 // came automatically (race, background, effects) rather than from the
 // player's own choice.
 func (x *deriver) skillLevels() (map[string]ProficiencyLevel, map[string]bool) {
-	c := x.c
-	levels := map[string]ProficiencyLevel{}
-	automatic := map[string]bool{}
-	raise := func(skill string, to ProficiencyLevel) {
-		if levels[skill] < to {
-			levels[skill] = to
-		}
-	}
-	if bg, ok := c.backgrounds[x.b.Background]; ok {
-		for _, s := range bg.Skills {
-			raise(s, ProficiencyFull)
-			automatic[s] = true
-		}
-	}
-	if x.b.Background == "" {
-		for _, s := range x.b.CustomBackgroundSkills {
-			if _, ok := c.skills[s]; ok {
-				raise(s, ProficiencyFull)
-				automatic[s] = true
-			}
-		}
-	}
-	for _, t := range x.ownedTraits() {
-		for _, p := range t.Proficiencies {
-			if skill, ok := strings.CutPrefix(p, "proficiency:skill-"); ok {
-				raise("skill:"+skill, ProficiencyFull)
-				automatic["skill:"+skill] = true
-			}
-		}
+	sk := skillTally{levels: map[string]ProficiencyLevel{}, automatic: map[string]bool{}}
+	for _, s := range x.automaticSkillKeys() {
+		sk.raise(s, ProficiencyFull)
+		sk.automatic[s] = true
 	}
 	for _, s := range x.b.SkillProficiencies {
-		if _, ok := c.skills[s]; ok {
-			raise(s, ProficiencyFull)
+		if _, ok := x.c.skills[s]; ok {
+			sk.raise(s, ProficiencyFull)
 		}
 	}
 	for _, a := range x.active {
@@ -281,29 +289,80 @@ func (x *deriver) skillLevels() (map[string]ProficiencyLevel, map[string]bool) {
 		if e.Type != "proficiency" || !strings.HasPrefix(e.Proficiency, "skill:") || len(e.Tags) > 0 || !x.applies(a) {
 			continue
 		}
-		lvl := proficiencyLevelOf(e.Level)
-		if e.Proficiency == "skill:*" {
-			for _, s := range c.skillOrder {
-				raise(s, lvl)
+		x.skillEffect(&sk, e)
+	}
+	x.expertise(sk.levels)
+	return sk.levels, sk.automatic
+}
+
+// skillTally is the skills' proficiency levels as skillLevels gathers them, and
+// the skills that came automatically.
+type skillTally struct {
+	levels    map[string]ProficiencyLevel
+	automatic map[string]bool
+}
+
+// raise lifts a skill to a level, never lowering it.
+func (sk *skillTally) raise(skill string, to ProficiencyLevel) {
+	if sk.levels[skill] < to {
+		sk.levels[skill] = to
+	}
+}
+
+// automaticSkillKeys are the skills the background (an SRD or table one, or the
+// custom one's known skills) and the traits give, in that order.
+func (x *deriver) automaticSkillKeys() []string {
+	var out []string
+	if bg, ok := x.c.backgrounds[x.b.Background]; ok {
+		out = append(out, bg.Skills...)
+	}
+	if x.b.Background == "" {
+		for _, s := range x.b.CustomBackgroundSkills {
+			if _, ok := x.c.skills[s]; ok {
+				out = append(out, s)
 			}
-			continue
-		}
-		raise(e.Proficiency, lvl)
-		if lvl >= ProficiencyFull {
-			automatic[e.Proficiency] = true
 		}
 	}
+	for _, t := range x.ownedTraits() {
+		for _, p := range t.Proficiencies {
+			if skill, ok := strings.CutPrefix(p, "proficiency:skill-"); ok {
+				out = append(out, "skill:"+skill)
+			}
+		}
+	}
+	return out
+}
+
+// skillEffect applies a skill proficiency effect: "skill:*" raises every skill
+// (Jack of All Trades), and a full or better proficiency in one skill counts as
+// automatic.
+func (x *deriver) skillEffect(sk *skillTally, e *Effect) {
+	lvl := proficiencyLevelOf(e.Level)
+	if e.Proficiency == "skill:*" {
+		for _, s := range x.c.skillOrder {
+			sk.raise(s, lvl)
+		}
+		return
+	}
+	sk.raise(e.Proficiency, lvl)
+	if lvl >= ProficiencyFull {
+		sk.automatic[e.Proficiency] = true
+	}
+}
+
+// expertise sets the expertise skills, with an Issue for an unknown skill (left
+// out) and for one without proficiency (set all the same).
+func (x *deriver) expertise(levels map[string]ProficiencyLevel) {
 	for i, s := range x.b.Expertise {
-		if _, ok := c.skills[s]; !ok {
+		if _, ok := x.c.skills[s]; !ok {
 			x.issue(IssueUnknownKey, fmt.Sprintf("full.expertise_skill_keys[%d]", i), "A perícia escolhida não existe.")
 			continue
 		}
 		if levels[s] < ProficiencyFull {
-			x.issue(IssueExpertise, fmt.Sprintf("full.expertise_skill_keys[%d]", i), "Especialização em %s pede proficiência nessa perícia.", c.namePT(s))
+			x.issue(IssueExpertise, fmt.Sprintf("full.expertise_skill_keys[%d]", i), "Especialização em %s pede proficiência nessa perícia.", x.c.namePT(s))
 		}
 		levels[s] = ProficiencyExpertise
 	}
-	return levels, automatic
 }
 
 func proficiencyLevelOf(s string) ProficiencyLevel {

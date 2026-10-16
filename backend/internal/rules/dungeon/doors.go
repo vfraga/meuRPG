@@ -13,6 +13,14 @@ var (
 	mixTrapped = map[DoorMix]int{MixOpen: 0, MixTypical: 8, MixSecured: 15, MixParanoid: 25}
 )
 
+// sideCount is how many sides a room has: placeDoors gives up after that
+// many sides in a row with no candidate.
+const sideCount = 4
+
+// maxSideThresholds is the most thresholds a room side has: a side of 31
+// squares (the largest RoomSideMax) has 16.
+const maxSideThresholds = 16
+
 // threshold is a candidate door position on a room's ring.
 type threshold struct {
 	doorX, doorY     int // the door square (a wall-line square)
@@ -82,32 +90,42 @@ func (g *gen) candidateOK(r *room, side Side, p int) (threshold, bool) {
 	}
 	bi := g.idx(t.beyondX, t.beyondY)
 	if g.kind[bi] == KindRoom {
-		other := int(g.rid[bi])
-		if other == r.id {
-			return t, false
-		}
-		if _, dup := g.directPairs[pairKey(r.id, other)]; dup {
-			return t, false
-		}
-		// The door is also on the other room's ring: its own neighbors there
-		// (the thresholds 2 squares along the shared wall that open into the
-		// other room) must not be doors either.
-		ax, ay := 0, 2
-		if side == North || side == South {
-			ax, ay = 2, 0
-		}
-		for _, s := range [2]int{-1, 1} {
-			nx, ny, bx, by := t.doorX+s*ax, t.doorY+s*ay, t.beyondX+s*ax, t.beyondY+s*ay
-			if !g.inside(nx, ny) || !g.inside(bx, by) {
-				continue
-			}
-			n, nb := g.idx(nx, ny), g.idx(bx, by)
-			if g.kind[n] == KindDoor && g.kind[nb] == KindRoom && int(g.rid[nb]) == other {
-				return t, false
-			}
-		}
+		return t, g.directDoorOK(r, side, t, int(g.rid[bi]))
 	}
 	return t, true
+}
+
+// directDoorOK is the rule for a door into the room other: never the same
+// room, at most one direct door per pair, and the door is also on the other
+// room's ring, so its own neighbors there (the thresholds 2 squares along the
+// shared wall that open into the other room) must not be doors either.
+func (g *gen) directDoorOK(r *room, side Side, t threshold, other int) bool {
+	if other == r.id {
+		return false
+	}
+	if _, dup := g.directPairs[pairKey(r.id, other)]; dup {
+		return false
+	}
+	ax, ay := 0, 2
+	if side == North || side == South {
+		ax, ay = 2, 0
+	}
+	for _, s := range [2]int{-1, 1} {
+		if g.otherRoomDoorAt(t.doorX+s*ax, t.doorY+s*ay, t.beyondX+s*ax, t.beyondY+s*ay, other) {
+			return false
+		}
+	}
+	return true
+}
+
+// otherRoomDoorAt reports whether (nx, ny) is a door that opens at (bx, by)
+// into the room other.
+func (g *gen) otherRoomDoorAt(nx, ny, bx, by, other int) bool {
+	if !g.inside(nx, ny) || !g.inside(bx, by) {
+		return false
+	}
+	n, nb := g.idx(nx, ny), g.idx(bx, by)
+	return g.kind[n] == KindDoor && g.kind[nb] == KindRoom && int(g.rid[nb]) == other
 }
 
 // openDoor makes the square a door (its kind comes later) and prepares what
@@ -161,22 +179,17 @@ func (g *gen) drawKind(di int) {
 // side, then the round-robin share-out; all the kinds at the end.
 func (g *gen) placeDoors() {
 	r := stream(g.o.Seed, phaseDoors)
-	var cands, accepted []int
+	// A side has at most maxSideThresholds candidates, so cands never grows.
+	cands := make([]int, 0, maxSideThresholds)
+	var accepted []int
 	for _, rm := range g.rooms {
-		p := 2 * ((rm.w+1)/2 + (rm.h+1)/2)
-		count := 1 + p/8 + r.intn(2) // DRAW: the count's extra door (0..1)
-		count = max(1, (count*g.o.DoorDensity+50)/100)
+		count := g.doorCount(r, rm)
 		// DRAW: starting side, clockwise from there
 		side := Side(r.intn(4)) //nolint:gosec // G115: 0 to 3
 		accepted = accepted[:0]
 		skips := 0
-		for len(accepted) < count && skips < 4 {
-			cands = cands[:0]
-			for pos := 0; pos < rm.sideLen(side); pos++ {
-				if _, ok := g.candidateOK(rm, side, pos); ok {
-					cands = append(cands, pos)
-				}
-			}
+		for len(accepted) < count && skips < sideCount {
+			cands = g.sideCandidates(cands[:0], rm, side)
 			if len(cands) == 0 {
 				skips++
 			} else {
@@ -192,4 +205,22 @@ func (g *gen) placeDoors() {
 			g.drawKind(di)
 		}
 	}
+}
+
+// doorCount is how many doors a room asks for: one, one more per 8 squares
+// of ring, a drawn extra one, scaled by DoorDensity and never below one.
+func (g *gen) doorCount(r *rng, rm *room) int {
+	p := 2 * ((rm.w+1)/2 + (rm.h+1)/2)
+	count := 1 + p/8 + r.intn(2) // DRAW: the count's extra door (0..1)
+	return max(1, (count*g.o.DoorDensity+50)/100)
+}
+
+// sideCandidates appends the valid door positions of one side of a room.
+func (g *gen) sideCandidates(cands []int, rm *room, side Side) []int {
+	for pos := range rm.sideLen(side) {
+		if _, ok := g.candidateOK(rm, side, pos); ok {
+			cands = append(cands, pos)
+		}
+	}
+	return cands
 }

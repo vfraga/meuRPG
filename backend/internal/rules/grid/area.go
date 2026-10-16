@@ -259,26 +259,36 @@ func (t Terrain) spread(origin Square, inside map[Square]bool) []Square {
 	queue := []Square{origin}
 	for len(queue) > 0 {
 		cur := queue[0]
-		queue = queue[1:]
-		for dr := -1; dr <= 1; dr++ {
-			for dc := -1; dc <= 1; dc++ {
-				next := Square{Col: cur.Col + dc, Row: cur.Row + dr}
-				if (dc == 0 && dr == 0) || !inside[next] || seen[next] {
-					continue
-				}
-				if dc != 0 && dr != 0 && t.wall(Square{Col: cur.Col + dc, Row: cur.Row}) && t.wall(Square{Col: cur.Col, Row: cur.Row + dr}) {
-					continue // squeezing between two walls that touch at a corner
-				}
-				seen[next] = true
-				queue = append(queue, next)
-			}
-		}
+		queue = append(queue[1:], t.spreadStep(cur, inside, seen)...)
 	}
 	out := make([]Square, 0, len(seen))
 	for s := range seen {
 		out = append(out, s)
 	}
 	return out
+}
+
+// spreadStep is the neighbors of cur the spread reaches for the first time,
+// in order (row by row), marked as seen.
+func (t Terrain) spreadStep(cur Square, inside, seen map[Square]bool) []Square {
+	var next []Square
+	for dr := -1; dr <= 1; dr++ {
+		for dc := -1; dc <= 1; dc++ {
+			n := Square{Col: cur.Col + dc, Row: cur.Row + dr}
+			if (dc == 0 && dr == 0) || !inside[n] || seen[n] || t.cornerSqueeze(cur, dc, dr) {
+				continue
+			}
+			seen[n] = true
+			next = append(next, n)
+		}
+	}
+	return next
+}
+
+// cornerSqueeze says whether the diagonal step from cur squeezes between two
+// walls that touch at a corner.
+func (t Terrain) cornerSqueeze(cur Square, dc, dr int) bool {
+	return dc != 0 && dr != 0 && t.wall(Square{Col: cur.Col + dc, Row: cur.Row}) && t.wall(Square{Col: cur.Col, Row: cur.Row + dr})
 }
 
 // NearSide is the point of origin of an area its caster places at a point they

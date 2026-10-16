@@ -383,20 +383,49 @@ func convertSubraces(in *inputs) (output, error) {
 	return output{"subraces.json", out}, nil
 }
 
+// traitSpecificSource is the part of a trait that only some traits have; the
+// subtrait options are the dragonborn's ancestries.
+type traitSpecificSource struct {
+	SubtraitOptions *optionSet `json:"subtrait_options"`
+}
+
+// traitProficiencyChoices is how many proficiencies the trait lets the player
+// choose, and from which (none when the trait gives no choice).
+func traitProficiencyChoices(o *optionSet) (int, []string) {
+	if o == nil {
+		return 0, nil
+	}
+	var options []string
+	for _, idx := range o.referenced() {
+		options = append(options, "proficiency:"+idx)
+	}
+	return o.Choose, options
+}
+
+// traitSubtraits are the trait keys a trait lets the player pick one of.
+func traitSubtraits(ts *traitSpecificSource) []string {
+	if ts == nil || ts.SubtraitOptions == nil {
+		return nil
+	}
+	var out []string
+	for _, idx := range ts.SubtraitOptions.referenced() {
+		out = append(out, "trait:"+idx)
+	}
+	return out
+}
+
 func convertTraits(in *inputs) (output, error) {
 	type src struct {
-		Index              string     `json:"index"`
-		Name               string     `json:"name"`
-		Races              []ref      `json:"races"`
-		Subraces           []ref      `json:"subraces"`
-		Desc               []string   `json:"desc"`
-		Proficiencies      []ref      `json:"proficiencies"`
-		ProficiencyChoices *optionSet `json:"proficiency_choices"`
-		LanguageOptions    *optionSet `json:"language_options"`
-		Parent             *ref       `json:"parent"`
-		TraitSpecific      *struct {
-			SubtraitOptions *optionSet `json:"subtrait_options"`
-		} `json:"trait_specific"`
+		Index              string               `json:"index"`
+		Name               string               `json:"name"`
+		Races              []ref                `json:"races"`
+		Subraces           []ref                `json:"subraces"`
+		Desc               []string             `json:"desc"`
+		Proficiencies      []ref                `json:"proficiencies"`
+		ProficiencyChoices *optionSet           `json:"proficiency_choices"`
+		LanguageOptions    *optionSet           `json:"language_options"`
+		Parent             *ref                 `json:"parent"`
+		TraitSpecific      *traitSpecificSource `json:"trait_specific"`
 	}
 	rows, err := decode[src](in, "5e-SRD-Traits.json")
 	if err != nil {
@@ -412,53 +441,49 @@ func convertTraits(in *inputs) (output, error) {
 			Desc:          r.Desc,
 			Proficiencies: keys("proficiency:", r.Proficiencies),
 		}
-		if r.ProficiencyChoices != nil {
-			t.ProficiencyChoices = r.ProficiencyChoices.Choose
-			for _, idx := range r.ProficiencyChoices.referenced() {
-				t.ProficiencyOptions = append(t.ProficiencyOptions, "proficiency:"+idx)
-			}
-		}
+		t.ProficiencyChoices, t.ProficiencyOptions = traitProficiencyChoices(r.ProficiencyChoices)
 		if r.LanguageOptions != nil {
 			t.LanguageChoices = r.LanguageOptions.Choose
 		}
 		if r.Parent != nil {
 			t.Parent = "trait:" + r.Parent.Index
 		}
-		if r.TraitSpecific != nil && r.TraitSpecific.SubtraitOptions != nil {
-			for _, idx := range r.TraitSpecific.SubtraitOptions.referenced() {
-				t.Options = append(t.Options, "trait:"+idx)
-			}
-		}
+		t.Options = traitSubtraits(r.TraitSpecific)
 		out = append(out, t)
 	}
 	sortByKey(out, func(t srd51.Trait) string { return t.Key })
 	return output{"traits.json", out}, nil
 }
 
+// prerequisite is an ability score minimum a class asks to multiclass.
+type prerequisite struct {
+	AbilityScore ref `json:"ability_score"`
+	MinimumScore int `json:"minimum_score"`
+}
+
+// classMultiClassing is what a class asks and gives to multiclass into it.
+type classMultiClassing struct {
+	Prerequisites       []prerequisite `json:"prerequisites"`
+	PrerequisiteOptions *struct {
+		From struct {
+			Options []prerequisite `json:"options"`
+		} `json:"from"`
+	} `json:"prerequisite_options"`
+	Proficiencies      []ref       `json:"proficiencies"`
+	ProficiencyChoices []optionSet `json:"proficiency_choices"`
+}
+
 func convertClasses(in *inputs) (output, error) {
-	type prerequisite struct {
-		AbilityScore ref `json:"ability_score"`
-		MinimumScore int `json:"minimum_score"`
-	}
 	type src struct {
-		Index              string      `json:"index"`
-		Name               string      `json:"name"`
-		HitDie             int         `json:"hit_die"`
-		ProficiencyChoices []optionSet `json:"proficiency_choices"`
-		Proficiencies      []ref       `json:"proficiencies"`
-		SavingThrows       []ref       `json:"saving_throws"`
-		MultiClassing      struct {
-			Prerequisites       []prerequisite `json:"prerequisites"`
-			PrerequisiteOptions *struct {
-				From struct {
-					Options []prerequisite `json:"options"`
-				} `json:"from"`
-			} `json:"prerequisite_options"`
-			Proficiencies      []ref       `json:"proficiencies"`
-			ProficiencyChoices []optionSet `json:"proficiency_choices"`
-		} `json:"multi_classing"`
-		Subclasses   []ref `json:"subclasses"`
-		Spellcasting *struct {
+		Index              string             `json:"index"`
+		Name               string             `json:"name"`
+		HitDie             int                `json:"hit_die"`
+		ProficiencyChoices []optionSet        `json:"proficiency_choices"`
+		Proficiencies      []ref              `json:"proficiencies"`
+		SavingThrows       []ref              `json:"saving_throws"`
+		MultiClassing      classMultiClassing `json:"multi_classing"`
+		Subclasses         []ref              `json:"subclasses"`
+		Spellcasting       *struct {
 			Level               int `json:"level"`
 			SpellcastingAbility ref `json:"spellcasting_ability"`
 		} `json:"spellcasting"`
@@ -474,58 +499,87 @@ func convertClasses(in *inputs) (output, error) {
 	out := make([]srd51.Class, 0, len(rows))
 	for _, r := range rows {
 		c := srd51.Class{
-			Key:          "class:" + r.Index,
-			Name:         r.Name,
-			HitDie:       r.HitDie,
-			SavingThrows: keys("", r.SavingThrows),
-			Subclasses:   keys("subclass:", r.Subclasses),
+			Key:           "class:" + r.Index,
+			Name:          r.Name,
+			HitDie:        r.HitDie,
+			SavingThrows:  keys("", r.SavingThrows),
+			Subclasses:    keys("subclass:", r.Subclasses),
+			Proficiencies: classProficiencies(r.Proficiencies),
 		}
-		for _, p := range r.Proficiencies {
-			if !strings.HasPrefix(p.Index, "saving-throw-") {
-				c.Proficiencies = append(c.Proficiencies, "proficiency:"+p.Index)
-			}
-		}
-		found := false
-		for i := range r.ProficiencyChoices {
-			if choice, ok := skillChoice(&r.ProficiencyChoices[i]); ok {
-				c.SkillChoices, found = choice, true
-				break
-			}
-		}
+		choice, found := firstSkillChoice(r.ProficiencyChoices)
 		if !found {
 			return output{}, fmt.Errorf("class %s: no skill choice", r.Index)
 		}
-		mc := srd51.Multiclass{Proficiencies: keys("proficiency:", r.MultiClassing.Proficiencies)}
-		for _, p := range r.MultiClassing.Prerequisites {
-			if mc.Minimums == nil {
-				mc.Minimums = map[string]int{}
-			}
-			mc.Minimums[p.AbilityScore.Index] = p.MinimumScore
-		}
-		if po := r.MultiClassing.PrerequisiteOptions; po != nil {
-			mc.AnyOf = map[string]int{}
-			for _, p := range po.From.Options {
-				mc.AnyOf[p.AbilityScore.Index] = p.MinimumScore
-			}
-		}
-		for i := range r.MultiClassing.ProficiencyChoices {
-			if choice, ok := skillChoice(&r.MultiClassing.ProficiencyChoices[i]); ok {
-				mc.SkillChoices = &choice
-			}
-		}
-		c.Multiclass = mc
+		c.SkillChoices = choice
+		c.Multiclass = classMulticlass(r.MultiClassing)
 		if r.Spellcasting != nil {
 			c.Spellcasting = &srd51.ClassSpellcaster{Level: r.Spellcasting.Level, Ability: r.Spellcasting.SpellcastingAbility.Index}
 		}
-		for _, sub := range c.Subclasses {
-			if lvl := subclassLevels[sub]; c.SubclassLevel == 0 || (lvl > 0 && lvl < c.SubclassLevel) {
-				c.SubclassLevel = lvl
-			}
-		}
+		c.SubclassLevel = classSubclassLevel(c.Subclasses, subclassLevels)
 		out = append(out, c)
 	}
 	sortByKey(out, func(c srd51.Class) string { return c.Key })
 	return output{"classes.json", out}, nil
+}
+
+// classProficiencies are the class's proficiency keys; the saving throws are
+// listed apart (SavingThrows), so they are left out.
+func classProficiencies(list []ref) []string {
+	var out []string
+	for _, p := range list {
+		if !strings.HasPrefix(p.Index, "saving-throw-") {
+			out = append(out, "proficiency:"+p.Index)
+		}
+	}
+	return out
+}
+
+// firstSkillChoice is the first of the class's proficiency choices that is a
+// choice of skills (the others are tools and instruments).
+func firstSkillChoice(choices []optionSet) (srd51.Choice, bool) {
+	for i := range choices {
+		if choice, ok := skillChoice(&choices[i]); ok {
+			return choice, true
+		}
+	}
+	return srd51.Choice{}, false
+}
+
+// classMulticlass reads what multiclassing into the class asks and gives.
+// Unlike the class's own skill choice, the last skill choice listed is kept.
+func classMulticlass(src classMultiClassing) srd51.Multiclass {
+	mc := srd51.Multiclass{Proficiencies: keys("proficiency:", src.Proficiencies)}
+	for _, p := range src.Prerequisites {
+		if mc.Minimums == nil {
+			mc.Minimums = map[string]int{}
+		}
+		mc.Minimums[p.AbilityScore.Index] = p.MinimumScore
+	}
+	if po := src.PrerequisiteOptions; po != nil {
+		mc.AnyOf = map[string]int{}
+		for _, p := range po.From.Options {
+			mc.AnyOf[p.AbilityScore.Index] = p.MinimumScore
+		}
+	}
+	for i := range src.ProficiencyChoices {
+		if choice, ok := skillChoice(&src.ProficiencyChoices[i]); ok {
+			mc.SkillChoices = &choice
+		}
+	}
+	return mc
+}
+
+// classSubclassLevel is the lowest first level of the class's subclasses. A
+// subclass without levels (0) is taken only while nothing is known yet, so a
+// later one with levels replaces it.
+func classSubclassLevel(subclasses []string, subclassLevels map[string]int) int {
+	level := 0
+	for _, sub := range subclasses {
+		if lvl := subclassLevels[sub]; level == 0 || (lvl > 0 && lvl < level) {
+			level = lvl
+		}
+	}
+	return level
 }
 
 // firstSubclassLevels returns, per subclass key, the first class level of
@@ -610,20 +664,46 @@ func compact(raw json.RawMessage) json.RawMessage {
 	return buf.Bytes()
 }
 
+// subclassSpellSource is a spell a subclass always has prepared, and what it
+// waits for: a class level, features.
+type subclassSpellSource struct {
+	Prerequisites []struct {
+		Index string `json:"index"`
+		Type  string `json:"type"`
+	} `json:"prerequisites"`
+	Spell ref `json:"spell"`
+}
+
+// convertSubclassSpell reads one spell of subclass index, of class classIndex.
+func convertSubclassSpell(index, classIndex string, sp subclassSpellSource) (srd51.SubclassSpell, error) {
+	ss := srd51.SubclassSpell{Spell: "spell:" + sp.Spell.Index}
+	for _, p := range sp.Prerequisites {
+		switch p.Type {
+		case "level":
+			// "cleric-3" is the 3rd cleric level.
+			var lvl int
+			_, err := fmt.Sscanf(strings.TrimPrefix(p.Index, classIndex+"-"), "%d", &lvl)
+			if err != nil {
+				return srd51.SubclassSpell{}, fmt.Errorf("subclass %s: prerequisite %q: %w", index, p.Index, err)
+			}
+			ss.ClassLevel = lvl
+		case "feature":
+			ss.WithFeatures = append(ss.WithFeatures, "feature:"+p.Index)
+		default:
+			return srd51.SubclassSpell{}, fmt.Errorf("subclass %s: unknown prerequisite type %q", index, p.Type)
+		}
+	}
+	return ss, nil
+}
+
 func convertSubclasses(in *inputs) (output, error) {
 	type src struct {
-		Index          string   `json:"index"`
-		Name           string   `json:"name"`
-		Class          ref      `json:"class"`
-		SubclassFlavor string   `json:"subclass_flavor"`
-		Desc           []string `json:"desc"`
-		Spells         []struct {
-			Prerequisites []struct {
-				Index string `json:"index"`
-				Type  string `json:"type"`
-			} `json:"prerequisites"`
-			Spell ref `json:"spell"`
-		} `json:"spells"`
+		Index          string                `json:"index"`
+		Name           string                `json:"name"`
+		Class          ref                   `json:"class"`
+		SubclassFlavor string                `json:"subclass_flavor"`
+		Desc           []string              `json:"desc"`
+		Spells         []subclassSpellSource `json:"spells"`
 	}
 	rows, err := decode[src](in, "5e-SRD-Subclasses.json")
 	if err != nil {
@@ -639,22 +719,9 @@ func convertSubclasses(in *inputs) (output, error) {
 			Desc:   r.Desc,
 		}
 		for _, sp := range r.Spells {
-			ss := srd51.SubclassSpell{Spell: "spell:" + sp.Spell.Index}
-			for _, p := range sp.Prerequisites {
-				switch p.Type {
-				case "level":
-					// "cleric-3" is the 3rd cleric level.
-					var lvl int
-					_, err := fmt.Sscanf(strings.TrimPrefix(p.Index, r.Class.Index+"-"), "%d", &lvl)
-					if err != nil {
-						return output{}, fmt.Errorf("subclass %s: prerequisite %q: %w", r.Index, p.Index, err)
-					}
-					ss.ClassLevel = lvl
-				case "feature":
-					ss.WithFeatures = append(ss.WithFeatures, "feature:"+p.Index)
-				default:
-					return output{}, fmt.Errorf("subclass %s: unknown prerequisite type %q", r.Index, p.Type)
-				}
+			ss, err := convertSubclassSpell(r.Index, r.Class.Index, sp)
+			if err != nil {
+				return output{}, err
 			}
 			s.Spells = append(s.Spells, ss)
 		}
@@ -662,6 +729,37 @@ func convertSubclasses(in *inputs) (output, error) {
 	}
 	sortByKey(out, func(s srd51.Subclass) string { return s.Key })
 	return output{"subclasses.json", out}, nil
+}
+
+// featureSpecific reads the options a feature offers, in this order: its
+// subfeature options, its invocations (which replace the subfeature options
+// when a feature has both) and its expertise picks.
+func featureSpecific(fs map[string]json.RawMessage, f *srd51.Feature) error {
+	if raw, ok := fs["subfeature_options"]; ok {
+		var o optionSet
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return err
+		}
+		f.OptionsChoose = o.Choose
+		for _, idx := range o.referenced() {
+			f.Options = append(f.Options, "feature:"+idx)
+		}
+	}
+	if raw, ok := fs["invocations"]; ok {
+		var refs []ref
+		if err := json.Unmarshal(raw, &refs); err != nil {
+			return err
+		}
+		f.Options = keys("feature:", refs)
+	}
+	if raw, ok := fs["expertise_options"]; ok {
+		var o optionSet
+		if err := json.Unmarshal(raw, &o); err != nil {
+			return err
+		}
+		f.ExpertiseChoices = o.picks()
+	}
+	return nil
 }
 
 func convertFeatures(in *inputs) (output, error) {
@@ -694,29 +792,8 @@ func convertFeatures(in *inputs) (output, error) {
 		if r.Parent != nil {
 			f.Parent = "feature:" + r.Parent.Index
 		}
-		if raw, ok := r.FeatureSpecific["subfeature_options"]; ok {
-			var o optionSet
-			if err := json.Unmarshal(raw, &o); err != nil {
-				return output{}, fmt.Errorf("feature %s: %w", r.Index, err)
-			}
-			f.OptionsChoose = o.Choose
-			for _, idx := range o.referenced() {
-				f.Options = append(f.Options, "feature:"+idx)
-			}
-		}
-		if raw, ok := r.FeatureSpecific["invocations"]; ok {
-			var refs []ref
-			if err := json.Unmarshal(raw, &refs); err != nil {
-				return output{}, fmt.Errorf("feature %s: %w", r.Index, err)
-			}
-			f.Options = keys("feature:", refs)
-		}
-		if raw, ok := r.FeatureSpecific["expertise_options"]; ok {
-			var o optionSet
-			if err := json.Unmarshal(raw, &o); err != nil {
-				return output{}, fmt.Errorf("feature %s: %w", r.Index, err)
-			}
-			f.ExpertiseChoices = o.picks()
+		if err := featureSpecific(r.FeatureSpecific, &f); err != nil {
+			return output{}, fmt.Errorf("feature %s: %w", r.Index, err)
 		}
 		out = append(out, f)
 	}
@@ -863,38 +940,42 @@ func convertProficiencies(in *inputs) (output, error) {
 	return output{"proficiencies.json", out}, nil
 }
 
+// equipmentDamage is a weapon's damage in 5e-SRD-Equipment.json.
+type equipmentDamage struct {
+	DamageDice string `json:"damage_dice"`
+	DamageType ref    `json:"damage_type"`
+}
+
+// equipmentRange is a weapon's normal and long range, in feet.
+type equipmentRange struct {
+	Normal int `json:"normal"`
+	Long   int `json:"long"`
+}
+
+// equipmentSource is an entry of 5e-SRD-Equipment.json, the fields we keep.
+type equipmentSource struct {
+	Index             string `json:"index"`
+	Name              string `json:"name"`
+	EquipmentCategory ref    `json:"equipment_category"`
+	WeaponCategory    string `json:"weapon_category"`
+	WeaponRange       string `json:"weapon_range"`
+	Damage            *equipmentDamage
+	TwoHandedDamage   *equipmentDamage `json:"two_handed_damage"`
+	Range             *equipmentRange  `json:"range"`
+	ThrowRange        *equipmentRange  `json:"throw_range"`
+	Properties        []ref            `json:"properties"`
+	ArmorCategory     string           `json:"armor_category"`
+	ArmorClass        *struct {
+		Base     int  `json:"base"`
+		DexBonus bool `json:"dex_bonus"`
+		MaxBonus int  `json:"max_bonus"`
+	} `json:"armor_class"`
+	StrMinimum          int  `json:"str_minimum"`
+	StealthDisadvantage bool `json:"stealth_disadvantage"`
+}
+
 func convertEquipment(in *inputs) (output, error) {
-	type damage struct {
-		DamageDice string `json:"damage_dice"`
-		DamageType ref    `json:"damage_type"`
-	}
-	type src struct {
-		Index             string `json:"index"`
-		Name              string `json:"name"`
-		EquipmentCategory ref    `json:"equipment_category"`
-		WeaponCategory    string `json:"weapon_category"`
-		WeaponRange       string `json:"weapon_range"`
-		Damage            *damage
-		TwoHandedDamage   *damage `json:"two_handed_damage"`
-		Range             *struct {
-			Normal int `json:"normal"`
-			Long   int `json:"long"`
-		} `json:"range"`
-		ThrowRange *struct {
-			Normal int `json:"normal"`
-			Long   int `json:"long"`
-		} `json:"throw_range"`
-		Properties    []ref  `json:"properties"`
-		ArmorCategory string `json:"armor_category"`
-		ArmorClass    *struct {
-			Base     int  `json:"base"`
-			DexBonus bool `json:"dex_bonus"`
-			MaxBonus int  `json:"max_bonus"`
-		} `json:"armor_class"`
-		StrMinimum          int  `json:"str_minimum"`
-		StealthDisadvantage bool `json:"stealth_disadvantage"`
-	}
-	rows, err := decode[src](in, "5e-SRD-Equipment.json")
+	rows, err := decode[equipmentSource](in, "5e-SRD-Equipment.json")
 	if err != nil {
 		return output{}, err
 	}
@@ -906,41 +987,9 @@ func convertEquipment(in *inputs) (output, error) {
 			if r.ArmorClass == nil {
 				return output{}, fmt.Errorf("armor %s: no armor_class", r.Index)
 			}
-			e.Kind = "armor"
-			e.Armor = &srd51.Armor{
-				Category:            strings.ToLower(r.ArmorCategory),
-				BaseAC:              r.ArmorClass.Base,
-				DexBonus:            r.ArmorClass.DexBonus,
-				MaxDexBonus:         r.ArmorClass.MaxBonus,
-				StrMinimum:          r.StrMinimum,
-				StealthDisadvantage: r.StealthDisadvantage,
-			}
+			e.Kind, e.Armor = "armor", equipmentArmor(r)
 		case "weapon":
-			e.Kind = "weapon"
-			w := &srd51.Weapon{
-				Category:   strings.ToLower(r.WeaponCategory),
-				Range:      strings.ToLower(r.WeaponRange),
-				Properties: keys("weapon-property:", r.Properties),
-			}
-			if r.Damage != nil {
-				w.Damage = r.Damage.DamageDice
-				w.DamageType = "damage-type:" + r.Damage.DamageType.Index
-			}
-			if r.TwoHandedDamage != nil {
-				w.TwoHandedDamage = r.TwoHandedDamage.DamageDice
-			}
-			if r.Range != nil {
-				w.NormalRangeFt, w.LongRangeFt = r.Range.Normal, r.Range.Long
-			}
-			if w.Range == "melee" && slices.Contains(w.Properties, "weapon-property:reach") {
-				// The source gives a reach weapon the 5 ft of any melee
-				// weapon; the property is what makes it 10.
-				w.NormalRangeFt = reachWeaponFt
-			}
-			if r.ThrowRange != nil {
-				w.ThrowNormalFt, w.ThrowLongFt = r.ThrowRange.Normal, r.ThrowRange.Long
-			}
-			e.Weapon = w
+			e.Kind, e.Weapon = "weapon", equipmentWeapon(r)
 		case "tools":
 			e.Kind = "tool"
 		default:
@@ -950,6 +999,46 @@ func convertEquipment(in *inputs) (output, error) {
 	}
 	sortByKey(out, func(e srd51.Equipment) string { return e.Key })
 	return output{"equipment.json", out}, nil
+}
+
+// equipmentArmor reads an armor; r.ArmorClass is not nil.
+func equipmentArmor(r equipmentSource) *srd51.Armor {
+	return &srd51.Armor{
+		Category:            strings.ToLower(r.ArmorCategory),
+		BaseAC:              r.ArmorClass.Base,
+		DexBonus:            r.ArmorClass.DexBonus,
+		MaxDexBonus:         r.ArmorClass.MaxBonus,
+		StrMinimum:          r.StrMinimum,
+		StealthDisadvantage: r.StealthDisadvantage,
+	}
+}
+
+// equipmentWeapon reads a weapon, each part only when the source has it.
+func equipmentWeapon(r equipmentSource) *srd51.Weapon {
+	w := &srd51.Weapon{
+		Category:   strings.ToLower(r.WeaponCategory),
+		Range:      strings.ToLower(r.WeaponRange),
+		Properties: keys("weapon-property:", r.Properties),
+	}
+	if r.Damage != nil {
+		w.Damage = r.Damage.DamageDice
+		w.DamageType = "damage-type:" + r.Damage.DamageType.Index
+	}
+	if r.TwoHandedDamage != nil {
+		w.TwoHandedDamage = r.TwoHandedDamage.DamageDice
+	}
+	if r.Range != nil {
+		w.NormalRangeFt, w.LongRangeFt = r.Range.Normal, r.Range.Long
+	}
+	if w.Range == "melee" && slices.Contains(w.Properties, "weapon-property:reach") {
+		// The source gives a reach weapon the 5 ft of any melee
+		// weapon; the property is what makes it 10.
+		w.NormalRangeFt = reachWeaponFt
+	}
+	if r.ThrowRange != nil {
+		w.ThrowNormalFt, w.ThrowLongFt = r.ThrowRange.Normal, r.ThrowRange.Long
+	}
+	return w
 }
 
 func convertSpells(in *inputs) (output, error) {
@@ -1336,6 +1425,83 @@ func armorClass(r monstersSource, m *srd51.Monster) error {
 	return nil
 }
 
+// monsterSpeed reads the speeds in feet ("30 ft.") and whether the creature
+// hovers; a kind of speed the engine does not know is refused.
+func monsterSpeed(speeds map[string]json.RawMessage, sp *srd51.MonsterSpeed) error {
+	for kind, raw := range speeds {
+		if kind == "hover" {
+			sp.Hover = string(raw) == "true"
+			continue
+		}
+		var text string
+		if err := json.Unmarshal(raw, &text); err != nil {
+			return fmt.Errorf("speed %s: %w", kind, err)
+		}
+		ft := leadingInt(text)
+		switch kind {
+		case "walk":
+			sp.Walk = ft
+		case "fly":
+			sp.Fly = ft
+		case "swim":
+			sp.Swim = ft
+		case "climb":
+			sp.Climb = ft
+		case "burrow":
+			sp.Burrow = ft
+		default:
+			return fmt.Errorf("unknown speed %q", kind)
+		}
+	}
+	return nil
+}
+
+// monsterSenses reads the senses' ranges in feet and the passive Perception;
+// a sense the engine does not know is refused.
+func monsterSenses(senses map[string]any, m *srd51.Monster) error {
+	for k, v := range senses {
+		text, _ := v.(string)
+		switch k {
+		case "darkvision":
+			m.Darkvision = leadingInt(text)
+		case "blindsight":
+			m.Blindsight = leadingInt(text)
+		case "tremorsense":
+			m.Tremorsense = leadingInt(text)
+		case "truesight":
+			m.Truesight = leadingInt(text)
+		case "passive_perception":
+			n, _ := v.(float64)
+			m.PassivePerception = int(n)
+		default:
+			return fmt.Errorf("unknown sense %q", k)
+		}
+	}
+	return nil
+}
+
+// monsterProficiencies reads the save and skill bonuses; any other
+// proficiency is refused.
+func monsterProficiencies(r monstersSource, m *srd51.Monster) error {
+	for _, p := range r.Proficiencies {
+		switch idx := p.Proficiency.Index; {
+		case strings.HasPrefix(idx, "saving-throw-"):
+			if m.Saves == nil {
+				m.Saves = map[string]int{}
+			}
+			m.Saves[strings.TrimPrefix(idx, "saving-throw-")] = p.Value
+		case strings.HasPrefix(idx, "skill-"):
+			if m.Skills == nil {
+				m.Skills = map[string]int{}
+			}
+			m.Skills["skill:"+strings.TrimPrefix(idx, "skill-")] = p.Value
+		default:
+			return fmt.Errorf("unknown proficiency %q", idx)
+		}
+	}
+	return nil
+}
+
 func convertMonster(r monstersSource) (srd51.Monster, error) {
 	cr, err := challengeRating(r.ChallengeRating)
 	if err != nil {
@@ -1356,64 +1522,14 @@ func convertMonster(r monstersSource) (srd51.Monster, error) {
 	if err := armorClass(r, &m); err != nil {
 		return srd51.Monster{}, err
 	}
-	for kind, raw := range r.Speed {
-		if kind == "hover" {
-			m.Speed.Hover = string(raw) == "true"
-			continue
-		}
-		var text string
-		if err := json.Unmarshal(raw, &text); err != nil {
-			return srd51.Monster{}, fmt.Errorf("speed %s: %w", kind, err)
-		}
-		ft := leadingInt(text)
-		switch kind {
-		case "walk":
-			m.Speed.Walk = ft
-		case "fly":
-			m.Speed.Fly = ft
-		case "swim":
-			m.Speed.Swim = ft
-		case "climb":
-			m.Speed.Climb = ft
-		case "burrow":
-			m.Speed.Burrow = ft
-		default:
-			return srd51.Monster{}, fmt.Errorf("unknown speed %q", kind)
-		}
+	if err := monsterSpeed(r.Speed, &m.Speed); err != nil {
+		return srd51.Monster{}, err
 	}
-	for k, v := range r.Senses {
-		text, _ := v.(string)
-		switch k {
-		case "darkvision":
-			m.Darkvision = leadingInt(text)
-		case "blindsight":
-			m.Blindsight = leadingInt(text)
-		case "tremorsense":
-			m.Tremorsense = leadingInt(text)
-		case "truesight":
-			m.Truesight = leadingInt(text)
-		case "passive_perception":
-			n, _ := v.(float64)
-			m.PassivePerception = int(n)
-		default:
-			return srd51.Monster{}, fmt.Errorf("unknown sense %q", k)
-		}
+	if err := monsterSenses(r.Senses, &m); err != nil {
+		return srd51.Monster{}, err
 	}
-	for _, p := range r.Proficiencies {
-		switch idx := p.Proficiency.Index; {
-		case strings.HasPrefix(idx, "saving-throw-"):
-			if m.Saves == nil {
-				m.Saves = map[string]int{}
-			}
-			m.Saves[strings.TrimPrefix(idx, "saving-throw-")] = p.Value
-		case strings.HasPrefix(idx, "skill-"):
-			if m.Skills == nil {
-				m.Skills = map[string]int{}
-			}
-			m.Skills["skill:"+strings.TrimPrefix(idx, "skill-")] = p.Value
-		default:
-			return srd51.Monster{}, fmt.Errorf("unknown proficiency %q", idx)
-		}
+	if err := monsterProficiencies(r, &m); err != nil {
+		return srd51.Monster{}, err
 	}
 	for _, a := range r.SpecialAbilities {
 		m.SpecialAbilities = append(m.SpecialAbilities, srd51.MonsterAbility{Name: a.Name, Desc: a.Desc, Usage: monsterUsageText(a.Usage)})
@@ -1484,46 +1600,65 @@ func convertMonsterAction(a monsterActionSource) srd51.MonsterAction {
 	out.Damage = convertDamage(a.Damage)
 	out.Save = convertDC(a.DC)
 	if out.Save == nil {
-		// Many attacks (a wolf's bite) have a rider save that 5e-database
-		// leaves in the text only.
-		if m := textSaveRe.FindStringSubmatch(a.Desc); m != nil {
-			dc, _ := strconv.Atoi(m[1])
-			out.Save = &srd51.MonsterSave{Ability: strings.ToLower(m[2][:3]), DC: dc, OnSuccess: textSuccess(a.Desc)}
-		}
-	}
-	// Counts: a number, or words for the master (the hydra has "Number of
-	// Heads", five by the SRD; the violet fungus "1d4"); the engine always
-	// gets a number of at least 1.
-	count := func(x monsterMultiItem) srd51.MonsterAttackCount {
-		c, err := strconv.Atoi(x.Count)
-		if err == nil {
-			return srd51.MonsterAttackCount{Name: x.ActionName, Count: c, Kind: x.Type}
-		}
-		c = 1
-		if x.Count == "Number of Heads" {
-			c = 5
-		}
-		return srd51.MonsterAttackCount{Name: x.ActionName, Count: c, Kind: x.Type, Text: x.Count}
+		out.Save = textSave(a.Desc)
 	}
 	switch a.MultiattackType {
 	case "actions":
-		var routine []srd51.MonsterAttackCount
-		for _, x := range a.Actions {
-			routine = append(routine, count(x))
-		}
-		out.Multiattack = [][]srd51.MonsterAttackCount{routine}
+		out.Multiattack = [][]srd51.MonsterAttackCount{monsterRoutine(a.Actions)}
 	case "action_options":
-		for _, o := range a.ActionOptions.From.Options {
-			var routine []srd51.MonsterAttackCount
-			if o.OptionType == "multiple" {
-				for _, x := range o.Items {
-					routine = append(routine, count(x))
-				}
-			} else {
-				routine = append(routine, count(monsterMultiItem{ActionName: o.ActionName, Count: o.Count, Type: o.Type}))
-			}
-			out.Multiattack = append(out.Multiattack, routine)
+		out.Multiattack = monsterRoutineOptions(a)
+	}
+	return out
+}
+
+// textSave is the save of an action's text, or nil. Many attacks (a wolf's
+// bite) have a rider save that 5e-database leaves in the text only.
+func textSave(desc string) *srd51.MonsterSave {
+	m := textSaveRe.FindStringSubmatch(desc)
+	if m == nil {
+		return nil
+	}
+	dc, _ := strconv.Atoi(m[1])
+	return &srd51.MonsterSave{Ability: strings.ToLower(m[2][:3]), DC: dc, OnSuccess: textSuccess(desc)}
+}
+
+// hydraHeads is the count the SRD gives the hydra's "Number of Heads".
+const hydraHeads = 5
+
+// monsterAttackCount reads a count: a number, or words for the master (the
+// hydra has "Number of Heads", five by the SRD; the violet fungus "1d4"); the
+// engine always gets a number of at least 1.
+func monsterAttackCount(x monsterMultiItem) srd51.MonsterAttackCount {
+	c, err := strconv.Atoi(x.Count)
+	if err == nil {
+		return srd51.MonsterAttackCount{Name: x.ActionName, Count: c, Kind: x.Type}
+	}
+	c = 1
+	if x.Count == "Number of Heads" {
+		c = hydraHeads
+	}
+	return srd51.MonsterAttackCount{Name: x.ActionName, Count: c, Kind: x.Type, Text: x.Count}
+}
+
+// monsterRoutine is one Multiattack routine: the attacks made together.
+func monsterRoutine(items []monsterMultiItem) []srd51.MonsterAttackCount {
+	var routine []srd51.MonsterAttackCount
+	for _, x := range items {
+		routine = append(routine, monsterAttackCount(x))
+	}
+	return routine
+}
+
+// monsterRoutineOptions are the routines a Multiattack lets the creature
+// choose from: several attacks together, or a single one.
+func monsterRoutineOptions(a monsterActionSource) [][]srd51.MonsterAttackCount {
+	var out [][]srd51.MonsterAttackCount
+	for _, o := range a.ActionOptions.From.Options {
+		if o.OptionType == "multiple" {
+			out = append(out, monsterRoutine(o.Items))
+			continue
 		}
+		out = append(out, []srd51.MonsterAttackCount{monsterAttackCount(monsterMultiItem{ActionName: o.ActionName, Count: o.Count, Type: o.Type})})
 	}
 	return out
 }
@@ -1565,30 +1700,34 @@ func fixMultiattackNames(m *srd51.Monster) {
 	for _, a := range m.Actions {
 		names[a.Name] = true
 	}
-	resolve := func(n string) string {
-		if names[n] {
-			return n
-		}
-		if base, _, ok := strings.Cut(n, " ("); ok && names[base] {
-			return base
-		}
-		if names[strings.TrimSuffix(n, "s")] {
-			return strings.TrimSuffix(n, "s")
-		}
-		for _, a := range m.Actions {
-			if strings.HasPrefix(a.Name, n+" (") {
-				return a.Name
-			}
-		}
-		return n
-	}
 	for i := range m.Actions {
 		for _, routine := range m.Actions[i].Multiattack {
 			for j := range routine {
-				routine[j].Name = resolve(routine[j].Name)
+				routine[j].Name = resolveMultiattackName(routine[j].Name, names, m.Actions)
 			}
 		}
 	}
+}
+
+// resolveMultiattackName is the action of the stat block that n names, tried
+// in this order: the same name, n without its parenthesis, n without a plural
+// "s", and an action that is n with a parenthesis; otherwise n itself.
+func resolveMultiattackName(n string, names map[string]bool, actions []srd51.MonsterAction) string {
+	if names[n] {
+		return n
+	}
+	if base, _, ok := strings.Cut(n, " ("); ok && names[base] {
+		return base
+	}
+	if names[strings.TrimSuffix(n, "s")] {
+		return strings.TrimSuffix(n, "s")
+	}
+	for _, a := range actions {
+		if strings.HasPrefix(a.Name, n+" (") {
+			return a.Name
+		}
+	}
+	return n
 }
 
 // named converts a small list (damage types, schools...) into Named entries.

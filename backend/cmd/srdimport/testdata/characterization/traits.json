@@ -1,0 +1,47 @@
+[
+ {
+  "key": "trait:full",
+  "name": "Full",
+  "races": [
+   "race:dwarf"
+  ],
+  "subraces": [
+   "subrace:hill-dwarf"
+  ],
+  "desc": [
+   "Text."
+  ],
+  "proficiencies": [
+   "proficiency:battleaxes"
+  ],
+  "proficiency_choices": 1,
+  "proficiency_options": [
+   "proficiency:smiths-tools"
+  ],
+  "language_choices": 2,
+  "parent": "trait:plain",
+  "options": [
+   "trait:draconic-black"
+  ]
+ },
+ {
+  "key": "trait:plain",
+  "name": "Plain",
+  "races": [
+   "race:elf"
+  ],
+  "subraces": [],
+  "desc": [
+   "Text."
+  ],
+  "proficiencies": []
+ },
+ {
+  "key": "trait:specific",
+  "name": "Specific",
+  "races": [],
+  "subraces": [],
+  "desc": [],
+  "proficiencies": []
+ }
+]

@@ -132,55 +132,11 @@ func (p Pillars) encode(state []int) int {
 // with the 2 x Count moves. ok is false when the target cannot be reached (links
 // can make that so). A state that is the target takes 0 moves.
 func (p Pillars) Minimum(state, target []int) (moves int, path []PillarStep, ok bool, err error) {
-	if err := p.Validate(); err != nil {
+	if err := p.checkSearch(state, target); err != nil {
 		return 0, nil, false, err
-	}
-	if err := p.CheckState(state); err != nil {
-		return 0, nil, false, err
-	}
-	if err := p.CheckState(target); err != nil {
-		return 0, nil, false, err
-	}
-	total := 1
-	for range p.Count {
-		total *= p.Glyphs
 	}
 	from, to := p.encode(state), p.encode(target)
-	// parent[s] is the state before s, step[s] the move that led to s; -1: not seen.
-	parent := make([]int32, total)
-	step := make([]PillarStep, total)
-	for i := range parent {
-		parent[i] = -1
-	}
-	parent[from] = int32(from) //nolint:gosec // from is below 6^6
-	queue := []int{from}
-	for len(queue) > 0 && parent[to] < 0 {
-		cur := queue[0]
-		queue = queue[1:]
-		var pos [MaxPillars]int
-		for i, n := 0, cur; i < p.Count; i++ {
-			pos[i] = n % p.Glyphs
-			n /= p.Glyphs
-		}
-		for pillar := range p.Count {
-			for _, delta := range [2]int{1, -1} {
-				nextPos := pos // an array: a copy
-				for _, c := range p.turned(pillar) {
-					nextPos[c] = mod(nextPos[c]+delta, p.Glyphs)
-				}
-				n := 0
-				for i := p.Count - 1; i >= 0; i-- {
-					n = n*p.Glyphs + nextPos[i]
-				}
-				if parent[n] >= 0 {
-					continue
-				}
-				parent[n] = int32(cur) //nolint:gosec // cur is below 6^6
-				step[n] = PillarStep{Pillar: pillar, Delta: delta}
-				queue = append(queue, n)
-			}
-		}
-	}
+	parent, step := p.search(from, to)
 	if parent[to] < 0 {
 		return 0, nil, false, nil
 	}
@@ -189,6 +145,77 @@ func (p Pillars) Minimum(state, target []int) (moves int, path []PillarStep, ok 
 	}
 	slices.Reverse(path)
 	return len(path), path, true, nil
+}
+
+// checkSearch checks the shape, then the state, then the target.
+func (p Pillars) checkSearch(state, target []int) error {
+	if err := p.Validate(); err != nil {
+		return err
+	}
+	if err := p.CheckState(state); err != nil {
+		return err
+	}
+	return p.CheckState(target)
+}
+
+// states is how many states the pillars have: Glyphs to the power Count.
+func (p Pillars) states() int {
+	total := 1
+	for range p.Count {
+		total *= p.Glyphs
+	}
+	return total
+}
+
+// search is the breadth-first search from one state until it reaches the
+// other or runs out. parent[s] is the state before s, step[s] the move that
+// led to s; -1: not seen.
+func (p Pillars) search(from, to int) (parent []int32, step []PillarStep) {
+	total := p.states()
+	parent = make([]int32, total)
+	step = make([]PillarStep, total)
+	for i := range parent {
+		parent[i] = -1
+	}
+	parent[from] = int32(from) //nolint:gosec // from is below 6^6
+	queue := []int{from}
+	for len(queue) > 0 && parent[to] < 0 {
+		cur := queue[0]
+		queue = p.expand(queue[1:], cur, parent, step)
+	}
+	return parent, step
+}
+
+// expand queues every state one move from cur that was not seen yet, pillar
+// by pillar, up before down.
+func (p Pillars) expand(queue []int, cur int, parent []int32, step []PillarStep) []int {
+	pos := p.decode(cur)
+	for pillar := range p.Count {
+		for _, delta := range [2]int{1, -1} {
+			nextPos := pos // an array: a copy
+			for _, c := range p.turned(pillar) {
+				nextPos[c] = mod(nextPos[c]+delta, p.Glyphs)
+			}
+			n := p.encode(nextPos[:p.Count])
+			if parent[n] >= 0 {
+				continue
+			}
+			parent[n] = int32(cur) //nolint:gosec // cur is below 6^6
+			step[n] = PillarStep{Pillar: pillar, Delta: delta}
+			queue = append(queue, n)
+		}
+	}
+	return queue
+}
+
+// decode is encode backwards: the positions of the state numbered n.
+func (p Pillars) decode(n int) [MaxPillars]int {
+	var pos [MaxPillars]int
+	for i := range p.Count {
+		pos[i] = n % p.Glyphs
+		n /= p.Glyphs
+	}
+	return pos
 }
 
 // Start draws a start from the target: the target after a seeded run of moves,
@@ -207,17 +234,8 @@ func (p Pillars) Start(target []int, seed uint64) ([]int, error) {
 	}
 	r := newRNG(seed)
 	var fallback []int
-	for range 64 {
-		state := slices.Clone(target)
-		steps := 6 + r.intn(10)
-		for range steps {
-			pillar := r.intn(p.Count)
-			delta := 1
-			if r.next()&1 == 1 {
-				delta = -1
-			}
-			state, _, _ = p.Turn(state, pillar, delta) // the arguments are valid
-		}
+	for range startDraws {
+		state := p.scramble(target, r)
 		if slices.Equal(state, target) {
 			continue
 		}
@@ -225,7 +243,7 @@ func (p Pillars) Start(target []int, seed uint64) ([]int, error) {
 			fallback = state
 		}
 		// A start a turn or two from the mural is no puzzle: ask for three.
-		if moves, _, ok, err := p.Minimum(state, target); err == nil && ok && moves >= 3 {
+		if moves, _, ok, err := p.Minimum(state, target); err == nil && ok && moves >= minStartTurns {
 			return state, nil
 		}
 	}
@@ -236,6 +254,33 @@ func (p Pillars) Start(target []int, seed uint64) ([]int, error) {
 	// first pillar once, which is never the target.
 	state, _, err := p.Turn(target, 0, 1)
 	return state, err
+}
+
+// The draws of Start.
+const (
+	// startDraws is how many starts are drawn before the fallback is taken.
+	startDraws = 64
+	// minStartTurns is how far from the target a drawn start must be.
+	minStartTurns = 3
+	// minScramble and scrambleSpread bound the turns of one draw: 6 to 15.
+	minScramble    = 6
+	scrambleSpread = 10
+)
+
+// scramble is the target after a seeded run of turns, each of a random pillar
+// up or down.
+func (p Pillars) scramble(target []int, r *rng) []int {
+	state := slices.Clone(target)
+	steps := minScramble + r.intn(scrambleSpread)
+	for range steps {
+		pillar := r.intn(p.Count)
+		delta := 1
+		if r.next()&1 == 1 {
+			delta = -1
+		}
+		state, _, _ = p.Turn(state, pillar, delta) // the arguments are valid
+	}
+	return state
 }
 
 // PillarsSolved says whether the pillars match the target.

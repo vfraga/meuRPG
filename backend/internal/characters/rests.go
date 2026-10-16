@@ -59,41 +59,13 @@ func planRest(kind string, v *playv1.CharacterVitals, m vitalsMax, choice rules.
 		preview.NoBenefit = true
 		return restPlan{after: after, preview: preview}, nil
 	}
-	rechargeOf := map[string]string{}
-	for _, r := range m.resources {
-		rechargeOf[r.Key] = r.Recharge
-	}
-	for _, r := range after.GetResources() {
-		if r.GetUsed() > 0 && rules.RechargesOnRest(rechargeOf[r.GetKey()], kind) {
-			preview.Resources = append(preview.Resources, &playv1.RestResourceBack{Key: r.GetKey(), NamePt: r.GetNamePt(), Spent: r.GetUsed(), Total: r.GetTotal()})
-			r.Used = 0
-		}
-	}
-	if p := after.GetPactSlots(); p != nil && p.GetUsed() > 0 && rules.PactSlotsReturnOn(kind) {
-		preview.PactSlotsBack = p.GetUsed()
-		p.Used = 0
-	}
+	restResources(kind, after, m, preview)
+	restPactSlots(kind, after, preview)
 	if rules.SpellSlotsReturnOn(kind) {
-		var slots []*playv1.SpellSlotUsage
-		for _, slot := range after.GetSpellSlots() {
-			sheetTotal := slot.GetTotal() - slot.GetCreated()
-			if back := min(slot.GetUsed(), sheetTotal); back > 0 {
-				preview.SpellSlotsBack = append(preview.SpellSlotsBack, &playv1.SpellSlotBack{Level: slot.GetLevel(), Count: back})
-			}
-			preview.CreatedSlotsLost += slot.GetCreated()
-			slot.Used, slot.Created, slot.Total = 0, 0, sheetTotal // the slots Flexible Casting made vanish
-			if slot.GetTotal() > 0 {
-				slots = append(slots, slot)
-			}
-		}
-		after.SpellSlots = slots
+		restSpellSlots(after, preview)
 	}
 	if long {
-		// Ajuda lasts 8 hours (SRD 5.1, "Aid"): a long rest ends it, and the hit points
-		// that come back fill the sheet's own maximum.
-		after.HitPointsMax -= after.GetHitPointsMaxBonus()
-		after.HitPointsMaxBonus = 0
-		after.HitPointsCurrent = after.GetHitPointsMax()
+		restEndAid(after)
 	}
 	if rules.TemporaryHitPointsEndOn(kind) {
 		preview.TemporaryHitPointsLost = v.GetHitPointsTemporary()
@@ -108,6 +80,54 @@ func planRest(kind string, v *playv1.CharacterVitals, m vitalsMax, choice rules.
 		setHitDiceUsed(after, left)
 	}
 	return restPlan{after: after, preview: preview}, nil
+}
+
+// restResources gives back the spent resources the rest recharges.
+func restResources(kind string, after *playv1.CharacterVitals, m vitalsMax, preview *playv1.RestPreview) {
+	rechargeOf := map[string]string{}
+	for _, r := range m.resources {
+		rechargeOf[r.Key] = r.Recharge
+	}
+	for _, r := range after.GetResources() {
+		if r.GetUsed() > 0 && rules.RechargesOnRest(rechargeOf[r.GetKey()], kind) {
+			preview.Resources = append(preview.Resources, &playv1.RestResourceBack{Key: r.GetKey(), NamePt: r.GetNamePt(), Spent: r.GetUsed(), Total: r.GetTotal()})
+			r.Used = 0
+		}
+	}
+}
+
+// restPactSlots gives back the spent pact magic slots, when the rest does.
+func restPactSlots(kind string, after *playv1.CharacterVitals, preview *playv1.RestPreview) {
+	if p := after.GetPactSlots(); p != nil && p.GetUsed() > 0 && rules.PactSlotsReturnOn(kind) {
+		preview.PactSlotsBack = p.GetUsed()
+		p.Used = 0
+	}
+}
+
+// restSpellSlots gives back the spent spell slots of the sheet; the slots Flexible
+// Casting made vanish, and a level left with none is gone from the list.
+func restSpellSlots(after *playv1.CharacterVitals, preview *playv1.RestPreview) {
+	var slots []*playv1.SpellSlotUsage
+	for _, slot := range after.GetSpellSlots() {
+		sheetTotal := slot.GetTotal() - slot.GetCreated()
+		if back := min(slot.GetUsed(), sheetTotal); back > 0 {
+			preview.SpellSlotsBack = append(preview.SpellSlotsBack, &playv1.SpellSlotBack{Level: slot.GetLevel(), Count: back})
+		}
+		preview.CreatedSlotsLost += slot.GetCreated()
+		slot.Used, slot.Created, slot.Total = 0, 0, sheetTotal
+		if slot.GetTotal() > 0 {
+			slots = append(slots, slot)
+		}
+	}
+	after.SpellSlots = slots
+}
+
+// restEndAid ends Ajuda, which lasts 8 hours (SRD 5.1, "Aid"): a long rest ends it, and
+// the hit points that come back fill the sheet's own maximum.
+func restEndAid(after *playv1.CharacterVitals) {
+	after.HitPointsMax -= after.GetHitPointsMaxBonus()
+	after.HitPointsMaxBonus = 0
+	after.HitPointsCurrent = after.GetHitPointsMax()
 }
 
 // restRows reads the campaign's living, active player characters inside tx, each
@@ -178,60 +198,110 @@ func (s *Service) TakeRest(ctx context.Context, tx pgx.Tx, campaignID string, re
 	if err != nil {
 		return nil, nil, err
 	}
-	choices := map[string]rules.HitDiceUsed{}
-	for _, c := range req.GetHitDiceChoices() {
-		if _, dup := choices[c.GetCharacterId()]; dup || !slices.ContainsFunc(rows, func(r restRow) bool { return r.row.ID == c.GetCharacterId() }) {
-			return nil, nil, link.ErrBadHitDiceChoice
+	choices, err := restHitDiceChoices(rows, req.GetHitDiceChoices())
+	if err != nil {
+		return nil, nil, err
+	}
+	before, after, err = s.restEveryone(ctx, tx, k, rows, choices)
+	if err != nil {
+		return nil, nil, err
+	}
+	if k == rules.RestLong && !req.GetWithoutFoodOrDrink() {
+		// A long rest with food and drink takes one level of exhaustion off (SRD 5.1).
+		if before, after, err = s.restEaseExhaustion(ctx, tx, campaignID, rows, before, after); err != nil {
+			return nil, nil, err
 		}
-		pick := rules.HitDiceUsed{}
-		for _, d := range c.GetDice() {
-			if _, dup := pick[int(d.GetFaces())]; dup {
-				return nil, nil, link.ErrBadHitDiceChoice
-			}
-			pick[int(d.GetFaces())] = int(d.GetCount())
+	}
+	return before, after, nil
+}
+
+// restHitDiceChoices reads which hit dice each player chose to get back, by character:
+// link.ErrBadHitDiceChoice for a character not in rows, one named twice, or a die size
+// named twice in one choice.
+func restHitDiceChoices(rows []restRow, given []*playv1.HitDiceChoice) (map[string]rules.HitDiceUsed, error) {
+	choices := map[string]rules.HitDiceUsed{}
+	for _, c := range given {
+		if _, dup := choices[c.GetCharacterId()]; dup || !slices.ContainsFunc(rows, func(r restRow) bool { return r.row.ID == c.GetCharacterId() }) {
+			return nil, link.ErrBadHitDiceChoice
+		}
+		pick, err := restHitDicePick(c)
+		if err != nil {
+			return nil, err
 		}
 		choices[c.GetCharacterId()] = pick
 	}
+	return choices, nil
+}
+
+// restHitDicePick is one player's choice by die size (never nil, so an empty choice gets
+// no die back): link.ErrBadHitDiceChoice for a size named twice.
+func restHitDicePick(c *playv1.HitDiceChoice) (rules.HitDiceUsed, error) {
+	pick := rules.HitDiceUsed{}
+	for _, d := range c.GetDice() {
+		if _, dup := pick[int(d.GetFaces())]; dup {
+			return nil, link.ErrBadHitDiceChoice
+		}
+		pick[int(d.GetFaces())] = int(d.GetCount())
+	}
+	return pick, nil
+}
+
+// restEveryone writes what the rest of the kind gives each character back, and returns
+// the vitals before and after of the characters it changed, in the party's order.
+func (s *Service) restEveryone(ctx context.Context, tx pgx.Tx, kind string, rows []restRow, choices map[string]rules.HitDiceUsed) (before, after []*playv1.CharacterVitals, err error) {
 	q := s.queries.WithTx(tx)
 	for _, r := range rows {
-		plan, err := planRest(k, r.view, r.m, choices[r.row.ID])
+		plan, err := planRest(kind, r.view, r.m, choices[r.row.ID])
 		if err != nil {
 			return nil, nil, err
 		}
 		if proto.Equal(plan.after, r.view) {
 			continue
 		}
-		saved, err := s.writeVitals(ctx, q, r.row, plan.after, k == rules.RestLong)
+		if err := s.writeRestPlan(ctx, q, r, plan, kind == rules.RestLong); err != nil {
+			return nil, nil, err
+		}
+		before, after = append(before, r.view), append(after, plan.after)
+	}
+	return before, after, nil
+}
+
+// writeRestPlan stores one character's vitals after the rest and puts the revision on
+// plan.after.
+func (s *Service) writeRestPlan(ctx context.Context, q *charactersdb.Queries, r restRow, plan restPlan, long bool) error {
+	saved, err := s.writeVitals(ctx, q, r.row, plan.after, long)
+	if err != nil {
+		return err
+	}
+	if r.view.GetHitPointsMaxBonus() > 0 && plan.after.GetHitPointsMaxBonus() == 0 {
+		// The rest ended Ajuda: the bonus is cleared on the row, which bumps the revision once more.
+		saved2, err := q.SetVitalsMaxBonus(ctx, charactersdb.SetVitalsMaxBonusParams{CharacterID: r.row.ID, HitPointsMaxBonus: 0, Now: s.now()})
+		if err != nil {
+			return wrap("end Aid", err)
+		}
+		saved.Revision, saved.UpdatedAt = saved2.Revision, saved2.UpdatedAt
+	}
+	plan.after.Revision = saved.Revision
+	plan.after.UpdatedAt = timestamppb.New(saved.UpdatedAt)
+	return nil
+}
+
+// restEaseExhaustion takes one level of exhaustion off every character of rows that has
+// some. The vitals after of a character the rest changed are replaced; a character it
+// changed in nothing else is added at the end.
+func (s *Service) restEaseExhaustion(ctx context.Context, tx pgx.Tx, campaignID string, rows []restRow, before, after []*playv1.CharacterVitals) ([]*playv1.CharacterVitals, []*playv1.CharacterVitals, error) {
+	for _, r := range rows {
+		if r.view.GetExhaustionLevel() < 1 {
+			continue
+		}
+		was, now, err := s.SetExhaustion(ctx, tx, campaignID, r.row.ID, r.view.GetExhaustionLevel()-1)
 		if err != nil {
 			return nil, nil, err
 		}
-		if r.view.GetHitPointsMaxBonus() > 0 && plan.after.GetHitPointsMaxBonus() == 0 {
-			// The rest ended Ajuda: the bonus is cleared on the row, which bumps the revision once more.
-			saved2, err := q.SetVitalsMaxBonus(ctx, charactersdb.SetVitalsMaxBonusParams{CharacterID: r.row.ID, HitPointsMaxBonus: 0, Now: s.now()})
-			if err != nil {
-				return nil, nil, wrap("end Aid", err)
-			}
-			saved.Revision, saved.UpdatedAt = saved2.Revision, saved2.UpdatedAt
-		}
-		plan.after.Revision = saved.Revision
-		plan.after.UpdatedAt = timestamppb.New(saved.UpdatedAt)
-		before, after = append(before, r.view), append(after, plan.after)
-	}
-	if k == rules.RestLong && !req.GetWithoutFoodOrDrink() {
-		// A long rest with food and drink takes one level of exhaustion off (SRD 5.1).
-		for _, r := range rows {
-			if r.view.GetExhaustionLevel() < 1 {
-				continue
-			}
-			was, now, err := s.SetExhaustion(ctx, tx, campaignID, r.row.ID, r.view.GetExhaustionLevel()-1)
-			if err != nil {
-				return nil, nil, err
-			}
-			if i := slices.IndexFunc(after, func(v *playv1.CharacterVitals) bool { return v.GetCharacterId() == r.row.ID }); i >= 0 {
-				after[i] = now
-			} else {
-				before, after = append(before, was), append(after, now)
-			}
+		if i := slices.IndexFunc(after, func(v *playv1.CharacterVitals) bool { return v.GetCharacterId() == r.row.ID }); i >= 0 {
+			after[i] = now
+		} else {
+			before, after = append(before, was), append(after, now)
 		}
 	}
 	return before, after, nil
@@ -243,32 +313,14 @@ func (s *Service) TakeRest(ctx context.Context, tx pgx.Tx, campaignID string, re
 // What the view cannot show (the usage of a slot level or a resource the sheet lost)
 // is kept as it was, except that a long rest clears every slot level.
 func (s *Service) writeVitals(ctx context.Context, q *charactersdb.Queries, row vitalsRow, after *playv1.CharacterVitals, clearSlots bool) (charactersdb.UpsertVitalsRow, error) {
-	used := make([]int32, maxSpellLevel)
-	copy(used, row.SpellSlotsUsed)
-	created := make([]int32, maxSpellLevel)
-	if clearSlots {
-		clear(used)
-	}
-	for _, slot := range after.GetSpellSlots() {
-		if l := int(slot.GetLevel()); l >= 1 && l <= maxSpellLevel {
-			used[l-1], created[l-1] = slot.GetUsed(), slot.GetCreated()
-		}
-	}
+	used, created := restedSlots(row, after, clearSlots)
 	pactUsed := derefInt(row.PactSlotsUsed)
 	if p := after.GetPactSlots(); p != nil {
 		pactUsed = p.GetUsed()
 	}
-	usedResources := map[string]int32{}
-	_ = json.Unmarshal(row.ResourcesUsed, &usedResources)
-	if usedResources == nil {
-		usedResources = map[string]int32{}
-	}
+	usedResources := storedResourcesUsed(row.ResourcesUsed)
 	for _, r := range after.GetResources() {
-		if r.GetUsed() > 0 {
-			usedResources[r.GetKey()] = r.GetUsed()
-		} else {
-			delete(usedResources, r.GetKey())
-		}
+		setResourceUse(usedResources, r.GetKey(), r.GetUsed())
 	}
 	resourcesJSON, err := json.Marshal(usedResources)
 	if err != nil {
@@ -291,6 +343,23 @@ func (s *Service) writeVitals(ctx context.Context, q *charactersdb.Queries, row 
 		return charactersdb.UpsertVitalsRow{}, wrap("save vitals", err)
 	}
 	return saved, nil
+}
+
+// restedSlots are the slots used and created, by level, to store for the vitals after:
+// the stored usage of the levels the view does not show stays, unless clearSlots.
+func restedSlots(row vitalsRow, after *playv1.CharacterVitals, clearSlots bool) (used, created []int32) {
+	used = make([]int32, maxSpellLevel)
+	copy(used, row.SpellSlotsUsed)
+	created = make([]int32, maxSpellLevel)
+	if clearSlots {
+		clear(used)
+	}
+	for _, slot := range after.GetSpellSlots() {
+		if l := int(slot.GetLevel()); l >= 1 && l <= maxSpellLevel {
+			used[l-1], created[l-1] = slot.GetUsed(), slot.GetCreated()
+		}
+	}
+	return used, created
 }
 
 // vitalsOfRow reads one character's vitals and maximums inside tx, or `not_found`.

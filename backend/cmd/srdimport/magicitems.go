@@ -65,70 +65,19 @@ func convertMagicItemRows(rows []magicItemsSource) ([]srd51.MagicItem, error) {
 	out := make([]srd51.MagicItem, 0, len(rows))
 	seen := map[string]bool{}
 	for _, r := range rows {
-		cat, ok := magicCategories[r.EquipmentCategory.Index]
-		if !ok {
-			return nil, fmt.Errorf("magic item %s: unknown category %q", r.Index, r.EquipmentCategory.Index)
-		}
-		rarity, ok := magicRarities[r.Rarity.Name]
-		if !ok {
-			return nil, fmt.Errorf("magic item %s: unknown rarity %q", r.Index, r.Rarity.Name)
-		}
-		if len(r.Desc) == 0 {
-			return nil, fmt.Errorf("magic item %s: no description", r.Index)
-		}
-		if seen[r.Index] {
-			return nil, fmt.Errorf("magic item %s: listed twice", r.Index)
-		}
-		it := srd51.MagicItem{
-			Key: "item:" + r.Index, Name: strings.TrimSpace(r.Name), Category: cat, Rarity: rarity,
-			Desc: r.Desc,
-		}
-		if m := attunementRE.FindStringSubmatch(r.Desc[0]); m != nil {
-			it.Attunement = true
-			it.AttunementBy = strings.TrimSpace(m[1])
-		}
-		if rarity == "varies" && len(r.Variants) == 0 {
-			return nil, fmt.Errorf("magic item %s: rarity varies but it has no variants", r.Index)
-		}
-		if r.Variant && len(r.Variants) > 0 {
-			return nil, fmt.Errorf("magic item %s: a variant with variants", r.Index)
-		}
-		if familyAlsoItem[r.Index] {
-			if len(r.Variants) == 0 || rarity == "varies" {
-				return nil, fmt.Errorf("magic item %s: listed as a family that is also an item, but it is not a family with a rarity", r.Index)
-			}
-			it.Standalone = true
-		}
-		for _, v := range r.Variants {
-			it.Variants = append(it.Variants, "item:"+v.Index)
+		it, err := convertMagicItemRow(r, seen)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, it)
 		seen[r.Index] = true
-	}
-	byKey := map[string]*srd51.MagicItem{}
-	for i := range out {
-		byKey[out[i].Key] = &out[i]
 	}
 	isVariant := map[string]bool{}
 	for _, r := range rows {
 		isVariant["item:"+r.Index] = r.Variant
 	}
-	for i := range out {
-		fam := &out[i]
-		for _, vk := range fam.Variants {
-			v, ok := byKey[vk]
-			switch {
-			case !ok:
-				return nil, fmt.Errorf("magic item %s: variant %s does not exist", fam.Key, vk)
-			case !isVariant[vk]:
-				return nil, fmt.Errorf("magic item %s: %s is listed as a variant but is not one", fam.Key, vk)
-			case v.VariantOf != "":
-				return nil, fmt.Errorf("magic item %s: in two families, %s and %s", vk, v.VariantOf, fam.Key)
-			case v.Rarity == "varies":
-				return nil, fmt.Errorf("magic item %s: a variant must have a rarity", vk)
-			}
-			v.VariantOf = fam.Key
-		}
+	if err := linkMagicVariants(out, isVariant); err != nil {
+		return nil, err
 	}
 	for i := range out {
 		if isVariant[out[i].Key] && out[i].VariantOf == "" {
@@ -137,4 +86,82 @@ func convertMagicItemRows(rows []magicItemsSource) ([]srd51.MagicItem, error) {
 	}
 	sortByKey(out, func(m srd51.MagicItem) string { return m.Key })
 	return out, nil
+}
+
+// convertMagicItemRow converts one entry and checks what it can alone: its
+// category, rarity and text, that it is new, and its place in a family.
+func convertMagicItemRow(r magicItemsSource, seen map[string]bool) (srd51.MagicItem, error) {
+	cat, ok := magicCategories[r.EquipmentCategory.Index]
+	if !ok {
+		return srd51.MagicItem{}, fmt.Errorf("magic item %s: unknown category %q", r.Index, r.EquipmentCategory.Index)
+	}
+	rarity, ok := magicRarities[r.Rarity.Name]
+	if !ok {
+		return srd51.MagicItem{}, fmt.Errorf("magic item %s: unknown rarity %q", r.Index, r.Rarity.Name)
+	}
+	if len(r.Desc) == 0 {
+		return srd51.MagicItem{}, fmt.Errorf("magic item %s: no description", r.Index)
+	}
+	if seen[r.Index] {
+		return srd51.MagicItem{}, fmt.Errorf("magic item %s: listed twice", r.Index)
+	}
+	it := srd51.MagicItem{
+		Key: "item:" + r.Index, Name: strings.TrimSpace(r.Name), Category: cat, Rarity: rarity,
+		Desc: r.Desc,
+	}
+	if m := attunementRE.FindStringSubmatch(r.Desc[0]); m != nil {
+		it.Attunement = true
+		it.AttunementBy = strings.TrimSpace(m[1])
+	}
+	if err := checkMagicFamily(r, rarity); err != nil {
+		return srd51.MagicItem{}, err
+	}
+	it.Standalone = familyAlsoItem[r.Index]
+	for _, v := range r.Variants {
+		it.Variants = append(it.Variants, "item:"+v.Index)
+	}
+	return it, nil
+}
+
+// checkMagicFamily checks an entry's variants against its rarity: a rarity
+// that varies needs variants, a variant has none, and a family that is also an
+// item has variants and a rarity of its own.
+func checkMagicFamily(r magicItemsSource, rarity string) error {
+	if rarity == "varies" && len(r.Variants) == 0 {
+		return fmt.Errorf("magic item %s: rarity varies but it has no variants", r.Index)
+	}
+	if r.Variant && len(r.Variants) > 0 {
+		return fmt.Errorf("magic item %s: a variant with variants", r.Index)
+	}
+	if familyAlsoItem[r.Index] && (len(r.Variants) == 0 || rarity == "varies") {
+		return fmt.Errorf("magic item %s: listed as a family that is also an item, but it is not a family with a rarity", r.Index)
+	}
+	return nil
+}
+
+// linkMagicVariants points each variant at its family, refusing a variant
+// that does not exist, is not one, is in two families or has no rarity.
+func linkMagicVariants(out []srd51.MagicItem, isVariant map[string]bool) error {
+	byKey := map[string]*srd51.MagicItem{}
+	for i := range out {
+		byKey[out[i].Key] = &out[i]
+	}
+	for i := range out {
+		fam := &out[i]
+		for _, vk := range fam.Variants {
+			v, ok := byKey[vk]
+			switch {
+			case !ok:
+				return fmt.Errorf("magic item %s: variant %s does not exist", fam.Key, vk)
+			case !isVariant[vk]:
+				return fmt.Errorf("magic item %s: %s is listed as a variant but is not one", fam.Key, vk)
+			case v.VariantOf != "":
+				return fmt.Errorf("magic item %s: in two families, %s and %s", vk, v.VariantOf, fam.Key)
+			case v.Rarity == "varies":
+				return fmt.Errorf("magic item %s: a variant must have a rarity", vk)
+			}
+			v.VariantOf = fam.Key
+		}
+	}
+	return nil
 }

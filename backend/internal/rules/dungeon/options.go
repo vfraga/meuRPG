@@ -153,39 +153,16 @@ func inRange(option string, v, lo, hi int) error {
 }
 
 // normalize validates the options and returns them with the even sizes
-// normalised.
+// normalised. The checks run in a fixed order and the first refusal is the
+// one returned (with the options normalised so far).
 func normalize(o Options) (Options, error) {
-	if err := inRange("version", o.Version, 1, Version); err != nil {
-		return o, err
-	}
-	if err := inRange("width", o.Width, 15, 199); err != nil {
-		return o, err
-	}
-	if err := inRange("height", o.Height, 15, 399); err != nil {
+	if err := checkGrid(o); err != nil {
 		return o, err
 	}
 	o.Width -= (o.Width + 1) % 2 // even goes down to the next odd
 	o.Height -= (o.Height + 1) % 2
-	switch o.Mask {
-	case MaskNone, MaskPlus, MaskLShape, MaskEllipse, MaskDiamond:
-	case MaskDonut:
-		if err := inRange("mask_hole", o.MaskHole, 20, 60); err != nil {
-			return o, err
-		}
-	case MaskCustom:
-		m := o.CustomMask
-		switch {
-		case m == nil:
-			return o, optErr("custom_mask", "required with mask custom")
-		case m.Width < 3 || m.Height < 3:
-			return o, optErr("custom_mask", "%d by %d is smaller than 3 by 3", m.Width, m.Height)
-		case m.Width > o.Width || m.Height > o.Height:
-			return o, optErr("custom_mask", "%d by %d is larger than the %d by %d grid", m.Width, m.Height, o.Width, o.Height)
-		case len(m.On) != m.Width*m.Height:
-			return o, optErr("custom_mask", "%d cells for a %d by %d bitmap", len(m.On), m.Width, m.Height)
-		}
-	default:
-		return o, optErr("mask", "unknown mask %q", o.Mask)
+	if err := checkMask(o); err != nil {
+		return o, err
 	}
 	if err := inRange("room_side_min", o.RoomSideMin, 3, 15); err != nil {
 		return o, err
@@ -193,47 +170,100 @@ func normalize(o Options) (Options, error) {
 	if err := inRange("room_side_max", o.RoomSideMax, o.RoomSideMin, 31); err != nil {
 		return o, err
 	}
-	if o.RoomSideMin%2 == 0 {
-		o.RoomSideMin++
+	o.RoomSideMin, o.RoomSideMax = oddSides(o.RoomSideMin, o.RoomSideMax)
+	if err := checkLayout(o); err != nil {
+		return o, err
 	}
-	if o.RoomSideMax%2 == 0 {
-		o.RoomSideMax--
+	return o, checkDoorsAndFinish(o)
+}
+
+// checkGrid checks the version and the grid size.
+func checkGrid(o Options) error {
+	if err := inRange("version", o.Version, 1, Version); err != nil {
+		return err
 	}
-	if o.RoomSideMax < o.RoomSideMin { // 14, 14 -> 15, 13: the smallest reading is max = min
-		o.RoomSideMax = o.RoomSideMin
+	if err := inRange("width", o.Width, 15, 199); err != nil {
+		return err
 	}
+	return inRange("height", o.Height, 15, 399)
+}
+
+// checkMask checks the silhouette and the option it needs (the hole of a
+// donut, the bitmap of a custom mask), against the normalised grid.
+func checkMask(o Options) error {
+	switch o.Mask {
+	case MaskNone, MaskPlus, MaskLShape, MaskEllipse, MaskDiamond:
+		return nil
+	case MaskDonut:
+		return inRange("mask_hole", o.MaskHole, 20, 60)
+	case MaskCustom:
+		return checkCustomMask(o.CustomMask, o.Width, o.Height)
+	}
+	return optErr("mask", "unknown mask %q", o.Mask)
+}
+
+// checkCustomMask checks a custom bitmap against a w by h grid.
+func checkCustomMask(m *CustomMask, w, h int) error {
+	switch {
+	case m == nil:
+		return optErr("custom_mask", "required with mask custom")
+	case m.Width < 3 || m.Height < 3:
+		return optErr("custom_mask", "%d by %d is smaller than 3 by 3", m.Width, m.Height)
+	case m.Width > w || m.Height > h:
+		return optErr("custom_mask", "%d by %d is larger than the %d by %d grid", m.Width, m.Height, w, h)
+	case len(m.On) != m.Width*m.Height:
+		return optErr("custom_mask", "%d cells for a %d by %d bitmap", len(m.On), m.Width, m.Height)
+	}
+	return nil
+}
+
+// oddSides makes an even least side odd upward and an even greatest side odd
+// downward; 14, 14 gives 15, 13, and the smallest reading is max = min.
+func oddSides(lo, hi int) (minSide, maxSide int) {
+	if lo%2 == 0 {
+		lo++
+	}
+	if hi%2 == 0 {
+		hi--
+	}
+	return lo, max(hi, lo)
+}
+
+// checkLayout checks the room shapes, the density and the two styles.
+func checkLayout(o Options) error {
 	if !(o.AspectLimit >= 1 && o.AspectLimit <= 6) { // also rejects NaN
-		return o, optErr("aspect_limit", "%v is outside 1.0 to 6.0", o.AspectLimit)
+		return optErr("aspect_limit", "%v is outside 1.0 to 6.0", o.AspectLimit)
 	}
 	if err := inRange("room_density", o.RoomDensity, 10, 200); err != nil {
-		return o, err
+		return err
 	}
 	switch o.Placement {
 	case PlacementSpread, PlacementTiled:
 	default:
-		return o, optErr("placement", "unknown placement %q", o.Placement)
+		return optErr("placement", "unknown placement %q", o.Placement)
 	}
 	switch o.CorridorStyle {
 	case StyleTwisty, StyleMeandering, StyleLongRuns:
-	default:
-		return o, optErr("corridor_style", "unknown style %q", o.CorridorStyle)
+		return nil
 	}
+	return optErr("corridor_style", "unknown style %q", o.CorridorStyle)
+}
+
+// checkDoorsAndFinish checks the doors and the last phases' options.
+func checkDoorsAndFinish(o Options) error {
 	if err := inRange("door_density", o.DoorDensity, 25, 200); err != nil {
-		return o, err
+		return err
 	}
 	switch o.DoorMix {
 	case MixOpen, MixTypical, MixSecured, MixParanoid:
 	default:
-		return o, optErr("door_mix", "unknown mix %q", o.DoorMix)
+		return optErr("door_mix", "unknown mix %q", o.DoorMix)
 	}
 	if err := inRange("deadend_removal", o.DeadendRemoval, 0, 100); err != nil {
-		return o, err
+		return err
 	}
 	if err := inRange("stairs", o.Stairs, 0, 8); err != nil {
-		return o, err
+		return err
 	}
-	if err := inRange("extra_loops", o.ExtraLoops, 0, 100); err != nil {
-		return o, err
-	}
-	return o, nil
+	return inRange("extra_loops", o.ExtraLoops, 0, 100)
 }

@@ -1,0 +1,38 @@
+[
+ {
+  "key": "subclass:champion",
+  "name": "Champion",
+  "class": "class:fighter",
+  "flavor": "Martial Archetype",
+  "desc": [
+   "Text."
+  ]
+ },
+ {
+  "key": "subclass:life",
+  "name": "Life",
+  "class": "class:cleric",
+  "flavor": "Divine Domain",
+  "desc": [
+   "Text."
+  ],
+  "spells": [
+   {
+    "spell": "spell:bless",
+    "class_level": 3
+   },
+   {
+    "spell": "spell:revivify",
+    "class_level": 5,
+    "with_features": [
+     "feature:channel",
+     "feature:other"
+    ]
+   },
+   {
+    "spell": "spell:light",
+    "class_level": 0
+   }
+  ]
+ }
+]

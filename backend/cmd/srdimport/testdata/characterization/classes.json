@@ -1,0 +1,92 @@
+[
+ {
+  "key": "class:a",
+  "name": "A",
+  "hit_die": 10,
+  "saving_throws": [
+   "str",
+   "con"
+  ],
+  "skill_choices": {
+   "choose": 2,
+   "from": [
+    "skill:arcana",
+    "skill:history"
+   ]
+  },
+  "proficiencies": [
+   "proficiency:light-armor",
+   "proficiency:shields"
+  ],
+  "multiclass": {
+   "minimums": {
+    "cha": 13,
+    "str": 13
+   },
+   "any_of": {
+    "dex": 13,
+    "str": 13
+   },
+   "proficiencies": [
+    "proficiency:light-armor"
+   ],
+   "skill_choices": {
+    "choose": 1,
+    "from": [
+     "skill:stealth"
+    ]
+   }
+  },
+  "spellcasting": {
+   "level": 1,
+   "ability": "cha"
+  },
+  "subclasses": [
+   "subclass:sub-a1",
+   "subclass:sub-a2",
+   "subclass:sub-none"
+  ],
+  "subclass_level": 2
+ },
+ {
+  "key": "class:b",
+  "name": "B",
+  "hit_die": 6,
+  "saving_throws": [],
+  "skill_choices": {
+   "choose": 2,
+   "from": [
+    "skill:arcana",
+    "skill:history"
+   ]
+  },
+  "proficiencies": null,
+  "multiclass": {
+   "proficiencies": []
+  },
+  "subclasses": [
+   "subclass:sub-none",
+   "subclass:sub-b"
+  ],
+  "subclass_level": 6
+ },
+ {
+  "key": "class:c",
+  "name": "C",
+  "hit_die": 8,
+  "saving_throws": [],
+  "skill_choices": {
+   "choose": 2,
+   "from": [
+    "skill:arcana",
+    "skill:history"
+   ]
+  },
+  "proficiencies": null,
+  "multiclass": {
+   "proficiencies": []
+  },
+  "subclasses": [],
+  "subclass_level": 0
+ }
+]

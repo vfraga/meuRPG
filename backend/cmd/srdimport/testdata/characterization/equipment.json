@@ -1,0 +1,102 @@
+[
+ {
+  "key": "equipment:chain-mail",
+  "name": "Chain Mail",
+  "kind": "armor",
+  "armor": {
+   "category": "heavy",
+   "base_ac": 16,
+   "dex_bonus": false,
+   "str_minimum": 13,
+   "stealth_disadvantage": true
+  }
+ },
+ {
+  "key": "equipment:dagger",
+  "name": "Dagger",
+  "kind": "weapon",
+  "weapon": {
+   "category": "simple",
+   "range": "melee",
+   "damage": "1d4",
+   "damage_type": "damage-type:piercing",
+   "properties": [
+    "weapon-property:thrown"
+   ],
+   "normal_range_ft": 5,
+   "throw_normal_ft": 20,
+   "throw_long_ft": 60
+  }
+ },
+ {
+  "key": "equipment:glaive",
+  "name": "Glaive",
+  "kind": "weapon",
+  "weapon": {
+   "category": "martial",
+   "range": "melee",
+   "damage": "1d10",
+   "damage_type": "damage-type:slashing",
+   "properties": [
+    "weapon-property:heavy",
+    "weapon-property:reach"
+   ],
+   "normal_range_ft": 10
+  }
+ },
+ {
+  "key": "equipment:longsword",
+  "name": "Longsword",
+  "kind": "weapon",
+  "weapon": {
+   "category": "martial",
+   "range": "melee",
+   "damage": "1d8",
+   "damage_type": "damage-type:slashing",
+   "two_handed_damage": "1d10",
+   "properties": [
+    "weapon-property:versatile"
+   ],
+   "normal_range_ft": 5
+  }
+ },
+ {
+  "key": "equipment:lute",
+  "name": "Lute",
+  "kind": "tool"
+ },
+ {
+  "key": "equipment:net",
+  "name": "Net",
+  "kind": "weapon",
+  "weapon": {
+   "category": "martial",
+   "range": "ranged",
+   "properties": []
+  }
+ },
+ {
+  "key": "equipment:studded",
+  "name": "Studded",
+  "kind": "armor",
+  "armor": {
+   "category": "light",
+   "base_ac": 12,
+   "dex_bonus": true
+  }
+ },
+ {
+  "key": "equipment:whip-ranged",
+  "name": "Odd",
+  "kind": "weapon",
+  "weapon": {
+   "category": "simple",
+   "range": "ranged",
+   "properties": [
+    "weapon-property:reach"
+   ],
+   "normal_range_ft": 30,
+   "long_range_ft": 120
+  }
+ }
+]

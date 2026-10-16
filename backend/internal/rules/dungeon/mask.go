@@ -14,35 +14,53 @@ func (g *gen) buildMask() {
 }
 
 func (g *gen) insideMask(x, y int) bool {
-	w, h := g.w, g.h
 	switch g.o.Mask {
 	case MaskDonut:
-		hw, hh := w*g.o.MaskHole/100, h*g.o.MaskHole/100
-		x0, y0 := (w-hw)/2, (h-hh)/2
-		return x < x0 || x >= x0+hw || y < y0 || y >= y0+hh
+		return g.insideDonut(x, y)
 	case MaskPlus:
-		cw, ch := w/4, h/4
-		return x >= cw && x < w-cw || y >= ch && y < h-ch
+		cw, ch := g.w/4, g.h/4
+		return x >= cw && x < g.w-cw || y >= ch && y < g.h-ch
 	case MaskLShape:
-		return x < w-w*45/100 || y >= h*45/100
+		return x < g.w-g.w*45/100 || y >= g.h*45/100
 	case MaskEllipse:
-		// The center of the square against the inscribed ellipse, scaled by 2.
-		a, b := int64(2*x+1-w), int64(2*y+1-h)
-		return a*a*int64(h)*int64(h)+b*b*int64(w)*int64(w) <= int64(w)*int64(w)*int64(h)*int64(h)
+		return g.insideEllipse(x, y)
 	case MaskDiamond:
-		a, b := int64(2*x+1-w), int64(2*y+1-h)
-		if a < 0 {
-			a = -a
-		}
-		if b < 0 {
-			b = -b
-		}
-		return a*int64(h)+b*int64(w) <= int64(w)*int64(h)
+		return g.insideDiamond(x, y)
 	case MaskCustom:
 		m := g.o.CustomMask
-		cx := (2*x + 1) * m.Width / (2 * w)
-		cy := (2*y + 1) * m.Height / (2 * h)
+		cx := (2*x + 1) * m.Width / (2 * g.w)
+		cy := (2*y + 1) * m.Height / (2 * g.h)
 		return m.On[cy*m.Width+cx]
 	}
 	return true
+}
+
+// insideDonut: outside the centered hole of MaskHole percent of each side.
+func (g *gen) insideDonut(x, y int) bool {
+	w, h := g.w, g.h
+	hw, hh := w*g.o.MaskHole/100, h*g.o.MaskHole/100
+	x0, y0 := (w-hw)/2, (h-hh)/2
+	return x < x0 || x >= x0+hw || y < y0 || y >= y0+hh
+}
+
+// insideEllipse: the center of the square against the inscribed ellipse,
+// scaled by 2.
+func (g *gen) insideEllipse(x, y int) bool {
+	w, h := int64(g.w), int64(g.h)
+	a, b := int64(2*x+1)-w, int64(2*y+1)-h
+	return a*a*h*h+b*b*w*w <= w*w*h*h
+}
+
+// insideDiamond: the center of the square against the inscribed diamond,
+// scaled by 2.
+func (g *gen) insideDiamond(x, y int) bool {
+	w, h := int64(g.w), int64(g.h)
+	a, b := int64(2*x+1)-w, int64(2*y+1)-h
+	if a < 0 {
+		a = -a
+	}
+	if b < 0 {
+		b = -b
+	}
+	return a*h+b*w <= w*h
 }

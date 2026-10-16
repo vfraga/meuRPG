@@ -135,66 +135,107 @@ func LightsMinimum(n int, state uint64) (sol LightsSolution, ok bool, err error)
 		return LightsSolution{}, false, err
 	}
 	m := n * n
+	rows := lightsEquations(n, state)
+	pivotOf, rank := eliminate(rows, m)
+	if inconsistent(rows, rank, m) {
+		return LightsSolution{}, false, nil // 0 = 1: no solution
+	}
+	particular, kernel := solutionSpace(rows, pivotOf, m)
+	if len(kernel) > maxKernel {
+		return LightsSolution{}, false, fmt.Errorf("puzzle: a kernel of %d vectors is more than expected", len(kernel))
+	}
+	best := fewestPresses(particular, kernel)
+	return LightsSolution{Presses: bits.OnesCount64(best), Cells: best}, true, nil
+}
+
+// lightsEquations is the system to solve, one row per light: bit c is set when
+// pressing c toggles the light (the matrix is symmetric, so that is bit r of
+// masks[c] and bit c of masks[r]), and bit m (N x N) is the right-hand side,
+// the light's own state.
+func lightsEquations(n int, state uint64) []uint64 {
+	m := n * n
 	masks := pressMasks(n)
-	// Row r holds the equation of light r: bit c is set when pressing c toggles r
-	// (the matrix is symmetric, so that is bit r of masks[c] and bit c of masks[r]),
-	// and bit m is the right-hand side, the light's own state.
 	rows := make([]uint64, m)
 	for r := range m {
 		rows[r] = masks[r] | (state>>r&1)<<m
 	}
-	pivotOf := make([]int, m) // pivotOf[col] = the row whose leading column is col, or -1
+	return rows
+}
+
+// eliminate runs Gauss-Jordan elimination over GF(2) on the m x m system in
+// place. pivotOf[col] is the row whose leading column is col, or -1 for a
+// free column; rank is how many pivot rows there are, the first ones.
+func eliminate(rows []uint64, m int) (pivotOf []int, rank int) {
+	pivotOf = make([]int, m)
 	for i := range pivotOf {
 		pivotOf[i] = -1
 	}
-	next := 0 // the next row to use as a pivot
 	for col := range m {
-		sel := -1
-		for r := next; r < m; r++ {
-			if rows[r]>>col&1 == 1 {
-				sel = r
-				break
-			}
-		}
+		sel := pivotRow(rows, rank, col)
 		if sel < 0 {
 			continue // a free column
 		}
-		rows[next], rows[sel] = rows[sel], rows[next]
-		for r := range m {
-			if r != next && rows[r]>>col&1 == 1 {
-				rows[r] ^= rows[next]
+		rows[rank], rows[sel] = rows[sel], rows[rank]
+		for r := range rows {
+			if r != rank && rows[r]>>col&1 == 1 {
+				rows[r] ^= rows[rank]
 			}
 		}
-		pivotOf[col] = next
-		next++
+		pivotOf[col] = rank
+		rank++
 	}
-	for r := next; r < m; r++ {
-		if rows[r]>>m&1 == 1 {
-			return LightsSolution{}, false, nil // 0 = 1: no solution
+	return pivotOf, rank
+}
+
+// pivotRow is the first row from `from` on with the column set, or -1.
+func pivotRow(rows []uint64, from, col int) int {
+	for r := from; r < len(rows); r++ {
+		if rows[r]>>col&1 == 1 {
+			return r
 		}
 	}
-	// A particular solution: the free columns are 0, each pivot column takes the
-	// right-hand side of its row.
-	var particular uint64
-	var kernel []uint64
+	return -1
+}
+
+// inconsistent says whether a row past the pivots reads 0 = 1.
+func inconsistent(rows []uint64, rank, m int) bool {
+	for r := rank; r < len(rows); r++ {
+		if rows[r]>>m&1 == 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// solutionSpace is a particular solution (the free columns are 0, each pivot
+// column takes the right-hand side of its row) and a basis of the kernel, one
+// vector per free column, in column order.
+func solutionSpace(rows []uint64, pivotOf []int, m int) (particular uint64, kernel []uint64) {
 	for col := range m {
 		if pivotOf[col] >= 0 {
 			particular |= (rows[pivotOf[col]] >> m & 1) << col
 			continue
 		}
-		// A kernel vector: press the free column, and every pivot column whose
-		// row has the free column in it.
-		v := uint64(1) << col
-		for p := range m {
-			if pivotOf[p] >= 0 && rows[pivotOf[p]]>>col&1 == 1 {
-				v |= 1 << p
-			}
+		kernel = append(kernel, kernelVector(rows, pivotOf, m, col))
+	}
+	return particular, kernel
+}
+
+// kernelVector presses the free column, and every pivot column whose row has
+// the free column in it.
+func kernelVector(rows []uint64, pivotOf []int, m, free int) uint64 {
+	v := uint64(1) << free
+	for p := range m {
+		if pivotOf[p] >= 0 && rows[pivotOf[p]]>>free&1 == 1 {
+			v |= 1 << p
 		}
-		kernel = append(kernel, v)
 	}
-	if len(kernel) > maxKernel {
-		return LightsSolution{}, false, fmt.Errorf("puzzle: a kernel of %d vectors is more than expected", len(kernel))
-	}
+	return v
+}
+
+// fewestPresses is the solution with the fewest presses among the particular
+// one plus each combination of the kernel, the first one found on a tie.
+func fewestPresses(particular uint64, kernel []uint64) uint64 {
 	best := particular
 	for combo := 1; combo < 1<<len(kernel); combo++ {
 		x := particular
@@ -207,7 +248,7 @@ func LightsMinimum(n int, state uint64) (sol LightsSolution, ok bool, err error)
 			best = x
 		}
 	}
-	return LightsSolution{Presses: bits.OnesCount64(best), Cells: best}, true, nil
+	return best
 }
 
 // LightsToBools lists the board row by row, true for a lit light.

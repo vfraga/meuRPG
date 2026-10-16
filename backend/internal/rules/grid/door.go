@@ -139,6 +139,16 @@ func SightWalls(walls *Layer, doors *DoorLayer) *Layer {
 	if doors == nil || (walls != nil && walls.g != doors.g) {
 		return walls
 	}
+	if out := withShutDoors(walls, doors); out != nil {
+		return out
+	}
+	return walls
+}
+
+// withShutDoors is a copy of the walls (or a new layer, when there are none)
+// with the squares of the doors that block sight set, or nil when no door
+// blocks sight.
+func withShutDoors(walls *Layer, doors *DoorLayer) *Layer {
 	var out *Layer
 	for row := range doors.g.Rows {
 		for col := range doors.g.Columns {
@@ -146,16 +156,20 @@ func SightWalls(walls *Layer, doors *DoorLayer) *Layer {
 				continue
 			}
 			if out == nil {
-				out = NewLayer(doors.g)
-				if walls != nil {
-					out.bits = append(out.bits[:0], walls.bits...)
-				}
+				out = copyOrNewLayer(walls, doors.g)
 			}
 			out.Set(col, row, true)
 		}
 	}
-	if out == nil {
-		return walls
+	return out
+}
+
+// copyOrNewLayer is a copy of the layer, or an empty layer of the grid when
+// it is nil.
+func copyOrNewLayer(l *Layer, g Grid) *Layer {
+	out := NewLayer(g)
+	if l != nil {
+		out.bits = append(out.bits[:0], l.bits...)
 	}
 	return out
 }

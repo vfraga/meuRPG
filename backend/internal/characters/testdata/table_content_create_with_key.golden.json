@@ -1,0 +1,123 @@
+[
+  {
+    "step": "first",
+    "value": {
+      "entry": {
+        "createdAt": "\u003ctime\u003e",
+        "key": "background:guarda-de-farol@mesa",
+        "kind": "TABLE_CONTENT_KIND_BACKGROUND",
+        "namePt": "Guarda de farol",
+        "revision": 1,
+        "tableBackground": {
+          "equipmentPt": "Uma lanterna e um apito.",
+          "feature": {
+            "descPt": [
+              "Texto de luz."
+            ],
+            "effects": [
+              {
+                "textPt": "Conhece a rota dos navios.",
+                "type": "note"
+              }
+            ],
+            "key": "background-feature:background-guarda-de-farol-c2bc7e--luz-guia@mesa",
+            "namePt": "Luz-guia"
+          },
+          "languageChoices": 1,
+          "namePt": "Guarda de farol",
+          "skills": [
+            "skill:insight",
+            "skill:religion"
+          ],
+          "tools": [
+            "proficiency:thieves-tools"
+          ]
+        },
+        "updatedAt": "\u003ctime\u003e"
+      },
+      "tableRevision": 1
+    }
+  },
+  {
+    "step": "the same request again",
+    "value": {
+      "entry": {
+        "createdAt": "\u003ctime\u003e",
+        "key": "background:guarda-de-farol@mesa",
+        "kind": "TABLE_CONTENT_KIND_BACKGROUND",
+        "namePt": "Guarda de farol",
+        "revision": 1,
+        "tableBackground": {
+          "equipmentPt": "Uma lanterna e um apito.",
+          "feature": {
+            "descPt": [
+              "Texto de luz."
+            ],
+            "effects": [
+              {
+                "textPt": "Conhece a rota dos navios.",
+                "type": "note"
+              }
+            ],
+            "key": "background-feature:background-guarda-de-farol-c2bc7e--luz-guia@mesa",
+            "namePt": "Luz-guia"
+          },
+          "languageChoices": 1,
+          "namePt": "Guarda de farol",
+          "skills": [
+            "skill:insight",
+            "skill:religion"
+          ],
+          "tools": [
+            "proficiency:thieves-tools"
+          ]
+        },
+        "updatedAt": "\u003ctime\u003e"
+      },
+      "tableRevision": 2
+    }
+  },
+  {
+    "step": "the same key with another request",
+    "value": "invalid_argument: idempotency_key was used for another change"
+  },
+  {
+    "step": "the same key in another campaign",
+    "value": {
+      "entry": {
+        "createdAt": "\u003ctime\u003e",
+        "key": "background:guarda-de-farol@mesa",
+        "kind": "TABLE_CONTENT_KIND_BACKGROUND",
+        "namePt": "Guarda de farol",
+        "revision": 1,
+        "tableBackground": {
+          "equipmentPt": "Uma lanterna e um apito.",
+          "feature": {
+            "descPt": [
+              "Texto de luz."
+            ],
+            "effects": [
+              {
+                "textPt": "Conhece a rota dos navios.",
+                "type": "note"
+              }
+            ],
+            "key": "background-feature:background-guarda-de-farol-c2bc7e--luz-guia@mesa",
+            "namePt": "Luz-guia"
+          },
+          "languageChoices": 1,
+          "namePt": "Guarda de farol",
+          "skills": [
+            "skill:insight",
+            "skill:religion"
+          ],
+          "tools": [
+            "proficiency:thieves-tools"
+          ]
+        },
+        "updatedAt": "\u003ctime\u003e"
+      },
+      "tableRevision": 1
+    }
+  }
+]

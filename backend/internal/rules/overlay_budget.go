@@ -101,58 +101,83 @@ func (bg *budget) casting(path string, key string, c *TableCasting) error {
 }
 
 // checkBudgets walks the whole overlay once, before anything is compiled or
-// allocated, and refuses the one that is over a budget, naming the limit.
+// allocated, and refuses the one that is over a budget, naming the limit. The
+// parts are walked in a fixed order, so the first refusal is always the same.
 func checkBudgets(o *Overlay) error {
 	bg := &budget{formulas: map[string]bool{}}
+	for _, part := range []func(*Overlay) error{bg.classes, bg.subclasses, bg.races, bg.subraces, bg.backgrounds, bg.feats} {
+		if err := part(o); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// classes counts each class's casting and features.
+func (bg *budget) classes(o *Overlay) error {
 	for ci := range o.Classes {
 		tc := &o.Classes[ci]
 		path := fmt.Sprintf("classes[%d]", ci)
 		if err := bg.casting(path, tc.Key, &tc.Casting); err != nil {
 			return err
 		}
-		n := 0
-		for li := range tc.Levels {
-			for fi := range tc.Levels[li].Features {
-				n++
-				if n > MaxTableFeatures {
-					return ovErr(tc.Key, "more than %d features; the limit is %d per class", MaxTableFeatures, MaxTableFeatures).at(fmt.Sprintf("%s.levels[%d].features[%d]", path, li, fi), ReasonLimit)
-				}
-				if err := bg.feature(fmt.Sprintf("%s.levels[%d].features[%d]", path, li, fi), &tc.Levels[li].Features[fi]); err != nil {
-					return err
-				}
-			}
+		if err := budgetRows(bg, path, tc.Key, "class", tc.Levels, func(l *TableClassLevel) []TableFeature { return l.Features }); err != nil {
+			return err
 		}
 	}
+	return nil
+}
+
+// subclasses counts each subclass's casting and features.
+func (bg *budget) subclasses(o *Overlay) error {
 	for si := range o.Subclasses {
 		ts := &o.Subclasses[si]
 		path := fmt.Sprintf("subclasses[%d]", si)
 		if err := bg.casting(path, ts.Key, ts.Casting); err != nil {
 			return err
 		}
-		n := 0
-		for li := range ts.Levels {
-			for fi := range ts.Levels[li].Features {
-				n++
-				if n > MaxTableFeatures {
-					return ovErr(ts.Key, "more than %d features; the limit is %d per subclass", MaxTableFeatures, MaxTableFeatures).at(fmt.Sprintf("%s.levels[%d].features[%d]", path, li, fi), ReasonLimit)
-				}
-				if err := bg.feature(fmt.Sprintf("%s.levels[%d].features[%d]", path, li, fi), &ts.Levels[li].Features[fi]); err != nil {
-					return err
-				}
-			}
+		if err := budgetRows(bg, path, ts.Key, "subclass", ts.Levels, func(l *TableSubclassLevel) []TableFeature { return l.Features }); err != nil {
+			return err
 		}
 	}
-	traits := func(path, key string, ts []TableFeature) error {
-		if len(ts) > MaxTraits {
-			return ovErr(key, "%d traits; the limit is %d per race or subrace", len(ts), MaxTraits).at(path+".traits", ReasonLimit)
-		}
-		for i := range ts {
-			if err := bg.feature(fmt.Sprintf("%s.traits[%d]", path, i), &ts[i]); err != nil {
+	return nil
+}
+
+// budgetRows counts the features of a class's or a subclass's rows, refusing
+// the one past MaxTableFeatures. kind names the entry in the message.
+func budgetRows[L any](bg *budget, path, key, kind string, levels []L, features func(*L) []TableFeature) error {
+	n := 0
+	for li := range levels {
+		fs := features(&levels[li])
+		for fi := range fs {
+			n++
+			at := fmt.Sprintf("%s.levels[%d].features[%d]", path, li, fi)
+			if n > MaxTableFeatures {
+				return ovErr(key, "more than %d features; the limit is %d per %s", MaxTableFeatures, MaxTableFeatures, kind).at(at, ReasonLimit)
+			}
+			if err := bg.feature(at, &fs[fi]); err != nil {
 				return err
 			}
 		}
-		return nil
 	}
+	return nil
+}
+
+// traits counts the traits of a race or a subrace.
+func (bg *budget) traits(path, key string, ts []TableFeature) error {
+	if len(ts) > MaxTraits {
+		return ovErr(key, "%d traits; the limit is %d per race or subrace", len(ts), MaxTraits).at(path+".traits", ReasonLimit)
+	}
+	for i := range ts {
+		if err := bg.feature(fmt.Sprintf("%s.traits[%d]", path, i), &ts[i]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// races counts each race's darkvision (an effect the engine writes) and traits.
+func (bg *budget) races(o *Overlay) error {
 	for ri := range o.Races {
 		tr := &o.Races[ri]
 		path := fmt.Sprintf("races[%d]", ri)
@@ -161,20 +186,35 @@ func checkBudgets(o *Overlay) error {
 				return err
 			}
 		}
-		if err := traits(path, tr.Key, tr.Traits); err != nil {
+		if err := bg.traits(path, tr.Key, tr.Traits); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// subraces counts each subrace's traits.
+func (bg *budget) subraces(o *Overlay) error {
 	for si := range o.Subraces {
-		if err := traits(fmt.Sprintf("subraces[%d]", si), o.Subraces[si].Key, o.Subraces[si].Traits); err != nil {
+		if err := bg.traits(fmt.Sprintf("subraces[%d]", si), o.Subraces[si].Key, o.Subraces[si].Traits); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// backgrounds counts each background's feature.
+func (bg *budget) backgrounds(o *Overlay) error {
 	for bi := range o.Backgrounds {
 		if err := bg.feature(fmt.Sprintf("backgrounds[%d].feature", bi), &o.Backgrounds[bi].Feature); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// feats counts each feat's effects, as a feature's.
+func (bg *budget) feats(o *Overlay) error {
 	for fi := range o.Feats {
 		tf := &o.Feats[fi]
 		if err := bg.feature(fmt.Sprintf("feats[%d]", fi), &TableFeature{Key: tf.Key, Effects: tf.Effects}); err != nil {

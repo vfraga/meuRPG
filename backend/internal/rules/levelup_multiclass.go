@@ -493,49 +493,69 @@ func MulticlassSummaryOf(before, after Build, newClass string, c *Content) (Mult
 	s.SlotsByTable = casters > 1
 
 	dBefore, dAfter := derive(before, x), derive(after, x)
+	s.ProficienciesGained = x.proficienciesGained(before, after, dBefore, dAfter, newClass)
+	s.Exceptions = x.multiclassExceptions(dBefore, dAfter)
+	return s, true
+}
+
+// proficienciesGained are the proficiencies the sheet after has and the sheet
+// before did not, then, for a new class, the new skills and tools picked.
+func (c *content) proficienciesGained(before, after Build, dBefore, dAfter Derived, newClass string) []NamedKey {
 	had := map[string]bool{}
 	for _, p := range dBefore.Proficiencies {
 		had[p.Key] = true
 	}
+	var out []NamedKey
 	for _, p := range dAfter.Proficiencies {
-		if !x.covered(had, p.Key) {
-			s.ProficienciesGained = append(s.ProficienciesGained, NamedKey{Key: p.Key, NamePT: p.NamePT})
+		if !c.covered(had, p.Key) {
+			out = append(out, NamedKey{Key: p.Key, NamePT: p.NamePT})
 		}
 	}
-	if newClass != "" {
-		fresh, _ := added(before.SkillProficiencies, after.SkillProficiencies)
-		for _, k := range fresh {
-			s.ProficienciesGained = append(s.ProficienciesGained, NamedKey{Key: k, NamePT: x.namePT(k)})
-		}
-		tools, _ := added(before.ToolProficiencies, after.ToolProficiencies)
-		for _, t := range tools {
-			s.ProficienciesGained = append(s.ProficienciesGained, NamedKey{NamePT: t})
-		}
+	if newClass == "" {
+		return out
 	}
+	fresh, _ := added(before.SkillProficiencies, after.SkillProficiencies)
+	for _, k := range fresh {
+		out = append(out, NamedKey{Key: k, NamePT: c.namePT(k)})
+	}
+	tools, _ := added(before.ToolProficiencies, after.ToolProficiencies)
+	for _, t := range tools {
+		out = append(out, NamedKey{NamePT: t})
+	}
+	return out
+}
 
-	// The exceptions: a feature the level gives whose effect the character already
-	// had in full from another feature.
+// multiclassExceptions are the exceptions the level meets: a feature it gives
+// whose effect the character already had in full from another feature.
+func (c *content) multiclassExceptions(dBefore, dAfter Derived) []string {
 	hadFeature := map[string]bool{}
 	for _, f := range dBefore.Features {
 		hadFeature[f.Key] = true
 	}
+	var out []string
 	for _, f := range dAfter.Features {
-		if hadFeature[f.Key] {
-			continue
-		}
-		for _, e := range x.effects[f.Key] {
-			switch {
-			case e.Type == "extra_attack" && dBefore.AttacksPerAction >= e.Count:
-				s.Exceptions = appendOnce(s.Exceptions, ExceptionExtraAttack)
-			case e.Type == "resource" && resourceMaxOf(dBefore, e.Resource) > 0 && resourceMaxOf(dBefore, e.Resource) >= resourceMaxOf(dAfter, e.Resource):
-				s.Exceptions = appendOnce(s.Exceptions, ExceptionChannelDivinity)
-			}
-		}
-		if unarmoredDefenseFeatures[f.Key] && slices.ContainsFunc(dBefore.Features, func(o Feature) bool { return unarmoredDefenseFeatures[o.Key] }) {
-			s.Exceptions = appendOnce(s.Exceptions, ExceptionUnarmoredDefense)
+		if !hadFeature[f.Key] {
+			out = c.featureExceptions(out, f.Key, dBefore, dAfter)
 		}
 	}
-	return s, true
+	return out
+}
+
+// featureExceptions adds to out the exceptions a new feature (key) meets: its
+// Extra Attack or resource adds nothing, or it is a second Unarmored Defense.
+func (c *content) featureExceptions(out []string, key string, dBefore, dAfter Derived) []string {
+	for _, e := range c.effects[key] {
+		switch {
+		case e.Type == "extra_attack" && dBefore.AttacksPerAction >= e.Count:
+			out = appendOnce(out, ExceptionExtraAttack)
+		case e.Type == "resource" && resourceMaxOf(dBefore, e.Resource) > 0 && resourceMaxOf(dBefore, e.Resource) >= resourceMaxOf(dAfter, e.Resource):
+			out = appendOnce(out, ExceptionChannelDivinity)
+		}
+	}
+	if unarmoredDefenseFeatures[key] && slices.ContainsFunc(dBefore.Features, func(o Feature) bool { return unarmoredDefenseFeatures[o.Key] }) {
+		out = appendOnce(out, ExceptionUnarmoredDefense)
+	}
+	return out
 }
 
 // resourceMax is the maximum of a resource, 0 when the character has none.

@@ -38,46 +38,62 @@ const alphabet = "abcdefghijklmnopqrstuvwxyz"
 // cipherAlphabet is the letter each plain letter becomes, a to z. It is refused when
 // the key changes no letter, or has too few distinct letters in a keyword.
 func cipherAlphabet(k CipherKey) ([26]byte, error) {
-	var out [26]byte
 	switch {
 	case k.Shift != 0 && k.Keyword != "":
-		return out, fmt.Errorf("%w: a shift and a keyword together", ErrCipher)
+		return [26]byte{}, fmt.Errorf("%w: a shift and a keyword together", ErrCipher)
 	case k.Shift != 0:
-		if k.Shift < MinShift || k.Shift > MaxShift {
-			return out, fmt.Errorf("%w: the shift is %d, want %d to %d", ErrCipher, k.Shift, MinShift, MaxShift)
-		}
-		for i := range out {
-			out[i] = alphabet[(i+k.Shift)%26]
-		}
+		return shiftAlphabet(k.Shift)
 	case k.Keyword != "":
-		var order []byte
-		used := map[byte]bool{}
-		for _, r := range Fold(k.Keyword) {
-			if r >= 'a' && r <= 'z' && !used[byte(r)] {
-				used[byte(r)] = true
-				order = append(order, byte(r))
-			}
-		}
-		if len(order) < MinKeyword || len(order) > MaxKeyword {
-			return out, fmt.Errorf("%w: the keyword has %d distinct letters, want %d to %d", ErrCipher, len(order), MinKeyword, MaxKeyword)
-		}
-		for i := range 26 {
-			if c := alphabet[i]; !used[c] {
-				order = append(order, c)
-			}
-		}
-		copy(out[:], order)
-		same := true
-		for i := range out {
-			same = same && out[i] == alphabet[i]
-		}
-		if same {
-			return out, fmt.Errorf("%w: the keyword changes no letter", ErrCipher)
-		}
+		return keywordAlphabet(k.Keyword)
 	default:
-		return out, fmt.Errorf("%w: no key", ErrCipher)
+		return [26]byte{}, fmt.Errorf("%w: no key", ErrCipher)
+	}
+}
+
+// shiftAlphabet is the alphabet moved shift places on.
+func shiftAlphabet(shift int) ([26]byte, error) {
+	var out [26]byte
+	if shift < MinShift || shift > MaxShift {
+		return out, fmt.Errorf("%w: the shift is %d, want %d to %d", ErrCipher, shift, MinShift, MaxShift)
+	}
+	for i := range out {
+		out[i] = alphabet[(i+shift)%len(alphabet)]
 	}
 	return out, nil
+}
+
+// keywordAlphabet is the keyword's distinct letters, then the rest of the
+// alphabet in order. On a refusal it still hands back what it built, as the
+// alphabet of a keyword that changes no letter.
+func keywordAlphabet(keyword string) ([26]byte, error) {
+	var out [26]byte
+	order, used := keywordLetters(keyword)
+	if len(order) < MinKeyword || len(order) > MaxKeyword {
+		return out, fmt.Errorf("%w: the keyword has %d distinct letters, want %d to %d", ErrCipher, len(order), MinKeyword, MaxKeyword)
+	}
+	for i := range len(alphabet) {
+		if c := alphabet[i]; !used[c] {
+			order = append(order, c)
+		}
+	}
+	copy(out[:], order)
+	if string(out[:]) == alphabet {
+		return out, fmt.Errorf("%w: the keyword changes no letter", ErrCipher)
+	}
+	return out, nil
+}
+
+// keywordLetters is the letters a to z of the folded keyword, once each, in
+// order, and the set of them.
+func keywordLetters(keyword string) (order []byte, used map[byte]bool) {
+	used = map[byte]bool{}
+	for _, r := range Fold(keyword) {
+		if r >= 'a' && r <= 'z' && !used[byte(r)] {
+			used[byte(r)] = true
+			order = append(order, byte(r))
+		}
+	}
+	return order, used
 }
 
 // ValidateCipher checks the key and the message: 1 to MaxCipherMessage characters

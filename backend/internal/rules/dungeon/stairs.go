@@ -76,6 +76,16 @@ func (g *gen) placeStairs() {
 		return
 	}
 	r := stream(g.o.Seed, phaseStairs)
+	g.placeCorridorStairs(r, want)
+	if len(g.stairs) < want {
+		g.placeRoomStairs(r, want)
+	}
+	g.drawStairKinds(r)
+}
+
+// placeCorridorStairs places stairs at the shuffled dead-end sites, each far
+// enough from the others.
+func (g *gen) placeCorridorStairs(r *rng, want int) {
 	var sites []int
 	for i := range g.kind {
 		if _, ok := g.stairSite(i); ok {
@@ -96,37 +106,52 @@ func (g *gen) placeStairs() {
 		g.protected[i] = true
 		g.protected[g.idx(x+dx[behind], y+dy[behind])] = true
 	}
-	if len(g.stairs) < want {
-		type corner struct {
-			x, y, room int
-			facing     Side
-		}
-		// Gathered in row-major order of the square (spec 4.5).
-		var cs []corner
-		for _, rm := range g.rooms {
-			for _, c := range [4]corner{
-				{rm.x, rm.y, rm.id, West},
-				{rm.x + rm.w - 1, rm.y, rm.id, East},
-				{rm.x, rm.y + rm.h - 1, rm.id, West},
-				{rm.x + rm.w - 1, rm.y + rm.h - 1, rm.id, East},
-			} {
-				if g.roomSite(c.x, c.y) {
-					cs = append(cs, c)
-				}
-			}
-		}
-		slices.SortFunc(cs, func(a, b corner) int { return a.y*g.w + a.x - (b.y*g.w + b.x) })
-		shuffle(r, cs) // DRAW: the room sites, once, only if a stair is missing
-		for _, c := range cs {
-			if len(g.stairs) >= want {
-				break
-			}
-			if g.farFromStairs(c.x, c.y) {
-				g.stairs = append(g.stairs, Stair{X: c.x, Y: c.y, Facing: c.facing, InRoom: c.room})
-				g.protected[g.idx(c.x, c.y)] = true
+}
+
+// stairCorner is a room corner where a stair may go.
+type stairCorner struct {
+	x, y, room int
+	facing     Side
+}
+
+// roomCorners are the room sites, gathered in row-major order of the square
+// (spec 4.5).
+func (g *gen) roomCorners() []stairCorner {
+	var cs []stairCorner
+	for _, rm := range g.rooms {
+		for _, c := range [4]stairCorner{
+			{rm.x, rm.y, rm.id, West},
+			{rm.x + rm.w - 1, rm.y, rm.id, East},
+			{rm.x, rm.y + rm.h - 1, rm.id, West},
+			{rm.x + rm.w - 1, rm.y + rm.h - 1, rm.id, East},
+		} {
+			if g.roomSite(c.x, c.y) {
+				cs = append(cs, c)
 			}
 		}
 	}
+	slices.SortFunc(cs, func(a, b stairCorner) int { return a.y*g.w + a.x - (b.y*g.w + b.x) })
+	return cs
+}
+
+// placeRoomStairs places the missing stairs at the shuffled room corners.
+func (g *gen) placeRoomStairs(r *rng, want int) {
+	cs := g.roomCorners()
+	shuffle(r, cs) // DRAW: the room sites, once, only if a stair is missing
+	for _, c := range cs {
+		if len(g.stairs) >= want {
+			break
+		}
+		if g.farFromStairs(c.x, c.y) {
+			g.stairs = append(g.stairs, Stair{X: c.x, Y: c.y, Facing: c.facing, InRoom: c.room})
+			g.protected[g.idx(c.x, c.y)] = true
+		}
+	}
+}
+
+// drawStairKinds makes the first stair up, the second down and draws the
+// others.
+func (g *gen) drawStairKinds(r *rng) {
 	for k := range g.stairs {
 		switch k {
 		case 0:
