@@ -9,7 +9,7 @@ import { article } from '../format/article';
 import { naturalMark } from './natural-mark';
 import { luckyText } from './lucky';
 import { LogContext, LogLine } from './combat-log-types';
-import { subject, upFirst } from './combat-log-words';
+import { ofSubject, subject, upFirst } from './combat-log-words';
 
 /** Who an effect line is about, after the preposition ("em"/"a") or alone: "em Brisa e no Goblin 2", "Brisa e o Goblin 2". */
 function effectTargets(fx: CombatLogEffect, ctx: LogContext, prep: '' | 'em' | 'a' = ''): string {
@@ -106,9 +106,7 @@ export function exhaustionLogText(fx: CombatLogEffect, ctx: LogContext): string 
 export function effectEndedText(e: CombatLogEntry, ctx: LogContext): string {
   const end = e.effectEnd;
   const label = e.actorLabel || e.targetLabel || 'alguém';
-  const of = ctx.players.has(label)
-    ? `de ${label}`
-    : `${article(label) === 'a' ? 'da' : 'do'} ${label}`;
+  const of = ofSubject(label, ctx);
   if (end?.effect === CombatEffect.SHIELD) {
     return `O Escudo Arcano ${of} acabou`;
   }
