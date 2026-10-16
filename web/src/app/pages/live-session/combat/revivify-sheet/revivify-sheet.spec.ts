@@ -21,6 +21,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { RevivifyClient } from '../../../../core/revivify/revivify-client';
 import { RevivifySheet, type RevivifySheetData } from './revivify-sheet';
 import { nextTurn } from '../../../../../test-settle';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const text = (el: Element | null | undefined) =>
   (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -133,7 +134,7 @@ async function mount(
     providers: [
       { provide: MAT_DIALOG_DATA, useValue: data },
       { provide: MatDialogRef, useValue: { close: closed, disableClose: false } },
-      { provide: CombatClient, useValue: { castRevivify: cast, endTurn } },
+      { provide: CombatClient, useValue: fakeCombatClient({ castRevivify: cast, endTurn }) },
       { provide: RevivifyClient, useValue: { preview, request, list } },
     ],
   });

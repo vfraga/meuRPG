@@ -6,7 +6,8 @@ import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1
 import type { DiceRoll } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
-import { type DamageDie, CombatClient } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { type DamageDie } from '../../../../core/combat/combat-client-types';
 import { rollFormula } from '../../../../core/combat/combat-dice';
 import { RollAnimator, showOfDice } from '../../../../shared/roll-overlay/roll-animator';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
@@ -148,7 +149,7 @@ export class FeatureSheet {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.api.takeAction(
+      const res = await this.api.turn.takeAction(
         this.data.campaignId,
         this.data.encounterId,
         this.data.combatantId,

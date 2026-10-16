@@ -17,6 +17,7 @@ import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { textOf } from '../../../../core/combat/contest-testing';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const shortsword = {
@@ -115,7 +116,7 @@ function setup(opts: { targets: unknown[]; diceMode?: DiceMode; master?: boolean
     providers: [
       { provide: MAT_DIALOG_DATA, useValue: data },
       { provide: MatDialogRef, useValue: { close: () => undefined } },
-      { provide: CombatClient, useValue: api },
+      { provide: CombatClient, useValue: fakeCombatClient(api) },
     ],
   });
   const fixture = TestBed.createComponent(AttackSheet);
@@ -470,7 +471,7 @@ describe('AttackSheet: the damage parts', () => {
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: () => undefined } },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
       ],
     });
     const fixture = TestBed.createComponent(AttackSheet);

@@ -1482,7 +1482,7 @@ describe('LiveSession', () => {
     });
 
     it('reads the combat again on vision_changed during a combat, so an NPC that just came into sight arrives', async () => {
-      const get = vi.spyOn(TestBed.inject(CombatClient), 'get').mockResolvedValue(null);
+      const get = vi.spyOn(TestBed.inject(CombatClient).turn, 'get').mockResolvedValue(null);
       const fixture = TestBed.createComponent(LiveSession);
       await settle(fixture);
       const page = flat(fixture) as unknown as { combat: CombatState };
@@ -1852,7 +1852,7 @@ describe('LiveSession', () => {
   });
   describe('the reaction windows on the stream (PM-04)', () => {
     it('reads the combat again when a window opens, and keeps the sentence of one that closed by itself', async () => {
-      const get = vi.spyOn(TestBed.inject(CombatClient), 'get').mockResolvedValue(null);
+      const get = vi.spyOn(TestBed.inject(CombatClient).turn, 'get').mockResolvedValue(null);
       const fixture = TestBed.createComponent(LiveSession);
       await settle(fixture);
       const state = (flat(fixture) as unknown as { combat: CombatState }).combat;
@@ -1876,7 +1876,7 @@ describe('LiveSession', () => {
     });
 
     it('a window that was answered says nothing, and the combat is read again', async () => {
-      const get = vi.spyOn(TestBed.inject(CombatClient), 'get').mockResolvedValue(null);
+      const get = vi.spyOn(TestBed.inject(CombatClient).turn, 'get').mockResolvedValue(null);
       const fixture = TestBed.createComponent(LiveSession);
       await settle(fixture);
       const state = (flat(fixture) as unknown as { combat: CombatState }).combat;
@@ -1917,7 +1917,7 @@ describe('LiveSession', () => {
       });
     /** The page with the combat already read: later reads are counted from here. */
     async function withCombat(shown: Encounter | null = running()) {
-      const get = vi.spyOn(TestBed.inject(CombatClient), 'get').mockResolvedValue(shown);
+      const get = vi.spyOn(TestBed.inject(CombatClient).turn, 'get').mockResolvedValue(shown);
       const fixture = TestBed.createComponent(LiveSession);
       await settle(fixture);
       const page = flat(fixture) as unknown as { combat: CombatState };
@@ -2033,7 +2033,7 @@ describe('LiveSession', () => {
       vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
       try {
         const get = vi
-          .spyOn(TestBed.inject(CombatClient), 'get')
+          .spyOn(TestBed.inject(CombatClient).turn, 'get')
           .mockRejectedValueOnce(new Error('network'))
           .mockResolvedValue(running());
         const fixture = TestBed.createComponent(LiveSession);
@@ -2282,8 +2282,8 @@ describe('LiveSession', () => {
 
     it('names who cast Revivificar on a character that lives again, from the combat log', async () => {
       const combatApi = TestBed.inject(CombatClient);
-      vi.spyOn(combatApi, 'get').mockResolvedValue(encounter({ id: 'e1', combatants: [] }));
-      const log = vi.spyOn(combatApi, 'log').mockResolvedValue({ rounds: [] } as never);
+      vi.spyOn(combatApi.turn, 'get').mockResolvedValue(encounter({ id: 'e1', combatants: [] }));
+      const log = vi.spyOn(combatApi.turn, 'log').mockResolvedValue({ rounds: [] } as never);
       const fixture = TestBed.createComponent(LiveSession);
       await settle(fixture);
       source.push({ kind: 'characterRevived', characterId: 'pensantus' });

@@ -14,12 +14,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import { awaitsReaction, steps } from '../../../../core/combat/attack-flow';
+import { CombatClient } from '../../../../core/combat/combat-client';
 import {
   type AttackDie,
   type DamageDie,
   type PairDie,
-  CombatClient,
-} from '../../../../core/combat/combat-client';
+} from '../../../../core/combat/combat-client-types';
 import { attackDetail, attackName, isCantrip } from '../../../../core/combat/combat-options';
 import { combatantInitial, isPlayer } from '../../../../core/combat/combat-view';
 import { isCreature } from '../../../../core/combat/creature-names';

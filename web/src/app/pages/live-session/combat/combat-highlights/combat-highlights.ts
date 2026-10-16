@@ -85,7 +85,7 @@ export class CombatHighlights {
   ): Promise<void> {
     this.state.set({ status: 'loading' });
     try {
-      const res = await this.api.highlights(campaignId, encounterId);
+      const res = await this.api.turn.highlights(campaignId, encounterId);
       this.tiles.set(highlightTiles(res));
       this.rows.set(
         highlightRows(res.characters).map((r) => ({

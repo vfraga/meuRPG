@@ -17,6 +17,7 @@ import { encounter, reactionWindow } from '../../../../core/combat/combat-testin
 import { inspirationOffer } from '../../../../core/play/scene-testing';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { ReactionSheet, type ReactionSheetData } from './reaction-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (text: string | null | undefined) =>
   (text ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -101,7 +102,7 @@ describe('ReactionSheet', () => {
           provide: MatDialogRef,
           useValue: { close: (r?: unknown) => closed.push(r ?? 'closed'), disableClose: true },
         },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         { provide: ResourceClient, useValue: resources },
       ],
     });

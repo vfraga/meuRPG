@@ -9,6 +9,7 @@ import {
 import { CombatState } from '../../../../core/combat/combat-state';
 import { encounter } from '../../../../core/combat/combat-testing';
 import { ModeRequests } from './mode-requests';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const request = (status: RollModeRequestStatus, over: Record<string, unknown> = {}) =>
   ({
@@ -32,7 +33,7 @@ describe('ModeRequests', () => {
 
   function requests() {
     return new ModeRequests({
-      api: api as never,
+      api: fakeCombatClient(api),
       campaignId: 'c',
       encounterId: 'enc',
       attackerId: 't',

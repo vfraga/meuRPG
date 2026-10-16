@@ -161,7 +161,7 @@ Two simultaneous changes wait for each other, so a double tap on "Encerrar turno
 
 ## Combat on screen
 
-The session page (`pages/live-session`) reads the combat (`CombatClient.get`, `core/combat`) at every `ready` and after each `encounter_changed` newer than its copy; `CombatState` compares revisions and sets an older copy aside.
+The session page (`pages/live-session`) reads the combat (`CombatClient.turn.get`, `core/combat`) at every `ready` and after each `encounter_changed` newer than its copy; `CombatState` compares revisions and sets an older copy aside.
 `turn_changed` and `combatant_moved` apply in place; a combatant the screen does not know makes it read.
 A read that began before one of those events, or before an answer to a call was applied, is dropped when it answers, and the page reads again up to 3 times (`CombatState.changedSince`).
 A read that fails is retried once 1.5 s later; after that the next stream event or reconnection reads it.
@@ -171,6 +171,8 @@ Errors become Portuguese through the code and `EncounterBlocked` detail (`combat
 Dragging a token saves one move at a time per combatant (`MoveSaves`); if the server refuses, the token goes back and the screen says why.
 The combat code loads only with the session page.
 The grid has its own page (`/campaigns/:id/maps/:mapId/grid`, `MapService.SetMapGrid`) and printing the map another (`/campaigns/:id/maps/:mapId/print`, MR-033, web only; see [Design](../../design/maps.md#printing-pagesmapsmap-print)).
+
+`CombatClient` (`core/combat/combat-client.ts`) holds five parts built on one `CombatClientBase` (the generated client and the keyed sender): `turn` (setting up, turns, actions, undo, log, highlights), `moves` (movement, sides, cover, opportunities, roster), `attacks` (attacks, damage, roll modes, reactions, concentration), `casts` (spells, hidden reveals) and `combatants` (death saves, conditions, effects, hit points). Screens call `api.attacks.rollAttack(...)`, never a forwarder on the client.
 
 **How `CombatView` is put together.** The component (`combat-view.ts`) is the composition and the inputs the template reads; the logic is in parts it builds in field initializers, each a plain class that reads the screen through a few getters, so each is tested with the same fake `CombatClient`:
 

@@ -7,6 +7,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { OpportunitySheet, type OpportunitySheetData } from './opportunity-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) =>
   (t ?? '')
@@ -69,12 +70,12 @@ function setup(
       { provide: MatDialogRef, useValue: { close: (r: unknown) => closed.push(r) } },
       {
         provide: CombatClient,
-        useValue: {
+        useValue: fakeCombatClient({
           declineOpportunity: async (_c: string, _e: string, id: string) => {
             declined.push(id);
             return encounter({ opportunityOffers: [] });
           },
-        },
+        }),
       },
     ],
   });

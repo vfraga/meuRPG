@@ -139,7 +139,7 @@ export class CombatLogPanel {
     }
     this.busy.set(true);
     try {
-      this.state().apply(await this.api.undo(this.campaignId(), this.encounter().id, id));
+      this.state().apply(await this.api.turn.undo(this.campaignId(), this.encounter().id, id));
       this.undone.mark();
       this.confirming.set(false);
     } catch (err) {

@@ -1,7 +1,7 @@
 import { computed } from '@angular/core';
 
 import { RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
-import type { ModeChoice } from '../../../../core/combat/combat-client';
+import type { ModeChoice } from '../../../../core/combat/combat-client-types';
 import { d20Count, modeStatus, orNormal } from '../../../../core/combat/roll-mode';
 import { modeChoiceOf } from './attack-sheet-view';
 import type { AttackState } from './attack-state';

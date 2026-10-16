@@ -27,6 +27,7 @@ import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
 import { nextTurn } from '../../../../test-settle';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
 // reach the next file (a real setTimeout never fires on a fake clock).
@@ -73,21 +74,17 @@ describe('"Ainda não" survives a heal and a second fall', () => {
       addListener: () => undefined,
       removeListener: () => undefined,
     }));
-    const api = new Proxy(
-      {},
-      {
-        get: (_t, name: string) =>
-          name === 'turnOptions'
-            ? async () => ({
-                options: create(TurnOptionsSchema, {}),
-                attackTargets: [],
-                spellTargets: [],
-                pendingDamages: [],
-              })
-            : name === 'log'
-              ? async () => ({ rounds: [], undoableEventId: '' })
-              : async () => ({}),
-      },
+    const api = anyCallCombatClient((name) =>
+      name === 'turnOptions'
+        ? async () => ({
+            options: create(TurnOptionsSchema, {}),
+            attackTargets: [],
+            spellTargets: [],
+            pendingDamages: [],
+          })
+        : name === 'log'
+          ? async () => ({ rounds: [], undoableEventId: '' })
+          : async () => ({}),
     );
     const state = new CombatState();
     state.apply(enc(CombatantState.DYING));

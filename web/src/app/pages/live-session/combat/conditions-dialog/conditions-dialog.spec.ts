@@ -5,6 +5,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { ConditionsDialog } from './conditions-dialog';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('ConditionsDialog', () => {
   function open() {
@@ -17,7 +18,7 @@ describe('ConditionsDialog', () => {
     );
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { setConditions } },
+        { provide: CombatClient, useValue: fakeCombatClient({ setConditions }) },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },
         {
           provide: MAT_DIALOG_DATA,

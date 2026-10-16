@@ -18,7 +18,7 @@ function clientWith(sent: Sent): CombatClient {
     providers: [CombatClient, { provide: CONNECT_TRANSPORT, useValue: {} }],
   });
   const client = TestBed.inject(CombatClient);
-  (client as unknown as { client: unknown }).client = {
+  (client as unknown as { base: { client: unknown } }).base.client = {
     endTurn: (req: { idempotencyKey: string; expectedCombatantId: string }) => {
       sent.endTurn.push(req);
       const failure = sent.answers.shift();
@@ -32,8 +32,8 @@ describe('CombatClient keys', () => {
   it('sends the same key when the same change is tried again after a lost answer', async () => {
     const sent: Sent = { endTurn: [], answers: [new ConnectError('lost', Code.Unavailable), null] };
     const client = clientWith(sent);
-    await expect(client.endTurn('c', 'e', 'a')).rejects.toBeInstanceOf(ConnectError);
-    await client.endTurn('c', 'e', 'a');
+    await expect(client.turn.endTurn('c', 'e', 'a')).rejects.toBeInstanceOf(ConnectError);
+    await client.turn.endTurn('c', 'e', 'a');
     expect(sent.endTurn).toHaveLength(2);
     expect(sent.endTurn[1].idempotencyKey).toBe(sent.endTurn[0].idempotencyKey);
   });
@@ -41,16 +41,16 @@ describe('CombatClient keys', () => {
   it('takes a new key for other values', async () => {
     const sent: Sent = { endTurn: [], answers: [new ConnectError('lost', Code.Unavailable), null] };
     const client = clientWith(sent);
-    await expect(client.endTurn('c', 'e', 'a')).rejects.toBeInstanceOf(ConnectError);
-    await client.endTurn('c', 'e', 'b');
+    await expect(client.turn.endTurn('c', 'e', 'a')).rejects.toBeInstanceOf(ConnectError);
+    await client.turn.endTurn('c', 'e', 'b');
     expect(sent.endTurn[1].idempotencyKey).not.toBe(sent.endTurn[0].idempotencyKey);
   });
 
   it('takes a new key for the same values once the change worked', async () => {
     const sent: Sent = { endTurn: [], answers: [] };
     const client = clientWith(sent);
-    await client.endTurn('c', 'e', 'a');
-    await client.endTurn('c', 'e', 'a');
+    await client.turn.endTurn('c', 'e', 'a');
+    await client.turn.endTurn('c', 'e', 'a');
     expect(sent.endTurn[1].idempotencyKey).not.toBe(sent.endTurn[0].idempotencyKey);
   });
 });
@@ -62,7 +62,7 @@ describe('CombatClient area spells', () => {
     });
     const client = TestBed.inject(CombatClient);
     const requests: Record<string, unknown>[] = [];
-    (client as unknown as { client: unknown }).client = {
+    (client as unknown as { base: { client: unknown } }).base.client = {
       castSpell: (req: Record<string, unknown>) => {
         requests.push(req);
         return Promise.resolve({
@@ -88,7 +88,7 @@ describe('CombatClient area spells', () => {
 
   it("casts at a point with the master's reveal choice, and reads where it landed", async () => {
     const { client, requests } = withRequests();
-    const res = await client.castSpell(
+    const res = await client.casts.castSpell(
       'c',
       'e',
       'zuk',
@@ -111,7 +111,7 @@ describe('CombatClient area spells', () => {
 
   it('leaves the reveal out unless the master chose, and sends a direction for a cone', async () => {
     const { client, requests } = withRequests();
-    await client.castSpell(
+    await client.casts.castSpell(
       'c',
       'e',
       'p',
@@ -132,9 +132,9 @@ describe('CombatClient area spells', () => {
 
   it('previews a sphere around the caster with no point, and answers a question with a key', async () => {
     const { client, requests } = withRequests();
-    await client.previewSpellArea('c', 'e', 'p', 'spell:x', null, null);
+    await client.casts.previewSpellArea('c', 'e', 'p', 'spell:x', null, null);
     expect(requests[0]['area']).toEqual({ case: undefined });
-    await client.resolveHiddenReveal('c', 'e', 'q1', true);
+    await client.casts.resolveHiddenReveal('c', 'e', 'q1', true);
     expect(requests[1]).toMatchObject({ pendingRevealId: 'q1', reveal: true });
     expect(requests[1]['idempotencyKey']).toEqual(expect.any(String));
   });
@@ -148,7 +148,7 @@ describe('CombatClient.endCombatEffect', () => {
     const client = TestBed.inject(CombatClient);
     const sent: { combatantId: string; effect: CombatEffect; idempotencyKey: string }[] = [];
     const answers: (Error | null)[] = [new ConnectError('lost', Code.Unavailable), null, null];
-    (client as unknown as { client: unknown }).client = {
+    (client as unknown as { base: { client: unknown } }).base.client = {
       endCombatEffect: (req: {
         combatantId: string;
         effect: CombatEffect;
@@ -159,11 +159,11 @@ describe('CombatClient.endCombatEffect', () => {
         return failure ? Promise.reject(failure) : Promise.resolve({ encounter: { id: 'enc' } });
       },
     };
-    await expect(client.endCombatEffect('c', 'e', 'sal', CombatEffect.AID)).rejects.toBeInstanceOf(
-      ConnectError,
-    );
-    await client.endCombatEffect('c', 'e', 'sal', CombatEffect.AID);
-    await client.endCombatEffect('c', 'e', 'tor', CombatEffect.AID);
+    await expect(
+      client.combatants.endCombatEffect('c', 'e', 'sal', CombatEffect.AID),
+    ).rejects.toBeInstanceOf(ConnectError);
+    await client.combatants.endCombatEffect('c', 'e', 'sal', CombatEffect.AID);
+    await client.combatants.endCombatEffect('c', 'e', 'tor', CombatEffect.AID);
     expect(sent.map((s) => [s.combatantId, s.effect])).toEqual([
       ['sal', CombatEffect.AID],
       ['sal', CombatEffect.AID],
@@ -181,7 +181,7 @@ describe('CombatClient.moveOptions', () => {
     });
     const client = TestBed.inject(CombatClient);
     const sent: object[] = [];
-    (client as unknown as { client: unknown }).client = {
+    (client as unknown as { base: { client: unknown } }).base.client = {
       getMoveOptions: (req: object) => {
         sent.push(req);
         return Promise.resolve({});
@@ -192,13 +192,13 @@ describe('CombatClient.moveOptions', () => {
 
   it('asks for the walk with no jump', async () => {
     const { client, sent } = clientAsking();
-    await client.moveOptions('c', 'e', 't');
+    await client.moves.moveOptions('c', 'e', 't');
     expect(sent[0]).toMatchObject({ jump: JumpKind.UNSPECIFIED, jumpRunningStart: false });
   });
 
   it("asks for the long jump, with the running start, so the warning is the jump's", async () => {
     const { client, sent } = clientAsking();
-    await client.moveOptions('c', 'e', 't', { runningStart: true });
+    await client.moves.moveOptions('c', 'e', 't', { runningStart: true });
     expect(sent[0]).toMatchObject({
       combatantId: 't',
       jump: JumpKind.LONG,
@@ -218,7 +218,7 @@ describe('CombatClient, the reaction windows (PM-04)', () => {
       providers: [CombatClient, { provide: CONNECT_TRANSPORT, useValue: {} }],
     });
     const client = TestBed.inject(CombatClient);
-    (client as unknown as { client: unknown }).client = {
+    (client as unknown as { base: { client: unknown } }).base.client = {
       answerReaction: (req: Record<string, unknown>) => {
         calls.answer.push(req);
         return Promise.resolve({ encounter: { id: 'enc' }, result: { used: true } });
@@ -237,7 +237,7 @@ describe('CombatClient, the reaction windows (PM-04)', () => {
 
   it('answers USE with the slot, the Infernal Legacy, the creatures and the die the window asked for', async () => {
     const { client, calls } = fake();
-    await client.answerReaction(
+    await client.attacks.answerReaction(
       'c',
       'e',
       'w1',
@@ -265,8 +265,8 @@ describe('CombatClient, the reaction windows (PM-04)', () => {
 
   it('answers PASS with nothing else, and asks the app to roll with roll_in_app', async () => {
     const { client, calls } = fake();
-    await client.answerReaction('c', 'e', 'w1', { use: false }, 'k');
-    await client.answerReaction('c', 'e', 'w1', { use: true, die: { inApp: true } }, 'k2');
+    await client.attacks.answerReaction('c', 'e', 'w1', { use: false }, 'k');
+    await client.attacks.answerReaction('c', 'e', 'w1', { use: true, die: { inApp: true } }, 'k2');
     expect(calls.answer[0]).toMatchObject({
       answer: 2,
       creatureIds: [],
@@ -278,10 +278,10 @@ describe('CombatClient, the reaction windows (PM-04)', () => {
 
   it('settles a concentration save four ways: the app, a typed d20, the master, or kept', async () => {
     const { client, calls } = fake();
-    await client.resolveConcentrationSave('c', 'e', 'w', { kind: 'app' }, 'k1');
-    await client.resolveConcentrationSave('c', 'e', 'w', { kind: 'typed', face: 12 }, 'k2');
-    await client.resolveConcentrationSave('c', 'e', 'w', { kind: 'hand' }, 'k3');
-    await client.resolveConcentrationSave('c', 'e', 'w', { kind: 'keep' }, 'k4');
+    await client.attacks.resolveConcentrationSave('c', 'e', 'w', { kind: 'app' }, 'k1');
+    await client.attacks.resolveConcentrationSave('c', 'e', 'w', { kind: 'typed', face: 12 }, 'k2');
+    await client.attacks.resolveConcentrationSave('c', 'e', 'w', { kind: 'hand' }, 'k3');
+    await client.attacks.resolveConcentrationSave('c', 'e', 'w', { kind: 'keep' }, 'k4');
     expect(calls.concentration.map((c) => c['roll'])).toEqual([
       { case: 'rollInApp', value: true },
       { case: 'd20Face', value: 12 },
@@ -292,7 +292,7 @@ describe('CombatClient, the reaction windows (PM-04)', () => {
 
   it('sends the second d20 of a typed concentration save with advantage or disadvantage', async () => {
     const { client, calls } = fake();
-    await client.resolveConcentrationSave(
+    await client.attacks.resolveConcentrationSave(
       'c',
       'e',
       'w',
@@ -307,7 +307,7 @@ describe('CombatClient, the reaction windows (PM-04)', () => {
 
   it("names the window that caught the missile on the monk's throw back", async () => {
     const { client, calls } = fake();
-    await client.rollAttack(
+    await client.attacks.rollAttack(
       'c',
       'e',
       'a',
@@ -331,7 +331,7 @@ describe('CombatClient Revivify', () => {
     });
     const client = TestBed.inject(CombatClient);
     let sent: unknown;
-    (client as unknown as { client: unknown }).client = {
+    (client as unknown as { base: { client: unknown } }).base.client = {
       castSpell: (req: unknown) => {
         sent = req;
         return Promise.resolve({
@@ -341,7 +341,7 @@ describe('CombatClient Revivify', () => {
         });
       },
     };
-    await client.castRevivify('c', 'e', 'i', { level: 3, pact: false }, 'toren', 'k');
+    await client.casts.castRevivify('c', 'e', 'i', { level: 3, pact: false }, 'toren', 'k');
     expect(sent).toMatchObject({
       spellKey: 'spell:revivify',
       slot: { level: 3, pact: false },

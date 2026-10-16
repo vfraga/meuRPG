@@ -8,6 +8,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { CastSheet, type CastSheetData } from './cast-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('CastSheet: the damage type the caster picks', () => {
   async function open(damageChoice: SpellDamageChoice, types = ['fire', 'radiant']) {
@@ -49,7 +50,7 @@ describe('CastSheet: the damage type the caster picks', () => {
     } as unknown as CastSheetData;
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { castSpell } },
+        { provide: CombatClient, useValue: fakeCombatClient({ castSpell }) },
         { provide: SpellCatalog, useValue: { details: () => Promise.resolve(details) } },
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },

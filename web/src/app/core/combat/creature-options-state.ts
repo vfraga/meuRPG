@@ -21,7 +21,7 @@ export class CreatureOptionsState {
   ): Promise<void> {
     const mine = ++this.asked;
     const results = await Promise.allSettled(
-      ids.map((id) => api.turnOptions(campaignId, encounterId, id)),
+      ids.map((id) => api.moves.turnOptions(campaignId, encounterId, id)),
     );
     if (mine !== this.asked) {
       return;

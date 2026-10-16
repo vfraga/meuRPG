@@ -4,11 +4,11 @@ import { newKey } from '../connect/idempotency';
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import { inject } from '@angular/core';
 
-/** The shared part of the combat client: the generated client and the keyed sender. */
-export abstract class CombatClientBase {
-  protected readonly client = createClient(CombatService, inject(CONNECT_TRANSPORT));
+/** What the parts of the combat client share: the generated client and the keyed sender. */
+export class CombatClientBase {
+  readonly client = createClient(CombatService, inject(CONNECT_TRANSPORT));
   /** The key of each change still waiting for its answer, by the request it carries. */
-  protected readonly sending = new Map<string, string>();
+  private readonly sending = new Map<string, string>();
 
   /**
    * Sends a change under the key of its request: the same request again (a second tap, or a try after a lost
@@ -16,7 +16,7 @@ export abstract class CombatClientBase {
    * with a new key. Once the change worked the next one, even with the same values (two equal hits), is new.
    * A `given` key is the caller's, kept across its own retries.
    */
-  protected async keyed<T>(
+  async keyed<T>(
     what: readonly unknown[],
     call: (key: string) => Promise<T>,
     given?: string,

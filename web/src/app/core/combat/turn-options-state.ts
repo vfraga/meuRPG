@@ -41,7 +41,7 @@ export class TurnOptionsState {
       this.shown.set(mine - 1);
     }
     try {
-      const res = await api.turnOptions(campaignId, encounterId, combatantId);
+      const res = await api.moves.turnOptions(campaignId, encounterId, combatantId);
       if (mine > this.shown()) {
         this.shown.set(mine);
         this.data.set(res);

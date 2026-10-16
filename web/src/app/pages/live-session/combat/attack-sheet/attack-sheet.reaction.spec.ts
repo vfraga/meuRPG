@@ -15,6 +15,7 @@ import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
 import { nextTurn } from '../../../../../test-settle';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const sword = {
@@ -91,7 +92,7 @@ describe('AttackSheet: a hit that waits for the reaction of its target (Escudo)'
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: () => undefined } },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
       ],
     });
     const fixture = TestBed.createComponent(AttackSheet);
@@ -152,7 +153,7 @@ describe("AttackSheet: a roll a reaction holds, and the monk's throw back (PM-04
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: () => undefined } },
-        { provide: CombatClient, useValue: { rollAttack } },
+        { provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) },
       ],
     });
     const fixture = TestBed.createComponent(AttackSheet);
@@ -260,7 +261,7 @@ describe('AttackSheet: the hit that waited for Escudo follows the server (R2-07)
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: () => undefined } },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
       ],
     });
     const fixture = TestBed.createComponent(AttackSheet);

@@ -15,6 +15,7 @@ import {
 } from '../../core/creatures/creatures-testing';
 import { SummonSheet, type SummonSheetData } from './summon-sheet';
 import { nextTurn } from '../../../test-settle';
+import { fakeCombatClient } from '../../core/combat/combat-client-testing';
 
 /** Conjurar Animais in a combat (E9-12): the group's one initiative d20 follows the campaign's dice (RN-18). */
 describe("SummonSheet in a combat: the group's initiative die", () => {
@@ -46,7 +47,7 @@ describe("SummonSheet in a combat: the group's initiative die", () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: CreaturesClient, useValue: api },
-        { provide: CombatClient, useValue: { castSpell } },
+        { provide: CombatClient, useValue: fakeCombatClient({ castSpell }) },
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },
       ],

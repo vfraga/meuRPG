@@ -3,7 +3,10 @@ import type {
   ReactionWindow,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { EffectPhase } from '../../../../../gen/meurpg/play/v1/lasting_effects_pb';
-import type { ConcentrationAnswer, ReactionAnswer } from '../../../../core/combat/combat-client';
+import type {
+  ConcentrationAnswer,
+  ReactionAnswer,
+} from '../../../../core/combat/combat-client-types';
 import { rollText } from '../../../../core/combat/combat-dice';
 import { ofThe } from '../../../../core/combat/move-plan';
 import {

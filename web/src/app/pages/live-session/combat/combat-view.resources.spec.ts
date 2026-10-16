@@ -42,6 +42,7 @@ import { BardicInspirationSheet } from './bardic-inspiration-sheet/bardic-inspir
 import { CombatView } from './combat-view';
 import { FlexibleCastingSheet } from './flexible-casting-sheet/flexible-casting-sheet';
 import { LayOnHandsSheet } from './lay-on-hands-sheet/lay-on-hands-sheet';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 const feature = (key: string, namePt: string, economy: ActionEconomy) =>
   create(ActionOptionSchema, {
@@ -148,18 +149,14 @@ describe('CombatView: the class resource dialogs', () => {
     });
 
   async function render(own: Record<string, unknown> = {}) {
-    const api = new Proxy(
-      {},
-      {
-        get: (_t, name: string) =>
-          name === 'turnOptions'
-            ? async () => turnOptions
-            : name === 'takeAction'
-              ? takeAction
-              : name === 'log'
-                ? async () => ({ rounds: [], undoableEventId: '' })
-                : async () => ({}),
-      },
+    const api = anyCallCombatClient((name) =>
+      name === 'turnOptions'
+        ? async () => turnOptions
+        : name === 'takeAction'
+          ? takeAction
+          : name === 'log'
+            ? async () => ({ rounds: [], undoableEventId: '' })
+            : async () => ({}),
     );
     const state = new CombatState();
     state.apply(fresh(1, own));

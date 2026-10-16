@@ -8,6 +8,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const sword = {
   key: 'attack:longsword',
@@ -71,7 +72,7 @@ describe('AttackSheet: closing while the roll request is in flight', () => {
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: (r: unknown) => closed.push(r) } },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
       ],
     });
     const fixture = TestBed.createComponent(AttackSheet);

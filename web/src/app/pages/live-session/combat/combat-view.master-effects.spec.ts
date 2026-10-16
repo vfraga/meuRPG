@@ -21,6 +21,7 @@ import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { TableRulesClient } from '../../../core/campaigns/table-rules';
 import { CombatView } from './combat-view';
 import { nextTurn } from '../../../../test-settle';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 async function settle(fixture: { detectChanges: () => void; whenStable: () => Promise<unknown> }) {
   await fixture.whenStable();
@@ -34,21 +35,17 @@ describe('the panel of effects in the combat page', () => {
 
   function render(isMaster: boolean, status: EncounterStatus) {
     list.mockReset().mockResolvedValue(boardEffects());
-    const api = new Proxy(
-      {},
-      {
-        get: (_t, name: string) =>
-          name === 'turnOptions'
-            ? async () => ({
-                options: create(TurnOptionsSchema, {}),
-                attackTargets: [],
-                spellTargets: [],
-                pendingDamages: [],
-              })
-            : name === 'log'
-              ? async () => ({ rounds: [], undoableEventId: '' })
-              : async () => ({}),
-      },
+    const api = anyCallCombatClient((name) =>
+      name === 'turnOptions'
+        ? async () => ({
+            options: create(TurnOptionsSchema, {}),
+            attackTargets: [],
+            spellTargets: [],
+            pendingDamages: [],
+          })
+        : name === 'log'
+          ? async () => ({ rounds: [], undoableEventId: '' })
+          : async () => ({}),
     );
     const state = new CombatState();
     state.apply(

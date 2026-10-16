@@ -19,6 +19,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { CastSheet, type CastSheetData } from './cast-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const flat = (n: Element | null | undefined) =>
   n?.textContent?.replace(/\s+/g, ' ').trim().replace(/ /g, ' ') ?? '';
@@ -109,7 +110,7 @@ describe('CastSheet: Metamagic (PM-07c 11)', () => {
     } as unknown as CastSheetData;
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { castSpell } },
+        { provide: CombatClient, useValue: fakeCombatClient({ castSpell }) },
         {
           provide: SpellCatalog,
           useValue: { details: () => Promise.resolve(create(SpellDetailsSchema, {})) },

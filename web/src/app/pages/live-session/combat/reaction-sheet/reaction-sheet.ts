@@ -18,7 +18,8 @@ import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1
 import type { ReactionWindow } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import { type SlotRow, defaultSlot, lastSlotWarning } from '../../../../core/combat/cast-flow';
-import { CombatClient, type ReactionAnswer } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { type ReactionAnswer } from '../../../../core/combat/combat-client-types';
 import { luckyHeldLine } from '../../../../core/combat/lucky-question';
 import {
   type ConcentrationMode,

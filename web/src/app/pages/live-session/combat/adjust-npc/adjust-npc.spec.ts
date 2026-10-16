@@ -5,6 +5,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { AdjustNpc } from './adjust-npc';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('AdjustNpc reads the live hit points', () => {
   it('compares an exact value with the current hit points', async () => {
@@ -18,7 +19,7 @@ describe('AdjustNpc reads the live hit points', () => {
     const close = vi.fn();
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { adjustHitPoints } },
+        { provide: CombatClient, useValue: fakeCombatClient({ adjustHitPoints }) },
         { provide: MatDialogRef, useValue: { close } },
         {
           provide: MAT_DIALOG_DATA,
@@ -56,7 +57,7 @@ describe('AdjustNpc reads the live hit points', () => {
       const close = vi.fn();
       TestBed.configureTestingModule({
         providers: [
-          { provide: CombatClient, useValue: { adjustHitPoints } },
+          { provide: CombatClient, useValue: fakeCombatClient({ adjustHitPoints }) },
           { provide: MatDialogRef, useValue: { close } },
           {
             provide: MAT_DIALOG_DATA,

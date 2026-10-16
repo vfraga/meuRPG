@@ -5,6 +5,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { RollModeQueue } from './roll-mode-queue';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const request = (id: string, status = RollModeRequestStatus.PENDING) =>
   ({
@@ -21,7 +22,9 @@ const request = (id: string, status = RollModeRequestStatus.PENDING) =>
 
 function setup(requests: unknown[]) {
   const api = { answerRollModeRequest: vi.fn() };
-  TestBed.configureTestingModule({ providers: [{ provide: CombatClient, useValue: api }] });
+  TestBed.configureTestingModule({
+    providers: [{ provide: CombatClient, useValue: fakeCombatClient(api) }],
+  });
   const enc = encounter({
     combatants: [combatant({ id: 't', label: 'Toren' }), combatant({ id: 'g', label: 'Goblin' })],
     rollModeRequests: requests,

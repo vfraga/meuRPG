@@ -10,6 +10,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { CastSheet, type CastSheetData } from './cast-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('a failed typed damage keeps the typed form open', () => {
   it('keeps typing() true when the roll is rejected', async () => {
@@ -53,7 +54,7 @@ describe('a failed typed damage keeps the typed form open', () => {
     } as unknown as CastSheetData;
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { rollDamage } },
+        { provide: CombatClient, useValue: fakeCombatClient({ rollDamage }) },
         { provide: SpellCatalog, useValue: { details: () => Promise.resolve(null) } },
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },

@@ -15,10 +15,12 @@ import {
   type ConcentrationOutcome,
 } from './combat-client-types';
 import { attackResult, need } from './combat-client-wire';
-import { CombatMoveCalls } from './combat-client-move';
+import { type CombatClientBase } from './combat-client-base';
 
 /** The calls of attacks, damage, roll modes, reactions and concentration. */
-export abstract class CombatAttackCalls extends CombatMoveCalls {
+export class CombatAttackCalls {
+  constructor(private readonly base: CombatClientBase) {}
+
   /** The attack roll. `key` is made once per attack by the caller, so a retry
    * after a lost answer never rolls twice. */
   async rollAttack(
@@ -35,7 +37,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     catchWindowId = '',
     effects: AttackEffects = {},
   ): Promise<AttackResult> {
-    const res = await this.client.rollAttack({
+    const res = await this.base.client.rollAttack({
       campaignId,
       encounterId,
       attackerId,
@@ -75,7 +77,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     key: string,
     choice?: DamageChoice,
   ): Promise<DamageResult> {
-    const res = await this.client.rollDamage({
+    const res = await this.base.client.rollDamage({
       campaignId,
       encounterId,
       pendingDamageId,
@@ -116,10 +118,10 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     key?: string,
     ignoreModifiers: readonly string[] = [],
   ): Promise<DamageResult> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['applyPendingDamage', campaignId, encounterId, pendingDamageId, amount, ignoreModifiers],
       (sent) =>
-        this.client.applyPendingDamage({
+        this.base.client.applyPendingDamage({
           campaignId,
           encounterId,
           pendingDamageId,
@@ -147,7 +149,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     reason: string,
     key: string,
   ): Promise<{ readonly encounter: Encounter; readonly request: RollModeRequest }> {
-    const res = await this.client.requestRollMode({
+    const res = await this.base.client.requestRollMode({
       campaignId,
       encounterId,
       attackerId,
@@ -171,7 +173,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     decidedMode: RollMode,
     key: string,
   ): Promise<Encounter> {
-    const res = await this.client.answerRollModeRequest({
+    const res = await this.base.client.answerRollModeRequest({
       campaignId,
       encounterId,
       requestId,
@@ -187,7 +189,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     requestId: string,
     key: string,
   ): Promise<Encounter> {
-    const res = await this.client.cancelRollModeRequest({
+    const res = await this.base.client.cancelRollModeRequest({
       campaignId,
       encounterId,
       requestId,
@@ -205,7 +207,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     reason: string,
     key: string,
   ): Promise<DamageResult> {
-    const res = await this.client.removeDamagePart({
+    const res = await this.base.client.removeDamagePart({
       campaignId,
       encounterId,
       pendingDamageId,
@@ -225,10 +227,10 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     encounterId: string,
     pendingDamageId: string,
   ): Promise<DamageResult> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['discardPendingDamage', campaignId, encounterId, pendingDamageId],
       (sent) =>
-        this.client.discardPendingDamage({
+        this.base.client.discardPendingDamage({
           campaignId,
           encounterId,
           pendingDamageId,
@@ -250,7 +252,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     answer: ReactionAnswer,
     key: string,
   ): Promise<AnswerResult> {
-    const res = await this.client.answerReaction({
+    const res = await this.base.client.answerReaction({
       campaignId,
       encounterId,
       windowId,
@@ -278,7 +280,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     encounterId: string,
     windowId: string,
   ): Promise<Encounter> {
-    const res = await this.client.markReactionRolling({ campaignId, encounterId, windowId });
+    const res = await this.base.client.markReactionRolling({ campaignId, encounterId, windowId });
     return need(res.encounter, 'MarkReactionRolling');
   }
 
@@ -290,7 +292,7 @@ export abstract class CombatAttackCalls extends CombatMoveCalls {
     how: ConcentrationAnswer,
     key: string,
   ): Promise<ConcentrationOutcome> {
-    const res = await this.client.resolveConcentrationSave({
+    const res = await this.base.client.resolveConcentrationSave({
       campaignId,
       encounterId,
       windowId,

@@ -14,6 +14,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const longsword = {
   key: 'attack:longsword',
@@ -78,7 +79,7 @@ describe('AttackSheet: the idempotency key follows the request', () => {
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: () => undefined } },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
       ],
     });
     const sheet = TestBed.createComponent(AttackSheet).componentInstance as unknown as {

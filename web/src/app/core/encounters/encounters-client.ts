@@ -10,7 +10,7 @@ import {
   type EncounterEvaluation,
 } from '../../../gen/meurpg/play/v1/encounters_pb';
 import type { CreatureSummary } from '../../../gen/meurpg/rules/v1/rules_pb';
-import type { MonsterGroupSpec, MonsterHp } from '../combat/combat-client';
+import type { MonsterGroupSpec, MonsterHp } from '../combat/combat-client-types';
 import { CONNECT_TRANSPORT } from '../connect/transport';
 
 /** An NPC the master puts in the party for one encounter (question 86): one of the campaign's NPCs, or only a name, and a level. */

@@ -240,7 +240,7 @@ export class RevivifySheet {
       const key = this.keys.keyFor({ target: target.id, slot: [slot.level, slot.pact] });
       const c = this.data.combat;
       if (c) {
-        const res = await this.combatApi.castRevivify(
+        const res = await this.combatApi.casts.castRevivify(
           this.data.campaignId,
           c.encounterId,
           c.casterId,
@@ -324,7 +324,7 @@ export class RevivifySheet {
     this.error.set('');
     try {
       c.state.apply(
-        await this.combatApi.endTurn(
+        await this.combatApi.turn.endTurn(
           this.data.campaignId,
           c.encounterId,
           c.casterId,

@@ -21,6 +21,7 @@ import { NoMapPanel, TheatreReaction } from './no-map-panel';
 import { OfferPanel } from './offer-panel';
 import { SpendSheet, type SpendSheetData } from './spend-sheet';
 import { TheatrePill } from './theatre-pill';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const button = (el: HTMLElement, name: string) =>
@@ -62,7 +63,7 @@ describe('SpendSheet, "Gastar movimento" (RN-25, E10-04)', () => {
         { provide: MatDialogRef, useValue: { close: (r: unknown) => closed.push(r) } },
         {
           provide: CombatClient,
-          useValue: {
+          useValue: fakeCombatClient({
             spendMovement: async (_c: string, _e: string, id: string, ft: number) => {
               if (opts.fail) {
                 throw opts.fail;
@@ -80,7 +81,7 @@ describe('SpendSheet, "Gastar movimento" (RN-25, E10-04)', () => {
                 movementLeftDft: 100,
               };
             },
-          },
+          }),
         },
       ],
     });
@@ -176,7 +177,7 @@ describe('SpendSheet, "Gastar movimento" (RN-25, E10-04)', () => {
         { provide: MatDialogRef, useValue: { close: () => undefined } },
         {
           provide: CombatClient,
-          useValue: {
+          useValue: fakeCombatClient({
             spendMovement: async () => {
               throw err;
             },
@@ -184,7 +185,7 @@ describe('SpendSheet, "Gastar movimento" (RN-25, E10-04)', () => {
               reads++;
               return refreshed;
             },
-          },
+          }),
         },
       ],
     });
@@ -218,7 +219,7 @@ describe("MasterSpend, the master's movement for an NPC (E10-04 state 2)", () =>
       providers: [
         {
           provide: CombatClient,
-          useValue: {
+          useValue: fakeCombatClient({
             spendMovement: async (_c: string, _e: string, _id: string, ft: number) => {
               calls.push(ft);
               return {
@@ -229,7 +230,7 @@ describe("MasterSpend, the master's movement for an NPC (E10-04 state 2)", () =>
                 movementLeftDft: 100,
               };
             },
-          },
+          }),
         },
       ],
     });

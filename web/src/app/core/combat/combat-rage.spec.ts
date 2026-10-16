@@ -21,7 +21,7 @@ function clientWith(sent: Sent): CombatClient {
     const failure = sent.fail.shift();
     return failure ? Promise.reject(failure) : Promise.resolve({ encounter: { id: 'enc' } });
   };
-  (client as unknown as { client: unknown }).client = {
+  (client as unknown as { base: { client: unknown } }).base.client = {
     answerRageEnd: (req: Sent['answer'][number]) => {
       sent.answer.push(req);
       return reply();
@@ -38,8 +38,8 @@ describe('the rage calls', () => {
   it('sends the answer to the rage question with the combatant and the choice', async () => {
     const sent: Sent = { answer: [], end: [], fail: [] };
     const client = clientWith(sent);
-    await client.answerRageEnd('c', 'e', 't', false);
-    await client.answerRageEnd('c', 'e', 't', true);
+    await client.turn.answerRageEnd('c', 'e', 't', false);
+    await client.turn.answerRageEnd('c', 'e', 't', true);
     expect(sent.answer.map((a) => [a.combatantId, a.endRage])).toEqual([
       ['t', false],
       ['t', true],
@@ -49,8 +49,8 @@ describe('the rage calls', () => {
   it('keeps the key of "Encerrar fúria" across a retry after a lost answer', async () => {
     const sent: Sent = { answer: [], end: [], fail: [new ConnectError('lost', Code.Unavailable)] };
     const client = clientWith(sent);
-    await expect(client.endRage('c', 'e', 't')).rejects.toBeInstanceOf(ConnectError);
-    await client.endRage('c', 'e', 't');
+    await expect(client.turn.endRage('c', 'e', 't')).rejects.toBeInstanceOf(ConnectError);
+    await client.turn.endRage('c', 'e', 't');
     expect(sent.end[1].idempotencyKey).toBe(sent.end[0].idempotencyKey);
   });
 

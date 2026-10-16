@@ -8,7 +8,8 @@ import {
   type OpportunityOffer,
   type ReactionWindow,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
-import { type AttackDie, newKey } from '../../../core/combat/combat-client';
+import { type AttackDie } from '../../../core/combat/combat-client-types';
+import { newKey } from '../../../core/connect/idempotency';
 import { type MineTab, membersToEnd } from '../../../core/combat/mine';
 import type { Square } from '../../../core/combat/combat-grid';
 import { outcomeText, saveAnnouncement } from '../../../core/combat/death-saves';
@@ -63,7 +64,7 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
     let text = '';
     await this.calls.run(async (e) => {
       const key = this.deathKey.keyFor([e.id, id, die]);
-      const res = await this.api.rollDeathSave(this.campaignId(), e.id, id, die, key);
+      const res = await this.api.combatants.rollDeathSave(this.campaignId(), e.id, id, die, key);
       this.deathKey.renew();
       text = saveAnnouncement(res.save, label);
       // The death save, as the line under the sheet tells it (hidden saves arrive without a roll: nothing plays).
@@ -92,7 +93,7 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
   /** The master's "Confirmar a morte" (ConfirmDeath): the character is dead for good. */
   protected async confirmDeath(id: string): Promise<void> {
     await this.calls.run(async (e) => {
-      const res = await this.api.confirmDeath(
+      const res = await this.api.combatants.confirmDeath(
         this.campaignId(),
         e.id,
         id,
@@ -108,25 +109,25 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
     // "Deixar a fúria acabar" ends the rage and then passes the turn, in one tap, as the
     // question says: the server only ends the rage, so the turn goes in the same call.
     await this.calls.run(async (e) => {
-      const answered = await this.api.answerRageEnd(this.campaignId(), e.id, id, endRage);
+      const answered = await this.api.turn.answerRageEnd(this.campaignId(), e.id, id, endRage);
       if (!endRage) {
         return answered;
       }
       this.state().apply(answered);
-      return this.api.endTurn(this.campaignId(), e.id, id, false, answered.round);
+      return this.api.turn.endTurn(this.campaignId(), e.id, id, false, answered.round);
     });
   }
 
   /** "Técnica da Mão Aberta" and "Golpe Atordoante": the monk's answer to an offer after a hit. */
   protected answerRider(pick: RiderPick): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.useHitRider(this.campaignId(), e.id, pick.id, pick.choice),
+      this.api.turn.useHitRider(this.campaignId(), e.id, pick.id, pick.choice),
     );
   }
 
   /** "Encerrar fúria": the bonus action. */
   protected endRageOf(id: string): Promise<boolean> {
-    return this.calls.run((e) => this.api.endRage(this.campaignId(), e.id, id));
+    return this.calls.run((e) => this.api.turn.endRage(this.campaignId(), e.id, id));
   }
 
   protected deathLaterFor(id: string): void {
@@ -148,7 +149,9 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
     return own
       ? this.calls
           .run((e) =>
-            this.api.setConditions(this.campaignId(), e.id, own.id, { endConcentration: true }),
+            this.api.combatants.setConditions(this.campaignId(), e.id, own.id, {
+              endConcentration: true,
+            }),
           )
           .then((ok) => {
             if (!ok) {
@@ -169,7 +172,7 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
       }
       if (
         !(await this.calls.run((current) =>
-          this.api.endTurn(this.campaignId(), current.id, member.id, false, current.round),
+          this.api.turn.endTurn(this.campaignId(), current.id, member.id, false, current.round),
         ))
       ) {
         return;
@@ -182,18 +185,18 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
   }
 
   protected endCombat(): Promise<boolean> {
-    return this.calls.run((e) => this.api.end(this.campaignId(), e.id));
+    return this.calls.run((e) => this.api.turn.end(this.campaignId(), e.id));
   }
 
   protected submitFace(combatantId: string, face: number): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.submitInitiative(this.campaignId(), e.id, combatantId, { face }),
+      this.api.turn.submitInitiative(this.campaignId(), e.id, combatantId, { face }),
     );
   }
 
   protected async rollInApp(combatantId: string): Promise<boolean> {
     const done = await this.calls.run((e) =>
-      this.api.submitInitiative(this.campaignId(), e.id, combatantId, { inApp: true }),
+      this.api.turn.submitInitiative(this.campaignId(), e.id, combatantId, { inApp: true }),
     );
     if (done) {
       this.animateInitiative(combatantId);
@@ -211,31 +214,31 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
   }
 
   protected setOrder(ids: string[]): Promise<boolean> {
-    return this.calls.run((e) => this.api.setOrder(this.campaignId(), e.id, ids));
+    return this.calls.run((e) => this.api.turn.setOrder(this.campaignId(), e.id, ids));
   }
 
   protected reveal(change: { id: string; hidden: boolean }): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.setHidden(this.campaignId(), e.id, change.id, change.hidden),
+      this.api.moves.setHidden(this.campaignId(), e.id, change.id, change.hidden),
     );
   }
 
   /** The master: "Perdeu a concentração" (the app does not roll the save; the damage card reminds the DC). */
   protected loseConcentration(id: string): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.setConditions(this.campaignId(), e.id, id, { endConcentration: true }),
+      this.api.combatants.setConditions(this.campaignId(), e.id, id, { endConcentration: true }),
     );
   }
 
   /** The master: "Encerrar Ajuda": the bonus goes, and the hit points lose only what passes the new maximum. */
   protected endAid(id: string): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.endCombatEffect(this.campaignId(), e.id, id, CombatEffect.AID),
+      this.api.combatants.endCombatEffect(this.campaignId(), e.id, id, CombatEffect.AID),
     );
   }
 
   protected remove(id: string): Promise<boolean> {
-    return this.calls.run((e) => this.api.remove(this.campaignId(), e.id, id));
+    return this.calls.run((e) => this.api.moves.remove(this.campaignId(), e.id, id));
   }
 
   protected adjustFor(characterId: string): void {
@@ -277,7 +280,7 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
   protected answerOpportunity(a: MasterAnswer): Promise<boolean> | void {
     if (!a.attack) {
       return this.calls.run((e) =>
-        this.api.declineOpportunity(this.campaignId(), e.id, a.offer.id),
+        this.api.moves.declineOpportunity(this.campaignId(), e.id, a.offer.id),
       );
     }
     this.sheets.reactions.opportunityAttack(
@@ -295,7 +298,7 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
       return Promise.resolve(false);
     }
     return this.calls.run(async (e) => {
-      const undone = await this.api.undo(this.campaignId(), e.id, entry.id);
+      const undone = await this.api.turn.undo(this.campaignId(), e.id, entry.id);
       this.undone.mark();
       return undone;
     });
@@ -303,7 +306,7 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
 
   /** "Seguir sem esperar": the master passes over an offer the player does not answer. */
   protected skipOpportunity(offer: OpportunityOffer): Promise<boolean> {
-    return this.calls.run((e) => this.api.skipOpportunity(this.campaignId(), e.id, offer.id));
+    return this.calls.run((e) => this.api.moves.skipOpportunity(this.campaignId(), e.id, offer.id));
   }
 
   /** "Oferecer a Toren": the master says the one on turn left that combatant's reach (a combat without a map). */
@@ -320,7 +323,7 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
       this.offerKeys.set(reactorId, key);
     }
     const ok = await this.calls.run((current) =>
-      this.api.offerOpportunity(this.campaignId(), current.id, mover.id, reactorId, key),
+      this.api.moves.offerOpportunity(this.campaignId(), current.id, mover.id, reactorId, key),
     );
     if (ok) {
       this.offering.set(false);
@@ -344,18 +347,22 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
 
   /** "Retirar a oferta": the master takes back an offer nobody answered; the reactor keeps its reaction. */
   protected withdrawOpportunity(offer: OpportunityOffer): Promise<boolean> {
-    return this.calls.run((e) => this.api.withdrawOpportunity(this.campaignId(), e.id, offer.id));
+    return this.calls.run((e) =>
+      this.api.moves.withdrawOpportunity(this.campaignId(), e.id, offer.id),
+    );
   }
 
   /** The master's "Marcar como aliado" / "Voltar a ser inimigo". */
   protected setSide(change: { id: string; side: CombatantSide }): Promise<boolean> {
-    return this.calls.run((e) => this.api.setSide(this.campaignId(), e.id, change.id, change.side));
+    return this.calls.run((e) =>
+      this.api.moves.setSide(this.campaignId(), e.id, change.id, change.side),
+    );
   }
 
   /** The master's cover mark, applied at once. */
   protected setCover(change: { id: string; cover: CoverDegree }): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.setCover(this.campaignId(), e.id, change.id, change.cover),
+      this.api.moves.setCover(this.campaignId(), e.id, change.id, change.cover),
     );
   }
 
@@ -365,14 +372,14 @@ export abstract class CombatViewFlowsDirective extends CombatViewPartsDirective 
   protected standUp(id?: string): Promise<boolean> {
     const who = id ?? this.own()?.id;
     return who
-      ? this.calls.run((e) => this.api.standUp(this.campaignId(), e.id, who))
+      ? this.calls.run((e) => this.api.moves.standUp(this.campaignId(), e.id, who))
       : Promise.resolve(false);
   }
 
   /** "Colocar no mapa": the server picks the square, by the rule that places the
    * NPCs when the combat begins (free floor, away from the players). */
   protected async place(id: string): Promise<void> {
-    await this.calls.run((current) => this.api.place(this.campaignId(), current.id, id));
+    await this.calls.run((current) => this.api.moves.place(this.campaignId(), current.id, id));
   }
 
   // ---- sheets and moving: the template and the screens below call these ----

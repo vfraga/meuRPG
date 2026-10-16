@@ -22,6 +22,7 @@ import { ResourceClient } from '../../../../core/resources/resources-client';
 import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { settle } from '../../../../../test-settle';
 import { ReactionSheet, type ReactionSheetData } from './reaction-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (text: string | null | undefined) =>
   (text ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -154,7 +155,7 @@ describe('ReactionSheet, the answers and the keys', () => {
           provide: MatDialogRef,
           useValue: { close: (r?: unknown) => closed.push(r ?? 'closed'), disableClose: true },
         },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         { provide: ResourceClient, useValue: resources },
         { provide: RollAnimator, useValue: animator },
       ],

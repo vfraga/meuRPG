@@ -22,6 +22,7 @@ import { combatant, encounter } from '../../../core/combat/combat-testing';
 import { flat, isOff } from '../../../core/creatures/creatures-testing';
 import { BANDIT } from '../../../core/encounters/encounters-testing';
 import { PutMonstersSheet, type PutMonstersData } from './put-sheet';
+import { fakeCombatClient } from '../../../core/combat/combat-client-testing';
 
 /** The combat client of the sheet: the open combat, and what was asked of it. */
 class FakeCombat {
@@ -114,7 +115,7 @@ describe('PutMonstersSheet: "Pôr no combate" (MR-042, RN-29, E10-08 states 4 an
     const data: PutMonstersData = { campaignId: 'camp-1', creature: BANDIT };
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         {
           provide: OpenSessionLookup,
           useValue: {

@@ -165,7 +165,7 @@ export class LiveSessionLoader {
       return;
     }
     try {
-      const log = await this.services.combatApi.log(campaignId, e.id);
+      const log = await this.services.combatApi.turn.log(campaignId, e.id);
       if (generation === state.generation) {
         state.revivedCaster.set(casterOfRevival(log.rounds, characterId));
       }
@@ -219,7 +219,7 @@ export class LiveSessionLoader {
     const { state, parts } = this;
     const ticket = parts.combat.beginRead();
     try {
-      const encounter = await this.services.combatApi.get(state.campaignId());
+      const encounter = await this.services.combatApi.turn.get(state.campaignId());
       // Dropped for something that replaced the combat while it was out (an event, an answer to a call): that may be
       // older than what this read was asked for, so read again. Bounded: a busy table never loops.
       if (

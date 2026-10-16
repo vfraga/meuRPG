@@ -19,7 +19,7 @@ import {
   type EncounterLine,
 } from '../../../../gen/meurpg/play/v1/encounters_pb';
 import type { CreatureSummary } from '../../../../gen/meurpg/rules/v1/rules_pb';
-import type { MonsterGroupSpec } from '../../../core/combat/combat-client';
+import type { MonsterGroupSpec } from '../../../core/combat/combat-client-types';
 import { CREATURE_TYPES } from '../../../core/creatures/creature-types';
 import { type DraftEntry } from '../../../core/encounters/encounter-draft';
 import {

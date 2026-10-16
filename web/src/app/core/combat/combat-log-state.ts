@@ -21,7 +21,7 @@ export class CombatLogState {
   async load(api: CombatClient, campaignId: string, encounterId: string): Promise<void> {
     const mine = ++this.asked;
     try {
-      const res = await api.log(campaignId, encounterId);
+      const res = await api.turn.log(campaignId, encounterId);
       if (mine === this.asked) {
         this.rounds.set(res.rounds);
         this.undoableId.set(res.undoableEventId);

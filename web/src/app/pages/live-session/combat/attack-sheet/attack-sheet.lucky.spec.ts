@@ -19,12 +19,14 @@ import {
   ResourceBlockedSchema,
 } from '../../../../../gen/meurpg/play/v1/resources_pb';
 import type { Attack } from '../../../../../gen/meurpg/rules/v1/rules_pb';
-import { type AttackResult, CombatClient } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { type AttackResult } from '../../../../core/combat/combat-client-types';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { LUCKY_TRAIT } from '../../../../core/combat/lucky';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const flat = (n: Element | null | undefined) => n?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
@@ -118,7 +120,7 @@ describe('AttackSheet: the halfling’s Lucky question, "Tirou 1: rolar de novo?
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { rollAttack } },
+        { provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) },
         { provide: ResourceClient, useValue: { answerLucky, answerBardicInspiration } },
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: vi.fn(), disableClose: false } },

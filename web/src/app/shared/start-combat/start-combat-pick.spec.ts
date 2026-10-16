@@ -16,6 +16,7 @@ import { BANDIT } from '../../core/encounters/encounters-testing';
 import { RosterClient } from '../../core/maps/roster-client';
 import { CreaturePick } from '../creature-pick/creature-pick';
 import { StartCombatDialog, type StartCombatData } from './start-combat-dialog';
+import { fakeCombatClient } from '../../core/combat/combat-client-testing';
 
 /** R4: a bestiary monster is picked inside "Iniciar combate", so the dialog is never left. */
 describe('StartCombatDialog: monsters picked from the bestiary in place', () => {
@@ -75,7 +76,7 @@ describe('StartCombatDialog: monsters picked from the bestiary in place', () => 
         },
         {
           provide: CombatClient,
-          useValue: {
+          useValue: fakeCombatClient({
             start: vi.fn(
               async (
                 _c: string,
@@ -88,7 +89,7 @@ describe('StartCombatDialog: monsters picked from the bestiary in place', () => 
                 return encounter({ id: 'enc-9', name });
               },
             ),
-          },
+          }),
         },
       ],
     });

@@ -6,6 +6,7 @@ import { EffectsClient } from '../../../../core/effects/effects-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter, reactionWindow } from '../../../../core/combat/combat-testing';
 import { ReactionQueue } from './reaction-queue';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (text: string | null | undefined) =>
   (text ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -60,7 +61,7 @@ describe("ReactionQueue, the master's side of the reaction windows", () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         { provide: EffectsClient, useValue: effectsApi },
       ],
     });

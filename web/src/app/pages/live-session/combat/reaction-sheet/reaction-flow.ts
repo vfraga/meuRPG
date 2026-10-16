@@ -9,11 +9,11 @@ import {
   type ReactionWindow,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { SlotRow } from '../../../../core/combat/cast-flow';
+import { type CombatClient } from '../../../../core/combat/combat-client';
 import {
-  type CombatClient,
   type ConcentrationAnswer,
   type ReactionAnswer,
-} from '../../../../core/combat/combat-client';
+} from '../../../../core/combat/combat-client-types';
 import { combatErrorMessage, encounterBlocked } from '../../../../core/combat/combat-errors';
 import { luckyReroll } from '../../../../core/combat/lucky-question';
 import { isOptionalReaction } from '../../../../core/combat/reaction-autopass';
@@ -113,7 +113,7 @@ export class ReactionFlow {
 
   private async tellRolling(windowId: string): Promise<void> {
     try {
-      const e = await this.host.api.markReactionRolling(
+      const e = await this.host.api.attacks.markReactionRolling(
         this.host.data.campaignId,
         this.host.data.encounterId,
         windowId,
@@ -130,7 +130,7 @@ export class ReactionFlow {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.host.api.answerReaction(
+      const res = await this.host.api.attacks.answerReaction(
         this.host.data.campaignId,
         this.host.data.encounterId,
         w.id,
@@ -173,7 +173,7 @@ export class ReactionFlow {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.host.api.resolveConcentrationSave(
+      const res = await this.host.api.attacks.resolveConcentrationSave(
         this.host.data.campaignId,
         this.host.data.encounterId,
         w.id,
@@ -316,7 +316,7 @@ export class ReactionFlow {
     this.error.set(combatErrorMessage(err, what));
     if (blocked?.reason === EncounterBlockedReason.NOT_YOUR_TURN_TO_ANSWER) {
       try {
-        const fresh = await this.host.api.get(this.host.data.campaignId);
+        const fresh = await this.host.api.turn.get(this.host.data.campaignId);
         if (fresh) {
           this.host.data.state.apply(fresh);
         }
@@ -352,7 +352,7 @@ export class ReactionFlow {
       const answer: ReactionAnswer = { use: false };
       this.host.data.state.apply(
         (
-          await this.host.api.answerReaction(
+          await this.host.api.attacks.answerReaction(
             this.host.data.campaignId,
             this.host.data.encounterId,
             id,

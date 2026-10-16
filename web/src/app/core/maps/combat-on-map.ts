@@ -15,7 +15,7 @@ export class CombatOnMap {
 
   async running(campaignId: string, mapId: string): Promise<boolean> {
     try {
-      const encounter = await this.combat.get(campaignId);
+      const encounter = await this.combat.turn.get(campaignId);
       return (
         encounter !== null &&
         encounter.mapId === mapId &&

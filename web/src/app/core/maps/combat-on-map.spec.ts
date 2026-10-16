@@ -4,11 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { EncounterStatus, type Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
 import { CombatClient } from '../combat/combat-client';
 import { CombatOnMap } from './combat-on-map';
+import { fakeCombatClient } from '../combat/combat-client-testing';
 
 function lookup(answer: () => Promise<Encounter | null>): CombatOnMap {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [{ provide: CombatClient, useValue: { get: answer } }],
+    providers: [{ provide: CombatClient, useValue: fakeCombatClient({ get: answer }) }],
   });
   return TestBed.inject(CombatOnMap);
 }

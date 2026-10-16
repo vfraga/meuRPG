@@ -7,6 +7,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { NpcCard } from './npc-card';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('NpcCard: the idempotency key follows the target', () => {
   const opts = (targets: string[]) =>
@@ -40,7 +41,7 @@ describe('NpcCard: the idempotency key follows the target', () => {
       .mockRejectedValueOnce(new Error('lost'))
       .mockRejectedValue(new Error('lost again'));
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { rollAttack } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) }],
     });
     const fixture = TestBed.createComponent(NpcCard);
     fixture.componentRef.setInput('campaignId', 'c');
@@ -80,7 +81,7 @@ describe('NpcCard: the idempotency key follows the target', () => {
     TestBed.resetTestingModule();
     const rollAttack = vi.fn();
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { rollAttack } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) }],
     });
     const fixture = TestBed.createComponent(NpcCard);
     fixture.componentRef.setInput('campaignId', 'c');
@@ -111,7 +112,7 @@ describe('NpcCard: the idempotency key follows the target', () => {
     TestBed.resetTestingModule();
     const rollAttack = vi.fn();
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { rollAttack } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) }],
     });
     const fixture = TestBed.createComponent(NpcCard);
     fixture.componentRef.setInput('campaignId', 'c');
@@ -155,7 +156,7 @@ describe('NpcCard: the idempotency key follows the target', () => {
       encounter: encounter({ combatants: [combatant({ id: 'npc', label: 'Goblin' })] }),
     }));
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { rollAttack } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) }],
     });
     const fixture = TestBed.createComponent(NpcCard);
     fixture.componentRef.setInput('campaignId', 'c');
@@ -265,7 +266,7 @@ describe('NpcCard: the typed d20 follows the roll mode of the target', () => {
     TestBed.resetTestingModule();
     const rollAttack = vi.fn().mockRejectedValue(new Error('stop'));
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { rollAttack } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) }],
     });
     const fixture = TestBed.createComponent(NpcCard);
     fixture.componentRef.setInput('campaignId', 'c');

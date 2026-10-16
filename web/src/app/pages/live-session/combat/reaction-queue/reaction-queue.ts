@@ -16,11 +16,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { Encounter, ReactionWindow } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { CombatClient } from '../../../../core/combat/combat-client';
 import {
-  CombatClient,
   type ConcentrationAnswer,
   type ReactionAnswer,
-} from '../../../../core/combat/combat-client';
+} from '../../../../core/combat/combat-client-types';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { ofThe } from '../../../../core/combat/move-plan';
@@ -201,7 +201,7 @@ export class ReactionQueue {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.api.answerReaction(
+      const res = await this.api.attacks.answerReaction(
         this.campaignId(),
         this.encounter().id,
         w.id,
@@ -232,7 +232,7 @@ export class ReactionQueue {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.api.resolveConcentrationSave(
+      const res = await this.api.attacks.resolveConcentrationSave(
         this.campaignId(),
         this.encounter().id,
         w.id,

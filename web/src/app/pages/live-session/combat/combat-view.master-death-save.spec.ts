@@ -29,6 +29,7 @@ import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
 import { nextTurn } from '../../../../test-settle';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
 // reach the next file (a real setTimeout never fires on a fake clock).
@@ -80,39 +81,34 @@ async function mount(first: ReturnType<typeof enc>, diceMode = DiceMode.PLAYERS_
   }));
   const rolls: { combatantId: string; die: unknown }[] = [];
   const turnsEnded: string[] = [];
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        switch (name) {
-          case 'turnOptions':
-            return async () => ({
-              options: create(TurnOptionsSchema, {}),
-              attackTargets: [],
-              spellTargets: [],
-              pendingDamages: [],
-            });
-          case 'log':
-            return async () => ({ rounds: [], undoableEventId: '' });
-          case 'rollDeathSave':
-            return async (_c: string, _e: string, combatantId: string, die: unknown) => {
-              rolls.push({ combatantId, die });
-              return {
-                encounter: enc('b', brisa({ deathSaveDue: false, deathSuccesses: 1 })),
-                save: SAVE,
-              };
-            };
-          case 'endTurn':
-            return async (_c: string, _e: string, who: string) => {
-              turnsEnded.push(who);
-              return enc('g', brisa());
-            };
-          default:
-            return async () => ({});
-        }
-      },
-    },
-  );
+  const api = anyCallCombatClient((name) => {
+    switch (name) {
+      case 'turnOptions':
+        return async () => ({
+          options: create(TurnOptionsSchema, {}),
+          attackTargets: [],
+          spellTargets: [],
+          pendingDamages: [],
+        });
+      case 'log':
+        return async () => ({ rounds: [], undoableEventId: '' });
+      case 'rollDeathSave':
+        return async (_c: string, _e: string, combatantId: string, die: unknown) => {
+          rolls.push({ combatantId, die });
+          return {
+            encounter: enc('b', brisa({ deathSaveDue: false, deathSuccesses: 1 })),
+            save: SAVE,
+          };
+        };
+      case 'endTurn':
+        return async (_c: string, _e: string, who: string) => {
+          turnsEnded.push(who);
+          return enc('g', brisa());
+        };
+      default:
+        return async () => ({});
+    }
+  });
   const state = new CombatState();
   state.apply(first);
   TestBed.configureTestingModule({

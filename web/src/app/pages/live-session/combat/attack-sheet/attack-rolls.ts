@@ -10,13 +10,13 @@ import {
 import { EffectRollKind } from '../../../../../gen/meurpg/play/v1/lasting_effects_pb';
 import type { Attack } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { awaitsReaction, stageAfterRoll, stageOfAnswer } from '../../../../core/combat/attack-flow';
+import type { CombatClient } from '../../../../core/combat/combat-client';
 import type {
   AttackDie,
-  CombatClient,
   DamageDie,
   ModeChoice,
   PairDie,
-} from '../../../../core/combat/combat-client';
+} from '../../../../core/combat/combat-client-types';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import {
   type ExtraDieField,
@@ -82,7 +82,7 @@ export class AttackRolls {
     await this.s.run(
       async () => {
         const mode = this.host.modeChoice();
-        const res = await this.host.api.rollAttack(
+        const res = await this.host.api.attacks.rollAttack(
           data.campaignId,
           data.encounterId,
           data.attackerId,
@@ -120,7 +120,7 @@ export class AttackRolls {
           this.damage.parts().length > 0
             ? { extras: this.s.picks(), ...(typedParts ? { typedParts } : {}) }
             : undefined;
-        const res = await this.host.api.rollDamage(
+        const res = await this.host.api.attacks.rollDamage(
           data.campaignId,
           data.encounterId,
           p.id,
@@ -175,7 +175,7 @@ export class AttackRolls {
       return;
     }
     try {
-      const res = await this.host.api.turnOptions(
+      const res = await this.host.api.moves.turnOptions(
         s.data.campaignId,
         s.data.encounterId,
         s.data.attackerId,

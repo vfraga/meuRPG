@@ -18,7 +18,7 @@ export class MoveOptionsState {
 
   /** `jump` asks for the squares of a long jump instead of a walk's (and its opportunity-attack warning): the answer for one is never read as the other. */
   async load(
-    api: Pick<CombatClient, 'moveOptions'>,
+    api: Pick<CombatClient, 'moves'>,
     campaignId: string,
     encounterId: string,
     combatantId: string,
@@ -33,7 +33,7 @@ export class MoveOptionsState {
       this.failed.set(false);
     }
     try {
-      const res = await api.moveOptions(campaignId, encounterId, combatantId, jump);
+      const res = await api.moves.moveOptions(campaignId, encounterId, combatantId, jump);
       if (mine === this.asked) {
         this.data.set(res);
         this.failed.set(false);

@@ -2,7 +2,7 @@ import { computed, signal } from '@angular/core';
 
 import type { EncounterEvaluation } from '../../../gen/meurpg/play/v1/encounters_pb';
 import type { CreatureSummary } from '../../../gen/meurpg/rules/v1/rules_pb';
-import type { MonsterGroupSpec } from '../combat/combat-client';
+import type { MonsterGroupSpec } from '../combat/combat-client-types';
 import { type EncountersClient, type PartyNpcSpec } from './encounters-client';
 import { encounterErrorMessage } from './encounter-text';
 

@@ -8,10 +8,12 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { type JoinSpec, type MoveResult, type SpendResult } from './combat-client-types';
 import { toParticipant, need } from './combat-client-wire';
-import { CombatTurnCalls } from './combat-client-turn';
+import { type CombatClientBase } from './combat-client-base';
 
 /** The calls of movement, sides, cover, opportunity offers and the roster. */
-export abstract class CombatMoveCalls extends CombatTurnCalls {
+export class CombatMoveCalls {
+  constructor(private readonly base: CombatClientBase) {}
+
   /** `MoveCombatant`: a walk to a square, or a jump (`jump`: a long one to the
    * square, or a high one by `jumpHeightDft` tenths of a foot). `stoppedEarly`
    * is "something you did not see stopped you"; `provoked` that an opportunity
@@ -29,10 +31,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     key?: string,
     forced = false,
   ): Promise<MoveResult> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['moveCombatant', campaignId, encounterId, combatantId, col, row, jump, forced],
       (sent) =>
-        this.client.moveCombatant({
+        this.base.client.moveCombatant({
           campaignId,
           encounterId,
           combatantId,
@@ -60,14 +62,16 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
   /** "Colocar no mapa": the server picks the square of a combatant that has none
    * (free floor, away from the players), so the screen never guesses one. */
   async place(campaignId: string, encounterId: string, combatantId: string): Promise<Encounter> {
-    const res = await this.keyed(['placeCombatant', campaignId, encounterId, combatantId], (sent) =>
-      this.client.moveCombatant({
-        campaignId,
-        encounterId,
-        combatantId,
-        idempotencyKey: sent,
-        place: true,
-      }),
+    const res = await this.base.keyed(
+      ['placeCombatant', campaignId, encounterId, combatantId],
+      (sent) =>
+        this.base.client.moveCombatant({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          place: true,
+        }),
     );
     return need(res.encounter, 'MoveCombatant');
   }
@@ -81,7 +85,7 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     jump?: { readonly runningStart: boolean },
   ): Promise<GetMoveOptionsResponse> {
     // With a jump the squares are the long jump's, and `provokes_reactor_ids` warns about its opportunity attacks as a walk's does.
-    return this.client.getMoveOptions({
+    return this.base.client.getMoveOptions({
       campaignId,
       encounterId,
       combatantId,
@@ -97,10 +101,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     combatantId: string,
     side: CombatantSide,
   ): Promise<Encounter> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['setCombatantSide', campaignId, encounterId, combatantId, side],
       (sent) =>
-        this.client.setCombatantSide({
+        this.base.client.setCombatantSide({
           campaignId,
           encounterId,
           combatantId,
@@ -118,10 +122,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     combatantId: string,
     cover: CoverDegree,
   ): Promise<Encounter> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['setCombatantCover', campaignId, encounterId, combatantId, cover],
       (sent) =>
-        this.client.setCombatantCover({
+        this.base.client.setCombatantCover({
           campaignId,
           encounterId,
           combatantId,
@@ -138,13 +142,15 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     encounterId: string,
     offerId: string,
   ): Promise<Encounter> {
-    const res = await this.keyed(['declineOpportunity', campaignId, encounterId, offerId], (sent) =>
-      this.client.declineOpportunity({
-        campaignId,
-        encounterId,
-        opportunityOfferId: offerId,
-        idempotencyKey: sent,
-      }),
+    const res = await this.base.keyed(
+      ['declineOpportunity', campaignId, encounterId, offerId],
+      (sent) =>
+        this.base.client.declineOpportunity({
+          campaignId,
+          encounterId,
+          opportunityOfferId: offerId,
+          idempotencyKey: sent,
+        }),
     );
     return need(res.encounter, 'DeclineOpportunity');
   }
@@ -156,10 +162,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     offerId: string,
     key?: string,
   ): Promise<Encounter> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['skipOpportunity', campaignId, encounterId, offerId],
       (sent) =>
-        this.client.skipOpportunity({
+        this.base.client.skipOpportunity({
           campaignId,
           encounterId,
           opportunityOfferId: offerId,
@@ -178,7 +184,7 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     distanceFt: number,
     idempotencyKey: string,
   ): Promise<SpendResult> {
-    const res = await this.client.spendMovement({
+    const res = await this.base.client.spendMovement({
       campaignId,
       encounterId,
       combatantId,
@@ -193,8 +199,8 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
 
   /** "Levantar-se": the combatant stands up from Prone for half its speed (SRD 5.1, "Being Prone"), on a map or without one. */
   async standUp(campaignId: string, encounterId: string, combatantId: string): Promise<Encounter> {
-    const res = await this.keyed(['standUp', campaignId, encounterId, combatantId], (sent) =>
-      this.client.standUp({ campaignId, encounterId, combatantId, idempotencyKey: sent }),
+    const res = await this.base.keyed(['standUp', campaignId, encounterId, combatantId], (sent) =>
+      this.base.client.standUp({ campaignId, encounterId, combatantId, idempotencyKey: sent }),
     );
     return need(res.encounter, 'StandUp');
   }
@@ -207,7 +213,7 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     reactorId: string,
     idempotencyKey: string,
   ): Promise<Encounter> {
-    const res = await this.client.offerOpportunity({
+    const res = await this.base.client.offerOpportunity({
       campaignId,
       encounterId,
       moverId,
@@ -223,10 +229,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     encounterId: string,
     offerId: string,
   ): Promise<Encounter> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['withdrawOpportunity', campaignId, encounterId, offerId],
       (sent) =>
-        this.client.withdrawOpportunity({
+        this.base.client.withdrawOpportunity({
           campaignId,
           encounterId,
           opportunityOfferId: offerId,
@@ -242,10 +248,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     combatantId: string,
     hidden: boolean,
   ): Promise<Encounter> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['setCombatantHidden', campaignId, encounterId, combatantId, hidden],
       (sent) =>
-        this.client.setCombatantHidden({
+        this.base.client.setCombatantHidden({
           campaignId,
           encounterId,
           combatantId,
@@ -262,10 +268,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     participants: readonly JoinSpec[],
     key?: string,
   ): Promise<Encounter> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['addCombatants', campaignId, encounterId, participants],
       (sent) =>
-        this.client.addCombatants({
+        this.base.client.addCombatants({
           campaignId,
           encounterId,
           idempotencyKey: sent,
@@ -277,10 +283,10 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
   }
 
   async remove(campaignId: string, encounterId: string, combatantId: string): Promise<Encounter> {
-    const res = await this.keyed(
+    const res = await this.base.keyed(
       ['removeCombatant', campaignId, encounterId, combatantId],
       (sent) =>
-        this.client.removeCombatant({
+        this.base.client.removeCombatant({
           campaignId,
           encounterId,
           combatantId,
@@ -297,6 +303,6 @@ export abstract class CombatMoveCalls extends CombatTurnCalls {
     encounterId: string,
     combatantId: string,
   ): Promise<GetTurnOptionsResponse> {
-    return this.client.getTurnOptions({ campaignId, encounterId, combatantId });
+    return this.base.client.getTurnOptions({ campaignId, encounterId, combatantId });
   }
 }

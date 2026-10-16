@@ -11,6 +11,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { CastSheet, type CastSheetData } from './cast-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('CastSheet: a typed roll belongs to the slot it was rolled for', () => {
   async function open() {
@@ -58,7 +59,7 @@ describe('CastSheet: a typed roll belongs to the slot it was rolled for', () => 
     } as unknown as CastSheetData;
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { castSpell } },
+        { provide: CombatClient, useValue: fakeCombatClient({ castSpell }) },
         { provide: SpellCatalog, useValue: { details: () => Promise.resolve(sleep) } },
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: vi.fn() } },

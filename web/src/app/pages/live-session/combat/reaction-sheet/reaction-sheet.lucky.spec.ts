@@ -23,6 +23,7 @@ import { encounter, reactionWindow } from '../../../../core/combat/combat-testin
 import { LUCKY_TRAIT } from '../../../../core/combat/lucky';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { ReactionSheet, type ReactionSheetData } from './reaction-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (text: string | null | undefined) => (text ?? '').replace(/\s+/g, ' ').trim();
 
@@ -101,7 +102,7 @@ describe('ReactionSheet: the halfling’s Lucky question on a concentration save
       providers: [
         { provide: MAT_DIALOG_DATA, useValue: data },
         { provide: MatDialogRef, useValue: { close: vi.fn(), disableClose: true } },
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         { provide: ResourceClient, useValue: resources },
       ],
     });

@@ -75,7 +75,7 @@ export class HighlightsCard {
   private async load(campaignId: string, encounterId: string): Promise<void> {
     this.loaded.set(false);
     try {
-      const res = await this.api.highlights(campaignId, encounterId);
+      const res = await this.api.turn.highlights(campaignId, encounterId);
       this.tiles.set(highlightTiles(res));
       this.rows.set(res.characters);
       this.loaded.set(true);

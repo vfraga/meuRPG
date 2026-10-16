@@ -38,7 +38,8 @@ import {
   stepOneTitle,
 } from '../../../../core/combat/area-text';
 import { castSubtitle, saveAbility, spellKind } from '../../../../core/combat/cast-flow';
-import { CombatClient, type SlotRef } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { type SlotRef } from '../../../../core/combat/combat-client-types';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import { circleLabel } from '../../../../core/combat/combat-grid';
 import type { CombatState } from '../../../../core/combat/combat-state';
@@ -104,7 +105,7 @@ export class MasterAreaCast {
     widthFt: this.data.targets.areaWidthFt,
   };
   protected readonly flow = new AreaFlow(this.placement, (area) =>
-    this.api.previewSpellArea(
+    this.api.casts.previewSpellArea(
       this.data.campaignId,
       this.data.encounterId,
       this.data.caster.id,
@@ -256,7 +257,7 @@ export class MasterAreaCast {
       const revealHidden = this.hidden().length > 0 ? this.reveal() : undefined;
       const die =
         spellKind(this.data.spellKey, this.details()) === 'pool' ? { inApp: true as const } : null;
-      const res = await this.api.castSpell(
+      const res = await this.api.casts.castSpell(
         this.data.campaignId,
         this.data.encounterId,
         this.data.caster.id,

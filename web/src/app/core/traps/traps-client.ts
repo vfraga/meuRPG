@@ -92,7 +92,7 @@ export class TrapsClient {
     return this.client.listTrapDamages({ campaignId });
   }
 
-  /** Outside a combat. In a combat the damage is a pending one: `CombatClient.applyDamage`. */
+  /** Outside a combat. In a combat the damage is a pending one: `CombatClient.attacks.applyDamage`. */
   applyDamage(
     campaignId: string,
     id: string,

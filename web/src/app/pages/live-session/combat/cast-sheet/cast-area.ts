@@ -70,7 +70,7 @@ export class CastArea {
       this.placement === AreaPlacement.UNSPECIFIED
         ? null
         : new AreaFlow(this.placement, (area) =>
-            api.previewSpellArea(
+            api.casts.previewSpellArea(
               data.campaignId,
               data.encounterId,
               data.casterId,

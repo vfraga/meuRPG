@@ -4,7 +4,8 @@ import { MatIconModule } from '@angular/material/icon';
 
 import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { hitPointsAfter } from '../../../../core/combat/attack-flow';
-import { CombatClient, type HpAdjust } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { type HpAdjust } from '../../../../core/combat/combat-client-types';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
@@ -135,7 +136,7 @@ export class AdjustNpc {
     this.error.set('');
     try {
       this.data.state.apply(
-        await this.api.adjustHitPoints(
+        await this.api.combatants.adjustHitPoints(
           this.data.campaignId,
           this.data.encounterId,
           this.c.id,

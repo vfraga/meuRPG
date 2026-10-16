@@ -18,6 +18,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { AreaMap } from '../../../../shared/area-picker/area-map';
 import { MasterAreaCast, type MasterAreaCastData } from './master-area-cast';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) =>
   (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -72,7 +73,7 @@ async function open(rule: HiddenAreaHitRule, hiddenInside: boolean) {
   };
   TestBed.configureTestingModule({
     providers: [
-      { provide: CombatClient, useValue: { castSpell, previewSpellArea } },
+      { provide: CombatClient, useValue: fakeCombatClient({ castSpell, previewSpellArea }) },
       { provide: SpellCatalog, useValue: { details: () => Promise.resolve(null) } },
       {
         provide: TableRulesClient,

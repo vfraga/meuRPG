@@ -11,6 +11,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter, reactionWindow } from '../../../../core/combat/combat-testing';
 import { PendingDamages } from './pending-damages';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 // With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
 // reach the next file (a real setTimeout never fires on a fake clock).
@@ -228,7 +229,9 @@ describe('PendingDamages: rolling again after "Desfazer" (R2-11)', () => {
         return { encounter: enc, pending: {}, cast: [] };
       },
     };
-    TestBed.configureTestingModule({ providers: [{ provide: CombatClient, useValue: api }] });
+    TestBed.configureTestingModule({
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient(api) }],
+    });
     const fixture = TestBed.createComponent(PendingDamages);
     const p = {
       id: 'p1',
@@ -267,7 +270,9 @@ describe('PendingDamages: rolling again after "Desfazer" (R2-11)', () => {
         return { encounter: enc, pending: {}, cast: [] };
       },
     };
-    TestBed.configureTestingModule({ providers: [{ provide: CombatClient, useValue: api }] });
+    TestBed.configureTestingModule({
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient(api) }],
+    });
     const fixture = TestBed.createComponent(PendingDamages);
     const p = {
       id: 'p1',
@@ -310,7 +315,7 @@ describe('PendingDamages: "Não aplicar" is not confirmed by a double-click (R4)
       roll: { diceCount: 1, diceSides: 6, faces: [5], modifier: 2, total: 11, physical: false },
     } as never;
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { discardDamage } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ discardDamage }) }],
     });
     TestBed.inject(ConfirmGuard).start();
     const fixture = TestBed.createComponent(PendingDamages);

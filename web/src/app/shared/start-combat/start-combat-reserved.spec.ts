@@ -6,11 +6,13 @@ import { DiceMode, DicePreference } from '../../../gen/meurpg/campaigns/v1/campa
 import { CharacterKind } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { TableRulesClient } from '../../core/campaigns/table-rules';
-import { CombatClient, type JoinSpec } from '../../core/combat/combat-client';
+import { CombatClient } from '../../core/combat/combat-client';
+import { type JoinSpec } from '../../core/combat/combat-client-types';
 import { encounter } from '../../core/combat/combat-testing';
 import { RosterClient } from '../../core/maps/roster-client';
 import { StartCombatDialog, type StartCombatData } from './start-combat-dialog';
 import { nextTurn } from '../../../test-settle';
+import { fakeCombatClient } from '../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 
@@ -50,12 +52,12 @@ describe('"Iniciar combate": a reserved character (no player yet) cannot fight',
         { provide: TableRulesClient, useValue: { get: async () => ({ saved: {} }) } },
         {
           provide: CombatClient,
-          useValue: {
+          useValue: fakeCombatClient({
             start: async (_c: string, _n: string, specs: JoinSpec[]) => {
               sent.push(specs);
               return encounter();
             },
-          },
+          }),
         },
       ],
     });

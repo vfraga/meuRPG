@@ -20,7 +20,7 @@ import {
   targetAfter,
   targetRows,
 } from '../../../../core/combat/attack-flow';
-import type { ModeChoice } from '../../../../core/combat/combat-client';
+import type { ModeChoice } from '../../../../core/combat/combat-client-types';
 import { article } from '../../../../core/combat/combat-log';
 import { beamSpentText, bonusSpentText } from '../../../../core/combat/combat-options';
 import { diceName, sumRange } from '../../../../core/combat/combat-dice';

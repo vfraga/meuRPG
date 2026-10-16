@@ -33,6 +33,7 @@ import { LUCKY_TRAIT } from '../../../../core/combat/lucky';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
 import { nextTurn } from '../../../../../test-settle';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 /** The sheet seen from a spec: protected members and all. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,7 +200,7 @@ async function open(over: Over = {}) {
     providers: [
       { provide: MAT_DIALOG_DATA, useValue: data },
       { provide: MatDialogRef, useValue: { close } },
-      { provide: CombatClient, useValue: api },
+      { provide: CombatClient, useValue: fakeCombatClient(api) },
       { provide: ResourceClient, useValue: resources },
     ],
   });

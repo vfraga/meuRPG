@@ -118,6 +118,7 @@ The spec files are not isolated from one another, so the shared setup keeps test
 
 - `web/src/test-setup.ts` undoes every `vi.stubGlobal` and restores real timers after each test, and gives each test fresh `scrollIntoView` and `window.scrollTo` mocks (jsdom has none).
 - `web/src/test-providers.ts` turns off the Material animations.
+- `fakeCombatClient({ rollAttack, ... })` (`web/src/app/core/combat/combat-client-testing.ts`) builds a `CombatClient` from the calls a spec answers, each placed in the part that owns it; `anyCallCombatClient` answers every call by name.
 - A spec settles a component with `settle(fixture)` or waits one turn with `nextTurn()` from `web/src/test-settle.ts`, never with its own `setTimeout` (ESLint fails a `setTimeout(` in a `*.spec.ts`): under a fake clock the turn advances that clock instead of waiting for a timer that would never fire.
 - A spec that turns a fake clock on (`vi.useFakeTimers`) or stubs a global also undoes it in its own `afterEach`, because with `--coverage` the setup file's hooks reach only the first file of each worker.
 

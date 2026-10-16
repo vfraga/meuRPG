@@ -6,6 +6,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { PendingDamages } from './pending-damages';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('PendingDamages: the parts of a rolled damage and its resistance steps', () => {
   const pending = {
@@ -71,7 +72,9 @@ describe('PendingDamages: the parts of a rolled damage and its resistance steps'
   };
 
   function setup() {
-    TestBed.configureTestingModule({ providers: [{ provide: CombatClient, useValue: api }] });
+    TestBed.configureTestingModule({
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient(api) }],
+    });
     const fixture = TestBed.createComponent(PendingDamages);
     fixture.componentRef.setInput('pendings', [pending]);
     fixture.componentRef.setInput('encounter', enc);

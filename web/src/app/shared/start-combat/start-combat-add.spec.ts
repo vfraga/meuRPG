@@ -15,6 +15,7 @@ import { GOBLIN } from '../../core/encounters/encounters-testing';
 import { RosterClient } from '../../core/maps/roster-client';
 import { CreaturePick } from '../creature-pick/creature-pick';
 import { StartCombatDialog, type StartCombatData } from './start-combat-dialog';
+import { fakeCombatClient } from '../../core/combat/combat-client-testing';
 
 interface AddMonstersCall {
   creatureKey: string;
@@ -80,7 +81,7 @@ describe('StartCombatDialog: monsters picked in add mode', () => {
         },
         {
           provide: CombatClient,
-          useValue: {
+          useValue: fakeCombatClient({
             add: vi.fn(
               async (_c: string, _e: string, specs: { characterId: string }[], key: string) => {
                 adds.push({ specs, key });
@@ -105,7 +106,7 @@ describe('StartCombatDialog: monsters picked in add mode', () => {
                 };
               },
             ),
-          },
+          }),
         },
       ],
     });

@@ -4,7 +4,7 @@ import {
   AreaPlacement,
   type PreviewSpellAreaResponse,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import type { AreaChoice } from './combat-client';
+import type { AreaChoice } from './combat-client-types';
 import { combatErrorMessage, encounterBlocked } from './combat-errors';
 import type { Square } from './combat-grid';
 import { type Direction, sameSquare } from './spell-area';

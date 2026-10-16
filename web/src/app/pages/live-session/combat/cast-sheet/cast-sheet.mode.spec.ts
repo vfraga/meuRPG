@@ -10,6 +10,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { CastSheet, type CastSheetData } from './cast-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 
@@ -79,7 +80,7 @@ async function open(opts: { master?: boolean; diceMode?: DiceMode; targets: unkn
     providers: [
       { provide: MAT_DIALOG_DATA, useValue: data },
       { provide: MatDialogRef, useValue: { close: () => undefined } },
-      { provide: CombatClient, useValue: { castSpell } },
+      { provide: CombatClient, useValue: fakeCombatClient({ castSpell }) },
       { provide: SpellCatalog, useValue: { details: () => Promise.resolve(bolt) } },
     ],
   });

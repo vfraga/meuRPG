@@ -1,6 +1,6 @@
 import type { ReactionWindow } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { type SlotRow, slotRows } from '../../../../core/combat/cast-flow';
-import type { ReactionAnswer } from '../../../../core/combat/combat-client';
+import type { ReactionAnswer } from '../../../../core/combat/combat-client-types';
 import {
   REACTION_NAMES,
   type ResultView,

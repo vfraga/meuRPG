@@ -15,7 +15,7 @@ import { RouterLink } from '@angular/router';
 import { type MapPoint, MapPointKind } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import type { Map as MapMessage } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import type { EncounterEvaluation } from '../../../../gen/meurpg/play/v1/encounters_pb';
-import type { MonsterGroupSpec } from '../../../core/combat/combat-client';
+import type { MonsterGroupSpec } from '../../../core/combat/combat-client-types';
 import { EncountersClient, type PartyNpcSpec } from '../../../core/encounters/encounters-client';
 import {
   GUIDE_LABEL,

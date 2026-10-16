@@ -108,7 +108,7 @@ export abstract class CombatViewPartsDirective extends CombatViewDerivedDirectiv
   // ---- calls ----
 
   protected begin(): Promise<boolean> {
-    return this.calls.run((e) => this.api.begin(this.campaignId(), e.id));
+    return this.calls.run((e) => this.api.turn.begin(this.campaignId(), e.id));
   }
 
   /** `discard`: the master passes the turn although a damage waits. */
@@ -134,14 +134,14 @@ export abstract class CombatViewPartsDirective extends CombatViewDerivedDirectiv
     return this.calls.run((e) => {
       const own = this.own();
       const who = !this.isMaster() && own && acts(e, own) ? own.id : e.currentCombatantId;
-      return this.api.endTurn(this.campaignId(), e.id, who, discard, e.round);
+      return this.api.turn.endTurn(this.campaignId(), e.id, who, discard, e.round);
     });
   }
 
   /** "Revelar" or "Manter escondidas" on a question about hidden creatures (PM-02c state 9). */
   protected answerReveal(a: RevealAnswer): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.resolveHiddenReveal(this.campaignId(), e.id, a.id, a.reveal),
+      this.api.casts.resolveHiddenReveal(this.campaignId(), e.id, a.id, a.reveal),
     );
   }
 
@@ -160,7 +160,9 @@ export abstract class CombatViewPartsDirective extends CombatViewDerivedDirectiv
 
   /** "Encerrar a parte da Brisa": the master ends one member's part. */
   protected endPart(id: string): Promise<boolean> {
-    return this.calls.run((e) => this.api.endTurn(this.campaignId(), e.id, id, false, e.round));
+    return this.calls.run((e) =>
+      this.api.turn.endTurn(this.campaignId(), e.id, id, false, e.round),
+    );
   }
 
   /** A standard action ("Disparada"): it spends the action; Dash doubles the
@@ -173,7 +175,7 @@ export abstract class CombatViewPartsDirective extends CombatViewDerivedDirectiv
   /** The same for a combatant of the player's: their character, or one of their creatures. */
   protected takeActionFor(id: string, key: string): Promise<boolean> {
     return this.calls.run(
-      async (e) => (await this.api.takeAction(this.campaignId(), e.id, id, key)).encounter,
+      async (e) => (await this.api.turn.takeAction(this.campaignId(), e.id, id, key)).encounter,
     );
   }
 
@@ -243,7 +245,7 @@ export abstract class CombatViewPartsDirective extends CombatViewDerivedDirectiv
       await this.calls.run(
         async (current) =>
           (
-            await this.api.takeAction(
+            await this.api.turn.takeAction(
               this.campaignId(),
               current.id,
               own.id,
@@ -289,7 +291,7 @@ export abstract class CombatViewPartsDirective extends CombatViewDerivedDirectiv
       void this.calls.run(
         async (e) =>
           (
-            await this.api.takeAction(
+            await this.api.turn.takeAction(
               this.campaignId(),
               e.id,
               own.id,

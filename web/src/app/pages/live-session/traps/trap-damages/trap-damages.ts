@@ -140,7 +140,7 @@ export class TrapDamages {
     const changed = amount !== d.amount ? amount : undefined;
     await this.run(async () => {
       if (d.encounterId) {
-        const res = await this.combatApi.applyDamage(
+        const res = await this.combatApi.attacks.applyDamage(
           this.campaignId(),
           d.encounterId,
           d.id,
@@ -164,7 +164,11 @@ export class TrapDamages {
   protected async discard(d: TrapDamage): Promise<void> {
     await this.run(async () => {
       if (d.encounterId) {
-        const res = await this.combatApi.discardDamage(this.campaignId(), d.encounterId, d.id);
+        const res = await this.combatApi.attacks.discardDamage(
+          this.campaignId(),
+          d.encounterId,
+          d.id,
+        );
         this.combat()?.apply(res.encounter);
       } else {
         await this.traps.discardDamage(this.campaignId(), d.id, this.keyFor('discard', d.id));

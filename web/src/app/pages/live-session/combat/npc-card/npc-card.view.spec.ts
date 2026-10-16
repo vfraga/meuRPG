@@ -7,6 +7,7 @@ import type { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { settle } from '../../../../../test-settle';
 import { NpcCard } from './npc-card';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 /** What the master's card says: the result of the roll, the stats, the area spells and why a roll is off. */
 describe('NpcCard: the words of the card', () => {
@@ -60,7 +61,7 @@ describe('NpcCard: the words of the card', () => {
       encounter: encounter({ combatants: [] }),
     }));
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { rollAttack } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ rollAttack }) }],
     });
     const subject = combatant({ id: 'npc', label: 'Goblin', ...opts.subject } as never);
     const fixture = TestBed.createComponent(NpcCard);

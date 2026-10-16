@@ -326,7 +326,7 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
       return next;
     });
     try {
-      const res = await this.api.turnOptions(this.campaignId(), e.id, offer.reactorId);
+      const res = await this.api.moves.turnOptions(this.campaignId(), e.id, offer.reactorId);
       this.reactorOptions.update((m) => new Map(m).set(offer.id, res));
     } catch {
       this.reactorFailed.update((s) => new Set(s).add(offer.id));

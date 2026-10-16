@@ -19,7 +19,8 @@ import { THEATRE_WHY, THEATRE_WHY_DIALOG } from '../../core/combat/theatre';
 import { DiceChoice } from '../dice-choice/dice-choice';
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { effectivePreference, preferenceLabel } from '../../core/campaigns/dice-labels';
-import { CombatClient, type JoinSpec, type MonsterHp } from '../../core/combat/combat-client';
+import { CombatClient } from '../../core/combat/combat-client';
+import { type JoinSpec, type MonsterHp } from '../../core/combat/combat-client-types';
 import { ActionKey } from '../../core/connect/idempotency';
 import type { CreatureSummary } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { CountStepper } from '../count-stepper/count-stepper';
@@ -367,7 +368,7 @@ export class StartCombatDialog {
         : {}),
       ...(this.saved ? { mapPointId: this.saved.pointId } : {}),
     };
-    return this.combat.start(
+    return this.combat.turn.start(
       this.data.campaignId,
       this.name().trim(),
       specs,
@@ -381,7 +382,7 @@ export class StartCombatDialog {
     const encounterId = this.data.encounterId ?? '';
     let last: Encounter | undefined;
     if (specs.length > 0) {
-      last = await this.combat.add(
+      last = await this.combat.moves.add(
         this.data.campaignId,
         encounterId,
         specs,
@@ -401,7 +402,7 @@ export class StartCombatDialog {
         key = new ActionKey();
         this.monsterKeys.set(m.key, key);
       }
-      const made = await this.combat.addMonsters(
+      const made = await this.combat.turn.addMonsters(
         this.data.campaignId,
         encounterId,
         add,

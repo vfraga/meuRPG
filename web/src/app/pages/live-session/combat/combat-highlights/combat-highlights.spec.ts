@@ -14,6 +14,7 @@ import type { CombatantInfo } from '../combat-info';
 import { CombatHighlights } from './combat-highlights';
 import { HighlightsCard } from './highlights-card';
 import { nextTurn } from '../../../../../test-settle';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const nbsp = ' ';
 /** The text of an element as read, without the icons' ligature names. */
@@ -96,7 +97,7 @@ describe("CombatHighlights, the master's panel (E8-11)", () => {
   async function setup(answer = masterAnswer) {
     highlights.mockReset().mockResolvedValue(answer);
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { highlights } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ highlights }) }],
     });
     const fixture = TestBed.createComponent(CombatHighlights);
     fixture.componentRef.setInput('campaignId', 'c1');
@@ -202,7 +203,7 @@ describe("CombatHighlights, the master's panel (E8-11)", () => {
       .mockRejectedValueOnce(new ConnectError('x', Code.Unavailable))
       .mockResolvedValue(masterAnswer);
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { highlights } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ highlights }) }],
     });
     const fixture = TestBed.createComponent(CombatHighlights);
     fixture.componentRef.setInput('campaignId', 'c1');
@@ -226,7 +227,7 @@ describe("HighlightsCard, the players' card (E8-11)", () => {
   async function setup(answer = playerAnswer, characterId = 'pens', name = 'Pensantus') {
     highlights.mockReset().mockResolvedValue(answer);
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { highlights } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ highlights }) }],
     });
     const fixture = TestBed.createComponent(HighlightsCard);
     fixture.componentRef.setInput('campaignId', 'c1');
@@ -334,7 +335,7 @@ describe("HighlightsCard, the players' card (E8-11)", () => {
   it('shows nothing at all when the highlights cannot be read: it is a bonus, not a screen', async () => {
     highlights.mockReset().mockRejectedValue(new ConnectError('x', Code.Unavailable));
     TestBed.configureTestingModule({
-      providers: [{ provide: CombatClient, useValue: { highlights } }],
+      providers: [{ provide: CombatClient, useValue: fakeCombatClient({ highlights }) }],
     });
     const fixture = TestBed.createComponent(HighlightsCard);
     fixture.componentRef.setInput('campaignId', 'c1');

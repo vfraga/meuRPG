@@ -9,7 +9,7 @@ import {
   PreviewSpellAreaResponseSchema,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { AreaFlow, samePick } from './area-flow';
-import type { AreaChoice } from './combat-client';
+import type { AreaChoice } from './combat-client-types';
 import { nextTurn } from '../../../test-settle';
 
 const answer = (

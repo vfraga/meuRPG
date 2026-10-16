@@ -176,7 +176,7 @@ export class ConditionsDialog {
     try {
       const key = this.key.keyFor([this.data.combatant.id, change]);
       this.data.state.apply(
-        await this.api.setConditions(
+        await this.api.combatants.setConditions(
           this.data.campaignId,
           this.data.encounterId,
           this.data.combatant.id,

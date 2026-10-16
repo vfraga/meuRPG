@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 
 import { CharacterKind } from '../../../../gen/meurpg/characters/v1/characters_pb';
 import type { EncounterEvaluation } from '../../../../gen/meurpg/play/v1/encounters_pb';
-import type { MonsterGroupSpec } from '../../../core/combat/combat-client';
+import type { MonsterGroupSpec } from '../../../core/combat/combat-client-types';
 import { combatantInitial, npcKindLabel } from '../../../core/combat/combat-view';
 import { type DraftNpc } from '../../../core/encounters/encounter-draft';
 import { EncountersClient, type PartyNpcSpec } from '../../../core/encounters/encounters-client';

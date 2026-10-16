@@ -26,6 +26,7 @@ import { AttackSheet } from './attack-sheet/attack-sheet';
 import { CombatView } from './combat-view';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
 import { nextTurn } from '../../../../test-settle';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // The reaction window on the combat screen (PM-04): the sheet that opens by itself for the player, the master's cards,
 // the line that waits, and the sentence of a window that closed by itself.
@@ -78,45 +79,40 @@ function setup(opts: {
   const opened: Opened[] = [];
   const closes: Subject<unknown>[] = [];
   const calls: unknown[][] = [];
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        switch (name) {
-          case 'log':
-            return async () => ({ rounds: [], undoableEventId: '' });
-          case 'turnOptions':
-            return async () => ({
-              options: create(TurnOptionsSchema, {
-                attacks: [
-                  {
-                    attack: {
-                      key: 'attack:shortbow',
-                      name: 'Shortbow',
-                      namePt: 'Arco curto',
-                      kind: AttackKind.WEAPON,
-                      melee: false,
-                      saveDc: 0,
-                      rangeFt: 80,
-                    },
-                  },
-                ],
-              }),
-              attackTargets: [
-                { attackKey: 'attack:shortbow', targets: [{ combatantId: 'g', label: 'Goblin' }] },
-              ],
-              spellTargets: [],
-              pendingDamages: [],
-            });
-          default:
-            return async (...args: unknown[]) => {
-              calls.push([name, ...args]);
-              return {};
-            };
-        }
-      },
-    },
-  );
+  const api = anyCallCombatClient((name) => {
+    switch (name) {
+      case 'log':
+        return async () => ({ rounds: [], undoableEventId: '' });
+      case 'turnOptions':
+        return async () => ({
+          options: create(TurnOptionsSchema, {
+            attacks: [
+              {
+                attack: {
+                  key: 'attack:shortbow',
+                  name: 'Shortbow',
+                  namePt: 'Arco curto',
+                  kind: AttackKind.WEAPON,
+                  melee: false,
+                  saveDc: 0,
+                  rangeFt: 80,
+                },
+              },
+            ],
+          }),
+          attackTargets: [
+            { attackKey: 'attack:shortbow', targets: [{ combatantId: 'g', label: 'Goblin' }] },
+          ],
+          spellTargets: [],
+          pendingDamages: [],
+        });
+      default:
+        return async (...args: unknown[]) => {
+          calls.push([name, ...args]);
+          return {};
+        };
+    }
+  });
   const state = new CombatState();
   state.apply(
     encounter({

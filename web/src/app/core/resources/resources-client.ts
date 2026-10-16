@@ -18,7 +18,8 @@ import {
   type SpendHitDiceResponse,
   type UseArcaneRecoveryResponse,
 } from '../../../gen/meurpg/play/v1/resources_pb';
-import { type AttackResult, attackResult } from '../combat/combat-client';
+import { type AttackResult } from '../combat/combat-client-types';
+import { attackResult } from '../combat/combat-client-wire';
 import { CONNECT_TRANSPORT } from '../connect/transport';
 
 /** How the die of a spent hit die comes (RN-18): the app rolls it, or the player typed the face of a real die. */

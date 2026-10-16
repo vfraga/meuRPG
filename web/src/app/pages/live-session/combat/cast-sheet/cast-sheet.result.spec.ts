@@ -18,6 +18,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { CastSheet, type CastSheetData } from './cast-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) =>
   (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -90,7 +91,7 @@ describe('CastSheet: the result and the damage still to roll', () => {
     } as unknown as CastSheetData;
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { castSpell, rollDamage } },
+        { provide: CombatClient, useValue: fakeCombatClient({ castSpell, rollDamage }) },
         {
           provide: SpellCatalog,
           useValue: { details: () => Promise.resolve(opts.details ?? plainSpell) },

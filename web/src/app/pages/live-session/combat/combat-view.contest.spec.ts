@@ -56,6 +56,7 @@ import { HelpSheet } from './help-sheet/help-sheet';
 import { HideSheet } from './hide-sheet/hide-sheet';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
 import { nextTurn } from '../../../../test-settle';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // The player's side of the contests on the combat screen (W7-X): the lines of the attack list, the sheets that open by
 // themselves when a contest asks something of the player, Hide and Help from the standard actions, and the reaction cards that
@@ -168,26 +169,21 @@ function setup(opts: {
         }),
       }),
   );
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        switch (name) {
-          case 'log':
-            return async () => ({ rounds: [], undoableEventId: '' });
-          case 'turnOptions':
-            return async () => options;
-          case 'takeAction':
-            return async (_c: string, _e: string, _id: string, key: string) => {
-              taken.push(key);
-              return { encounter: encounter() };
-            };
-          default:
-            return async () => ({});
-        }
-      },
-    },
-  );
+  const api = anyCallCombatClient((name) => {
+    switch (name) {
+      case 'log':
+        return async () => ({ rounds: [], undoableEventId: '' });
+      case 'turnOptions':
+        return async () => options;
+      case 'takeAction':
+        return async (_c: string, _e: string, _id: string, key: string) => {
+          taken.push(key);
+          return { encounter: encounter() };
+        };
+      default:
+        return async () => ({});
+    }
+  });
   const state = new CombatState();
   state.apply(
     encounter({

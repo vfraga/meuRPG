@@ -22,6 +22,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { AreaMap } from '../../../../shared/area-picker/area-map';
 import { CastSheet, type CastSheetData } from './cast-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) =>
   (t ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -126,7 +127,7 @@ async function open(
   } as unknown as CastSheetData;
   TestBed.configureTestingModule({
     providers: [
-      { provide: CombatClient, useValue: { castSpell, previewSpellArea } },
+      { provide: CombatClient, useValue: fakeCombatClient({ castSpell, previewSpellArea }) },
       { provide: SpellCatalog, useValue: { details: () => Promise.resolve(fireball) } },
       { provide: MAT_DIALOG_DATA, useValue: data },
       { provide: MatDialogRef, useValue: { close: vi.fn() } },

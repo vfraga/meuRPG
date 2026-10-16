@@ -40,6 +40,7 @@ import { InspirationQuestion } from '../../../../core/resources/bardic-inspirati
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { CastSheet, type CastSheetData } from './cast-sheet';
 import { resumedCastOf } from './cast-sheet-view';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 /** The sheet seen from a spec: protected members and all. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,7 +180,7 @@ async function open(over: Over = {}) {
       : over.details;
   TestBed.configureTestingModule({
     providers: [
-      { provide: CombatClient, useValue: client },
+      { provide: CombatClient, useValue: fakeCombatClient(client) },
       { provide: ResourceClient, useValue: resources },
       { provide: SpellCatalog, useValue: { details: () => Promise.resolve(details) } },
       { provide: MAT_DIALOG_DATA, useValue: data },

@@ -7,7 +7,8 @@ import {
   type GetTurnOptionsResponse,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import type { CombatCalls } from '../../../core/combat/combat-calls';
-import { type CombatClient, type MoveResult } from '../../../core/combat/combat-client';
+import { type CombatClient } from '../../../core/combat/combat-client';
+import { type MoveResult } from '../../../core/combat/combat-client-types';
 import { combatErrorMessage } from '../../../core/combat/combat-errors';
 import type { Square } from '../../../core/combat/combat-grid';
 import { masterReach } from '../../../core/combat/combat-derived';
@@ -25,7 +26,7 @@ import type { JumpRequest } from './move-page/move-page';
 
 /** What `MoveFlow` reads from the screen it serves. */
 export interface MoveFlowContext {
-  readonly api: Pick<CombatClient, 'move' | 'moveOptions'>;
+  readonly api: Pick<CombatClient, 'moves'>;
   readonly calls: Pick<CombatCalls, 'busy' | 'error' | 'refreshAfter'>;
   readonly campaignId: () => string;
   readonly encounter: () => Encounter | null;
@@ -217,7 +218,7 @@ export class MoveFlow {
       {
         // The server decides every move (reach, walls, creatures): a refusal puts the token back.
         save: async (to) => {
-          const res = await this.ctx.api.move(
+          const res = await this.ctx.api.moves.move(
             this.ctx.campaignId(),
             e.id,
             c.id,
@@ -275,7 +276,7 @@ export class MoveFlow {
     }
     this.moveError.set('');
     const ok = await this.runMove((e) =>
-      this.ctx.api.move(this.ctx.campaignId(), e.id, own.id, to.col, to.row),
+      this.ctx.api.moves.move(this.ctx.campaignId(), e.id, own.id, to.col, to.row),
     );
     this.afterMove(ok);
   }
@@ -314,7 +315,7 @@ export class MoveFlow {
     const key = this.jumpKey.keyFor([e.id, own.id, req]);
     const campaignId = this.ctx.campaignId();
     return req.kind === 'long'
-      ? this.ctx.api.move(
+      ? this.ctx.api.moves.move(
           campaignId,
           e.id,
           own.id,
@@ -323,7 +324,7 @@ export class MoveFlow {
           { kind: 'long' },
           key,
         )
-      : this.ctx.api.move(
+      : this.ctx.api.moves.move(
           campaignId,
           e.id,
           own.id,

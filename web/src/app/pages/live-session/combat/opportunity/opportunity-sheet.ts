@@ -209,7 +209,7 @@ export class OpportunitySheet {
     this.error.set('');
     try {
       this.data.state.apply(
-        await this.api.declineOpportunity(
+        await this.api.moves.declineOpportunity(
           this.data.campaignId,
           this.data.encounterId,
           this.data.offer.id,

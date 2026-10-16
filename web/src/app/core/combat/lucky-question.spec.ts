@@ -56,7 +56,7 @@ describe('the clients carry the Lucky question', () => {
       providers: [CombatClient, { provide: CONNECT_TRANSPORT, useValue: {} }],
     });
     const client = TestBed.inject(CombatClient);
-    (client as unknown as { client: unknown }).client = {
+    (client as unknown as { base: { client: unknown } }).base.client = {
       castSpell: () => Promise.resolve(answer),
       resolveConcentrationSave: () => Promise.resolve(answer),
     };
@@ -69,7 +69,7 @@ describe('the clients carry the Lucky question', () => {
       luckyOffer: offer(),
       inspirationOffer: create(OutsideInspirationOfferSchema, { holdId: 'h1', sides: 8 }),
     });
-    const cast = client.castSpell('c', 'e', 'p', 'spell:guiding-bolt', null, [], null, 'k');
+    const cast = client.casts.castSpell('c', 'e', 'p', 'spell:guiding-bolt', null, [], null, 'k');
     await expect(cast).rejects.toBeInstanceOf(LuckyQuestion);
     await cast.catch((err: unknown) => {
       expect((err as LuckyQuestion).offer.holdId).toBe('h1');
@@ -79,7 +79,7 @@ describe('the clients carry the Lucky question', () => {
 
   it('a concentration save that waits for Lucky answers the question and no result', async () => {
     const client = combatClient({ encounter: { id: 'enc' }, luckyOffer: offer() });
-    const res = await client.resolveConcentrationSave('c', 'e', 'w', { kind: 'app' }, 'k');
+    const res = await client.attacks.resolveConcentrationSave('c', 'e', 'w', { kind: 'app' }, 'k');
     expect(res.lucky?.holdId).toBe('h1');
     expect(res.result).toBeUndefined();
     expect(res.offer).toBeUndefined();

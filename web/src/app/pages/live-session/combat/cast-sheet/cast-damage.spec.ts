@@ -9,6 +9,7 @@ import {
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { encounter } from '../../../../core/combat/combat-testing';
 import { CastDamage, type CastDamageContext } from './cast-damage';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const owed = (id: string, over: Record<string, unknown> = {}) =>
   create(PendingDamageSchema, {
@@ -30,12 +31,12 @@ describe('CastDamage', () => {
 
   function damage(resume = [owed('p1'), owed('p2')], over: Partial<CastDamageContext> = {}) {
     return new CastDamage({
-      api: {
+      api: fakeCombatClient({
         rollDamage: (...args: unknown[]) => {
           rolled.push(args);
           return answer(args[2] as string);
         },
-      } as never,
+      }),
       campaignId: 'c',
       encounterId: 'enc',
       resume,

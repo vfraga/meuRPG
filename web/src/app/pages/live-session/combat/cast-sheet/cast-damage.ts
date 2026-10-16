@@ -2,7 +2,8 @@ import { type WritableSignal, computed, signal } from '@angular/core';
 
 import type { PendingDamage } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { rollGroups } from '../../../../core/combat/cast-flow';
-import { type DamageDie, type CombatClient } from '../../../../core/combat/combat-client';
+import { type CombatClient } from '../../../../core/combat/combat-client';
+import { type DamageDie } from '../../../../core/combat/combat-client-types';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { ActionKey } from '../../../../core/connect/idempotency';
@@ -10,7 +11,7 @@ import { showOfDice, type RollAnimator } from '../../../../shared/roll-overlay/r
 
 /** What `CastDamage` reads from the sheet it rolls for. */
 export interface CastDamageContext {
-  readonly api: Pick<CombatClient, 'rollDamage'>;
+  readonly api: Pick<CombatClient, 'attacks'>;
   readonly campaignId: string;
   readonly encounterId: string;
   /** The damages a closed sheet left unrolled: the sheet opens at them. */
@@ -67,7 +68,7 @@ export class CastDamage {
     this.host.busy.set(true);
     this.host.error.set('');
     try {
-      const res = await this.host.api.rollDamage(
+      const res = await this.host.api.attacks.rollDamage(
         this.host.campaignId,
         this.host.encounterId,
         p.id,

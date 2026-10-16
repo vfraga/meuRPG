@@ -3,6 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { CombatCalls } from './combat-calls';
 import { CombatState } from './combat-state';
 import { encounter } from './combat-testing';
+import { fakeCombatClient } from './combat-client-testing';
 
 function setup(over: { get?: () => Promise<unknown>; shown?: boolean } = {}) {
   const state = new CombatState();
@@ -12,7 +13,7 @@ function setup(over: { get?: () => Promise<unknown>; shown?: boolean } = {}) {
   }
   const get = vi.fn(over.get ?? (async () => enc));
   const calls = new CombatCalls({
-    api: { get } as never,
+    api: fakeCombatClient({ get }),
     campaignId: () => 'c',
     encounter: () => state.shown(),
     state: () => state,

@@ -7,6 +7,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { TrapsClient } from '../../../../core/traps/traps-client';
 import type { VitalsVm } from '../../../../core/play/live-session.types';
 import { TrapDamages, parseAmount } from './trap-damages';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const damage = (extra = {}) =>
   create(TrapDamageSchema, {
@@ -109,7 +110,7 @@ describe('TrapDamages', () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: TrapsClient, useValue: {} },
-        { provide: CombatClient, useValue: combatApi },
+        { provide: CombatClient, useValue: fakeCombatClient(combatApi) },
       ],
     });
     const fixture = TestBed.createComponent(TrapDamages);

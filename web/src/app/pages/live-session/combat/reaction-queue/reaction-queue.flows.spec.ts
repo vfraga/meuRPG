@@ -9,6 +9,7 @@ import { EffectsClient } from '../../../../core/effects/effects-client';
 import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { settle } from '../../../../../test-settle';
 import { ReactionQueue } from './reaction-queue';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (text: string | null | undefined) =>
   (text ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
@@ -100,7 +101,7 @@ describe('ReactionQueue, the answers and what each card says', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         { provide: EffectsClient, useValue: effectsApi },
         { provide: RollAnimator, useValue: animator },
       ],

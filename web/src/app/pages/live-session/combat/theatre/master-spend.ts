@@ -7,7 +7,8 @@ import {
   type Combatant,
   EncounterBlockedReason,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import { CombatClient, newKey } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { newKey } from '../../../../core/connect/idempotency';
 import { combatErrorMessage, encounterBlocked } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { spendPlan } from '../../../../core/combat/theatre';
@@ -90,7 +91,7 @@ export class MasterSpend {
     const code = ConnectError.from(err).code;
     if (code === Code.Aborted || code === Code.FailedPrecondition || code === Code.NotFound) {
       try {
-        this.state().apply(await this.api.get(this.campaignId()));
+        this.state().apply(await this.api.turn.get(this.campaignId()));
         this.ft.set(this.plan().ft);
       } catch {
         // The stream's next read brings it.
@@ -112,7 +113,7 @@ export class MasterSpend {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.api.spendMovement(
+      const res = await this.api.moves.spendMovement(
         this.campaignId(),
         this.encounterId(),
         this.subject().id,

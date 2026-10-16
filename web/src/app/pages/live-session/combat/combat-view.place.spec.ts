@@ -19,6 +19,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // "Colocar no mapa": the server picks the square, so a wall or the players' side is never chosen here.
 
@@ -48,25 +49,20 @@ function setup() {
     ],
   });
   state.apply(e);
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        if (name === 'place' || name === 'move') {
-          return async (...args: unknown[]) => {
-            calls.push({ name, args });
-            return name === 'place'
-              ? e
-              : { encounter: e, stoppedEarly: false, lockedDoor: false, provoked: false };
-          };
-        }
-        if (name === 'log') {
-          return async () => ({ rounds: [], undoableEventId: '' });
-        }
-        return async () => ({});
-      },
-    },
-  );
+  const api = anyCallCombatClient((name) => {
+    if (name === 'place' || name === 'move') {
+      return async (...args: unknown[]) => {
+        calls.push({ name, args });
+        return name === 'place'
+          ? e
+          : { encounter: e, stoppedEarly: false, lockedDoor: false, provoked: false };
+      };
+    }
+    if (name === 'log') {
+      return async () => ({ rounds: [], undoableEventId: '' });
+    }
+    return async () => ({});
+  });
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),

@@ -15,7 +15,7 @@ import {
 } from '../../../gen/meurpg/play/v1/encounters_pb';
 import type { CreatureSummary } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { summary } from '../creatures/creatures-testing';
-import type { MonsterGroupSpec } from '../combat/combat-client';
+import type { MonsterGroupSpec } from '../combat/combat-client-types';
 import type { BattleRead, GenerateBand, PartyNpcSpec, SavedEncounter } from './encounters-client';
 
 /** The SRD creatures of the artboards (E10-09), with their XP by challenge rating. */

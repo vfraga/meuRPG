@@ -8,7 +8,8 @@ import {
   EncounterStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import type { CreatureSummary } from '../../../../gen/meurpg/rules/v1/rules_pb';
-import { CombatClient, type MonsterHp } from '../../../core/combat/combat-client';
+import { CombatClient } from '../../../core/combat/combat-client';
+import { type MonsterHp } from '../../../core/combat/combat-client-types';
 import { sessionClosed } from '../../../core/combat/combat-errors';
 import {
   ADD_MAX,
@@ -189,7 +190,7 @@ export class PutMonstersSheet {
 
   private async load(): Promise<void> {
     try {
-      const encounter = await this.combat.get(this.data.campaignId);
+      const encounter = await this.combat.turn.get(this.data.campaignId);
       this.target.set(encounter ? targetOf(encounter) : null);
       if (!this.target()) {
         await this.readMode();
@@ -280,11 +281,11 @@ export class PutMonstersSheet {
       let encounter: Encounter;
       let ids: readonly string[] = [];
       if (target) {
-        const made = await this.combat.addMonsters(this.data.campaignId, target.id, add, key);
+        const made = await this.combat.turn.addMonsters(this.data.campaignId, target.id, add, key);
         encounter = made.encounter;
         ids = made.combatantIds;
       } else {
-        encounter = await this.combat.start(
+        encounter = await this.combat.turn.start(
           this.data.campaignId,
           `Combate: ${this.c.namePt}`,
           [],

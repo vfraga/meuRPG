@@ -28,7 +28,7 @@ const RETRYABLE: ReadonlySet<Code> = new Set([
 
 /** What `MasterAutoPass` reads from the screen it serves. */
 export interface AutoPassContext {
-  readonly api: Pick<CombatClient, 'answerReaction' | 'skipOpportunity'>;
+  readonly api: Pick<CombatClient, 'attacks' | 'moves'>;
   readonly campaignId: () => string;
   readonly encounter: () => Encounter | null;
   readonly isMaster: () => boolean;
@@ -145,7 +145,7 @@ export class MasterAutoPass {
   /** The same "Seguir sem esperar" the master taps, with a key of its own; a refusal (answered meanwhile) is ignored quietly. */
   private async passOffer(encounterId: string, offerId: string): Promise<void> {
     try {
-      const res = await this.ctx.api.skipOpportunity(
+      const res = await this.ctx.api.moves.skipOpportunity(
         this.ctx.campaignId(),
         encounterId,
         offerId,
@@ -162,7 +162,7 @@ export class MasterAutoPass {
   /** The same "Deixar passar" the master taps, with a key of its own; a refusal (answered meanwhile) is ignored quietly. */
   private async passWindow(encounterId: string, windowId: string): Promise<void> {
     try {
-      const res = await this.ctx.api.answerReaction(
+      const res = await this.ctx.api.attacks.answerReaction(
         this.ctx.campaignId(),
         encounterId,
         windowId,

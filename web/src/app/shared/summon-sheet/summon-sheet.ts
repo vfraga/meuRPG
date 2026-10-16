@@ -440,7 +440,7 @@ export class SummonSheet {
     }
     const face = this.face();
     const die = this.needsFace() && face !== null ? { face } : { inApp: true as const };
-    const res = await this.combatApi.castSpell(
+    const res = await this.combatApi.casts.castSpell(
       this.data.campaignId,
       combat.encounterId,
       combat.casterId,

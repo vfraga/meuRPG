@@ -15,6 +15,7 @@ import { flat } from '../../core/creatures/creatures-testing';
 import { RosterClient } from '../../core/maps/roster-client';
 import { type CombatMapInfo, StartCombatDialog, type StartCombatData } from './start-combat-dialog';
 import { nextTurn } from '../../../test-settle';
+import { fakeCombatClient } from '../../core/combat/combat-client-testing';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 
@@ -93,7 +94,7 @@ async function setup(opts: { withMap: boolean | 'fails'; map?: CombatMapInfo | n
       },
       {
         provide: CombatClient,
-        useValue: {
+        useValue: fakeCombatClient({
           start: async (
             _c: string,
             _n: string,
@@ -104,7 +105,7 @@ async function setup(opts: { withMap: boolean | 'fails'; map?: CombatMapInfo | n
             started.push({ mode: extras?.mode });
             return encounter();
           },
-        },
+        }),
       },
     ],
   });
@@ -254,7 +255,7 @@ describe('"Adicionar combatente": the key of one addition', () => {
         },
       ],
     });
-    (TestBed.inject(CombatClient) as unknown as { client: unknown }).client = {
+    (TestBed.inject(CombatClient) as unknown as { base: { client: unknown } }).base.client = {
       addCombatants: async (req: { idempotencyKey: string }) => {
         sent.push(req);
         if (sent.length === 1) {

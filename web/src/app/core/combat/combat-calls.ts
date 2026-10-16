@@ -8,7 +8,7 @@ import type { CombatState } from './combat-state';
 
 /** What `CombatCalls` reads from the screen it serves. */
 export interface CombatCallsContext {
-  readonly api: Pick<CombatClient, 'get'>;
+  readonly api: Pick<CombatClient, 'turn'>;
   readonly campaignId: () => string;
   /** The combat as the screen shows it, or `null` before it is read. */
   readonly encounter: () => Encounter | null;
@@ -64,7 +64,7 @@ export class CombatCalls {
     const state = this.ctx.state();
     const ticket = state.beginRead();
     try {
-      state.applyRead(ticket, await this.ctx.api.get(this.ctx.campaignId()));
+      state.applyRead(ticket, await this.ctx.api.turn.get(this.ctx.campaignId()));
     } catch {
       // The stream's next `ready` reads it again.
     }

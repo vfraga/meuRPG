@@ -6,13 +6,14 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { encounter } from '../../../../core/combat/combat-testing';
 import { FeatureSheet } from './feature-sheet';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 describe('FeatureSheet', () => {
   function open(takeAction: ReturnType<typeof vi.fn>) {
     const close = vi.fn();
     TestBed.configureTestingModule({
       providers: [
-        { provide: CombatClient, useValue: { takeAction } },
+        { provide: CombatClient, useValue: fakeCombatClient({ takeAction }) },
         { provide: MatDialogRef, useValue: { close } },
         {
           provide: MAT_DIALOG_DATA,

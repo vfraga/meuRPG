@@ -22,6 +22,7 @@ import { RosterClient } from '../../../../core/maps/roster-client';
 import { ProgressionClient } from '../../../../core/progression/progression-client';
 import { CombatSummary } from './combat-summary';
 import { nextTurn } from '../../../../../test-settle';
+import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const nbsp = ' ';
 const combatants = [
@@ -74,7 +75,7 @@ describe('CombatSummary and the XP (E7-06)', () => {
           },
         },
         { provide: RosterClient, useValue: { list: () => Promise.resolve([]) } },
-        { provide: CombatClient, useValue: { highlights } },
+        { provide: CombatClient, useValue: fakeCombatClient({ highlights }) },
         { provide: MatDialog, useValue: { open: vi.fn() } },
         { provide: MatBottomSheet, useValue: { open: vi.fn() } },
       ],

@@ -1,5 +1,5 @@
 import type { CreatureSummary } from '../../../gen/meurpg/rules/v1/rules_pb';
-import type { JoinSpec } from '../../core/combat/combat-client';
+import type { JoinSpec } from '../../core/combat/combat-client-types';
 import type { RosterEntry } from '../../core/maps/roster-client';
 import type { PickedMonster, SavedMonsters } from './start-combat.types';
 

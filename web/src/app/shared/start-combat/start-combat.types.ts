@@ -1,4 +1,4 @@
-import type { MonsterHp } from '../../core/combat/combat-client';
+import type { MonsterHp } from '../../core/combat/combat-client-types';
 
 /** The map the fight is on (the session's current map). */
 export interface CombatMapInfo {

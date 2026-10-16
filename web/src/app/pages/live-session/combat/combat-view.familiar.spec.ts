@@ -22,6 +22,7 @@ import { MapState } from '../../../core/maps/map-state';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { CombatView } from './combat-view';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 describe('familiar name is read once per character', () => {
   const fresh = (revision: number) =>
@@ -47,21 +48,17 @@ describe('familiar name is read once per character', () => {
 
   it('asks ListCharacterCreatures once for the character, not once per refresh', async () => {
     let calls = 0;
-    const api = new Proxy(
-      {},
-      {
-        get: (_t, name: string) =>
-          name === 'turnOptions'
-            ? async () => ({
-                options: create(TurnOptionsSchema, {}),
-                attackTargets: [],
-                spellTargets: [],
-                pendingDamages: [],
-              })
-            : name === 'log'
-              ? async () => ({ rounds: [], undoableEventId: '' })
-              : async () => ({}),
-      },
+    const api = anyCallCombatClient((name) =>
+      name === 'turnOptions'
+        ? async () => ({
+            options: create(TurnOptionsSchema, {}),
+            attackTargets: [],
+            spellTargets: [],
+            pendingDamages: [],
+          })
+        : name === 'log'
+          ? async () => ({ rounds: [], undoableEventId: '' })
+          : async () => ({}),
     );
     const state = new CombatState();
     state.apply(fresh(1));

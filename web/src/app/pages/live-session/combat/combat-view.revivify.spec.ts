@@ -28,6 +28,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { CombatView } from './combat-view';
 import { RevivifySheet } from './revivify-sheet/revivify-sheet';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 describe('CombatView: Revivificar in the cast list', () => {
   function mount() {
@@ -39,21 +40,17 @@ describe('CombatView: Revivificar in the cast list', () => {
       addListener: () => undefined,
       removeListener: () => undefined,
     }));
-    const api = new Proxy(
-      {},
-      {
-        get: (_t, name: string) =>
-          name === 'turnOptions'
-            ? async () => ({
-                options: create(TurnOptionsSchema, {}),
-                attackTargets: [],
-                spellTargets: [],
-                pendingDamages: [],
-              })
-            : name === 'log'
-              ? async () => ({ rounds: [], undoableEventId: '' })
-              : async () => ({}),
-      },
+    const api = anyCallCombatClient((name) =>
+      name === 'turnOptions'
+        ? async () => ({
+            options: create(TurnOptionsSchema, {}),
+            attackTargets: [],
+            spellTargets: [],
+            pendingDamages: [],
+          })
+        : name === 'log'
+          ? async () => ({ rounds: [], undoableEventId: '' })
+          : async () => ({}),
     );
     const open = vi.fn((..._args: unknown[]) => ({ afterClosed: () => of(undefined) }));
     const state = new CombatState();

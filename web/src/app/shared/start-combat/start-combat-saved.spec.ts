@@ -12,6 +12,7 @@ import { encounter } from '../../core/combat/combat-testing';
 import { flat, isOff } from '../../core/creatures/creatures-testing';
 import { RosterClient } from '../../core/maps/roster-client';
 import { StartCombatDialog, type StartCombatData } from './start-combat-dialog';
+import { fakeCombatClient } from '../../core/combat/combat-client-testing';
 
 /** "Começar este combate" (MR-043, E10-09 state 7): "Iniciar combate" filled from the saved encounter of a battle point. */
 describe('StartCombatDialog with a saved encounter', () => {
@@ -112,7 +113,7 @@ describe('StartCombatDialog with a saved encounter', () => {
         },
         {
           provide: CombatClient,
-          useValue: {
+          useValue: fakeCombatClient({
             start: vi.fn(
               async (
                 _c: string,
@@ -129,7 +130,7 @@ describe('StartCombatDialog with a saved encounter', () => {
                 return encounter({ id: 'enc-9', name });
               },
             ),
-          },
+          }),
         },
       ],
     });

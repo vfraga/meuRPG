@@ -27,6 +27,7 @@ import { EffectSaveSheet } from '../effects/effect-save-sheet/effect-save-sheet'
 import { CombatView } from './combat-view';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
 import { nextTurn } from '../../../../test-settle';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // The effects that last on the combat screen (RN-22): the saving throw of the end of the turn opens by itself and can be
 // opened again, the waits are the server's words, and what the effects take from the turn is said and spent.
@@ -85,30 +86,25 @@ function setup(opts: {
   const opened: Opened[] = [];
   const closes: Subject<unknown>[] = [];
   const takeAction = vi.fn(async () => ({ encounter: state.encounter() }));
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        switch (name) {
-          case 'log':
-            return async () => ({ rounds: [], undoableEventId: '' });
-          case 'turnOptions':
-            return async () => ({
-              options: create(TurnOptionsSchema, {}),
-              attackTargets: [],
-              spellTargets: [],
-              pendingDamages: [],
-              effectNotes: [],
-              ...opts.options,
-            });
-          case 'takeAction':
-            return takeAction;
-          default:
-            return async () => ({});
-        }
-      },
-    },
-  );
+  const api = anyCallCombatClient((name) => {
+    switch (name) {
+      case 'log':
+        return async () => ({ rounds: [], undoableEventId: '' });
+      case 'turnOptions':
+        return async () => ({
+          options: create(TurnOptionsSchema, {}),
+          attackTargets: [],
+          spellTargets: [],
+          pendingDamages: [],
+          effectNotes: [],
+          ...opts.options,
+        });
+      case 'takeAction':
+        return takeAction;
+      default:
+        return async () => ({});
+    }
+  });
   const state = new CombatState();
   state.apply(
     encounter({

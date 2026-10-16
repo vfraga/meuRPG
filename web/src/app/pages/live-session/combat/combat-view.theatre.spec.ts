@@ -28,6 +28,7 @@ import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
 import { nextTurn } from '../../../../test-settle';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
 // reach the next file (a real setTimeout never fires on a fake clock).
@@ -99,36 +100,31 @@ function setup(opts: {
   TestBed.resetTestingModule();
   laptop();
   const calls: { offer: unknown[][]; withdraw: string[] } = { offer: [], withdraw: [] };
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        switch (name) {
-          case 'offerOpportunity':
-            return async (...a: unknown[]) => {
-              calls.offer.push(a);
-              return state.encounter()!;
-            };
-          case 'withdrawOpportunity':
-            return async (_c: string, _e: string, id: string) => {
-              calls.withdraw.push(id);
-              return state.encounter()!;
-            };
-          case 'log':
-            return async () => ({ rounds: [], undoableEventId: '' });
-          case 'turnOptions':
-            return async () => ({
-              options: create(TurnOptionsSchema, {}),
-              attackTargets: [],
-              spellTargets: [],
-              pendingDamages: [],
-            });
-          default:
-            return async () => ({});
-        }
-      },
-    },
-  );
+  const api = anyCallCombatClient((name) => {
+    switch (name) {
+      case 'offerOpportunity':
+        return async (...a: unknown[]) => {
+          calls.offer.push(a);
+          return state.encounter()!;
+        };
+      case 'withdrawOpportunity':
+        return async (_c: string, _e: string, id: string) => {
+          calls.withdraw.push(id);
+          return state.encounter()!;
+        };
+      case 'log':
+        return async () => ({ rounds: [], undoableEventId: '' });
+      case 'turnOptions':
+        return async () => ({
+          options: create(TurnOptionsSchema, {}),
+          attackTargets: [],
+          spellTargets: [],
+          pendingDamages: [],
+        });
+      default:
+        return async () => ({});
+    }
+  });
   const state = new CombatState();
   state.apply(
     encounter({

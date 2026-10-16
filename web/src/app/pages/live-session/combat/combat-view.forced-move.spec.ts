@@ -19,6 +19,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // The master's drag on the map of a running combat: "Movimento forçado" is for one drag.
 
@@ -61,24 +62,19 @@ function setup(move: (args: unknown[]) => Promise<void>) {
     ],
   });
   state.apply(e);
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        if (name === 'move') {
-          return async (...a: unknown[]) => {
-            sent.push({ forced: a[7] === true });
-            await move(a);
-            return { encounter: e, stoppedEarly: false, lockedDoor: false, provoked: false };
-          };
-        }
-        if (name === 'log') {
-          return async () => ({ rounds: [], undoableEventId: '' });
-        }
-        return async () => ({});
-      },
-    },
-  );
+  const api = anyCallCombatClient((name) => {
+    if (name === 'move') {
+      return async (...a: unknown[]) => {
+        sent.push({ forced: a[7] === true });
+        await move(a);
+        return { encounter: e, stoppedEarly: false, lockedDoor: false, provoked: false };
+      };
+    }
+    if (name === 'log') {
+      return async () => ({ rounds: [], undoableEventId: '' });
+    }
+    return async () => ({});
+  });
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),

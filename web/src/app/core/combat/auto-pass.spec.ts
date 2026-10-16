@@ -8,6 +8,7 @@ import { MasterAutoPass, autoPassOffers, masterWaitNote } from './auto-pass';
 import { CombatState } from './combat-state';
 import { combatant, encounter, reactionWindow } from './combat-testing';
 import { AUTO_PASS_SECONDS, autoPassKey } from './reaction-autopass';
+import { fakeCombatClient } from './combat-client-testing';
 
 const toren = combatant({ id: 't', label: 'Toren', kind: CombatantKind.PLAYER, mine: true });
 const goblin = combatant({ id: 'g', label: 'Goblin' });
@@ -36,7 +37,7 @@ function setup(opts: { master?: boolean; enc?: Encounter } = {}) {
   const pass = TestBed.runInInjectionContext(
     () =>
       new MasterAutoPass({
-        api: api as never,
+        api: fakeCombatClient(api),
         campaignId: () => 'c',
         encounter: () => state.shown(),
         isMaster: () => master(),

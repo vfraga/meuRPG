@@ -24,6 +24,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 
 // The turn alert on the combat screen: it fires when the turn passes to what the viewer plays, never on load or on an NPC.
 
@@ -59,19 +60,15 @@ function setup(opts: { current: string; master?: boolean }) {
     onVisible: () => () => undefined,
     onGesture: () => () => undefined,
   };
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) =>
-        name === 'turnOptions'
-          ? async () => ({
-              options: create(TurnOptionsSchema, {}),
-              attackTargets: [],
-              spellTargets: [],
-              pendingDamages: [],
-            })
-          : async () => ({ rounds: [], undoableEventId: '' }),
-    },
+  const api = anyCallCombatClient((name) =>
+    name === 'turnOptions'
+      ? async () => ({
+          options: create(TurnOptionsSchema, {}),
+          attackTargets: [],
+          spellTargets: [],
+          pendingDamages: [],
+        })
+      : async () => ({ rounds: [], undoableEventId: '' }),
   );
   const state = new CombatState();
   const apply = (current: string) =>

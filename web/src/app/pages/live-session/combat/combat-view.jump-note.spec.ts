@@ -18,6 +18,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
+import { fakeCombatClient } from '../../../core/combat/combat-client-testing';
 
 // A long jump the server stopped early (a hidden creature holds the landing) keeps the generic note.
 
@@ -55,7 +56,7 @@ describe('a jump stopped early keeps its note', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         { provide: RosterClient, useValue: { list: async () => [] } },
         { provide: MapsClient, useValue: { layers: async () => ({}) } },
         { provide: SpellCatalog, useValue: { details: async () => null } },
@@ -127,7 +128,7 @@ describe("the master's drag that a door stopped", () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: CombatClient, useValue: api },
+        { provide: CombatClient, useValue: fakeCombatClient(api) },
         { provide: RosterClient, useValue: { list: async () => [] } },
         { provide: MapsClient, useValue: { layers: async () => ({}) } },
         { provide: SpellCatalog, useValue: { details: async () => null } },

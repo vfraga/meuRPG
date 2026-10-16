@@ -26,7 +26,8 @@ import {
 import { RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { type Attack } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { CombatUndone } from '../../../../core/combat/combat-undone';
-import { CombatClient, newKey } from '../../../../core/combat/combat-client';
+import { CombatClient } from '../../../../core/combat/combat-client';
+import { newKey } from '../../../../core/connect/idempotency';
 import { d20Count, orNormal } from '../../../../core/combat/roll-mode';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import { ofThe } from '../../../../core/combat/move-plan';
@@ -322,7 +323,7 @@ export class NpcCard {
     this.error.set('');
     try {
       this.state().apply(
-        await this.api.standUp(this.campaignId(), this.encounter().id, this.subject().id),
+        await this.api.moves.standUp(this.campaignId(), this.encounter().id, this.subject().id),
       );
     } catch (err) {
       this.error.set(combatErrorMessage(err, 'levantar'));
@@ -352,7 +353,7 @@ export class NpcCard {
     this.busy.set(true);
     this.error.set('');
     try {
-      const res = await this.api.rollAttack(
+      const res = await this.api.attacks.rollAttack(
         this.campaignId(),
         this.encounter().id,
         this.subject().id,

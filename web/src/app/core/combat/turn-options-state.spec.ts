@@ -1,10 +1,11 @@
 import type { GetTurnOptionsResponse } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { CombatClient } from './combat-client';
 import { TurnOptionsState } from './turn-options-state';
+import { fakeCombatClient } from './combat-client-testing';
 
 function api(answers: Promise<GetTurnOptionsResponse>[]): CombatClient {
   let i = 0;
-  return { turnOptions: () => answers[i++] } as unknown as CombatClient;
+  return fakeCombatClient({ turnOptions: () => answers[i++] });
 }
 
 describe('TurnOptionsState', () => {
@@ -38,10 +39,10 @@ describe('TurnOptionsState', () => {
   it("does not show the last combatant's options while the next one's come", async () => {
     const state = new TurnOptionsState();
     const optionsA = { yourTurn: true } as GetTurnOptionsResponse;
-    const client = {
+    const client = fakeCombatClient({
       turnOptions: (_c: string, _e: string, id: string) =>
         id === 'A' ? Promise.resolve(optionsA) : new Promise<GetTurnOptionsResponse>(() => {}),
-    } as unknown as CombatClient;
+    });
     await state.load(client, 'c', 'e', 'A');
     expect(state.data()).toBe(optionsA);
     void state.load(client, 'c', 'e', 'B');

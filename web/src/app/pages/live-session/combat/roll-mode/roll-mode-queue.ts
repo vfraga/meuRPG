@@ -81,7 +81,7 @@ export class RollModeQueue {
     this.busy.set(true);
     this.error.set('');
     try {
-      const encounter = await this.api.answerRollModeRequest(
+      const encounter = await this.api.attacks.answerRollModeRequest(
         this.campaignId(),
         this.encounter().id,
         r.id,

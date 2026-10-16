@@ -12,6 +12,7 @@ import type { Encounter } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { type GetTurnOptionsResponse } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { TurnOptionsSchema } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { TableRulesClient } from '../../../core/campaigns/table-rules';
+import { anyCallCombatClient } from '../../../core/combat/combat-client-testing';
 import { CombatClient } from '../../../core/combat/combat-client';
 import { CombatState } from '../../../core/combat/combat-state';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
@@ -90,36 +91,32 @@ export function mountCombatView(opts: MountOptions) {
     pendingDamages: [],
     resourceTargets: [],
   });
-  const api = new Proxy(
-    {},
-    {
-      get: (_t, name: string) => {
-        const override = opts.api?.[name];
-        if (override) {
-          return async (...args: unknown[]) => {
-            calls.push({ name, args });
-            return override(...args);
-          };
-        }
-        switch (name) {
-          case 'log':
-            return async () => ({ rounds: [], undoableEventId: '' });
-          case 'turnOptions':
-            return async (...args: unknown[]) => {
-              calls.push({ name, args });
-              return { ...emptyOptions(), ...opts.turnOptions?.(args[2] as string) };
-            };
-          case 'get':
-            return async () => opts.enc;
-          default:
-            return async (...args: unknown[]) => {
-              calls.push({ name, args });
-              return { encounter: opts.enc };
-            };
-        }
-      },
-    },
-  );
+  const answer = (name: string) => {
+    const override = opts.api?.[name];
+    if (override) {
+      return async (...args: unknown[]) => {
+        calls.push({ name, args });
+        return override(...args);
+      };
+    }
+    switch (name) {
+      case 'log':
+        return async () => ({ rounds: [], undoableEventId: '' });
+      case 'turnOptions':
+        return async (...args: unknown[]) => {
+          calls.push({ name, args });
+          return { ...emptyOptions(), ...opts.turnOptions?.(args[2] as string) };
+        };
+      case 'get':
+        return async () => opts.enc;
+      default:
+        return async (...args: unknown[]) => {
+          calls.push({ name, args });
+          return { encounter: opts.enc };
+        };
+    }
+  };
+  const api = anyCallCombatClient(answer);
   const record = (component: Type<unknown>, config: Opened['config'], result: Subject<unknown>) =>
     opened.push({
       component,

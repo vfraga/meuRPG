@@ -4,7 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { type Combatant, CombatantState } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
-import type { AttackDie } from '../../../../core/combat/combat-client';
+import type { AttackDie } from '../../../../core/combat/combat-client-types';
 import { article } from '../../../../core/combat/combat-log';
 import { countText } from '../../../../core/combat/death-saves';
 import { EndTurn } from '../turn-panel/end-turn';

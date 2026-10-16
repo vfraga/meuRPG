@@ -9,7 +9,7 @@ function clientWith(calls: Record<string, ReturnType<typeof vi.fn>>): CombatClie
     providers: [CombatClient, { provide: CONNECT_TRANSPORT, useValue: {} }],
   });
   const client = TestBed.inject(CombatClient);
-  (client as unknown as { client: unknown }).client = calls;
+  (client as unknown as { base: { client: unknown } }).base.client = calls;
   return client;
 }
 
@@ -17,11 +17,22 @@ describe('CombatClient: roll modes, damage parts and requests', () => {
   it('sends the mode, the reason, the request id and the two physical faces of an attack', async () => {
     const rollAttack = vi.fn().mockResolvedValue({ encounter: {}, roll: {} });
     const client = clientWith({ rollAttack });
-    await client.rollAttack('c', 'e', 'a', 'attack:x', 't', { faces: [14, 7] }, 'k', false, '', {
-      mode: RollMode.ADVANTAGE,
-      reason: 'costas',
-      requestId: 'r1',
-    });
+    await client.attacks.rollAttack(
+      'c',
+      'e',
+      'a',
+      'attack:x',
+      't',
+      { faces: [14, 7] },
+      'k',
+      false,
+      '',
+      {
+        mode: RollMode.ADVANTAGE,
+        reason: 'costas',
+        requestId: 'r1',
+      },
+    );
     const req = rollAttack.mock.calls[0][0];
     expect(req.d20Faces).toEqual([14, 7]);
     expect(req.roll).toEqual({ case: undefined });
@@ -33,7 +44,7 @@ describe('CombatClient: roll modes, damage parts and requests', () => {
   it('leaves the mode out when the suggestion stands and keeps the single typed face', async () => {
     const rollAttack = vi.fn().mockResolvedValue({ encounter: {}, roll: {} });
     const client = clientWith({ rollAttack });
-    await client.rollAttack('c', 'e', 'a', 'attack:x', 't', { face: 12 }, 'k');
+    await client.attacks.rollAttack('c', 'e', 'a', 'attack:x', 't', { face: 12 }, 'k');
     const req = rollAttack.mock.calls[0][0];
     expect(req.roll).toEqual({ case: 'd20Face', value: 12 });
     expect(req.rollMode).toBeUndefined();
@@ -43,7 +54,7 @@ describe('CombatClient: roll modes, damage parts and requests', () => {
   it('answers the extras as the whole choice, even none, and sends the typed parts', async () => {
     const rollDamage = vi.fn().mockResolvedValue({ encounter: {}, pendingDamage: {} });
     const client = clientWith({ rollDamage });
-    await client.rollDamage('c', 'e', 'p', { parts: true }, 'k', {
+    await client.attacks.rollDamage('c', 'e', 'p', { parts: true }, 'k', {
       extras: [{ key: 'divine-smite', slotLevel: 2, pact: false }],
       typedParts: [{ partKey: 'weapon', sum: 5 }],
     });
@@ -51,16 +62,16 @@ describe('CombatClient: roll modes, damage parts and requests', () => {
     expect(req.extrasChosen).toBe(true);
     expect(req.selectedExtras).toEqual([{ key: 'divine-smite', slotLevel: 2, pact: false }]);
     expect(req.typedParts).toEqual([{ partKey: 'weapon', sum: 5 }]);
-    await client.rollDamage('c', 'e', 'p', { inApp: true }, 'k2', { extras: [] });
+    await client.attacks.rollDamage('c', 'e', 'p', { inApp: true }, 'k2', { extras: [] });
     expect(rollDamage.mock.calls[1][0].extrasChosen).toBe(true);
-    await client.rollDamage('c', 'e', 'p', { inApp: true }, 'k3');
+    await client.attacks.rollDamage('c', 'e', 'p', { inApp: true }, 'k3');
     expect(rollDamage.mock.calls[2][0].extrasChosen).toBeUndefined();
   });
 
   it('sends the sources to ignore when the damage is applied', async () => {
     const applyPendingDamage = vi.fn().mockResolvedValue({ encounter: {}, pendingDamage: {} });
     const client = clientWith({ applyPendingDamage });
-    await client.applyDamage('c', 'e', 'p', undefined, 'k', ['race:tiefling']);
+    await client.attacks.applyDamage('c', 'e', 'p', undefined, 'k', ['race:tiefling']);
     expect(applyPendingDamage.mock.calls[0][0].ignoreModifiers).toEqual(['race:tiefling']);
   });
 
@@ -69,10 +80,22 @@ describe('CombatClient: roll modes, damage parts and requests', () => {
       .fn()
       .mockResolvedValue({ encounter: {}, cast: {}, summonedCombatantIds: [] });
     const client = clientWith({ castSpell });
-    await client.castSpell('c', 'e', 'm', 's', null, [], { faces: [3, 18] }, 'k', undefined, '', {
-      mode: RollMode.DISADVANTAGE,
-      reason: 'fumaça',
-    });
+    await client.casts.castSpell(
+      'c',
+      'e',
+      'm',
+      's',
+      null,
+      [],
+      { faces: [3, 18] },
+      'k',
+      undefined,
+      '',
+      {
+        mode: RollMode.DISADVANTAGE,
+        reason: 'fumaça',
+      },
+    );
     const req = castSpell.mock.calls[0][0];
     expect(req.d20Faces).toEqual([3, 18]);
     expect(req.rollMode).toBe(RollMode.DISADVANTAGE);
@@ -90,7 +113,7 @@ describe('CombatClient: roll modes, damage parts and requests', () => {
       cancelRollModeRequest,
       removeDamagePart,
     });
-    const res = await client.requestRollMode(
+    const res = await client.attacks.requestRollMode(
       'c',
       'e',
       'a',
@@ -109,14 +132,14 @@ describe('CombatClient: roll modes, damage parts and requests', () => {
       reason: 'costas',
       idempotencyKey: 'k1',
     });
-    await client.answerRollModeRequest('c', 'e', 'r', RollMode.NORMAL, 'k2');
+    await client.attacks.answerRollModeRequest('c', 'e', 'r', RollMode.NORMAL, 'k2');
     expect(answerRollModeRequest.mock.calls[0][0]).toMatchObject({
       requestId: 'r',
       decidedMode: RollMode.NORMAL,
     });
-    await client.cancelRollModeRequest('c', 'e', 'r', 'k3');
+    await client.attacks.cancelRollModeRequest('c', 'e', 'r', 'k3');
     expect(cancelRollModeRequest.mock.calls[0][0]).toMatchObject({ requestId: 'r' });
-    await client.removeDamagePart('c', 'e', 'p', 'sneak-attack', 'não vale', 'k4');
+    await client.attacks.removeDamagePart('c', 'e', 'p', 'sneak-attack', 'não vale', 'k4');
     expect(removeDamagePart.mock.calls[0][0]).toMatchObject({
       partKey: 'sneak-attack',
       reason: 'não vale',
