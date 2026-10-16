@@ -21,10 +21,7 @@ import {
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { SessionSummaryClient } from '../../core/play/session-summary';
 import { PageTitle } from '../../core/title/page-title';
-import {
-  GameSessionSource,
-  GameSessionVm,
-} from '../campaign-detail/game-session/game-session-card.types';
+import { GameSessionSource, GameSessionVm } from '../../core/play/game-session-card.types';
 import { SessionSummaryPage } from './session-summary-page';
 import { nextTurn } from '../../../test-settle';
 

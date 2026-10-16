@@ -17,7 +17,7 @@ import { combatantInitial, isPlayer, stateWord } from '../../../../core/combat/c
 import { isCreature } from '../../../../core/combat/creature-names';
 import { formatXp } from '../../../../core/format/text';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
-import type { VitalsVm } from '../../live-session.types';
+import type { VitalsVm } from '../../../../core/play/live-session.types';
 import type { CombatantInfo } from '../combat-info';
 import { CombatHighlights } from '../combat-highlights/combat-highlights';
 import { CombatXp, type CombatXpState } from '../combat-xp/combat-xp';

@@ -3,8 +3,8 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { usageSentence } from '../../../core/content/content-kinds';
 import { PairFoot } from '../../../shared/pair-foot/pair-foot';
-import { SheetFrame } from '../../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../live-session/combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 
 export interface ArchiveSheetData {
   readonly name: string;

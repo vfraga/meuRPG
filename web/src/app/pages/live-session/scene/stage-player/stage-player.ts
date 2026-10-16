@@ -18,7 +18,7 @@ import { MatIconModule } from '@angular/material/icon';
 import type { StageNpc } from '../../../../../gen/meurpg/play/v1/scene_pb';
 import type { SceneState } from '../../../../core/play/scene-state';
 import { joinNames } from '../../../../core/play/stage-view';
-import { openSheet } from '../../combat/sheet-host';
+import { openSheet } from '../../../../shared/sheet/sheet-host';
 import { StageFigure } from './stage-figure';
 import { StageViewer, type StageViewerData } from './stage-viewer';
 

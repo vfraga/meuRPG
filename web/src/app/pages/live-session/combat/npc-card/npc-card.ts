@@ -58,7 +58,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
 import { Portrait } from '../../../../shared/portrait/portrait';
 import { NextTurn } from '../combat-bar/next-turn';
 import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { MasterSpend } from '../theatre/master-spend';
 import { TheatrePill } from '../theatre/theatre-pill';
 import { AttackChoice } from './attack-choice';

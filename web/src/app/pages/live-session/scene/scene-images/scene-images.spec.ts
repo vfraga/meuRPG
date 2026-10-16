@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { create } from '@bufbuild/protobuf';
 
 import { type SceneImage, SceneImageSchema } from '../../../../../gen/meurpg/maps/v1/maps_pb';
-import { LiveSessionSource, type ShownImageVm } from '../../live-session.types';
+import { LiveSessionSource, type ShownImageVm } from '../../../../core/play/live-session.types';
 import { SceneImagesShow } from './scene-images';
 import { nextTurn } from '../../../../../test-settle';
 

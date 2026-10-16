@@ -28,7 +28,7 @@ import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
 import { StatBlock } from '../../../shared/creatures/stat-block';
-import { openSheet } from '../../live-session/combat/sheet-host';
+import { openSheet } from '../../../shared/sheet/sheet-host';
 import {
   CreateNpcSheet,
   type CreateNpcData,

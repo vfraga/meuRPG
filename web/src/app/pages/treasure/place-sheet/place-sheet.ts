@@ -39,7 +39,7 @@ import { MapPinsLegend } from '../../../shared/map-pins/map-pins-legend';
 import { MapView } from '../../../shared/map-view/map-view';
 import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../shared/sheet/sheet-host';
-import { EditorOverlay } from '../../maps/editor-overlay/editor-overlay';
+import { EditorOverlay } from '../../../shared/editor-overlay/editor-overlay';
 
 /** What the page hands the sheet: the treasure to place and what the confirmation says about the gold. */
 export interface PlaceSheetData {

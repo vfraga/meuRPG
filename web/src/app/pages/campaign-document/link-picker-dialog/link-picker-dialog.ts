@@ -4,7 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { describeConnectError } from '../../../core/connect/connect-errors';
 import { DocDialog } from '../doc-dialog/doc-dialog';
-import { DocumentLinks } from '../document-clients';
+import { DocumentLinks } from '../../../shared/campaign-document/document-clients';
 
 /** One row of the picker. */
 interface Row {

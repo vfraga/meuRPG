@@ -66,8 +66,8 @@ jobs:
       - name: Formatting (Prettier)
         run: npm run format:check
 
-      # The layer rules (core, shared, pages, shell) and the import cycles, as a ratchet like the lint: the
-      # known violations are in .dependency-cruiser-known-violations.json, so only a NEW one fails. About 4 s.
+      # The layer rules (core, shared, pages, shell) and the import cycles, with a ratchet like the lint
+      # (.dependency-cruiser-known-violations.json, empty today: any violation fails). About 4 s.
       - name: Import rules (dependency-cruiser)
         run: npm run depcruise
 

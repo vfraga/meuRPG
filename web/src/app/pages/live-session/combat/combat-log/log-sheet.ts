@@ -2,7 +2,7 @@ import { Component, type Signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { LogGroup } from '../../../../core/combat/combat-log';
-import { injectSheet } from '../sheet-host';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { LogList } from './log-list';
 
 export interface LogSheetData {

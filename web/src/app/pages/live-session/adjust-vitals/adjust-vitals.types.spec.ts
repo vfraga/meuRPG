@@ -1,4 +1,4 @@
-import { brisaVitals, pensantusVitals } from '../testing';
+import { brisaVitals, pensantusVitals } from '../../../core/play/live-testing';
 import { changeBetween, draftFrom, sameChange } from './adjust-vitals.types';
 
 describe('changeBetween', () => {

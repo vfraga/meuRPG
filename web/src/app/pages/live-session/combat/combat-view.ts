@@ -136,7 +136,7 @@ import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
 import type { SpellDetailsData } from '../../../shared/spell-details/spell-details';
 import { openSpellDetails } from '../../../shared/spell-details/open-spell-details';
 import { spellDetailsFromGen } from '../../../shared/spell-details/spell-details-map';
-import type { PartyMemberInfoVm, VitalsVm } from '../live-session.types';
+import type { PartyMemberInfoVm, VitalsVm } from '../../../core/play/live-session.types';
 import { ActionGroups } from './action-groups/action-groups';
 import { AdjustNpc, type AdjustNpcData } from './adjust-npc/adjust-npc';
 import { AttackSheet, type AttackSheetData } from './attack-sheet/attack-sheet';
@@ -201,19 +201,19 @@ import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { openFamiliarEyes } from '../../../shared/familiar-eyes/familiar-eyes-sheet';
 import { openWildShape } from '../../../shared/wild-shape/wild-shape-sheet';
 import { BeastTraits } from '../../../shared/wild-shape/beast-traits';
-import {
-  SummonSheet,
-  type SummonSheetData,
-} from '../../character-sheet/creatures-panel/summon-sheet';
+import { SummonSheet, type SummonSheetData } from '../../../shared/summon-sheet/summon-sheet';
 import { CreatureBar } from './creature-turn/creature-bar';
 import { CreatureBlock } from './creature-turn/creature-block';
 import { CreatureHero } from './creature-turn/creature-hero';
 import { MineTabs } from './mine-tabs/mine-tabs';
-import { openSheet } from './sheet-host';
+import { openSheet } from '../../../shared/sheet/sheet-host';
 import { type DoorSheetData, openDoorSheet } from '../door-sheet/door-sheet';
 import type { DoorSquare } from '../../../core/maps/layers';
 import { wallUnderDoor } from '../../../core/maps/door-paint';
-import { type StartCombatData, StartCombatDialog } from './start-combat/start-combat-dialog';
+import {
+  type StartCombatData,
+  StartCombatDialog,
+} from '../../../shared/start-combat/start-combat-dialog';
 import { TrapDamages } from '../traps/trap-damages/trap-damages';
 import { openTrapSearch } from '../traps/trap-search-sheet/trap-search-sheet';
 import { OrderColumn } from './turn-panel/order-column';

@@ -6,8 +6,8 @@ import type { SceneState } from '../../../../core/play/scene-state';
 import type { StageController } from '../../../../core/play/stage-controller';
 import type { StageCandidate } from '../../../../core/play/stage-roster';
 import { stageCount } from '../../../../core/play/stage-view';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../combat/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { StageList } from './stage-list';
 
 /** What "Pôr em cena" hands the phone's sheet. */

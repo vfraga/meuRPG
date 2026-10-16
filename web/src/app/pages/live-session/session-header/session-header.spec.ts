@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { describe, expect, it, vi } from 'vitest';
 
-import { LiveSessionSource } from '../live-session.types';
+import { LiveSessionSource } from '../../../core/play/live-session.types';
 import { SessionHeader } from './session-header';
 
 describe('SessionHeader ending the session', () => {

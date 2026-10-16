@@ -50,8 +50,8 @@ import { PuzzleHost } from '../../../../shared/puzzle-boards/puzzle-host';
 import { SequenceStrip } from '../../../../shared/puzzle-boards/sequence-strip';
 import { LimitCounters } from '../../../../shared/puzzle-boards/limit-counters';
 import { SecretPill } from '../../../../shared/puzzle-boards/secret-pill';
-import { MapAsk } from '../../../maps/map-ask/map-ask';
-import { DoorCrop } from '../door-crop/door-crop';
+import { MapAsk } from '../../../../shared/map-ask/map-ask';
+import { DoorCrop } from '../../../../shared/door-crop/door-crop';
 
 type Ask = 'reset' | 'close';
 type Action = 'hint' | 'reseed' | 'reset' | 'close' | 'play';

@@ -23,7 +23,7 @@ import {
   type Character,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { LevelUpClient } from '../../core/levelup/levelup-client';
-import { LiveSessionSourceLive } from '../live-session/live-session-source.live';
+import { LiveSessionSourceLive } from '../../core/play/live-session-source.live';
 import { LevelUpDraft } from '../../core/levelup/levelup-draft';
 import {
   cannotLevelUpMessage,

@@ -11,8 +11,8 @@ import { newKey } from '../../../core/connect/idempotency';
 import { tieNumbers } from '../../../core/format/text';
 import { metersText } from '../../../core/units';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
-import { SheetFrame } from '../../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../live-session/combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 
 /** What the stat block page hands the dialog. */
 export interface CreateNpcData {

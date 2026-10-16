@@ -44,9 +44,9 @@ import { RollAnimator, showOfDice, showOfDie } from '../../../../shared/roll-ove
 import { mediaQuery } from '../../../../shared/map-view/media-query';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { MultiRoll, type RollField } from '../../combat/multi-roll/multi-roll';
-import { RollPicker } from '../../combat/roll-picker/roll-picker';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../combat/sheet-host';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 import { CheckMode } from '../check-mode/check-mode';
 import { InspirationOffer } from '../../inspiration/inspiration-offer';
 import { LuckyOfferCard } from '../../inspiration/lucky-offer';

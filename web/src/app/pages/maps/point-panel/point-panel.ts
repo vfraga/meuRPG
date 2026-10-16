@@ -38,7 +38,7 @@ import { pointKindIcon, pointKindLabel } from '../../../shared/map-view/map-labe
 import { mapNameError } from '../map-new/map-new';
 import { ClueList } from '../clue-list/clue-list';
 import { HooksField } from '../hooks-field/hooks-field';
-import { RevealSwitch } from '../reveal-switch/reveal-switch';
+import { RevealSwitch } from '../../../shared/reveal-switch/reveal-switch';
 import { SceneImages } from '../scene-images/scene-images';
 import { SceneActions } from '../scene-actions/scene-actions';
 import {

@@ -11,8 +11,8 @@ import { finders } from '../../../../core/traps/treasure-text';
 import { listNames } from '../../../../core/maps/scene-clues';
 import { ChestIcon } from '../../../../shared/chest-icon/chest-icon';
 import { TreasureFacts } from '../../../../shared/treasure-facts/treasure-facts';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../combat/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** The sheet of a treasure that was found: a bottom sheet on a phone, a dialog from a tablet up. */
 @Component({

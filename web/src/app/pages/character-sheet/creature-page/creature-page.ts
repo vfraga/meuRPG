@@ -28,7 +28,7 @@ import { joinDots } from '../../../core/format/text';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
 import { StatBlock } from '../../../shared/creatures/stat-block';
-import { CreatureEdit, type EditMode } from '../creatures-panel/creature-edit';
+import { CreatureEdit, type EditMode } from '../../../shared/creatures/creature-edit';
 
 /** `CharacterCreature.attack`, which the proto sends as a number (1 none, 2 reaction, 3 full). */
 const CreatureAttack = { NONE: 1, REACTION: 2 } as const;

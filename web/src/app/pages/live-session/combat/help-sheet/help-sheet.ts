@@ -31,8 +31,8 @@ import {
 } from '../../../../core/combat/help-view';
 import { Segmented, type Segment } from '../../../../shared/segmented/segmented';
 import { AttackSteps } from '../attack-sheet/attack-steps';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands the Help sheet. */
 export interface HelpSheetData {

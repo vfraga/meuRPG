@@ -9,8 +9,8 @@ import type { ExperienceRow } from '../../../core/progression/experience-store';
 import { reachedEffect } from '../../../core/progression/milestones';
 import { ProgressionClient } from '../../../core/progression/progression-client';
 import { xpErrorMessage } from '../../../core/progression/xp-errors';
-import { SheetFrame } from '../../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../live-session/combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../shared/sheet/sheet-host';
 import { XpActions } from '../../../shared/xp/xp-actions';
 import { type Recipient, XpRecipients } from '../../../shared/xp/xp-recipients';
 

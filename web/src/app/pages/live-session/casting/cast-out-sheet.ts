@@ -51,13 +51,13 @@ import { abilityMissing, needsAbility } from '../../../core/effects/ability-choi
 import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet, openSheet } from '../../../shared/sheet/sheet-host';
 import { AbilityPicker } from '../effects/ability-picker/ability-picker';
-import { RollPicker } from '../combat/roll-picker/roll-picker';
-import { SlotPicker } from '../combat/cast-sheet/slot-picker';
+import { RollPicker } from '../../../shared/roll-picker/roll-picker';
+import { SlotPicker } from '../../../shared/slot-picker/slot-picker';
 import {
   SummonSheet,
   type SummonSheetData,
   type SummonSheetResult,
-} from '../../character-sheet/creatures-panel/summon-sheet';
+} from '../../../shared/summon-sheet/summon-sheet';
 import { castNotice, creaturesText } from '../../../core/creatures/summon-labels';
 import { type ChoiceRow, ChoiceCards } from './choice-cards';
 import { openCastConfirm } from './confirm-sheet';

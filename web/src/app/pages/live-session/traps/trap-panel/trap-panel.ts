@@ -27,7 +27,7 @@ import type { TrapBoard } from '../../../../core/traps/trap-board';
 import { clockOf, trapPoints, trapVisibility } from '../../../../core/traps/trap-text';
 import type { PickRow } from '../../../../shared/person-pick/person-pick';
 import { isPlayer } from '../../../../core/combat/combat-view';
-import type { VitalsVm } from '../../live-session.types';
+import type { VitalsVm } from '../../../../core/play/live-session.types';
 import { TrapActivityList } from '../trap-activity/trap-activity';
 import { TrapCard } from '../trap-card/trap-card';
 import { TrapDamages } from '../trap-damages/trap-damages';

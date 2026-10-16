@@ -57,8 +57,8 @@ import {
   skillOptions,
 } from '../../../../core/traps/trap-search';
 import { type SearchDie, type SearchSkill, TrapsClient } from '../../../../core/traps/traps-client';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../combat/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 import { CheckMode } from '../../scene/check-mode/check-mode';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 

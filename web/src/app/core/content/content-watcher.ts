@@ -1,8 +1,8 @@
 import { DOCUMENT, DestroyRef, Injectable, effect, inject, untracked } from '@angular/core';
 
-import { LiveSessionSourceLive } from '../../pages/live-session/live-session-source.live';
-import { LiveStream } from '../../pages/live-session/live-stream';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
+import { LiveSessionSourceLive } from '../play/live-session-source.live';
+import { LiveStream } from '../play/live-stream';
+import { OpenSessions } from '../play/open-sessions';
 
 /** The wait that gathers a burst of hints into one read: the server already lets one through every 250 ms. */
 export const CONTENT_DEBOUNCE_MS = 300;

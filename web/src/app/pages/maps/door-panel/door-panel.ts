@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 
 /**
  * "Porta" (E10-05 7, RN-26): the side panel while the door tool is the chosen one. It says what a tap does (puts the chosen kind where

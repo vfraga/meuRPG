@@ -19,8 +19,8 @@ import { EffectsClient } from '../../../core/effects/effects-client';
 import { effectsErrorMessage } from '../../../core/effects/effects-errors';
 import { MAX_LABEL } from '../../../core/effects/effects-text';
 import { HiddenSwitch } from '../../../shared/hidden-switch/hidden-switch';
-import { SheetFrame } from '../combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 import { VisibilityFields } from './visibility-fields';
 
 /** What the page hands "O que os jogadores veem". */

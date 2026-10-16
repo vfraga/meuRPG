@@ -23,10 +23,10 @@ import { ResourceClient } from '../../../../core/resources/resources-client';
 import { classResourceErrorMessage } from '../../../../core/resources/resources-errors';
 import { metersText } from '../../../../core/units';
 import { CountPips } from '../../../../shared/count-pips/count-pips';
-import type { VitalsVm } from '../../live-session.types';
+import type { VitalsVm } from '../../../../core/play/live-session.types';
 import { type PickRow, ResourcePick } from '../resource-pick/resource-pick';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands "Inspiração de Bardo". */
 export interface BardicInspirationSheetData {

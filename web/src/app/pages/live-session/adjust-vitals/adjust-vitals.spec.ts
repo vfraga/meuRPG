@@ -3,8 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { AuthService } from '../../../core/auth/auth.service';
-import { LiveErrorKind, LiveSessionSource, VitalsVm } from '../live-session.types';
-import { brisaVitals, pensantusVitals } from '../testing';
+import { LiveErrorKind, LiveSessionSource, VitalsVm } from '../../../core/play/live-session.types';
+import { brisaVitals, pensantusVitals } from '../../../core/play/live-testing';
 import { AdjustVitals } from './adjust-vitals';
 import { AdjustVitalsData } from './adjust-vitals.types';
 

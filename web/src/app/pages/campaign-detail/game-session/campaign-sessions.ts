@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import { GameSessionSource, GameSessionVm } from './game-session-card.types';
+import { GameSessionSource, GameSessionVm } from '../../../core/play/game-session-card.types';
 
 export type CampaignSessionsState =
   | { readonly status: 'loading' }

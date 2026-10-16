@@ -21,8 +21,8 @@ import { characterKindLabel, characterStateLabel } from '../../../core/character
 import { CharacterKind } from '../../../core/characters/characters.types';
 import { LevelUpFeed } from '../../../core/levelup/levelup-feed';
 import { ExperienceStore } from '../../../core/progression/experience-store';
-import { OpenSessions } from '../../../shell/live-notice/open-sessions';
-import { XpWatcher } from '../../character-sheet/xp-watcher';
+import { OpenSessions } from '../../../core/play/open-sessions';
+import { XpWatcher } from '../../../core/play/xp-watcher';
 import { LevelUpTag } from '../../../shared/xp/level-up-tag';
 import { characterRowSub, stateTagClass } from './campaign-characters.copy';
 import { LevelUpChanges } from './level-up-changes';

@@ -1,4 +1,4 @@
-import { pensantusVitals } from '../../live-session/testing';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { MAX_PIPS, rechargeLine, resourceBoxes, slotCounterRows, slotsFootnote } from './counters';
 
 describe('rechargeLine', () => {

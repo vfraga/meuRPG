@@ -22,7 +22,7 @@ import { type StageCandidate, StageRoster } from '../../../../core/play/stage-ro
 import { STAGE_FULL_REASON, stageCount } from '../../../../core/play/stage-view';
 import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query';
 import { Portrait } from '../../../../shared/portrait/portrait';
-import { openSheet } from '../../combat/sheet-host';
+import { openSheet } from '../../../../shared/sheet/sheet-host';
 import { StageList } from './stage-list';
 import { StagePickerSheet, type StagePickerData } from './stage-picker-sheet';
 

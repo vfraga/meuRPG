@@ -34,7 +34,7 @@ import {
   switchedOffKey,
 } from '../../core/characters/character-errors';
 import { ContentWatcher } from '../../core/content/content-watcher';
-import { LiveSessionSourceLive } from '../live-session/live-session-source.live';
+import { LiveSessionSourceLive } from '../../core/play/live-session-source.live';
 import { catalogChanged, offControlOf, offersChanged } from './catalog-changes';
 import {
   abilityLabel,

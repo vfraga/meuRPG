@@ -49,7 +49,7 @@ import {
 import { DiceChoice } from '../../shared/dice-choice/dice-choice';
 import { FogSwitch } from './fog-switch/fog-switch';
 import { RulesRead } from './rules-read/rules-read';
-import { MethodCards } from './method-cards/method-cards';
+import { MethodCards } from '../../shared/method-cards/method-cards';
 import { XpModePanel } from './xp-mode-panel/xp-mode-panel';
 
 type PageState =

@@ -39,7 +39,7 @@ import { LimitCounters } from '../../../../shared/puzzle-boards/limit-counters';
 import { PillarsBoard } from '../../../../shared/puzzle-boards/pillars-board';
 import { PuzzleHost } from '../../../../shared/puzzle-boards/puzzle-host';
 import { sessionSince } from '../../../../shared/session-time/session-time';
-import type { LiveSessionVm } from '../../live-session.types';
+import type { LiveSessionVm } from '../../../../core/play/live-session.types';
 import { HintTryControl } from '../hint-try/hint-try';
 import { MyPart } from '../my-part/my-part';
 

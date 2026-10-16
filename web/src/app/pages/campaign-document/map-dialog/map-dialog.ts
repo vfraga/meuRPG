@@ -9,7 +9,11 @@ import { MapPinsLegend } from '../../../shared/map-pins/map-pins-legend';
 import { MapPins } from '../../../shared/map-pins/map-pins';
 import { MapView as MapPicture } from '../../../shared/map-view/map-view';
 import { DocDialog } from '../doc-dialog/doc-dialog';
-import { DocumentLinks, type MapView, type OpenSessionMap } from '../document-clients';
+import {
+  DocumentLinks,
+  type MapView,
+  type OpenSessionMap,
+} from '../../../shared/campaign-document/document-clients';
 import { type LookupState, lookupFailure } from '../document-copy';
 
 /**

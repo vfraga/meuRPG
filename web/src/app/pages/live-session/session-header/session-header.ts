@@ -18,8 +18,8 @@ import { RouterLink } from '@angular/router';
 import { LivePill } from '../../../shared/live-pill/live-pill';
 import { COPIED_FOR_MS, copyText, sessionLink } from '../../../shared/session-link/session-link';
 import { formatClock, sessionSince } from '../../../shared/session-time/session-time';
-import { LiveSessionSource, LiveSessionVm } from '../live-session.types';
-import { StreamStatus } from '../live-stream';
+import { LiveSessionSource, LiveSessionVm } from '../../../core/play/live-session.types';
+import { StreamStatus } from '../../../core/play/live-stream';
 
 type EndState = 'idle' | 'confirming' | 'saving' | 'error';
 

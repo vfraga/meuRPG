@@ -5,7 +5,7 @@ import {
   formatModifier,
   splitArmorDescription,
 } from '../../../core/characters/character-labels';
-import type { VitalsVm } from '../../live-session/live-session.types';
+import type { VitalsVm } from '../../../core/play/live-session.types';
 import { SpellHelp } from '../../../shared/spell-details/spell-help';
 import { FullSheetVm } from '../character-sheet.types';
 import { CombatStats } from '../combat-stats/combat-stats';

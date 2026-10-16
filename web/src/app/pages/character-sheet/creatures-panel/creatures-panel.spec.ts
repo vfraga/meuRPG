@@ -18,7 +18,7 @@ import {
   raven,
   summonAnswer,
 } from '../../../core/creatures/creatures-testing';
-import { OpenSessions } from '../../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../../core/play/open-sessions';
 import { CreaturesPanel } from './creatures-panel';
 import { nextTurn } from '../../../../test-settle';
 

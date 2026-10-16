@@ -1,10 +1,10 @@
 // dependency-cruiser config: the layer rules of the web app (see docs/architecture.md#web-app-web and
 // CONTRIBUTING "Web and e2e linters"). Run it with `npm run depcruise`.
 //
-// A ratchet, like ESLint's: the violations that existed when the rules came in are recorded in
-// .dependency-cruiser-known-violations.json and ignored (`--ignore-known`), so only a NEW violation fails.
-// Never grow that file; fix the import (or move the shared piece down to `core/` or `shared/`) and regenerate it with
-// `npm run depcruise:baseline`, which can only make it smaller. The layers, from the bottom up:
+// A ratchet, like ESLint's: violations recorded in .dependency-cruiser-known-violations.json are ignored
+// (`--ignore-known`), so only a NEW violation fails. The 100 that existed when the rules came in were all fixed, so the
+// file is empty. Never add to it: fix the import (or move the shared piece down to `core/` or `shared/`).
+// The layers, from the bottom up:
 //   core   (clients, state, display helpers; imports neither pages nor shell. It should not import shared either,
 //          but that is not enforced yet: the 19 imports left are not part of the rules)
 //   shared (components used by more than one page; imports core, never a page)

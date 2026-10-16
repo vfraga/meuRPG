@@ -15,8 +15,8 @@ import { foundLine, moreTreasures, po, totalPo, townCalc } from '../../core/prog
 import { townErrorMessage, xpBlocked, xpNotFound } from '../../core/progression/xp-errors';
 import { nameList } from '../../core/progression/xp-labels';
 import { eachLine } from '../../core/progression/xp-math';
-import { SheetFrame } from '../../pages/live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../pages/live-session/combat/sheet-host';
+import { SheetFrame } from '../sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../sheet/sheet-host';
 import { CheckBox } from '../check-box/check-box';
 import type { AwardXpResult } from './award-xp-sheet';
 import { XpActions } from './xp-actions';

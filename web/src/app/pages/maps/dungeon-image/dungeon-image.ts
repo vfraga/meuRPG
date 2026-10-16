@@ -19,7 +19,7 @@ import type { Map as MapMessage } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { redrawFailure } from '../../../core/maps/dungeon-errors';
 import { doorCountText, dungeonSizeText } from '../../../core/maps/dungeon-layout';
 import { DungeonsClient } from '../../../core/maps/dungeons-client';
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 
 /**
  * The "Imagem" panel of a generated dungeon's map (E10-05 5 and 6): the map's name with "Gerada pelo app", the seed and the size, and

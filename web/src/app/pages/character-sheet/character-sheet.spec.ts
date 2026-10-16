@@ -14,14 +14,15 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatDialog } from '@angular/material/dialog';
 import { SpellDetails } from '../../shared/spell-details/spell-details';
 import type { SpellDetailsVm } from '../../shared/spell-details/spell-details.types';
-import { OpenSessions, type OpenSessionVm } from '../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
+import type { OpenSessionVm } from '../../core/play/open-sessions.types';
 import { CharacterSheetPage } from './character-sheet';
 import { NotesClient } from '../../core/notes/notes-client';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { CreaturesPanel } from './creatures-panel/creatures-panel';
-import { XpWatcher } from './xp-watcher';
-import type { VitalsVm } from '../live-session/live-session.types';
-import { pensantusVitals } from '../live-session/testing';
+import { XpWatcher } from '../../core/play/xp-watcher';
+import type { VitalsVm } from '../../core/play/live-session.types';
+import { pensantusVitals } from '../../core/play/live-testing';
 import {
   BasicSheetVm,
   CampaignXpMode,

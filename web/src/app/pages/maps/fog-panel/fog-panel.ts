@@ -18,8 +18,8 @@ import { LightLevel, type Map as MapMessage } from '../../../../gen/meurpg/maps/
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { editorErrorMessage } from '../../../core/maps/map-errors';
 import { MapsClient } from '../../../core/maps/maps-client';
-import { MapAsk } from '../map-ask/map-ask';
-import { RevealSwitch } from '../reveal-switch/reveal-switch';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
+import { RevealSwitch } from '../../../shared/reveal-switch/reveal-switch';
 
 const LEVELS: readonly { level: LightLevel; label: string; icon: string }[] = [
   { level: LightLevel.BRIGHT, label: 'Claro', icon: 'light_mode' },

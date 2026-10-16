@@ -41,7 +41,7 @@ import {
 } from '../../../core/content/content-kinds';
 import { ContentWatcher } from '../../../core/content/content-watcher';
 import { EffectMenuVm } from '../../../core/content/effect-draft';
-import { LiveSessionSourceLive } from '../../live-session/live-session-source.live';
+import { LiveSessionSourceLive } from '../../../core/play/live-session-source.live';
 import { mediaQuery, PHONE_QUERY } from '../../../shared/map-view/media-query';
 import { openSheet } from '../../../shared/sheet/sheet-host';
 import { ArchiveQuestion } from '../archive/archive-question';

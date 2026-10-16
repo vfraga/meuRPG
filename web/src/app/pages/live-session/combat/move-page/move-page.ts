@@ -65,7 +65,7 @@ import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query
 import { JumpPanel } from './jump-panel';
 import { MoveAdjust } from './move-adjust';
 import { MoveStatus, type MoveSummary } from './move-status';
-import { type Segment, Segmented } from './segmented';
+import { type Segment, Segmented } from '../../../../shared/segmented/segmented';
 
 /** Sides of a square on this page, in pixels: the map is zoomed in so a thumb hits one (E9-05: 30 px). */
 const ZOOMS = [22, 30, 40, 52] as const;

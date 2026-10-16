@@ -24,7 +24,7 @@ import {
   CampaignCharactersSource,
   CampaignCharactersVm,
 } from './characters/campaign-characters.types';
-import { GameSessionSource, GameSessionVm } from './game-session/game-session-card.types';
+import { GameSessionSource, GameSessionVm } from '../../core/play/game-session-card.types';
 import { nextTurn } from '../../../test-settle';
 
 /** `CampaignCharacters` (the "Personagens" section) and `GameSessionCard`

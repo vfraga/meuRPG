@@ -14,8 +14,8 @@ import { readBlocks } from '../../core/creatures/read-blocks';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { beastAttacks, beastLine } from '../../core/creatures/creature-format';
 import { tight } from '../../core/format/text';
-import { SheetFrame } from '../../pages/live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../pages/live-session/combat/sheet-host';
+import { SheetFrame } from '../sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../sheet/sheet-host';
 import { type ChoiceRow, CreatureChoiceList } from '../creatures/creature-choice-list';
 
 /** What the sheet needs: whose Wild Shape, whether it is a combat (it costs the action there) and the uses the character has. */

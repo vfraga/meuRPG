@@ -9,7 +9,7 @@ import { GLYPHS, pillarFaces } from '../../../core/puzzles/puzzle-symbols';
 import { PillarsBoard } from '../../../shared/puzzle-boards/pillars-board';
 import type { Turn } from '../../../shared/puzzle-boards/symbol-columns';
 import { SymbolGlyph } from '../../../shared/puzzle-boards/symbol-glyph';
-import { RevealSwitch } from '../../maps/reveal-switch/reveal-switch';
+import { RevealSwitch } from '../../../shared/reveal-switch/reveal-switch';
 import { Stepper } from '../fields/stepper';
 import type { StartPreview } from './start-preview';
 

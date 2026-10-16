@@ -8,7 +8,7 @@ import type { AttackDie } from '../../../../core/combat/combat-client';
 import { article } from '../../../../core/combat/combat-log';
 import { countText } from '../../../../core/combat/death-saves';
 import { EndTurn } from '../turn-panel/end-turn';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { DeathMarks } from './death-marks';
 
 /**

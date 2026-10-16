@@ -35,9 +35,9 @@ import {
 } from '../../../core/resources/resources-errors';
 import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet, openSheet } from '../../../shared/sheet/sheet-host';
-import { RollPicker } from '../combat/roll-picker/roll-picker';
-import { toVitalsVm } from '../live-session-source.live';
-import type { VitalsVm } from '../live-session.types';
+import { RollPicker } from '../../../shared/roll-picker/roll-picker';
+import { toVitalsVm } from '../../../core/play/live-session-source.live';
+import type { VitalsVm } from '../../../core/play/live-session.types';
 import { arcaneRecoveryState, expendedSlots, levelsWords } from './arcane-recovery';
 
 /** What the page hands "Gastar dados de vida". */

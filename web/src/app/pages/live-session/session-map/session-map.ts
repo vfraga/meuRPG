@@ -34,7 +34,7 @@ import { MapMove, MapView } from '../../../shared/map-view/map-view';
 import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
 import { type DoorSheetData, openDoorSheet } from '../door-sheet/door-sheet';
 import { FogPlayerTools } from '../fog-tools/fog-player-tools';
-import { LiveSessionSource } from '../live-session.types';
+import { LiveSessionSource } from '../../../core/play/live-session.types';
 
 /**
  * The map half of the session page (MR-012, E5-02 to E5-06): the session's

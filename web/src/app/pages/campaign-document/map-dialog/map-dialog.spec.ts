@@ -3,7 +3,11 @@ import { provideRouter } from '@angular/router';
 
 import { MapPointKind, TrapState } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { mapPoint } from '../../../core/maps/maps-testing';
-import { DocumentLinks, type MapView, type OpenSessionMap } from '../document-clients';
+import {
+  DocumentLinks,
+  type MapView,
+  type OpenSessionMap,
+} from '../../../shared/campaign-document/document-clients';
 import { DocumentMapDialog } from './map-dialog';
 
 const IMAGE = { url: '/images/img-1', width: 2400, height: 1600 };

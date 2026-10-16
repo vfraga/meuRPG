@@ -18,8 +18,8 @@ import {
   restPreviewResponse,
 } from '../../../core/resources/resources-testing';
 import { ResourceClient } from '../../../core/resources/resources-client';
-import type { VitalsVm } from '../live-session.types';
-import { pensantusVitals } from '../testing';
+import type { VitalsVm } from '../../../core/play/live-session.types';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { RestCard } from './rest-card';
 
 const flat = (n: Element | null | undefined) => n?.textContent?.replace(/\s+/g, ' ').trim();

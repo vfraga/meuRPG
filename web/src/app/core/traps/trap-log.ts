@@ -1,4 +1,4 @@
-import { article } from '../combat/combat-log';
+import { article } from '../format/article';
 import {
   AttackOutcome,
   PendingDamageStatus,

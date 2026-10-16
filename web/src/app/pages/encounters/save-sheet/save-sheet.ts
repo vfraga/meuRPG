@@ -25,8 +25,8 @@ import {
 import { formatInt } from '../../../core/format/text';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { mapErrorMessage } from '../../../core/maps/map-errors';
-import { SheetFrame } from '../../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../live-session/combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 
 /** What the builder hands the sheet. */
 export interface SaveData {

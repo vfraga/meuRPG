@@ -8,7 +8,7 @@ import {
   useLabel,
 } from '../../../../core/resources/bardic-inspiration';
 import type { InspirationRoll } from '../../../../core/resources/resources-client';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 
 /**
  * "Usar a Inspiração de Bardo (d8)?" (PM-07c 12, right): the question a held roll asks, after the d20 and before the

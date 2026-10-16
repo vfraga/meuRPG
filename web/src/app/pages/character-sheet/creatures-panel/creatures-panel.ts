@@ -25,15 +25,19 @@ import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { creaturesHidden } from '../../../core/creatures/creature-errors';
 import { castNotice, creaturesText } from '../../../core/creatures/summon-labels';
 import { tight } from '../../../core/format/text';
-import { OpenSessions } from '../../../shell/live-notice/open-sessions';
-import { openSheet } from '../../live-session/combat/sheet-host';
+import { OpenSessions } from '../../../core/play/open-sessions';
+import { openSheet } from '../../../shared/sheet/sheet-host';
 import { openWildShape } from '../../../shared/wild-shape/wild-shape-sheet';
 import { combatErrorMessage } from '../../../core/combat/combat-errors';
 import { isUnlimited } from '../../../core/combat/unlimited-uses';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { CreatureCard } from './creature-card';
-import type { EditMode } from './creature-edit';
-import { SummonSheet, type SummonSheetData, type SummonSheetResult } from './summon-sheet';
+import type { EditMode } from '../../../shared/creatures/creature-edit';
+import {
+  SummonSheet,
+  type SummonSheetData,
+  type SummonSheetResult,
+} from '../../../shared/summon-sheet/summon-sheet';
 
 type ListState = 'loading' | 'hidden' | 'ready' | 'failed';
 

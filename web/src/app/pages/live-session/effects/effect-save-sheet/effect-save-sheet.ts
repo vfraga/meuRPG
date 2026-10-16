@@ -49,9 +49,9 @@ import {
 } from '../../../../shared/roll-overlay/roll-animator';
 import { LuckyPrompt } from '../../combat/lucky-prompt/lucky-prompt';
 import { MultiRoll, type RollField } from '../../combat/multi-roll/multi-roll';
-import { RollPicker } from '../../combat/roll-picker/roll-picker';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../combat/sheet-host';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { ExtraDice } from '../extra-dice/extra-dice';
 
 /** What the page hands the sheet of an effect's saving throw. */

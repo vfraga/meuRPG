@@ -36,8 +36,8 @@ import {
 import { AttackSteps } from '../attack-sheet/attack-steps';
 import { CheckRollForm } from '../check-roll-form/check-roll-form';
 import { ContestRoll } from '../contest-roll/contest-roll';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands the Hide sheet. */
 export interface HideSheetData {

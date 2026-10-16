@@ -28,7 +28,7 @@ import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { InspirationOffer } from '../../inspiration/inspiration-offer';
 import { LuckyOfferCard } from '../../inspiration/lucky-offer';
 import { MultiRoll, type RollField } from '../../combat/multi-roll/multi-roll';
-import { RollPicker } from '../../combat/roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { CheckMode } from '../../scene/check-mode/check-mode';
 
 /**

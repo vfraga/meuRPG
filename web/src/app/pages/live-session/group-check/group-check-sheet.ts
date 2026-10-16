@@ -40,8 +40,8 @@ import { askedTest } from '../../../core/combat/contest-master';
 import { AttackSteps } from '../combat/attack-sheet/attack-steps';
 import { CheckRollForm } from '../combat/check-roll-form/check-roll-form';
 import { ContestRoll } from '../combat/contest-roll/contest-roll';
-import { SheetFrame } from '../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../shared/sheet/sheet-host';
 import { InspirationOffer } from '../inspiration/inspiration-offer';
 import { LuckyOfferCard } from '../inspiration/lucky-offer';
 

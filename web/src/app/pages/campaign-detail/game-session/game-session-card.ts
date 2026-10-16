@@ -23,14 +23,14 @@ import { ActionKey } from '../../../core/connect/idempotency';
 import { LivePill } from '../../../shared/live-pill/live-pill';
 import { COPIED_FOR_MS, copyText, sessionLink } from '../../../shared/session-link/session-link';
 import { formatSessionStart } from '../../../shared/session-time/session-time';
-import { OpenSessions } from '../../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../../core/play/open-sessions';
 import { CampaignSessions } from './campaign-sessions';
 import {
   GameSessionSource,
   GameSessionVm,
   OpenChoiceKindVm,
   OpenChoicesVm,
-} from './game-session-card.types';
+} from '../../../core/play/game-session-card.types';
 
 type CardState =
   | { status: 'loading' }

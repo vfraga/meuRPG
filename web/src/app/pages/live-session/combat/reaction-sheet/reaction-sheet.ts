@@ -72,7 +72,7 @@ import {
 import { classResourceErrorMessage } from '../../../../core/resources/resources-errors';
 import { InspirationOffer } from '../../inspiration/inspiration-offer';
 import { LuckyPrompt } from '../lucky-prompt/lucky-prompt';
-import { SlotPicker } from '../cast-sheet/slot-picker';
+import { SlotPicker } from '../../../../shared/slot-picker/slot-picker';
 import { ExtraDiceState } from '../../../../core/effects/extra-dice-state';
 import {
   RollAnimator,
@@ -83,9 +83,9 @@ import {
 } from '../../../../shared/roll-overlay/roll-animator';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
-import { RollPicker } from '../roll-picker/roll-picker';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet } from '../sheet-host';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands the reaction sheet. */
 export interface ReactionSheetData {

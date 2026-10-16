@@ -18,7 +18,7 @@ import { sceneActionErrorMessage } from '../../../core/maps/map-errors';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { SCENE_ACTION_LIMIT, actionSubtitle, actionTitle } from '../../../core/maps/scene-actions';
-import { RevealSwitch } from '../reveal-switch/reveal-switch';
+import { RevealSwitch } from '../../../shared/reveal-switch/reveal-switch';
 import { SceneActionForm, type NewSceneAction, type SceneActionChanges } from './scene-action-form';
 
 /** 1 to 5 attempts, or 0: unlimited (maps.proto, `UpdateSceneAction`). */

@@ -13,7 +13,7 @@ import {
 
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { PairFoot } from '../../../shared/pair-foot/pair-foot';
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 
 /**
  * The foot of the new point panels (E9-02): "Salvar ponto", the screen's one filled button, and "Apagar ponto" beside it

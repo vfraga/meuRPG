@@ -139,15 +139,15 @@ import { SpellHelp } from '../../../../shared/spell-details/spell-help';
 import { AbilityPicker } from '../../effects/ability-picker/ability-picker';
 import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
 import { RollModePicker } from '../roll-mode/roll-mode-picker';
-import { RollPicker } from '../roll-picker/roll-picker';
-import { injectSheet } from '../sheet-host';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { CastResult, CastSlots, type SlotAfter } from './cast-result';
 import { CastTargets } from './cast-targets';
 import { SculptPicker, type SculptRow } from './sculpt-picker';
 import { MetamagicPicker } from './metamagic-picker';
 import { DamageTypePicker } from './damage-type-picker';
-import { SlotPicker } from './slot-picker';
+import { SlotPicker } from '../../../../shared/slot-picker/slot-picker';
 
 /** The battle map an area spell is placed on (a combat with a grid): what the page already draws. */
 export interface CastMapData {

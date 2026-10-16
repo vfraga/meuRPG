@@ -24,7 +24,7 @@ import type { MapState } from '../../../../core/maps/map-state';
 import { joinDots, tieShortWords } from '../../../../core/format/text';
 import { SceneClient } from '../../../../core/play/scene-client';
 import { sceneErrorMessage } from '../../../../core/play/scene-errors';
-import type { ShownImageVm } from '../../live-session.types';
+import type { ShownImageVm } from '../../../../core/play/live-session.types';
 import type { SceneState } from '../../../../core/play/scene-state';
 import { actionCount, masterAttempts, rollCount } from '../../../../core/play/scene-view';
 import { formatClock } from '../../../../shared/session-time/session-time';

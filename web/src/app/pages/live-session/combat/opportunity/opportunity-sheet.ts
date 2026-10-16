@@ -28,8 +28,8 @@ import {
 } from '../../../../core/combat/opportunity';
 import { playerAutoPassText, playerSecondsLeft } from '../../../../core/combat/reaction-autopass';
 import { tieNumbers } from '../../../../core/format/text';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
 /** How often the prompt's countdown redraws, in ms. */
 const CLOCK_TICK_MS = 1000;

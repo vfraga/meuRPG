@@ -14,8 +14,8 @@ import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { describeConnectError } from '../../core/connect/connect-errors';
 import { ActionKey } from '../../core/connect/idempotency';
 import { LivePill } from '../../shared/live-pill/live-pill';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
-import { creationRefusalText, roleTag, xpModeSentence } from './campaign-copy';
+import { OpenSessions } from '../../core/play/open-sessions';
+import { creationRefusalText, roleTag, xpModeSentence } from '../../core/campaigns/campaign-copy';
 
 type ListState =
   | { status: 'loading' }

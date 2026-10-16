@@ -51,8 +51,8 @@ import { AreaList } from '../../../../shared/area-picker/area-list';
 import { AreaMap } from '../../../../shared/area-picker/area-map';
 import { AreaStep } from '../../../../shared/area-picker/area-step';
 import { HiddenSwitch } from '../../../../shared/hidden-switch/hidden-switch';
-import { injectSheet } from '../sheet-host';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import type { CastMapData } from '../cast-sheet/cast-sheet';
 
 /** What the page hands the master's area cast. */

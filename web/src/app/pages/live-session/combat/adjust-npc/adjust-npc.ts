@@ -9,7 +9,7 @@ import { ActionKey } from '../../../../core/connect/idempotency';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { VitalsStepper } from '../../vitals-stepper/vitals-stepper';
-import { injectSheet } from '../sheet-host';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
 export interface AdjustNpcData {
   readonly campaignId: string;

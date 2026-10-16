@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { CampaignSessions } from '../game-session/campaign-sessions';
-import { GameSessionSource, GameSessionVm } from '../game-session/game-session-card.types';
+import { GameSessionSource, GameSessionVm } from '../../../core/play/game-session-card.types';
 import { PastSessionsPanel } from './past-sessions-panel';
 import { nextTurn } from '../../../../test-settle';
 

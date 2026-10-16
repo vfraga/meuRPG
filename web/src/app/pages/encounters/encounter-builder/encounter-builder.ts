@@ -35,11 +35,11 @@ import {
 } from '../../../core/encounters/encounter-text';
 import { formatInt, tight } from '../../../core/format/text';
 import { RosterClient } from '../../../core/maps/roster-client';
-import { openSheet } from '../../live-session/combat/sheet-host';
+import { openSheet } from '../../../shared/sheet/sheet-host';
 import { BudgetBar } from '../budget-bar/budget-bar';
 import { EncounterRows } from '../encounter-rows/encounter-rows';
 import { PartyChips } from '../party-chips/party-chips';
-import { CreaturePick } from '../creature-pick/creature-pick';
+import { CreaturePick } from '../../../shared/creature-pick/creature-pick';
 import {
   GenerateSheet,
   type GenerateData,

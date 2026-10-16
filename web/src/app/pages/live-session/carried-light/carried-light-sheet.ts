@@ -8,8 +8,8 @@ import type { MapToken } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { carriedErrorMessage } from '../../../core/maps/carried-light';
 import { type LightOption, NO_LIGHT } from '../../../core/maps/light-presets';
 import { MapsClient } from '../../../core/maps/maps-client';
-import { SheetFrame } from '../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../shared/sheet/sheet-host';
 
 /** What the sheet needs: who carries, what is carried now, the choices, and what to tell the page after each. */
 export interface CarriedLightData {

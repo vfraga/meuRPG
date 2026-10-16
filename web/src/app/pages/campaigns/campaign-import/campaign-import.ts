@@ -43,7 +43,7 @@ import { describeConnectError } from '../../../core/connect/connect-errors';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { formatBytes } from '../../../core/images/image-format';
 import { UploadFailed } from '../../../core/images/upload-errors';
-import { creationRefusalText } from '../campaign-copy';
+import { creationRefusalText } from '../../../core/campaigns/campaign-copy';
 
 /** Where a failure happened, which is where "Tentar de novo" picks up: before the package was read, or when creating. */
 type Stage = 'upload' | 'create';

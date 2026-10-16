@@ -5,7 +5,7 @@ import { MapReveals } from '../../../core/maps/map-reveals';
 import { MapState } from '../../../core/maps/map-state';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { MapTokensList } from '../../../shared/map-lists/map-tokens-list';
-import type { PartyMemberInfoVm } from '../live-session.types';
+import type { PartyMemberInfoVm } from '../../../core/play/live-session.types';
 
 /**
  * The master's "Tokens no mapa" panel (E5-04, E5-06): each token of the

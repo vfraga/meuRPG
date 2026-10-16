@@ -3,7 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import type { DiceMode, DicePreference } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
-import { DicePreferencePanel } from '../../campaign-detail/dice-preference-panel/dice-preference-panel';
+import { DicePreferencePanel } from '../../../shared/dice-preference-panel/dice-preference-panel';
 
 export interface DiceDialogData {
   readonly campaignId: string;

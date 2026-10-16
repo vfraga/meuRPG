@@ -1,7 +1,7 @@
 import { Component, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 
-import type { ShownImageVm } from '../live-session.types';
+import type { ShownImageVm } from '../../../core/play/live-session.types';
 
 /**
  * "Deixadas com os jogadores" (E6-25, MR-028): the images the master left

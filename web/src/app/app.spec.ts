@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { AuthState, AuthService } from './core/auth/auth.service';
-import { OpenSessionVm, OpenSessions } from './shell/live-notice/open-sessions';
+import { OpenSessions } from './core/play/open-sessions';
+import type { OpenSessionVm } from './core/play/open-sessions.types';
 import { SessionNotes } from './shell/session-notes/session-notes';
 import { App } from './app';
 

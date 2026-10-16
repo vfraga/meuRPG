@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
 
 import { CharacterSheetSource } from './character-sheet.types';
-import { LiveSessionSourceLive } from '../live-session/live-session-source.live';
+import { LiveSessionSourceLive } from '../../core/play/live-session-source.live';
 import { CharacterSheetSourceLive } from './character-sheet-source.live';
-import { XpWatcher } from './xp-watcher';
+import { XpWatcher } from '../../core/play/xp-watcher';
 
 /**
  * Lazily loaded from `app.routes.ts` via `loadChildren`, instead of a plain

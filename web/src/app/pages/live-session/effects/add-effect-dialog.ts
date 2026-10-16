@@ -31,8 +31,8 @@ import {
 } from '../../../core/effects/effects-text';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
 import { TextField } from '../../../shared/form-fields/text-field';
-import { SheetFrame } from '../combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 import { AbilityPicker } from './ability-picker/ability-picker';
 import { VisibilityFields } from './visibility-fields';
 

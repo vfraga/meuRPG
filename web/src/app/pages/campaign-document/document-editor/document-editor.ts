@@ -24,7 +24,7 @@ import {
   type RefOpen,
 } from '../../../shared/markdown/markdown-view';
 import { formatClock } from '../../../shared/session-time/session-time';
-import { DocumentClient } from '../document-clients';
+import { DocumentClient } from '../../../shared/campaign-document/document-clients';
 import { CONFLICT_MESSAGE, isConflict, saveErrorMessage } from '../document-copy';
 import {
   type Edit,

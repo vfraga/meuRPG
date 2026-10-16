@@ -20,7 +20,7 @@ import { RouterLink } from '@angular/router';
 import { type GenerateOutcome } from '../../../shared/image-generate/image-generate-dialog';
 import { GenerateImageButton } from '../../../shared/image-generate/generate-image-button';
 import type { GenerateOrigin } from '../../../core/images/imagegen-copy';
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 
 import { MapBlockedReason, type Map as MapMessage } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { DELETE_BLOCKED_TEXT } from '../../../core/maps/map-errors';

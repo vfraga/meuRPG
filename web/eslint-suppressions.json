@@ -471,7 +471,7 @@
       "count": 1
     }
   },
-  "src/app/pages/campaign-detail/dice-preference-panel/dice-preference-panel.ts": {
+  "src/app/shared/dice-preference-panel/dice-preference-panel.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }
@@ -609,7 +609,7 @@
       "count": 1
     }
   },
-  "src/app/pages/campaign-document/document-format.ts": {
+  "src/app/shared/campaign-document/document-format.ts": {
     "@typescript-eslint/no-magic-numbers": {
       "count": 1
     }
@@ -842,7 +842,7 @@
       "count": 1
     }
   },
-  "src/app/pages/character-sheet/creatures-panel/creature-edit.ts": {
+  "src/app/shared/creatures/creature-edit.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }
@@ -860,7 +860,7 @@
       "count": 1
     }
   },
-  "src/app/pages/character-sheet/creatures-panel/summon-sheet.ts": {
+  "src/app/shared/summon-sheet/summon-sheet.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     },
@@ -1042,7 +1042,7 @@
       "count": 2
     }
   },
-  "src/app/pages/encounters/creature-pick/creature-pick.ts": {
+  "src/app/shared/creature-pick/creature-pick.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     },
@@ -1299,7 +1299,7 @@
       "count": 1
     }
   },
-  "src/app/pages/live-session/combat/cast-sheet/slot-picker.ts": {
+  "src/app/shared/slot-picker/slot-picker.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }
@@ -1583,7 +1583,7 @@
       "count": 2
     }
   },
-  "src/app/pages/live-session/combat/roll-picker/roll-picker.ts": {
+  "src/app/shared/roll-picker/roll-picker.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     },
@@ -1591,12 +1591,12 @@
       "count": 2
     }
   },
-  "src/app/pages/live-session/combat/start-combat/npc-row.ts": {
+  "src/app/shared/start-combat/npc-row.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }
   },
-  "src/app/pages/live-session/combat/start-combat/player-row.ts": {
+  "src/app/shared/start-combat/player-row.ts": {
     "@angular-eslint/no-output-native": {
       "count": 1
     },
@@ -1604,12 +1604,12 @@
       "count": 1
     }
   },
-  "src/app/pages/live-session/combat/start-combat/saved-monsters.ts": {
+  "src/app/shared/start-combat/saved-monsters.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }
   },
-  "src/app/pages/live-session/combat/start-combat/start-combat-dialog.ts": {
+  "src/app/shared/start-combat/start-combat-dialog.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     },
@@ -1620,7 +1620,7 @@
       "count": 1
     }
   },
-  "src/app/pages/live-session/combat/start-combat/start-combat-saved.spec.ts": {
+  "src/app/shared/start-combat/start-combat-saved.spec.ts": {
     "@typescript-eslint/no-non-null-asserted-optional-chain": {
       "count": 1
     }
@@ -1744,7 +1744,7 @@
       "count": 1
     }
   },
-  "src/app/pages/live-session/live-session-source.live.ts": {
+  "src/app/core/play/live-session-source.live.ts": {
     "complexity": {
       "count": 1
     }
@@ -1757,7 +1757,7 @@
       "count": 1
     }
   },
-  "src/app/pages/live-session/live-stream.ts": {
+  "src/app/core/play/live-stream.ts": {
     "@typescript-eslint/no-magic-numbers": {
       "count": 3
     },
@@ -1935,7 +1935,7 @@
       "count": 1
     }
   },
-  "src/app/pages/live-session/slot-dots/slot-dots.ts": {
+  "src/app/shared/slot-dots/slot-dots.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     },
@@ -2003,7 +2003,7 @@
       "count": 1
     }
   },
-  "src/app/pages/maps/dungeon-new/choice-row.ts": {
+  "src/app/shared/choice-row/choice-row.ts": {
     "@angular-eslint/template/interactive-supports-focus": {
       "count": 1
     }
@@ -2031,7 +2031,7 @@
       "count": 1
     }
   },
-  "src/app/pages/maps/editor-overlay/editor-overlay.ts": {
+  "src/app/shared/editor-overlay/editor-overlay.ts": {
     "@typescript-eslint/no-magic-numbers": {
       "count": 4
     }
@@ -2056,12 +2056,12 @@
       "count": 1
     }
   },
-  "src/app/pages/maps/map-ask/map-ask.spec.ts": {
+  "src/app/shared/map-ask/map-ask.spec.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }
   },
-  "src/app/pages/maps/map-ask/map-ask.ts": {
+  "src/app/shared/map-ask/map-ask.ts": {
     "@angular-eslint/no-output-native": {
       "count": 1
     }
@@ -2194,7 +2194,7 @@
       "count": 1
     }
   },
-  "src/app/pages/maps/reveal-switch/reveal-switch.ts": {
+  "src/app/shared/reveal-switch/reveal-switch.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }
@@ -2290,7 +2290,7 @@
       "count": 1
     }
   },
-  "src/app/pages/table-rules/method-cards/method-cards.ts": {
+  "src/app/shared/method-cards/method-cards.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
     }

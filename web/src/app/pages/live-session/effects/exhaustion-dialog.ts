@@ -23,8 +23,8 @@ import {
   MAX_EXHAUSTION,
 } from '../../../core/effects/effects-text';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
-import { SheetFrame } from '../combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 
 /** One creature the master may change the exhaustion of: its name, the level the screen shows and who it is for the server. */
 export interface ExhaustionOption {

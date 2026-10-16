@@ -13,7 +13,7 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
 import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
-import type { ShownImageVm } from '../live-session.types';
+import type { ShownImageVm } from '../../../core/play/live-session.types';
 import { ShownImageViewer } from '../shown-image-block/shown-image-viewer';
 
 /**

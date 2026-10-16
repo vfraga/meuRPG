@@ -13,7 +13,7 @@ import {
   XpMode,
 } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
 import { Campaigns } from './campaigns';
 
 /** A stand-in for CampaignsService whose calls this spec fully controls. */

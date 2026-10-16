@@ -21,8 +21,8 @@ import type { DoorKind, DoorSquare } from '../../../core/maps/layers';
 import { mapErrorMessage } from '../../../core/maps/map-errors';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { DoorMark } from '../../../shared/map-layers/door-mark';
-import { SheetFrame } from '../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../shared/sheet/sheet-host';
 
 /** What the page hands the door sheet: the door and whether a wall is painted under it (a revealed secret door clears it, over the whole block of the drawing's square). */
 export interface DoorSheetData {

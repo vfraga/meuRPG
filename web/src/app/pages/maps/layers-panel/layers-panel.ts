@@ -15,7 +15,7 @@ import type { MapLayers } from '../../../core/maps/layers';
 import { type PaintSaveStatus } from '../../../core/maps/paint-queue';
 import { LIGHT_LABEL, type PaintTool, layerLines } from '../../../core/maps/paint-tools';
 import { DoorMark } from '../../../shared/map-layers/door-mark';
-import { RevealSwitch } from '../reveal-switch/reveal-switch';
+import { RevealSwitch } from '../../../shared/reveal-switch/reveal-switch';
 
 /** Which layers the master's map shows (a view setting of his drawing: it changes nothing for anyone). */
 export type LayerVisibility = Readonly<Record<PaintTool, boolean>>;

@@ -34,8 +34,8 @@ import {
   validSeconds,
 } from '../../../core/effects/effects-text';
 import { TextField } from '../../../shared/form-fields/text-field';
-import { openSheet } from '../combat/sheet-host';
-import type { VitalsVm } from '../live-session.types';
+import { openSheet } from '../../../shared/sheet/sheet-host';
+import type { VitalsVm } from '../../../core/play/live-session.types';
 import {
   AddCharacterEffectDialog,
   type AddCharacterEffectData,

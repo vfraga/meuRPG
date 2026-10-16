@@ -27,7 +27,7 @@ import { joinDots, tight } from '../../../core/format/text';
 import { metersText } from '../../../core/units';
 import { FamiliarEyesButton } from '../../../shared/familiar-eyes/familiar-eyes-button';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
-import { CreatureEdit, type EditMode } from './creature-edit';
+import { CreatureEdit, type EditMode } from '../../../shared/creatures/creature-edit';
 
 /**
  * One creature of the character, as a card (E9-10, quadro 1): its picture, the

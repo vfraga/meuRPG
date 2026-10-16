@@ -52,7 +52,7 @@ import { SelectField, type SelectOption } from '../../../shared/form-fields/sele
 import { SwitchField } from '../../../shared/form-fields/switch-field';
 import { TextField } from '../../../shared/form-fields/text-field';
 import { mediaQuery, PHONE_QUERY } from '../../../shared/map-view/media-query';
-import { LiveSessionSourceLive } from '../../live-session/live-session-source.live';
+import { LiveSessionSourceLive } from '../../../core/play/live-session-source.live';
 
 type Access =
   | { status: 'loading' }

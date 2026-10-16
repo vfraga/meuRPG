@@ -5,9 +5,9 @@ import { of } from 'rxjs';
 import { provideRouter } from '@angular/router';
 
 import { DiceMode, DicePreference } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
-import type { VitalsVm } from '../live-session.types';
+import type { VitalsVm } from '../../../core/play/live-session.types';
 import type { HitDiceSheetData } from '../hit-dice-sheet/hit-dice-sheet';
-import { pensantusVitals } from '../testing';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { PlayerVitals } from './player-vitals';
 
 describe('PlayerVitals as a beast (MR-037, E9-11)', () => {

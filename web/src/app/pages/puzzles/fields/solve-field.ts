@@ -24,7 +24,7 @@ import {
   type PointChoice,
   SolveTargets,
 } from '../../../core/puzzles/solve-targets';
-import { DoorCrop } from '../../live-session/puzzles/door-crop/door-crop';
+import { DoorCrop } from '../../../shared/door-crop/door-crop';
 import { type PickOption, PickGroup } from './pick-group';
 
 const CHOICES: readonly PickOption<SolveChoice>[] = [

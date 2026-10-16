@@ -1,9 +1,9 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
-import { LiveSessionSourceLive } from '../../pages/live-session/live-session-source.live';
-import type { LiveEventVm } from '../../pages/live-session/live-session.types';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
+import { LiveSessionSourceLive } from '../play/live-session-source.live';
+import type { LiveEventVm } from '../play/live-session.types';
+import { OpenSessions } from '../play/open-sessions';
 import { CONTENT_DEBOUNCE_MS, ContentWatcher } from './content-watcher';
 
 // With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would

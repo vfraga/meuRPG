@@ -31,7 +31,7 @@ import {
   type PutMonstersData,
   type PutMonstersResult,
 } from '../../../shared/monsters/put-sheet/put-sheet';
-import { openSheet } from '../../live-session/combat/sheet-host';
+import { openSheet } from '../../../shared/sheet/sheet-host';
 import { BestiaryRow, type BestiaryRowData } from './bestiary-row';
 
 type ListState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready' };

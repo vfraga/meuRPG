@@ -7,7 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { XpMode } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import type { TreasureToConvert, XPAward } from '../../../gen/meurpg/progression/v1/progression_pb';
 import type { ExperienceRow, LoadState } from '../../core/progression/experience-store';
-import { openSheet } from '../../pages/live-session/combat/sheet-host';
+import { openSheet } from '../sheet/sheet-host';
 import {
   type AwardXpData,
   type AwardXpResult,

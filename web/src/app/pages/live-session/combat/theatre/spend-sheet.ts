@@ -8,8 +8,8 @@ import { CombatClient, newKey } from '../../../../core/combat/combat-client';
 import { combatErrorMessage, encounterBlocked } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { spendLabel, spendPlan, turnHas } from '../../../../core/combat/theatre';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { SpendStepper, startAmount } from './spend-stepper';
 
 /** What the page hands the movement sheet. */

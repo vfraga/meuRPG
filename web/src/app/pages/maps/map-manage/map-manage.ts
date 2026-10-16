@@ -33,7 +33,7 @@ import { MapView } from '../../../shared/map-view/map-view';
 import { GenerateImageButton } from '../../../shared/image-generate/generate-image-button';
 import type { GenerateOutcome } from '../../../shared/image-generate/image-generate-dialog';
 import { DungeonRooms, type RoomOutline } from '../dungeon-rooms/dungeon-rooms';
-import { EditorOverlay } from '../editor-overlay/editor-overlay';
+import { EditorOverlay } from '../../../shared/editor-overlay/editor-overlay';
 import { FogPanel } from '../fog-panel/fog-panel';
 
 /**

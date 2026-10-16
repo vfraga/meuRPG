@@ -5,9 +5,9 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
 import { AuthService } from '../../../core/auth/auth.service';
-import { LiveSessionSource, VitalsChange } from '../live-session.types';
+import { LiveSessionSource, VitalsChange } from '../../../core/play/live-session.types';
 import { dieName } from '../../../core/resources/hit-dice-text';
-import { slotLevelLabel, usedWords, whoSeesTheChange } from '../vitals';
+import { slotLevelLabel, usedWords, whoSeesTheChange } from '../../../core/play/vitals';
 import { VitalsStepper } from '../vitals-stepper/vitals-stepper';
 import {
   AdjustVitalsData,

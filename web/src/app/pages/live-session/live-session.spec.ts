@@ -81,7 +81,7 @@ import {
   SceneActionSchema,
   TreasureFinderSchema,
 } from '../../../gen/meurpg/maps/v1/maps_pb';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
 import { CALLING_NOTICE_MS, LiveSession } from './live-session';
 import {
   CampaignInfoVm,
@@ -92,8 +92,8 @@ import {
   PartyMemberInfoVm,
   PlayerSheetVm,
   ShownImageVm,
-} from './live-session.types';
-import { brisaVitals, pensantusVitals } from './testing';
+} from '../../core/play/live-session.types';
+import { brisaVitals, pensantusVitals } from '../../core/play/live-testing';
 import { nextTurn } from '../../../test-settle';
 
 class KindError extends Error {

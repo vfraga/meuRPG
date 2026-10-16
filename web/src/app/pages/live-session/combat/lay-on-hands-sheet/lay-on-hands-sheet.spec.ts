@@ -18,7 +18,7 @@ import {
 import { CombatState } from '../../../../core/combat/combat-state';
 import { encounter } from '../../../../core/combat/combat-testing';
 import { ResourceClient } from '../../../../core/resources/resources-client';
-import { pensantusVitals } from '../../testing';
+import { pensantusVitals } from '../../../../core/play/live-testing';
 import { LayOnHandsSheet, type LayOnHandsSheetData } from './lay-on-hands-sheet';
 
 const flat = (n: Element | null | undefined) => n?.textContent?.replace(/\s+/g, ' ').trim() ?? '';

@@ -46,7 +46,7 @@ import { ViewAsCounts } from '../../../core/maps/view-as';
 
 import { ViewAsList, type ViewAsPerson } from '../../../shared/fog-map/view-as-list';
 import { ViewAsMapView } from '../../../shared/fog-map/view-as-map';
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 import { MapLayersLegend } from '../../../shared/map-layers/map-layers-legend';
 import { MapPinsLegend } from '../../../shared/map-pins/map-pins-legend';
 import type { PickRow } from '../../../shared/person-pick/person-pick';
@@ -55,7 +55,7 @@ import { BP_MAX } from '../../../shared/map-view/map-geometry';
 import { MapMove, MapSelection, MapView } from '../../../shared/map-view/map-view';
 import { CoverDegrees } from '../cover-degrees/cover-degrees';
 import { EditorBar, type EditorMode } from '../editor-bar/editor-bar';
-import { EditorOverlay, type LightReach } from '../editor-overlay/editor-overlay';
+import { EditorOverlay, type LightReach } from '../../../shared/editor-overlay/editor-overlay';
 import { FogPanel } from '../fog-panel/fog-panel';
 import { GridPanel } from '../grid-panel/grid-panel';
 import { LayersPanel } from '../layers-panel/layers-panel';

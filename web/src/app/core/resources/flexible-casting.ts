@@ -1,4 +1,4 @@
-import type { SlotUsageVm } from '../../pages/live-session/live-session.types';
+import type { SlotUsageVm } from '../play/resource-usage.types';
 import { circleLabel } from '../combat/combat-grid';
 import { type Pool, pointsText } from './pools';
 
