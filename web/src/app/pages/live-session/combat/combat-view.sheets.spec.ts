@@ -787,7 +787,7 @@ describe('CombatView sheets: the attack sheet', () => {
           fail = (err) => subscriber.error(err);
         }),
     });
-    m.view.attackSheet('attack:longsword', undefined, true, undefined, undefined, undefined, 'w9');
+    m.view.sheets.attack({ key: 'attack:longsword', asReaction: true, catchWindowId: 'w9' });
     expect(m.view.attackSheetOpen()).toBe(true);
     fail(new Error('boom'));
     expect(m.view.attackSheetOpen()).toBe(false);
@@ -1149,7 +1149,7 @@ describe('CombatView sheets: the missile caught by Defletir Projéteis', () => {
 
   it('builds the thrown attack from the prompt and lists each target once, the first list winning', async () => {
     const m = await mount();
-    m.view.openThrowBack('w2');
+    m.view.sheets.throwBack('w2');
     expect(m.opened[0].component).toBe(AttackSheet);
     expect(m.opened[0].config.ariaLabel).toBe('Ataque de oportunidade com Arco curto');
     const d = data(m);
@@ -1185,7 +1185,7 @@ describe('CombatView sheets: the missile caught by Defletir Projéteis', () => {
 
   it('calls a missile with no name "Projétil"', async () => {
     const m = await mount(throwWindow({}, ''));
-    m.view.openThrowBack('w2');
+    m.view.sheets.throwBack('w2');
     expect(data(m)['attack']).toMatchObject({ name: 'Projétil', namePt: 'Projétil' });
     expect(m.opened[0].config.ariaLabel).toBe('Ataque de oportunidade com Projétil');
   });
@@ -1194,8 +1194,8 @@ describe('CombatView sheets: the missile caught by Defletir Projéteis', () => {
     const m = await mount(
       throwWindow({ id: 'w3', prompt: { case: 'masterCheck', value: {} } as never }),
     );
-    m.view.openThrowBack('w2');
-    m.view.openThrowBack('w3');
+    m.view.sheets.throwBack('w2');
+    m.view.sheets.throwBack('w3');
     expect(m.opened).toHaveLength(0);
   });
 
@@ -1204,14 +1204,14 @@ describe('CombatView sheets: the missile caught by Defletir Projéteis', () => {
       enc: theatre({ reactionWindows: [throwWindow()] }),
       matches: PHONE,
     });
-    m.view.openThrowBack('w2');
+    m.view.sheets.throwBack('w2');
     expect(data(m)['targets']).toEqual([]);
     expect(data(m)).toMatchObject({ attacksLeft: 0, attacksPerAction: 1, catchWindowId: 'w2' });
   });
 
   it('answers the window "Deixar passar" when the sheet closes without a roll, under a key of its own', async () => {
     const m = await mount();
-    m.view.openThrowBack('w2');
+    m.view.sheets.throwBack('w2');
     m.opened[0].close();
     await settle(m.fixture);
     expect(m.callsOf('answerReaction').map((c) => c.args)).toEqual([
@@ -1221,7 +1221,7 @@ describe('CombatView sheets: the missile caught by Defletir Projéteis', () => {
 
   it('keeps no missile for a window that was answered meanwhile', async () => {
     const m = await mount(throwWindow({ status: ReactionWindowStatus.ANSWERED }));
-    m.view.openThrowBack('w2');
+    m.view.sheets.throwBack('w2');
     m.opened[0].close();
     await settle(m.fixture);
     expect(m.callsOf('answerReaction')).toHaveLength(0);
@@ -1235,7 +1235,7 @@ describe('CombatView sheets: the missile caught by Defletir Projéteis', () => {
         },
       },
     });
-    m.view.openThrowBack('w2');
+    m.view.sheets.throwBack('w2');
     m.opened[0].close();
     await settle(m.fixture);
     expect(m.callsOf('answerReaction')).toHaveLength(1);
@@ -1282,7 +1282,7 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
       inputs: { vitals: [slots], armorClass: 15 },
     });
     const window = shield();
-    m.view.openReaction(window);
+    m.view.sheets.reaction(window);
     expect(m.opened).toHaveLength(1);
     expect(m.opened[0].component).toBe(ReactionSheet);
     const d = data(m);
@@ -1302,13 +1302,13 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
 
   it('hands it no slots and no armor class when the sheet does not say', async () => {
     const m = await setup();
-    m.view.openReaction(shield());
+    m.view.sheets.reaction(shield());
     expect(data(m)).toMatchObject({ usage: [], pact: null, armorClass: null });
   });
 
   it('is an alert that must be answered, labelled by its prompt', async () => {
     const m = await setup({ matches: PHONE });
-    m.view.openReaction(shield());
+    m.view.sheets.reaction(shield());
     expect(m.opened[0].config.ariaLabel).toMatch(/\S/);
     expect(m.opened[0].config.ariaLabel).not.toBe('Reação');
     expect(m.opened[0].config.disableClose).toBe(true);
@@ -1317,7 +1317,7 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
 
   it('labels a window with no prompt of its own "Reação"', async () => {
     const m = await setup({ matches: PHONE });
-    m.view.openReaction(
+    m.view.sheets.reaction(
       reactionWindow({ id: 'w7', prompt: { case: 'masterCheck', value: {} } as never } as never),
     );
     expect(m.opened[0].config.ariaLabel).toBe('Reação');
@@ -1325,7 +1325,7 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
 
   it('holds the reaction flag while the sheet is open', async () => {
     const m = await setup();
-    m.view.openReaction(shield());
+    m.view.sheets.reaction(shield());
     expect(m.view.reactionOpen()).toBe(true);
     m.opened[0].close();
     expect(m.view.reactionOpen()).toBe(false);
@@ -1348,7 +1348,7 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
         ],
       }),
     });
-    m.view.openReaction(shield());
+    m.view.sheets.reaction(shield());
     m.opened[0].close({ throwWindowId: 'w2' });
     expect(m.view.reactionHandled.has('w2')).toBe(true);
     expect(m.opened[1].component).toBe(AttackSheet);
@@ -1357,7 +1357,7 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
 
   it('opens nothing on a result that asks for no throw', async () => {
     const m = await setup();
-    m.view.openReaction(shield());
+    m.view.sheets.reaction(shield());
     m.opened[0].close({});
     expect(m.opened).toHaveLength(1);
   });
@@ -1365,7 +1365,7 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
   it('sends a window with an effect saving throw to its own sheet', async () => {
     const m = await setup({ matches: PHONE });
     const window = effectSave();
-    m.view.openReaction(window);
+    m.view.sheets.reaction(window);
     expect(m.opened).toHaveLength(1);
     expect(m.opened[0].component).toBe(EffectSaveSheet);
     expect(m.opened[0].config.ariaLabel).toBe('Teste de resistência do fim do turno');
@@ -1392,7 +1392,7 @@ describe('CombatView sheets: the reaction and the effect saving throw', () => {
 
   it('opens no second sheet over one that is open', async () => {
     const m = await setup();
-    m.view.openReaction(shield());
+    m.view.sheets.reaction(shield());
     m.view.openEffectSave(effectSave());
     expect(m.opened.map((o) => o.component)).toEqual([ReactionSheet]);
   });
@@ -1622,7 +1622,7 @@ describe('CombatView sheets: casting', () => {
       { spellTargets: [targets] },
       { inputs: { vitals: [slotVitals] } },
     );
-    m.view.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
     expect(m.opened).toHaveLength(1);
     expect(m.opened[0].component).toBe(CastSheet);
     expect(m.opened[0].config.ariaLabel).toBe('Conjurar Mísseis Mágicos');
@@ -1663,7 +1663,7 @@ describe('CombatView sheets: casting', () => {
 
   it('hands the sheet empty slots, no pact, no points and no Escudo when the character has none', async () => {
     const m = await mount({ spells: [missile({ metamagicOptions: [], sculptSpells: false })] });
-    m.view.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
     expect(data(m)).toMatchObject({
       usage: [],
       pact: null,
@@ -1690,7 +1690,7 @@ describe('CombatView sheets: casting', () => {
         },
       },
     );
-    m.view.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
     expect(data(m)['sorceryPoints']).toEqual({ left: 0, total: 2 });
   });
 
@@ -1701,7 +1701,7 @@ describe('CombatView sheets: casting', () => {
         shield({ spell: { key: 'spell:shield', name: 'Shield', namePt: '', level: 1 }, slots: [] }),
       ],
     });
-    m.view.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
     expect(data(m)['shieldFree']).toBe(0);
     expect(data(m)['shieldName']).toBe('Escudo Arcano');
   });
@@ -1713,7 +1713,7 @@ describe('CombatView sheets: casting', () => {
         shield({ spell: { key: 'spell:shield', name: 'Shield', namePt: 'Escudo', level: 1 } }),
       ],
     });
-    m.view.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
     expect(data(m)['shieldName']).toBe('Escudo');
   });
 
@@ -1721,7 +1721,7 @@ describe('CombatView sheets: casting', () => {
     const m = await mount({
       spells: [missile({ spell: { key: 'spell:magic-missile', name: 'Magic Missile', level: 1 } })],
     });
-    m.view.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
     expect(data(m)['name']).toBe('Magic Missile');
     expect(m.opened[0].config.ariaLabel).toBe('Conjurar Magic Missile');
   });
@@ -1733,7 +1733,7 @@ describe('CombatView sheets: casting', () => {
         { enabled: true, attack: fireBolt },
       ],
     });
-    m.view.castSheet('spell:fire-bolt');
+    m.view.sheets.castSheet('spell:fire-bolt');
     expect(m.opened[0].config.ariaLabel).toBe('Conjurar Raio de Fogo');
     expect(data(m)).toMatchObject({
       spellKey: 'spell:fire-bolt',
@@ -1751,13 +1751,13 @@ describe('CombatView sheets: casting', () => {
 
   it('names a cantrip with no Portuguese name by its English one, and takes a save cantrip’s DC less 8', async () => {
     const m = await mount({ attacks: [{ enabled: true, attack: sacredFlame }] });
-    m.view.castSheet('spell:sacred-flame');
+    m.view.sheets.castSheet('spell:sacred-flame');
     expect(data(m)).toMatchObject({ name: 'Sacred Flame', cantripDice: '1d8', attackBonus: 7 });
   });
 
   it('skips an attack option that carries no attack when it looks for the spell attack bonus', async () => {
     const m = await mount({ attacks: [{ enabled: false }, { enabled: true, attack: fireBolt }] });
-    m.view.castSheet('spell:fire-bolt');
+    m.view.sheets.castSheet('spell:fire-bolt');
     expect(data(m)['attackBonus']).toBe(7);
   });
 
@@ -1768,13 +1768,13 @@ describe('CombatView sheets: casting', () => {
         { enabled: true, attack: fireBolt },
       ],
     });
-    m.view.castSheet('spell:sacred-flame');
+    m.view.sheets.castSheet('spell:sacred-flame');
     expect(data(m)['attackBonus']).toBe(7);
   });
 
   it('names a key that is neither a spell nor an attack by itself, at level 0', async () => {
     const m = await mount({ spells: [missile()] });
-    m.view.castSheet('spell:unknown');
+    m.view.sheets.castSheet('spell:unknown');
     expect(data(m)).toMatchObject({
       name: 'spell:unknown',
       level: 0,
@@ -1791,20 +1791,20 @@ describe('CombatView sheets: casting', () => {
   it('opens at the damage with the pending hits, and labels it so', async () => {
     const m = await mount({ spells: [missile()] });
     const owed = [pending({ attackKey: 'spell:magic-missile' })];
-    m.view.castSheet('spell:magic-missile', owed);
+    m.view.sheets.castSheet('spell:magic-missile', owed);
     expect(m.opened[0].config.ariaLabel).toBe('Rolar o dano de Mísseis Mágicos');
     expect(data(m)['resume']).toBe(owed);
   });
 
   it('opens nothing without a character, or before the options arrive', async () => {
     const master = await mount({ spells: [missile()] }, {}, { master: true, enc: masterEnc() });
-    master.view.castSheet('spell:magic-missile');
+    master.view.sheets.castSheet('spell:magic-missile');
     expect(master.opened).toHaveLength(0);
     const early = mountCombatView({
       enc: theatre(),
       turnOptions: forToren({ spells: [missile()] }),
     });
-    early.view.castSheet('spell:magic-missile');
+    early.view.sheets.castSheet('spell:magic-missile');
     expect(early.opened).toHaveLength(0);
   });
 
@@ -1834,7 +1834,7 @@ describe('CombatView sheets: casting', () => {
 
     it('hands the sheet the map: the picture, the grid, the layers and no fog', async () => {
       const m = await onTheMap(AreaPlacement.POINT);
-      m.view.castSheet('spell:fireball');
+      m.view.sheets.castSheet('spell:fireball');
       expect(data(m)['map']).toEqual({
         image: { url: '/m.png', width: 1000, height: 700 },
         mapName: 'Estrada na floresta',
@@ -1850,7 +1850,7 @@ describe('CombatView sheets: casting', () => {
       ['a direction', AreaPlacement.DIRECTION],
     ])('opens on the map when the area is placed by %s', async (_name, placement) => {
       const m = await onTheMap(placement);
-      m.view.castSheet('spell:fireball');
+      m.view.sheets.castSheet('spell:fireball');
       expect(m.opened[0].config.autoFocus).toBe('[role="application"]');
     });
 
@@ -1859,19 +1859,19 @@ describe('CombatView sheets: casting', () => {
       ['unspecified', AreaPlacement.UNSPECIFIED],
     ])('opens on the title when the area is %s', async (_name, placement) => {
       const m = await onTheMap(placement);
-      m.view.castSheet('spell:fireball');
+      m.view.sheets.castSheet('spell:fireball');
       expect(m.opened[0].config.autoFocus).toBe('first-heading');
     });
 
     it('opens on the title when the spell has no targets entry', async () => {
       const m = await onTheMap();
-      m.view.castSheet('spell:fireball');
+      m.view.sheets.castSheet('spell:fireball');
       expect(m.opened[0].config.autoFocus).toBe('first-heading');
     });
 
     it('opens on the title when it opens at the damage', async () => {
       const m = await onTheMap(AreaPlacement.POINT);
-      m.view.castSheet('spell:fireball', [pending({ attackKey: 'spell:fireball' })]);
+      m.view.sheets.castSheet('spell:fireball', [pending({ attackKey: 'spell:fireball' })]);
       expect(m.opened[0].config.autoFocus).toBe('first-heading');
     });
 
@@ -1884,7 +1884,7 @@ describe('CombatView sheets: casting', () => {
           { spellTargets: [area(AreaPlacement.POINT)] },
         ),
       });
-      m.view.castSheet('spell:fireball');
+      m.view.sheets.castSheet('spell:fireball');
       expect(data(m)['map']).toBeNull();
       expect(m.opened[0].config.autoFocus).toBe('first-heading');
     });
@@ -1895,7 +1895,7 @@ describe('CombatView sheets: casting', () => {
         create(MapSchema, { id: 'other', image: { url: '/o.png', width: 1, height: 1 } }),
       );
       const m = await onTheMap(AreaPlacement.POINT, { mapState });
-      m.view.castSheet('spell:fireball');
+      m.view.sheets.castSheet('spell:fireball');
       expect(data(m)['map']).toBeNull();
     });
   });
@@ -2030,7 +2030,7 @@ describe('CombatView sheets: casting', () => {
 
     it('opens no Revivificar sheet for the master, who has no caster of his own', async () => {
       const m = await mount({}, {}, { master: true, enc: masterEnc() });
-      m.view.revivifySheet();
+      m.view.sheets.revivify();
       expect(m.opened).toHaveLength(0);
     });
 
@@ -2041,51 +2041,9 @@ describe('CombatView sheets: casting', () => {
         {},
         { master: true, enc: masterEnc(), creatures },
       );
-      expect(await m.view.isSummon('spell:conjure-animals')).toBe(false);
+      expect(await m.view.sheets.isSummon('spell:conjure-animals')).toBe(false);
       expect(creatures.summonOptions).not.toHaveBeenCalled();
     });
-  });
-});
-
-describe('CombatView sheets: the attack bonus of a spell', () => {
-  it('takes the bonus of the first spell attack that asks no saving throw', async () => {
-    const m = await setup();
-    const attacks = [
-      { kind: AttackKind.WEAPON, saveDc: 0, attackBonus: 9 },
-      { kind: AttackKind.SPELL, saveDc: 13, attackBonus: 1 },
-      { kind: AttackKind.SPELL, saveDc: 0, attackBonus: 6 },
-      { kind: AttackKind.SPELL, saveDc: 0, attackBonus: 8 },
-    ];
-    expect(m.view.spellAttackBonus(attacks)).toBe(6);
-  });
-
-  it('takes the DC of the first save cantrip, less 8, when there is no spell attack', async () => {
-    const m = await setup();
-    expect(
-      m.view.spellAttackBonus([
-        { kind: AttackKind.WEAPON, saveDc: 0, attackBonus: 9 },
-        { kind: AttackKind.SPELL, saveDc: 14, attackBonus: 0 },
-        { kind: AttackKind.SPELL, saveDc: 16, attackBonus: 0 },
-      ]),
-    ).toBe(6);
-  });
-
-  it('is zero without either', async () => {
-    const m = await setup();
-    expect(m.view.spellAttackBonus([{ kind: AttackKind.WEAPON, saveDc: 0, attackBonus: 9 }])).toBe(
-      0,
-    );
-    expect(m.view.spellAttackBonus([])).toBe(0);
-  });
-
-  it('can be a spell attack bonus of zero', async () => {
-    const m = await setup();
-    expect(
-      m.view.spellAttackBonus([
-        { kind: AttackKind.SPELL, saveDc: 15, attackBonus: 0 },
-        { kind: AttackKind.SPELL, saveDc: 0, attackBonus: 0 },
-      ]),
-    ).toBe(0);
   });
 });
 
@@ -2279,23 +2237,23 @@ describe('CombatView sheets: with no combat on screen', () => {
     m.view.adjustNpc('g');
     m.view.openSpend();
     m.view.openSpend('w');
-    m.view.openReaction(window);
+    m.view.sheets.reaction(window);
     m.view.openEffectSave(window);
-    m.view.openThrowBack('w2');
-    m.view.keepMissile('w2');
-    m.view.revivifySheet();
-    m.view.summonSheet('spell:conjure-animals', 'Conjurar Animais');
+    m.view.sheets.throwBack('w2');
+    m.view.sheets.keepMissile('w2');
+    m.view.sheets.revivify();
+    m.view.sheets.summon('spell:conjure-animals', 'Conjurar Animais');
     m.view.openMasterArea('spell:fireball');
     m.view.openAttack('attack:longsword');
     m.view.openCreatureAttack('w', 'attack:bite');
     m.view.rollCreatureDamage('w');
     m.view.rollPendingDamage();
-    m.view.castSheet('spell:magic-missile');
+    m.view.sheets.castSheet('spell:magic-missile');
     await m.view.openCast('spell:magic-missile');
     await m.view.useFeature('feature:rage');
     await settle(m.fixture);
     expect(m.view.openHeldRoll()).toBe(false);
-    expect(m.view.castMap()).toBeNull();
+    expect(m.view.sheets.castMap()).toBeNull();
     expect(m.opened).toHaveLength(0);
     expect(m.callsOf('answerReaction')).toHaveLength(0);
     expect(m.callsOf('takeAction')).toHaveLength(0);
@@ -2303,14 +2261,14 @@ describe('CombatView sheets: with no combat on screen', () => {
 
   it('opens no summoning sheet for the master, who has no caster of his own', async () => {
     const m = await setup({ master: true, enc: masterEnc() });
-    m.view.summonSheet('spell:conjure-animals', 'Conjurar Animais');
+    m.view.sheets.summon('spell:conjure-animals', 'Conjurar Animais');
     expect(m.opened).toHaveLength(0);
   });
 
   it('gives no map to the cast sheet when there is no combat', async () => {
     const m = await setup({ enc: onMap(), mapState: mapWithImage() });
-    expect(m.view.castMap()).not.toBeNull();
+    expect(m.view.sheets.castMap()).not.toBeNull();
     m.state.clear();
-    expect(m.view.castMap()).toBeNull();
+    expect(m.view.sheets.castMap()).toBeNull();
   });
 });

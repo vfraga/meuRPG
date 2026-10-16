@@ -17,46 +17,26 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { create } from '@bufbuild/protobuf';
-import { Code, ConnectError } from '@connectrpc/connect';
 
 import type { DiceMode, DicePreference } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
-import { CharacterKind } from '../../../../gen/meurpg/characters/v1/characters_pb';
 import {
-  AreaPlacement,
-  type Combatant,
   CombatEffect,
   type InspirationOffer,
   type LuckyOffer,
   CombatLogKind,
-  CombatantKind,
   CombatantState,
   DeathSaveOutcome,
   CombatantSide,
   CoverDegree,
-  CoverSource,
   type Encounter,
   EncounterStatus,
   type OpportunityOffer,
   type PendingDamage,
   PendingDamageStatus,
   type ReactionWindow,
-  type TargetInReach,
   type GetTurnOptionsResponse,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
-import {
-  ActionEconomy,
-  type Attack,
-  AttackKind,
-  AttackSchema,
-  type SpellDetails,
-} from '../../../../gen/meurpg/rules/v1/rules_pb';
-import {
-  type AttackDie,
-  CombatClient,
-  type MoveResult,
-  newKey,
-} from '../../../core/combat/combat-client';
+import { type AttackDie, CombatClient, newKey } from '../../../core/combat/combat-client';
 import { CombatUndone } from '../../../core/combat/combat-undone';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { combatErrorMessage } from '../../../core/combat/combat-errors';
@@ -69,9 +49,7 @@ import {
   lostNoticeText,
   wildActionLine,
 } from '../../../core/combat/combat-notices';
-import { MoveOptionsState } from '../../../core/combat/move-options-state';
 import { TableRulesClient } from '../../../core/campaigns/table-rules';
-import { DeathSaveVisibility } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import {
   coverTargets,
   everyoneStanding,
@@ -88,26 +66,20 @@ import {
   ownCreatures,
   validTab,
 } from '../../../core/combat/mine';
-import { article } from '../../../core/combat/combat-log';
-import { ofThe } from '../../../core/combat/move-plan';
 import {
   type ReactorAttack,
-  barText,
   offersHolding,
   offersToAnswer,
   reactorAttacks,
-  reachingAttacks,
   reactorIsMasters,
   waitingText,
 } from '../../../core/combat/opportunity';
 import type { FogView } from '../../../core/maps/fog-view';
 import { LayersState } from '../../../core/maps/layers-state';
 import { MapsClient } from '../../../core/maps/maps-client';
-import { isRevivify } from '../../../core/revivify/revivify-flow';
-import { type FallNote, fallNote } from '../../../core/traps/trap-log';
 import { type SearchSkills, searchRoute } from '../../../core/traps/trap-search';
 import type { TrapBoard } from '../../../core/traps/trap-board';
-import type { OfferMark, Reach } from '../../../shared/combat-map/combat-map';
+import type { OfferMark } from '../../../shared/combat-map/combat-map';
 import type { Square } from '../../../core/combat/combat-grid';
 import { openDamages, pendingNote } from '../../../core/combat/attack-flow';
 import { CombatLogState } from '../../../core/combat/combat-log-state';
@@ -116,59 +88,46 @@ import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { TurnOptionsState } from '../../../core/combat/turn-options-state';
 import { outcomeText, saveAnnouncement } from '../../../core/combat/death-saves';
 import { RollAnimator, showOfDice, showOfDie } from '../../../shared/roll-overlay/roll-animator';
-import {
-  currentCombatant,
-  isDead,
-  isDown,
-  isPlayer,
-  ownCombatant,
-  npcKindLabel,
-} from '../../../core/combat/combat-view';
+import { currentCombatant, isDown, isPlayer, ownCombatant } from '../../../core/combat/combat-view';
 import { acts, jointTurn, masterActor } from '../../../core/combat/joint-turn';
 import type { MapState } from '../../../core/maps/map-state';
-import { MoveSaves } from '../../../core/maps/move-saves';
-import { metersFixed } from '../../../core/units';
 import { RosterClient } from '../../../core/maps/roster-client';
 import type { TokenDrop } from '../../../shared/combat-map/combat-map';
 import { TurnAlert } from '../../../core/combat/turn-alert';
 import { CheckRow } from '../../../shared/form-fields/check-row';
 import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
-import type { SpellDetailsData } from '../../../shared/spell-details/spell-details';
-import { openSpellDetails } from '../../../shared/spell-details/open-spell-details';
-import { spellDetailsFromGen } from '../../../shared/spell-details/spell-details-map';
 import type { PartyMemberInfoVm, VitalsVm } from '../../../core/play/live-session.types';
+import { MasterAutoPass, masterWaitNote } from '../../../core/combat/auto-pass';
+import { CombatCalls } from '../../../core/combat/combat-calls';
+import {
+  coverAgainst,
+  creatureTrapNotes,
+  deathDueOf,
+  featureNote,
+  initiativeLine,
+  dyingOf,
+  offerMarks,
+  opportunityAttacks,
+  pendingRollOf,
+  stoppedByReaction,
+  trapNote,
+} from '../../../core/combat/combat-derived';
+import { CombatReads } from './combat-reads';
+import { CombatSheets } from './combat-sheets';
+import { MoveFlow } from './move-flow';
 import { ActionGroups } from './action-groups/action-groups';
-import { AdjustNpc, type AdjustNpcData } from './adjust-npc/adjust-npc';
-import { AttackSheet, type AttackSheetData } from './attack-sheet/attack-sheet';
 import { ContestHost } from './contest-host';
 import { ContestClient } from '../../../core/combat/contest-client';
-import { CastSheet, type CastMapData, type CastSheetData } from './cast-sheet/cast-sheet';
-import { ConditionsDialog, type ConditionsData } from './conditions-dialog/conditions-dialog';
 import { DeathQuestion } from './death-question/death-question';
 import { DeathSaves } from './death-saves/death-saves';
 import { DeathSaveDue, type DeathSaveRoll } from './death-save-due/death-save-due';
 import { EffectsPanel } from '../effects/effects-panel';
 import { HitRiderCard, type RiderPick } from './hit-rider/hit-rider-card';
 import { RageQuestion } from './rage-end/rage-question';
-import { FeatureSheet, type FeatureSheetData } from './feature-sheet/feature-sheet';
-import { openRevivifySheet } from './revivify-sheet/revivify-sheet';
 import { InspirationCard } from './inspiration-card/inspiration-card';
-import { openBardicInspiration, openFlexibleCasting, openLayOnHands } from './resource-sheets';
 import { resourceFlow } from '../../../core/resources/resource-actions';
-import { SORCERY_POINTS_RESOURCE, poolOf } from '../../../core/resources/pools';
-import {
-  ReactionSheet,
-  type ReactionSheetData,
-  type ReactionSheetResult,
-} from './reaction-sheet/reaction-sheet';
-import { AutoPassClock, autoPassKey, autoPassText } from '../../../core/combat/reaction-autopass';
-import { windowsBarText } from '../../../core/combat/reaction-master';
-import { openWindows, promptView, reactionWait, sheetWindow } from '../../../core/combat/reactions';
+import { openWindows, reactionWait, sheetWindow } from '../../../core/combat/reactions';
 import { ContestMaster } from './contest-master/contest-master';
-import {
-  EffectSaveSheet,
-  type EffectSaveSheetData,
-} from '../effects/effect-save-sheet/effect-save-sheet';
 import { ReactionQueue } from './reaction-queue/reaction-queue';
 import { SurpriseCard } from './surprise-card/surprise-card';
 import { CombatLogPanel } from './combat-log/combat-log-panel';
@@ -182,40 +141,24 @@ import { InitiativeSide } from './initiative-side/initiative-side';
 import { type JumpRequest, MovePage } from './move-page/move-page';
 import { OpportunityCard, type MasterAnswer } from './opportunity/opportunity-card';
 import { HiddenRevealCard, type RevealAnswer } from './hidden-reveal/hidden-reveal-card';
-import { MasterAreaCast, type MasterAreaCastData } from './area-cast/master-area-cast';
-import { defaultSlot, slotRows } from '../../../core/combat/cast-flow';
-import { heldWait, questions, revealBarText, revealWhy } from '../../../core/combat/hidden-reveal';
-import {
-  OpportunitySheet,
-  type OpportunityAnswer,
-  type OpportunitySheetData,
-} from './opportunity/opportunity-sheet';
+import { heldWait, questions, revealWhy } from '../../../core/combat/hidden-reveal';
 import { NpcCard } from './npc-card/npc-card';
 import { DeathsBlock } from './deaths-block/deaths-block';
 import { RollModeQueue } from './roll-mode/roll-mode-queue';
 import { OrderList } from './order-list/order-list';
 import { PlayerInitiative } from './player-initiative/player-initiative';
-import { CreatureSource } from '../../../../gen/meurpg/characters/v1/characters_pb';
-import type { Creature } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
-import { openFamiliarEyes } from '../../../shared/familiar-eyes/familiar-eyes-sheet';
-import { openWildShape } from '../../../shared/wild-shape/wild-shape-sheet';
 import { BeastTraits } from '../../../shared/wild-shape/beast-traits';
-import { SummonSheet, type SummonSheetData } from '../../../shared/summon-sheet/summon-sheet';
 import { CreatureBar } from './creature-turn/creature-bar';
 import { CreatureBlock } from './creature-turn/creature-block';
 import { CreatureHero } from './creature-turn/creature-hero';
 import { MineTabs } from './mine-tabs/mine-tabs';
-import { openSheet } from '../../../shared/sheet/sheet-host';
-import { type DoorSheetData, openDoorSheet } from '../door-sheet/door-sheet';
 import type { DoorSquare } from '../../../core/maps/layers';
-import { wallUnderDoor } from '../../../core/maps/door-paint';
 import {
   type StartCombatData,
   StartCombatDialog,
 } from '../../../shared/start-combat/start-combat-dialog';
 import { TrapDamages } from '../traps/trap-damages/trap-damages';
-import { openTrapSearch } from '../traps/trap-search-sheet/trap-search-sheet';
 import { OrderColumn } from './turn-panel/order-column';
 import { OrderStrip } from './turn-panel/order-strip';
 import { TurnBar } from './turn-panel/turn-bar';
@@ -223,21 +166,6 @@ import { TurnPanel } from './turn-panel/turn-panel';
 import { CoverPanel } from './theatre/cover-panel';
 import { NoMapPanel, TheatreReaction } from './theatre/no-map-panel';
 import { OfferPanel } from './theatre/offer-panel';
-import { SpendSheet, type SpendSheetData } from './theatre/spend-sheet';
-
-/** How often the master's screen looks at the clock of the automatic pass of a player's optional reaction. */
-const AUTO_PASS_TICK_MS = 1000;
-
-/** The key the throw-back sheet gives its made-up attack: the server builds the real one from the window and ignores it. */
-const THROW_BACK_KEY = 'deflect-missiles:throw';
-/** The failures of the pass that are the network's, not a refusal: the pass may be sent again. */
-const RETRYABLE: ReadonlySet<Code> = new Set([
-  Code.Unavailable,
-  Code.DeadlineExceeded,
-  Code.Unknown,
-  Code.Internal,
-  Code.Aborted,
-]);
 
 /**
  * The combat on the session page (MR-013, E6-01 to E6-16): it picks the
@@ -334,11 +262,6 @@ export class CombatView {
   protected readonly laptop = mediaQuery('(min-width: 1024px)');
   /** From 1280px the player's order is a column on the left (E6-14). */
   protected readonly wideLayout = mediaQuery('(min-width: 1280px)');
-  /** One save in flight per combatant (see `MoveSaves`). */
-  private readonly moves = new MoveSaves();
-  /** The key of a jump: the same jump again is a retry of it. */
-  private readonly jumpKey = new ActionKey();
-
   readonly campaignId = input.required<string>();
   readonly isMaster = input(false);
   readonly state = input.required<CombatState>();
@@ -366,17 +289,121 @@ export class CombatView {
   /** "Mudar" (how the player rolls). */
   readonly changeDice = output<void>();
 
+  /** The character's own vitals row: the hit points that wait while it is a beast, and the uses of its resources. */
+  protected readonly ownVitals = computed(() => {
+    const own = this.own();
+    return own ? (this.vitals().find((v) => v.characterId === own.characterId) ?? null) : null;
+  });
+
+  /** The calls that answer with the combat: one at a time, the answer applied, a refusal said (`CombatCalls`). */
+  private readonly calls = new CombatCalls({
+    api: this.api,
+    campaignId: () => this.campaignId(),
+    encounter: () => this.encounter(),
+    state: () => this.state(),
+  });
+  protected readonly busy = this.calls.busy;
+  protected readonly error = this.calls.error;
+
+  /** What the screen reads from the services around the combat (`CombatReads`). */
+  private readonly reads = new CombatReads({
+    campaignId: () => this.campaignId(),
+    isMaster: () => this.isMaster(),
+    encounter: () => this.encounter(),
+    own: () => this.own(),
+    options: () => this.options(),
+    tableRules: this.tableRules,
+    catalog: this.catalog,
+    roster: this.roster,
+    creatures: this.creaturesApi,
+  });
+  protected readonly rosterInfo = this.reads.rosterInfo;
+  protected readonly spellDetails = this.reads.spellDetails;
+  protected readonly revealSpellNames = this.reads.revealSpellNames;
+  protected readonly beastBlock = this.reads.beastBlock;
+  protected readonly familiar = this.reads.familiar;
+  protected readonly deathsHidden = this.reads.deathsHidden;
+
+  /** Every sheet and dialog the screen opens (`CombatSheets`). */
+  private readonly sheets = new CombatSheets({
+    dialog: this.dialog,
+    bottomSheet: this.bottomSheet,
+    api: this.api,
+    creatures: this.creaturesApi,
+    catalog: this.catalog,
+    campaignId: () => this.campaignId(),
+    encounter: () => this.encounter(),
+    own: () => this.own(),
+    isMaster: () => this.isMaster(),
+    state: () => this.state(),
+    diceMode: () => this.diceMode(),
+    preference: () => this.dicePreference(),
+    options: () => this.options(),
+    vitals: () => this.vitals(),
+    ownVitals: this.ownVitals,
+    casterClasses: () => this.casterClasses(),
+    armorClass: () => this.armorClass(),
+    trapSkills: () => this.trapSkills(),
+    mapState: () => this.mapState(),
+    image: () => this.image(),
+    theatre: () => this.theatre(),
+    mapName: () => this.mapName(),
+    layers: () => this.layers(),
+    fogVision: () => this.fogVision(),
+    spendClosed: () => this.moves.moveNote.set(''),
+  });
+  private readonly attackSheetOpen = this.sheets.attackOpen;
+  private readonly reactionOpen = this.sheets.reactionOpen;
+  private readonly reactionHandled = this.sheets.reactionHandled;
+  private readonly inspirationHandled = this.sheets.inspirationHandled;
+
+  /** Moving: the "Mover" page, the jump, the master's drag and the reach (`MoveFlow`). */
+  protected readonly moves = new MoveFlow({
+    api: this.api,
+    calls: this.calls,
+    campaignId: () => this.campaignId(),
+    encounter: () => this.encounter(),
+    state: () => this.state(),
+    own: () => this.own(),
+    isMaster: () => this.isMaster(),
+    active: () => this.active(),
+    theatre: () => this.theatre(),
+    options: () => this.options(),
+    creatureOptions: () => this.creatureOptions.data(),
+    takeAction: (id, key) => this.takeActionFor(id, key),
+    openSpend: (id) => this.sheets.spend(id),
+  });
+  protected readonly moverId = this.moves.moverId;
+  protected readonly dropStart = this.moves.dropStart;
+  protected readonly moveError = this.moves.moveError;
+  protected readonly moveNote = this.moves.moveNote;
+  protected readonly lockedDoor = this.moves.lockedDoor;
+  protected readonly forcedMove = this.moves.forcedMove;
+  protected readonly forcedNote = this.moves.forcedNote;
+  protected readonly moveJump = this.moves.jump;
+  protected readonly reachOn = this.moves.reachOn;
+  protected readonly moveOptions = this.moves.options;
+  protected readonly canDisengage = this.moves.canDisengage;
+  protected readonly moverJumps = this.moves.jumps;
+  protected readonly masterReach = this.moves.masterReach;
+  protected readonly reachSwitch = this.moves.reachSwitch;
+
+  /** The master's screen passes by itself the reactions a player leaves unanswered (`MasterAutoPass`). */
+  private readonly autoPass = new MasterAutoPass({
+    api: this.api,
+    campaignId: () => this.campaignId(),
+    encounter: () => this.encounter(),
+    isMaster: () => this.isMaster(),
+    state: () => this.state(),
+  });
+  protected readonly autoLeft = this.autoPass.windowsLeft;
+  protected readonly offerLeft = this.autoPass.offersLeft;
+
   protected readonly Status = EncounterStatus;
   /** What the combatant in the spotlight can do: the player's own on their
    * turn, the master's current one (`GetTurnOptions`). */
   protected readonly turn = new TurnOptionsState();
   protected readonly log = new CombatLogState();
-  protected readonly busy = signal(false);
-  protected readonly error = signal('');
-  /** A refusal of the move on the "Mover" page (TOO_FAR, SQUARE_OCCUPIED). */
-  protected readonly moveError = signal('');
-  protected readonly rosterInfo = signal<ReadonlyMap<string, CombatantInfo>>(new Map());
-
   /** What the last feature said ("Surto de Ação: você tem outra ação"), and the
    * death save just rolled this turn; both are cleared when the turn changes. */
   protected readonly actionNote = signal('');
@@ -392,11 +419,6 @@ export class CombatView {
   protected readonly masterDeathResult = signal('');
   private readonly confirmDeathKey = new ActionKey();
   private readonly leaveFormKey = new ActionKey();
-  /** The reaction windows whose sheet already opened by itself: it opens once for each, never again after it closed. */
-  private readonly reactionHandled = new Set<string>();
-  /** The reaction sheet is on screen: no second one opens over it. */
-  private readonly reactionOpen = signal(false);
-
   protected readonly encounter = computed(() => this.state().shown());
   /** "Combate atualizado agora." (PM-02c 9c): said once when the page comes up with the turn on hold, that is, after a reload;
    * it goes when the wait is over. Nothing here is kept in the browser: the combat says what waits. */
@@ -456,11 +478,6 @@ export class CombatView {
     const e = this.encounter();
     return e ? coverTargets(e) : [];
   });
-  /** The table hides the death saves from the other players (RN-24); `null` while the rule is not read (then every screen shows them as before). */
-  private readonly deathRule = signal<DeathSaveVisibility | null>(null);
-  protected readonly deathsHidden = computed(
-    () => this.deathRule() === DeathSaveVisibility.OWNER_AND_MASTER,
-  );
   protected readonly info = computed<ReadonlyMap<string, CombatantInfo>>(() => {
     const merged = new Map(this.rosterInfo());
     // A player has no roster: their own combatant says what the table needs.
@@ -478,33 +495,8 @@ export class CombatView {
   });
   /** The characters whose "Dano/Cura" has a vitals row to adjust. */
   protected readonly adjustable = computed(() => new Set(this.vitals().map((v) => v.characterId)));
-  /** The player's familiar ("Nanquim"), for the action "Ver pelos olhos do Nanquim": read once for the character, and again when the combat changes who they are. */
-  protected readonly familiar = signal<string | null>(null);
-  /** "Ver pelos olhos do Nanquim": the question first; the stream brings the band, the action spent and the blind line. */
-  protected askFamiliarEyes(): void {
-    const mine = this.own();
-    const name = this.familiar();
-    if (!mine || !name) {
-      return;
-    }
-    openFamiliarEyes(this.dialog, this.bottomSheet, {
-      campaignId: this.campaignId(),
-      characterId: mine.characterId,
-      characterName: mine.label,
-      familiarName: name,
-      inCombat: true,
-    }).subscribe();
-  }
-
   // ---- Forma Selvagem (MR-037, E9-11) ----
 
-  /** The character's own vitals row: the hit points that wait while it is a beast, and the uses of its resources. */
-  protected readonly ownVitals = computed(() => {
-    const own = this.own();
-    return own ? (this.vitals().find((v) => v.characterId === own.characterId) ?? null) : null;
-  });
-  /** The book's stat block of the beast the druid is, for its traits (read once per beast). */
-  protected readonly beastBlock = signal<Creature | null>(null);
   /** The druid's Wild Shape as a line of the Ação: its uses ("restam 2 de 2 usos") and why it cannot be used now. `null` without it, and while in a form. */
   protected readonly wild = computed(() => {
     const own = this.own();
@@ -523,25 +515,6 @@ export class CombatView {
     return ended ? formNoticeText(ended) : '';
   });
   private readonly formNotices = new FormNotices();
-  /** "Transformar": the list of beasts the level allows. */
-  protected openTransform(): void {
-    const own = this.own();
-    if (!own) {
-      return;
-    }
-    const resource = this.ownVitals()?.resources?.find((r) => r.key === 'wild_shape');
-    openWildShape(this.dialog, this.bottomSheet, {
-      campaignId: this.campaignId(),
-      characterId: own.characterId,
-      inCombat: true,
-      uses: resource ? { left: resource.total - resource.used, total: resource.total } : null,
-    }).subscribe((result) => {
-      if (result?.encounter) {
-        this.state().apply(result.encounter);
-      }
-    });
-  }
-
   /** "Voltar à forma normal": a bonus action. The druid knows it came back: the log's line says "left", and no notice comes of it. */
   protected async leaveForm(): Promise<void> {
     const own = this.own();
@@ -562,7 +535,7 @@ export class CombatView {
       }
     } catch (err) {
       this.error.set(combatErrorMessage(err, 'voltar à forma normal'));
-      await this.refreshAfter(err);
+      await this.calls.refreshAfter(err);
     } finally {
       this.busy.set(false);
     }
@@ -614,22 +587,6 @@ export class CombatView {
   protected readonly creatureOptions = new CreatureOptionsState();
   /** The question to end a group's part is open: the tabs are inert until it is answered. */
   protected readonly partAsking = signal(false);
-  /** The creature whose "Mover" page is open (`''`: the character's own). */
-  protected readonly moverId = signal('');
-  /** Whoever the "Mover" page is for: one of the creatures, or the character. */
-  private readonly mover = computed(() => {
-    const e = this.encounter();
-    const id = this.moverId();
-    // A creature that left the combat is not the character: nothing moves, and the page closes (the effect below says so).
-    return e ? (id ? (e.combatants.find((c) => c.id === id) ?? null) : this.own()) : null;
-  });
-  /** The name of the creature the page was opened for, to say it left. */
-  private moverName = '';
-  private readonly moverActs = computed(() => {
-    const e = this.encounter();
-    const who = this.mover();
-    return !!e && !!who && acts(e, who);
-  });
   /** What it waits for ("Esperando a reação do mestre") on the page of a creature's turn. */
   protected readonly creatureLocked = computed(() => this.waiting()?.title ?? '');
 
@@ -669,39 +626,6 @@ export class CombatView {
       ? (this.fog()?.layers() ?? this.layersState.layers())
       : this.layersState.layers(),
   );
-  /** Where the combatant of the move page can go (`GetMoveOptions`): the player's own, or whoever the master's reach is on for. */
-  protected readonly moveOptions = new MoveOptionsState();
-  /** The "Saltar" page's "Distância" is on: the options are the long jump's (and its warning), not the walk's. */
-  protected readonly moveJump = signal<{ readonly runningStart: boolean } | null>(null);
-  /** The master's "Mostrar o alcance": the reach of whoever is on turn, drawn on the map. */
-  protected readonly reachOn = signal(false);
-  /** The master's "Movimento forçado" box: it is for one drag, and goes off when the drag is taken. */
-  protected readonly forcedMove = signal(false);
-  /** What the last forced drag did, for the live region; cleared by the next drag. */
-  protected readonly forcedNote = signal('');
-  /** "Você parou antes: algo bloqueou o caminho.": what the last move said when it stopped short. */
-  protected readonly moveNote = signal('');
-  /** The last move stopped before a locked door: the "Mover" page stays open and says so (RN-26). */
-  protected readonly lockedDoor = signal(false);
-  /** The reach the master's map draws, as the server said it. */
-  protected readonly masterReach = computed<Reach | null>(() => {
-    const e = this.encounter();
-    const who = e ? currentCombatant(e) : null;
-    const options = this.moveOptions.data();
-    return this.isMaster() && this.reachOn() && who?.placed && options
-      ? {
-          origin: { col: who.col, row: who.row },
-          leftDft: options.movementLeftDft,
-          squares: options.reachable.map((q) => ({ col: q.col, row: q.row })),
-        }
-      : null;
-  });
-  protected readonly reachSwitch = computed(() => {
-    const e = this.encounter();
-    const who = e ? currentCombatant(e) : null;
-    return this.isMaster() && who?.placed ? { name: ofThe([who.label]), on: this.reachOn() } : null;
-  });
-
   // ---- opportunity attacks (E9-13) ----
 
   /** The offers the caller answers, and the ones on the player's own mover. */
@@ -723,69 +647,11 @@ export class CombatView {
       reactionWait(e) ?? waitingText(e, offersHolding(e, own.id)) ?? heldWait(e, this.myTurn())
     );
   });
-  /** The master's bar: "Esperando a sua resposta: escondidas atingidas", or "Esperando a sua reação: Goblin 2". */
-  protected readonly waitNote = computed(() => {
-    const e = this.encounter();
-    if (!e || !this.isMaster()) {
-      return '';
-    }
-    const other =
-      revealBarText(e) ||
-      barText(e, (characterId) => this.info().get(characterId)?.playerName ?? '');
-    if (other) {
-      return other;
-    }
-    const left = this.autoLeft();
-    const soonest = Math.min(...Object.values(left));
-    const text = windowsBarText(e);
-    return text && Number.isFinite(soonest)
-      ? `${text} · ${autoPassText(soonest).toLowerCase()}`
-      : text;
-  });
-  /** The seconds left of each player's optional reaction the master's screen passes by itself, by window id. */
-  protected readonly autoLeft = computed<Readonly<Record<string, number>>>(() => {
-    const now = this.autoNow();
-    const e = this.encounter();
-    if (!e || !this.isMaster()) {
-      return {};
-    }
-    const left: Record<string, number> = {};
-    for (const w of openWindows(e)) {
-      const s = this.autoClock.secondsLeft(w.id, now);
-      if (s !== null) {
-        left[w.id] = s;
-      }
-    }
-    return left;
-  });
-  private readonly autoClock = new AutoPassClock();
-  /** The same clock for the opportunity attacks a player's character may take and has not answered. */
-  private readonly offerClock = new AutoPassClock();
-  /** The seconds left of each such offer the master's screen passes by itself, by offer id. */
-  protected readonly offerLeft = computed<Readonly<Record<string, number>>>(() => {
-    const now = this.autoNow();
-    const e = this.encounter();
-    if (!e || !this.isMaster()) {
-      return {};
-    }
-    const left: Record<string, number> = {};
-    for (const o of this.autoPassOffers(e)) {
-      const s = this.offerClock.secondsLeft(o.id, now);
-      if (s !== null) {
-        left[o.id] = s;
-      }
-    }
-    return left;
-  });
-  private readonly autoNow = signal(Date.now());
-  private autoTimer: ReturnType<typeof setInterval> | undefined;
   /** Why "Próximo turno" waits while questions about hidden creatures are open ("Responda ao pedido abaixo para seguir."). */
   protected readonly waitWhy = computed(() => {
     const e = this.encounter();
     return e && this.isMaster() ? revealWhy(e) : '';
   });
-  /** The Portuguese name of each spell a question is about, read through the catalog. */
-  protected readonly revealSpellNames = signal<ReadonlyMap<string, string>>(new Map());
   /** The NPC reactors' attacks with their numbers, by offer (read from the reactor's own options). */
   protected readonly reactorOptions = signal<ReadonlyMap<string, GetTurnOptionsResponse>>(
     new Map(),
@@ -804,64 +670,15 @@ export class CombatView {
         ]),
       ),
   );
-  /** The reactors drawn on the map for whoever answers, with the square the mover left. */
-  protected readonly offerMarks = computed<readonly OfferMark[]>(() => {
-    const e = this.encounter();
-    if (!e) {
-      return [];
-    }
-    return e.opportunityOffers.flatMap((o) => {
-      const r = e.combatants.find((c) => c.id === o.reactorId && c.placed);
-      return r
-        ? [
-            {
-              reactor: { col: r.col, row: r.row },
-              left: o.forYou ? { col: o.leftCol, row: o.leftRow } : null,
-            },
-          ]
-        : [];
-    });
-  });
-  /** "Desengajar" can still be taken here: the action is free and it was not. */
-  protected readonly canDisengage = computed(() => {
-    const who = this.mover();
-    return !!who && !who.actionUsed && !who.disengaged;
-  });
-  /** How far and how high the mover can jump: the creature's own options, or the character's. */
-  protected readonly moverJumps = computed(() =>
-    this.moverId()
-      ? this.creatureOptions.data().get(this.moverId())?.options?.jumps
-      : this.options()?.options?.jumps,
-  );
   private readonly offersHandled = new Set<string>();
   private readonly reactorReading = new Set<string>();
   /** The offers whose reactor's attacks could not be read: the master's card offers "Tentar de novo". */
   protected readonly reactorFailed = signal<ReadonlySet<string>>(new Set());
-  /** Where the player dropped their token on the main map: the "Mover" page starts there (the drop never moves). */
-  protected readonly dropStart = signal<Square | null>(null);
   /** The master's last action is a move: the log's undoable entry says so ("Desfazer o movimento"). */
   protected readonly canUndoMove = computed(
     () => this.log.undoable()?.kind === CombatLogKind.MOVED,
   );
   protected readonly turnSide = computed(() => this.subject()?.side ?? CombatantSide.UNSPECIFIED);
-  /** Who has the cover each combatant has against whoever has the turn (the master's order list). */
-  protected readonly coverAgainst = computed(() => {
-    const out = new Map<string, { cover: CoverDegree; source: CoverSource }>();
-    const opts = this.options();
-    for (const t of [
-      ...(opts?.attackTargets ?? []).flatMap((a) => a.targets),
-      ...(opts?.spellTargets ?? []).flatMap((s) => s.targets),
-    ]) {
-      if (
-        !out.has(t.combatantId) &&
-        t.cover !== CoverDegree.NONE &&
-        t.cover !== CoverDegree.UNSPECIFIED
-      ) {
-        out.set(t.combatantId, { cover: t.cover, source: t.coverSource });
-      }
-    }
-    return out;
-  });
   protected readonly turnLabel = computed(() =>
     this.isMaster() ? (this.subject()?.label ?? '') : '',
   );
@@ -911,49 +728,6 @@ export class CombatView {
   protected readonly ownConcentration = computed(() => {
     return this.own()?.concentrationSpellNamePt ?? '';
   });
-  /** The melee attacks an opportunity attack can use: off turn, with the reaction
-   * free, someone in reach and the character on its feet (E6-28). */
-  protected readonly opportunities = computed(() => {
-    const own = this.own();
-    const opts = this.options();
-    if (
-      this.isMaster() ||
-      !own ||
-      this.myTurn() ||
-      !this.active() ||
-      own.reactionUsed ||
-      isDown(own) ||
-      isDead(own) ||
-      !opts?.options
-    ) {
-      return [];
-    }
-    return reachingAttacks(opts);
-  });
-  /** The characters at three failures: the master is asked to confirm each death (E6-30). */
-  protected readonly dying = computed(() =>
-    this.isMaster()
-      ? (this.encounter()?.combatants ?? []).filter((c) => c.state === CombatantState.DYING)
-      : [],
-  );
-  /** The downed player characters whose death save is due this turn: the master rolls it when the player is away (RN-03). */
-  protected readonly deathDue = computed(() =>
-    this.isMaster()
-      ? (this.encounter()?.combatants ?? []).filter(
-          (c) =>
-            c.kind === CombatantKind.PLAYER && c.state === CombatantState.DOWN && c.deathSaveDue,
-        )
-      : [],
-  );
-  /** The player's hit whose damage is still to roll (the sheet was closed). */
-  protected readonly ownPendingRoll = computed(() => {
-    const own = this.own();
-    return (
-      this.options()?.pendingDamages.find(
-        (p) => p.status === PendingDamageStatus.AWAITING_ROLL && p.attackerId === own?.id,
-      ) ?? null
-    );
-  });
   /** What the master's turn still owes a hit: "Falta aplicar 5 de dano". */
   protected readonly owed = computed(() =>
     this.isMaster() ? pendingNote(this.options()?.pendingDamages ?? []) : null,
@@ -963,15 +737,6 @@ export class CombatView {
   protected readonly masterCard = computed(() => {
     const c = this.subject();
     return this.isMaster() && c ? c : null;
-  });
-  /** The newest attack of the one on turn was stopped by the target's Escudo (from the log). */
-  protected readonly reactionStopped = computed(() => {
-    const who = this.subject();
-    const entry = this.log
-      .rounds()
-      .flatMap((r) => r.entries)
-      .find((x) => x.kind === CombatLogKind.ATTACK && x.actorId === who?.id);
-    return !!entry?.stoppedByReaction;
   });
   protected readonly cardVisible = computed(() => {
     const c = this.masterCard();
@@ -989,10 +754,6 @@ export class CombatView {
   protected readonly active = computed(() => this.encounter()?.status === EncounterStatus.ACTIVE);
   protected readonly ended = computed(() => this.encounter()?.status === EncounterStatus.ENDED);
 
-  /** The SRD's details of each spell in the list (read once, cached by the catalog): the line under a spell's name. */
-  protected readonly spellDetails = signal<ReadonlyMap<string, SpellDetails>>(new Map());
-
-  private ruleKey = '';
   /** Changes only when the turn passes (or the combat ends): a string, so the effects that read it ignore the combat's other updates. */
   private readonly turnKey = computed(() => {
     const e = this.encounter();
@@ -1001,33 +762,51 @@ export class CombatView {
       : '';
   });
 
-  /** The table's rule on who sees the death saves (RN-24): read when a combat shows and again when someone falls, so a rule changed meanwhile is caught. */
-  /** Whose familiar to ask for: the character's id, so a re-read of the combat changes nothing. */
-  private readonly familiarOwner = computed(() =>
-    this.isMaster() || this.lookingThroughFamiliar() ? '' : (this.own()?.characterId ?? ''),
+  /** The master's bar: "Esperando a sua resposta: escondidas atingidas", or "Esperando a sua reação: Goblin 2". */
+  protected readonly waitNote = computed(() => {
+    const e = this.encounter();
+    return e && this.isMaster()
+      ? masterWaitNote(e, this.autoLeft(), (id) => this.info().get(id)?.playerName ?? '')
+      : '';
+  });
+  /** The reactors drawn on the map for whoever answers, with the square the mover left. */
+  protected readonly offerMarks = computed<readonly OfferMark[]>(() => {
+    const e = this.encounter();
+    return e ? offerMarks(e) : [];
+  });
+  /** Who has the cover each combatant has against whoever has the turn (the master's order list). */
+  protected readonly coverAgainst = computed(() => coverAgainst(this.options()));
+  /** The melee attacks an opportunity attack can use: off turn, with the reaction free, someone in reach and the character
+   * on its feet (E6-28). */
+  protected readonly opportunities = computed(() =>
+    opportunityAttacks(
+      this.own(),
+      this.options(),
+      !this.isMaster() && !this.myTurn() && this.active(),
+    ),
   );
-  private familiarRequest = 0;
-
-  private async readDeathRule(campaignId: string): Promise<void> {
-    try {
-      this.deathRule.set((await this.tableRules.get(campaignId)).saved.deathSaves);
-    } catch {
-      // Without the rule the screens show the marks as they always did.
-    }
-  }
+  /** The characters at three failures: the master is asked to confirm each death (E6-30). */
+  protected readonly dying = computed(() => (this.isMaster() ? dyingOf(this.encounter()) : []));
+  /** The downed player characters whose death save is due this turn: the master rolls it when the player is away (RN-03). */
+  protected readonly deathDue = computed(() =>
+    this.isMaster() ? deathDueOf(this.encounter()) : [],
+  );
+  /** The player's hit whose damage is still to roll (the sheet was closed). */
+  protected readonly ownPendingRoll = computed(() => pendingRollOf(this.options(), this.own()?.id));
+  /** The newest attack of the one on turn was stopped by the target's Escudo (from the log). */
+  protected readonly reactionStopped = computed(() =>
+    stoppedByReaction(this.log.rounds(), this.subject()?.id),
+  );
+  /** What a trap did to this player's character this round (E9-08 E), from the combat log. */
+  protected readonly trapNote = computed(() =>
+    trapNote(this.encounter(), this.own(), this.log.rounds()),
+  );
+  /** The same note for each of the player's creatures that a trap caught (a wolf or Nanquim that walked into one on its own part). */
+  protected readonly creatureTrapNotes = computed(() =>
+    creatureTrapNotes(this.encounter(), this.isMaster(), this.log.rounds()),
+  );
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => clearInterval(this.autoTimer));
-    effect(() => {
-      const e = this.encounter();
-      const master = this.isMaster();
-      untracked(() =>
-        this.watchAutoPass(
-          master && e ? openWindows(e) : [],
-          master && e ? this.autoPassOffers(e) : [],
-        ),
-      );
-    });
     effect(() => {
       const e = this.encounter();
       untracked(() => {
@@ -1038,17 +817,6 @@ export class CombatView {
           this.refreshed.set(held ? 'Combate atualizado agora.' : '');
         } else if (!held) {
           this.refreshed.set('');
-        }
-      });
-    });
-    effect(() => {
-      const e = this.encounter();
-      const campaignId = this.campaignId();
-      const key = e ? `${e.id}:${e.combatants.some(isDown)}` : '';
-      untracked(() => {
-        if (key !== '' && key !== this.ruleKey) {
-          this.ruleKey = key;
-          void this.readDeathRule(campaignId);
         }
       });
     });
@@ -1071,55 +839,6 @@ export class CombatView {
     effect(() => {
       void this.turnKey();
       untracked(() => this.offering.set(false));
-    });
-    // The familiar's name, for the action "Ver pelos olhos do Nanquim" (the owner's list: RN-20).
-    effect(() => {
-      const characterId = this.familiarOwner();
-      const campaignId = this.campaignId();
-      const request = ++this.familiarRequest;
-      if (!characterId) {
-        untracked(() => this.familiar.set(null));
-        return;
-      }
-      untracked(
-        () =>
-          void this.creaturesApi.list(campaignId, characterId).then(
-            (list) => {
-              if (request === this.familiarRequest) {
-                this.familiar.set(
-                  list.find((c) => c.source === CreatureSource.FAMILIAR)?.name ?? null,
-                );
-              }
-            },
-            () => {
-              if (request === this.familiarRequest) {
-                this.familiar.set(null);
-              }
-            },
-          ),
-      );
-    });
-    effect(() => {
-      const spells = this.options()?.options?.spells ?? [];
-      const campaignId = this.campaignId();
-      for (const s of spells) {
-        const key = s.spell?.key ?? '';
-        if (!key || untracked(() => this.spellDetails().has(key))) {
-          continue;
-        }
-        void this.catalog.details(campaignId, key).then((d) => {
-          if (d) {
-            this.spellDetails.update((m) => new Map(m).set(key, d));
-          }
-        });
-      }
-    });
-    // The master's lists need the roster (the kind of each NPC, the class
-    // line, the player's name).
-    effect(() => {
-      if (this.isMaster() && this.campaignId()) {
-        void this.loadRoster(this.campaignId());
-      }
     });
     // The options are asked for again whenever the combat changes (every
     // call and every event bumps its revision) and whoever is in the
@@ -1179,7 +898,7 @@ export class CombatView {
       const window = sheetWindow(e);
       if (window && !this.reactionHandled.has(window.id)) {
         this.reactionHandled.add(window.id);
-        untracked(() => this.openReaction(window));
+        untracked(() => this.sheets.reaction(window));
       }
     });
     // A roll held for a question, Lucky or Bardic Inspiration (the player read the screen again, or left the sheet): the
@@ -1208,23 +927,6 @@ export class CombatView {
         });
       }
     });
-    // "Mover" belongs to the player's turn: when it ends, the page closes.
-    effect(() => {
-      if (!this.moverActs() || !this.active()) {
-        untracked(() => {
-          if (this.moverId() && this.active() && !this.mover() && this.moverName) {
-            this.moveNote.set(
-              `${article(this.moverName) === 'a' ? 'A' : 'O'} ${this.moverName} saiu do combate.`,
-            );
-          }
-          this.state().moving.set(false);
-          this.moverId.set('');
-        });
-      }
-      if (!this.active()) {
-        this.state().mapOpen.set(false);
-      }
-    });
     // The map's layers: read when the combat's map is known, and again when the map's `layers_revision` changes.
     effect(() => {
       const e = this.encounter();
@@ -1232,22 +934,6 @@ export class CombatView {
       const id = e && map && map.id === e.mapId ? map.id : null;
       const revision = map?.layersRevision ?? 0;
       untracked(() => void this.layersState.open(id, revision));
-    });
-    // Where the one on the "Mover" page (or the master's reach) can go: asked again whenever the combat changes.
-    effect(() => {
-      const e = this.encounter();
-      const who = this.moveSubject();
-      const campaignId = this.campaignId();
-      if (!e || !who) {
-        untracked(() => this.moveOptions.clear());
-        return;
-      }
-      void e.revision;
-      // Only while the "Saltar" page is the one open: the master's reach and a closed page read the walk's.
-      const jump = this.state().moving() ? this.moveJump() : null;
-      untracked(
-        () => void this.moveOptions.load(this.api, campaignId, e.id, who, jump ?? undefined),
-      );
     });
     // An offer the player answers opens its prompt by itself, once (E9-13).
     effect(() => {
@@ -1258,7 +944,7 @@ export class CombatView {
       for (const offer of offersToAnswer(e)) {
         if (!this.offersHandled.has(offer.id)) {
           this.offersHandled.add(offer.id);
-          untracked(() => void this.openOpportunity(offer));
+          untracked(() => this.sheets.opportunity(offer));
         }
       }
     });
@@ -1299,21 +985,6 @@ export class CombatView {
       }
       void e.revision;
       untracked(() => void this.creatureOptions.load(this.api, campaignId, e.id, ids));
-    });
-    // The beast's book (its armor class and traits), read once for each beast the druid becomes.
-    effect(() => {
-      const key = this.own()?.wildShapeBeastKey ?? '';
-      const campaignId = this.campaignId();
-      untracked(() => {
-        if (!key) {
-          this.beastBlock.set(null);
-          return;
-        }
-        void this.creaturesApi.statBlock(campaignId, key).then(
-          (block) => this.beastBlock.set(block),
-          () => this.beastBlock.set(null),
-        );
-      });
     });
     // When the form ends without the druid asking (the beast fell to 0, the master ended it), the player is told, until they touch it:
     // the combat log's line says why and how much damage passed on (the server's number; nothing is worked out here). The lines that
@@ -1359,25 +1030,6 @@ export class CombatView {
         }
       });
     });
-    // The questions about hidden creatures name their spell: read once per spell through the catalog.
-    effect(() => {
-      const e = this.encounter();
-      const campaignId = this.campaignId();
-      const keys = e && this.isMaster() ? questions(e).map((q) => q.spellKey) : [];
-      untracked(() => {
-        for (const key of new Set(keys)) {
-          if (this.revealSpellNames().has(key)) {
-            continue;
-          }
-          void this.catalog.details(campaignId, key).then((d) => {
-            const name = d?.spell?.namePt || d?.spell?.name;
-            if (name) {
-              this.revealSpellNames.update((m) => new Map(m).set(key, name));
-            }
-          });
-        }
-      });
-    });
     // The master's prompts need each NPC reactor's attacks with their numbers.
     effect(() => {
       const e = this.encounter();
@@ -1417,160 +1069,10 @@ export class CombatView {
     }
   }
 
-  /** Whose reach the server is asked for: the player's own on the "Mover" page, the master's on turn with the reach on. */
-  private readonly moveSubject = computed(() => {
-    const e = this.encounter();
-    if (!e || e.status !== EncounterStatus.ACTIVE) {
-      return null;
-    }
-    if (this.isMaster()) {
-      const who = currentCombatant(e);
-      return this.reachOn() && who?.placed ? who.id : null;
-    }
-    const who = this.mover();
-    return this.state().moving() && this.moverActs() && who?.placed ? who.id : null;
-  });
-
-  /** Starts (or stops) the second-by-second clock of the automatic pass for the windows the master's screen waits on. */
-  private watchAutoPass(
-    windows: readonly ReactionWindow[],
-    offers: readonly OpportunityOffer[],
-  ): void {
-    const now = Date.now();
-    this.autoClock.sync(windows, now);
-    this.offerClock.syncIds(
-      offers.map((o) => o.id),
-      now,
-    );
-    this.autoNow.set(now);
-    const running = this.autoTimer !== undefined;
-    if (this.autoClock.soonest(now) === null && this.offerClock.soonest(now) === null) {
-      clearInterval(this.autoTimer);
-      this.autoTimer = undefined;
-    } else if (!running) {
-      this.autoTimer = setInterval(() => this.tickAutoPass(), AUTO_PASS_TICK_MS);
-    }
-  }
-
-  private tickAutoPass(): void {
-    const now = Date.now();
-    this.autoNow.set(now);
-    const e = this.encounter();
-    if (!e) {
-      return;
-    }
-    for (const id of this.autoClock.due(now)) {
-      void this.sendAutoPass(e.id, id);
-    }
-    for (const id of this.offerClock.due(now)) {
-      void this.sendOfferPass(e.id, id);
-    }
-  }
-
-  /** The offers of an opportunity attack that a player's character answers, which pass after 30 s like any optional reaction. */
-  private autoPassOffers(e: Encounter): OpportunityOffer[] {
-    return offersToAnswer(e).filter((o) => !reactorIsMasters(e, o));
-  }
-
-  /** The same "Seguir sem esperar" the master taps, with a key of its own; a refusal (answered meanwhile) is ignored quietly. */
-  private async sendOfferPass(encounterId: string, offerId: string): Promise<void> {
-    try {
-      const res = await this.api.skipOpportunity(
-        this.campaignId(),
-        encounterId,
-        offerId,
-        autoPassKey(offerId),
-      );
-      this.state().apply(res);
-    } catch (err) {
-      if (!(err instanceof ConnectError) || RETRYABLE.has(err.code)) {
-        this.offerClock.release(offerId);
-      }
-    }
-  }
-
-  /** The same "Deixar passar" the master taps, with a key of its own; a refusal (answered meanwhile) is ignored quietly. */
-  private async sendAutoPass(encounterId: string, windowId: string): Promise<void> {
-    try {
-      const res = await this.api.answerReaction(
-        this.campaignId(),
-        encounterId,
-        windowId,
-        { use: false },
-        autoPassKey(windowId),
-      );
-      this.state().apply(res.encounter);
-    } catch (err) {
-      if (!(err instanceof ConnectError) || RETRYABLE.has(err.code)) {
-        this.autoClock.release(windowId);
-      }
-    }
-  }
-
-  private async loadRoster(campaignId: string): Promise<void> {
-    try {
-      const entries = await this.roster.list(campaignId);
-      this.rosterInfo.set(
-        new Map(
-          entries.map((e) => [
-            e.id,
-            {
-              classSummary: e.classSummary,
-              playerName: e.playerName,
-              kindLabel: e.kind === CharacterKind.PLAYER ? '' : npcKindLabel(e.kind),
-              raceName: e.raceName,
-            },
-          ]),
-        ),
-      );
-    } catch {
-      // Best effort: the lists fall back to what the combat itself says.
-    }
-  }
-
   // ---- calls ----
 
-  /** Runs a call that answers with the combat: applies it, or says why not.
-   * A refusal that means the screen is stale reads the combat again. */
-  private async run(call: (e: Encounter) => Promise<Encounter>): Promise<boolean> {
-    const e = this.encounter();
-    if (!e || this.busy()) {
-      return false;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      this.state().apply(await call(e));
-      return true;
-    } catch (err) {
-      this.error.set(combatErrorMessage(err));
-      await this.refreshAfter(err);
-      return false;
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  private async refreshAfter(err: unknown): Promise<void> {
-    const code = ConnectError.from(err).code;
-    if (
-      code === Code.Aborted ||
-      code === Code.FailedPrecondition ||
-      code === Code.NotFound ||
-      code === Code.Unavailable ||
-      code === Code.DeadlineExceeded
-    ) {
-      const ticket = this.state().beginRead();
-      try {
-        this.state().applyRead(ticket, await this.api.get(this.campaignId()));
-      } catch {
-        // The stream's next `ready` reads it again.
-      }
-    }
-  }
-
   protected begin(): Promise<boolean> {
-    return this.run((e) => this.api.begin(this.campaignId(), e.id));
+    return this.calls.run((e) => this.api.begin(this.campaignId(), e.id));
   }
 
   /** `discard`: the master passes the turn although a damage waits. */
@@ -1593,7 +1095,7 @@ export class CombatView {
   private endTurn(discard: boolean): Promise<boolean> {
     // In a joint turn a player ends their own part; the master ends the part of
     // the first member who still acts (the others have their own button).
-    return this.run((e) => {
+    return this.calls.run((e) => {
       const own = this.own();
       const who = !this.isMaster() && own && acts(e, own) ? own.id : e.currentCombatantId;
       return this.api.endTurn(this.campaignId(), e.id, who, discard, e.round);
@@ -1602,7 +1104,9 @@ export class CombatView {
 
   /** "Revelar" or "Manter escondidas" on a question about hidden creatures (PM-02c state 9). */
   protected answerReveal(a: RevealAnswer): Promise<boolean> {
-    return this.run((e) => this.api.resolveHiddenReveal(this.campaignId(), e.id, a.id, a.reveal));
+    return this.calls.run((e) =>
+      this.api.resolveHiddenReveal(this.campaignId(), e.id, a.id, a.reveal),
+    );
   }
 
   /** The last question answered: the focus goes on to the order, the next stop of the column. */
@@ -1620,7 +1124,7 @@ export class CombatView {
 
   /** "Encerrar a parte da Brisa": the master ends one member's part. */
   protected endPart(id: string): Promise<boolean> {
-    return this.run((e) => this.api.endTurn(this.campaignId(), e.id, id, false, e.round));
+    return this.calls.run((e) => this.api.endTurn(this.campaignId(), e.id, id, false, e.round));
   }
 
   /** A standard action ("Disparada"): it spends the action; Dash doubles the
@@ -1632,7 +1136,7 @@ export class CombatView {
 
   /** The same for a combatant of the player's: their character, or one of their creatures. */
   protected takeActionFor(id: string, key: string): Promise<boolean> {
-    return this.run(
+    return this.calls.run(
       async (e) => (await this.api.takeAction(this.campaignId(), e.id, id, key)).encounter,
     );
   }
@@ -1668,63 +1172,11 @@ export class CombatView {
       key === 'standard:search' &&
       searchRoute(this.mapState().map()?.gridColumns ?? 0, this.own()?.placed ?? false) === 'traps'
     ) {
-      this.searchTraps();
+      this.sheets.searchTraps();
       return;
     }
     void this.takeAction(key);
   }
-
-  private searchTraps(): void {
-    openTrapSearch(this.dialog, this.bottomSheet, {
-      campaignId: this.campaignId(),
-      skills: this.trapSkills(),
-      diceMode: this.diceMode(),
-      preference: this.dicePreference(),
-      state: this.mapState(),
-      inCombat: true,
-    }).subscribe();
-  }
-
-  /** What a trap did to this player's character this round (E9-08 E), from the combat log. */
-  protected readonly trapNote = computed(() => {
-    const e = this.encounter();
-    const own = this.own();
-    if (!e || !own) {
-      return null;
-    }
-    const round = this.log.rounds().find((r) => r.round === e.round);
-    for (const entry of round?.entries ?? []) {
-      if (entry.kind === CombatLogKind.TRAP_TRIGGERED && entry.trap) {
-        const note = fallNote(entry.trap, own.id);
-        if (note) {
-          return note;
-        }
-      }
-    }
-    return null;
-  });
-
-  /** The same note for each of the player's creatures that a trap caught (a wolf or Nanquim that walked into one on its own part). */
-  protected readonly creatureTrapNotes = computed(() => {
-    const e = this.encounter();
-    const notes = new Map<string, FallNote>();
-    if (!e || this.isMaster()) {
-      return notes;
-    }
-    const round = this.log.rounds().find((r) => r.round === e.round);
-    for (const c of ownCreatures(e)) {
-      for (const entry of round?.entries ?? []) {
-        if (entry.kind === CombatLogKind.TRAP_TRIGGERED && entry.trap) {
-          const note = fallNote(entry.trap, c.id, c.label);
-          if (note) {
-            notes.set(c.id, note);
-            break;
-          }
-        }
-      }
-    }
-    return notes;
-  });
 
   /** "Usar" on a feature: Retomar o Fôlego rolls (its own sheet); the others
    * only spend the action and remind the table ("Você tem outra ação"). */
@@ -1743,41 +1195,16 @@ export class CombatView {
     const name = option.action.namePt;
     const flow = resourceFlow(key);
     if (flow) {
-      this.openResourceFlow(flow, key, own.id, e.id);
+      this.sheets.resource(flow, key, own.id, e.id);
       return;
     }
     if (key === 'feature:second-wind') {
-      const data: FeatureSheetData = {
-        campaignId: this.campaignId(),
-        encounterId: e.id,
-        combatantId: own.id,
-        actionKey: key,
-        name,
-        cost: option.action.economy === ActionEconomy.BONUS_ACTION ? 'Ação bônus' : 'Ação',
-        diceMode: this.diceMode(),
-        preference: this.dicePreference(),
-        state: this.state(),
-      };
-      openSheet<FeatureSheet, FeatureSheetData, boolean>(
-        this.dialog,
-        this.bottomSheet,
-        FeatureSheet,
-        {
-          data,
-          ariaLabel: name,
-          labelledBy: 'sheet-t',
-        },
-      ).subscribe();
+      this.sheets.secondWind(own, e, name, option.action.economy);
       return;
     }
     const actionKey = key;
-    // Surto de Ação (any level's feature) gives the action back.
-    const note =
-      option.action.resourceKey === 'action_surge'
-        ? `${name}: você tem outra ação.`
-        : `Usou ${name}.`;
     if (
-      await this.run(
+      await this.calls.run(
         async (current) =>
           (
             await this.api.takeAction(
@@ -1793,38 +1220,7 @@ export class CombatView {
           ).encounter,
       )
     ) {
-      this.actionNote.set(frenzy ? `${name}: você entrou em frenesi.` : note);
-    }
-  }
-
-  /** The dialog of a class resource (Cura pelas Mãos, Conjuração Flexível, Inspiração de Bardo): `TakeAction` refuses
-   * these actions, `ResourceService` runs them. */
-  private openResourceFlow(
-    flow: NonNullable<ReturnType<typeof resourceFlow>>,
-    key: string,
-    actorId: string,
-    encounterId: string,
-  ): void {
-    const base = {
-      campaignId: this.campaignId(),
-      encounterId,
-      actorId,
-      vitals: this.ownVitals,
-      state: this.state(),
-    };
-    const targets = this.options()?.resourceTargets.find((t) => t.actionKey === key)?.targets ?? [];
-    switch (flow) {
-      case 'lay-on-hands':
-        openLayOnHands(this.dialog, this.bottomSheet, { ...base, targets }).subscribe();
-        break;
-      case 'bardic-give':
-        openBardicInspiration(this.dialog, this.bottomSheet, { ...base, targets }).subscribe();
-        break;
-      default:
-        openFlexibleCasting(this.dialog, this.bottomSheet, {
-          ...base,
-          direction: flow === 'flexible-create' ? 'create' : 'convert',
-        }).subscribe();
+      this.actionNote.set(featureNote(name, option.action.resourceKey, frenzy));
     }
   }
 
@@ -1834,11 +1230,6 @@ export class CombatView {
   protected readonly ownOffer = computed(() => this.own()?.inspirationOffer ?? null);
   /** The attack roll of the player's halfling that waits for the Lucky answer ("Tirou 1: rolar de novo?"), asked first. */
   protected readonly ownLucky = computed(() => this.own()?.luckyOffer ?? null);
-  /** The held rolls the page already opened its question for: a roll's own sheet registers its hold, so the reading
-   * of the screen does not open the question a second time. */
-  private readonly inspirationHandled = new Set<string>();
-  private readonly attackSheetOpen = signal(false);
-
   /** "Responder": the question of a held roll (Lucky first, then the die's), at the d20 that was rolled. `false` while
    * the attack is not in the options. */
   protected openHeldRoll(): boolean {
@@ -1851,30 +1242,21 @@ export class CombatView {
     if (!key || !attack) {
       return false;
     }
-    this.attackSheet(key, undefined, false, undefined, undefined, held);
+    this.sheets.attack({ key, held });
     return true;
   }
 
   /** "Atacar": the attack sheet (Alvo, Rolar, Dano). `asReaction` is the
    * opportunity attack, off turn. */
   protected openAttack(key: string, asReaction = false, useExtraAction = false): void {
-    this.attackSheet(
-      key,
-      undefined,
-      asReaction,
-      undefined,
-      undefined,
-      undefined,
-      '',
-      useExtraAction,
-    );
+    this.sheets.attack({ key, asReaction, useExtraAction });
   }
 
   /** A standard action paid with the extra action an effect gives (Velocidade): Disparada, Desengajar, Esconder, Usar um objeto. */
   protected takeExtra(key: string): void {
     const own = this.own();
     if (own) {
-      void this.run(
+      void this.calls.run(
         async (e) =>
           (
             await this.api.takeAction(
@@ -1901,7 +1283,7 @@ export class CombatView {
       (a) => a.attack?.key === p.attackKey,
     )?.attack;
     if (attack && attack.saveDc === 0) {
-      this.attackSheet(p.attackKey, p);
+      this.sheets.attack({ key: p.attackKey, resume: p });
       return;
     }
     // A spell's damage (Mísseis Mágicos, Mãos Flamejantes): the cast sheet, at the damage.
@@ -1912,20 +1294,19 @@ export class CombatView {
         x.attackerId === own?.id &&
         x.attackKey === p.attackKey,
     );
-    this.castSheet(p.attackKey, owed);
+    this.sheets.castSheet(p.attackKey, owed);
   }
 
   /** "Atacar" on one of the player's creatures (E9-12): the same sheet, with the creature as the attacker; `asReaction` for the familiar of the Pacto da Corrente. */
   protected openCreatureAttack(id: string, key: string, asReaction = false): void {
     const who = this.encounter()?.combatants.find((c) => c.id === id);
     if (who) {
-      this.attackSheet(
+      this.sheets.attack({
         key,
-        undefined,
         asReaction,
         who,
-        this.creatureOptions.data().get(id) ?? null,
-      );
+        creatureOpts: this.creatureOptions.data().get(id) ?? null,
+      });
     }
   }
 
@@ -1946,307 +1327,13 @@ export class CombatView {
     const p = this.creaturePending(id);
     const who = this.encounter()?.combatants.find((c) => c.id === id);
     if (p && who) {
-      this.attackSheet(p.attackKey, p, false, who, this.creatureOptions.data().get(id) ?? null);
+      this.sheets.attack({
+        key: p.attackKey,
+        resume: p,
+        who,
+        creatureOpts: this.creatureOptions.data().get(id) ?? null,
+      });
     }
-  }
-
-  /** The label of a combatant of the combat, `''` when it is not in it. */
-  private labelOf(e: Encounter, id: string): string {
-    return e.combatants.find((c) => c.id === id)?.label ?? '';
-  }
-
-  private attackSheet(
-    key: string,
-    resume?: PendingDamage,
-    asReaction = false,
-    who?: Combatant,
-    creatureOpts?: GetTurnOptionsResponse | null,
-    held?: HeldRoll,
-    catchWindowId = '',
-    useExtraAction = false,
-    thrown?: { attack: Attack; targets: TargetInReach[] },
-  ): void {
-    const e = this.encounter();
-    const own = who ?? this.own();
-    const opts = who ? creatureOpts : this.options();
-    const option = opts?.options?.attacks.find((a) => a.attack?.key === key);
-    const attack = thrown?.attack ?? option?.attack;
-    if (!e || !own || !attack) {
-      return;
-    }
-    const data: AttackSheetData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      attackerId: own.id,
-      round: e.round,
-      attack,
-      targets:
-        thrown?.targets ?? opts?.attackTargets.find((t) => t.attackKey === key)?.targets ?? [],
-      diceMode: this.diceMode(),
-      preference: this.dicePreference(),
-      state: this.state(),
-      asReaction,
-      master: this.isMaster(),
-      ...(catchWindowId ? { catchWindowId } : {}),
-      ...(useExtraAction ? { useExtraAction } : {}),
-      bonusRule: option?.bonusRule,
-      bonusAttacksLeft: option?.bonusAttacksLeft,
-      beamsLeft: option?.beamsLeft || attack.beams,
-      attacksLeft: who ? (opts?.options?.economy?.attacksLeft ?? 0) : this.attacksLeft(),
-      attacksPerAction: who
-        ? (opts?.options?.economy?.attacksPerAction ?? 1)
-        : this.attacksPerAction(),
-      resume: resume
-        ? {
-            pending: resume,
-            targetLabel: e.combatants.find((c) => c.id === resume.targetId)?.label ?? '',
-          }
-        : undefined,
-      inspiration: held?.offer
-        ? { offer: held.offer, targetLabel: this.labelOf(e, held.offer.targetId) }
-        : undefined,
-      lucky: held?.lucky
-        ? { offer: held.lucky, targetLabel: this.labelOf(e, held.lucky.targetId) }
-        : undefined,
-      onHeld: (holdId) => this.inspirationHandled.add(holdId),
-    };
-    this.attackSheetOpen.set(true);
-    openSheet<AttackSheet, AttackSheetData, boolean>(this.dialog, this.bottomSheet, AttackSheet, {
-      data,
-      ariaLabel: asReaction
-        ? `Ataque de oportunidade com ${attack.namePt || attack.name}`
-        : `Atacar com ${attack.namePt || attack.name}${who ? `: ${who.label}` : ''}`,
-      labelledBy: 'sheet-t',
-    }).subscribe({
-      complete: () => {
-        this.attackSheetOpen.set(false);
-        if (catchWindowId) {
-          this.keepMissile(catchWindowId);
-        }
-      },
-      error: () => this.attackSheetOpen.set(false),
-    });
-  }
-
-  /** The master taps a door of the map: its sheet opens (open, close, lock, or reveal a secret door). The map reads itself again on the stream. */
-  protected openDoor(door: DoorSquare): void {
-    const e = this.encounter();
-    if (!e) {
-      return;
-    }
-    const data: DoorSheetData = {
-      campaignId: this.campaignId(),
-      mapId: e.mapId,
-      door,
-      wallSquares: wallUnderDoor(
-        this.layers().walls,
-        this.layers().columns,
-        this.layers().rows,
-        this.mapState().map()?.squareFactor ?? 1,
-        door,
-      ),
-    };
-    openDoorSheet(this.dialog, this.bottomSheet, data).subscribe();
-  }
-
-  /** The "?" of a spell: its description (the SRD's, read once through the catalog), a sheet on a phone. */
-  protected describeSpell(key: string, name: string): void {
-    openSpellDetails(this.dialog, this.bottomSheet, this.spellDetailsData(key, name));
-  }
-
-  /** What the details sheet needs: the name now, and the text when it loads. */
-  private spellDetailsData(key: string, name: string): SpellDetailsData {
-    const campaignId = this.campaignId();
-    return {
-      namePt: name,
-      load: async () => {
-        const details = await this.catalog.details(campaignId, key);
-        if (!details) {
-          throw new Error('spell details unavailable');
-        }
-        return spellDetailsFromGen(details);
-      },
-    };
-  }
-
-  /** "Conjurar": the cast sheet (the slot, the targets, the roll, the damage); a summoning spell asks for the creatures instead. */
-  protected async openCast(key: string): Promise<void> {
-    const spell = this.options()?.options?.spells.find((s) => s.spell?.key === key);
-    if (spell?.spell && (await this.isSummon(key))) {
-      this.summonSheet(key, spell.spell.namePt || spell.spell.name);
-      return;
-    }
-    if (isRevivify(key)) {
-      this.revivifySheet();
-      return;
-    }
-    this.castSheet(key);
-  }
-
-  /** Revivificar has its own sheet (who died nearby, the diamonds, the result), not the target picker. */
-  private revivifySheet(): void {
-    const e = this.encounter();
-    const own = this.own();
-    if (!e || !own) {
-      return;
-    }
-    openRevivifySheet(this.dialog, this.bottomSheet, {
-      campaignId: this.campaignId(),
-      casterName: own.label,
-      classes: this.casterClasses(),
-      combat: { encounterId: e.id, casterId: own.id, round: e.round, state: this.state() },
-      casterCharacterId: own.characterId,
-      reload: signal(0),
-    }).subscribe();
-  }
-
-  /** The cast sheet for a spell of the options, or a cantrip that asks for a
-   * saving throw; with `resume` it opens at the damage the player never rolled. */
-  private castSheet(key: string, resume?: readonly PendingDamage[]): void {
-    const e = this.encounter();
-    const own = this.own();
-    const opts = this.options();
-    if (!e || !own || !opts?.options) {
-      return;
-    }
-    const spell = opts.options.spells.find((s) => s.spell?.key === key);
-    const cantrip = opts.options.attacks.find((a) => a.attack?.key === key)?.attack;
-    const name = spell?.spell
-      ? spell.spell.namePt || spell.spell.name
-      : cantrip
-        ? cantrip.namePt || cantrip.name
-        : key;
-    const vitals = this.vitals().find((v) => v.characterId === own.characterId);
-    const shield = opts.options.spells.find((s) => s.spell?.key === 'spell:shield');
-    const attackBonus = this.spellAttackBonus(
-      opts.options.attacks.flatMap((a) => (a.attack ? [a.attack] : [])),
-    );
-    const data: CastSheetData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      casterId: own.id,
-      round: e.round,
-      spellKey: key,
-      name,
-      level: spell?.spell?.level ?? 0,
-      concentration: spell?.spell?.concentration ?? false,
-      cantripDice: cantrip?.spellDice ?? '',
-      economy: spell?.economy ?? ActionEconomy.ACTION,
-      slots: spell?.slots ?? [],
-      usage: vitals?.spellSlots ?? [],
-      pact: vitals?.pactSlots ?? null,
-      targets: opts.spellTargets.find((t) => t.spellKey === key),
-      shieldFree: shield ? shield.slots.reduce((n, s) => n + s.free, 0) : null,
-      shieldName: shield?.spell?.namePt || 'Escudo Arcano',
-      metamagic: spell?.metamagicOptions ?? [],
-      sculptSpells: spell?.sculptSpells ?? false,
-      sorceryPoints: poolOf(vitals?.resources, SORCERY_POINTS_RESOURCE),
-      attackBonus,
-      master: this.isMaster(),
-      diceMode: this.diceMode(),
-      preference: this.dicePreference(),
-      state: this.state(),
-      resume,
-      map: this.castMap(),
-    };
-    // A spell placed on the map opens on the map, its first step (PM-02a); any other on the title.
-    const placed =
-      !resume &&
-      !!data.map &&
-      !!data.targets &&
-      data.targets.placement !== AreaPlacement.UNSPECIFIED &&
-      data.targets.placement !== AreaPlacement.CASTER;
-    openSheet<CastSheet, CastSheetData, boolean>(this.dialog, this.bottomSheet, CastSheet, {
-      data,
-      ariaLabel: resume ? `Rolar o dano de ${name}` : `Conjurar ${name}`,
-      labelledBy: 'sheet-t',
-      ...(placed ? { focus: '[role="application"]' } : {}),
-    }).subscribe();
-  }
-
-  /** The battle map an area spell is placed on: the picture, the grid, the layers and, for a player, what the fog lets them
-   * see. `null` without a map (theatre of the mind), where every area spell keeps its list. */
-  private castMap(): CastMapData | null {
-    const e = this.encounter();
-    const img = this.image();
-    if (!e || !img || this.theatre()) {
-      return null;
-    }
-    return {
-      image: img,
-      mapName: this.mapName(),
-      columns: e.gridColumns,
-      rows: e.gridRows,
-      layers: this.layers(),
-      fog: this.fogVision(),
-    };
-  }
-
-  /** A spell of the options with its targets, its level and its Portuguese name; `null` when the options lack it. */
-  private areaSpell(key: string) {
-    const opts = this.options();
-    const spell = opts?.options?.spells.find((s) => s.spell?.key === key);
-    const targets = opts?.spellTargets.find((t) => t.spellKey === key);
-    if (!spell?.spell || !targets) {
-      return null;
-    }
-    return {
-      spell,
-      targets,
-      level: spell.spell.level,
-      name: spell.spell.namePt || spell.spell.name,
-    };
-  }
-
-  /** "Conjurar" on an NPC's area spell: the master's picker in a dialog (PM-02d state 11), the same steps as the player's. */
-  protected openMasterArea(key: string): void {
-    const e = this.encounter();
-    const who = e ? currentCombatant(e) : null;
-    const found = this.areaSpell(key);
-    const map = this.castMap();
-    if (!e || !who || !found || !map) {
-      return;
-    }
-    const { spell, targets, level, name } = found;
-    // The NPC's slots are not counted: the lowest the options offer, or the spell's own level.
-    const row = defaultSlot(slotRows(level, spell.slots, [], null));
-    const data: MasterAreaCastData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      caster: who,
-      spellKey: key,
-      name,
-      level,
-      slot: level > 0 ? { level: row?.level ?? level, pact: row?.pact ?? false } : null,
-      economy: spell.economy,
-      targets,
-      map,
-      state: this.state(),
-    };
-    openSheet<MasterAreaCast, MasterAreaCastData, boolean>(
-      this.dialog,
-      this.bottomSheet,
-      MasterAreaCast,
-      {
-        data,
-        ariaLabel: `${who.label} conjura ${name}`,
-        labelledBy: 'sheet-t',
-        width: '1100px',
-        tall: true,
-        ...(targets.placement === AreaPlacement.CASTER ? {} : { focus: '[role="application"]' }),
-      },
-    ).subscribe();
-  }
-
-  /** The spell attack bonus, for a typed d20: the one of a spell attack in the
-   * options, or a save cantrip's DC minus 8 (the same proficiency and modifier). */
-  private spellAttackBonus(attacks: readonly Attack[]): number {
-    const spellAttack = attacks.find((a) => a.kind === AttackKind.SPELL && a.saveDc === 0);
-    if (spellAttack) {
-      return spellAttack.attackBonus;
-    }
-    const save = attacks.find((a) => a.saveDc > 0);
-    return save ? save.saveDc - 8 : 0;
   }
 
   /** The death save of the player's own turn (RN-03, RN-18 per roll). */
@@ -2277,7 +1364,7 @@ export class CombatView {
   /** One death save call, with the dice animation; the sentence it announced, or '' when the call failed. */
   private async rollDeathSaveOf(id: string, label: string, die: AttackDie): Promise<string> {
     let text = '';
-    await this.run(async (e) => {
+    await this.calls.run(async (e) => {
       const key = this.deathKey.keyFor([e.id, id, die]);
       const res = await this.api.rollDeathSave(this.campaignId(), e.id, id, die, key);
       this.deathKey.renew();
@@ -2307,7 +1394,7 @@ export class CombatView {
 
   /** The master's "Confirmar a morte" (ConfirmDeath): the character is dead for good. */
   protected async confirmDeath(id: string): Promise<void> {
-    await this.run(async (e) => {
+    await this.calls.run(async (e) => {
       const res = await this.api.confirmDeath(
         this.campaignId(),
         e.id,
@@ -2331,7 +1418,7 @@ export class CombatView {
   protected async answerRage(id: string, endRage: boolean): Promise<void> {
     // "Deixar a fúria acabar" ends the rage and then passes the turn, in one tap, as the
     // question says: the server only ends the rage, so the turn goes in the same call.
-    await this.run(async (e) => {
+    await this.calls.run(async (e) => {
       const answered = await this.api.answerRageEnd(this.campaignId(), e.id, id, endRage);
       if (!endRage) {
         return answered;
@@ -2343,12 +1430,14 @@ export class CombatView {
 
   /** "Técnica da Mão Aberta" and "Golpe Atordoante": the monk's answer to an offer after a hit. */
   protected answerRider(pick: RiderPick): Promise<boolean> {
-    return this.run((e) => this.api.useHitRider(this.campaignId(), e.id, pick.id, pick.choice));
+    return this.calls.run((e) =>
+      this.api.useHitRider(this.campaignId(), e.id, pick.id, pick.choice),
+    );
   }
 
   /** "Encerrar fúria": the bonus action. */
   protected endRageOf(id: string): Promise<boolean> {
-    return this.run((e) => this.api.endRage(this.campaignId(), e.id, id));
+    return this.calls.run((e) => this.api.endRage(this.campaignId(), e.id, id));
   }
 
   protected deathLaterFor(id: string): void {
@@ -2368,14 +1457,16 @@ export class CombatView {
     const own = this.own();
     this.concentration.endedByMe = true;
     return own
-      ? this.run((e) =>
-          this.api.setConditions(this.campaignId(), e.id, own.id, { endConcentration: true }),
-        ).then((ok) => {
-          if (!ok) {
-            this.concentration.endedByMe = false;
-          }
-          return ok;
-        })
+      ? this.calls
+          .run((e) =>
+            this.api.setConditions(this.campaignId(), e.id, own.id, { endConcentration: true }),
+          )
+          .then((ok) => {
+            if (!ok) {
+              this.concentration.endedByMe = false;
+            }
+            return ok;
+          })
       : Promise.resolve(false);
   }
 
@@ -2388,158 +1479,13 @@ export class CombatView {
         continue;
       }
       if (
-        !(await this.run((current) =>
+        !(await this.calls.run((current) =>
           this.api.endTurn(this.campaignId(), current.id, member.id, false, current.round),
         ))
       ) {
         return;
       }
     }
-  }
-
-  /** What the player's combatants say a summoning spell is: the keys `GetSummonOptions` lists, read once for the character. */
-  private summonSpells: Promise<ReadonlySet<string>> | null = null;
-
-  private isSummon(key: string): Promise<boolean> {
-    const own = this.own();
-    if (!own) {
-      return Promise.resolve(false);
-    }
-    // A failed read is not kept: the next cast asks again, so one error never hides Conjurar Animais for the whole session.
-    this.summonSpells ??= this.creaturesApi.summonOptions(this.campaignId(), own.characterId).then(
-      (options) => new Set(options.spells.map((s) => s.spellKey)),
-      (err: unknown) => {
-        this.summonSpells = null;
-        throw err;
-      },
-    );
-    return this.summonSpells.then(
-      (keys) => keys.has(key),
-      () => false,
-    );
-  }
-
-  /** Conjurar Animais in a combat: the choices of the creatures and the group's one initiative roll (E9-12). */
-  private summonSheet(key: string, name: string): void {
-    const e = this.encounter();
-    const own = this.own();
-    if (!e || !own) {
-      return;
-    }
-    const data: SummonSheetData = {
-      campaignId: this.campaignId(),
-      characterId: own.characterId,
-      spellKey: key,
-      combat: {
-        encounterId: e.id,
-        casterId: own.id,
-        diceMode: this.diceMode(),
-        preference: this.dicePreference(),
-        state: this.state(),
-        concentrating: own.concentrationSpellNamePt,
-      },
-    };
-    openSheet<SummonSheet, SummonSheetData, unknown>(this.dialog, this.bottomSheet, SummonSheet, {
-      data,
-      ariaLabel: `Conjurar ${name}`,
-      labelledBy: 'summon-t',
-      width: '560px',
-    }).subscribe();
-  }
-
-  /** "Condições…" in a combatant's menu (the master). */
-  protected openConditions(combatantId: string): void {
-    const e = this.encounter();
-    const combatant = e?.combatants.find((c) => c.id === combatantId);
-    if (!e || !combatant) {
-      return;
-    }
-    const data: ConditionsData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      combatant,
-      state: this.state(),
-    };
-    openSheet<ConditionsDialog, ConditionsData, boolean>(
-      this.dialog,
-      this.bottomSheet,
-      ConditionsDialog,
-      {
-        data,
-        ariaLabel: `Condições de ${combatant.label}`,
-        labelledBy: 'sheet-t',
-        width: '600px',
-      },
-    ).subscribe();
-  }
-
-  /** "Você foi atingido: usar Escudo?" and the other reactions: opens by itself, and has to be answered. */
-  private openReaction(window: ReactionWindow): void {
-    const e = this.encounter();
-    const own = this.own();
-    const vitals = this.vitals().find((v) => v.characterId === own?.characterId);
-    if (!e) {
-      return;
-    }
-    if (window.prompt.case === 'effectSave') {
-      this.openEffectSave(window);
-      return;
-    }
-    const data: ReactionSheetData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      window,
-      round: e.round,
-      usage: vitals?.spellSlots ?? [],
-      pact: vitals?.pactSlots ?? null,
-      state: this.state(),
-      armorClass: this.armorClass(),
-      diceMode: this.diceMode(),
-      preference: this.dicePreference(),
-    };
-    this.reactionOpen.set(true);
-    openSheet<ReactionSheet, ReactionSheetData, ReactionSheetResult>(
-      this.dialog,
-      this.bottomSheet,
-      ReactionSheet,
-      {
-        data,
-        ariaLabel: promptView(window, e.round)?.ariaLabel ?? 'Reação',
-        alert: true,
-      },
-    ).subscribe({
-      next: (result) => {
-        if (result?.throwWindowId) {
-          this.reactionHandled.add(result.throwWindowId);
-          this.openThrowBack(result.throwWindowId);
-        }
-      },
-      complete: () => this.reactionOpen.set(false),
-    });
-  }
-
-  /** The saving throw an effect asks at the end or the start of this player's turn (RN-22): opens by itself, and again from "Rolar o teste". */
-  protected openEffectSave(window: ReactionWindow): void {
-    const e = this.encounter();
-    if (!e || this.reactionOpen()) {
-      return;
-    }
-    const data: EffectSaveSheetData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      window,
-      round: e.round,
-      state: this.state(),
-      diceMode: this.diceMode(),
-      preference: this.dicePreference(),
-    };
-    this.reactionOpen.set(true);
-    openSheet<EffectSaveSheet, EffectSaveSheetData, void>(
-      this.dialog,
-      this.bottomSheet,
-      EffectSaveSheet,
-      { data, ariaLabel: 'Teste de resistência do fim do turno', labelledBy: 'sheet-t' },
-    ).subscribe({ complete: () => this.reactionOpen.set(false) });
   }
 
   /** The saving throw of an effect that waits for this player: it has to be answered, so it can be opened again after closing it. */
@@ -2555,95 +1501,23 @@ export class CombatView {
     );
   });
 
-  /**
-   * "Devolver (1 de chi)": the ranged attack with the missile the monk caught, part of the same
-   * reaction. The server builds the attack from the missile (its dice, Dex, proficiency, 20/60 ft)
-   * and ignores the key; the sheet shows what the prompt says. The targets are the ones any of
-   * the monk's attacks lists, with the reach re-measured at the long range. Closing the sheet
-   * without the roll keeps the missile (the window is passed), so the combat never waits on it.
-   */
-  private openThrowBack(windowId: string): void {
-    const e = this.encounter();
-    const w = e?.reactionWindows.find((x) => x.id === windowId);
-    const prompt = w?.prompt.case === 'deflectThrow' ? w.prompt.value : null;
-    if (!prompt) {
-      return;
-    }
-    const seen = new Map<string, TargetInReach>();
-    for (const list of this.options()?.attackTargets ?? []) {
-      for (const t of list.targets) {
-        if (!seen.has(t.combatantId)) {
-          seen.set(t.combatantId, t);
-        }
-      }
-    }
-    const attack = create(AttackSchema, {
-      key: THROW_BACK_KEY,
-      name: prompt.missileNamePt || 'Projétil',
-      namePt: prompt.missileNamePt || 'Projétil',
-      attackBonus: prompt.attackBonus,
-      kind: AttackKind.WEAPON,
-      rangeFt: prompt.normalRangeFt,
-      longRangeFt: prompt.longRangeFt,
-    });
-    this.attackSheet(
-      THROW_BACK_KEY,
-      undefined,
-      true,
-      undefined,
-      undefined,
-      undefined,
-      windowId,
-      false,
-      { attack, targets: [...seen.values()] },
-    );
-  }
-
-  /** The throw-back sheet closed without a roll: the missile is kept, so the window does not hang. */
-  private keepMissile(windowId: string): void {
-    const e = this.encounter();
-    if (!e || !openWindows(e).some((w) => w.id === windowId)) {
-      return;
-    }
-    const answer = { use: false };
-    void this.api
-      .answerReaction(this.campaignId(), e.id, windowId, answer, `keep-${windowId}`)
-      .then((r) => this.state().apply(r.encounter))
-      .catch(() => undefined);
-  }
-
   /** A damage was settled: the master's card stays for its note. */
   protected settled(): void {
     this.settledTurn.set(this.subject()?.id ?? '');
   }
 
-  /** "Dano/Cura" on an NPC (`AdjustCombatantHitPoints`). */
-  protected adjustNpc(combatantId: string): void {
-    const e = this.encounter();
-    const combatant = e?.combatants.find((c) => c.id === combatantId);
-    if (!e || !combatant) {
-      return;
-    }
-    openSheet<AdjustNpc, AdjustNpcData, boolean>(this.dialog, this.bottomSheet, AdjustNpc, {
-      data: { campaignId: this.campaignId(), encounterId: e.id, combatant, state: this.state() },
-      ariaLabel: `Dano ou cura em ${combatant.label}`,
-      labelledBy: 'adjust-npc-title',
-      width: '440px',
-    }).subscribe();
-  }
-
   protected endCombat(): Promise<boolean> {
-    return this.run((e) => this.api.end(this.campaignId(), e.id));
+    return this.calls.run((e) => this.api.end(this.campaignId(), e.id));
   }
 
   protected submitFace(combatantId: string, face: number): Promise<boolean> {
-    return this.run((e) =>
+    return this.calls.run((e) =>
       this.api.submitInitiative(this.campaignId(), e.id, combatantId, { face }),
     );
   }
 
   protected async rollInApp(combatantId: string): Promise<boolean> {
-    const done = await this.run((e) =>
+    const done = await this.calls.run((e) =>
       this.api.submitInitiative(this.campaignId(), e.id, combatantId, { inApp: true }),
     );
     if (done) {
@@ -2654,51 +1528,39 @@ export class CombatView {
 
   /** The initiative d20 the app just rolled for the player's own combatant, as the initiative card tells it (d20 + bonus = total). */
   private animateInitiative(combatantId: string): void {
-    const c = this.encounter()?.combatants.find((x) => x.id === combatantId);
-    if (
-      c?.initiativeFace === undefined ||
-      c.initiativeBonus === undefined ||
-      c.initiative === undefined
-    ) {
-      return;
-    }
-    const mod =
-      c.initiativeBonus === 0
-        ? ''
-        : ` ${c.initiativeBonus < 0 ? '−' : '+'} ${Math.abs(c.initiativeBonus)}`;
-    const show = showOfDie(
-      'Iniciativa',
-      INITIATIVE_DIE,
-      c.initiativeFace,
-      `${c.initiativeFace}${mod} = ${c.initiative}`,
-    );
+    const shown = initiativeLine(this.encounter()?.combatants.find((x) => x.id === combatantId));
+    const show = shown && showOfDie('Iniciativa', INITIATIVE_DIE, shown.face, shown.line);
     if (show) {
       this.animator.play(show);
     }
   }
 
   protected setOrder(ids: string[]): Promise<boolean> {
-    return this.run((e) => this.api.setOrder(this.campaignId(), e.id, ids));
+    return this.calls.run((e) => this.api.setOrder(this.campaignId(), e.id, ids));
   }
 
   protected reveal(change: { id: string; hidden: boolean }): Promise<boolean> {
-    return this.run((e) => this.api.setHidden(this.campaignId(), e.id, change.id, change.hidden));
+    return this.calls.run((e) =>
+      this.api.setHidden(this.campaignId(), e.id, change.id, change.hidden),
+    );
   }
 
   /** The master: "Perdeu a concentração" (the app does not roll the save; the damage card reminds the DC). */
   protected loseConcentration(id: string): Promise<boolean> {
-    return this.run((e) =>
+    return this.calls.run((e) =>
       this.api.setConditions(this.campaignId(), e.id, id, { endConcentration: true }),
     );
   }
 
   /** The master: "Encerrar Ajuda": the bonus goes, and the hit points lose only what passes the new maximum. */
   protected endAid(id: string): Promise<boolean> {
-    return this.run((e) => this.api.endCombatEffect(this.campaignId(), e.id, id, CombatEffect.AID));
+    return this.calls.run((e) =>
+      this.api.endCombatEffect(this.campaignId(), e.id, id, CombatEffect.AID),
+    );
   }
 
   protected remove(id: string): Promise<boolean> {
-    return this.run((e) => this.api.remove(this.campaignId(), e.id, id));
+    return this.calls.run((e) => this.api.remove(this.campaignId(), e.id, id));
   }
 
   protected adjustFor(characterId: string): void {
@@ -2737,98 +1599,19 @@ export class CombatView {
 
   // ---- opportunity attacks (E9-13) ----
 
-  /** The player's prompt: "O Goblin 2 está saindo do seu alcance. Ataque de oportunidade?" It reads the
-   * reactor's attacks itself (its buttons are off until they are in), so an offer is never stuck on a failed read. */
-  private openOpportunity(offer: OpportunityOffer): void {
-    const e = this.encounter();
-    if (!e) {
-      return;
-    }
-    const data: OpportunitySheetData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      offer,
-      round: e.round,
-      load: async () => {
-        const options = await this.api.turnOptions(this.campaignId(), e.id, offer.reactorId);
-        return {
-          options,
-          attacks: reactorAttacks(
-            offer,
-            (options.options?.attacks ?? []).flatMap((a) => (a.attack ? [a.attack] : [])),
-          ),
-        };
-      },
-      state: this.state(),
-    };
-    openSheet<OpportunitySheet, OpportunitySheetData, OpportunityAnswer>(
-      this.dialog,
-      this.bottomSheet,
-      OpportunitySheet,
-      {
-        data,
-        ariaLabel: 'Ataque de oportunidade',
-        alert: true,
-      },
-    ).subscribe((answer) => {
-      if (answer) {
-        this.opportunityAttack(offer, answer.attackKey, answer.options, false);
-      }
-    });
-  }
-
-  /** The offer is still pending after the attack sheet closed (nobody rolled): ask again, it must be answered. */
-  private rearm(offer: OpportunityOffer): void {
-    const still =
-      this.encounter()?.opportunityOffers.some((o) => o.id === offer.id && o.forYou) ?? false;
-    if (still && !this.isMaster()) {
-      untracked(() => this.openOpportunity(offer));
-    }
-  }
-
-  /** "Atacar com <arma>": the attack sheet, with the mover as its target. */
-  private opportunityAttack(
-    offer: OpportunityOffer,
-    key: string,
-    options: GetTurnOptionsResponse | null | undefined,
-    byMaster: boolean,
-  ): void {
-    const e = this.encounter();
-    const attack = options?.options?.attacks.find((a) => a.attack?.key === key)?.attack;
-    if (!e || !attack) {
-      return;
-    }
-    const data: AttackSheetData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      attackerId: offer.reactorId,
-      round: e.round,
-      attack,
-      targets: [],
-      diceMode: this.diceMode(),
-      preference: this.dicePreference(),
-      state: this.state(),
-      asReaction: true,
-      opportunity: {
-        offerId: offer.id,
-        targetId: offer.moverId,
-        targetLabel: offer.moverLabel,
-        byMaster,
-      },
-    };
-    openSheet<AttackSheet, AttackSheetData, boolean>(this.dialog, this.bottomSheet, AttackSheet, {
-      data,
-      ariaLabel: `Ataque de oportunidade com ${attack.namePt || attack.name}`,
-      labelledBy: 'sheet-t',
-    }).subscribe(() => this.rearm(offer));
-  }
-
   /** The master answers for an NPC: "Não atacar", or "Atacar com <arma>". */
   protected answerOpportunity(a: MasterAnswer): Promise<boolean> | void {
     if (!a.attack) {
-      return this.run((e) => this.api.declineOpportunity(this.campaignId(), e.id, a.offer.id));
+      return this.calls.run((e) =>
+        this.api.declineOpportunity(this.campaignId(), e.id, a.offer.id),
+      );
     }
-    this.opportunityAttack(a.offer, a.attack.key, this.reactorOptions().get(a.offer.id), true);
+    this.sheets.opportunityAttack(
+      a.offer,
+      a.attack.key,
+      this.reactorOptions().get(a.offer.id),
+      true,
+    );
   }
 
   /** "Desfazer o movimento": the master takes back his last action when it is the move that made the offers. */
@@ -2837,7 +1620,7 @@ export class CombatView {
     if (!entry) {
       return Promise.resolve(false);
     }
-    return this.run(async (e) => {
+    return this.calls.run(async (e) => {
       const undone = await this.api.undo(this.campaignId(), e.id, entry.id);
       this.undone.mark();
       return undone;
@@ -2846,7 +1629,7 @@ export class CombatView {
 
   /** "Seguir sem esperar": the master passes over an offer the player does not answer. */
   protected skipOpportunity(offer: OpportunityOffer): Promise<boolean> {
-    return this.run((e) => this.api.skipOpportunity(this.campaignId(), e.id, offer.id));
+    return this.calls.run((e) => this.api.skipOpportunity(this.campaignId(), e.id, offer.id));
   }
 
   /** "Oferecer a Toren": the master says the one on turn left that combatant's reach (a combat without a map). */
@@ -2862,7 +1645,7 @@ export class CombatView {
       key = newKey();
       this.offerKeys.set(reactorId, key);
     }
-    const ok = await this.run((current) =>
+    const ok = await this.calls.run((current) =>
       this.api.offerOpportunity(this.campaignId(), current.id, mover.id, reactorId, key),
     );
     if (ok) {
@@ -2887,281 +1670,92 @@ export class CombatView {
 
   /** "Retirar a oferta": the master takes back an offer nobody answered; the reactor keeps its reaction. */
   protected withdrawOpportunity(offer: OpportunityOffer): Promise<boolean> {
-    return this.run((e) => this.api.withdrawOpportunity(this.campaignId(), e.id, offer.id));
+    return this.calls.run((e) => this.api.withdrawOpportunity(this.campaignId(), e.id, offer.id));
   }
 
   /** The master's "Marcar como aliado" / "Voltar a ser inimigo". */
   protected setSide(change: { id: string; side: CombatantSide }): Promise<boolean> {
-    return this.run((e) => this.api.setSide(this.campaignId(), e.id, change.id, change.side));
+    return this.calls.run((e) => this.api.setSide(this.campaignId(), e.id, change.id, change.side));
   }
 
   /** The master's cover mark, applied at once. */
   protected setCover(change: { id: string; cover: CoverDegree }): Promise<boolean> {
-    return this.run((e) => this.api.setCover(this.campaignId(), e.id, change.id, change.cover));
+    return this.calls.run((e) =>
+      this.api.setCover(this.campaignId(), e.id, change.id, change.cover),
+    );
   }
 
   // ---- moving ----
-
-  /** A token dropped on a square (the master's drag, or a player's inside
-   * their reach). The token is where it was dropped at once; if the server
-   * refuses, it goes back and says why. */
-  protected async drop(drop: TokenDrop): Promise<void> {
-    const e = this.encounter();
-    const c = e?.combatants.find((x) => x.id === drop.id);
-    if (!e || !c) {
-      return;
-    }
-    const from: Square = { col: c.col, row: c.row };
-    if (c.placed && from.col === drop.col && from.row === drop.row) {
-      return;
-    }
-    // A player's drop picks the square on the "Mover" page: the same warnings, the same
-    // question about a trap, the same confirm. It never moves by itself.
-    if (!this.isMaster()) {
-      this.moveError.set('');
-      this.dropStart.set({ col: drop.col, row: drop.row });
-      this.state().moving.set(true);
-      return;
-    }
-    this.error.set('');
-    // The box is for this drag only; a refusal gives it back.
-    const forced = this.forcedMove();
-    this.forcedMove.set(false);
-    this.forcedNote.set('');
-    this.state().applyMove({ encounterId: e.id, combatantId: c.id, col: drop.col, row: drop.row });
-    // One save at a time per combatant: `MoveSaves` is about positions, and
-    // here a square's column and row stand in for x and y.
-    await this.moves.move(
-      `${e.id}/${c.id}`,
-      { xBp: from.col, yBp: from.row },
-      { xBp: drop.col, yBp: drop.row },
-      {
-        // The server decides every move (reach, walls, creatures): a refusal puts the token back.
-        save: async (to) => {
-          const res = await this.api.move(
-            this.campaignId(),
-            e.id,
-            c.id,
-            to.xBp,
-            to.yBp,
-            undefined,
-            undefined,
-            forced,
-          );
-          this.state().apply(res.encounter);
-          if (forced) {
-            this.forcedNote.set(
-              `${c.label} foi mov${article(c.label) === 'a' ? 'ida' : 'ido'} à força. Ninguém recebeu oferta de ataque de oportunidade.`,
-            );
-          }
-          if (res.lockedDoor) {
-            // The master walks through closed doors but a locked one stops them too (RN-26).
-            this.error.set(
-              'Uma porta trancada parou o movimento. Destranque a porta (toque nela no mapa) e mova de novo.',
-            );
-          } else if (res.stoppedEarly) {
-            // A barred or secret door stops it too: the token stands where it stopped.
-            this.error.set(
-              'Uma grade levadiça ou uma porta secreta parou o movimento. Abra a porta (toque nela no mapa) e mova de novo.',
-            );
-          }
-        },
-        failed: (saved, err) => {
-          if (forced) {
-            this.forcedMove.set(true);
-          }
-          this.state().applyMove({
-            encounterId: e.id,
-            combatantId: c.id,
-            col: saved.xBp,
-            row: saved.yBp,
-          });
-          this.error.set(combatErrorMessage(err, 'mover o token'));
-          void this.refreshAfter(err);
-        },
-      },
-    );
-  }
-
-  /** "Mover para cá" on the "Mover" page. */
-  protected async confirmMove(to: Square): Promise<void> {
-    const own = this.mover();
-    if (!own) {
-      return;
-    }
-    this.moveError.set('');
-    const ok = await this.runMove((e) =>
-      this.api.move(this.campaignId(), e.id, own.id, to.col, to.row),
-    );
-    this.afterMove(ok);
-  }
-
-  /** "Saltar para cá" or "Saltar 1,8 m para cima": the same call, as a jump. The new movement
-   * used, less what was used before, is what the jump cost: the server's own numbers. */
-  protected async confirmJump(req: JumpRequest): Promise<void> {
-    const own = this.mover();
-    if (!own) {
-      return;
-    }
-    const before = own.movementUsedDft;
-    this.moveError.set('');
-    // "Saltar e desengajar": the action is spent first, so the jump leaves the reach with no opportunity attack.
-    if (req.kind === 'long' && req.disengage && !(await this.disengage())) {
-      return;
-    }
-    const ok = await this.runMove((e) => {
-      // The same jump again (a lost answer) is a retry: it keeps its key and is not charged twice.
-      const key = this.jumpKey.keyFor([e.id, own.id, req]);
-      return req.kind === 'long'
-        ? this.api.move(
-            this.campaignId(),
-            e.id,
-            own.id,
-            req.square.col,
-            req.square.row,
-            { kind: 'long' },
-            key,
-          )
-        : this.api.move(
-            this.campaignId(),
-            e.id,
-            own.id,
-            own.col,
-            own.row,
-            { kind: 'high', heightDft: req.heightDft },
-            key,
-          );
-    });
-    if (ok) {
-      this.jumpKey.renew();
-    }
-    // A jump that stopped short already said so (runMove's note): that is not "saltou".
-    if (ok && !this.moveNote()) {
-      const spent = (this.mover()?.movementUsedDft ?? before) - before;
-      this.moveNote.set(
-        req.kind === 'long'
-          ? `Você saltou ${metersFixed(spent / 10)}.`
-          : `Você saltou ${metersFixed(spent / 10)} para cima.`,
-      );
-    }
-    this.afterMove(ok);
-  }
-
-  private afterMove(ok: boolean): void {
-    if (ok && this.lockedDoor()) {
-      // A locked door stopped the move: the page stays, with the notice (E10-05 9). The token already stands where it stopped.
-      return;
-    }
-    if (ok) {
-      this.state().moving.set(false);
-    } else {
-      // The refusal's own words, next to the map where the person looks.
-      this.moveError.set(this.error());
-      this.error.set('');
-    }
-  }
-
-  /** Runs a move: applies the combat it answers, and says when it stopped short. */
-  private async runMove(call: (e: Encounter) => Promise<MoveResult>): Promise<boolean> {
-    const e = this.encounter();
-    if (!e || this.busy()) {
-      return false;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    this.moveNote.set('');
-    this.lockedDoor.set(false);
-    try {
-      const res = await call(e);
-      this.state().apply(res.encounter);
-      if (res.lockedDoor) {
-        this.lockedDoor.set(true);
-      } else if (res.stoppedEarly) {
-        // Never what stopped it: the player did not see it.
-        this.moveNote.set('Você parou antes: algo bloqueou o caminho.');
-      }
-      return true;
-    } catch (err) {
-      this.error.set(combatErrorMessage(err, 'mover'));
-      await this.refreshAfter(err);
-      return false;
-    } finally {
-      this.busy.set(false);
-    }
-  }
-
-  /** "Desengajar (gasta a ação)" on the "Mover" page: the warning goes once it is taken. */
-  protected disengage(): Promise<boolean> {
-    const who = this.mover();
-    return who ? this.takeActionFor(who.id, 'standard:disengage') : Promise.resolve(false);
-  }
-
-  protected closeFullPage(): void {
-    this.lockedDoor.set(false);
-    this.moverId.set('');
-    this.dropStart.set(null);
-    this.state().moving.set(false);
-    this.state().mapOpen.set(false);
-  }
-
-  /** "Gastar movimento" (a combat without a map): the sheet that asks how far. For the player's character, or for one of their creatures. */
-  protected openSpend(id?: string): void {
-    const e = this.encounter();
-    const who = id ?? this.own()?.id;
-    if (!e || !who) {
-      return;
-    }
-    const data: SpendSheetData = {
-      campaignId: this.campaignId(),
-      encounterId: e.id,
-      combatantId: who,
-      state: this.state(),
-    };
-    openSheet<SpendSheet, SpendSheetData, boolean>(this.dialog, this.bottomSheet, SpendSheet, {
-      data,
-      ariaLabel: 'Gastar movimento',
-      labelledBy: 'sheet-t',
-    }).subscribe(() => this.moveNote.set(''));
-  }
-
-  protected openMove(): void {
-    if (this.theatre()) {
-      this.openSpend();
-      return;
-    }
-    this.lockedDoor.set(false);
-    this.moverId.set('');
-    this.dropStart.set(null);
-    this.moveError.set('');
-    this.state().moving.set(true);
-  }
 
   /** "Levantar-se": the combatant (the player's own, a creature of theirs, or the one on the master's card) stands up from Prone. */
   protected standUp(id?: string): Promise<boolean> {
     const who = id ?? this.own()?.id;
     return who
-      ? this.run((e) => this.api.standUp(this.campaignId(), e.id, who))
+      ? this.calls.run((e) => this.api.standUp(this.campaignId(), e.id, who))
       : Promise.resolve(false);
-  }
-
-  /** "Mover o Lobo atroz 1": the same page, for the creature. */
-  protected openCreatureMove(id: string): void {
-    if (this.theatre()) {
-      this.openSpend(id);
-      return;
-    }
-    this.moverName = this.encounter()?.combatants.find((c) => c.id === id)?.label ?? '';
-    this.moverId.set(id);
-    this.lockedDoor.set(false);
-    this.dropStart.set(null);
-    this.moveError.set('');
-    this.state().moving.set(true);
   }
 
   /** "Colocar no mapa": the server picks the square, by the rule that places the
    * NPCs when the combat begins (free floor, away from the players). */
   protected async place(id: string): Promise<void> {
-    await this.run((current) => this.api.place(this.campaignId(), current.id, id));
+    await this.calls.run((current) => this.api.place(this.campaignId(), current.id, id));
+  }
+
+  // ---- sheets and moving: the template and the screens below call these ----
+
+  protected askFamiliarEyes(): void {
+    const name = this.familiar();
+    if (name) {
+      this.sheets.familiarEyes(name);
+    }
+  }
+  protected openTransform(): void {
+    this.sheets.wildShape();
+  }
+  protected openDoor(door: DoorSquare): void {
+    this.sheets.door(door);
+  }
+  protected describeSpell(key: string, name: string): void {
+    this.sheets.describeSpell(key, name);
+  }
+  protected openCast(key: string): Promise<void> {
+    return this.sheets.cast(key);
+  }
+  protected openMasterArea(key: string): void {
+    this.sheets.masterArea(key);
+  }
+  protected openConditions(combatantId: string): void {
+    this.sheets.conditions(combatantId);
+  }
+  protected openEffectSave(window: ReactionWindow): void {
+    this.sheets.effectSave(window);
+  }
+  protected adjustNpc(combatantId: string): void {
+    this.sheets.adjustNpc(combatantId);
+  }
+  protected openSpend(id?: string): void {
+    this.sheets.spend(id);
+  }
+  protected drop(drop: TokenDrop): Promise<void> {
+    return this.moves.drop(drop);
+  }
+  protected confirmMove(to: Square): Promise<void> {
+    return this.moves.confirmMove(to);
+  }
+  protected confirmJump(req: JumpRequest): Promise<void> {
+    return this.moves.confirmJump(req);
+  }
+  protected disengage(): Promise<boolean> {
+    return this.moves.disengage();
+  }
+  protected closeFullPage(): void {
+    this.moves.closeFullPage();
+  }
+  protected openMove(): void {
+    this.moves.open();
+  }
+  protected openCreatureMove(id: string): void {
+    this.moves.openCreature(id);
   }
 
   protected leave(): void {

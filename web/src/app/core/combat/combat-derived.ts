@@ -169,3 +169,28 @@ export function creatureTrapNotes(
   }
   return notes;
 }
+
+/** The d20 the app just rolled for a combatant's initiative, and the line the initiative card tells it: "15 + 4 = 19", "15 − 1 = 14",
+ * "15 = 15" with no modifier. `null` while any of the three numbers is missing. */
+export function initiativeLine(c: Combatant | undefined): { face: number; line: string } | null {
+  if (
+    c?.initiativeFace === undefined ||
+    c.initiativeBonus === undefined ||
+    c.initiative === undefined
+  ) {
+    return null;
+  }
+  const mod =
+    c.initiativeBonus === 0
+      ? ''
+      : ` ${c.initiativeBonus < 0 ? '\u2212' : '+'} ${Math.abs(c.initiativeBonus)}`;
+  return { face: c.initiativeFace, line: `${c.initiativeFace}${mod} = ${c.initiative}` };
+}
+
+/** What the player reads after a feature spent the action: Action Surge gives the action back, frenzy says so, any other is "Usou X.". */
+export function featureNote(name: string, resourceKey: string, frenzy: boolean): string {
+  if (frenzy) {
+    return `${name}: você entrou em frenesi.`;
+  }
+  return resourceKey === 'action_surge' ? `${name}: você tem outra ação.` : `Usou ${name}.`;
+}

@@ -1149,7 +1149,7 @@ describe('CombatView calls: opportunity attacks', () => {
   it('openOpportunity does nothing without a combat', () => {
     const { view, state, opened } = mountCombatView({ enc: withOffer(), master: true });
     state.apply(null);
-    view.openOpportunity(offer());
+    view.sheets.opportunity(offer());
     expect(opened).toEqual([]);
   });
 });
@@ -1721,7 +1721,7 @@ describe('CombatView calls: opening the movement', () => {
     view.moveError.set('old');
     view.openCreatureMove('w');
     expect(view.moverId()).toBe('w');
-    expect(view.moverName).toBe('Lobo atroz 1');
+    expect(view.moves.moverName).toBe('Lobo atroz 1');
     expect(state.moving()).toBe(true);
     expect(view.lockedDoor()).toBe(false);
     expect(view.dropStart()).toBeNull();
@@ -1731,7 +1731,7 @@ describe('CombatView calls: opening the movement', () => {
   it('an unknown creature opens the page with no name', () => {
     const { view } = mountCombatView({ enc: grid('t', toren()) });
     view.openCreatureMove('ghost');
-    expect(view.moverName).toBe('');
+    expect(view.moves.moverName).toBe('');
   });
 
   it("without a map the creature's movement is the spend sheet for that creature", () => {

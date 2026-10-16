@@ -13,6 +13,8 @@ import {
   coverAgainst,
   creatureTrapNotes,
   deathDueOf,
+  featureNote,
+  initiativeLine,
   dyingOf,
   masterReach,
   offerMarks,
@@ -235,5 +237,39 @@ describe('the combat log reads', () => {
     expect(creatureTrapNotes(e, true, [round(2, [caught('w1')])]).size).toBe(0);
     expect(creatureTrapNotes(null, false, []).size).toBe(0);
     expect(creatureTrapNotes(e, false, [round(1, [caught('w1')])]).size).toBe(0);
+  });
+});
+
+describe('initiativeLine', () => {
+  const c = (over: object) => combatant({ id: 'a', label: 'A', ...over });
+
+  it('writes the d20, the modifier with its sign and the total', () => {
+    expect(initiativeLine(c({ initiativeFace: 15, initiativeBonus: 4, initiative: 19 }))).toEqual({
+      face: 15,
+      line: '15 + 4 = 19',
+    });
+    expect(
+      initiativeLine(c({ initiativeFace: 15, initiativeBonus: -2, initiative: 13 }))?.line,
+    ).toBe('15 \u2212 2 = 13');
+    expect(
+      initiativeLine(c({ initiativeFace: 15, initiativeBonus: 0, initiative: 15 }))?.line,
+    ).toBe('15 = 15');
+  });
+
+  it('is null while a number is missing, or there is no combatant', () => {
+    expect(initiativeLine(c({ initiativeBonus: 4, initiative: 19 }))).toBeNull();
+    expect(initiativeLine(c({ initiativeFace: 15, initiative: 19 }))).toBeNull();
+    expect(initiativeLine(c({ initiativeFace: 15, initiativeBonus: 4 }))).toBeNull();
+    expect(initiativeLine(undefined)).toBeNull();
+  });
+});
+
+describe('featureNote', () => {
+  it('says what the feature did: frenzy, Action Surge, or just that it was used', () => {
+    expect(featureNote('Frenesi', 'x', true)).toBe('Frenesi: você entrou em frenesi.');
+    expect(featureNote('Surto de Ação', 'action_surge', false)).toBe(
+      'Surto de Ação: você tem outra ação.',
+    );
+    expect(featureNote('Fúria', 'rage', false)).toBe('Usou Fúria.');
   });
 });

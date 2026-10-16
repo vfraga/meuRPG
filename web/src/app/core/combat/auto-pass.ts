@@ -8,9 +8,11 @@ import type {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { CombatClient } from './combat-client';
 import type { CombatState } from './combat-state';
-import { offersToAnswer, reactorIsMasters } from './opportunity';
-import { AutoPassClock, autoPassKey } from './reaction-autopass';
+import { barText, offersToAnswer, reactorIsMasters } from './opportunity';
+import { revealBarText } from './hidden-reveal';
+import { AutoPassClock, autoPassKey, autoPassText } from './reaction-autopass';
 import { openWindows } from './reactions';
+import { windowsBarText } from './reaction-master';
 
 /** How often the master's screen looks at the clock of the automatic pass of a player's optional reaction. */
 const AUTO_PASS_TICK_MS = 1000;
@@ -36,6 +38,26 @@ export interface AutoPassContext {
 /** The offers of an opportunity attack that a player's character answers, which pass after 30 s like any optional reaction. */
 export function autoPassOffers(e: Encounter): OpportunityOffer[] {
   return offersToAnswer(e).filter((o) => !reactorIsMasters(e, o));
+}
+
+/**
+ * The master's bar: "Esperando a sua resposta: escondidas atingidas", or "Esperando a sua reação: Goblin 2", with the time
+ * left of the automatic pass when a player's optional reaction has a clock (`left`, by window id).
+ */
+export function masterWaitNote(
+  e: Encounter,
+  left: Readonly<Record<string, number>>,
+  playerName: (characterId: string) => string,
+): string {
+  const other = revealBarText(e) || barText(e, playerName);
+  if (other) {
+    return other;
+  }
+  const soonest = Math.min(...Object.values(left));
+  const text = windowsBarText(e);
+  return text && Number.isFinite(soonest)
+    ? `${text} · ${autoPassText(soonest).toLowerCase()}`
+    : text;
 }
 
 /**

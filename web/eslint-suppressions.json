@@ -1371,12 +1371,6 @@
   "src/app/pages/live-session/combat/combat-view.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
-    },
-    "@typescript-eslint/no-magic-numbers": {
-      "count": 1
-    },
-    "complexity": {
-      "count": 2
     }
   },
   "src/app/pages/live-session/combat/combat-xp/combat-xp.ts": {

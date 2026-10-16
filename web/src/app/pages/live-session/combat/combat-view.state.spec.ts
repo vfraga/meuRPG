@@ -114,7 +114,7 @@ describe('CombatView state: who is who', () => {
           raceName: '',
         },
       ] as never;
-    await view.loadRoster('c');
+    await view.reads.loadRoster('c');
     await settle(fixture);
     expect(view.info().get('toren-c')).toEqual({
       classSummary: 'Guerreiro 4',
@@ -136,7 +136,7 @@ describe('CombatView state: who is who', () => {
     TestBed.inject(RosterClient).list = async () => {
       throw new ConnectError('down', Code.Unavailable);
     };
-    await view.loadRoster('c');
+    await view.reads.loadRoster('c');
     expect([...view.rosterInfo().keys()]).toEqual(['x']);
   });
 
@@ -611,14 +611,14 @@ describe('CombatView state: the master reach and the moves', () => {
 
   it('tells that a creature left the combat while its "Mover" page was open', async () => {
     const mine = mountCombatView({ enc: player() });
-    mine.view.moverName = 'Lobo';
+    mine.view.moves.moverName = 'Lobo';
     mine.view.moverId.set('sumiu');
     await settle(mine.fixture);
     expect(mine.view.moveNote()).toBe('O Lobo saiu do combate.');
     expect(mine.view.moverId()).toBe('');
 
     const fem = mountCombatView({ enc: player() });
-    fem.view.moverName = 'Loba';
+    fem.view.moves.moverName = 'Loba';
     fem.view.moverId.set('sumiu');
     await settle(fem.fixture);
     expect(fem.view.moveNote()).toBe('A Loba saiu do combate.');
@@ -895,7 +895,7 @@ describe('CombatView state: the master bar and the clock of the automatic pass',
     expect(view.waitNote()).toBe('');
     expect(view.autoLeft()).toEqual({});
     expect(view.offerLeft()).toEqual({});
-    expect(view.autoTimer).toBeUndefined();
+    expect(view.autoPass.timer).toBeUndefined();
   });
 
   it('says what the master waits for, with the time left of an optional reaction of a player', () => {
@@ -903,7 +903,7 @@ describe('CombatView state: the master bar and the clock of the automatic pass',
     const { view } = mountCombatView({ enc: withWindow(), master: true });
     expect(view.autoLeft()).toEqual({ w1: 30 });
     expect(view.waitNote()).toBe('Esperando a reação de Toren · passa sozinho em 30 s');
-    expect(view.autoTimer).toBeDefined();
+    expect(view.autoPass.timer).toBeDefined();
   });
 
   it('counts the seconds down on the clock and passes the reaction when the 30 s are up, with its own key', async () => {
@@ -932,7 +932,7 @@ describe('CombatView state: the master bar and the clock of the automatic pass',
     expect(state.encounter()?.revision).toBe(2);
     expect(view.autoLeft()).toEqual({});
     expect(view.waitNote()).toBe('');
-    expect(view.autoTimer).toBeUndefined();
+    expect(view.autoPass.timer).toBeUndefined();
     await vi.advanceTimersByTimeAsync(5000);
     expect(callsOf('answerReaction')).toHaveLength(1);
   });
@@ -947,7 +947,7 @@ describe('CombatView state: the master bar and the clock of the automatic pass',
     const concentration = shield({ kind: ReactionKind.CONCENTRATION_SAVE });
     const { view } = mountCombatView({ enc: withWindow(concentration), master: true });
     expect(view.autoLeft()).toEqual({});
-    expect(view.autoTimer).toBeUndefined();
+    expect(view.autoPass.timer).toBeUndefined();
     expect(view.waitNote()).toBe('Esperando a reação de Toren');
     const npc = shield({ reactorIsPlayer: false, reactorId: 'g', reactorLabel: 'Goblin' });
     expect(mountCombatView({ enc: withWindow(npc), master: true }).view.waitNote()).toBe(
@@ -1015,7 +1015,7 @@ describe('CombatView state: the master bar and the clock of the automatic pass',
       master: true,
     });
     expect(view.offerLeft()).toEqual({ o1: 30 });
-    expect(view.autoTimer).toBeDefined();
+    expect(view.autoPass.timer).toBeDefined();
   });
 
   it('passes the offer by itself after 30 s with its own key, and applies the combat the server answers', async () => {
@@ -1040,7 +1040,7 @@ describe('CombatView state: the master bar and the clock of the automatic pass',
     ]);
     expect(state.encounter()).toEqual(done);
     expect(view.offerLeft()).toEqual({});
-    expect(view.autoTimer).toBeUndefined();
+    expect(view.autoPass.timer).toBeUndefined();
   });
 
   describe.each([

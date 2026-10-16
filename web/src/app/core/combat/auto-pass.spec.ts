@@ -4,7 +4,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { vi } from 'vitest';
 
 import { CombatantKind, type Encounter, ReactionKind } from '../../../gen/meurpg/play/v1/combat_pb';
-import { MasterAutoPass, autoPassOffers } from './auto-pass';
+import { MasterAutoPass, autoPassOffers, masterWaitNote } from './auto-pass';
 import { CombatState } from './combat-state';
 import { combatant, encounter, reactionWindow } from './combat-testing';
 import { AUTO_PASS_SECONDS, autoPassKey } from './reaction-autopass';
@@ -124,5 +124,26 @@ describe('MasterAutoPass', () => {
     expect(vi.getTimerCount()).toBe(1);
     TestBed.resetTestingModule();
     expect(vi.getTimerCount()).toBe(0);
+  });
+});
+
+describe('masterWaitNote', () => {
+  const name = (id: string) => (id === 'char-t' ? 'Vinicius' : '');
+
+  it('says what the master waits for on a reaction of a player, with the time left of its automatic pass', () => {
+    const e = withWindows();
+    const plain = masterWaitNote(e, {}, name);
+    expect(plain).not.toBe('');
+    expect(plain).not.toContain('Passa sozinho');
+    expect(masterWaitNote(e, { w1: 12 }, name)).toBe(`${plain} \u00b7 passa sozinho em 12 s`);
+  });
+
+  it('says nothing when nothing waits', () => {
+    expect(masterWaitNote(encounter({ combatants: [toren, goblin] }), {}, name)).toBe('');
+  });
+
+  it('names the player an opportunity attack waits for, before any reaction', () => {
+    const e = withWindows({ opportunityOffers: [offer('o1', 't')] });
+    expect(masterWaitNote(e, { w1: 5 }, name)).toContain('Vinicius');
   });
 });
