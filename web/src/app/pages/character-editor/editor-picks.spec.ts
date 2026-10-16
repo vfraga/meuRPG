@@ -17,6 +17,24 @@ describe('EditorPicks', () => {
     expect([...picks.expertiseSkills()]).toEqual([]);
   });
 
+  it('leaves the expertise alone when a skill without expertise is dropped', () => {
+    const picks = new EditorPicks(() => NO_GIVEN);
+    picks.toggleSkill('skill:arcana');
+    picks.toggleSkill('skill:history');
+    picks.toggleExpertise('skill:history');
+    picks.toggleSkill('skill:arcana');
+    expect([...picks.selectedSkills()]).toEqual(['skill:history']);
+    expect([...picks.expertiseSkills()]).toEqual(['skill:history']);
+  });
+
+  it('gives expertise to a skill that is given, and takes it off with a second click', () => {
+    const picks = new EditorPicks(() => new Map([['skill:insight', 'Sábio']]));
+    picks.toggleExpertise('skill:insight');
+    expect([...picks.expertiseSkills()]).toEqual(['skill:insight']);
+    picks.toggleExpertise('skill:insight');
+    expect([...picks.expertiseSkills()]).toEqual([]);
+  });
+
   it('does not take a skill the race or the background already gives', () => {
     const picks = new EditorPicks(() => new Map([['skill:insight', 'Sábio']]));
     picks.toggleSkill('skill:insight');
@@ -33,6 +51,8 @@ describe('EditorPicks', () => {
     const picks = new EditorPicks(() => NO_GIVEN);
     ['a', 'b', 'c'].forEach(picks.toggleCustomBackgroundSkill);
     expect([...picks.customBackgroundSkills()]).toEqual(['a', 'b']);
+    picks.toggleCustomBackgroundSkill('a');
+    expect([...picks.customBackgroundSkills()]).toEqual(['b']);
     picks.setCustomProficiencies(['x', 'y', 'z']);
     expect(picks.customBackgroundProficiencies()).toEqual(['x', 'y']);
   });

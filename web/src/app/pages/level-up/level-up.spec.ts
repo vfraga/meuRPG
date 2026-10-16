@@ -47,7 +47,6 @@ import {
   wizardOptions,
 } from '../../core/levelup/levelup-testing';
 import { LevelUpPage } from './level-up';
-import { newSpellsTitle } from './level-up-session';
 import { QUIET_MS } from './level-up-preview';
 
 // With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
@@ -1666,15 +1665,5 @@ describe('LevelUpPage with the real client: a content_changed hint really reads 
     expect(listContent).toHaveBeenCalledTimes(2);
     expect(row('Prestidigitação')).toBeUndefined();
     expect(root.textContent).toContain('O mestre mudou as opções da mesa');
-  });
-});
-
-describe('newSpellsTitle', () => {
-  it('agrees the participle with the count, and keeps "para o livro" for a spellbook', () => {
-    expect(newSpellsTitle(1, false)).toBe('1 magia conhecida');
-    expect(newSpellsTitle(2, false)).toBe('2 magias conhecidas');
-    expect(newSpellsTitle(1, true)).toBe('1 magia para o livro');
-    expect(newSpellsTitle(2, true)).toBe('2 magias para o livro');
-    expect(newSpellsTitle(0, false)).toBe('');
   });
 });

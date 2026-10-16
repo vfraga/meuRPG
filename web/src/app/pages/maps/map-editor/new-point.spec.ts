@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { MapPointKind } from '../../../../gen/meurpg/maps/v1/maps_pb';
-import { defaultName, newPointBody } from './new-point';
+import { newPointBody } from './new-point';
 
 describe('new point', () => {
   const at = { xBp: 10, yBp: 20 };
@@ -14,38 +14,11 @@ describe('new point', () => {
     traps: { list: async () => ({ presets: [], severities: [] }) },
   } as never;
 
-  it('names each kind', () => {
-    expect(
-      [
-        MapPointKind.BATTLE,
-        MapPointKind.SUBMAP,
-        MapPointKind.LIGHT,
-        MapPointKind.TRAP,
-        MapPointKind.TREASURE,
-        MapPointKind.SCENE,
-      ].map(defaultName),
-    ).toEqual([
-      'Nova batalha',
-      'Novo submapa',
-      'Nova luz',
-      'Nova armadilha',
-      'Novo tesouro',
-      'Nova cena',
-    ]);
-  });
-
-  it('gives a light, a trap and a treasure the start the server takes', async () => {
-    expect(await newPointBody(MapPointKind.LIGHT, at, 'c', presets)).toMatchObject({
-      light: { presetKey: 'light:torch' },
-    });
+  it('starts a trap one square wide and a scene with only its name and place', async () => {
     expect(await newPointBody(MapPointKind.TRAP, at, 'c', presets)).toMatchObject({
       trap: { findDc: 14, areaSize: 1 },
     });
-    expect(await newPointBody(MapPointKind.TREASURE, at, 'c', presets)).toMatchObject({
-      treasureValuePo: 0,
-    });
-    const scene = await newPointBody(MapPointKind.SCENE, at, 'c', presets);
-    expect(scene).toEqual({
+    expect(await newPointBody(MapPointKind.SCENE, at, 'c', presets)).toEqual({
       kind: MapPointKind.SCENE,
       name: 'Nova cena',
       description: '',

@@ -506,7 +506,7 @@ describe('the undo label', () => {
   });
 });
 
-describe('the log of spells, reactions, the fallen and conditions (slice 6.5c)', () => {
+describe('the log of spells, reactions, the fallen and conditions', () => {
   const roll = (faces: number[], modifier: number) =>
     ({
       diceCount: faces.length,

@@ -1,7 +1,6 @@
-// The branches of `cast-sheet.ts` the other specs of the cast sheet never took (found with the coverage report): the page
-// before the combat is read, what "Conjurar" waits for, the targets and darts that follow the slot, the result's notes,
-// the damage still to roll, and the questions a cast can answer with. They read the sheet through its protected members,
-// as the specs next to this one do, and were written green on the code as it was before it was split.
+// `cast-sheet.ts` off the happy path: the page before the combat is read, what "Conjurar" waits for, the targets and darts
+// that follow the slot, the result's notes, the damage still to roll, and the questions a cast can answer with. It reads
+// the sheet through its protected members, as the specs next to this one do.
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';

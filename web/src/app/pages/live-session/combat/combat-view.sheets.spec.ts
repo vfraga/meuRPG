@@ -1,4 +1,4 @@
-import { create } from '@bufbuild/protobuf';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 import { Observable } from 'rxjs';
 import { vi } from 'vitest';
@@ -8,11 +8,14 @@ import { CreatureSource } from '../../../../gen/meurpg/characters/v1/characters_
 import { MapSchema } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import {
   AreaPlacement,
+  type Combatant,
   CombatantKind,
   CombatantSide,
   type Encounter,
   EncounterMode,
   GetTurnOptionsResponseSchema,
+  OpportunityAttackSchema,
+  OpportunityOfferSchema,
   PendingDamageStatus,
   ReactionKind,
   ReactionWindowStatus,
@@ -21,6 +24,7 @@ import {
   ActionEconomy,
   AttackKind,
   SpellDetailsSchema,
+  TurnOptionsSchema,
 } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant, encounter, reactionWindow } from '../../../core/combat/combat-testing';
 import { settle } from '../../../../test-settle';
@@ -52,7 +56,7 @@ import { RevivifySheet } from './revivify-sheet/revivify-sheet';
 import { SpendSheet } from './theatre/spend-sheet';
 
 // The data each sheet and dialog of the combat page is handed, field by field, and the calls the page makes before or instead
-// of opening one: the contract the page's sheet builders keep when they are moved around.
+// of opening one: the contract the page's sheet builders keep.
 
 const PHONE = [PHONE_QUERY];
 
@@ -2270,5 +2274,71 @@ describe('CombatView sheets: with no combat on screen', () => {
     expect(m.view.sheets.castMap()).not.toBeNull();
     m.state.clear();
     expect(m.view.sheets.castMap()).toBeNull();
+  });
+});
+
+describe('CombatView sheets: the edges (an answer that is nothing, a combat that is gone, no character)', () => {
+  const toren = (over: Partial<Combatant> = {}) =>
+    combatant({
+      id: 't',
+      label: 'Toren',
+      kind: CombatantKind.PLAYER,
+      side: CombatantSide.PARTY,
+      characterId: 'toren-c',
+      mine: true,
+      col: 1,
+      row: 1,
+      ...over,
+    });
+  const goblin = () => combatant({ id: 'g', label: 'Goblin', col: 3, row: 3 });
+  const offer = (over: MessageInitShape<typeof OpportunityOfferSchema> = {}) =>
+    create(OpportunityOfferSchema, {
+      id: 'o1',
+      moverId: 't',
+      moverLabel: 'Toren',
+      reactorId: 'g',
+      reactorLabel: 'Goblin',
+      forYou: true,
+      attacks: [create(OpportunityAttackSchema, { key: 'scimitar', namePt: 'Cimitarra' })],
+      ...over,
+    });
+  const withOffer = () =>
+    encounter({
+      mode: EncounterMode.GRID,
+      currentCombatantId: 't',
+      combatants: [toren(), goblin()],
+      opportunityOffers: [offer()],
+    });
+  const reactorOptions = {
+    options: create(TurnOptionsSchema, {
+      attacks: [{ attack: { key: 'scimitar', name: 'Scimitar', namePt: 'Cimitarra' } }],
+    }),
+    attackTargets: [],
+    spellTargets: [],
+    pendingDamages: [],
+    resourceTargets: [],
+  };
+
+  it('opens no attack for an opportunity prompt answered with nothing', () => {
+    const { opened } = mountCombatView({ enc: withOffer() });
+    opened[0].close(null);
+    expect(opened).toHaveLength(1);
+  });
+
+  it('does not ask again once the combat is gone', () => {
+    const { opened, state } = mountCombatView({ enc: withOffer() });
+    opened[0].close({ attackKey: 'scimitar', options: reactorOptions });
+    state.apply(null);
+    opened[1].close(true);
+    expect(opened).toHaveLength(2);
+  });
+
+  it('asks nothing about a familiar when the screen has no character of its own', () => {
+    const { view, opened } = mountCombatView({
+      enc: encounter({ combatants: [goblin()] }),
+      master: true,
+    });
+    view.sheets.actions.familiarEyes('Nanquim');
+    expect(opened).toEqual([]);
   });
 });

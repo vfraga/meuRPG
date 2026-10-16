@@ -132,6 +132,7 @@ describe('LevelUpSession', () => {
     expect(newSpellsTitle(0, false)).toBe('');
     expect(newSpellsTitle(1, false)).toBe('1 magia conhecida');
     expect(newSpellsTitle(2, false)).toBe('2 magias conhecidas');
+    expect(newSpellsTitle(1, true)).toBe('1 magia para o livro');
     expect(newSpellsTitle(2, true)).toBe('2 magias para o livro');
   });
 

@@ -1,8 +1,6 @@
-// The branches of `attack-sheet.ts` the other specs of the attack sheet never took (found with the coverage report): the
-// target list of a reaction or a throw, what the attack spent, the damage before it is rolled, the requests to the master
-// that are taken back, a hit that waits for a reaction, and the questions a roll can answer with. They read the sheet
-// through its protected members, as the specs next to this one do, and were written green on the code as it was before
-// it was split.
+// `attack-sheet.ts` off the happy path: the target list of a reaction or a throw, what the attack spent, the damage
+// before it is rolled, the requests to the master that are taken back, a hit that waits for a reaction, and the
+// questions a roll can answer with. It reads the sheet through its protected members, as the specs next to this one do.
 import { TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { create } from '@bufbuild/protobuf';

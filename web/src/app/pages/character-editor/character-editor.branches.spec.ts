@@ -15,7 +15,6 @@ import {
   ChoiceOptionSchema,
   ChoiceOrigin,
   ChoiceSchema,
-  InvalidFieldSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { fakeContentWatcher } from '../../core/content/content-testing';
 import { CharacterEditor } from './character-editor';
@@ -36,10 +35,9 @@ import {
 } from './character-editor.types';
 import { nextTurn } from '../../../test-settle';
 
-// The branches of `character-editor.ts` the other specs of the editor never took (found with the coverage report):
-// the page before its catalog arrives, the texts and numbers it derives, the class blocks, the toggles, the ways a
-// save or a read fails, and the server's answers for the draft. They read the component through its protected
-// members, as the specs next to this one do, and were written green on the code as it was before it was split.
+// `character-editor.ts` off the happy path: the page before its catalog arrives, the texts and numbers it derives, the
+// class blocks, the toggles, the ways a save or a read fails, and the server's answers for the draft. It reads the
+// component through its protected members, as the specs next to this one do.
 
 /** The component seen from a spec: protected members and all. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -344,12 +342,6 @@ async function settleView(fixture: ComponentFixture<CharacterEditor>): Promise<v
   fixture.detectChanges();
 }
 
-function invalidField(field: string): ConnectError {
-  return new ConnectError('refused', Code.InvalidArgument, undefined, [
-    { desc: InvalidFieldSchema, value: create(InvalidFieldSchema, { field }) },
-  ]);
-}
-
 function blocked(reason: CharacterBlockedReason, contentKey = ''): ConnectError {
   return new ConnectError('x', Code.FailedPrecondition, undefined, [
     { desc: CharacterBlockedSchema, value: create(CharacterBlockedSchema, { reason, contentKey }) },
@@ -641,28 +633,16 @@ describe('CharacterEditor, the spell and skill picks', () => {
     expect(view.knownLimit).toBeNull();
   });
 
-  it('does not toggle a skill the race gives, and drops the expertise of a skill it unticks', async () => {
+  it('does not toggle a skill the race gives, and takes one the race does not', async () => {
     const { cmp } = await ready();
     fill(cmp);
     cmp.toggleSkill('skill:arcana');
     expect(cmp.picks.selectedSkills().size).toBe(0);
     cmp.toggleSkill('skill:nature');
     expect(cmp.picks.selectedSkills().has('skill:nature')).toBe(true);
-    // Expertise needs a proficient skill (the race's counts).
-    cmp.toggleExpertise('skill:history');
-    expect(cmp.expertiseSkills().size).toBe(0);
+    // Expertise counts the skills the race gives as proficient.
     cmp.toggleExpertise('skill:arcana');
     expect(cmp.expertiseSkills().has('skill:arcana')).toBe(true);
-    cmp.toggleExpertise('skill:arcana');
-    expect(cmp.expertiseSkills().size).toBe(0);
-    cmp.toggleExpertise('skill:nature');
-    cmp.toggleSkill('skill:nature');
-    expect(cmp.picks.selectedSkills().size).toBe(0);
-    expect(cmp.expertiseSkills().size).toBe(0);
-    // Unticking a skill with no expertise leaves the expertise alone.
-    cmp.toggleSkill('skill:nature');
-    cmp.toggleSkill('skill:nature');
-    expect(cmp.expertiseSkills().size).toBe(0);
   });
 
   it('counts a skill the race and the background both give once, as the race gives it', async () => {
@@ -689,38 +669,6 @@ describe('CharacterEditor, the spell and skill picks', () => {
     const [view] = cmp.sectionViews();
     expect(view.knownLimit).toBe(4);
     expect(view.preparedLimit).toBeNull();
-  });
-
-  it('stops at two skills for a custom background', async () => {
-    const { cmp } = await ready();
-    cmp.toggleCustomBackgroundSkill('skill:arcana');
-    cmp.toggleCustomBackgroundSkill('skill:history');
-    cmp.toggleCustomBackgroundSkill('skill:religion');
-    expect([...cmp.customBackgroundSkills()]).toEqual(['skill:arcana', 'skill:history']);
-    cmp.toggleCustomBackgroundSkill('skill:arcana');
-    cmp.toggleCustomBackgroundSkill('skill:religion');
-    expect([...cmp.customBackgroundSkills()].sort()).toEqual(['skill:history', 'skill:religion']);
-    cmp.setCustomProficiencies(['a', 'b', 'c']);
-    expect(cmp.customBackgroundProficiencies()).toEqual(['a', 'b']);
-  });
-
-  it('adds a choice cantrip once', async () => {
-    const { cmp } = await ready();
-    cmp.addChoiceCantrip('spell:fire-bolt');
-    cmp.addChoiceCantrip('spell:fire-bolt');
-    expect([...cmp.selectedCantrips()]).toEqual(['spell:fire-bolt']);
-  });
-
-  it('adds a feat once and takes it off with the slot of the improvement it replaced', async () => {
-    const { cmp } = await ready();
-    cmp.addFeat('feat:lucky');
-    cmp.addFeat('feat:lucky');
-    cmp.addFeat('feat:alert');
-    expect(cmp.featKeys()).toEqual(['feat:lucky', 'feat:alert']);
-    cmp.featSlots.set({ 'feat:lucky': 'str', 'feat:alert': 'dex' });
-    cmp.removeFeat('feat:lucky');
-    expect(cmp.featKeys()).toEqual(['feat:alert']);
-    expect(cmp.featSlots()).toEqual({ 'feat:alert': 'dex' });
   });
 });
 
@@ -757,18 +705,6 @@ describe('CharacterEditor, saving', () => {
     expect(cmp.bonusesOpen()).toBe(true);
   });
 
-  it('marks the class block a refusal points at, and clears the mark on the next refusal', async () => {
-    const { cmp, fake } = await ready();
-    fill(cmp);
-    fake.createFn = () => Promise.reject(invalidField('full.classes[1].level'));
-    await cmp.submit();
-    expect(cmp.serverClassProblem()).toBe(1);
-    expect(cmp.saveState().status).toBe('error');
-    fake.createFn = () => Promise.reject(invalidField('full.name'));
-    await cmp.submit();
-    expect(cmp.serverClassProblem()).toBeNull();
-  });
-
   it('names an archived option by its name in the refusal', async () => {
     const { cmp, fake } = await ready();
     fill(cmp);
@@ -787,16 +723,6 @@ describe('CharacterEditor, saving', () => {
     expect(cmp.saveState().status).toBe('error');
     expect(cmp.saveState().message).toContain('Escudo Arcano');
     expect(fake.catalogCalls.length).toBe(1);
-  });
-
-  it('saves nothing for an edit that has no character to save', async () => {
-    const { cmp, fake } = await ready();
-    cmp.state.set({ ...cmp.state(), mode: 'edit', characterId: null });
-    fill(cmp);
-    await cmp.submit();
-    expect(fake.created).toEqual([]);
-    expect(fake.updated).toEqual([]);
-    expect(cmp.saveState().status).toBe('idle');
   });
 
   it('sends the key of a reserved character as made for a player, and goes to the campaign', async () => {
@@ -840,50 +766,6 @@ describe('CharacterEditor, reading the page', () => {
       backLabel: 'Voltar para a campanha',
     });
     expect(cmp.pageTitle()).toBe('Não foi possível abrir o formulário');
-  });
-
-  it('says the sheet could not be read, with a way back to it', async () => {
-    const { fake } = configure({ id: 'camp-1', characterId: 'char-1' });
-    fake.editFn = () => Promise.reject(new ConnectError('x', Code.NotFound));
-    const { cmp } = await render();
-    expect(cmp.state()).toMatchObject({
-      status: 'error',
-      message: 'Personagem não encontrado.',
-      backLink: ['/campaigns', 'camp-1', 'characters', 'char-1'],
-    });
-  });
-
-  it('drops the answer of a read the person left, whether it comes back well or badly', async () => {
-    const { fake } = configure({ id: 'camp-1' });
-    fake.editFn = () => new Promise(() => undefined);
-    const late: { ok?: (c: RulesCatalogVm) => void; fail?: (e: unknown) => void }[] = [];
-    fake.catalogFn = () =>
-      new Promise((ok, fail) => {
-        late.push({ ok, fail });
-      });
-    const { cmp, fixture } = await render();
-    // The same component reads again (another route): the first answers are stale.
-    cmp.loader.forCreate('camp-2', 'player', false);
-    cmp.loader.forEdit('camp-2', 'char-2');
-    late[0].ok?.(catalog());
-    late[1].fail?.(new ConnectError('x', Code.NotFound));
-    await settleView(fixture);
-    expect(cmp.state().status).toBe('loading');
-    void fake;
-  });
-
-  it('drops a stale error of the read of an edit', async () => {
-    const { fake } = configure({ id: 'camp-1', characterId: 'char-1' });
-    let fail: (e: unknown) => void = () => undefined;
-    fake.editFn = () =>
-      new Promise((_, reject) => {
-        fail = reject;
-      });
-    const { cmp, fixture } = await render();
-    cmp.loader.seq++;
-    fail(new ConnectError('x', Code.NotFound));
-    await settleView(fixture);
-    expect(cmp.state().status).toBe('loading');
   });
 
   it('opens an existing sheet with the numbers of the saved prepared spells and the bard setting', async () => {

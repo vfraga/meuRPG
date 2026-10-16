@@ -2,11 +2,9 @@ import { CastingEffectKind } from '../../../../gen/meurpg/play/v1/casting_pb';
 import { castingSpell } from '../../../core/casting/casting-testing';
 import {
   castRequestOf,
-  casterRowsOf,
   diceOf,
   endsConfirmText,
   missingOf,
-  spellRowsOf,
   summonedNotice,
   targetChoicesOf,
   wayRowsOf,
@@ -20,29 +18,7 @@ const heal = castingSpell('spell:cure-wounds', 'Curar Ferimentos', 1, {
 const plain = (s: string) => s.replace(/\u00a0/g, ' ');
 const slot = { level: 1, pact: false } as never;
 
-describe('cast-out rows', () => {
-  it('lists the NPCs that can cast, all on', () => {
-    expect(casterRowsOf([{ id: 'lich', name: 'Lich', detail: 'Mago 18' }])).toEqual([
-      { id: 'lich', title: 'Lich', detail: 'Mago 18', enabled: true, reason: '' },
-    ]);
-  });
-
-  it('turns a spell off only when neither a slot nor a ritual can cast it', () => {
-    const spent = castingSpell('spell:shield', 'Escudo', 1, { canCast: false, slots: [] });
-    const ritual = castingSpell('spell:alarm', 'Alarme', 1, {
-      canCast: false,
-      ritualAllowed: true,
-    });
-    const [off, on, ok] = spellRowsOf([spent, ritual, heal]);
-    expect(off).toMatchObject({
-      id: 'spell:shield',
-      enabled: false,
-      reason: 'Sem espaço de magia livre.',
-    });
-    expect(on).toMatchObject({ enabled: true, reason: '' });
-    expect(ok.enabled).toBe(true);
-  });
-
+describe('cast-out rows the sheet spec does not read', () => {
   it('words the slot by its casting time and the ritual by its extra time', () => {
     const alarm = castingSpell('spell:alarm', 'Alarme', 1, {
       ritualAllowed: true,

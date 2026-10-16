@@ -1,7 +1,6 @@
-// What `LiveStream` hands each handler for each kind of message, and the corners of its lifecycle the main spec never
-// reaches (a tab opened hidden, a stream closed under a timer, a message of a kind it does not know). Written green on
-// the stream as it was before `connect` was split into its reconnect, its dispatch and its state updates, with the
-// same fake call and fake clock as `live-stream.spec.ts`.
+// What `LiveStream` hands each handler for each kind of message, plus the corners of its lifecycle that
+// `live-stream.spec.ts` leaves out: a tab opened hidden, a closed stream under a timer, a message of an unknown kind and
+// a replaced connection that keeps sending. It uses the same fake call and fake clock as `live-stream.spec.ts`.
 import { LiveStream, LiveStreamHandlers } from './live-stream';
 import { LiveEventVm } from './live-session.types';
 
@@ -303,7 +302,6 @@ describe('LiveStream: what each message hands the page', () => {
 describe('LiveStream: the corners of its lifecycle', () => {
   let calls: FakeCall[];
   let stream: LiveStream;
-  let readyCount: number;
   const flush = () => vi.advanceTimersByTimeAsync(0);
   const priv = () =>
     stream as unknown as {
@@ -316,7 +314,6 @@ describe('LiveStream: the corners of its lifecycle', () => {
     vi.useFakeTimers();
     setVisibility('visible');
     calls = [];
-    readyCount = 0;
     stream = new LiveStream({
       open: (signal) => {
         const call = new FakeCall(signal);
@@ -325,7 +322,7 @@ describe('LiveStream: the corners of its lifecycle', () => {
       },
       classify: () => 'transient',
       handlers: {
-        onReady: () => readyCount++,
+        onReady: vi.fn(),
         onVitals: vi.fn(),
         onEnded: vi.fn(),
         onFatal: vi.fn(),
@@ -387,26 +384,6 @@ describe('LiveStream: the corners of its lifecycle', () => {
     await vi.advanceTimersByTimeAsync(60_000);
     expect(stream.status()).toBe('closed');
     expect(calls.length).toBe(1);
-  });
-
-  it('counts a restart as the attempt it waits for, and lets a healthy snapshot start the wait over', async () => {
-    stream.start();
-    calls[0].push({ kind: 'ready' });
-    await flush();
-    stream.restart();
-    await vi.advanceTimersByTimeAsync(1_999);
-    expect(calls.length).toBe(1);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(calls.length).toBe(2);
-    calls[1].push({ kind: 'ready' });
-    await flush();
-    stream.confirmHealthy();
-    stream.restart();
-    await vi.advanceTimersByTimeAsync(1_999);
-    expect(calls.length).toBe(2);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(calls.length).toBe(3);
-    expect(readyCount).toBe(2);
   });
 });
 

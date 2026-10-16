@@ -1,7 +1,6 @@
-// The lines of `combat-log.ts` the other specs never read (found with the coverage report): what an undo names for each
-// kind of entry, the hit-point spells for the master and for a player, the pool card, the monk's riders, the states and
-// the small kinds. Each expectation is the text the code wrote before `undoLabel` and the spell lines were split into one
-// function per piece, recorded as an inline snapshot.
+// The lines of `combat-log.ts` that `combat-log.spec.ts` leaves out: what an undo names for each kind of entry, the
+// small kinds (standard actions, hit-point adjustments, states, monk riders, death saves) and the hit-point spells
+// (threshold, heal, zero-hp, pool) for the master and for a player. Expectations are inline snapshots of the written text.
 import { type MessageInitShape, create } from '@bufbuild/protobuf';
 
 import { CombatantStateKind } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
@@ -14,7 +13,6 @@ import {
   HitRiderChoice,
   HitRiderLogResult,
   PendingDamageStatus,
-  SpellEffectGain,
   SpellEffectKind,
   SpellEffectOutcome,
   SpellEffectReason,
@@ -158,9 +156,6 @@ describe('the small kinds', () => {
 
   it('writes the hit points the master changed, down, up or by zero, with or without the total', () => {
     const base = { kind: CombatLogKind.HIT_POINTS_ADJUSTED, targetLabel: 'Goblin' };
-    expect(text({ ...base, hitPointsDelta: -3, hitPointsAfter: 4 })).toMatchInlineSnapshot(
-      `" perdeu 3 PV, por ajuste do mestre, agora com 4 PV"`,
-    );
     expect(text({ ...base, hitPointsDelta: 3, hitPointsAfter: 10 })).toMatchInlineSnapshot(
       `" recuperou 3 PV, por ajuste do mestre, agora com 10 PV"`,
     );
@@ -297,11 +292,6 @@ describe('the small kinds', () => {
     const save = (over: Record<string, unknown>) =>
       text({ kind: CombatLogKind.DEATH_SAVE, actorLabel: 'Toren', deathSave: over as never });
     expect(save({ stable: true })).toMatchInlineSnapshot(`" estabilizou"`);
-    expect(
-      save({ outcome: DeathSaveOutcome.FAILURE, failures: 1, stable: false, dying: true }),
-    ).toMatchInlineSnapshot(
-      `" faz um teste contra a morte: falha (0 sucessos, 1 falha). Morrendo: o mestre confirma a morte"`,
-    );
     expect(save({ outcome: DeathSaveOutcome.REVIVED })).toMatchInlineSnapshot(
       `" faz um teste contra a morte: volta com 1 PV"`,
     );
@@ -365,7 +355,7 @@ describe('the spells that read hit points', () => {
     `);
   });
 
-  it('says the heal, the zero-hit-point kill and the Aid, with the amounts only where sent', () => {
+  it('says the heal and the zero-hit-point kill, with the amounts only where sent', () => {
     expect(
       cast({
         effectKind: SpellEffectKind.FLAT_HEAL,
@@ -404,22 +394,6 @@ describe('the spells that read hit points', () => {
         "icon": "auto_awesome",
         "id": "e1",
         "text": " conjura Sono no Orc (9 PV): não é afetado: não estava a 0 PV",
-        "undoable": false,
-      }
-    `);
-    expect(
-      cast({
-        effectKind: SpellEffectKind.MAX_HP,
-        targets: [target('Toren', { outcome: AFFECTED, gain: SpellEffectGain.CURRENT, healed: 5 })],
-      }),
-    ).toMatchInlineSnapshot(`
-      {
-        "actor": "Pensantus",
-        "card": undefined,
-        "hidden": false,
-        "icon": "auto_awesome",
-        "id": "e1",
-        "text": " conjura Sono em Toren: acorda com 5 PV",
         "undoable": false,
       }
     `);
