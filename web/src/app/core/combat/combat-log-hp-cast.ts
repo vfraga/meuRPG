@@ -92,41 +92,9 @@ function poolCard(e: CombatLogEntry): PoolCard | undefined {
     return oa - ob;
   });
   const condition = conditionName(spell.effectConditionKey);
-  const rows: PoolCardRow[] = targets.map((t) => {
-    const label = t.targetLabel || 'alguém';
-    const fx = t.effect;
-    const w = effectWords(
-      spell.effectKind,
-      spell.effectConditionKey,
-      fx?.outcome ?? SpellEffectOutcome.UNSPECIFIED,
-      label,
-      fx?.gain,
-    );
-    const hp = fx?.hitPointsBefore;
-    const left = fx?.poolLeft;
-    let math = '';
-    if (w.affected && hp !== undefined && left !== undefined) {
-      math = `${left + hp} − ${hp} = ${left} restam`;
-    } else if (fx && !w.affected) {
-      math = reasonWords(fx.reason, hp, left, undefined);
-    }
-    return {
-      id: t.targetId,
-      label,
-      hitPoints: hp === undefined ? '' : `${hp} PV`,
-      math,
-      word: w.affected ? `${w.past}${condition ? ` · ${condition}` : ''}` : 'Não afetado',
-      icon: w.icon,
-      affected: w.affected,
-    };
-  });
+  const rows = targets.map((t) => poolRow(spell, t, condition));
   const roll = poolRollText(spell.poolRoll).replace(' · dado físico', '');
-  const summary = `${roll} PV${spell.poolRoll.physical ? ', dado físico' : ''}. ${rows
-    .map(
-      (r) =>
-        `${r.label}${r.hitPoints ? ` (${r.hitPoints})` : ''} ${r.affected ? `${r.word.toLowerCase()}${r.math ? `, ${r.math}` : ''}` : 'não é afetado'}.`,
-    )
-    .join(' ')}`;
+  const summary = poolSummary(roll, spell.poolRoll.physical, rows);
   return {
     roll,
     physical: spell.poolRoll.physical || spell.poolRoll.faces.length === 0,
@@ -138,6 +106,49 @@ function poolCard(e: CombatLogEntry): PoolCard | undefined {
       .map((r) => ({ id: r.id, label: r.label })),
     summary,
   };
+}
+
+/** The arithmetic of a creature of the pool: what was left after it, or why it was not affected. */
+function poolMath(fx: CombatLogSpellTarget['effect'], affected: boolean): string {
+  const hp = fx?.hitPointsBefore;
+  const left = fx?.poolLeft;
+  if (affected && hp !== undefined && left !== undefined) {
+    return `${left + hp} − ${hp} = ${left} restam`;
+  }
+  return fx && !affected ? reasonWords(fx.reason, hp, left, undefined) : '';
+}
+
+/** One creature of the pool card: its hit points, the sum that was left, and the word with the condition it got. */
+function poolRow(spell: CastSpell, t: CombatLogSpellTarget, condition: string): PoolCardRow {
+  const label = t.targetLabel || 'alguém';
+  const fx = t.effect;
+  const w = effectWords(
+    spell.effectKind,
+    spell.effectConditionKey,
+    fx?.outcome ?? SpellEffectOutcome.UNSPECIFIED,
+    label,
+    fx?.gain,
+  );
+  const hp = fx?.hitPointsBefore;
+  const math = poolMath(fx, w.affected);
+  return {
+    id: t.targetId,
+    label,
+    hitPoints: hp === undefined ? '' : `${hp} PV`,
+    math,
+    word: w.affected ? `${w.past}${condition ? ` · ${condition}` : ''}` : 'Não afetado',
+    icon: w.icon,
+    affected: w.affected,
+  };
+}
+
+/** The card in one paragraph, for a screen reader: "5d8 = 22 PV. Goblin 1 (7 PV) adormeceu, 22 − 7 = 15 restam." */
+function poolSummary(roll: string, physical: boolean, rows: readonly PoolCardRow[]): string {
+  const sentences = rows.map(
+    (r) =>
+      `${r.label}${r.hitPoints ? ` (${r.hitPoints})` : ''} ${r.affected ? `${r.word.toLowerCase()}${r.math ? `, ${r.math}` : ''}` : 'não é afetado'}.`,
+  );
+  return `${roll} PV${physical ? ', dado físico' : ''}. ${sentences.join(' ')}`;
 }
 
 type CastSpell = NonNullable<CombatLogEntry['spell']>;
