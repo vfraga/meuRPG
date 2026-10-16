@@ -32,11 +32,6 @@
       "count": 1
     }
   },
-  "src/app/core/combat/combat-errors.ts": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "src/app/core/combat/combat-grid.ts": {
     "@typescript-eslint/no-magic-numbers": {
       "count": 2
@@ -44,7 +39,7 @@
   },
   "src/app/core/combat/combat-log.ts": {
     "complexity": {
-      "count": 3
+      "count": 2
     }
   },
   "src/app/core/combat/combat-notices.ts": {
@@ -1371,12 +1366,6 @@
   "src/app/pages/live-session/combat/combat-view.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
-    },
-    "@typescript-eslint/no-magic-numbers": {
-      "count": 1
-    },
-    "complexity": {
-      "count": 2
     }
   },
   "src/app/pages/live-session/combat/combat-xp/combat-xp.ts": {

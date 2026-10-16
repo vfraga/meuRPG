@@ -391,13 +391,19 @@ func (u *undoer) damageApplied(ctx context.Context, ev actionEvent) error {
 	return nil
 }
 
-// damageDiscarded: the damage is back in the status it was discarded from.
+// damageDiscarded: the damage is back in the status it was discarded from, and a hit
+// that waited for a reaction waits for it again: the windows the discard closed are open
+// as they were (ev.ClosedWindows), so that the next settleReactions does not let the hit
+// go on.
 func (u *undoer) damageDiscarded(ctx context.Context, ev actionEvent) error {
 	prev := ev.PrevStatus
 	if prev != pendingAwaitingReaction && prev != pendingAwaitingRoll && prev != pendingRolled {
 		prev = pendingRolled // never: only these can be discarded
 	}
-	return u.setStatus(ctx, ev.Pending, prev)
+	if err := u.setStatus(ctx, ev.Pending, prev); err != nil {
+		return err
+	}
+	return reopenWindows(ctx, u.c, ev.ClosedWindows)
 }
 
 // hideResolved: the master's reveal, the hiding comes back as it was.
@@ -599,8 +605,8 @@ func (u *undoer) castDieBack(ctx context.Context, who playdb.Combatant, ev actio
 	return nil
 }
 
-// castEffectsBack takes away the effects the cast put on its targets, and the mark
-// of Hunter's Mark.
+// castEffectsBack takes away the effects the cast put on its targets and the mark of
+// Hunter's Mark, and puts back the marks the cast took off.
 func (u *undoer) castEffectsBack(ctx context.Context, who playdb.Combatant, ev actionEvent) error {
 	if ev.Lasting != nil { // the effects the cast put on its targets
 		for _, id := range ev.Lasting.Effects {
@@ -613,7 +619,31 @@ func (u *undoer) castEffectsBack(ctx context.Context, who playdb.Combatant, ev a
 		}
 	}
 	if ev.Key == huntersMark { // the mark the cast put on its target
-		return u.s.clearHuntersMark(ctx, u.c, who)
+		if err := u.s.clearHuntersMark(ctx, u.c, who, nil); err != nil {
+			return err
+		}
+	}
+	return u.marksBack(ctx, ev.MarksBefore)
+}
+
+// marksBack puts back, with their IDs and rounds, the Hunter's Marks a cast took off: the
+// caster's mark that a new Hunter's Mark moved to another target, or that a new
+// concentration ended. It runs after the cast's own mark is off, which takes every mark of
+// the caster away. A mark whose target or caster left the combat stays off. A cast written
+// before its event kept the marks has none, and the first target stays unmarked.
+func (u *undoer) marksBack(ctx context.Context, marks []markState) error {
+	for _, mk := range marks {
+		if _, ok := u.find(mk.Target); !ok {
+			continue
+		}
+		if _, ok := u.find(mk.Source); !ok {
+			continue
+		}
+		if err := u.c.q.RestoreHuntersMark(ctx, playdb.RestoreHuntersMarkParams{
+			ID: mk.ID, EncounterID: u.c.enc.ID, CombatantID: mk.Target, SourceID: &mk.Source, StartedRound: mk.Round, CreatedAt: mk.CreatedAt,
+		}); err != nil {
+			return fmt.Errorf("put the Hunter's Mark back: %w", err)
+		}
 	}
 	return nil
 }

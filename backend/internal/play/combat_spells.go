@@ -583,12 +583,12 @@ func (s *Service) castSpell(ctx context.Context, m authz.Membership, req *connec
 			}
 			// The old concentration's mark goes, and a new Hunter's Mark marks its target.
 			if made.ConcBefore == huntersMark {
-				if err := s.clearHuntersMark(ctx, c, caster); err != nil {
+				if err := s.clearHuntersMark(ctx, c, caster, &made); err != nil {
 					return nil, err
 				}
 			}
 			if spellKey == huntersMark && len(targs) == 1 {
-				if err := s.markHuntersMark(ctx, c, caster, targs[0]); err != nil {
+				if err := s.markHuntersMark(ctx, c, caster, targs[0], &made); err != nil {
 					return nil, err
 				}
 			}

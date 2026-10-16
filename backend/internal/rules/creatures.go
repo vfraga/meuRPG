@@ -83,83 +83,144 @@ type CreatureEntry struct {
 // checkMonsters refuses a stat block that points at something that does not
 // exist: a skill, a save ability, a damage type, a condition or a challenge
 // rating. data/ is generated, so this catches a bad importer or a bad commit.
+// The stat blocks are checked in key order and the first problem is returned.
 func (c *content) checkMonsters() error {
 	for _, k := range sortedKeys(c.monsters) {
-		m := c.monsters[k]
-		fail := func(format string, a ...any) error {
-			return fmt.Errorf("data/monsters.json: %s: %s", k, fmt.Sprintf(format, a...))
+		if problem := c.monsterProblem(c.monsters[k]); problem != "" {
+			return fmt.Errorf("data/monsters.json: %s: %s", k, problem)
 		}
-		if _, ok := crEighths(m.ChallengeRating); !ok {
-			return fail("%q is not a challenge rating", m.ChallengeRating)
+	}
+	return nil
+}
+
+// monsterProblem is the first thing wrong with a stat block, or "".
+func (c *content) monsterProblem(m *srd51.Monster) string {
+	if _, ok := crEighths(m.ChallengeRating); !ok {
+		return fmt.Sprintf("%q is not a challenge rating", m.ChallengeRating)
+	}
+	for _, check := range [...]func(*srd51.Monster) string{
+		c.skillsProblem, savesProblem, c.conditionImmunitiesProblem, c.damageModsProblem, c.armorClassProblem, c.actionsProblem,
+	} {
+		if problem := check(m); problem != "" {
+			return problem
 		}
-		for s := range m.Skills {
-			if _, ok := c.skills[s]; !ok {
-				return fail("%q is not a skill", s)
-			}
+	}
+	return ""
+}
+
+func (c *content) skillsProblem(m *srd51.Monster) string {
+	for s := range m.Skills {
+		if _, ok := c.skills[s]; !ok {
+			return fmt.Sprintf("%q is not a skill", s)
 		}
-		for a := range m.Saves {
-			if _, ok := abilityIndex[Ability(a)]; !ok {
-				return fail("%q is not an ability", a)
-			}
+	}
+	return ""
+}
+
+func savesProblem(m *srd51.Monster) string {
+	for a := range m.Saves {
+		if _, ok := abilityIndex[Ability(a)]; !ok {
+			return fmt.Sprintf("%q is not an ability", a)
 		}
-		for _, k := range m.ConditionImmunities {
-			if n, ok := c.named[k]; !ok || n == nil || !strings.HasPrefix(k, "condition:") {
-				return fail("%q is not a condition", k)
-			}
+	}
+	return ""
+}
+
+func (c *content) conditionImmunitiesProblem(m *srd51.Monster) string {
+	for _, k := range m.ConditionImmunities {
+		if n, ok := c.named[k]; !ok || n == nil || !strings.HasPrefix(k, "condition:") {
+			return fmt.Sprintf("%q is not a condition", k)
 		}
-		for _, list := range [][]srd51.MonsterDamageMod{m.Vulnerabilities, m.Resistances, m.Immunities} {
-			for _, d := range list {
-				for _, t := range d.Types {
-					if _, ok := c.named[t]; !ok || !strings.HasPrefix(t, "damage-type:") {
-						return fail("%q is not a damage type", t)
-					}
-				}
-			}
-		}
-		for _, e := range m.ArmorClassItems {
-			if _, ok := c.equipment[e]; !ok {
-				return fail("%q is not equipment", e)
-			}
-		}
-		for _, alt := range m.ArmorClassAlts {
-			if _, ok := c.spells[alt.Spell]; alt.Spell != "" && !ok {
-				return fail("%q is not a spell", alt.Spell)
-			}
-			if _, ok := c.named[alt.Condition]; alt.Condition != "" && !ok {
-				return fail("%q is not a condition", alt.Condition)
-			}
-		}
-		actions := map[string]bool{}
-		for _, a := range m.Actions {
-			actions[a.Name] = true
-		}
-		for _, a := range m.Actions {
-			for _, routine := range a.Multiattack {
-				for _, x := range routine {
-					if x.Count < 1 {
-						return fail("%s: %q has a count of %d", a.Name, x.Name, x.Count)
-					}
-					if !actions[x.Name] && x.Kind != "ability" && x.Kind != "magic" {
-						return fail("%s: %q is not an action of the stat block", a.Name, x.Name)
-					}
-				}
-			}
-			for _, d := range a.Damage {
-				if _, ok := c.named[d.DamageType]; !ok || !strings.HasPrefix(d.DamageType, "damage-type:") {
-					return fail("%s: %q is not a damage type", a.Name, d.DamageType)
-				}
-				if _, ok := ParseDice(d.Dice); !ok {
-					return fail("%s: %q are not dice", a.Name, d.Dice)
-				}
-			}
-			if a.Save != nil {
-				if _, ok := abilityIndex[Ability(a.Save.Ability)]; !ok {
-					return fail("%s: %q is not an ability", a.Name, a.Save.Ability)
+	}
+	return ""
+}
+
+// isDamageTypeKey says the key is a damage type of the content.
+func (c *content) isDamageTypeKey(k string) bool {
+	_, ok := c.named[k]
+	return ok && strings.HasPrefix(k, "damage-type:")
+}
+
+func (c *content) damageModsProblem(m *srd51.Monster) string {
+	for _, list := range [][]srd51.MonsterDamageMod{m.Vulnerabilities, m.Resistances, m.Immunities} {
+		for _, d := range list {
+			for _, t := range d.Types {
+				if !c.isDamageTypeKey(t) {
+					return fmt.Sprintf("%q is not a damage type", t)
 				}
 			}
 		}
 	}
-	return nil
+	return ""
+}
+
+// armorClassProblem checks the equipment the armor class wears and the spell and
+// condition of its alternatives.
+func (c *content) armorClassProblem(m *srd51.Monster) string {
+	for _, e := range m.ArmorClassItems {
+		if _, ok := c.equipment[e]; !ok {
+			return fmt.Sprintf("%q is not equipment", e)
+		}
+	}
+	for _, alt := range m.ArmorClassAlts {
+		if _, ok := c.spells[alt.Spell]; alt.Spell != "" && !ok {
+			return fmt.Sprintf("%q is not a spell", alt.Spell)
+		}
+		if _, ok := c.named[alt.Condition]; alt.Condition != "" && !ok {
+			return fmt.Sprintf("%q is not a condition", alt.Condition)
+		}
+	}
+	return ""
+}
+
+func (c *content) actionsProblem(m *srd51.Monster) string {
+	names := map[string]bool{}
+	for _, a := range m.Actions {
+		names[a.Name] = true
+	}
+	for _, a := range m.Actions {
+		if problem := multiattackProblem(&a, names); problem != "" {
+			return problem
+		}
+		if problem := c.actionDamageProblem(&a); problem != "" {
+			return problem
+		}
+		if a.Save != nil {
+			if _, ok := abilityIndex[Ability(a.Save.Ability)]; !ok {
+				return fmt.Sprintf("%s: %q is not an ability", a.Name, a.Save.Ability)
+			}
+		}
+	}
+	return ""
+}
+
+// multiattackProblem checks the routines of a Multiattack: each part is done at
+// least once and, unless it is an ability or a spell, is an action of the same
+// stat block (names).
+func multiattackProblem(a *srd51.MonsterAction, names map[string]bool) string {
+	for _, routine := range a.Multiattack {
+		for _, x := range routine {
+			if x.Count < 1 {
+				return fmt.Sprintf("%s: %q has a count of %d", a.Name, x.Name, x.Count)
+			}
+			if !names[x.Name] && x.Kind != "ability" && x.Kind != "magic" {
+				return fmt.Sprintf("%s: %q is not an action of the stat block", a.Name, x.Name)
+			}
+		}
+	}
+	return ""
+}
+
+func (c *content) actionDamageProblem(a *srd51.MonsterAction) string {
+	for _, d := range a.Damage {
+		if !c.isDamageTypeKey(d.DamageType) {
+			return fmt.Sprintf("%s: %q is not a damage type", a.Name, d.DamageType)
+		}
+		if _, ok := ParseDice(d.Dice); !ok {
+			return fmt.Sprintf("%s: %q are not dice", a.Name, d.Dice)
+		}
+	}
+	return ""
 }
 
 func (c *content) buildCreatures() {

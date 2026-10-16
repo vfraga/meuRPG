@@ -185,130 +185,204 @@ func (b *overlayBuilder) addOptions(f *TableFeature, k featureKind, path string)
 	return keys, nil
 }
 
+// effectSite is where an effect is, for the errors it gets: the owner's key and
+// the effect's path in the Overlay.
+type effectSite struct{ owner, path string }
+
+// fail is the refusal of the effect's attribute attr.
+func (s effectSite) fail(attr, reason, format string, args ...any) error {
+	return ovErr(s.owner, format, args...).at(s.path+attr, reason)
+}
+
 // checkEffect is the closed menu: what is not on it is refused, naming the key.
 // The error carries the effect's path.
 func (b *overlayBuilder) checkEffect(owner, path string, e *Effect, strict bool) error {
-	fail := func(attr, reason, format string, args ...any) error {
-		return ovErr(owner, format, args...).at(path+attr, reason)
-	}
-	if e.Type == "handler" {
-		return fail(".type", ReasonEffect, "a handler effect is not allowed: the table's content never runs code")
-	}
-	if !slices.Contains(overlayEffectTypes, e.Type) {
-		return fail(".type", ReasonEffect, "effect type %q is not on the table's menu", e.Type)
-	}
-	if e.Type == "ability_increase" && !strings.HasPrefix(owner, "feat:") {
-		return fail(".type", ReasonEffect, "only a feat raises abilities: an ability_increase is not on the menu of a feature")
+	site := effectSite{owner: owner, path: path}
+	if err := checkEffectType(site, e); err != nil {
+		return err
 	}
 	if name := unusedField(e); strict && name != "" {
-		return fail("."+name, ReasonValue, "the field %s is not used by a %s effect", name, e.Type)
+		return site.fail("."+name, ReasonValue, "the field %s is not used by a %s effect", name, e.Type)
 	}
 	if len(e.Spells) > 0 {
-		// A spell the effect grants (a race that knows a cantrip, a once-a-day
-		// spell): a note with the spells, as the SRD's Infernal Legacy. The uses
-		// per rest are a resource effect of the same feature.
-		if e.Type != "note" {
-			return fail(".spells", ReasonEffect, "only a note grants spells in the table's content")
-		}
-		for _, sp := range e.Spells {
-			if !b.isSpell(sp) {
-				return fail(".spells", ReasonReference, "the granted spell %q does not exist", sp)
-			}
+		if err := b.checkGrantedSpells(site, e); err != nil {
+			return err
 		}
 	}
 	switch e.Type {
 	case "choice":
-		if !slices.Contains(overlayChoiceKinds, e.Choice) {
-			return fail(".choice", ReasonEffect, "choice %q is not on the table's menu", e.Choice)
-		}
-		if e.Count < 1 {
-			return fail(".count", ReasonValue, "a choice needs a count of at least 1")
-		}
-		if e.Count > MaxChoiceCount {
-			return fail(".count", ReasonValue, "a choice has a count of at most %d", MaxChoiceCount)
-		}
-		if e.Choice == "feature" && e.Count > len(e.From) {
-			return fail(".count", ReasonValue, "a choice of features cannot ask for more than the %d options it lists", len(e.From))
-		}
-		if e.Choice == "feature" && len(e.From) == 0 {
-			return fail(".from", ReasonValue, "a choice of features needs the options to choose from")
-		}
-		if e.Choice == "feat" && len(e.From) > 0 && e.Count > len(e.From) {
-			return fail(".count", ReasonValue, "a choice of feats cannot ask for more than the %d feats it lists", len(e.From))
-		}
-		if e.Choice == "feature" && len(slices.Compact(slices.Sorted(slices.Values(e.From)))) != len(e.From) {
-			return fail(".from", ReasonValue, "the options of a choice are listed once each")
-		}
-		if b.optionEntry[owner] != "" {
-			return fail(".type", ReasonEffect, "an option does not ask for another choice")
-		}
-		for _, k := range e.From {
-			if e.Choice == "feature" && b.optionEntry[k] != "" {
-				// An option of a feature list: the same entry's, never another's.
-				if b.optionEntry[k] != b.featureEntry[owner] {
-					return fail(".from", ReasonReference, "choice option %q belongs to another entry's list", k)
-				}
-				continue
-			}
-			if e.Choice == "feat" {
-				// The feats offered are the SRD's or the table's own, and only feats.
-				if !strings.HasPrefix(k, "feat:") || (!b.entries[k] && !b.base.exists(k)) {
-					return fail(".from", ReasonReference, "choice feat %q does not exist", k)
-				}
-				continue
-			}
-			// The options come from an SRD set: a key the SRD has, never one of the
-			// table's (and never one that does not exist).
-			if isTableKey(k) || !b.base.exists(k) {
-				return fail(".from", ReasonReference, "choice option %q is not in the SRD", k)
-			}
-			if e.Choice == "feature" && !isOption(b.base, k) {
-				return fail(".from", ReasonReference, "%q is not an option of an SRD feature", k)
-			}
-		}
+		return b.checkChoiceEffect(site, e)
 	case "ability_increase":
 		if attr, msg := checkAbilityIncrease(e); attr != "" {
-			return fail(attr, ReasonValue, "%s", msg)
+			return site.fail(attr, ReasonValue, "%s", msg)
 		}
 	case "grant_action":
-		if e.Resource != "" {
-			entry := b.featureEntry[owner]
-			_, srd := b.base.namesPT["resource:"+e.Resource]
-			if !validResourceName(e.Resource) || (!srd && !b.resources[entry][e.Resource] && !b.resources[b.featureClass[owner]][e.Resource]) {
-				return fail(".resource", ReasonReference, "the action spends %q, which no resource effect of this entry or its class defines", e.Resource)
-			}
+		if e.Resource != "" && !b.resourceDefined(owner, e.Resource) {
+			return site.fail(".resource", ReasonReference, "the action spends %q, which no resource effect of this entry or its class defines", e.Resource)
 		}
 	case "superiority_die":
-		entry := b.featureEntry[owner]
-		_, srd := b.base.namesPT["resource:"+e.Resource]
-		if !validResourceName(e.Resource) || (!srd && !b.resources[entry][e.Resource] && !b.resources[b.featureClass[owner]][e.Resource]) {
-			return fail(".resource", ReasonReference, "the die spends %q, which no resource effect of this entry or its class defines", e.Resource)
-		}
-		if !slices.Contains(maneuverApplies, e.Applies) {
-			return fail(".applies", ReasonValue, "applies %q is not on the table's menu", e.Applies)
-		}
-		if e.Applies == ManeuverReduceMelee && e.Ability == "" {
-			return fail(".ability", ReasonValue, "a reduction names the ability whose modifier is added")
-		}
-		if e.Applies == ManeuverReduceMelee && e.Economy != EconomyReaction {
-			return fail(".economy", ReasonValue, "a reduction of a melee attack's damage costs a reaction")
-		}
-		if e.Applies == ManeuverGrapple && e.Economy != "" && e.Economy != EconomyBonusAction {
-			return fail(".economy", ReasonValue, "a grapple maneuver costs a bonus action or nothing")
-		}
-		if e.Applies != ManeuverReduceMelee && e.Applies != ManeuverGrapple && e.Economy != "" {
-			return fail(".economy", ReasonValue, "a die added to an attack or to damage costs no action")
-		}
-		if e.Applies != ManeuverReduceMelee && e.Ability != "" {
-			return fail(".ability", ReasonValue, "only a reduction adds an ability modifier")
-		}
+		return b.checkSuperiorityDie(site, e)
 	case "resource":
-		if !validResourceName(e.Resource) {
-			return fail(".resource", ReasonValue, "a resource name has 1 to 40 characters of a-z, 0-9 and _")
+		return b.checkResourceEffect(site, e)
+	}
+	return nil
+}
+
+// checkEffectType refuses a type that is not on the menu.
+func checkEffectType(site effectSite, e *Effect) error {
+	if e.Type == "handler" {
+		return site.fail(".type", ReasonEffect, "a handler effect is not allowed: the table's content never runs code")
+	}
+	if !slices.Contains(overlayEffectTypes, e.Type) {
+		return site.fail(".type", ReasonEffect, "effect type %q is not on the table's menu", e.Type)
+	}
+	if e.Type == "ability_increase" && !strings.HasPrefix(site.owner, "feat:") {
+		return site.fail(".type", ReasonEffect, "only a feat raises abilities: an ability_increase is not on the menu of a feature")
+	}
+	return nil
+}
+
+// checkGrantedSpells checks a spell the effect grants (a race that knows a
+// cantrip, a once-a-day spell): a note with the spells, as the SRD's Infernal
+// Legacy. The uses per rest are a resource effect of the same feature.
+func (b *overlayBuilder) checkGrantedSpells(site effectSite, e *Effect) error {
+	if e.Type != "note" {
+		return site.fail(".spells", ReasonEffect, "only a note grants spells in the table's content")
+	}
+	for _, sp := range e.Spells {
+		if !b.isSpell(sp) {
+			return site.fail(".spells", ReasonReference, "the granted spell %q does not exist", sp)
 		}
-		if _, taken := b.base.namesPT["resource:"+e.Resource]; taken {
-			return fail(".resource", ReasonValue, "resource %q is an SRD resource; use another name", e.Resource)
+	}
+	return nil
+}
+
+// resourceDefined says the owner can spend the resource: it is an SRD resource,
+// or a resource effect of the owner's entry or of its class defines it.
+func (b *overlayBuilder) resourceDefined(owner, name string) bool {
+	_, srd := b.base.namesPT["resource:"+name]
+	return validResourceName(name) && (srd || b.resources[b.featureEntry[owner]][name] || b.resources[b.featureClass[owner]][name])
+}
+
+// checkChoiceEffect checks a choice effect: what it asks and what it offers.
+func (b *overlayBuilder) checkChoiceEffect(site effectSite, e *Effect) error {
+	if err := checkChoiceCount(site, e); err != nil {
+		return err
+	}
+	if err := checkChoiceList(site, e); err != nil {
+		return err
+	}
+	if b.optionEntry[site.owner] != "" {
+		return site.fail(".type", ReasonEffect, "an option does not ask for another choice")
+	}
+	for _, k := range e.From {
+		if err := b.checkChoiceKey(site, e, k); err != nil {
+			return err
 		}
+	}
+	return nil
+}
+
+// checkChoiceCount checks the kind of a choice and how many it asks for.
+func checkChoiceCount(site effectSite, e *Effect) error {
+	if !slices.Contains(overlayChoiceKinds, e.Choice) {
+		return site.fail(".choice", ReasonEffect, "choice %q is not on the table's menu", e.Choice)
+	}
+	if e.Count < 1 {
+		return site.fail(".count", ReasonValue, "a choice needs a count of at least 1")
+	}
+	if e.Count > MaxChoiceCount {
+		return site.fail(".count", ReasonValue, "a choice has a count of at most %d", MaxChoiceCount)
+	}
+	return nil
+}
+
+// checkChoiceList checks the list of options or feats a choice offers against
+// the number it asks for.
+func checkChoiceList(site effectSite, e *Effect) error {
+	if e.Choice == "feature" && e.Count > len(e.From) {
+		return site.fail(".count", ReasonValue, "a choice of features cannot ask for more than the %d options it lists", len(e.From))
+	}
+	if e.Choice == "feature" && len(e.From) == 0 {
+		return site.fail(".from", ReasonValue, "a choice of features needs the options to choose from")
+	}
+	if e.Choice == "feat" && len(e.From) > 0 && e.Count > len(e.From) {
+		return site.fail(".count", ReasonValue, "a choice of feats cannot ask for more than the %d feats it lists", len(e.From))
+	}
+	if e.Choice == "feature" && len(slices.Compact(slices.Sorted(slices.Values(e.From)))) != len(e.From) {
+		return site.fail(".from", ReasonValue, "the options of a choice are listed once each")
+	}
+	return nil
+}
+
+// checkChoiceKey checks one key a choice offers.
+func (b *overlayBuilder) checkChoiceKey(site effectSite, e *Effect, k string) error {
+	if e.Choice == "feature" && b.optionEntry[k] != "" {
+		// An option of a feature list: the same entry's, never another's.
+		if b.optionEntry[k] != b.featureEntry[site.owner] {
+			return site.fail(".from", ReasonReference, "choice option %q belongs to another entry's list", k)
+		}
+		return nil
+	}
+	if e.Choice == "feat" {
+		// The feats offered are the SRD's or the table's own, and only feats.
+		if !strings.HasPrefix(k, "feat:") || (!b.entries[k] && !b.base.exists(k)) {
+			return site.fail(".from", ReasonReference, "choice feat %q does not exist", k)
+		}
+		return nil
+	}
+	// The options come from an SRD set: a key the SRD has, never one of the
+	// table's (and never one that does not exist).
+	if isTableKey(k) || !b.base.exists(k) {
+		return site.fail(".from", ReasonReference, "choice option %q is not in the SRD", k)
+	}
+	if e.Choice == "feature" && !isOption(b.base, k) {
+		return site.fail(".from", ReasonReference, "%q is not an option of an SRD feature", k)
+	}
+	return nil
+}
+
+// checkSuperiorityDie checks a superiority die: the resource it spends and what
+// it is added to.
+func (b *overlayBuilder) checkSuperiorityDie(site effectSite, e *Effect) error {
+	if !b.resourceDefined(site.owner, e.Resource) {
+		return site.fail(".resource", ReasonReference, "the die spends %q, which no resource effect of this entry or its class defines", e.Resource)
+	}
+	if !slices.Contains(maneuverApplies, e.Applies) {
+		return site.fail(".applies", ReasonValue, "applies %q is not on the table's menu", e.Applies)
+	}
+	return checkManeuverCost(site, e)
+}
+
+// checkManeuverCost checks the action a maneuver costs and the ability it adds,
+// which only a reduction of a melee attack's damage and a grapple have.
+func checkManeuverCost(site effectSite, e *Effect) error {
+	reduction := e.Applies == ManeuverReduceMelee
+	if reduction && e.Ability == "" {
+		return site.fail(".ability", ReasonValue, "a reduction names the ability whose modifier is added")
+	}
+	if reduction && e.Economy != EconomyReaction {
+		return site.fail(".economy", ReasonValue, "a reduction of a melee attack's damage costs a reaction")
+	}
+	if e.Applies == ManeuverGrapple && e.Economy != "" && e.Economy != EconomyBonusAction {
+		return site.fail(".economy", ReasonValue, "a grapple maneuver costs a bonus action or nothing")
+	}
+	if !reduction && e.Applies != ManeuverGrapple && e.Economy != "" {
+		return site.fail(".economy", ReasonValue, "a die added to an attack or to damage costs no action")
+	}
+	if !reduction && e.Ability != "" {
+		return site.fail(".ability", ReasonValue, "only a reduction adds an ability modifier")
+	}
+	return nil
+}
+
+// checkResourceEffect checks the name of a resource an effect declares.
+func (b *overlayBuilder) checkResourceEffect(site effectSite, e *Effect) error {
+	if !validResourceName(e.Resource) {
+		return site.fail(".resource", ReasonValue, "a resource name has 1 to 40 characters of a-z, 0-9 and _")
+	}
+	if _, taken := b.base.namesPT["resource:"+e.Resource]; taken {
+		return site.fail(".resource", ReasonValue, "resource %q is an SRD resource; use another name", e.Resource)
 	}
 	return nil
 }

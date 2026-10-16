@@ -132,180 +132,237 @@ export function rechargeText(recharge: Recharge): string {
   }
 }
 
+/** What each refusal of the combat says when the words do not depend on a number: the Portuguese sentence, by reason. */
+const BLOCKED_TEXT: ReadonlyMap<EncounterBlockedReason, string> = new Map([
+  [EncounterBlockedReason.ENCOUNTER_ALREADY_OPEN, 'A sessão já tem um combate em andamento.'],
+  [EncounterBlockedReason.NO_CURRENT_MAP, 'Escolha o mapa do combate antes de iniciar.'],
+  [
+    EncounterBlockedReason.MAP_HAS_NO_GRID,
+    'Esse mapa ainda não tem grade. Defina a grade para iniciar o combate.',
+  ],
+  [EncounterBlockedReason.NOT_IN_SETUP, 'O combate já começou.'],
+  [EncounterBlockedReason.NOT_ACTIVE, 'O combate não está em andamento.'],
+  [EncounterBlockedReason.ENCOUNTER_ENDED, 'Esse combate já terminou.'],
+  [EncounterBlockedReason.INITIATIVE_MISSING, 'Ainda falta a iniciativa de alguém.'],
+  [EncounterBlockedReason.INITIATIVE_ALREADY_SET, 'Sua iniciativa já foi rolada.'],
+  [
+    EncounterBlockedReason.WRONG_DICE_MODE,
+    'A campanha mudou a forma de rolar os dados. Recarregue a página.',
+  ],
+  [EncounterBlockedReason.NOT_YOUR_TURN, 'Não é a sua vez.'],
+  [EncounterBlockedReason.NOT_PLACED, 'Esse combatente ainda não está no mapa.'],
+  [EncounterBlockedReason.NOT_PRONE, 'Você já está de pé. A tela foi atualizada.'],
+  [EncounterBlockedReason.CANNOT_STAND_UP, 'Sem velocidade, não dá para se levantar.'],
+  [
+    EncounterBlockedReason.MOVE_BLOCKED,
+    'Não dá para passar por aí: há uma parede ou outra criatura no caminho.',
+  ],
+  [EncounterBlockedReason.WALL_ON_SQUARE, 'Esse quadrado é uma parede: ninguém fica dentro dele.'],
+  [EncounterBlockedReason.NO_FREE_SQUARE, 'Não há quadrado livre longe dos jogadores neste mapa.'],
+  [EncounterBlockedReason.TARGET_DEAD, 'Não dá para curar quem já morreu.'],
+  [EncounterBlockedReason.ENEMY_IN_THE_WAY, 'Um inimigo está no caminho.'],
+  [EncounterBlockedReason.TARGET_COVER_TOTAL, 'O alvo está atrás de cobertura total.'],
+  [EncounterBlockedReason.SQUARE_OCCUPIED, 'Ocupado: escolha outro quadrado.'],
+  [EncounterBlockedReason.PLAYER_IN_COMBAT, 'Um jogador só sai do combate antes de ele começar.'],
+  [EncounterBlockedReason.ACTION_USED, 'Sua ação já foi usada neste turno.'],
+  [EncounterBlockedReason.BONUS_ACTION_USED, 'Sua ação bônus já foi usada neste turno.'],
+  [EncounterBlockedReason.ATTACKS_USED, 'Os ataques desta ação já foram usados.'],
+  [EncounterBlockedReason.TARGET_DEFEATED, 'Esse alvo já foi derrotado. Escolha outro.'],
+  [
+    EncounterBlockedReason.PENDING_DAMAGE,
+    'Ainda falta rolar ou aplicar o dano do ataque antes de passar o turno.',
+  ],
+  [EncounterBlockedReason.DAMAGE_ALREADY_ROLLED, 'O dano desse ataque já foi rolado.'],
+  [EncounterBlockedReason.DAMAGE_NOT_ROLLED, 'O dano ainda não foi rolado.'],
+  [EncounterBlockedReason.DAMAGE_RESOLVED, 'Esse dano já foi aplicado ou descartado.'],
+  [
+    EncounterBlockedReason.NOTHING_TO_UNDO,
+    'Não há mais nada para desfazer: só a última ação pode ser desfeita.',
+  ],
+  [EncounterBlockedReason.COMBATANT_DOWN, 'Quem está caído não age.'],
+  [
+    EncounterBlockedReason.REACTION_PENDING,
+    'Uma reação ainda espera resposta. Espere a resposta ou responda no lugar de quem reage.',
+  ],
+  [
+    EncounterBlockedReason.CONCENTRATION_SAVE_PENDING,
+    'Um teste de concentração ainda espera resposta.',
+  ],
+  [
+    EncounterBlockedReason.NOT_YOUR_TURN_TO_ANSWER,
+    'Essa reação não espera a sua resposta agora. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.REACTION_NEEDS_ROLL,
+    'Falta o dado: role no app ou digite o resultado do dado.',
+  ],
+  [
+    EncounterBlockedReason.NOT_AWAITING_REACTION,
+    'Esse acerto não espera mais uma reação. A tela foi atualizada.',
+  ],
+  [EncounterBlockedReason.REACTION_USED, 'A reação já foi usada: ela volta no começo da sua vez.'],
+  [
+    EncounterBlockedReason.ALREADY_USED_THIS_TURN,
+    'Esse recurso só pode ser usado uma vez por turno, e já foi usado neste.',
+  ],
+  [
+    EncounterBlockedReason.BONUS_ACTION_SPELL_LIMIT,
+    'Quem conjura uma magia com ação bônus não conjura outra no mesmo turno, a não ser um truque de 1 ação.',
+  ],
+  [
+    EncounterBlockedReason.ATTACK_ACTION_FIRST,
+    'A Rajada de Golpes vem logo depois da ação de Atacar.',
+  ],
+  [EncounterBlockedReason.DEATH_SAVE_DUE, 'Role o teste contra a morte antes de encerrar o turno.'],
+  [
+    EncounterBlockedReason.DEATH_SAVE_NOT_DUE,
+    'Não há teste contra a morte para rolar agora. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.NOT_DYING,
+    'Esse personagem não falhou três testes contra a morte. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.OPPORTUNITY_PENDING,
+    'Esperando a reação do mestre: um ataque de oportunidade ainda não foi respondido.',
+  ],
+  // The turn waits for the master's answer about hidden creatures an area hit: a player reads the same words as any wait
+  // for the master, never why (RN-10). The master's own screen says what it waits for, so this refusal is never news to him.
+  [EncounterBlockedReason.HIDDEN_REVEAL_PENDING, 'Esperando o mestre.'],
+  [
+    EncounterBlockedReason.NOT_ENDED,
+    'O combate ainda não terminou. Os destaques aparecem quando ele acabar.',
+  ],
+  // The creatures and Wild Shape (MR-037): what the server refused, in words.
+  [
+    EncounterBlockedReason.CASTING_TIME_TOO_LONG,
+    'Essa magia leva mais tempo do que um combate dá. Conjure fora do combate.',
+  ],
+  [
+    EncounterBlockedReason.SUMMON_CHOICE_INVALID,
+    'Essa escolha não vale para o espaço que você usou. Mude a quantidade, a criatura ou o espaço e tente de novo.',
+  ],
+  [EncounterBlockedReason.SUMMON_NEEDS_INITIATIVE, 'Falta o d20 da iniciativa das criaturas.'],
+  [
+    EncounterBlockedReason.CREATURE_CANNOT_ATTACK,
+    'Essa criatura não ataca assim: um familiar não ataca, e o do Pacto da Corrente só com a reação.',
+  ],
+  [
+    EncounterBlockedReason.TOO_MANY_COMBATANTS,
+    'Não cabem mais combatentes neste combate. Nada foi gasto.',
+  ],
+  [
+    EncounterBlockedReason.SUMMON_IN_COMBAT,
+    'Há um combate em andamento: conjure pela sua vez, na tela do combate.',
+  ],
+  [
+    EncounterBlockedReason.WILD_SHAPE_BEAST_NOT_ALLOWED,
+    'Essa não é uma das feras que o seu nível permite. Feche a lista e abra de novo.',
+  ],
+  [EncounterBlockedReason.ALREADY_IN_WILD_SHAPE, 'Você já está na forma de uma fera.'],
+  [
+    EncounterBlockedReason.NOT_IN_WILD_SHAPE,
+    'Você já está na sua forma normal. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.WILD_SHAPE_NO_SPELLS,
+    'Na forma de fera não dá para conjurar. Volte à forma normal e tente de novo.',
+  ],
+  [EncounterBlockedReason.DOOR_LOCKED, LOCKED_DOOR_FIRST_STEP_TEXT],
+  // Combat without a map (RN-25): what each side of the line refuses.
+  [
+    EncounterBlockedReason.THEATRE_ONLY,
+    'Este combate tem mapa: o movimento é no mapa, e o ataque de oportunidade o app acha sozinho. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.NEEDS_A_MAP,
+    'Sem mapa, isso não existe: o combate não tem posições. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.THEATRE_HAS_NO_MAP,
+    'Um combate sem mapa não leva um mapa. Escolha "Com mapa" ou tire o mapa.',
+  ],
+  [
+    EncounterBlockedReason.NO_OPPORTUNITY,
+    'Esse ataque de oportunidade não pode ser oferecido agora: quem ia reagir não pode atacar, está do mesmo lado, ou a oferta já espera.',
+  ],
+  [EncounterBlockedReason.RAGING_CANNOT_CAST, 'Você está em fúria: não pode lançar magias.'],
+  [
+    EncounterBlockedReason.RAGE_END_PENDING,
+    'A pergunta da fúria espera uma resposta antes de passar o turno.',
+  ],
+  [
+    EncounterBlockedReason.RAGE_END_NOT_PENDING,
+    'Essa pergunta da fúria já foi respondida. A tela foi atualizada.',
+  ],
+  [EncounterBlockedReason.NOT_RAGING, 'Esse personagem não está em fúria. A tela foi atualizada.'],
+  [
+    EncounterBlockedReason.ROLL_MODE_NEEDS_APPROVAL,
+    'Esse modo é melhor do que o sugerido: peça ao mestre.',
+  ],
+  [EncounterBlockedReason.ROLL_MODE_REQUEST_PENDING, 'O mestre ainda não respondeu ao seu pedido.'],
+  [
+    EncounterBlockedReason.ROLL_MODE_REQUEST_CLOSED,
+    'Esse pedido ao mestre já foi respondido, cancelado ou usado. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.EXTRA_NOT_AVAILABLE,
+    'Um dos extras marcados não vale mais. A tela foi atualizada.',
+  ],
+  [
+    EncounterBlockedReason.DAMAGE_PART_NOT_REMOVABLE,
+    'Só um extra pode ser tirado do dano, e uma vez só.',
+  ],
+  // Effects that last (RN-22): never the cause (a hidden effect, or a condition only the master reads); the words are the same
+  // for a player whether it is lethargy, a spell or a condition.
+  [EncounterBlockedReason.CANNOT_ACT, 'Não dá para agir agora.'],
+  [
+    EncounterBlockedReason.EXTRA_ACTION_UNAVAILABLE,
+    'A ação extra não está disponível para isso agora: ela já foi usada neste turno ou não vale para essa ação.',
+  ],
+  [
+    EncounterBlockedReason.CHARACTER_RESERVED,
+    'Um personagem reservado (ainda sem jogador) não entra no combate. Desmarque-o e tente de novo.',
+  ],
+]);
+
+/** The refusals whose words carry a number the server sent (a distance, a level, the recharge). */
+const BLOCKED_TEXT_WITH_NUMBERS: ReadonlyMap<
+  EncounterBlockedReason,
+  (b: EncounterBlocked) => string
+> = new Map([
+  [EncounterBlockedReason.TOO_FAR, tooFarText],
+  [
+    EncounterBlockedReason.TARGET_OUT_OF_REACH,
+    (b) => `Longe demais: faltam ${metersText(b.missingFt)} para chegar ao alvo.`,
+  ],
+  [
+    EncounterBlockedReason.NO_SLOT,
+    (b) =>
+      b.minLevel > 0
+        ? `Não há espaço de ${circleLabel(b.minLevel)} ou maior livre.`
+        : 'Não há espaço de magia livre.',
+  ],
+  [EncounterBlockedReason.NO_USES, (b) => `Sem usos: ${rechargeText(b.recharge)}.`],
+]);
+
+/** The move that goes further than the movement left, or the jump past its limit. */
+function tooFarText(blocked: EncounterBlocked): string {
+  // In tenths of a foot when the server sent them; the whole feet are for the old app.
+  const missing = metersFixed((blocked.missingDft || blocked.missingFt * 10) / 10);
+  // A jump longer than its limit says the limit, and whether it had a running start.
+  return blocked.jumpLimitDft > 0
+    ? `Longe demais para o seu salto: ele vai até ${metersFixed(blocked.jumpLimitDft / 10)}${blocked.jumpRunningStart ? ' com corrida' : ' parado'}. Faltam ${missing}.`
+    : `Esse caminho custa mais do que o movimento que sobra: faltam ${missing}.`;
+}
+
 /** Why a move was refused, for the reach line under the map (E6-10). */
 export function blockedMessage(blocked: EncounterBlocked): string {
-  switch (blocked.reason) {
-    case EncounterBlockedReason.ENCOUNTER_ALREADY_OPEN:
-      return 'A sessão já tem um combate em andamento.';
-    case EncounterBlockedReason.NO_CURRENT_MAP:
-      return 'Escolha o mapa do combate antes de iniciar.';
-    case EncounterBlockedReason.MAP_HAS_NO_GRID:
-      return 'Esse mapa ainda não tem grade. Defina a grade para iniciar o combate.';
-    case EncounterBlockedReason.NOT_IN_SETUP:
-      return 'O combate já começou.';
-    case EncounterBlockedReason.NOT_ACTIVE:
-      return 'O combate não está em andamento.';
-    case EncounterBlockedReason.ENCOUNTER_ENDED:
-      return 'Esse combate já terminou.';
-    case EncounterBlockedReason.INITIATIVE_MISSING:
-      return 'Ainda falta a iniciativa de alguém.';
-    case EncounterBlockedReason.INITIATIVE_ALREADY_SET:
-      return 'Sua iniciativa já foi rolada.';
-    case EncounterBlockedReason.WRONG_DICE_MODE:
-      return 'A campanha mudou a forma de rolar os dados. Recarregue a página.';
-    case EncounterBlockedReason.NOT_YOUR_TURN:
-      return 'Não é a sua vez.';
-    case EncounterBlockedReason.NOT_PLACED:
-      return 'Esse combatente ainda não está no mapa.';
-    case EncounterBlockedReason.TOO_FAR: {
-      // In tenths of a foot when the server sent them; the whole feet are for the old app.
-      const missing = metersFixed((blocked.missingDft || blocked.missingFt * 10) / 10);
-      // A jump longer than its limit says the limit, and whether it had a running start.
-      return blocked.jumpLimitDft > 0
-        ? `Longe demais para o seu salto: ele vai até ${metersFixed(blocked.jumpLimitDft / 10)}${blocked.jumpRunningStart ? ' com corrida' : ' parado'}. Faltam ${missing}.`
-        : `Esse caminho custa mais do que o movimento que sobra: faltam ${missing}.`;
-    }
-    case EncounterBlockedReason.NOT_PRONE:
-      return 'Você já está de pé. A tela foi atualizada.';
-    case EncounterBlockedReason.CANNOT_STAND_UP:
-      return 'Sem velocidade, não dá para se levantar.';
-    case EncounterBlockedReason.MOVE_BLOCKED:
-      return 'Não dá para passar por aí: há uma parede ou outra criatura no caminho.';
-    case EncounterBlockedReason.WALL_ON_SQUARE:
-      return 'Esse quadrado é uma parede: ninguém fica dentro dele.';
-    case EncounterBlockedReason.NO_FREE_SQUARE:
-      return 'Não há quadrado livre longe dos jogadores neste mapa.';
-    case EncounterBlockedReason.TARGET_DEAD:
-      return 'Não dá para curar quem já morreu.';
-    case EncounterBlockedReason.ENEMY_IN_THE_WAY:
-      return 'Um inimigo está no caminho.';
-    case EncounterBlockedReason.TARGET_COVER_TOTAL:
-      return 'O alvo está atrás de cobertura total.';
-    case EncounterBlockedReason.SQUARE_OCCUPIED:
-      return 'Ocupado: escolha outro quadrado.';
-    case EncounterBlockedReason.PLAYER_IN_COMBAT:
-      return 'Um jogador só sai do combate antes de ele começar.';
-    case EncounterBlockedReason.ACTION_USED:
-      return 'Sua ação já foi usada neste turno.';
-    case EncounterBlockedReason.BONUS_ACTION_USED:
-      return 'Sua ação bônus já foi usada neste turno.';
-    case EncounterBlockedReason.ATTACKS_USED:
-      return 'Os ataques desta ação já foram usados.';
-    case EncounterBlockedReason.TARGET_OUT_OF_REACH:
-      return `Longe demais: faltam ${metersText(blocked.missingFt)} para chegar ao alvo.`;
-    case EncounterBlockedReason.TARGET_DEFEATED:
-      return 'Esse alvo já foi derrotado. Escolha outro.';
-    case EncounterBlockedReason.PENDING_DAMAGE:
-      return 'Ainda falta rolar ou aplicar o dano do ataque antes de passar o turno.';
-    case EncounterBlockedReason.DAMAGE_ALREADY_ROLLED:
-      return 'O dano desse ataque já foi rolado.';
-    case EncounterBlockedReason.DAMAGE_NOT_ROLLED:
-      return 'O dano ainda não foi rolado.';
-    case EncounterBlockedReason.DAMAGE_RESOLVED:
-      return 'Esse dano já foi aplicado ou descartado.';
-    case EncounterBlockedReason.NOTHING_TO_UNDO:
-      return 'Não há mais nada para desfazer: só a última ação pode ser desfeita.';
-    case EncounterBlockedReason.COMBATANT_DOWN:
-      return 'Quem está caído não age.';
-    case EncounterBlockedReason.REACTION_PENDING:
-      return 'Uma reação ainda espera resposta. Espere a resposta ou responda no lugar de quem reage.';
-    case EncounterBlockedReason.CONCENTRATION_SAVE_PENDING:
-      return 'Um teste de concentração ainda espera resposta.';
-    case EncounterBlockedReason.NOT_YOUR_TURN_TO_ANSWER:
-      return 'Essa reação não espera a sua resposta agora. A tela foi atualizada.';
-    case EncounterBlockedReason.REACTION_NEEDS_ROLL:
-      return 'Falta o dado: role no app ou digite o resultado do dado.';
-    case EncounterBlockedReason.NOT_AWAITING_REACTION:
-      return 'Esse acerto não espera mais uma reação. A tela foi atualizada.';
-    case EncounterBlockedReason.REACTION_USED:
-      return 'A reação já foi usada: ela volta no começo da sua vez.';
-    case EncounterBlockedReason.NO_SLOT:
-      return blocked.minLevel > 0
-        ? `Não há espaço de ${circleLabel(blocked.minLevel)} ou maior livre.`
-        : 'Não há espaço de magia livre.';
-    case EncounterBlockedReason.NO_USES:
-      return `Sem usos: ${rechargeText(blocked.recharge)}.`;
-    case EncounterBlockedReason.ALREADY_USED_THIS_TURN:
-      return 'Esse recurso só pode ser usado uma vez por turno, e já foi usado neste.';
-    case EncounterBlockedReason.BONUS_ACTION_SPELL_LIMIT:
-      return 'Quem conjura uma magia com ação bônus não conjura outra no mesmo turno, a não ser um truque de 1 ação.';
-    case EncounterBlockedReason.ATTACK_ACTION_FIRST:
-      return 'A Rajada de Golpes vem logo depois da ação de Atacar.';
-    case EncounterBlockedReason.DEATH_SAVE_DUE:
-      return 'Role o teste contra a morte antes de encerrar o turno.';
-    case EncounterBlockedReason.DEATH_SAVE_NOT_DUE:
-      return 'Não há teste contra a morte para rolar agora. A tela foi atualizada.';
-    case EncounterBlockedReason.NOT_DYING:
-      return 'Esse personagem não falhou três testes contra a morte. A tela foi atualizada.';
-    case EncounterBlockedReason.OPPORTUNITY_PENDING:
-      return 'Esperando a reação do mestre: um ataque de oportunidade ainda não foi respondido.';
-    case EncounterBlockedReason.HIDDEN_REVEAL_PENDING:
-      // The turn waits for the master's answer about hidden creatures an area hit: a player reads the same words as any wait
-      // for the master, never why (RN-10). The master's own screen says what it waits for, so this refusal is never news to him.
-      return 'Esperando o mestre.';
-    case EncounterBlockedReason.NOT_ENDED:
-      return 'O combate ainda não terminou. Os destaques aparecem quando ele acabar.';
-    // The creatures and Wild Shape (MR-037): what the server refused, in words.
-    case EncounterBlockedReason.CASTING_TIME_TOO_LONG:
-      return 'Essa magia leva mais tempo do que um combate dá. Conjure fora do combate.';
-    case EncounterBlockedReason.SUMMON_CHOICE_INVALID:
-      return 'Essa escolha não vale para o espaço que você usou. Mude a quantidade, a criatura ou o espaço e tente de novo.';
-    case EncounterBlockedReason.SUMMON_NEEDS_INITIATIVE:
-      return 'Falta o d20 da iniciativa das criaturas.';
-    case EncounterBlockedReason.CREATURE_CANNOT_ATTACK:
-      return 'Essa criatura não ataca assim: um familiar não ataca, e o do Pacto da Corrente só com a reação.';
-    case EncounterBlockedReason.TOO_MANY_COMBATANTS:
-      return 'Não cabem mais combatentes neste combate. Nada foi gasto.';
-    case EncounterBlockedReason.SUMMON_IN_COMBAT:
-      return 'Há um combate em andamento: conjure pela sua vez, na tela do combate.';
-    case EncounterBlockedReason.WILD_SHAPE_BEAST_NOT_ALLOWED:
-      return 'Essa não é uma das feras que o seu nível permite. Feche a lista e abra de novo.';
-    case EncounterBlockedReason.ALREADY_IN_WILD_SHAPE:
-      return 'Você já está na forma de uma fera.';
-    case EncounterBlockedReason.NOT_IN_WILD_SHAPE:
-      return 'Você já está na sua forma normal. A tela foi atualizada.';
-    case EncounterBlockedReason.WILD_SHAPE_NO_SPELLS:
-      return 'Na forma de fera não dá para conjurar. Volte à forma normal e tente de novo.';
-    case EncounterBlockedReason.DOOR_LOCKED:
-      return LOCKED_DOOR_FIRST_STEP_TEXT;
-    // Combat without a map (RN-25): what each side of the line refuses.
-    case EncounterBlockedReason.THEATRE_ONLY:
-      return 'Este combate tem mapa: o movimento é no mapa, e o ataque de oportunidade o app acha sozinho. A tela foi atualizada.';
-    case EncounterBlockedReason.NEEDS_A_MAP:
-      return 'Sem mapa, isso não existe: o combate não tem posições. A tela foi atualizada.';
-    case EncounterBlockedReason.THEATRE_HAS_NO_MAP:
-      return 'Um combate sem mapa não leva um mapa. Escolha "Com mapa" ou tire o mapa.';
-    case EncounterBlockedReason.NO_OPPORTUNITY:
-      return 'Esse ataque de oportunidade não pode ser oferecido agora: quem ia reagir não pode atacar, está do mesmo lado, ou a oferta já espera.';
-    case EncounterBlockedReason.RAGING_CANNOT_CAST:
-      return 'Você está em fúria: não pode lançar magias.';
-    case EncounterBlockedReason.RAGE_END_PENDING:
-      return 'A pergunta da fúria espera uma resposta antes de passar o turno.';
-    case EncounterBlockedReason.RAGE_END_NOT_PENDING:
-      return 'Essa pergunta da fúria já foi respondida. A tela foi atualizada.';
-    case EncounterBlockedReason.NOT_RAGING:
-      return 'Esse personagem não está em fúria. A tela foi atualizada.';
-    case EncounterBlockedReason.ROLL_MODE_NEEDS_APPROVAL:
-      return 'Esse modo é melhor do que o sugerido: peça ao mestre.';
-    case EncounterBlockedReason.ROLL_MODE_REQUEST_PENDING:
-      return 'O mestre ainda não respondeu ao seu pedido.';
-    case EncounterBlockedReason.ROLL_MODE_REQUEST_CLOSED:
-      return 'Esse pedido ao mestre já foi respondido, cancelado ou usado. A tela foi atualizada.';
-    case EncounterBlockedReason.EXTRA_NOT_AVAILABLE:
-      return 'Um dos extras marcados não vale mais. A tela foi atualizada.';
-    case EncounterBlockedReason.DAMAGE_PART_NOT_REMOVABLE:
-      return 'Só um extra pode ser tirado do dano, e uma vez só.';
-    // Effects that last (RN-22): never the cause (a hidden effect, or a condition only the master reads); the words are the same
-    // for a player whether it is lethargy, a spell or a condition.
-    case EncounterBlockedReason.CANNOT_ACT:
-      return 'Não dá para agir agora.';
-    case EncounterBlockedReason.EXTRA_ACTION_UNAVAILABLE:
-      return 'A ação extra não está disponível para isso agora: ela já foi usada neste turno ou não vale para essa ação.';
-    case EncounterBlockedReason.CHARACTER_RESERVED:
-      return 'Um personagem reservado (ainda sem jogador) não entra no combate. Desmarque-o e tente de novo.';
-    default:
-      return 'O combate não está num estado que aceite isso. A tela foi atualizada.';
-  }
+  return (
+    BLOCKED_TEXT.get(blocked.reason) ??
+    BLOCKED_TEXT_WITH_NUMBERS.get(blocked.reason)?.(blocked) ??
+    'O combate não está num estado que aceite isso. A tela foi atualizada.'
+  );
 }
 
 /** The Portuguese message for a failed combat call: what happened and how to

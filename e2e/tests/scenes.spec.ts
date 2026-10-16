@@ -2,7 +2,9 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';
 import { addActionRPC, rollTyped, sceneActionIdsRPC, setAttemptsRPC, tableForScenes } from './scene-support';
-import { newSignedInContext } from './support';
+import { orla, orlaSheet } from './rests-support';
+import { callRPC, newSignedInContext } from './support';
+import { secondPlayer } from './theatre-support';
 
 // MR-015 (the actions of an RP scene), through the screens: the master picks
 // the actions on the map point, opens the scene in the session, each player
@@ -590,6 +592,67 @@ test(
         await endOpenSessionRPC(master, campaignId);
       }
     } finally {
+      await masterContext.close();
+      await playerContext.close();
+    }
+  },
+);
+
+test(
+  'o dado de Inspiração de Bardo num teste de cena: a pergunta vem depois do d20 e antes do total, o dado digitado entra na soma e o dado some',
+  { tag: ['@MR-014', '@MR-015', '@RN-18'] },
+  async ({ browser }) => {
+    test.setTimeout(120_000);
+    const masterContext = await newSignedInContext(browser, 'Mestre Teste');
+    const playerContext = await newSignedInContext(browser, 'Jogador Teste');
+    const master = await masterContext.newPage();
+    const player = await playerContext.newPage();
+    let bard: Awaited<ReturnType<typeof secondPlayer>> | undefined;
+    try {
+      await master.goto('/');
+      const { campaignId, characterId } = await tableForScenes(master, player, `Dado na cena ${Date.now()}`, true);
+      // The session opened below is always ended, and with no conditional in the test (playwright/no-conditional-in-test).
+      try {
+        // Orla, a bard (a d6), gives Pensantus the die between the fights: the answer to it is what is under test.
+        bard = await secondPlayer(browser, master, campaignId, orla, orlaSheet);
+        await openSessionPage(master, campaignId);
+        const gift = await callRPC(bard.page, 'meurpg.play.v1.ResourceService/GiveBardicInspirationOutside', {
+          campaignId,
+          targetCharacterId: characterId,
+          idempotencyKey: crypto.randomUUID(),
+        });
+        expect(gift.ok(), await gift.text()).toBeTruthy();
+        await openScene(master, 'A carroça tombada');
+        await openSessionPage(player, campaignId);
+        await expect(player.getByText(/Você tem uma Inspiração de Bardo \(d6\) de Orla/)).toBeVisible();
+        const scene = player.getByRole('region', { name: 'Cena: A carroça tombada' });
+        await scene.getByRole('button', { name: 'Rolar Procurar pistas na carroça' }).click();
+        const sheet = player.getByRole('dialog', { name: 'Rolar Procurar pistas na carroça' });
+        await sheet.getByRole('button', { name: 'Digitar o resultado' }).click();
+        await sheet.getByLabel(/Role 1d20 para Investigação/).fill('14');
+        await sheet.getByRole('button', { name: 'Confirmar 14' }).click();
+
+        // SRD 5.1, Bard: the die is decided on after the d20 and before the result, so the total is not told yet.
+        await expect(sheet.getByRole('heading', { name: 'Usar a Inspiração de Bardo (d6)?' })).toBeVisible();
+        await expect(sheet.getByText('O resultado só aparece depois da sua escolha.')).toBeVisible();
+        await expect(sheet.getByText('Seu total em Investigação')).toBeHidden();
+        await sheet.getByRole('button', { name: 'Digitar o dado' }).click();
+        await sheet.getByLabel(/Número que saiu no d6/).fill('4');
+        await sheet.getByRole('button', { name: 'Usar o dado digitado' }).click();
+
+        // The roll is written with the die: 14 + Pensantus's +6 in Investigação + the 4 of the d6.
+        await expect(sheet.getByText('Seu total em Investigação')).toBeVisible();
+        await expect(sheet.locator('.res__sum')).toHaveText('24');
+        await expect(sheet.getByRole('heading', { name: 'Usar a Inspiração de Bardo (d6)?' })).toBeHidden();
+
+        // The die is spent: Pensantus holds none after a reload.
+        await player.reload();
+        await expect(player.getByText(/Você tem uma Inspiração de Bardo/)).toBeHidden();
+      } finally {
+        await endOpenSessionRPC(master, campaignId);
+      }
+    } finally {
+      await bard?.close();
       await masterContext.close();
       await playerContext.close();
     }

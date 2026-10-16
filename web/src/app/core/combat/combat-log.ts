@@ -870,15 +870,20 @@ function contestText(e: CombatLogEntry, ctx: LogContext): { icon: string; text: 
   };
 }
 
-/** The line of one entry, or `null` for a kind this app doesn't know. */
-export function logLine(
-  e: CombatLogEntry,
-  encounterName = '',
-  ctx: LogContext = NO_CONTEXT,
-): LogLine | null {
-  const base = { id: e.id, actor: e.actorLabel, hidden: e.hidden, undoable: e.undoable };
-  switch (e.kind) {
-    case CombatLogKind.COMBAT_BEGUN:
+/** What a line builder is given: the entry, the fields every line shares, the combat's name and who is reading. */
+interface LineArgs {
+  readonly e: CombatLogEntry;
+  readonly base: { id: string; actor: string; hidden: boolean; undoable: boolean };
+  readonly encounterName: string;
+  readonly ctx: LogContext;
+}
+
+/** One builder per kind of entry, so a new kind is one more row and no function grows with it. A builder answers `null` for an
+ * entry it cannot write (an effect with no effect in it). */
+const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | null> = new Map([
+  [
+    CombatLogKind.COMBAT_BEGUN,
+    ({ base, encounterName, ctx }) => {
       return {
         ...base,
         icon: 'flag',
@@ -887,8 +892,12 @@ export function logLine(
           (encounterName ? `Combate iniciado: ${encounterName}` : 'Combate iniciado') +
           (ctx.theatre ? ', sem mapa (teatro da mente)' : ''),
       };
-    case CombatLogKind.ATTACK:
-      // A spell attack (Raio de Fogo) has the sparkles E6-15 draws for spells.
+    },
+  ],
+  // A spell attack (Raio de Fogo) has the sparkles E6-15 draws for spells.
+  [
+    CombatLogKind.ATTACK,
+    ({ e, base }) => {
       return {
         ...base,
         icon: e.key.startsWith('spell:') ? 'auto_awesome' : 'swords',
@@ -898,36 +907,60 @@ export function logLine(
           Boolean,
         ),
       };
-    case CombatLogKind.ACTION:
+    },
+  ],
+  [
+    CombatLogKind.ACTION,
+    ({ e, base }) => {
       return {
         ...base,
         icon: e.key === 'standard:hide' ? 'visibility_off' : 'bolt',
         text: actionText(e),
       };
-    case CombatLogKind.MOVED:
+    },
+  ],
+  [
+    CombatLogKind.MOVED,
+    ({ e, base, ctx }) => {
       return {
         ...base,
         icon: ctx.theatre ? 'directions_run' : 'arrow_forward',
         text: ctx.theatre ? spentText(e) : movedText(e),
       };
-    case CombatLogKind.HIT_POINTS_ADJUSTED:
-      // The server puts the NPC whose hit points changed in the target.
+    },
+  ],
+  // The server puts the NPC whose hit points changed in the target.
+  [
+    CombatLogKind.HIT_POINTS_ADJUSTED,
+    ({ e, base }) => {
       return {
         ...base,
         actor: e.actorLabel || e.targetLabel,
         icon: 'healing',
         text: hitPointsText(e),
       };
-    case CombatLogKind.REVEAL_CHANGED:
+    },
+  ],
+  [
+    CombatLogKind.REVEAL_CHANGED,
+    ({ e, base }) => {
       return {
         ...base,
         actor: e.actorLabel || e.targetLabel,
         icon: e.nowHidden ? 'visibility_off' : 'visibility',
         text: e.nowHidden ? ' foi escondido dos jogadores' : ' foi revelado aos jogadores',
       };
-    case CombatLogKind.COMBAT_ENDED:
+    },
+  ],
+  [
+    CombatLogKind.COMBAT_ENDED,
+    ({ base }) => {
       return { ...base, icon: 'flag', actor: '', text: 'Combate encerrado' };
-    case CombatLogKind.SPELL_CAST: {
+    },
+  ],
+  [
+    CombatLogKind.SPELL_CAST,
+    ({ e, base, ctx }) => {
       if (e.spell?.effectKind === SpellEffectKind.REVIVE) {
         return { ...base, icon: 'favorite', ...reviveCastText(e, ctx) };
       }
@@ -945,96 +978,176 @@ export function logLine(
         card: cast.card,
         ...(lucky.length ? { notes: lucky } : {}),
       };
-    }
-    case CombatLogKind.CHARACTER_REVIVED:
-      // The master brought a dead character back: the server puts the combatant in the target and sends no actor.
+    },
+  ],
+  // The master brought a dead character back: the server puts the combatant in the target and sends no actor.
+  [
+    CombatLogKind.CHARACTER_REVIVED,
+    ({ e, base }) => {
       return {
         ...base,
         actor: '',
         icon: 'favorite',
         text: `O mestre reviveu ${e.targetLabel || 'alguém'}`,
       };
-    case CombatLogKind.REACTION: {
+    },
+  ],
+  [
+    CombatLogKind.REACTION,
+    ({ e, base }) => {
       const slot = e.spell?.slot;
       return {
         ...base,
         icon: 'shield',
         text: ` conjura ${e.keyNamePt || 'uma magia'}${slot ? ` (${circleLabel(slot.level)})` : ''}, com a reação`,
       };
-    }
-    case CombatLogKind.DEATH_SAVE:
+    },
+  ],
+  [
+    CombatLogKind.DEATH_SAVE,
+    ({ e, base }) => {
       return { ...base, icon: 'heart_broken', text: deathSaveText(e) };
-    case CombatLogKind.DEATH_CONFIRMED:
-      // The server puts the character in the target.
+    },
+  ],
+  // The server puts the character in the target.
+  [
+    CombatLogKind.DEATH_CONFIRMED,
+    ({ e, base }) => {
       return { ...base, actor: e.targetLabel || e.actorLabel, icon: 'close', text: ' morreu' };
-    case CombatLogKind.CONDITIONS_CHANGED:
+    },
+  ],
+  [
+    CombatLogKind.CONDITIONS_CHANGED,
+    ({ e, base }) => {
       return {
         ...base,
         actor: e.targetLabel || e.actorLabel,
         icon: 'label',
         text: conditionsText(e),
       };
-    case CombatLogKind.TRAP_TRIGGERED:
-      // A trap that fired is public: everyone reads the line (the dice stay with the master and the creature's player).
+    },
+  ],
+  // A trap that fired is public: everyone reads the line (the dice stay with the master and the creature's player).
+  [
+    CombatLogKind.TRAP_TRIGGERED,
+    ({ e, base, ctx }) => {
       return { ...base, icon: 'warning', actor: '', text: trapLogText(e.trap, ctx.master) };
-    case CombatLogKind.TURN_PART_ENDED:
-      // A member of a joint turn ended their part and the turn goes on.
+    },
+  ],
+  // A member of a joint turn ended their part and the turn goes on.
+  [
+    CombatLogKind.TURN_PART_ENDED,
+    ({ e, base }) => {
       return {
         ...base,
         icon: 'flag',
         text: ` encerrou a parte ${article(e.actorLabel) === 'a' ? 'dela' : 'dele'}`,
       };
-    case CombatLogKind.WILD_SHAPE:
+    },
+  ],
+  [
+    CombatLogKind.WILD_SHAPE,
+    ({ e, base }) => {
       return { ...base, icon: 'pets', text: wildShapeText(e) };
-    case CombatLogKind.OPPORTUNITY_OFFERED:
-      // The master offered it, in a combat without a map: the mover is the actor and the reactor the target.
+    },
+  ],
+  // The master offered it, in a combat without a map: the mover is the actor and the reactor the target.
+  [
+    CombatLogKind.OPPORTUNITY_OFFERED,
+    ({ e, base }) => {
       return { ...base, icon: 'swords', text: ` saiu do alcance de ${e.targetLabel || 'alguém'}` };
-    case CombatLogKind.HIT_RIDER:
+    },
+  ],
+  [
+    CombatLogKind.HIT_RIDER,
+    ({ e, base }) => {
       return { ...base, icon: 'sports_martial_arts', text: hitRiderText(e) };
-    case CombatLogKind.DOOR_OPENED:
-      // A move opened a closed door (RN-26): "Toren abriu a porta." The server sends the line only to who saw or remembers the door.
+    },
+  ],
+  // A move opened a closed door (RN-26): "Toren abriu a porta." The server sends the line only to who saw or remembers the door.
+  [
+    CombatLogKind.DOOR_OPENED,
+    ({ base }) => {
       return { ...base, icon: 'door_open', text: ' abriu a porta' };
-    case CombatLogKind.EFFECT_ENDED:
+    },
+  ],
+  [
+    CombatLogKind.EFFECT_ENDED,
+    ({ e, base, ctx }) => {
       return {
         ...base,
         icon: e.effectEnd?.effect === CombatEffect.SHIELD ? 'shield' : 'favorite_border',
         actor: '',
         text: effectEndedText(e, ctx),
       };
-    case CombatLogKind.EFFECT:
+    },
+  ],
+  [
+    CombatLogKind.EFFECT,
+    ({ e, base, ctx }) => {
       return e.effect ? effectLine(base, e.effect, ctx) : null;
-    case CombatLogKind.EXHAUSTION:
+    },
+  ],
+  [
+    CombatLogKind.EXHAUSTION,
+    ({ e, base, ctx }) => {
       return e.effect
         ? { ...base, icon: 'battery_alert', actor: '', text: exhaustionLogText(e.effect, ctx) }
         : null;
-    case CombatLogKind.RESOURCE: {
+    },
+  ],
+  [
+    CombatLogKind.RESOURCE,
+    ({ e, base }) => {
       const r = resourceText(e);
       return { ...base, icon: r.icon, text: r.text };
-    }
-    case CombatLogKind.REACTION_WINDOW:
-      // A reaction was answered or closed (PM-04): one line, written on the server for who reads it (the master's has the
-      // numbers of the NPCs, the players' never names a reactor they do not see).
+    },
+  ],
+  // A reaction was answered or closed (PM-04): one line, written on the server for who reads it (the master's has the
+  // numbers of the NPCs, the players' never names a reactor they do not see).
+  [
+    CombatLogKind.REACTION_WINDOW,
+    ({ e, base }) => {
       return { ...base, icon: 'bolt', actor: '', text: e.reactionTextPt };
-    case CombatLogKind.MONSTERS_ADDED:
-      // The master put monsters in the combat (RN-29): the line is his alone, with the hit points and the dice they were rolled with.
+    },
+  ],
+  // The master put monsters in the combat (RN-29): the line is his alone, with the hit points and the dice they were rolled with.
+  [
+    CombatLogKind.MONSTERS_ADDED,
+    ({ e, base }) => {
       return { ...base, hidden: true, icon: 'pets', actor: '', text: monstersAddedText(e) };
-    case CombatLogKind.DAMAGE_PART_REMOVED:
-      // The master took an extra out of a damage; the reason is only for him and the attacker's player.
+    },
+  ],
+  // The master took an extra out of a damage; the reason is only for him and the attacker's player.
+  [
+    CombatLogKind.DAMAGE_PART_REMOVED,
+    ({ e, base }) => {
       return {
         ...base,
         icon: 'remove_circle_outline',
         actor: '',
         text: `O mestre tirou ${e.keyNamePt ? the(e.keyNamePt) : 'um extra'}${e.reason ? `: “${e.reason}”` : ''}`,
       };
-    case CombatLogKind.STATE_CHANGED:
+    },
+  ],
+  [
+    CombatLogKind.STATE_CHANGED,
+    ({ e, base }) => {
       return e.state
         ? { ...base, icon: 'local_fire_department', actor: '', text: stateText(e, e.state) }
         : null;
-    case CombatLogKind.CONTEST: {
+    },
+  ],
+  [
+    CombatLogKind.CONTEST,
+    ({ e, base, ctx }) => {
       const line = contestText(e, ctx);
       return line ? { ...base, icon: line.icon, text: line.text } : null;
-    }
-    case CombatLogKind.ROLL_MODE_ANSWERED:
+    },
+  ],
+  [
+    CombatLogKind.ROLL_MODE_ANSWERED,
+    ({ e, base }) => {
       return e.modeChange
         ? {
             ...base,
@@ -1043,9 +1156,18 @@ export function logLine(
             notes: e.modeChange.reason ? [`Motivo: “${e.modeChange.reason}”`] : undefined,
           }
         : null;
-    default:
-      return null;
-  }
+    },
+  ],
+]);
+
+/** The line of one entry, or `null` for a kind this app doesn't know. */
+export function logLine(
+  e: CombatLogEntry,
+  encounterName = '',
+  ctx: LogContext = NO_CONTEXT,
+): LogLine | null {
+  const base = { id: e.id, actor: e.actorLabel, hidden: e.hidden, undoable: e.undoable };
+  return LINE_BUILDERS.get(e.kind)?.({ e, base, encounterName, ctx }) ?? null;
 }
 
 /** Who an effect line is about, after the preposition ("em"/"a") or alone: "em Brisa e no Goblin 2", "Brisa e o Goblin 2". */
