@@ -1181,10 +1181,17 @@ WHERE combatant_id = $1 AND kind = $2
 RETURNING id;
 
 -- name: DeleteCombatantStatesBySource :many
--- The states a source gave (the marks of a ranger who stopped concentrating).
+-- The states a source gave (the marks of a ranger who stopped concentrating), with what
+-- the undo of a cast that moved a mark needs to put it back (RestoreHuntersMark).
 DELETE FROM combatant_states
 WHERE source_id = $1 AND kind = $2
-RETURNING id, combatant_id;
+RETURNING id, combatant_id, started_round, created_at;
+
+-- name: RestoreHuntersMark :exec
+-- The undo of a cast that moved a Hunter's Mark: the mark it took off comes back with
+-- its ID, its round and its time, as InsertCombatantState made it.
+INSERT INTO combatant_states (id, encounter_id, combatant_id, kind, source_id, started_round, amount, created_at)
+VALUES ($1, $2, $3, 'hunters_mark_target', $4, $5, 0, $6);
 
 -- name: SetCombatantRageFlags :exec
 -- What decides whether a rage ends: it attacked a hostile creature since its last turn,

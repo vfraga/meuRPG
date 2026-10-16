@@ -652,49 +652,6 @@ func TestUndoKindDamageAppliedAsksHellishRebuke(t *testing.T) {
 	})
 }
 
-// deltaShieldLost: the master's discard of a hit that waits for the target's Escudo closes
-// the Shield window (settleReactions finds its trigger gone, triggerGone in
-// combat_reaction_window.go:296, the pending being discarded), and the undo sets the
-// pending damage back to awaiting_reaction without reopening the window (the
-// eventDamageDiscarded case of takeBack, combat_undo.go:605, has no reopenWindowOf as the
-// reaction cases have). With no open window the next settleReactions releases the hit:
-// it ends up awaiting_roll, and the reactor's prompt, the table's "Esperando a reação" and
-// the master's window are gone. Escudo can no longer be cast on this hit.
-func deltaShieldLost() undoDelta {
-	out := undoDelta{
-		"+ db/pending_damages[#].status=awaiting_roll", "- db/pending_damages[#].status=awaiting_reaction",
-		"+ db/reaction_windows[#].closed_reason=trigger_gone", "+ db/reaction_windows[#].outcome={}", "+ db/reaction_windows[#].status=closed",
-		"- db/reaction_windows[#].closed_reason=<nil>", "- db/reaction_windows[#].outcome=<nil>", "- db/reaction_windows[#].status=open",
-	}
-	prompt := []string{
-		"attackNamePt=Cimitarra", "attackerLabel=Capitão Goblin", "pendingDamageId=#", "slots[0].free=4", "slots[0].level=1", "slots[1].free=2", "slots[1].level=2",
-		"spellKey=spell:shield", "spellNamePt=Escudo Arcano", "targetId=#",
-	}
-	window := []string{
-		"forYou=true", "groupId=#", "id=#", "kind=REACTION_KIND_SHIELD", "reactorId=#", "reactorIsPlayer=true", "reactorLabel=Pensantus",
-		"shield.attackNamePt=Cimitarra", "shield.attackerLabel=Capitão Goblin", "shield.pendingDamageId=#", "shield.slots[0].free=4", "shield.slots[0].level=1",
-		"shield.slots[1].free=2", "shield.slots[1].level=2", "shield.spellNamePt=Escudo Arcano", "status=REACTION_WINDOW_STATUS_OPEN",
-	}
-	for _, p := range prompt {
-		out = append(out, "- ana/combat.reactionPrompts[0]."+p, "- master/combat.reactionPrompts[0]."+p)
-	}
-	out = append(out, "- master/combat.reactionPrompts[0].attackerId=#")
-	for _, p := range window {
-		out = append(out, "- ana/combat.reactionWindows[0]."+p, "- master/combat.reactionWindows[0]."+p)
-	}
-	for _, p := range []string{
-		"answerNow=true", "trigger.actionKey=basic:0", "trigger.actionNamePt=Cimitarra", "trigger.actorId=#", "trigger.actorLabel=Capitão Goblin",
-		"trigger.armorClassWithShield=17", "trigger.attackTotal=13", "trigger.distanceFt=5", "trigger.targetArmorClass=12", "trigger.targetId=#", "trigger.targetLabel=Pensantus",
-	} {
-		out = append(out, "- master/combat.reactionWindows[0]."+p)
-	}
-	out = append(out, "- master/combat.reactionWait.titlePt=Esperando a reação de Pensantus")
-	for _, who := range []string{"bia", "caio"} {
-		out = append(out, "- "+who+"/combat.reactionWait.detailPt=O turno continua quando responder.", "- "+who+"/combat.reactionWait.titlePt=Esperando a reação de Pensantus")
-	}
-	return out
-}
-
 // TestUndoKindDamageDiscarded: the master discards a damage in each status it can be
 // in: waiting for the target's reaction, waiting for the roll and rolled.
 func TestUndoKindDamageDiscarded(t *testing.T) {
@@ -712,7 +669,7 @@ func TestUndoKindDamageDiscarded(t *testing.T) {
 
 	// Pensantus can cast Escudo: the hit waits for her reaction.
 	waiting := a.mustAttack(t, a.master, e, "Capitão Goblin", sword, "Pensantus", d20(9)).GetPendingDamage()
-	w.run(t, "discarding a damage that waits for a reaction", deltaShieldLost(), discard(waiting.GetId()))
+	w.run(t, "discarding a damage that waits for a reaction", nil, discard(waiting.GetId()))
 	e = a.nextTurnOf(t, e, "Capitão Goblin")
 
 	// Toren has no reaction: the hit waits for the roll.

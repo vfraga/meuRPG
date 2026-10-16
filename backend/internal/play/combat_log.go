@@ -200,6 +200,27 @@ func (s *Service) ListCombatLog(
 // the master's apply or discard, a reaction) merge into one entry, and those of
 // a spell (its cast, the damage rolls and applies of its targets) into one.
 func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
+	undone := undoneEvents(events)
+	b := &logBuilder{
+		byPending: map[string]*logEntry{},
+		byFiring:  map[string]*logEntry{},
+		byMove:    map[string]*logEntry{},
+		moveOf:    map[string]string{},
+	}
+	var out []*logEntry
+	for _, e := range events {
+		if undone[e.ID] || e.Kind == eventActionUndone {
+			continue
+		}
+		if entry := b.entry(e); entry != nil {
+			out = append(out, entry)
+		}
+	}
+	return out
+}
+
+// undoneEvents are the ids of the events an undo took back.
+func undoneEvents(events []playdb.ListEncounterEventsRow) map[string]bool {
 	undone := map[string]bool{}
 	for _, e := range events {
 		if e.Kind != eventActionUndone {
@@ -212,239 +233,341 @@ func buildLog(events []playdb.ListEncounterEventsRow) []*logEntry {
 			}
 		}
 	}
-	var out []*logEntry
-	byPending := map[string]*logEntry{}
-	byFiring := map[string]*logEntry{}
+	return undone
+}
+
+// logBuilder is what buildLog remembers while it reads the events in order: where the
+// pending damages, the trap firings and the moves that made offers were written, so that
+// a later event lands in the entry of the one it belongs to.
+type logBuilder struct {
+	byPending map[string]*logEntry
+	byFiring  map[string]*logEntry
 	// An opportunity offer's answer without an attack (a decline, a skip) is no
 	// line, but the master's undo can take it back: it belongs to the entry of
 	// the move that made the offer, so that entry is the one to undo.
-	byMove := map[string]*logEntry{}
-	moveOf := map[string]string{} // offer id -> move id
-	for _, e := range events {
-		if undone[e.ID] || e.Kind == eventActionUndone {
-			continue
-		}
-		ev, err := readEvent(e.Payload)
-		if err != nil {
-			continue // never: this package wrote it
-		}
-		// The log starts when the combat begins: the setup is not in it. The master's line of
-		// the monsters he put in (their rolled hit points) is the exception: it is his from the setup.
-		if ev.Round == 0 && (e.Kind != eventCombatantsAdded || ev.Monsters == nil) {
-			continue
-		}
-		if ev.Reaction != nil && ev.Reaction.Hold {
-			continue // the event of a held action stands for nothing yet: its replay is the line
-		}
-		entry := &logEntry{id: e.ID, at: e.CreatedAt, ev: ev, hosts: []string{e.ID}}
-		switch e.Kind {
-		case eventCombatBegun:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_COMBAT_BEGUN
-		case eventEncounterEnded:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_COMBAT_ENDED
-		case eventCombatantMoved:
-			if ev.Contest != nil && ev.Contest.Line == contestLineStoodUp { // "se levantou" (combat_standup.go)
-				if !contestLogEntry(entry, ev) {
-					continue
-				}
-				break
-			}
-			if !ev.OnTurn || (ev.DistanceFt == 0 && ev.DistanceDFt == 0 && ev.Jump != jumpHigh) {
-				continue // placing a token is not a move of the fight
-			}
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_MOVED
-			if ev.MoveID != "" {
-				byMove[ev.MoveID] = entry
-			}
-		case eventDoorOpened:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_DOOR_OPENED
-		case eventCombatantsAdded:
-			if ev.Monsters == nil {
-				continue // reinforcements (AddCombatants) are no line
-			}
-			entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_MONSTERS_ADDED, true
-		case eventCombatantHiddenSet:
-			// The master's own reveal is his alone; the one an area spell made is the
-			// players' line too ("foi revelado"): the creature appears on their map.
-			entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_REVEAL_CHANGED, !ev.ByArea
-		case eventActionTaken:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION
-			if ev.Res != nil {
-				entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_RESOURCE
-			}
-		case eventHitPointsAdjusted:
-			entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_POINTS_ADJUSTED, true
-		case eventDeathSaveRolled:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_DEATH_SAVE
-		case eventDeathConfirmed:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_DEATH_CONFIRMED
-		case eventCharacterRevived:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_CHARACTER_REVIVED
-		case eventConditionsSet:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_CONDITIONS_CHANGED
-		case eventCombatEffectEnded:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT_ENDED
-		case eventTurnPartEnded:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_TURN_PART_ENDED
-		case eventAttackRolled:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK
-			if ev.Pending != "" {
-				entry.status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_ROLL
-				byPending[ev.Pending] = entry
-			}
-		case eventSpellCast:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST
-			entry.pend = map[string]*damageLog{}
-			for _, h := range ev.Hits {
-				for _, id := range append([]string{h.Pending}, h.More...) {
-					if id != "" {
-						entry.pend[id] = &damageLog{status: playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_ROLL}
-						byPending[id] = entry
-					}
-				}
-			}
-		case eventTrapTriggered:
-			if ev.Trap != nil && ev.Trap.ExtendsID != "" {
-				// The master added creatures to a firing: they join its entry, and their damage
-				// moves on with the master's apply like the rest.
-				if host, ok := byFiring[ev.Trap.ExtendsID]; ok && host.ev.Trap != nil {
-					host.ev.Trap.Caught = append(host.ev.Trap.Caught, ev.Trap.Caught...)
-					host.hosts = append(host.hosts, e.ID)
-					for _, cc := range ev.Trap.Caught {
-						for _, d := range cc.Damages {
-							if d.Pending == "" {
-								continue
-							}
-							status := playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_ROLLED
-							if d.Applied {
-								status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED
-							}
-							host.pend[d.Pending] = &damageLog{status: status}
-							byPending[d.Pending] = host
-						}
-					}
-				}
-				continue
-			}
-			// A trap fired (MR-035): the entry holds its pending damages, which the
-			// master's apply or discard moves on like a spell's.
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_TRAP_TRIGGERED
-			entry.pend = map[string]*damageLog{}
-			byFiring[e.ID] = entry
-			if ev.Trap != nil {
-				for _, cc := range ev.Trap.Caught {
-					for _, d := range cc.Damages {
-						if d.Pending == "" {
-							continue
-						}
-						status := playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_ROLLED
-						if d.Applied {
-							status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED
-						}
-						entry.pend[d.Pending] = &damageLog{status: status}
-						byPending[d.Pending] = entry
-					}
-				}
-			}
-		case eventRollModeAnswered:
-			if ev.Canceled {
-				continue // a request taken back is no line
-			}
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ROLL_MODE_ANSWERED
-		case eventLastingAdded, eventLastingChanged, eventLastingEnded, eventLastingSaved, eventLastingTriggered, eventLastingVisibility, eventExhaustion:
-			entry.kind = effectLogKinds[e.Kind]
-		case eventHitRider:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_RIDER
-		case eventStateChanged:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_STATE_CHANGED
-		case eventDamagePartRemoved:
-			// The removal belongs to the damage it took the extra out of, and is a line of its own.
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_DAMAGE_PART_REMOVED
-			if host, ok := byPending[ev.Pending]; ok {
-				host.hosts = append(host.hosts, e.ID)
-				host.removed = &ev
-				if host.dmg != nil {
-					for _, r := range host.dmg.Parts {
-						if r.Key == ev.Key {
-							entry.partLabel = r.Label
-						}
-					}
-					if ev.After != nil {
-						host.dmg.After = ev.After
-					}
-				}
-			}
-		case eventTrapSearched:
-			// A search is the Search action: the master's line only, with the roll in
-			// his history; the table sees nothing of it (RN-10).
-			entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION, true
-			entry.ev.Key = "standard:search"
-		case eventContestStarted, eventContestResolved, eventContestClosed, eventShoveResolved, eventGrappleReleased,
-			eventHideAttempted, eventHideResolved, eventHelpGiven:
-			// Grapple, shove, escape, Hide and Help (combat_contests.go): a line when the event says one.
-			if !contestLogEntry(entry, ev) {
-				continue
-			}
-		case eventWildShapeStarted, eventWildShapeEnded:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE
-			entry.shapeStarted = e.Kind == eventWildShapeStarted
-		case eventReactionUsed:
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION
-			// Escudo that stopped the attack takes its damage away; the hit waits for
-			// its roll otherwise, which the roll event says.
-			if host, ok := byPending[ev.Pending]; ok {
-				host.hosts = append(host.hosts, e.ID)
-				if ev.Stopped {
-					host.setStatus(ev.Pending, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_DISCARDED)
-					host.stopped = append(host.stopped, ev.Pending)
-				}
-			}
-			for _, h := range ev.AlsoStopped {
-				if host, ok := byPending[h.Pending]; ok {
-					host.hosts = append(host.hosts, e.ID)
-					host.setStatus(h.Pending, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_DISCARDED)
-					host.stopped = append(host.stopped, h.Pending)
-				}
-			}
-		case eventOpportunityOffered:
-			moveOf[ev.OfferID] = ev.MoveID
-			if !ev.ByHand {
-				continue // a move's offer is no line of its own: the move's is
-			}
-			// The master's offer in a combat without a map is a line, and its answer
-			// (decline, skip, withdraw) belongs to it, so the answer can be undone.
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_OPPORTUNITY_OFFERED
-			byMove[ev.MoveID] = entry
-		case eventReactionAnswered, eventConcentrationSaveRolled:
-			// One line for each reaction used (PM-04c, 10); a "Deixar passar" and the
-			// master's one-tap check are no line.
-			if ev.Reaction == nil || ev.Reaction.Kind == string(reaction.MasterCheck) || (!ev.Reaction.Used && e.Kind == eventReactionAnswered) {
-				continue
-			}
-			entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION_WINDOW
-		case eventReactionDeclined:
-			if host, ok := byPending[ev.Pending]; ok {
-				host.hosts = append(host.hosts, e.ID) // a decline is the entry's last action to undo
-			}
-			if host, ok := byMove[moveOf[ev.OfferID]]; ev.OfferID != "" && ok {
-				host.hosts = append(host.hosts, e.ID) // an opportunity offer's answer is the move's to undo
-			}
-			continue
-		case eventDamageRolled, eventDamageApplied, eventDamageDiscarded:
-			// The damage lands in the attack's or the spell's entry.
-			host, ok := byPending[ev.Pending]
-			if !ok {
-				continue
-			}
-			host.hosts = append(host.hosts, e.ID)
-			host.land(e.Kind, ev)
-			continue
-		default:
-			continue // initiative, turns, reinforcements: not lines of the log
-		}
-		out = append(out, entry)
+	byMove map[string]*logEntry
+	moveOf map[string]string // offer id -> move id
+}
+
+// logHandler fills the entry of an event of one kind and says whether the event is a line
+// of its own; the events that are not may still land in the entry of another.
+type logHandler func(b *logBuilder, e playdb.ListEncounterEventsRow, entry *logEntry) bool
+
+// logHandlers are the events that make a line or join one, by event kind; the others
+// (initiative, turns, reinforcements) are not lines of the log.
+var logHandlers = map[string]logHandler{
+	eventCombatBegun:             plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_COMBAT_BEGUN),
+	eventEncounterEnded:          plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_COMBAT_ENDED),
+	eventCombatantMoved:          (*logBuilder).moved,
+	eventDoorOpened:              plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_DOOR_OPENED),
+	eventCombatantsAdded:         (*logBuilder).monstersAdded,
+	eventCombatantHiddenSet:      (*logBuilder).hiddenSet,
+	eventActionTaken:             (*logBuilder).actionTaken,
+	eventHitPointsAdjusted:       masterLine(playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_POINTS_ADJUSTED),
+	eventDeathSaveRolled:         plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_DEATH_SAVE),
+	eventDeathConfirmed:          plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_DEATH_CONFIRMED),
+	eventCharacterRevived:        plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_CHARACTER_REVIVED),
+	eventConditionsSet:           plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_CONDITIONS_CHANGED),
+	eventCombatEffectEnded:       plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT_ENDED),
+	eventTurnPartEnded:           plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_TURN_PART_ENDED),
+	eventAttackRolled:            (*logBuilder).attackRolled,
+	eventSpellCast:               (*logBuilder).spellCast,
+	eventTrapTriggered:           (*logBuilder).trapTriggered,
+	eventRollModeAnswered:        (*logBuilder).rollModeAnswered,
+	eventLastingAdded:            effectLine,
+	eventLastingChanged:          effectLine,
+	eventLastingEnded:            effectLine,
+	eventLastingSaved:            effectLine,
+	eventLastingTriggered:        effectLine,
+	eventLastingVisibility:       effectLine,
+	eventExhaustion:              effectLine,
+	eventHitRider:                plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_RIDER),
+	eventStateChanged:            plainLine(playv1.CombatLogKind_COMBAT_LOG_KIND_STATE_CHANGED),
+	eventDamagePartRemoved:       (*logBuilder).partRemoved,
+	eventTrapSearched:            (*logBuilder).trapSearched,
+	eventContestStarted:          contestLine,
+	eventContestResolved:         contestLine,
+	eventContestClosed:           contestLine,
+	eventShoveResolved:           contestLine,
+	eventGrappleReleased:         contestLine,
+	eventHideAttempted:           contestLine,
+	eventHideResolved:            contestLine,
+	eventHelpGiven:               contestLine,
+	eventWildShapeStarted:        (*logBuilder).wildShape,
+	eventWildShapeEnded:          (*logBuilder).wildShape,
+	eventReactionUsed:            (*logBuilder).reactionUsed,
+	eventOpportunityOffered:      (*logBuilder).opportunityOffered,
+	eventReactionAnswered:        (*logBuilder).reactionAnswered,
+	eventConcentrationSaveRolled: (*logBuilder).reactionAnswered,
+	eventReactionDeclined:        (*logBuilder).reactionDeclined,
+	eventDamageRolled:            (*logBuilder).damageEvent,
+	eventDamageApplied:           (*logBuilder).damageEvent,
+	eventDamageDiscarded:         (*logBuilder).damageEvent,
+}
+
+// entry reads one event: the entry it makes, or nil when it makes none.
+func (b *logBuilder) entry(e playdb.ListEncounterEventsRow) *logEntry {
+	ev, err := readEvent(e.Payload)
+	if err != nil {
+		return nil // never: this package wrote it
 	}
-	return out
+	// The log starts when the combat begins: the setup is not in it. The master's line of
+	// the monsters he put in (their rolled hit points) is the exception: it is his from the setup.
+	if ev.Round == 0 && (e.Kind != eventCombatantsAdded || ev.Monsters == nil) {
+		return nil
+	}
+	if ev.Reaction != nil && ev.Reaction.Hold {
+		return nil // the event of a held action stands for nothing yet: its replay is the line
+	}
+	entry := &logEntry{id: e.ID, at: e.CreatedAt, ev: ev, hosts: []string{e.ID}}
+	handle, ok := logHandlers[e.Kind]
+	if !ok || !handle(b, e, entry) {
+		return nil
+	}
+	return entry
+}
+
+// plainLine is the handler of an event that is a line of the kind, for everybody.
+func plainLine(kind playv1.CombatLogKind) logHandler {
+	return func(_ *logBuilder, _ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+		entry.kind = kind
+		return true
+	}
+}
+
+// masterLine is the handler of an event that is a line of the kind for the master alone.
+func masterLine(kind playv1.CombatLogKind) logHandler {
+	return func(_ *logBuilder, _ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+		entry.kind, entry.masterOnly = kind, true
+		return true
+	}
+}
+
+// effectLine is the handler of the events of the effects that last.
+func effectLine(_ *logBuilder, e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	entry.kind = effectLogKinds[e.Kind]
+	return true
+}
+
+// contestLine is the handler of grapple, shove, escape, Hide and Help (combat_contests.go):
+// a line when the event says one.
+func contestLine(_ *logBuilder, _ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	return contestLogEntry(entry, entry.ev)
+}
+
+func (b *logBuilder) moved(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	ev := entry.ev
+	if ev.Contest != nil && ev.Contest.Line == contestLineStoodUp { // "se levantou" (combat_standup.go)
+		return contestLogEntry(entry, ev)
+	}
+	if !ev.OnTurn || (ev.DistanceFt == 0 && ev.DistanceDFt == 0 && ev.Jump != jumpHigh) {
+		return false // placing a token is not a move of the fight
+	}
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_MOVED
+	if ev.MoveID != "" {
+		b.byMove[ev.MoveID] = entry
+	}
+	return true
+}
+
+func (b *logBuilder) monstersAdded(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	if entry.ev.Monsters == nil {
+		return false // reinforcements (AddCombatants) are no line
+	}
+	entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_MONSTERS_ADDED, true
+	return true
+}
+
+func (b *logBuilder) hiddenSet(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	// The master's own reveal is his alone; the one an area spell made is the
+	// players' line too ("foi revelado"): the creature appears on their map.
+	entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_REVEAL_CHANGED, !entry.ev.ByArea
+	return true
+}
+
+func (b *logBuilder) actionTaken(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION
+	if entry.ev.Res != nil {
+		entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_RESOURCE
+	}
+	return true
+}
+
+func (b *logBuilder) attackRolled(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK
+	if entry.ev.Pending != "" {
+		entry.status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_ROLL
+		b.byPending[entry.ev.Pending] = entry
+	}
+	return true
+}
+
+func (b *logBuilder) spellCast(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST
+	entry.pend = map[string]*damageLog{}
+	for _, h := range entry.ev.Hits {
+		for _, id := range append([]string{h.Pending}, h.More...) {
+			if id != "" {
+				entry.pend[id] = &damageLog{status: playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_ROLL}
+				b.byPending[id] = entry
+			}
+		}
+	}
+	return true
+}
+
+// trapTriggered is a trap firing, or the master adding creatures to one.
+func (b *logBuilder) trapTriggered(e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	ev := entry.ev
+	if ev.Trap != nil && ev.Trap.ExtendsID != "" {
+		// The master added creatures to a firing: they join its entry, and their damage
+		// moves on with the master's apply like the rest.
+		if host, ok := b.byFiring[ev.Trap.ExtendsID]; ok && host.ev.Trap != nil {
+			host.ev.Trap.Caught = append(host.ev.Trap.Caught, ev.Trap.Caught...)
+			host.hosts = append(host.hosts, e.ID)
+			b.registerTrapDamages(host, ev.Trap.Caught)
+		}
+		return false
+	}
+	// A trap fired (MR-035): the entry holds its pending damages, which the
+	// master's apply or discard moves on like a spell's.
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_TRAP_TRIGGERED
+	entry.pend = map[string]*damageLog{}
+	b.byFiring[e.ID] = entry
+	if ev.Trap != nil {
+		b.registerTrapDamages(entry, ev.Trap.Caught)
+	}
+	return true
+}
+
+// registerTrapDamages puts the pending damages of the creatures a trap caught on the entry.
+func (b *logBuilder) registerTrapDamages(host *logEntry, caught []trapCaughtEvent) {
+	for _, cc := range caught {
+		for _, d := range cc.Damages {
+			if d.Pending == "" {
+				continue
+			}
+			status := playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_ROLLED
+			if d.Applied {
+				status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED
+			}
+			host.pend[d.Pending] = &damageLog{status: status}
+			b.byPending[d.Pending] = host
+		}
+	}
+}
+
+func (b *logBuilder) rollModeAnswered(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	if entry.ev.Canceled {
+		return false // a request taken back is no line
+	}
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_ROLL_MODE_ANSWERED
+	return true
+}
+
+func (b *logBuilder) partRemoved(e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	// The removal belongs to the damage it took the extra out of, and is a line of its own.
+	ev := entry.ev
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_DAMAGE_PART_REMOVED
+	host, ok := b.byPending[ev.Pending]
+	if !ok {
+		return true
+	}
+	host.hosts = append(host.hosts, e.ID)
+	host.removed = &ev
+	if host.dmg != nil {
+		for _, r := range host.dmg.Parts {
+			if r.Key == ev.Key {
+				entry.partLabel = r.Label
+			}
+		}
+		if ev.After != nil {
+			host.dmg.After = ev.After
+		}
+	}
+	return true
+}
+
+func (b *logBuilder) trapSearched(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	// A search is the Search action: the master's line only, with the roll in
+	// his history; the table sees nothing of it (RN-10).
+	entry.kind, entry.masterOnly = playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION, true
+	entry.ev.Key = "standard:search"
+	return true
+}
+
+func (b *logBuilder) wildShape(e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE
+	entry.shapeStarted = e.Kind == eventWildShapeStarted
+	return true
+}
+
+func (b *logBuilder) reactionUsed(e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	ev := entry.ev
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION
+	// Escudo that stopped the attack takes its damage away; the hit waits for
+	// its roll otherwise, which the roll event says.
+	if host, ok := b.byPending[ev.Pending]; ok {
+		host.hosts = append(host.hosts, e.ID)
+		if ev.Stopped {
+			host.setStatus(ev.Pending, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_DISCARDED)
+			host.stopped = append(host.stopped, ev.Pending)
+		}
+	}
+	for _, h := range ev.AlsoStopped {
+		if host, ok := b.byPending[h.Pending]; ok {
+			host.hosts = append(host.hosts, e.ID)
+			host.setStatus(h.Pending, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_DISCARDED)
+			host.stopped = append(host.stopped, h.Pending)
+		}
+	}
+	return true
+}
+
+func (b *logBuilder) opportunityOffered(_ playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	ev := entry.ev
+	b.moveOf[ev.OfferID] = ev.MoveID
+	if !ev.ByHand {
+		return false // a move's offer is no line of its own: the move's is
+	}
+	// The master's offer in a combat without a map is a line, and its answer
+	// (decline, skip, withdraw) belongs to it, so the answer can be undone.
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_OPPORTUNITY_OFFERED
+	b.byMove[ev.MoveID] = entry
+	return true
+}
+
+func (b *logBuilder) reactionAnswered(e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	// One line for each reaction used (PM-04c, 10); a "Deixar passar" and the
+	// master's one-tap check are no line.
+	re := entry.ev.Reaction
+	if re == nil || re.Kind == string(reaction.MasterCheck) || (!re.Used && e.Kind == eventReactionAnswered) {
+		return false
+	}
+	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION_WINDOW
+	return true
+}
+
+func (b *logBuilder) reactionDeclined(e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	ev := entry.ev
+	if host, ok := b.byPending[ev.Pending]; ok {
+		host.hosts = append(host.hosts, e.ID) // a decline is the entry's last action to undo
+	}
+	if host, ok := b.byMove[b.moveOf[ev.OfferID]]; ev.OfferID != "" && ok {
+		host.hosts = append(host.hosts, e.ID) // an opportunity offer's answer is the move's to undo
+	}
+	return false
+}
+
+// damageEvent lands in the attack's or the spell's entry.
+func (b *logBuilder) damageEvent(e playdb.ListEncounterEventsRow, entry *logEntry) bool {
+	host, ok := b.byPending[entry.ev.Pending]
+	if !ok {
+		return false
+	}
+	host.hosts = append(host.hosts, e.ID)
+	host.land(e.Kind, entry.ev)
+	return false
 }
 
 // setStatus records where a pending damage of the entry is.
@@ -461,33 +584,9 @@ func (e *logEntry) setStatus(pending string, status playv1.PendingDamageStatus) 
 func (e *logEntry) land(kind string, ev actionEvent) {
 	switch kind {
 	case eventDamageRolled:
-		e.returned, e.returnBlocked = e.returned || ev.ReturnedFrom != nil, e.returnBlocked || ev.ReturnBlocked
-		hits := ev.Settled
-		if len(hits) == 0 {
-			hits = []damageHit{{Pending: ev.Pending, Target: ev.Target, Amount: ev.Amount, Applied: ev.Applied, After: ev.After, ConcentrationDC: ev.ConcentrationDC}}
-		}
-		for _, h := range hits {
-			status := playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_ROLLED
-			if h.Applied {
-				status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED
-			}
-			if dl, ok := e.pend[h.Pending]; ok {
-				dl.roll, dl.hit, dl.status = &ev, h, status
-				continue
-			}
-			e.dmg, e.status = &ev, status
-			e.dmg.After = h.After // the target's hit points after, for an NPC that took it at once
-		}
+		e.landRolled(ev)
 	case eventDamageApplied:
-		e.returned, e.returnBlocked = e.returned || ev.ReturnedFrom != nil, e.returnBlocked || ev.ReturnBlocked
-		if dl, ok := e.pend[ev.Pending]; ok {
-			dl.applied, dl.status = &ev, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED
-			return
-		}
-		e.status, e.applied = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED, &ev
-		if e.dmg != nil {
-			e.dmg.After = ev.After // the character's hit points after
-		}
+		e.landApplied(ev)
 	case eventDamageDiscarded:
 		e.setStatus(ev.Pending, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_DISCARDED)
 		if dl, ok := e.pend[ev.Pending]; ok {
@@ -496,12 +595,77 @@ func (e *logEntry) land(kind string, ev actionEvent) {
 	}
 }
 
-// view builds the entry the viewer gets, and false when they do not get it.
+// landRolled is the damage roll: of an attack, or the one roll of a cast's pending damages.
+func (e *logEntry) landRolled(ev actionEvent) {
+	e.returned, e.returnBlocked = e.returned || ev.ReturnedFrom != nil, e.returnBlocked || ev.ReturnBlocked
+	hits := ev.Settled
+	if len(hits) == 0 {
+		hits = []damageHit{{Pending: ev.Pending, Target: ev.Target, Amount: ev.Amount, Applied: ev.Applied, After: ev.After, ConcentrationDC: ev.ConcentrationDC}}
+	}
+	for _, h := range hits {
+		status := playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_ROLLED
+		if h.Applied {
+			status = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED
+		}
+		if dl, ok := e.pend[h.Pending]; ok {
+			dl.roll, dl.hit, dl.status = &ev, h, status
+			continue
+		}
+		e.dmg, e.status = &ev, status
+		e.dmg.After = h.After // the target's hit points after, for an NPC that took it at once
+	}
+}
+
+// landApplied is the master's apply of the damage on a character.
+func (e *logEntry) landApplied(ev actionEvent) {
+	e.returned, e.returnBlocked = e.returned || ev.ReturnedFrom != nil, e.returnBlocked || ev.ReturnBlocked
+	if dl, ok := e.pend[ev.Pending]; ok {
+		dl.applied, dl.status = &ev, playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED
+		return
+	}
+	e.status, e.applied = playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED, &ev
+	if e.dmg != nil {
+		e.dmg.After = ev.After // the character's hit points after
+	}
+}
+
+// view builds the entry the viewer gets, and false when they do not get it. It reads in
+// phases: who the entry is about, whether the viewer may have it at all, the fields every
+// entry has, and the fields of its kind.
 func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]playdb.Combatant, names *keyNames, lastID string) (*playv1.CombatLogEntry, bool) {
 	if e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION_WINDOW {
 		return e.reactionEntry(ctx, v, byID, names)
 	}
-	actor, target := byID[e.ev.Actor], byID[e.ev.Target]
+	actor, target := e.parties(byID)
+	visible, seen := e.visibility(v, byID, actor, target)
+	if !e.viewerGets(v, actor, target, visible, seen, byID) {
+		return nil, false
+	}
+	c := &logViewing{
+		ctx: ctx, v: v, byID: byID, names: names, actor: actor, target: target,
+		dice: v.master || v.owns(actor), // the dice are the master's and the owner's: the master's rolls are not the players'
+	}
+	out := e.commonFields(c, visible, lastID)
+	if !e.fill(c, out) {
+		return nil, false
+	}
+	return out, true
+}
+
+// logViewing is who reads an entry and who it is about, for the fillers of each kind.
+type logViewing struct {
+	ctx           context.Context
+	v             combatViewer
+	byID          map[string]playdb.Combatant
+	names         *keyNames
+	actor, target playdb.Combatant
+	dice          bool
+}
+
+// parties are the actor and the target of the line, which the kind may swap: the
+// affected one of the master's hit point change is the target.
+func (e *logEntry) parties(byID map[string]playdb.Combatant) (actor, target playdb.Combatant) {
+	actor, target = byID[e.ev.Actor], byID[e.ev.Target]
 	switch e.kind {
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_POINTS_ADJUSTED:
 		actor, target = playdb.Combatant{}, byID[e.ev.Actor] // the affected one is the target
@@ -511,10 +675,29 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 		playv1.CombatLogKind_COMBAT_LOG_KIND_CHARACTER_REVIVED:
 		actor, target = playdb.Combatant{}, byID[e.ev.Actor]
 	}
-	// What a player may see: nothing with a hidden combatant in it, when it
-	// happened or now (a combatant the master hides again takes its lines back).
-	// A combatant that left the combat is unknown now, and an entry about it
-	// would be anonymous: a player does not get it either.
+	return actor, target
+}
+
+// visibility says whether the players may have the entry as for who is in it (visible)
+// and as for the fog of war (seen); the master gets it either way, with a mark.
+func (e *logEntry) visibility(v combatViewer, byID map[string]playdb.Combatant, actor, target playdb.Combatant) (visible, seen bool) {
+	visible = e.visibleToTable(v, byID, actor, target)
+	// On a map with the fog of war, a line is the players' who saw its NPCs when it
+	// happened, even if they have walked into the dark since; one they did not see
+	// never appears later (MR-036). The master's copy says it is hidden from them.
+	seen = e.ev.seenByViewer(v)
+	// The master's reveal of a hider is the hider's player's line too (RN-10: no other player is told).
+	if e.ev.Contest != nil && e.ev.Contest.Line == contestLineHideRevealed && v.owns(actor) {
+		visible, seen = true, true
+	}
+	return visible && e.hitsVisible(byID), seen
+}
+
+// visibleToTable is what a player may see: nothing with a hidden combatant in it, when it
+// happened or now (a combatant the master hides again takes its lines back). A combatant
+// that left the combat is unknown now, and an entry about it would be anonymous: a player
+// does not get it either.
+func (e *logEntry) visibleToTable(v combatViewer, byID map[string]playdb.Combatant, actor, target playdb.Combatant) bool {
 	_, actorKnown := byID[e.ev.Actor]
 	_, targetKnown := byID[e.ev.Target]
 	known := (e.ev.Actor == "" || actorKnown) && (e.ev.Target == "" || targetKnown || e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION)
@@ -522,48 +705,53 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 	if e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION && (e.ev.AttackerHidden || byID[e.ev.Target].Hidden) && !v.owns(actor) {
 		visible = false
 	}
-	// On a map with the fog of war, a line is the players' who saw its NPCs when it
-	// happened, even if they have walked into the dark since; one they did not see
-	// never appears later (MR-036). The master's copy says it is hidden from them.
-	seen := e.ev.seenByViewer(v)
-	// The master's reveal of a hider is the hider's player's line too (RN-10: no other player is told).
-	if e.ev.Contest != nil && e.ev.Contest.Line == contestLineHideRevealed && v.owns(actor) {
-		visible, seen = true, true
+	return visible
+}
+
+// hitsVisible says that every target of a spell is a combatant the players may see. An
+// area the server placed leaves the hidden creatures it hit out of the line, not the line.
+func (e *logEntry) hitsVisible(byID map[string]playdb.Combatant) bool {
+	if e.ev.Placed {
+		return true
 	}
-	for _, h := range e.ev.Hits { // every target of a spell
-		hit, ok := byID[h.Target]
-		if e.ev.Placed { // an area the server placed: the hidden creatures it hit are left out of the line, not the line
-			continue
+	for _, h := range e.ev.Hits {
+		if hit, ok := byID[h.Target]; !ok || hit.Hidden {
+			return false
 		}
-		visible = visible && ok && !hit.Hidden
 	}
-	if !v.master && (!visible || !seen) {
-		return nil, false
+	return true
+}
+
+// viewerGets says whether the viewer gets the entry at all.
+func (e *logEntry) viewerGets(v combatViewer, actor, target playdb.Combatant, visible, seen bool, byID map[string]playdb.Combatant) bool {
+	if v.master {
+		return true
+	}
+	if !visible || !seen {
+		return false
 	}
 	if _, isEffect := effectLogKinds[kindKeyOf(e.kind)]; isEffect && e.ev.Lasting != nil && !effectLineVisible(e.ev.Lasting, v, byID) {
-		return nil, false
+		return false
 	}
 	// An Escudo that ended is a line for the master and the combatant's own player: the
 	// Escudo may have answered an attack the other players do not see (a hidden attacker),
 	// and the line would tell them something happened (RN-10).
-	if !v.master && e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT_ENDED && e.ev.EffectEnd != nil && e.ev.EffectEnd.Effect == effectShield && !v.owns(actor) {
-		return nil, false
+	if e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT_ENDED && e.ev.EffectEnd != nil && e.ev.EffectEnd.Effect == effectShield && !v.owns(actor) {
+		return false
 	}
 	// The offer's line is for whoever gets the offer (RN-10): the reactor's player
 	// and the mover's.
-	if !v.master && e.kind == playv1.CombatLogKind_COMBAT_LOG_KIND_OPPORTUNITY_OFFERED && !v.owns(actor) && !v.owns(target) {
-		return nil, false
-	}
+	return e.kind != playv1.CombatLogKind_COMBAT_LOG_KIND_OPPORTUNITY_OFFERED || v.owns(actor) || v.owns(target)
+}
 
-	// The dice are the master's and the owner's: the master's rolls are not the
-	// players'.
-	dice := v.master || v.owns(actor)
+// commonFields are the fields every entry has, and the master's marks.
+func (e *logEntry) commonFields(c *logViewing, visible bool, lastID string) *playv1.CombatLogEntry {
 	out := &playv1.CombatLogEntry{
 		Id: e.id, Kind: e.kind, At: timestamppb.New(e.at), Round: e.ev.Round,
-		ActorId: actor.ID, ActorLabel: actor.Label, TargetId: target.ID, TargetLabel: target.Label,
+		ActorId: c.actor.ID, ActorLabel: c.actor.Label, TargetId: c.target.ID, TargetLabel: c.target.Label,
 		Key: e.ev.Key,
 	}
-	if v.master {
+	if c.v.master {
 		out.Hidden = !visible || (e.ev.Fogged && len(e.ev.SeenBy) == 0)
 		out.Undoable = slices.Contains(e.hosts, lastID)
 	}
@@ -571,157 +759,261 @@ func (e *logEntry) view(ctx context.Context, v combatViewer, byID map[string]pla
 	case playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK, playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION,
 		playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST, playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION,
 		playv1.CombatLogKind_COMBAT_LOG_KIND_RESOURCE:
-		out.KeyNamePt = names.of(ctx, actor, e.ev.Key)
+		out.KeyNamePt = c.names.of(c.ctx, c.actor, e.ev.Key)
 	}
-	switch e.kind {
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT, playv1.CombatLogKind_COMBAT_LOG_KIND_EXHAUSTION:
-		names.s.effectLogView(ctx, e, out, v, byID, names.campaignID)
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_RESOURCE:
-		out.Resource = resourceLogView(e.ev, v, actor, target)
-		if e.ev.Res != nil && e.ev.Res.Kind == resBardicGive && !v.master && !v.owns(actor) && !v.owns(target) {
-			out.TargetId, out.TargetLabel = "", "" // who holds the die is the bard's, the holder's and the master's
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_MONSTERS_ADDED:
-		for _, it := range e.ev.Monsters.Items {
-			out.Monsters = append(out.Monsters, &playv1.CombatLogMonster{
-				CombatantId: it.ID, Label: byID[it.ID].Label, HitPoints: it.HitPoints, Rolled: it.Dice != "", Dice: it.Dice, Faces: it.Faces, Modifier: it.Modifier,
-			})
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_MOVED:
-		out.DistanceFt, out.DistanceDft = e.ev.DistanceFt, e.ev.DistanceDFt
-		out.SpentDft, out.MoveDragging, out.MoveCrawling = e.ev.SpentDFt, e.ev.Dragging, e.ev.Crawling
-		if out.DistanceDft == 0 { // an event written before the tenths of a foot
-			out.DistanceDft = e.ev.DistanceFt * 10
-		}
-		switch e.ev.Jump {
-		case jumpLong:
-			out.Jump, out.JumpRunningStart = playv1.JumpKind_JUMP_KIND_LONG, e.ev.JumpRunning
-		case jumpHigh:
-			out.Jump, out.JumpHeightDft = playv1.JumpKind_JUMP_KIND_HIGH, e.ev.HeightDFt
-		}
-		out.LandingDifficult = v.master && e.ev.LandingDifficult // the Acrobatics reminder is the master's alone
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_CONTEST:
-		out.Contest = &playv1.CombatLogContest{Line: contestLineProto[e.ev.Contest.Line]} // never a total or a DC (RN-20)
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_RIDER:
-		if r := e.ev.Rider; r != nil {
-			// The target's roll is the master's (an NPC's roll never reaches a player, RN-20), or the
-			// target's own player's when a player's character made the save.
-			out.HitRider = riderLogProto(r, v.master || v.owns(byID[e.ev.Target]))
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_DOOR_OPENED:
-		out.Door = &playv1.CombatLogDoor{Col: e.ev.Col, Row: e.ev.Row}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_REVEAL_CHANGED:
-		out.NowHidden = e.ev.NowHidden
-		out.ActorId, out.ActorLabel = "", ""
-		out.TargetId, out.TargetLabel = e.ev.Actor, byID[e.ev.Actor].Label
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_POINTS_ADJUSTED:
-		out.HitPointsDelta = e.ev.Delta
-		if e.ev.After != nil {
-			out.HitPointsAfter = &e.ev.After.HP
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK:
-		out.Outcome = outcomeToProto[e.ev.Outcome]
-		out.AsReaction = e.ev.AsReaction
-		out.ReturnedToReach, out.ReturnBlocked = e.returned, v.master && e.returnBlocked
-		coverKey, coverSource := e.ev.coverFor(v)
-		out.Cover, out.CoverSource = coverDegreeProto(coverKey), coverSourceProto(coverSource)
-		if v.master && e.ev.TargetAC > 0 { // "CA 17: 15 + 2 de meia cobertura": a player never gets an armor class (RN-20)
-			out.TargetArmorClass, out.CoverBonus = &e.ev.TargetAC, e.ev.CoverBonus
-		}
-		if dice {
-			out.AttackRoll = diceRoll(1, 20, []int32{e.ev.D20}, e.ev.Modifier, e.ev.Total, e.ev.Physical)
-			if e.ev.D20B != 0 {
-				out.AttackRoll = diceRoll(2, 20, pairOf(e.ev.D20, e.ev.D20B, e.ev.Counted), e.ev.Modifier, e.ev.Total, e.ev.Physical)
-				out.AttackRoll.CountedIndex = e.ev.Counted
-			}
-			out.ModeChange = e.modeChange(e.ev, e.ev.ByMaster)
-			out.Reason = e.rolls.reasonOf(e.ev)
-			out.BonusDice = bonusDiceOf(e.ev)
-			out.AttackRoll.ExtraDice = extraDiceProto(e.ev.Extra, v.master, nil)
-			out.AttackRoll.Rerolled = e.ev.Lucky.proto() // "Sortudo: 1 → 14", with the d20 it changed
-		}
-		if len(e.stopped) > 0 { // Escudo stopped it: a miss, with no damage
-			out.Outcome, out.StoppedByReaction = playv1.AttackOutcome_ATTACK_OUTCOME_MISS, true
-		} else if e.ev.Pending != "" {
-			out.Damage = e.damage(dice, v.master, v.master || v.owns(target), out)
-			e.dressDamage(out.Damage, v, dice, v.master || (target.Kind == kindPlayer && v.owns(target)), holdsHP(target))
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION:
-		if e.ev.Heal { // Retomar o fôlego: only the master and its own player see the numbers
-			if v.master || v.owns(actor) {
-				out.Damage = &playv1.CombatLogDamage{
-					Status: playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED, Healing: true, Amount: e.ev.Amount,
-					Roll: diceRoll(e.ev.DiceCount, e.ev.DiceSides, e.ev.Faces, e.ev.Modifier, e.ev.Total, e.ev.Physical),
-				}
-			}
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_ROLL_MODE_ANSWERED:
-		if !v.master && !v.owns(actor) {
-			return nil, false
-		}
-		out.ModeChange = e.answerChange()
-		out.Reason = e.rolls.reasonOf(e.ev)
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_STATE_CHANGED:
-		out.State = &playv1.CombatLogStateChange{Kind: stateKindProto(e.ev.StateKind), Started: e.ev.StateStarted, Reason: e.ev.StateReason}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_DAMAGE_PART_REMOVED:
-		if !e.removalView(v, v.owns(actor), out) {
-			return nil, false
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST:
-		out.Spell = e.spellView(v, byID)
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_TRAP_TRIGGERED:
-		out.Trap = e.trapEntry(ctx, v, byID, names)
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE:
-		out.WildShape = &playv1.CombatLogWildShape{BeastKey: e.ev.Beast, BeastNamePt: names.contentName(ctx, e.ev.Beast), Started: e.shapeStarted}
-		if !e.shapeStarted {
-			out.WildShape.EndReason = wildShapeEndReasonProto[e.ev.Reason]
-			if v.master || v.owns(actor) { // the carried damage is the druid's player's and the master's (RN-20)
-				out.WildShape.CarriedDamage = e.ev.Carried
-			}
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION:
-		out.Spell = &playv1.CombatLogSpell{Slot: slotProto(e.ev.Slot)}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_DEATH_SAVE:
-		after := e.ev.Death
-		if after == nil {
-			after = &deathState{}
-		}
-		if v.hiddenFrom(e.ev.DeathHidden, actor) {
-			// The table keeps the road to the owner and the master (RN-24): a save that
-			// went on is no line for anybody else, and the one that made the character
-			// stable says only that it did, a result the table sees.
-			if after.Successes < 3 || e.ev.DeathOutcome != deathSuccess {
-				return nil, false
-			}
-			out.DeathSave = &playv1.CombatLogDeathSave{Stable: true}
-			break
-		}
-		out.DeathSave = &playv1.CombatLogDeathSave{
-			Outcome: deathOutcomeToProto[e.ev.DeathOutcome], Successes: after.Successes, Failures: after.Failures,
-			Stable: after.Successes >= 3, Dying: v.master && after.Failures >= 3,
-		}
-		if v.master || v.owns(actor) {
-			out.DeathSave.Roll = diceRoll(1, 20, []int32{e.ev.D20}, 0, e.ev.D20, e.ev.Physical)
-		}
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_CONDITIONS_CHANGED:
-		out.Conditions = e.ev.Conditions
-		if !v.master && !v.owns(actor) { // a condition with no outward sign is the owner's and the master's (RN-10)
-			out.Conditions = withoutOwnerOnly(e.ev.Conditions)
-			if e.ev.ConcEnded == "" && slices.Equal(out.Conditions, withoutOwnerOnly(e.ev.CondBefore)) {
-				return nil, false // nothing a player may read changed
-			}
-		}
-		out.ConcentrationEndedKey = e.ev.ConcEnded
-	case playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT_ENDED:
-		if end := e.ev.EffectEnd; end != nil {
-			out.EffectEnd = &playv1.CombatLogEffectEnd{Effect: combatEffectToProto[end.Effect]}
-			if v.master { // the numbers are the master's and the player's own (RN-20); the player reads the vitals
-				out.EffectEnd.HitPointsBefore, out.EffectEnd.HitPointsAfter = end.HP0, end.HP1
-				out.EffectEnd.HitPointsMaxBefore, out.EffectEnd.HitPointsMaxAfter = end.Max0, end.Max1
-			}
+	return out
+}
+
+// deathSaveCount is how many successes make a character stable and how many failures make it dying.
+const deathSaveCount = 3
+
+// logFiller writes the fields of one kind of entry, and says false when the viewer has
+// nothing of it to read after all.
+type logFiller func(e *logEntry, c *logViewing, out *playv1.CombatLogEntry) bool
+
+// logFillers are the fillers by kind; a kind with none has only the common fields.
+var logFillers = map[playv1.CombatLogKind]logFiller{
+	playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT:              (*logEntry).fillEffect,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_EXHAUSTION:          (*logEntry).fillEffect,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_RESOURCE:            (*logEntry).fillResource,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_MONSTERS_ADDED:      (*logEntry).fillMonsters,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_MOVED:               (*logEntry).fillMoved,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CONTEST:             (*logEntry).fillContest,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_RIDER:           (*logEntry).fillHitRider,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_DOOR_OPENED:         (*logEntry).fillDoor,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_REVEAL_CHANGED:      (*logEntry).fillReveal,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_HIT_POINTS_ADJUSTED: (*logEntry).fillHitPoints,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_ATTACK:              (*logEntry).fillAttack,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_ACTION:              (*logEntry).fillAction,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_ROLL_MODE_ANSWERED:  (*logEntry).fillAnswer,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_STATE_CHANGED:       (*logEntry).fillState,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_DAMAGE_PART_REMOVED: (*logEntry).fillRemoval,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_SPELL_CAST:          (*logEntry).fillSpell,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_TRAP_TRIGGERED:      (*logEntry).fillTrap,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_WILD_SHAPE:          (*logEntry).fillWildShape,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_REACTION:            (*logEntry).fillReaction,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_DEATH_SAVE:          (*logEntry).fillDeathSave,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_CONDITIONS_CHANGED:  (*logEntry).fillConditions,
+	playv1.CombatLogKind_COMBAT_LOG_KIND_EFFECT_ENDED:        (*logEntry).fillEffectEnd,
+}
+
+// fill writes the fields of the entry's kind.
+func (e *logEntry) fill(c *logViewing, out *playv1.CombatLogEntry) bool {
+	fill, ok := logFillers[e.kind]
+	return !ok || fill(e, c, out)
+}
+
+func (e *logEntry) fillEffect(c *logViewing, out *playv1.CombatLogEntry) bool {
+	c.names.s.effectLogView(c.ctx, e, out, c.v, c.byID, c.names.campaignID)
+	return true
+}
+
+func (e *logEntry) fillResource(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.Resource = resourceLogView(e.ev, c.v, c.actor, c.target)
+	if e.ev.Res != nil && e.ev.Res.Kind == resBardicGive && !c.v.master && !c.v.owns(c.actor) && !c.v.owns(c.target) {
+		out.TargetId, out.TargetLabel = "", "" // who holds the die is the bard's, the holder's and the master's
+	}
+	return true
+}
+
+func (e *logEntry) fillMonsters(c *logViewing, out *playv1.CombatLogEntry) bool {
+	for _, it := range e.ev.Monsters.Items {
+		out.Monsters = append(out.Monsters, &playv1.CombatLogMonster{
+			CombatantId: it.ID, Label: c.byID[it.ID].Label, HitPoints: it.HitPoints, Rolled: it.Dice != "", Dice: it.Dice, Faces: it.Faces, Modifier: it.Modifier,
+		})
+	}
+	return true
+}
+
+func (e *logEntry) fillMoved(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.DistanceFt, out.DistanceDft = e.ev.DistanceFt, e.ev.DistanceDFt
+	out.SpentDft, out.MoveDragging, out.MoveCrawling = e.ev.SpentDFt, e.ev.Dragging, e.ev.Crawling
+	if out.DistanceDft == 0 { // an event written before the tenths of a foot
+		out.DistanceDft = e.ev.DistanceFt * 10
+	}
+	switch e.ev.Jump {
+	case jumpLong:
+		out.Jump, out.JumpRunningStart = playv1.JumpKind_JUMP_KIND_LONG, e.ev.JumpRunning
+	case jumpHigh:
+		out.Jump, out.JumpHeightDft = playv1.JumpKind_JUMP_KIND_HIGH, e.ev.HeightDFt
+	}
+	out.LandingDifficult = c.v.master && e.ev.LandingDifficult // the Acrobatics reminder is the master's alone
+	return true
+}
+
+func (e *logEntry) fillContest(_ *logViewing, out *playv1.CombatLogEntry) bool {
+	out.Contest = &playv1.CombatLogContest{Line: contestLineProto[e.ev.Contest.Line]} // never a total or a DC (RN-20)
+	return true
+}
+
+func (e *logEntry) fillHitRider(c *logViewing, out *playv1.CombatLogEntry) bool {
+	if r := e.ev.Rider; r != nil {
+		// The target's roll is the master's (an NPC's roll never reaches a player, RN-20), or the
+		// target's own player's when a player's character made the save.
+		out.HitRider = riderLogProto(r, c.v.master || c.v.owns(c.byID[e.ev.Target]))
+	}
+	return true
+}
+
+func (e *logEntry) fillDoor(_ *logViewing, out *playv1.CombatLogEntry) bool {
+	out.Door = &playv1.CombatLogDoor{Col: e.ev.Col, Row: e.ev.Row}
+	return true
+}
+
+func (e *logEntry) fillReveal(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.NowHidden = e.ev.NowHidden
+	out.ActorId, out.ActorLabel = "", ""
+	out.TargetId, out.TargetLabel = e.ev.Actor, c.byID[e.ev.Actor].Label
+	return true
+}
+
+func (e *logEntry) fillHitPoints(_ *logViewing, out *playv1.CombatLogEntry) bool {
+	out.HitPointsDelta = e.ev.Delta
+	if e.ev.After != nil {
+		out.HitPointsAfter = &e.ev.After.HP
+	}
+	return true
+}
+
+func (e *logEntry) fillAttack(c *logViewing, out *playv1.CombatLogEntry) bool {
+	v := c.v
+	out.Outcome = outcomeToProto[e.ev.Outcome]
+	out.AsReaction = e.ev.AsReaction
+	out.ReturnedToReach, out.ReturnBlocked = e.returned, v.master && e.returnBlocked
+	coverKey, coverSource := e.ev.coverFor(v)
+	out.Cover, out.CoverSource = coverDegreeProto(coverKey), coverSourceProto(coverSource)
+	if v.master && e.ev.TargetAC > 0 { // "CA 17: 15 + 2 de meia cobertura": a player never gets an armor class (RN-20)
+		out.TargetArmorClass, out.CoverBonus = &e.ev.TargetAC, e.ev.CoverBonus
+	}
+	if c.dice {
+		e.attackDice(out, v)
+	}
+	if len(e.stopped) > 0 { // Escudo stopped it: a miss, with no damage
+		out.Outcome, out.StoppedByReaction = playv1.AttackOutcome_ATTACK_OUTCOME_MISS, true
+	} else if e.ev.Pending != "" {
+		out.Damage = e.damage(c.dice, v.master, v.master || v.owns(c.target), out)
+		e.dressDamage(out.Damage, v, c.dice, v.master || (c.target.Kind == kindPlayer && v.owns(c.target)), holdsHP(c.target))
+	}
+	return true
+}
+
+// attackDice are the dice of an attack: the master's and the attacker's player's.
+func (e *logEntry) attackDice(out *playv1.CombatLogEntry, v combatViewer) {
+	out.AttackRoll = diceRoll(1, 20, []int32{e.ev.D20}, e.ev.Modifier, e.ev.Total, e.ev.Physical)
+	if e.ev.D20B != 0 {
+		out.AttackRoll = diceRoll(2, 20, pairOf(e.ev.D20, e.ev.D20B, e.ev.Counted), e.ev.Modifier, e.ev.Total, e.ev.Physical)
+		out.AttackRoll.CountedIndex = e.ev.Counted
+	}
+	out.ModeChange = e.modeChange(e.ev, e.ev.ByMaster)
+	out.Reason = e.rolls.reasonOf(e.ev)
+	out.BonusDice = bonusDiceOf(e.ev)
+	out.AttackRoll.ExtraDice = extraDiceProto(e.ev.Extra, v.master, nil)
+	out.AttackRoll.Rerolled = e.ev.Lucky.proto() // "Sortudo: 1 → 14", with the d20 it changed
+}
+
+func (e *logEntry) fillAction(c *logViewing, out *playv1.CombatLogEntry) bool {
+	if e.ev.Heal && (c.v.master || c.v.owns(c.actor)) { // Retomar o fôlego: only the master and its own player see the numbers
+		out.Damage = &playv1.CombatLogDamage{
+			Status: playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED, Healing: true, Amount: e.ev.Amount,
+			Roll: diceRoll(e.ev.DiceCount, e.ev.DiceSides, e.ev.Faces, e.ev.Modifier, e.ev.Total, e.ev.Physical),
 		}
 	}
-	return out, true
+	return true
+}
+
+func (e *logEntry) fillAnswer(c *logViewing, out *playv1.CombatLogEntry) bool {
+	if !c.v.master && !c.v.owns(c.actor) {
+		return false
+	}
+	out.ModeChange = e.answerChange()
+	out.Reason = e.rolls.reasonOf(e.ev)
+	return true
+}
+
+func (e *logEntry) fillState(_ *logViewing, out *playv1.CombatLogEntry) bool {
+	out.State = &playv1.CombatLogStateChange{Kind: stateKindProto(e.ev.StateKind), Started: e.ev.StateStarted, Reason: e.ev.StateReason}
+	return true
+}
+
+func (e *logEntry) fillRemoval(c *logViewing, out *playv1.CombatLogEntry) bool {
+	return e.removalView(c.v, c.v.owns(c.actor), out)
+}
+
+func (e *logEntry) fillSpell(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.Spell = e.spellView(c.v, c.byID)
+	return true
+}
+
+func (e *logEntry) fillTrap(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.Trap = e.trapEntry(c.ctx, c.v, c.byID, c.names)
+	return true
+}
+
+func (e *logEntry) fillWildShape(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.WildShape = &playv1.CombatLogWildShape{BeastKey: e.ev.Beast, BeastNamePt: c.names.contentName(c.ctx, e.ev.Beast), Started: e.shapeStarted}
+	if !e.shapeStarted {
+		out.WildShape.EndReason = wildShapeEndReasonProto[e.ev.Reason]
+		if c.v.master || c.v.owns(c.actor) { // the carried damage is the druid's player's and the master's (RN-20)
+			out.WildShape.CarriedDamage = e.ev.Carried
+		}
+	}
+	return true
+}
+
+func (e *logEntry) fillReaction(_ *logViewing, out *playv1.CombatLogEntry) bool {
+	out.Spell = &playv1.CombatLogSpell{Slot: slotProto(e.ev.Slot)}
+	return true
+}
+
+func (e *logEntry) fillDeathSave(c *logViewing, out *playv1.CombatLogEntry) bool {
+	v := c.v
+	after := e.ev.Death
+	if after == nil {
+		after = &deathState{}
+	}
+	if v.hiddenFrom(e.ev.DeathHidden, c.actor) {
+		// The table keeps the road to the owner and the master (RN-24): a save that
+		// went on is no line for anybody else, and the one that made the character
+		// stable says only that it did, a result the table sees.
+		if after.Successes < deathSaveCount || e.ev.DeathOutcome != deathSuccess {
+			return false
+		}
+		out.DeathSave = &playv1.CombatLogDeathSave{Stable: true}
+		return true
+	}
+	out.DeathSave = &playv1.CombatLogDeathSave{
+		Outcome: deathOutcomeToProto[e.ev.DeathOutcome], Successes: after.Successes, Failures: after.Failures,
+		Stable: after.Successes >= deathSaveCount, Dying: v.master && after.Failures >= deathSaveCount,
+	}
+	if v.master || v.owns(c.actor) {
+		out.DeathSave.Roll = diceRoll(1, 20, []int32{e.ev.D20}, 0, e.ev.D20, e.ev.Physical)
+	}
+	return true
+}
+
+func (e *logEntry) fillConditions(c *logViewing, out *playv1.CombatLogEntry) bool {
+	out.Conditions = e.ev.Conditions
+	if !c.v.master && !c.v.owns(c.actor) { // a condition with no outward sign is the owner's and the master's (RN-10)
+		out.Conditions = withoutOwnerOnly(e.ev.Conditions)
+		if e.ev.ConcEnded == "" && slices.Equal(out.Conditions, withoutOwnerOnly(e.ev.CondBefore)) {
+			return false // nothing a player may read changed
+		}
+	}
+	out.ConcentrationEndedKey = e.ev.ConcEnded
+	return true
+}
+
+func (e *logEntry) fillEffectEnd(c *logViewing, out *playv1.CombatLogEntry) bool {
+	end := e.ev.EffectEnd
+	if end == nil {
+		return true
+	}
+	out.EffectEnd = &playv1.CombatLogEffectEnd{Effect: combatEffectToProto[end.Effect]}
+	if c.v.master { // the numbers are the master's and the player's own (RN-20); the player reads the vitals
+		out.EffectEnd.HitPointsBefore, out.EffectEnd.HitPointsAfter = end.HP0, end.HP1
+		out.EffectEnd.HitPointsMaxBefore, out.EffectEnd.HitPointsMaxAfter = end.Max0, end.Max1
+	}
+	return true
 }
 
 // spellView is the cast as the viewer gets it: what each target did, in the

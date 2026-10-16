@@ -847,7 +847,7 @@ func (q *Queries) DeleteCombatantState(ctx context.Context, id string) error {
 const deleteCombatantStatesBySource = `-- name: DeleteCombatantStatesBySource :many
 DELETE FROM combatant_states
 WHERE source_id = $1 AND kind = $2
-RETURNING id, combatant_id
+RETURNING id, combatant_id, started_round, created_at
 `
 
 type DeleteCombatantStatesBySourceParams struct {
@@ -856,11 +856,14 @@ type DeleteCombatantStatesBySourceParams struct {
 }
 
 type DeleteCombatantStatesBySourceRow struct {
-	ID          string
-	CombatantID string
+	ID           string
+	CombatantID  string
+	StartedRound int32
+	CreatedAt    time.Time
 }
 
-// The states a source gave (the marks of a ranger who stopped concentrating).
+// The states a source gave (the marks of a ranger who stopped concentrating), with what
+// the undo of a cast that moved a mark needs to put it back (RestoreHuntersMark).
 func (q *Queries) DeleteCombatantStatesBySource(ctx context.Context, arg DeleteCombatantStatesBySourceParams) ([]DeleteCombatantStatesBySourceRow, error) {
 	rows, err := q.db.Query(ctx, deleteCombatantStatesBySource, arg.SourceID, arg.Kind)
 	if err != nil {
@@ -870,7 +873,12 @@ func (q *Queries) DeleteCombatantStatesBySource(ctx context.Context, arg DeleteC
 	var items []DeleteCombatantStatesBySourceRow
 	for rows.Next() {
 		var i DeleteCombatantStatesBySourceRow
-		if err := rows.Scan(&i.ID, &i.CombatantID); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.CombatantID,
+			&i.StartedRound,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -7542,6 +7550,34 @@ type ResetDeathSavesOfCharacterParams struct {
 // summary.
 func (q *Queries) ResetDeathSavesOfCharacter(ctx context.Context, arg ResetDeathSavesOfCharacterParams) error {
 	_, err := q.db.Exec(ctx, resetDeathSavesOfCharacter, arg.CharacterID, arg.GameSessionID)
+	return err
+}
+
+const restoreHuntersMark = `-- name: RestoreHuntersMark :exec
+INSERT INTO combatant_states (id, encounter_id, combatant_id, kind, source_id, started_round, amount, created_at)
+VALUES ($1, $2, $3, 'hunters_mark_target', $4, $5, 0, $6)
+`
+
+type RestoreHuntersMarkParams struct {
+	ID           string
+	EncounterID  string
+	CombatantID  string
+	SourceID     *string
+	StartedRound int32
+	CreatedAt    time.Time
+}
+
+// The undo of a cast that moved a Hunter's Mark: the mark it took off comes back with
+// its ID, its round and its time, as InsertCombatantState made it.
+func (q *Queries) RestoreHuntersMark(ctx context.Context, arg RestoreHuntersMarkParams) error {
+	_, err := q.db.Exec(ctx, restoreHuntersMark,
+		arg.ID,
+		arg.EncounterID,
+		arg.CombatantID,
+		arg.SourceID,
+		arg.StartedRound,
+		arg.CreatedAt,
+	)
 	return err
 }
 

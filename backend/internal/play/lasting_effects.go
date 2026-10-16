@@ -514,14 +514,10 @@ func (s *Service) afterEffectEnded(ctx context.Context, c *combatTx, cs []playdb
 				if j := slices.IndexFunc(cs, func(o playdb.Combatant) bool { return o.ID == deref(st.SourceID) }); j >= 0 {
 					caster = &cs[j]
 				}
-				made, err := s.addEffects(ctx, c, cs, effectSpec{
+				if err := s.leaveFollowUp(ctx, c, cs, effectSpec{
 					key: def.OnEnd, sourceKind: "feature", def: next, caster: caster, targets: []playdb.Combatant{cs[i]},
 					dur: durationSpec{Kind: next.Duration.Kind}, follows: key,
-				})
-				if err != nil {
-					return err
-				}
-				if err := s.addedEvent(ctx, c, cs, made, def.OnEnd); err != nil {
+				}); err != nil {
 					return err
 				}
 			}
@@ -550,6 +546,27 @@ func (s *Service) afterEffectEnded(ctx context.Context, c *combatTx, cs []playdb
 	return nil
 }
 
+// leaveFollowUp makes what an effect that ended leaves on its target (Haste's lethargy)
+// and its "added" line, and notes both in the change (followUps): the change's undo, which
+// puts the ended effect back, takes them away.
+func (s *Service) leaveFollowUp(ctx context.Context, c *combatTx, cs []playdb.Combatant, spec effectSpec) error {
+	made, err := s.addEffects(ctx, c, cs, spec)
+	if err != nil {
+		return err
+	}
+	line, err := s.addedEventID(ctx, c, cs, made, spec.key)
+	if err != nil {
+		return err
+	}
+	for _, st := range made {
+		c.followUps = append(c.followUps, effectRef{ID: st.ID, Target: st.CombatantID})
+	}
+	if line != "" {
+		c.followUpLines = append(c.followUpLines, line)
+	}
+	return nil
+}
+
 // effectDef is the catalog entry of an effect's key: a spell's or an app effect's.
 func (s *Service) effectDef(content *rules.Content, key string) (*rules.EffectDef, bool) {
 	if d, ok := content.CombatSpellEffect(key); ok {
@@ -560,8 +577,15 @@ func (s *Service) effectDef(content *rules.Content, key string) (*rules.EffectDe
 
 // addedEvent writes the line of an effect that began: one for the casting.
 func (s *Service) addedEvent(ctx context.Context, c *combatTx, cs []playdb.Combatant, rows []playdb.CombatantState, key string) error {
+	_, err := s.addedEventID(ctx, c, cs, rows, key)
+	return err
+}
+
+// addedEventID is addedEvent that returns the line's ID (empty when there are no rows and
+// so no line), for a change whose own event names it.
+func (s *Service) addedEventID(ctx context.Context, c *combatTx, cs []playdb.Combatant, rows []playdb.CombatantState, key string) (string, error) {
 	if len(rows) == 0 {
-		return nil
+		return "", nil
 	}
 	var targets, ids []string
 	for _, st := range rows {
@@ -572,7 +596,7 @@ func (s *Service) addedEvent(ctx context.Context, c *combatTx, cs []playdb.Comba
 	if first.EndsRound != nil {
 		rounds = max(*first.EndsRound-max(c.enc.Round, 1), 0)
 	}
-	return insertEvent(ctx, c, eventLastingAdded, &c.actorUserID, nil, actionEvent{
+	return insertEventID(ctx, c, eventLastingAdded, &c.actorUserID, nil, actionEvent{
 		Round: c.enc.Round, Secret: s.effectHiddenFrom(first, targetsOf(cs, targets)), Actor: deref(first.SourceID), Target: targets[0],
 		Lasting: &lastingEvent{Key: key, Change: "added", Targets: targets, Caster: deref(first.SourceID), Rounds: rounds, Effects: ids, OwnerOnly: first.Audience == audienceOwner},
 	})

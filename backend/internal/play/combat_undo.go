@@ -233,8 +233,9 @@ func (s *Service) UndoLastAction(
 		if vitals, err = s.takeBack(ctx, c, last.Kind, ev); err != nil {
 			return nil, err
 		}
-		// The effects the action ended are back (takeBack): their "ended" lines go too.
-		alsoUndone = append(alsoUndone, ev.EndedLines...)
+		// What the action ended or revealed is as it was (takeBack): the lines it wrote
+		// about it go too.
+		alsoUndone = append(alsoUndone, ev.linesBefore()...)
 		if last.Kind == eventCombatantMoved {
 			undoneMove = &ev
 		}
@@ -251,7 +252,7 @@ func (s *Service) UndoLastAction(
 					return nil, err
 				}
 				vitals = append(vitals, more...)
-				alsoUndone = append(append(alsoUndone, older.ID), pe.EndedLines...)
+				alsoUndone = append(append(alsoUndone, older.ID), pe.linesBefore()...)
 			}
 		}
 		if last.Kind == eventTrapTriggered {
@@ -267,7 +268,7 @@ func (s *Service) UndoLastAction(
 					return nil, err
 				}
 				vitals = append(vitals, more...)
-				alsoUndone = append(append(alsoUndone, older.ID), pe.EndedLines...)
+				alsoUndone = append(append(alsoUndone, older.ID), pe.linesBefore()...)
 			}
 		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
@@ -356,8 +357,8 @@ func (s *Service) takeBack(ctx context.Context, c *combatTx, kind string, ev act
 		return nil, err
 	}
 	// What the action ended (an effect whose caster stopped concentrating, a spell it replaced)
-	// comes back with its id and its clock.
-	if err := s.restoreEffects(ctx, c, ev.Restore); err != nil {
+	// comes back with its id and its clock, and what that left behind goes.
+	if err := s.effectsBack(ctx, c, ev); err != nil {
 		return nil, err
 	}
 	undo, ok := undoers[kind]
@@ -369,6 +370,27 @@ func (s *Service) takeBack(ctx context.Context, c *combatTx, kind string, ev act
 		return nil, err
 	}
 	return u.vitals, nil
+}
+
+// effectsBack puts back the effects the action ended (ev.Restore), then takes away what
+// their end left behind (ev.FollowUps: Haste's lethargy), which never happened once the
+// effects are back. A follow-up the action made and ended again is in both lists, and goes.
+func (s *Service) effectsBack(ctx context.Context, c *combatTx, ev actionEvent) error {
+	if err := s.restoreEffects(ctx, c, ev.Restore); err != nil {
+		return err
+	}
+	if len(ev.FollowUps) == 0 {
+		return nil
+	}
+	targets := make([]string, 0, len(ev.FollowUps))
+	for _, f := range ev.FollowUps {
+		if err := c.q.DeleteLastingEffect(ctx, f.ID); err != nil {
+			return fmt.Errorf("take away what an ended effect left: %w", err)
+		}
+		targets = append(targets, f.Target)
+	}
+	slices.Sort(targets)
+	return s.refreshCombatants(ctx, c, slices.Compact(targets)...)
 }
 
 // closeDamageWindows closes the windows a damage opened (a concentration save, a

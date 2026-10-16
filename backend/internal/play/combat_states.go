@@ -153,9 +153,10 @@ func (s *Service) endRage(ctx context.Context, c *combatTx, who playdb.Combatant
 }
 
 // markHuntersMark puts the caster's Hunter's Mark on the target: one mark at a time (SRD
-// 5.1, Hunter's Mark), and it ends with the concentration.
-func (s *Service) markHuntersMark(ctx context.Context, c *combatTx, caster, target playdb.Combatant) error {
-	if err := s.clearHuntersMark(ctx, c, caster); err != nil {
+// 5.1, Hunter's Mark), and it ends with the concentration. The cast's event keeps a mark it
+// takes off (clearHuntersMark).
+func (s *Service) markHuntersMark(ctx context.Context, c *combatTx, caster, target playdb.Combatant, ev *actionEvent) error {
+	if err := s.clearHuntersMark(ctx, c, caster, ev); err != nil {
 		return err
 	}
 	_, err := c.q.InsertCombatantState(ctx, playdb.InsertCombatantStateParams{
@@ -167,10 +168,19 @@ func (s *Service) markHuntersMark(ctx context.Context, c *combatTx, caster, targ
 	return nil
 }
 
-// clearHuntersMark takes the caster's marks off: its concentration ended.
-func (s *Service) clearHuntersMark(ctx context.Context, c *combatTx, caster playdb.Combatant) error {
-	if _, err := c.q.DeleteCombatantStatesBySource(ctx, playdb.DeleteCombatantStatesBySourceParams{SourceID: &caster.ID, Kind: stateMark}); err != nil {
+// clearHuntersMark takes the caster's marks off: its concentration ended. ev, when not nil,
+// is the event of a cast, which keeps the marks taken off (MarksBefore) so that its undo
+// puts them back (marksBack, combat_undo_kinds.go).
+func (s *Service) clearHuntersMark(ctx context.Context, c *combatTx, caster playdb.Combatant, ev *actionEvent) error {
+	rows, err := c.q.DeleteCombatantStatesBySource(ctx, playdb.DeleteCombatantStatesBySourceParams{SourceID: &caster.ID, Kind: stateMark})
+	if err != nil {
 		return fmt.Errorf("take the marks off: %w", err)
+	}
+	if ev == nil {
+		return nil
+	}
+	for _, r := range rows {
+		ev.MarksBefore = append(ev.MarksBefore, markState{ID: r.ID, Source: caster.ID, Target: r.CombatantID, Round: r.StartedRound, CreatedAt: r.CreatedAt})
 	}
 	return nil
 }

@@ -343,65 +343,107 @@ func (x *deriver) levelAndProficiency() {
 // and the chosen options), in a stable order. It fills Derived.Features
 // on the way.
 func (x *deriver) collectEffects() {
-	c := x.c
-	owned := map[string]bool{}
-	add := func(key string) {
-		if owned[key] {
-			return
-		}
-		owned[key] = true
-		for _, e := range c.effects[key] {
-			x.active = append(x.active, activeEffect{owner: key, effect: e})
-		}
-	}
-	feature := func(key, name, source string, level int, desc []string) {
-		x.d.Features = append(x.d.Features, Feature{
-			Key: key, Name: name, NamePT: c.namePT(key), Source: source, Level: level,
-			SourcePT: x.sourcePT(source, level), Description: desc, SummaryPT: x.optionSummary(key),
-		}.withTextPT(c))
-	}
+	col := &collector{x: x, owned: map[string]bool{}}
+	col.raceTraits(x.race)
+	col.subraceTraits(x.subrace)
+	col.background()
+	col.classFeatures()
+	col.feats()
+	x.choiceFeats(col.owned, col.add, col.feature)
+	col.options()
+}
 
-	if x.race != nil {
-		add(x.race.Key)
-		for _, t := range x.race.Traits {
-			if tr, ok := c.traits[t]; ok {
-				add(t)
-				feature(t, tr.Name, x.race.Key, 0, tr.Desc)
-			}
+// collector is the state collectEffects works with: the keys the character owns,
+// so far, and the deriver the effects and the features go to.
+type collector struct {
+	x     *deriver
+	owned map[string]bool
+}
+
+// add makes the effects of a feature, trait or feat active, once.
+func (col *collector) add(key string) {
+	if col.owned[key] {
+		return
+	}
+	col.owned[key] = true
+	for _, e := range col.x.c.effects[key] {
+		col.x.active = append(col.x.active, activeEffect{owner: key, effect: e})
+	}
+}
+
+// feature lists a feature on the sheet.
+func (col *collector) feature(key, name, source string, level int, desc []string) {
+	x := col.x
+	x.d.Features = append(x.d.Features, Feature{
+		Key: key, Name: name, NamePT: x.c.namePT(key), Source: source, Level: level,
+		SourcePT: x.sourcePT(source, level), Description: desc, SummaryPT: x.optionSummary(key),
+	}.withTextPT(x.c))
+}
+
+func (col *collector) raceTraits(r *srd51.Race) {
+	if r != nil {
+		col.traitsOf(r.Key, r.Traits)
+	}
+}
+
+func (col *collector) subraceTraits(r *srd51.Subrace) {
+	if r != nil {
+		col.traitsOf(r.Key, r.Traits)
+	}
+}
+
+// traitsOf adds a race or a subrace and the traits of it the content has.
+func (col *collector) traitsOf(source string, traits []string) {
+	col.add(source)
+	for _, t := range traits {
+		if tr, ok := col.x.c.traits[t]; ok {
+			col.add(t)
+			col.feature(t, tr.Name, source, 0, tr.Desc)
 		}
 	}
-	if x.subrace != nil {
-		add(x.subrace.Key)
-		for _, t := range x.subrace.Traits {
-			if tr, ok := c.traits[t]; ok {
-				add(t)
-				feature(t, tr.Name, x.subrace.Key, 0, tr.Desc)
-			}
-		}
-	}
-	if bg, ok := c.backgrounds[x.b.Background]; ok {
-		add(bg.Key)
-		add(bg.Feature.Key)
-		feature(bg.Feature.Key, bg.Feature.Name, bg.Key, 0, bg.Feature.Desc)
-	} else if x.b.Background != "" {
-		x.issue(IssueUnknownKey, "full.background_key", "O antecedente escolhido não existe no conteúdo %s.", c.version)
-	} else if x.customBackground() {
-		// The player's own background (SRD 5.1 "Customizing a Background"): its
-		// feature is the player's text, like a table background's text feature.
-		if x.b.CustomBackgroundFeatureName != "" || x.b.CustomBackgroundFeature != "" {
-			var desc []string
-			if x.b.CustomBackgroundFeature != "" {
-				desc = []string{x.b.CustomBackgroundFeature}
-			}
-			x.d.Features = append(x.d.Features, Feature{
-				Key: CustomBackgroundFeatureKey, Name: x.b.CustomBackgroundFeatureName, NamePT: x.b.CustomBackgroundFeatureName,
-				Source: CustomBackgroundKey, SourcePT: x.b.CustomBackgroundName, Description: desc,
-			})
-		}
-	} else if x.b.Background == "" {
+}
+
+// background adds the background's feature, or the player's own background, or
+// the issue that there is none.
+func (col *collector) background() {
+	x := col.x
+	bg, ok := x.c.backgrounds[x.b.Background]
+	switch {
+	case ok:
+		col.add(bg.Key)
+		col.add(bg.Feature.Key)
+		col.feature(bg.Feature.Key, bg.Feature.Name, bg.Key, 0, bg.Feature.Desc)
+	case x.b.Background != "":
+		x.issue(IssueUnknownKey, "full.background_key", "O antecedente escolhido não existe no conteúdo %s.", x.c.version)
+	case x.customBackground():
+		col.customBackgroundFeature()
+	default:
 		x.issue(IssueMissing, "full.background_key", "Escolha um antecedente.")
 	}
+}
 
+// customBackgroundFeature lists the feature of the player's own background (SRD
+// 5.1 "Customizing a Background"): it is the player's text, like a table
+// background's text feature.
+func (col *collector) customBackgroundFeature() {
+	x := col.x
+	if x.b.CustomBackgroundFeatureName == "" && x.b.CustomBackgroundFeature == "" {
+		return
+	}
+	var desc []string
+	if x.b.CustomBackgroundFeature != "" {
+		desc = []string{x.b.CustomBackgroundFeature}
+	}
+	x.d.Features = append(x.d.Features, Feature{
+		Key: CustomBackgroundFeatureKey, Name: x.b.CustomBackgroundFeatureName, NamePT: x.b.CustomBackgroundFeatureName,
+		Source: CustomBackgroundKey, SourcePT: x.b.CustomBackgroundName, Description: desc,
+	})
+}
+
+// classFeatures adds each class and subclass and their features up to the level
+// of the class.
+func (col *collector) classFeatures() {
+	x := col.x
 	replacedByFeat := map[string]bool{}
 	for feat, slot := range x.b.FeatSlots {
 		if slices.Contains(x.b.Feats, feat) {
@@ -409,110 +451,152 @@ func (x *deriver) collectEffects() {
 		}
 	}
 	for _, oc := range x.classes {
-		add(oc.key)
+		col.add(oc.key)
 		if oc.subclass != nil {
-			add(oc.subclass.Key)
+			col.add(oc.subclass.Key)
 		}
 		for lvl := 1; lvl <= oc.level; lvl++ {
-			for _, fk := range c.classLevels[oc.key][lvl-1].Features {
-				if replacedByFeat[fk] {
-					continue // a feat was taken in its place
-				}
-				if f, ok := c.features[fk]; ok {
-					add(fk)
-					feature(fk, f.Name, oc.key, lvl, f.Desc)
-				}
-			}
-			if oc.subclass == nil {
-				continue
-			}
-			row := c.subclassLevels[oc.subclass.Key][lvl]
-			if row == nil {
-				continue
-			}
-			for _, fk := range row.Features {
-				if f, ok := c.features[fk]; ok {
-					add(fk)
-					feature(fk, f.Name, oc.subclass.Key, lvl, f.Desc)
-				}
-			}
+			col.classLevel(oc, lvl, replacedByFeat)
 		}
 	}
+}
 
-	// The feats the character took apply like features. A key the content does
-	// not have is an issue, not a failure: the sheet still opens.
+// classLevel adds the features a class, and its subclass, give at one level.
+func (col *collector) classLevel(oc ownedClass, lvl int, replacedByFeat map[string]bool) {
+	c := col.x.c
+	for _, fk := range c.classLevels[oc.key][lvl-1].Features {
+		if replacedByFeat[fk] {
+			continue // a feat was taken in its place
+		}
+		col.levelFeature(fk, oc.key, lvl)
+	}
+	if oc.subclass == nil {
+		return
+	}
+	row := c.subclassLevels[oc.subclass.Key][lvl]
+	if row == nil {
+		return
+	}
+	for _, fk := range row.Features {
+		col.levelFeature(fk, oc.subclass.Key, lvl)
+	}
+}
+
+// levelFeature adds a feature of a class or a subclass, when the content has it.
+func (col *collector) levelFeature(key, source string, level int) {
+	if f, ok := col.x.c.features[key]; ok {
+		col.add(key)
+		col.feature(key, f.Name, source, level, f.Desc)
+	}
+}
+
+// feats adds the feats the character took, which apply like features. A key the
+// content does not have is an issue, not a failure: the sheet still opens.
+func (col *collector) feats() {
+	x := col.x
 	for i, key := range x.b.Feats {
-		f, ok := c.feats[key]
+		f, ok := x.c.feats[key]
 		if !ok {
-			x.issue(IssueUnknownKey, fmt.Sprintf("full.feat_keys[%d]", i), "O talento escolhido não existe no conteúdo %s.", c.version)
+			x.issue(IssueUnknownKey, fmt.Sprintf("full.feat_keys[%d]", i), "O talento escolhido não existe no conteúdo %s.", x.c.version)
 			continue
 		}
 		if x.inactiveFeats[key] {
-			x.issue(IssueFeatPrerequisite, fmt.Sprintf("full.feat_keys[%d]", i), "O personagem não cumpre mais o pré-requisito de %s: o talento só vale de novo quando cumprir.", c.namePT(key))
+			x.issue(IssueFeatPrerequisite, fmt.Sprintf("full.feat_keys[%d]", i), "O personagem não cumpre mais o pré-requisito de %s: o talento só vale de novo quando cumprir.", x.c.namePT(key))
 		} else {
-			add(key)
+			col.add(key)
 		}
-		feature(key, f.Name, key, 0, f.Desc)
-		if slot, ok := x.b.FeatSlots[key]; ok {
-			// Taken in place of an Ability Score Improvement: the sheet says where.
-			if sf := c.features[slot]; sf != nil {
-				last := &x.d.Features[len(x.d.Features)-1]
-				last.Level, last.SourcePT = sf.Level, fmt.Sprintf("Talento · %s %d", c.namePT(sf.Class), sf.Level)
-			}
-		}
+		col.feature(key, f.Name, key, 0, f.Desc)
+		col.featSlot(key)
 	}
+}
 
-	x.choiceFeats(owned, add, feature)
+// featSlot says, on the feat just listed, where it was taken: in place of an
+// Ability Score Improvement.
+func (col *collector) featSlot(key string) {
+	x := col.x
+	slot, ok := x.b.FeatSlots[key]
+	if !ok {
+		return
+	}
+	if sf := x.c.features[slot]; sf != nil {
+		last := &x.d.Features[len(x.d.Features)-1]
+		last.Level, last.SourcePT = sf.Level, fmt.Sprintf("Talento · %s %d", x.c.namePT(sf.Class), sf.Level)
+	}
+}
 
-	// Chosen options count only while their parent feature or trait is
-	// owned, so a fighting style disappears with the fighter levels.
+// options adds the chosen options. They count only while their parent feature or
+// trait is owned, so a fighting style disappears with the fighter levels.
+func (col *collector) options() {
+	x := col.x
 	pickedNames := map[string]bool{}
 	for i, key := range x.b.FeatureChoices {
 		field := fmt.Sprintf("full.feature_choice_keys[%d]", i)
 		switch {
-		case c.choiceValueOK(key):
+		case x.c.choiceValueOK(key):
 			// A pick of the choice engine (choicegroups.go), which checks it.
 		case strings.HasPrefix(key, "feature:"):
-			f, ok := c.features[key]
-			if !ok {
-				x.issue(IssueUnknownKey, field, "A opção escolhida não existe no conteúdo %s.", c.version)
-				continue
-			}
-			parent := x.optionParent(key, f.Parent)
-			if parent == "" || !owned[parent] {
-				// A table feature may offer an SRD option (a fighting style).
-				parent = x.offeredParent(key, owned)
-			}
-			if parent == "" || !owned[parent] {
-				x.issueChange(IssueUnknownKey, field, "", fmt.Sprintf("a escolha %s não vale mais: nada na ficha oferece essa opção.", c.namePT(key)), fmt.Sprintf("%s não vale para este personagem.", c.namePT(key)))
-				if entry := x.tieToOfferers(x.optionParent(key, f.Parent)); entry != "" {
-					last := &x.d.Issues[len(x.d.Issues)-1]
-					last.ChangeSubject = entry
-					last.ChangeMessage = fmt.Sprintf("agora não oferece a escolha %s; ela não vale mais nesta ficha.", c.namePT(key))
-				}
-				continue
-			}
-			// An option can be taken once: the same style from a second class
-			// (Defense from the fighter and the paladin) is not a second one.
-			if pickedNames[f.Name] {
-				x.issue(IssueChoiceCount, field, "%s já foi escolhida: ela vale uma vez só.", c.namePT(key))
-				continue
-			}
-			pickedNames[f.Name] = true
-			add(key)
-			feature(key, f.Name, parent, x.featureLevel(parent), f.Desc)
+			col.featureOption(field, key, pickedNames)
 		case strings.HasPrefix(key, "trait:"):
-			t, ok := c.traits[key]
-			if !ok || t.Parent == "" || !owned[t.Parent] {
-				x.issue(IssueUnknownKey, field, "A opção escolhida não vale para este personagem.")
-				continue
-			}
-			add(key)
-			feature(key, t.Name, t.Parent, 0, t.Desc)
+			col.traitOption(field, key)
 		default:
-			x.issue(IssueUnknownKey, field, "A opção escolhida não existe no conteúdo %s.", c.version)
+			x.issue(IssueUnknownKey, field, "A opção escolhida não existe no conteúdo %s.", x.c.version)
 		}
 	}
+}
+
+// featureOption adds the option of a feature the character picked, or says why it
+// does not count.
+func (col *collector) featureOption(field, key string, pickedNames map[string]bool) {
+	x := col.x
+	f, ok := x.c.features[key]
+	if !ok {
+		x.issue(IssueUnknownKey, field, "A opção escolhida não existe no conteúdo %s.", x.c.version)
+		return
+	}
+	parent := x.optionParent(key, f.Parent)
+	if parent == "" || !col.owned[parent] {
+		// A table feature may offer an SRD option (a fighting style).
+		parent = x.offeredParent(key, col.owned)
+	}
+	if parent == "" || !col.owned[parent] {
+		col.optionNotOffered(field, key, f)
+		return
+	}
+	// An option can be taken once: the same style from a second class
+	// (Defense from the fighter and the paladin) is not a second one.
+	if pickedNames[f.Name] {
+		x.issue(IssueChoiceCount, field, "%s já foi escolhida: ela vale uma vez só.", x.c.namePT(key))
+		return
+	}
+	pickedNames[f.Name] = true
+	col.add(key)
+	col.feature(key, f.Name, parent, x.featureLevel(parent), f.Desc)
+}
+
+// optionNotOffered is the issue of a pick that nothing on the sheet offers, tied
+// to the table entry that used to offer it, when there is one.
+func (col *collector) optionNotOffered(field, key string, f *srd51.Feature) {
+	x := col.x
+	c := x.c
+	x.issueChange(IssueUnknownKey, field, "", fmt.Sprintf("a escolha %s não vale mais: nada na ficha oferece essa opção.", c.namePT(key)), fmt.Sprintf("%s não vale para este personagem.", c.namePT(key)))
+	if entry := x.tieToOfferers(x.optionParent(key, f.Parent)); entry != "" {
+		last := &x.d.Issues[len(x.d.Issues)-1]
+		last.ChangeSubject = entry
+		last.ChangeMessage = fmt.Sprintf("agora não oferece a escolha %s; ela não vale mais nesta ficha.", c.namePT(key))
+	}
+}
+
+// traitOption adds the option of a trait the character picked, when the trait
+// that offers it is owned.
+func (col *collector) traitOption(field, key string) {
+	x := col.x
+	t, ok := x.c.traits[key]
+	if !ok || t.Parent == "" || !col.owned[t.Parent] {
+		x.issue(IssueUnknownKey, field, "A opção escolhida não vale para este personagem.")
+		return
+	}
+	col.add(key)
+	col.feature(key, t.Name, t.Parent, 0, t.Desc)
 }
 
 // optionSummary is the one-line rule of a chosen option, or "".

@@ -400,7 +400,7 @@ func (s *Service) stopConcentrating(ctx context.Context, c *combatTx, target pla
 	}
 	ev.ConcBefore, ev.ConcEnded = *target.ConcentrationSpell, *target.ConcentrationSpell
 	if *target.ConcentrationSpell == huntersMark {
-		if err := s.clearHuntersMark(ctx, c, target); err != nil {
+		if err := s.clearHuntersMark(ctx, c, target, nil); err != nil { // only a cast's undo puts a mark back (MarksBefore)
 			return err
 		}
 	}
