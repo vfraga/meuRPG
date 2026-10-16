@@ -53,6 +53,9 @@ import { UserMenu } from './shell/user-menu/user-menu';
  * the generated PlayService client lazily, so neither adds it to the
  * initial bundle.
  *
+ * The dice overlay (`RollOverlay`) is in a `@defer (on idle)` in the template: it needs the generated rules and contest
+ * code, which would be about 70 kB of the initial bundle, and nothing rolls before a page that can roll has loaded.
+ *
  * On a player's session page the bar also shows "Anotações" (E8-06): the
  * page turns it on through `SessionNotes`, a small service with no generated
  * client, so the shell stays light.

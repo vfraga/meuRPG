@@ -284,8 +284,6 @@ cognitive internal/play (*Service).spendHide 23
 cognitive internal/play (*Service).spendOne 26
 cognitive internal/play (*Service).startMonsters 23
 cognitive internal/play (*Service).syncContests 26
-cognitive internal/play (*Service).takeBack 472
-cognitive internal/play (*Service).takeBackResource 37
 cognitive internal/play (*Service).takeBackTrap 25
 cognitive internal/play (*Service).triggerGone 29
 cognitive internal/play (*Service).viewerOf 42
@@ -699,8 +697,6 @@ cyclomatic internal/play (*Service).spendHide 21
 cyclomatic internal/play (*Service).spendOne 19
 cyclomatic internal/play (*Service).startMonsters 16
 cyclomatic internal/play (*Service).syncContests 19
-cyclomatic internal/play (*Service).takeBack 224
-cyclomatic internal/play (*Service).takeBackResource 19
 cyclomatic internal/play (*Service).takeEffect 20
 cyclomatic internal/play (*Service).triggerGone 27
 cyclomatic internal/play (*Service).useShield 18
@@ -843,7 +839,6 @@ maintainability internal/play (*Service).castSpell 0
 maintainability internal/play (*Service).rollAttack 0
 maintainability internal/play (*Service).rollDamage 4
 maintainability internal/play (*Service).settleTrapDamage 19
-maintainability internal/play (*Service).takeBack 0
 maintainability internal/progression (*Service).give 17
 maintainability internal/rules (*content).buildCatalog 18
 maintainability internal/rules (*content).loadChoiceData 17

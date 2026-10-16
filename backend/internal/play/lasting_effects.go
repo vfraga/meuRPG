@@ -464,12 +464,16 @@ func (s *Service) endEffectRows(ctx context.Context, c *combatTx, cs []playdb.Co
 		}
 		first := k.rows[0]
 		hidden := s.effectHiddenFrom(first, targetsOf(cs, targets))
-		if err := insertEvent(ctx, c, eventLastingEnded, &c.actorUserID, nil, actionEvent{
+		line, err := insertEventID(ctx, c, eventLastingEnded, &c.actorUserID, nil, actionEvent{
 			Round: c.enc.Round, Secret: hidden, Actor: deref(first.SourceID), Target: targets[0],
 			Lasting: &lastingEvent{Key: k.key, Change: "ended", Targets: targets, Reason: reason, Effects: ids, OwnerOnly: first.Audience == audienceOwner},
-		}); err != nil {
+		})
+		if err != nil {
 			return err
 		}
+		// The change's own event names the line, so that its undo, which puts the rows
+		// back, takes the line back too (write, UndoLastAction).
+		c.endedLines = append(c.endedLines, line)
 	}
 	ids := make([]string, 0, len(touched))
 	for id := range touched {

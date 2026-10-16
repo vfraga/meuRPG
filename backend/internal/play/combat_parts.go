@@ -729,8 +729,12 @@ func storePartsRoll(ctx context.Context, c *combatTx, id string, parts []partRec
 	if landedBefore != nil {
 		landed = mustJSON(landedBefore)
 	}
+	var rolled []byte // NULL: a roll with no parts of its own leaves the damage's list as it is
+	if len(parts) > 0 {
+		rolled = mustJSON(parts)
+	}
 	if err := c.q.SetPendingDamageDetail(ctx, playdb.SetPendingDamageDetailParams{
-		ID: id, Parts: mustJSON(parts), PartRolls: mustJSON(rolls), Steps: mustJSON(groups), AfterSteps: afterSteps, LandedBefore: landed,
+		ID: id, Parts: rolled, PartRolls: mustJSON(rolls), Steps: mustJSON(groups), AfterSteps: afterSteps, LandedBefore: landed,
 	}); err != nil {
 		return fmt.Errorf("keep the parts of the damage: %w", err)
 	}

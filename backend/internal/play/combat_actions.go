@@ -1037,7 +1037,7 @@ func (s *Service) rollAttack(ctx context.Context, m authz.Membership, req *conne
 			if err := s.offerRiders(ctx, c, attacker, target, attack, attackerSheet, bonusKind == combat.BonusFlurry); err != nil {
 				return nil, err
 			}
-			if err := markMeleeHit(ctx, c, attacker, attack); err != nil {
+			if err := markMeleeHit(ctx, c, attacker, attack, &made); err != nil {
 				return nil, err
 			}
 		}

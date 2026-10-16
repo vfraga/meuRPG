@@ -66,4 +66,8 @@
 
 <app-footer />
 
-<app-roll-overlay />
+<!-- The dice overlay is the only thing in the shell that needs the generated rules and contest code (about 70 kB), and nothing
+     rolls before a page that can roll has loaded (the chunk is requested when the browser is idle, right after the first screen). -->
+@defer (on idle) {
+  <app-roll-overlay />
+}
