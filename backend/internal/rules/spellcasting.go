@@ -37,47 +37,62 @@ type caster struct {
 // pact magic apart) and the list of the character's spells, then checks
 // the spell choices.
 func (x *deriver) spellcasting() {
-	c := x.c
 	var casters []caster
 	for _, oc := range x.classes {
-		cast, ok := c.castingFor(oc.key, oc.subclass)
-		if !ok || oc.level < cast.level {
-			continue
+		if cs, ok := x.casterOf(oc); ok {
+			casters = append(casters, cs)
 		}
-		e := cast.effect
-		a := Ability(e.Ability)
-		row := c.castingRow(oc.key, oc.level, cast)
-		if row == nil {
-			continue
-		}
-		sc := Spellcasting{
-			Class: oc.key, ClassNamePT: c.namePT(oc.key), Ability: a,
-			SaveDC: 8 + x.prof + x.mods[a], AttackBonus: x.prof + x.mods[a],
-			PreparesSpells: e.Prepares, Spellbook: e.Spellbook, Ritual: e.Ritual, SpellList: cast.list,
-		}
-		if s := row.Spellcasting; s != nil {
-			sc.CantripsKnown = s.CantripsKnown
-			if !e.Prepares {
-				sc.SpellsKnownMax = s.SpellsKnown
-			}
-			sc.MaxSpellLevel = MaxSpellLevelFromSlots(s.Slots)
-		}
-		if e.Prepares {
-			n, err := e.preparedMax.Int(x.env)
-			if err != nil {
-				x.issue(IssueFormula, "", "O número de magias preparadas de %s não pôde ser calculado.", sc.ClassNamePT)
-			}
-			sc.PreparedMax = max(n, 0)
-		}
-		x.d.Spellcasting = append(x.d.Spellcasting, sc)
-		casters = append(casters, caster{oc: oc, e: e, row: row, list: cast.list})
 	}
 	// casters[i] goes with Spellcasting[i]; point at it once the slice
 	// stops growing.
 	for i := range casters {
 		casters[i].sc = &x.d.Spellcasting[i]
 	}
+	x.spellSlots(casters)
+	x.characterSpells(casters)
+}
 
+// casterOf adds the Spellcasting of a class that casts at its level and
+// returns its caster, or false when the class casts nothing yet (or its table
+// has no row there).
+func (x *deriver) casterOf(oc ownedClass) (caster, bool) {
+	c := x.c
+	cast, ok := c.castingFor(oc.key, oc.subclass)
+	if !ok || oc.level < cast.level {
+		return caster{}, false
+	}
+	e := cast.effect
+	a := Ability(e.Ability)
+	row := c.castingRow(oc.key, oc.level, cast)
+	if row == nil {
+		return caster{}, false
+	}
+	sc := Spellcasting{
+		Class: oc.key, ClassNamePT: c.namePT(oc.key), Ability: a,
+		SaveDC: 8 + x.prof + x.mods[a], AttackBonus: x.prof + x.mods[a],
+		PreparesSpells: e.Prepares, Spellbook: e.Spellbook, Ritual: e.Ritual, SpellList: cast.list,
+	}
+	if s := row.Spellcasting; s != nil {
+		sc.CantripsKnown = s.CantripsKnown
+		if !e.Prepares {
+			sc.SpellsKnownMax = s.SpellsKnown
+		}
+		sc.MaxSpellLevel = MaxSpellLevelFromSlots(s.Slots)
+	}
+	if e.Prepares {
+		n, err := e.preparedMax.Int(x.env)
+		if err != nil {
+			x.issue(IssueFormula, "", "O número de magias preparadas de %s não pôde ser calculado.", sc.ClassNamePT)
+		}
+		sc.PreparedMax = max(n, 0)
+	}
+	x.d.Spellcasting = append(x.d.Spellcasting, sc)
+	return caster{oc: oc, e: e, row: row, list: cast.list}, true
+}
+
+// spellSlots fills the spell slots: pact magic apart, the class row of a single
+// caster, or the multiclass spellcaster table for more.
+func (x *deriver) spellSlots(casters []caster) {
 	x.d.SpellSlots = make([]int, 9)
 	var slotCasters []caster
 	for _, cs := range casters {
@@ -96,8 +111,6 @@ func (x *deriver) spellcasting() {
 	default:
 		x.multiclassSlots(slotCasters)
 	}
-
-	x.characterSpells(casters)
 }
 
 // pactMagic reads the warlock row's slots: all of one level.

@@ -60,31 +60,31 @@ func (b *overlayBuilder) addFeat(tf *TableFeat, path string) error {
 // problem at its own field. The keys it names (a proficiency, a race or subrace)
 // may be the SRD's or the table's.
 func (b *overlayBuilder) checkFeatPrerequisite(c *entryErrors, f *srd51.Feat, key, path string) {
-	for _, m := range []struct {
-		attr string
-		set  map[string]int
-	}{{".prerequisite.minimums", f.Minimums}, {".prerequisite.any_of", f.AnyOf}} {
-		for _, a := range sortedKeys(m.set) {
-			v := m.set[a]
-			if _, ok := abilityIndex[Ability(a)]; !ok {
-				c.at(key, path, m.attr, ReasonValue, "unknown ability %q", a)
-			} else if v < 1 || v > MaxScore {
-				c.at(key, path, m.attr+"."+abilityField[Ability(a)], ReasonValue, "the minimum score is 1 to %d", MaxScore)
-			}
-		}
-	}
+	checkFeatScores(c, key, path, ".prerequisite.minimums", f.Minimums)
+	checkFeatScores(c, key, path, ".prerequisite.any_of", f.AnyOf)
 	if p := f.Proficiency; p != "" {
 		if _, ok := b.base.proficiencies[p]; !ok {
 			c.at(key, path, ".prerequisite.proficiency_key", ReasonReference, "%q is not a proficiency of the SRD", p)
 		}
 	}
-	if r := f.Race; r != "" {
-		if !b.isRace(r) && !b.isSubrace(r) {
-			c.at(key, path, ".prerequisite.race_key", ReasonReference, "the race or subrace %q does not exist", r)
-		}
+	if r := f.Race; r != "" && !b.isRace(r) && !b.isSubrace(r) {
+		c.at(key, path, ".prerequisite.race_key", ReasonReference, "the race or subrace %q does not exist", r)
 	}
 	if f.Level < 0 || f.Level > MaxLevel {
 		c.at(key, path, ".prerequisite.level", ReasonValue, "the level is 0 to %d", MaxLevel)
+	}
+}
+
+// checkFeatScores checks the ability scores a feat asks for, in the order of
+// the abilities' names; attr is the set's field.
+func checkFeatScores(c *entryErrors, key, path, attr string, set map[string]int) {
+	for _, a := range sortedKeys(set) {
+		v := set[a]
+		if _, ok := abilityIndex[Ability(a)]; !ok {
+			c.at(key, path, attr, ReasonValue, "unknown ability %q", a)
+		} else if v < 1 || v > MaxScore {
+			c.at(key, path, attr+"."+abilityField[Ability(a)], ReasonValue, "the minimum score is 1 to %d", MaxScore)
+		}
 	}
 }
 

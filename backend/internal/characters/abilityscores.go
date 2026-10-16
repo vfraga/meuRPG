@@ -269,8 +269,28 @@ func (s *Service) RollAbilityScores(
 	if isMaster(m) {
 		return nil, errPermission("only a player makes a sheet's ability scores; the master's NPCs are free")
 	}
+	typed, err := typedAbilityDice(req.Msg.GetTypedDice())
+	if err != nil {
+		return nil, err
+	}
+	res := &charactersv1.RollAbilityScoresResponse{}
+	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+		return s.rollAbilityScoresIn(ctx, tx, m, typed, res)
+	})
+	if err != nil {
+		return nil, s.dbError(ctx, "roll the ability scores", err)
+	}
+	return connect.NewResponse(res), nil
+}
+
+// rolledMethod is the way of making the scores that RollAbilityScores serves.
+const rolledMethod = charactersv1.AbilityMethod_ABILITY_METHOD_ROLLED_4D6
+
+// typedAbilityDice is the dice a player typed (RN-18), checked, or nil when the app is to
+// roll.
+func typedAbilityDice(sets []*charactersv1.AbilityRollSet) ([][]int, error) {
 	var typed [][]int
-	for _, set := range req.Msg.GetTypedDice() {
+	for _, set := range sets {
 		d := make([]int, len(set.GetDice()))
 		for i, v := range set.GetDice() {
 			d[i] = int(v)
@@ -282,77 +302,93 @@ func (s *Service) RollAbilityScores(
 			return nil, invalidArgument(fieldErr("typed_dice", "%s", err.Error()))
 		}
 	}
-	method := charactersv1.AbilityMethod_ABILITY_METHOD_ROLLED_4D6
-	res := &charactersv1.RollAbilityScoresResponse{}
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		q := s.queries.WithTx(tx)
-		_, tr, err := s.content.For(ctx, tx, m.CampaignID)
-		if err != nil {
-			return wrap("read the table rules", err)
-		}
-		if tr.AbilityMethodsOff.Roll {
-			return errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_METHOD_NOT_ALLOWED, method)
-		}
-		key := charactersdb.GetAbilityRollsParams{CampaignID: m.CampaignID, UserID: m.UserID}
-		stored, err := q.GetAbilityRolls(ctx, key)
-		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-			return wrap("read the stored ability rolls", err)
-		}
-		if err == nil {
-			// The same sets again: reloading never rerolls. Typed dice are accepted
-			// again only when they are the stored ones (a retried request).
-			if len(typed) > 0 {
-				have, err := decodeSets(stored.Sets)
-				if err != nil {
-					return err
-				}
-				if !slices.EqualFunc(have, typed, slices.Equal[[]int]) {
-					return errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_ROLLS_ALREADY_STORED, method)
-				}
-			}
-			if res.Rolls, err = abilityRollsToProto(stored); err != nil {
-				return err
-			}
-			res.AlreadyRolled = true
-			return nil
-		}
-		rule, err := s.diceRule(ctx, tx, m)
+	return typed, nil
+}
+
+// rollAbilityScoresIn is RollAbilityScores' transaction: the table's rule, then the sets
+// stored already or new ones, written into res.
+func (s *Service) rollAbilityScoresIn(ctx context.Context, tx pgx.Tx, m authz.Membership, typed [][]int, res *charactersv1.RollAbilityScoresResponse) error {
+	q := s.queries.WithTx(tx)
+	_, tr, err := s.content.For(ctx, tx, m.CampaignID)
+	if err != nil {
+		return wrap("read the table rules", err)
+	}
+	if tr.AbilityMethodsOff.Roll {
+		return errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_METHOD_NOT_ALLOWED, rolledMethod)
+	}
+	key := charactersdb.GetAbilityRollsParams{CampaignID: m.CampaignID, UserID: m.UserID}
+	stored, err := q.GetAbilityRolls(ctx, key)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return wrap("read the stored ability rolls", err)
+	}
+	if err == nil {
+		return answerStoredRolls(stored, typed, res)
+	}
+	sets, source, err := s.newAbilitySets(ctx, tx, m, typed)
+	if err != nil {
+		return err
+	}
+	return s.storeAbilityRolls(ctx, q, key, sets, source, res)
+}
+
+// answerStoredRolls answers the sets stored already: reloading never rerolls. Typed dice
+// are accepted again only when they are the stored ones (a retried request).
+func answerStoredRolls(stored charactersdb.GetAbilityRollsRow, typed [][]int, res *charactersv1.RollAbilityScoresResponse) error {
+	if len(typed) > 0 {
+		have, err := decodeSets(stored.Sets)
 		if err != nil {
 			return err
 		}
-		sets, source := typed, "typed"
-		switch {
-		case len(typed) > 0 && rule == charactersv1.LevelUpDiceRule_LEVEL_UP_DICE_RULE_FORCED_IN_APP:
-			return errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_DICE_FORCED_IN_APP, method)
-		case len(typed) == 0 && rule == charactersv1.LevelUpDiceRule_LEVEL_UP_DICE_RULE_FORCED_PHYSICAL:
-			return errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_DICE_FORCED_PHYSICAL, method)
-		case len(typed) == 0:
-			source = "app"
-			if sets, err = s.rollAbilitySets(); err != nil {
-				return err
-			}
+		if !slices.EqualFunc(have, typed, slices.Equal[[]int]) {
+			return errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_ROLLS_ALREADY_STORED, rolledMethod)
 		}
-		raw, err := json.Marshal(sets)
-		if err != nil {
-			return wrap("encode the ability rolls", err)
-		}
-		now := s.now()
-		if _, err := q.InsertAbilityRolls(ctx, charactersdb.InsertAbilityRollsParams{
-			CampaignID: m.CampaignID, UserID: m.UserID, Sets: raw, Source: source, Now: now,
-		}); err != nil {
-			return wrap("store the ability rolls", err)
-		}
-		// Read back what stands, as GetAbilityRolls would answer.
-		if stored, err = q.GetAbilityRolls(ctx, key); err != nil {
-			return wrap("read the stored ability rolls", err)
-		}
-		res.Rolls, err = abilityRollsToProto(stored)
-		return err
-	})
-	if err != nil {
-		return nil, s.dbError(ctx, "roll the ability scores", err)
 	}
-	return connect.NewResponse(res), nil
+	var err error
+	if res.Rolls, err = abilityRollsToProto(stored); err != nil {
+		return err
+	}
+	res.AlreadyRolled = true
+	return nil
+}
+
+// newAbilitySets is the sets of a first roll and who made them ("typed" or "app"), as
+// the campaign's dice setting allows.
+func (s *Service) newAbilitySets(ctx context.Context, tx pgx.Tx, m authz.Membership, typed [][]int) (sets [][]int, source string, err error) {
+	rule, err := s.diceRule(ctx, tx, m)
+	if err != nil {
+		return nil, "", err
+	}
+	switch {
+	case len(typed) > 0 && rule == charactersv1.LevelUpDiceRule_LEVEL_UP_DICE_RULE_FORCED_IN_APP:
+		return nil, "", errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_DICE_FORCED_IN_APP, rolledMethod)
+	case len(typed) == 0 && rule == charactersv1.LevelUpDiceRule_LEVEL_UP_DICE_RULE_FORCED_PHYSICAL:
+		return nil, "", errAbilityScores(charactersv1.AbilityScoresRefusalReason_ABILITY_SCORES_REFUSAL_REASON_DICE_FORCED_PHYSICAL, rolledMethod)
+	case len(typed) == 0:
+		sets, err = s.rollAbilitySets()
+		return sets, "app", err
+	}
+	return typed, "typed", nil
+}
+
+// storeAbilityRolls stores the sets of a first roll and answers them as they stand.
+func (s *Service) storeAbilityRolls(ctx context.Context, q *charactersdb.Queries, key charactersdb.GetAbilityRollsParams, sets [][]int, source string, res *charactersv1.RollAbilityScoresResponse) error {
+	raw, err := json.Marshal(sets)
+	if err != nil {
+		return wrap("encode the ability rolls", err)
+	}
+	now := s.now()
+	if _, err := q.InsertAbilityRolls(ctx, charactersdb.InsertAbilityRollsParams{
+		CampaignID: key.CampaignID, UserID: key.UserID, Sets: raw, Source: source, Now: now,
+	}); err != nil {
+		return wrap("store the ability rolls", err)
+	}
+	// Read back what stands, as GetAbilityRolls would answer.
+	stored, err := q.GetAbilityRolls(ctx, key)
+	if err != nil {
+		return wrap("read the stored ability rolls", err)
+	}
+	res.Rolls, err = abilityRollsToProto(stored)
+	return err
 }
 
 // rollAbilitySets rolls six sets of four six-sided dice with the server's source.

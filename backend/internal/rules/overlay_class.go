@@ -28,6 +28,14 @@ func bad(key, path, attr, reason, format string, args ...any) *OverlayError {
 	return ovErr(key, format, args...).at(path+attr, reason)
 }
 
+// Default casting start levels: a half caster starts at 2, a third caster at 3,
+// any other at 1.
+const (
+	defaultCastingStart      = 1
+	defaultHalfCastingStart  = 2
+	defaultThirdCastingStart = 3
+)
+
 // checkCasting checks a class's or a subclass's casting and returns the class
 // level it starts at (0 when the casting is wrong). path is the entry's, and the
 // errors name a field of the casting ("classes[0].casting.ability"); every field
@@ -38,6 +46,22 @@ func (b *overlayBuilder) checkCasting(c *entryErrors, key, path string, cast *Ta
 		kinds = []string{CastingThird}
 	}
 	at := path + ".casting"
+	checkCastingFields(c, key, at, cast, kinds)
+	b.checkListFrom(c, key, at, cast.ListFrom, sub)
+	start := castingStart(cast)
+	if start < 1 || start > MaxLevel {
+		c.at(key, at, ".start_level", ReasonCasting, "casting starts at level 1 to %d", MaxLevel)
+		return 0
+	}
+	if !slices.Contains(kinds, cast.Kind) {
+		return 0
+	}
+	return start
+}
+
+// checkCastingFields checks the kind, the ability and the preparation of a
+// casting. at is the casting's path.
+func checkCastingFields(c *entryErrors, key, at string, cast *TableCasting, kinds []string) {
 	if !slices.Contains(kinds, cast.Kind) {
 		c.at(key, at, ".kind", ReasonCasting, "casting kind %q is not allowed here", cast.Kind)
 	}
@@ -50,7 +74,12 @@ func (b *overlayBuilder) checkCasting(c *entryErrors, key, path string, cast *Ta
 	if cast.PreparedMax != "" && cast.Preparation != PreparationPrepared {
 		c.at(key, at, ".prepared_max", ReasonCasting, "prepared_max is for a class that prepares")
 	}
-	switch from := cast.ListFrom; {
+}
+
+// checkListFrom checks the class whose spell list a caster uses: a third caster
+// must name one, and it must be another class's own list.
+func (b *overlayBuilder) checkListFrom(c *entryErrors, key, at, from string, sub bool) {
+	switch {
 	case from == "" && sub:
 		c.at(key, at, ".list_from", ReasonCasting, "a third caster needs the class whose spell list it uses")
 	case from == "":
@@ -67,25 +96,21 @@ func (b *overlayBuilder) checkCasting(c *entryErrors, key, path string, cast *Ta
 			c.at(key, at, ".list_from", ReasonCasting, "class %q reuses another list; use that one", from)
 		}
 	}
-	start := cast.StartLevel
-	if start == 0 {
-		switch cast.Kind {
-		case CastingHalf:
-			start = 2
-		case CastingThird:
-			start = 3
-		default:
-			start = 1
-		}
+}
+
+// castingStart is the class level a casting starts at: its own, or its kind's
+// default.
+func castingStart(cast *TableCasting) int {
+	if cast.StartLevel != 0 {
+		return cast.StartLevel
 	}
-	if start < 1 || start > MaxLevel {
-		c.at(key, at, ".start_level", ReasonCasting, "casting starts at level 1 to %d", MaxLevel)
-		return 0
+	switch cast.Kind {
+	case CastingHalf:
+		return defaultHalfCastingStart
+	case CastingThird:
+		return defaultThirdCastingStart
 	}
-	if !slices.Contains(kinds, cast.Kind) {
-		return 0
-	}
-	return start
+	return defaultCastingStart
 }
 
 // castingEffect writes the spellcasting effect the engine reads, from the
@@ -118,6 +143,17 @@ func castingEffect(c *TableCasting, classKey string) *Effect {
 // classLevel takes.
 func slugKey(classKey string) string { return strings.TrimPrefix(classKey, "class:") }
 
+// maxSlotsPerLevel is the most spell slots of one level a table row has.
+const maxSlotsPerLevel = 9
+
+// secondSlotLevel counts the second spell level with slots in a row: the one a
+// pact row must not have.
+const secondSlotLevel = 2
+
+// rowSlots is what checkRow learns of a row's slots: their total, how many
+// levels have any, and the index of the second such level (-1 for none).
+type rowSlots struct{ total, nonzero, second int }
+
 // checkRow checks the casting columns of one table row. path is the row's
 // ("classes[0].levels[4]"), and the errors name the column. casts says the class
 // casts at this level (the start level has come), pact that the slots are pact
@@ -131,45 +167,58 @@ func checkRow(c *entryErrors, key, path string, level int, r TableLevel, casts, 
 	if r.SpellsKnown < 0 || r.SpellsKnown > MaxKnownSpells {
 		c.at(key, path, ".spells_known", ReasonTable, "level %d: spells known is 0 to %d", level, MaxKnownSpells)
 	}
-	slots, nonzero, second := 0, 0, -1
-	for i, s := range r.Slots {
-		if s < 0 || s > 9 {
-			c.at(key, path, fmt.Sprintf(".slots[%d]", i), ReasonTable, "level %d: a spell slot count is 0 to 9", level)
-			continue
-		}
-		slots += s
-		if s > 0 {
-			nonzero++
-			if nonzero == 2 {
-				second = i
-			}
-		}
-	}
+	slots := countRowSlots(c, key, path, level, r.Slots)
 	if len(c.list) > before || !known {
 		return
 	}
 	if !casts {
-		if r.CantripsKnown != 0 {
-			c.at(key, path, ".cantrips_known", ReasonTable, "level %d: the casting columns must be zero before casting starts", level)
-		}
-		if r.SpellsKnown != 0 {
-			c.at(key, path, ".spells_known", ReasonTable, "level %d: the casting columns must be zero before casting starts", level)
-		}
-		if slots != 0 {
-			first := slices.IndexFunc(r.Slots[:], func(n int) bool { return n > 0 })
-			c.at(key, path, fmt.Sprintf(".slots[%d]", first), ReasonTable, "level %d: the casting columns must be zero before casting starts", level)
-		}
+		checkRowBeforeCasting(c, key, path, level, r, slots.total)
 		return
 	}
 	switch {
-	case pact && nonzero != 1:
+	case pact && slots.nonzero != 1:
 		at := ".slots"
-		if second >= 0 {
-			at = fmt.Sprintf(".slots[%d]", second)
+		if slots.second >= 0 {
+			at = fmt.Sprintf(".slots[%d]", slots.second)
 		}
 		c.at(key, path, at, ReasonTable, "level %d: pact magic has slots of one spell level", level)
-	case nonzero == 0:
+	case slots.nonzero == 0:
 		c.at(key, path, ".slots", ReasonTable, "level %d: a caster needs spell slots", level)
+	}
+}
+
+// countRowSlots checks the range of each slot count of a row and counts them.
+func countRowSlots(c *entryErrors, key, path string, level int, slots [9]int) rowSlots {
+	out := rowSlots{second: -1}
+	for i, s := range slots {
+		if s < 0 || s > maxSlotsPerLevel {
+			c.at(key, path, fmt.Sprintf(".slots[%d]", i), ReasonTable, "level %d: a spell slot count is 0 to 9", level)
+			continue
+		}
+		out.total += s
+		if s == 0 {
+			continue
+		}
+		out.nonzero++
+		if out.nonzero == secondSlotLevel {
+			out.second = i
+		}
+	}
+	return out
+}
+
+// checkRowBeforeCasting refuses casting columns in a row before casting starts.
+func checkRowBeforeCasting(c *entryErrors, key, path string, level int, r TableLevel, slots int) {
+	const msg = "level %d: the casting columns must be zero before casting starts"
+	if r.CantripsKnown != 0 {
+		c.at(key, path, ".cantrips_known", ReasonTable, msg, level)
+	}
+	if r.SpellsKnown != 0 {
+		c.at(key, path, ".spells_known", ReasonTable, msg, level)
+	}
+	if slots != 0 {
+		first := slices.IndexFunc(r.Slots[:], func(n int) bool { return n > 0 })
+		c.at(key, path, fmt.Sprintf(".slots[%d]", first), ReasonTable, msg, level)
 	}
 }
 

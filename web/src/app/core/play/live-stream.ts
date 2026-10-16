@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 
-import type { CombatantMove, TurnChange } from '../combat/combat-state';
-import { LiveErrorKind, LiveEventVm, ShownImageVm, VitalsVm } from './live-session.types';
+import { LiveErrorKind, LiveEventVm } from './live-session.types';
+import { routeEvent } from './live-stream-dispatch';
+import type { LiveStreamHandlers } from './live-stream-handlers';
 
 /**
  * Where the stream stands:
@@ -15,75 +16,7 @@ import { LiveErrorKind, LiveEventVm, ShownImageVm, VitalsVm } from './live-sessi
  */
 export type StreamStatus = 'connecting' | 'live' | 'reconnecting' | 'paused' | 'closed';
 
-export interface LiveStreamHandlers {
-  /** The server subscribed us: read the snapshot now (and after every
-   * reconnection, so a missed event never leaves the screen stale). */
-  onReady(): void;
-  onVitals(vitals: VitalsVm): void;
-  /** `current_map_changed`: another map (or none) on the table. */
-  onCurrentMap?(mapId: string | null): void;
-  /** `map_changed`: something on this map changed, read it again. */
-  onMapChanged?(mapId: string): void;
-  /** `token_moved`: a token has a new position, with no reading. */
-  onTokenMoved?(move: { mapId: string; characterId: string; xBp: number; yBp: number }): void;
-  /** `vision_changed`: what the player sees of a fog map changed, read it again. */
-  onVisionChanged?(mapId: string): void;
-  /** `shown_image_changed`: an image on the players' screens, or none. */
-  onShownImage?(image: ShownImageVm | null): void;
-  /** `left_images_changed`: read the list of left images again. */
-  onLeftImages?(): void;
-  /** `encounter_changed`: the combat changed; the page reads it again when
-   * `revision` is newer than its copy. */
-  onEncounterChanged?(change: { encounterId: string; revision: number; mode?: number }): void;
-  /** `reaction_window_opened`: a window waits for this player (or the master); the page reads the combat again. */
-  onReactionWindowOpened?(opened: { encounterId: string; windowId: string }): void;
-  /** `reaction_window_closed`: a window is no longer open; `text` says why when it closed by itself. */
-  onReactionWindowClosed?(closed: {
-    encounterId: string;
-    windowId: string;
-    closedByItself: boolean;
-    text: string;
-  }): void;
-  /** `turn_changed`: applied in place, per audience. */
-  onTurnChanged?(turn: TurnChange): void;
-  /** `combatant_moved`: applied in place. */
-  onCombatantMoved?(move: CombatantMove): void;
-  /** `combat_log_changed`: the log has a new entry, read it again. */
-  onCombatLogChanged?(): void;
-  /** `xp_changed`: the campaign's XP changed, read it again. */
-  onXpChanged?(): void;
-  /** `scene_changed` and `scene_check_rolled`: read the open scene again. */
-  onSceneChanged?(): void;
-  /** `notes_changed`: the master revealed a clue to this player, read the notes again. */
-  onNotesChanged?(): void;
-  /** `stage_changed` (MR-031): the stage lives in the open scene, so the page
-   * reads the scene again; the event names nobody. */
-  onStageChanged?(): void;
-  /** `trap_noticed` (MR-035): this player's character noticed a trap; only they get it. */
-  onTrapNoticed?(notice: { mapId: string; pointId: string }): void;
-  /** `creatures_changed` (MR-037): a character's creatures changed outside a combat, read them again. */
-  onCreaturesChanged?(): void;
-  /** `spell_casts_changed` (MR-048): a cast outside a combat changed; the casts panel reads them again. */
-  onSpellCastsChanged?(): void;
-  /** `group_check_changed` (W7-X): a group check was asked, answered or closed; the page reads it again. */
-  onGroupCheckChanged?(): void;
-  /** `content_changed` (10.1d): the table's content changed; a screen that shows the catalog reads it again. */
-  onContentChanged?(): void;
-  /** `character_changes_requested`, `character_resubmitted` or `character_revived`: that character changed; read it again. */
-  onCharacterChanged?(characterId: string): void;
-  /** `character_revived`: a dead character lives again (`onCharacterChanged` is told too); the vitals change with it. */
-  onCharacterRevived?(characterId: string): void;
-  /** `revivify_changed`: a Revivify cast outside a combat was asked or answered; the master reads the casts again. */
-  onRevivifyChanged?(): void;
-  /** `puzzle_changed` (MR-038): a puzzle changed; the page reads it again (the server already throttles the hint). */
-  onPuzzleChanged?(puzzleId: string): void;
-  /** `calling_you`: the master is calling this player; the page alerts (vibration, chime, shake) and says it. */
-  onCallingYou?(): void;
-  /** `session_ended`, or `NO_OPEN_SESSION` when (re)connecting. */
-  onEnded(): void;
-  /** `not_found` or `unauthenticated`: no reconnecting. */
-  onFatal(kind: 'no-access' | 'signed-out'): void;
-}
+export type { LiveStreamHandlers } from './live-stream-handlers';
 
 export interface LiveStreamOptions {
   open(signal: AbortSignal): AsyncIterable<LiveEventVm>;
@@ -200,101 +133,8 @@ export class LiveStream {
         }
         this.lastMessageAt.set(new Date());
         this.armDeadTimer();
-        switch (event.kind) {
-          case 'ready':
-            this.attempt = 0;
-            this.status.set('live');
-            this.options.handlers.onReady();
-            break;
-          case 'vitals':
-            this.options.handlers.onVitals(event.vitals);
-            break;
-          case 'currentMap':
-            this.options.handlers.onCurrentMap?.(event.mapId);
-            break;
-          case 'mapChanged':
-            this.options.handlers.onMapChanged?.(event.mapId);
-            break;
-          case 'tokenMoved':
-            this.options.handlers.onTokenMoved?.(event);
-            break;
-          case 'visionChanged':
-            this.options.handlers.onVisionChanged?.(event.mapId);
-            break;
-          case 'leftImages':
-            this.options.handlers.onLeftImages?.();
-            break;
-          case 'shownImage':
-            this.options.handlers.onShownImage?.(event.image);
-            break;
-          case 'encounterChanged':
-            this.options.handlers.onEncounterChanged?.(event);
-            break;
-          case 'reactionWindowOpened':
-            this.options.handlers.onReactionWindowOpened?.(event);
-            break;
-          case 'reactionWindowClosed':
-            this.options.handlers.onReactionWindowClosed?.(event);
-            break;
-          case 'turnChanged':
-            this.options.handlers.onTurnChanged?.(event);
-            break;
-          case 'combatantMoved':
-            this.options.handlers.onCombatantMoved?.(event);
-            break;
-          case 'combatLogChanged':
-            this.options.handlers.onCombatLogChanged?.();
-            break;
-          case 'xpChanged':
-            this.options.handlers.onXpChanged?.();
-            break;
-          case 'sceneChanged':
-          case 'sceneCheckRolled':
-            this.options.handlers.onSceneChanged?.();
-            break;
-          case 'notesChanged':
-            this.options.handlers.onNotesChanged?.();
-            break;
-          case 'stageChanged':
-            this.options.handlers.onStageChanged?.();
-            break;
-          case 'trapNoticed':
-            this.options.handlers.onTrapNoticed?.(event);
-            break;
-          case 'creaturesChanged':
-            this.options.handlers.onCreaturesChanged?.();
-            break;
-          case 'spellCastsChanged':
-            this.options.handlers.onSpellCastsChanged?.();
-            break;
-          case 'groupCheckChanged':
-            this.options.handlers.onGroupCheckChanged?.();
-            break;
-          case 'contentChanged':
-            this.options.handlers.onContentChanged?.();
-            break;
-          case 'characterChanged':
-            this.options.handlers.onCharacterChanged?.(event.characterId);
-            break;
-          case 'characterRevived':
-            this.options.handlers.onCharacterChanged?.(event.characterId);
-            this.options.handlers.onCharacterRevived?.(event.characterId);
-            break;
-          case 'revivifyChanged':
-            this.options.handlers.onRevivifyChanged?.();
-            break;
-          case 'callingYou':
-            this.options.handlers.onCallingYou?.();
-            break;
-          case 'puzzleChanged':
-            this.options.handlers.onPuzzleChanged?.(event.puzzleId);
-            break;
-          case 'ended':
-            this.stop();
-            this.options.handlers.onEnded();
-            return;
-          case 'heartbeat':
-            break;
+        if (this.receive(event) === 'over') {
+          return;
         }
       }
       if (controller !== this.controller) {
@@ -308,22 +148,45 @@ export class LiveStream {
         return; // we aborted it ourselves (dead stream, hidden tab, stop)
       }
       this.controller = null;
-      switch (this.options.classify(err)) {
-        case 'no-access':
-          this.stop();
-          this.options.handlers.onFatal('no-access');
-          return;
-        case 'signed-out':
-          this.stop();
-          this.options.handlers.onFatal('signed-out');
-          return;
-        case 'no-session':
-          this.stop();
-          this.options.handlers.onEnded();
-          return;
-        default:
-          this.scheduleReconnect();
-      }
+      this.failed(err);
+    }
+  }
+
+  /** What one message does: `ready` makes the stream live and asks the page for a snapshot, `ended` closes it for good
+   * (and the loop with it), anything else goes to the page's handler for its kind. */
+  private receive(event: LiveEventVm): 'more' | 'over' {
+    if (event.kind === 'ready') {
+      this.attempt = 0;
+      this.status.set('live');
+      this.options.handlers.onReady();
+    } else if (event.kind === 'ended') {
+      this.stop();
+      this.options.handlers.onEnded();
+      return 'over';
+    } else {
+      routeEvent(this.options.handlers, event);
+    }
+    return 'more';
+  }
+
+  /** The connection failed on its own: a fatal error ends the stream, the session being over too, and any other
+   * error is tried again after the backoff. */
+  private failed(err: unknown): void {
+    switch (this.options.classify(err)) {
+      case 'no-access':
+        this.stop();
+        this.options.handlers.onFatal('no-access');
+        return;
+      case 'signed-out':
+        this.stop();
+        this.options.handlers.onFatal('signed-out');
+        return;
+      case 'no-session':
+        this.stop();
+        this.options.handlers.onEnded();
+        return;
+      default:
+        this.scheduleReconnect();
     }
   }
 

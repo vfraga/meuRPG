@@ -173,35 +173,49 @@ func (x *deriver) tieToOfferers(parent string) string {
 	last := &x.d.Issues[len(x.d.Issues)-1]
 	first := ""
 	for _, a := range x.active {
-		e := a.effect
-		if e.Type != "choice" || e.Choice != "feature" || !isTableKey(a.owner) {
+		entry := x.offeringEntry(a)
+		if entry == "" || !x.offersOptionOf(a.effect, parent) {
 			continue
 		}
-		f := x.c.features[a.owner]
-		if f == nil {
-			continue
+		if !slices.Contains(last.Keys, entry) {
+			last.Keys = append(last.Keys, entry)
 		}
-		entry := f.Class
-		if f.Subclass != "" {
-			entry = f.Subclass
-		}
-		if !isTableKey(entry) {
-			continue
-		}
-		for _, from := range e.From {
-			if of := x.c.features[from]; of != nil && x.optionParent(from, of.Parent) == parent {
-				if !slices.Contains(last.Keys, entry) {
-					last.Keys = append(last.Keys, entry)
-				}
-				if first == "" {
-					first = entry
-				}
-				break
-			}
+		if first == "" {
+			first = entry
 		}
 	}
 	slices.Sort(last.Keys)
 	return first
+}
+
+// offeringEntry is the table class or subclass whose table feature a has a
+// feature choice from, or "" when a is no such choice.
+func (x *deriver) offeringEntry(a activeEffect) string {
+	e := a.effect
+	if e.Type != "choice" || e.Choice != "feature" || !isTableKey(a.owner) {
+		return ""
+	}
+	f := x.c.features[a.owner]
+	if f == nil {
+		return ""
+	}
+	entry := f.Class
+	if f.Subclass != "" {
+		entry = f.Subclass
+	}
+	if !isTableKey(entry) {
+		return ""
+	}
+	return entry
+}
+
+// offersOptionOf says whether a feature choice offers an option of the SRD set
+// under parent.
+func (x *deriver) offersOptionOf(e *Effect, parent string) bool {
+	return slices.ContainsFunc(e.From, func(from string) bool {
+		of := x.c.features[from]
+		return of != nil && x.optionParent(from, of.Parent) == parent
+	})
 }
 
 // issueKeys are the table keys an issue depends on (Issue.Keys): the key at the
@@ -226,29 +240,9 @@ func (x *deriver) issueKeys(code, field string) []string {
 			add(kf.Key)
 		}
 	}
-	// groups: which fields of the sheet the numbers behind a code come from.
-	var classes, race, background, spells bool
-	switch code {
-	case IssueSkillCount, IssueExpertise, IssueMulticlass, IssueSubclassLevel, IssueArmorProficiency:
-		classes, race, background = true, true, true
-	case IssueSpellCount, IssueSpellLevel, IssueSpellNotOnList:
-		classes = true
-	case IssueRaceBonus:
-		race = true
-	case IssueHitPointRolls, IssueLevel:
-		classes = true
-	case IssueFormula:
-		classes, race, background, spells = true, true, true, true
-	}
+	g := issueGroupsOf(code)
 	for _, kf := range all {
-		switch {
-		case classes && (strings.Contains(kf.Field, ".classes[") || kf.Field == "full.classes"):
-			add(kf.Key)
-		case race && (kf.Field == "full.race_key" || kf.Field == "full.subrace_key"):
-			add(kf.Key)
-		case background && kf.Field == "full.background_key":
-			add(kf.Key)
-		case spells && (strings.Contains(kf.Field, "_spell_keys[") || strings.Contains(kf.Field, "cantrip_keys[")):
+		if g.covers(kf.Field) {
 			add(kf.Key)
 		}
 	}
@@ -256,9 +250,55 @@ func (x *deriver) issueKeys(code, field string) []string {
 	return out
 }
 
+// issueGroups are which fields of the sheet the numbers behind an issue code
+// come from.
+type issueGroups struct {
+	classes, race, background, spells bool
+}
+
+// issueGroupsOf is the groups of an issue code; a code not listed has none.
+func issueGroupsOf(code string) issueGroups {
+	switch code {
+	case IssueSkillCount, IssueExpertise, IssueMulticlass, IssueSubclassLevel, IssueArmorProficiency:
+		return issueGroups{classes: true, race: true, background: true}
+	case IssueSpellCount, IssueSpellLevel, IssueSpellNotOnList, IssueHitPointRolls, IssueLevel:
+		return issueGroups{classes: true}
+	case IssueRaceBonus:
+		return issueGroups{race: true}
+	case IssueFormula:
+		return issueGroups{classes: true, race: true, background: true, spells: true}
+	}
+	return issueGroups{}
+}
+
+// covers says whether a field of BuildKeys is in one of the groups.
+func (g issueGroups) covers(field string) bool {
+	switch {
+	case g.classes && (strings.Contains(field, ".classes[") || field == "full.classes"):
+		return true
+	case g.race && (field == "full.race_key" || field == "full.subrace_key"):
+		return true
+	case g.background && field == "full.background_key":
+		return true
+	}
+	return g.spells && (strings.Contains(field, "_spell_keys[") || strings.Contains(field, "cantrip_keys["))
+}
+
 // resolve looks up the race, subrace and classes, turning unknown keys into
 // Issues so the rest of Derive can rely on what it finds.
 func (x *deriver) resolve() {
+	x.resolveRace()
+	if len(x.b.Classes) == 0 {
+		x.issue(IssueMissing, "full.classes", "Escolha uma classe.")
+	}
+	seen := map[string]bool{}
+	for i, cl := range x.b.Classes {
+		x.resolveClass(i, cl, seen)
+	}
+}
+
+// resolveRace looks up the race and the subrace.
+func (x *deriver) resolveRace() {
 	c := x.c
 	switch r, ok := c.races[x.b.Race]; {
 	case x.b.Race == "":
@@ -268,51 +308,59 @@ func (x *deriver) resolve() {
 	default:
 		x.race = r
 	}
-	if x.b.Subrace != "" {
-		s, ok := c.subraces[x.b.Subrace]
-		switch {
-		case !ok:
-			x.issue(IssueUnknownKey, "full.subrace_key", "A sub-raça escolhida não existe no conteúdo %s.", c.version)
-		case x.race == nil || s.Race != x.race.Key:
-			x.issue(IssueUnknownKey, "full.subrace_key", "A sub-raça não é da raça escolhida.")
-		default:
-			x.subrace = s
-		}
+	if x.b.Subrace == "" {
+		return
 	}
-	if len(x.b.Classes) == 0 {
-		x.issue(IssueMissing, "full.classes", "Escolha uma classe.")
+	s, ok := c.subraces[x.b.Subrace]
+	switch {
+	case !ok:
+		x.issue(IssueUnknownKey, "full.subrace_key", "A sub-raça escolhida não existe no conteúdo %s.", c.version)
+	case x.race == nil || s.Race != x.race.Key:
+		x.issue(IssueUnknownKey, "full.subrace_key", "A sub-raça não é da raça escolhida.")
+	default:
+		x.subrace = s
 	}
-	seen := map[string]bool{}
-	for i, cl := range x.b.Classes {
-		field := fmt.Sprintf("full.classes[%d]", i)
-		class, ok := c.classes[cl.Class]
-		if !ok {
-			x.issue(IssueUnknownKey, field+".class_key", "A classe escolhida não existe no conteúdo %s.", c.version)
-			continue
-		}
-		if seen[cl.Class] {
-			x.issue(IssueUnknownKey, field+".class_key", "A classe %s aparece duas vezes.", c.namePT(cl.Class))
-			continue
-		}
-		seen[cl.Class] = true
-		level := min(max(cl.Level, 1), MaxLevel)
-		oc := ownedClass{key: cl.Class, class: class, level: level, index: i, customSubclass: cl.CustomSubclassName}
-		if cl.Subclass != "" {
-			sub, ok := c.subclasses[cl.Subclass]
-			switch {
-			case !ok || sub.Class != cl.Class:
-				x.issue(IssueUnknownKey, field+".subclass_key", "A subclasse escolhida não é de %s.", c.namePT(cl.Class))
-			case level < class.SubclassLevel:
-				x.issueChange(IssueSubclassLevel, field+".subclass_key", cl.Class,
-					fmt.Sprintf("agora escolhe a subclasse no nível %d; esta ficha tem nível %d nela.", class.SubclassLevel, level),
-					fmt.Sprintf("%s escolhe a subclasse no nível %d.", c.namePT(cl.Class), class.SubclassLevel))
-				oc.subclass = sub
-			default:
-				oc.subclass = sub
-			}
-		}
-		x.classes = append(x.classes, oc)
+}
+
+// resolveClass looks up the i-th class of the Build and its subclass, and
+// adds it to x.classes unless it is unknown or already seen.
+func (x *deriver) resolveClass(i int, cl ClassLevel, seen map[string]bool) {
+	c := x.c
+	field := fmt.Sprintf("full.classes[%d]", i)
+	class, ok := c.classes[cl.Class]
+	if !ok {
+		x.issue(IssueUnknownKey, field+".class_key", "A classe escolhida não existe no conteúdo %s.", c.version)
+		return
 	}
+	if seen[cl.Class] {
+		x.issue(IssueUnknownKey, field+".class_key", "A classe %s aparece duas vezes.", c.namePT(cl.Class))
+		return
+	}
+	seen[cl.Class] = true
+	level := min(max(cl.Level, 1), MaxLevel)
+	oc := ownedClass{key: cl.Class, class: class, level: level, index: i, customSubclass: cl.CustomSubclassName}
+	if cl.Subclass != "" {
+		oc.subclass = x.resolveSubclass(field, cl.Subclass, oc)
+	}
+	x.classes = append(x.classes, oc)
+}
+
+// resolveSubclass looks up a class's subclass: nil with an Issue when it is not
+// of the class; the subclass, with an Issue, when the class level is below the
+// one that chooses it.
+func (x *deriver) resolveSubclass(field, key string, oc ownedClass) *srd51.Subclass {
+	c := x.c
+	sub, ok := c.subclasses[key]
+	switch {
+	case !ok || sub.Class != oc.key:
+		x.issue(IssueUnknownKey, field+".subclass_key", "A subclasse escolhida não é de %s.", c.namePT(oc.key))
+		return nil
+	case oc.level < oc.class.SubclassLevel:
+		x.issueChange(IssueSubclassLevel, field+".subclass_key", oc.key,
+			fmt.Sprintf("agora escolhe a subclasse no nível %d; esta ficha tem nível %d nela.", oc.class.SubclassLevel, oc.level),
+			fmt.Sprintf("%s escolhe a subclasse no nível %d.", c.namePT(oc.key), oc.class.SubclassLevel))
+	}
+	return sub
 }
 
 // levelAndProficiency sets the total level and the proficiency bonus.

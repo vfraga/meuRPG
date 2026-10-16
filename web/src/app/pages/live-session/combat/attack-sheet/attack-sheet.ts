@@ -11,46 +11,33 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { Code, ConnectError } from '@connectrpc/connect';
 
 import { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import {
   AttackOutcome,
   type AttackRoll,
   AttackRollSchema,
-  CombatantSide,
   type InspirationOffer,
   type LuckyOffer,
   type PendingDamage,
-  PendingDamageStatus,
   type TargetInReach,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import {
-  type RollModeRequest,
-  RollMode,
-  RollModeRequestStatus,
-} from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
+import { RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { EffectRollKind } from '../../../../../gen/meurpg/play/v1/lasting_effects_pb';
 import type { Attack, BonusAttackRule } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import {
   type ExtraDieField,
   dieFields,
   genericDieFields,
-  missingDice,
   rollDiceOf,
 } from '../../../../core/effects/effects';
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import {
   type AttackStage,
   awaitsReaction,
-  isHit,
-  missMark,
-  outcomeWord,
   stageAfterRoll,
   stageOfAnswer,
   steps,
-  targetAfter,
-  targetRows,
 } from '../../../../core/combat/attack-flow';
 import {
   type AttackDie,
@@ -65,53 +52,20 @@ import {
   type LuckyRoll,
   ResourceClient,
 } from '../../../../core/resources/resources-client';
-import { classResourceErrorMessage } from '../../../../core/resources/resources-errors';
-import {
-  damageFormula,
-  diceName,
-  extraDiceOf,
-  sumRange,
-} from '../../../../core/combat/combat-dice';
-import {
-  brutalLabel,
-  brutalTyped,
-  brutalTypedHint,
-  criticalHint,
-  criticalSentence,
-  criticalSum,
-  criticalTypedHint,
-  fixedParts,
-  hasExtraDice,
-  typedRange,
-} from '../../../../core/combat/critical';
+import { damageFormula, extraDiceOf } from '../../../../core/combat/combat-dice';
+import { brutalTyped, criticalSentence, criticalSum } from '../../../../core/combat/critical';
 import {
   type ExtraPick,
   activeParts,
   initialPicks,
   typedFields,
 } from '../../../../core/combat/damage-parts';
-import {
-  d20Count,
-  d20Formula,
-  liveRequest,
-  modeStatus,
-  orNormal,
-} from '../../../../core/combat/roll-mode';
-import { reactionWait } from '../../../../core/combat/reactions';
+import { d20Count, d20Formula, modeStatus, orNormal } from '../../../../core/combat/roll-mode';
 import { isTheatre } from '../../../../core/combat/theatre';
 import { metersText } from '../../../../core/units';
-import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
-import {
-  attackDetail,
-  attackName,
-  beamSpentText,
-  bonusSpentText,
-  isCantrip,
-} from '../../../../core/combat/combat-options';
-import { article } from '../../../../core/combat/combat-log';
-import { joinDots, tight } from '../../../../core/format/text';
-import { combatantInitial, isPlayer, stateWord } from '../../../../core/combat/combat-view';
+import { attackDetail, attackName, isCantrip } from '../../../../core/combat/combat-options';
+import { combatantInitial, isPlayer } from '../../../../core/combat/combat-view';
 import { isCreature } from '../../../../core/combat/creature-names';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import { AttackResult } from './attack-result';
@@ -121,14 +75,34 @@ import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
 import { RollModePicker } from '../roll-mode/roll-mode-picker';
 import { InspirationPrompt } from '../inspiration-prompt/inspiration-prompt';
 import { LuckyPrompt } from '../lucky-prompt/lucky-prompt';
-import { LUCKY_TRAIT } from '../../../../core/combat/lucky';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
-import { RollAnimator, showOfDice, showOfDie } from '../../../../shared/roll-overlay/roll-animator';
-
-/** The d4 of Bênção and Perdição. */
-const EFFECT_DIE_FACES = 4;
+import { RollAnimator, type RollShow } from '../../../../shared/roll-overlay/roll-animator';
+import { AttackQuestions } from './attack-questions';
+import {
+  EFFECT_DIE_FACES,
+  afterDamageText,
+  attackShow,
+  attackTargetRows,
+  brutalOf,
+  damageDiceOf,
+  damageHintOf,
+  damageIntroOf,
+  damageLabelOf,
+  damageRangeOf,
+  damageShow,
+  extraDiceProblem,
+  fixedTextOf,
+  heldWait,
+  modeChoiceOf,
+  outcomeOf,
+  rollRefusal,
+  signedBonus,
+  spentText,
+  withAllies,
+} from './attack-sheet-view';
+import { ModeRequests } from './mode-requests';
 
 /** What the page hands the attack sheet. */
 export interface AttackSheetData {
@@ -257,10 +231,25 @@ export class AttackSheet {
         })
       : null,
   );
-  /** The Bardic Inspiration question of a held roll: the d20 is rolled, the result waits for the answer. */
-  protected readonly offer = signal<InspirationOffer | null>(this.data.inspiration?.offer ?? null);
-  /** The Lucky question of a held roll whose d20 shows a 1: asked before the die's. */
-  protected readonly luckyOffer = signal<LuckyOffer | null>(this.data.lucky?.offer ?? null);
+  /** The questions of a held roll (`AttackQuestions`): the Bardic Inspiration die's, and the halfling's Lucky about a 1,
+   * asked before it. */
+  private readonly questions = new AttackQuestions(
+    {
+      resources: this.resources,
+      campaignId: this.data.campaignId,
+      encounterId: this.data.encounterId,
+      state: this.data.state,
+      animator: this.animator,
+      busy: this.busy,
+      error: this.error,
+      stage: this.stage,
+      onHeld: this.data.onHeld,
+      settle: (res) => this.settle(res),
+    },
+    { offer: this.data.inspiration?.offer ?? null, lucky: this.data.lucky?.offer ?? null },
+  );
+  protected readonly offer = this.questions.offer;
+  protected readonly luckyOffer = this.questions.luckyOffer;
   /** The roll waits for an answer: neither a result nor the damage is told. */
   protected readonly asking = computed(
     () => this.stage() === 'lucky' || this.stage() === 'inspire',
@@ -268,11 +257,22 @@ export class AttackSheet {
   protected readonly pending = signal<PendingDamage | null>(this.data.resume?.pending ?? null);
   /** The damage rolled, once it is. */
   protected readonly damage = signal<PendingDamage | null>(null);
+  /** The mode the player asks the master for (`ModeRequests`): the pick, why, and the request as the combat shows it. */
+  private readonly modes: ModeRequests = new ModeRequests({
+    api: this.api,
+    campaignId: this.data.campaignId,
+    encounterId: this.data.encounterId,
+    attackerId: this.data.attackerId,
+    attackKey: this.attack.key,
+    state: this.data.state,
+    targetId: () => this.targetId(),
+    chosen: (): RollMode => this.chosen(),
+    busy: this.busy,
+    error: this.error,
+  });
   /** The mode the player picked; null follows the server's suggestion. */
-  protected readonly picked = signal<RollMode | null>(null);
-  protected readonly reason = signal('');
-  /** The request this sheet sent to the master (its state is read from the combat). */
-  private readonly asked = signal<RollModeRequest | null>(null);
+  protected readonly picked = this.modes.picked;
+  protected readonly reason = this.modes.reason;
   /** The extras marked in the damage step. */
   protected readonly picks = signal<readonly ExtraPick[]>([]);
 
@@ -291,12 +291,6 @@ export class AttackSheet {
   private readonly attackKeys = new ActionKey();
   /** One key per damage roll: the same die again is a retry, another die (typed after an app roll was lost) is a new request. */
   private readonly damageKeys = new ActionKey();
-  /** One key per request to the master: the same mode and reason again is a retry. */
-  private readonly requestKeys = new ActionKey();
-  /** One key per answer about the die (use it with this die, or keep it): the same answer again is a retry. */
-  private readonly answerKeys = new ActionKey();
-  /** One key per Lucky answer (roll again this way, or keep the 1): the same answer again is a retry. */
-  private readonly luckyKeys = new ActionKey();
   private readonly body = viewChild<ElementRef<HTMLElement>>('body');
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
 
@@ -315,54 +309,17 @@ export class AttackSheet {
     this.thrown ? this.attack.longRangeFt : this.data.asReaction ? 5 : this.attack.rangeFt,
   );
   /** An opportunity attack reaches 5 ft, whatever range the weapon has when thrown. */
-  protected readonly rows = computed(() => this.withAllies(this.baseRows()));
-  /** An ally is tagged ("Aliada"), so a table of friends does not misread the list. */
-  private withAllies(rows: ReturnType<typeof targetRows>): ReturnType<typeof targetRows> {
-    const e = this.data.state.encounter();
-    return rows.map((r) => {
-      const c = e?.combatants.find((x) => x.id === r.id);
-      const ally =
-        c && (isPlayer(c) || c.side === CombatantSide.PARTY)
-          ? article(c.label) === 'a'
-            ? 'Aliada'
-            : 'Aliado'
-          : '';
-      return ally ? { ...r, sub: tight(joinDots([r.sub, ally].filter(Boolean))) } : r;
-    });
-  }
+  protected readonly rows = computed(() =>
+    withAllies(this.baseRows(), this.data.state.encounter()?.combatants ?? []),
+  );
   private readonly baseRows = computed(() =>
-    this.data.opportunity
-      ? [
-          {
-            id: this.data.opportunity.targetId,
-            label: this.data.opportunity.targetLabel,
-            sub: '',
-            blocked: '',
-            cover: '',
-            coverMark: null,
-          },
-        ]
-      : this.thrown
-        ? targetRows(
-            this.data.targets.map(
-              (t) =>
-                ({
-                  ...t,
-                  tooFar:
-                    t.distanceFt === undefined ? t.tooFar : t.distanceFt > this.attack.longRangeFt,
-                }) as typeof t,
-            ),
-            this.attack.longRangeFt,
-          )
-        : this.data.asReaction
-          ? targetRows(
-              this.data.targets.map(
-                (t) =>
-                  ({ ...t, tooFar: t.distanceFt === undefined || t.distanceFt > 5 }) as typeof t,
-              ),
-              5,
-            )
-          : targetRows(this.data.targets, this.attack.rangeFt),
+    attackTargetRows({
+      opportunity: this.data.opportunity,
+      thrown: this.thrown,
+      asReaction: this.data.asReaction ?? false,
+      targets: this.data.targets,
+      attack: this.attack,
+    }),
   );
   /** The target's circumstances from the options: the suggested mode and why. An opportunity attack has none. */
   private readonly reach = computed(() => {
@@ -376,21 +333,10 @@ export class AttackSheet {
   protected readonly sources = computed(() => this.reach()?.sources ?? []);
   protected readonly criticalOnHit = computed(() => this.reach()?.criticalOnHit ?? false);
   protected readonly approval = this.data.master ? 'free' : 'request';
-  protected readonly chosen = computed(() => this.picked() ?? this.suggested());
+  protected readonly chosen = computed<RollMode>(() => this.picked() ?? this.suggested());
   /** The request of this attack as the combat shows it now (waiting, answered), or none. */
-  protected readonly request = computed(() => {
-    const sent = this.asked();
-    if (!sent) {
-      return null;
-    }
-    const all = this.data.state.encounter()?.rollModeRequests ?? [];
-    const live = liveRequest(all, sent.id);
-    return live ?? (all.some((r) => r.id === sent.id) ? null : sent);
-  });
-  private readonly answered = computed(() => {
-    const r = this.request();
-    return r?.status === RollModeRequestStatus.ANSWERED ? r : null;
-  });
+  protected readonly request = this.modes.request;
+  private readonly answered = this.modes.answered;
   /** The mode the d20 rolls with: the master's decision on a request, else the player's choice. */
   protected readonly rollMode = computed(() => this.answered()?.decidedMode ?? this.chosen());
   protected readonly modeState = computed(() =>
@@ -421,52 +367,21 @@ export class AttackSheet {
   protected readonly preferApp =
     effectivePreference(this.data.diceMode, this.data.preference) === DicePreference.APP;
 
-  protected readonly outcome = computed(() => {
-    const r = this.roll();
-    // A held roll has no result yet: neither a word nor a pill (the master has not said, or a reaction holds it).
-    return r && !r.heldForReaction && !this.asking()
-      ? {
-          word: outcomeWord(r.outcome),
-          hit: isHit(r.outcome),
-          crit: r.outcome === AttackOutcome.CRITICAL_HIT,
-          natural: missMark(r),
-        }
-      : null;
-  });
+  protected readonly outcome = computed(() => outcomeOf(this.roll(), this.asking()));
   protected readonly d20Formula = computed(() => {
     const r = this.roll()?.d20;
     return r ? d20Formula(r) : '';
   });
   /** The dice of the damage still to roll: "2d6" (doubled on a critical hit). */
-  protected readonly dice = computed(() => {
-    const p = this.pending();
-    return p
-      ? {
-          count: p.diceCount,
-          sides: p.diceSides,
-          bonus: p.bonus,
-          name: diceName(p.diceCount, p.diceSides),
-        }
-      : null;
-  });
+  protected readonly dice = computed(() => damageDiceOf(this.pending()));
   /** The damage when a feature adds dice to the critical (Crítico Brutal): the screens say the groups and the feature's name. */
-  protected readonly brutal = computed(() => {
-    const p = this.pending();
-    return p && hasExtraDice(p) ? p : null;
-  });
+  protected readonly brutal = computed(() => brutalOf(this.pending()));
   /** "2d12 + 1d12 + 3" and "2d12 do crítico (dados dobrados) e 1d12 do Crítico Brutal (nível 9), mais 3 de modificador, de cortante.". */
   protected readonly brutalCard = computed(() => {
     const b = this.brutal();
     return b ? { sum: criticalSum(b), sentence: criticalSentence(b, b.damageTypePt) } : null;
   });
-  protected readonly range = computed(() => {
-    const b = this.brutal();
-    if (b) {
-      return typedRange(b);
-    }
-    const d = this.dice();
-    return d ? sumRange(d.count, d.sides) : { min: 1, max: 1 };
-  });
+  protected readonly range = computed(() => damageRangeOf(this.brutal(), this.dice()));
   protected readonly parts = computed(() => this.pending()?.parts ?? []);
   /** One field for each group of dice of the damage that is marked, for physical dice. */
   protected readonly damageFields = computed<readonly RollField[]>(() =>
@@ -499,56 +414,29 @@ export class AttackSheet {
     const d = this.dice();
     return this.brutal() ? 'Rolar dano no app' : `Rolar ${d?.name ?? ''} no app`;
   });
-  protected readonly after = computed(() => {
-    const d = this.damage();
-    if (!d) {
-      return '';
-    }
-    const enc = this.data.state.encounter();
-    const target = enc?.combatants.find((c) => c.id === d.targetId);
-    return targetAfter(
-      this.targetLabel(),
-      !!target && isPlayer(target),
-      d,
-      target ? stateWord(target.state) : '',
-    );
-  });
+  protected readonly after = computed(() =>
+    afterDamageText(this.damage(), this.data.state.encounter(), this.targetLabel()),
+  );
   /** The d20 is rolled but a reaction holds the result: "Esperando o mestre. O resultado do seu ataque sai quando ele responder." */
-  protected readonly held = computed(() => {
-    const r = this.roll();
-    const e = this.data.state.encounter();
-    return r?.heldForReaction
-      ? ((e ? reactionWait(e) : null) ?? {
-          title: 'Esperando o mestre',
-          detail: 'O resultado do seu ataque sai quando ele responder.',
-        })
-      : null;
-  });
+  protected readonly held = computed(() => heldWait(this.roll(), this.data.state.encounter()));
   /** The hit is made, but its damage waits for the target's reaction (Escudo). */
   protected readonly waiting = computed(() => awaitsReaction(this.pending()));
   protected readonly defeated = computed(() => this.damage()?.targetDefeated ?? false);
   /** What the attack spent: the reaction, one of Extra Attack's attacks (the
    * action stays open for the rest) or the action. */
-  protected readonly spent = computed(() => {
-    if (this.data.opportunity?.byMaster) {
-      return 'A reação dele foi usada.';
-    }
-    if (this.data.asReaction) {
-      return 'Sua reação foi usada.';
-    }
-    const bonus = bonusSpentText(this.data.bonusRule, this.data.bonusAttacksLeft);
-    if (bonus) {
-      return bonus;
-    }
-    if (this.cantrip && (this.data.beamsLeft ?? 0) > 1) {
-      return beamSpentText(this.name, this.data.beamsLeft ?? 0);
-    }
-    const left = (this.data.attacksLeft ?? 1) - 1;
-    if (!this.cantrip && (this.data.attacksPerAction ?? 1) > 1 && left > 0) {
-      return `Você ainda tem ${left} ${left === 1 ? 'ataque' : 'ataques'} desta ação.`;
-    }
-    return 'Sua ação foi usada.';
-  });
+  protected readonly spent = computed(() =>
+    spentText({
+      byMaster: !!this.data.opportunity?.byMaster,
+      asReaction: !!this.data.asReaction,
+      bonusRule: this.data.bonusRule,
+      bonusAttacksLeft: this.data.bonusAttacksLeft,
+      cantrip: this.cantrip,
+      name: this.name,
+      beamsLeft: this.data.beamsLeft,
+      attacksLeft: this.data.attacksLeft,
+      attacksPerAction: this.data.attacksPerAction,
+    }),
+  );
   protected readonly title = computed(() =>
     this.typing() ? 'Digite o resultado do dado' : `Atacar com ${this.name}`,
   );
@@ -558,61 +446,25 @@ export class AttackSheet {
       : this.detail,
   );
   protected readonly rollLabel = computed(
-    () => `Role 1d20 para ${this.name} (${this.signedBonus()})`,
+    () => `Role 1d20 para ${this.name} (${signedBonus(this.attack.attackBonus)})`,
   );
-  protected readonly damageLabel = computed(() => {
-    const b = this.brutal();
-    if (b) {
-      return brutalLabel(b, `${article(this.name)} ${this.name}`);
-    }
-    const d = this.dice();
-    return d && d.count > 1
-      ? `Role ${d.name} para o dano: some os dois`
-      : `Role ${d?.name ?? ''} para o dano`;
-  });
-  protected readonly damageHint = computed(() => {
-    const b = this.brutal();
-    if (b) {
-      return brutalTypedHint(b);
-    }
-    const r = this.range();
-    const p = this.pending();
-    return criticalTypedHint(
-      p?.criticalRule ?? 0,
-      p ? diceName(p.diceCount, p.diceSides) : '',
-      r.min,
-      r.max,
-      p?.criticalMax ?? 0,
-    );
-  });
+  protected readonly damageLabel = computed(() =>
+    damageLabelOf(this.brutal(), this.dice(), this.name),
+  );
+  protected readonly damageHint = computed(() =>
+    damageHintOf(this.brutal(), this.pending(), this.range()),
+  );
   /** What the typed sum is added to: the modifier and the critical's fixed maximum (the server's numbers, shown in the total before it is sent). */
   protected readonly damageModifier = computed(
     () => (this.pending()?.bonus ?? 0) + (this.pending()?.criticalMax ?? 0),
   );
-  protected readonly fixedText = computed(() => {
-    const b = this.brutal();
-    if (b) {
-      // The maximum stands in the live total's groups; the field's note is the modifier alone.
-      return b.bonus === 0 ? '' : `${b.bonus < 0 ? '−' : '+'} ${Math.abs(b.bonus)} de bônus`;
-    }
-    return fixedParts(this.pending()?.criticalMax ?? 0, this.pending()?.bonus ?? 0);
-  });
+  protected readonly fixedText = computed(() => fixedTextOf(this.brutal(), this.pending()));
   /** The critical's line only for whoever rolls physical dice (the app's dice are the server's). */
   protected readonly showCritical = computed(() => !this.canApp || this.typing());
   /** The line above the damage's dice: what a critical hit rolls under the table's rule ("role os dados duas vezes", "o máximo mais uma rolagem"), or "Acertou: role o dano.". */
-  protected readonly damageIntro = computed(() => {
-    const p = this.pending();
-    if (!p) {
-      return '';
-    }
-    const hint = criticalHint(p.criticalRule, p.diceCount, p.diceSides, p.criticalMax);
-    if (hint) {
-      return hint.line;
-    }
-    return p.critical || this.outcome()?.crit
-      ? `Acerto crítico: os dados do dano dobram (${diceName(p.diceCount, p.diceSides)}).`
-      : 'Acertou: role o dano.';
-  });
+  protected readonly damageIntro = computed(() =>
+    damageIntroOf(this.pending(), this.outcome()?.crit),
+  );
   /** A combat without a map: the master judges the reach, and the list says so instead of "Longe demais". */
   protected readonly theatre = computed(() => isTheatre(this.data.state.encounter()));
 
@@ -647,21 +499,9 @@ export class AttackSheet {
       const waiting = this.roll()?.heldForReaction === true;
       const me = this.data.state.encounter()?.combatants.find((c) => c.id === this.data.attackerId);
       if (waiting && this.stage() === 'done') {
-        untracked(() => this.askAfterWindow(me?.luckyOffer, me?.inspirationOffer));
+        untracked(() => this.questions.askAfterWindow(me?.luckyOffer, me?.inspirationOffer));
       }
     });
-  }
-
-  /** The question the combat now carries for the roll a reaction window held: Lucky first, then the die's. */
-  private askAfterWindow(lucky: LuckyOffer | undefined, offer: InspirationOffer | undefined): void {
-    const held = lucky ?? offer;
-    if (!held) {
-      return;
-    }
-    this.luckyOffer.set(lucky ?? null);
-    this.offer.set(offer ?? null);
-    this.data.onHeld?.(held.holdId);
-    this.stage.set(lucky ? 'lucky' : 'inspire');
   }
 
   /** Reads the attacker's pending damages again: the hit that waited for a reaction is now a damage to roll, or gone
@@ -698,11 +538,6 @@ export class AttackSheet {
     }
   }
 
-  private signedBonus(): string {
-    const b = this.attack.attackBonus;
-    return `${b < 0 ? '−' : '+'}${Math.abs(b)}`;
-  }
-
   protected initial(label: string): string {
     return combatantInitial(label);
   }
@@ -720,7 +555,7 @@ export class AttackSheet {
   protected pick(id: string): void {
     this.targetId.set(id);
     this.error.set('');
-    this.dropMode();
+    this.modes.drop();
   }
 
   /** The target is chosen: on to the roll (a click, or Enter). */
@@ -733,26 +568,7 @@ export class AttackSheet {
   protected change(): void {
     this.typing.set(false);
     this.stage.set('target');
-    this.dropMode();
-  }
-
-  /** A new target starts from its own suggestion; a request for the old one is taken back. */
-  private dropMode(): void {
-    const sent = this.asked();
-    this.picked.set(null);
-    this.reason.set('');
-    this.asked.set(null);
-    if (sent && sent.status === RollModeRequestStatus.PENDING) {
-      void this.api
-        .cancelRollModeRequest(
-          this.data.campaignId,
-          this.data.encounterId,
-          sent.id,
-          this.requestKeys.keyFor({ cancel: sent.id }),
-        )
-        .then((e) => this.data.state.apply(e))
-        .catch(() => undefined);
-    }
+    this.modes.drop();
   }
 
   protected setMode(mode: RollMode): void {
@@ -761,77 +577,24 @@ export class AttackSheet {
   }
 
   /** "Pedir ao mestre": the mode asked for and why; the sheet waits for the answer. */
-  protected async askMaster(): Promise<void> {
-    const id = this.targetId();
-    if (id === null || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const mode = this.chosen();
-      const reason = this.reason().trim();
-      const res = await this.api.requestRollMode(
-        this.data.campaignId,
-        this.data.encounterId,
-        this.data.attackerId,
-        this.attack.key,
-        id,
-        mode,
-        reason,
-        this.requestKeys.keyFor({ id, mode, reason }),
-      );
-      this.data.state.apply(res.encounter);
-      this.asked.set(res.request);
-    } catch (err) {
-      this.error.set(combatErrorMessage(err, 'pedir ao mestre'));
-    } finally {
-      this.busy.set(false);
-    }
+  protected askMaster(): Promise<void> {
+    return this.modes.ask();
   }
 
   /** "Cancelar pedido": the player takes it back and picks again. */
-  protected async cancelAsk(): Promise<void> {
-    const sent = this.asked();
-    if (!sent || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const e = await this.api.cancelRollModeRequest(
-        this.data.campaignId,
-        this.data.encounterId,
-        sent.id,
-        this.requestKeys.keyFor({ cancel: sent.id }),
-      );
-      this.data.state.apply(e);
-      this.asked.set(null);
-      this.picked.set(null);
-      this.reason.set('');
-    } catch (err) {
-      this.error.set(combatErrorMessage(err, 'cancelar o pedido'));
-    } finally {
-      this.busy.set(false);
-    }
+  protected cancelAsk(): Promise<void> {
+    return this.modes.cancel();
   }
 
   /** What the roll sends about the mode: nothing when the suggestion stands, else the mode, why, and the answered request. */
   private modeChoice(): ModeChoice | undefined {
-    if (!this.hasMode()) {
-      return undefined;
-    }
-    const r = this.answered();
-    if (r) {
-      return {
-        mode: r.decidedMode,
-        reason: r.decidedMode === r.suggestedMode ? '' : r.reason,
-        requestId: r.id,
-      };
-    }
-    return this.chosen() === this.suggested()
-      ? undefined
-      : { mode: this.chosen(), reason: this.reason().trim() };
+    return modeChoiceOf({
+      hasMode: this.hasMode(),
+      answered: this.answered(),
+      chosen: this.chosen(),
+      suggested: this.suggested(),
+      reason: this.reason(),
+    });
   }
 
   protected async rollAttack(die: AttackDie | PairDie): Promise<void> {
@@ -863,7 +626,7 @@ export class AttackSheet {
       );
       this.data.state.apply(res.encounter);
       this.settle(res);
-      this.animate(res);
+      this.play(attackShow(this.name, res));
     } catch (err) {
       this.fail(err);
     } finally {
@@ -871,31 +634,7 @@ export class AttackSheet {
     }
   }
 
-  /**
-   * The d20 the app just rolled, tumbling (RN-20): the face, and the total and the word only where this sheet shows them
-   * (a roll held for a reaction or for the Inspiração de Bardo question shows the face alone). Never an armor class.
-   */
-  private animate(res: { readonly roll: AttackRoll; readonly offer?: InspirationOffer }): void {
-    const r = res.roll;
-    const told = !res.offer && !r.heldForReaction && r.outcome !== AttackOutcome.UNSPECIFIED;
-    const hit = isHit(r.outcome);
-    const show = showOfDice(`Ataque com ${this.name}`, r.d20, {
-      withTotal: !r.heldForReaction,
-      outcome: told ? { word: outcomeWord(r.outcome), good: hit } : undefined,
-      critical: told && r.outcome === AttackOutcome.CRITICAL_HIT,
-      fumble: told && !hit,
-    });
-    if (show) {
-      this.animator.play(show);
-    }
-  }
-
-  /** The damage dice the app just rolled, as the result step shows them: the faces, the roll's total and the damage type. */
-  private animateDamage(p: PendingDamage | undefined): void {
-    if (!p || p.status === PendingDamageStatus.AWAITING_REACTION) {
-      return;
-    }
-    const show = showOfDice('Dano', p.roll, { withTotal: true, note: p.damageTypePt || undefined });
+  private play(show: RollShow | null): void {
     if (show) {
       this.animator.play(show);
     }
@@ -921,82 +660,14 @@ export class AttackSheet {
     this.stage.set(stageOfAnswer(res));
   }
 
-  /** "Rolar de novo" (rolled in the app, or the typed face) or "Ficar com o 1": the answer resolves the held attack, or
-   * moves on to the Bardic Inspiration question on the new roll when the attacker holds a die. */
-  protected async answerLucky(reroll: boolean, die: LuckyRoll | null): Promise<void> {
-    const offer = this.luckyOffer();
-    if (!offer || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const res = await this.resources.answerLucky(
-        this.data.campaignId,
-        this.data.encounterId,
-        offer.holdId,
-        reroll,
-        die,
-        this.luckyKeys.keyFor({ holdId: offer.holdId, reroll, die }),
-      );
-      this.luckyKeys.renew();
-      this.data.state.apply(res.encounter);
-      this.settle(res);
-      if (die && 'inApp' in die) {
-        this.animateLucky(res.roll);
-      }
-    } catch (err) {
-      this.error.set(classResourceErrorMessage(err, 'responder ao Sortudo'));
-    } finally {
-      this.busy.set(false);
-    }
+  /** "Rolar de novo" or "Ficar com o 1" (`AttackQuestions`). */
+  protected answerLucky(reroll: boolean, die: LuckyRoll | null): Promise<void> {
+    return this.questions.answerLucky(reroll, die);
   }
 
-  /** The d20 the app rolled again for Lucky, tumbling: the new face alone, "1 → 14" (the sheet tells the result). */
-  private animateLucky(roll: AttackRoll): void {
-    const again = roll.d20?.rerolled.find((r) => r.sourceKey === LUCKY_TRAIT);
-    const show = again
-      ? showOfDie('Sortudo', roll.d20?.diceSides ?? 0, again.to, `${again.from} → ${again.to}`)
-      : null;
-    if (show) {
-      this.animator.play(show);
-    }
-  }
-
-  /** "Somar o d8" (rolled in the app, or the typed face) or "Guardar o dado": the answer finishes the held attack. */
-  protected async answerInspiration(use: boolean, die: InspirationRoll | null): Promise<void> {
-    const offer = this.offer();
-    if (!offer || this.busy()) {
-      return;
-    }
-    this.busy.set(true);
-    this.error.set('');
-    try {
-      const res = await this.resources.answerBardicInspiration(
-        this.data.campaignId,
-        this.data.encounterId,
-        offer.holdId,
-        use,
-        die,
-        this.answerKeys.keyFor({ holdId: offer.holdId, use, die }),
-      );
-      this.answerKeys.renew();
-      this.data.state.apply(res.encounter);
-      this.settle(res);
-      // The die the player added after the d20, rolled in the app (the sheet's "Com o d8 da Inspiração de Bardo (+5)" line).
-      const bonus =
-        use && die && 'inApp' in die ? res.roll.bonusDice.find((b) => b.used) : undefined;
-      const show = bonus
-        ? showOfDie('Inspiração de Bardo', bonus.sides, bonus.face, `+${bonus.face}`)
-        : null;
-      if (show) {
-        this.animator.play(show);
-      }
-    } catch (err) {
-      this.error.set(classResourceErrorMessage(err, 'responder à Inspiração de Bardo'));
-    } finally {
-      this.busy.set(false);
-    }
+  /** "Somar o d8" or "Guardar o dado" (`AttackQuestions`). */
+  protected answerInspiration(use: boolean, die: InspirationRoll | null): Promise<void> {
+    return this.questions.answerInspiration(use, die);
   }
 
   protected rollAttackTyped(face: number): Promise<void> {
@@ -1034,7 +705,7 @@ export class AttackSheet {
       );
       this.data.state.apply(res.encounter);
       this.damage.set(res.pending);
-      this.animateDamage(res.pending);
+      this.play(damageShow(res.pending));
       this.typing.set(false);
       this.stage.set('done');
     } catch (err) {
@@ -1058,20 +729,11 @@ export class AttackSheet {
   }
 
   private fail(err: unknown): void {
-    // Physical dice and an effect the app did not list (one the master keeps from the players): the server says how many
-    // more d4 the roll takes, and the sheet asks for them.
-    const connectErr = ConnectError.from(err, Code.Unavailable);
-    const more = connectErr.code === Code.InvalidArgument ? missingDice(connectErr.rawMessage) : 0;
-    if (more > 0) {
-      this.extraFields.set(genericDieFields(more, EFFECT_DIE_FACES));
-      this.error.set(
-        more === 1
-          ? 'Esta rolagem leva mais um d4: role-o e digite o resultado.'
-          : `Esta rolagem leva mais ${more} d4: role-os e digite os resultados.`,
-      );
-      return;
+    const refusal = rollRefusal(err);
+    if (refusal.more > 0) {
+      this.extraFields.set(genericDieFields(refusal.more, EFFECT_DIE_FACES));
     }
-    this.error.set(combatErrorMessage(err, 'rolar o ataque'));
+    this.error.set(refusal.message);
   }
 
   /** The faces of the d4 typed for a roll from physical dice; none for the app's dice, `null` while one is missing (the sheet says so). */
@@ -1080,16 +742,12 @@ export class AttackSheet {
     if ('inApp' in die || fields.length === 0) {
       return [];
     }
-    const faces = this.extraFaces();
-    if (faces.length !== fields.length || faces.some((f) => f === null)) {
-      this.error.set(
-        fields.length === 1
-          ? `Digite o resultado do d${fields[0].faces} antes de confirmar.`
-          : 'Digite o resultado de cada dado extra antes de confirmar.',
-      );
+    const problem = extraDiceProblem(fields, this.extraFaces());
+    if (problem) {
+      this.error.set(problem);
       return null;
     }
-    return faces as readonly number[];
+    return this.extraFaces() as readonly number[];
   }
 
   protected close(): void {

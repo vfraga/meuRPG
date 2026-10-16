@@ -158,111 +158,11 @@ func (s *Service) SetOptionSwitches(
 		return nil, err
 	}
 	switches := req.Msg.GetSwitches()
-	switch {
-	case len(switches) == 0:
-		return nil, invalidArgument(fieldErr("switches", "must have at least one switch"))
-	case len(switches) > MaxOptionSwitches:
-		return nil, invalidArgument(fieldErr("switches", "must have at most %d switches", MaxOptionSwitches))
+	if err := checkSwitchRequest(switches); err != nil {
+		return nil, err
 	}
-	asked := make(map[string]bool, len(switches)) // key -> off
-	for i, sw := range switches {
-		if _, dup := asked[sw.GetKey()]; dup {
-			return nil, invalidArgument(fieldErr("switches", "switches[%d]: the key %q is there twice", i, sw.GetKey()))
-		}
-		asked[sw.GetKey()] = sw.GetOff()
-	}
-	var res *rulesv1.SetOptionSwitchesResponse
-	changed := false
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		changed, res = false, nil
-		q := s.queries.WithTx(tx)
-		// The content is read first (the revision row joins the transaction's reads),
-		// then the revision is bumped: a write that got in between makes this one
-		// retry, and two switches of a campaign run one after the other.
-		before, err := s.contentFor(ctx, tx, m.CampaignID)
-		if err != nil {
-			return err
-		}
-		for i, sw := range switches {
-			if !before.Switchable(sw.GetKey()) {
-				return invalidArgument(fieldErr("switches", "switches[%d].key: %q is not a class, subclass, race, subrace, background, spell or feat of this campaign", i, sw.GetKey()))
-			}
-		}
-		rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: m.CampaignID, Now: s.now()})
-		if err != nil {
-			return wrap("bump the content revision", err)
-		}
-		current, err := q.ListContentOff(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("read the options switched off", err)
-		}
-		var turnOff, turnOn []string
-		for _, sw := range switches {
-			isOff := slices.Contains(current, sw.GetKey())
-			switch {
-			case sw.GetOff() && !isOff:
-				turnOff = append(turnOff, sw.GetKey())
-			case !sw.GetOff() && isOff:
-				turnOn = append(turnOn, sw.GetKey())
-			}
-		}
-		if len(turnOff)+len(turnOn) == 0 {
-			return errNoSwitchChange // nothing to write: roll the bump back
-		}
-		if len(turnOff) > 0 {
-			if err := q.InsertContentOff(ctx, charactersdb.InsertContentOffParams{CampaignID: m.CampaignID, ContentKeys: turnOff, Now: s.now()}); err != nil {
-				return wrap("switch options off", err)
-			}
-		}
-		if len(turnOn) > 0 {
-			if err := q.DeleteContentOff(ctx, charactersdb.DeleteContentOffParams{CampaignID: m.CampaignID, ContentKeys: turnOn}); err != nil {
-				return wrap("switch options on", err)
-			}
-		}
-		// The content as the players have it now, compared with the one before: what
-		// changed for them. It is built here from the rows the transaction sees and the
-		// new set, and never goes through the live source: a write never fills the
-		// cache (the transaction may still roll back, and the revision would then be
-		// served a content nobody committed).
-		rows, err := q.ListCampaignContent(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("list the table's content", err)
-		}
-		overlay, err := overlayOf(rows, int(rev))
-		if err != nil {
-			return err
-		}
-		for _, k := range current {
-			if !slices.Contains(turnOn, k) {
-				overlay.Off = append(overlay.Off, k)
-			}
-		}
-		overlay.Off = append(overlay.Off, turnOff...)
-		after, err := s.srd.With(overlay)
-		if err != nil {
-			return wrap("add the table's content to the rules", err)
-		}
-		sheets, err := q.ListCampaignSheets(ctx, m.CampaignID)
-		if err != nil {
-			return wrap("list the campaign's sheets", err)
-		}
-		uses, err := playerUses(sheets)
-		if err != nil {
-			return err
-		}
-		was := map[string]*rulesv1.OptionSwitchEntry{}
-		for _, e := range optionEntries(before, nil) {
-			was[e.GetKey()] = e
-		}
-		res = &rulesv1.SetOptionSwitchesResponse{TableRevision: rev, Changed: i32(len(turnOff) + len(turnOn))}
-		for _, e := range optionEntries(after, uses) {
-			if w := was[e.GetKey()]; w == nil || w.GetOff() != e.GetOff() || w.GetHidden() != e.GetHidden() {
-				res.Options = append(res.Options, e)
-			}
-		}
-		changed = true
-		return nil
-	})
+	call := &switchCall{s: s, campaignID: m.CampaignID, switches: switches}
+	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return call.run(ctx, tx) })
 	if errors.Is(err, errNoSwitchChange) {
 		rev, rerr := contentRevision(ctx, s.queries, m.CampaignID)
 		if rerr != nil {
@@ -273,9 +173,177 @@ func (s *Service) SetOptionSwitches(
 	if err != nil {
 		return nil, s.dbError(ctx, "set the option switches", err)
 	}
-	if changed {
-		logging.Event(ctx, s.logger, "content.option_switched", slog.Int("changed", int(res.GetChanged())), slog.Int("table_revision", int(res.GetTableRevision())))
+	if call.changed {
+		logging.Event(ctx, s.logger, "content.option_switched", slog.Int("changed", int(call.res.GetChanged())), slog.Int("table_revision", int(call.res.GetTableRevision())))
 		s.publishContentChanged(m.CampaignID)
 	}
-	return connect.NewResponse(res), nil
+	return connect.NewResponse(call.res), nil
+}
+
+// checkSwitchRequest refuses, before the database is read, a request with no switch, too
+// many, or a key that is there twice.
+func checkSwitchRequest(switches []*rulesv1.OptionSwitch) error {
+	switch {
+	case len(switches) == 0:
+		return invalidArgument(fieldErr("switches", "must have at least one switch"))
+	case len(switches) > MaxOptionSwitches:
+		return invalidArgument(fieldErr("switches", "must have at most %d switches", MaxOptionSwitches))
+	}
+	asked := make(map[string]bool, len(switches))
+	for i, sw := range switches {
+		if asked[sw.GetKey()] {
+			return invalidArgument(fieldErr("switches", "switches[%d]: the key %q is there twice", i, sw.GetKey()))
+		}
+		asked[sw.GetKey()] = true
+	}
+	return nil
+}
+
+// switchCall is one SetOptionSwitches: the request and what its transaction found. The
+// transaction's closure runs again when CockroachDB retries it, so run starts it all again.
+type switchCall struct {
+	s          *Service
+	campaignID string
+	switches   []*rulesv1.OptionSwitch
+
+	res     *rulesv1.SetOptionSwitchesResponse
+	changed bool
+}
+
+// run is the transaction of the call: read the content, check the keys, bump the revision,
+// write the new off set, and answer what changed for the players.
+func (c *switchCall) run(ctx context.Context, tx pgx.Tx) error {
+	c.changed, c.res = false, nil
+	q := c.s.queries.WithTx(tx)
+	// The content is read first (the revision row joins the transaction's reads),
+	// then the revision is bumped: a write that got in between makes this one
+	// retry, and two switches of a campaign run one after the other.
+	before, err := c.s.contentFor(ctx, tx, c.campaignID)
+	if err != nil {
+		return err
+	}
+	if err := checkSwitchable(before, c.switches); err != nil {
+		return err
+	}
+	rev, err := q.BumpContentRevision(ctx, charactersdb.BumpContentRevisionParams{CampaignID: c.campaignID, Now: c.s.now()})
+	if err != nil {
+		return wrap("bump the content revision", err)
+	}
+	current, err := q.ListContentOff(ctx, c.campaignID)
+	if err != nil {
+		return wrap("read the options switched off", err)
+	}
+	turnOff, turnOn := switchChanges(c.switches, current)
+	if len(turnOff)+len(turnOn) == 0 {
+		return errNoSwitchChange // nothing to write: roll the bump back
+	}
+	if err := c.write(ctx, q, turnOff, turnOn); err != nil {
+		return err
+	}
+	after, err := c.contentAfter(ctx, q, rev, offAfter(current, turnOff, turnOn))
+	if err != nil {
+		return err
+	}
+	sheets, err := q.ListCampaignSheets(ctx, c.campaignID)
+	if err != nil {
+		return wrap("list the campaign's sheets", err)
+	}
+	uses, err := playerUses(sheets)
+	if err != nil {
+		return err
+	}
+	c.res = &rulesv1.SetOptionSwitchesResponse{
+		TableRevision: rev, Changed: i32(len(turnOff) + len(turnOn)), Options: changedOptions(before, after, uses),
+	}
+	c.changed = true
+	return nil
+}
+
+// checkSwitchable refuses a key that is not a switchable option of the content.
+func checkSwitchable(content *rules.Content, switches []*rulesv1.OptionSwitch) error {
+	for i, sw := range switches {
+		if !content.Switchable(sw.GetKey()) {
+			return invalidArgument(fieldErr("switches", "switches[%d].key: %q is not a class, subclass, race, subrace, background, spell or feat of this campaign", i, sw.GetKey()))
+		}
+	}
+	return nil
+}
+
+// switchChanges are the keys the switches turn off and on, against the stored off set: a
+// switch to the state its key already has changes nothing.
+func switchChanges(switches []*rulesv1.OptionSwitch, current []string) (turnOff, turnOn []string) {
+	for _, sw := range switches {
+		isOff := slices.Contains(current, sw.GetKey())
+		switch {
+		case sw.GetOff() && !isOff:
+			turnOff = append(turnOff, sw.GetKey())
+		case !sw.GetOff() && isOff:
+			turnOn = append(turnOn, sw.GetKey())
+		}
+	}
+	return turnOff, turnOn
+}
+
+// write stores the keys switched off and deletes the ones switched on.
+func (c *switchCall) write(ctx context.Context, q *charactersdb.Queries, turnOff, turnOn []string) error {
+	if len(turnOff) > 0 {
+		if err := q.InsertContentOff(ctx, charactersdb.InsertContentOffParams{CampaignID: c.campaignID, ContentKeys: turnOff, Now: c.s.now()}); err != nil {
+			return wrap("switch options off", err)
+		}
+	}
+	if len(turnOn) > 0 {
+		if err := q.DeleteContentOff(ctx, charactersdb.DeleteContentOffParams{CampaignID: c.campaignID, ContentKeys: turnOn}); err != nil {
+			return wrap("switch options on", err)
+		}
+	}
+	return nil
+}
+
+// offAfter is the off set once the switches are written: the stored one without what is
+// turned on, then what is turned off.
+func offAfter(current, turnOff, turnOn []string) []string {
+	var out []string
+	for _, k := range current {
+		if !slices.Contains(turnOn, k) {
+			out = append(out, k)
+		}
+	}
+	return append(out, turnOff...)
+}
+
+// contentAfter is the content as the players have it now. It is built here from the rows
+// the transaction sees and the new off set, and never goes through the live source: a
+// write never fills the cache (the transaction may still roll back, and the revision would
+// then be served a content nobody committed).
+func (c *switchCall) contentAfter(ctx context.Context, q *charactersdb.Queries, rev int32, off []string) (*rules.Content, error) {
+	rows, err := q.ListCampaignContent(ctx, c.campaignID)
+	if err != nil {
+		return nil, wrap("list the table's content", err)
+	}
+	overlay, err := overlayOf(rows, int(rev))
+	if err != nil {
+		return nil, err
+	}
+	overlay.Off = append(overlay.Off, off...)
+	after, err := c.s.srd.With(overlay)
+	if err != nil {
+		return nil, wrap("add the table's content to the rules", err)
+	}
+	return after, nil
+}
+
+// changedOptions are the options of after whose state changed for the players since
+// before: a new one, or one switched, hidden or shown.
+func changedOptions(before, after *rules.Content, uses map[string]int) []*rulesv1.OptionSwitchEntry {
+	was := map[string]*rulesv1.OptionSwitchEntry{}
+	for _, e := range optionEntries(before, nil) {
+		was[e.GetKey()] = e
+	}
+	var out []*rulesv1.OptionSwitchEntry
+	for _, e := range optionEntries(after, uses) {
+		if w := was[e.GetKey()]; w == nil || w.GetOff() != e.GetOff() || w.GetHidden() != e.GetHidden() {
+			out = append(out, e)
+		}
+	}
+	return out
 }

@@ -1,0 +1,123 @@
+{
+  "Channel Divinity gives no use": {
+    "ok": true,
+    "summary": {
+      "NewClass": "",
+      "CasterLevelBefore": 7,
+      "CasterLevelAfter": 7,
+      "SlotsByTable": true,
+      "ProficienciesGained": null,
+      "Exceptions": [
+        "channel_divinity"
+      ]
+    }
+  },
+  "Channel Divinity's first use": {
+    "ok": true,
+    "summary": {
+      "NewClass": "",
+      "CasterLevelBefore": 2,
+      "CasterLevelAfter": 2,
+      "SlotsByTable": true,
+      "ProficienciesGained": null,
+      "Exceptions": null
+    }
+  },
+  "Extra Attack adds": {
+    "ok": true,
+    "summary": {
+      "NewClass": "",
+      "CasterLevelBefore": 2,
+      "CasterLevelAfter": 2,
+      "SlotsByTable": false,
+      "ProficienciesGained": null,
+      "Exceptions": null
+    }
+  },
+  "Extra Attack does not add": {
+    "ok": true,
+    "summary": {
+      "NewClass": "",
+      "CasterLevelBefore": 2,
+      "CasterLevelAfter": 2,
+      "SlotsByTable": false,
+      "ProficienciesGained": null,
+      "Exceptions": [
+        "extra_attack"
+      ]
+    }
+  },
+  "Unarmored Defense twice": {
+    "ok": true,
+    "summary": {
+      "NewClass": "class:monk",
+      "CasterLevelBefore": 0,
+      "CasterLevelAfter": 0,
+      "SlotsByTable": false,
+      "ProficienciesGained": null,
+      "Exceptions": [
+        "unarmored_defense"
+      ]
+    }
+  },
+  "a new class's proficiencies": {
+    "ok": true,
+    "summary": {
+      "NewClass": "class:rogue",
+      "CasterLevelBefore": 0,
+      "CasterLevelAfter": 0,
+      "SlotsByTable": false,
+      "ProficienciesGained": [
+        {
+          "Key": "proficiency:thieves-tools",
+          "NamePT": "Ferramentas de ladrão"
+        }
+      ],
+      "Exceptions": null
+    }
+  },
+  "single class": {
+    "ok": false,
+    "summary": {
+      "NewClass": "",
+      "CasterLevelBefore": 0,
+      "CasterLevelAfter": 0,
+      "SlotsByTable": false,
+      "ProficienciesGained": null,
+      "Exceptions": null
+    }
+  },
+  "the bard's instrument and skill": {
+    "ok": true,
+    "summary": {
+      "NewClass": "class:bard",
+      "CasterLevelBefore": 0,
+      "CasterLevelAfter": 1,
+      "SlotsByTable": false,
+      "ProficienciesGained": [
+        {
+          "Key": "skill:arcana",
+          "NamePT": "Arcanismo"
+        },
+        {
+          "Key": "",
+          "NamePT": "Alaúde"
+        }
+      ],
+      "Exceptions": null
+    }
+  },
+  "two casters": {
+    "ok": true,
+    "summary": {
+      "NewClass": "",
+      "CasterLevelBefore": 4,
+      "CasterLevelAfter": 4,
+      "SlotsByTable": true,
+      "ProficienciesGained": null,
+      "Exceptions": [
+        "channel_divinity"
+      ]
+    }
+  }
+}

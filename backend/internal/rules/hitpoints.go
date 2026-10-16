@@ -19,47 +19,60 @@ func (x *deriver) hitPoints() {
 	if len(x.classes) == 0 {
 		return
 	}
-	con := x.mods[CON]
-	rolled := x.b.HitPoints.Method == HitPointsRolled
-	rolls := x.b.HitPoints.Rolls
-	hp, n, levels := 0, 0, 0
-	dice := map[int]int{}
+	hp := hitPointTally{con: x.mods[CON], rolled: x.b.HitPoints.Method == HitPointsRolled, dice: map[int]int{}}
 	for _, oc := range x.classes {
-		die := oc.class.HitDie
-		for l := 0; l < oc.level && levels < x.d.TotalLevel; l++ {
-			levels++
-			dice[die]++
-			if levels == 1 {
-				hp += max(die+con, 1)
-				continue
-			}
-			gain := die/2 + 1
-			if rolled {
-				if n < len(rolls) {
-					r := rolls[n]
-					if r < 1 || r > die {
-						x.issue(IssueHitPointRolls, fmt.Sprintf("full.hit_points.rolls[%d]", n), "A rolagem %d não cabe num d%d; os cálculos usam a média.", r, die)
-					} else {
-						gain = r
-					}
-				}
-				n++
-			}
-			hp += max(gain+con, 1)
+		for l := 0; l < oc.level && hp.levels < x.d.TotalLevel; l++ {
+			x.hitPointLevel(&hp, oc.class.HitDie)
 		}
 	}
-	if rolled && len(rolls) != x.d.TotalLevel-1 {
+	rolls := x.b.HitPoints.Rolls
+	if hp.rolled && len(rolls) != x.d.TotalLevel-1 {
 		x.issue(IssueHitPointRolls, "full.hit_points.rolls", "Há %d rolagens de pontos de vida para %d níveis depois do primeiro; os níveis sem rolagem usam a média.", len(rolls), x.d.TotalLevel-1)
 	}
 	// A level never gives less than 1 hit point, whatever the modifiers say: a
 	// table's effect that takes hit points away stops there.
-	x.d.HitPointsMax = max(x.modifiers("hp.max", hp), x.d.TotalLevel)
-	x.d.HitPointsFromEffects = x.d.HitPointsMax - hp
+	x.d.HitPointsMax = max(x.modifiers("hp.max", hp.total), x.d.TotalLevel)
+	x.d.HitPointsFromEffects = x.d.HitPointsMax - hp.total
 
-	for die, count := range dice {
+	for die, count := range hp.dice {
 		x.d.HitDice = append(x.d.HitDice, HitDice{Die: die, Count: count})
 	}
 	slices.SortFunc(x.d.HitDice, func(a, b HitDice) int { return cmp.Compare(b.Die, a.Die) })
+}
+
+// hitPointTally is the hit points as hitPoints adds them level by level: the
+// total, the levels counted, the next roll to read and the dice by size.
+type hitPointTally struct {
+	con           int
+	rolled        bool
+	total, levels int
+	roll          int
+	dice          map[int]int
+}
+
+// hitPointLevel adds one character level of a class with the given hit die:
+// the die's maximum at the first level, else the average or the player's roll
+// (an Issue and the average when the roll does not fit the die).
+func (x *deriver) hitPointLevel(hp *hitPointTally, die int) {
+	hp.levels++
+	hp.dice[die]++
+	if hp.levels == 1 {
+		hp.total += max(die+hp.con, 1)
+		return
+	}
+	gain := die/2 + 1
+	if hp.rolled {
+		if rolls := x.b.HitPoints.Rolls; hp.roll < len(rolls) {
+			r := rolls[hp.roll]
+			if r < 1 || r > die {
+				x.issue(IssueHitPointRolls, fmt.Sprintf("full.hit_points.rolls[%d]", hp.roll), "A rolagem %d não cabe num d%d; os cálculos usam a média.", r, die)
+			} else {
+				gain = r
+			}
+		}
+		hp.roll++
+	}
+	hp.total += max(gain+hp.con, 1)
 }
 
 // heavyArmorSpeedPenaltyFt is the speed lost in armor the character is too weak for.

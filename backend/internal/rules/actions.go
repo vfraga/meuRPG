@@ -112,51 +112,18 @@ func (x *deriver) resourcesAndActions() {
 	x.d.StandardActions = slices.Clone(x.c.standardActions)
 	x.d.AttacksPerAction = 1
 	x.criticalAndStyles()
-	for _, a := range x.active {
-		if a.effect.Type == "extra_attack" && x.applies(a) {
-			x.d.AttacksPerAction = max(x.d.AttacksPerAction, a.effect.Count)
-		}
-	}
+	x.extraAttacks()
 	// Two classes may share a resource name (Channel Divinity of the cleric and
 	// the paladin); the session counts them as one pool, which has the larger
 	// Max: a second class gives new effects but no extra use (SRD Multiclassing).
 	at := map[string]int{}
 	for _, a := range x.active {
-		e := a.effect
-		if e.Type != "resource" || !x.applies(a) {
+		if a.effect.Type != "resource" || !x.applies(a) {
 			continue
 		}
-		n, err := e.max.Int(x.env)
-		if err != nil {
-			x.issue(IssueFormula, "", "Um efeito de %s foi ignorado: a fórmula falhou.", x.c.namePT(a.owner))
-			continue
+		if r, ok := x.resource(a); ok {
+			x.addResource(at, r)
 		}
-		if n <= 0 {
-			continue
-		}
-		recharge := e.Recharge
-		if e.rechargeIf != nil {
-			switch ok, err := e.rechargeIf.Bool(x.env); {
-			case err != nil:
-				x.issue(IssueFormula, "", "Um efeito de %s foi ignorado: a condição falhou.", x.c.namePT(a.owner))
-				continue
-			case ok:
-				recharge = e.RechargeThen
-			}
-		}
-		name := x.c.namesPT["resource:"+e.Resource]
-		if name == "" {
-			name = x.c.namePT(a.owner)
-		}
-		r := Resource{Key: e.Resource, NamePT: name, Max: n, Recharge: recharge, Source: a.owner}
-		if i, shared := at[e.Resource]; shared {
-			if n > x.d.Resources[i].Max {
-				x.d.Resources[i] = r
-			}
-			continue
-		}
-		at[e.Resource] = len(x.d.Resources)
-		x.d.Resources = append(x.d.Resources, r)
 	}
 	x.maneuvers()
 	for _, a := range x.active {
@@ -166,30 +133,84 @@ func (x *deriver) resourcesAndActions() {
 		if x.hasManeuver(a.owner) {
 			continue // the option is a die on a roll; its action would spend the resource twice
 		}
-		act := Action{Key: a.owner, NamePT: x.c.namePT(a.owner), Economy: a.effect.Economy, Source: a.owner}
-		// The resource of the same feature, when it has one at this level. The
-		// action takes the resource's name: the SRD names some features per
-		// level ("Surto de Ação (1 uso)"), and the screen shows the uses apart.
-		for _, r := range x.d.Resources {
-			if r.Source == a.owner {
-				act.Resource = r.Key
-				act.NamePT = r.NamePT
-				break
-			}
+		x.grantAction(a)
+	}
+}
+
+// extraAttacks sets AttacksPerAction from the extra_attack effects: the
+// highest count wins.
+func (x *deriver) extraAttacks() {
+	for _, a := range x.active {
+		if a.effect.Type == "extra_attack" && x.applies(a) {
+			x.d.AttacksPerAction = max(x.d.AttacksPerAction, a.effect.Count)
 		}
-		// A feature action may spend a resource of another feature (the monk's
-		// actions spend ki).
-		if spent := a.effect.Resource; spent != "" {
-			if i := slices.IndexFunc(x.d.Resources, func(r Resource) bool { return r.Key == spent }); i >= 0 {
-				act.Resource = spent
-			} else {
-				continue // the resource is not there: no ki, no ki action
-			}
+	}
+}
+
+// resource is the Resource a resource effect gives at the character's level,
+// and false when it gives none: no use at this level, or a formula that failed
+// (an Issue is recorded).
+func (x *deriver) resource(a activeEffect) (Resource, bool) {
+	e := a.effect
+	n, err := e.max.Int(x.env)
+	if err != nil {
+		x.issue(IssueFormula, "", "Um efeito de %s foi ignorado: a fórmula falhou.", x.c.namePT(a.owner))
+		return Resource{}, false
+	}
+	if n <= 0 {
+		return Resource{}, false
+	}
+	recharge := e.Recharge
+	if e.rechargeIf != nil {
+		switch ok, err := e.rechargeIf.Bool(x.env); {
+		case err != nil:
+			x.issue(IssueFormula, "", "Um efeito de %s foi ignorado: a condição falhou.", x.c.namePT(a.owner))
+			return Resource{}, false
+		case ok:
+			recharge = e.RechargeThen
 		}
-		for _, route := range x.routes(act, a.effect.TextPT) {
-			if !slices.ContainsFunc(x.d.Actions, func(o Action) bool { return o.Key == route.Key && o.Economy == route.Economy }) {
-				x.d.Actions = append(x.d.Actions, route)
-			}
+	}
+	name := x.c.namesPT["resource:"+e.Resource]
+	if name == "" {
+		name = x.c.namePT(a.owner)
+	}
+	return Resource{Key: e.Resource, NamePT: name, Max: n, Recharge: recharge, Source: a.owner}, true
+}
+
+// addResource adds r to Derived.Resources, or, when a resource of the same key
+// is there (at holds where), keeps the one with the larger Max.
+func (x *deriver) addResource(at map[string]int, r Resource) {
+	if i, shared := at[r.Key]; shared {
+		if r.Max > x.d.Resources[i].Max {
+			x.d.Resources[i] = r
+		}
+		return
+	}
+	at[r.Key] = len(x.d.Resources)
+	x.d.Resources = append(x.d.Resources, r)
+}
+
+// grantAction adds the actions of a grant_action effect, each route once.
+func (x *deriver) grantAction(a activeEffect) {
+	act := Action{Key: a.owner, NamePT: x.c.namePT(a.owner), Economy: a.effect.Economy, Source: a.owner}
+	// The resource of the same feature, when it has one at this level. The
+	// action takes the resource's name: the SRD names some features per
+	// level ("Surto de Ação (1 uso)"), and the screen shows the uses apart.
+	if i := slices.IndexFunc(x.d.Resources, func(r Resource) bool { return r.Source == a.owner }); i >= 0 {
+		act.Resource = x.d.Resources[i].Key
+		act.NamePT = x.d.Resources[i].NamePT
+	}
+	// A feature action may spend a resource of another feature (the monk's
+	// actions spend ki).
+	if spent := a.effect.Resource; spent != "" {
+		if !slices.ContainsFunc(x.d.Resources, func(r Resource) bool { return r.Key == spent }) {
+			return // the resource is not there: no ki, no ki action
+		}
+		act.Resource = spent
+	}
+	for _, route := range x.routes(act, a.effect.TextPT) {
+		if !slices.ContainsFunc(x.d.Actions, func(o Action) bool { return o.Key == route.Key && o.Economy == route.Economy }) {
+			x.d.Actions = append(x.d.Actions, route)
 		}
 	}
 }
