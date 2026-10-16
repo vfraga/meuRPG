@@ -28,6 +28,8 @@ go test ./internal/rules -run TableCharacterGolden -update
 go test ./internal/rules/dungeon -run Golden -update      # changing the generator's output also requires bumping Version in types.go
 ```
 
+The golden files of the maps module (`backend/internal/maps/testdata`: the layers each viewer reads, the fog's streams, the package staging, the image store) are rewritten with `go test ./internal/maps -run <test> -update-golden` (database needed); review the diff of each file before committing it.
+
 The `*_characterization_test.go` files in `internal/rules` pin the behaviour of the engine's large functions; a failing one means the output changed, which is not necessarily wrong, so review it.
 Other pure suites: `rules/grid` and `rules/vision` (geometry, movement, cover, sight), `rules/puzzle` (the puzzle maths), `rules/encounter` (the party budget and the generator) and `rules/dungeon` (properties over many options; `DUNGEON_SWEEP=1` adds a sweep of thousands of combinations).
 Fuzz targets exist for the formulas (`FuzzCompileFormula`), the dungeon options (`FuzzOptions`), the encounter generator (`FuzzGenerate`) and the treasure generator (`FuzzGenerateTreasure`).

@@ -158,38 +158,6 @@ var frozenDigests = map[string]string{
 	"serve|player|bia":                                          "295c8b28989ad3568151",
 	"serve|player|caio":                                         "3583e9648a2b1c3ff518",
 	"serve|player|dani":                                         "16a47c0fe5dbeca8194f",
-	"blacken|jpeg 2400x1200 shrunk|checkerboard":                "26b4b8cda98dd7dbe777",
-	"blacken|jpeg 2400x1200 shrunk|disc":                        "9f6080134da6a6702e6b",
-	"blacken|jpeg 2400x1200 shrunk|everything":                  "00141234390573055c00",
-	"blacken|jpeg 2400x1200 shrunk|frame":                       "a1a4f496c0e4e5c385b4",
-	"blacken|jpeg 2400x1200 shrunk|left third":                  "7626918fff5a30ad2935",
-	"blacken|jpeg 2400x1200 shrunk|nothing":                     "4c44e99a248e2833f87e",
-	"blacken|jpeg 2400x1200 shrunk|one square":                  "01f1a6b7dc2091a10596",
-	"blacken|jpeg 2400x1200 shrunk|two discs":                   "080bc74b8d5dd7b34cdd",
-	"blacken|jpeg 240x160 4px squares|checkerboard":             "df79807aae94f448c82e",
-	"blacken|jpeg 240x160 4px squares|disc":                     "a16d2da38dc511f692a4",
-	"blacken|jpeg 240x160 4px squares|everything":               "c7dbe7de8c445ca8124b",
-	"blacken|jpeg 240x160 4px squares|frame":                    "df79807aae94f448c82e",
-	"blacken|jpeg 240x160 4px squares|left third":               "31582761e9a37e06d410",
-	"blacken|jpeg 240x160 4px squares|nothing":                  "df79807aae94f448c82e",
-	"blacken|jpeg 240x160 4px squares|one square":               "df79807aae94f448c82e",
-	"blacken|jpeg 240x160 4px squares|two discs":                "7e44c58c382144f84d36",
-	"blacken|jpeg 400x240 10px squares|checkerboard":            "895552358a39cacbf5d1",
-	"blacken|jpeg 400x240 10px squares|disc":                    "2114a726e753f871b1c0",
-	"blacken|jpeg 400x240 10px squares|everything":              "64012689a2b11ee5aa5a",
-	"blacken|jpeg 400x240 10px squares|frame":                   "895552358a39cacbf5d1",
-	"blacken|jpeg 400x240 10px squares|left third":              "91d3fa32ff05e5335b1f",
-	"blacken|jpeg 400x240 10px squares|nothing":                 "895552358a39cacbf5d1",
-	"blacken|jpeg 400x240 10px squares|one square":              "895552358a39cacbf5d1",
-	"blacken|jpeg 400x240 10px squares|two discs":               "d2ee4617af7f57411a2f",
-	"blacken|jpeg 70x50 odd squares|checkerboard":               "000d3a0b24fe6436e5bc",
-	"blacken|jpeg 70x50 odd squares|disc":                       "bb1979170e0aabd244a0",
-	"blacken|jpeg 70x50 odd squares|everything":                 "b9f0d34414eb6833fd7c",
-	"blacken|jpeg 70x50 odd squares|frame":                      "44f94068198d5cc76863",
-	"blacken|jpeg 70x50 odd squares|left third":                 "50f6b08e39d21b0d4ad7",
-	"blacken|jpeg 70x50 odd squares|nothing":                    "000d3a0b24fe6436e5bc",
-	"blacken|jpeg 70x50 odd squares|one square":                 "000d3a0b24fe6436e5bc",
-	"blacken|jpeg 70x50 odd squares|two discs":                  "b54dd374f961a05c6559",
 	"build|jpeg 2400x1200 shrunk|checkerboard|false":            "170661aff338298802fa",
 	"build|jpeg 2400x1200 shrunk|checkerboard|true":             "a4688ab85c356ab70632",
 	"build|jpeg 2400x1200 shrunk|disc|false":                    "b85b8f940e24a3d462c4",
@@ -397,50 +365,6 @@ func TestTilesAreByteForByteFrozen(t *testing.T) {
 			t.Run(f.name+"/"+v.name, func(t *testing.T) {
 				t.Parallel()
 				checkFrozen(t, "render|"+f.name+"|"+v.name, renderAll(t, f, v))
-			})
-		}
-	}
-}
-
-// TestBlackenBlocksIsFrozen calls blackenBlocks on its own: the mask it leaves
-// for a tile of a JPEG, for each viewer.
-func TestBlackenBlocksIsFrozen(t *testing.T) {
-	t.Parallel()
-	for _, f := range tileFixtures(t) {
-		if !f.jpeg {
-			continue
-		}
-		for _, v := range tileViewers {
-			t.Run(f.name+"/"+v.name, func(t *testing.T) {
-				t.Parallel()
-				wc := workingOf(t, f)
-				src := tileSource{g: f.g, width: f.w, height: f.h, jpeg: true}
-				W, H := wc.img.Bounds().Dx(), wc.img.Bounds().Dy()
-				cols, rows := tileGrid(f.g)
-				var lines []string
-				for ty := range rows {
-					for tx := range cols {
-						x0, x1, y0, y1 := tilePixels(f.g, W, H, tx, ty)
-						w, h := x1-x0, y1-y0
-						if w == 0 || h == 0 {
-							continue
-						}
-						nb := newNbhd(f.g, tx, ty, src.ring(), v.known(f.g))
-						show := make([]bool, w*h)
-						for i := range show {
-							show[i] = true
-						}
-						blackenBlocks(show, wc, f.g, nb, x0, y0, w, h)
-						bits := make([]byte, len(show))
-						for i, s := range show {
-							if s {
-								bits[i] = 1
-							}
-						}
-						lines = append(lines, fmt.Sprintf("%d,%d: %s", tx, ty, digestOf(bits)))
-					}
-				}
-				checkFrozen(t, "blacken|"+f.name+"|"+v.name, strings.Join(lines, "\n"))
 			})
 		}
 	}

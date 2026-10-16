@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"flag"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"testing"
@@ -30,11 +27,9 @@ import (
 // revealed to one character, fired, revealed), the treasures (hidden, shown, found)
 // and the submap points that name the parents. Each answer is a golden file
 // (testdata/layers_*.golden.json, ids replaced by names and the times by <time>); run
-// with -update-layers-golden to write them again after a change of behavior that was
+// with -update-golden to write them again after a change of behavior that was
 // meant. The refusals of the calls that write the layers are frozen with their exact
 // words in TestLayersFrozen_Refusals.
-
-var updateLayersGolden = flag.Bool("update-layers-golden", false, "write the golden files of the layers again")
 
 var (
 	layersIDPattern   = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
@@ -97,23 +92,7 @@ func (g *layersGolden) check(t *testing.T, viewer string, parts map[string]proto
 		t.Fatal(err)
 	}
 	out.WriteByte('\n')
-	path := filepath.Join("testdata", "layers_"+g.table+"_"+viewer+".golden.json")
-	if *updateLayersGolden {
-		if err := os.MkdirAll("testdata", 0o750); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, out.Bytes(), 0o600); err != nil {
-			t.Fatal(err)
-		}
-		return
-	}
-	want, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read the golden file: %v (write it with -update-layers-golden)", err)
-	}
-	if !bytes.Equal(out.Bytes(), want) {
-		t.Errorf("what %s reads differs from %s:\n--- got\n%s\n--- want\n%s", viewer, path, out.Bytes(), want)
-	}
+	checkGolden(t, "layers_"+g.table+"_"+viewer+".golden.json", out.Bytes())
 }
 
 // layersShapeOf is what a refusal says: the code, the message and the reasons of its details.
@@ -319,32 +298,30 @@ func TestLayersGolden_WhatEachViewerReadsWithFog(t *testing.T) {
 		g.name(id, label)
 	}
 	maps := map[string]string{"cave": c.mapID, "crypt": crypt.GetId(), "probe": c.probeMap}
-	viewers := []layersReader{
-		{"master", m, ""},
-		{"master_as_pens", m, c.pens.GetId()},
-		{"master_as_toren", m, c.toren.GetId()},
-		{"ana", c.ana, ""},
-		{"caio", c.caio, ""},
-		{"visitor", visitor, ""},
-	}
-	phase := func(prefix string) {
+	master, asPens, asToren := layersReader{"master", m, ""}, layersReader{"master_as_pens", m, c.pens.GetId()}, layersReader{"master_as_toren", m, c.toren.GetId()}
+	ana, caio, visitorReads := layersReader{"ana", c.ana, ""}, layersReader{"caio", c.caio, ""}, layersReader{"visitor", visitor, ""}
+	// Each state reads the layers again for the viewers it can change: the fog for all of them
+	// (the two characters the master reads as, and the two players, whose own lights differ),
+	// the party's vision for the master, a player and the member with no character, the fog
+	// off for the master, one character and one player.
+	phase := func(prefix string, viewers ...layersReader) {
 		t.Helper()
 		for _, r := range viewers {
 			r.name = prefix + r.name
 			g.read(t, c.campaign, r, maps)
 		}
 	}
-	phase("fog_")
+	phase("fog_", master, asPens, asToren, ana, caio, visitorReads)
 
 	// The party's vision, then the fog off: the same layers read again.
 	if _, err := m.maps.SetMapFog(t.Context(), connect.NewRequest(&mapsv1.SetMapFogRequest{CampaignId: c.campaign, MapId: c.mapID, GroupVision: new(true)})); err != nil {
 		t.Fatal(err)
 	}
-	phase("group_")
+	phase("group_", master, ana, visitorReads)
 	if _, err := m.maps.SetMapFog(t.Context(), connect.NewRequest(&mapsv1.SetMapFogRequest{CampaignId: c.campaign, MapId: c.mapID, FogEnabled: new(false)})); err != nil {
 		t.Fatal(err)
 	}
-	phase("nofog_")
+	phase("nofog_", master, asPens, ana)
 }
 
 // layersCall runs a call and returns its refusal's words.

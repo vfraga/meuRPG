@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -53,31 +51,6 @@ var uuidPattern = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-
 // maskUUIDs replaces every UUID of s with a placeholder, so a golden does not
 // hold the ids a run made up.
 func maskUUIDs(s string) string { return uuidPattern.ReplaceAllString(s, "<uuid>") }
-
-// updateImageGoldens rewrites the goldens of this file instead of comparing.
-const updateImageGoldens = "UPDATE_IMAGE_GOLDENS"
-
-// checkImageGolden compares got with testdata/<name>.golden.txt.
-func checkImageGolden(t *testing.T, name, got string) {
-	t.Helper()
-	path := filepath.Join("testdata", name+".golden.txt")
-	if os.Getenv(updateImageGoldens) != "" {
-		if err := os.MkdirAll("testdata", 0o750); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(got), 0o600); err != nil {
-			t.Fatal(err)
-		}
-		return
-	}
-	want, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read the golden: %v (run with %s=1 to write it)", err, updateImageGoldens)
-	}
-	if string(want) != got {
-		t.Errorf("%s differs from its golden:\n--- got\n%s\n--- want\n%s", name, got, want)
-	}
-}
 
 func TestStoreImageIsFrozen(t *testing.T) {
 	t.Parallel()
@@ -205,7 +178,7 @@ func TestStoreImageIsFrozen(t *testing.T) {
 	row, err = store(res, false, "", nil, nil)
 	svc.maxBytes = maxBytes
 	record("an image one byte over the bytes", row, err)
-	checkImageGolden(t, "image_store", out.String())
+	checkGolden(t, "image_store.golden.txt", []byte(out.String()))
 }
 
 func TestServeImageIsFrozen(t *testing.T) {
@@ -274,7 +247,7 @@ func TestServeImageIsFrozen(t *testing.T) {
 	for _, a := range asks {
 		fmt.Fprintf(&out, "%s: %s\n", a.name, line(a.do()))
 	}
-	checkImageGolden(t, "image_serve", out.String())
+	checkGolden(t, "image_serve.golden.txt", []byte(out.String()))
 }
 
 // headTo is a HEAD for a path of the test server.

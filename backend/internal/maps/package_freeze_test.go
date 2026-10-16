@@ -8,8 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -31,31 +29,6 @@ import (
 // (every problem with its kind, name and reason, in the order the checks run)
 // and what is staged from the good ones. Written on the code before it was split
 // into phases; the goldens in testdata must not change in the refactor.
-
-// updatePackageGoldens rewrites the goldens of this file instead of comparing.
-const updatePackageGoldens = "UPDATE_PACKAGE_GOLDENS"
-
-// checkPackageGolden compares got with testdata/<name>.golden.txt.
-func checkPackageGolden(t *testing.T, name, got string) {
-	t.Helper()
-	path := filepath.Join("testdata", name+".golden.txt")
-	if os.Getenv(updatePackageGoldens) != "" {
-		if err := os.MkdirAll("testdata", 0o750); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte(got), 0o600); err != nil {
-			t.Fatal(err)
-		}
-		return
-	}
-	want, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read the golden: %v (run with %s=1 to write it)", err, updatePackageGoldens)
-	}
-	if string(want) != got {
-		t.Errorf("%s differs from its golden:\n--- got\n%s\n--- want\n%s", name, got, want)
-	}
-}
 
 // Fixed UUIDs of the package's own ids.
 const (
@@ -678,8 +651,8 @@ func stageApplyExportGolden(t *testing.T, s *scenes) string {
 func TestPackageStagingIsFrozen(t *testing.T) {
 	t.Parallel()
 	s := newScenes(t, false)
-	checkPackageGolden(t, "package_stage_point", stagePointGolden(t, &mapsPart{s: s.h.svc}))
-	checkPackageGolden(t, "package_stage_map", stageMapGolden(t, &mapsPart{s: s.h.svc}))
-	checkPackageGolden(t, "package_stage_images", stageImagesGolden(t, &imagesPart{s: s.h.svc}))
-	checkPackageGolden(t, "package_apply_export", stageApplyExportGolden(t, s))
+	checkGolden(t, "package_stage_point.golden.txt", []byte(stagePointGolden(t, &mapsPart{s: s.h.svc})))
+	checkGolden(t, "package_stage_map.golden.txt", []byte(stageMapGolden(t, &mapsPart{s: s.h.svc})))
+	checkGolden(t, "package_stage_images.golden.txt", []byte(stageImagesGolden(t, &imagesPart{s: s.h.svc})))
+	checkGolden(t, "package_apply_export.golden.txt", []byte(stageApplyExportGolden(t, s)))
 }

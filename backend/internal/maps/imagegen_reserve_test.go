@@ -16,15 +16,6 @@ import (
 // after it has prepared the images: every refusal reserve itself makes inside its
 // transaction is reached by a state that changed after begin's own checks.
 
-// wantReserveRefusal checks a refusal of reserve by its code and message.
-func wantReserveRefusal(t *testing.T, call string, err error, code connect.Code, message string) {
-	t.Helper()
-	ce, ok := errors.AsType[*connect.Error](err)
-	if !ok || ce.Code() != code || ce.Message() != message {
-		t.Errorf("%s error = %v, want %v %q", call, err, code, message)
-	}
-}
-
 func sceneRequest(master *user, key string) newRequest {
 	return newRequest{kind: kindScene, key: key, prompt: "uma cena", style: "", ratio: defaultSceneRatio, requestedBy: master.id, name: "Arte"}
 }
@@ -55,7 +46,7 @@ func TestMR039_ReserveChecksTheCapsAgain(t *testing.T) {
 	if b.GetStatus().GetUsedThisMonth() != 1 || b.GetStatus().GetRemaining() != 1 {
 		t.Errorf("status in the daily refusal = %v", b.GetStatus())
 	}
-	wantReserveRefusal(t, "reserve over the daily cap", err, connect.CodeFailedPrecondition, "the server made all its images of the day, try again tomorrow")
+	wantRefusal(t, "reserve over the daily cap", err, connect.CodeFailedPrecondition, "the server made all its images of the day, try again tomorrow")
 }
 
 func TestMR039_ReserveChecksTheMonthAgain(t *testing.T) {
@@ -75,7 +66,7 @@ func TestMR039_ReserveChecksTheMonthAgain(t *testing.T) {
 	if b.GetStatus().GetRemaining() != 0 || b.GetStatus().GetUsedThisMonth() != 1 {
 		t.Errorf("status in the month's refusal = %v", b.GetStatus())
 	}
-	wantReserveRefusal(t, "reserve over the month", err, connect.CodeFailedPrecondition, "the campaign used its images of the month")
+	wantRefusal(t, "reserve over the month", err, connect.CodeFailedPrecondition, "the campaign used its images of the month")
 }
 
 func TestMR039_ReserveChecksTheServiceIsOn(t *testing.T) {
@@ -89,7 +80,7 @@ func TestMR039_ReserveChecksTheServiceIsOn(t *testing.T) {
 	if b.GetStatus().GetEnabled() {
 		t.Errorf("status in the off refusal = %v, want not enabled", b.GetStatus())
 	}
-	wantReserveRefusal(t, "reserve with the service off", err, connect.CodeFailedPrecondition, "image generation is not on in this server")
+	wantRefusal(t, "reserve with the service off", err, connect.CodeFailedPrecondition, "image generation is not on in this server")
 }
 
 // An image that is not in the campaign's gallery, or an edit's source that is not
@@ -129,7 +120,7 @@ func TestMR039_ReserveRefusesImagesThatAreNotThere(t *testing.T) {
 		n := sceneRequest(master, nextKey())
 		tc.mod(&n)
 		_, _, err := h.svc.reserve(ctx, n, campaign)
-		wantReserveRefusal(t, tc.name, err, connect.CodeNotFound, notFound)
+		wantRefusal(t, tc.name, err, connect.CodeNotFound, notFound)
 	}
 	if got := master.imageStatus(campaign).GetUsedThisMonth(); got != 1 {
 		t.Errorf("used this month = %d, want 1 (the source; the orphan's request was deleted)", got)
@@ -166,7 +157,7 @@ func TestMR039_ReserveRefusesPastThePendingCap(t *testing.T) {
 	h.svc.pending.Store(maxPendingRequests)
 	_, _, err := h.svc.reserve(t.Context(), sceneRequest(master, "reserve-1"), campaign)
 	h.svc.pending.Store(0)
-	wantReserveRefusal(t, "reserve past the pending cap", err, connect.CodeResourceExhausted, "too many images are being made right now; wait for one to finish")
+	wantRefusal(t, "reserve past the pending cap", err, connect.CodeResourceExhausted, "too many images are being made right now; wait for one to finish")
 	if got := master.imageStatus(campaign).GetUsedThisMonth(); got != 0 {
 		t.Errorf("used this month = %d, want 0", got)
 	}
@@ -196,7 +187,7 @@ func TestMR039_ReserveReplaysAKey(t *testing.T) {
 	}
 	n.hash = hash("b")
 	_, _, err = h.svc.reserve(ctx, n, campaign)
-	wantReserveRefusal(t, "reserve with the key reused", err, connect.CodeInvalidArgument, errReusedMessage())
+	wantRefusal(t, "reserve with the key reused", err, connect.CodeInvalidArgument, errReusedMessage())
 }
 
 func errReusedMessage() string {

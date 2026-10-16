@@ -162,7 +162,7 @@ func TestFogSight_NewSight(t *testing.T) {
 	if got := c.dumpSight(inTx, names); got != dump {
 		t.Errorf("the scene in a transaction says\n%s\nwant what the cached one says\n%s", got, dump)
 	}
-	fogCheckGolden(t, "fog_sight_cave.golden.txt", []byte(dump))
+	checkGolden(t, "fog_sight_cave.golden.txt", []byte(dump))
 
 	// A failed read of the layers: the error of the call, and the cache does not keep the entry.
 	c.failing("GetMapLayers")
@@ -236,7 +236,7 @@ func TestFogSight_LightSources(t *testing.T) {
 				t.Fatalf("%s: lightSources() error = %v", name, err)
 			}
 		}
-		fogCheckGolden(t, "fog_lights_"+strings.ReplaceAll(name, " ", "_")+".golden.txt", fmt.Appendf(nil, "%+v\n", got))
+		checkGolden(t, "fog_lights_"+strings.ReplaceAll(name, " ", "_")+".golden.txt", fmt.Appendf(nil, "%+v\n", got))
 	}
 }
 
@@ -331,7 +331,7 @@ func TestFogSight_FamiliarEyes(t *testing.T) {
 	combat.Creatures[owl] = grid.Square{Col: 6, Row: 8}
 	record("two members, one creature each", run([]link.PartyMember{member(c.salvia.GetId(), token), member(c.pens.GetId(), owl)}, combat))
 	record("a member twice", run([]link.PartyMember{member(c.salvia.GetId(), owl), member(c.salvia.GetId(), owl)}, combat))
-	fogCheckGolden(t, "fog_familiar_eyes.golden.txt", []byte(sb.String()))
+	checkGolden(t, "fog_familiar_eyes.golden.txt", []byte(sb.String()))
 }
 
 // TestFogSight_UpdateVision: the work out of what the players see skips a map that is gone, has no

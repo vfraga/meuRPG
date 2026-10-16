@@ -1,12 +1,8 @@
 package maps
 
 import (
-	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"testing"
@@ -24,32 +20,8 @@ import (
 // afterwards (MR-036, RN-10, D6): the live events every viewer of the table receives after
 // each step of a script, on the cave with the fog on and on a map without fog, and the views
 // (GetMapVision) the script leaves each player with, memory included. Each answer is a golden
-// file (testdata/fog_*.golden.*); run with -update-fog-golden to write them again after a
+// file (testdata/fog_*.golden.*); run with -update-golden to write them again after a
 // change of behavior that was meant.
-
-var updateFogGolden = flag.Bool("update-fog-golden", false, "write the golden files of the fog's streams and views again")
-
-// fogCheckGolden compares got with the golden file name.
-func fogCheckGolden(t *testing.T, name string, got []byte) {
-	t.Helper()
-	path := filepath.Join("testdata", name)
-	if *updateFogGolden {
-		if err := os.MkdirAll("testdata", 0o750); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, got, 0o600); err != nil {
-			t.Fatal(err)
-		}
-		return
-	}
-	want, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read the golden file: %v (write it with -update-fog-golden)", err)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("differs from %s:\n--- got\n%s\n--- want\n%s", path, got, want)
-	}
-}
 
 // fogStreamScript runs the steps of a table and writes down, after each one, what every
 // viewer's stream got.
@@ -128,7 +100,7 @@ func (sc *fogStreamScript) step(name string, do func()) {
 	}
 }
 
-func (sc *fogStreamScript) golden(name string) { fogCheckGolden(sc.t, name, []byte(sc.out.String())) }
+func (sc *fogStreamScript) golden(name string) { checkGolden(sc.t, name, []byte(sc.out.String())) }
 
 func (u *user) removeToken(campaignID, mapID, characterID string) {
 	u.h.t.Helper()
@@ -237,7 +209,7 @@ func TestFogStreams_WhoIsToldOfEachTokenWriteWithFog(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fogCheckGolden(t, "fog_views_cave.golden.json", append(fogScrub(raw), '\n'))
+	checkGolden(t, "fog_views_cave.golden.json", append(fogScrub(raw), '\n'))
 }
 
 func firstOf(s []string) string {

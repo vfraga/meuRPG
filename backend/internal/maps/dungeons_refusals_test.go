@@ -15,19 +15,6 @@ import (
 // They freeze the order of the checks: a request that breaks two rules gets the first
 // one's answer.
 
-// wantDungeonRefusal fails unless err is a Connect error with this code and exactly this message.
-func wantDungeonRefusal(t *testing.T, call string, err error, code connect.Code, message string) {
-	t.Helper()
-	ce, ok := err.(*connect.Error) //nolint:errorlint // the handler returns the Connect error itself
-	if !ok {
-		t.Errorf("%s error = %v, want a Connect error", call, err)
-		return
-	}
-	if ce.Code() != code || ce.Message() != message {
-		t.Errorf("%s error = %v %q, want %v %q", call, ce.Code(), ce.Message(), code, message)
-	}
-}
-
 func TestDungeonCreateRefusalsAreFrozen(t *testing.T) {
 	t.Parallel()
 	d := newDungeonTable(t)
@@ -35,7 +22,7 @@ func TestDungeonCreateRefusalsAreFrozen(t *testing.T) {
 
 	// Who may ask: the master only; a player and a stranger read `not_found`.
 	_, err := d.ana.tryCreateDungeon(d.campaign, "Masmorra", testDungeonOptions(), &seed)
-	wantDungeonRefusal(t, "a player creates", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a player creates", err, connect.CodeNotFound, "map not found")
 	stranger := d.h.newUser("Estranho")
 	_, err = stranger.tryCreateDungeon(d.campaign, "Masmorra", testDungeonOptions(), &seed)
 	wantCode(t, "a stranger creates", err, connect.CodeNotFound)
@@ -57,10 +44,10 @@ func TestDungeonCreateRefusalsAreFrozen(t *testing.T) {
 	// Images off come before the name.
 	d.h.svc.blobs = nil
 	_, err = d.master.tryCreateDungeon(d.campaign, "   ", testDungeonOptions(), &seed)
-	wantDungeonRefusal(t, "images off", err, connect.CodeUnavailable, "images are not configured on this server")
+	wantRefusal(t, "images off", err, connect.CodeUnavailable, "images are not configured on this server")
 	// ... and after who asks.
 	_, err = d.ana.tryCreateDungeon(d.campaign, "Masmorra", testDungeonOptions(), &seed)
-	wantDungeonRefusal(t, "a player, images off", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a player, images off", err, connect.CodeNotFound, "map not found")
 	var maps int
 	if err := d.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM maps WHERE campaign_id = $1`, d.campaign).Scan(&maps); err != nil || maps != 0 {
 		t.Errorf("%d maps after the refusals (%v), want none", maps, err)
@@ -77,16 +64,16 @@ func TestDungeonRoomsRefusalsAndReadAreFrozen(t *testing.T) {
 
 	// Who may read: the master only.
 	_, err := d.ana.dungeonRooms(d.campaign, mapID)
-	wantDungeonRefusal(t, "a player reads the rooms", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a player reads the rooms", err, connect.CodeNotFound, "map not found")
 	_, err = d.h.newUser("Estranho").dungeonRooms(d.campaign, mapID)
 	wantCode(t, "a stranger reads the rooms", err, connect.CodeNotFound)
 	_, err = m.dungeonRooms(d.campaign, "not-a-uuid")
-	wantDungeonRefusal(t, "a bad map ID", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a bad map ID", err, connect.CodeNotFound, "map not found")
 	_, err = m.dungeonRooms(d.campaign, "00000000-0000-4000-8000-000000000000")
-	wantDungeonRefusal(t, "a map that does not exist", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a map that does not exist", err, connect.CodeNotFound, "map not found")
 	plain := m.createMap(d.campaign, "Comum", m.newImage(d.campaign))
 	_, err = m.dungeonRooms(d.campaign, plain.GetId())
-	wantDungeonRefusal(t, "a plain map", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a plain map", err, connect.CodeNotFound, "map not found")
 
 	// The read: the stored seed, version, size, options and rooms, and the scene points of
 	// each room (a scene on the floor of the room; a battle point is not a scene).
@@ -156,26 +143,26 @@ func TestDungeonRedrawRefusalsAreFrozen(t *testing.T) {
 
 	// Who may ask, and what the map must be.
 	_, err := d.ana.redraw(d.campaign, mapID)
-	wantDungeonRefusal(t, "a player redraws", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a player redraws", err, connect.CodeNotFound, "map not found")
 	_, err = d.h.newUser("Estranho").redraw(d.campaign, mapID)
 	wantCode(t, "a stranger redraws", err, connect.CodeNotFound)
 	_, err = m.redraw(d.campaign, "not-a-uuid")
-	wantDungeonRefusal(t, "a bad map ID", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a bad map ID", err, connect.CodeNotFound, "map not found")
 	_, err = m.redraw(d.campaign, missing)
-	wantDungeonRefusal(t, "a map that does not exist", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a map that does not exist", err, connect.CodeNotFound, "map not found")
 	plain := m.createMap(d.campaign, "Comum", m.newImage(d.campaign))
 	_, err = m.redraw(d.campaign, plain.GetId())
-	wantDungeonRefusal(t, "a plain map", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a plain map", err, connect.CodeNotFound, "map not found")
 
 	// No grid: its own reason. A grid with another number of squares: the image changed.
 	m.mustSetGrid(d.campaign, mapID, 0)
 	_, err = m.redraw(d.campaign, mapID)
 	wantMapBlocked(t, "a map without a grid", err, mapsv1.MapBlockedReason_MAP_BLOCKED_REASON_NO_GRID)
-	wantDungeonRefusal(t, "a map without a grid", err, connect.CodeFailedPrecondition, "the map has no grid")
+	wantRefusal(t, "a map without a grid", err, connect.CodeFailedPrecondition, "the map has no grid")
 	m.mustSetGrid(d.campaign, mapID, 20)
 	_, err = m.redraw(d.campaign, mapID)
 	wantMapBlocked(t, "a grid of other squares", err, mapsv1.MapBlockedReason_MAP_BLOCKED_REASON_IMAGE_CHANGED)
-	wantDungeonRefusal(t, "a grid of other squares", err, connect.CodeFailedPrecondition,
+	wantRefusal(t, "a grid of other squares", err, connect.CodeFailedPrecondition,
 		"the map is no longer the generated dungeon's: its image, size, grid or layers changed")
 
 	// Layers cleared (a grid change does that): the image changed, as well.
@@ -189,9 +176,9 @@ func TestDungeonRedrawRefusalsAreFrozen(t *testing.T) {
 	// Images off come after who asks, before the map ID.
 	d.h.svc.blobs = nil
 	_, err = m.redraw(d.campaign, "not-a-uuid")
-	wantDungeonRefusal(t, "images off", err, connect.CodeUnavailable, "images are not configured on this server")
+	wantRefusal(t, "images off", err, connect.CodeUnavailable, "images are not configured on this server")
 	_, err = d.ana.redraw(d.campaign, mapID)
-	wantDungeonRefusal(t, "a player, images off", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a player, images off", err, connect.CodeNotFound, "map not found")
 }
 
 // The window between the render and the transaction: what changes there is read again
@@ -210,7 +197,7 @@ func TestDungeonRedrawRefusalsInsideTheTransactionAreFrozen(t *testing.T) {
 			}
 		}, func(t *testing.T, err error) {
 			t.Helper()
-			wantDungeonRefusal(t, "a redraw of a map deleted meanwhile", err, connect.CodeNotFound, "map not found")
+			wantRefusal(t, "a redraw of a map deleted meanwhile", err, connect.CodeNotFound, "map not found")
 		}},
 		{"the layers are cleared", func(d *dungeonTable, mapID string) {
 			if _, err := d.h.pool.Exec(d.h.t.Context(), `DELETE FROM map_layers WHERE map_id = $1`, mapID); err != nil {
@@ -222,7 +209,7 @@ func TestDungeonRedrawRefusalsInsideTheTransactionAreFrozen(t *testing.T) {
 		}},
 		{"the gallery fills up", func(d *dungeonTable, _ string) { d.h.svc.maxImages = 0 }, func(t *testing.T, err error) {
 			t.Helper()
-			wantDungeonRefusal(t, "a redraw with a full gallery meanwhile", err, connect.CodeResourceExhausted, "the campaign's gallery is full")
+			wantRefusal(t, "a redraw with a full gallery meanwhile", err, connect.CodeResourceExhausted, "the campaign's gallery is full")
 		}},
 	}
 	for _, tc := range cases {

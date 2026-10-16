@@ -64,13 +64,6 @@ func (c *trapPlayTable) disarm(mapID string, trap *mapsv1.MapPoint) (*mapsv1.Map
 	return res.Msg.GetPoint(), nil
 }
 
-func wantTrapPlayRefusal(t *testing.T, call string, err error, code connect.Code, msg string) {
-	t.Helper()
-	if connect.CodeOf(err) != code || err == nil || err.Error() != code.String()+": "+msg {
-		t.Errorf("%s error = %v, want %v %q", call, err, code, msg)
-	}
-}
-
 func TestTrapDisarmRefusesInItsOrderAndTellsWhoMayKnow(t *testing.T) {
 	t.Parallel()
 	c := newTrapPlayTable(t)
@@ -85,13 +78,13 @@ func TestTrapDisarmRefusesInItsOrderAndTellsWhoMayKnow(t *testing.T) {
 		return err
 	}
 	trap := c.trapOn(c.mapID, "Fosso", 1000, 1000)
-	wantTrapPlayRefusal(t, "a bad map id", dis("x", trap.GetId()), connect.CodeNotFound, "map not found")
-	wantTrapPlayRefusal(t, "a bad point id", dis(c.mapID, "x"), connect.CodeNotFound, "point not found")
-	wantTrapPlayRefusal(t, "the map before the point", dis("x", "x"), connect.CodeNotFound, "map not found")
-	wantTrapPlayRefusal(t, "a point that is not there", dis(c.mapID, missing), connect.CodeNotFound, "point not found")
-	wantTrapPlayRefusal(t, "a map of another campaign", dis(foreign.GetId(), trap.GetId()), connect.CodeNotFound, "map not found")
-	wantTrapPlayRefusal(t, "a point of another map", dis(c.hiddenMap, trap.GetId()), connect.CodeNotFound, "point not found")
-	wantTrapPlayRefusal(t, "a scene", dis(c.mapID, c.point.GetId()), connect.CodeInvalidArgument, "the point is not a TRAP point")
+	wantRefusal(t, "a bad map id", dis("x", trap.GetId()), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a bad point id", dis(c.mapID, "x"), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "the map before the point", dis("x", "x"), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a point that is not there", dis(c.mapID, missing), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "a map of another campaign", dis(foreign.GetId(), trap.GetId()), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a point of another map", dis(c.hiddenMap, trap.GetId()), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "a scene", dis(c.mapID, c.point.GetId()), connect.CodeInvalidArgument, "the point is not a TRAP point")
 	c.heard(c.mapID)
 
 	// A trap nobody knows: a disarm tells the master only. A trap Toren knows: Toren too. A
@@ -181,13 +174,13 @@ func TestTrapNoticersAnswerForEveryoneOfTheParty(t *testing.T) {
 	}
 	// Refusals.
 	_, err := get("x", trap.GetId())
-	wantTrapPlayRefusal(t, "a bad map id", err, connect.CodeNotFound, "map not found")
+	wantRefusal(t, "a bad map id", err, connect.CodeNotFound, "map not found")
 	_, err = get(c.mapID, "x")
-	wantTrapPlayRefusal(t, "a bad point id", err, connect.CodeNotFound, "point not found")
+	wantRefusal(t, "a bad point id", err, connect.CodeNotFound, "point not found")
 	_, err = get(c.mapID, newKey())
-	wantTrapPlayRefusal(t, "a point that is not there", err, connect.CodeNotFound, "point not found")
+	wantRefusal(t, "a point that is not there", err, connect.CodeNotFound, "point not found")
 	_, err = get(c.mapID, c.point.GetId())
-	wantTrapPlayRefusal(t, "a scene", err, connect.CodeInvalidArgument, "the point is not a TRAP point")
+	wantRefusal(t, "a scene", err, connect.CodeInvalidArgument, "the point is not a TRAP point")
 
 	// Nobody on the map: everyone off it.
 	res, err := get(c.mapID, trap.GetId())

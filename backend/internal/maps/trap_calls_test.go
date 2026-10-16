@@ -87,14 +87,6 @@ func (c *trapCallsTable) unmark(mapID string, point *mapsv1.MapPoint) error {
 	return err
 }
 
-// wantTrapCallRefusal checks the code and the exact message of a refusal.
-func wantTrapCallRefusal(t *testing.T, call string, err error, code connect.Code, msg string) {
-	t.Helper()
-	if connect.CodeOf(err) != code || err == nil || err.Error() != code.String()+": "+msg {
-		t.Errorf("%s error = %v, want %v %q", call, err, code, msg)
-	}
-}
-
 // The three calls check in one order: the ids of the map and the point, then (for the
 // two that name characters) the characters, then the map and the point in the
 // transaction, then the kind of the point.
@@ -114,22 +106,22 @@ func TestTrapCallsRefuseInTheirOrder(t *testing.T) {
 		}))
 		return err
 	}
-	wantTrapCallRefusal(t, "reveal: a bad map id", rv("x", c.trap.GetId(), true), connect.CodeNotFound, "map not found")
-	wantTrapCallRefusal(t, "reveal: a bad point id", rv(c.mapID, "x", true), connect.CodeNotFound, "point not found")
-	wantTrapCallRefusal(t, "reveal: the map before the point", rv("x", "x", true), connect.CodeNotFound, "map not found")
-	wantTrapCallRefusal(t, "reveal: the ids before the choice of who", rv("x", c.trap.GetId(), false), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "reveal: a bad map id", rv("x", c.trap.GetId(), true), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "reveal: a bad point id", rv(c.mapID, "x", true), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "reveal: the map before the point", rv("x", "x", true), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "reveal: the ids before the choice of who", rv("x", c.trap.GetId(), false), connect.CodeNotFound, "map not found")
 	both := "send character_ids or all, not both and not neither"
-	wantTrapCallRefusal(t, "reveal: neither", rv(c.mapID, c.trap.GetId(), false), connect.CodeInvalidArgument, both)
-	wantTrapCallRefusal(t, "reveal: both before the characters", rv(c.mapID, c.trap.GetId(), true, npc.GetId()), connect.CodeInvalidArgument, both)
-	wantTrapCallRefusal(t, "reveal: the choice before the point is found", rv(c.mapID, missing, false), connect.CodeInvalidArgument, both)
-	wantTrapCallRefusal(t, "reveal: a character that is no player's", rv(c.mapID, c.trap.GetId(), false, npc.GetId()), connect.CodeNotFound, "character not found")
-	wantTrapCallRefusal(t, "reveal: an id that is no id", rv(c.mapID, c.trap.GetId(), false, pens, "x"), connect.CodeNotFound, "character not found")
-	wantTrapCallRefusal(t, "reveal: 51 characters", rv(c.mapID, c.trap.GetId(), false, slices.Repeat([]string{pens}, 51)...), connect.CodeInvalidArgument, "character_ids must have 1 to 50 characters")
-	wantTrapCallRefusal(t, "reveal: the characters before the point", rv(c.mapID, missing, false, npc.GetId()), connect.CodeNotFound, "character not found")
-	wantTrapCallRefusal(t, "reveal: a point that is not there", rv(c.mapID, missing, true), connect.CodeNotFound, "point not found")
-	wantTrapCallRefusal(t, "reveal: a map of another campaign", rv(foreign.GetId(), c.trap.GetId(), true), connect.CodeNotFound, "map not found")
-	wantTrapCallRefusal(t, "reveal: a point of another map", rv(c.hiddenMap, c.trap.GetId(), true), connect.CodeNotFound, "point not found")
-	wantTrapCallRefusal(t, "reveal: a treasure", rv(c.mapID, c.chest.GetId(), true), connect.CodeInvalidArgument, "the point is not a TRAP point")
+	wantRefusal(t, "reveal: neither", rv(c.mapID, c.trap.GetId(), false), connect.CodeInvalidArgument, both)
+	wantRefusal(t, "reveal: both before the characters", rv(c.mapID, c.trap.GetId(), true, npc.GetId()), connect.CodeInvalidArgument, both)
+	wantRefusal(t, "reveal: the choice before the point is found", rv(c.mapID, missing, false), connect.CodeInvalidArgument, both)
+	wantRefusal(t, "reveal: a character that is no player's", rv(c.mapID, c.trap.GetId(), false, npc.GetId()), connect.CodeNotFound, "character not found")
+	wantRefusal(t, "reveal: an id that is no id", rv(c.mapID, c.trap.GetId(), false, pens, "x"), connect.CodeNotFound, "character not found")
+	wantRefusal(t, "reveal: 51 characters", rv(c.mapID, c.trap.GetId(), false, slices.Repeat([]string{pens}, 51)...), connect.CodeInvalidArgument, "character_ids must have 1 to 50 characters")
+	wantRefusal(t, "reveal: the characters before the point", rv(c.mapID, missing, false, npc.GetId()), connect.CodeNotFound, "character not found")
+	wantRefusal(t, "reveal: a point that is not there", rv(c.mapID, missing, true), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "reveal: a map of another campaign", rv(foreign.GetId(), c.trap.GetId(), true), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "reveal: a point of another map", rv(c.hiddenMap, c.trap.GetId(), true), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "reveal: a treasure", rv(c.mapID, c.chest.GetId(), true), connect.CodeInvalidArgument, "the point is not a TRAP point")
 	// A character repeated is told once.
 	if err := rv(c.mapID, c.trap.GetId(), false, pens, pens); err != nil {
 		t.Errorf("reveal: a character twice: %v", err)
@@ -145,26 +137,26 @@ func TestTrapCallsRefuseInTheirOrder(t *testing.T) {
 		}))
 		return err
 	}
-	wantTrapCallRefusal(t, "mark: a bad map id", mk("x", c.chest.GetId(), pens), connect.CodeNotFound, "map not found")
-	wantTrapCallRefusal(t, "mark: a bad point id", mk(c.mapID, "x", pens), connect.CodeNotFound, "point not found")
-	wantTrapCallRefusal(t, "mark: the ids before the characters", mk("x", "x", npc.GetId()), connect.CodeNotFound, "map not found")
-	wantTrapCallRefusal(t, "mark: nobody", mk(c.mapID, c.chest.GetId()), connect.CodeInvalidArgument, "character_ids must have 1 to 50 characters")
-	wantTrapCallRefusal(t, "mark: an NPC", mk(c.mapID, c.chest.GetId(), npc.GetId()), connect.CodeNotFound, "character not found")
-	wantTrapCallRefusal(t, "mark: the characters before the point", mk(c.mapID, missing, npc.GetId()), connect.CodeNotFound, "character not found")
-	wantTrapCallRefusal(t, "mark: a point that is not there", mk(c.mapID, missing, pens), connect.CodeNotFound, "point not found")
-	wantTrapCallRefusal(t, "mark: a trap", mk(c.mapID, c.trap.GetId(), pens), connect.CodeInvalidArgument, "the point is not a TREASURE point")
-	wantTrapCallRefusal(t, "mark: a map of another campaign", mk(foreign.GetId(), c.chest.GetId(), pens), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "mark: a bad map id", mk("x", c.chest.GetId(), pens), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "mark: a bad point id", mk(c.mapID, "x", pens), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "mark: the ids before the characters", mk("x", "x", npc.GetId()), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "mark: nobody", mk(c.mapID, c.chest.GetId()), connect.CodeInvalidArgument, "character_ids must have 1 to 50 characters")
+	wantRefusal(t, "mark: an NPC", mk(c.mapID, c.chest.GetId(), npc.GetId()), connect.CodeNotFound, "character not found")
+	wantRefusal(t, "mark: the characters before the point", mk(c.mapID, missing, npc.GetId()), connect.CodeNotFound, "character not found")
+	wantRefusal(t, "mark: a point that is not there", mk(c.mapID, missing, pens), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "mark: a trap", mk(c.mapID, c.trap.GetId(), pens), connect.CodeInvalidArgument, "the point is not a TREASURE point")
+	wantRefusal(t, "mark: a map of another campaign", mk(foreign.GetId(), c.chest.GetId(), pens), connect.CodeNotFound, "map not found")
 
 	// UnmarkTreasureFound.
 	um := func(mapID, pointID string) error {
 		_, err := c.master.maps.UnmarkTreasureFound(t.Context(), connect.NewRequest(&mapsv1.UnmarkTreasureFoundRequest{CampaignId: c.campaign, MapId: mapID, PointId: pointID}))
 		return err
 	}
-	wantTrapCallRefusal(t, "unmark: a bad map id", um("x", c.chest.GetId()), connect.CodeNotFound, "map not found")
-	wantTrapCallRefusal(t, "unmark: a bad point id", um(c.mapID, "x"), connect.CodeNotFound, "point not found")
-	wantTrapCallRefusal(t, "unmark: a point that is not there", um(c.mapID, missing), connect.CodeNotFound, "point not found")
-	wantTrapCallRefusal(t, "unmark: a trap", um(c.mapID, c.trap.GetId()), connect.CodeInvalidArgument, "the point is not a TREASURE point")
-	wantTrapCallRefusal(t, "unmark: a map of another campaign", um(foreign.GetId(), c.chest.GetId()), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "unmark: a bad map id", um("x", c.chest.GetId()), connect.CodeNotFound, "map not found")
+	wantRefusal(t, "unmark: a bad point id", um(c.mapID, "x"), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "unmark: a point that is not there", um(c.mapID, missing), connect.CodeNotFound, "point not found")
+	wantRefusal(t, "unmark: a trap", um(c.mapID, c.trap.GetId()), connect.CodeInvalidArgument, "the point is not a TREASURE point")
+	wantRefusal(t, "unmark: a map of another campaign", um(foreign.GetId(), c.chest.GetId()), connect.CodeNotFound, "map not found")
 }
 
 // Who is told of each change, on a map the players see and on one they do not: the master

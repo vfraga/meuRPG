@@ -1,7 +1,6 @@
 package maps
 
 import (
-	"errors"
 	"slices"
 	"strings"
 	"testing"
@@ -27,14 +26,7 @@ type crudRefusal struct {
 
 func wantCrudRefusal(t *testing.T, call string, err error, want crudRefusal) {
 	t.Helper()
-	ce, _ := errors.AsType[*connect.Error](err)
-	if ce == nil {
-		t.Errorf("%s error = %v, want %v %q", call, err, want.code, want.message)
-		return
-	}
-	if ce.Code() != want.code || ce.Message() != want.message {
-		t.Errorf("%s error = %v %q, want %v %q", call, ce.Code(), ce.Message(), want.code, want.message)
-	}
+	wantRefusal(t, call, err, want.code, want.message)
 	if want.reason != mapsv1.MapBlockedReason_MAP_BLOCKED_REASON_UNSPECIFIED {
 		wantMapBlocked(t, call, err, want.reason)
 	}

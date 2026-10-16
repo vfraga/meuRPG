@@ -572,6 +572,19 @@ func solid(w, h int, c color.NRGBA) *image.NRGBA {
 // allowed marks a call that must succeed in the authorization matrix.
 const allowed connect.Code = 0
 
+// wantRefusal fails unless err is a Connect error with this code and exactly this message.
+func wantRefusal(t *testing.T, call string, err error, code connect.Code, message string) {
+	t.Helper()
+	ce, ok := errors.AsType[*connect.Error](err)
+	if !ok {
+		t.Errorf("%s error = %v, want %v %q", call, err, code, message)
+		return
+	}
+	if ce.Code() != code || ce.Message() != message {
+		t.Errorf("%s error = %v %q, want %v %q", call, ce.Code(), ce.Message(), code, message)
+	}
+}
+
 func wantCode(t *testing.T, call string, err error, want connect.Code) {
 	t.Helper()
 	switch {
