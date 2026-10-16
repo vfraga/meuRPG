@@ -279,7 +279,7 @@ func TestUndoKindDamageRolledOfAnAreaSpell(t *testing.T) {
 	cast := a.mustCast(t, a.ana, e, "Pensantus", burningHands, slotOfLevel(1), a.at(t, "Capitão Goblin", "Toren"), noCastRoll)
 	w := newUndoWatch(t, a)
 
-	w.run(t, "the damage roll of an area spell on a creature and a character", deltaPartsNull, func() {
+	w.run(t, "the damage roll of an area spell on a creature and a character", nil, func() {
 		a.h.roller.queue(3, 3, 3)
 		a.mustDamage(t, a.ana, e, cast.GetCast().GetPendingDamages()[0].GetId(), inAppDamage)
 	})
@@ -297,7 +297,6 @@ func TestUndoKindDamageRolledAsksAConcentrationSave(t *testing.T) {
 	cast := a.mustCast(t, a.ana, e, "Pensantus", burningHands, slotOfLevel(1), a.at(t, "Capitão Goblin", "Toren"), noCastRoll)
 	w := newUndoWatch(t, a)
 	win := closedWindowOf("concentration_save", "actor=#", "key=spell:burning-hands", "pending=#", "spell=spell:web", "taken=9", "target=#")
-	win.delta = append(win.delta, deltaPartsNull...)
 
 	w.run(t, "a damage roll that opens a concentration save", win.delta, func() {
 		a.h.roller.queue(3, 3, 3)
@@ -325,7 +324,7 @@ func TestUndoKindDamageRolledSendsTheMoverBack(t *testing.T) {
 	}
 	w := newUndoWatch(t, c.armed)
 
-	w.run(t, "a damage that drops the mover to 0", deltaPartsNull, func() {
+	w.run(t, "a damage that drops the mover to 0", nil, func() {
 		if _, err := c.damage(t, c.caio, c.get(t, c.master), hit.GetPendingDamage().GetId(), typedDamage(8)); err != nil {
 			t.Fatalf("RollDamage() error = %v", err)
 		}
@@ -424,9 +423,11 @@ func (a *armed) wantMark(t *testing.T, label, column string) {
 }
 
 // deltaPartsSelected: the roll rewrites the parts the damage offered (SetPendingDamageDetail
-// in storePartsRoll, combat_parts.go:733) with the choice that was made, and the undo
-// (ClearPendingDamageRoll, queries.sql:504, from takeBack's eventDamageRolled case) puts
-// back the rolled columns but not `parts`: the damage that waits to be rolled again is
+// in storePartsRoll, combat_parts.go) with the choice that was made, and the undo
+// (ClearPendingDamageRoll, queries.sql, from takeBack's eventDamageRolled case) puts back
+// the rolled columns and an empty list the roll left alone, but not a list the roll
+// rewrote: the list the hit offered is kept nowhere (an event holds no text, and the
+// offered parts carry labels and riders), so the damage that waits to be rolled again is
 // offered with Divine Smite already chosen, at the slot level of the undone roll.
 var deltaPartsSelected = undoDelta{
 	"+ db/pending_damages[#].parts[1].selected=true", "+ db/pending_damages[#].parts[1].slot_level=1",

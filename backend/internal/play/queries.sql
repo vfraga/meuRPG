@@ -502,10 +502,13 @@ WHERE id = $1
 RETURNING *;
 
 -- name: ClearPendingDamageRoll :one
--- An undo of the damage roll: it waits to be rolled again.
+-- An undo of the damage roll: it waits to be rolled again. A roll with no parts of its
+-- own leaves `parts` as the hit left it (SetPendingDamageDetail); one made before that
+-- wrote a JSON null over the empty list, which goes back to the empty list here.
 UPDATE pending_damages
 SET status = 'awaiting_roll', faces = '{}', physical = false, amount = NULL, resolved_at = NULL, roll_total = NULL, taken = NULL,
-    part_rolls = '[]', steps = '[]', after_steps = NULL, landed_before = NULL
+    part_rolls = '[]', steps = '[]', after_steps = NULL, landed_before = NULL,
+    parts = COALESCE(NULLIF(parts, 'null'::JSONB), '[]'::JSONB)
 WHERE id = $1
 RETURNING *;
 
@@ -1203,7 +1206,8 @@ SET sneak_attack_turn = $2, colossus_slayer_turn = $3
 WHERE id = $1;
 
 -- name: SetCombatantMeleeHitTurn :exec
--- The turn ("<round>:<combatant on turn>") of the combatant's last melee weapon hit.
+-- The turn ("<round>:<combatant on turn>") of the combatant's last melee weapon hit; the
+-- undo of a hit puts back the one before it (NULL: none).
 UPDATE combatants
 SET melee_hit_turn = $2
 WHERE id = $1;
@@ -1217,10 +1221,13 @@ WHERE id = $1;
 -- name: SetPendingDamageDetail :exec
 -- What a roll left: the parts as they were rolled, what each rolled, the steps of the
 -- damage, the damage after them and, for an NPC that took it at once, how many hit
--- points it had before.
+-- points it had before. A roll with no parts of its own (another target of a cast's
+-- roll, a damage without parts) sends NULL parts and leaves the list the damage has,
+-- so that the roll's undo finds it as it was.
 UPDATE pending_damages
-SET parts = $2, part_rolls = $3, steps = $4, after_steps = $5, landed_before = $6
-WHERE id = $1;
+SET parts = COALESCE(sqlc.narg(parts)::JSONB, parts), part_rolls = sqlc.arg(part_rolls), steps = sqlc.arg(steps),
+    after_steps = sqlc.narg(after_steps), landed_before = sqlc.narg(landed_before)
+WHERE id = sqlc.arg(id);
 
 -- name: SetPendingDamageLanding :exec
 -- The damage that lands, changed on its own: a monk's Slow Fall took points off a
