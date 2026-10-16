@@ -1,0 +1,2191 @@
+[
+  {
+    "name": "the rich character before",
+    "request": null,
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "the plain character before",
+    "request": null,
+    "after": {
+      "characterId": "c-plain",
+      "hitDice": [
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 3,
+      "hitPointsCurrent": 20,
+      "hitPointsMax": 20,
+      "name": "Simples",
+      "spellSlots": [
+        {
+          "level": 1,
+          "total": 4
+        },
+        {
+          "level": 2,
+          "total": 2
+        }
+      ]
+    }
+  },
+  {
+    "name": "nothing to change",
+    "request": {},
+    "field": "request",
+    "error": "request must set at least one value to change"
+  },
+  {
+    "name": "nothing to change on a plain character",
+    "request": {},
+    "field": "request",
+    "error": "request must set at least one value to change"
+  },
+  {
+    "name": "empty lists are nothing",
+    "request": {},
+    "field": "request",
+    "error": "request must set at least one value to change"
+  },
+  {
+    "name": "wild shape without a form",
+    "request": {
+      "wildShapeHitPointsCurrent": 3
+    },
+    "field": "wild_shape_hit_points_current",
+    "error": "wild_shape_hit_points_current must be unset: the character is not in a beast form"
+  },
+  {
+    "name": "wild shape negative",
+    "request": {
+      "wildShapeHitPointsCurrent": -1
+    },
+    "field": "wild_shape_hit_points_current",
+    "error": "wild_shape_hit_points_current must be 0 to 11"
+  },
+  {
+    "name": "wild shape above the beast",
+    "request": {
+      "wildShapeHitPointsCurrent": 12
+    },
+    "field": "wild_shape_hit_points_current",
+    "error": "wild_shape_hit_points_current must be 0 to 11"
+  },
+  {
+    "name": "wild shape at the beast's maximum",
+    "request": {
+      "wildShapeHitPointsCurrent": 11
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 11,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "wild shape at 0 ends the form",
+    "request": {
+      "wildShapeHitPointsCurrent": 0
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ]
+    }
+  },
+  {
+    "name": "wild shape is checked before the hit points",
+    "request": {
+      "hitPointsCurrent": 99,
+      "wildShapeHitPointsCurrent": 99
+    },
+    "field": "wild_shape_hit_points_current",
+    "error": "wild_shape_hit_points_current must be 0 to 11"
+  },
+  {
+    "name": "hit points at 0",
+    "request": {
+      "hitPointsCurrent": 0
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "hit points at the maximum",
+    "request": {
+      "hitPointsCurrent": 30
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 30,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "hit points above the maximum",
+    "request": {
+      "hitPointsCurrent": 31
+    },
+    "field": "hit_points_current",
+    "error": "hit_points_current must be 0 to 30"
+  },
+  {
+    "name": "negative hit points",
+    "request": {
+      "hitPointsCurrent": -5
+    },
+    "field": "hit_points_current",
+    "error": "hit_points_current must be 0 to 30"
+  },
+  {
+    "name": "hit points are checked before the temporary ones",
+    "request": {
+      "hitPointsCurrent": 31,
+      "hitPointsTemporary": -1
+    },
+    "field": "hit_points_current",
+    "error": "hit_points_current must be 0 to 30"
+  },
+  {
+    "name": "temporary at 0",
+    "request": {
+      "hitPointsTemporary": 0
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "temporary at the limit",
+    "request": {
+      "hitPointsTemporary": 999
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 999,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "temporary above the limit",
+    "request": {
+      "hitPointsTemporary": 1000
+    },
+    "field": "hit_points_temporary",
+    "error": "hit_points_temporary must be 0 to 999"
+  },
+  {
+    "name": "negative temporary",
+    "request": {
+      "hitPointsTemporary": -1
+    },
+    "field": "hit_points_temporary",
+    "error": "hit_points_temporary must be 0 to 999"
+  },
+  {
+    "name": "temporary is checked before the slots",
+    "request": {
+      "hitPointsTemporary": -1,
+      "spellSlotsUsed": [
+        {
+          "level": 9,
+          "used": 1
+        }
+      ]
+    },
+    "field": "hit_points_temporary",
+    "error": "hit_points_temporary must be 0 to 999"
+  },
+  {
+    "name": "slots of three levels",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 3,
+          "used": 2
+        },
+        {
+          "level": 1,
+          "used": 5
+        },
+        {
+          "level": 2
+        }
+      ]
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 5
+        },
+        {
+          "level": 2,
+          "total": 3
+        },
+        {
+          "level": 3,
+          "total": 2,
+          "used": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "a created slot counts in the total",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 1,
+          "used": 5
+        }
+      ]
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 5
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "a slot above the total",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 1,
+          "used": 6
+        }
+      ]
+    },
+    "field": "spell_slots_used[0].used",
+    "error": "spell_slots_used[0].used must be 0 to 5"
+  },
+  {
+    "name": "a negative slot",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 2,
+          "used": -1
+        }
+      ]
+    },
+    "field": "spell_slots_used[0].used",
+    "error": "spell_slots_used[0].used must be 0 to 3"
+  },
+  {
+    "name": "a level without slots",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 4
+        }
+      ]
+    },
+    "field": "spell_slots_used[0].level",
+    "error": "spell_slots_used[0].level must be a spell level the character has slots of"
+  },
+  {
+    "name": "level 0",
+    "request": {
+      "spellSlotsUsed": [
+        {}
+      ]
+    },
+    "field": "spell_slots_used[0].level",
+    "error": "spell_slots_used[0].level must be a spell level the character has slots of"
+  },
+  {
+    "name": "a level twice",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 1,
+          "used": 1
+        },
+        {
+          "level": 1,
+          "used": 2
+        }
+      ]
+    },
+    "field": "spell_slots_used[1].level",
+    "error": "spell_slots_used[1].level repeats level 1"
+  },
+  {
+    "name": "a level twice is found before a bad used",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 2,
+          "used": 1
+        },
+        {
+          "level": 2,
+          "used": 99
+        }
+      ]
+    },
+    "field": "spell_slots_used[1].level",
+    "error": "spell_slots_used[1].level repeats level 2"
+  },
+  {
+    "name": "the first bad entry wins",
+    "request": {
+      "spellSlotsUsed": [
+        {
+          "level": 1,
+          "used": 1
+        },
+        {
+          "level": 7
+        },
+        {
+          "level": 2,
+          "used": 99
+        }
+      ]
+    },
+    "field": "spell_slots_used[1].level",
+    "error": "spell_slots_used[1].level must be a spell level the character has slots of"
+  },
+  {
+    "name": "slots are checked before the pact slots",
+    "request": {
+      "pactSlotsUsed": 9,
+      "spellSlotsUsed": [
+        {
+          "level": 7
+        }
+      ]
+    },
+    "field": "spell_slots_used[0].level",
+    "error": "spell_slots_used[0].level must be a spell level the character has slots of"
+  },
+  {
+    "name": "pact slots without pact magic",
+    "request": {
+      "pactSlotsUsed": 0
+    },
+    "field": "pact_slots_used",
+    "error": "pact_slots_used must be unset: the character has no pact magic slots"
+  },
+  {
+    "name": "pact slots at the total",
+    "request": {
+      "pactSlotsUsed": 2
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 2
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "pact slots at 0",
+    "request": {
+      "pactSlotsUsed": 0
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "pact slots above the total",
+    "request": {
+      "pactSlotsUsed": 3
+    },
+    "field": "pact_slots_used",
+    "error": "pact_slots_used must be 0 to 2"
+  },
+  {
+    "name": "pact slots are checked before the hit dice",
+    "request": {
+      "hitDiceUsed": 99,
+      "pactSlotsUsed": 3
+    },
+    "field": "pact_slots_used",
+    "error": "pact_slots_used must be 0 to 2"
+  },
+  {
+    "name": "a count and sizes together",
+    "request": {
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "6": 1
+      }
+    },
+    "field": "hit_dice_used",
+    "error": "hit_dice_used must not be set together with hit_dice_used_by_die"
+  },
+  {
+    "name": "a count and sizes together, both bad",
+    "request": {
+      "hitDiceUsed": 99,
+      "hitDiceUsedByDie": {
+        "8": 99
+      }
+    },
+    "field": "hit_dice_used",
+    "error": "hit_dice_used must not be set together with hit_dice_used_by_die"
+  },
+  {
+    "name": "a count spends the largest dice first",
+    "request": {
+      "hitDiceUsed": 3
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 3,
+      "hitDiceUsedByDie": {
+        "10": 2,
+        "6": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "every hit die",
+    "request": {
+      "hitDiceUsed": 5
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 5,
+      "hitDiceUsedByDie": {
+        "10": 2,
+        "6": 3
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "no hit die",
+    "request": {
+      "hitDiceUsed": 0
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "more hit dice than the level",
+    "request": {
+      "hitDiceUsed": 6
+    },
+    "field": "hit_dice_used",
+    "error": "hit_dice_used must be 0 to 5"
+  },
+  {
+    "name": "negative hit dice",
+    "request": {
+      "hitDiceUsed": -1
+    },
+    "field": "hit_dice_used",
+    "error": "hit_dice_used must be 0 to 5"
+  },
+  {
+    "name": "a size set",
+    "request": {
+      "hitDiceUsedByDie": {
+        "6": 2
+      }
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 3,
+      "hitDiceUsedByDie": {
+        "10": 1,
+        "6": 2
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "a size cleared",
+    "request": {
+      "hitDiceUsedByDie": {
+        "10": 0
+      }
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "two sizes",
+    "request": {
+      "hitDiceUsedByDie": {
+        "10": 2,
+        "6": 3
+      }
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 5,
+      "hitDiceUsedByDie": {
+        "10": 2,
+        "6": 3
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "a size the character has not",
+    "request": {
+      "hitDiceUsedByDie": {
+        "8": 1
+      }
+    },
+    "field": "hit_dice_used_by_die[8]",
+    "error": "hit_dice_used_by_die[8] must be a die size the character has"
+  },
+  {
+    "name": "a size above its count",
+    "request": {
+      "hitDiceUsedByDie": {
+        "10": 3
+      }
+    },
+    "field": "hit_dice_used_by_die[10]",
+    "error": "hit_dice_used_by_die[10] must be 0 to 2"
+  },
+  {
+    "name": "a negative size",
+    "request": {
+      "hitDiceUsedByDie": {
+        "6": -1
+      }
+    },
+    "field": "hit_dice_used_by_die[6]",
+    "error": "hit_dice_used_by_die[6] must be 0 to 3"
+  },
+  {
+    "name": "hit dice are checked before the resources",
+    "request": {
+      "hitDiceUsed": 9,
+      "resourcesUsed": [
+        {
+          "key": "nope"
+        }
+      ]
+    },
+    "field": "hit_dice_used",
+    "error": "hit_dice_used must be 0 to 5"
+  },
+  {
+    "name": "a resource spent",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "channel_divinity",
+          "used": 2
+        }
+      ]
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2,
+          "used": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "a resource given back",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "second_wind"
+        }
+      ]
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "two resources",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "arcane_recovery"
+        },
+        {
+          "key": "channel_divinity",
+          "used": 1
+        }
+      ]
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "10": 1
+      },
+      "hitPointsCurrent": 12,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 3,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2,
+        "used": 1
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1,
+          "used": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2,
+          "used": 1
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5,
+          "used": 2
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 8,
+        "hitPointsMax": 11
+      }
+    }
+  },
+  {
+    "name": "a resource the character has not",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "rage",
+          "used": 1
+        }
+      ]
+    },
+    "field": "resources_used[0].key",
+    "error": "resources_used[0].key must be a resource the character has"
+  },
+  {
+    "name": "a resource above its total",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "second_wind",
+          "used": 2
+        }
+      ]
+    },
+    "field": "resources_used[0].used",
+    "error": "resources_used[0].used must be 0 to 1"
+  },
+  {
+    "name": "a negative resource",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "second_wind",
+          "used": -1
+        }
+      ]
+    },
+    "field": "resources_used[0].used",
+    "error": "resources_used[0].used must be 0 to 1"
+  },
+  {
+    "name": "a resource twice",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "second_wind"
+        },
+        {
+          "key": "second_wind",
+          "used": 1
+        }
+      ]
+    },
+    "field": "resources_used[1].key",
+    "error": "resources_used[1].key repeats a resource"
+  },
+  {
+    "name": "an unknown key is found before it repeats",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "rage"
+        },
+        {
+          "key": "rage"
+        }
+      ]
+    },
+    "field": "resources_used[0].key",
+    "error": "resources_used[0].key must be a resource the character has"
+  },
+  {
+    "name": "no resource on a plain character",
+    "request": {
+      "resourcesUsed": [
+        {
+          "key": "second_wind"
+        }
+      ]
+    },
+    "field": "resources_used[0].key",
+    "error": "resources_used[0].key must be a resource the character has"
+  },
+  {
+    "name": "everything at once",
+    "request": {
+      "hitDiceUsedByDie": {
+        "10": 0,
+        "6": 1
+      },
+      "hitPointsCurrent": 20,
+      "hitPointsTemporary": 7,
+      "pactSlotsUsed": 0,
+      "resourcesUsed": [
+        {
+          "key": "arcane_recovery"
+        },
+        {
+          "key": "second_wind"
+        },
+        {
+          "key": "channel_divinity",
+          "used": 2
+        }
+      ],
+      "spellSlotsUsed": [
+        {
+          "level": 1
+        },
+        {
+          "level": 3,
+          "used": 2
+        }
+      ],
+      "wildShapeHitPointsCurrent": 4
+    },
+    "after": {
+      "arcaneRecoveryAllowance": 2,
+      "characterId": "c-rich",
+      "hitDice": [
+        {
+          "count": 2,
+          "faces": 10
+        },
+        {
+          "count": 3,
+          "faces": 6
+        }
+      ],
+      "hitDiceTotal": 5,
+      "hitDiceUsed": 1,
+      "hitDiceUsedByDie": {
+        "6": 1
+      },
+      "hitPointsCurrent": 20,
+      "hitPointsMax": 30,
+      "hitPointsTemporary": 7,
+      "name": "Rica",
+      "pactSlots": {
+        "slotLevel": 2,
+        "total": 2
+      },
+      "playerUserId": "u-rich",
+      "resources": [
+        {
+          "key": "arcane_recovery",
+          "namePt": "Recuperação Arcana",
+          "recharge": "RECHARGE_LONG_REST",
+          "total": 1
+        },
+        {
+          "key": "second_wind",
+          "namePt": "Retomar o Fôlego",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 1
+        },
+        {
+          "key": "channel_divinity",
+          "namePt": "Canalizar Divindade",
+          "recharge": "RECHARGE_SHORT_REST",
+          "total": 2,
+          "used": 2
+        }
+      ],
+      "revision": 4,
+      "spellSlots": [
+        {
+          "created": 1,
+          "level": 1,
+          "total": 5
+        },
+        {
+          "level": 2,
+          "total": 3,
+          "used": 1
+        },
+        {
+          "level": 3,
+          "total": 2,
+          "used": 2
+        }
+      ],
+      "wildShape": {
+        "beastKey": "monster:wolf",
+        "beastNamePt": "Lobo",
+        "hitPointsCurrent": 4,
+        "hitPointsMax": 11
+      }
+    }
+  }
+]

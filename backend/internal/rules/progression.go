@@ -226,37 +226,11 @@ func SceneOptions(d Derived, actions []SceneAction) ([]SceneOption, error) {
 		ok := false
 		switch kind {
 		case SceneSkill:
-			for _, s := range d.Skills {
-				if s.Key == a.Key {
-					o.NamePT, o.Bonus, ok = s.NamePT, s.Bonus, true
-					o.ReliableTalent = d.ReliableTalent && (s.Proficiency == ProficiencyFull || s.Proficiency == ProficiencyExpertise)
-					switch key {
-					case "perception":
-						o.Passive, o.HasPassive = d.PassivePerception, true
-					case "investigation":
-						o.Passive, o.HasPassive = d.PassiveInvestigation, true
-					case "insight":
-						o.Passive, o.HasPassive = d.PassiveInsight, true
-					}
-				}
-			}
+			ok = sceneSkillOption(d, &o)
 		case SceneAbility:
-			for _, s := range d.Abilities {
-				if string(s.Ability) == key {
-					o.NamePT, o.Bonus, ok = "Teste de "+s.NamePT, s.Modifier, true
-					// A raw ability check includes no proficiency: Jack of All Trades adds half
-					// the bonus, rounded down (SRD 5.1, Bard).
-					if HasFeature(d, "feature:jack-of-all-trades") {
-						o.Bonus += d.ProficiencyBonus / 2
-					}
-				}
-			}
+			ok = sceneAbilityOption(d, key, &o)
 		case SceneSave:
-			for _, s := range d.SavingThrows {
-				if string(s.Ability) == key {
-					o.NamePT, o.Bonus, ok = "Teste de resistência de "+s.NamePT, s.Bonus, true
-				}
-			}
+			ok = sceneSaveOption(d, key, &o)
 		}
 		if !ok {
 			return nil, &SceneError{Index: i, Key: a.Key}
@@ -264,4 +238,62 @@ func SceneOptions(d Derived, actions []SceneAction) ([]SceneOption, error) {
 		out = append(out, o)
 	}
 	return out, nil
+}
+
+// sceneSkillOption fills a skill check with the skill's name and bonus, Reliable
+// Talent and the passive score of the three skills that have one; false for a
+// skill the sheet does not list.
+func sceneSkillOption(d Derived, o *SceneOption) bool {
+	ok := false
+	for _, s := range d.Skills {
+		if s.Key == o.Action.Key {
+			o.NamePT, o.Bonus, ok = s.NamePT, s.Bonus, true
+			o.ReliableTalent = d.ReliableTalent && (s.Proficiency == ProficiencyFull || s.Proficiency == ProficiencyExpertise)
+			if passive, has := scenePassive(d, s.Key); has {
+				o.Passive, o.HasPassive = passive, true
+			}
+		}
+	}
+	return ok
+}
+
+// scenePassive is the passive score of a skill, for Perception, Investigation and
+// Insight.
+func scenePassive(d Derived, skillKey string) (int, bool) {
+	switch strings.TrimPrefix(skillKey, SceneSkill+":") {
+	case "perception":
+		return d.PassivePerception, true
+	case "investigation":
+		return d.PassiveInvestigation, true
+	case "insight":
+		return d.PassiveInsight, true
+	}
+	return 0, false
+}
+
+// sceneAbilityOption fills a raw ability check; false for an unknown ability.
+func sceneAbilityOption(d Derived, key string, o *SceneOption) bool {
+	ok := false
+	for _, s := range d.Abilities {
+		if string(s.Ability) == key {
+			o.NamePT, o.Bonus, ok = "Teste de "+s.NamePT, s.Modifier, true
+			// A raw ability check includes no proficiency: Jack of All Trades adds half
+			// the bonus, rounded down (SRD 5.1, Bard).
+			if HasFeature(d, "feature:jack-of-all-trades") {
+				o.Bonus += d.ProficiencyBonus / 2
+			}
+		}
+	}
+	return ok
+}
+
+// sceneSaveOption fills a saving throw; false for an unknown ability.
+func sceneSaveOption(d Derived, key string, o *SceneOption) bool {
+	ok := false
+	for _, s := range d.SavingThrows {
+		if string(s.Ability) == key {
+			o.NamePT, o.Bonus, ok = "Teste de resistência de "+s.NamePT, s.Bonus, true
+		}
+	}
+	return ok
 }

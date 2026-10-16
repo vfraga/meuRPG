@@ -43,8 +43,34 @@ type featureKind struct {
 // "feature") also becomes what the level-up and Derive read as the options'
 // offerer.
 func (b *overlayBuilder) addFeature(f *TableFeature, k featureKind, path string) error {
-	n := b.n
-	if err := checkTableKey(k.prefix, f.Key); err != nil {
+	if err := b.checkFeatureHead(f, k.prefix, path); err != nil {
+		return err
+	}
+	b.know(f.Key, k)
+	effects, err := b.featureOptions(f, k, path)
+	if err != nil {
+		return err
+	}
+	b.n.namesEN[f.Key] = f.NamePT
+	b.n.namesPT[f.Key] = f.NamePT
+	switch k.prefix {
+	case "feature:":
+		if err := b.writeFeature(f, k, effects, path); err != nil {
+			return err
+		}
+	case "trait:":
+		b.writeTrait(f, k)
+	}
+	b.declareResources(k, effects)
+	if len(effects) > 0 {
+		b.pending = append(b.pending, pendingEffects{owner: f.Key, entry: k.owner, effects: effects, path: path, strict: b.strict[k.owner]})
+	}
+	return nil
+}
+
+// checkFeatureHead checks a feature's key (and claims it), its name and its text.
+func (b *overlayBuilder) checkFeatureHead(f *TableFeature, prefix, path string) error {
+	if err := checkTableKey(prefix, f.Key); err != nil {
 		return locate(err, path)
 	}
 	if err := b.claim(f.Key); err != nil {
@@ -56,67 +82,84 @@ func (b *overlayBuilder) addFeature(f *TableFeature, k featureKind, path string)
 	if err := checkText(f.Key, f.DescPT); err != nil {
 		return locate(err, path+".desc_pt")
 	}
-	b.know(f.Key, k)
-	effects := f.Effects
-	if len(f.Options) > 0 {
-		if k.prefix != "feature:" {
-			return ovErr(f.Key, "only a class or subclass feature has an option list").at(path+".options", ReasonEffect)
-		}
-		if len(f.Options) > MaxFeatureOptions {
-			return ovErr(f.Key, "%d options; the limit is %d per feature", len(f.Options), MaxFeatureOptions).at(path+".options", ReasonLimit)
-		}
-		keys, err := b.addOptions(f, k, path)
-		if err != nil {
-			return err
-		}
-		// A choice of features with no `from` offers this feature's own options.
-		effects = slices.Clone(f.Effects)
-		offers := false
-		for i := range effects {
-			e := &effects[i]
-			if e.Type == "choice" && e.Choice == "feature" {
-				if len(e.From) == 0 {
-					e.From = slices.Clone(keys)
-				}
-				offers = true
-			}
-		}
-		if !offers {
-			return ovErr(f.Key, "a feature with options needs a choice of features to offer them").at(path+".effects", ReasonEffect)
-		}
-	}
-	n.namesEN[f.Key] = f.NamePT
-	n.namesPT[f.Key] = f.NamePT
-	switch k.prefix {
-	case "feature:":
-		feat := &srd51.Feature{Key: f.Key, Name: f.NamePT, Class: k.class, Subclass: k.subclass, Level: k.level, Desc: slices.Clone(f.DescPT)}
-		for _, e := range effects {
-			if e.Type != "choice" || e.Choice != "feature" {
-				continue
-			}
-			if len(feat.Options) > 0 {
-				return ovErr(f.Key, "a feature offers one choice of options").at(path+".effects", ReasonEffect)
-			}
-			feat.Options, feat.OptionsChoose = slices.Clone(e.From), e.Count
-			for _, o := range e.From {
-				n.offeredBy[o] = append(n.offeredBy[o], f.Key)
-			}
-		}
-		n.features[f.Key] = feat
-	case "trait:":
-		t := &srd51.Trait{Key: f.Key, Name: f.NamePT, Desc: slices.Clone(f.DescPT)}
-		if strings.HasPrefix(k.owner, "subrace:") {
-			t.Subraces = []string{k.owner}
-		} else {
-			t.Races = []string{k.owner}
-		}
-		n.traits[f.Key] = t
-	}
-	b.declareResources(k, effects)
-	if len(effects) > 0 {
-		b.pending = append(b.pending, pendingEffects{owner: f.Key, entry: k.owner, effects: effects, path: path, strict: b.strict[k.owner]})
-	}
 	return nil
+}
+
+// featureOptions registers a feature's option list, when it has one, and returns
+// the feature's effects with its choice of features offering those options (the
+// caller's effects themselves when there is no list).
+func (b *overlayBuilder) featureOptions(f *TableFeature, k featureKind, path string) ([]Effect, error) {
+	if len(f.Options) == 0 {
+		return f.Effects, nil
+	}
+	if k.prefix != "feature:" {
+		return nil, ovErr(f.Key, "only a class or subclass feature has an option list").at(path+".options", ReasonEffect)
+	}
+	if len(f.Options) > MaxFeatureOptions {
+		return nil, ovErr(f.Key, "%d options; the limit is %d per feature", len(f.Options), MaxFeatureOptions).at(path+".options", ReasonLimit)
+	}
+	keys, err := b.addOptions(f, k, path)
+	if err != nil {
+		return nil, err
+	}
+	effects := slices.Clone(f.Effects)
+	if !offerOptions(effects, keys) {
+		return nil, ovErr(f.Key, "a feature with options needs a choice of features to offer them").at(path+".effects", ReasonEffect)
+	}
+	return effects, nil
+}
+
+// offerOptions makes a choice of features with no `from` offer the feature's own
+// options, and says whether the effects have a choice of features at all.
+func offerOptions(effects []Effect, keys []string) bool {
+	offers := false
+	for i := range effects {
+		e := &effects[i]
+		if !isFeatureChoice(e) {
+			continue
+		}
+		if len(e.From) == 0 {
+			e.From = slices.Clone(keys)
+		}
+		offers = true
+	}
+	return offers
+}
+
+// isFeatureChoice says whether the effect is a choice of features (options).
+func isFeatureChoice(e *Effect) bool { return e.Type == "choice" && e.Choice == "feature" }
+
+// writeFeature puts a class or subclass feature in the clone; a choice of
+// features makes it the offerer of the options it lists.
+func (b *overlayBuilder) writeFeature(f *TableFeature, k featureKind, effects []Effect, path string) error {
+	n := b.n
+	feat := &srd51.Feature{Key: f.Key, Name: f.NamePT, Class: k.class, Subclass: k.subclass, Level: k.level, Desc: slices.Clone(f.DescPT)}
+	for i := range effects {
+		e := &effects[i]
+		if !isFeatureChoice(e) {
+			continue
+		}
+		if len(feat.Options) > 0 {
+			return ovErr(f.Key, "a feature offers one choice of options").at(path+".effects", ReasonEffect)
+		}
+		feat.Options, feat.OptionsChoose = slices.Clone(e.From), e.Count
+		for _, o := range e.From {
+			n.offeredBy[o] = append(n.offeredBy[o], f.Key)
+		}
+	}
+	n.features[f.Key] = feat
+	return nil
+}
+
+// writeTrait puts a race's or a subrace's trait in the clone.
+func (b *overlayBuilder) writeTrait(f *TableFeature, k featureKind) {
+	t := &srd51.Trait{Key: f.Key, Name: f.NamePT, Desc: slices.Clone(f.DescPT)}
+	if strings.HasPrefix(k.owner, "subrace:") {
+		t.Subraces = []string{k.owner}
+	} else {
+		t.Races = []string{k.owner}
+	}
+	b.n.traits[f.Key] = t
 }
 
 // know records which entry (and class) a feature or option belongs to, for the
@@ -409,52 +452,69 @@ var ownFields = map[string][]string{
 	"ranged_attack": {"applies", "ignore_cover", "range_multiplier", "no_long_range_disadvantage"},
 }
 
-// unusedField is the first field of e, in the order of the proto message, that
-// its type does not read (a modifier with a recharge, a sense with a count), or
-// "". The editor sends only what the type shows, so a stray value is a mistake
+// effectField is a field of an Effect a type may not read: its name in the
+// proto message, whether it is set, and how to clear it.
+type effectField struct {
+	name  string
+	set   func(e *Effect) bool
+	clear func(e *Effect)
+}
+
+// effectFields are the type-specific fields of TableEffect in the order of the
+// proto message, then the switches of ranged_attack, then the fields of the
+// engine's own effects (which no type of the menu reads).
+var effectFields = []effectField{
+	{"target", func(e *Effect) bool { return e.Target != "" }, func(e *Effect) { e.Target = "" }},
+	{"mode", func(e *Effect) bool { return e.Mode != "" }, func(e *Effect) { e.Mode = "" }},
+	{"value", func(e *Effect) bool { return e.Value != "" }, func(e *Effect) { e.Value = "" }},
+	{"proficiency", func(e *Effect) bool { return e.Proficiency != "" }, func(e *Effect) { e.Proficiency = "" }},
+	{"level", func(e *Effect) bool { return e.Level != "" }, func(e *Effect) { e.Level = "" }},
+	{"roll", func(e *Effect) bool { return e.Roll != "" }, func(e *Effect) { e.Roll = "" }},
+	{"targets", func(e *Effect) bool { return len(e.Targets) > 0 }, func(e *Effect) { e.Targets = nil }},
+	{"sense", func(e *Effect) bool { return e.Sense != "" }, func(e *Effect) { e.Sense = "" }},
+	{"range_ft", func(e *Effect) bool { return e.RangeFt != 0 }, func(e *Effect) { e.RangeFt = 0 }},
+	{"resource", func(e *Effect) bool { return e.Resource != "" }, func(e *Effect) { e.Resource = "" }},
+	{"max", func(e *Effect) bool { return e.Max != "" }, func(e *Effect) { e.Max = "" }},
+	{"recharge", func(e *Effect) bool { return e.Recharge != "" }, func(e *Effect) { e.Recharge = "" }},
+	{"choice", func(e *Effect) bool { return e.Choice != "" }, func(e *Effect) { e.Choice = "" }},
+	{"count", func(e *Effect) bool { return e.Count != 0 }, func(e *Effect) { e.Count = 0 }},
+	{"from", func(e *Effect) bool { return len(e.From) > 0 }, func(e *Effect) { e.From = nil }},
+	{"economy", func(e *Effect) bool { return e.Economy != "" }, func(e *Effect) { e.Economy = "" }},
+	{"ability", func(e *Effect) bool { return e.Ability != "" }, func(e *Effect) { e.Ability = "" }},
+	{"applies", func(e *Effect) bool { return e.Applies != "" }, func(e *Effect) { e.Applies = "" }},
+	{"ignore_cover", func(e *Effect) bool { return e.IgnoreCover }, func(e *Effect) { e.IgnoreCover = false }},
+	{"range_multiplier", func(e *Effect) bool { return e.RangeMultiplier != 0 }, func(e *Effect) { e.RangeMultiplier = 0 }},
+	{"no_long_range_disadvantage", func(e *Effect) bool { return e.NoLongRangeDisadvantage }, func(e *Effect) { e.NoLongRangeDisadvantage = false }},
+	{"progression", func(e *Effect) bool { return e.Progression != "" }, func(e *Effect) { e.Progression = "" }},
+	{"prepares", func(e *Effect) bool { return e.Prepares }, func(e *Effect) { e.Prepares = false }},
+	{"prepared_max", func(e *Effect) bool { return e.PreparedMax != "" }, func(e *Effect) { e.PreparedMax = "" }},
+	{"spellbook", func(e *Effect) bool { return e.Spellbook }, func(e *Effect) { e.Spellbook = false }},
+	{"ritual", func(e *Effect) bool { return e.Ritual }, func(e *Effect) { e.Ritual = false }},
+	{"handler", func(e *Effect) bool { return e.Handler != "" }, func(e *Effect) { e.Handler = "" }},
+	{"max_cr", func(e *Effect) bool { return e.MaxCR != "" }, func(e *Effect) { e.MaxCR = "" }},
+	{"no_fly", func(e *Effect) bool { return e.NoFly }, func(e *Effect) { e.NoFly = false }},
+	{"no_swim", func(e *Effect) bool { return e.NoSwim }, func(e *Effect) { e.NoSwim = false }},
+}
+
+// effectFieldClear is how to clear each of effectFields, by name.
+var effectFieldClear = func() map[string]func(e *Effect) {
+	out := make(map[string]func(e *Effect), len(effectFields))
+	for _, f := range effectFields {
+		out[f.name] = f.clear
+	}
+	return out
+}()
+
+// unusedField is the first field of e, in the order of effectFields, that its
+// type does not read (a modifier with a recharge, a sense with a count), or "".
+// The editor sends only what the type shows, so a stray value is a mistake
 // worth naming, not something to ignore silently.
 func unusedField(e *Effect) string {
-	set := map[string]bool{
-		"target": e.Target != "", "mode": e.Mode != "", "value": e.Value != "",
-		"proficiency": e.Proficiency != "", "level": e.Level != "", "roll": e.Roll != "", "targets": len(e.Targets) > 0,
-		"sense": e.Sense != "", "range_ft": e.RangeFt != 0, "resource": e.Resource != "", "max": e.Max != "", "recharge": e.Recharge != "",
-		"choice": e.Choice != "", "count": e.Count != 0, "from": len(e.From) > 0, "economy": e.Economy != "",
-	}
 	own := ownFields[e.Type]
-	for _, name := range effectFieldOrder {
-		if set[name] && !slices.Contains(own, name) {
-			return name
+	for _, f := range effectFields {
+		if f.set(e) && !slices.Contains(own, f.name) {
+			return f.name
 		}
-	}
-	switch {
-	case e.Ability != "" && !slices.Contains(own, "ability"):
-		return "ability"
-	case e.Applies != "" && !slices.Contains(own, "applies"):
-		return "applies"
-	case e.IgnoreCover && !slices.Contains(own, "ignore_cover"):
-		return "ignore_cover"
-	case e.RangeMultiplier != 0 && !slices.Contains(own, "range_multiplier"):
-		return "range_multiplier"
-	case e.NoLongRangeDisadvantage && !slices.Contains(own, "no_long_range_disadvantage"):
-		return "no_long_range_disadvantage"
-	case e.Progression != "":
-		return "progression"
-	case e.Prepares:
-		return "prepares"
-	case e.PreparedMax != "":
-		return "prepared_max"
-	case e.Spellbook:
-		return "spellbook"
-	case e.Ritual:
-		return "ritual"
-	case e.Handler != "":
-		return "handler"
-	case e.MaxCR != "":
-		return "max_cr"
-	case e.NoFly:
-		return "no_fly"
-	case e.NoSwim:
-		return "no_swim"
 	}
 	return ""
 }
@@ -467,75 +527,12 @@ func stripUnused(e *Effect) {
 	}
 }
 
+// clearEffectField clears the field of effectFields named name; any other name
+// changes nothing.
 func clearEffectField(e *Effect, name string) {
-	switch name {
-	case "target":
-		e.Target = ""
-	case "mode":
-		e.Mode = ""
-	case "value":
-		e.Value = ""
-	case "proficiency":
-		e.Proficiency = ""
-	case "level":
-		e.Level = ""
-	case "roll":
-		e.Roll = ""
-	case "targets":
-		e.Targets = nil
-	case "sense":
-		e.Sense = ""
-	case "range_ft":
-		e.RangeFt = 0
-	case "resource":
-		e.Resource = ""
-	case "max":
-		e.Max = ""
-	case "recharge":
-		e.Recharge = ""
-	case "choice":
-		e.Choice = ""
-	case "count":
-		e.Count = 0
-	case "from":
-		e.From = nil
-	case "economy":
-		e.Economy = ""
-	case "ability":
-		e.Ability = ""
-	case "applies":
-		e.Applies = ""
-	case "ignore_cover":
-		e.IgnoreCover = false
-	case "range_multiplier":
-		e.RangeMultiplier = 0
-	case "no_long_range_disadvantage":
-		e.NoLongRangeDisadvantage = false
-	case "progression":
-		e.Progression = ""
-	case "prepares":
-		e.Prepares = false
-	case "prepared_max":
-		e.PreparedMax = ""
-	case "spellbook":
-		e.Spellbook = false
-	case "ritual":
-		e.Ritual = false
-	case "handler":
-		e.Handler = ""
-	case "max_cr":
-		e.MaxCR = ""
-	case "no_fly":
-		e.NoFly = false
-	case "no_swim":
-		e.NoSwim = false
+	if clearField, ok := effectFieldClear[name]; ok {
+		clearField(e)
 	}
-}
-
-// effectFieldOrder is the order of the type-specific fields in TableEffect.
-var effectFieldOrder = []string{
-	"target", "mode", "value", "proficiency", "level", "roll", "targets", "sense", "range_ft",
-	"resource", "max", "recharge", "choice", "count", "from", "economy",
 }
 
 // effectError says which TableEffect field a compile error of the engine is
@@ -554,62 +551,74 @@ func effectError(e *Effect, msg string) (attr, reason string) {
 	if attr, ok := rangedAttackErrorAttr(e, msg); ok {
 		return attr, ReasonValue
 	}
-	switch {
-	case has("formula "):
-		return formulaAttr(e, has), ReasonFormula
-	case has("unknown target"):
+	for _, r := range effectErrorRules {
+		if has(r.words...) {
+			return r.attr(e, has), r.reason
+		}
+	}
+	return "", ReasonValue
+}
+
+// effectErrorRule maps the words of an engine message to the field it is
+// about; the first rule whose words the message has wins.
+type effectErrorRule struct {
+	words  []string
+	attr   func(e *Effect, has func(words ...string) bool) string
+	reason string
+}
+
+// fieldAttr is an effectErrorRule's attr that always names the same field.
+func fieldAttr(attr string) func(*Effect, func(...string) bool) string {
+	return func(*Effect, func(...string) bool) string { return attr }
+}
+
+var effectErrorRules = []effectErrorRule{
+	{[]string{"formula "}, formulaAttr, ReasonFormula},
+	{[]string{"unknown target"}, func(e *Effect, _ func(...string) bool) string {
 		if e.Type == "roll_mode" {
-			return ".targets", ReasonValue
+			return ".targets"
 		}
-		return ".target", ReasonValue
-	case has("unknown mode"):
-		return ".mode", ReasonValue
-	case has("value is required", "a value needs"):
+		return ".target"
+	}, ReasonValue},
+	{[]string{"unknown mode"}, fieldAttr(".mode"), ReasonValue},
+	{[]string{"value is required", "a value needs"}, func(_ *Effect, has func(...string) bool) string {
 		if has("text_pt") {
-			return ".text_pt", ReasonValue
+			return ".text_pt"
 		}
-		return ".value", ReasonValue
-	case has("unknown proficiency"):
-		return ".proficiency", ReasonValue
-	case has("unknown level"):
-		return ".level", ReasonValue
-	case has("unknown roll"):
-		return ".roll", ReasonValue
-	case has("targets are required"):
-		return ".targets", ReasonValue
-	case has("sense needs"):
+		return ".value"
+	}, ReasonValue},
+	{[]string{"unknown proficiency"}, fieldAttr(".proficiency"), ReasonValue},
+	{[]string{"unknown level"}, fieldAttr(".level"), ReasonValue},
+	{[]string{"unknown roll"}, fieldAttr(".roll"), ReasonValue},
+	{[]string{"targets are required"}, fieldAttr(".targets"), ReasonValue},
+	{[]string{"sense needs"}, func(e *Effect, _ func(...string) bool) string {
 		if slices.Contains(senses, e.Sense) {
-			return ".range_ft", ReasonValue
+			return ".range_ft"
 		}
-		return ".sense", ReasonValue
-	case has("resource needs"):
+		return ".sense"
+	}, ReasonValue},
+	{[]string{"resource needs"}, func(e *Effect, _ func(...string) bool) string {
 		switch {
 		case e.Resource == "":
-			return ".resource", ReasonValue
+			return ".resource"
 		case e.Max == "":
-			return ".max", ReasonValue
+			return ".max"
 		}
-		return ".recharge", ReasonValue
-	case has("unknown choice"):
-		return ".choice", ReasonValue
-	case has("in from"):
-		return ".from", ReasonReference
-	case has("ability_increase"):
+		return ".recharge"
+	}, ReasonValue},
+	{[]string{"unknown choice"}, fieldAttr(".choice"), ReasonValue},
+	{[]string{"in from"}, fieldAttr(".from"), ReasonReference},
+	{[]string{"ability_increase"}, func(e *Effect, _ func(...string) bool) string {
 		attr, _ := checkAbilityIncrease(e)
 		if attr == "" {
 			attr = ".value"
 		}
-		return attr, ReasonValue
-	case has("unknown economy"):
-		return ".economy", ReasonValue
-	case has("extra_attack needs"):
-		return ".count", ReasonValue
-	case has("empty tag"):
-		return ".tags", ReasonValue
-	case has("unknown spell"):
-		return ".spells", ReasonReference
-	}
-	return "", ReasonValue
+		return attr
+	}, ReasonValue},
+	{[]string{"unknown economy"}, fieldAttr(".economy"), ReasonValue},
+	{[]string{"extra_attack needs"}, fieldAttr(".count"), ReasonValue},
+	{[]string{"empty tag"}, fieldAttr(".tags"), ReasonValue},
+	{[]string{"unknown spell"}, fieldAttr(".spells"), ReasonReference},
 }
 
 // formulaAttr is the field whose formula a compile error names (".when", ".value"
@@ -647,36 +656,43 @@ func (b *overlayBuilder) compileEffectsOf(owner string) error {
 	var c entryErrors
 	failing := ""
 	for _, p := range b.pending {
-		if owner != "" && p.entry != owner {
+		if (owner != "" && p.entry != owner) || (failing != "" && p.entry != failing) {
 			continue
 		}
-		if failing != "" && p.entry != failing {
-			continue
-		}
-		out := make([]*Effect, 0, len(p.effects))
-		for i := range p.effects {
-			e := p.effects[i]
-			at := fmt.Sprintf("%s.effects[%d]", p.path, i)
-			e.Tags, e.Targets, e.From, e.Spells = slices.Clone(e.Tags), slices.Clone(e.Targets), slices.Clone(e.From), slices.Clone(e.Spells)
-			if !p.strict {
-				stripUnused(&e)
-			}
-			if err := b.checkEffect(p.owner, at, &e, p.strict); err != nil {
-				c.add(err)
-				failing = p.entry
-				continue
-			}
-			if err := b.n.compileEffect(p.owner, &e); err != nil {
-				attr, reason := effectError(&e, err.Error())
-				c.add(ovErr(p.owner, "%v", err).at(at+attr, reason))
-				failing = p.entry
-				continue
-			}
-			out = append(out, &e)
+		out, failed := b.compilePending(&c, p)
+		if failed {
+			failing = p.entry
 		}
 		b.n.effects[p.owner] = append(b.n.effects[p.owner], out...)
 	}
 	return c.err()
+}
+
+// compilePending checks and compiles one owner's pending effects, on copies. It
+// returns the ones that compiled, and whether any did not (those go to c).
+func (b *overlayBuilder) compilePending(c *entryErrors, p pendingEffects) (out []*Effect, failed bool) {
+	out = make([]*Effect, 0, len(p.effects))
+	for i := range p.effects {
+		e := p.effects[i]
+		at := fmt.Sprintf("%s.effects[%d]", p.path, i)
+		e.Tags, e.Targets, e.From, e.Spells = slices.Clone(e.Tags), slices.Clone(e.Targets), slices.Clone(e.From), slices.Clone(e.Spells)
+		if !p.strict {
+			stripUnused(&e)
+		}
+		if err := b.checkEffect(p.owner, at, &e, p.strict); err != nil {
+			c.add(err)
+			failed = true
+			continue
+		}
+		if err := b.n.compileEffect(p.owner, &e); err != nil {
+			attr, reason := effectError(&e, err.Error())
+			c.add(ovErr(p.owner, "%v", err).at(at+attr, reason))
+			failed = true
+			continue
+		}
+		out = append(out, &e)
+	}
+	return out, failed
 }
 
 // compileOwn compiles an effect the engine wrote itself (the spellcasting
@@ -720,24 +736,71 @@ func bonusMap(c *entryErrors, key, path string, in map[Ability]int) map[string]i
 // maxRaceBonus bounds a race's ability bonus, in either direction.
 const maxRaceBonus = 4
 
+// The bounds of a table race's and background's numbers.
+const (
+	// feetStep is the grid a speed or a darkvision range is on.
+	feetStep = 5
+	// maxRaceSpeedFt and maxDarkvisionFt bound a race's speed and darkvision.
+	maxRaceSpeedFt  = 120
+	maxDarkvisionFt = 120
+	// maxEntryLanguageChoices is the most languages a race or background lets
+	// the player choose.
+	maxEntryLanguageChoices = 4
+	// maxBackgroundTools is the most tool proficiencies a background gives.
+	maxBackgroundTools = 4
+)
+
+// raceSizes are the sizes a table race may have.
+var raceSizes = []string{"Tiny", "Small", "Medium", "Large"}
+
 // addRace registers a race and its traits. Every field that is wrong is reported
 // at its own path (size, speed_ft, ability_bonuses.<ability>, choice_bonuses[i],
 // languages[i]...), in one error.
 func (b *overlayBuilder) addRace(tr *TableRace, path string) error {
-	n := b.n
 	key := tr.Key
 	var c entryErrors
-	if !slices.Contains([]string{"Tiny", "Small", "Medium", "Large"}, tr.Size) {
+	checkRaceBody(&c, tr, path)
+	bonuses := bonusMap(&c, key, path, tr.AbilityBonuses)
+	choice := raceChoiceBonuses(&c, key, path, tr.ChoiceBonuses)
+	b.checkRaceLanguages(&c, tr, path)
+	race := &srd51.Race{
+		Key: key, Name: tr.NamePT, SpeedFt: tr.SpeedFt, Size: tr.Size, AbilityBonuses: bonuses,
+		Languages: slices.Clone(tr.Languages), LanguageChoices: tr.LanguageChoices,
+	}
+	race.Traits = b.addTraits(&c, key, path, tr.Traits)
+	if err := c.err(); err != nil {
+		return err
+	}
+	b.register(tr.TableEntry)
+	b.n.races[key] = race
+	if len(choice) > 0 {
+		b.n.raceChoice[key] = choice
+	}
+	if tr.DarkvisionFt > 0 {
+		// The darkvision is an effect of the race itself: Derive reads those too.
+		b.pending = append(b.pending, pendingEffects{owner: key, entry: key, effects: []Effect{{Type: "sense", Sense: "darkvision", RangeFt: tr.DarkvisionFt}}, path: path + ".darkvision_ft"})
+	}
+	return nil
+}
+
+// checkRaceBody checks a race's size, speed and darkvision.
+func checkRaceBody(c *entryErrors, tr *TableRace, path string) {
+	key := tr.Key
+	if !slices.Contains(raceSizes, tr.Size) {
 		c.at(key, path, ".size", ReasonValue, "size is Tiny, Small, Medium or Large")
 	}
-	if tr.SpeedFt < 5 || tr.SpeedFt > 120 || tr.SpeedFt%5 != 0 {
+	if tr.SpeedFt < feetStep || tr.SpeedFt > maxRaceSpeedFt || tr.SpeedFt%feetStep != 0 {
 		c.at(key, path, ".speed_ft", ReasonLimit, "the speed is 5 to 120 feet, in steps of 5")
 	}
-	if tr.DarkvisionFt < 0 || tr.DarkvisionFt > 120 || tr.DarkvisionFt%5 != 0 {
+	if tr.DarkvisionFt < 0 || tr.DarkvisionFt > maxDarkvisionFt || tr.DarkvisionFt%feetStep != 0 {
 		c.at(key, path, ".darkvision_ft", ReasonLimit, "the darkvision is 0 or 5 to 120 feet, in steps of 5")
 	}
-	bonuses := bonusMap(&c, key, path, tr.AbilityBonuses)
-	choice := slices.Clone(tr.ChoiceBonuses)
+}
+
+// raceChoiceBonuses checks the bonuses a race lets the player place and returns
+// them largest first.
+func raceChoiceBonuses(c *entryErrors, key, path string, in []int) []int {
+	choice := slices.Clone(in)
 	if len(choice) > len(abilityIndex) {
 		c.at(key, path, ".choice_bonuses", ReasonLimit, "at most %d bonuses to place", len(abilityIndex))
 	}
@@ -747,39 +810,35 @@ func (b *overlayBuilder) addRace(tr *TableRace, path string) error {
 		}
 	}
 	slices.SortFunc(choice, func(a, c int) int { return c - a })
-	if tr.LanguageChoices < 0 || tr.LanguageChoices > 4 {
-		c.at(key, path, ".language_choices", ReasonLimit, "languages to choose is 0 to 4")
+	return choice
+}
+
+// checkRaceLanguages checks the languages a race knows and lets the player choose.
+func (b *overlayBuilder) checkRaceLanguages(c *entryErrors, tr *TableRace, path string) {
+	if tr.LanguageChoices < 0 || tr.LanguageChoices > maxEntryLanguageChoices {
+		c.at(tr.Key, path, ".language_choices", ReasonLimit, "languages to choose is 0 to 4")
 	}
 	for i, l := range tr.Languages {
 		if _, ok := b.base.languages[l]; !ok {
-			c.at(key, path, fmt.Sprintf(".languages[%d]", i), ReasonReference, "language %q is not in the SRD", l)
+			c.at(tr.Key, path, fmt.Sprintf(".languages[%d]", i), ReasonReference, "language %q is not in the SRD", l)
 		}
 	}
-	race := &srd51.Race{
-		Key: key, Name: tr.NamePT, SpeedFt: tr.SpeedFt, Size: tr.Size, AbilityBonuses: bonuses,
-		Languages: slices.Clone(tr.Languages), LanguageChoices: tr.LanguageChoices,
-	}
-	for i := range tr.Traits {
-		t := &tr.Traits[i]
-		if err := b.addFeature(t, featureKind{prefix: "trait:", owner: key}, fmt.Sprintf("%s.traits[%d]", path, i)); err != nil {
-			c.add(locate(err, fmt.Sprintf("%s.traits[%d]", path, i)))
+}
+
+// addTraits adds the traits of a race or a subrace and returns the keys of the
+// ones that were added; the others' problems go to c.
+func (b *overlayBuilder) addTraits(c *entryErrors, key, path string, traits []TableFeature) []string {
+	var keys []string
+	for i := range traits {
+		t := &traits[i]
+		at := fmt.Sprintf("%s.traits[%d]", path, i)
+		if err := b.addFeature(t, featureKind{prefix: "trait:", owner: key}, at); err != nil {
+			c.add(locate(err, at))
 			continue
 		}
-		race.Traits = append(race.Traits, t.Key)
+		keys = append(keys, t.Key)
 	}
-	if err := c.err(); err != nil {
-		return err
-	}
-	b.register(tr.TableEntry)
-	n.races[key] = race
-	if len(choice) > 0 {
-		n.raceChoice[key] = choice
-	}
-	if tr.DarkvisionFt > 0 {
-		// The darkvision is an effect of the race itself: Derive reads those too.
-		b.pending = append(b.pending, pendingEffects{owner: key, entry: key, effects: []Effect{{Type: "sense", Sense: "darkvision", RangeFt: tr.DarkvisionFt}}, path: path + ".darkvision_ft"})
-	}
-	return nil
+	return keys
 }
 
 // addSubrace registers a subrace and puts it in its race's list, on a copy of
@@ -792,14 +851,7 @@ func (b *overlayBuilder) addSubrace(ts *TableSubrace, path string) error {
 	}
 	bonuses := bonusMap(&c, key, path, ts.AbilityBonuses)
 	sub := &srd51.Subrace{Key: key, Name: ts.NamePT, Race: ts.Race, AbilityBonuses: bonuses}
-	for i := range ts.Traits {
-		t := &ts.Traits[i]
-		if err := b.addFeature(t, featureKind{prefix: "trait:", owner: key}, fmt.Sprintf("%s.traits[%d]", path, i)); err != nil {
-			c.add(locate(err, fmt.Sprintf("%s.traits[%d]", path, i)))
-			continue
-		}
-		sub.Traits = append(sub.Traits, t.Key)
-	}
+	sub.Traits = b.addTraits(&c, key, path, ts.Traits)
 	if err := c.err(); err != nil {
 		return err
 	}
@@ -815,9 +867,39 @@ func (b *overlayBuilder) addSubrace(ts *TableSubrace, path string) error {
 // addBackground registers a background and its feature. Every field that is wrong
 // is reported at its own path (skills[i], tools[i], language_choices, feature...).
 func (b *overlayBuilder) addBackground(tb *TableBackground, path string) error {
-	n := b.n
 	key := tb.Key
 	var c entryErrors
+	b.checkBackgroundSkills(&c, tb, path)
+	if len(tb.Tools) > maxBackgroundTools {
+		c.at(key, path, ".tools", ReasonLimit, "at most 4 tools")
+	}
+	if tb.LanguageChoices < 0 || tb.LanguageChoices > maxEntryLanguageChoices {
+		c.at(key, path, ".language_choices", ReasonLimit, "at most 4 languages to choose")
+	}
+	b.checkBackgroundTools(&c, tb, path)
+	checkTextAt(&c, key, path, ".equipment_pt", []string{tb.EquipmentPT})
+	f := &tb.Feature
+	if err := b.addFeature(f, featureKind{prefix: "background-feature:", owner: key}, path+".feature"); err != nil {
+		c.add(locate(err, path+".feature"))
+	}
+	if err := c.err(); err != nil {
+		return err
+	}
+	b.register(tb.TableEntry)
+	b.n.backgrounds[key] = &srd51.Background{
+		Key: key, Name: tb.NamePT, Skills: slices.Clone(tb.Skills), Proficiencies: slices.Clone(tb.Tools),
+		LanguageChoices: tb.LanguageChoices,
+		Feature:         srd51.BackgroundFeature{Key: f.Key, Name: f.NamePT, Desc: slices.Clone(f.DescPT)},
+	}
+	if tb.EquipmentPT != "" {
+		b.n.bgEquipment[key] = tb.EquipmentPT
+	}
+	return nil
+}
+
+// checkBackgroundSkills checks a background's two different SRD skills.
+func (b *overlayBuilder) checkBackgroundSkills(c *entryErrors, tb *TableBackground, path string) {
+	key := tb.Key
 	if len(tb.Skills) != CustomBackgroundSkillCount {
 		c.at(key, path, ".skills", ReasonValue, "a background gives %d different skills", CustomBackgroundSkillCount)
 	}
@@ -828,33 +910,14 @@ func (b *overlayBuilder) addBackground(tb *TableBackground, path string) error {
 			c.at(key, path, fmt.Sprintf(".skills[%d]", i), ReasonValue, "a background gives %d different skills", CustomBackgroundSkillCount)
 		}
 	}
-	if len(tb.Tools) > 4 {
-		c.at(key, path, ".tools", ReasonLimit, "at most 4 tools")
-	}
-	if tb.LanguageChoices < 0 || tb.LanguageChoices > 4 {
-		c.at(key, path, ".language_choices", ReasonLimit, "at most 4 languages to choose")
-	}
+}
+
+// checkBackgroundTools checks that each tool of a background is a tool (or
+// other) proficiency of the SRD.
+func (b *overlayBuilder) checkBackgroundTools(c *entryErrors, tb *TableBackground, path string) {
 	for i, t := range tb.Tools {
 		if p, ok := b.base.proficiencies[t]; !ok || (p.Kind != "tool" && p.Kind != "other") {
-			c.at(key, path, fmt.Sprintf(".tools[%d]", i), ReasonReference, "%q is not a tool proficiency of the SRD", t)
+			c.at(tb.Key, path, fmt.Sprintf(".tools[%d]", i), ReasonReference, "%q is not a tool proficiency of the SRD", t)
 		}
 	}
-	checkTextAt(&c, key, path, ".equipment_pt", []string{tb.EquipmentPT})
-	f := &tb.Feature
-	if err := b.addFeature(f, featureKind{prefix: "background-feature:", owner: key}, path+".feature"); err != nil {
-		c.add(locate(err, path+".feature"))
-	}
-	if err := c.err(); err != nil {
-		return err
-	}
-	b.register(tb.TableEntry)
-	n.backgrounds[key] = &srd51.Background{
-		Key: key, Name: tb.NamePT, Skills: slices.Clone(tb.Skills), Proficiencies: slices.Clone(tb.Tools),
-		LanguageChoices: tb.LanguageChoices,
-		Feature:         srd51.BackgroundFeature{Key: f.Key, Name: f.NamePT, Desc: slices.Clone(f.DescPT)},
-	}
-	if tb.EquipmentPT != "" {
-		n.bgEquipment[key] = tb.EquipmentPT
-	}
-	return nil
 }

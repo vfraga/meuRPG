@@ -476,36 +476,46 @@ function hpCastText(e: CombatLogEntry, ctx: LogContext): { text: string; card?: 
     return { text: ` conjura ${name}${slot}`, card };
   }
   // One creature and its hit points: "no Capitão Goblin (27 PV, limite de 150): fica atordoado."
-  const out = (spell.targets ?? []).map((t) => {
-    const label = t.targetLabel || 'alguém';
-    const fx = t.effect;
-    const w = effectWords(
-      spell.effectKind,
-      spell.effectConditionKey,
-      fx?.outcome ?? SpellEffectOutcome.UNSPECIFIED,
-      label,
-      fx?.gain,
-    );
-    const prep = ctx.players.has(label) ? `em ${label}` : inThe(label);
-    const facts: string[] = [];
-    if (fx?.hitPointsBefore !== undefined) {
-      facts.push(`${fx.hitPointsBefore} PV`);
-    }
-    if (spell.effectThreshold !== undefined) {
-      facts.push(`limite de ${spell.effectThreshold}`);
-    }
-    const detail = facts.length > 0 ? ` (${facts.join(', ')})` : '';
-    const healed =
-      fx?.healed !== undefined && w.affected ? gainWords(spell.effectKind, fx.healed, fx.gain) : '';
-    const reason =
-      !w.affected && fx
-        ? reasonWords(fx.reason, fx.hitPointsBefore, fx.poolLeft, spell.effectThreshold)
-        : '';
-    const result =
-      healed || (w.affected ? w.present : `${w.present}${reason ? `: ${reason}` : ''}`);
-    return `${prep}${detail}: ${result}`;
-  });
+  const out = (spell.targets ?? []).map((t) => hpTargetText(spell, t, ctx));
   return { text: ` conjura ${name} ${out.join('; ')}` };
+}
+
+type HpSpell = NonNullable<CombatLogEntry['spell']>;
+type HpTarget = HpSpell['targets'][number];
+
+/** What a hit-point spell did to one creature, for the master: "no Capitão Goblin (27 PV, limite de 150): fica atordoado". */
+function hpTargetText(spell: HpSpell, t: HpTarget, ctx: LogContext): string {
+  const label = t.targetLabel || 'alguém';
+  const fx = t.effect;
+  const w = effectWords(
+    spell.effectKind,
+    spell.effectConditionKey,
+    fx?.outcome ?? SpellEffectOutcome.UNSPECIFIED,
+    label,
+    fx?.gain,
+  );
+  const prep = ctx.players.has(label) ? `em ${label}` : inThe(label);
+  const facts: string[] = [];
+  if (fx?.hitPointsBefore !== undefined) {
+    facts.push(`${fx.hitPointsBefore} PV`);
+  }
+  if (spell.effectThreshold !== undefined) {
+    facts.push(`limite de ${spell.effectThreshold}`);
+  }
+  const detail = facts.length > 0 ? ` (${facts.join(', ')})` : '';
+  return `${prep}${detail}: ${hpTargetResult(spell, t, w.affected, w.present)}`;
+}
+
+/** The end of that sentence: what was gained, or what happened and, for a creature not affected, why. */
+function hpTargetResult(spell: HpSpell, t: HpTarget, affected: boolean, present: string): string {
+  const fx = t.effect;
+  const healed =
+    fx?.healed !== undefined && affected ? gainWords(spell.effectKind, fx.healed, fx.gain) : '';
+  const reason =
+    !affected && fx
+      ? reasonWords(fx.reason, fx.hitPointsBefore, fx.poolLeft, spell.effectThreshold)
+      : '';
+  return healed || (affected ? present : `${present}${reason ? `: ${reason}` : ''}`);
 }
 
 /** The master's table for a pool spell: the dice, then each creature from the lowest hit
@@ -521,41 +531,9 @@ function poolCard(e: CombatLogEntry): PoolCard | undefined {
     return oa - ob;
   });
   const condition = conditionName(spell.effectConditionKey);
-  const rows: PoolCardRow[] = targets.map((t) => {
-    const label = t.targetLabel || 'alguém';
-    const fx = t.effect;
-    const w = effectWords(
-      spell.effectKind,
-      spell.effectConditionKey,
-      fx?.outcome ?? SpellEffectOutcome.UNSPECIFIED,
-      label,
-      fx?.gain,
-    );
-    const hp = fx?.hitPointsBefore;
-    const left = fx?.poolLeft;
-    let math = '';
-    if (w.affected && hp !== undefined && left !== undefined) {
-      math = `${left + hp} − ${hp} = ${left} restam`;
-    } else if (fx && !w.affected) {
-      math = reasonWords(fx.reason, hp, left, undefined);
-    }
-    return {
-      id: t.targetId,
-      label,
-      hitPoints: hp === undefined ? '' : `${hp} PV`,
-      math,
-      word: w.affected ? `${w.past}${condition ? ` · ${condition}` : ''}` : 'Não afetado',
-      icon: w.icon,
-      affected: w.affected,
-    };
-  });
+  const rows: PoolCardRow[] = targets.map((t) => poolRow(spell, t, condition));
   const roll = poolRollText(spell.poolRoll).replace(' · dado físico', '');
-  const summary = `${roll} PV${spell.poolRoll.physical ? ', dado físico' : ''}. ${rows
-    .map(
-      (r) =>
-        `${r.label}${r.hitPoints ? ` (${r.hitPoints})` : ''} ${r.affected ? `${r.word.toLowerCase()}${r.math ? `, ${r.math}` : ''}` : 'não é afetado'}.`,
-    )
-    .join(' ')}`;
+  const summary = poolSummary(roll, spell.poolRoll.physical, rows);
   return {
     roll,
     physical: spell.poolRoll.physical || spell.poolRoll.faces.length === 0,
@@ -567,6 +545,49 @@ function poolCard(e: CombatLogEntry): PoolCard | undefined {
       .map((r) => ({ id: r.id, label: r.label })),
     summary,
   };
+}
+
+/** The arithmetic of a creature of the pool: what was left after it, or why it was not affected. */
+function poolMath(fx: HpTarget['effect'], affected: boolean): string {
+  const hp = fx?.hitPointsBefore;
+  const left = fx?.poolLeft;
+  if (affected && hp !== undefined && left !== undefined) {
+    return `${left + hp} − ${hp} = ${left} restam`;
+  }
+  return fx && !affected ? reasonWords(fx.reason, hp, left, undefined) : '';
+}
+
+/** One creature of the pool card: its hit points, the sum that was left, and the word with the condition it got. */
+function poolRow(spell: HpSpell, t: HpTarget, condition: string): PoolCardRow {
+  const label = t.targetLabel || 'alguém';
+  const fx = t.effect;
+  const w = effectWords(
+    spell.effectKind,
+    spell.effectConditionKey,
+    fx?.outcome ?? SpellEffectOutcome.UNSPECIFIED,
+    label,
+    fx?.gain,
+  );
+  const hp = fx?.hitPointsBefore;
+  const math = poolMath(fx, w.affected);
+  return {
+    id: t.targetId,
+    label,
+    hitPoints: hp === undefined ? '' : `${hp} PV`,
+    math,
+    word: w.affected ? `${w.past}${condition ? ` · ${condition}` : ''}` : 'Não afetado',
+    icon: w.icon,
+    affected: w.affected,
+  };
+}
+
+/** The card in one paragraph, for a screen reader: "5d8 = 22 PV. Goblin 1 (7 PV) adormeceu, 22 − 7 = 15 restam." */
+function poolSummary(roll: string, physical: boolean, rows: readonly PoolCardRow[]): string {
+  const sentences = rows.map(
+    (r) =>
+      `${r.label}${r.hitPoints ? ` (${r.hitPoints})` : ''} ${r.affected ? `${r.word.toLowerCase()}${r.math ? `, ${r.math}` : ''}` : 'não é afetado'}.`,
+  );
+  return `${roll} PV${physical ? ', dado físico' : ''}. ${sentences.join(' ')}`;
 }
 
 function deathSaveText(e: CombatLogEntry): string {
@@ -1378,43 +1399,61 @@ export function entryCount(groups: readonly LogGroup[]): number {
   return groups.reduce((n, g) => n + g.lines.filter((l) => !l.id.startsWith('round-')).length, 0);
 }
 
+/** "da"/"do" before a name, by its gender. */
+function ofThe(label: string): string {
+  return article(label) === 'a' ? 'da' : 'do';
+}
+
+/** What the attack did, for the undo: " (5 de dano)", " (errou)", or nothing while the damage waits. */
+function attackUndoNote(e: CombatLogEntry): string {
+  if (
+    e.damage &&
+    e.damage.status !== PendingDamageStatus.AWAITING_ROLL &&
+    e.outcome !== AttackOutcome.MISS
+  ) {
+    return ` (${e.damage.amount} de dano)`;
+  }
+  return e.outcome === AttackOutcome.MISS ? ' (errou)' : '';
+}
+
+/** What an undo names for each kind of entry; a kind not listed is "a última ação". */
+const UNDO_LABELS = new Map<CombatLogKind, (e: CombatLogEntry) => string>([
+  [
+    CombatLogKind.ATTACK,
+    (e) => {
+      const target = e.targetLabel || 'alguém';
+      const to = article(target) === 'a' ? 'à' : 'ao';
+      return `o ataque ${ofThe(e.actorLabel)} ${e.actorLabel} ${to} ${target}${attackUndoNote(e)}`;
+    },
+  ],
+  [
+    CombatLogKind.ACTION,
+    (e) => `a ação de ${e.actorLabel}${e.keyNamePt ? ` (${e.keyNamePt})` : ''}`,
+  ],
+  [CombatLogKind.HIT_POINTS_ADJUSTED, (e) => `o ajuste de PV de ${e.actorLabel || e.targetLabel}`],
+  [
+    CombatLogKind.SPELL_CAST,
+    (e) => `a magia ${e.keyNamePt || ''} ${ofThe(e.actorLabel)} ${e.actorLabel}`.replace('  ', ' '),
+  ],
+  [CombatLogKind.REACTION, (e) => `a reação ${ofThe(e.actorLabel)} ${e.actorLabel}`],
+  [
+    CombatLogKind.OPPORTUNITY_OFFERED,
+    (e) => `a oferta de ataque de oportunidade a ${e.targetLabel || 'alguém'}`,
+  ],
+  [
+    CombatLogKind.DEATH_SAVE,
+    (e) => `o teste contra a morte ${ofThe(e.actorLabel)} ${e.actorLabel}`,
+  ],
+  [
+    CombatLogKind.CONDITIONS_CHANGED,
+    (e) => `a mudança de condições ${ofThe(e.targetLabel)} ${e.targetLabel}`,
+  ],
+]);
+
 /** The entry the undo would take back, named for the confirmation:
  * "o ataque do Capitão Goblin ao Toren (5 de dano)". */
 export function undoLabel(e: CombatLogEntry): string {
-  switch (e.kind) {
-    case CombatLogKind.ATTACK: {
-      const target = e.targetLabel || 'alguém';
-      const to = article(target) === 'a' ? 'à' : 'ao';
-      const damage =
-        e.damage &&
-        e.damage.status !== PendingDamageStatus.AWAITING_ROLL &&
-        e.outcome !== AttackOutcome.MISS
-          ? ` (${e.damage.amount} de dano)`
-          : e.outcome === AttackOutcome.MISS
-            ? ' (errou)'
-            : '';
-      return `o ataque ${article(e.actorLabel) === 'a' ? 'da' : 'do'} ${e.actorLabel} ${to} ${target}${damage}`;
-    }
-    case CombatLogKind.ACTION:
-      return `a ação de ${e.actorLabel}${e.keyNamePt ? ` (${e.keyNamePt})` : ''}`;
-    case CombatLogKind.HIT_POINTS_ADJUSTED:
-      return `o ajuste de PV de ${e.actorLabel || e.targetLabel}`;
-    case CombatLogKind.SPELL_CAST:
-      return `a magia ${e.keyNamePt || ''} ${article(e.actorLabel) === 'a' ? 'da' : 'do'} ${e.actorLabel}`.replace(
-        '  ',
-        ' ',
-      );
-    case CombatLogKind.REACTION:
-      return `a reação ${article(e.actorLabel) === 'a' ? 'da' : 'do'} ${e.actorLabel}`;
-    case CombatLogKind.OPPORTUNITY_OFFERED:
-      return `a oferta de ataque de oportunidade a ${e.targetLabel || 'alguém'}`;
-    case CombatLogKind.DEATH_SAVE:
-      return `o teste contra a morte ${article(e.actorLabel) === 'a' ? 'da' : 'do'} ${e.actorLabel}`;
-    case CombatLogKind.CONDITIONS_CHANGED:
-      return `a mudança de condições ${article(e.targetLabel) === 'a' ? 'da' : 'do'} ${e.targetLabel}`;
-    default:
-      return 'a última ação';
-  }
+  return UNDO_LABELS.get(e.kind)?.(e) ?? 'a última ação';
 }
 
 /** The last entry the master may undo, from the groups' source rounds. */

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/proto"
@@ -301,39 +299,38 @@ func (s *Service) getVitals(ctx context.Context, tx pgx.Tx, campaignID, characte
 // transaction that also writes the session event. It takes no caller on
 // purpose, like LockSheets.
 func (s *Service) AdjustVitals(ctx context.Context, tx pgx.Tx, campaignID, characterID string, req *playv1.AdjustCharacterVitalsRequest) (before, after *playv1.CharacterVitals, err error) {
-	id, ok := parseUUID(characterID)
-	if !ok {
-		return nil, nil, errCharacterNotFound()
-	}
-	q := s.queries.WithTx(tx)
-	row, err := q.GetVitals(ctx, charactersdb.GetVitalsParams{CampaignID: campaignID, ID: id})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil, errCharacterNotFound()
-	}
-	if err != nil {
-		return nil, nil, wrap("get vitals", err)
-	}
-	content, err := s.contentFor(ctx, tx, campaignID)
-	if err != nil {
-		return nil, nil, wrap("read rules content", err)
-	}
-	m, err := maxima(content, row.ID, row.Sheet, row.WildShapeBeast)
+	r, _, err := s.vitalsOfRow(ctx, tx, campaignID, characterID)
 	if err != nil {
 		return nil, nil, err
 	}
-	current := vitalsRow(row)
-	if err := s.liveFamiliar(ctx, q, campaignID, &current); err != nil {
-		return nil, nil, wrap("read the familiar", err)
-	}
-	before = vitalsToProto(current, m)
+	before = r.view
 	after = proto.CloneOf(before)
 	if err := applyVitalsChange(after, req); err != nil {
 		return nil, nil, invalidArgument(err)
 	}
+	params, err := correctedVitals(r.row, req, after)
+	if err != nil {
+		return nil, nil, err
+	}
+	q := s.queries.WithTx(tx)
+	params.Now = s.now()
+	saved, err := q.UpsertVitals(ctx, params)
+	if err != nil {
+		return nil, nil, wrap("save vitals", err)
+	}
+	if err := s.saveWildShapeChange(ctx, q, r.row.ID, req, after); err != nil {
+		return nil, nil, err
+	}
+	after.Revision = saved.Revision
+	after.UpdatedAt = timestamppb.New(saved.UpdatedAt)
+	return before, after, nil
+}
 
-	// Usage is stored as it was and changed only where req sets it: the view is cut to
-	// today's sheet, and writing that back would erase the usage of slots and
-	// resources the sheet has lost for now.
+// correctedVitals is the row a correction stores, all but the time. Usage is stored as
+// it was and changed only where req sets it: the view is cut to today's sheet, and
+// writing that back would erase the usage of slots and resources the sheet has lost for
+// now.
+func correctedVitals(row vitalsRow, req *playv1.AdjustCharacterVitalsRequest, after *playv1.CharacterVitals) (charactersdb.UpsertVitalsParams, error) {
 	used := make([]int32, maxSpellLevel)
 	copy(used, row.SpellSlotsUsed)
 	for _, change := range req.GetSpellSlotsUsed() {
@@ -347,23 +344,15 @@ func (s *Service) AdjustVitals(ctx context.Context, tx pgx.Tx, campaignID, chara
 	// was read (a row from before the sizes were kept gets them now).
 	hitDiceJSON, hitDiceUsed, err := encodeHitDiceUsed(hitDiceFromProto(after.GetHitDiceUsedByDie()))
 	if err != nil {
-		return nil, nil, wrap("encode the hit dice", err)
+		return charactersdb.UpsertVitalsParams{}, wrap("encode the hit dice", err)
 	}
-	usedResources := map[string]int32{}
-	_ = json.Unmarshal(row.ResourcesUsed, &usedResources)
-	if usedResources == nil {
-		usedResources = map[string]int32{}
-	}
+	usedResources := storedResourcesUsed(row.ResourcesUsed)
 	for _, change := range req.GetResourcesUsed() {
-		if change.GetUsed() > 0 {
-			usedResources[change.GetKey()] = change.GetUsed()
-		} else {
-			delete(usedResources, change.GetKey())
-		}
+		setResourceUse(usedResources, change.GetKey(), change.GetUsed())
 	}
 	resourcesJSON, err := json.Marshal(usedResources)
 	if err != nil {
-		return nil, nil, wrap("encode the resources", err)
+		return charactersdb.UpsertVitalsParams{}, wrap("encode the resources", err)
 	}
 	// A character whose hit points were never set, and this change leaves alone,
 	// keeps them unset: full, whatever the maximum becomes.
@@ -371,7 +360,7 @@ func (s *Service) AdjustVitals(ctx context.Context, tx pgx.Tx, campaignID, chara
 	if req.HitPointsCurrent == nil && row.HitPointsCurrent == nil {
 		hitPoints = nil
 	}
-	saved, err := q.UpsertVitals(ctx, charactersdb.UpsertVitalsParams{
+	return charactersdb.UpsertVitalsParams{
 		CharacterID:        row.ID,
 		HitPointsCurrent:   hitPoints,
 		HitPointsTemporary: after.GetHitPointsTemporary(),
@@ -379,134 +368,62 @@ func (s *Service) AdjustVitals(ctx context.Context, tx pgx.Tx, campaignID, chara
 		PactSlotsUsed:      pactUsed,
 		HitDiceUsed:        hitDiceUsed,
 		HitDiceUsedByDie:   hitDiceJSON,
-		SpellSlotsCreated:  slotsCreatedOf(current),
+		SpellSlotsCreated:  slotsCreatedOf(row),
 		ResourcesUsed:      resourcesJSON,
-		Now:                s.now(),
-	})
+	}, nil
+}
+
+// storedResourcesUsed reads the stored uses of the resources, a JSON object {key: n}; a
+// value that does not read counts as nothing spent. The map is never nil.
+func storedResourcesUsed(raw []byte) map[string]int32 {
+	used := map[string]int32{}
+	_ = json.Unmarshal(raw, &used)
+	if used == nil {
+		used = map[string]int32{}
+	}
+	return used
+}
+
+// setResourceUse puts a resource's uses in the stored map: none is no entry.
+func setResourceUse(used map[string]int32, key string, n int32) {
+	if n > 0 {
+		used[key] = n
+	} else {
+		delete(used, key)
+	}
+}
+
+// saveWildShapeChange stores the beast's pool when the correction set it. It is a row of
+// its own (character_wild_shapes): 0 ended the form (MR-037). UpsertVitals bumped the
+// revision already.
+func (s *Service) saveWildShapeChange(ctx context.Context, q *charactersdb.Queries, characterID string, req *playv1.AdjustCharacterVitalsRequest, after *playv1.CharacterVitals) error {
+	if req.WildShapeHitPointsCurrent == nil {
+		return nil
+	}
+	var err error
+	if w := after.GetWildShape(); w != nil {
+		err = q.SetWildShape(ctx, charactersdb.SetWildShapeParams{CharacterID: characterID, Beast: w.GetBeastKey(), Hp: w.GetHitPointsCurrent(), Now: s.now()})
+	} else {
+		err = q.ClearWildShape(ctx, characterID)
+	}
 	if err != nil {
-		return nil, nil, wrap("save vitals", err)
+		return wrap("save the wild shape", err)
 	}
-	// The beast's pool is a row of its own (character_wild_shapes): 0 ended the form
-	// (MR-037). UpsertVitals bumped the revision already.
-	if req.WildShapeHitPointsCurrent != nil {
-		if w := after.GetWildShape(); w != nil {
-			err = q.SetWildShape(ctx, charactersdb.SetWildShapeParams{CharacterID: row.ID, Beast: w.GetBeastKey(), Hp: w.GetHitPointsCurrent(), Now: s.now()})
-		} else {
-			err = q.ClearWildShape(ctx, row.ID)
-		}
-		if err != nil {
-			return nil, nil, wrap("save the wild shape", err)
-		}
-	}
-	after.Revision = saved.Revision
-	after.UpdatedAt = timestamppb.New(saved.UpdatedAt)
-	return before, after, nil
+	return nil
 }
 
 // applyVitalsChange sets on v the values req sets, checking each against
 // its maximum. v already has the maximums. Errors are fieldErrors, with the
-// request's field names.
+// request's field names. The checks run in vitalsChanges' order, and the first
+// refusal is the answer.
 func applyVitalsChange(v *playv1.CharacterVitals, req *playv1.AdjustCharacterVitalsRequest) error {
-	if req.HitPointsCurrent == nil && req.HitPointsTemporary == nil && len(req.GetSpellSlotsUsed()) == 0 &&
-		req.PactSlotsUsed == nil && req.HitDiceUsed == nil && len(req.GetHitDiceUsedByDie()) == 0 && len(req.GetResourcesUsed()) == 0 && req.WildShapeHitPointsCurrent == nil {
+	if !setsAnyVital(req) {
 		return fieldErr("request", "must set at least one value to change")
 	}
-	if req.WildShapeHitPointsCurrent != nil {
-		w := v.GetWildShape()
-		if w == nil {
-			return fieldErr("wild_shape_hit_points_current", "must be unset: the character is not in a beast form")
-		}
-		if err := inRange("wild_shape_hit_points_current", req.GetWildShapeHitPointsCurrent(), w.GetHitPointsMax()); err != nil {
+	for _, change := range vitalsChanges {
+		if err := change(v, req); err != nil {
 			return err
 		}
-		if req.GetWildShapeHitPointsCurrent() == 0 {
-			v.WildShape = nil // at 0 the beast is gone: the form ends
-		} else {
-			w.HitPointsCurrent = req.GetWildShapeHitPointsCurrent()
-		}
-	}
-	if req.HitPointsCurrent != nil {
-		if err := inRange("hit_points_current", req.GetHitPointsCurrent(), v.GetHitPointsMax()); err != nil {
-			return err
-		}
-		v.HitPointsCurrent = req.GetHitPointsCurrent()
-	}
-	if req.HitPointsTemporary != nil {
-		if err := inRange("hit_points_temporary", req.GetHitPointsTemporary(), MaxTemporaryHitPoints); err != nil {
-			return err
-		}
-		v.HitPointsTemporary = req.GetHitPointsTemporary()
-	}
-	seen := map[int32]bool{}
-	for i, change := range req.GetSpellSlotsUsed() {
-		field := fmt.Sprintf("spell_slots_used[%d]", i)
-		level := change.GetLevel()
-		if seen[level] {
-			return fieldErr(field+".level", "repeats level %d", level)
-		}
-		seen[level] = true
-		slot := slotOfLevel(v, level)
-		if slot == nil {
-			return fieldErr(field+".level", "must be a spell level the character has slots of")
-		}
-		if err := inRange(field+".used", change.GetUsed(), slot.GetTotal()); err != nil {
-			return err
-		}
-		slot.Used = change.GetUsed()
-	}
-	if req.PactSlotsUsed != nil {
-		if v.GetPactSlots() == nil {
-			return fieldErr("pact_slots_used", "must be unset: the character has no pact magic slots")
-		}
-		if err := inRange("pact_slots_used", req.GetPactSlotsUsed(), v.GetPactSlots().GetTotal()); err != nil {
-			return err
-		}
-		v.PactSlots.Used = req.GetPactSlotsUsed()
-	}
-	if req.HitDiceUsed != nil && len(req.GetHitDiceUsedByDie()) > 0 {
-		return fieldErr("hit_dice_used", "must not be set together with hit_dice_used_by_die")
-	}
-	if req.HitDiceUsed != nil {
-		if err := inRange("hit_dice_used", req.GetHitDiceUsed(), v.GetHitDiceTotal()); err != nil {
-			return err
-		}
-		// A count with no sizes spends the largest dice first.
-		setHitDiceUsed(v, rules.SplitHitDiceUsed(hitDiceOf(v), int(req.GetHitDiceUsed())))
-	}
-	if len(req.GetHitDiceUsedByDie()) > 0 {
-		next := hitDiceFromProto(v.GetHitDiceUsedByDie())
-		for die, n := range req.GetHitDiceUsedByDie() {
-			field := fmt.Sprintf("hit_dice_used_by_die[%d]", die)
-			i := slices.IndexFunc(v.GetHitDice(), func(hd *rulesv1.HitDice) bool { return hd.GetFaces() == die })
-			if i < 0 {
-				return fieldErr(field, "must be a die size the character has")
-			}
-			if err := inRange(field, n, v.GetHitDice()[i].GetCount()); err != nil {
-				return err
-			}
-			if n == 0 {
-				delete(next, int(die))
-			} else {
-				next[int(die)] = int(n)
-			}
-		}
-		setHitDiceUsed(v, next)
-	}
-	seenResource := map[string]bool{}
-	for i, change := range req.GetResourcesUsed() {
-		field := fmt.Sprintf("resources_used[%d]", i)
-		if seenResource[change.GetKey()] {
-			return fieldErr(field+".key", "repeats a resource")
-		}
-		seenResource[change.GetKey()] = true
-		i := slices.IndexFunc(v.GetResources(), func(r *playv1.ResourceUsage) bool { return r.GetKey() == change.GetKey() })
-		if i < 0 {
-			return fieldErr(field+".key", "must be a resource the character has")
-		}
-		if err := inRange(field+".used", change.GetUsed(), v.GetResources()[i].GetTotal()); err != nil {
-			return err
-		}
-		v.Resources[i].Used = change.GetUsed()
 	}
 	return nil
 }

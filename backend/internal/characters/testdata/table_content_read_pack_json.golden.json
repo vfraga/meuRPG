@@ -1,0 +1,90 @@
+[
+  {
+    "step": "a good file",
+    "value": {
+      "entries": 1,
+      "pack_nil": false,
+      "top": null,
+      "unknown": null
+    }
+  },
+  {
+    "step": "unknown fields at every depth",
+    "value": {
+      "entries": 2,
+      "pack_nil": false,
+      "top": [
+        "pack.name2 | unknown_field | the field \"name2\" does not exist",
+        "pack.zeta | unknown_field | the field \"zeta\" does not exist"
+      ],
+      "unknown": [
+        "0: extra | unknown_field | feat:um@mesa | the field \"extra\" does not exist",
+        "0: table_feat.effects[0].bogus | unknown_field | feat:um@mesa | the field \"bogus\" does not exist",
+        "0: table_feat.effects[2].nope | unknown_field | feat:um@mesa | the field \"nope\" does not exist",
+        "0: table_feat.prerequisite.proficiency | unknown_field | feat:um@mesa | the field \"proficiency\" does not exist"
+      ]
+    }
+  },
+  {
+    "step": "an unknown field in an entry past the list",
+    "value": {
+      "entries": 2,
+      "pack_nil": false,
+      "top": null,
+      "unknown": [
+        "0: a | unknown_field |  | the field \"a\" does not exist",
+        "1: b | unknown_field |  | the field \"b\" does not exist"
+      ]
+    }
+  },
+  {
+    "step": "not JSON",
+    "value": {
+      "pack_nil": true,
+      "top": [
+        "pack | bad_value | the file is not a content pack in proto JSON"
+      ],
+      "unknown": null
+    }
+  },
+  {
+    "step": "not an object",
+    "value": {
+      "pack_nil": true,
+      "top": [
+        "pack | bad_value | the file is not a content pack in proto JSON"
+      ],
+      "unknown": null
+    }
+  },
+  {
+    "step": "a field of the wrong type",
+    "value": {
+      "pack_nil": true,
+      "top": [
+        "pack | bad_value | the file is not a content pack in proto JSON"
+      ],
+      "unknown": null
+    }
+  },
+  {
+    "step": "trailing data",
+    "value": {
+      "pack_nil": true,
+      "top": [
+        "pack | bad_value | the file is not a content pack in proto JSON"
+      ],
+      "unknown": null
+    }
+  },
+  {
+    "step": "over the bytes",
+    "value": {
+      "pack_nil": true,
+      "top": [
+        "pack | size_limit | the pack is over 2097152 bytes"
+      ],
+      "unknown": null
+    }
+  }
+]

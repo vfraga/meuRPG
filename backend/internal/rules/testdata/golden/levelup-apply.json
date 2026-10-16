@@ -1,0 +1,973 @@
+{
+  "ASI on a fixed sheet": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": {
+      "dex": 1,
+      "str": 1
+    },
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "a feat on a sheet with feats": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": [
+      "feat:meio@mesa"
+    ],
+    "FeatSlots": {
+      "feat:meio@mesa": "feature:fighter-ability-score-improvement-1",
+      "x": "y"
+    }
+  },
+  "a feat that raises what it lists": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": {
+      "con": 1,
+      "str": 1
+    },
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": [
+      "feat:robusto@mesa"
+    ],
+    "FeatSlots": {
+      "feat:robusto@mesa": "feature:fighter-ability-score-improvement-1"
+    }
+  },
+  "a feat that raises what it lists, at 20": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 19,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": {
+      "con": 1
+    },
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": [
+      "feat:robusto@mesa"
+    ],
+    "FeatSlots": {
+      "feat:robusto@mesa": "feature:fighter-ability-score-improvement-1"
+    }
+  },
+  "a feat that raises what it lists, with an increase sent": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": {
+      "con": 1
+    },
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": [
+      "feat:robusto@mesa"
+    ],
+    "FeatSlots": {
+      "feat:robusto@mesa": "feature:fighter-ability-score-improvement-1"
+    }
+  },
+  "a feat to choose from": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": {
+      "dex": 1
+    },
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": [
+      "feat:meio@mesa"
+    ],
+    "FeatSlots": {
+      "feat:meio@mesa": "feature:fighter-ability-score-improvement-1"
+    }
+  },
+  "a new class with an instrument": {
+    "BaseScores": {
+      "cha": 15,
+      "con": 14,
+      "dex": 15,
+      "int": 15,
+      "str": 15,
+      "wis": 15
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 5
+      },
+      {
+        "Class": "class:bard",
+        "Subclass": "",
+        "CustomSubclassName": "",
+        "Level": 1
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:athletics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 1,
+      "Rolls": [
+        6,
+        6,
+        6,
+        6,
+        3
+      ]
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": [
+      "Alaúde"
+    ],
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "a roll on a fixed sheet": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 1,
+      "Rolls": [
+        6,
+        6,
+        7
+      ]
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "a roll on a rolled sheet": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 1,
+      "Rolls": [
+        9,
+        3,
+        2
+      ]
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "an invocation swapped": {
+    "BaseScores": {
+      "cha": 8,
+      "con": 13,
+      "dex": 14,
+      "int": 12,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:warlock",
+        "Subclass": "subclass:fiend",
+        "CustomSubclassName": "",
+        "Level": 5
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:arcana",
+      "skill:deception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": {
+      "cha": 1,
+      "wis": 1
+    },
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "",
+    "Shield": false,
+    "MageArmor": false,
+    "Weapons": null,
+    "Cantrips": [
+      "spell:chill-touch",
+      "spell:eldritch-blast",
+      "spell:mage-hand"
+    ],
+    "SpellsKnown": [
+      "spell:charm-person",
+      "spell:comprehend-languages",
+      "spell:expeditious-retreat",
+      "spell:darkness",
+      "spell:enthrall"
+    ],
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:eldritch-invocation-armor-of-shadows",
+      "feature:pact-of-the-chain",
+      "feature:eldritch-invocation-beast-speech"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "an unknown feat": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": [
+      "feat:nada"
+    ],
+    "FeatSlots": null
+  },
+  "an unknown instrument": {
+    "BaseScores": {
+      "cha": 15,
+      "con": 14,
+      "dex": 15,
+      "int": 15,
+      "str": 15,
+      "wis": 15
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 5
+      },
+      {
+        "Class": "class:bard",
+        "Subclass": "",
+        "CustomSubclassName": "",
+        "Level": 1
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:athletics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "choices, text, skills and expertise": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception",
+      "skill:arcana"
+    ],
+    "Expertise": [
+      "skill:perception"
+    ],
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense",
+      "feature:late",
+      "feature:x"
+    ],
+    "FeatureChoiceText": {
+      "feature:x": "texto"
+    },
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "refused: level 20": "{Field:full.classes[0].level Reason:max_level Code: Message:the character is already level 20 ClassKey: Ability: Minimum:0 Have:0}",
+  "refused: the prerequisite": "{Field:class_key Reason:multiclass_prerequisite Code: Message:class:wizard asks for int 13, the character has 9 ClassKey:class:wizard Ability:int Minimum:13 Have:9}",
+  "refused: unknown class": "{Field:full.classes Reason:class Code: Message:no such class ClassKey: Ability: Minimum:0 Have:0}",
+  "spells and a subclass": {
+    "BaseScores": {
+      "cha": 12,
+      "con": 15,
+      "dex": 16,
+      "int": 16,
+      "str": 12,
+      "wis": 13
+    },
+    "Race": "race:gnome",
+    "Subrace": "subrace:rock-gnome",
+    "Classes": [
+      {
+        "Class": "class:wizard",
+        "Subclass": "subclass:evocation",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "",
+    "CustomBackgroundName": "Sábio",
+    "CustomBackgroundSkills": [
+      "skill:arcana",
+      "skill:history"
+    ],
+    "CustomBackgroundProficiencies": [
+      "language:draconic",
+      "language:elvish"
+    ],
+    "CustomBackgroundFeatureName": "Pesquisador",
+    "CustomBackgroundFeature": "Quando você não sabe uma informação, sabe a quem perguntar: bibliotecas, escribas e outros estudiosos.",
+    "CustomBackgroundEquipment": "Um tinteiro, uma pena, uma faca pequena e roupas comuns.",
+    "SkillProficiencies": [
+      "skill:investigation",
+      "skill:insight"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "",
+    "Shield": false,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:quarterstaff"
+    ],
+    "Cantrips": [
+      "spell:fire-bolt",
+      "spell:ray-of-frost",
+      "spell:minor-illusion",
+      "spell:mage-hand"
+    ],
+    "SpellsKnown": [
+      "spell:magic-missile",
+      "spell:burning-hands",
+      "spell:shield",
+      "spell:mage-armor",
+      "spell:sleep",
+      "spell:find-familiar",
+      "spell:detect-magic",
+      "spell:comprehend-languages",
+      "spell:scorching-ray",
+      "spell:web",
+      "spell:misty-step"
+    ],
+    "SpellsPrepared": [
+      "spell:magic-missile",
+      "spell:burning-hands",
+      "spell:shield",
+      "spell:mage-armor",
+      "spell:sleep",
+      "spell:scorching-ray",
+      "spell:web",
+      "spell:misty-step"
+    ],
+    "FeatureChoices": null,
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "text on a sheet that has some": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 0,
+      "Rolls": null
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": {
+      "a": "1",
+      "b": "2"
+    },
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  },
+  "the average on a rolled sheet": {
+    "BaseScores": {
+      "cha": 10,
+      "con": 14,
+      "dex": 12,
+      "int": 8,
+      "str": 15,
+      "wis": 10
+    },
+    "Race": "race:human",
+    "Subrace": "",
+    "Classes": [
+      {
+        "Class": "class:fighter",
+        "Subclass": "subclass:champion",
+        "CustomSubclassName": "",
+        "Level": 4
+      }
+    ],
+    "Background": "background:acolyte",
+    "CustomBackgroundName": "",
+    "CustomBackgroundSkills": null,
+    "CustomBackgroundProficiencies": null,
+    "CustomBackgroundFeatureName": "",
+    "CustomBackgroundFeature": "",
+    "CustomBackgroundEquipment": "",
+    "SkillProficiencies": [
+      "skill:acrobatics",
+      "skill:perception"
+    ],
+    "Expertise": null,
+    "ExtraAbilityBonuses": null,
+    "HitPoints": {
+      "Method": 1,
+      "Rolls": [
+        9,
+        3,
+        6
+      ]
+    },
+    "Armor": "equipment:chain-mail",
+    "Shield": true,
+    "MageArmor": false,
+    "Weapons": [
+      "equipment:longsword"
+    ],
+    "Cantrips": null,
+    "SpellsKnown": null,
+    "SpellsPrepared": null,
+    "FeatureChoices": [
+      "feature:fighter-fighting-style-defense"
+    ],
+    "FeatureChoiceText": null,
+    "ToolProficiencies": null,
+    "Feats": null,
+    "FeatSlots": null
+  }
+}

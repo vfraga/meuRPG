@@ -1,0 +1,362 @@
+[
+  {
+    "step": "class casting from a hidden class",
+    "value": {
+      "casting": {
+        "kind": "half"
+      },
+      "levels": [
+        {
+          "features": [
+            {
+              "effects": [
+                {
+                  "spells": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "note"
+                },
+                {
+                  "choice": "spell",
+                  "count": 1,
+                  "from": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "choice"
+                }
+              ],
+              "key": "feature:a@mesa",
+              "namePt": "A"
+            },
+            {
+              "key": "feature:b@mesa",
+              "namePt": "B",
+              "options": [
+                {
+                  "effects": [
+                    {
+                      "spells": [
+                        "spell:fire-bolt"
+                      ],
+                      "type": "note"
+                    },
+                    {
+                      "choice": "spell",
+                      "count": 1,
+                      "from": [
+                        "spell:fire-bolt"
+                      ],
+                      "type": "choice"
+                    }
+                  ],
+                  "key": "feature:b-1@mesa",
+                  "namePt": "B1"
+                }
+              ]
+            }
+          ]
+        },
+        {}
+      ],
+      "namePt": "Classe"
+    }
+  },
+  {
+    "step": "class casting from a visible class",
+    "value": {
+      "casting": {
+        "kind": "full",
+        "listFrom": "class:wizard"
+      },
+      "namePt": "Classe 2"
+    }
+  },
+  {
+    "step": "class without casting",
+    "value": {
+      "namePt": "Classe 3"
+    }
+  },
+  {
+    "step": "subclass",
+    "value": {
+      "alwaysPrepared": [
+        {
+          "classLevel": 5,
+          "spellKey": "spell:fire-bolt"
+        }
+      ],
+      "casting": {
+        "kind": "third"
+      },
+      "classKey": "class:druid",
+      "levels": [
+        {
+          "features": [
+            {
+              "effects": [
+                {
+                  "spells": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "note"
+                },
+                {
+                  "choice": "spell",
+                  "count": 1,
+                  "from": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "choice"
+                }
+              ],
+              "key": "feature:a@mesa",
+              "namePt": "A"
+            },
+            {
+              "key": "feature:b@mesa",
+              "namePt": "B",
+              "options": [
+                {
+                  "effects": [
+                    {
+                      "spells": [
+                        "spell:fire-bolt"
+                      ],
+                      "type": "note"
+                    },
+                    {
+                      "choice": "spell",
+                      "count": 1,
+                      "from": [
+                        "spell:fire-bolt"
+                      ],
+                      "type": "choice"
+                    }
+                  ],
+                  "key": "feature:b-1@mesa",
+                  "namePt": "B1"
+                }
+              ]
+            }
+          ],
+          "level": 3
+        }
+      ],
+      "namePt": "Sub"
+    }
+  },
+  {
+    "step": "subclass without casting",
+    "value": {
+      "classKey": "class:fighter",
+      "namePt": "Sub 2"
+    }
+  },
+  {
+    "step": "race",
+    "value": {
+      "namePt": "Raça",
+      "traits": [
+        {
+          "effects": [
+            {
+              "spells": [
+                "spell:fire-bolt"
+              ],
+              "type": "note"
+            },
+            {
+              "choice": "spell",
+              "count": 1,
+              "from": [
+                "spell:fire-bolt"
+              ],
+              "type": "choice"
+            }
+          ],
+          "key": "feature:a@mesa",
+          "namePt": "A"
+        },
+        {
+          "key": "feature:b@mesa",
+          "namePt": "B",
+          "options": [
+            {
+              "effects": [
+                {
+                  "spells": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "note"
+                },
+                {
+                  "choice": "spell",
+                  "count": 1,
+                  "from": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "choice"
+                }
+              ],
+              "key": "feature:b-1@mesa",
+              "namePt": "B1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "step": "subrace",
+    "value": {
+      "namePt": "Sub-raça",
+      "raceKey": "race:oculta@mesa",
+      "traits": [
+        {
+          "effects": [
+            {
+              "spells": [
+                "spell:fire-bolt"
+              ],
+              "type": "note"
+            },
+            {
+              "choice": "spell",
+              "count": 1,
+              "from": [
+                "spell:fire-bolt"
+              ],
+              "type": "choice"
+            }
+          ],
+          "key": "feature:a@mesa",
+          "namePt": "A"
+        },
+        {
+          "key": "feature:b@mesa",
+          "namePt": "B",
+          "options": [
+            {
+              "effects": [
+                {
+                  "spells": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "note"
+                },
+                {
+                  "choice": "spell",
+                  "count": 1,
+                  "from": [
+                    "spell:fire-bolt"
+                  ],
+                  "type": "choice"
+                }
+              ],
+              "key": "feature:b-1@mesa",
+              "namePt": "B1"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "step": "background",
+    "value": {
+      "feature": {
+        "effects": [
+          {
+            "spells": [
+              "spell:fire-bolt"
+            ],
+            "type": "note"
+          },
+          {
+            "choice": "spell",
+            "count": 1,
+            "from": [
+              "spell:fire-bolt"
+            ],
+            "type": "choice"
+          }
+        ],
+        "key": "feature:a@mesa",
+        "namePt": "A"
+      },
+      "namePt": "Antecedente"
+    }
+  },
+  {
+    "step": "background without a feature",
+    "value": {
+      "namePt": "Antecedente 2"
+    }
+  },
+  {
+    "step": "spell",
+    "value": {
+      "classKeys": [
+        "class:wizard"
+      ],
+      "namePt": "Magia"
+    }
+  },
+  {
+    "step": "feat of a hidden race",
+    "value": {
+      "effects": [
+        {
+          "spells": [
+            "spell:fire-bolt"
+          ],
+          "type": "note"
+        },
+        {
+          "choice": "spell",
+          "count": 1,
+          "from": [
+            "spell:fire-bolt"
+          ],
+          "type": "choice"
+        }
+      ],
+      "namePt": "Talento",
+      "prerequisite": {
+        "level": 4
+      }
+    }
+  },
+  {
+    "step": "feat of a visible race",
+    "value": {
+      "namePt": "Talento 2",
+      "prerequisite": {
+        "raceKey": "race:elf"
+      }
+    }
+  },
+  {
+    "step": "feat without a prerequisite",
+    "value": {
+      "effects": [
+        {
+          "spells": [
+            "spell:fire-bolt"
+          ],
+          "type": "note"
+        },
+        {
+          "choice": "spell",
+          "count": 1,
+          "from": [
+            "spell:fire-bolt"
+          ],
+          "type": "choice"
+        }
+      ],
+      "namePt": "Talento 3"
+    }
+  }
+]

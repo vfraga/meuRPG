@@ -1,0 +1,249 @@
+[
+  {
+    "step": "an editor's update (violations)",
+    "value": [
+      "table_race.features[3].key | immutable | a feature key is made by the server; send back only the ones the entry has",
+      "table_race.features[4].key | immutable | a feature key is made by the server; send back only the ones the entry has"
+    ]
+  },
+  {
+    "step": "an editor's update",
+    "value": {
+      "namePt": "Brumas",
+      "traits": [
+        {
+          "key": "trait:race-brumas-a0c31d--passo@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--passo-2@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao@mesa",
+          "namePt": "Outro nome"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--da-mochila@mesa",
+          "namePt": "Mochila"
+        },
+        {
+          "key": "trait:outra-coisa@mesa",
+          "namePt": "Estranho"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao-2@mesa",
+          "namePt": "Visão"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--nevoa-densa@mesa",
+          "namePt": "Névoa Densa!"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--feature@mesa"
+        }
+      ]
+    }
+  },
+  {
+    "step": "a pack's update (violations)",
+    "value": [
+      "table_race.features[4].key | immutable | a feature key is made by the server; send back only the ones the entry has"
+    ]
+  },
+  {
+    "step": "a pack's update",
+    "value": {
+      "namePt": "Brumas",
+      "traits": [
+        {
+          "key": "trait:race-brumas-a0c31d--passo@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--passo-2@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao@mesa",
+          "namePt": "Outro nome"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--da-mochila@mesa",
+          "namePt": "Mochila"
+        },
+        {
+          "key": "trait:outra-coisa@mesa",
+          "namePt": "Estranho"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao-2@mesa",
+          "namePt": "Visão"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--nevoa-densa@mesa",
+          "namePt": "Névoa Densa!"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--feature@mesa"
+        }
+      ]
+    }
+  },
+  {
+    "step": "an editor's new race (violations)",
+    "value": [
+      "table_race.features[2].key | immutable | a feature key is made by the server; send back only the ones the entry has",
+      "table_race.features[3].key | immutable | a feature key is made by the server; send back only the ones the entry has",
+      "table_race.features[4].key | immutable | a feature key is made by the server; send back only the ones the entry has"
+    ]
+  },
+  {
+    "step": "an editor's new race",
+    "value": {
+      "namePt": "Brumas",
+      "traits": [
+        {
+          "key": "trait:race-brumas-a0c31d--passo@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--passo-2@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao@mesa",
+          "namePt": "Outro nome"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--da-mochila@mesa",
+          "namePt": "Mochila"
+        },
+        {
+          "key": "trait:outra-coisa@mesa",
+          "namePt": "Estranho"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao@mesa",
+          "namePt": "Visão"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--nevoa-densa@mesa",
+          "namePt": "Névoa Densa!"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--feature@mesa"
+        }
+      ]
+    }
+  },
+  {
+    "step": "a pack's new race (violations)",
+    "value": [
+      "table_race.features[4].key | immutable | a feature key is made by the server; send back only the ones the entry has"
+    ]
+  },
+  {
+    "step": "a pack's new race",
+    "value": {
+      "namePt": "Brumas",
+      "traits": [
+        {
+          "key": "trait:race-brumas-a0c31d--passo@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--passo-2@mesa",
+          "namePt": "Passo"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao@mesa",
+          "namePt": "Outro nome"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--da-mochila@mesa",
+          "namePt": "Mochila"
+        },
+        {
+          "key": "trait:outra-coisa@mesa",
+          "namePt": "Estranho"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--visao-2@mesa",
+          "namePt": "Visão"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--nevoa-densa@mesa",
+          "namePt": "Névoa Densa!"
+        },
+        {
+          "key": "trait:race-brumas-a0c31d--feature@mesa"
+        }
+      ]
+    }
+  },
+  {
+    "step": "a new class with options (violations)",
+    "value": [
+      "table_class.levels[0].features[0].options[2].key | immutable | a feature key is made by the server; send back only the ones the entry has"
+    ]
+  },
+  {
+    "step": "a new class with options",
+    "value": {
+      "levels": [
+        {
+          "features": [
+            {
+              "key": "feature:class-classe-2f2d15--postura@mesa",
+              "namePt": "Postura",
+              "options": [
+                {
+                  "key": "feature:class-classe-2f2d15--alta@mesa",
+                  "namePt": "Alta"
+                },
+                {
+                  "key": "feature:class-classe-2f2d15--alta-2@mesa",
+                  "namePt": "Alta"
+                },
+                {
+                  "key": "feature:x@mesa",
+                  "namePt": "Baixa"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "features": [
+            {
+              "key": "feature:class-classe-2f2d15--postura-2@mesa",
+              "namePt": "Postura"
+            }
+          ]
+        }
+      ],
+      "namePt": "Classe"
+    }
+  },
+  {
+    "step": "a class written by name",
+    "value": [
+      "feature:class-classe-2f2d15--postura@mesa",
+      "feature:class-classe-2f2d15--alta@mesa",
+      "feature:class-classe-2f2d15--alta-2@mesa",
+      "feature:class-classe-2f2d15--baixa@mesa",
+      "feature:class-classe-2f2d15--postura-2@mesa"
+    ]
+  },
+  {
+    "step": "the same class written by name again",
+    "value": [
+      "feature:class-classe-2f2d15--postura@mesa",
+      "feature:class-classe-2f2d15--alta-2@mesa",
+      "feature:class-classe-2f2d15--alta-3@mesa",
+      "feature:class-classe-2f2d15--baixa@mesa",
+      "feature:class-classe-2f2d15--postura-2@mesa"
+    ]
+  }
+]

@@ -96,48 +96,58 @@ func takesFullSheet(kind string) bool {
 func checkSheet(content *rules.Content, sheet *charactersv1.CharacterSheet) (*charactersv1.CharacterSheet, error) {
 	switch body := sheet.GetContent().(type) {
 	case *charactersv1.CharacterSheet_Full:
-		full := proto.CloneOf(body.Full)
-		if full == nil {
-			full = &charactersv1.FullSheet{}
-		}
-		if err := cleanFullSheet(full); err != nil {
-			return nil, err
-		}
-		// The revision of the table's content this sheet is saved with (RN-23): the
-		// server's, never the client's.
-		full.ContentRevision = i32(content.TableRevision())
-		// A feat's place in the improvements only means something for a feat the sheet has.
-		maps.DeleteFunc(full.FeatSlots, func(feat, _ string) bool { return !slices.Contains(full.FeatKeys, feat) })
-		full.KnownIssues = issueIDs(rules.Derive(buildOf(full), content).Issues)
-		full.ContentBaselines = nil // the server's: carryFlags sets it when a save keeps a flag
-		if err := rules.Validate(buildOf(full), content); err != nil {
-			if ve, ok := errors.AsType[*rules.ValidationError](err); ok {
-				return nil, &fieldError{field: "sheet." + ve.Field, err: errors.New(ve.Message)}
-			}
-			return nil, err
-		}
-		if err := checkChallenge(content, "sheet.full", full.GetChallengeRating(), full.GetXpValue()); err != nil {
-			return nil, err
-		}
-		return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: full}}, nil
+		return checkFullSheet(content, body.Full)
 	case *charactersv1.CharacterSheet_Basic:
-		basic := proto.CloneOf(body.Basic)
-		if basic == nil {
-			basic = &charactersv1.BasicSheet{}
-		}
-		// The creature link, its ability scores and the combat-only mark are the
-		// server's: only CreateNpcFromCreature and AddMonsters write them (MR-042).
-		basic.MonsterKey, basic.AbilityScores, basic.CombatOnly = "", nil, false
-		if err := cleanBasicSheet(basic); err != nil {
-			return nil, err
-		}
-		if err := checkChallenge(content, "sheet.basic", basic.GetChallengeRating(), basic.GetXpValue()); err != nil {
-			return nil, err
-		}
-		return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Basic{Basic: basic}}, nil
+		return checkBasicSheet(content, body.Basic)
 	default:
 		return nil, fieldErr("sheet", "is required: a full or a basic sheet")
 	}
+}
+
+// checkFullSheet is checkSheet for a full sheet.
+func checkFullSheet(content *rules.Content, sent *charactersv1.FullSheet) (*charactersv1.CharacterSheet, error) {
+	full := proto.CloneOf(sent)
+	if full == nil {
+		full = &charactersv1.FullSheet{}
+	}
+	if err := cleanFullSheet(full); err != nil {
+		return nil, err
+	}
+	// The revision of the table's content this sheet is saved with (RN-23): the
+	// server's, never the client's.
+	full.ContentRevision = i32(content.TableRevision())
+	// A feat's place in the improvements only means something for a feat the sheet has.
+	maps.DeleteFunc(full.FeatSlots, func(feat, _ string) bool { return !slices.Contains(full.FeatKeys, feat) })
+	full.KnownIssues = issueIDs(rules.Derive(buildOf(full), content).Issues)
+	full.ContentBaselines = nil // the server's: carryFlags sets it when a save keeps a flag
+	if err := rules.Validate(buildOf(full), content); err != nil {
+		if ve, ok := errors.AsType[*rules.ValidationError](err); ok {
+			return nil, &fieldError{field: "sheet." + ve.Field, err: errors.New(ve.Message)}
+		}
+		return nil, err
+	}
+	if err := checkChallenge(content, "sheet.full", full.GetChallengeRating(), full.GetXpValue()); err != nil {
+		return nil, err
+	}
+	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: full}}, nil
+}
+
+// checkBasicSheet is checkSheet for a basic sheet.
+func checkBasicSheet(content *rules.Content, sent *charactersv1.BasicSheet) (*charactersv1.CharacterSheet, error) {
+	basic := proto.CloneOf(sent)
+	if basic == nil {
+		basic = &charactersv1.BasicSheet{}
+	}
+	// The creature link, its ability scores and the combat-only mark are the
+	// server's: only CreateNpcFromCreature and AddMonsters write them (MR-042).
+	basic.MonsterKey, basic.AbilityScores, basic.CombatOnly = "", nil, false
+	if err := cleanBasicSheet(basic); err != nil {
+		return nil, err
+	}
+	if err := checkChallenge(content, "sheet.basic", basic.GetChallengeRating(), basic.GetXpValue()); err != nil {
+		return nil, err
+	}
+	return &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Basic{Basic: basic}}, nil
 }
 
 // checkChallenge checks an NPC's challenge rating and the XP it gives (MR-016,
@@ -177,41 +187,75 @@ func checkSheetKind(kind string, sheet *charactersv1.CharacterSheet) error {
 // cleanFullSheet checks and trims the free text and the numbers of a full
 // sheet that package rules does not look at.
 func cleanFullSheet(f *charactersv1.FullSheet) error {
-	for i, c := range f.GetClasses() {
-		if custom, ok := c.GetSubclass().(*charactersv1.ClassLevel_CustomSubclassName); ok {
-			name, err := names.Clean(custom.CustomSubclassName, rules.MaxCustomNameLength)
-			if err != nil {
-				return &fieldError{field: fmt.Sprintf("sheet.full.classes[%d].custom_subclass_name", i), err: err}
-			}
-			custom.CustomSubclassName = name
-		}
+	if err := cleanCustomSubclasses(f); err != nil {
+		return err
 	}
-	if custom, ok := f.GetBackground().(*charactersv1.FullSheet_CustomBackground); ok {
-		if custom.CustomBackground == nil {
-			custom.CustomBackground = &charactersv1.CustomBackground{}
-		}
-		name, err := names.Clean(custom.CustomBackground.GetName(), rules.MaxCustomNameLength)
-		if err != nil {
-			return &fieldError{field: "sheet.full.custom_background.name", err: err}
-		}
-		custom.CustomBackground.Name = name
-		// The rest of the "Outro" background (SRD 5.1 "Customizing a Background",
-		// question 82): one-line names and free texts, each cleaned; an empty one
-		// is a draft and shows an issue, never an error.
-		cb := custom.CustomBackground
-		if cb.FeatureName != "" {
-			if cb.FeatureName, err = names.Clean(cb.FeatureName, rules.MaxCustomNameLength); err != nil {
-				return &fieldError{field: "sheet.full.custom_background.feature_name", err: err}
-			}
-		}
-		if cb.FeatureText, err = names.CleanText(cb.FeatureText, rules.MaxCustomFeatureTextLength); err != nil {
-			return &fieldError{field: "sheet.full.custom_background.feature_text", err: err}
-		}
-		if cb.Equipment, err = names.CleanText(cb.Equipment, rules.MaxCustomEquipmentLength); err != nil {
-			return &fieldError{field: "sheet.full.custom_background.equipment", err: err}
-		}
+	if err := cleanCustomBackground(f); err != nil {
+		return err
 	}
+	if err := checkFullSheetEnums(f); err != nil {
+		return err
+	}
+	if err := cleanEquipment(f); err != nil {
+		return err
+	}
+	if err := checkCoins(f.GetCoins()); err != nil {
+		return err
+	}
+	return cleanFullSheetTexts(f)
+}
 
+// cleanCustomSubclasses trims the names of the custom subclasses.
+func cleanCustomSubclasses(f *charactersv1.FullSheet) error {
+	for i, c := range f.GetClasses() {
+		custom, ok := c.GetSubclass().(*charactersv1.ClassLevel_CustomSubclassName)
+		if !ok {
+			continue
+		}
+		name, err := names.Clean(custom.CustomSubclassName, rules.MaxCustomNameLength)
+		if err != nil {
+			return &fieldError{field: fmt.Sprintf("sheet.full.classes[%d].custom_subclass_name", i), err: err}
+		}
+		custom.CustomSubclassName = name
+	}
+	return nil
+}
+
+// cleanCustomBackground checks and trims the texts of a custom background.
+func cleanCustomBackground(f *charactersv1.FullSheet) error {
+	custom, ok := f.GetBackground().(*charactersv1.FullSheet_CustomBackground)
+	if !ok {
+		return nil
+	}
+	if custom.CustomBackground == nil {
+		custom.CustomBackground = &charactersv1.CustomBackground{}
+	}
+	cb := custom.CustomBackground
+	name, err := names.Clean(cb.GetName(), rules.MaxCustomNameLength)
+	if err != nil {
+		return &fieldError{field: "sheet.full.custom_background.name", err: err}
+	}
+	cb.Name = name
+	// The rest of the "Outro" background (SRD 5.1 "Customizing a Background",
+	// question 82): one-line names and free texts, each cleaned; an empty one
+	// is a draft and shows an issue, never an error.
+	if cb.FeatureName != "" {
+		if cb.FeatureName, err = names.Clean(cb.FeatureName, rules.MaxCustomNameLength); err != nil {
+			return &fieldError{field: "sheet.full.custom_background.feature_name", err: err}
+		}
+	}
+	if cb.FeatureText, err = names.CleanText(cb.FeatureText, rules.MaxCustomFeatureTextLength); err != nil {
+		return &fieldError{field: "sheet.full.custom_background.feature_text", err: err}
+	}
+	if cb.Equipment, err = names.CleanText(cb.Equipment, rules.MaxCustomEquipmentLength); err != nil {
+		return &fieldError{field: "sheet.full.custom_background.equipment", err: err}
+	}
+	return nil
+}
+
+// checkFullSheetEnums checks the hit point method, the alignment and the experience
+// points.
+func checkFullSheetEnums(f *charactersv1.FullSheet) error {
 	if m := f.GetHitPoints().GetMethod(); charactersv1.HitPointsMethod_name[int32(m)] == "" {
 		return fieldErr("sheet.full.hit_points.method", "is not a known method")
 	}
@@ -221,43 +265,64 @@ func cleanFullSheet(f *charactersv1.FullSheet) error {
 	if xp := f.GetExperiencePoints(); xp < 0 || xp > maxExperiencePoints {
 		return fieldErr("sheet.full.experience_points", "must be 0 to %d", maxExperiencePoints)
 	}
+	return nil
+}
 
+// cleanEquipment checks and trims the equipment list.
+func cleanEquipment(f *charactersv1.FullSheet) error {
 	if len(f.GetEquipment()) > maxEquipmentItems {
 		return fieldErr("sheet.full.equipment", "must have at most %d items", maxEquipmentItems)
 	}
 	for i, item := range f.GetEquipment() {
-		field := fmt.Sprintf("sheet.full.equipment[%d]", i)
-		if item == nil {
-			return fieldErr(field, "must not be empty")
-		}
-		name, err := names.Clean(item.GetName(), maxItemNameLength)
-		if err != nil {
-			return &fieldError{field: field + ".name", err: err}
-		}
-		item.Name = name
-		if item.GetQuantity() == 0 {
-			item.Quantity = 1 // 0 means 1, as documented
-		}
-		if item.GetQuantity() < 1 || item.GetQuantity() > maxItemQuantity {
-			return fieldErr(field+".quantity", "must be 1 to %d", maxItemQuantity)
+		if err := cleanItem(fmt.Sprintf("sheet.full.equipment[%d]", i), item); err != nil {
+			return err
 		}
 	}
+	return nil
+}
+
+// cleanItem checks and trims one item of the equipment, at field.
+func cleanItem(field string, item *charactersv1.Item) error {
+	if item == nil {
+		return fieldErr(field, "must not be empty")
+	}
+	name, err := names.Clean(item.GetName(), maxItemNameLength)
+	if err != nil {
+		return &fieldError{field: field + ".name", err: err}
+	}
+	item.Name = name
+	if item.GetQuantity() == 0 {
+		item.Quantity = 1 // 0 means 1, as documented
+	}
+	if item.GetQuantity() < 1 || item.GetQuantity() > maxItemQuantity {
+		return fieldErr(field+".quantity", "must be 1 to %d", maxItemQuantity)
+	}
+	return nil
+}
+
+// checkCoins checks each coin, from copper to platinum.
+func checkCoins(c *charactersv1.Coins) error {
 	coins := []struct {
 		name  string
 		value int32
 	}{
-		{"copper", f.GetCoins().GetCopper()},
-		{"silver", f.GetCoins().GetSilver()},
-		{"electrum", f.GetCoins().GetElectrum()},
-		{"gold", f.GetCoins().GetGold()},
-		{"platinum", f.GetCoins().GetPlatinum()},
+		{"copper", c.GetCopper()},
+		{"silver", c.GetSilver()},
+		{"electrum", c.GetElectrum()},
+		{"gold", c.GetGold()},
+		{"platinum", c.GetPlatinum()},
 	}
 	for _, coin := range coins {
 		if coin.value < 0 || coin.value > maxCoins {
 			return fieldErr("sheet.full.coins."+coin.name, "must be 0 to %d", maxCoins)
 		}
 	}
+	return nil
+}
 
+// cleanFullSheetTexts checks and trims the lists of free text, the custom features and
+// the choices' texts.
+func cleanFullSheetTexts(f *charactersv1.FullSheet) error {
 	var err error
 	if f.Languages, err = cleanEntries("sheet.full.languages", f.GetLanguages()); err != nil {
 		return err
@@ -311,6 +376,18 @@ func cleanEntries(field string, entries []string) ([]string, error) {
 
 // cleanBasicSheet checks and trims a basic sheet.
 func cleanBasicSheet(b *charactersv1.BasicSheet) error {
+	if err := checkBasicNumbers(b); err != nil {
+		return err
+	}
+	if err := cleanBasicAttacks(b.GetAttacks()); err != nil {
+		return err
+	}
+	return cleanBasicTexts(b)
+}
+
+// checkBasicNumbers checks the numbers of a basic sheet, its size and how many attacks
+// it has.
+func checkBasicNumbers(b *charactersv1.BasicSheet) error {
 	switch {
 	case b.GetHitPointsMax() < 1 || b.GetHitPointsMax() > maxBasicHitPoints:
 		return fieldErr("sheet.basic.hit_points_max", "must be 1 to %d", maxBasicHitPoints)
@@ -327,7 +404,12 @@ func cleanBasicSheet(b *charactersv1.BasicSheet) error {
 	case rulesv1.CreatureSize_name[int32(b.GetSize())] == "":
 		return fieldErr("sheet.basic.size", "must be a creature size")
 	}
-	for i, a := range b.GetAttacks() {
+	return nil
+}
+
+// cleanBasicAttacks checks each structured attack and trims its name.
+func cleanBasicAttacks(attacks []*charactersv1.BasicAttack) error {
+	for i, a := range attacks {
 		if err := checkAttack(a, fmt.Sprintf("sheet.basic.attacks[%d]", i)); err != nil {
 			return err
 		}
@@ -337,6 +419,11 @@ func cleanBasicSheet(b *charactersv1.BasicSheet) error {
 		}
 		a.Name = name
 	}
+	return nil
+}
+
+// cleanBasicTexts trims the old free-text damage and the description.
+func cleanBasicTexts(b *charactersv1.BasicSheet) error {
 	var err error
 	if len(b.GetAttacks()) > 0 {
 		// The structured attacks replace the old ones: do not keep both.

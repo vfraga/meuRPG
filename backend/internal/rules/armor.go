@@ -21,71 +21,12 @@ import (
 func (x *deriver) armorClass() {
 	c := x.c
 	name := "Sem armadura"
+	base := 10 + x.mods[DEX]
 	if x.armor != nil {
 		name = c.namePT(x.b.Armor)
+		base = x.wornArmor(name)
 	}
-
-	base := 10 + x.mods[DEX]
-	if a := x.armor; a != nil {
-		base = a.BaseAC
-		if a.DexBonus {
-			dex := x.mods[DEX]
-			if a.MaxDexBonus > 0 {
-				dex = min(dex, a.MaxDexBonus)
-			}
-			base += dex
-		}
-		if !x.armorProficient(x.armorCategory, x.b.Armor) {
-			x.issue(IssueArmorProficiency, "full.armor_key", "Sem proficiência em %s: desvantagem em testes, ataques e testes de resistência de FOR e DES, e não conjura magias.", strings.ToLower(name))
-		}
-		if a.StealthDisadvantage {
-			x.d.Hints = append(x.d.Hints, Hint{
-				Source: x.b.Armor, Target: "skill:stealth", Targets: []string{"skill:stealth"}, Mode: "disadvantage",
-				TextPT: fmt.Sprintf("Desvantagem em Furtividade com %s.", strings.ToLower(name)),
-			})
-		}
-		if a.StrMinimum > 0 && x.scores[STR] < a.StrMinimum {
-			x.d.Hints = append(x.d.Hints, Hint{
-				Source: x.b.Armor, Target: "speed.walk", Targets: []string{"speed.walk"}, Mode: "note",
-				TextPT: fmt.Sprintf("%s pede FOR %d: com menos, o deslocamento cai 10 pés (anões não perdem).", name, a.StrMinimum),
-			})
-		}
-	}
-
-	// Other bases from effects: the best one wins, and the description
-	// names the feature that gave it. Unarmored Defense is the exception: a
-	// character that has it from one class never gains it again from another
-	// (SRD 5.1, "Multiclassing", "Unarmored Defense"), so only the first of the
-	// features that read "Unarmored Defense" counts.
-	unarmored := ""
-	for _, a := range x.active {
-		e := a.effect
-		if e.Type != "modifier" || e.Target != "ac.base" || len(e.Tags) > 0 {
-			continue
-		}
-		if unarmoredDefenseFeatures[a.owner] {
-			if unarmored == "" {
-				unarmored = a.owner
-			}
-			if a.owner != unarmored {
-				continue
-			}
-		}
-		if !x.applies(a) {
-			continue
-		}
-		v, ok := x.value(a)
-		if !ok {
-			continue
-		}
-		switch {
-		case e.Mode == "set", e.Mode == "max" && v > base:
-			base = v
-			name = c.namePT(a.owner)
-		case e.Mode == "add":
-			base += v
-		}
-	}
+	base, name = x.effectBases(base, name)
 
 	// Mage Armor (SRD 5.1): a creature that wears no armor has a base AC of 13 +
 	// its Dexterity modifier, the best base winning like any other.
@@ -107,6 +48,82 @@ func (x *deriver) armorClass() {
 	x.d.ArmorClass = x.modifiers("ac", ac)
 	x.d.ArmorClassDescription = name
 	x.d.ArmorCategory = x.armorCategory
+}
+
+// wornArmor is the base AC of the worn armor (named name on the sheet), with
+// the Dexterity it lets count, and records what the armor costs: an Issue
+// without proficiency, a Hint for Stealth and one for a Strength the character
+// lacks.
+func (x *deriver) wornArmor(name string) int {
+	a := x.armor
+	base := a.BaseAC
+	if a.DexBonus {
+		dex := x.mods[DEX]
+		if a.MaxDexBonus > 0 {
+			dex = min(dex, a.MaxDexBonus)
+		}
+		base += dex
+	}
+	if !x.armorProficient(x.armorCategory, x.b.Armor) {
+		x.issue(IssueArmorProficiency, "full.armor_key", "Sem proficiência em %s: desvantagem em testes, ataques e testes de resistência de FOR e DES, e não conjura magias.", strings.ToLower(name))
+	}
+	if a.StealthDisadvantage {
+		x.d.Hints = append(x.d.Hints, Hint{
+			Source: x.b.Armor, Target: "skill:stealth", Targets: []string{"skill:stealth"}, Mode: "disadvantage",
+			TextPT: fmt.Sprintf("Desvantagem em Furtividade com %s.", strings.ToLower(name)),
+		})
+	}
+	if a.StrMinimum > 0 && x.scores[STR] < a.StrMinimum {
+		x.d.Hints = append(x.d.Hints, Hint{
+			Source: x.b.Armor, Target: "speed.walk", Targets: []string{"speed.walk"}, Mode: "note",
+			TextPT: fmt.Sprintf("%s pede FOR %d: com menos, o deslocamento cai 10 pés (anões não perdem).", name, a.StrMinimum),
+		})
+	}
+	return base
+}
+
+// effectBases applies the other bases the "ac.base" effects offer to base and
+// its description name: the best one wins, and the description names the
+// feature that gave it. Unarmored Defense is the exception: a character that
+// has it from one class never gains it again from another (SRD 5.1,
+// "Multiclassing", "Unarmored Defense"), so only the first of the features
+// that read "Unarmored Defense" counts.
+func (x *deriver) effectBases(base int, name string) (int, string) {
+	unarmored := ""
+	for _, a := range x.active {
+		if !isBaseEffect(a, &unarmored) || !x.applies(a) {
+			continue
+		}
+		v, ok := x.value(a)
+		if !ok {
+			continue
+		}
+		switch e := a.effect; {
+		case e.Mode == "set", e.Mode == "max" && v > base:
+			base = v
+			name = x.c.namePT(a.owner)
+		case e.Mode == "add":
+			base += v
+		}
+	}
+	return base, name
+}
+
+// isBaseEffect says whether a offers a base AC: an untagged "ac.base"
+// modifier, and, among the Unarmored Defense features, only the first one met
+// (unarmored holds its key once one is met).
+func isBaseEffect(a activeEffect, unarmored *string) bool {
+	e := a.effect
+	if e.Type != "modifier" || e.Target != "ac.base" || len(e.Tags) > 0 {
+		return false
+	}
+	if !unarmoredDefenseFeatures[a.owner] {
+		return true
+	}
+	if *unarmored == "" {
+		*unarmored = a.owner
+	}
+	return a.owner == *unarmored
 }
 
 // unarmoredDefenseFeatures are the class features called Unarmored Defense: the

@@ -1,0 +1,1203 @@
+{
+  "bard 2": {
+    "error": "accepted",
+    "options": [
+      {
+        "Action": {
+          "Key": "skill:acrobatics",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Acrobacia",
+        "Bonus": 4,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:animal-handling",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Adestrar Animais",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:arcana",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Arcanismo",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:athletics",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Atletismo",
+        "Bonus": 4,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:performance",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Atuação",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:deception",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Enganação",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:stealth",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Furtividade",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:history",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "História",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:intimidation",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Intimidação",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:insight",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Intuição",
+        "Bonus": 2,
+        "Passive": 12,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:investigation",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Investigação",
+        "Bonus": 2,
+        "Passive": 12,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:medicine",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Medicina",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:nature",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Natureza",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:perception",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Percepção",
+        "Bonus": 1,
+        "Passive": 11,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:persuasion",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Persuasão",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:sleight-of-hand",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Prestidigitação",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:religion",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Religião",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:survival",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Sobrevivência",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:str",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Força",
+        "Bonus": 4,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:str",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Força",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:dex",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Destreza",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:dex",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Destreza",
+        "Bonus": 4,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:con",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Constituição",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:con",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Constituição",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:int",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Inteligência",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:int",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Inteligência",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:wis",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Sabedoria",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:wis",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Sabedoria",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:cha",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Carisma",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:cha",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Carisma",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      }
+    ]
+  },
+  "fighter 3": {
+    "error": "accepted",
+    "options": [
+      {
+        "Action": {
+          "Key": "skill:acrobatics",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Acrobacia",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:animal-handling",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Adestrar Animais",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:arcana",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Arcanismo",
+        "Bonus": -1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:athletics",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Atletismo",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:performance",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Atuação",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:deception",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Enganação",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:stealth",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Furtividade",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:history",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "História",
+        "Bonus": -1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:intimidation",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Intimidação",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:insight",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Intuição",
+        "Bonus": 2,
+        "Passive": 12,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:investigation",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Investigação",
+        "Bonus": -1,
+        "Passive": 9,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:medicine",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Medicina",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:nature",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Natureza",
+        "Bonus": -1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:perception",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Percepção",
+        "Bonus": 2,
+        "Passive": 12,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:persuasion",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Persuasão",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:sleight-of-hand",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Prestidigitação",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:religion",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Religião",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:survival",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Sobrevivência",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:str",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Força",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:str",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Força",
+        "Bonus": 5,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:dex",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Destreza",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:dex",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Destreza",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:con",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Constituição",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:con",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Constituição",
+        "Bonus": 4,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:int",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Inteligência",
+        "Bonus": -1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:int",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Inteligência",
+        "Bonus": -1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:wis",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Sabedoria",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:wis",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Sabedoria",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:cha",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Carisma",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:cha",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Carisma",
+        "Bonus": 0,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      }
+    ]
+  },
+  "rogue 11": {
+    "error": "accepted",
+    "options": [
+      {
+        "Action": {
+          "Key": "skill:acrobatics",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Acrobacia",
+        "Bonus": 10,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": true
+      },
+      {
+        "Action": {
+          "Key": "skill:animal-handling",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Adestrar Animais",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:arcana",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Arcanismo",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:athletics",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Atletismo",
+        "Bonus": 11,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": true
+      },
+      {
+        "Action": {
+          "Key": "skill:performance",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Atuação",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:deception",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Enganação",
+        "Bonus": 9,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": true
+      },
+      {
+        "Action": {
+          "Key": "skill:stealth",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Furtividade",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:history",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "História",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:intimidation",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Intimidação",
+        "Bonus": 9,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": true
+      },
+      {
+        "Action": {
+          "Key": "skill:insight",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Intuição",
+        "Bonus": 5,
+        "Passive": 15,
+        "HasPassive": true,
+        "ReliableTalent": true
+      },
+      {
+        "Action": {
+          "Key": "skill:investigation",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Investigação",
+        "Bonus": 2,
+        "Passive": 12,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:medicine",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Medicina",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:nature",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Natureza",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:perception",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Percepção",
+        "Bonus": 1,
+        "Passive": 11,
+        "HasPassive": true,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:persuasion",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Persuasão",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:sleight-of-hand",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Prestidigitação",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "skill:religion",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Religião",
+        "Bonus": 6,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": true
+      },
+      {
+        "Action": {
+          "Key": "skill:survival",
+          "Name": "",
+          "DC": 10
+        },
+        "Kind": "skill",
+        "NamePT": "Sobrevivência",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:str",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Força",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:str",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Força",
+        "Bonus": 3,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:dex",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Destreza",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:dex",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Destreza",
+        "Bonus": 6,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:con",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Constituição",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:con",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Constituição",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:int",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Inteligência",
+        "Bonus": 2,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:int",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Inteligência",
+        "Bonus": 6,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:wis",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Sabedoria",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:wis",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Sabedoria",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "ability:cha",
+          "Name": "",
+          "DC": 12
+        },
+        "Kind": "ability",
+        "NamePT": "Teste de Carisma",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      },
+      {
+        "Action": {
+          "Key": "save:cha",
+          "Name": "",
+          "DC": 14
+        },
+        "Kind": "save",
+        "NamePT": "Teste de resistência de Carisma",
+        "Bonus": 1,
+        "Passive": 0,
+        "HasPassive": false,
+        "ReliableTalent": false
+      }
+    ]
+  },
+  "unknown ability": {
+    "error": "scene action 0: unknown check \"ability:nope\"",
+    "options": null
+  },
+  "unknown kind": {
+    "error": "scene action 1: unknown check \"nada:x\"",
+    "options": null
+  },
+  "unknown save": {
+    "error": "scene action 2: unknown check \"save:nope\"",
+    "options": null
+  },
+  "unknown skill": {
+    "error": "scene action 0: unknown check \"skill:nada\"",
+    "options": null
+  }
+}
