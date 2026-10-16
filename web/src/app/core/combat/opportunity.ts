@@ -7,7 +7,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { type Attack, AttackKind } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { GetTurnOptionsResponse } from '../../../gen/meurpg/play/v1/combat_pb';
-import { joinDots, tight } from '../format/text';
+import { joinDots, tight, upFirst } from '../format/text';
 import { article } from './combat-log';
 import { attackName, attackTitle, damageText } from './combat-options';
 import { listNames } from './joint-turn';
@@ -81,13 +81,9 @@ export function waitingText(
   const names = listNames(masters.map((o) => `${article(o.reactorLabel)} ${o.reactorLabel}`));
   const detail =
     masters.length > 0
-      ? `${capitalize(names)} ${masters.length === 1 ? 'pode fazer um ataque' : 'podem fazer ataques'} de oportunidade. ${trail}`
+      ? `${upFirst(names)} ${masters.length === 1 ? 'pode fazer um ataque' : 'podem fazer ataques'} de oportunidade. ${trail}`
       : trail;
   return { title: `Esperando a reação ${listNames(who)}`, detail };
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** "Esperando a sua reação: Goblin 2" on the master's bar, for the offers he answers for NPCs; or
@@ -110,7 +106,7 @@ export function barText(e: Encounter, playerName: (characterId: string) => strin
  * their creatures, it is named ("…do alcance do Lobo atroz 1"), never "seu". */
 export function playerQuestion(offer: OpportunityOffer, reactorIsCharacter = true): string {
   const reach = reactorIsCharacter ? 'seu alcance' : `alcance ${ofThe([offer.reactorLabel])}`;
-  return `${capitalize(`${article(offer.moverLabel)} ${offer.moverLabel}`)} está saindo do ${reach}. Ataque de oportunidade?`;
+  return `${upFirst(`${article(offer.moverLabel)} ${offer.moverLabel}`)} está saindo do ${reach}. Ataque de oportunidade?`;
 }
 
 /** What the answer spends: "Gasta a sua reação." or "Gasta a reação do Lobo atroz 1.". */
@@ -129,7 +125,7 @@ export function spendText(offer: OpportunityOffer, reactorIsCharacter = true): s
 /** The master's: "O Toren saiu do alcance do Goblin 2.", or "O Toren saltou para fora do alcance do Goblin 2." when the mover
  * left it by a long jump. */
 export function masterNews(offer: OpportunityOffer): string {
-  const who = capitalize(`${article(offer.moverLabel)} ${offer.moverLabel}`);
+  const who = upFirst(`${article(offer.moverLabel)} ${offer.moverLabel}`);
   return offer.jump === JumpKind.LONG
     ? `${who} saltou para fora do alcance ${ofThe([offer.reactorLabel])}.`
     : `${who} saiu do alcance ${ofThe([offer.reactorLabel])}.`;

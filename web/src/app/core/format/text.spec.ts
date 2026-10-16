@@ -1,4 +1,4 @@
-import { formatInt, formatXp, joinDots, tight } from './text';
+import { formatInt, formatXp, joinDots, tight, upFirst } from './text';
 
 describe('tight', () => {
   it('ties "1 hora", "10 minutos" and "3 criaturas" so a line never ends on the number', () => {
@@ -48,5 +48,17 @@ describe('tight with treasures (E9-09)', () => {
   it('ties a count to "tesouro" and "tesouros"', () => {
     expect(tight('3 tesouros · 420 PO')).toBe('3\u00a0tesouros · 420\u00a0PO');
     expect(tight('1 tesouro')).toBe('1\u00a0tesouro');
+  });
+});
+
+describe('upFirst', () => {
+  it('raises the first letter and leaves the rest', () => {
+    expect(upFirst('o Hobgoblin')).toBe('O Hobgoblin');
+    expect(upFirst('ágil')).toBe('Ágil');
+  });
+
+  it('leaves an empty text and a text that already starts up alone', () => {
+    expect(upFirst('')).toBe('');
+    expect(upFirst('Brisa')).toBe('Brisa');
   });
 });

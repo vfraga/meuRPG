@@ -16,10 +16,6 @@ export function subject(label: string, ctx: LogContext): string {
   return ctx.players.has(label) ? label : the(label);
 }
 
-export function upFirst(text: string): string {
-  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
-}
-
 /** "do Hobgoblin", "de Brisa". */
 export function ofSubject(label: string, ctx: LogContext): string {
   return ctx.players.has(label)

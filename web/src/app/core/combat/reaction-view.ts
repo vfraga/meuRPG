@@ -62,10 +62,6 @@ export function theName(label: string): string {
   return `${article(label)} ${label}`;
 }
 
-export function capitalized(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 /** What a reaction costs, for the prompts that do not already say it (SRD 5.1, Reactions: one per round, back at the start of the creature's next turn). */
 export const REACTION_SPENT = 'Gasta a sua reação, que só volta no começo do seu próximo turno.';
 

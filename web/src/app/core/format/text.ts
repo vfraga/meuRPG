@@ -43,3 +43,8 @@ export function formatXp(xp: number): string {
 export function tieShortWords(text: string): string {
   return text.replace(/(^|\s)(\p{L}) (?=\S)/gu, '$1$2\u00a0');
 }
+
+/** The first letter up: "o Hobgoblin" is "O Hobgoblin". */
+export function upFirst(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}

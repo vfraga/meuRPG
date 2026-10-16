@@ -23,10 +23,10 @@ import {
   pronoun,
   signed,
   skillLine,
-  upFirst,
   verb,
   whoIs,
 } from './contest-view';
+import { upFirst } from '../format/text';
 
 /**
  * What the master's contest cards say (W7-X, boards W7-Xa 3, W7-Xb 4 to 7, W7-Xc 8, 10 and 11): the sentences of the answer to a

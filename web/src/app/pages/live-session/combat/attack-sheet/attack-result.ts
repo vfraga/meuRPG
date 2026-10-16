@@ -7,6 +7,7 @@ import { coverBonusText, degreeWord, sourceWord } from '../../../../core/combat/
 import { luckyText } from '../../../../core/combat/lucky';
 import { DamageBreakdown } from '../damage-parts/damage-breakdown';
 import { D20Faces } from '../roll-mode/d20-faces';
+import { upFirst } from '../../../../core/format/text';
 
 /**
  * What the attack sheet has shown so far, as a list of done steps (E6-07,
@@ -133,10 +134,6 @@ export class AttackResult {
     // "Meia cobertura (marcada pelo mestre): +2 na CA.", the degree, where it came from and what it added, never the armor class (RN-20).
     const from = sourceWord(r.coverSource);
     const bonus = coverBonusText(r.cover);
-    return `${capitalize(`${article(this.targetLabel())} ${this.targetLabel()}`)} estava com ${word}${from ? ` (${from})` : ''}${bonus ? `: ${bonus}` : ''}.`;
+    return `${upFirst(`${article(this.targetLabel())} ${this.targetLabel()}`)} estava com ${word}${from ? ` (${from})` : ''}${bonus ? `: ${bonus}` : ''}.`;
   });
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

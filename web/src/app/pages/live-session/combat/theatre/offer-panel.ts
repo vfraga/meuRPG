@@ -15,7 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { article } from '../../../../core/combat/combat-log';
 import { combatantInitial } from '../../../../core/combat/combat-view';
 import { type ReactorRow } from '../../../../core/combat/theatre';
-import { tieNumbers } from '../../../../core/format/text';
+import { tieNumbers, upFirst } from '../../../../core/format/text';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 
 let nextId = 0;
@@ -86,7 +86,7 @@ export class OfferPanel {
   protected readonly id = `offer-${nextId++}`;
   protected readonly picked = signal('');
   protected readonly mover = computed(() =>
-    tieNumbers(`${cap(article(this.moverLabel()))} ${this.moverLabel()}`),
+    tieNumbers(`${upFirst(article(this.moverLabel()))} ${this.moverLabel()}`),
   );
   protected readonly toName = computed(() => {
     const r = this.rows().find((x) => x.id === this.picked());
@@ -118,8 +118,4 @@ export class OfferPanel {
       this.offer.emit(this.picked());
     }
   }
-}
-
-function cap(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

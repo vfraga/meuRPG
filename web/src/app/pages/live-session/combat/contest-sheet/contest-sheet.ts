@@ -46,7 +46,6 @@ import {
   skillChoices,
   skillLine,
   skillName,
-  upFirst,
   waitDetail,
   waitTitle,
   whoIs,
@@ -71,6 +70,7 @@ import { ContestRoll } from '../contest-roll/contest-roll';
 import { AttackSteps } from '../attack-sheet/attack-steps';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
+import { upFirst } from '../../../../core/format/text';
 
 /** What the page hands the initiator's sheet: a grapple, a shove or an escape. */
 export interface ContestSheetData {

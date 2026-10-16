@@ -4,6 +4,7 @@ import {
   PackageProblemReason,
 } from '../../../gen/meurpg/campaignpackage/v1/campaignpackage_pb';
 import { formatBytes } from '../images/image-format';
+import { upFirst } from '../format/text';
 
 /** The shape of `PackageProblem` this file reads (the generated message fits it), so a spec passes a plain object. */
 export type ProblemLike = Pick<PackageProblem, 'kind' | 'name' | 'reason' | 'limit'>;
@@ -107,10 +108,6 @@ export function cleanName(name: string): string {
   return flat.length > NAME_MAX_LENGTH ? `${flat.slice(0, NAME_MAX_LENGTH - 1).trimEnd()}…` : flat;
 }
 
-function capitalise(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 /** "a imagem “Mapa antigo.png”", or "uma imagem" when the package named nothing. Lowercase start. */
 function thing(problem: ProblemLike): string {
   const noun = nounOf(problem.kind);
@@ -195,9 +192,7 @@ function overLimit(problem: ProblemLike): string {
  */
 export function problemSentence(problem: ProblemLike): string {
   const words = SENTENCES[problem.reason];
-  return words
-    ? words(problem, capitalise(thing(problem)))
-    : `Não dá para criar ${thing(problem)}.`;
+  return words ? words(problem, upFirst(thing(problem))) : `Não dá para criar ${thing(problem)}.`;
 }
 
 type Sentence = (problem: ProblemLike, subject: string) => string;

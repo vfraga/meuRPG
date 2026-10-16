@@ -3,6 +3,7 @@ import { AbstractControl } from '@angular/forms';
 import { abilityLabel, formatModifier } from '../../core/characters/character-labels';
 import { ABILITY_KEYS, AbilityKey } from '../../core/characters/characters.types';
 import { AbilityScoresInput } from './character-editor.types';
+import { upFirst } from '../../core/format/text';
 
 /**
  * Display-only helpers for the character editor: labels, and the "what is
@@ -131,11 +132,7 @@ export function describeInvalidFields(fields: readonly EditorField[]): string {
   return Array.from(groups.entries())
     .map(([step, labels]) => {
       const list = labels.join(', ');
-      return step ? `${EDITOR_STEP_LABELS[step]}: ${list}.` : `${capitalize(list)}.`;
+      return step ? `${EDITOR_STEP_LABELS[step]}: ${list}.` : `${upFirst(list)}.`;
     })
     .join(' ');
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

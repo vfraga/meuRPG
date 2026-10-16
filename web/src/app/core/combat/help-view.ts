@@ -4,9 +4,9 @@ import {
   type GetTurnOptionsResponse,
   CombatantState,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import { type Who, named, possessive, pronoun, upFirst, whoIs } from './contest-view';
+import { type Who, named, possessive, pronoun, whoIs } from './contest-view';
 import { metersText } from '../units';
-import { tight } from '../format/text';
+import { tight, upFirst } from '../format/text';
 
 /**
  * What the Help sheet lists (W7-X, board W7-Xc 9): the allies the player may help, the tasks a check help names and the

@@ -4,7 +4,7 @@ import {
   type ReactionWindow,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { SlotChoice } from '../../../gen/meurpg/rules/v1/rules_pb';
-import { joinDots } from '../format/text';
+import { joinDots, upFirst } from '../format/text';
 import { metersText } from '../units';
 import { circleLabel } from './combat-grid';
 import { freeText } from './cast-flow';
@@ -12,7 +12,6 @@ import {
   PromptView,
   REACTION_NAMES,
   REACTION_SPENT,
-  capitalized,
   ofRollKind,
   reach,
   reachChip,
@@ -102,7 +101,7 @@ function cuttingWordsPrompt(c: PromptOf<'cuttingWords'>, rodada: string): Prompt
   const name = REACTION_NAMES.cuttingWords;
   const what = ofRollKind(c.rollKind);
   return {
-    title: `${capitalized(theName(c.rollerLabel))} ${what.verb}`,
+    title: `${upFirst(theName(c.rollerLabel))} ${what.verb}`,
     subtitle: joinDots([
       c.targetLabel ? `${c.rollerLabel} ataca ${theName(c.targetLabel)}` : c.rollerLabel,
       ...(c.distanceFt !== undefined ? [`${reach(c.distanceFt)} de você`] : []),
@@ -118,7 +117,7 @@ function cuttingWordsPrompt(c: PromptOf<'cuttingWords'>, rodada: string): Prompt
     ],
     note: 'O total e a CA do NPC não aparecem. Vale para uma jogada de ataque, um teste de habilidade ou uma jogada de dano de uma criatura que você vê e que pode ouvir você.',
     useLabel: `Usar ${name}`,
-    ariaLabel: `${capitalized(theName(c.rollerLabel))} ${what.verb}: usar ${name}?`,
+    ariaLabel: `${upFirst(theName(c.rollerLabel))} ${what.verb}: usar ${name}?`,
   };
 }
 

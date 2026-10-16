@@ -9,7 +9,8 @@ import { conditionName } from './conditions';
 import { circleLabel } from './combat-options';
 import { effectWords, gainWords, poolRollText, reasonWords } from './hp-effects';
 import { LogContext, PoolCard, PoolCardRow } from './combat-log-types';
-import { inThe, subject, upFirst } from './combat-log-words';
+import { inThe, subject } from './combat-log-words';
+import { upFirst } from '../format/text';
 
 // ---- the spells that read hit points (E8-03) ----
 

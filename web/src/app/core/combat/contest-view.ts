@@ -16,7 +16,7 @@ import {
 } from '../../../gen/meurpg/play/v1/contest_types_pb';
 import { CreatureSize } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { CREATURE_SIZES } from '../creatures/creature-types';
-import { tight } from '../format/text';
+import { tight, upFirst } from '../format/text';
 import { article } from './combat-log';
 import { isPlayer } from './combat-view';
 import { type NaturalMark, naturalMark } from './natural-mark';
@@ -78,11 +78,6 @@ export function pronoun(label: string): string {
 /** "dele" or "dela", by the name. */
 export function possessive(label: string): string {
   return gendered(label, 'dele', 'dela');
-}
-
-/** The first letter up: "o Hobgoblin" is "O Hobgoblin". */
-export function upFirst(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** "Atletismo" or "Acrobacia". */

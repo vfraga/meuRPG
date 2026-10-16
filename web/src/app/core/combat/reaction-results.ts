@@ -4,7 +4,7 @@ import {
   ReactionRollKind,
   type ReactionWindow,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import { joinDots } from '../format/text';
+import { joinDots, upFirst } from '../format/text';
 import { circleLabel } from './combat-grid';
 import { rollFormula, rollText } from './combat-dice';
 import { luckyText } from './lucky';
@@ -13,7 +13,6 @@ import {
   REACTION_NAMES,
   ResultView,
   SlotAfter,
-  capitalized,
   ofRollKind,
   outcomeWord,
   roundWord,
@@ -101,7 +100,7 @@ function hellishRebukeResult(
     pill: v.save ? { word: v.saved ? 'Passou' : 'Falhou', good: !v.saved } : null,
     text: [
       v.save
-        ? `Teste de Destreza ${ofThe([prompt?.aggressorLabel ?? ''])}: ${rollText(v.save)} contra CD ${v.saveDc}. ${capitalized(who)} ${outcome}: ${v.damage} de dano.`
+        ? `Teste de Destreza ${ofThe([prompt?.aggressorLabel ?? ''])}: ${rollText(v.save)} contra CD ${v.saveDc}. ${upFirst(who)} ${outcome}: ${v.damage} de dano.`
         : `O teste de ${who} é do mestre: o resultado aparece no registro do combate.`,
       // "Sortudo: 1 → 14": a halfling player's 1 the app rolled again by itself; the roll above already has the new face.
       luckyText(v.save),

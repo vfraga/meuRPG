@@ -28,7 +28,7 @@ import {
   reactorIsMasters,
 } from '../../../../core/combat/opportunity';
 import { autoPassText } from '../../../../core/combat/reaction-autopass';
-import { tieNumbers } from '../../../../core/format/text';
+import { tieNumbers, upFirst } from '../../../../core/format/text';
 import { article } from '../../../../core/combat/combat-log';
 import { ofThe } from '../../../../core/combat/move-plan';
 import type { CombatantInfo } from '../combat-info';
@@ -199,7 +199,7 @@ export class OpportunityCard {
     const name = reactor ? (this.info().get(reactor.characterId)?.playerName ?? '') : '';
     const who = name ? `${article(name)} ${name}` : 'o jogador';
     return tieNumbers(
-      `${capitalize(`${article(o.moverLabel)} ${o.moverLabel}`)} sai do alcance ${ofThe([o.reactorLabel])}: espera ${who}.`,
+      `${upFirst(`${article(o.moverLabel)} ${o.moverLabel}`)} sai do alcance ${ofThe([o.reactorLabel])}: espera ${who}.`,
     );
   }
 
@@ -232,7 +232,7 @@ export class OpportunityCard {
     const of = article(o.reactorLabel) === 'a' ? 'dela' : 'dele';
     const left = o.jump === JumpKind.LONG ? 'saltou para fora do' : 'saiu do';
     return tieNumbers(
-      `${capitalize(`${article(o.moverLabel)} ${o.moverLabel}`)} ${left} alcance ${of}.`,
+      `${upFirst(`${article(o.moverLabel)} ${o.moverLabel}`)} ${left} alcance ${of}.`,
     );
   }
 
@@ -263,8 +263,4 @@ export class OpportunityCard {
       name ? `${ofThe([name])} (${o.reactorLabel})` : `do jogador de ${o.reactorLabel}`,
     );
   }
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }

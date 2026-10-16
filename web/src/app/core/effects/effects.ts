@@ -7,6 +7,7 @@ import {
   EffectPhase,
   EffectRollKind,
 } from '../../../gen/meurpg/play/v1/lasting_effects_pb';
+import { upFirst } from '../format/text';
 
 /**
  * The effects that last (RN-22) as the player reads them: the cards of "Seus efeitos", the exhaustion card, the
@@ -28,10 +29,6 @@ export interface EffectCardView {
   readonly save: string;
   /** The lines of "O que isso muda". */
   readonly changes: readonly string[];
-}
-
-function capitalized(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 /** The line of the saving throw a card asks again: the ability only, never the DC (RN-10, RN-20). */
@@ -65,7 +62,7 @@ export function characterCards(effects: readonly CharacterEffect[]): EffectCardV
     name: e.sourceNamePt,
     origin: '',
     tags: [...e.tagsPt],
-    clock: capitalized(e.durationTextPt),
+    clock: upFirst(e.durationTextPt),
     save: '',
     changes: [],
   }));

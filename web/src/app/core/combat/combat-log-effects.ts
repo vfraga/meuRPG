@@ -9,7 +9,8 @@ import { article } from '../format/article';
 import { naturalMark } from './natural-mark';
 import { luckyText } from './lucky';
 import { LogContext, LogLine } from './combat-log-types';
-import { ofSubject, subject, upFirst } from './combat-log-words';
+import { ofSubject, subject } from './combat-log-words';
+import { upFirst } from '../format/text';
 
 /** Who an effect line is about, after the preposition ("em"/"a") or alone: "em Brisa e no Goblin 2", "Brisa e o Goblin 2". */
 function effectTargets(fx: CombatLogEffect, ctx: LogContext, prep: '' | 'em' | 'a' = ''): string {
