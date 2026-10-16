@@ -122,9 +122,9 @@ func checkSpellTargetKind(in spellTargetOverride) string {
 	case TargetSelf, TargetNone, TargetCreature:
 		return checkSingleTarget(in)
 	case TargetCreatures:
-		return checkCreaturesTarget(in)
+		return checkOverrideCreatures(in)
 	case TargetArea:
-		return checkAreaTarget(in)
+		return checkOverrideArea(in)
 	default:
 		return fmt.Sprintf("the kind %q is not creature, creatures, area, self or none", in.Kind)
 	}
@@ -139,14 +139,14 @@ func checkSingleTarget(in spellTargetOverride) string {
 	return ""
 }
 
-func checkCreaturesTarget(in spellTargetOverride) string {
+func checkOverrideCreatures(in spellTargetOverride) string {
 	if in.Count < 1 || in.Count > maxTargetCount || in.PerSlotLevel < 0 || in.PerSlotLevel > maxTargetPerSlotLevel || in.Shape != "" || in.SizeFt != 0 {
 		return "creatures: a count of 1 to 20 and 0 to 10 more per slot level"
 	}
 	return ""
 }
 
-func checkAreaTarget(in spellTargetOverride) string {
+func checkOverrideArea(in spellTargetOverride) string {
 	if !slices.Contains(targetShapes, in.Shape) || in.SizeFt < targetSizeStepFt || in.SizeFt%targetSizeStepFt != 0 || in.Count != 0 || in.PerSlotLevel != 0 {
 		return "an area is a cone, cube, cylinder, line or sphere of a multiple of 5 ft"
 	}
