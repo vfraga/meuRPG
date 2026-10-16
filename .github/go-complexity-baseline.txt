@@ -429,16 +429,9 @@ cognitive internal/rules (*content).checkFeatShape 19
 cognitive internal/rules (*content).checkMagicItems 37
 cognitive internal/rules (*content).checkPick 24
 cognitive internal/rules (*content).checkTreasureMode 21
-cognitive internal/rules (*content).correctCreature 16
-cognitive internal/rules (*content).correctCreatureLists 31
-cognitive internal/rules (*content).correctSpellLists 27
-cognitive internal/rules (*content).correctSubclassFeatures 27
 cognitive internal/rules (*content).creature 25
-cognitive internal/rules (*content).indexLevels 16
 cognitive internal/rules (*content).loadCombatEffects 36
 cognitive internal/rules (*content).loadDamageResistances 18
-cognitive internal/rules (*content).loadData 30
-cognitive internal/rules (*content).loadEffects 23
 cognitive internal/rules (*content).loadMagicItemEffects 22
 cognitive internal/rules (*content).loadSpellTargets 22
 cognitive internal/rules (*content).loadSummon 49
@@ -452,7 +445,6 @@ cognitive internal/rules (*deriver).checkOptionCounts 39
 cognitive internal/rules (*deriver).effectHints 27
 cognitive internal/rules (ChoiceSet).ChoiceProblems 23
 cognitive internal/rules checkModifier 53
-cognitive internal/rules load 31
 cognitive internal/rules metamagicReason 18
 cognitive internal/rules/combat AttackMode 31
 cognitive internal/rules/combat Options 18
@@ -758,9 +750,7 @@ cyclomatic internal/rules (*content).checkMagicItems 23
 cyclomatic internal/rules (*content).checkPick 23
 cyclomatic internal/rules (*content).checkTreasureMode 18
 cyclomatic internal/rules (*content).choiceValueOK 16
-cyclomatic internal/rules (*content).correctCreatureLists 19
 cyclomatic internal/rules (*content).loadCombatEffects 24
-cyclomatic internal/rules (*content).loadData 23
 cyclomatic internal/rules (*content).loadLights 16
 cyclomatic internal/rules (*content).loadMagicItemEffects 19
 cyclomatic internal/rules (*content).loadSpellTargets 25
@@ -772,7 +762,6 @@ cyclomatic internal/rules (*deriver).checkChoices 34
 cyclomatic internal/rules (*deriver).checkOptionCounts 21
 cyclomatic internal/rules (*deriver).effectHints 17
 cyclomatic internal/rules checkModifier 43
-cyclomatic internal/rules load 39
 cyclomatic internal/rules metamagicReason 20
 cyclomatic internal/rules/combat AttackMode 30
 cyclomatic internal/rules/combat BonusAttack 19
