@@ -18,7 +18,7 @@ export class MoveOptionsState {
 
   /** `jump` asks for the squares of a long jump instead of a walk's (and its opportunity-attack warning): the answer for one is never read as the other. */
   async load(
-    api: CombatClient,
+    api: Pick<CombatClient, 'moveOptions'>,
     campaignId: string,
     encounterId: string,
     combatantId: string,
