@@ -1,9 +1,12 @@
 package play
 
 import (
+	"slices"
 	"testing"
 
+	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 )
 
 // One test for each kind of event the master's Desfazer takes back (takeBack in
@@ -178,6 +181,50 @@ func TestUndoKindConditionsSet(t *testing.T) {
 	w.run(t, "the conditions", nil, func() {
 		if _, err := a.conditions(t, a.master, e, "Goblin", []string{"condition:poisoned"}, true, false); err != nil {
 			t.Fatalf("SetCombatantConditions() error = %v", err)
+		}
+	})
+}
+
+// Haste (SRD 5.1): a 3rd-level concentration spell whose end leaves its target lethargic,
+// unable to move or act until after its next turn (effect:lethargy).
+const (
+	hasteSpell  = "spell:haste"
+	lethargyKey = "effect:lethargy"
+)
+
+// newHasters is newCasters with Pensantus a level 5 wizard who knows Haste (two
+// 3rd-level slots).
+func newHasters(t *testing.T) *armed {
+	t.Helper()
+	return newArmedWith(t, func(a *armed) {
+		a.toren = a.caio.hero(t, a.campaignID, "Toren", "class:fighter", "race:human", 5,
+			&rulesv1.AbilityScores{Strength: 16, Dexterity: 13, Constitution: 14, Intelligence: 10, Wisdom: 10, Charisma: 8}, []string{battleaxe}, nil)
+		a.pens = a.ana.caster(t, a.campaignID, "Pensantus", "class:wizard", "race:gnome", 5,
+			&rulesv1.AbilityScores{Strength: 10, Dexterity: 14, Constitution: 12, Intelligence: 16, Wisdom: 10, Charisma: 8}, nil, []string{fireBolt},
+			[]string{magicMissileSpell, shieldSpell, hasteSpell}, []string{magicMissileSpell, shieldSpell, hasteSpell})
+		a.bri = a.bia.caster(t, a.campaignID, "Brisa", "class:cleric", "race:human", 3,
+			&rulesv1.AbilityScores{Strength: 10, Dexterity: 16, Constitution: 14, Intelligence: 10, Wisdom: 16, Charisma: 8}, []string{maceKey}, []string{sacredFlame}, nil,
+			[]string{cureWounds, healingWord, guidingBolt})
+	})
+}
+
+// TestUndoKindConditionsSetEndsHaste: the end of a concentration on Haste ends the spell
+// and leaves its target lethargic (afterEffectEnded), with the lethargy's "added" line
+// written before the change's own event; the undo puts Haste back and takes the lethargy
+// away, its row and its line.
+func TestUndoKindConditionsSetEndsHaste(t *testing.T) {
+	t.Parallel()
+	a := newHasters(t)
+	e := a.castersFight(t, 1)
+	w := newUndoWatch(t, a)
+	a.mustCast(t, a.ana, e, "Pensantus", hasteSpell, slotOfLevel(3), a.at(t, "Toren"), noCastRoll)
+
+	w.run(t, "ending the concentration on Haste", nil, func() {
+		if _, err := a.conditions(t, a.ana, e, "Pensantus", nil, false, true); err != nil {
+			t.Fatalf("SetCombatantConditions() error = %v", err)
+		}
+		if cardOf(t, byLabel(t, a.get(t, a.master), "Toren"), lethargyKey) == nil {
+			t.Fatal("the end of Haste left Toren no lethargy")
 		}
 	})
 }
@@ -416,5 +463,210 @@ func TestUndoOfAnEndedConcentrationTakesTheEndedLineBack(t *testing.T) {
 	}
 	if got := byLabel(t, a.get(t, a.master), "Pensantus").GetConcentrationSpell(); got != "" {
 		t.Errorf("Pensantus concentrates on %q after the undo of the cast, want nothing", got)
+	}
+}
+
+// Four more things the undo used to leave behind, each with a test of its own: the
+// reaction window a discarded hit closed, the Hunter's Mark a new one moved, the
+// "revealed" lines of an area spell and the lethargy Haste leaves when it ends.
+
+// TestUndoOfADiscardOpensTheShieldWindowAgain: the Capitão's hit on Pensantus waits for
+// her Escudo, and the master's discard of the hit closes the window (its trigger is
+// gone). His undo of the discard opens the same window again: Ana's prompt and the
+// master's window are back, the hit waits for the answer, and Escudo stops it.
+func TestUndoOfADiscardOpensTheShieldWindowAgain(t *testing.T) {
+	t.Parallel()
+	a := newCasters(t)
+	e := a.castersFightNPCFirst(t)
+	hit := a.mustAttack(t, a.master, e, "Capitão Goblin", sword, "Pensantus", d20(9)).GetPendingDamage() // 9 + 4 = 13 against armor class 12
+	window := a.windowOf(t, a.ana, playv1.ReactionKind_REACTION_KIND_SHIELD)
+	if window == nil {
+		t.Fatal("the hit opened no Escudo window")
+	}
+	if _, err := a.settle(t, a.master, e, hit.GetId(), false); err != nil {
+		t.Fatalf("DiscardPendingDamage() error = %v", err)
+	}
+	if w := a.windowOf(t, a.ana, playv1.ReactionKind_REACTION_KIND_SHIELD); w != nil {
+		t.Fatalf("the Escudo window %v is still open after the discard", w)
+	}
+
+	a.undoLast(t, e)
+	for name, u := range map[string]*user{"Ana": a.ana, "the master": a.master} {
+		got := a.get(t, u)
+		if p := got.GetReactionPrompts(); len(p) != 1 || p[0].GetPendingDamageId() != hit.GetId() || p[0].GetSpellKey() != shieldSpell {
+			t.Errorf("%s's prompts after the undo of the discard = %v, want Escudo on the hit", name, p)
+		}
+		if w := a.windowOf(t, u, playv1.ReactionKind_REACTION_KIND_SHIELD); w == nil || w.GetId() != window.GetId() {
+			t.Errorf("%s's Escudo window after the undo of the discard = %v, want the same window (%s) open", name, w, window.GetId())
+		}
+	}
+	res, err := a.useReaction(t, a.ana, e, hit.GetId(), slotOfLevel(1))
+	if err != nil {
+		t.Fatalf("UseReaction(Escudo) after the undo of the discard error = %v", err)
+	}
+	if res.GetOutcome() != playv1.ReactionOutcome_REACTION_OUTCOME_STOPPED {
+		t.Errorf("Escudo after the undo of the discard = %v, want the hit stopped (13 against 17)", res.GetOutcome())
+	}
+}
+
+// huntersMarkOn is the Hunter's Mark on a combatant, as the master reads it, or nil.
+func huntersMarkOn(t *testing.T, e *playv1.Encounter, label string) *playv1.CombatantEffect {
+	t.Helper()
+	for _, s := range byLabel(t, e, label).GetStates() {
+		if s.GetKind() == playv1.CombatantStateKind_COMBATANT_STATE_KIND_HUNTERS_MARK_TARGET {
+			return s
+		}
+	}
+	return nil
+}
+
+// TestUndoOfAMovedHuntersMarkMarksTheFirstTargetAgain: Brisa's Hunter's Mark marks the
+// Goblin; cast again on the Capitão, in her next turn, it moves the mark there. The
+// master's undo of the second cast takes the Capitão's mark off and puts the Goblin's
+// back, the same mark, with Brisa concentrating on Hunter's Mark still.
+func TestUndoOfAMovedHuntersMarkMarksTheFirstTargetAgain(t *testing.T) {
+	t.Parallel()
+	a := newRangers(t)
+	e := a.castersFight(t, 1)
+	a.passTo(t, e, "Brisa")
+	a.mustCast(t, a.bia, e, "Brisa", huntersMark, slotOfLevel(1), a.at(t, "Goblin"), noCastRoll)
+	first := huntersMarkOn(t, a.get(t, a.master), "Goblin")
+	if first == nil || first.GetSourceId() != a.id(t, "Brisa") {
+		t.Fatalf("the Goblin's mark after the cast = %v, want Brisa's", first)
+	}
+	a.passTo(t, a.mustEndTurnDiscarding(t, e), "Brisa")
+	a.mustCast(t, a.bia, a.get(t, a.master), "Brisa", huntersMark, slotOfLevel(1), a.at(t, "Capitão Goblin"), noCastRoll)
+	moved := a.get(t, a.master)
+	if g, c := huntersMarkOn(t, moved, "Goblin"), huntersMarkOn(t, moved, "Capitão Goblin"); g != nil || c == nil {
+		t.Fatalf("after the second cast the Goblin's mark is %v and the Capitão's %v, want the mark moved to the Capitão", g, c)
+	}
+
+	a.undoLast(t, e)
+	back := a.get(t, a.master)
+	if got := huntersMarkOn(t, back, "Goblin"); got == nil || got.GetId() != first.GetId() || got.GetSourceId() != first.GetSourceId() {
+		t.Errorf("the Goblin's mark after the undo = %v, want Brisa's first mark (%v) back", got, first)
+	}
+	if got := huntersMarkOn(t, back, "Capitão Goblin"); got != nil {
+		t.Errorf("the Capitão is still marked after the undo: %v", got)
+	}
+	if got := byLabel(t, back, "Brisa").GetConcentrationSpell(); got != huntersMark {
+		t.Errorf("Brisa concentrates on %q after the undo, want %q", got, huntersMark)
+	}
+}
+
+// TestUndoOfARevealingAreaTakesTheRevealedLinesBack: under the table rule that reveals the
+// hidden creatures an area hits, a Bola de Fogo on two hidden goblins writes a "revealed"
+// line for each before the cast's own event. The master's undo of the cast hides them
+// again and takes the lines back with it: his log has no "revealed" line left, and no
+// player sees either goblin.
+func TestUndoOfARevealingAreaTakesTheRevealedLinesBack(t *testing.T) {
+	t.Parallel()
+	c := newAreaCave(t)
+	e := c.askFight(t)
+	c.setRules(t, func(r *campaignsv1.TableRules) {
+		r.HiddenAreaHits = campaignsv1.HiddenAreaHitRule_HIDDEN_AREA_HIT_RULE_REVEAL
+	})
+	revealed := func() int {
+		t.Helper()
+		n := 0
+		for _, r := range c.log(t, c.master, e).GetRounds() {
+			for _, en := range r.GetEntries() {
+				if en.GetKind() == playv1.CombatLogKind_COMBAT_LOG_KIND_REVEAL_CHANGED && !en.GetNowHidden() {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	c.h.roller.queue(10, 10, 10, 10)
+	c.mustCastArea(t, c.ana, "Pensantus", fireball, slotOfLevel(3), at(20, 7), nil)
+	if n := revealed(); n != 2 {
+		t.Fatalf("the master's log has %d revealed lines after the cast, want 2 (Goblin 2 and Goblin 3)", n)
+	}
+
+	c.undoLast(t)
+	if n := revealed(); n != 0 {
+		t.Errorf("the master's log has %d revealed lines after the undo of the cast, want none: the goblins are hidden again", n)
+	}
+	for _, u := range []*user{c.ana, c.bia, c.caio} {
+		players := c.get(t, u)
+		for _, label := range []string{"Goblin 2", "Goblin 3"} {
+			if slices.ContainsFunc(players.GetCombatants(), func(x *playv1.Combatant) bool { return x.GetLabel() == label }) {
+				t.Errorf("a player sees %s after the undo of the cast that revealed it", label)
+			}
+		}
+	}
+}
+
+// lethargyLines counts the "added" lines of the lethargy in u's combat log.
+func (a *armed) lethargyLines(t *testing.T, u *user, e *playv1.Encounter) int {
+	t.Helper()
+	n := 0
+	for _, r := range a.log(t, u, e).GetRounds() {
+		for _, entry := range r.GetEntries() {
+			if f := entry.GetEffect(); f.GetSourceKey() == lethargyKey && f.GetChange() == playv1.CombatLogEffectChange_COMBAT_LOG_EFFECT_CHANGE_ADDED {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+// TestUndoOfHastesEndTakesTheLethargyAway: ending the concentration on Haste ends the spell
+// and leaves Toren lethargic, with the lethargy's "added" line before the change's own
+// event. The master's undo of the change puts Haste back and takes the lethargy away: no
+// lethargy row, no "added" line for it in any log, and the next undo is the cast's.
+func TestUndoOfHastesEndTakesTheLethargyAway(t *testing.T) {
+	t.Parallel()
+	a := newHasters(t)
+	e := a.castersFight(t, 1)
+	a.mustCast(t, a.ana, e, "Pensantus", hasteSpell, slotOfLevel(3), a.at(t, "Toren"), noCastRoll)
+	cast := a.log(t, a.master, e).GetUndoableEventId()
+	if cast == "" {
+		t.Fatal("the cast is not the master's to undo")
+	}
+	if _, err := a.conditions(t, a.ana, e, "Pensantus", nil, false, true); err != nil {
+		t.Fatalf("SetCombatantConditions(end the concentration) error = %v", err)
+	}
+	toren := byLabel(t, a.get(t, a.master), "Toren")
+	if cardOf(t, toren, hasteSpell) != nil || cardOf(t, toren, lethargyKey) == nil {
+		t.Fatalf("Toren's effects after the end of Haste = %v, want the lethargy alone", toren.GetEffects())
+	}
+	readers := []struct {
+		name string
+		u    *user
+	}{{"master", a.master}, {"ana", a.ana}, {"bia", a.bia}, {"caio", a.caio}}
+	if n := a.lethargyLines(t, a.master, e); n != 1 { // the line is there to take back
+		t.Fatalf("the master's log has %d lethargy lines after the end of Haste, want 1", n)
+	}
+
+	a.undoLast(t, e)
+	toren = byLabel(t, a.get(t, a.master), "Toren")
+	if cardOf(t, toren, hasteSpell) == nil {
+		t.Error("Haste is not back on Toren after the undo")
+	}
+	if cardOf(t, toren, lethargyKey) != nil {
+		t.Error("the lethargy is still on Toren after the undo of Haste's end")
+	}
+	var rows int
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM combatant_states WHERE combatant_id = $1 AND source_key = $2`, toren.GetId(), lethargyKey).Scan(&rows); err != nil {
+		t.Fatalf("count the lethargy rows: %v", err)
+	}
+	if rows != 0 {
+		t.Errorf("%d lethargy rows after the undo, want none", rows)
+	}
+	for _, r := range readers {
+		if n := a.lethargyLines(t, r.u, e); n != 0 {
+			t.Errorf("%s's log has %d lethargy lines after the undo, want none", r.name, n)
+		}
+	}
+	if got := a.log(t, a.master, e).GetUndoableEventId(); got != cast {
+		t.Fatalf("after the undo the master may undo %q, want the cast %q", got, cast)
+	}
+	if err := a.undo(t, a.master, e, cast); err != nil {
+		t.Fatalf("UndoLastAction(the cast) error = %v", err)
+	}
+	if cardOf(t, byLabel(t, a.get(t, a.master), "Toren"), hasteSpell) != nil {
+		t.Error("Haste is still on Toren after the undo of the cast")
 	}
 }

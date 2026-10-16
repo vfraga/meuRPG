@@ -103,35 +103,40 @@ func (s *Service) settleHidden(ctx context.Context, c *combatTx, m authz.Members
 		}
 		made.PendingReveal = q.ID
 	case reveal:
-		if err := s.revealCombatants(ctx, c, m, hit); err != nil {
+		lines, err := s.revealCombatants(ctx, c, m, hit)
+		if err != nil {
 			return err
 		}
-		made.Revealed = hit
+		// The cast's undo hides them again and takes these lines back with it.
+		made.Revealed, made.RevealLines = hit, lines
 	}
 	return nil
 }
 
 // revealCombatants makes hidden creatures appear to the players, with the line of
-// the log an area's reveal has ("foi revelado"). A creature that is not hidden any
-// more, or left the combat, is left alone.
-func (s *Service) revealCombatants(ctx context.Context, c *combatTx, m authz.Membership, ids []string) error {
+// the log an area's reveal has ("foi revelado"), and returns the lines' IDs. A creature
+// that is not hidden any more, or left the combat, is left alone.
+func (s *Service) revealCombatants(ctx context.Context, c *combatTx, m authz.Membership, ids []string) ([]string, error) {
 	cs, err := c.q.ListCombatants(ctx, c.enc.ID)
 	if err != nil {
-		return fmt.Errorf("list the combatants: %w", err)
+		return nil, fmt.Errorf("list the combatants: %w", err)
 	}
+	var lines []string
 	for _, id := range ids {
 		i := slices.IndexFunc(cs, func(o playdb.Combatant) bool { return o.ID == id })
 		if i < 0 || !cs[i].Hidden {
 			continue
 		}
 		if err := c.q.SetCombatantHidden(ctx, playdb.SetCombatantHiddenParams{ID: id, Hidden: false}); err != nil {
-			return fmt.Errorf("reveal the combatant: %w", err)
+			return nil, fmt.Errorf("reveal the combatant: %w", err)
 		}
-		if err := insertEvent(ctx, c, eventCombatantHiddenSet, &m.UserID, nil, actionEvent{Round: c.enc.Round, Actor: id, ByArea: true}); err != nil {
-			return err
+		line, err := insertEventID(ctx, c, eventCombatantHiddenSet, &m.UserID, nil, actionEvent{Round: c.enc.Round, Actor: id, ByArea: true})
+		if err != nil {
+			return nil, err
 		}
+		lines = append(lines, line)
 	}
-	return nil
+	return lines, nil
 }
 
 // mustNotHold refuses what the turn cannot do while a question waits for the
@@ -209,7 +214,7 @@ func (s *Service) ResolveHiddenReveal(
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("answer the oldest question first"))
 		}
 		if answer == hiddenRevealRevealed {
-			if err := s.revealCombatants(ctx, c, m, q.CombatantIds); err != nil {
+			if _, err := s.revealCombatants(ctx, c, m, q.CombatantIds); err != nil {
 				return nil, err
 			}
 			revealed = q.CombatantIds

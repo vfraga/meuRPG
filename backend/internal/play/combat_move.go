@@ -243,373 +243,642 @@ func moveStateOf(c playdb.Combatant) *moveState {
 	return st
 }
 
+// moveRequest is a MoveCombatant call, read and checked.
+type moveRequest struct {
+	m             authz.Membership
+	key           string
+	encID, combID string
+	col, row      int32
+	jump          playv1.JumpKind
+	height        int32
+	// forced (a teleport, a token put right) and place (the first square of a
+	// combatant that has none) are the master's.
+	forced, place bool
+}
+
+// walking says whether the move is a walk that pays its way: not a jump, and not
+// the master's forced one.
+func (r moveRequest) walking() bool {
+	return !r.forced && r.jump == playv1.JumpKind_JUMP_KIND_UNSPECIFIED
+}
+
+// readMoveRequest authorizes the caller and reads what the call asks.
+func readMoveRequest(ctx context.Context, msg *playv1.MoveCombatantRequest) (moveRequest, error) {
+	m, err := authz.RequireCampaignMember(ctx, msg.GetCampaignId())
+	if err != nil {
+		return moveRequest{}, err
+	}
+	key, err := parseKey(msg.GetIdempotencyKey())
+	if err != nil {
+		return moveRequest{}, err
+	}
+	encID, err := parseCombatID(msg.GetEncounterId(), "encounter")
+	if err != nil {
+		return moveRequest{}, err
+	}
+	combID, err := parseCombatID(msg.GetCombatantId(), "combatant")
+	if err != nil {
+		return moveRequest{}, err
+	}
+	r := moveRequest{
+		m: m, key: key, encID: encID, combID: combID, col: msg.GetCol(), row: msg.GetRow(),
+		jump: msg.GetJump(), height: msg.GetJumpHeightDft(), forced: msg.GetForced(), place: msg.GetPlace(),
+	}
+	return r, r.validate()
+}
+
+// validate refuses what no state of the combat could make right: a jump that is
+// not one, and what only the master may ask.
+func (r moveRequest) validate() error {
+	switch r.jump {
+	case playv1.JumpKind_JUMP_KIND_UNSPECIFIED, playv1.JumpKind_JUMP_KIND_LONG:
+	case playv1.JumpKind_JUMP_KIND_HIGH:
+		if r.height < 1 || r.height > maxJumpDFt {
+			return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("jump_height_dft must be 1 to %d", maxJumpDFt))
+		}
+	default:
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("jump must be a kind of jump"))
+	}
+	master := viewerOf(r.m).master
+	// A forced move (a teleport, a token put right) is the master's, and never
+	// provokes.
+	if r.forced && !master {
+		return connect.NewError(connect.CodePermissionDenied, errors.New("only the master may force a move"))
+	}
+	if r.place && !master {
+		return connect.NewError(connect.CodePermissionDenied, errors.New("only the master may place a combatant"))
+	}
+	if r.place && r.jump != playv1.JumpKind_JUMP_KIND_UNSPECIFIED {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("a placement is not a jump"))
+	}
+	return nil
+}
+
+// A drag and a crawl each make a foot of path cost this many.
+const slowedFoot = 2
+
+// moveAttempt is one run of the move's transaction: what it read, what it worked
+// out and what it made, which the publishers read after the commit. The closure
+// of the write runs again on a retry, and every run starts from a new one, so
+// nothing of a failed attempt stays.
+type moveAttempt struct {
+	req     moveRequest
+	c       *combatTx
+	v       combatViewer
+	cs      []playdb.Combatant
+	target  playdb.Combatant
+	terrain grid.Terrain
+	onTurn  bool
+	// dragged is the creature the target holds and drags, if it does; factor is
+	// what a foot of path costs after the drag and the crawl.
+	dragged    playdb.Combatant
+	dragging   bool
+	dragHalves bool
+	factor     int
+	// col and row are the square asked for, or the one a placement chose.
+	col, row int32
+	// th fires the traps the move enters.
+	th *trapHook
+	// from is where the target stood, and what it had walked, before the move.
+	from *moveState
+	// to is where the move ends; cost is what it spends, length how far it goes
+	// and last the running start it leaves, all in tenths of a foot.
+	to                 grid.Square
+	cost, length, last int
+	// the row the move writes.
+	newCol, newRow int32
+	squareChanged  bool
+	coverMark      string
+	used           int
+	// made is the move's event.
+	made actionEvent
+	// what the publishers read after the commit.
+	moved        playdb.Combatant
+	logged       bool     // the move is a line of the combat log
+	offered      []string // the reactors the move offered an attack
+	markCleared  bool     // the move took the master's cover mark off
+	opened       []grid.Square
+	draggedMoved *playdb.Combatant // the creature the mover dragged along, where it stands now
+	draggedFrom  *grid.Square      // and where it stood
+	draggedID    string            // the creature dragged along: it provokes nothing against its grappler
+}
+
+// playerPlan is what a player plans and walks on: the terrain they know, the
+// creatures they see and the creatures there are.
+type playerPlan struct {
+	terrain grid.Terrain
+	seen    grid.OccupantMap
+	all     grid.OccupantMap
+	mover   grid.Mover
+	origin  grid.Square
+	leftDFt int
+}
+
 // MoveCombatant implements playv1connect.CombatServiceHandler.
 func (s *Service) MoveCombatant(
 	ctx context.Context,
 	req *connect.Request[playv1.MoveCombatantRequest],
 ) (*connect.Response[playv1.MoveCombatantResponse], error) {
-	m, err := authz.RequireCampaignMember(ctx, req.Msg.GetCampaignId())
+	mv, err := readMoveRequest(ctx, req.Msg)
 	if err != nil {
 		return nil, err
 	}
-	key, err := parseKey(req.Msg.GetIdempotencyKey())
-	if err != nil {
-		return nil, err
-	}
-	encID, err := parseCombatID(req.Msg.GetEncounterId(), "encounter")
-	if err != nil {
-		return nil, err
-	}
-	combID, err := parseCombatID(req.Msg.GetCombatantId(), "combatant")
-	if err != nil {
-		return nil, err
-	}
-	col, row := req.Msg.GetCol(), req.Msg.GetRow()
-	jump := req.Msg.GetJump()
-	height := req.Msg.GetJumpHeightDft()
-	switch jump {
-	case playv1.JumpKind_JUMP_KIND_UNSPECIFIED, playv1.JumpKind_JUMP_KIND_LONG:
-	case playv1.JumpKind_JUMP_KIND_HIGH:
-		if height < 1 || height > maxJumpDFt {
-			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("jump_height_dft must be 1 to %d", maxJumpDFt))
-		}
-	default:
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("jump must be a kind of jump"))
-	}
-	v := viewerOf(m)
-	// A forced move (a teleport, a token put right) is the master's, and never
-	// provokes.
-	forced := req.Msg.GetForced()
-	if forced && !v.master {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("only the master may force a move"))
-	}
-	place := req.Msg.GetPlace()
-	if place && !v.master {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("only the master may place a combatant"))
-	}
-	if place && jump != playv1.JumpKind_JUMP_KIND_UNSPECIFIED {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a placement is not a jump"))
-	}
-
-	var moved playdb.Combatant
-	var made actionEvent
-	var stoppedEarly bool              // a creature the player does not see cut the move short
-	var logged bool                    // the move is a line of the combat log
-	var offered []string               // the reactors the move offered an attack
-	var markCleared bool               // the move took the master's cover mark off
-	var th *trapHook                   // the traps the move may fire (combat_traps.go, MR-035)
-	var moveID string                  // the id of the opportunity offers the move made, if any
-	var opened []grid.Square           // the closed doors the move opened (RN-26)
-	var lockedDoor bool                // a locked door stopped the move (a player only learns of one they know)
-	var draggedMoved *playdb.Combatant // the creature the mover dragged along, where it stands now
-	var draggedFrom *grid.Square       // and where it stood
-	var draggedID string               // the creature dragged along: it provokes nothing against its grappler
-	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: idem.Hash(req.Msg), kind: eventCombatantMoved, altKind: eventTrapTriggered, encounterID: encID}, func(c *combatTx) (any, error) {
-		logged, stoppedEarly, moveID, opened, lockedDoor = false, false, "", nil, false
-		draggedMoved, draggedFrom, draggedID = nil, nil, ""
-		if err := notEnded(c.enc); err != nil {
-			return nil, err
-		}
-		if isTheatre(c.enc) {
-			return nil, errNeedsAMap() // no squares: a move, a jump and a placement are the master's word (SpendMovement)
-		}
-		cs, err := c.q.ListCombatants(ctx, c.enc.ID)
-		if err != nil {
-			return nil, fmt.Errorf("list the combatants: %w", err)
-		}
-		v = c.viewer(m, cs) // the fog: an NPC the player does not see is not found
-		target, err := findCombatant(cs, combID, v)
-		if err != nil {
-			return nil, err
-		}
-		if err := v.mayAct(target); err != nil {
-			return nil, err
-		}
-		// A grappler drags the creature it holds, at half speed (combat_drag.go).
-		dragged, dragging, err := s.draggedBy(ctx, c.q, cs, target)
-		if err != nil {
-			return nil, err
-		}
-		factor, dragHalves := 1, false
-		if dragging && !forced && jump == playv1.JumpKind_JUMP_KIND_UNSPECIFIED && combat.DragHalvesSpeed(target.Size, dragged.Size) {
-			factor, dragHalves = 2, true
-		}
-		// Crawling (SRD 5.1, "Being Prone"): every foot of movement costs 1 extra foot, so a
-		// prone creature pays twice (a drag halves the speed on top of it). See combat_standup.go.
-		if crawls(target) && !forced && jump == playv1.JumpKind_JUMP_KIND_UNSPECIFIED {
-			factor *= 2
-		}
-		col, row := col, row // the closure runs again on a retry: a placement picks its square afresh
-		switch {
-		case place && placed(target):
-			return nil, errAlreadyPlaced
-		case place:
-			p, err := s.placementFor(ctx, c, cs)
-			if err != nil {
-				return nil, err
-			}
-			sq, ok := p.next()
-			if !ok {
-				return nil, errNoRoom()
-			}
-			col, row = clamp32(sq.Col, 0, math.MaxInt32), clamp32(sq.Row, 0, math.MaxInt32)
-		case jump != playv1.JumpKind_JUMP_KIND_HIGH && !inGrid(c.enc, col, row):
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("col and row must be a square of the grid"))
-		}
-		if jump != playv1.JumpKind_JUMP_KIND_UNSPECIFIED && !placed(target) {
-			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_PLACED, "a jump starts from a square of the map")
-		}
-		terrain, err := s.terrainOf(ctx, c.tx, m.CampaignID, c.enc)
-		if err != nil {
-			return nil, err
-		}
-		if v.master && jump != playv1.JumpKind_JUMP_KIND_HIGH && terrain.Walls.Has(grid.Square{Col: int(col), Row: int(row)}) {
-			return nil, errWall() // nobody stands in a wall, and a creature in one is seen by no player
-		}
-		onTurn := actsNow(c.enc, target)
-		if !v.master {
-			// RN-21: a player walks only on their own turn.
-			switch {
-			case c.enc.Status != statusActive:
-				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_ACTIVE, "the combat is not running")
-			case !onTurn: // not in the turn that is running, or its part ended
-				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_YOUR_TURN, "it is not your turn")
-			case !placed(target):
-				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_PLACED, "you are not on the map yet; ask the master")
-			}
-			if err := s.mustNotBeDown(ctx, c.tx, m.CampaignID, target); err != nil {
-				return nil, err
-			}
-			// A surprised creature does not move on its first turn (SRD 5.1, "Surprise").
-			if err := s.mustNotBeSurprised(ctx, c, target); err != nil {
-				return nil, err
-			}
-		}
-
-		if th, err = s.newTrapHook(ctx, c.tx, m.CampaignID, c.enc, target); err != nil {
-			return nil, err
-		}
-		from := moveStateOf(target)
-		made = actionEvent{Round: c.enc.Round, Secret: target.Hidden, Actor: target.ID, OnTurn: onTurn, From: from}
-		offered, markCleared = nil, false
-		to := grid.Square{Col: int(col), Row: int(row)}
-		if jump == playv1.JumpKind_JUMP_KIND_HIGH {
-			to = squareOfCombatant(target) // a high jump moves nobody
-		}
-		cost, length, last := 0, 0, int(target.LastMoveDft) // the master's move leaves the running start alone
-		if placed(target) && jump != playv1.JumpKind_JUMP_KIND_HIGH {
-			length = grid.LengthDFt(squareOfCombatant(target), to)
-		}
-
-		if !v.master || actsNow(c.enc, target) { // the turn's move waits for the master's answer; his own moves of a token off turn do not
-			if err := s.mustNotHold(ctx, c); err != nil {
-				return nil, err
-			}
-		}
-		if !v.master {
-			if err := s.mustNotWait(ctx, c, target); err != nil {
-				return nil, err
-			}
-			// The player plans on what they see (RN-10); the real move runs against
-			// everyone, and stops before a creature they do not see, without saying
-			// what it was (D1): the answer only says it was cut short.
-			occ := occupantsFor(cs, target, v)
-			all := occupantsFor(cs, target, combatViewer{master: true})
-			known, err := c.sight.knownTerrain(ctx, c.tx, v) // the mover's is cached by sightForWrite; any other is read in this transaction
-			if err != nil {
-				return nil, err
-			}
-			plan := planOn(v, terrain, known) // the walls and rubble the player knows; the rest is floor to them
-			mover, origin := moverOf(target), squareOfCombatant(target)
-			left := movementLeftDFt(target) / factor // the path that fits: a drag costs twice its length
-			switch jump {
-			case playv1.JumpKind_JUMP_KIND_UNSPECIFIED:
-				mv := plan.Move(origin, to, occ, mover)
-				if mv.Blocked {
-					return nil, moveStop(mv, occ, to)
-				}
-				if mv.CostDFt > left {
-					return nil, tooFar(mv.CostDFt - left)
-				}
-				st := terrain.MoveUntil(origin, to, all, mover, th.stops(), left)
-				stoppedEarly = st.Reason != grid.StopNone && (st.Reason != grid.StopMarked || st.Reached != to) // a trap's area is not "in the way" when it is where the mover went
-				if st.Reason == grid.StopLocked && doorKnown(plan, st.LockedAt) {
-					// The player learns the door is locked by trying it (RN-26). A door they
-					// do not see (the fog) is "something in the way" like any other.
-					stoppedEarly, lockedDoor = false, true
-					if len(st.Entered) == 0 {
-						return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_DOOR_LOCKED, "the door is locked")
-					}
-				}
-				opened = st.Opens
-				th.marked(st.Marked, st.MarkedAt)
-				to, cost = st.Reached, st.CostDFt
-				length = grid.LengthDFt(origin, to)
-				// Consecutive moves on foot add up to the running start (10 ft just
-				// before); a flier's move is no run.
-				switch {
-				case length == 0:
-				case mover.Flier:
-					last = 0
-				default:
-					last += length
-				}
-			case playv1.JumpKind_JUMP_KIND_LONG:
-				if length == 0 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a jump needs another square"))
-				}
-				running := combat.HasRunningStart(int(target.LastMoveDft))
-				limit := longJumpDFt(target, running)
-				if length > limit {
-					return nil, tooFar(length-limit, jumpLimit(limit, running))
-				}
-				mv := plan.Jump(origin, to, occ, mover)
-				if mv.Blocked {
-					return nil, moveStop(mv, occ, to)
-				}
-				if mv.CostDFt > left {
-					return nil, tooFar(mv.CostDFt - left)
-				}
-				if terrain.Jump(origin, to, all, mover).Blocked { // a creature it does not see holds the landing
-					stoppedEarly, to, length = true, origin, 0
-				} else {
-					cost, last = mv.CostDFt, 0
-					th.landed(to) // a jump fires a trap only where it lands (D3, D5)
-				}
-			case playv1.JumpKind_JUMP_KIND_HIGH:
-				running := combat.HasRunningStart(int(target.LastMoveDft))
-				limit := highJumpDFt(target, running)
-				if int(height) > limit {
-					return nil, tooFar(int(height)-limit, jumpLimit(limit, running))
-				}
-				if int(height) > left {
-					return nil, tooFar(int(height) - left)
-				}
-				cost, last = int(height), 0
-			}
-		}
-		if v.master && !forced && jump == playv1.JumpKind_JUMP_KIND_UNSPECIFIED && placed(target) && terrain.Doors.Count() > 0 {
-			// The master's move is free and no wall stops it, but the doors do what they
-			// do for everyone (RN-26): it opens the closed ones on its line, and a locked,
-			// barred or secret one stops it before. The master unlocks by painting.
-			origin := squareOfCombatant(target)
-			st := grid.Terrain{Grid: terrain.Grid, Doors: terrain.Doors}.MoveUntil(origin, to, nil, moverOf(target), nil, math.MaxInt)
-			if st.Reason == grid.StopLocked && len(st.Entered) == 0 {
-				return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_DOOR_LOCKED, "the door is locked")
-			}
-			stoppedEarly, lockedDoor = st.Reason != grid.StopNone, st.Reason == grid.StopLocked
-			to, opened = st.Reached, st.Opens
-			length = grid.LengthDFt(origin, to)
-		}
-		newCol, newRow := clamp32(to.Col, 0, math.MaxInt32), clamp32(to.Row, 0, math.MaxInt32)
-		// The master's cover mark clears when the combatant changes square, not
-		// when nobody moved (a high jump, a move to where it stands).
-		squareChanged := !placed(target) || to != squareOfCombatant(target)
-		coverMark := target.CoverMark
-		if squareChanged {
-			markCleared = coverMark != "" && coverMark != "none"
-			coverMark = "none"
-		}
-		made.StoppedEarly, made.LockedDoor = stoppedEarly, lockedDoor
-
-		used := int(target.MovementUsedDft) + cost*factor
-		if err := c.q.SetCombatantMove(ctx, playdb.SetCombatantMoveParams{
-			ID: target.ID, GridCol: &newCol, GridRow: &newRow,
-			MovementUsedFt: clamp32(used/10, 0, math.MaxInt32), MovementUsedDft: clamp32(used, 0, math.MaxInt32), LastMoveDft: clamp32(last, 0, math.MaxInt32), CoverMark: coverMark,
-		}); err != nil {
-			return nil, fmt.Errorf("move the combatant: %w", err)
-		}
-		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-			return nil, fmt.Errorf("touch the encounter: %w", err)
-		}
-		if dragging && !forced && jump == playv1.JumpKind_JUMP_KIND_UNSPECIFIED && squareChanged && placed(target) {
-			from := squareOfCombatant(dragged)
-			moved, err := s.dragTo(ctx, c, cs, target, dragged, dragSquare(terrain, squareOfCombatant(target), to, moverOf(target)))
-			if err != nil {
-				return nil, err
-			}
-			draggedMoved, draggedFrom = &moved, &from
-			draggedID = dragged.ID
-			made.Dragged, made.DraggedFrom = dragged.ID, moveStateOf(dragged)
-		}
-		// Opportunity attacks (D1b): a move on foot or a long jump (it spends
-		// movement), on the mover's turn, that leaves an enemy's reach lands, and the
-		// enemy is offered an attack. A high jump moves nobody; a placement out of
-		// turn, a forced move and a move that stays put offer nothing.
-		if jump != playv1.JumpKind_JUMP_KIND_HIGH && !forced && onTurn && placed(target) && squareChanged {
-			if moveID, offered, err = s.offerOpportunities(ctx, c, cs, target, squareOfCombatant(target), to, jump == playv1.JumpKind_JUMP_KIND_LONG, draggedID); err != nil {
-				return nil, err
-			}
-			made.MoveID = moveID
-		}
-		moved = target
-		moved.GridCol, moved.GridRow, moved.MovementUsedFt, moved.MovementUsedDft = &newCol, &newRow, clamp32(used/10, 0, math.MaxInt32), clamp32(used, 0, math.MaxInt32)
-		moved.LastMoveDft, moved.CoverMark = clamp32(last, 0, math.MaxInt32), coverMark
-		c.characterID = &target.CharacterID
-		if opened, err = s.openDoors(ctx, c, target, opened, from); err != nil {
-			return nil, err
-		}
-
-		// The log tells how far a combatant went on its turn: the line between
-		// where it was and where it goes, whoever moves it.
-		made.Col, made.Row = newCol, newRow
-		made.CostDFt, made.CostFt = clamp32(cost, 0, math.MaxInt32), clamp32(cost/10, 0, math.MaxInt32)
-		made.DistanceDFt, made.DistanceFt = clamp32(length, 0, math.MaxInt32), clamp32(length/10, 0, math.MaxInt32)
-		if jump == playv1.JumpKind_JUMP_KIND_UNSPECIFIED && cost > 0 { // what the walk spent: the path's cost, doubled by a drag and by a crawl
-			made.SpentDFt, made.Dragging, made.Crawling = clamp32(cost*factor, 0, math.MaxInt32), dragHalves, crawls(target) && !forced
-		}
-		switch jump {
-		case playv1.JumpKind_JUMP_KIND_LONG:
-			made.Jump, made.JumpRunning = jumpLong, combat.HasRunningStart(int(target.LastMoveDft))
-			// SRD: landing in difficult terrain asks for a DC 10 Acrobatics check or
-			// the jumper falls prone. The app rolls nothing: the master's log says it.
-			made.LandingDifficult = !moverOf(target).Flier && terrain.Difficult.Has(to)
-		case playv1.JumpKind_JUMP_KIND_HIGH:
-			made.Jump, made.HeightDFt = jumpHigh, height
-		}
-		logged = onTurn && (length > 0 || made.Jump == jumpHigh)
-		if v.master && squareChanged {
-			th.landed(to) // the master's move is not a walk: only where it ends counts
-		}
-		return th.finish(ctx, c, made, cs, moved)
+	var a moveAttempt
+	res, err := s.write(ctx, combatWrite{m: mv.m, key: mv.key, hash: idem.Hash(req.Msg), kind: eventCombatantMoved, altKind: eventTrapTriggered, encounterID: mv.encID}, func(c *combatTx) (any, error) {
+		a = moveAttempt{req: mv, c: c, factor: 1}
+		return s.moveInTx(ctx, &a)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "move a combatant", err)
 	}
-	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
-		s.publishCombatantMoved(ctx, m.CampaignID, d.enc, moved, squareOfState(made.From))
-		if draggedMoved != nil { // the creature it dragged moved too
-			s.publishCombatantMoved(ctx, m.CampaignID, d.enc, *draggedMoved, draggedFrom)
-			s.positionChanged(ctx, m.CampaignID, d.enc, *draggedMoved, draggedFrom)
-		}
-		if made.MoveID != "" { // the offers are in the combat, not in the move's hint
-			s.publishOffersMade(m.CampaignID, d, moved, offered)
-		}
-		if markCleared { // the mark is on the combatant, not in the move's hint: who saw it reads again
-			if moved.Hidden {
-				s.hub.Publish(m.CampaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
-			} else {
-				s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
-			}
-		}
-		s.positionChanged(ctx, m.CampaignID, d.enc, moved, squareOfState(made.From)) // the fog remembers what it showed
-		if len(opened) > 0 && s.doors != nil && d.enc.MapID != nil {                 // the map's layers changed, and what the players see with them
-			s.doors.DoorsChanged(ctx, m.CampaignID, *d.enc.MapID)
-		}
-		if logged || len(opened) > 0 {
-			s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !moved.Hidden)
-		}
-		th.after(ctx, m.CampaignID, d.enc)
-		s.noticeAfterMove(ctx, m.CampaignID, d.enc, moved) // a trap near where the mover ended may be noticed (MR-035)
-	})
+	out, err := s.finish(ctx, mv.m, res, func(ctx context.Context, d *encounterData) { s.publishMove(ctx, mv.m.CampaignID, d, &a) })
 	if err != nil {
 		return nil, err
 	}
-	ev, err := resultEvent(res, made)
+	ev, err := resultEvent(res, a.made)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the move", err)
 	}
 	return connect.NewResponse(&playv1.MoveCombatantResponse{Encounter: out, StoppedEarly: ev.StoppedEarly, Provoked: ev.MoveID != "", LockedDoor: ev.LockedDoor}), nil
+}
+
+// moveInTx is the move's transaction: it finds who moves and where (resolve),
+// works out the path (plan), writes the move and what it brings with it (write)
+// and fills the event the log keeps (describe).
+func (s *Service) moveInTx(ctx context.Context, a *moveAttempt) (any, error) {
+	if err := s.resolveMove(ctx, a); err != nil {
+		return nil, err
+	}
+	if err := s.planMove(ctx, a); err != nil {
+		return nil, err
+	}
+	if err := s.writeMove(ctx, a); err != nil {
+		return nil, err
+	}
+	a.describeMove()
+	return a.th.finish(ctx, a.c, a.made, a.cs, a.moved)
+}
+
+// resolveMove loads the combatants, picks the square and the terrain, and checks
+// that the caller may move the combatant now.
+func (s *Service) resolveMove(ctx context.Context, a *moveAttempt) error {
+	if err := s.loadMover(ctx, a); err != nil {
+		return err
+	}
+	if err := s.chooseSquare(ctx, a); err != nil {
+		return err
+	}
+	if err := s.readTerrain(ctx, a); err != nil {
+		return err
+	}
+	return s.mayMove(ctx, a)
+}
+
+// loadMover finds the combatant in the combat as the caller sees it, and what a
+// foot of its path costs: a grappler drags the creature it holds, at half speed
+// (combat_drag.go).
+func (s *Service) loadMover(ctx context.Context, a *moveAttempt) error {
+	if err := notEnded(a.c.enc); err != nil {
+		return err
+	}
+	if isTheatre(a.c.enc) {
+		return errNeedsAMap() // no squares: a move, a jump and a placement are the master's word (SpendMovement)
+	}
+	cs, err := a.c.q.ListCombatants(ctx, a.c.enc.ID)
+	if err != nil {
+		return fmt.Errorf("list the combatants: %w", err)
+	}
+	a.cs = cs
+	a.v = a.c.viewer(a.req.m, cs) // the fog: an NPC the player does not see is not found
+	if a.target, err = findCombatant(cs, a.req.combID, a.v); err != nil {
+		return err
+	}
+	if err := a.v.mayAct(a.target); err != nil {
+		return err
+	}
+	if a.dragged, a.dragging, err = s.draggedBy(ctx, a.c.q, cs, a.target); err != nil {
+		return err
+	}
+	a.setFactor()
+	return nil
+}
+
+// setFactor works out what a foot of path costs.
+func (a *moveAttempt) setFactor() {
+	if a.dragging && a.req.walking() && combat.DragHalvesSpeed(a.target.Size, a.dragged.Size) {
+		a.factor, a.dragHalves = slowedFoot, true
+	}
+	// Crawling (SRD 5.1, "Being Prone"): every foot of movement costs 1 extra foot, so a
+	// prone creature pays twice (a drag halves the speed on top of it). See combat_standup.go.
+	if a.req.walking() && crawls(a.target) {
+		a.factor *= slowedFoot
+	}
+}
+
+// chooseSquare takes the square the request names, or picks one for a placement.
+func (s *Service) chooseSquare(ctx context.Context, a *moveAttempt) error {
+	a.col, a.row = a.req.col, a.req.row // the closure runs again on a retry: a placement picks its square afresh
+	if err := s.pickSquare(ctx, a); err != nil {
+		return err
+	}
+	if a.req.jump != playv1.JumpKind_JUMP_KIND_UNSPECIFIED && !placed(a.target) {
+		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_PLACED, "a jump starts from a square of the map")
+	}
+	return nil
+}
+
+// pickSquare is the placement's choice, or the check that the square is on the grid.
+func (s *Service) pickSquare(ctx context.Context, a *moveAttempt) error {
+	switch {
+	case a.req.place && placed(a.target):
+		return errAlreadyPlaced
+	case a.req.place:
+		p, err := s.placementFor(ctx, a.c, a.cs)
+		if err != nil {
+			return err
+		}
+		sq, ok := p.next()
+		if !ok {
+			return errNoRoom()
+		}
+		a.col, a.row = clamp32(sq.Col, 0, math.MaxInt32), clamp32(sq.Row, 0, math.MaxInt32)
+	case a.req.jump != playv1.JumpKind_JUMP_KIND_HIGH && !inGrid(a.c.enc, a.col, a.row):
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("col and row must be a square of the grid"))
+	}
+	return nil
+}
+
+// readTerrain reads the map's layers and refuses the master a wall to stand in.
+func (s *Service) readTerrain(ctx context.Context, a *moveAttempt) error {
+	terrain, err := s.terrainOf(ctx, a.c.tx, a.req.m.CampaignID, a.c.enc)
+	if err != nil {
+		return err
+	}
+	a.terrain = terrain
+	if a.v.master && a.req.jump != playv1.JumpKind_JUMP_KIND_HIGH && terrain.Walls.Has(grid.Square{Col: int(a.col), Row: int(a.row)}) {
+		return errWall() // nobody stands in a wall, and a creature in one is seen by no player
+	}
+	return nil
+}
+
+// mayMove checks that a player may move the combatant now. The master moves
+// anyone at any time.
+func (s *Service) mayMove(ctx context.Context, a *moveAttempt) error {
+	a.onTurn = actsNow(a.c.enc, a.target)
+	if a.v.master {
+		return nil
+	}
+	// RN-21: a player walks only on their own turn.
+	switch {
+	case a.c.enc.Status != statusActive:
+		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_ACTIVE, "the combat is not running")
+	case !a.onTurn: // not in the turn that is running, or its part ended
+		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_YOUR_TURN, "it is not your turn")
+	case !placed(a.target):
+		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NOT_PLACED, "you are not on the map yet; ask the master")
+	}
+	if err := s.mustNotBeDown(ctx, a.c.tx, a.req.m.CampaignID, a.target); err != nil {
+		return err
+	}
+	// A surprised creature does not move on its first turn (SRD 5.1, "Surprise").
+	return s.mustNotBeSurprised(ctx, a.c, a.target)
+}
+
+// planMove sets the move up, checks that nothing holds the turn and works out
+// where the move ends and what it costs.
+func (s *Service) planMove(ctx context.Context, a *moveAttempt) error {
+	if err := s.startMove(ctx, a); err != nil {
+		return err
+	}
+	if !a.v.master || a.onTurn { // the turn's move waits for the master's answer; his own moves of a token off turn do not
+		if err := s.mustNotHold(ctx, a.c); err != nil {
+			return err
+		}
+	}
+	if a.v.master {
+		return a.planMasterWalk()
+	}
+	if err := s.mustNotWait(ctx, a.c, a.target); err != nil {
+		return err
+	}
+	return s.planPlayerMove(ctx, a)
+}
+
+// startMove opens the move's event and the trap hook, and takes the move to be
+// free and as long as the line to the square asked.
+func (s *Service) startMove(ctx context.Context, a *moveAttempt) error {
+	th, err := s.newTrapHook(ctx, a.c.tx, a.req.m.CampaignID, a.c.enc, a.target)
+	if err != nil {
+		return err
+	}
+	a.th = th
+	a.from = moveStateOf(a.target)
+	a.made = actionEvent{Round: a.c.enc.Round, Secret: a.target.Hidden, Actor: a.target.ID, OnTurn: a.onTurn, From: a.from}
+	a.to = grid.Square{Col: int(a.col), Row: int(a.row)}
+	if a.req.jump == playv1.JumpKind_JUMP_KIND_HIGH {
+		a.to = squareOfCombatant(a.target) // a high jump moves nobody
+	}
+	a.cost, a.length, a.last = 0, 0, int(a.target.LastMoveDft) // the master's move leaves the running start alone
+	if placed(a.target) && a.req.jump != playv1.JumpKind_JUMP_KIND_HIGH {
+		a.length = grid.LengthDFt(squareOfCombatant(a.target), a.to)
+	}
+	return nil
+}
+
+// planPlayerMove works out the move of a player. They plan on what they see
+// (RN-10); the real move runs against everyone, and stops before a creature they
+// do not see, without saying what it was (D1): the answer only says it was cut
+// short.
+func (s *Service) planPlayerMove(ctx context.Context, a *moveAttempt) error {
+	known, err := a.c.sight.knownTerrain(ctx, a.c.tx, a.v) // the mover's is cached by sightForWrite; any other is read in this transaction
+	if err != nil {
+		return err
+	}
+	p := playerPlan{
+		terrain: planOn(a.v, a.terrain, known), // the walls and rubble the player knows; the rest is floor to them
+		seen:    occupantsFor(a.cs, a.target, a.v),
+		all:     occupantsFor(a.cs, a.target, combatViewer{master: true}),
+		mover:   moverOf(a.target),
+		origin:  squareOfCombatant(a.target),
+		leftDFt: movementLeftDFt(a.target) / a.factor, // the path that fits: a drag costs twice its length
+	}
+	switch a.req.jump {
+	case playv1.JumpKind_JUMP_KIND_LONG:
+		return a.planLongJump(p)
+	case playv1.JumpKind_JUMP_KIND_HIGH:
+		return a.planHighJump(p)
+	}
+	return a.planWalk(p)
+}
+
+// planWalk is a player's straight move: refused when a wall or a creature they
+// know of is in the way or the path costs more than they have, and cut short by
+// what they do not know of.
+func (a *moveAttempt) planWalk(p playerPlan) error {
+	mv := p.terrain.Move(p.origin, a.to, p.seen, p.mover)
+	if mv.Blocked {
+		return moveStop(mv, p.seen, a.to)
+	}
+	if mv.CostDFt > p.leftDFt {
+		return tooFar(mv.CostDFt - p.leftDFt)
+	}
+	st := a.terrain.MoveUntil(p.origin, a.to, p.all, p.mover, a.th.stops(), p.leftDFt)
+	a.made.StoppedEarly = st.Reason != grid.StopNone && (st.Reason != grid.StopMarked || st.Reached != a.to) // a trap's area is not "in the way" when it is where the mover went
+	if err := a.noteLock(p.terrain, st); err != nil {
+		return err
+	}
+	a.opened = st.Opens
+	a.th.marked(st.Marked, st.MarkedAt)
+	a.to, a.cost = st.Reached, st.CostDFt
+	a.length = grid.LengthDFt(p.origin, a.to)
+	a.last = runAfterWalk(a.last, a.length, p.mover.Flier)
+	return nil
+}
+
+// noteLock tells a locked door the player knows of from a creature in the way.
+func (a *moveAttempt) noteLock(plan grid.Terrain, st grid.Stopped) error {
+	if st.Reason != grid.StopLocked || !doorKnown(plan, st.LockedAt) {
+		return nil
+	}
+	// The player learns the door is locked by trying it (RN-26). A door they
+	// do not see (the fog) is "something in the way" like any other.
+	a.made.StoppedEarly, a.made.LockedDoor = false, true
+	if len(st.Entered) == 0 {
+		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_DOOR_LOCKED, "the door is locked")
+	}
+	return nil
+}
+
+// runAfterWalk is the running start after a walk of length: consecutive moves on
+// foot add up to it (10 ft just before); a flier's move is no run.
+func runAfterWalk(last, length int, flier bool) int {
+	switch {
+	case length == 0:
+		return last
+	case flier:
+		return 0
+	}
+	return last + length
+}
+
+// planLongJump is a player's long jump: within the limit of the jump, over no
+// wall, onto no creature and paid for by the movement left.
+func (a *moveAttempt) planLongJump(p playerPlan) error {
+	if a.length == 0 {
+		return connect.NewError(connect.CodeInvalidArgument, errors.New("a jump needs another square"))
+	}
+	running := combat.HasRunningStart(int(a.target.LastMoveDft))
+	limit := longJumpDFt(a.target, running)
+	if a.length > limit {
+		return tooFar(a.length-limit, jumpLimit(limit, running))
+	}
+	mv := p.terrain.Jump(p.origin, a.to, p.seen, p.mover)
+	if mv.Blocked {
+		return moveStop(mv, p.seen, a.to)
+	}
+	if mv.CostDFt > p.leftDFt {
+		return tooFar(mv.CostDFt - p.leftDFt)
+	}
+	if a.terrain.Jump(p.origin, a.to, p.all, p.mover).Blocked { // a creature it does not see holds the landing
+		a.made.StoppedEarly, a.to, a.length = true, p.origin, 0
+		return nil
+	}
+	a.cost, a.last = mv.CostDFt, 0
+	a.th.landed(a.to) // a jump fires a trap only where it lands (D3, D5)
+	return nil
+}
+
+// planHighJump is a player's high jump: nobody moves, and the height is paid in
+// movement.
+func (a *moveAttempt) planHighJump(p playerPlan) error {
+	height := int(a.req.height)
+	running := combat.HasRunningStart(int(a.target.LastMoveDft))
+	limit := highJumpDFt(a.target, running)
+	if height > limit {
+		return tooFar(height-limit, jumpLimit(limit, running))
+	}
+	if height > p.leftDFt {
+		return tooFar(height - p.leftDFt)
+	}
+	a.cost, a.last = height, 0
+	return nil
+}
+
+// planMasterWalk is the master's move: free, and no wall stops it, but the doors
+// do what they do for everyone (RN-26): it opens the closed ones on its line, and
+// a locked, barred or secret one stops it before. The master unlocks by painting.
+func (a *moveAttempt) planMasterWalk() error {
+	if !a.req.walking() || !placed(a.target) || a.terrain.Doors.Count() == 0 {
+		return nil
+	}
+	origin := squareOfCombatant(a.target)
+	st := grid.Terrain{Grid: a.terrain.Grid, Doors: a.terrain.Doors}.MoveUntil(origin, a.to, nil, moverOf(a.target), nil, math.MaxInt)
+	if st.Reason == grid.StopLocked && len(st.Entered) == 0 {
+		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_DOOR_LOCKED, "the door is locked")
+	}
+	a.made.StoppedEarly, a.made.LockedDoor = st.Reason != grid.StopNone, st.Reason == grid.StopLocked
+	a.to, a.opened = st.Reached, st.Opens
+	a.length = grid.LengthDFt(origin, a.to)
+	return nil
+}
+
+// writeMove writes the move, the creature it drags, the opportunity offers it
+// makes and the doors it opens, in the order the undo takes them back.
+func (s *Service) writeMove(ctx context.Context, a *moveAttempt) error {
+	a.settleMove()
+	if err := s.saveMove(ctx, a); err != nil {
+		return err
+	}
+	if err := s.dragAlong(ctx, a); err != nil {
+		return err
+	}
+	if err := s.offerAttacks(ctx, a); err != nil {
+		return err
+	}
+	a.setMoved()
+	a.c.characterID = &a.target.CharacterID
+	var err error
+	a.opened, err = s.openDoors(ctx, a.c, a.target, a.opened, a.from)
+	return err
+}
+
+// settleMove works out the row the move leaves: the square, the cover mark and
+// the movement walked.
+func (a *moveAttempt) settleMove() {
+	a.newCol, a.newRow = clamp32(a.to.Col, 0, math.MaxInt32), clamp32(a.to.Row, 0, math.MaxInt32)
+	// The master's cover mark clears when the combatant changes square, not
+	// when nobody moved (a high jump, a move to where it stands).
+	a.squareChanged = !placed(a.target) || a.to != squareOfCombatant(a.target)
+	a.coverMark = a.target.CoverMark
+	if a.squareChanged {
+		a.markCleared = a.coverMark != "" && a.coverMark != "none"
+		a.coverMark = "none"
+	}
+	a.used = int(a.target.MovementUsedDft) + a.cost*a.factor
+}
+
+// saveMove writes the combatant's row and touches the encounter.
+func (s *Service) saveMove(ctx context.Context, a *moveAttempt) error {
+	if err := a.c.q.SetCombatantMove(ctx, playdb.SetCombatantMoveParams{
+		ID: a.target.ID, GridCol: &a.newCol, GridRow: &a.newRow,
+		MovementUsedFt: clamp32(a.used/10, 0, math.MaxInt32), MovementUsedDft: clamp32(a.used, 0, math.MaxInt32), LastMoveDft: clamp32(a.last, 0, math.MaxInt32), CoverMark: a.coverMark,
+	}); err != nil {
+		return fmt.Errorf("move the combatant: %w", err)
+	}
+	var err error
+	if a.c.enc, err = a.c.q.TouchEncounter(ctx, a.c.enc.ID); err != nil {
+		return fmt.Errorf("touch the encounter: %w", err)
+	}
+	return nil
+}
+
+// dragAlong moves the creature the mover holds to the square behind its path.
+func (s *Service) dragAlong(ctx context.Context, a *moveAttempt) error {
+	if !a.dragging || !a.req.walking() || !a.squareChanged || !placed(a.target) {
+		return nil
+	}
+	from := squareOfCombatant(a.dragged)
+	moved, err := s.dragTo(ctx, a.c, a.cs, a.target, a.dragged, dragSquare(a.terrain, squareOfCombatant(a.target), a.to, moverOf(a.target)))
+	if err != nil {
+		return err
+	}
+	a.draggedMoved, a.draggedFrom = &moved, &from
+	a.draggedID = a.dragged.ID
+	a.made.Dragged, a.made.DraggedFrom = a.dragged.ID, moveStateOf(a.dragged)
+	return nil
+}
+
+// offerAttacks makes the opportunity attacks (D1b): a move on foot or a long jump
+// (it spends movement), on the mover's turn, that leaves an enemy's reach lands,
+// and the enemy is offered an attack. A high jump moves nobody; a placement out of
+// turn, a forced move and a move that stays put offer nothing.
+func (s *Service) offerAttacks(ctx context.Context, a *moveAttempt) error {
+	if a.req.jump == playv1.JumpKind_JUMP_KIND_HIGH || a.req.forced || !a.onTurn || !placed(a.target) || !a.squareChanged {
+		return nil
+	}
+	moveID, offered, err := s.offerOpportunities(ctx, a.c, a.cs, a.target, squareOfCombatant(a.target), a.to, a.req.jump == playv1.JumpKind_JUMP_KIND_LONG, a.draggedID)
+	if err != nil {
+		return err
+	}
+	a.offered, a.made.MoveID = offered, moveID
+	return nil
+}
+
+// setMoved is the mover as it stands after the move.
+func (a *moveAttempt) setMoved() {
+	a.moved = a.target
+	a.moved.GridCol, a.moved.GridRow, a.moved.MovementUsedFt, a.moved.MovementUsedDft = &a.newCol, &a.newRow, clamp32(a.used/10, 0, math.MaxInt32), clamp32(a.used, 0, math.MaxInt32)
+	a.moved.LastMoveDft, a.moved.CoverMark = clamp32(a.last, 0, math.MaxInt32), a.coverMark
+}
+
+// describeMove fills the event the log keeps. The log tells how far a combatant
+// went on its turn: the line between where it was and where it goes, whoever
+// moves it.
+func (a *moveAttempt) describeMove() {
+	made := &a.made
+	made.Col, made.Row = a.newCol, a.newRow
+	made.CostDFt, made.CostFt = clamp32(a.cost, 0, math.MaxInt32), clamp32(a.cost/10, 0, math.MaxInt32)
+	made.DistanceDFt, made.DistanceFt = clamp32(a.length, 0, math.MaxInt32), clamp32(a.length/10, 0, math.MaxInt32)
+	if a.req.jump == playv1.JumpKind_JUMP_KIND_UNSPECIFIED && a.cost > 0 { // what the walk spent: the path's cost, doubled by a drag and by a crawl
+		made.SpentDFt, made.Dragging, made.Crawling = clamp32(a.cost*a.factor, 0, math.MaxInt32), a.dragHalves, crawls(a.target) && !a.req.forced
+	}
+	a.describeJump()
+	a.logged = a.onTurn && (a.length > 0 || made.Jump == jumpHigh)
+	if a.v.master && a.squareChanged {
+		a.th.landed(a.to) // the master's move is not a walk: only where it ends counts
+	}
+}
+
+// describeJump names the jump in the event.
+func (a *moveAttempt) describeJump() {
+	switch a.req.jump {
+	case playv1.JumpKind_JUMP_KIND_LONG:
+		a.made.Jump, a.made.JumpRunning = jumpLong, combat.HasRunningStart(int(a.target.LastMoveDft))
+		// SRD: landing in difficult terrain asks for a DC 10 Acrobatics check or
+		// the jumper falls prone. The app rolls nothing: the master's log says it.
+		a.made.LandingDifficult = !moverOf(a.target).Flier && a.terrain.Difficult.Has(a.to)
+	case playv1.JumpKind_JUMP_KIND_HIGH:
+		a.made.Jump, a.made.HeightDFt = jumpHigh, a.req.height
+	}
+}
+
+// publishMove tells the streams about the move, after the commit.
+func (s *Service) publishMove(ctx context.Context, campaignID string, d *encounterData, a *moveAttempt) {
+	s.publishCombatantMoved(ctx, campaignID, d.enc, a.moved, squareOfState(a.made.From))
+	if a.draggedMoved != nil { // the creature it dragged moved too
+		s.publishCombatantMoved(ctx, campaignID, d.enc, *a.draggedMoved, a.draggedFrom)
+		s.positionChanged(ctx, campaignID, d.enc, *a.draggedMoved, a.draggedFrom)
+	}
+	if a.made.MoveID != "" { // the offers are in the combat, not in the move's hint
+		s.publishOffersMade(campaignID, d, a.moved, a.offered)
+	}
+	if a.markCleared { // the mark is on the combatant, not in the move's hint: who saw it reads again
+		s.publishCoverCleared(ctx, campaignID, d.enc, a.moved)
+	}
+	s.positionChanged(ctx, campaignID, d.enc, a.moved, squareOfState(a.made.From)) // the fog remembers what it showed
+	s.publishDoorsOpened(ctx, campaignID, d.enc, a)
+	a.th.after(ctx, campaignID, d.enc)
+	s.noticeAfterMove(ctx, campaignID, d.enc, a.moved) // a trap near where the mover ended may be noticed (MR-035)
+}
+
+// publishCoverCleared tells who saw the combatant that its cover mark is gone.
+func (s *Service) publishCoverCleared(ctx context.Context, campaignID string, enc playdb.Encounter, moved playdb.Combatant) {
+	if moved.Hidden {
+		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
+		return
+	}
+	s.publishEncounterChanged(ctx, campaignID, enc)
+}
+
+// publishDoorsOpened tells the watchers of the map that its layers changed, and
+// of the log that the move, or the doors it opened, are a line of it.
+func (s *Service) publishDoorsOpened(ctx context.Context, campaignID string, enc playdb.Encounter, a *moveAttempt) {
+	if len(a.opened) > 0 && s.doors != nil && enc.MapID != nil { // the map's layers changed, and what the players see with them
+		s.doors.DoorsChanged(ctx, campaignID, *enc.MapID)
+	}
+	if a.logged || len(a.opened) > 0 {
+		s.publishLogChanged(ctx, campaignID, enc.ID, !a.moved.Hidden)
+	}
 }
 
 // doorKnown says whether the terrain a player plans on has a door on the square:

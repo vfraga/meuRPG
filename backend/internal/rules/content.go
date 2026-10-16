@@ -654,110 +654,204 @@ func (c *content) traitSkills(traits []string) []string {
 // buildCatalog fills catalog, spellEntries and spellDetails. reuse, when not nil,
 // are the details of another content with the same SRD spells (the base of a
 // With): the ones that did not change are shared instead of parsed again.
+// Every list but the abilities is sorted by Portuguese name, as the editor
+// shows it.
 func (c *content) buildCatalog(reuse map[string]*SpellDetails) {
 	cat := Catalog{ContentVersion: c.version, Attribution: srd51.Attribution}
+	cat.Races = c.raceEntries()
+	cat.Subraces = c.subraceEntries()
+	cat.Classes = c.classEntries()
+	cat.Subclasses = c.subclassEntries()
+	cat.Backgrounds = c.backgroundEntries()
+	cat.Skills = c.skillEntries()
+	cat.Armor, cat.Weapons = c.gearEntries()
+	cat.Spells = c.spellCatalog(reuse)
+	for _, a := range AllAbilities() {
+		cat.Abilities = append(cat.Abilities, AbilityEntry{
+			Ability: a, Name: c.abilities[a].FullName, NamePT: c.namePT(string(a)), AbbreviationPT: abbreviationPT[a],
+		})
+	}
+	cat.ChallengeRatings = slices.Clone(c.ratings)
+	cat.LevelXP = slices.Clone(c.levelXP)
+	cat.Languages, cat.Proficiencies, cat.DamageTypes = c.namedEntries()
+	c.catalog = cat
+}
+
+func (c *content) raceEntries() []RaceEntry {
+	var out []RaceEntry
 	for _, k := range sortedKeys(c.races) {
 		r := c.races[k]
-		cat.Races = append(cat.Races, RaceEntry{
+		out = append(out, RaceEntry{
 			Key: k, Name: r.Name, NamePT: c.namePT(k), SpeedFt: r.SpeedFt, Size: r.Size,
 			AbilityBonuses: abilityMap(r.AbilityBonuses), Subraces: r.Subraces,
 			ChoiceBonuses: c.raceChoice[k], SkillProficiencies: c.traitSkills(r.Traits), Archived: c.archived[k], Off: c.off[k],
 		})
 	}
+	sortPT(out, func(e RaceEntry) string { return e.NamePT })
+	return out
+}
+
+func (c *content) subraceEntries() []SubraceEntry {
+	var out []SubraceEntry
 	for _, k := range sortedKeys(c.subraces) {
 		s := c.subraces[k]
-		cat.Subraces = append(cat.Subraces, SubraceEntry{
+		out = append(out, SubraceEntry{
 			Key: k, Name: s.Name, NamePT: c.namePT(k), Race: s.Race, AbilityBonuses: abilityMap(s.AbilityBonuses),
 			SkillProficiencies: c.traitSkills(s.Traits), Archived: c.archived[k], Off: c.off[k],
 		})
 	}
+	sortPT(out, func(e SubraceEntry) string { return e.NamePT })
+	return out
+}
+
+func (c *content) classEntries() []ClassEntry {
+	var out []ClassEntry
 	for _, k := range sortedKeys(c.classes) {
-		cl := c.classes[k]
-		e := ClassEntry{
-			Key: k, Name: cl.Name, NamePT: c.namePT(k), HitDie: cl.HitDie,
-			SkillChoices: cl.SkillChoices.Choose, SkillOptions: cl.SkillChoices.From,
-			SubclassLevel: cl.SubclassLevel, Subclasses: cl.Subclasses, Archived: c.archived[k], Off: c.off[k],
-			SpellListFrom: c.listFrom[k],
-		}
-		for _, s := range cl.SavingThrows {
-			if a, ok := ability(s); ok {
-				e.SavingThrows = append(e.SavingThrows, a)
-			}
-		}
-		if cast, ok := c.casting[k]; ok {
-			e.SpellcastingAbility = Ability(cast.effect.Ability)
-			e.PreparesSpells = cast.effect.Prepares
-			e.SpellPreparation = preparation(cast.effect)
-			e.SpellcastingLevel = cast.level
-			for _, row := range c.classLevels[k] {
-				highest := 0
-				if row != nil && row.Spellcasting != nil {
-					highest = MaxSpellLevelFromSlots(row.Spellcasting.Slots)
-				}
-				e.MaxSpellLevelByLevel = append(e.MaxSpellLevelByLevel, highest)
-			}
-		}
-		cat.Classes = append(cat.Classes, e)
+		out = append(out, c.classEntry(k, c.classes[k]))
 	}
+	sortPT(out, func(e ClassEntry) string { return e.NamePT })
+	return out
+}
+
+// classEntry is a class as the catalog lists it, with its casting when it casts.
+func (c *content) classEntry(k string, cl *srd51.Class) ClassEntry {
+	e := ClassEntry{
+		Key: k, Name: cl.Name, NamePT: c.namePT(k), HitDie: cl.HitDie,
+		SkillChoices: cl.SkillChoices.Choose, SkillOptions: cl.SkillChoices.From,
+		SubclassLevel: cl.SubclassLevel, Subclasses: cl.Subclasses, Archived: c.archived[k], Off: c.off[k],
+		SpellListFrom: c.listFrom[k],
+	}
+	for _, s := range cl.SavingThrows {
+		if a, ok := ability(s); ok {
+			e.SavingThrows = append(e.SavingThrows, a)
+		}
+	}
+	cast, ok := c.casting[k]
+	if !ok {
+		return e
+	}
+	e.SpellcastingAbility = Ability(cast.effect.Ability)
+	e.PreparesSpells = cast.effect.Prepares
+	e.SpellPreparation = preparation(cast.effect)
+	e.SpellcastingLevel = cast.level
+	for _, row := range c.classLevels[k] {
+		highest := 0
+		if row != nil && row.Spellcasting != nil {
+			highest = MaxSpellLevelFromSlots(row.Spellcasting.Slots)
+		}
+		e.MaxSpellLevelByLevel = append(e.MaxSpellLevelByLevel, highest)
+	}
+	return e
+}
+
+func (c *content) subclassEntries() []SubclassEntry {
+	var out []SubclassEntry
 	for _, k := range sortedKeys(c.subclasses) {
-		s := c.subclasses[k]
-		e := SubclassEntry{Key: k, Name: s.Name, NamePT: c.namePT(k), Class: s.Class, Archived: c.archived[k], Off: c.off[k]}
-		for _, ss := range s.Spells {
-			// A spell that needs a feature's choice is not always prepared for everyone.
-			if len(ss.WithFeatures) == 0 && !s.ExpandedList {
-				e.AlwaysPrepared = append(e.AlwaysPrepared, SubclassSpellRef{Spell: ss.Spell, ClassLevel: ss.ClassLevel})
-			}
-		}
-		if cast, ok := c.subCasting[k]; ok {
-			sc := &SubclassCasting{
-				Kind: cast.effect.Progression, Ability: Ability(cast.effect.Ability), Preparation: preparation(cast.effect),
-				SpellList: cast.list, StartLevel: cast.level,
-			}
-			for lvl := 1; lvl <= MaxLevel; lvl++ {
-				highest := 0
-				if row := c.subclassLevels[k][lvl]; row != nil && row.Spellcasting != nil {
-					highest = MaxSpellLevelFromSlots(row.Spellcasting.Slots)
-				}
-				sc.MaxSpellLevelByLevel = append(sc.MaxSpellLevelByLevel, highest)
-			}
-			e.Casting = sc
-		}
-		cat.Subclasses = append(cat.Subclasses, e)
+		out = append(out, c.subclassEntry(k, c.subclasses[k]))
 	}
+	sortPT(out, func(e SubclassEntry) string { return e.NamePT })
+	return out
+}
+
+// subclassEntry is a subclass as the catalog lists it, with the spells it always
+// prepares and its casting when it is a third caster.
+func (c *content) subclassEntry(k string, s *srd51.Subclass) SubclassEntry {
+	e := SubclassEntry{Key: k, Name: s.Name, NamePT: c.namePT(k), Class: s.Class, Archived: c.archived[k], Off: c.off[k]}
+	for _, ss := range s.Spells {
+		// A spell that needs a feature's choice is not always prepared for everyone.
+		if len(ss.WithFeatures) == 0 && !s.ExpandedList {
+			e.AlwaysPrepared = append(e.AlwaysPrepared, SubclassSpellRef{Spell: ss.Spell, ClassLevel: ss.ClassLevel})
+		}
+	}
+	cast, ok := c.subCasting[k]
+	if !ok {
+		return e
+	}
+	sc := &SubclassCasting{
+		Kind: cast.effect.Progression, Ability: Ability(cast.effect.Ability), Preparation: preparation(cast.effect),
+		SpellList: cast.list, StartLevel: cast.level,
+	}
+	for lvl := 1; lvl <= MaxLevel; lvl++ {
+		highest := 0
+		if row := c.subclassLevels[k][lvl]; row != nil && row.Spellcasting != nil {
+			highest = MaxSpellLevelFromSlots(row.Spellcasting.Slots)
+		}
+		sc.MaxSpellLevelByLevel = append(sc.MaxSpellLevelByLevel, highest)
+	}
+	e.Casting = sc
+	return e
+}
+
+func (c *content) backgroundEntries() []BackgroundEntry {
+	var out []BackgroundEntry
 	for _, k := range sortedKeys(c.backgrounds) {
 		b := c.backgrounds[k]
-		cat.Backgrounds = append(cat.Backgrounds, BackgroundEntry{Key: k, Name: b.Name, NamePT: c.namePT(k), SkillProficiencies: b.Skills, EquipmentPT: c.bgEquipment[k], Archived: c.archived[k], Off: c.off[k]})
+		out = append(out, BackgroundEntry{Key: k, Name: b.Name, NamePT: c.namePT(k), SkillProficiencies: b.Skills, EquipmentPT: c.bgEquipment[k], Archived: c.archived[k], Off: c.off[k]})
 	}
+	sortPT(out, func(e BackgroundEntry) string { return e.NamePT })
+	return out
+}
+
+// skillEntries are the skills in the order of the SRD's list, sorted by name.
+func (c *content) skillEntries() []SkillEntry {
+	var out []SkillEntry
 	for _, k := range c.skillOrder {
 		s := c.skills[k]
-		cat.Skills = append(cat.Skills, SkillEntry{Key: k, Name: s.Name, NamePT: c.namePT(k), Ability: Ability(s.Ability)})
+		out = append(out, SkillEntry{Key: k, Name: s.Name, NamePT: c.namePT(k), Ability: Ability(s.Ability)})
 	}
+	sortPT(out, func(e SkillEntry) string { return e.NamePT })
+	return out
+}
+
+// gearEntries are the body armors (a shield is not one) and the weapons.
+func (c *content) gearEntries() ([]ArmorEntry, []WeaponEntry) {
+	var armor []ArmorEntry
+	var weapons []WeaponEntry
 	for _, k := range sortedKeys(c.equipment) {
 		e := c.equipment[k]
 		switch {
 		case e.Armor != nil && e.Armor.Category != "shield":
-			a := e.Armor
-			cat.Armor = append(cat.Armor, ArmorEntry{
-				Key: k, Name: e.Name, NamePT: c.namePT(k), Category: a.Category, BaseAC: a.BaseAC,
-				DexBonus: a.DexBonus, MaxDexBonus: a.MaxDexBonus, StrMinimum: a.StrMinimum,
-				StealthDisadvantage: a.StealthDisadvantage,
-			})
+			armor = append(armor, c.armorEntry(k, e))
 		case e.Weapon != nil:
-			w := e.Weapon
-			normal, long := w.NormalRangeFt, w.LongRangeFt
-			if w.ThrowNormalFt > 0 {
-				normal, long = w.ThrowNormalFt, w.ThrowLongFt
-			}
-			if w.Range == "melee" && w.ThrowNormalFt == 0 {
-				normal, long = 0, 0
-			}
-			cat.Weapons = append(cat.Weapons, WeaponEntry{
-				Key: k, Name: e.Name, NamePT: c.namePT(k), Category: w.Category, Range: w.Range,
-				Damage: w.Damage, DamageType: w.DamageType, TwoHandedDamage: w.TwoHandedDamage,
-				Properties: w.Properties, NormalRangeFt: normal, LongRangeFt: long,
-			})
+			weapons = append(weapons, c.weaponEntry(k, e))
 		}
 	}
+	sortPT(armor, func(e ArmorEntry) string { return e.NamePT })
+	sortPT(weapons, func(e WeaponEntry) string { return e.NamePT })
+	return armor, weapons
+}
+
+func (c *content) armorEntry(k string, e *srd51.Equipment) ArmorEntry {
+	a := e.Armor
+	return ArmorEntry{
+		Key: k, Name: e.Name, NamePT: c.namePT(k), Category: a.Category, BaseAC: a.BaseAC,
+		DexBonus: a.DexBonus, MaxDexBonus: a.MaxDexBonus, StrMinimum: a.StrMinimum,
+		StealthDisadvantage: a.StealthDisadvantage,
+	}
+}
+
+// weaponEntry is a weapon with the range it is used at: the thrown range of a
+// melee weapon that can be thrown, none for one that cannot.
+func (c *content) weaponEntry(k string, e *srd51.Equipment) WeaponEntry {
+	w := e.Weapon
+	normal, long := w.NormalRangeFt, w.LongRangeFt
+	if w.ThrowNormalFt > 0 {
+		normal, long = w.ThrowNormalFt, w.ThrowLongFt
+	}
+	if w.Range == "melee" && w.ThrowNormalFt == 0 {
+		normal, long = 0, 0
+	}
+	return WeaponEntry{
+		Key: k, Name: e.Name, NamePT: c.namePT(k), Category: w.Category, Range: w.Range,
+		Damage: w.Damage, DamageType: w.DamageType, TwoHandedDamage: w.TwoHandedDamage,
+		Properties: w.Properties, NormalRangeFt: normal, LongRangeFt: long,
+	}
+}
+
+// spellCatalog lists the spells sorted by name and fills spellEntries and
+// spellDetails, sharing the details of reuse that did not change.
+func (c *content) spellCatalog(reuse map[string]*SpellDetails) []SpellEntry {
+	var out []SpellEntry
 	c.spellEntries = make(map[string]SpellEntry, len(c.spells))
 	c.spellDetails = make(map[string]*SpellDetails, len(c.spells))
 	for _, k := range sortedKeys(c.spells) {
@@ -768,7 +862,7 @@ func (c *content) buildCatalog(reuse map[string]*SpellDetails) {
 			Classes: c.spellClasses(s), Ritual: s.Ritual, Concentration: s.Concentration,
 			CastingTime: parseCastingTime(s.CastingTime), Archived: c.archived[k], Off: c.off[k],
 		}
-		cat.Spells = append(cat.Spells, e)
+		out = append(out, e)
 		c.spellEntries[k] = e
 		if d, ok := reuse[k]; ok && d.Spell.Archived == e.Archived && d.Spell.Off == e.Off && slices.Equal(d.Spell.Classes, e.Classes) {
 			c.spellDetails[k] = d
@@ -783,40 +877,28 @@ func (c *content) buildCatalog(reuse map[string]*SpellDetails) {
 		}
 		c.spellDetails[k] = d
 	}
-	for _, a := range AllAbilities() {
-		cat.Abilities = append(cat.Abilities, AbilityEntry{
-			Ability: a, Name: c.abilities[a].FullName, NamePT: c.namePT(string(a)), AbbreviationPT: abbreviationPT[a],
-		})
-	}
+	sortPT(out, func(e SpellEntry) string { return e.NamePT })
+	return out
+}
 
-	// Every list but the abilities is sorted by Portuguese name, as the
-	// editor shows it.
-	sortPT(cat.Races, func(e RaceEntry) string { return e.NamePT })
-	sortPT(cat.Subraces, func(e SubraceEntry) string { return e.NamePT })
-	sortPT(cat.Classes, func(e ClassEntry) string { return e.NamePT })
-	sortPT(cat.Subclasses, func(e SubclassEntry) string { return e.NamePT })
-	sortPT(cat.Backgrounds, func(e BackgroundEntry) string { return e.NamePT })
-	sortPT(cat.Skills, func(e SkillEntry) string { return e.NamePT })
-	sortPT(cat.Armor, func(e ArmorEntry) string { return e.NamePT })
-	sortPT(cat.Weapons, func(e WeaponEntry) string { return e.NamePT })
-	sortPT(cat.Spells, func(e SpellEntry) string { return e.NamePT })
-	cat.ChallengeRatings = slices.Clone(c.ratings)
-	cat.LevelXP = slices.Clone(c.levelXP)
+// namedEntries are the languages, the proficiencies and the damage types, sorted
+// by Portuguese name.
+func (c *content) namedEntries() (languages, proficiencies, damageTypes []NamedEntry) {
 	for _, k := range sortedKeys(c.languages) {
-		cat.Languages = append(cat.Languages, NamedEntry{Key: k, NamePT: c.namePT(k), Kind: "language"})
+		languages = append(languages, NamedEntry{Key: k, NamePT: c.namePT(k), Kind: "language"})
 	}
 	for _, k := range sortedKeys(c.proficiencies) {
-		cat.Proficiencies = append(cat.Proficiencies, NamedEntry{Key: k, NamePT: c.proficiencyNamePT(k), Kind: c.proficiencies[k].Kind})
+		proficiencies = append(proficiencies, NamedEntry{Key: k, NamePT: c.proficiencyNamePT(k), Kind: c.proficiencies[k].Kind})
 	}
 	for _, k := range sortedKeys(c.named) {
 		if strings.HasPrefix(k, "damage-type:") {
-			cat.DamageTypes = append(cat.DamageTypes, NamedEntry{Key: k, NamePT: c.namePT(k)})
+			damageTypes = append(damageTypes, NamedEntry{Key: k, NamePT: c.namePT(k)})
 		}
 	}
-	sortPT(cat.Languages, func(e NamedEntry) string { return e.NamePT })
-	sortPT(cat.Proficiencies, func(e NamedEntry) string { return e.NamePT })
-	sortPT(cat.DamageTypes, func(e NamedEntry) string { return e.NamePT })
-	c.catalog = cat
+	for _, list := range [][]NamedEntry{languages, proficiencies, damageTypes} {
+		sortPT(list, func(e NamedEntry) string { return e.NamePT })
+	}
+	return languages, proficiencies, damageTypes
 }
 
 // spellClasses are the classes whose list a spell is on: the spell's own, and

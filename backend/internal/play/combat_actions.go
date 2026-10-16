@@ -1918,8 +1918,9 @@ func (s *Service) DiscardPendingDamage(
 		if p.Status == pendingApplied || p.Status == pendingDiscarded {
 			return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_DAMAGE_RESOLVED, "the damage was applied or discarded already")
 		}
-		if _, err := c.q.SetPendingDamageStatus(ctx, playdb.SetPendingDamageStatusParams{ID: p.ID, Status: pendingDiscarded, ResolvedAt: &c.now}); err != nil {
-			return nil, fmt.Errorf("discard the pending damage: %w", err)
+		windows, err := discardHit(ctx, c, p)
+		if err != nil {
+			return nil, err
 		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
 			return nil, fmt.Errorf("touch the encounter: %w", err)
@@ -1927,7 +1928,7 @@ func (s *Service) DiscardPendingDamage(
 		c.characterID = &attacker.CharacterID
 		made = actionEvent{
 			Round: c.enc.Round, Secret: secretOf(attacker, target), Actor: attacker.ID, Target: target.ID, Pending: p.ID, Key: p.AttackKey,
-			Amount: num(p.Amount), PrevStatus: p.Status,
+			Amount: num(p.Amount), PrevStatus: p.Status, ClosedWindows: windows,
 		}
 		if p.CastID != nil && !p.Healing {
 			// The discard may settle the cast's last damage for the target: what landed
@@ -1958,6 +1959,27 @@ func (s *Service) DiscardPendingDamage(
 	}
 	decorate(pending, ev, combatViewer{master: true}, s.membersOf(ctx, res))
 	return connect.NewResponse(&playv1.DiscardPendingDamageResponse{Encounter: out, PendingDamage: pending}), nil
+}
+
+// discardHit drops a pending damage the master discards, and returns the windows that
+// waited on it (a hit's Shield, or the master's check): they close with it
+// (settleReactions finds their trigger gone), and the discard's event keeps them so that
+// its undo opens them again (reopenWindows).
+func discardHit(ctx context.Context, c *combatTx, p playdb.PendingDamage) ([]string, error) {
+	open, err := openWindowsOf(ctx, c)
+	if err != nil {
+		return nil, err
+	}
+	var windows []string
+	for _, w := range open {
+		if deref(w.PendingDamageID) == p.ID {
+			windows = append(windows, w.ID)
+		}
+	}
+	if _, err := c.q.SetPendingDamageStatus(ctx, playdb.SetPendingDamageStatusParams{ID: p.ID, Status: pendingDiscarded, ResolvedAt: &c.now}); err != nil {
+		return nil, fmt.Errorf("discard the pending damage: %w", err)
+	}
+	return windows, nil
 }
 
 // The feature actions with their own effect on the numbers (the others only

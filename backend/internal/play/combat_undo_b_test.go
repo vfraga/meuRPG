@@ -506,34 +506,6 @@ var deltaAnsweredInspirationHold = undoDelta{
 	"+ db/inspiration_holds[#].total=9", "+ db/inspiration_holds[#].user_id=#",
 }
 
-// deltaHuntersMarkMovedAway: the second Hunter's Mark, cast on another target while the
-// first was marked, takes the first mark off (markHuntersMark, combat_states.go:157, clears
-// the caster's marks before it marks) and the cast's event keeps only that the concentration
-// was Hunter's Mark, so the undo (the Hunter's Mark branch of the spell case of takeBack,
-// combat_undo.go) clears the new mark with clearHuntersMark and the first target stays
-// unmarked while the concentration is back: the master's and the caster's players read the
-// target without its mark.
-var deltaHuntersMarkMovedAway = undoDelta{
-	"- bia/combat.combatants[3].states[0].effectPt=Marcado pela Marca do Caçador: dano extra a cada acerto de arma de quem o marcou, enquanto a concentração durar.",
-	"- bia/combat.combatants[3].states[0].id=#", "- bia/combat.combatants[3].states[0].kind=COMBATANT_STATE_KIND_HUNTERS_MARK_TARGET",
-	"- bia/combat.combatants[3].states[0].labelPt=Marcado por Brisa", "- bia/combat.combatants[3].states[0].sourceId=#",
-	"- bia/combat.combatants[3].states[0].sourceLabel=Brisa",
-	"- master/combat.combatants[3].states[0].effectPt=Marcado pela Marca do Caçador: dano extra a cada acerto de arma de quem o marcou, enquanto a concentração durar.",
-	"- master/combat.combatants[3].states[0].id=#", "- master/combat.combatants[3].states[0].kind=COMBATANT_STATE_KIND_HUNTERS_MARK_TARGET",
-	"- master/combat.combatants[3].states[0].labelPt=Marcado por Brisa", "- master/combat.combatants[3].states[0].sourceId=#",
-	"- master/combat.combatants[3].states[0].sourceLabel=Brisa",
-	"- db/combatant_states[#].amount=0", "- db/combatant_states[#].audience=all", "- db/combatant_states[#].combatant_id=#",
-	"- db/combatant_states[#].concentration=false", "- db/combatant_states[#].condition_keys=[]", "- db/combatant_states[#].duration_kind=<nil>",
-	"- db/combatant_states[#].encounter_id=#", "- db/combatant_states[#].end_save_ability=<nil>", "- db/combatant_states[#].ends_combatant_id=<nil>",
-	"- db/combatant_states[#].ends_phase=<nil>", "- db/combatant_states[#].ends_round=<nil>", "- db/combatant_states[#].follows_key=<nil>",
-	"- db/combatant_states[#].group_id=<nil>", "- db/combatant_states[#].kind=hunters_mark_target", "- db/combatant_states[#].modifiers=[]",
-	"- db/combatant_states[#].on_fail_effect=<nil>", "- db/combatant_states[#].player_label=<nil>", "- db/combatant_states[#].player_visible=true",
-	"- db/combatant_states[#].save_dc=<nil>", "- db/combatant_states[#].source_id=#", "- db/combatant_states[#].source_key=<nil>",
-	"- db/combatant_states[#].source_kind=<nil>", "- db/combatant_states[#].start_save_ability=<nil>", "- db/combatant_states[#].started_round=1",
-	"- db/combatant_states[#].trigger_damage_type=<nil>", "- db/combatant_states[#].trigger_dice=<nil>", "- db/combatant_states[#].trigger_max_triggers=<nil>",
-	"- db/combatant_states[#].triggers_fired=0",
-}
-
 // TestUndoKindSpellCastBardicDie: the spell attack that used a Bardic Inspiration die holds
 // the die again (ev.Die).
 func TestUndoKindSpellCastBardicDie(t *testing.T) {
@@ -604,7 +576,7 @@ func TestUndoKindSpellCastHuntersMark(t *testing.T) {
 	})
 	a.mustCast(t, a.bia, e, "Brisa", huntersMark, slotOfLevel(1), a.at(t, "Goblin"), noCastRoll)
 	a.passTo(t, a.mustEndTurnDiscarding(t, e), "Brisa")
-	w.run(t, "Marca do Caçador on another target", deltaHuntersMarkMovedAway, func() {
+	w.run(t, "Marca do Caçador on another target", nil, func() {
 		a.mustCast(t, a.bia, a.get(t, a.master), "Brisa", huntersMark, slotOfLevel(1), a.at(t, "Capitão Goblin"), noCastRoll)
 	})
 }
@@ -711,17 +683,6 @@ func TestUndoKindSpellCastTemporaryAndMaximumHitPoints(t *testing.T) {
 	})
 }
 
-// deltaRevealLines: an area spell under the rule that reveals the hidden creatures it hits
-// writes one combatant_hidden_set event for each of them (revealHit, combat_reveal.go:130), and
-// the spell case of takeBack (combat_undo.go, the ev.Revealed loop) hides them again without
-// taking those events away: the master's log keeps a "revealed" line for two creatures that are
-// hidden again (the players' log has none, for it only lists what they can see now, but the
-// line is there to appear the day the creature is revealed).
-var deltaRevealLines = undoDelta{
-	"+ master/log R1 REVEAL_CHANGED id=# >Goblin 2 hidden",
-	"+ master/log R1 REVEAL_CHANGED id=# >Goblin 3 hidden",
-}
-
 // TestUndoKindSpellCastHiddenHits: an area spell that hit hidden creatures, with the table
 // asking the master (the question, ev.PendingReveal) and revealing them (ev.Revealed).
 func TestUndoKindSpellCastHiddenHits(t *testing.T) {
@@ -737,7 +698,7 @@ func TestUndoKindSpellCastHiddenHits(t *testing.T) {
 	c.setRules(t, func(r *campaignsv1.TableRules) {
 		r.HiddenAreaHits = campaignsv1.HiddenAreaHitRule_HIDDEN_AREA_HIT_RULE_REVEAL
 	})
-	w.run(t, "a Bola de Fogo that reveals", deltaRevealLines, func() {
+	w.run(t, "a Bola de Fogo that reveals", nil, func() {
 		c.h.roller.queue(10, 10, 10, 10)
 		c.mustCastArea(t, c.ana, "Pensantus", fireball, slotOfLevel(3), at(20, 7), nil)
 	})

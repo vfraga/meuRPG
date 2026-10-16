@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
@@ -353,6 +354,11 @@ type actionEvent struct {
 	// question it opened for the master: what an undo of the cast puts back.
 	Revealed      []string `json:"revealed,omitempty"`
 	PendingReveal string   `json:"pending_reveal,omitempty"`
+	// RevealLines are the IDs of the "revealed" lines (combatant_hidden_set) the cast
+	// wrote for the creatures of Revealed, before its own event: its undo, which hides
+	// them again, takes the lines back with it (UndoneAlso), so that the master's log
+	// keeps no line for a creature hidden again and the lines do not stop the undo chain.
+	RevealLines []string `json:"reveal_lines,omitempty"`
 	// ByArea says a combatant_hidden_set event revealed the creature because of an
 	// area spell (the table's rule, the master's choice or his answer): the players
 	// get its line, "foi revelado".
@@ -363,6 +369,10 @@ type actionEvent struct {
 	// and ConcEnded the one the cast stopped (the same, when it replaced it).
 	ConcBefore string `json:"conc_before,omitempty"`
 	ConcEnded  string `json:"conc_ended,omitempty"`
+	// MarksBefore are the Hunter's Marks a cast took off (a new Hunter's Mark on another
+	// target moves the caster's mark): the undo of the cast, which takes the new mark off,
+	// puts these back.
+	MarksBefore []markState `json:"marks_before,omitempty"`
 	// A spell that reads hit points: its kind (rules.SpellKind*), the condition it
 	// gives, the limit of a threshold and the pool roll, which uses DiceCount,
 	// DiceSides, Faces, Total and Physical above.
@@ -424,6 +434,11 @@ type actionEvent struct {
 	// log still says the effects ended and the lines do not stop the undo chain.
 	Restore    []playdb.CombatantState `json:"restore,omitempty"`
 	EndedLines []string                `json:"ended_lines,omitempty"`
+	// FollowUps are the effects the ended ones left behind (Haste's lethargy), and
+	// FollowUpLines the IDs of their "added" lines, written before the action's own event:
+	// its undo, which puts the ended effects back, takes these away, rows and lines.
+	FollowUps     []effectRef `json:"follow_ups,omitempty"`
+	FollowUpLines []string    `json:"follow_up_lines,omitempty"`
 	// ExtraUsed says the action spent the extra action of an effect (Velocidade).
 	ExtraUsed bool `json:"extra_used,omitempty"`
 
@@ -437,6 +452,12 @@ type actionEvent struct {
 	SpellCastBefore  bool   `json:"spell_cast_before,omitempty"`
 	BonusSpellBefore bool   `json:"bonus_spell_before,omitempty"`
 	PrevStatus       string `json:"prev_status,omitempty"`
+	// ClosedWindows are the reaction windows that waited on the hit the master discarded
+	// (its Shield, or the master's check): they close with the discard (settleReactions
+	// finds their trigger gone), and its undo opens them again, so that the hit waits for
+	// their answer as it did. A discard written before this keeps none, and its undo lets
+	// the hit go on to its roll.
+	ClosedWindows []string `json:"closed_windows,omitempty"`
 	// Mode is how the master changed an NPC's hit points ("damage", "heal",
 	// "set"), and Delta the change.
 	Mode  string `json:"mode,omitempty"`
@@ -530,8 +551,8 @@ type actionEvent struct {
 	UndoneKind string `json:"undone_kind,omitempty"`
 	// UndoneAlso are the older events taken back with it: the other parts of a
 	// trap's firing that was written as several events, the concentration a damage
-	// ended at 0 hit points, and the "ended" lines of the effects the action ended
-	// (EndedLines).
+	// ended at 0 hit points, and the lines the action wrote before its own event for
+	// what its undo puts back (linesBefore).
 	UndoneAlso []string `json:"undone_also,omitempty"`
 
 	// The character's creatures (MR-037): the owner's character, the creatures a
@@ -645,6 +666,33 @@ type actionEvent struct {
 	// Reaction is what a reaction window did (PM-04), or marks the event that
 	// stands for a held action (combat_reaction_hold.go).
 	Reaction *reactionEvent `json:"reaction,omitempty"`
+}
+
+// markState is a Hunter's Mark as its row was (combatant_states, of the kind
+// hunters_mark_target): the caster that made it, the target it is on and the round and
+// time it began, for the undo that puts it back with its ID.
+type markState struct {
+	ID        string    `json:"id"`
+	Source    string    `json:"source"`
+	Target    string    `json:"target"`
+	Round     int32     `json:"round"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// effectRef is an effect that lasts (a combatant_states row of the kind 'effect') and
+// the combatant it is on.
+type effectRef struct {
+	ID     string `json:"id"`
+	Target string `json:"target"`
+}
+
+// linesBefore are the lines the action wrote before its own event about what its undo
+// puts back: the "ended" lines of the effects it ended, the "added" lines of what those
+// left behind and the "revealed" lines of the creatures it revealed. The undo takes them
+// back with the action (UndoneAlso), so that no log keeps them and they do not stop the
+// undo chain.
+func (ev actionEvent) linesBefore() []string {
+	return slices.Concat(ev.EndedLines, ev.FollowUpLines, ev.RevealLines)
 }
 
 // readEvent decodes an event's payload. A payload of this module never fails

@@ -104,14 +104,20 @@ type choiceDataFile struct {
 	Summaries   map[string]string  `json:"option_summaries"`
 }
 
+// choiceDataName is the file loadChoiceData reads, the prefix of its errors.
+const choiceDataName = "effects/choices.json"
+
+func choiceDataFail(format string, args ...any) error {
+	return fmt.Errorf("%s: %s", choiceDataName, fmt.Sprintf(format, args...))
+}
+
 // loadChoiceData reads effects/choices.json and checks every key against the
 // content. It must run after the effects (the invocations' keys are features).
-//
-//nolint:gocognit,gocyclo // one flat list of closed checks, one block per table of the file; splitting it would only scatter them
+// The tables are checked one after the other, in the order of the file, and the
+// first problem is returned; the content keeps nothing of a file it refused.
 func (c *content) loadChoiceData(fsys fs.FS) error {
-	const name = "effects/choices.json"
 	var f choiceDataFile
-	if err := readJSON(fsys, name, &f); err != nil {
+	if err := readJSON(fsys, choiceDataName, &f); err != nil {
 		return err
 	}
 	d := &choiceData{
@@ -120,120 +126,177 @@ func (c *content) loadChoiceData(fsys fs.FS) error {
 		prerequisites:     map[string]invocationPrerequisite{},
 		resistances:       map[string]racialResistance{},
 	}
-	fail := func(format string, args ...any) error {
-		return fmt.Errorf("%s: %s", name, fmt.Sprintf(format, args...))
+	for _, load := range [...]func(*choiceDataFile, *choiceData) error{
+		c.loadAncestries, c.loadBreathWeapon, c.loadInvocations, c.loadFavoredEnemy,
+		c.loadNaturalExplorer, c.loadResistances, c.loadSummaries, c.checkChoiceNames,
+	} {
+		if err := load(&f, d); err != nil {
+			return err
+		}
 	}
-	isDamageType := func(k string) bool {
-		n, ok := c.named[k]
-		return ok && n != nil && strings.HasPrefix(k, "damage-type:")
-	}
+	c.choices = d
+	return nil
+}
 
+// isLiveDamageType says the key is a damage type the content has a name for.
+func (c *content) isLiveDamageType(k string) bool {
+	n, ok := c.named[k]
+	return ok && n != nil && strings.HasPrefix(k, "damage-type:")
+}
+
+// loadAncestries reads the Draconic Ancestry table.
+func (c *content) loadAncestries(f *choiceDataFile, d *choiceData) error {
 	for i := range f.DraconicAncestry {
 		a := &f.DraconicAncestry[i]
-		if a.Source == "" {
-			return fail("draconic ancestry %q needs a source", a.Color)
-		}
-		if _, ok := c.traits[a.Trait]; !ok {
-			return fail("draconic ancestry %q: unknown trait %q", a.Color, a.Trait)
-		}
-		if _, ok := c.features[a.Feature]; !ok {
-			return fail("draconic ancestry %q: unknown feature %q", a.Color, a.Feature)
-		}
-		if !isDamageType(a.DamageType) {
-			return fail("draconic ancestry %q: %q is not a damage type", a.Color, a.DamageType)
-		}
-		if a.Shape != BreathLine && a.Shape != BreathCone {
-			return fail("draconic ancestry %q: shape %q is not line or cone", a.Color, a.Shape)
-		}
-		if a.SizeFt <= 0 || (a.Shape == BreathLine) != (a.WidthFt > 0) {
-			return fail("draconic ancestry %q: a line has a size and a width, a cone only a size", a.Color)
-		}
-		if _, ok := ability(a.Save); !ok {
-			return fail("draconic ancestry %q: %q is not an ability", a.Color, a.Save)
-		}
-		if d.ancestryByTrait[a.Trait] != nil || d.ancestryByFeature[a.Feature] != nil {
-			return fail("draconic ancestry %q is listed twice", a.Color)
+		if err := c.checkAncestry(a, d); err != nil {
+			return err
 		}
 		d.ancestryByTrait[a.Trait], d.ancestryByFeature[a.Feature] = a, a
 	}
+	return nil
+}
 
-	if _, ok := c.traits[f.BreathWeapon.Trait]; !ok || f.BreathWeapon.Source == "" || len(f.BreathWeapon.Dice) == 0 {
-		return fail("breath_weapon needs a known trait, dice and a source")
+// checkAncestry checks one row of the Draconic Ancestry table against the content
+// and the rows before it (d).
+func (c *content) checkAncestry(a *draconicAncestry, d *choiceData) error {
+	if a.Source == "" {
+		return choiceDataFail("draconic ancestry %q needs a source", a.Color)
 	}
-	d.breathTrait, d.breathSource = f.BreathWeapon.Trait, f.BreathWeapon.Source
-	for i, row := range f.BreathWeapon.Dice {
-		if _, ok := ParseDice(row.Dice); !ok || row.Level < 1 || row.Level > MaxLevel || (i > 0 && row.Level <= f.BreathWeapon.Dice[i-1].Level) {
-			return fail("breath_weapon dice %q at level %d: dice and ascending levels expected", row.Dice, row.Level)
+	if _, ok := c.traits[a.Trait]; !ok {
+		return choiceDataFail("draconic ancestry %q: unknown trait %q", a.Color, a.Trait)
+	}
+	if _, ok := c.features[a.Feature]; !ok {
+		return choiceDataFail("draconic ancestry %q: unknown feature %q", a.Color, a.Feature)
+	}
+	if !c.isLiveDamageType(a.DamageType) {
+		return choiceDataFail("draconic ancestry %q: %q is not a damage type", a.Color, a.DamageType)
+	}
+	if a.Shape != BreathLine && a.Shape != BreathCone {
+		return choiceDataFail("draconic ancestry %q: shape %q is not line or cone", a.Color, a.Shape)
+	}
+	if a.SizeFt <= 0 || (a.Shape == BreathLine) != (a.WidthFt > 0) {
+		return choiceDataFail("draconic ancestry %q: a line has a size and a width, a cone only a size", a.Color)
+	}
+	if _, ok := ability(a.Save); !ok {
+		return choiceDataFail("draconic ancestry %q: %q is not an ability", a.Color, a.Save)
+	}
+	if d.ancestryByTrait[a.Trait] != nil || d.ancestryByFeature[a.Feature] != nil {
+		return choiceDataFail("draconic ancestry %q is listed twice", a.Color)
+	}
+	return nil
+}
+
+// loadBreathWeapon reads the breath weapon's damage by level.
+func (c *content) loadBreathWeapon(f *choiceDataFile, d *choiceData) error {
+	bw := &f.BreathWeapon
+	if _, ok := c.traits[bw.Trait]; !ok || bw.Source == "" || len(bw.Dice) == 0 {
+		return choiceDataFail("breath_weapon needs a known trait, dice and a source")
+	}
+	d.breathTrait, d.breathSource = bw.Trait, bw.Source
+	for i, row := range bw.Dice {
+		if _, ok := ParseDice(row.Dice); !ok || row.Level < 1 || row.Level > MaxLevel || (i > 0 && row.Level <= bw.Dice[i-1].Level) {
+			return choiceDataFail("breath_weapon dice %q at level %d: dice and ascending levels expected", row.Dice, row.Level)
 		}
 	}
-	d.breathDice = f.BreathWeapon.Dice
+	d.breathDice = bw.Dice
+	return nil
+}
 
+// loadInvocations reads the prerequisites of the Eldritch Invocations; every
+// invocation the content has needs a row.
+func (c *content) loadInvocations(f *choiceDataFile, d *choiceData) error {
 	for _, p := range f.Invocations {
-		if p.Source == "" {
-			return fail("invocation %q needs a source", p.Invocation)
-		}
-		inv, ok := c.features[p.Invocation]
-		if !ok || inv.Parent != invocationsFeature {
-			return fail("%q is not an Eldritch Invocation", p.Invocation)
-		}
-		if _, dup := d.prerequisites[p.Invocation]; dup {
-			return fail("invocation %q is listed twice", p.Invocation)
-		}
-		if p.Spell != "" {
-			if s, ok := c.spells[p.Spell]; !ok || s.Level != 0 {
-				return fail("invocation %q: %q is not a known cantrip", p.Invocation, p.Spell)
-			}
-		}
-		if p.Feature != "" {
-			if pf, ok := c.features[p.Feature]; !ok || pf.Parent != "feature:pact-boon" {
-				return fail("invocation %q: %q is not a Pact Boon", p.Invocation, p.Feature)
-			}
-		}
-		if p.Level < 0 || p.Level > MaxLevel {
-			return fail("invocation %q: level %d is not 0 to %d", p.Invocation, p.Level, MaxLevel)
+		if err := c.checkInvocation(p, d); err != nil {
+			return err
 		}
 		d.prerequisites[p.Invocation] = p
 	}
 	for _, key := range c.features[invocationsFeature].Options {
 		if _, ok := d.prerequisites[key]; !ok {
-			return fail("invocation %q has no row: list it even when it asks for nothing", key)
+			return choiceDataFail("invocation %q has no row: list it even when it asks for nothing", key)
 		}
 	}
+	return nil
+}
 
+// checkInvocation checks one row of the invocations' prerequisites against the
+// content and the rows before it (d).
+func (c *content) checkInvocation(p invocationPrerequisite, d *choiceData) error {
+	if p.Source == "" {
+		return choiceDataFail("invocation %q needs a source", p.Invocation)
+	}
+	inv, ok := c.features[p.Invocation]
+	if !ok || inv.Parent != invocationsFeature {
+		return choiceDataFail("%q is not an Eldritch Invocation", p.Invocation)
+	}
+	if _, dup := d.prerequisites[p.Invocation]; dup {
+		return choiceDataFail("invocation %q is listed twice", p.Invocation)
+	}
+	if p.Spell != "" {
+		if s, ok := c.spells[p.Spell]; !ok || s.Level != 0 {
+			return choiceDataFail("invocation %q: %q is not a known cantrip", p.Invocation, p.Spell)
+		}
+	}
+	if p.Feature != "" {
+		if pf, ok := c.features[p.Feature]; !ok || pf.Parent != "feature:pact-boon" {
+			return choiceDataFail("invocation %q: %q is not a Pact Boon", p.Invocation, p.Feature)
+		}
+	}
+	if p.Level < 0 || p.Level > MaxLevel {
+		return choiceDataFail("invocation %q: level %d is not 0 to %d", p.Invocation, p.Level, MaxLevel)
+	}
+	return nil
+}
+
+// loadFavoredEnemy reads the Ranger's Favored Enemy types.
+func (c *content) loadFavoredEnemy(f *choiceDataFile, d *choiceData) error {
 	fe := f.FavoredEnemy
 	if fe.Source == "" || len(fe.Types) == 0 || fe.Humanoid == "" || fe.HumanoidRaces < 1 || hasDuplicate(fe.Types) {
-		return fail("favored_enemy needs types, the humanoid key, a race count and a source")
+		return choiceDataFail("favored_enemy needs types, the humanoid key, a race count and a source")
 	}
 	d.enemyTypes, d.enemyHumanoid, d.enemyHumanoidRaces = fe.Types, fe.Humanoid, fe.HumanoidRaces
 	for _, k := range append(slices.Clone(fe.Types), fe.Humanoid) {
 		if !strings.HasPrefix(k, "creature-type:") {
-			return fail("favored enemy %q is not a creature-type key", k)
+			return choiceDataFail("favored enemy %q is not a creature-type key", k)
 		}
 	}
+	return nil
+}
+
+// loadNaturalExplorer reads the Ranger's Natural Explorer terrains.
+func (c *content) loadNaturalExplorer(f *choiceDataFile, d *choiceData) error {
 	ne := f.NaturalExplorer
 	if ne.Source == "" || len(ne.Terrains) == 0 || hasDuplicate(ne.Terrains) {
-		return fail("natural_explorer needs terrains and a source")
+		return choiceDataFail("natural_explorer needs terrains and a source")
 	}
 	for _, k := range ne.Terrains {
 		if !strings.HasPrefix(k, "terrain:") {
-			return fail("terrain %q is not a terrain key", k)
+			return choiceDataFail("terrain %q is not a terrain key", k)
 		}
 	}
 	d.terrains = ne.Terrains
+	return nil
+}
 
+// loadResistances reads the damage resistances some traits give.
+func (c *content) loadResistances(f *choiceDataFile, d *choiceData) error {
 	for _, r := range f.Resistances {
-		if _, ok := c.traits[r.Trait]; !ok || !isDamageType(r.DamageType) || r.Source == "" {
-			return fail("racial resistance of %q needs a known trait, a damage type and a source", r.Trait)
+		if _, ok := c.traits[r.Trait]; !ok || !c.isLiveDamageType(r.DamageType) || r.Source == "" {
+			return choiceDataFail("racial resistance of %q needs a known trait, a damage type and a source", r.Trait)
 		}
 		d.resistances[r.Trait] = r
 	}
+	return nil
+}
 
-	// Every option a feature offers says its rule in a line, except the ones whose
-	// line the engine writes (the dragon ancestors and the terrains of the Land).
+// loadSummaries reads the one-line rules of the options. Every option a feature
+// offers says its rule in a line, except the ones whose line the engine writes
+// (the dragon ancestors and the terrains of the Land).
+func (c *content) loadSummaries(f *choiceDataFile, d *choiceData) error {
 	d.summaries = f.Summaries
 	for k, text := range f.Summaries {
 		if _, ok := c.features[k]; !ok || strings.TrimSpace(text) == "" {
-			return fail("option summary %q: a known feature and a text expected", k)
+			return choiceDataFail("option summary %q: a known feature and a text expected", k)
 		}
 	}
 	for _, parent := range c.features {
@@ -242,18 +305,20 @@ func (c *content) loadChoiceData(fsys fs.FS) error {
 				continue
 			}
 			if _, ok := f.Summaries[key]; !ok {
-				return fail("option %q has no summary", key)
+				return choiceDataFail("option %q has no summary", key)
 			}
 		}
 	}
+	return nil
+}
 
-	// The names of the keys this file introduces.
+// checkChoiceNames asks for a Portuguese name for each key this file introduces.
+func (c *content) checkChoiceNames(_ *choiceDataFile, d *choiceData) error {
 	for _, k := range append(slices.Clone(d.enemyTypes), append([]string{d.enemyHumanoid}, d.terrains...)...) {
 		if _, ok := c.namesPT[k]; !ok {
-			return fail("%s has no Portuguese name in effects/names_pt.json", k)
+			return choiceDataFail("%s has no Portuguese name in effects/names_pt.json", k)
 		}
 	}
-	c.choices = d
 	return nil
 }
 
