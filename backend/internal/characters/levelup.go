@@ -997,7 +997,7 @@ func levelUpOptionsToProto(o rules.LevelUpOffer) *charactersv1.LevelUpOptions {
 		Prepares: o.Prepares, PreparedMax: i32(o.PreparedMax), PreparedMaxAfter: i32(o.PreparedMaxAfter),
 		FeatureChoices: levelUpFeatureChoicesToProto(o.FeatureChoices), SkillChoices: i32(o.SkillChoices), ExpertiseChoices: i32(o.ExpertiseChoices),
 		ProficiencyBonusBefore: i32(o.ProficiencyBonusBefore), ProficiencyBonusAfter: i32(o.ProficiencyBonusAfter),
-		SpellSlotsBefore: spellSlotsToProto(o.SlotsBefore), SpellSlotsAfter: spellSlotsToProto(o.SlotsAfter),
+		SpellSlotsBefore: levelUpSlotsToProto(o.SlotsBefore), SpellSlotsAfter: levelUpSlotsToProto(o.SlotsAfter),
 		PactMagicBefore: pactMagicToProto(o.PactBefore), PactMagicAfter: pactMagicToProto(o.PactAfter),
 		NewFeatures: levelUpNamedKeysToProto(o.NewFeatures), MasterAdds: levelUpNamedKeysToProto(o.MasterAdds), AnyClassSpells: i32(o.AnyClassSpells),
 		LateChoices: choiceGroupsToProto(o.LateChoices), NewChoices: choiceGroupsToProto(o.NewChoices),
@@ -1048,8 +1048,8 @@ func pactMagicToProto(p *rules.PactMagic) *rulesv1.PactMagic {
 	return &rulesv1.PactMagic{SlotLevel: i32(p.SlotLevel), Count: i32(p.Slots)}
 }
 
-// spellSlotsToProto copies the slots per circle, all nine of them.
-func spellSlotsToProto(s [9]int) []int32 {
+// levelUpSlotsToProto copies the slots per circle, all nine of them.
+func levelUpSlotsToProto(s [9]int) []int32 {
 	out := make([]int32, len(s))
 	for i, n := range s {
 		out[i] = i32(n)
