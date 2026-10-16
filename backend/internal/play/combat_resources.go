@@ -656,70 +656,65 @@ func distanceOf(a, b playdb.Combatant) int32 {
 // (the economy comes back with the rest of the action): the points or the use it spent,
 // the hit points and conditions of the target, the slot Flexible Casting made or used,
 // the die the bard gave.
-func (s *Service) takeBackResource(
-	ctx context.Context, c *combatTx, ev actionEvent, who playdb.Combatant,
-	find func(string) (playdb.Combatant, bool),
-	setHP func(playdb.Combatant, hpState) error,
-	setDeath func(playdb.Combatant, *deathState) error,
-	putVitals func(playdb.Combatant, hpState) (*playv1.CharacterVitals, error),
-	keep func(*playv1.CharacterVitals),
-) error {
+func (u *undoer) takeBackResource(ctx context.Context, ev actionEvent, who playdb.Combatant) error {
+	campaign := u.c.session.CampaignID
 	res := ev.Res
-	campaign := c.session.CampaignID
 	switch res.Kind {
 	case resLayOnHands:
-		v, err := s.spendResource(ctx, c, who.CharacterID, rules.LayOnHandsKey, -res.Spent)
-		if err != nil {
-			return err
-		}
-		keep(v)
-		target, ok := find(ev.Target)
-		if !ok {
-			return nil
-		}
-		if res.HPBefore != nil {
-			if holdsHP(target) {
-				if err := setHP(target, *res.HPBefore); err != nil {
-					return err
-				}
-			} else {
-				v, err := putVitals(target, *res.HPBefore)
-				if err != nil {
-					return err
-				}
-				keep(v)
-				if err := setDeath(target, res.DeathBefore); err != nil {
-					return err
-				}
-			}
-		}
-		if res.CondSet {
-			if err := c.q.SetCombatantConditions(ctx, playdb.SetCombatantConditionsParams{ID: target.ID, Conditions: nonNil(res.CondBefore)}); err != nil {
-				return fmt.Errorf("put back the conditions: %w", err)
-			}
-		}
+		return u.layOnHandsBack(ctx, ev, who)
 	case resCreateSlot:
-		v, err := s.vitals.UndoCreateSpellSlot(ctx, c.tx, campaign, who.CharacterID, int(res.SlotLevel), int(res.Spent))
+		v, err := u.s.vitals.UndoCreateSpellSlot(ctx, u.c.tx, campaign, who.CharacterID, int(res.SlotLevel), int(res.Spent))
 		if err != nil {
 			return err
 		}
-		keep(v)
+		u.keep(v)
 	case resConvert:
-		v, err := s.vitals.UndoConvertSpellSlot(ctx, c.tx, campaign, who.CharacterID, int(res.SlotLevel), int(res.Gained))
+		v, err := u.s.vitals.UndoConvertSpellSlot(ctx, u.c.tx, campaign, who.CharacterID, int(res.SlotLevel), int(res.Gained))
 		if err != nil {
 			return err
 		}
-		keep(v)
+		u.keep(v)
 	case resBardicGive:
-		v, err := s.spendResource(ctx, c, who.CharacterID, rules.BardicInspirationKey, -res.Spent)
-		if err != nil {
+		return u.bardicGiveBack(ctx, ev, who)
+	}
+	return nil
+}
+
+// layOnHandsBack gives back the points of Lay on Hands, the hit points and the
+// conditions it changed on the target.
+func (u *undoer) layOnHandsBack(ctx context.Context, ev actionEvent, who playdb.Combatant) error {
+	res := ev.Res
+	v, err := u.s.spendResource(ctx, u.c, who.CharacterID, rules.LayOnHandsKey, -res.Spent)
+	if err != nil {
+		return err
+	}
+	u.keep(v)
+	target, ok := u.find(ev.Target)
+	if !ok {
+		return nil
+	}
+	if res.HPBefore != nil {
+		if err := u.putCreatureOrVitals(ctx, target, *res.HPBefore, res.DeathBefore); err != nil {
 			return err
 		}
-		keep(v)
-		if target, ok := find(ev.Target); ok {
-			if err := c.q.SetCombatantInspirationDie(ctx, playdb.SetCombatantInspirationDieParams{ID: target.ID}); err != nil {
-				return fmt.Errorf("take the die back: %w", err)
-			}
+	}
+	if res.CondSet {
+		return u.setConditionsBack(ctx, target.ID, res.CondBefore)
+	}
+	return nil
+}
+
+// bardicGiveBack gives back the use of Bardic Inspiration and takes the die from the
+// creature it was given to.
+func (u *undoer) bardicGiveBack(ctx context.Context, ev actionEvent, who playdb.Combatant) error {
+	v, err := u.s.spendResource(ctx, u.c, who.CharacterID, rules.BardicInspirationKey, -ev.Res.Spent)
+	if err != nil {
+		return err
+	}
+	u.keep(v)
+	if target, ok := u.find(ev.Target); ok {
+		if err := u.c.q.SetCombatantInspirationDie(ctx, playdb.SetCombatantInspirationDieParams{ID: target.ID}); err != nil {
+			return fmt.Errorf("take the die back: %w", err)
 		}
 	}
 	return nil
