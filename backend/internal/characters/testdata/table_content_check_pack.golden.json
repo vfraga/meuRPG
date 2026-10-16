@@ -1,0 +1,113 @@
+[
+  {
+    "step": "a good pack",
+    "value": {
+      "entries": [
+        "0 feat:um@mesa TABLE_CONTENT_KIND_FEAT um unknown=",
+        "1 feat:dois@mesa TABLE_CONTENT_KIND_FEAT dois unknown="
+      ],
+      "violations": null
+    }
+  },
+  {
+    "step": "an empty pack",
+    "value": {
+      "entries": null,
+      "violations": null
+    }
+  },
+  {
+    "step": "over the bytes as proto",
+    "value": {
+      "entries": null,
+      "violations": [
+        "pack | size_limit |  | the pack is over 2097152 bytes"
+      ]
+    }
+  },
+  {
+    "step": "over the bytes only as JSON",
+    "value": {
+      "entries": null,
+      "violations": [
+        "pack | size_limit |  | the pack is over 2097152 bytes"
+      ]
+    }
+  },
+  {
+    "step": "every pack field wrong",
+    "value": {
+      "entries": null,
+      "violations": [
+        "pack.format | bad_value |  | the format is \"meurpg.table-content\"",
+        "pack.version | bad_value |  | the only version this server reads is 1",
+        "pack.name | bad_name |  | the name is one line of at most 80 characters"
+      ]
+    }
+  },
+  {
+    "step": "a name of 80 characters",
+    "value": {
+      "entries": null,
+      "violations": null
+    }
+  },
+  {
+    "step": "a name with a carriage return",
+    "value": {
+      "entries": null,
+      "violations": [
+        "pack.name | bad_name |  | the name is one line of at most 80 characters"
+      ]
+    }
+  },
+  {
+    "step": "a name with a tab",
+    "value": {
+      "entries": null,
+      "violations": [
+        "pack.name | bad_name |  | the name is one line of at most 80 characters"
+      ]
+    }
+  },
+  {
+    "step": "too many entries, with a wrong format",
+    "value": {
+      "entries": [
+        "count 0"
+      ],
+      "violations": [
+        "pack.format | bad_value |  | the format is \"meurpg.table-content\"",
+        "pack.entries | limit |  | 301 entries; the limit is 300 per table"
+      ]
+    }
+  },
+  {
+    "step": "the most entries",
+    "value": {
+      "entries": [
+        "count 300"
+      ],
+      "violations": null
+    }
+  },
+  {
+    "step": "each entry check",
+    "value": {
+      "entries": [
+        "2 feat:um@mesa TABLE_CONTENT_KIND_FEAT um unknown=table_feat.x",
+        "7 feat:sem-nome@mesa TABLE_CONTENT_KIND_FEAT c unknown=",
+        "8 race:raca@mesa TABLE_CONTENT_KIND_RACE r unknown="
+      ],
+      "violations": [
+        "pack.entries[0].kind | bad_value |  | the kind of an entry is one of the seven kinds",
+        "pack.entries[1].key | bad_key |  | the slug may only have a-z, 0-9 and -",
+        "pack.entries[3].key | duplicate_key |  | the pack has this key twice",
+        "pack.entries[4].body | bad_value |  | an entry has exactly the body of its kind",
+        "pack.entries[5].body | bad_value |  | an entry has exactly the body of its kind",
+        "pack.entries[6].name_pt | bad_value |  | the name of an entry is the name in its body",
+        "pack.entries[9].key | reserved_key |  | the slug cannot have \"wild-shape\": the engine reads it in SRD keys, so it is reserved"
+      ]
+    }
+  }
+]

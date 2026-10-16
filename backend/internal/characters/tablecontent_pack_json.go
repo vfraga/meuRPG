@@ -70,28 +70,36 @@ func walkUnknown(md protoreflect.MessageDescriptor, v any, path string, found fu
 		return
 	}
 	for name, child := range obj {
-		fd := md.Fields().ByName(protoreflect.Name(name))
+		fd := fieldNamed(md, name)
 		if fd == nil {
-			fd = md.Fields().ByJSONName(name)
-		}
-		here := joinPath(path, name)
-		if fd == nil {
-			found(here)
+			found(joinPath(path, name))
 			continue
 		}
-		here = joinPath(path, string(fd.Name()))
-		if fd.Message() == nil || fd.IsMap() {
-			continue
-		}
-		if fd.IsList() {
-			if items, ok := child.([]any); ok {
-				for i, item := range items {
-					walkUnknown(fd.Message(), item, here+"["+strconv.Itoa(i)+"]", found)
-				}
-			}
-			continue
-		}
+		walkUnknownField(fd, child, joinPath(path, string(fd.Name())), found)
+	}
+}
+
+// fieldNamed is the field of md with the proto name or the JSON name, or nil.
+func fieldNamed(md protoreflect.MessageDescriptor, name string) protoreflect.FieldDescriptor {
+	if fd := md.Fields().ByName(protoreflect.Name(name)); fd != nil {
+		return fd
+	}
+	return md.Fields().ByJSONName(name)
+}
+
+// walkUnknownField walks the value of one known field: a message, or each message of a list.
+// A scalar or a map holds no field of its own to check.
+func walkUnknownField(fd protoreflect.FieldDescriptor, child any, here string, found func(string)) {
+	if fd.Message() == nil || fd.IsMap() {
+		return
+	}
+	if !fd.IsList() {
 		walkUnknown(fd.Message(), child, here, found)
+		return
+	}
+	items, _ := child.([]any)
+	for i, item := range items {
+		walkUnknown(fd.Message(), item, here+"["+strconv.Itoa(i)+"]", found)
 	}
 }
 

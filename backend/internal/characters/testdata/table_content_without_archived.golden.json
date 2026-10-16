@@ -1,0 +1,154 @@
+[
+  {
+    "step": "nothing kept",
+    "value": {
+      "backgrounds": [
+        {
+          "key": "background:a"
+        }
+      ],
+      "classes": [
+        {
+          "key": "class:a",
+          "spellcasting": {}
+        },
+        {
+          "key": "class:b",
+          "spellcasting": {
+            "listClassKey": "class:a"
+          }
+        },
+        {
+          "key": "class:c"
+        }
+      ],
+      "contentVersion": "v+mesa.7",
+      "races": [
+        {
+          "key": "race:a"
+        }
+      ],
+      "spells": [
+        {
+          "classKeys": [
+            "class:a"
+          ],
+          "key": "spell:a"
+        }
+      ],
+      "subclasses": [
+        {
+          "alwaysPrepared": [
+            {
+              "spellKey": "spell:a"
+            }
+          ],
+          "classKey": "class:a",
+          "key": "subclass:a",
+          "spellcasting": {}
+        },
+        {
+          "classKey": "class:a",
+          "key": "subclass:b",
+          "spellcasting": {
+            "listClassKey": "class:a"
+          }
+        }
+      ],
+      "subraces": [
+        {
+          "key": "subrace:a",
+          "raceKey": "race:a"
+        }
+      ]
+    }
+  },
+  {
+    "step": "a sheet keeps race:arch, class:off, spell:off and subclass:arch",
+    "value": {
+      "backgrounds": [
+        {
+          "key": "background:a"
+        }
+      ],
+      "classes": [
+        {
+          "key": "class:a",
+          "spellcasting": {}
+        },
+        {
+          "key": "class:b",
+          "spellcasting": {
+            "listClassKey": "class:a"
+          }
+        },
+        {
+          "key": "class:c"
+        },
+        {
+          "key": "class:off",
+          "off": true
+        }
+      ],
+      "contentVersion": "v+mesa.7",
+      "races": [
+        {
+          "key": "race:a"
+        },
+        {
+          "archived": true,
+          "key": "race:arch"
+        }
+      ],
+      "spells": [
+        {
+          "classKeys": [
+            "class:a",
+            "class:off"
+          ],
+          "key": "spell:a"
+        },
+        {
+          "key": "spell:off",
+          "off": true
+        }
+      ],
+      "subclasses": [
+        {
+          "alwaysPrepared": [
+            {
+              "spellKey": "spell:a"
+            }
+          ],
+          "classKey": "class:a",
+          "key": "subclass:a",
+          "spellcasting": {
+            "listClassKey": "class:off"
+          }
+        },
+        {
+          "classKey": "class:a",
+          "key": "subclass:b",
+          "spellcasting": {
+            "listClassKey": "class:a"
+          }
+        },
+        {
+          "archived": true,
+          "classKey": "class:a",
+          "key": "subclass:arch"
+        }
+      ],
+      "subraces": [
+        {
+          "key": "subrace:a",
+          "raceKey": "race:a"
+        },
+        {
+          "key": "subrace:of-arch",
+          "raceKey": "race:arch"
+        }
+      ]
+    }
+  }
+]

@@ -124,13 +124,40 @@ type packEntry struct {
 // key, its body and its name, and that no key repeats. It returns the entries that are
 // well formed and every violation found.
 func checkPack(pack *rulesv1.TableContentPack, unknown map[int][]*rulesv1.TableContentViolation) ([]packEntry, []*rulesv1.TableContentViolation) {
+	if packTooBig(pack) {
+		return nil, []*rulesv1.TableContentViolation{packViolation("pack", reasonSizeLimit, "the pack is over %d bytes", MaxPackBytes)}
+	}
+	out := checkPackHeader(pack)
+	if n := len(pack.GetEntries()); n > rules.MaxOverlayEntries {
+		out = append(out, packViolation("pack.entries", rules.ReasonLimit, "%d entries; the limit is %d per table", n, rules.MaxOverlayEntries))
+		return nil, out
+	}
+	var entries []packEntry
+	seen := map[string]bool{}
+	for i, e := range pack.GetEntries() {
+		if v := checkPackEntry(fmt.Sprintf("pack.entries[%d]", i), e, seen); v != nil {
+			out = append(out, v)
+			continue
+		}
+		body, kind := bodyOfEntry(e)
+		entries = append(entries, packEntry{index: i, key: e.GetKey(), kind: kind, body: body, unknown: unknown[i]})
+	}
+	return entries, out
+}
+
+// packTooBig says whether the pack is over the limit, as proto or as proto JSON (a control
+// character takes six bytes of JSON).
+func packTooBig(pack *rulesv1.TableContentPack) bool {
+	if proto.Size(pack) > MaxPackBytes {
+		return true
+	}
+	data, err := storeJSON.Marshal(pack)
+	return err != nil || len(data) > MaxPackBytes
+}
+
+// checkPackHeader checks the pack's format, version and label.
+func checkPackHeader(pack *rulesv1.TableContentPack) []*rulesv1.TableContentViolation {
 	var out []*rulesv1.TableContentViolation
-	if size := proto.Size(pack); size > MaxPackBytes {
-		return nil, []*rulesv1.TableContentViolation{packViolation("pack", reasonSizeLimit, "the pack is over %d bytes", MaxPackBytes)}
-	}
-	if data, err := storeJSON.Marshal(pack); err != nil || len(data) > MaxPackBytes {
-		return nil, []*rulesv1.TableContentViolation{packViolation("pack", reasonSizeLimit, "the pack is over %d bytes", MaxPackBytes)}
-	}
 	if pack.GetFormat() != PackFormat {
 		out = append(out, packViolation("pack.format", rules.ReasonValue, "the format is %q", PackFormat))
 	}
@@ -140,40 +167,31 @@ func checkPack(pack *rulesv1.TableContentPack, unknown map[int][]*rulesv1.TableC
 	if name := pack.GetName(); utf8.RuneCountInString(name) > maxPackNameRunes || strings.ContainsFunc(name, func(r rune) bool { return r == '\n' || r == '\r' || r < ' ' }) {
 		out = append(out, packViolation("pack.name", rules.ReasonName, "the name is one line of at most %d characters", maxPackNameRunes))
 	}
-	if n := len(pack.GetEntries()); n > rules.MaxOverlayEntries {
-		out = append(out, packViolation("pack.entries", rules.ReasonLimit, "%d entries; the limit is %d per table", n, rules.MaxOverlayEntries))
-		return nil, out
+	return out
+}
+
+// checkPackEntry is the first thing wrong with the form of one entry of a pack (its kind,
+// its key, a key seen before, its body, its name), or nil; it marks a good key as seen.
+func checkPackEntry(field string, e *rulesv1.TableEntry, seen map[string]bool) *rulesv1.TableContentViolation {
+	prefix := kindPrefix(e.GetKind())
+	if prefix == "" {
+		return packViolation(field+".kind", rules.ReasonValue, "the kind of an entry is one of the seven kinds")
 	}
-	var entries []packEntry
-	seen := map[string]bool{}
-	for i, e := range pack.GetEntries() {
-		field := fmt.Sprintf("pack.entries[%d]", i)
-		prefix := kindPrefix(e.GetKind())
-		if prefix == "" {
-			out = append(out, packViolation(field+".kind", rules.ReasonValue, "the kind of an entry is one of the seven kinds"))
-			continue
-		}
-		if reason, msg := rules.CheckEntryKey(prefix, e.GetKey()); reason != "" {
-			out = append(out, packViolation(field+".key", reason, "%s", msg))
-			continue
-		}
-		if seen[e.GetKey()] {
-			out = append(out, packViolation(field+".key", rules.ReasonDuplicateKey, "the pack has this key twice"))
-			continue
-		}
-		seen[e.GetKey()] = true
-		body, kind := bodyOfEntry(e)
-		if body == nil || kind != e.GetKind() {
-			out = append(out, packViolation(field+".body", rules.ReasonValue, "an entry has exactly the body of its kind"))
-			continue
-		}
-		if e.GetNamePt() != "" && e.GetNamePt() != body.GetNamePt() {
-			out = append(out, packViolation(field+".name_pt", rules.ReasonValue, "the name of an entry is the name in its body"))
-			continue
-		}
-		entries = append(entries, packEntry{index: i, key: e.GetKey(), kind: kind, body: body, unknown: unknown[i]})
+	if reason, msg := rules.CheckEntryKey(prefix, e.GetKey()); reason != "" {
+		return packViolation(field+".key", reason, "%s", msg)
 	}
-	return entries, out
+	if seen[e.GetKey()] {
+		return packViolation(field+".key", rules.ReasonDuplicateKey, "the pack has this key twice")
+	}
+	seen[e.GetKey()] = true
+	body, kind := bodyOfEntry(e)
+	if body == nil || kind != e.GetKind() {
+		return packViolation(field+".body", rules.ReasonValue, "an entry has exactly the body of its kind")
+	}
+	if e.GetNamePt() != "" && e.GetNamePt() != body.GetNamePt() {
+		return packViolation(field+".name_pt", rules.ReasonValue, "the name of an entry is the name in its body")
+	}
+	return nil
 }
 
 // bodyOfEntry is the body of an entry and the kind it gives, or nil.
@@ -524,22 +542,9 @@ func (s *Service) ImportTableContent(
 	if err != nil {
 		return nil, err
 	}
-	mode := req.Msg.GetMode()
-	if mode != rulesv1.TableImportMode_TABLE_IMPORT_MODE_PREVIEW && mode != rulesv1.TableImportMode_TABLE_IMPORT_MODE_APPLY {
-		return nil, invalidArgument(fieldErr("mode", "must be preview or apply"))
-	}
-	pack, unknown := req.Msg.GetPack(), map[int][]*rulesv1.TableContentViolation(nil)
-	if raw := req.Msg.GetPackJson(); len(raw) > 0 {
-		if pack != nil {
-			return nil, invalidArgument(fieldErr("pack_json", "and pack are alternatives: send one"))
-		}
-		var top []*rulesv1.TableContentViolation
-		if pack, unknown, top = readPackJSON(raw); len(top) > 0 {
-			return nil, errRefusedContent(top)
-		}
-	}
-	if pack == nil {
-		return nil, invalidArgument(fieldErr("pack", "is required"))
+	pack, unknown, err := readImportRequest(req.Msg)
+	if err != nil {
+		return nil, err
 	}
 	idemKey, err := idem.Clean(req.Msg.GetIdempotencyKey())
 	if err != nil {
@@ -550,20 +555,11 @@ func (s *Service) ImportTableContent(
 	if len(violations) > 0 {
 		return nil, errRefusedContent(violations)
 	}
-	call := &importCall{s: s, m: m, msg: req.Msg, pack: pack, entries: entries, apply: mode == rulesv1.TableImportMode_TABLE_IMPORT_MODE_APPLY}
+	call := &importCall{s: s, m: m, msg: req.Msg, pack: pack, entries: entries, apply: req.Msg.GetMode() == rulesv1.TableImportMode_TABLE_IMPORT_MODE_APPLY}
 	if call.apply {
 		call.scopedKey, call.requestHash = idem.Scope(m.CampaignID, idemKey), idem.Hash(req.Msg)
-		err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return call.run(ctx, tx) })
-	} else {
-		err = db.ReadTx(ctx, s.pool, func(tx pgx.Tx) error { return call.run(ctx, tx) })
 	}
-	switch {
-	case call.replayed && errors.Is(err, errImportReplayed):
-		err = nil // the first call wrote and announced it
-	case errors.Is(err, errNothingToImport):
-		err = nil
-	}
-	if err != nil {
+	if err := call.transact(ctx); err != nil {
 		return nil, s.dbError(ctx, "import the table's content", err)
 	}
 	if !call.replayed {
@@ -580,6 +576,49 @@ func (s *Service) ImportTableContent(
 		s.publishContentChanged(m.CampaignID)
 	}
 	return connect.NewResponse(call.res), nil
+}
+
+// readImportRequest checks the mode and takes the pack, from the message or from its file
+// (read strictly, so an unknown field is a violation).
+func readImportRequest(msg *rulesv1.ImportTableContentRequest) (*rulesv1.TableContentPack, map[int][]*rulesv1.TableContentViolation, error) {
+	mode := msg.GetMode()
+	if mode != rulesv1.TableImportMode_TABLE_IMPORT_MODE_PREVIEW && mode != rulesv1.TableImportMode_TABLE_IMPORT_MODE_APPLY {
+		return nil, nil, invalidArgument(fieldErr("mode", "must be preview or apply"))
+	}
+	pack, unknown := msg.GetPack(), map[int][]*rulesv1.TableContentViolation(nil)
+	if raw := msg.GetPackJson(); len(raw) > 0 {
+		if pack != nil {
+			return nil, nil, invalidArgument(fieldErr("pack_json", "and pack are alternatives: send one"))
+		}
+		var top []*rulesv1.TableContentViolation
+		if pack, unknown, top = readPackJSON(raw); len(top) > 0 {
+			return nil, nil, errRefusedContent(top)
+		}
+	}
+	if pack == nil {
+		return nil, nil, invalidArgument(fieldErr("pack", "is required"))
+	}
+	return pack, unknown, nil
+}
+
+// transact runs the call's transaction: an APPLY's writes, a PREVIEW's read. An APPLY that
+// found the answer of its key, or that changes nothing, ends its transaction with an error
+// that rolls the bump back; neither is an error of the call.
+func (c *importCall) transact(ctx context.Context) error {
+	run := func(tx pgx.Tx) error { return c.run(ctx, tx) }
+	var err error
+	if c.apply {
+		err = db.InTx(ctx, c.s.pool, run)
+	} else {
+		err = db.ReadTx(ctx, c.s.pool, run)
+	}
+	switch {
+	case c.replayed && errors.Is(err, errImportReplayed):
+		return nil // the first call wrote and announced it
+	case errors.Is(err, errNothingToImport):
+		return nil
+	}
+	return err
 }
 
 // run is the transaction of the call: a PREVIEW reads, an APPLY bumps the content revision

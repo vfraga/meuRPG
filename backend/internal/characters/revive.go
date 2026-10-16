@@ -58,49 +58,69 @@ func (s *Service) ReviveCharacter(
 	if err != nil {
 		return nil, s.dbError(ctx, "read rules content", err)
 	}
-	var row charactersdb.Character
-	var replayed bool
-	var encounterID string
+	var done revival
 	now := s.now()
 	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		replayed, encounterID = false, ""
-		q := s.queries.WithTx(tx)
 		var err error
-		row, err = visibleForUpdate(ctx, q, m, id)
-		if err != nil {
-			return err
-		}
-		if row.Kind != kindPlayer {
-			return invalidArgument(fieldErr("character_id", "is an NPC: only player characters die"))
-		}
-		if row.Status != statusDead {
-			// A retry of the call that brought it back: the same key and request.
-			if row.ReviveKey != nil && *row.ReviveKey == *scoped && row.RevivedAt != nil {
-				if err := idem.SameRequest(row.ReviveHash, hash); err != nil {
-					return err
-				}
-				replayed = true
-				return nil
-			}
-			return errBlocked(charactersv1.CharacterBlockedReason_CHARACTER_BLOCKED_REASON_NOT_DEAD, row.ID)
-		}
-		if row, err = s.reviveTx(ctx, tx, row, scoped, hash, now); err != nil {
-			return err
-		}
-		return s.revivedInCombat(ctx, tx, m.CampaignID, row, m.UserID, now, &encounterID)
+		done, err = s.reviveInTx(ctx, tx, m, id, scoped, hash, now)
+		return err
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "revive a character", err)
 	}
-	if !replayed {
-		logging.Event(ctx, s.logger, "character.revived", slog.String("character_id", row.ID))
-		s.publishRevived(ctx, m.CampaignID, row, encounterID)
+	if !done.replayed {
+		logging.Event(ctx, s.logger, "character.revived", slog.String("character_id", done.row.ID))
+		s.publishRevived(ctx, m.CampaignID, done.row, done.encounterID)
 	}
-	c, err := s.character(ctx, content, row, m)
+	c, err := s.character(ctx, content, done.row, m)
 	if err != nil {
 		return nil, s.dbError(ctx, "read a character", err)
 	}
 	return connect.NewResponse(&charactersv1.ReviveCharacterResponse{Character: c}), nil
+}
+
+// revival is what one try of ReviveCharacter's transaction did: the character as it is
+// now, whether the call was a retry of one that brought it back, and the combat that
+// holds it (empty for none).
+type revival struct {
+	row         charactersdb.Character
+	replayed    bool
+	encounterID string
+}
+
+// reviveInTx is ReviveCharacter's transaction: the character, locked FOR UPDATE, must be
+// a dead player character, or the same call again; then it lives again and the table
+// reads the line.
+func (s *Service) reviveInTx(ctx context.Context, tx pgx.Tx, m authz.Membership, id string, key, hash *string, now time.Time) (revival, error) {
+	row, err := visibleForUpdate(ctx, s.queries.WithTx(tx), m, id)
+	if err != nil {
+		return revival{}, err
+	}
+	if row.Kind != kindPlayer {
+		return revival{}, invalidArgument(fieldErr("character_id", "is an NPC: only player characters die"))
+	}
+	if row.Status != statusDead {
+		replayed, err := reviveReplayed(row, key, hash)
+		return revival{row: row, replayed: replayed}, err
+	}
+	if row, err = s.reviveTx(ctx, tx, row, key, hash, now); err != nil {
+		return revival{}, err
+	}
+	done := revival{row: row}
+	err = s.revivedInCombat(ctx, tx, m.CampaignID, row, m.UserID, now, &done.encounterID)
+	return done, err
+}
+
+// reviveReplayed says whether a living character is the answer to a retry of the call
+// that brought it back: the same key and request. Any other call is NOT_DEAD.
+func reviveReplayed(row charactersdb.Character, key, hash *string) (bool, error) {
+	if row.ReviveKey == nil || *row.ReviveKey != *key || row.RevivedAt == nil {
+		return false, errBlocked(charactersv1.CharacterBlockedReason_CHARACTER_BLOCKED_REASON_NOT_DEAD, row.ID)
+	}
+	if err := idem.SameRequest(row.ReviveHash, hash); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // reviveTx brings the dead character row back inside tx: RN-03 first, then the status, then

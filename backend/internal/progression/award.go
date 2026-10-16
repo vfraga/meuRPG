@@ -124,53 +124,8 @@ func (s *Service) AwardXP(
 	if err != nil {
 		return nil, err
 	}
-	var g grant
-	switch req.Msg.GetMode() {
-	case progressionv1.XPAwardMode_XP_AWARD_MODE_ENEMIES:
-		g.mode = modeEnemies
-		id, err := uuid.Parse(req.Msg.GetEncounterId())
-		if err != nil {
-			return nil, connect.NewError(connect.CodeNotFound, errors.New("encounter not found"))
-		}
-		g.encounterID = id.String()
-		if req.Msg.GetAmount() != 0 || req.Msg.GetGold() != 0 {
-			return nil, invalidArgument("amount and gold", errors.New("must be empty for an ENEMIES award"))
-		}
-	case progressionv1.XPAwardMode_XP_AWARD_MODE_GOLD:
-		g.mode = modeGold
-		if req.Msg.GetEncounterId() != "" || req.Msg.GetAmount() != 0 {
-			return nil, invalidArgument("encounter_id and amount", errors.New("must be empty for a GOLD award"))
-		}
-		if len(req.Msg.GetTreasurePointIds()) > 0 {
-			// "Voltar à cidade": the treasures' PO is the gold.
-			if req.Msg.GetGold() != 0 {
-				return nil, invalidArgument("gold", errors.New("must be empty when treasure_point_ids is set"))
-			}
-			if g.treasureIDs, err = checkTreasureIDs(req.Msg.GetTreasurePointIds()); err != nil {
-				return nil, err
-			}
-			break
-		}
-		if gold := req.Msg.GetGold(); gold < 1 || gold > maxXPAmount {
-			return nil, invalidArgument("gold", fmt.Errorf("must be 1 to %d", maxXPAmount))
-		}
-		g.amount = req.Msg.GetGold()
-	case progressionv1.XPAwardMode_XP_AWARD_MODE_MANUAL:
-		g.mode = modeManual
-		if req.Msg.GetEncounterId() != "" || req.Msg.GetGold() != 0 {
-			return nil, invalidArgument("encounter_id and gold", errors.New("must be empty for a MANUAL award"))
-		}
-		if amount := req.Msg.GetAmount(); amount < 1 || amount > maxXPAmount {
-			return nil, invalidArgument("amount", fmt.Errorf("must be 1 to %d", maxXPAmount))
-		}
-		g.amount = req.Msg.GetAmount()
-	default:
-		return nil, invalidArgument("mode", errors.New("must be ENEMIES, GOLD or MANUAL"))
-	}
-	if g.mode != modeGold && len(req.Msg.GetTreasurePointIds()) > 0 {
-		return nil, invalidArgument("treasure_point_ids", errors.New("must be empty unless the mode is GOLD"))
-	}
-	if g.reason, g.key, g.characters, err = checkCommon(req.Msg.GetReason(), req.Msg.GetIdempotencyKey(), req.Msg.GetCharacterIds()); err != nil {
+	g, err := awardGrant(req.Msg)
+	if err != nil {
 		return nil, err
 	}
 	award, err := s.give(ctx, m, g)
@@ -183,6 +138,85 @@ func (s *Service) AwardXP(
 	}
 	each, lost := xpEach(award.TotalXp, len(views[0].GetShares()))
 	return connect.NewResponse(&progressionv1.AwardXPResponse{Award: views[0], XpEach: each, LostXp: lost, Treasures: views[0].GetTreasures()}), nil
+}
+
+// awardGrant checks an AwardXP request and returns the grant it asks for: the
+// mode's own fields first, then that only GOLD takes treasures, then what
+// every award has (checkCommon).
+func awardGrant(msg *progressionv1.AwardXPRequest) (grant, error) {
+	byMode, ok := grantByMode[msg.GetMode()]
+	if !ok {
+		return grant{}, invalidArgument("mode", errors.New("must be ENEMIES, GOLD or MANUAL"))
+	}
+	g, err := byMode(msg)
+	if err != nil {
+		return grant{}, err
+	}
+	if g.mode != modeGold && len(msg.GetTreasurePointIds()) > 0 {
+		return grant{}, invalidArgument("treasure_point_ids", errors.New("must be empty unless the mode is GOLD"))
+	}
+	if g.reason, g.key, g.characters, err = checkCommon(msg.GetReason(), msg.GetIdempotencyKey(), msg.GetCharacterIds()); err != nil {
+		return grant{}, err
+	}
+	return g, nil
+}
+
+// grantByMode checks the fields of each mode AwardXP takes (a milestone is
+// MarkMilestone's).
+var grantByMode = map[progressionv1.XPAwardMode]func(*progressionv1.AwardXPRequest) (grant, error){
+	progressionv1.XPAwardMode_XP_AWARD_MODE_ENEMIES: enemiesGrant,
+	progressionv1.XPAwardMode_XP_AWARD_MODE_GOLD:    goldGrant,
+	progressionv1.XPAwardMode_XP_AWARD_MODE_MANUAL:  manualGrant,
+}
+
+// enemiesGrant is an ENEMIES award: a combat, and neither an amount nor gold.
+// An encounter ID that is not a UUID is a combat that does not exist.
+func enemiesGrant(msg *progressionv1.AwardXPRequest) (grant, error) {
+	id, err := uuid.Parse(msg.GetEncounterId())
+	if err != nil {
+		return grant{}, connect.NewError(connect.CodeNotFound, errors.New("encounter not found"))
+	}
+	if msg.GetAmount() != 0 || msg.GetGold() != 0 {
+		return grant{}, invalidArgument("amount and gold", errors.New("must be empty for an ENEMIES award"))
+	}
+	return grant{mode: modeEnemies, encounterID: id.String()}, nil
+}
+
+// goldGrant is a GOLD award: the gold typed, or the treasures of a "Voltar à
+// cidade" (their PO is the gold), and neither a combat nor an amount.
+func goldGrant(msg *progressionv1.AwardXPRequest) (grant, error) {
+	if msg.GetEncounterId() != "" || msg.GetAmount() != 0 {
+		return grant{}, invalidArgument("encounter_id and amount", errors.New("must be empty for a GOLD award"))
+	}
+	if len(msg.GetTreasurePointIds()) > 0 {
+		if msg.GetGold() != 0 {
+			return grant{}, invalidArgument("gold", errors.New("must be empty when treasure_point_ids is set"))
+		}
+		ids, err := checkTreasureIDs(msg.GetTreasurePointIds())
+		if err != nil {
+			return grant{}, err
+		}
+		return grant{mode: modeGold, treasureIDs: ids}, nil
+	}
+	gold, err := checkXPAmount("gold", msg.GetGold())
+	return grant{mode: modeGold, amount: gold}, err
+}
+
+// manualGrant is a MANUAL award: an amount, and neither a combat nor gold.
+func manualGrant(msg *progressionv1.AwardXPRequest) (grant, error) {
+	if msg.GetEncounterId() != "" || msg.GetGold() != 0 {
+		return grant{}, invalidArgument("encounter_id and gold", errors.New("must be empty for a MANUAL award"))
+	}
+	amount, err := checkXPAmount("amount", msg.GetAmount())
+	return grant{mode: modeManual, amount: amount}, err
+}
+
+// checkXPAmount checks that the field's amount is 1 to what a sheet holds.
+func checkXPAmount(field string, amount int32) (int32, error) {
+	if amount < 1 || amount > maxXPAmount {
+		return 0, invalidArgument(field, fmt.Errorf("must be 1 to %d", maxXPAmount))
+	}
+	return amount, nil
 }
 
 // MarkMilestone implements progressionv1connect.ProgressionServiceHandler.
@@ -277,12 +311,9 @@ func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progre
 	g.hash = g.requestHash()
 	// A retry comes first: whatever changed since (the mode, a character that
 	// died) must not turn the answer to a request already done into an error.
-	if done, err := s.queries.GetXPAwardByKey(ctx, progressiondb.GetXPAwardByKeyParams{CampaignID: m.CampaignID, IdempotencyKey: g.key}); err == nil {
-		return s.sameRequest(ctx, s.queries, done, g)
-	} else if !errors.Is(err, pgx.ErrNoRows) {
-		return progressiondb.XpAward{}, s.dbError(ctx, "find an award by its key", err)
+	if done, found, err := s.retriedAward(ctx, m, g); found || err != nil {
+		return done, err
 	}
-
 	campaignMode, err := s.campaigns.CampaignXPMode(ctx, nil, m.CampaignID)
 	if err != nil {
 		return progressiondb.XpAward{}, s.dbError(ctx, "read the campaign's XP mode", err)
@@ -290,167 +321,294 @@ func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progre
 	if !fits(campaignMode, g.mode) {
 		return progressiondb.XpAward{}, errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_MODE_NOT_ALLOWED, "", campaignMode)
 	}
-	var award progressiondb.XpAward
-	var repeated, logged bool
-	var changedMaps []string // the maps whose treasures this award converted
+	var given givenAward
 	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		award, repeated, logged, changedMaps = progressiondb.XpAward{}, false, false, nil // a retry starts over
-		q := s.queries.WithTx(tx)
-		if done, err := q.GetXPAwardByKey(ctx, progressiondb.GetXPAwardByKeyParams{CampaignID: m.CampaignID, IdempotencyKey: g.key}); err == nil {
-			repeated = true // a request that raced with its own retry
-			award, err = s.sameRequest(ctx, q, done, g)
-			return err
-		} else if !errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("find an award by its key: %w", err)
-		}
-
-		// The mode is read again here, in the transaction (RN-09): SetCampaignXpMode
-		// reads the awards and writes the mode in a transaction of its own, so under
-		// serializable isolation the two cannot both pass, and one retries.
-		txMode, err := s.campaigns.CampaignXPMode(ctx, tx, m.CampaignID)
-		if err != nil {
-			return fmt.Errorf("read the campaign's XP mode: %w", err)
-		}
-		if !fits(txMode, g.mode) {
-			return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_MODE_NOT_ALLOWED, "", txMode)
-		}
-		// The party is read here, in the transaction: a character that died, or
-		// went up a level, since the request began is judged as it is now.
-		party, err := s.party.Party(ctx, tx, m.CampaignID)
-		if err != nil {
-			return fmt.Errorf("read the party: %w", err)
-		}
-		for _, id := range g.characters {
-			if !slices.ContainsFunc(party, func(p link.Member) bool { return p.ID == id }) {
-				return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_CHARACTER_NOT_ELIGIBLE, id, 0)
-			}
-		}
-		reason := g.reason
-		if g.milestoneID != "" {
-			if reason, err = s.checkMilestone(ctx, q, m.CampaignID, g); err != nil {
-				return err
-			}
-		}
-		// "Voltar à cidade": lock and check the treasures, and their PO is the
-		// gold. The lock holds until the commit, so two awards for one treasure
-		// take turns and the second finds it converted.
-		var treasures []link.Treasure
-		if len(g.treasureIDs) > 0 {
-			if treasures, err = s.lockTreasures(ctx, tx, m.CampaignID, g.treasureIDs); err != nil {
-				return err
-			}
-			g.amount = 0
-			for _, tr := range treasures {
-				g.amount += tr.ValuePO
-			}
-			if g.amount > maxXPAmount {
-				return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_TREASURES_OVER_LIMIT, "", 0)
-			}
-		}
-		total, err := s.total(ctx, tx, q, m.CampaignID, g)
-		if err != nil {
-			return err
-		}
-		each := int32(0)
-		if g.mode != modeMilestone {
-			if each, _ = xpEach(total, len(g.characters)); each < 1 {
-				return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_NOTHING_TO_GIVE, "", 0)
-			}
-		}
-		now := s.now()
-		params := progressiondb.InsertXPAwardParams{
-			CampaignID: m.CampaignID, GivenBy: m.UserID, CreatedAt: now, Mode: g.mode, Reason: reason,
-			TotalXp: total, IdempotencyKey: g.key, IdempotencyHash: &g.hash,
-		}
-		if g.milestoneID != "" {
-			params.MilestoneID, params.MilestoneAgain = &g.milestoneID, g.again
-		}
-		switch g.mode {
-		case modeEnemies:
-			params.EncounterID = &g.encounterID
-		case modeGold:
-			params.Gold = &g.amount
-		}
-		if award, err = q.InsertXPAward(ctx, params); err != nil {
-			if isUniqueViolation(err, oneAwardPerEncounterIndex) {
-				return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_ALREADY_AWARDED, "", 0)
-			}
-			if isUniqueViolation(err, idempotencyKeyIndex) {
-				return connect.NewError(connect.CodeAborted, errors.New("the same request is being handled, please try again"))
-			}
-			return fmt.Errorf("insert an award: %w", err)
-		}
-		for _, id := range g.characters {
-			share := progressiondb.InsertXPShareParams{AwardID: award.ID, CharacterID: id, Xp: each}
-			if g.mode == modeMilestone {
-				// The tag lasts until the sheet's level goes past this one.
-				level := party[slices.IndexFunc(party, func(p link.Member) bool { return p.ID == id })].Level
-				share.LevelAtMark = &level
-			} else {
-				// The sheet holds at most 1,000,000 XP: the share keeps what the
-				// sheet gained, so an undo takes back exactly that.
-				before, after, err := s.party.AddExperience(ctx, tx, m.CampaignID, id, each, now)
-				if err != nil {
-					if connect.CodeOf(err) == connect.CodeNotFound {
-						return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_CHARACTER_NOT_ELIGIBLE, id, 0)
-					}
-					return fmt.Errorf("add the XP to a sheet: %w", err)
-				}
-				share.Xp = after - before
-			}
-			if err := q.InsertXPShare(ctx, share); err != nil {
-				return fmt.Errorf("insert a share: %w", err)
-			}
-		}
-		for _, tr := range treasures {
-			if err := q.InsertXPAwardTreasure(ctx, progressiondb.InsertXPAwardTreasureParams{AwardID: award.ID, PointID: tr.PointID, ValuePo: tr.ValuePO}); err != nil {
-				return fmt.Errorf("insert a converted treasure: %w", err)
-			}
-		}
-		if len(treasures) > 0 {
-			if err := s.treasures.MarkConverted(ctx, tx, award.ID, g.treasureIDs); err != nil {
-				return err
-			}
-			for _, tr := range treasures {
-				if !slices.Contains(changedMaps, tr.MapID) {
-					changedMaps = append(changedMaps, tr.MapID)
-				}
-			}
-		}
-		payload := eventPayload{AwardID: award.ID, Mode: g.mode, TotalXP: total, XPEach: each, CharacterIDs: g.characters, EncounterID: g.encounterID, MilestoneID: g.milestoneID}
-		_, payload.LostXP = xpEach(total, len(g.characters))
-		if g.mode == modeGold {
-			payload.Gold = g.amount
-		}
-		for _, tr := range treasures {
-			payload.Treasures = append(payload.Treasures, eventTreasure{PointID: tr.PointID, ValuePO: tr.ValuePO})
-		}
-		kind := eventXPAwarded
-		if g.mode == modeMilestone {
-			kind, payload.LostXP = eventMilestoneMarked, 0
-		}
-		logged, err = s.appendEvent(ctx, tx, m, kind, payload, now)
+		var err error
+		given, err = s.giveInTx(ctx, tx, m, g) // a retry starts over
 		return err
 	})
 	if err != nil {
 		return progressiondb.XpAward{}, s.dbError(ctx, "give XP", err)
 	}
-	if !repeated && len(changedMaps) > 0 {
-		s.treasures.PublishChanged(m.CampaignID, changedMaps) // after the commit, once per map
+	s.announceAward(ctx, m, g, given)
+	return given.award, nil
+}
+
+// givenAward is what an award's transaction did: the award, whether it was a
+// retry that found it (repeated), whether the open session logged it, and
+// the maps whose treasures it converted.
+type givenAward struct {
+	award       progressiondb.XpAward
+	repeated    bool
+	logged      bool
+	changedMaps []string
+}
+
+// awardPlan is an award checked inside its transaction, ready to write: the
+// grant (with the treasures' gold), the party as it is now, the reason (a
+// planned milestone's text), the locked treasures, the XP to split and each
+// character's share of it (0 for a milestone).
+type awardPlan struct {
+	g         grant
+	party     []link.Member
+	reason    string
+	treasures []link.Treasure
+	total     int32
+	each      int32
+}
+
+// retriedAward finds, outside a transaction, the award a retried key already
+// made, and checks it is for the same request (found says there was one).
+func (s *Service) retriedAward(ctx context.Context, m authz.Membership, g grant) (progressiondb.XpAward, bool, error) {
+	done, err := s.queries.GetXPAwardByKey(ctx, progressiondb.GetXPAwardByKeyParams{CampaignID: m.CampaignID, IdempotencyKey: g.key})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return progressiondb.XpAward{}, false, nil
 	}
-	if logged && !repeated {
-		name := "xp.awarded"
-		if g.mode == modeMilestone {
-			name = "xp.milestone_marked"
-		}
-		logging.Event(ctx, s.logger, name, slog.String("award_id", award.ID), slog.String("mode", g.mode),
-			slog.Int("characters", len(g.characters)), slog.Int64("total_xp", int64(award.TotalXp)))
-		if len(g.treasureIDs) > 0 {
-			logging.Event(ctx, s.logger, "treasure.converted", slog.String("award_id", award.ID), slog.Int("treasures", len(g.treasureIDs)))
-		}
-		s.log.PublishXPChanged(m.CampaignID)
+	if err != nil {
+		return progressiondb.XpAward{}, false, s.dbError(ctx, "find an award by its key", err)
 	}
-	return award, nil
+	award, err := s.sameRequest(ctx, s.queries, done, g)
+	return award, true, err
+}
+
+// giveInTx is the award's transaction: the key again, the checks against what
+// the campaign is now, then the writes and the session's event.
+func (s *Service) giveInTx(ctx context.Context, tx pgx.Tx, m authz.Membership, g grant) (givenAward, error) {
+	q := s.queries.WithTx(tx)
+	done, err := q.GetXPAwardByKey(ctx, progressiondb.GetXPAwardByKeyParams{CampaignID: m.CampaignID, IdempotencyKey: g.key})
+	if err == nil {
+		// A request that raced with its own retry.
+		award, err := s.sameRequest(ctx, q, done, g)
+		return givenAward{award: award, repeated: true}, err
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return givenAward{}, fmt.Errorf("find an award by its key: %w", err)
+	}
+	p, err := s.planAward(ctx, tx, q, m, g)
+	if err != nil {
+		return givenAward{}, err
+	}
+	now := s.now()
+	award, err := insertAward(ctx, q, m, p, now)
+	if err != nil {
+		return givenAward{}, err
+	}
+	if err := s.insertShares(ctx, tx, q, m, p, award.ID, now); err != nil {
+		return givenAward{}, err
+	}
+	changedMaps, err := s.convertTreasures(ctx, tx, q, p, award.ID)
+	if err != nil {
+		return givenAward{}, err
+	}
+	kind, payload := awardEvent(p, award.ID)
+	logged, err := s.appendEvent(ctx, tx, m, kind, payload, now)
+	return givenAward{award: award, logged: logged, changedMaps: changedMaps}, err
+}
+
+// planAward checks the award inside its transaction, in this order: the XP
+// mode, the party, the planned milestone, the treasures, the XP to give.
+func (s *Service) planAward(ctx context.Context, tx pgx.Tx, q *progressiondb.Queries, m authz.Membership, g grant) (awardPlan, error) {
+	// The mode is read again here, in the transaction (RN-09): SetCampaignXpMode
+	// reads the awards and writes the mode in a transaction of its own, so under
+	// serializable isolation the two cannot both pass, and one retries.
+	txMode, err := s.campaigns.CampaignXPMode(ctx, tx, m.CampaignID)
+	if err != nil {
+		return awardPlan{}, fmt.Errorf("read the campaign's XP mode: %w", err)
+	}
+	if !fits(txMode, g.mode) {
+		return awardPlan{}, errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_MODE_NOT_ALLOWED, "", txMode)
+	}
+	p := awardPlan{g: g, reason: g.reason}
+	if p.party, err = s.eligibleParty(ctx, tx, m.CampaignID, g.characters); err != nil {
+		return awardPlan{}, err
+	}
+	if g.milestoneID != "" {
+		if p.reason, err = s.checkMilestone(ctx, q, m.CampaignID, g); err != nil {
+			return awardPlan{}, err
+		}
+	}
+	if err := s.treasureGold(ctx, tx, m.CampaignID, &p); err != nil {
+		return awardPlan{}, err
+	}
+	if p.total, err = s.total(ctx, tx, q, m.CampaignID, p.g); err != nil {
+		return awardPlan{}, err
+	}
+	if p.g.mode != modeMilestone {
+		if p.each, _ = xpEach(p.total, len(g.characters)); p.each < 1 {
+			return awardPlan{}, errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_NOTHING_TO_GIVE, "", 0)
+		}
+	}
+	return p, nil
+}
+
+// eligibleParty reads the party in the transaction, so that a character that
+// died, or went up a level, since the request began is judged as it is now,
+// and refuses the first character that is not in it.
+func (s *Service) eligibleParty(ctx context.Context, tx pgx.Tx, campaignID string, characters []string) ([]link.Member, error) {
+	party, err := s.party.Party(ctx, tx, campaignID)
+	if err != nil {
+		return nil, fmt.Errorf("read the party: %w", err)
+	}
+	for _, id := range characters {
+		if !slices.ContainsFunc(party, func(p link.Member) bool { return p.ID == id }) {
+			return nil, errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_CHARACTER_NOT_ELIGIBLE, id, 0)
+		}
+	}
+	return party, nil
+}
+
+// treasureGold locks and checks the treasures of a "Voltar à cidade", and
+// makes their PO the plan's gold. The lock holds until the commit, so two
+// awards for one treasure take turns and the second finds it converted.
+func (s *Service) treasureGold(ctx context.Context, tx pgx.Tx, campaignID string, p *awardPlan) error {
+	if len(p.g.treasureIDs) == 0 {
+		return nil
+	}
+	treasures, err := s.lockTreasures(ctx, tx, campaignID, p.g.treasureIDs)
+	if err != nil {
+		return err
+	}
+	p.treasures, p.g.amount = treasures, 0
+	for _, tr := range treasures {
+		p.g.amount += tr.ValuePO
+	}
+	if p.g.amount > maxXPAmount {
+		return errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_TREASURES_OVER_LIMIT, "", 0)
+	}
+	return nil
+}
+
+// insertAward writes the award's row. The unique indexes refuse what two
+// calls that raced both checked: a second award for the combat, or the key
+// of a request still being handled.
+func insertAward(ctx context.Context, q *progressiondb.Queries, m authz.Membership, p awardPlan, now time.Time) (progressiondb.XpAward, error) {
+	g := p.g
+	params := progressiondb.InsertXPAwardParams{
+		CampaignID: m.CampaignID, GivenBy: m.UserID, CreatedAt: now, Mode: g.mode, Reason: p.reason,
+		TotalXp: p.total, IdempotencyKey: g.key, IdempotencyHash: &g.hash,
+	}
+	if g.milestoneID != "" {
+		params.MilestoneID, params.MilestoneAgain = &g.milestoneID, g.again
+	}
+	switch g.mode {
+	case modeEnemies:
+		params.EncounterID = &g.encounterID
+	case modeGold:
+		params.Gold = &g.amount
+	}
+	award, err := q.InsertXPAward(ctx, params)
+	switch {
+	case err == nil:
+		return award, nil
+	case isUniqueViolation(err, oneAwardPerEncounterIndex):
+		return award, errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_ALREADY_AWARDED, "", 0)
+	case isUniqueViolation(err, idempotencyKeyIndex):
+		return award, connect.NewError(connect.CodeAborted, errors.New("the same request is being handled, please try again"))
+	}
+	return award, fmt.Errorf("insert an award: %w", err)
+}
+
+// insertShares writes each character's share, in the order the request named
+// them, with its XP on the sheet.
+func (s *Service) insertShares(ctx context.Context, tx pgx.Tx, q *progressiondb.Queries, m authz.Membership, p awardPlan, awardID string, now time.Time) error {
+	for _, id := range p.g.characters {
+		share, err := s.share(ctx, tx, m, p, awardID, id, now)
+		if err != nil {
+			return err
+		}
+		if err := q.InsertXPShare(ctx, share); err != nil {
+			return fmt.Errorf("insert a share: %w", err)
+		}
+	}
+	return nil
+}
+
+// share is one character's share of the award. A milestone's keeps the
+// sheet's level, as the tag lasts until the level goes past it; any other's
+// adds the XP to the sheet and keeps what the sheet gained (it holds at most
+// 1,000,000 XP), so an undo takes back exactly that.
+func (s *Service) share(ctx context.Context, tx pgx.Tx, m authz.Membership, p awardPlan, awardID, id string, now time.Time) (progressiondb.InsertXPShareParams, error) {
+	share := progressiondb.InsertXPShareParams{AwardID: awardID, CharacterID: id, Xp: p.each}
+	if p.g.mode == modeMilestone {
+		level := p.party[slices.IndexFunc(p.party, func(member link.Member) bool { return member.ID == id })].Level
+		share.LevelAtMark = &level
+		return share, nil
+	}
+	before, after, err := s.party.AddExperience(ctx, tx, m.CampaignID, id, p.each, now)
+	if err != nil {
+		if connect.CodeOf(err) == connect.CodeNotFound {
+			return share, errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_CHARACTER_NOT_ELIGIBLE, id, 0)
+		}
+		return share, fmt.Errorf("add the XP to a sheet: %w", err)
+	}
+	share.Xp = after - before
+	return share, nil
+}
+
+// convertTreasures links the award to the treasures it converted, and returns
+// the maps they are on, each once.
+func (s *Service) convertTreasures(ctx context.Context, tx pgx.Tx, q *progressiondb.Queries, p awardPlan, awardID string) ([]string, error) {
+	for _, tr := range p.treasures {
+		if err := q.InsertXPAwardTreasure(ctx, progressiondb.InsertXPAwardTreasureParams{AwardID: awardID, PointID: tr.PointID, ValuePo: tr.ValuePO}); err != nil {
+			return nil, fmt.Errorf("insert a converted treasure: %w", err)
+		}
+	}
+	if len(p.treasures) == 0 {
+		return nil, nil
+	}
+	if err := s.treasures.MarkConverted(ctx, tx, awardID, p.g.treasureIDs); err != nil {
+		return nil, err
+	}
+	var maps []string
+	for _, tr := range p.treasures {
+		if !slices.Contains(maps, tr.MapID) {
+			maps = append(maps, tr.MapID)
+		}
+	}
+	return maps, nil
+}
+
+// awardEvent is the session event of an award: milestone_marked, with no XP
+// lost, for a milestone, and xp_awarded for the others.
+func awardEvent(p awardPlan, awardID string) (string, eventPayload) {
+	g := p.g
+	payload := eventPayload{AwardID: awardID, Mode: g.mode, TotalXP: p.total, XPEach: p.each, CharacterIDs: g.characters, EncounterID: g.encounterID, MilestoneID: g.milestoneID}
+	if g.mode == modeMilestone {
+		return eventMilestoneMarked, payload
+	}
+	_, payload.LostXP = xpEach(p.total, len(g.characters))
+	if g.mode == modeGold {
+		payload.Gold = g.amount
+	}
+	for _, tr := range p.treasures {
+		payload.Treasures = append(payload.Treasures, eventTreasure{PointID: tr.PointID, ValuePO: tr.ValuePO})
+	}
+	return eventXPAwarded, payload
+}
+
+// announceAward runs after the commit of an award that was not a retry: it
+// tells each map whose treasures changed, and, once the open session logged
+// the award, writes the log lines and tells the streams the XP changed.
+func (s *Service) announceAward(ctx context.Context, m authz.Membership, g grant, given givenAward) {
+	if given.repeated {
+		return
+	}
+	if len(given.changedMaps) > 0 {
+		s.treasures.PublishChanged(m.CampaignID, given.changedMaps) // once per map
+	}
+	if !given.logged {
+		return
+	}
+	name := "xp.awarded"
+	if g.mode == modeMilestone {
+		name = "xp.milestone_marked"
+	}
+	logging.Event(ctx, s.logger, name, slog.String("award_id", given.award.ID), slog.String("mode", g.mode),
+		slog.Int("characters", len(g.characters)), slog.Int64("total_xp", int64(given.award.TotalXp)))
+	if len(g.treasureIDs) > 0 {
+		logging.Event(ctx, s.logger, "treasure.converted", slog.String("award_id", given.award.ID), slog.Int("treasures", len(g.treasureIDs)))
+	}
+	s.log.PublishXPChanged(m.CampaignID)
 }
 
 // sameRequest checks that a retried key is for the same request, and returns
@@ -458,41 +616,57 @@ func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progre
 // app, not a retry: another mode, another milestone, "Dar a mais alguém" for a
 // first mark (or the reverse), or other characters.
 func (s *Service) sameRequest(ctx context.Context, q *progressiondb.Queries, done progressiondb.XpAward, g grant) (progressiondb.XpAward, error) {
-	reused := invalidArgument("idempotency_key", errors.New("was already used for another change"))
-	if done.IdempotencyHash != nil {
-		if *done.IdempotencyHash != g.hash {
-			return progressiondb.XpAward{}, reused
+	same := done.IdempotencyHash != nil && *done.IdempotencyHash == g.hash
+	if done.IdempotencyHash == nil {
+		var err error
+		if same, err = s.leftTheSame(ctx, q, done, g); err != nil {
+			return progressiondb.XpAward{}, err
 		}
-		return done, nil
 	}
-	// An award from before the hash was kept: compared by what it left.
+	if !same {
+		return progressiondb.XpAward{}, invalidArgument("idempotency_key", errors.New("was already used for another change"))
+	}
+	return done, nil
+}
+
+// leftTheSame compares a retry with an award from before the request's hash
+// was kept, by what the award left: its mode, its milestone and "Dar a mais
+// alguém", its treasures (gold) and its characters (a planned milestone).
+func (s *Service) leftTheSame(ctx context.Context, q *progressiondb.Queries, done progressiondb.XpAward, g grant) (bool, error) {
 	if done.Mode != g.mode || deref(done.MilestoneID) != g.milestoneID || (g.milestoneID != "" && done.MilestoneAgain != g.again) {
-		return progressiondb.XpAward{}, reused
+		return false, nil
 	}
 	if g.mode == modeGold {
 		// "Voltar à cidade" and a typed amount are different requests.
 		rows, err := q.ListXPAwardTreasures(ctx, []string{done.ID})
 		if err != nil {
-			return progressiondb.XpAward{}, s.dbError(ctx, "read the treasures of an award", err)
+			return false, s.dbError(ctx, "read the treasures of an award", err)
 		}
-		if len(rows) != len(g.treasureIDs) || slices.ContainsFunc(rows, func(r progressiondb.XpAwardTreasure) bool { return !slices.Contains(g.treasureIDs, r.PointID) }) {
-			return progressiondb.XpAward{}, reused
+		points := make([]string, 0, len(rows))
+		for _, r := range rows {
+			points = append(points, r.PointID)
 		}
-	}
-	if g.milestoneID != "" {
-		shares, err := q.ListXPSharesOfAwards(ctx, []string{done.ID})
-		if err != nil {
-			return progressiondb.XpAward{}, s.dbError(ctx, "read the shares of an award", err)
-		}
-		ids := make([]string, 0, len(shares))
-		for _, sh := range shares {
-			ids = append(ids, sh.CharacterID)
-		}
-		if len(ids) != len(g.characters) || slices.ContainsFunc(ids, func(id string) bool { return !slices.Contains(g.characters, id) }) {
-			return progressiondb.XpAward{}, reused
+		if !sameIDSet(points, g.treasureIDs) {
+			return false, nil
 		}
 	}
-	return done, nil
+	if g.milestoneID == "" {
+		return true, nil
+	}
+	shares, err := q.ListXPSharesOfAwards(ctx, []string{done.ID})
+	if err != nil {
+		return false, s.dbError(ctx, "read the shares of an award", err)
+	}
+	ids := make([]string, 0, len(shares))
+	for _, sh := range shares {
+		ids = append(ids, sh.CharacterID)
+	}
+	return sameIDSet(ids, g.characters), nil
+}
+
+// sameIDSet says whether got and want hold the same IDs (neither repeats one).
+func sameIDSet(got, want []string) bool {
+	return len(got) == len(want) && !slices.ContainsFunc(got, func(id string) bool { return !slices.Contains(want, id) })
 }
 
 // total is the XP an award splits: the defeated NPCs' XP of an ended combat
