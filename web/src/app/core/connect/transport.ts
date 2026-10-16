@@ -3,7 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import type { Interceptor, Transport } from '@connectrpc/connect';
 import { createConnectTransport } from '@connectrpc/connect-web';
 
-import { AuthService } from '../auth/auth.service';
+import { SESSION_REFRESHER } from '../auth/session-refresher';
 import { isRateLimited, rateLimitedMessage } from './connect-errors';
 
 /**
@@ -31,10 +31,11 @@ export const rateLimitInterceptor: Interceptor = (next) => async (req) => {
 /**
  * A unary call answered `unauthenticated`: the login session ended (signed
  * out in another tab, "Sair dos outros dispositivos", expiry). `AuthService`
- * reads `GetMe` again so the app bar, the guards and the live-session poll
+ * reads `GetMe` again (through `SESSION_REFRESHER`, which the app binds to
+ * `AuthService`) so the app bar, the guards and the live-session poll
  * see `signed-out`. `GetMe` and `SignOut` are left out (`GetMe` is the
- * reader itself: refreshing on its answer would loop). `AuthService` comes
- * from the injector lazily because it injects this transport.
+ * reader itself: refreshing on its answer would loop). The refresher comes
+ * from the injector lazily because `AuthService` injects this transport.
  */
 export function sessionEndedInterceptor(injector: Injector): Interceptor {
   return (next) => async (req) => {
@@ -44,7 +45,7 @@ export function sessionEndedInterceptor(injector: Injector): Interceptor {
       const e = ConnectError.from(err);
       const isReader = req.method.name === 'GetMe' || req.method.name === 'SignOut';
       if (e.code === Code.Unauthenticated && !isReader) {
-        void injector.get(AuthService).refresh();
+        void injector.get(SESSION_REFRESHER).refresh();
       }
       throw err;
     }

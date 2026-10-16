@@ -5,7 +5,7 @@ import {
   WildShapeEndReason,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode, type ActionOption } from '../../../gen/meurpg/rules/v1/rules_pb';
-import type { ResourceUsageVm } from '../../pages/live-session/live-session.types';
+import type { ResourceUsageVm } from '../play/resource-usage.types';
 import { joinDots, tight } from '../format/text';
 import { article } from './combat-log';
 import { isUnlimited } from './unlimited-uses';

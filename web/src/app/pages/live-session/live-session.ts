@@ -69,7 +69,7 @@ import { SceneClient } from '../../core/play/scene-client';
 import { SceneState } from '../../core/play/scene-state';
 import { setPageSubject } from '../../core/title/page-title';
 import { openNotesSheet } from '../../shared/notes/notes-sheet';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
 import { SessionNotes } from '../../shell/session-notes/session-notes';
 import { AdjustVitals } from './adjust-vitals/adjust-vitals';
 import { AdjustVitalsData, AdjustVitalsResult } from './adjust-vitals/adjust-vitals.types';
@@ -81,14 +81,14 @@ import {
   PlayerSheetVm,
   ShownImageVm,
   VitalsVm,
-} from './live-session.types';
+} from '../../core/play/live-session.types';
 import { ClueNotice } from './clue-notice/clue-notice';
 import { BattleEncounters } from './battle-encounters/battle-encounters';
 import { CombatLaunch } from './combat/combat-launch';
 import { DiceDialog, DiceDialogData } from './combat/dice-dialog';
 import { CombatView } from './combat/combat-view';
 import { HighlightsCard } from './combat/combat-highlights/highlights-card';
-import { LiveStream } from './live-stream';
+import { LiveStream } from '../../core/play/live-stream';
 import { PartyPanel } from './party-panel/party-panel';
 import { RestCard } from './rest-card/rest-card';
 import { CharacterEffectsPanel } from './effects/character-effects-panel';
@@ -112,7 +112,7 @@ import { ScenePlayer } from './scene/scene-player/scene-player';
 import { LeftImagesBlock } from './left-images-block/left-images-block';
 import { ShownImageBlock } from './shown-image-block/shown-image-block';
 import { ShownImagePanel } from './shown-image-panel/shown-image-panel';
-import { applySnapshot, applyVitals, betterArmorClass, partyRowSub } from './vitals';
+import { applySnapshot, applyVitals, betterArmorClass, partyRowSub } from '../../core/play/vitals';
 import { FoundTreasures } from './treasure/found-treasures/found-treasures';
 import { GroupCheckCard } from './group-check/group-check-card';
 import { GroupCheckMaster } from './group-check/group-check-master';

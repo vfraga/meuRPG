@@ -10,6 +10,8 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { TitleStrategy, provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
+import { AuthService } from './core/auth/auth.service';
+import { SESSION_REFRESHER } from './core/auth/session-refresher';
 import { ConfirmGuard } from './core/confirm-guard/confirm-guard';
 import { PageTitleStrategy } from './core/title/page-title';
 
@@ -17,6 +19,9 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    // The transport asks the auth state to read `GetMe` again when a call answers `unauthenticated`; it cannot
+    // import `AuthService` (which injects the transport), so it asks for this token.
+    { provide: SESSION_REFRESHER, useExisting: AuthService },
     // Every page's title, in the tab and in the history (WCAG 2.4.2).
     { provide: TitleStrategy, useExisting: PageTitleStrategy },
     // Loads the animations runtime lazily, only if a component (e.g. a

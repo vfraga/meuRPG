@@ -6,6 +6,12 @@ import { timestampFromDate } from '@bufbuild/protobuf/wkt';
 import { ClaimsService } from '../../../../core/characters/claims.service';
 import { ClaimLinkSheet, type ClaimLinkData } from './claim-link-sheet';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 const DATA: ClaimLinkData = {
   campaignId: 'camp-1',
   characterId: 'char-1',

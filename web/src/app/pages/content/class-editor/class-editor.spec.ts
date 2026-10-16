@@ -19,6 +19,7 @@ import {
   menu,
 } from '../../../core/content/content-testing';
 import { ClassEditor } from './class-editor';
+import { settle } from '../../../../test-settle';
 
 // The whole editor renders per test (a 20-row grid, every section): on a busy machine that passes the default 5 s.
 vi.setConfig({ testTimeout: 30_000 });
@@ -73,15 +74,6 @@ describe('ClassEditor', () => {
     fixture.componentRef.setInput('entry', e);
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
-  }
-
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 3; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
   }
 
   const text = (el: Element) => (el.textContent ?? '').replace(/\s+/g, ' ');
@@ -149,7 +141,7 @@ describe('ClassEditor', () => {
         (i) => (i as HTMLInputElement).value === 'half',
       ) as HTMLInputElement
     ).dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(cell(el, 'Nível 2, espaços de magia de 1º nível').value).toBe('2');
     expect(cell(el, 'Nível 9, espaços de magia de 3º nível').value).toBe('2');
     expect(el.querySelector('.ask')).toBeNull();
@@ -158,24 +150,24 @@ describe('ClassEditor', () => {
   it('asks before replacing a table the master edited, and "Manter a minha tabela" keeps it', async () => {
     const { fixture, el } = setup();
     type(cell(el, 'Nível 5, espaços de magia de 1º nível'), '9');
-    await settle(fixture);
+    await settle(fixture, 3);
     // Full caster: the kind changes the default table, and the edited one is at stake.
     (
       Array.from(el.querySelectorAll('app-segmented input')).find(
         (i) => (i as HTMLInputElement).value === 'full',
       ) as HTMLInputElement
     ).dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     const ask = el.querySelector('.ask')!;
     expect(text(ask)).toContain('Refazer a tabela dos 20 níveis?');
     expect(text(ask)).toContain('Você editou a tabela dos níveis.');
     click(ask as HTMLElement, 'Manter a minha tabela');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelector('.ask')).toBeNull();
     expect(cell(el, 'Nível 5, espaços de magia de 1º nível').value).toBe('9');
     save.mockResolvedValue({ entry: guardiao(), affected: [] });
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(save.mock.calls[0][2].value.casting.kind).toBe('full');
     expect(save.mock.calls[0][2].value.levels[4].slots[0]).toBe(9);
   });
@@ -183,15 +175,15 @@ describe('ClassEditor', () => {
   it('"Refazer a tabela" puts the new kind\'s rows in', async () => {
     const { fixture, el } = setup();
     type(cell(el, 'Nível 5, espaços de magia de 1º nível'), '9');
-    await settle(fixture);
+    await settle(fixture, 3);
     (
       Array.from(el.querySelectorAll('app-segmented input')).find(
         (i) => (i as HTMLInputElement).value === 'full',
       ) as HTMLInputElement
     ).dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     click(el.querySelector('.ask') as HTMLElement, 'Refazer a tabela');
-    await settle(fixture);
+    await settle(fixture, 3);
     // The full caster of the fixture: 4 first-circle slots at level 5.
     expect(cell(el, 'Nível 5, espaços de magia de 1º nível').value).toBe('4');
   });
@@ -203,7 +195,7 @@ describe('ClassEditor', () => {
         (i) => (i as HTMLInputElement).value === 'none',
       ) as HTMLInputElement
     ).dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelector('.ask')).toBeNull();
     expect(el.querySelector('table')!.querySelectorAll('thead th')).toHaveLength(3);
   });
@@ -212,11 +204,11 @@ describe('ClassEditor', () => {
     const { fixture, el } = setup();
     type(cell(el, 'Nível 5, espaços de magia de 3º nível'), '1');
     type(cell(el, 'Nível 1, bônus de proficiência'), '3');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(cell(el, 'Nível 1, bônus de proficiência').value).toBe('+3');
     save.mockResolvedValue({ entry: guardiao(), affected: [] });
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     const [campaign, sent, body] = save.mock.calls[0];
     expect(campaign).toBe('camp-1');
     expect(sent.key).toBe('class:guardi-o-do-vale@mesa');
@@ -233,23 +225,23 @@ describe('ClassEditor', () => {
   it("adds a feature with an effect from the menu: only the chosen type's fields go", async () => {
     const { fixture, el } = setup();
     click(el, 'Adicionar característica');
-    await settle(fixture);
+    await settle(fixture, 3);
     const base = 'table_class.levels[0].features[1]';
     type(field(el, `${base}.name_pt`) as HTMLInputElement, 'Olhar de coruja');
-    await settle(fixture);
+    await settle(fixture, 3);
     const type_ = field(el, `${base}.effects[0].type`) as HTMLSelectElement;
     type_.value = 'sense';
     type_.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     const sense = field(el, `${base}.effects[0].sense`) as HTMLSelectElement;
     sense.value = 'darkvision';
     sense.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     type(field(el, `${base}.effects[0].range_ft`) as HTMLInputElement, '18');
-    await settle(fixture);
+    await settle(fixture, 3);
     save.mockResolvedValue({ entry: guardiao(), affected: [] });
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(save.mock.calls[0][2].value.levels[0].features[1]).toEqual({
       key: '',
       namePt: 'Olhar de coruja',
@@ -261,14 +253,14 @@ describe('ClassEditor', () => {
   it("moves a feature to another level: it goes under that level's row", async () => {
     const { fixture, el } = setup();
     click(el, 'Vigília');
-    await settle(fixture);
+    await settle(fixture, 3);
     const level = el.querySelector<HTMLSelectElement>('app-select-field[lead] select')!;
     level.selectedIndex = 4;
     level.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     save.mockResolvedValue({ entry: guardiao(), affected: [] });
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     const levels = save.mock.calls[0][2].value.levels;
     expect(levels[0].features).toEqual([]);
     expect(levels[4].features[0].namePt).toBe('Vigília');
@@ -278,7 +270,7 @@ describe('ClassEditor', () => {
     const { fixture, el } = setup();
     save.mockRejectedValue(refusal(['table_class.levels[4].slots[2]', 'bad_table']));
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     const input = cell(el, 'Nível 5, espaços de magia de 3º nível');
     expect(input.getAttribute('aria-invalid')).toBe('true');
     expect(input.dataset['field']).toBe('table_class.levels[4].slots[2]');
@@ -299,7 +291,7 @@ describe('ClassEditor', () => {
       refusal(['table_class.levels[0].features[0].effects[0].range_ft', 'bad_value']),
     );
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     const input = field(el, 'table_class.levels[0].features[0].effects[0].range_ft');
     expect(document.activeElement).toBe(input);
     expect(text(input.closest('app-text-field')!)).toContain(
@@ -311,7 +303,7 @@ describe('ClassEditor', () => {
     const { fixture, el } = setup();
     save.mockRejectedValue(refusal(['table_class.levels[0].features[0]', 'limit']));
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     // At the panel head, with the counter, and not on a feature row.
     const head = el.querySelector('[data-field="table_class.features"]')!;
     expect(text(head.parentElement!)).toContain(
@@ -326,7 +318,7 @@ describe('ClassEditor', () => {
       refusal(['table_class.casting.ability', 'bad_casting'], ['table_class.hit_die', 'bad_value']),
     );
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(field(el, 'table_class.casting.ability').getAttribute('aria-invalid')).toBe('true');
     expect(field(el, 'table_class.hit_die').getAttribute('aria-invalid')).toBe('true');
     expect(text(el.querySelector('[role="alert"]')!)).toContain('2 campos precisam de ajuste');
@@ -351,12 +343,12 @@ describe('ClassEditor', () => {
     )!;
     mc.value = 'wisdom';
     mc.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     type(field(el, 'table_class.minimums.wisdom') as HTMLInputElement, '14');
-    await settle(fixture);
+    await settle(fixture, 3);
     save.mockResolvedValue({ entry: guardiao(), affected: [] });
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     const body = save.mock.calls[0][2].value;
     expect(body.proficiencies).toEqual([
       'proficiency:light-armor',
@@ -370,7 +362,7 @@ describe('ClassEditor', () => {
     const { fixture, el } = setup();
     save.mockResolvedValue({ entry: guardiao(), affected: [] });
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(save.mock.calls[0][2].value).toMatchObject({
       subclassLevel: 3,
       asiLevels: [4, 8, 12, 16, 19],
@@ -394,7 +386,7 @@ describe('ClassEditor', () => {
       ),
     );
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(field(el, 'table_class.hit_die').getAttribute('aria-invalid')).toBe('true');
     expect(field(el, 'table_class.saving_throws[1]').getAttribute('aria-invalid')).toBe('true');
     expect(cell(el, 'Nível 5, espaços de magia de 3º nível').getAttribute('aria-invalid')).toBe(
@@ -409,7 +401,7 @@ describe('ClassEditor', () => {
     const { fixture, el } = setup();
     save.mockRejectedValue(refusal(['table_class.levels[6].slots', 'bad_table']));
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el.querySelector('app-level-grid')!)).toContain(
       'Nível 7, espaços de magia. Quem conjura precisa de espaços de magia neste nível.',
     );
@@ -421,13 +413,13 @@ describe('ClassEditor', () => {
   it('asks the casting question right under the kind, with the focus on its title', async () => {
     const { fixture, el } = setup();
     type(cell(el, 'Nível 5, espaços de magia de 1º nível'), '9');
-    await settle(fixture);
+    await settle(fixture, 3);
     (
       Array.from(el.querySelectorAll('app-segmented input')).find(
         (i) => (i as HTMLInputElement).value === 'full',
       ) as HTMLInputElement
     ).dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     const casting = el.querySelector('app-casting-fields')!;
     const kids = Array.from(casting.children).map((c) => c.tagName.toLowerCase());
     // The kind's control, its note, then the question.
@@ -438,17 +430,17 @@ describe('ClassEditor', () => {
   it('asks before "Restaurar o padrão" replaces an edited table, and says nothing is needed when it is already the default', async () => {
     const { fixture, el } = setup();
     click(el, 'Restaurar o padrão');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelector('app-table-question')).toBeNull();
     type(cell(el, 'Nível 5, espaços de magia de 1º nível'), '9');
-    await settle(fixture);
+    await settle(fixture, 3);
     click(el, 'Restaurar o padrão');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el.querySelector('app-table-question')!)).toContain(
       'Voltar a tabela ao padrão do Paladino?',
     );
     click(el.querySelector('app-table-question') as HTMLElement, 'Restaurar o padrão');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(cell(el, 'Nível 5, espaços de magia de 1º nível').value).toBe('4');
   });
 
@@ -474,19 +466,19 @@ describe('ClassEditor', () => {
     )!;
     add.value = 'wisdom';
     add.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelectorAll('[data-field="table_class.minimums"] .req__row')).toHaveLength(1);
     type(field(el, 'table_class.minimums.wisdom') as HTMLInputElement, '14');
-    await settle(fixture);
+    await settle(fixture, 3);
     click(
       el.querySelector('[data-field="table_class.minimums"] .req__row') as HTMLElement,
       'Tirar Sabedoria',
     );
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelectorAll('[data-field="table_class.minimums"] .req__row')).toHaveLength(0);
     save.mockResolvedValue({ entry: guardiao(), affected: [] });
     click(el, 'Salvar classe');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(save.mock.calls[0][2].value.minimums).toBeUndefined();
   });
 });

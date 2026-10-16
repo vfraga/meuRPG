@@ -11,8 +11,7 @@ import {
 } from '../../core/images/gallery-testing';
 import { ImageUploader } from '../../core/images/image-uploader';
 import { GalleryPicker } from './gallery-picker';
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { nextTurn } from '../../../test-settle';
 
 describe('GalleryPicker', () => {
   let gallery: FakeGalleryClient;
@@ -48,7 +47,7 @@ describe('GalleryPicker', () => {
   }
 
   async function settle(): Promise<void> {
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   }

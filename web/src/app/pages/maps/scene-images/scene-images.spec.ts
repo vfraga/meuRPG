@@ -7,6 +7,7 @@ import { type SceneImage, SceneImageSchema } from '../../../../gen/meurpg/maps/v
 import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient } from '../../../core/maps/maps-testing';
 import { SceneImages } from './scene-images';
+import { nextTurn } from '../../../../test-settle';
 
 function image(id: string, name: string): SceneImage {
   return create(SceneImageSchema, { id, name });
@@ -61,7 +62,7 @@ describe('SceneImages (the point panel)', () => {
   async function settle(): Promise<void> {
     for (let i = 0; i < 4; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

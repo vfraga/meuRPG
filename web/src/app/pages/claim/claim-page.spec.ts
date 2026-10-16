@@ -10,6 +10,7 @@ import {
 import { AuthService, type AuthState } from '../../core/auth/auth.service';
 import { ClaimsService } from '../../core/characters/claims.service';
 import { ClaimPage } from './claim-page';
+import { nextTurn } from '../../../test-settle';
 
 @Injectable()
 class FakeAuthService {
@@ -50,11 +51,6 @@ function blocked(reason: CharacterBlockedReason, extra: Record<string, string> =
   return new ConnectError('blocked', Code.FailedPrecondition, undefined, [
     { desc: CharacterBlockedSchema, value: { reason, ...extra } },
   ]);
-}
-
-/** Lets the subscriptions, the effects and the awaits of the component settle. */
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
 function text(fixture: { nativeElement: unknown }): string {
@@ -98,7 +94,7 @@ describe('ClaimPage (MR-049)', () => {
     const fixture = TestBed.createComponent(ClaimPage);
     fixture.detectChanges();
     auth.set(state);
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     return fixture;
   }
@@ -126,7 +122,7 @@ describe('ClaimPage (MR-049)', () => {
       card: { ...CARD.card, characterName: 'Ragna' },
     });
     window.location.hash = '#t=second';
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(claims.preview).toHaveBeenLastCalledWith('second');
@@ -217,7 +213,7 @@ describe('ClaimPage (MR-049)', () => {
       expect(claims.claim).not.toHaveBeenCalled();
 
       button(fixture, 'Assumir este personagem').click();
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
 
       expect(claims.claim).toHaveBeenCalledWith('abc');
@@ -264,7 +260,7 @@ describe('ClaimPage (MR-049)', () => {
       const fixture = await open('#t=abc', SIGNED_IN);
 
       button(fixture, 'Assumir este personagem').click();
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
 
       expect(text(fixture)).toContain('Este link não pode ser usado');
@@ -290,7 +286,7 @@ describe('ClaimPage (MR-049)', () => {
       const fixture = await open('#t=abc', SIGNED_IN);
 
       button(fixture, 'Assumir este personagem').click();
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
 
       const page = text(fixture);
@@ -313,7 +309,7 @@ describe('ClaimPage (MR-049)', () => {
 
       expect(text(fixture)).toContain('Não foi possível falar com o servidor agora');
       button(fixture, 'Tentar de novo').click();
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
 
       expect(claims.preview).toHaveBeenLastCalledWith('abc');
@@ -332,10 +328,10 @@ describe('ClaimPage (MR-049)', () => {
       const fixture = await open('#t=abc', SIGNED_IN);
 
       button(fixture, 'Assumir este personagem').click();
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
       button(fixture, 'Tentar de novo').click();
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
 
       expect(claims.claim).toHaveBeenCalledTimes(2);
@@ -351,7 +347,7 @@ describe('ClaimPage (MR-049)', () => {
       const fixture = await open('#t=abc', SIGNED_IN);
 
       button(fixture, 'Não é você?').click();
-      await flush();
+      await nextTurn();
 
       expect(auth.endSessionHere).toHaveBeenCalled();
       const form = document.querySelector('form[action="/auth/login"]') as HTMLFormElement;

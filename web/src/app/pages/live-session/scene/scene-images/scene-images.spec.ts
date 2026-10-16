@@ -2,8 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { create } from '@bufbuild/protobuf';
 
 import { type SceneImage, SceneImageSchema } from '../../../../../gen/meurpg/maps/v1/maps_pb';
-import { LiveSessionSource, type ShownImageVm } from '../../live-session.types';
+import { LiveSessionSource, type ShownImageVm } from '../../../../core/play/live-session.types';
 import { SceneImagesShow } from './scene-images';
+import { nextTurn } from '../../../../../test-settle';
 
 function image(id: string, name: string, wholeMap = false): SceneImage {
   return create(SceneImageSchema, { id, name, showsWholeMap: wholeMap });
@@ -43,7 +44,7 @@ describe("SceneImagesShow (the master's open scene)", () => {
   async function settle(): Promise<void> {
     for (let i = 0; i < 3; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

@@ -5,7 +5,7 @@ import { PendingDamageStatus } from '../../../../../gen/meurpg/play/v1/combat_pb
 import { TrapDamageSchema } from '../../../../../gen/meurpg/play/v1/traps_pb';
 import { CombatClient } from '../../../../core/combat/combat-client';
 import { TrapsClient } from '../../../../core/traps/traps-client';
-import type { VitalsVm } from '../../live-session.types';
+import type { VitalsVm } from '../../../../core/play/live-session.types';
 import { TrapDamages, parseAmount } from './trap-damages';
 
 const damage = (extra = {}) =>

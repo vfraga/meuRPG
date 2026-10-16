@@ -6,6 +6,7 @@ import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { FakeCreaturesClient, flat, ogre } from '../../../core/creatures/creatures-testing';
 import { openSheet } from '../../../shared/sheet/sheet-host';
 import { CreateNpcSheet, type CreateNpcData, type CreateNpcResult } from './create-npc-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 describe('CreateNpcSheet while the request runs', () => {
   it('does not let a reopened dialog create a second NPC', async () => {
@@ -38,7 +39,7 @@ describe('CreateNpcSheet while the request runs', () => {
       ).subscribe();
     const settle = async () => {
       for (let i = 0; i < 3; i++) {
-        await new Promise((r) => setTimeout(r, 0));
+        await nextTurn();
         TestBed.tick();
       }
     };

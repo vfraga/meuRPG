@@ -1,4 +1,4 @@
-import type { ResourceUsageVm } from '../../pages/live-session/live-session.types';
+import type { ResourceUsageVm } from '../play/resource-usage.types';
 
 /** What is left of a counted resource (the paladin's pool, the sorcerer's points, the bard's uses) and how much it holds. */
 export interface Pool {

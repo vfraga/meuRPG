@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { mapMessage } from '../../../core/maps/maps-testing';
 import { MapHead } from './map-head';
+import { nextTurn } from '../../../../test-settle';
 
 describe('MapHead: renomear e apagar (E6-27)', () => {
   let fixture: ComponentFixture<MapHead>;
@@ -51,7 +52,7 @@ describe('MapHead: renomear e apagar (E6-27)', () => {
   // The calls are plain promises: let them settle, then render.
   async function settle(): Promise<void> {
     fixture.detectChanges();
-    await new Promise((resolve) => setTimeout(resolve));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   }
@@ -223,7 +224,7 @@ describe('MapHead: "Trocar imagem" asks before it erases (E9-01 4)', () => {
     Array.from(el.querySelectorAll('button')).find((b) => b.textContent?.trim().endsWith(text))!;
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };
@@ -334,7 +335,7 @@ describe('MapHead: "Apagar mapa" says why before the click', () => {
   const reason = () => el.querySelector('#delete-reason');
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };

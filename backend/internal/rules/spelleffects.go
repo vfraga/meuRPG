@@ -120,6 +120,69 @@ type spellEffectDef struct {
 	amountPer  int         // a temp_hp's and a max_hp's extra amount
 }
 
+// spellEffectFields is a set of the hit point fields of an entry of
+// effects/spells.json (the ones every kind allows or refuses as a group).
+type spellEffectFields uint
+
+const (
+	fieldDice spellEffectFields = 1 << iota
+	fieldDicePerLevel
+	fieldCondition
+	fieldThreshold
+	fieldDies
+	fieldAmount
+	fieldAmountPerLevel
+	fieldEnds
+)
+
+// set is the fields the entry sets to something other than zero.
+func (in *spellEffectJSON) set() spellEffectFields {
+	var out spellEffectFields
+	for _, f := range []struct {
+		on   bool
+		flag spellEffectFields
+	}{
+		{in.Dice != "", fieldDice},
+		{in.DicePerLevel != "", fieldDicePerLevel},
+		{in.Condition != "", fieldCondition},
+		{in.Threshold != 0, fieldThreshold},
+		{in.Dies, fieldDies},
+		{in.Amount != 0, fieldAmount},
+		{in.AmountPerLvl != 0, fieldAmountPerLevel},
+		{len(in.Ends) != 0, fieldEnds},
+	} {
+		if f.on {
+			out |= f.flag
+		}
+	}
+	return out
+}
+
+// outside says the entry sets a field that is not in allowed.
+func (in *spellEffectJSON) outside(allowed spellEffectFields) bool { return in.set()&^allowed != 0 }
+
+// spellEffectEntry is one entry of effects/spells.json being loaded.
+type spellEffectEntry struct {
+	key        string
+	in         spellEffectJSON
+	spellLevel int
+}
+
+func (e spellEffectEntry) fail(format string, a ...any) error {
+	return fmt.Errorf("effects/spells.json: %s: %s", e.key, fmt.Sprintf(format, a...))
+}
+
+// spellEffectKinds builds the definition of each kind that reads hit points
+// (the others, revive, summon and ignores_cover, are loaded apart).
+var spellEffectKinds = map[string]func(e spellEffectEntry, def *spellEffectDef) error{
+	SpellKindHPPool:      spellEffectEntry.hpPool,
+	SpellKindHPThreshold: spellEffectEntry.hpThreshold,
+	SpellKindZeroHP:      spellEffectEntry.zeroHP,
+	SpellKindTempHP:      spellEffectEntry.tempHP,
+	SpellKindMaxHP:       spellEffectEntry.maxHP,
+	SpellKindFlatHeal:    spellEffectEntry.flatHeal,
+}
+
 // loadSpellEffects reads and checks effects/spells.json.
 func (c *content) loadSpellEffects(fsys fs.FS) error {
 	var f spellEffectFile
@@ -130,98 +193,149 @@ func (c *content) loadSpellEffects(fsys fs.FS) error {
 	c.coverIgnoring = map[string]bool{}
 	c.revives = map[string]ReviveSpec{}
 	for _, key := range sortedKeys(f.Spells) {
-		in := f.Spells[key]
-		sp, ok := c.spells[key]
-		if !ok {
-			return fmt.Errorf("effects/spells.json: %q is not a spell of the content", key)
+		if err := c.loadSpellEffect(key, f.Spells[key]); err != nil {
+			return err
 		}
-		fail := func(format string, a ...any) error {
-			return fmt.Errorf("effects/spells.json: %s: %s", key, fmt.Sprintf(format, a...))
+	}
+	return nil
+}
+
+// loadSpellEffect checks one entry and stores it.
+func (c *content) loadSpellEffect(key string, in spellEffectJSON) error {
+	sp, ok := c.spells[key]
+	if !ok {
+		return fmt.Errorf("effects/spells.json: %q is not a spell of the content", key)
+	}
+	e := spellEffectEntry{key: key, in: in, spellLevel: sp.Level}
+	if done, err := c.loadApartKind(e); done {
+		return err
+	}
+	def := spellEffectDef{spellLevel: sp.Level, base: SpellEffect{Kind: in.Kind, Condition: in.Condition, Threshold: in.Threshold, Dies: in.Dies, Ends: in.Ends}}
+	build, ok := spellEffectKinds[in.Kind]
+	if !ok {
+		return e.fail("unknown kind %q", in.Kind)
+	}
+	if err := build(e, &def); err != nil {
+		return err
+	}
+	if err := c.checkEffectConditions(e); err != nil {
+		return err
+	}
+	def.base.Ends = slices.Clone(in.Ends)
+	c.spellEffects[key] = def
+	return nil
+}
+
+// loadApartKind loads the kinds that read no hit points (revive, summon and
+// ignores_cover) and refuses the fields that belong to them on any other kind.
+// done says the entry is dealt with, whatever err is.
+func (c *content) loadApartKind(e spellEffectEntry) (done bool, err error) {
+	in := &e.in
+	if in.Kind == SpellKindRevive {
+		return true, c.loadRevive(e)
+	}
+	if in.HitPoints != 0 || in.WindowRounds != 0 {
+		return true, e.fail("hit_points and window_rounds belong to the revive kind")
+	}
+	if in.Kind == SpellKindSummon {
+		return true, c.loadSummonEntry(e)
+	}
+	if !in.empty() {
+		return true, e.fail("the summon fields belong to the summon kind")
+	}
+	if in.Kind == SpellKindIgnoresCover {
+		if in.set() != 0 {
+			return true, e.fail("an ignores_cover spell takes nothing else")
 		}
-		condition := func(k string) error {
-			if _, ok := c.named[k]; !ok || !strings.HasPrefix(k, "condition:") {
-				return fail("%q is not a condition", k)
-			}
-			return nil
-		}
-		if in.Kind == SpellKindRevive {
-			if in.HitPoints < 1 || in.WindowRounds < 1 || in.Source == "" || in.Dice != "" || in.DicePerLevel != "" || in.Condition != "" || in.Threshold != 0 || in.Dies || in.Amount != 0 || in.AmountPerLvl != 0 || len(in.Ends) != 0 {
-				return fail("a revive takes hit_points, window_rounds and its source only")
-			}
-			c.revives[key] = ReviveSpec{HitPoints: in.HitPoints, WindowRounds: in.WindowRounds}
+		c.coverIgnoring[e.key] = true
+		return true, nil
+	}
+	return false, nil
+}
+
+func (c *content) loadRevive(e spellEffectEntry) error {
+	in := &e.in
+	if in.HitPoints < 1 || in.WindowRounds < 1 || in.Source == "" || in.set() != 0 {
+		return e.fail("a revive takes hit_points, window_rounds and its source only")
+	}
+	c.revives[e.key] = ReviveSpec{HitPoints: in.HitPoints, WindowRounds: in.WindowRounds}
+	return nil
+}
+
+func (c *content) loadSummonEntry(e spellEffectEntry) error {
+	if e.in.set() != 0 {
+		return e.fail("a summon takes the summon fields only")
+	}
+	return c.loadSummon(e.key, e.spellLevel, &e.in.summonJSON, e.fail)
+}
+
+func (e spellEffectEntry) hpPool(def *spellEffectDef) error {
+	in := &e.in
+	dice, ok1 := plainDice(in.Dice)
+	per, ok2 := plainDice(in.DicePerLevel)
+	if !ok1 || !ok2 || per.Sides != dice.Sides {
+		return e.fail("an hp_pool needs dice and dice_per_level of the same die that exists at a table, as in \"5d8\" and \"2d8\"")
+	}
+	if in.Condition == "" || in.outside(fieldDice|fieldDicePerLevel|fieldCondition) {
+		return e.fail("an hp_pool takes dice, dice_per_level and a condition only")
+	}
+	def.base.Dice, def.perLevel = dice, per
+	return nil
+}
+
+func (e spellEffectEntry) hpThreshold(*spellEffectDef) error {
+	in := &e.in
+	if in.Threshold < 1 || (in.Dies == (in.Condition != "")) || in.outside(fieldThreshold|fieldDies|fieldCondition) {
+		return e.fail("an hp_threshold takes a threshold and either a condition or dies")
+	}
+	return nil
+}
+
+func (e spellEffectEntry) zeroHP(*spellEffectDef) error {
+	if e.in.set() != 0 {
+		return e.fail("a zero_hp_target takes nothing else")
+	}
+	return nil
+}
+
+func (e spellEffectEntry) tempHP(def *spellEffectDef) error {
+	in := &e.in
+	dice, ok := plainDice(in.Dice)
+	if !ok || in.Amount < 0 || in.AmountPerLvl < 1 || in.outside(fieldDice|fieldAmount|fieldAmountPerLevel) {
+		return e.fail("a temp_hp takes dice, amount and amount_per_level only")
+	}
+	def.base.Dice, def.base.Amount, def.amountPer = dice, in.Amount, in.AmountPerLvl
+	return nil
+}
+
+func (e spellEffectEntry) maxHP(def *spellEffectDef) error {
+	in := &e.in
+	if in.Amount < 1 || in.AmountPerLvl < 0 || in.outside(fieldAmount|fieldAmountPerLevel) {
+		return e.fail("a max_hp takes amount and amount_per_level only")
+	}
+	def.base.Amount, def.amountPer = in.Amount, in.AmountPerLvl
+	return nil
+}
+
+func (e spellEffectEntry) flatHeal(def *spellEffectDef) error {
+	in := &e.in
+	if in.Amount < 1 || in.AmountPerLvl < 0 || len(in.Ends) == 0 || in.outside(fieldAmount|fieldAmountPerLevel|fieldEnds) {
+		return e.fail("a flat_heal takes an amount, amount_per_level and the conditions it ends")
+	}
+	def.base.Heal, def.healPerLvl = in.Amount, in.AmountPerLvl
+	return nil
+}
+
+// checkEffectConditions: the condition the entry gives and the ones it ends
+// are conditions of the content, the condition first.
+func (c *content) checkEffectConditions(e spellEffectEntry) error {
+	for _, k := range append([]string{e.in.Condition}, e.in.Ends...) {
+		if k == "" {
 			continue
 		}
-		if in.HitPoints != 0 || in.WindowRounds != 0 {
-			return fail("hit_points and window_rounds belong to the revive kind")
+		if _, ok := c.named[k]; !ok || !strings.HasPrefix(k, "condition:") {
+			return e.fail("%q is not a condition", k)
 		}
-		if in.Kind == SpellKindSummon {
-			if in.Dice != "" || in.DicePerLevel != "" || in.Condition != "" || in.Threshold != 0 || in.Dies || in.Amount != 0 || in.AmountPerLvl != 0 || len(in.Ends) != 0 {
-				return fail("a summon takes the summon fields only")
-			}
-			if err := c.loadSummon(key, sp.Level, &in.summonJSON, fail); err != nil {
-				return err
-			}
-			continue
-		}
-		if !in.empty() {
-			return fail("the summon fields belong to the summon kind")
-		}
-		if in.Kind == SpellKindIgnoresCover {
-			if in.Dice != "" || in.DicePerLevel != "" || in.Condition != "" || in.Threshold != 0 || in.Dies || in.Amount != 0 || in.AmountPerLvl != 0 || len(in.Ends) != 0 {
-				return fail("an ignores_cover spell takes nothing else")
-			}
-			c.coverIgnoring[key] = true
-			continue
-		}
-		def := spellEffectDef{spellLevel: sp.Level, base: SpellEffect{Kind: in.Kind, Condition: in.Condition, Threshold: in.Threshold, Dies: in.Dies, Ends: in.Ends}}
-		switch in.Kind {
-		case SpellKindHPPool:
-			dice, ok1 := plainDice(in.Dice)
-			per, ok2 := plainDice(in.DicePerLevel)
-			if !ok1 || !ok2 || per.Sides != dice.Sides {
-				return fail("an hp_pool needs dice and dice_per_level of the same die that exists at a table, as in \"5d8\" and \"2d8\"")
-			}
-			if in.Condition == "" || in.Threshold != 0 || in.Dies || in.Amount != 0 || in.AmountPerLvl != 0 || len(in.Ends) != 0 {
-				return fail("an hp_pool takes dice, dice_per_level and a condition only")
-			}
-			def.base.Dice, def.perLevel = dice, per
-		case SpellKindHPThreshold:
-			if in.Threshold < 1 || (in.Dies == (in.Condition != "")) || in.Dice != "" || in.DicePerLevel != "" || in.Amount != 0 || in.AmountPerLvl != 0 || len(in.Ends) != 0 {
-				return fail("an hp_threshold takes a threshold and either a condition or dies")
-			}
-		case SpellKindZeroHP:
-			if in.Dice != "" || in.DicePerLevel != "" || in.Condition != "" || in.Threshold != 0 || in.Dies || in.Amount != 0 || in.AmountPerLvl != 0 || len(in.Ends) != 0 {
-				return fail("a zero_hp_target takes nothing else")
-			}
-		case SpellKindTempHP:
-			dice, ok := plainDice(in.Dice)
-			if !ok || in.Amount < 0 || in.AmountPerLvl < 1 || in.DicePerLevel != "" || in.Condition != "" || in.Threshold != 0 || in.Dies || len(in.Ends) != 0 {
-				return fail("a temp_hp takes dice, amount and amount_per_level only")
-			}
-			def.base.Dice, def.base.Amount, def.amountPer = dice, in.Amount, in.AmountPerLvl
-		case SpellKindMaxHP:
-			if in.Amount < 1 || in.AmountPerLvl < 0 || in.Dice != "" || in.DicePerLevel != "" || in.Condition != "" || in.Threshold != 0 || in.Dies || len(in.Ends) != 0 {
-				return fail("a max_hp takes amount and amount_per_level only")
-			}
-			def.base.Amount, def.amountPer = in.Amount, in.AmountPerLvl
-		case SpellKindFlatHeal:
-			if in.Amount < 1 || in.AmountPerLvl < 0 || len(in.Ends) == 0 || in.Dice != "" || in.DicePerLevel != "" || in.Condition != "" || in.Threshold != 0 || in.Dies {
-				return fail("a flat_heal takes an amount, amount_per_level and the conditions it ends")
-			}
-			def.base.Heal, def.healPerLvl = in.Amount, in.AmountPerLvl
-		default:
-			return fail("unknown kind %q", in.Kind)
-		}
-		for _, k := range append([]string{in.Condition}, in.Ends...) {
-			if k == "" {
-				continue
-			}
-			if err := condition(k); err != nil {
-				return err
-			}
-		}
-		def.base.Ends = slices.Clone(in.Ends)
-		c.spellEffects[key] = def
 	}
 	return nil
 }

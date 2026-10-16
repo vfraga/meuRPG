@@ -8,7 +8,7 @@ import { ViewAsCounts } from '../../../core/maps/view-as';
 import { ViewAsList, type ViewAsPerson } from '../../../shared/fog-map/view-as-list';
 import { ViewAsMapView } from '../../../shared/fog-map/view-as-map';
 import { LightPanel } from '../carried-light/light-panel';
-import type { PartyMemberInfoVm } from '../live-session.types';
+import type { PartyMemberInfoVm } from '../../../core/play/live-session.types';
 
 /**
  * The master's fog tools (MR-036, E9-03 and E9-04), next to the map on the session page and under the combat

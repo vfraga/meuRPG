@@ -16,6 +16,7 @@ import {
 import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { TableContentClient } from '../../../core/content/content-client';
 import { ContentImport } from './content-import';
+import { settle } from '../../../../test-settle';
 
 const PACK = JSON.stringify({
   format: 'meurpg.table-content',
@@ -75,17 +76,8 @@ describe('ContentImport (MR-025)', () => {
       ],
     });
     const fixture = TestBed.createComponent(ContentImport);
-    await settle(fixture);
+    await settle(fixture, 4);
     return { fixture, el: fixture.nativeElement as HTMLElement };
-  }
-
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 4; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
   }
 
   const text = (e: Element) => (e.textContent ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ');
@@ -106,7 +98,7 @@ describe('ContentImport (MR-025)', () => {
     Object.defineProperty(file, 'size', { value: size });
     Object.defineProperty(input, 'files', { value: [file], configurable: true });
     input.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 4);
   }
 
   it('tells a player that only the master imports', async () => {
@@ -163,7 +155,7 @@ describe('ContentImport (MR-025)', () => {
       ),
     );
     button(el, 'Importar 2 entradas').click();
-    await settle(fixture);
+    await settle(fixture, 4);
     const [campaign, , mode, key] = importPack.mock.calls[1];
     expect([campaign, mode]).toEqual(['camp-1', 'apply']);
     expect(key).toEqual(expect.any(String));
@@ -243,7 +235,7 @@ describe('ContentImport (MR-025)', () => {
       ),
     );
     button(el, 'Importar 1 entrada').click();
-    await settle(fixture);
+    await settle(fixture, 4);
     const warn = text(el.querySelector('.mr-notice--warning')!);
     expect(warn).toContain('1 ficha ficou com aviso.');
     expect(warn).toContain('Pensantus');

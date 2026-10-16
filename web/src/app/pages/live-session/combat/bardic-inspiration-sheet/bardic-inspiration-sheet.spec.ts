@@ -18,7 +18,7 @@ import {
 import { CombatState } from '../../../../core/combat/combat-state';
 import { encounter } from '../../../../core/combat/combat-testing';
 import { ResourceClient } from '../../../../core/resources/resources-client';
-import { pensantusVitals } from '../../testing';
+import { pensantusVitals } from '../../../../core/play/live-testing';
 import {
   BardicInspirationSheet,
   type BardicInspirationSheetData,

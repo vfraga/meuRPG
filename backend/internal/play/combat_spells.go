@@ -952,6 +952,11 @@ func (s *Service) spellSave(ctx context.Context, c *combatTx, m authz.Membership
 		if err != nil {
 			return err
 		}
+		// Nobody is asked about this save: a halfling player's 1 is rolled again by the app (combat_lucky.go).
+		d20, lucky, err := s.luckySave(d20, save.Bonus, saveMode, luckySaver(target, targetSheet.Traits))
+		if err != nil {
+			return err
+		}
 		// Bênção and Perdição: a d4 on the target's saving throw.
 		extra, extraTotal, err := s.rollEffectDice(rollInput{inApp: true}, effectDiceFor(modes.in.states, target.ID, rules.RollAppliesSave), nil)
 		if err != nil {
@@ -965,7 +970,7 @@ func (s *Service) spellSave(ctx context.Context, c *combatTx, m authz.Membership
 			Extra: extra,
 			D20:   clamp32(d20.Face(), 1, 20), Bonus: clamp32(save.Bonus, math.MinInt32, math.MaxInt32), Total: clamp32(d20.Total+extraTotal, math.MinInt32, math.MaxInt32),
 			DC: clamp32(sp.SaveDC, 0, math.MaxInt32), Saved: saved, Unknown: !save.Known,
-			D20B: clamp32(d20.otherFace(), 0, 20), Counted: clamp32(d20.Index, 0, 1), RollMode: modeKey(saveMode),
+			D20B: clamp32(d20.otherFace(), 0, 20), Counted: clamp32(d20.Index, 0, 1), RollMode: modeKey(saveMode), Lucky: lucky,
 		}
 	}
 	if len(sp.Damages) == 0 || (saved && sp.SaveOnSuccess != "half" && sp.SaveOnSuccess != "other") {

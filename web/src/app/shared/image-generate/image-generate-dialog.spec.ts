@@ -37,6 +37,7 @@ import {
   type ImageGenerateData,
   ImageGenerateDialog,
 } from './image-generate-dialog';
+import { nextTurn } from '../../../test-settle';
 
 const plain = (t: string | null | undefined) =>
   (t ?? '')
@@ -45,7 +46,7 @@ const plain = (t: string | null | undefined) =>
     .trim();
 const flush = async () => {
   for (let i = 0; i < 6; i++) {
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
   }
 };
 

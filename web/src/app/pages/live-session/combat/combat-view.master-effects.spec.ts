@@ -20,10 +20,11 @@ import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { TableRulesClient } from '../../../core/campaigns/table-rules';
 import { CombatView } from './combat-view';
+import { nextTurn } from '../../../../test-settle';
 
 async function settle(fixture: { detectChanges: () => void; whenStable: () => Promise<unknown> }) {
   await fixture.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await nextTurn();
   await fixture.whenStable();
   fixture.detectChanges();
 }

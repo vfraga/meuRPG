@@ -3,7 +3,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import { OpenSessionVm, OpenSessions } from '../../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../../core/play/open-sessions';
+import type { OpenSessionVm } from '../../../core/play/open-sessions.types';
 import { CampaignSessions } from './campaign-sessions';
 import { GameSessionCard } from './game-session-card';
 import {
@@ -11,7 +12,8 @@ import {
   GameSessionVm,
   OpenChoicesVm,
   StartGameSessionResultVm,
-} from './game-session-card.types';
+} from '../../../core/play/game-session-card.types';
+import { nextTurn } from '../../../../test-settle';
 
 @Injectable()
 class FakeGameSessionSource {
@@ -75,7 +77,7 @@ describe('GameSessionCard', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     // The list of sessions comes through the shared store, a few promises deep.
-    await new Promise((resolve) => setTimeout(resolve));
+    await nextTurn();
     fixture.detectChanges();
     return { el: fixture.nativeElement as HTMLElement, fixture };
   }
@@ -322,7 +324,7 @@ describe('GameSessionCard', () => {
     polled.set([polledSession]);
     fixture.detectChanges();
     await fixture.whenStable();
-    await new Promise((resolve) => setTimeout(resolve));
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.textContent).toContain('Entrar na sessão');
@@ -338,7 +340,7 @@ describe('GameSessionCard', () => {
     polled.set([]);
     fixture.detectChanges();
     await fixture.whenStable();
-    await new Promise((resolve) => setTimeout(resolve));
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.textContent).not.toContain('Entrar na sessão');

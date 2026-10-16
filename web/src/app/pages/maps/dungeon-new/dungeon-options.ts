@@ -24,7 +24,7 @@ import {
   wholeNumber,
 } from '../../../core/maps/dungeon-options';
 import { SQUARE_FT, metersNumber } from '../../../core/units';
-import { type Choice, ChoiceRow } from './choice-row';
+import { type Choice, ChoiceRow } from '../../../shared/choice-row/choice-row';
 
 /** The "Outro" of the size choice: the master types the longer side. */
 const OTHER = -1;

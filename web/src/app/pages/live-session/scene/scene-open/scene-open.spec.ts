@@ -5,7 +5,7 @@ import { mapMessage, mapPoint, mapResponse } from '../../../../core/maps/maps-te
 import { SceneClient } from '../../../../core/play/scene-client';
 import { SceneState } from '../../../../core/play/scene-state';
 import { FakeSceneClient, masterScene, sceneRoll } from '../../../../core/play/scene-testing';
-import { LiveSessionSource } from '../../live-session.types';
+import { LiveSessionSource } from '../../../../core/play/live-session.types';
 import { SceneOpen } from './scene-open';
 
 const flat = (e: Element | null | undefined) =>

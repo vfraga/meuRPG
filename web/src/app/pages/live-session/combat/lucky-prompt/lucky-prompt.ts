@@ -4,7 +4,7 @@ import { MatButtonModule } from '@angular/material/button';
 import type { LuckyOffer } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { LUCKY_TITLE, luckyWhat } from '../../../../core/combat/lucky';
 import type { LuckyRoll } from '../../../../core/resources/resources-client';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 
 /** Each prompt's own heading id: a sheet and the session panel's Lucky question may both be on the page. */
 let nextId = 0;

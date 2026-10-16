@@ -5,6 +5,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { NotesState } from '../../core/notes/notes-state';
 import { FakeNotesClient, note, scene } from '../../core/notes/notes-testing';
 import { NotesSheet, type NotesSheetData } from './notes-sheet';
+import { nextTurn } from '../../../test-settle';
 
 // Relative to today, so the "Hoje" stamps hold on any day; day 3 is today, day 1 two days earlier.
 const at = (day: number, h: number, m: number) => {
@@ -54,7 +55,7 @@ describe('NotesSheet', () => {
     const settle = async () => {
       for (let i = 0; i < 4; i++) {
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         fixture.detectChanges();
       }
     };

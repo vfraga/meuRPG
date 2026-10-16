@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { SheetFrame } from './sheet-frame';
+import { nextTurn } from '../../../../test-settle';
 
 @Component({
   imports: [SheetFrame],
@@ -47,7 +48,7 @@ describe('SheetFrame', () => {
     fixture.componentInstance.more.set(true);
     fixture.detectChanges();
     // The mutation observer reports the new child and the frame checks again.
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await nextTurn();
     fixture.detectChanges();
     expect(body.classList.contains('frame__body--scrolls')).toBe(true);
   });

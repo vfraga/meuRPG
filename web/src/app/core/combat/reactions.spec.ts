@@ -335,6 +335,34 @@ describe('the result of an answered reaction', () => {
     expect(still.pill?.word).toBe('Acertou');
   });
 
+  it('Repreensão Infernal: a halfling’s save the app rolled again says "Sortudo: 1 → 15"', () => {
+    const asked = win('hellishRebuke', { aggressorLabel: 'Pipo', saveDc: 13, options: [] });
+    const save = (rerolled: object[]) => ({
+      diceCount: 1,
+      diceSides: 20,
+      faces: [15],
+      modifier: 4,
+      total: 19,
+      rerolled,
+    });
+    const answer = (rerolled: object[]) =>
+      resultView(
+        {
+          used: true,
+          result: {
+            case: 'hellishRebuke',
+            value: { save: save(rerolled), saveDc: 13, saved: true, damage: 6, level: 1 },
+          },
+        } as never,
+        asked,
+        ctx,
+      );
+    const lucky = answer([{ index: 0, from: 1, to: 15, sourceKey: 'trait:lucky' }]);
+    expect(plain(lucky.text[0])).toContain('1d20 (15) + 4 = 19 contra CD 13');
+    expect(lucky.text[1]).toBe('Sortudo: 1 → 15');
+    expect(answer([]).text).toHaveLength(1);
+  });
+
   it('Contramágica: reveals the spell and the level now that it happened', () => {
     const asked = win('counterspell', { casterLabel: 'Mago 1', slotOptions: [] });
     const v = resultView(

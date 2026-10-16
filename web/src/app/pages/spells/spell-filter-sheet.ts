@@ -7,8 +7,8 @@ import type { Observable } from 'rxjs';
 import { formatInt } from '../../core/format/text';
 import type { SpellClass } from '../../core/spells/spells-client';
 import type { SpellsState } from '../../core/spells/spells-state';
-import { SheetFrame } from '../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../live-session/combat/sheet-host';
+import { SheetFrame } from '../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../shared/sheet/sheet-host';
 import { type MineCharacter, SpellFilters } from './spell-filters';
 
 /** What the page hands the "Filtros" sheet: the page's own state, so the count follows the filters. */

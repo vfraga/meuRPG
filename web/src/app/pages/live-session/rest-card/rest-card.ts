@@ -29,8 +29,8 @@ import { ResourceClient } from '../../../core/resources/resources-client';
 import { restErrorMessage } from '../../../core/resources/resources-errors';
 import { CountStepper } from '../../../shared/count-stepper/count-stepper';
 import { HiddenSwitch } from '../../../shared/hidden-switch/hidden-switch';
-import { toVitalsVm } from '../live-session-source.live';
-import type { VitalsVm } from '../live-session.types';
+import { toVitalsVm } from '../../../core/play/live-session-source.live';
+import type { VitalsVm } from '../../../core/play/live-session.types';
 
 /** The die sizes' counts of each character that chooses which hit dice come back: character, then die size. */
 type DiceCounts = Readonly<Record<string, Readonly<Record<number, number>>>>;

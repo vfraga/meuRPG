@@ -50,7 +50,7 @@ import { type EffectSaveAnswer, EffectsClient } from '../../../../core/effects/e
 import { ExtraDiceState } from '../../../../core/effects/extra-dice-state';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 
 let nextId = 0;
 

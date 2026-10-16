@@ -168,4 +168,37 @@ describe('trap log', () => {
       ' procurou armadilhas (Investigação): 1d20 (14) + 4 = 18; Sortudo: 1 → 14, e não achou nada',
     );
   });
+
+  it('says the save the app rolled again for a halfling beside its dice, and nothing without the dice', () => {
+    const save = (withRoll: boolean) =>
+      create(TrapFiringSchema, {
+        name: 'Estátua de Fogo',
+        caught: [
+          {
+            targetId: 'b',
+            targetLabel: 'Brisa',
+            saves: [
+              {
+                outcome: SaveOutcome.SAVED,
+                dc: 12,
+                roll: withRoll
+                  ? {
+                      diceCount: 1,
+                      diceSides: 20,
+                      faces: [14],
+                      modifier: 4,
+                      total: 18,
+                      rerolled: [{ index: 0, from: 1, to: 14, sourceKey: 'trait:lucky' }],
+                    }
+                  : undefined,
+              },
+            ],
+          },
+        ],
+      });
+    expect(trapLogText(save(true), true)).toContain(
+      'Brisa caiu (passou no teste (1d20 (14) + 4 = 18 contra CD 12; Sortudo: 1 → 14))',
+    );
+    expect(trapLogText(save(false), false)).not.toContain('Sortudo');
+  });
 });

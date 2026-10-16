@@ -43,7 +43,7 @@ import {
   uniqueTargets,
   visibilityText,
 } from '../../../core/effects/effects-text';
-import { openSheet } from '../combat/sheet-host';
+import { openSheet } from '../../../shared/sheet/sheet-host';
 import { AddEffectDialog, type AddEffectData } from './add-effect-dialog';
 import { DurationDialog, type DurationData } from './duration-dialog';
 import { ExhaustionDialog, type ExhaustionData, type ExhaustionOption } from './exhaustion-dialog';

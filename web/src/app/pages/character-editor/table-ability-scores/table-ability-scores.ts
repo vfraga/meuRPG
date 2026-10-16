@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 
 import { AbilityScoresRefusalReason } from '../../../../gen/meurpg/characters/v1/characters_pb';
-import { MapAsk } from '../../maps/map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 
 import {
   canLower,
@@ -26,7 +26,7 @@ import {
 import { abilityLabel } from '../../../core/characters/character-labels';
 import { ABILITY_KEYS, type AbilityKey } from '../../../core/characters/characters.types';
 import { emptyPlacement, freeCount, place, type Placement } from '../../../core/dice/dice';
-import { SRD_521_LABEL } from '../../table-rules/method-cards/method-cards';
+import { SRD_521_LABEL } from '../../../shared/method-cards/method-cards';
 import { AbilityFields, type AbilityFormGroup } from '../ability-fields/ability-fields';
 import { AbilityPlacing } from '../ability-scores/ability-placing/ability-placing';
 import {

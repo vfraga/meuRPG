@@ -12,6 +12,12 @@ import {
 } from '../../../core/creatures/creatures-testing';
 import { GiveCreatureSheet, type GiveCreatureData } from './give-creature-sheet';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('GiveCreatureSheet: the master gives a creature (E9-10, MR-037)', () => {
   let api: FakeCreaturesClient;
   let close: ReturnType<typeof vi.fn>;

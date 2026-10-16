@@ -16,6 +16,8 @@ on:
       - ".github/workflows/backend.yml"
       - ".github/scripts/go-db-shard.sh"
       - ".github/scripts/go-coverage.sh"
+      - ".github/scripts/go-complexity.sh"
+      - ".github/go-complexity-baseline.txt"
       - ".node-version"
   push:
     branches: [main]
@@ -27,6 +29,8 @@ on:
       - ".github/workflows/backend.yml"
       - ".github/scripts/go-db-shard.sh"
       - ".github/scripts/go-coverage.sh"
+      - ".github/scripts/go-complexity.sh"
+      - ".github/go-complexity-baseline.txt"
       - ".node-version"
 
 # Cancel a still-running run for the same PR when a new commit lands, so we
@@ -117,8 +121,10 @@ jobs:
   go:
     # No `go test` here: go-db runs every package (the pure ones too, with
     # -race), so a test run in this job only repeated it. This job is the
-    # fast, database-free check: lint and known vulnerabilities. The image
-    # build moved to the e2e workflow, which builds it once and runs it.
+    # fast, database-free check: lint, the complexity totals and known
+    # vulnerabilities. The image build moved to the e2e workflow, which builds
+    # it once and runs it. The module boundaries are a test
+    # (internal/archtest), so go-db's "rest" group runs them.
     name: go (lint, vulncheck)
     timeout-minutes: 15
     runs-on: ubuntu-26.04
@@ -168,6 +174,20 @@ jobs:
           version: v2.14.0
           working-directory: backend
           args: ${{ steps.ratchet.outputs.args }}
+
+      - name: Complexity totals do not grow (cyclomatic > 15, cognitive > 20, maintainability < 20)
+        # The ratchet above judges a function only when its `func` line
+        # changes; this judges every body. The functions over each limit are
+        # listed in .github/go-complexity-baseline.txt: a function that enters
+        # a list or gets worse fails, and so does one that gets better until
+        # the baseline is lowered (`go-complexity.sh --update`). It runs even
+        # when golangci-lint found something, so one push shows both. Uses the
+        # golangci-lint the step above put on PATH (for maintidx). Measured on
+        # 16/10/2026 on an Apple M1 Pro: about 2 s with Go's caches warm, 9 s
+        # on the first run; here the first `go run` of gocyclo and gocognit
+        # also downloads and builds them.
+        if: ${{ !cancelled() }}
+        run: ../.github/scripts/go-complexity.sh
 
       - name: govulncheck
         # Invoked directly (rather than golang/govulncheck-action) so the

@@ -12,8 +12,7 @@ import {
 } from '../../../core/images/gallery-testing';
 import { ImageUploader } from '../../../core/images/image-uploader';
 import { type ImagePickerData, ImagePickerDialog } from './image-picker-dialog';
-
-const flush = () => new Promise((r) => setTimeout(r));
+import { nextTurn } from '../../../../test-settle';
 
 // RN-10: a picture of the whole map (the textured map and its edits) is tagged in the picker, and showing it asks first, in place.
 describe('ImagePickerDialog and a picture of the whole map', () => {
@@ -57,11 +56,11 @@ describe('ImagePickerDialog and a picture of the whole map', () => {
     });
     const fixture = TestBed.createComponent(ImagePickerDialog);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const settle = async () => {
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
     };
     const tile = (name: string) =>

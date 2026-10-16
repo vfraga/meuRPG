@@ -23,6 +23,7 @@ import { FakeMapsClient } from '../../../core/maps/maps-testing';
 import { SceneChecks } from '../../../core/maps/scene-actions';
 import { TrapPresets } from '../../../core/traps/trap-presets';
 import { TrapPointPanel } from './trap-point-panel';
+import { nextTurn } from '../../../../test-settle';
 
 const presets = create(ListTrapPresetsResponseSchema, {
   presets: [
@@ -194,7 +195,7 @@ describe('TrapPointPanel', () => {
   }
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };

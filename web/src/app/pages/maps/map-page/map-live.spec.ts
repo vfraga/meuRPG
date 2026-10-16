@@ -1,6 +1,6 @@
 import { type Mock, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { LiveEventVm } from '../../live-session/live-session.types';
+import type { LiveEventVm } from '../../../core/play/live-session.types';
 import { MAP_LIVE_DEBOUNCE_MS, MapLive, type MapLiveHost } from './map-live';
 
 /** A stream the test pushes events into; aborting its signal ends it. */

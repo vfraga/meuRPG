@@ -27,7 +27,7 @@ import {
 import { formatXp } from '../../../core/format/text';
 import { DiceChoice } from '../../../shared/dice-choice/dice-choice';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
-import { MapAsk } from '../../maps/map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 
 const OPTIONS: readonly DiceOption<XpMode>[] = [
   { value: XpMode.ENEMIES, title: 'Por inimigos', description: 'Cada inimigo derrotado dá XP.' },

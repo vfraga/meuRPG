@@ -52,8 +52,8 @@ import {
 import { freeText } from '../../../../core/combat/cast-flow';
 import { standUpRow } from '../../../../core/combat/stand-up';
 import { mediaQuery } from '../../../../shared/map-view/media-query';
-import type { PactSlotsVm, SlotUsageVm } from '../../live-session.types';
-import { SlotDots } from '../../slot-dots/slot-dots';
+import type { PactSlotsVm, SlotUsageVm } from '../../../../core/play/resource-usage.types';
+import { SlotDots } from '../../../../shared/slot-dots/slot-dots';
 import { ActionRow } from './action-row';
 import { EconomyTiles } from './economy-tiles';
 import { GroupState } from './group-state';

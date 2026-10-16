@@ -24,11 +24,11 @@ import { SORCERY_POINTS_RESOURCE, pointsText, poolOf } from '../../../../core/re
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { classResourceErrorMessage } from '../../../../core/resources/resources-errors';
 import { type Segment, Segmented } from '../../../../shared/segmented/segmented';
-import { toVitalsVm } from '../../live-session-source.live';
-import type { VitalsVm } from '../../live-session.types';
+import { toVitalsVm } from '../../../../core/play/live-session-source.live';
+import type { VitalsVm } from '../../../../core/play/live-session.types';
 import { type PickRow, ResourcePick } from '../resource-pick/resource-pick';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands "Conjuração Flexível". */
 export interface FlexibleCastingSheetData {

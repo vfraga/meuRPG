@@ -21,7 +21,7 @@ import type { MapPoint } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { type LightOption, LightPresets } from '../../../core/maps/light-presets';
 import type { PointChanges } from '../../../core/maps/maps-client';
 import { tight } from '../../../core/format/text';
-import type { LightReach } from '../editor-overlay/editor-overlay';
+import type { LightReach } from '../../../shared/editor-overlay/editor-overlay';
 import {
   CUSTOM_KEY,
   type LightDraft,

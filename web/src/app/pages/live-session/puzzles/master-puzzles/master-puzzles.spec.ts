@@ -16,6 +16,7 @@ import {
   pillarsPuzzle,
 } from '../../../../core/puzzles/puzzles-testing';
 import { MasterPuzzles } from './master-puzzles';
+import { nextTurn } from '../../../../../test-settle';
 
 describe('MasterPuzzles (MR-038, E10-06 states 3 and 4)', () => {
   const a = lightsPuzzle('a', 'O selo da Capela');
@@ -50,7 +51,7 @@ describe('MasterPuzzles (MR-038, E10-06 states 3 and 4)', () => {
       for (let i = 0; i < 3; i++) {
         fixture.detectChanges();
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
       }
       fixture.detectChanges();
     };

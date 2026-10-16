@@ -14,14 +14,15 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatDialog } from '@angular/material/dialog';
 import { SpellDetails } from '../../shared/spell-details/spell-details';
 import type { SpellDetailsVm } from '../../shared/spell-details/spell-details.types';
-import { OpenSessions, type OpenSessionVm } from '../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
+import type { OpenSessionVm } from '../../core/play/open-sessions.types';
 import { CharacterSheetPage } from './character-sheet';
 import { NotesClient } from '../../core/notes/notes-client';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { CreaturesPanel } from './creatures-panel/creatures-panel';
-import { XpWatcher } from './xp-watcher';
-import type { VitalsVm } from '../live-session/live-session.types';
-import { pensantusVitals } from '../live-session/testing';
+import { XpWatcher } from '../../core/play/xp-watcher';
+import type { VitalsVm } from '../../core/play/live-session.types';
+import { pensantusVitals } from '../../core/play/live-testing';
 import {
   BasicSheetVm,
   CampaignXpMode,
@@ -31,6 +32,7 @@ import {
   FullSheetVm,
   ReviewVm,
 } from './character-sheet.types';
+import { nextTurn } from '../../../test-settle';
 
 @Injectable()
 class FakeCharacterSheetSource {
@@ -318,10 +320,6 @@ function activatedRouteFor(campaignId: string, characterId: string) {
   return { paramMap: of(convertToParamMap({ id: campaignId, characterId })) };
 }
 
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
 /** The `<dd>` right after the `<dt>` with exactly this text (the page's
  * `<dl>`s: header fields, medallions, combat numbers, the story). */
 function ddAfter(el: HTMLElement, term: string): HTMLElement | null {
@@ -358,7 +356,7 @@ describe('CharacterSheetPage', () => {
   async function render(): Promise<HTMLElement> {
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
@@ -941,7 +939,7 @@ describe('CharacterSheetPage', () => {
       b.textContent?.includes('Permitir editar a história'),
     ) as HTMLButtonElement;
     toggle.click();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await nextTurn();
 
     expect(fake.setStoryEditingAllowedCalls).toEqual([{ id: 'char-1', allowed: true }]);
   });
@@ -1561,7 +1559,7 @@ describe('CharacterSheetPage', () => {
     };
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
@@ -1577,7 +1575,7 @@ describe('CharacterSheetPage', () => {
     buttonWithText(el, 'Marcar como morto')!.click();
     fixture.detectChanges();
     buttonWithText(el, 'Confirmar morte')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(calls).toBe(1);
@@ -1637,7 +1635,7 @@ describe('CharacterSheetPage', () => {
     };
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
@@ -1649,7 +1647,7 @@ describe('CharacterSheetPage', () => {
     backstory.value = 'Cresceu entre livros.';
     backstory.dispatchEvent(new Event('input'));
     buttonWithText(el, 'Salvar história')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(saved).toEqual({ revision: 4, backstory: 'Cresceu entre livros.' });
@@ -1701,7 +1699,7 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
   async function render() {
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture;
@@ -1757,7 +1755,7 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     const el = fixture.nativeElement as HTMLElement;
 
     button(el, 'Aprovar personagem')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[aria-label="Estado do personagem"]')?.textContent).toContain(
@@ -1779,7 +1777,7 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     expect(button(el, 'Cancelar')).toBeTruthy();
 
     button(el, 'Confirmar recusa')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(fake.rejectCharacterCalls).toEqual(['char-1']);
@@ -1795,7 +1793,7 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     button(el, 'Recusar personagem')!.click();
     fixture.detectChanges();
     button(el, 'Confirmar recusa')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('Personagem não encontrado');
@@ -1903,7 +1901,7 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     await type(fixture, el, '  O antecedente não bate com a história.  ');
 
     button(el, 'Enviar pedido')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -1940,7 +1938,7 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     await type(fixture, el, 'Falta o equipamento.');
 
     button(el, 'Enviar pedido')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('Você não tem permissão');
@@ -2022,7 +2020,7 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     const el = fixture.nativeElement as HTMLElement;
 
     button(el, 'Enviar de novo')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(fake.resubmitCalls).toEqual(['char-1']);
@@ -2075,10 +2073,10 @@ describe('CharacterSheetPage: approval (MR-024)', () => {
     const onCharacter = xpWatcher.follow.mock.calls.at(-1)![6]!;
 
     onCharacter('other');
-    await flush();
+    await nextTurn();
     expect(reads).toBe(1);
     onCharacter('char-1');
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(reads).toBe(2);
     openSessions.set([]);
@@ -2117,7 +2115,7 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
   async function render() {
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture;
@@ -2400,7 +2398,7 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
     xp = 2716;
     const onChange = xpWatcher.follow.mock.calls.at(-1)![1];
     onChange();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -2438,7 +2436,7 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
         isMaster: false,
       },
     ]);
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
 
@@ -2618,7 +2616,7 @@ describe('CharacterSheetPage: the XP block (MR-016, RN-12, E7-10)', () => {
     const before = reads;
     const onContent = xpWatcher.follow.mock.calls.at(-1)![3]!;
     onContent();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     expect(reads).toBe(before + 1);
@@ -2678,7 +2676,7 @@ describe('CharacterSheetPage: answers that arrive late', () => {
 
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
@@ -2687,12 +2685,12 @@ describe('CharacterSheetPage: answers that arrive late', () => {
     buttonWithText(el, 'Marcar como morto')!.click();
     fixture.detectChanges();
     buttonWithText(el, 'Confirmar morte')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(el.querySelector('[aria-label="Estado do personagem"]')?.textContent).toContain('Morto');
 
     reload.resolve(alive);
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[aria-label="Estado do personagem"]')?.textContent).toContain('Morto');
@@ -2706,9 +2704,9 @@ describe('CharacterSheetPage: answers that arrive late', () => {
       Promise.resolve(vm({ name: ++reads === 1 ? 'Antes' : 'Depois' }));
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     xpWatcher.follow.mock.calls.at(-1)![1]();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Depois');
   });
@@ -2724,13 +2722,13 @@ describe('CharacterSheetPage: answers that arrive late', () => {
     // The router reuses the page for the same route with another parameter.
     params.next(convertToParamMap({ id: 'camp-1', characterId: 'char-B' }));
     b.resolve(vm({ id: 'char-B', name: 'Bravo' }));
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Bravo');
 
     a.resolve(vm({ id: 'char-A', name: 'Alfa' }));
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.textContent).toContain('Bravo');
@@ -2748,19 +2746,19 @@ describe('CharacterSheetPage: answers that arrive late', () => {
 
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Alfa');
 
     xpWatcher.follow.mock.calls.at(-1)![1]();
     params.next(convertToParamMap({ id: 'camp-1', characterId: 'char-B' }));
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(el.textContent).toContain('Bravo');
 
     reloadA.resolve(vm({ id: 'char-A', name: 'Alfa' }));
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.textContent).toContain('Bravo');
@@ -2800,7 +2798,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
     fake.getCharacterSheetFn = () => Promise.resolve(character);
     const fixture = TestBed.createComponent(CharacterSheetPage);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
@@ -2835,7 +2833,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
 
     button('Reviver')!.click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const dialog = el.querySelector('[role="alertdialog"]')!;
@@ -2859,14 +2857,14 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
     const { fixture, el, button } = await open(deadForMaster());
     button('Reviver')!.click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     el.querySelector('[role="alertdialog"]')!.dispatchEvent(
       new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
     );
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alertdialog"]')).toBeNull();
@@ -2889,7 +2887,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
     button('Reviver')!.click();
     fixture.detectChanges();
     button('Reviver Toren')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(fake.reviveCalls).toHaveLength(1);
@@ -2910,7 +2908,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
     button('Reviver')!.click();
     fixture.detectChanges();
     button('Reviver Toren')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const card = el.querySelector('[role="alert"]')!;
@@ -2939,7 +2937,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
     button('Reviver')!.click();
     fixture.detectChanges();
     button('Reviver Toren')!.click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alert"]')?.textContent).toContain('não está morto');
@@ -2949,7 +2947,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
     const { fixture, el, button } = await open(
       vm({ name: 'Toren', state: 'dead', diedAt: new Date(2026, 9, 8), canEdit: false }),
     );
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const panel = sectionTitled(el, 'E agora?');
@@ -2965,7 +2963,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
   it('keeps "E agora?" from the owner who already has a living character', async () => {
     fake.hasLivingFn = () => Promise.resolve(true);
     const { fixture, el } = await open(vm({ name: 'Toren', state: 'dead', canEdit: false }));
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.textContent).not.toContain('E agora?');
@@ -2973,7 +2971,7 @@ describe('CharacterSheetPage: Reviver and "E agora?"', () => {
 
   it('keeps "E agora?" from the master and from a living character', async () => {
     const master = await open(deadForMaster());
-    await flush();
+    await nextTurn();
     master.fixture.detectChanges();
     expect(master.el.textContent).not.toContain('E agora?');
   });

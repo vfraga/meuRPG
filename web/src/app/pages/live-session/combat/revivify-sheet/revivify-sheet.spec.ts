@@ -20,6 +20,7 @@ import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { RevivifyClient } from '../../../../core/revivify/revivify-client';
 import { RevivifySheet, type RevivifySheetData } from './revivify-sheet';
+import { nextTurn } from '../../../../../test-settle';
 
 const text = (el: Element | null | undefined) =>
   (el?.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -69,7 +70,7 @@ interface Harness {
 
 async function settle(h: Pick<Harness, 'fixture'>): Promise<void> {
   await h.fixture.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await nextTurn();
   await h.fixture.whenStable();
   h.fixture.detectChanges();
 }

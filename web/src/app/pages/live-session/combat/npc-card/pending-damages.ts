@@ -39,7 +39,7 @@ import { article } from '../../../../core/combat/combat-log';
 import { isPlayer } from '../../../../core/combat/combat-view';
 import { DamageBreakdown } from '../damage-parts/damage-breakdown';
 import { heldReason } from '../../../../core/combat/reaction-master';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 
 /**
  * The damage the master owes a hit (E6-11, E6-12, RN-02): "Rolar dano" for

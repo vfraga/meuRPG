@@ -27,7 +27,7 @@ import {
 import { editorErrorMessage, mapBlockedReason } from '../../../core/maps/map-errors';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { DiceChoice } from '../../../shared/dice-choice/dice-choice';
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 
 /** The radio value of "Outro". */
 const OTHER = 0;

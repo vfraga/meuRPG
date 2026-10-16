@@ -5,7 +5,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { EffectAudience, EffectEndScope } from '../../../../gen/meurpg/play/v1/lasting_effects_pb';
 import { EffectsClient } from '../../../core/effects/effects-client';
 import { catalogEffect, characterEffect } from '../../../core/effects/effects-testing';
-import { pensantusVitals } from '../testing';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { CharacterEffectsPanel } from './character-effects-panel';
 import { isOff } from './effects-dialogs-testing';
 

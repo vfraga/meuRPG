@@ -12,3 +12,5 @@ eslint-suppressions.json
 # elements and text, which changes what renders when CSS makes an element inline (measured on 07/10/2026: a space
 # before a comma, two pills that sat together drifting apart, padding in text the tests compare).
 *.html
+# The known-violations file is written by dependency-cruiser (npm run depcruise:baseline).
+.dependency-cruiser-known-violations.json

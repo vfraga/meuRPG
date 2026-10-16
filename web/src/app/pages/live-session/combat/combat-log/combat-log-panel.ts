@@ -32,7 +32,7 @@ import {
 import { isPlayer } from '../../../../core/combat/combat-view';
 import { isTheatre } from '../../../../core/combat/theatre';
 import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query';
-import { openSheet } from '../sheet-host';
+import { openSheet } from '../../../../shared/sheet/sheet-host';
 import { LogList } from './log-list';
 import { LogSheet, type LogSheetData } from './log-sheet';
 

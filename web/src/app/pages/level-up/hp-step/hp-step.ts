@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import type { DiceOption } from '../../../core/campaigns/dice-labels';
 import { formatModifier } from '../../../core/characters/character-labels';
 import { DiceChoice } from '../../../shared/dice-choice/dice-choice';
-import { RollPicker } from '../../live-session/combat/roll-picker/roll-picker';
+import { RollPicker } from '../../../shared/roll-picker/roll-picker';
 import { LevelUpSession } from '../level-up-session';
 
 /** The two cards' values: `DiceChoice` keys its radios by number. */

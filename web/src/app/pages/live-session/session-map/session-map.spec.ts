@@ -11,7 +11,7 @@ import { create } from '@bufbuild/protobuf';
 
 import { MapPointKind, MapRefSchema } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { MapView } from '../../../shared/map-view/map-view';
-import { LiveSessionSource } from '../live-session.types';
+import { LiveSessionSource } from '../../../core/play/live-session.types';
 import { SessionMap } from './session-map';
 
 describe('SessionMap dragging a token', () => {

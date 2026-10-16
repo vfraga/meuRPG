@@ -100,6 +100,9 @@ type saveRoll struct {
 	Sculpted bool `json:"sculpted,omitempty"`
 	// Extra are the dice effects added to the roll (Bênção, Perdição).
 	Extra []effectDie `json:"extra,omitempty"`
+	// Lucky is the d20 the app rolled again for a halfling player's character after it showed a 1
+	// (autoLucky, combat_lucky.go): D20, D20B and Counted are the dice after it. Nil when none was.
+	Lucky *luckyReroll `json:"lucky,omitempty"`
 	// Unknown says the target is a basic-sheet NPC with no saving throw bonus:
 	// the roll is d20 + 0 and the master may overrule it.
 	Unknown bool `json:"bonus_unknown,omitempty"`

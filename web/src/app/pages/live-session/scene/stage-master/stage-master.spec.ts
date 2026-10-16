@@ -8,6 +8,7 @@ import { SceneState } from '../../../../core/play/scene-state';
 import { FakeSceneClient, masterScene, stageNpc } from '../../../../core/play/scene-testing';
 import { type StageCandidate, StageRoster } from '../../../../core/play/stage-roster';
 import { StageMaster } from './stage-master';
+import { nextTurn } from '../../../../../test-settle';
 
 const nbsp = ' ';
 /** The text of an element as read, without the icons' ligature names ("check"). */
@@ -84,7 +85,7 @@ describe('StageMaster', () => {
   async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
     for (let i = 0; i < 3; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

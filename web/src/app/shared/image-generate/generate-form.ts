@@ -30,7 +30,7 @@ import {
 } from '../../core/images/imagegen-copy';
 import type { GenerateIssue } from '../../core/images/imagegen-errors';
 import { type ImageForm, type PickableNpc, npcPortraits } from '../../core/images/imagegen-form';
-import { ChoiceRow } from '../../pages/maps/dungeon-new/choice-row';
+import { ChoiceRow } from '../choice-row/choice-row';
 import { KindStrip } from './kind-strip';
 import { NpcPicks } from './npc-picks';
 import { ReferencePicks } from './reference-picks';

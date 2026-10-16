@@ -24,6 +24,7 @@ import {
   type TableRulesVm,
 } from '../../core/campaigns/table-rules';
 import { TableRulesPage } from './table-rules';
+import { settle } from '../../../test-settle';
 
 const presets = [
   create(TableStylePresetSchema, {
@@ -116,17 +117,8 @@ describe('TableRulesPage', () => {
     });
     const fixture = TestBed.createComponent(TableRulesPage);
     fixture.detectChanges();
-    await settle(fixture);
+    await settle(fixture, 3);
     return { fixture, el: fixture.nativeElement as HTMLElement };
-  }
-
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 3; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
   }
 
   const text = (el: HTMLElement) =>
@@ -218,7 +210,7 @@ describe('TableRulesPage', () => {
   it('choosing a style fills the three choices in place, says what it changed, and lights "Salvar regras"', async () => {
     const { fixture, el } = await setup();
     radio(el, 'Teatro da mente').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(radio(el, 'Teatro da mente').checked).toBe(true);
     expect(radio(el, 'Começar sem mapa').checked).toBe(true);
     expect(el.querySelector('button[role="switch"]')?.getAttribute('aria-checked')).toBe('false');
@@ -239,9 +231,9 @@ describe('TableRulesPage', () => {
   it('an edit by hand after a style takes it back to "Personalizado", and says so', async () => {
     const { fixture, el } = await setup();
     radio(el, 'Teatro da mente').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     radio(el, 'Começar com mapa').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(radio(el, 'Personalizado').checked).toBe(true);
     expect(text(el)).toContain('Personalizado. Suas escolhas não batem mais com nenhum estilo.');
   });
@@ -249,11 +241,11 @@ describe('TableRulesPage', () => {
   it('saves everything at once, with the dice mode, and goes back to "Tudo salvo"', async () => {
     const { fixture, el } = await setup();
     radio(el, 'Mesa física').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     radio(el, 'A média').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(set).toHaveBeenCalledTimes(1);
     const [id, sent] = set.mock.calls[0] as [string, RulesDraft];
     expect(id).toBe('camp-1');
@@ -285,10 +277,10 @@ describe('TableRulesPage', () => {
     expect(text(el)).toContain('Vale a partir da próxima magia.');
 
     radio(el, 'Perguntar a cada vez').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('1 mudança não salva');
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     const [, sent] = set.mock.calls[0] as [string, RulesDraft];
     expect(sent.hiddenAreaHits).toBe(HiddenAreaHitRule.ASK);
   });
@@ -299,9 +291,9 @@ describe('TableRulesPage', () => {
     });
     expect(radio(el, 'Manter escondidas').checked).toBe(true);
     radio(el, 'A média').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     const [, sent] = set.mock.calls[0] as [string, RulesDraft];
     expect(sent.hiddenAreaHits).toBe(HiddenAreaHitRule.KEEP_HIDDEN);
   });
@@ -326,10 +318,10 @@ describe('TableRulesPage', () => {
       -1,
     )!;
     typed.click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('Marque pelo menos um jeito de fazer as habilidades.');
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(set).not.toHaveBeenCalled();
   });
 
@@ -337,20 +329,20 @@ describe('TableRulesPage', () => {
     const { fixture, el } = await setup(Role.MASTER, { houseRules: [] });
     expect(el.querySelectorAll('.reminder')).toHaveLength(0);
     button(el, 'Adicionar um lembrete').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     const field = el.querySelector<HTMLInputElement>('.reminder input')!;
     expect(field.getAttribute('maxlength')).toBe('200');
     // An empty line cannot be saved.
     expect(text(el)).toContain('Escreva o lembrete ou remova a linha vazia.');
     field.value = 'Quem cai fica caído';
     field.dispatchEvent(new Event('input'));
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).not.toContain('Escreva o lembrete');
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect((set.mock.calls[0][1] as RulesDraft).houseRules).toEqual(['Quem cai fica caído']);
     button(el, 'Remover o lembrete 1').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelectorAll('.reminder')).toHaveLength(0);
   });
 
@@ -367,9 +359,9 @@ describe('TableRulesPage', () => {
     const { fixture, el } = await setup();
     set.mockRejectedValue(new ConnectError('x', Code.InvalidArgument));
     radio(el, 'A média').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('Não deu para salvar as regras');
   });
 
@@ -404,9 +396,9 @@ describe('TableRulesPage', () => {
       ]),
     );
     radio(el, 'Por marcos').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     button(el, 'Mudar para marcos').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(button(el, 'Salvar regras').classList).toContain('mat-mdc-outlined-button');
     expect(
       el.querySelectorAll('button.mat-mdc-unelevated-button, button.mdc-button--unelevated').length,
@@ -426,24 +418,24 @@ describe('TableRulesPage', () => {
       expect(apply.getAttribute('aria-disabled')).toBe('true');
       expect(apply.hasAttribute('disabled')).toBe(false);
       radio(el, 'Por marcos').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(setXpMode).not.toHaveBeenCalled();
       expect(button(el, 'Mudar para marcos').getAttribute('aria-disabled')).not.toBe('true');
       // Picking the mode in force again puts the button back.
       radio(el, 'Por inimigos').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(button(el, 'Mudar o modo de XP').getAttribute('aria-disabled')).toBe('true');
       button(el, 'Mudar o modo de XP').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(setXpMode).not.toHaveBeenCalled();
     });
 
     it('changes at once when nobody has XP, and says when', async () => {
       const { fixture, el } = await setup();
       radio(el, 'Por marcos').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       button(el, 'Mudar para marcos').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(setXpMode).toHaveBeenCalledWith('camp-1', XpMode.MILESTONES, false);
       expect(radio(el, 'Por marcos').checked).toBe(true);
       expect(text(el)).toContain('Modo de XP mudado para por marcos');
@@ -460,9 +452,9 @@ describe('TableRulesPage', () => {
       ]);
       setXpMode.mockRejectedValueOnce(blocked);
       radio(el, 'Por marcos').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       button(el, 'Mudar para marcos').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(el.querySelector('h3')?.textContent).toContain('Mudar para “por marcos”?');
       expect(document.activeElement).toBe(el.querySelector('h3'));
       const q = text(el);
@@ -474,7 +466,7 @@ describe('TableRulesPage', () => {
       Array.from(el.querySelectorAll<HTMLButtonElement>('.ask button'))
         .find((b) => b.textContent?.includes('Mudar para marcos'))!
         .click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(setXpMode).toHaveBeenLastCalledWith('camp-1', XpMode.MILESTONES, true);
       expect(radio(el, 'Por marcos').checked).toBe(true);
       expect(el.querySelector('h3')).toBeNull();
@@ -490,15 +482,15 @@ describe('TableRulesPage', () => {
       ]);
       setXpMode.mockRejectedValueOnce(blocked);
       radio(el, 'Por ouro').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       button(el, 'Mudar para ouro').click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(text(el)).toContain('1 prêmio, 50 XP');
       expect(radio(el, 'Por ouro').checked).toBe(true);
       Array.from(el.querySelectorAll<HTMLButtonElement>('.ask button'))
         .find((b) => b.textContent?.trim() === 'Voltar')!
         .click();
-      await settle(fixture);
+      await settle(fixture, 3);
       expect(el.querySelector('h3')).toBeNull();
       expect(radio(el, 'Por inimigos').checked).toBe(true);
       expect(setXpMode).toHaveBeenCalledTimes(1);
@@ -510,10 +502,10 @@ describe('TableRulesPage', () => {
     const { fixture, el } = await setup();
     expect(radio(el, 'Não usados').checked).toBe(true);
     radio(el, 'Permitidos').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('1 mudança não salva');
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     const [, sent] = set.mock.calls[0] as [string, RulesDraft];
     expect(sent.featsAllowed).toBe(true);
     expect(sent.houseRules).toEqual(['Beber uma poção é uma ação bônus']);
@@ -544,9 +536,9 @@ describe('TableRulesPage', () => {
   it('saves the chosen enemy reactions rule with "Salvar regras"', async () => {
     const { fixture, el } = await setup();
     radio(el, 'Sempre').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     button(el, 'Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect((set.mock.calls[0][1] as RulesDraft).enemyReactions).toBe(EnemyReactionsRule.ALWAYS);
   });
 

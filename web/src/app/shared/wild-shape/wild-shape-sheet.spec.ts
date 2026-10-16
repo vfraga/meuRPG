@@ -5,6 +5,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { FakeCreaturesClient, flat, raven, summary } from '../../core/creatures/creatures-testing';
 import { WildShapeSheet, type WildShapeSheetData } from './wild-shape-sheet';
+import { nextTurn } from '../../../test-settle';
 
 describe('WildShapeSheet (E9-11 state 2)', () => {
   async function setup(data: Partial<WildShapeSheetData> = {}, fail: unknown = null) {
@@ -43,7 +44,7 @@ describe('WildShapeSheet (E9-11 state 2)', () => {
     const settle = async () => {
       for (let i = 0; i < 4; i++) {
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         fixture.detectChanges();
       }
     };
@@ -92,7 +93,7 @@ describe('WildShapeSheet (E9-11 state 2)', () => {
       for (let i = 0; i < 4; i++) {
         fixture.detectChanges();
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
       }
       fixture.detectChanges();
       expect(flat(fixture.nativeElement.querySelector('.frame__sub'))).toBe(text);

@@ -46,6 +46,7 @@ func saveView(sr *saveRoll, v combatViewer, caster, target playdb.Combatant) *pl
 		out.Mode, out.AutoFailed = modeToProto[modeOfKey(sr.RollMode)], sr.Auto
 		if out.Roll != nil {
 			out.Roll.ExtraDice = extraDiceProto(sr.Extra, v.master, nil)
+			out.Roll.Rerolled = sr.Lucky.proto() // "Sortudo: 1 → 14": the d20 the app rolled again, with the dice
 		}
 	}
 	if v.master {

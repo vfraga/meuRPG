@@ -10,6 +10,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient } from '../../../core/maps/maps-testing';
 import type { PickRow } from '../../../shared/person-pick/person-pick';
 import { TreasurePointPanel } from './treasure-point-panel';
+import { nextTurn } from '../../../../test-settle';
 
 const people: PickRow[] = [
   { id: 'c1', name: 'Brisa', sub: 'Clériga 5 · Ana' },
@@ -56,7 +57,7 @@ describe('TreasurePointPanel', () => {
   }
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };

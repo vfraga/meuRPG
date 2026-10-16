@@ -12,6 +12,7 @@ import { TableContentClient } from '../../../core/content/content-client';
 import { TableContentPackSchema as PackSchema } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { entry, fakeContentWatcher, mirathel } from '../../../core/content/content-testing';
 import { ContentList } from './content-list';
+import { settle } from '../../../../test-settle';
 
 describe('ContentList', () => {
   const originalMatchMedia = window.matchMedia;
@@ -68,17 +69,8 @@ describe('ContentList', () => {
       ],
     });
     const fixture = TestBed.createComponent(ContentList);
-    await settle(fixture);
-    return { fixture, el: fixture.nativeElement as HTMLElement, settle: () => settle(fixture) };
-  }
-
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 3; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
+    await settle(fixture, 3);
+    return { fixture, el: fixture.nativeElement as HTMLElement, settle: () => settle(fixture, 3) };
   }
 
   const text = (el: Element) => (el.textContent ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
@@ -149,14 +141,14 @@ describe('ContentList', () => {
     const select = el.querySelector('select') as HTMLSelectElement;
     select.selectedIndex = 3;
     select.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     const rows = Array.from(el.querySelectorAll('.row')).map((r) => text(r));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toContain('Bardo das Cinzas');
     const input = el.querySelector('input[data-field], input') as HTMLInputElement;
     input.value = 'zzz';
     input.dispatchEvent(new Event('input'));
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('Nenhuma entrada com esta busca');
   });
 
@@ -212,7 +204,7 @@ describe('ContentList', () => {
     expect(text(el)).toContain('7 de 300 entradas na campanha.');
     // "Desarquivar" comes back at once, with no question.
     (el.querySelectorAll('.prow__btn')[1] as HTMLButtonElement).click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(unarchive).toHaveBeenCalledWith('camp-1', 'class:bardo-das-cinzas@mesa');
     expect(
       Array.from(el.querySelectorAll('.prow__btn')).map((b) => b.getAttribute('aria-label')),
@@ -226,11 +218,11 @@ describe('ContentList', () => {
     const { fixture, el } = await setup(Role.MASTER, { phone: true, kind: 'classes' });
     unarchive.mockRejectedValueOnce(new ConnectError('refused', Code.InvalidArgument));
     (el.querySelectorAll('.prow__btn')[1] as HTMLButtonElement).click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('Não foi possível desarquivar: confira os dados e tente de novo.');
     unarchive.mockRejectedValueOnce(new ConnectError('maybe', Code.Unknown));
     (el.querySelectorAll('.prow__btn')[1] as HTMLButtonElement).click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('Não deu para confirmar se a alteração foi salva');
   });
 
@@ -252,7 +244,7 @@ describe('ContentList', () => {
       ],
     });
     const fixture = TestBed.createComponent(ContentList);
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(fixture.nativeElement)).toContain('Campanha não encontrada');
     expect(entry(TableContentKind.CLASS, 'x')).toBeDefined();
   });

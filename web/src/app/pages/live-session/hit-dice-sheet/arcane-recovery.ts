@@ -1,4 +1,5 @@
-import type { SlotUsageVm, VitalsVm } from '../live-session.types';
+import type { SlotUsageVm } from '../../../core/play/resource-usage.types';
+import type { VitalsVm } from '../../../core/play/live-session.types';
 
 /** The resource of the wizard's Recuperação Arcana (`rules.ArcaneRecoveryKey`). */
 export const ARCANE_RECOVERY_KEY = 'arcane_recovery';

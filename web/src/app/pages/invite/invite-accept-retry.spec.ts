@@ -6,10 +6,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { AuthState, AuthService } from '../../core/auth/auth.service';
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { InviteAccept } from './invite-accept';
-
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
+import { nextTurn } from '../../../test-settle';
 
 describe('InviteAccept after a transient failure', () => {
   afterEach(() => {
@@ -35,7 +32,7 @@ describe('InviteAccept after a transient failure', () => {
 
     const fixture = TestBed.createComponent(InviteAccept);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
@@ -45,7 +42,7 @@ describe('InviteAccept after a transient failure', () => {
     const retry = el.querySelector('button') as HTMLButtonElement | null;
     expect(retry, 'a retry button in the error state').not.toBeNull();
     retry!.click();
-    await flush();
+    await nextTurn();
 
     expect(acceptInvite).toHaveBeenCalledTimes(2);
     expect(acceptInvite).toHaveBeenLastCalledWith('abc');

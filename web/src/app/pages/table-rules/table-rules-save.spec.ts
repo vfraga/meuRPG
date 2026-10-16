@@ -22,6 +22,7 @@ import {
   type TableRulesVm,
 } from '../../core/campaigns/table-rules';
 import { TableRulesPage } from './table-rules';
+import { settle } from '../../../test-settle';
 
 const presets = [
   create(TableStylePresetSchema, {
@@ -62,15 +63,6 @@ const vm: TableRulesVm = {
 };
 
 describe('TableRulesPage saving', () => {
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 3; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
-  }
-
   it('keeps the later edit in the draft and still counts it as unsaved', async () => {
     const get = vi.fn().mockResolvedValue(vm);
     let resolveSet!: (v: unknown) => void;
@@ -102,7 +94,7 @@ describe('TableRulesPage saving', () => {
     });
     const fixture = TestBed.createComponent(TableRulesPage);
     fixture.detectChanges();
-    await settle(fixture);
+    await settle(fixture, 3);
     const el = fixture.nativeElement as HTMLElement;
     const text = () => (el.textContent ?? '').replace(/ /g, ' ').replace(/\s+/g, ' ');
     const button = (label: string) =>
@@ -115,20 +107,20 @@ describe('TableRulesPage saving', () => {
       i.closest('label')?.textContent?.includes('A média'),
     )!;
     avg.click();
-    await settle(fixture);
+    await settle(fixture, 3);
     button('Salvar regras').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(set).toHaveBeenCalledTimes(1);
 
     // While the call is in flight, the master edits a reminder.
     const field = el.querySelector<HTMLInputElement>('.reminder input')!;
     field.value = 'Lembrete novo escrito durante o salvamento';
     field.dispatchEvent(new Event('input'));
-    await settle(fixture);
+    await settle(fixture, 3);
 
     // The server answers with the draft that was sent (without the later edit).
     resolveSet(null);
-    await settle(fixture);
+    await settle(fixture, 3);
 
     const input = el.querySelector<HTMLInputElement>('.reminder input')!;
     expect(input.value).toBe('Lembrete novo escrito durante o salvamento');

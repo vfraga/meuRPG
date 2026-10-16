@@ -2,7 +2,7 @@ import { Component, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { CastRow } from '../../../../core/combat/cast-flow';
-import { SlotDots } from '../../slot-dots/slot-dots';
+import { SlotDots } from '../../../../shared/slot-dots/slot-dots';
 import { D20Faces } from '../roll-mode/d20-faces';
 
 /** What the cast left on the sheet: the slots as they are now. */

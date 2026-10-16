@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 
-import { LiveSessionSourceLive } from './live-session-source.live';
-import { LiveSessionSource } from './live-session.types';
+import { LiveSessionSourceLive } from '../../core/play/live-session-source.live';
+import { LiveSessionSource } from '../../core/play/live-session.types';
 
 /**
  * Lazily loaded from `app.routes.ts` via `loadChildren` for

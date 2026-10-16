@@ -17,6 +17,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { RevivifyClient } from '../../../../core/revivify/revivify-client';
 import type { CombatantInfo } from '../combat-info';
 import { DeathsBlock } from './deaths-block';
+import { nextTurn } from '../../../../../test-settle';
 
 /** The text as the eye reads it: the lines join with a no-break space before the dot. */
 const plain = (node: Element | null) => (node?.textContent ?? '').replace(/\u00a0/g, ' ');
@@ -58,10 +59,6 @@ const rows = [
   }),
   combatant({ id: 'g2', label: 'Goblin 2', defeated: true }),
 ];
-
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
 
 describe('DeathsBlock', () => {
   const calls: string[] = [];
@@ -169,7 +166,7 @@ describe('DeathsBlock', () => {
     const { fixture, el, row, button } = render();
     button(row('Toren'), 'Reviver').click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const dialog = el.querySelector('[role="alertdialog"]')!;
@@ -178,7 +175,7 @@ describe('DeathsBlock', () => {
     expect(calls).toEqual([]);
 
     button(dialog, 'Reviver Toren').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(calls).toEqual(['revive toren-c key']);
@@ -195,7 +192,7 @@ describe('DeathsBlock', () => {
       new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
     );
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alertdialog"]')).toBeNull();
@@ -221,7 +218,7 @@ describe('DeathsBlock', () => {
     button(row('Toren'), 'Reviver').click();
     fixture.detectChanges();
     button(el.querySelector('[role="alertdialog"]')!, 'Reviver Toren').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const card = row('Toren').querySelector('[role="alert"]')!;
@@ -240,7 +237,7 @@ describe('DeathsBlock', () => {
 
     toggle.click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(calls).toEqual(['blocked g2 true']);
@@ -255,7 +252,7 @@ describe('DeathsBlock', () => {
     const toggle = row('Goblin 2').querySelector<HTMLButtonElement>('[role="switch"]')!;
     toggle.click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(toggle.getAttribute('aria-checked')).toBe('false');

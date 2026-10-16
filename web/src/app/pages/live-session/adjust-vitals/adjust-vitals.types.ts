@@ -1,4 +1,4 @@
-import { VitalsChange, VitalsVm } from '../live-session.types';
+import { VitalsChange, VitalsVm } from '../../../core/play/live-session.types';
 
 /** What the page hands the adjust sheet (or dialog). */
 export interface AdjustVitalsData {

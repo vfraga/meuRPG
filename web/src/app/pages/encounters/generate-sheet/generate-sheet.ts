@@ -38,9 +38,9 @@ import {
   warningLines,
 } from '../../../core/encounters/encounter-text';
 import { formatInt, tight } from '../../../core/format/text';
-import { Segmented, type Segment } from '../../live-session/combat/move-page/segmented';
-import { SheetFrame } from '../../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../live-session/combat/sheet-host';
+import { Segmented, type Segment } from '../../../shared/segmented/segmented';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
 import { SwapPanel } from '../swap-panel/swap-panel';
 

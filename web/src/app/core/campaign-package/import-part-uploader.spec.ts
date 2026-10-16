@@ -2,6 +2,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { ImportPartUploader, importPartPath } from './import-part-uploader';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 /** Just enough of XMLHttpRequest to drive `ImportPartUploader` by hand. */
 class FakeXhr {
   static last: FakeXhr;

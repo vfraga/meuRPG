@@ -66,6 +66,11 @@ jobs:
       - name: Formatting (Prettier)
         run: npm run format:check
 
+      # The layer rules (core, shared, pages, shell) and the import cycles, with a ratchet like the lint
+      # (.dependency-cruiser-known-violations.json, empty today: any violation fails). About 4 s.
+      - name: Import rules (dependency-cruiser)
+        run: npm run depcruise
+
       # The verdict: the plain run, where the setup file (src/test-setup.ts)
       # resets the stubbed globals and the clock after every test.
       - name: Run unit tests
@@ -74,16 +79,16 @@ jobs:
       - name: Build
         run: npm run build
 
-  # The coverage report, in its own job so it can never decide the verdict or
-  # cancel the build: with --coverage the run is 5 to 6 times slower (v8
-  # instrumentation: 509 s against 81 s on run 38037185741, and the 5 s test
-  # timeout fires on about 340 tests that wait on a timer), and it kept growing
-  # until it ate the 15 minutes of "test and build". The job is report only
-  # (continue-on-error); the plain `npm test` in "test and build" is the verdict.
+  # The coverage run, in its own job so it can never cancel or skip the build
+  # and runs in parallel with it (v8 instrumentation makes it slower than the
+  # plain run, and it once ate the 15 minutes of "test and build"). It is
+  # blocking: the floor (lines 89, statements 88, branches 84, functions 83,
+  # today's numbers rounded down) is `coverageThresholds` in web/angular.json,
+  # and the builder exits with an error under it. Raise the floor when the
+  # numbers rise; never lower it to get green.
   coverage:
-    name: coverage (report only)
+    name: coverage
     timeout-minutes: 25
-    continue-on-error: true
     runs-on: ubuntu-26.04
     defaults:
       run:
@@ -109,9 +114,8 @@ jobs:
 
       # With --coverage the setup file (src/test-setup.ts) runs once per
       # worker, not once per spec file, so its own spec (test-setup.spec.ts) is
-      # left out. No threshold yet: the numbers are only reported.
-      - name: Measure coverage (report only)
-        continue-on-error: true
+      # left out. Under the floor in angular.json the step fails.
+      - name: Measure coverage (floor)
         run: npx ng test --watch=false --coverage --exclude src/test-setup.spec.ts
 
       - name: Coverage summary

@@ -3,7 +3,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 
 import { GalleryClient } from '../../../core/images/gallery-client';
 import { mapMessage } from '../../../core/maps/maps-testing';
-import { LiveSessionSource, ShownImageVm } from '../live-session.types';
+import { LiveSessionSource, ShownImageVm } from '../../../core/play/live-session.types';
 import {
   ShownImagePanel,
   hiddenMapImages,

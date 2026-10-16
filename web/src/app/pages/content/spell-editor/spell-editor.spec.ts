@@ -13,6 +13,7 @@ import {
 import { TableContentClient } from '../../../core/content/content-client';
 import { catalog, entry } from '../../../core/content/content-testing';
 import { SpellEditor } from './spell-editor';
+import { settle } from '../../../../test-settle';
 
 function refusal(...violations: [string, string][]) {
   return new ConnectError('refused', Code.InvalidArgument, undefined, [
@@ -68,15 +69,6 @@ describe('SpellEditor', () => {
     };
   }
 
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 3; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
-  }
-
   const text = (el: Element) => (el.textContent ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
   const field = (el: HTMLElement, path: string) =>
     el.querySelector<HTMLElement>(`[data-field="${path}"]`)!;
@@ -107,13 +99,13 @@ describe('SpellEditor', () => {
         i.closest('label')?.textContent?.includes('Área'),
       ) as HTMLInputElement
     ).click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('Comprimento');
     const shape = field(el, 'table_spell.target.shape') as HTMLSelectElement;
     shape.value = 'cube';
     shape.selectedIndex = Array.from(shape.options).findIndex((o) => o.text === 'Cubo');
     shape.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el)).toContain('Lado');
     expect(text(el)).not.toContain('Comprimento');
   });
@@ -126,7 +118,7 @@ describe('SpellEditor', () => {
     const range = field(el, 'table_spell.range.distance_ft') as HTMLInputElement;
     range.value = '18';
     range.dispatchEvent(new Event('input'));
-    await settle(fixture);
+    await settle(fixture, 3);
     const preview = text(el.querySelector('.preview')!);
     expect(preview).toContain('Sopro de Nanquim');
     const rows = Array.from(el.querySelectorAll('.preview .rows__row')).map((r) =>
@@ -149,7 +141,7 @@ describe('SpellEditor', () => {
       affected: [],
     });
     click(el, 'Salvar magia');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(save).toHaveBeenCalledTimes(1);
     const [campaignId, sent, body] = save.mock.calls[0];
     expect(campaignId).toBe('camp-1');
@@ -169,7 +161,7 @@ describe('SpellEditor', () => {
       ),
     );
     click(el, 'Salvar magia');
-    await settle(fixture);
+    await settle(fixture, 3);
     const alert = el.querySelector('[role="alert"]')!;
     expect(text(alert)).toContain('Não foi possível salvar a magia.');
     expect(text(alert)).toContain('3 campos precisam de ajuste');
@@ -197,7 +189,7 @@ describe('SpellEditor', () => {
       ]),
     );
     click(el, 'Salvar magia');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(text(el.querySelector('[role="alert"]')!)).toContain(
       'Esta entrada mudou enquanto você editava.',
     );
@@ -229,12 +221,12 @@ describe('SpellEditor', () => {
     const { fixture, el } = setup(true);
     expect(el.querySelector('[data-field="table_spell.target.per_slot_level"]')).toBeNull();
     click(el, 'Mais criaturas por nível de espaço');
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelector('[data-field="table_spell.target.per_slot_level"]')).not.toBeNull();
     const level = field(el, 'table_spell.level') as HTMLSelectElement;
     level.selectedIndex = 0;
     level.dispatchEvent(new Event('change'));
-    await settle(fixture);
+    await settle(fixture, 3);
     expect(el.querySelector('[data-field="table_spell.target.per_slot_level"]')).toBeNull();
     expect(text(el)).not.toContain('acima do 0º');
   });
@@ -246,12 +238,12 @@ describe('SpellEditor', () => {
         i.closest('label')?.textContent?.includes(label),
       ) as HTMLInputElement;
     radio('Só quem conjura').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect((field(el, 'table_spell.range.kind') as HTMLSelectElement).selectedOptions[0].text).toBe(
       'Pessoal',
     );
     radio('Área').click();
-    await settle(fixture);
+    await settle(fixture, 3);
     expect((field(el, 'table_spell.range.kind') as HTMLSelectElement).selectedOptions[0].text).toBe(
       'Pessoal',
     );
@@ -263,7 +255,7 @@ describe('SpellEditor', () => {
       i.closest('label')?.textContent?.includes('Teste de resistência'),
     ) as HTMLInputElement;
     radio.click();
-    await settle(fixture);
+    await settle(fixture, 3);
     const ability = field(el, 'table_spell.save.ability') as HTMLSelectElement;
     expect(Array.from(ability.options).map((o) => o.text.trim())).toEqual([
       'Força',

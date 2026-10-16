@@ -6,8 +6,8 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { newKey } from '../../core/connect/idempotency';
 import { FamiliarEyesClient, familiarSightMessage } from '../../core/play/familiar-eyes';
-import { SheetFrame } from '../../pages/live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../pages/live-session/combat/sheet-host';
+import { SheetFrame } from '../sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../sheet/sheet-host';
 
 /** What the question needs: whose eyes, whose character, and whether a combat is on (it costs the action there). */
 export interface FamiliarEyesData {

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import type { EffectCardView } from '../../../core/effects/effects';
-import { pensantusVitals } from '../testing';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { PlayerVitals } from './player-vitals';
 
 const flat = (n: Element | null) => n?.textContent?.replace(/\s+/g, ' ').trim();

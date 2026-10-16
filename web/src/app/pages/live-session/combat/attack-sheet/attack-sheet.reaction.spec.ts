@@ -14,6 +14,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { AttackSheet, type AttackSheetData } from './attack-sheet';
+import { nextTurn } from '../../../../../test-settle';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const sword = {
@@ -287,7 +288,7 @@ describe('AttackSheet: the hit that waited for Escudo follows the server (R2-07)
     answered = true;
     state.apply(encounter({ ...enc, revision: 2 } as never));
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
     fixture.detectChanges();
     const text = plain(el.textContent);
     expect(text).toContain('Errou');
@@ -316,7 +317,7 @@ describe('AttackSheet: the hit that waited for Escudo follows the server (R2-07)
     answered = true;
     state.apply(encounter({ ...enc, revision: 2 } as never));
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
     fixture.detectChanges();
     const text = plain(el.textContent);
     expect(text).toContain('Acertou');

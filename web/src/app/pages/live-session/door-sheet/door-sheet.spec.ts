@@ -7,6 +7,7 @@ import type { DoorSquare } from '../../../core/maps/layers';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient } from '../../../core/maps/maps-testing';
 import { DoorSheet, type DoorSheetData } from './door-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 
@@ -34,7 +35,7 @@ describe('DoorSheet', () => {
         .find((b) => plain(b.textContent).includes(name))!
         .click();
       fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       await fixture.whenStable();
       fixture.detectChanges();
     };
@@ -106,7 +107,7 @@ describe('DoorSheet', () => {
     expect(radios.map((r) => r.tabIndex)).toEqual([-1, 0, -1]);
     radios[1].focus();
     radios[1].dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     expect(api.paints).toEqual([

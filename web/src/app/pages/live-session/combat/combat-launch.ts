@@ -11,7 +11,7 @@ import {
   type CombatMapInfo,
   StartCombatDialog,
   type StartCombatData,
-} from './start-combat/start-combat-dialog';
+} from '../../../shared/start-combat/start-combat-dialog';
 
 /** The session's current map as the start dialog wants it, or `null` while there is none or it has no image. */
 export function combatMapInfo(state: MapState): CombatMapInfo | null {

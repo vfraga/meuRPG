@@ -12,6 +12,12 @@ import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter, reactionWindow } from '../../../../core/combat/combat-testing';
 import { PendingDamages } from './pending-damages';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('PendingDamages, a hit that waits for a reaction (PM-04)', () => {
   const pending = (status: PendingDamageStatus) =>
     ({

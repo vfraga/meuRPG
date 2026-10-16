@@ -9,7 +9,7 @@ import { carriedErrorMessage, carriedLine, carriedOptions } from '../../../core/
 import { type LightOption, LightPresets } from '../../../core/maps/light-presets';
 import type { MapState } from '../../../core/maps/map-state';
 import { MapsClient } from '../../../core/maps/maps-client';
-import type { PartyMemberInfoVm } from '../live-session.types';
+import type { PartyMemberInfoVm } from '../../../core/play/live-session.types';
 
 /**
  * "Luz dos personagens" (MR-036, E9-04 state 2): the master's panel on the session

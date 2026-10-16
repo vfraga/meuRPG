@@ -520,6 +520,9 @@ func (s *Service) fireOutside(ctx context.Context, c *combatTx, trap maplink.Tra
 			if targets[i].saveDice, err = s.outsideSaveDice(ctx, c.tx, ch.ID); err != nil {
 				return nil, err
 			}
+			if targets[i].lucky, err = s.outsideLucky(ctx, c.tx, campaignID, ch); err != nil {
+				return nil, err
+			}
 		}
 	}
 	for j, cr := range creatures {
@@ -602,6 +605,20 @@ func (s *Service) fireOutside(ctx context.Context, c *combatTx, trap maplink.Tra
 		ev.Caught = append(ev.Caught, cc)
 	}
 	return ev, nil
+}
+
+// outsideLucky says the character a trap caught outside a combat is a halfling player's
+// character: the app rolls a 1 on its saving throw again by itself (combat_lucky.go). An NPC
+// never is, and its sheet is not read.
+func (s *Service) outsideLucky(ctx context.Context, tx pgx.Tx, campaignID string, ch link.Character) (bool, error) {
+	if !ch.Player {
+		return false, nil
+	}
+	sheet, err := s.roster.CombatSheet(ctx, tx, campaignID, ch.ID)
+	if err != nil {
+		return false, err
+	}
+	return sheet.Traits.Lucky, nil
 }
 
 // TokenDropped implements maps.TrapFirer: the master dropped a player's

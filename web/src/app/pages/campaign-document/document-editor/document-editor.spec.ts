@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { type CampaignDocument } from '../../../../gen/meurpg/campaigns/v1/campaign_document_pb';
-import { DocumentClient } from '../document-clients';
+import { DocumentClient } from '../../../shared/campaign-document/document-clients';
 import { DocumentEditor } from './document-editor';
 
 const doc = { body: 'Texto salvo', revision: 1n } as unknown as CampaignDocument;

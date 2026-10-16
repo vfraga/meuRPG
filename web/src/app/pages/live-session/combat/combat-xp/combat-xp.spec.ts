@@ -27,6 +27,7 @@ import { RosterClient } from '../../../../core/maps/roster-client';
 import { ProgressionClient } from '../../../../core/progression/progression-client';
 import { XpChanges } from '../../../../core/progression/xp-changes';
 import { CombatXp, type CombatXpState } from './combat-xp';
+import { nextTurn } from '../../../../../test-settle';
 
 const nbsp = ' ';
 
@@ -117,7 +118,7 @@ describe('CombatXp (E7-06)', () => {
   /** Lets the fake calls answer (they are plain promises, which `whenStable` does not wait for). */
   async function ready(fixture: ReturnType<typeof setup>['fixture']) {
     for (let i = 0; i < 3; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

@@ -15,6 +15,7 @@ import {
 } from '../../../../gen/meurpg/play/v1/revivify_pb';
 import { RevivifyClient } from '../../../core/revivify/revivify-client';
 import { RevivifyAsk } from './revivify-ask';
+import { nextTurn } from '../../../../test-settle';
 
 const asked = (id: string, over: MessageInitShape<typeof RevivifyRequestSchema> = {}) =>
   create(RevivifyRequestSchema, {
@@ -25,10 +26,6 @@ const asked = (id: string, over: MessageInitShape<typeof RevivifyRequestSchema> 
     createdAt: timestampFromDate(new Date(2026, 9, 9, 10, 0, Number(id.replace(/\D/g, '')))),
     ...over,
   });
-
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
 
 describe('RevivifyAsk', () => {
   let requests: RevivifyRequest[];
@@ -65,7 +62,7 @@ describe('RevivifyAsk', () => {
     const fixture = TestBed.createComponent(RevivifyAsk);
     fixture.componentRef.setInput('campaignId', 'camp-1');
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
@@ -115,7 +112,7 @@ describe('RevivifyAsk', () => {
     const { fixture, el, button } = await open();
     requests = [];
     button('Faz menos de 1 minuto').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(confirms).toHaveLength(1);
@@ -132,7 +129,7 @@ describe('RevivifyAsk', () => {
     const { fixture, el, button } = await open();
     requests = [];
     button('Já passou').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(confirms[0]).toMatchObject({ pendingId: 'r1', within: false });
@@ -147,7 +144,7 @@ describe('RevivifyAsk', () => {
 
     requests = [asked('r2', { casterName: 'Brisa', targetName: 'Nuvem' })];
     button('Já passou').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('h2')?.textContent).toContain(
@@ -168,7 +165,7 @@ describe('RevivifyAsk', () => {
     requests = [asked('r1')];
     fixture.componentRef.setInput('reload', 1);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(listed).toHaveBeenCalledTimes(2);
@@ -192,7 +189,7 @@ describe('RevivifyAsk', () => {
         ]),
       );
     button('Faz menos de 1 minuto').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const card = el.querySelector('[role="alert"]')!;
@@ -214,7 +211,7 @@ describe('RevivifyAsk', () => {
     confirmFn = () => Promise.reject(new ConnectError('answered', Code.FailedPrecondition));
     requests = [];
     button('Faz menos de 1 minuto').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('[role="alertdialog"]')).toBeNull();
@@ -226,7 +223,7 @@ describe('RevivifyAsk', () => {
     const { fixture, el, button } = await open();
     confirmFn = () => Promise.reject(new ConnectError('gone', Code.NotFound));
     button('Faz menos de 1 minuto').click();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     expect(el.querySelector('.ask__error')?.textContent).toContain('não existe mais');

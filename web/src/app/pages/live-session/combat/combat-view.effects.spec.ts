@@ -26,6 +26,7 @@ import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { EffectSaveSheet } from '../effects/effect-save-sheet/effect-save-sheet';
 import { CombatView } from './combat-view';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 // The effects that last on the combat screen (RN-22): the saving throw of the end of the turn opens by itself and can be
 // opened again, the waits are the server's words, and what the effects take from the turn is said and spent.
@@ -168,7 +169,7 @@ async function settle(fixture: {
   whenStable: () => Promise<unknown>;
 }): Promise<void> {
   await fixture.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await nextTurn();
   await fixture.whenStable();
   fixture.detectChanges();
 }

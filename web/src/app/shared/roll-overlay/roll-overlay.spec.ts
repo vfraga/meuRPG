@@ -4,6 +4,12 @@ import { vi } from 'vitest';
 import { RollAnimator, type RollShow, shapesOf } from './roll-animator';
 import { RollOverlay } from './roll-overlay';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 const attack: RollShow = {
   label: 'Ataque com Machado grande',
   dice: [{ sides: 20, face: 17 }],

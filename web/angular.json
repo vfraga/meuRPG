@@ -99,7 +99,8 @@
             "providersFile": "src/test-providers.ts",
             "setupFiles": ["src/test-setup.ts"],
             "coverageExclude": ["src/gen/**", "**/*.spec.ts", "src/test-*.ts"],
-            "coverageReporters": ["text-summary", "lcov", "json-summary"]
+            "coverageReporters": ["text-summary", "lcov", "json-summary"],
+            "coverageThresholds": { "lines": 89, "statements": 88, "branches": 84, "functions": 83 }
           }
         }
       }

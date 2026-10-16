@@ -22,7 +22,7 @@ import { MAX_COLUMNS, MIN_COLUMNS, gridRows } from '../../../core/combat/combat-
 import { MapBlockedReason } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { editorErrorMessage, mapBlockedReason } from '../../../core/maps/map-errors';
 import { MapsClient } from '../../../core/maps/maps-client';
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 import { CalibrateAsk } from './calibrate-ask';
 import { factorLabel, maxDrawnColumns } from '../../../core/maps/calibration';
 

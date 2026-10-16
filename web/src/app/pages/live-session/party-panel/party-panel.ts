@@ -3,10 +3,16 @@ import { MatButtonModule } from '@angular/material/button';
 
 import { aidTagForMaster } from '../../../core/combat/combat-effects';
 import { NudgeButton } from '../nudge-button/nudge-button';
-import { PartyMemberInfoVm, VitalsVm } from '../live-session.types';
+import { PartyMemberInfoVm, VitalsVm } from '../../../core/play/live-session.types';
 import { SessionXp } from '../session-xp/session-xp';
-import { SlotDots } from '../slot-dots/slot-dots';
-import { freeWords, hitPointsPercent, hitPointsState, partyRowSub, slotRowLabel } from '../vitals';
+import { SlotDots } from '../../../shared/slot-dots/slot-dots';
+import {
+  freeWords,
+  hitPointsPercent,
+  hitPointsState,
+  partyRowSub,
+  slotRowLabel,
+} from '../../../core/play/vitals';
 
 /**
  * The master's "Grupo" panel on the session page (artboards E5-04 and

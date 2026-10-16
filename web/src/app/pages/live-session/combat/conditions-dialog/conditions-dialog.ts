@@ -8,8 +8,8 @@ import { ActionKey } from '../../../../core/connect/idempotency';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { CONDITIONS, sameKeys } from '../../../../core/combat/conditions';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands "Condições…". */
 export interface ConditionsData {

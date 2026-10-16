@@ -6,8 +6,8 @@ import { RouterLink } from '@angular/router';
 
 import type { CampaignDocument } from '../../../../gen/meurpg/campaigns/v1/campaign_document_pb';
 import { describeConnectError } from '../../../core/connect/connect-errors';
-import { DocumentClient } from '../../campaign-document/document-clients';
-import { whenText } from '../../campaign-document/document-format';
+import { DocumentClient } from '../../../shared/campaign-document/document-clients';
+import { whenText } from '../../../shared/campaign-document/document-format';
 
 type PanelState =
   | { status: 'loading' }

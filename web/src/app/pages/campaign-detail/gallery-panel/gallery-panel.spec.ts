@@ -10,8 +10,7 @@ import {
   plain,
 } from '../../../core/images/gallery-testing';
 import { GalleryPanel } from './gallery-panel';
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { nextTurn } from '../../../../test-settle';
 
 describe('GalleryPanel', () => {
   let gallery: FakeGalleryClient;
@@ -28,7 +27,7 @@ describe('GalleryPanel', () => {
     const fixture = TestBed.createComponent(GalleryPanel);
     fixture.componentRef.setInput('campaignId', 'camp-1');
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;

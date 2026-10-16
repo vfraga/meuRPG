@@ -81,7 +81,7 @@ import {
   SceneActionSchema,
   TreasureFinderSchema,
 } from '../../../gen/meurpg/maps/v1/maps_pb';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
 import { CALLING_NOTICE_MS, LiveSession } from './live-session';
 import {
   CampaignInfoVm,
@@ -92,8 +92,9 @@ import {
   PartyMemberInfoVm,
   PlayerSheetVm,
   ShownImageVm,
-} from './live-session.types';
-import { brisaVitals, pensantusVitals } from './testing';
+} from '../../core/play/live-session.types';
+import { brisaVitals, pensantusVitals } from '../../core/play/live-testing';
+import { nextTurn } from '../../../test-settle';
 
 class KindError extends Error {
   constructor(readonly kind: LiveErrorKind) {
@@ -295,7 +296,7 @@ describe('LiveSession', () => {
     fixture.detectChanges();
     for (let i = 0; i < 4; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
     return fixture.nativeElement as HTMLElement;
@@ -370,10 +371,10 @@ describe('LiveSession', () => {
       xpExperience.mockClear();
 
       source.push({ kind: 'xpChanged' });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       expect(changes.version()).toBe(before + 1);
       // The party panel's "Dar XP" reads the characters again.
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       expect(xpExperience).toHaveBeenCalledTimes(1);
     });
   });
@@ -388,8 +389,8 @@ describe('LiveSession', () => {
       expect(first).toBeGreaterThanOrEqual(1);
       expect(el.querySelector('app-group-check-card')?.textContent).toContain('Esperando o mestre');
       source.push({ kind: 'groupCheckChanged' });
-      await new Promise((r) => setTimeout(r));
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
+      await nextTurn();
       expect(reads()).toBe(first + 1);
     });
 
@@ -865,7 +866,7 @@ describe('LiveSession', () => {
         xBp: 6200,
         yBp: 5400,
       });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
       expect(el.querySelector('app-map-token')?.getAttribute('style')).toContain('left: 62%');
       expect(maps.calls.filter((c) => c.startsWith('get')).length).toBe(gets);
@@ -875,12 +876,12 @@ describe('LiveSession', () => {
       const el = await render();
       const gets = maps.calls.filter((c) => c.startsWith('get')).length;
       source.push({ kind: 'mapChanged', mapId: 'map-1' });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       expect(maps.calls.filter((c) => c.startsWith('get')).length).toBe(gets + 1);
 
       maps.responses.delete('map-1'); // not_found: the map is hidden from them now
       source.push({ kind: 'mapChanged', mapId: 'map-1' });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
       expect(el.textContent).toContain('O mestre ainda não escolheu um mapa.');
     });
@@ -890,11 +891,11 @@ describe('LiveSession', () => {
       const other = mapMessage('map-2', 'Torre de Mirathel', { revealed: true, current: true });
       maps.responses.set('map-2', mapResponse(other));
       source.push({ kind: 'currentMap', mapId: 'map-2' });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
       expect(el.querySelector('#session-map-heading')?.textContent).toContain('Torre de Mirathel');
       source.push({ kind: 'currentMap', mapId: null });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
       expect(el.textContent).toContain('O mestre ainda não escolheu um mapa.');
     });
@@ -910,7 +911,7 @@ describe('LiveSession', () => {
         url: '/images/img-1',
       };
       source.push({ kind: 'shownImage', image });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
       expect(el.querySelector('#shown-title')?.textContent).toContain('O mestre está mostrando');
       expect(el.querySelector('.block__name')?.textContent).toContain('Capitão Goblin');
@@ -921,7 +922,7 @@ describe('LiveSession', () => {
       expect(el.textContent).toContain('O mestre está mostrando Capitão Goblin.');
 
       source.push({ kind: 'shownImage', image: null });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
       expect(el.textContent).toContain('O mestre parou de mostrar a imagem.');
     });
@@ -948,7 +949,7 @@ describe('LiveSession', () => {
 
       source.left = [];
       source.push({ kind: 'leftImages' });
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
       expect(el.querySelector('#left-title')).toBeNull();
       expect(el.querySelector('[role="status"]:not(.status)')?.textContent?.trim() ?? '').toBe('');
@@ -981,14 +982,14 @@ describe('LiveSession', () => {
           .mockReturnValueOnce(older.promise)
           .mockReturnValueOnce(newer.promise);
         source.push({ kind: 'leftImages' });
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         source.push({ kind: 'leftImages' });
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         expect(source.listLeftImages).toHaveBeenCalledTimes(2);
         const answers = [() => older.resolve([tower]), () => newer.resolve([])];
         for (const answer of newerFirst ? answers.reverse() : answers) {
           answer();
-          await new Promise((r) => setTimeout(r));
+          await nextTurn();
         }
         TestBed.inject(ApplicationRef).tick();
         return el;
@@ -1018,7 +1019,7 @@ describe('LiveSession', () => {
 
   describe('RP scene (MR-015, E7-02, E7-03)', () => {
     async function tick(): Promise<void> {
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
     }
 
@@ -1331,7 +1332,7 @@ describe('LiveSession', () => {
   describe('the fog of war (MR-036, RN-10, E9-03)', () => {
     let maps: FakeMapsClient;
     const tick = async () => {
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
     };
     const tile = (tx: number, ty: number, revision: number) => ({
@@ -1671,8 +1672,8 @@ describe('LiveSession', () => {
       revivifyList.mockResolvedValue([asked]);
       const reads = revivifyList.mock.calls.length;
       source.push({ kind: 'revivifyChanged' });
-      await new Promise((r) => setTimeout(r));
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
+      await nextTurn();
 
       expect(revivifyList.mock.calls.length).toBeGreaterThan(reads);
     });
@@ -1689,8 +1690,8 @@ describe('LiveSession', () => {
       await render();
       const reads = vi.spyOn(source, 'getLiveSession');
       source.push({ kind: 'characterRevived', characterId: 'brisa' });
-      await new Promise((r) => setTimeout(r));
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
+      await nextTurn();
 
       expect(reads).toHaveBeenCalled();
     });
@@ -1703,8 +1704,8 @@ describe('LiveSession', () => {
       const focused = document.activeElement;
 
       source.push({ kind: 'characterRevived', characterId: 'pensantus' });
-      await new Promise((r) => setTimeout(r));
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
 
       const said = (el.querySelector('app-revived-notice [role="status"]')?.textContent ?? '')
@@ -1719,8 +1720,8 @@ describe('LiveSession', () => {
       asMaster();
       const el = await render();
       source.push({ kind: 'characterRevived', characterId: 'brisa' });
-      await new Promise((r) => setTimeout(r));
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
+      await nextTurn();
       expect(el.querySelector('app-revived-notice')).toBeNull();
     });
   });
@@ -1736,8 +1737,8 @@ describe('LiveSession', () => {
       };
     };
     const settle = async () => {
-      await new Promise((r) => setTimeout(r));
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
+      await nextTurn();
       TestBed.inject(ApplicationRef).tick();
     };
 

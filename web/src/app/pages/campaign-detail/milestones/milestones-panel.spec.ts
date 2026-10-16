@@ -18,6 +18,7 @@ import { RosterClient } from '../../../core/maps/roster-client';
 import { ExperienceStore } from '../../../core/progression/experience-store';
 import { ProgressionClient } from '../../../core/progression/progression-client';
 import { MilestonesPanel } from './milestones-panel';
+import { nextTurn } from '../../../../test-settle';
 
 const reachedVale = create(MilestoneSchema, {
   id: 'm1',
@@ -163,7 +164,7 @@ describe('MilestonesPanel (E8-14)', () => {
     );
     document.dispatchEvent(new Event('visibilitychange'));
     await fixture.whenStable();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     fixture.detectChanges();
     expect(el.querySelector('.live')?.textContent).toBe(
       'O mestre marcou Chegar ao Vale Seco. Pensantus pode subir de nível.',

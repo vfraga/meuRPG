@@ -625,6 +625,11 @@ function castRow(
       lines.push(
         `${tight(`Resistência: ${d20Formula(t.save.roll)}`)}${t.save.dc > 0 ? `, CD ${t.save.dc}` : ''}`,
       );
+      // "Sortudo: 1 → 14": a halfling player's 1 the app rolled again by itself; the formula already has the new face.
+      const saveLucky = luckyText(t.save.roll);
+      if (saveLucky) {
+        lines.push(saveLucky);
+      }
       d20s.push({
         caption: 'Resistência',
         roll: t.save.roll,

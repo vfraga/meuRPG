@@ -39,7 +39,7 @@ import { LevelUpBanner } from './level-up-banner/level-up-banner';
 import { LevelUpDoneNotice } from './level-up-banner/level-up-done';
 import { AbilityMedallions } from './ability-medallions/ability-medallions';
 import { BasicSheet } from './basic-sheet/basic-sheet';
-import { OpenSessions } from '../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
 import {
   BasicSheetVm,
   CampaignXpMode,
@@ -62,9 +62,9 @@ import { RejectConfirm } from './reject-confirm/reject-confirm';
 import { RequestChanges } from './request-changes/request-changes';
 import { formatWhen, issueTitle } from './sheet-format';
 import { StoryPanel } from './story-panel/story-panel';
-import { XpWatcher } from './xp-watcher';
+import { XpWatcher } from '../../core/play/xp-watcher';
 import { ResourceCounters } from './resource-counters/resource-counters';
-import type { VitalsVm } from '../live-session/live-session.types';
+import type { VitalsVm } from '../../core/play/live-session.types';
 
 type PageState =
   | { status: 'loading' }

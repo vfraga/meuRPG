@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { CampaignSessions } from './campaign-sessions';
-import { GameSessionSource, GameSessionVm } from './game-session-card.types';
+import { GameSessionSource, GameSessionVm } from '../../../core/play/game-session-card.types';
 
 function session(sessionNumber: number, ended = true): GameSessionVm {
   return {

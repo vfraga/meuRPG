@@ -13,7 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 import type { SceneImage } from '../../../../../gen/meurpg/maps/v1/maps_pb';
 import { tight } from '../../../../core/format/text';
 import { RetryImage } from '../../../../shared/retry-image/retry-image';
-import { LiveSessionSource, ShownImageVm } from '../../live-session.types';
+import { LiveSessionSource, ShownImageVm } from '../../../../core/play/live-session.types';
 import { showErrorMessage } from '../../shown-image-panel/shown-image-panel';
 
 /**

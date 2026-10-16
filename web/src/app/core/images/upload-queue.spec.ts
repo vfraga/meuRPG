@@ -2,8 +2,8 @@ import type { GalleryImage, GalleryUsage } from '../../../gen/meurpg/maps/v1/gal
 import { FakeImageUploader, galleryImage, galleryUsage, plain } from './gallery-testing';
 import { UploadFailed } from './upload-errors';
 import { UploadQueue } from './upload-queue';
+import { nextTurn } from '../../../test-settle';
 
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 const jpeg = (name: string, size = 1000) =>
   new File([new Uint8Array(size)], name, { type: 'image/jpeg' });
 
@@ -34,12 +34,12 @@ describe('UploadQueue', () => {
     expect(uploader.pending.map((p) => p.campaignId)).toEqual(['camp-1']);
 
     uploader.pending[0].resolve(galleryImage('img-a', 'a'));
-    await flush();
+    await nextTurn();
     expect(uploaded.map((i) => i.id)).toEqual(['img-a']);
     expect(queue.items().map((i) => [i.fileName, i.status])).toEqual([['b.jpg', 'sending']]);
 
     uploader.pending[1].resolve(galleryImage('img-b', 'b'));
-    await flush();
+    await nextTurn();
     expect(uploaded.map((i) => i.id)).toEqual(['img-a', 'img-b']);
     expect(queue.items()).toEqual([]);
   });
@@ -67,7 +67,7 @@ describe('UploadQueue', () => {
   it('turns a server refusal into that file’s notice, and goes on with the next file', async () => {
     queue.add([jpeg('texto.png'), jpeg('b.jpg')]);
     uploader.pending[0].reject(new UploadFailed('UNSUPPORTED_TYPE'));
-    await flush();
+    await nextTurn();
     expect(queue.failures().map((f) => f.fileName)).toEqual(['texto.png']);
     expect(queue.items().map((i) => i.fileName)).toEqual(['b.jpg']);
     expect(uploader.pending.length).toBe(2);
@@ -87,7 +87,7 @@ describe('UploadQueue', () => {
     expect(queue.items().map((i) => i.fileName)).toEqual(['a.jpg', 'c.jpg']);
 
     queue.cancel(a.key);
-    await flush();
+    await nextTurn();
     expect(uploader.pending[0].options.signal?.aborted).toBe(true);
     expect(queue.failures()).toEqual([]);
     expect(uploader.pending.map((p) => p.file.name)).toEqual(['a.jpg', 'c.jpg']);
@@ -104,7 +104,7 @@ describe('UploadQueue', () => {
     queue.add([jpeg('a.jpg'), jpeg('b.jpg')]);
     queue.destroy();
     expect(uploader.pending[0].options.signal?.aborted).toBe(true);
-    await flush();
+    await nextTurn();
     expect(queue.items()).toEqual([]);
     expect(uploader.pending.length).toBe(1);
     expect(uploaded).toEqual([]);

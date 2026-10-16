@@ -529,7 +529,9 @@ function hellishRebukeResult(
       v.save
         ? `Teste de Destreza ${ofThe([prompt?.aggressorLabel ?? ''])}: ${rollText(v.save)} contra CD ${v.saveDc}. ${capitalized(who)} ${outcome}: ${v.damage} de dano.`
         : `O teste de ${who} é do mestre: o resultado aparece no registro do combate.`,
-    ],
+      // "Sortudo: 1 → 14": a halfling player's 1 the app rolled again by itself; the roll above already has the new face.
+      luckyText(v.save),
+    ].filter(Boolean),
     chips: [...base(ctx).used, ...(v.racial ? ['Legado Infernal usado'] : slotChip(ctx.after))],
     note: '',
     throwBack: false,

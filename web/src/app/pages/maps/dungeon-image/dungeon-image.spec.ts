@@ -11,6 +11,7 @@ import { DungeonsClient } from '../../../core/maps/dungeons-client';
 import { FakeDungeonsClient, roomsResponse } from '../../../core/maps/dungeons-testing';
 import { mapMessage } from '../../../core/maps/maps-testing';
 import { DungeonImage } from './dungeon-image';
+import { nextTurn } from '../../../../test-settle';
 
 const blocked = (reason: MapBlockedReason) =>
   new ConnectError('blocked', Code.FailedPrecondition, undefined, [
@@ -55,10 +56,10 @@ describe('DungeonImage ("Imagem" and "Redesenhar", E10-05 5 and 6)', () => {
     )!;
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     fixture.detectChanges();
   };
 

@@ -7,6 +7,7 @@ import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { mapMessage, mapResponse } from '../../../core/maps/maps-testing';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { MapPrint } from './map-print';
+import { nextTurn } from '../../../../test-settle';
 
 /** The artboard's map: 30 x 20 squares on a 3.000 x 2.000 px image. */
 const gridded = () =>
@@ -67,7 +68,7 @@ async function render(
   });
   const fixture = TestBed.createComponent(MapPrint);
   settle(fixture);
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await nextTurn();
   settle(fixture);
   return { fixture, el: fixture.nativeElement as HTMLElement };
 }
@@ -362,11 +363,11 @@ describe('MapPrint: a resposta atrasada de outra rota', () => {
       campaign: { name, myRole: Role.MASTER, awaitingApproval: false },
     });
     answers.get('camp-2')!(campaign('Segunda'));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await nextTurn();
     settle(fixture);
     // The first campaign answers last: it is no longer the one on screen.
     answers.get('camp-1')!(campaign('Primeira'));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await nextTurn();
     settle(fixture);
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
     expect(text).toContain('Segunda');

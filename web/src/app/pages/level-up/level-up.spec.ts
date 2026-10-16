@@ -49,6 +49,12 @@ import { LevelUpPage } from './level-up';
 import { newSpellsTitle } from './level-up-session';
 import { QUIET_MS } from './level-up-preview';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 /** Lets every pending answer land, quiet period of the preview included: the spec's fake clock moves, the wall clock does not. */
 const settle = () => vi.advanceTimersByTimeAsync(QUIET_MS * 2);
 

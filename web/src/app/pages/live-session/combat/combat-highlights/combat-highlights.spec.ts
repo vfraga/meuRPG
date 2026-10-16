@@ -13,6 +13,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import type { CombatantInfo } from '../combat-info';
 import { CombatHighlights } from './combat-highlights';
 import { HighlightsCard } from './highlights-card';
+import { nextTurn } from '../../../../../test-settle';
 
 const nbsp = ' ';
 /** The text of an element as read, without the icons' ligature names. */
@@ -84,7 +85,7 @@ const info = new Map<string, CombatantInfo>([
 async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
   for (let i = 0; i < 3; i++) {
     await fixture.whenStable();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     fixture.detectChanges();
   }
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
 
 // The halfling's Lucky (SRD 5.1, Halfling): a halfling who rolls a 1 on the d20 of an attack roll,
@@ -34,6 +35,16 @@ import (
 // Bardic Inspiration die, the roll stays held for the die's question, now on the new roll. The 1
 // is on the table first, so Lucky comes first; the die is added to whatever the d20 is after it.
 // The new roll is never asked about again, even when it is another 1.
+//
+// The saving throws the app rolls for a player's character inside someone else's call (a spell's
+// save, a trap's, the Dexterity save against Hellish Rebuke) have nobody to ask, so the app rolls
+// the 1 again by itself (autoLucky): a reroll of a 1 never lowers the result, so a player always
+// takes it. The new roll stands, even another 1; with advantage or disadvantage the first die that
+// shows a 1 is the one rolled again, and the die that counts is picked again from the new pair.
+// Only a player's character is lucky there (luckySaver): an NPC never is, whatever its sheet says.
+// The reroll is kept where the save keeps its d20 (saveRoll.Lucky for a spell's and a trap's save,
+// actionEvent.Lucky for Hellish Rebuke), so the result and the log say "Sortudo: 1 → 14" to whoever
+// reads the save's dice, and the undo of the call has nothing more to put back.
 
 // luckyReroll is the die Lucky rolled again: its index in the faces in the order rolled, the 1 it
 // showed and the new face. An attack's event keeps it, so the log still says "Sortudo: 1 → 14"
@@ -87,6 +98,48 @@ func luckyIndexOf(faces []int, lucky bool) *int32 {
 		return nil
 	}
 	return new(clamp32(i, 0, 1))
+}
+
+// luckySaver says the app rolls a 1 again on a saving throw it rolls for this combatant: a
+// player's character whose sheet has Lucky. An NPC is never lucky here, even with a halfling's
+// sheet.
+func luckySaver(c playdb.Combatant, traits link.Traits) bool {
+	return c.Kind == kindPlayer && traits.Lucky
+}
+
+// autoLucky rolls again, with d20, the first of the faces that shows a 1 when the roller is lucky,
+// and gives the new faces and what Lucky did; the faces as they were and nil when nothing was
+// rolled again. The new face stands, even another 1.
+func autoLucky(faces []int, lucky bool, d20 func() (int, error)) ([]int, *luckyReroll, error) {
+	at := luckyIndexOf(faces, lucky)
+	if at == nil {
+		return faces, nil, nil
+	}
+	face, err := d20()
+	if err != nil {
+		return nil, nil, err
+	}
+	out := slices.Clone(faces)
+	out[*at] = face
+	return out, &luckyReroll{Index: *at, From: 1, To: clamp32(face, 1, d20Sides)}, nil
+}
+
+// appD20 rolls one d20 in the app: the die autoLucky rolls again on a save the app rolled.
+func (s *Service) appD20() (int, error) {
+	face, _, err := s.d20(rollInput{inApp: true}, 0)
+	return face, err
+}
+
+// luckySave is a saving throw's d20 the app rolled (roll, with the mode and the modifier it was
+// rolled with) after autoLucky: the die that counts and the total are picked again from the new
+// faces, as d20With picks them. The roll as it was and nil when nothing was rolled again.
+func (s *Service) luckySave(roll d20Roll, modifier int, mode combat.RollMode, lucky bool) (d20Roll, *luckyReroll, error) {
+	faces, reroll, err := autoLucky(roll.Faces, lucky, s.appD20)
+	if err != nil || reroll == nil {
+		return roll, nil, err
+	}
+	idx := mode.Pick(faces)
+	return d20Roll{Faces: faces, Index: idx, Total: faces[idx] + modifier, Physical: roll.Physical}, reroll, nil
 }
 
 // luckyOfferOf is the question a hold asks the player of a lucky attacker: the d20 with the

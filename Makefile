@@ -108,11 +108,16 @@ proto-lint: ## Lint proto files and check formatting
 # (`git fetch origin main`).
 LINT_BASE ?= origin/main
 
+# Every finding of the backlog: by default golangci-lint shows at most 50 per
+# linter, 3 with the same text and one per line, and gocyclo, gocognit and
+# maintidx all report on the same `func` line.
+LINT_ALL_FLAGS := --max-issues-per-linter=0 --max-same-issues=0 --uniq-by-line=false
+
 lint: proto-lint ## Run all linters (proto + Go); Go only for what changed since origin/main, like CI
 	cd backend && $(GOLANGCI_LINT) run --new-from-merge-base=$(LINT_BASE)
 
 lint-all: proto-lint ## Run all linters on the whole code, including the backlog the ratchet lets through
-	cd backend && $(GOLANGCI_LINT) run
+	cd backend && $(GOLANGCI_LINT) run $(LINT_ALL_FLAGS)
 
 test: ## Run backend Go tests with the race detector
 	cd backend && go test -race ./...

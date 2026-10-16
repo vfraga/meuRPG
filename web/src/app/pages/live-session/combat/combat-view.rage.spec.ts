@@ -29,6 +29,13 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
+import { nextTurn } from '../../../../test-settle';
+
+// With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
 const toren = combatant({
@@ -58,7 +65,7 @@ const enc = (pending: string) =>
 
 async function settle(fixture: { detectChanges: () => void; whenStable: () => Promise<unknown> }) {
   await fixture.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await nextTurn();
   await fixture.whenStable();
   fixture.detectChanges();
 }

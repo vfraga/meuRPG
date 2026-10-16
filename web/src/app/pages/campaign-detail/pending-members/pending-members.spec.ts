@@ -6,6 +6,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { PendingMember } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { PendingMembers } from './pending-members';
+import { nextTurn } from '../../../../test-settle';
 
 function pending(userId: string, name: string): PendingMember {
   return {
@@ -33,8 +34,6 @@ class FakeCampaignsService {
   }
 }
 
-const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-
 describe('PendingMembers', () => {
   let fake: FakeCampaignsService;
   let fixture: ComponentFixture<PendingMembers>;
@@ -55,7 +54,7 @@ describe('PendingMembers', () => {
 
   async function settle(): Promise<void> {
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   }

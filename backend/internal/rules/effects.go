@@ -194,227 +194,354 @@ var (
 	}
 )
 
+// The limits of the effect schema.
+const (
+	// minExtraAttacks and maxExtraAttacks bound the attacks an extra_attack makes.
+	minExtraAttacks = 2
+	maxExtraAttacks = 4
+)
+
+// effectCompiler checks and compiles one effect.
+type effectCompiler struct {
+	c *content
+	// key is the feature, trait or background the effect belongs to.
+	key string
+	e   *Effect
+}
+
+func (x effectCompiler) fail(format string, args ...any) error {
+	return fmt.Errorf("effect %s (%s): %s", x.key, x.e.Type, fmt.Sprintf(format, args...))
+}
+
+// compile compiles a formula of the effect; an empty one is no program.
+func (x effectCompiler) compile(src string, kind formula.Kind) (*formula.Program, error) {
+	if src == "" {
+		return nil, nil
+	}
+	p, err := x.c.compileFormula(src, kind)
+	if err != nil {
+		return nil, x.fail("formula %q: %v", src, err)
+	}
+	return p, nil
+}
+
+// takesOnly says the effect sets nothing but the fields strip takes off a copy
+// of it (compiled formulas included).
+func (x effectCompiler) takesOnly(strip func(other *Effect)) bool {
+	other := *x.e
+	strip(&other)
+	return reflect.DeepEqual(other, Effect{})
+}
+
+// effectCheckers check what each effect type needs, after the checks every
+// effect goes through.
+var effectCheckers = map[string]func(x effectCompiler) error{
+	"ranged_attack":    effectCompiler.rangedAttack,
+	"replaces":         effectCompiler.replaces,
+	"modifier":         effectCompiler.modifier,
+	"proficiency":      effectCompiler.proficiency,
+	"roll_mode":        effectCompiler.rollMode,
+	"sense":            effectCompiler.sense,
+	"spellcasting":     effectCompiler.spellcasting,
+	"resource":         effectCompiler.resource,
+	"choice":           effectCompiler.choice,
+	"ability_increase": effectCompiler.abilityIncrease,
+	"grant_action":     effectCompiler.grantAction,
+	"superiority_die":  effectCompiler.superiorityDie,
+	"extra_attack":     effectCompiler.extraAttack,
+	"wild_shape":       effectCompiler.wildShape,
+	"song_of_rest":     effectCompiler.songOfRest,
+	"beast_spells":     effectCompiler.beastSpells,
+	"handler":          effectCompiler.handler,
+	"note":             effectCompiler.note,
+}
+
 // compileEffect checks one effect against the schema and compiles its
 // formulas. key is the feature, trait or background it belongs to.
 func (c *content) compileEffect(key string, e *Effect) error {
-	fail := func(format string, args ...any) error {
-		return fmt.Errorf("effect %s (%s): %s", key, e.Type, fmt.Sprintf(format, args...))
-	}
+	x := effectCompiler{c: c, key: key, e: e}
 	if !slices.Contains(effectTypes, e.Type) {
-		return fail("unknown effect type")
-	}
-	compile := func(src string, kind formula.Kind) (*formula.Program, error) {
-		if src == "" {
-			return nil, nil
-		}
-		p, err := c.compileFormula(src, kind)
-		if err != nil {
-			return nil, fail("formula %q: %v", src, err)
-		}
-		return p, nil
+		return x.fail("unknown effect type")
 	}
 	var err error
-	if e.when, err = compile(e.When, formula.Bool); err != nil {
+	if e.when, err = x.compile(e.When, formula.Bool); err != nil {
 		return err
 	}
 	for _, tag := range e.Tags {
 		if tag == "" || strings.TrimSpace(tag) != tag {
-			return fail("empty tag")
+			return x.fail("empty tag")
 		}
 	}
-
-	if e.Type != "wild_shape" && (e.MaxCR != "" || e.NoFly || e.NoSwim) {
-		return fail("max_cr, no_fly and no_swim belong to wild_shape")
+	if err := x.strayFields(); err != nil {
+		return err
 	}
-
-	if e.Type != "song_of_rest" && e.Sides != 0 {
-		return fail("sides belongs to song_of_rest")
-	}
-
-	if e.Type != "replaces" && e.Replaces != "" {
-		return fail("replaces belongs to the replaces effect")
-	}
-
-	if e.Type != "ranged_attack" && (e.IgnoreCover || e.RangeMultiplier != 0 || e.NoLongRangeDisadvantage) {
-		return fail("ignore_cover, range_multiplier and no_long_range_disadvantage belong to ranged_attack")
-	}
-
-	switch e.Type {
-	case "ranged_attack":
-		if _, msg := checkRangedAttack(e); msg != "" {
-			return fail("%s", msg)
-		}
-	case "replaces":
-		other := *e
-		other.Type, other.Replaces = "", ""
-		if !reflect.DeepEqual(other, Effect{}) {
-			return fail("replaces takes the feature key only")
-		}
-		if _, ok := c.features[e.Replaces]; !ok {
-			return fail("replaces needs the key of a feature")
-		}
-		if e.Replaces == key {
-			return fail("a feature cannot replace itself")
-		}
-	case "modifier":
-		if !c.validModifierTarget(e.Target) {
-			return fail("unknown target %q", e.Target)
-		}
-		if !slices.Contains(modifierModes, e.Mode) {
-			return fail("unknown mode %q", e.Mode)
-		}
-		if e.Value == "" {
-			return fail("value is required")
-		}
-		if _, isScore := strings.CutPrefix(e.Target, "score."); isScore != (e.Cap != 0) || (isScore && (e.Mode != "add" || e.Cap <= MaxNormalScore || e.Cap > MaxScore)) {
-			return fail("a score modifier is an add with a cap above %d, and nothing else has a cap", MaxNormalScore)
-		}
-		if e.value, err = compile(e.Value, formula.Int); err != nil {
+	if check, ok := effectCheckers[e.Type]; ok {
+		if err := check(x); err != nil {
 			return err
-		}
-	case "proficiency":
-		if !c.validProficiencyTarget(e.Proficiency) {
-			return fail("unknown proficiency %q", e.Proficiency)
-		}
-		if e.Level != "" && !slices.Contains(proficiencyLevels, e.Level) {
-			return fail("unknown level %q", e.Level)
-		}
-	case "roll_mode":
-		if !slices.Contains(rollModes, e.Roll) {
-			return fail("unknown roll %q", e.Roll)
-		}
-		if len(e.Targets) == 0 {
-			return fail("targets are required")
-		}
-		for _, t := range e.Targets {
-			if !c.validRollTarget(t) {
-				return fail("unknown target %q", t)
-			}
-		}
-	case "sense":
-		if !slices.Contains(senses, e.Sense) || e.RangeFt <= 0 {
-			return fail("sense needs a known sense and a range")
-		}
-	case "spellcasting":
-		if _, ok := abilityIndex[Ability(e.Ability)]; !ok {
-			return fail("unknown ability %q", e.Ability)
-		}
-		if !slices.Contains(progressions, e.Progression) {
-			return fail("unknown progression %q", e.Progression)
-		}
-		if e.Prepares != (e.PreparedMax != "") || (e.Spellbook && !e.Prepares) {
-			return fail("prepared_max is required exactly when prepares is true, and a spellbook prepares")
-		}
-		if e.preparedMax, err = compile(e.PreparedMax, formula.Int); err != nil {
-			return err
-		}
-	case "resource":
-		if e.Resource == "" || e.Max == "" || !slices.Contains(recharges, e.Recharge) {
-			return fail("resource needs a name, a max and a known recharge")
-		}
-		if e.max, err = compile(e.Max, formula.Int); err != nil {
-			return err
-		}
-		if (e.RechargeIf == "") != (e.RechargeThen == "") || (e.RechargeThen != "" && !slices.Contains(recharges, e.RechargeThen)) {
-			return fail("recharge_if and recharge_then go together, and recharge_then is a known recharge")
-		}
-		if e.rechargeIf, err = compile(e.RechargeIf, formula.Bool); err != nil {
-			return err
-		}
-	case "choice":
-		if !slices.Contains(choiceKinds, e.Choice) || e.Count < 0 {
-			return fail("unknown choice %q", e.Choice)
-		}
-		for _, k := range e.From {
-			if !c.exists(k) {
-				return fail("unknown key %q in from", k)
-			}
-		}
-	case "ability_increase":
-		// The player picks Count different abilities of From and adds Value to
-		// each; the sheet keeps the result as manual ability bonuses, so Derive reads
-		// nothing here. Only a feat has it (the table's menu).
-		if attr, msg := checkAbilityIncrease(e); attr != "" {
-			return fail("%s", msg)
-		}
-	case "grant_action":
-		if !slices.Contains(economies, e.Economy) {
-			return fail("unknown economy %q", e.Economy)
-		}
-	case "superiority_die":
-		if e.Resource == "" {
-			return fail("a superiority die names the resource it spends")
-		}
-		if !slices.Contains(maneuverApplies, e.Applies) {
-			return fail("unknown applies %q", e.Applies)
-		}
-		if e.Value == "" {
-			return fail("value is required: the sides of the die")
-		}
-		if e.value, err = compile(e.Value, formula.Int); err != nil {
-			return err
-		}
-		switch e.Applies {
-		case ManeuverReduceMelee:
-			if _, ok := abilityIndex[Ability(e.Ability)]; !ok {
-				return fail("reduce_melee_damage needs the ability whose modifier is added")
-			}
-			if e.Economy != EconomyReaction {
-				return fail("reduce_melee_damage costs a reaction")
-			}
-		case ManeuverGrapple:
-			if e.Economy != "" && e.Economy != EconomyBonusAction {
-				return fail("a grapple maneuver costs a bonus action or nothing")
-			}
-		default:
-			if e.Ability != "" || e.Economy != "" {
-				return fail("%s takes no ability and no economy", e.Applies)
-			}
-		}
-	case "extra_attack":
-		if e.Count < 2 || e.Count > 4 {
-			return fail("extra_attack needs a count of 2 to 4 attacks")
-		}
-	case "wild_shape":
-		other := *e
-		other.Type, other.MaxCR, other.NoFly, other.NoSwim = "", "", false, false
-		if !reflect.DeepEqual(other, Effect{}) {
-			return fail("wild_shape takes max_cr, no_fly and no_swim only")
-		}
-		if _, ok := crEighths(e.MaxCR); !ok {
-			return fail("wild_shape needs a max_cr that is a challenge rating, such as \"1/4\"")
-		}
-	case "song_of_rest":
-		other := *e
-		other.Type, other.Sides = "", 0
-		if !reflect.DeepEqual(other, Effect{}) {
-			return fail("song_of_rest takes sides only")
-		}
-		if !slices.Contains(songOfRestDice, e.Sides) {
-			return fail("song_of_rest needs sides of 6, 8, 10 or 12")
-		}
-	case "beast_spells":
-		other := *e
-		other.Type = ""
-		if !reflect.DeepEqual(other, Effect{}) {
-			return fail("beast_spells takes no fields")
-		}
-	case "handler":
-		if !slices.Contains(handlers, e.Handler) {
-			return fail("unknown handler %q", e.Handler)
-		}
-	case "note":
-		if e.value, err = compile(e.Value, formula.Int); err != nil {
-			return err
-		}
-		if e.Value != "" && e.TextPT == "" {
-			return fail("a value needs a text_pt to show it in")
 		}
 	}
 	for _, s := range e.Spells {
 		if _, ok := c.spells[s]; !ok {
-			return fail("unknown spell %q", s)
+			return x.fail("unknown spell %q", s)
 		}
+	}
+	return nil
+}
+
+// strayFields refuses the fields of one type on an effect of another.
+func (x effectCompiler) strayFields() error {
+	e := x.e
+	if e.Type != "wild_shape" && (e.MaxCR != "" || e.NoFly || e.NoSwim) {
+		return x.fail("max_cr, no_fly and no_swim belong to wild_shape")
+	}
+	if e.Type != "song_of_rest" && e.Sides != 0 {
+		return x.fail("sides belongs to song_of_rest")
+	}
+	if e.Type != "replaces" && e.Replaces != "" {
+		return x.fail("replaces belongs to the replaces effect")
+	}
+	if e.Type != "ranged_attack" && (e.IgnoreCover || e.RangeMultiplier != 0 || e.NoLongRangeDisadvantage) {
+		return x.fail("ignore_cover, range_multiplier and no_long_range_disadvantage belong to ranged_attack")
+	}
+	return nil
+}
+
+func (x effectCompiler) rangedAttack() error {
+	if _, msg := checkRangedAttack(x.e); msg != "" {
+		return x.fail("%s", msg)
+	}
+	return nil
+}
+
+func (x effectCompiler) replaces() error {
+	if !x.takesOnly(func(o *Effect) { o.Type, o.Replaces = "", "" }) {
+		return x.fail("replaces takes the feature key only")
+	}
+	if _, ok := x.c.features[x.e.Replaces]; !ok {
+		return x.fail("replaces needs the key of a feature")
+	}
+	if x.e.Replaces == x.key {
+		return x.fail("a feature cannot replace itself")
+	}
+	return nil
+}
+
+func (x effectCompiler) modifier() error {
+	e := x.e
+	if !x.c.validModifierTarget(e.Target) {
+		return x.fail("unknown target %q", e.Target)
+	}
+	if !slices.Contains(modifierModes, e.Mode) {
+		return x.fail("unknown mode %q", e.Mode)
+	}
+	if e.Value == "" {
+		return x.fail("value is required")
+	}
+	if !scoreCapFits(e) {
+		return x.fail("a score modifier is an add with a cap above %d, and nothing else has a cap", MaxNormalScore)
+	}
+	var err error
+	e.value, err = x.compile(e.Value, formula.Int)
+	return err
+}
+
+// scoreCapFits: a modifier of a score is an add with a cap between the normal
+// maximum and the highest score, and no other modifier has a cap.
+func scoreCapFits(e *Effect) bool {
+	_, isScore := strings.CutPrefix(e.Target, "score.")
+	if isScore != (e.Cap != 0) {
+		return false
+	}
+	return !isScore || (e.Mode == "add" && e.Cap > MaxNormalScore && e.Cap <= MaxScore)
+}
+
+func (x effectCompiler) proficiency() error {
+	e := x.e
+	if !x.c.validProficiencyTarget(e.Proficiency) {
+		return x.fail("unknown proficiency %q", e.Proficiency)
+	}
+	if e.Level != "" && !slices.Contains(proficiencyLevels, e.Level) {
+		return x.fail("unknown level %q", e.Level)
+	}
+	return nil
+}
+
+func (x effectCompiler) rollMode() error {
+	e := x.e
+	if !slices.Contains(rollModes, e.Roll) {
+		return x.fail("unknown roll %q", e.Roll)
+	}
+	if len(e.Targets) == 0 {
+		return x.fail("targets are required")
+	}
+	for _, t := range e.Targets {
+		if !x.c.validRollTarget(t) {
+			return x.fail("unknown target %q", t)
+		}
+	}
+	return nil
+}
+
+func (x effectCompiler) sense() error {
+	if !slices.Contains(senses, x.e.Sense) || x.e.RangeFt <= 0 {
+		return x.fail("sense needs a known sense and a range")
+	}
+	return nil
+}
+
+func (x effectCompiler) spellcasting() error {
+	e := x.e
+	if _, ok := abilityIndex[Ability(e.Ability)]; !ok {
+		return x.fail("unknown ability %q", e.Ability)
+	}
+	if !slices.Contains(progressions, e.Progression) {
+		return x.fail("unknown progression %q", e.Progression)
+	}
+	if e.Prepares != (e.PreparedMax != "") || (e.Spellbook && !e.Prepares) {
+		return x.fail("prepared_max is required exactly when prepares is true, and a spellbook prepares")
+	}
+	var err error
+	e.preparedMax, err = x.compile(e.PreparedMax, formula.Int)
+	return err
+}
+
+func (x effectCompiler) resource() error {
+	e := x.e
+	if e.Resource == "" || e.Max == "" || !slices.Contains(recharges, e.Recharge) {
+		return x.fail("resource needs a name, a max and a known recharge")
+	}
+	var err error
+	if e.max, err = x.compile(e.Max, formula.Int); err != nil {
+		return err
+	}
+	if (e.RechargeIf == "") != (e.RechargeThen == "") || (e.RechargeThen != "" && !slices.Contains(recharges, e.RechargeThen)) {
+		return x.fail("recharge_if and recharge_then go together, and recharge_then is a known recharge")
+	}
+	e.rechargeIf, err = x.compile(e.RechargeIf, formula.Bool)
+	return err
+}
+
+func (x effectCompiler) choice() error {
+	e := x.e
+	if !slices.Contains(choiceKinds, e.Choice) || e.Count < 0 {
+		return x.fail("unknown choice %q", e.Choice)
+	}
+	for _, k := range e.From {
+		if !x.c.exists(k) {
+			return x.fail("unknown key %q in from", k)
+		}
+	}
+	return nil
+}
+
+// abilityIncrease: the player picks Count different abilities of From and adds
+// Value to each; the sheet keeps the result as manual ability bonuses, so Derive
+// reads nothing here. Only a feat has it (the table's menu).
+func (x effectCompiler) abilityIncrease() error {
+	if attr, msg := checkAbilityIncrease(x.e); attr != "" {
+		return x.fail("%s", msg)
+	}
+	return nil
+}
+
+func (x effectCompiler) grantAction() error {
+	if !slices.Contains(economies, x.e.Economy) {
+		return x.fail("unknown economy %q", x.e.Economy)
+	}
+	return nil
+}
+
+func (x effectCompiler) superiorityDie() error {
+	e := x.e
+	if e.Resource == "" {
+		return x.fail("a superiority die names the resource it spends")
+	}
+	if !slices.Contains(maneuverApplies, e.Applies) {
+		return x.fail("unknown applies %q", e.Applies)
+	}
+	if e.Value == "" {
+		return x.fail("value is required: the sides of the die")
+	}
+	var err error
+	if e.value, err = x.compile(e.Value, formula.Int); err != nil {
+		return err
+	}
+	return x.maneuverRider()
+}
+
+// maneuverRider checks the ability and the economy a superiority die takes,
+// which depend on where the die goes.
+func (x effectCompiler) maneuverRider() error {
+	e := x.e
+	switch e.Applies {
+	case ManeuverReduceMelee:
+		if _, ok := abilityIndex[Ability(e.Ability)]; !ok {
+			return x.fail("reduce_melee_damage needs the ability whose modifier is added")
+		}
+		if e.Economy != EconomyReaction {
+			return x.fail("reduce_melee_damage costs a reaction")
+		}
+	case ManeuverGrapple:
+		if e.Economy != "" && e.Economy != EconomyBonusAction {
+			return x.fail("a grapple maneuver costs a bonus action or nothing")
+		}
+	default:
+		if e.Ability != "" || e.Economy != "" {
+			return x.fail("%s takes no ability and no economy", e.Applies)
+		}
+	}
+	return nil
+}
+
+func (x effectCompiler) extraAttack() error {
+	if x.e.Count < minExtraAttacks || x.e.Count > maxExtraAttacks {
+		return x.fail("extra_attack needs a count of 2 to 4 attacks")
+	}
+	return nil
+}
+
+func (x effectCompiler) wildShape() error {
+	if !x.takesOnly(func(o *Effect) { o.Type, o.MaxCR, o.NoFly, o.NoSwim = "", "", false, false }) {
+		return x.fail("wild_shape takes max_cr, no_fly and no_swim only")
+	}
+	if _, ok := crEighths(x.e.MaxCR); !ok {
+		return x.fail("wild_shape needs a max_cr that is a challenge rating, such as \"1/4\"")
+	}
+	return nil
+}
+
+func (x effectCompiler) songOfRest() error {
+	if !x.takesOnly(func(o *Effect) { o.Type, o.Sides = "", 0 }) {
+		return x.fail("song_of_rest takes sides only")
+	}
+	if !slices.Contains(songOfRestDice, x.e.Sides) {
+		return x.fail("song_of_rest needs sides of 6, 8, 10 or 12")
+	}
+	return nil
+}
+
+func (x effectCompiler) beastSpells() error {
+	if !x.takesOnly(func(o *Effect) { o.Type = "" }) {
+		return x.fail("beast_spells takes no fields")
+	}
+	return nil
+}
+
+func (x effectCompiler) handler() error {
+	if !slices.Contains(handlers, x.e.Handler) {
+		return x.fail("unknown handler %q", x.e.Handler)
+	}
+	return nil
+}
+
+func (x effectCompiler) note() error {
+	e := x.e
+	var err error
+	if e.value, err = x.compile(e.Value, formula.Int); err != nil {
+		return err
+	}
+	if e.Value != "" && e.TextPT == "" {
+		return x.fail("a value needs a text_pt to show it in")
 	}
 	return nil
 }

@@ -36,8 +36,8 @@ import { isPlayer } from '../../../../core/combat/combat-view';
 import { skillLine, whoIs } from '../../../../core/combat/contest-view';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { CheckRollForm } from '../check-roll-form/check-roll-form';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands the sheet of an NPC's grapple or shove. */
 export interface NpcGrappleData {

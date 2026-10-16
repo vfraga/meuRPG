@@ -22,6 +22,7 @@ import {
   mirathel,
 } from '../../../core/content/content-testing';
 import { ContentEntry } from './content-entry';
+import { settle } from '../../../../test-settle';
 
 describe('ContentEntry', () => {
   const originalMatchMedia = window.matchMedia;
@@ -102,17 +103,8 @@ describe('ContentEntry', () => {
       ],
     });
     const fixture = TestBed.createComponent(ContentEntry);
-    await settle(fixture);
+    await settle(fixture, 4);
     return { fixture, el: fixture.nativeElement as HTMLElement, params$ };
-  }
-
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 4; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
   }
 
   const text = (el: Element) => (el.textContent ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
@@ -136,7 +128,7 @@ describe('ContentEntry', () => {
   it('asks in place, turns "Salvar raça" off with the reason, and archives: the result says it and offers "Desarquivar"', async () => {
     const { fixture, el } = await setup(Role.MASTER, 'race:corujeiro@mesa');
     click(el, 'Arquivar');
-    await settle(fixture);
+    await settle(fixture, 4);
     const ask = el.querySelector('app-archive-question')!;
     expect(text(ask)).toContain('Arquivar Corujeiro?');
     expect(text(ask)).toContain(
@@ -149,13 +141,13 @@ describe('ContentEntry', () => {
     expect(document.activeElement?.id).toBe('ask-t');
     // "Voltar" closes it and nothing is archived.
     click(ask as HTMLElement, 'Voltar');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(el.querySelector('app-archive-question')).toBeNull();
     expect(archive).not.toHaveBeenCalled();
     click(el, 'Arquivar');
-    await settle(fixture);
+    await settle(fixture, 4);
     click(el.querySelector('app-archive-question') as HTMLElement, 'Arquivar Corujeiro');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(archive).toHaveBeenCalledWith('camp-1', 'race:corujeiro@mesa');
     expect(text(el.querySelector('.archived')!)).toContain('A raça Corujeiro está arquivada.');
     expect(text(el.querySelector('.archived')!)).toContain(
@@ -166,7 +158,7 @@ describe('ContentEntry', () => {
     expect(el.querySelector('app-race-editor')).not.toBeNull();
     expect(text(el)).not.toContain('Apagar');
     click(el, 'Desarquivar');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(unarchive).toHaveBeenCalledWith('camp-1', 'race:corujeiro@mesa');
     expect(el.querySelector('.archived')).toBeNull();
   });
@@ -221,7 +213,7 @@ describe('ContentEntry', () => {
   it("writes the background's switch in the masculine", async () => {
     const { fixture, el } = await setup(Role.MASTER, 'background:cart-grafo-do-vale@mesa');
     el.querySelector<HTMLButtonElement>('app-players-switch [role="switch"]')!.click();
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(text(el.querySelector('.tags')!)).toContain('Desligado para os jogadores');
     expect(text(el.querySelector('app-players-switch')!)).toContain(
       'ninguém o escolhe numa ficha nova e os jogadores não o leem',
@@ -267,7 +259,7 @@ describe('ContentEntry', () => {
     expect(text(el)).toContain('Tentar de novo');
     classDefaultsCall.mockResolvedValue(classDefaults());
     click(el, 'Tentar de novo');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(el.querySelector('app-class-editor')).not.toBeNull();
   });
 
@@ -286,15 +278,15 @@ describe('ContentEntry', () => {
     const field = () => el.querySelector<HTMLInputElement>('[data-field="table_race.name_pt"]')!;
     field().value = 'Corujeiro Pálido';
     field().dispatchEvent(new Event('input'));
-    await settle(fixture);
+    await settle(fixture, 4);
     click(el, 'Arquivar');
-    await settle(fixture);
+    await settle(fixture, 4);
     click(el.querySelector('app-archive-question') as HTMLElement, 'Arquivar Corujeiro');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(archive).toHaveBeenCalled();
     expect(field().value).toBe('Corujeiro Pálido');
     click(el, 'Desarquivar');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(field().value).toBe('Corujeiro Pálido');
   });
 
@@ -314,7 +306,7 @@ describe('ContentEntry', () => {
       ]),
     );
     click(el, 'Desarquivar');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(unarchive).toHaveBeenCalled();
     expect(text(el)).toContain('Não foi possível desarquivar');
     expect(text(el)).not.toContain('Confira a conexão');
@@ -329,10 +321,10 @@ describe('ContentEntry', () => {
     page['savedLine'].set('A raça Corujeiro foi salva.');
     page['affected'].set([{ characterId: 'c1', name: 'Pensantus' }]);
     page['actionError'].set('Não foi possível arquivar.');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(text(el)).toContain('A raça Corujeiro foi salva.');
     p.next(convertToParamMap({ id: 'camp-1', key: 'spell:l-mina-de-nanquim@mesa' }));
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(text(el)).not.toContain('A raça Corujeiro foi salva.');
     expect(text(el)).not.toContain('Pensantus');
     expect(text(el)).not.toContain('Não foi possível arquivar.');
@@ -348,7 +340,7 @@ describe('ContentEntry', () => {
     expect(el.querySelector('mat-spinner')).toBeNull();
     effectMenu.mockResolvedValue(menuResponse());
     click(el, 'Tentar de novo');
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(el.querySelector('app-race-editor')).not.toBeNull();
     const failed = await setup(Role.PLAYER, 'race:corujeiro@mesa', mirathel(), {
       failCatalog: true,
@@ -370,7 +362,7 @@ describe('ContentEntry', () => {
     expect(sw.getAttribute('aria-checked')).toBe('true');
     expect(text(el.querySelector('app-players-switch')!)).toContain('Ligado');
     sw.click();
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(setSwitches).toHaveBeenCalledWith('camp-1', [{ key: 'race:corujeiro@mesa', off: true }]);
     expect(
       el.querySelector('app-players-switch [role="switch"]')!.getAttribute('aria-checked'),
@@ -388,7 +380,7 @@ describe('ContentEntry', () => {
     const { fixture, el } = await setup(Role.MASTER, 'race:corujeiro@mesa');
     setSwitches.mockRejectedValue(new Error('offline'));
     el.querySelector<HTMLButtonElement>('app-players-switch [role="switch"]')!.click();
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(
       el.querySelector('app-players-switch [role="switch"]')!.getAttribute('aria-checked'),
     ).toBe('true');
@@ -412,7 +404,7 @@ describe('ContentEntry', () => {
       tableRevision: 8,
     });
     watcher.hint();
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(text(el.querySelector('.tags')!)).toContain('Desligada para os jogadores');
     expect(
       el.querySelector('app-players-switch [role="switch"]')!.getAttribute('aria-checked'),
@@ -424,7 +416,7 @@ describe('ContentEntry', () => {
     const input = el.querySelector<HTMLInputElement>('app-race-editor input')!;
     input.value = 'Corujeiro dos Vales';
     input.dispatchEvent(new Event('input'));
-    await settle(fixture);
+    await settle(fixture, 4);
     list.mockResolvedValue({
       entries: mirathel().map((e) =>
         e.key === 'race:corujeiro@mesa' ? ({ ...e, revision: 9, off: true } as typeof e) : e,
@@ -432,7 +424,7 @@ describe('ContentEntry', () => {
       tableRevision: 9,
     });
     watcher.hint();
-    await settle(fixture);
+    await settle(fixture, 4);
     expect(el.querySelector<HTMLInputElement>('app-race-editor input')!.value).toBe(
       'Corujeiro dos Vales',
     );
@@ -456,7 +448,7 @@ describe('ContentEntry', () => {
       expect(text(el)).toContain(RACE);
       list.mockResolvedValue({ entries: [sub(), race('Corujeiro')], tableRevision: 8 });
       watcher.hint();
-      await settle(fixture);
+      await settle(fixture, 4);
       expect(text(el)).not.toContain(RACE);
       expect(text(el)).toContain('Corujeiro');
     });
@@ -473,11 +465,11 @@ describe('ContentEntry', () => {
       list.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise);
       watcher.hint();
       watcher.hint();
-      await settle(fixture);
+      await settle(fixture, 4);
       newer.resolve({ entries: [sub(), race('Corujeiro Novo')], tableRevision: 9 });
-      await settle(fixture);
+      await settle(fixture, 4);
       older.resolve({ entries: [sub(), race('Corujeiro Velho')], tableRevision: 8 });
-      await settle(fixture);
+      await settle(fixture, 4);
       expect(text(el)).toContain('Corujeiro Novo');
       expect(text(el)).not.toContain('Corujeiro Velho');
     });

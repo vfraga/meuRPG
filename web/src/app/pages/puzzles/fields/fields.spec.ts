@@ -13,12 +13,13 @@ import { HintsField } from './hints-field';
 import { type PickOption, PickGroup } from './pick-group';
 import { SolveField } from './solve-field';
 import { Stepper } from './stepper';
+import { nextTurn } from '../../../../test-settle';
 
 const settle = async (fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) => {
   for (let i = 0; i < 4; i++) {
     fixture.detectChanges();
     await fixture.whenStable();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
   }
   fixture.detectChanges();
 };

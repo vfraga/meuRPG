@@ -24,6 +24,7 @@ import {
   sampleIndividual,
 } from '../../../core/treasure/treasure-testing';
 import { PlaceSheet, type PlaceSheetData } from './place-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 const plain = (s: string | undefined) => s?.replace(/\u00a0/g, ' ');
 
@@ -84,7 +85,7 @@ describe('PlaceSheet: "Pôr no mapa" (MR-044, RN-10, E10-10 states 4 and 6)', ()
         fixture.detectChanges();
         await fixture.whenStable();
         // The calls are chains of promises: let them run before the next look.
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        await nextTurn();
       }
     };
     await settle();

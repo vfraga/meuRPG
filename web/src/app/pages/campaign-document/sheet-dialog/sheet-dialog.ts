@@ -4,7 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 
 import { DocDialog } from '../doc-dialog/doc-dialog';
-import { DocumentLinks, type SheetView } from '../document-clients';
+import { DocumentLinks, type SheetView } from '../../../shared/campaign-document/document-clients';
 import { type LookupState, lookupFailure } from '../document-copy';
 
 /**

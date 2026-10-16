@@ -20,7 +20,7 @@ import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import type { AttackDie } from '../../../../core/combat/combat-client';
 import { countText } from '../../../../core/combat/death-saves';
 import { DeathMarks } from '../death-saves/death-marks';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 
 /** What "Rolar o teste contra a morte" asks the page for: whose save, and the d20 (in the app or typed). */
 export interface DeathSaveRoll {

@@ -10,6 +10,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { AreaFlow, samePick } from './area-flow';
 import type { AreaChoice } from './combat-client';
+import { nextTurn } from '../../../test-settle';
 
 const answer = (
   over: {
@@ -63,7 +64,7 @@ describe('AreaFlow', () => {
     second.resolve(answer({ origin: { col: 2, row: 2 } }));
     await Promise.resolve();
     first.resolve(answer({ origin: { col: 1, row: 1 } }));
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     expect(flow.preview()?.origin).toMatchObject({ col: 2, row: 2 });
   });
 

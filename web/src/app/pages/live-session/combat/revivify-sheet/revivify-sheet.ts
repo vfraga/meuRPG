@@ -43,8 +43,8 @@ import {
   targetRows,
 } from '../../../../core/revivify/revivify-flow';
 import { RevivifyClient } from '../../../../core/revivify/revivify-client';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands the Revivificar sheet. */
 export interface RevivifySheetData {

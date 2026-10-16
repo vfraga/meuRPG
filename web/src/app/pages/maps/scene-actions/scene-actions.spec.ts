@@ -7,6 +7,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient } from '../../../core/maps/maps-testing';
 import { SceneChecks } from '../../../core/maps/scene-actions';
 import { SceneActions } from './scene-actions';
+import { nextTurn } from '../../../../test-settle';
 
 function action(
   id: string,
@@ -72,7 +73,7 @@ describe('SceneActions', () => {
   async function settle(): Promise<void> {
     for (let i = 0; i < 4; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

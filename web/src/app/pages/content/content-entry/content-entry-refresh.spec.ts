@@ -14,6 +14,7 @@ import {
   mirathel,
 } from '../../../core/content/content-testing';
 import { ContentEntry } from './content-entry';
+import { nextTurn } from '../../../../test-settle';
 
 describe('ContentEntry refresh after a content change', () => {
   const KEY = 'race:corujeiro@mesa';
@@ -61,7 +62,7 @@ describe('ContentEntry refresh after a content change', () => {
     const settle = async () => {
       for (let i = 0; i < 4; i++) {
         fixture.detectChanges();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         await fixture.whenStable();
       }
       fixture.detectChanges();

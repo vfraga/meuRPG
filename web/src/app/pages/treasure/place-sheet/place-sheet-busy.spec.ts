@@ -10,6 +10,7 @@ import { FakeMapsClient, mapMessage, mapResponse } from '../../../core/maps/maps
 import { TreasureClient } from '../../../core/treasure/treasure-client';
 import { FakeTreasureClient, sampleHoard } from '../../../core/treasure/treasure-testing';
 import { PlaceSheet, type PlaceSheetData } from './place-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 describe('PlaceSheet while the request runs', () => {
   it('refuses to dismiss the sheet while PlaceTreasure is in flight (else the result is lost and a retry uses a new key)', async () => {
@@ -40,7 +41,7 @@ describe('PlaceSheet while the request runs', () => {
       for (let i = 0; i < 6; i++) {
         fixture.detectChanges();
         await fixture.whenStable();
-        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        await nextTurn();
       }
     };
     await settle();

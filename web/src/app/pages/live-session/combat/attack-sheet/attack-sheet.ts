@@ -122,9 +122,9 @@ import { RollModePicker } from '../roll-mode/roll-mode-picker';
 import { InspirationPrompt } from '../inspiration-prompt/inspiration-prompt';
 import { LuckyPrompt } from '../lucky-prompt/lucky-prompt';
 import { LUCKY_TRAIT } from '../../../../core/combat/lucky';
-import { RollPicker } from '../roll-picker/roll-picker';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
-import { injectSheet } from '../sheet-host';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { RollAnimator, showOfDice, showOfDie } from '../../../../shared/roll-overlay/roll-animator';
 
 /** The d4 of Bênção and Perdição. */

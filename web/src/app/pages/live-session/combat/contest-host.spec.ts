@@ -40,6 +40,7 @@ import { ContestHost } from './contest-host';
 import { ContestSheet } from './contest-sheet/contest-sheet';
 import { HelpSheet } from './help-sheet/help-sheet';
 import { HideSheet } from './hide-sheet/hide-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 const toren = combatant({
   id: 't',
@@ -101,7 +102,7 @@ function setup(
   const settle = async () => {
     TestBed.tick();
     await Promise.resolve();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
     TestBed.tick();
   };
   const read = async (response: ReturnType<typeof contestState>, revision: number) => {

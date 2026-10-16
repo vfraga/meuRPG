@@ -154,282 +154,403 @@ func casterLevelOf(progression string, classLevel int) int {
 	return 0
 }
 
+// spellSheet is the state of building a character's spell list: what the
+// effects and the picks grant, the limits of the casting classes, and the
+// spells added so far.
+type spellSheet struct {
+	x       *deriver
+	c       *content
+	casters []caster
+
+	// granted are the spells an effect or a pick gives (Infernal Legacy's
+	// thaumaturgy, a Mystic Arcanum); they count against none of the class's
+	// numbers.
+	granted map[string]bool
+	// extraCantrips are the cantrips effects let the character choose from
+	// another list (the high elf's wizard cantrip), from extraCantripLists.
+	extraCantrips     int
+	extraCantripLists []string
+	// grantedCantrips and grantedSpells are what the picks of the choice engine
+	// grant (choicegroups.go): a bonus cantrip, the Pact of the Tome's cantrips
+	// and a Mystic Arcanum. They are known on top of the class's numbers.
+	grantedCantrips, grantedSpells []string
+	// alwaysPrepared are the subclass's spells at its class level.
+	alwaysPrepared map[string]bool
+
+	// The limits of the casting classes.
+	maxLevel                                    int
+	hasKnownCaster, hasSpellbook, onlySpellbook bool
+	knownMax, preparedMax, cantripsMax          int
+	// offListLeft is how many spells off the list the Bard's Magical Secrets
+	// still allow, and extraKnown the ones that do not count against the spells
+	// known.
+	offListLeft, extraKnown int
+
+	seen map[string]bool
+}
+
 // characterSpells builds Derived.Spells and checks the spell choices.
 func (x *deriver) characterSpells(casters []caster) {
-	c := x.c
-	onClassList := func(s *srd51.Spell) bool {
-		for _, cs := range casters {
-			if c.onList(s, cs.list) {
-				return true
-			}
-			if cs.oc.subclass != nil && slices.Contains(s.Subclasses, cs.oc.subclass.Key) {
-				return true
-			}
-		}
-		return false
+	s := &spellSheet{
+		x: x, c: x.c, casters: casters,
+		granted: map[string]bool{}, alwaysPrepared: map[string]bool{}, seen: map[string]bool{},
+		onlySpellbook: true,
 	}
-
-	// What effects add: granted spells (Infernal Legacy) and cantrip
-	// choices from another list (the high elf's wizard cantrip).
-	granted := map[string]bool{}
-	extraCantrips := 0
-	var extraCantripLists []string
-	for _, a := range x.active {
-		e := a.effect
-		for _, s := range e.Spells {
-			granted[s] = true
-		}
-		if e.Type == "choice" && e.Choice == "cantrip" {
-			extraCantrips += e.Count
-			extraCantripLists = append(extraCantripLists, e.From...)
-		}
-	}
-
-	// What the picks of the choice engine grant (choicegroups.go): a bonus cantrip (the
-	// high elf's), the Pact of the Tome's cantrips and a Mystic Arcanum. They are known
-	// on top of the class's numbers, so they count against none. The bonus cantrips
-	// take the place of the extra cantrips a sheet that predates the picks keeps in
-	// its cantrip list.
-	var grantedCantrips, grantedSpells []string
-	for _, k := range x.b.FeatureChoices {
-		choiceKey, spell, ok := SplitScopedChoice(k)
-		if !ok || !strings.HasPrefix(spell, "spell:") || !x.grantsSpells(choiceKey) {
-			continue
-		}
-		granted[spell] = true
-		if sp := c.spells[spell]; sp != nil && sp.Level == 0 {
-			grantedCantrips = append(grantedCantrips, spell)
-			if len(c.effectChoices(strings.SplitN(choiceKey, textSeparator, 2)[0], "cantrip")) > 0 {
-				extraCantrips = max(extraCantrips-1, 0)
-			}
-		} else {
-			grantedSpells = append(grantedSpells, spell)
-		}
-	}
-
-	// The subclass's always-prepared spells at its class level.
-	alwaysPrepared := map[string]bool{}
-	for _, cs := range casters {
-		if cs.oc.subclass == nil || cs.oc.subclass.ExpandedList {
-			continue // an expanded list is spells to choose from, not spells given
-		}
-		for _, ss := range cs.oc.subclass.Spells {
-			if ss.ClassLevel > cs.oc.level {
-				continue
-			}
-			ok := true
-			for _, f := range ss.WithFeatures {
-				ok = ok && slices.Contains(x.b.FeatureChoices, f)
-			}
-			if ok {
-				alwaysPrepared[ss.Spell] = true
-			}
-		}
-	}
-
-	maxLevel := 0
-	for i, n := range x.d.SpellSlots {
-		if n > 0 {
-			maxLevel = i + 1
-		}
-	}
-	if x.d.PactMagic != nil {
-		maxLevel = max(maxLevel, x.d.PactMagic.SlotLevel)
-	}
-	hasKnownCaster := false
-	hasSpellbook := false
-	onlySpellbook := true
-	knownMax, preparedMax, cantripsMax := 0, 0, extraCantrips
-	for _, cs := range casters {
-		cantripsMax += cs.sc.CantripsKnown
-		switch preparation(cs.e) {
-		case PreparationKnown:
-			hasKnownCaster = true
-			knownMax += cs.sc.SpellsKnownMax
-		case PreparationSpellbook:
-			hasSpellbook = true
-			preparedMax += cs.sc.PreparedMax
-		case PreparationPrepared:
-			onlySpellbook = false
-			preparedMax += cs.sc.PreparedMax
-		}
-	}
-	knownByCaster := func(s *srd51.Spell) bool {
-		// A spell off the class's list (the Bard's Magical Secrets) is as known
-		// as the others when the sheet has no spellbook to tell them apart.
-		if hasKnownCaster && !hasSpellbook {
-			return true
-		}
-		for _, cs := range casters {
-			if preparation(cs.e) == PreparationKnown && c.onList(s, cs.list) {
-				return true
-			}
-		}
-		return false
-	}
-
-	seen := map[string]bool{}
-	addSpell := func(s *srd51.Spell, prepared bool) {
-		if seen[s.Key] {
-			if prepared {
-				for i := range x.d.Spells {
-					if x.d.Spells[i].Spell.Key == s.Key {
-						x.d.Spells[i].Prepared = true
-					}
-				}
-			}
-			return
-		}
-		seen[s.Key] = true
-		x.d.Spells = append(x.d.Spells, CharacterSpell{Spell: c.spellEntries[s.Key], Prepared: prepared})
-	}
-
-	// Cantrips.
-	for i, key := range x.b.Cantrips {
-		field := fmt.Sprintf("full.cantrip_keys[%d]", i)
-		s, ok := c.spells[key]
-		if !ok {
-			x.issue(IssueUnknownKey, field, "A magia escolhida não existe no conteúdo %s.", c.version)
-			continue
-		}
-		if s.Level != 0 {
-			x.issue(IssueSpellLevel, field, "%s não é um truque.", c.namePT(key))
-		}
-		fromExtraList := slices.ContainsFunc(extraCantripLists, func(cl string) bool { return c.onList(s, cl) })
-		if !onClassList(s) && !granted[key] && !fromExtraList {
-			x.issue(IssueSpellNotOnList, field, "%s não está na lista de magias do personagem.", c.namePT(key))
-		}
-		addSpell(s, true)
-	}
-	for _, spell := range grantedCantrips {
-		if sp := c.spells[spell]; sp != nil {
-			addSpell(sp, true)
-		}
-	}
-	for _, spell := range grantedSpells {
-		if sp := c.spells[spell]; sp != nil {
-			addSpell(sp, true)
-		}
-	}
-	// A spell an effect grants (a race's cantrip) comes on top of the class's
-	// numbers: it counts against none of them.
-	notGranted := func(keys []string) int {
-		n := 0
-		for _, k := range keys {
-			if !granted[k] {
-				n++
-			}
-		}
-		return n
-	}
-	// whoCasts is the sentence "A classe mudou" tells a spell count that changed,
-	// and the entry it is about: with one caster and no other source of the spells,
-	// "agora conhece 3 truques; esta ficha tem 4." about the class (the subclass,
-	// for a third caster, whose numbers are the subclass's); otherwise only the
-	// total, with no entry named.
-	whoCasts := func(verb, what, total string, allowed, have int, otherSource bool) (subject, change string) {
-		if len(casters) != 1 || otherSource {
-			return "", fmt.Sprintf("o total de %s agora é %d; esta ficha tem %d.", total, allowed, have)
-		}
-		subject = casters[0].oc.key
-		if cast, ok := c.castingFor(casters[0].oc.key, casters[0].oc.subclass); ok && cast.sub != "" {
-			subject = cast.sub
-		}
-		return subject, fmt.Sprintf("agora %s %s; esta ficha tem %d.", verb, what, have)
-	}
-	if n := notGranted(x.b.Cantrips); n > cantripsMax {
-		subject, change := whoCasts("conhece", countPT(cantripsMax, "truque", "truques"), "truques conhecidos", cantripsMax, n, extraCantrips > 0)
-		x.issueChange(IssueSpellCount, "full.cantrip_keys", subject, change,
-			fmt.Sprintf("Há %d truques; o personagem conhece %d.", n, cantripsMax))
-	}
-
-	if n := notGranted(x.b.Cantrips); n < cantripsMax {
-		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceCantrips, Missing: cantripsMax - n})
-	}
-
-	// Spells known (a wizard's spellbook, or a known caster's spells) and
-	// prepared.
-	checkSpell := func(field, key string, offList bool) (*srd51.Spell, bool) {
-		s, ok := c.spells[key]
-		if !ok {
-			x.issue(IssueUnknownKey, field, "A magia escolhida não existe no conteúdo %s.", c.version)
-			return nil, false
-		}
-		switch {
-		case s.Level == 0:
-			x.issue(IssueSpellLevel, field, "%s é um truque: vai na lista de truques.", c.namePT(key))
-		case s.Level > maxLevel && !granted[key]:
-			// A granted spell is cast with the feature's own uses, not with a slot.
-			x.issue(IssueSpellLevel, field, "%s é de %dº nível; o personagem conjura até o %dº.", c.namePT(key), s.Level, maxLevel)
-		}
-		if !onClassList(s) && !granted[key] && !alwaysPrepared[key] && !offList {
-			x.issue(IssueSpellNotOnList, field, "%s não está na lista de magias do personagem.", c.namePT(key))
-		}
-		return s, true
-	}
-	// The Bard's Magical Secrets (two spells from any class at levels 10, 14
-	// and 18) and the College of Lore's Additional Magical Secrets (two more,
-	// which do not count against the spells known) allow spells off the list.
-	offListLeft, extraKnown := 0, 0
-	for _, f := range x.d.Features {
-		switch {
-		case strings.HasPrefix(f.Key, "feature:magical-secrets-") && !isTableKey(f.Key):
-			offListLeft += 2
-		case f.Key == "feature:additional-magical-secrets" && !isTableKey(f.Key):
-			offListLeft += 2
-			extraKnown += 2
-		}
-	}
-	for i, key := range x.b.SpellsKnown {
-		offList := false
-		if s := c.spells[key]; s != nil && offListLeft > 0 && !onClassList(s) {
-			offList = true
-			offListLeft--
-		}
-		if s, ok := checkSpell(fmt.Sprintf("full.known_spell_keys[%d]", i), key, offList); ok {
-			addSpell(s, knownByCaster(s))
-		}
-	}
-	counted := 0
-	for i, key := range x.b.SpellsPrepared {
-		field := fmt.Sprintf("full.prepared_spell_keys[%d]", i)
-		s, ok := checkSpell(field, key, false)
-		if !ok {
-			continue
-		}
-		if !alwaysPrepared[key] && !granted[key] {
-			counted++
-		}
-		if hasSpellbook && onlySpellbook && !slices.Contains(x.b.SpellsKnown, key) {
-			x.issue(IssueSpellNotOnList, field, "%s está preparada mas não está no grimório.", c.namePT(key))
-		}
-		addSpell(s, true)
-	}
-	for _, key := range sortedKeys(alwaysPrepared) {
-		if s, ok := c.spells[key]; ok {
-			addSpell(s, true)
-		}
-	}
-	if n := notGranted(x.b.SpellsKnown); hasKnownCaster && !hasSpellbook && n > knownMax+extraKnown {
-		subject, change := whoCasts("conhece", countPT(knownMax+extraKnown, "magia", "magias"), "magias conhecidas", knownMax+extraKnown, n, extraKnown > 0)
-		x.issueChange(IssueSpellCount, "full.known_spell_keys", subject, change,
-			fmt.Sprintf("Há %d magias conhecidas; o personagem conhece %d.", n, knownMax+extraKnown))
-	}
-	if n := notGranted(x.b.SpellsKnown); hasKnownCaster && !hasSpellbook && n < knownMax {
-		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceSpellsKnown, Missing: knownMax - n})
-	}
-	if counted < preparedMax {
-		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceSpellsPrepared, Missing: preparedMax - counted})
-	}
-	if preparedMax > 0 && counted > preparedMax {
-		subject, change := whoCasts("prepara", countPT(preparedMax, "magia", "magias"), "magias preparadas", preparedMax, counted, false)
-		x.issueChange(IssueSpellCount, "full.prepared_spell_keys", subject, change,
-			fmt.Sprintf("Há %d magias preparadas; o personagem prepara %d.", counted, preparedMax))
-	}
+	s.collectGranted()
+	s.collectPicks()
+	s.collectAlwaysPrepared()
+	s.collectLimits()
+	s.addCantrips()
+	s.checkCantripCount()
+	s.countSecrets()
+	s.addKnown()
+	counted := s.addPrepared()
+	s.addAlwaysPrepared()
+	s.checkKnownCount()
+	s.checkPreparedCount(counted)
 
 	slices.SortFunc(x.d.Spells, func(a, b CharacterSpell) int {
 		return cmp.Or(cmp.Compare(a.Spell.Level, b.Spell.Level), comparePT(a.Spell.NamePT, b.Spell.NamePT))
 	})
+}
+
+// onClassList says the spell is on the list of one of the casting classes, or
+// of the subclass of one.
+func (s *spellSheet) onClassList(sp *srd51.Spell) bool {
+	for _, cs := range s.casters {
+		if s.c.onList(sp, cs.list) {
+			return true
+		}
+		if cs.oc.subclass != nil && slices.Contains(sp.Subclasses, cs.oc.subclass.Key) {
+			return true
+		}
+	}
+	return false
+}
+
+// collectGranted reads what effects add: granted spells (Infernal Legacy) and
+// cantrip choices from another list (the high elf's wizard cantrip).
+func (s *spellSheet) collectGranted() {
+	for _, a := range s.x.active {
+		e := a.effect
+		for _, sp := range e.Spells {
+			s.granted[sp] = true
+		}
+		if e.Type == "choice" && e.Choice == "cantrip" {
+			s.extraCantrips += e.Count
+			s.extraCantripLists = append(s.extraCantripLists, e.From...)
+		}
+	}
+}
+
+// collectPicks reads what the picks of the choice engine grant (choicegroups.go).
+// The bonus cantrips take the place of the extra cantrips a sheet that predates
+// the picks keeps in its cantrip list.
+func (s *spellSheet) collectPicks() {
+	for _, k := range s.x.b.FeatureChoices {
+		choiceKey, spell, ok := SplitScopedChoice(k)
+		if !ok || !strings.HasPrefix(spell, "spell:") || !s.x.grantsSpells(choiceKey) {
+			continue
+		}
+		s.granted[spell] = true
+		if sp := s.c.spells[spell]; sp != nil && sp.Level == 0 {
+			s.grantedCantrips = append(s.grantedCantrips, spell)
+			if len(s.c.effectChoices(strings.SplitN(choiceKey, textSeparator, 2)[0], "cantrip")) > 0 {
+				s.extraCantrips = max(s.extraCantrips-1, 0)
+			}
+		} else {
+			s.grantedSpells = append(s.grantedSpells, spell)
+		}
+	}
+}
+
+// collectAlwaysPrepared reads the subclass's always-prepared spells at its
+// class level.
+func (s *spellSheet) collectAlwaysPrepared() {
+	for _, cs := range s.casters {
+		if cs.oc.subclass == nil || cs.oc.subclass.ExpandedList {
+			continue // an expanded list is spells to choose from, not spells given
+		}
+		for _, ss := range cs.oc.subclass.Spells {
+			if ss.ClassLevel <= cs.oc.level && s.hasChosen(ss.WithFeatures) {
+				s.alwaysPrepared[ss.Spell] = true
+			}
+		}
+	}
+}
+
+// hasChosen says the sheet chose every one of the features.
+func (s *spellSheet) hasChosen(features []string) bool {
+	for _, f := range features {
+		if !slices.Contains(s.x.b.FeatureChoices, f) {
+			return false
+		}
+	}
+	return true
+}
+
+// collectLimits reads the highest spell level the sheet casts and the numbers
+// of cantrips, spells known and spells prepared its classes allow.
+func (s *spellSheet) collectLimits() {
+	x := s.x
+	for i, n := range x.d.SpellSlots {
+		if n > 0 {
+			s.maxLevel = i + 1
+		}
+	}
+	if x.d.PactMagic != nil {
+		s.maxLevel = max(s.maxLevel, x.d.PactMagic.SlotLevel)
+	}
+	s.cantripsMax = s.extraCantrips
+	for _, cs := range s.casters {
+		s.cantripsMax += cs.sc.CantripsKnown
+		switch preparation(cs.e) {
+		case PreparationKnown:
+			s.hasKnownCaster = true
+			s.knownMax += cs.sc.SpellsKnownMax
+		case PreparationSpellbook:
+			s.hasSpellbook = true
+			s.preparedMax += cs.sc.PreparedMax
+		case PreparationPrepared:
+			s.onlySpellbook = false
+			s.preparedMax += cs.sc.PreparedMax
+		}
+	}
+}
+
+// knownByCaster says the spell is known (not just on the sheet) because a
+// caster that knows its spells has it on its list.
+func (s *spellSheet) knownByCaster(sp *srd51.Spell) bool {
+	// A spell off the class's list (the Bard's Magical Secrets) is as known
+	// as the others when the sheet has no spellbook to tell them apart.
+	if s.hasKnownCaster && !s.hasSpellbook {
+		return true
+	}
+	for _, cs := range s.casters {
+		if preparation(cs.e) == PreparationKnown && s.c.onList(sp, cs.list) {
+			return true
+		}
+	}
+	return false
+}
+
+// addSpell puts a spell on the sheet once; a second time it only marks it
+// prepared.
+func (s *spellSheet) addSpell(sp *srd51.Spell, prepared bool) {
+	x := s.x
+	if s.seen[sp.Key] {
+		if prepared {
+			for i := range x.d.Spells {
+				if x.d.Spells[i].Spell.Key == sp.Key {
+					x.d.Spells[i].Prepared = true
+				}
+			}
+		}
+		return
+	}
+	s.seen[sp.Key] = true
+	x.d.Spells = append(x.d.Spells, CharacterSpell{Spell: s.c.spellEntries[sp.Key], Prepared: prepared})
+}
+
+// notGranted counts the keys that are not granted: a spell an effect grants (a
+// race's cantrip) comes on top of the class's numbers and counts against none
+// of them.
+func (s *spellSheet) notGranted(keys []string) int {
+	n := 0
+	for _, k := range keys {
+		if !s.granted[k] {
+			n++
+		}
+	}
+	return n
+}
+
+// whoCasts is the sentence "A classe mudou" tells a spell count that changed,
+// and the entry it is about: with one caster and no other source of the spells,
+// "agora conhece 3 truques; esta ficha tem 4." about the class (the subclass,
+// for a third caster, whose numbers are the subclass's); otherwise only the
+// total, with no entry named.
+func (s *spellSheet) whoCasts(verb, what, total string, allowed, have int, otherSource bool) (subject, change string) {
+	if len(s.casters) != 1 || otherSource {
+		return "", fmt.Sprintf("o total de %s agora é %d; esta ficha tem %d.", total, allowed, have)
+	}
+	only := s.casters[0]
+	subject = only.oc.key
+	if cast, ok := s.c.castingFor(only.oc.key, only.oc.subclass); ok && cast.sub != "" {
+		subject = cast.sub
+	}
+	return subject, fmt.Sprintf("agora %s %s; esta ficha tem %d.", verb, what, have)
+}
+
+// addCantrips adds the cantrips of the sheet, checking each, then the cantrips
+// and spells the picks grant.
+func (s *spellSheet) addCantrips() {
+	for i, key := range s.x.b.Cantrips {
+		s.addCantrip(i, key)
+	}
+	for _, spell := range s.grantedCantrips {
+		if sp := s.c.spells[spell]; sp != nil {
+			s.addSpell(sp, true)
+		}
+	}
+	for _, spell := range s.grantedSpells {
+		if sp := s.c.spells[spell]; sp != nil {
+			s.addSpell(sp, true)
+		}
+	}
+}
+
+func (s *spellSheet) addCantrip(i int, key string) {
+	x, c := s.x, s.c
+	field := fmt.Sprintf("full.cantrip_keys[%d]", i)
+	sp, ok := c.spells[key]
+	if !ok {
+		x.issue(IssueUnknownKey, field, "A magia escolhida não existe no conteúdo %s.", c.version)
+		return
+	}
+	if sp.Level != 0 {
+		x.issue(IssueSpellLevel, field, "%s não é um truque.", c.namePT(key))
+	}
+	fromExtraList := slices.ContainsFunc(s.extraCantripLists, func(cl string) bool { return c.onList(sp, cl) })
+	if !s.onClassList(sp) && !s.granted[key] && !fromExtraList {
+		x.issue(IssueSpellNotOnList, field, "%s não está na lista de magias do personagem.", c.namePT(key))
+	}
+	s.addSpell(sp, true)
+}
+
+// checkCantripCount compares the cantrips of the sheet with what the classes
+// allow: too many is an issue, too few an open choice.
+func (s *spellSheet) checkCantripCount() {
+	x := s.x
+	n := s.notGranted(x.b.Cantrips)
+	if n > s.cantripsMax {
+		subject, change := s.whoCasts("conhece", countPT(s.cantripsMax, "truque", "truques"), "truques conhecidos", s.cantripsMax, n, s.extraCantrips > 0)
+		x.issueChange(IssueSpellCount, "full.cantrip_keys", subject, change,
+			fmt.Sprintf("Há %d truques; o personagem conhece %d.", n, s.cantripsMax))
+	}
+	if n < s.cantripsMax {
+		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceCantrips, Missing: s.cantripsMax - n})
+	}
+}
+
+// checkSpell checks a spell of the known or prepared list: it exists, it is not
+// a cantrip, the sheet casts its level and it is on a list the character reads.
+func (s *spellSheet) checkSpell(field, key string, offList bool) (*srd51.Spell, bool) {
+	x, c := s.x, s.c
+	sp, ok := c.spells[key]
+	if !ok {
+		x.issue(IssueUnknownKey, field, "A magia escolhida não existe no conteúdo %s.", c.version)
+		return nil, false
+	}
+	switch {
+	case sp.Level == 0:
+		x.issue(IssueSpellLevel, field, "%s é um truque: vai na lista de truques.", c.namePT(key))
+	case sp.Level > s.maxLevel && !s.granted[key]:
+		// A granted spell is cast with the feature's own uses, not with a slot.
+		x.issue(IssueSpellLevel, field, "%s é de %dº nível; o personagem conjura até o %dº.", c.namePT(key), sp.Level, s.maxLevel)
+	}
+	if !s.onClassList(sp) && !s.granted[key] && !s.alwaysPrepared[key] && !offList {
+		x.issue(IssueSpellNotOnList, field, "%s não está na lista de magias do personagem.", c.namePT(key))
+	}
+	return sp, true
+}
+
+// countSecrets reads the Bard's Magical Secrets (two spells from any class at
+// levels 10, 14 and 18) and the College of Lore's Additional Magical Secrets
+// (two more, which do not count against the spells known): they allow spells off
+// the list.
+func (s *spellSheet) countSecrets() {
+	for _, f := range s.x.d.Features {
+		switch {
+		case strings.HasPrefix(f.Key, "feature:magical-secrets-") && !isTableKey(f.Key):
+			s.offListLeft += secretsPerFeature
+		case f.Key == "feature:additional-magical-secrets" && !isTableKey(f.Key):
+			s.offListLeft += secretsPerFeature
+			s.extraKnown += secretsPerFeature
+		}
+	}
+}
+
+// takeOffList spends one of the Magical Secrets on a spell off the class list.
+func (s *spellSheet) takeOffList(key string) bool {
+	sp := s.c.spells[key]
+	if sp == nil || s.offListLeft <= 0 || s.onClassList(sp) {
+		return false
+	}
+	s.offListLeft--
+	return true
+}
+
+// addKnown adds the spells known (a wizard's spellbook, or a known caster's spells).
+func (s *spellSheet) addKnown() {
+	for i, key := range s.x.b.SpellsKnown {
+		offList := s.takeOffList(key)
+		if sp, ok := s.checkSpell(fmt.Sprintf("full.known_spell_keys[%d]", i), key, offList); ok {
+			s.addSpell(sp, s.knownByCaster(sp))
+		}
+	}
+}
+
+// addPrepared adds the prepared spells and returns how many count against the
+// number the classes prepare (the always-prepared and the granted do not).
+func (s *spellSheet) addPrepared() int {
+	x := s.x
+	counted := 0
+	for i, key := range x.b.SpellsPrepared {
+		field := fmt.Sprintf("full.prepared_spell_keys[%d]", i)
+		sp, ok := s.checkSpell(field, key, false)
+		if !ok {
+			continue
+		}
+		if !s.alwaysPrepared[key] && !s.granted[key] {
+			counted++
+		}
+		if s.hasSpellbook && s.onlySpellbook && !slices.Contains(x.b.SpellsKnown, key) {
+			x.issue(IssueSpellNotOnList, field, "%s está preparada mas não está no grimório.", s.c.namePT(key))
+		}
+		s.addSpell(sp, true)
+	}
+	return counted
+}
+
+func (s *spellSheet) addAlwaysPrepared() {
+	for _, key := range sortedKeys(s.alwaysPrepared) {
+		if sp, ok := s.c.spells[key]; ok {
+			s.addSpell(sp, true)
+		}
+	}
+}
+
+// checkKnownCount compares the spells known with what a known caster allows.
+func (s *spellSheet) checkKnownCount() {
+	if !s.hasKnownCaster || s.hasSpellbook {
+		return
+	}
+	x := s.x
+	n := s.notGranted(x.b.SpellsKnown)
+	limit := s.knownMax + s.extraKnown
+	if n > limit {
+		subject, change := s.whoCasts("conhece", countPT(limit, "magia", "magias"), "magias conhecidas", limit, n, s.extraKnown > 0)
+		x.issueChange(IssueSpellCount, "full.known_spell_keys", subject, change,
+			fmt.Sprintf("Há %d magias conhecidas; o personagem conhece %d.", n, limit))
+	}
+	if n < s.knownMax {
+		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceSpellsKnown, Missing: s.knownMax - n})
+	}
+}
+
+// checkPreparedCount compares the prepared spells that count with what the
+// classes prepare.
+func (s *spellSheet) checkPreparedCount(counted int) {
+	x := s.x
+	if counted < s.preparedMax {
+		x.d.OpenChoices = append(x.d.OpenChoices, OpenChoice{Kind: OpenChoiceSpellsPrepared, Missing: s.preparedMax - counted})
+	}
+	if s.preparedMax > 0 && counted > s.preparedMax {
+		subject, change := s.whoCasts("prepara", countPT(s.preparedMax, "magia", "magias"), "magias preparadas", s.preparedMax, counted, false)
+		x.issueChange(IssueSpellCount, "full.prepared_spell_keys", subject, change,
+			fmt.Sprintf("Há %d magias preparadas; o personagem prepara %d.", counted, s.preparedMax))
+	}
 }
 
 // MaxSpellLevelFromSlots is the highest spell level a class table row can

@@ -4,9 +4,9 @@ import { vi } from 'vitest';
 
 import { Nudger } from '../../../core/combat/nudger';
 
-import { VitalsVm } from '../live-session.types';
+import { VitalsVm } from '../../../core/play/live-session.types';
 import { SessionXp } from '../session-xp/session-xp';
-import { pensantusVitals } from '../testing';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { PartyPanel } from './party-panel';
 
 @Component({

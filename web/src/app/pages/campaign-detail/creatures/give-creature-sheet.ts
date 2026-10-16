@@ -17,8 +17,8 @@ import {
 } from '../../../core/creatures/creature-format';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { formatInt, joinDots } from '../../../core/format/text';
-import { SheetFrame } from '../../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../live-session/combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 import { type ChoiceRow, CreatureChoiceList } from '../../../shared/creatures/creature-choice-list';
 
 /** What the campaign's list hands the dialog. */

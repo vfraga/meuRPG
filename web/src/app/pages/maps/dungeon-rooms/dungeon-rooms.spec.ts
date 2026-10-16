@@ -6,6 +6,7 @@ import { FakeDungeonsClient, roomsResponse } from '../../../core/maps/dungeons-t
 import { MapState } from '../../../core/maps/map-state';
 import { mapMessage, mapResponse } from '../../../core/maps/maps-testing';
 import { DungeonRooms, type RoomOutline } from './dungeon-rooms';
+import { nextTurn } from '../../../../test-settle';
 
 describe('DungeonRooms (E10-05 5)', () => {
   let fixture: ComponentFixture<DungeonRooms>;
@@ -38,7 +39,7 @@ describe('DungeonRooms (E10-05 5)', () => {
   const rooms = () => Array.from(el.querySelectorAll('li.room'));
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };

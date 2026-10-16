@@ -13,6 +13,12 @@ import type { AreaPick } from '../../core/combat/area-flow';
 import { combatant } from '../../core/combat/combat-testing';
 import { AreaMap } from './area-map';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 /** Each square is 20 px on the stubbed 240 × 160 map (12 × 8 squares). */
 const SQ = 20;
 

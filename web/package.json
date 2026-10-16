@@ -9,7 +9,9 @@
     "test": "ng test",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "depcruise": "depcruise src --config .dependency-cruiser.cjs --ignore-known",
+    "depcruise:baseline": "depcruise src --config .dependency-cruiser.cjs --output-type baseline > .dependency-cruiser-known-violations.json"
   },
   "private": true,
   "packageManager": "npm@11.20.0",
@@ -41,6 +43,7 @@
     "@types/node": "22.20.5",
     "@vitest/coverage-v8": "4.1.11",
     "angular-eslint": "21.4.0",
+    "dependency-cruiser": "18.6.0",
     "eslint": "10.12.0",
     "jsdom": "30.1.2",
     "prettier": "3.9.9",

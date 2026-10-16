@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 
-import { GameSessionSource } from '../campaign-detail/game-session/game-session-card.types';
-import { GameSessionSourceLive } from '../campaign-detail/game-session/game-session-source.live';
+import { GameSessionSource } from '../../core/play/game-session-card.types';
+import { GameSessionSourceLive } from '../../core/play/game-session-source.live';
 
 /**
  * Lazily loaded from `app.routes.ts` via `loadChildren` for

@@ -2,6 +2,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { CONFIRM_GUARD_MS, ConfirmGuard } from './confirm-guard';
 
+// With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('ConfirmGuard, a double-click never confirms a destructive inline action', () => {
   let host: HTMLElement;
 

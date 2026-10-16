@@ -20,8 +20,8 @@ import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { sourceShort } from '../../../core/creatures/creature-format';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
-import { CreatureEdit } from '../../character-sheet/creatures-panel/creature-edit';
-import { openSheet } from '../../live-session/combat/sheet-host';
+import { CreatureEdit } from '../../../shared/creatures/creature-edit';
+import { openSheet } from '../../../shared/sheet/sheet-host';
 import {
   GiveCreatureSheet,
   type GiveCreatureData,

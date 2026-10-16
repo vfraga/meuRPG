@@ -11,6 +11,7 @@ import {
 import { TableContentClient } from '../../../core/content/content-client';
 import { catalog, entry, feature, menu } from '../../../core/content/content-testing';
 import { BackgroundEditor } from './background-editor';
+import { settle } from '../../../../test-settle';
 
 function refusal(...violations: [string, string][]) {
   return new ConnectError('refused', Code.InvalidArgument, undefined, [
@@ -60,15 +61,6 @@ describe('BackgroundEditor (E10-01 state 7)', () => {
     return { fixture, el: fixture.nativeElement as HTMLElement };
   }
 
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 3; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
-  }
-
   const text = (e: Element) => (e.textContent ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
   const field = (el: HTMLElement, path: string) =>
     el.querySelector<HTMLElement>(`[data-field="${path}"]`)!;
@@ -111,7 +103,7 @@ describe('BackgroundEditor (E10-01 state 7)', () => {
     const { fixture, el } = setup();
     save.mockResolvedValue({ entry: stored(), affected: [] });
     click(el, 'Salvar antecedente');
-    await settle(fixture);
+    await settle(fixture, 3);
     const [, sent, body] = save.mock.calls[0];
     expect(sent.key).toBe('background:cart-grafo-do-vale@mesa');
     expect(body.case).toBe('tableBackground');
@@ -139,7 +131,7 @@ describe('BackgroundEditor (E10-01 state 7)', () => {
       ),
     );
     click(el, 'Salvar antecedente');
-    await settle(fixture);
+    await settle(fixture, 3);
     const alert = text(el.querySelector('[role="alert"]')!);
     expect(alert).toContain('5 campos precisam de ajuste');
     expect(text(field(el, 'table_background.skills[1]').closest('app-select-field')!)).toContain(

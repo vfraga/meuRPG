@@ -24,7 +24,7 @@ import { newKey } from '../../../../core/connect/idempotency';
 import { trapErrorMessage } from '../../../../core/traps/trap-errors';
 import { TrapsClient } from '../../../../core/traps/traps-client';
 import { joinDots } from '../../../../core/format/text';
-import type { VitalsVm } from '../../live-session.types';
+import type { VitalsVm } from '../../../../core/play/live-session.types';
 
 /** A number typed for the damage to apply: a whole number from 0 to 1000 (what `ApplyTrapDamage` takes), or `null`. */
 export function parseAmount(text: string): number | null {

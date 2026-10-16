@@ -10,6 +10,7 @@ import {
 import { FakeMapsClient, mapMessage } from '../../../core/maps/maps-testing';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { GridPanel } from './grid-panel';
+import { nextTurn } from '../../../../test-settle';
 
 describe('GridPanel', () => {
   let fixture: ComponentFixture<GridPanel>;
@@ -41,7 +42,7 @@ describe('GridPanel', () => {
   const text = () => (el.textContent ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };

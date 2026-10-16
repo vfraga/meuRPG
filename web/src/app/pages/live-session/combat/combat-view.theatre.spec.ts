@@ -27,6 +27,13 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { CombatView } from './combat-view';
+import { nextTurn } from '../../../../test-settle';
+
+// With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 // The combat screen of a combat without a map (RN-25, E10-04), as the page mounts it: what each audience gets, and what is not drawn.
 
@@ -183,7 +190,7 @@ async function settle(fixture: {
   whenStable: () => Promise<unknown>;
 }): Promise<void> {
   await fixture.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await nextTurn();
   await fixture.whenStable();
   fixture.detectChanges();
 }

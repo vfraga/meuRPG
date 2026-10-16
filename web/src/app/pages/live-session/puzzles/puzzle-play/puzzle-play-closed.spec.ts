@@ -15,6 +15,13 @@ import {
   riddlePuzzle,
 } from '../../../../core/puzzles/puzzles-testing';
 import { PuzzlePlayPage } from './puzzle-play';
+import { nextTurn } from '../../../../../test-settle';
+
+// With --coverage test-setup.ts only hooks the first file of a worker, so the fake clock this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -60,7 +67,7 @@ describe('PuzzlePlayPage: a closed puzzle', () => {
       for (let i = 0; i < 3; i++) {
         fixture.detectChanges();
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
       }
       fixture.detectChanges();
     };

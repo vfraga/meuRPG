@@ -3,9 +3,9 @@ import { createClient } from '@connectrpc/connect';
 
 import { PlayService } from '../../../../gen/meurpg/play/v1/play_pb';
 import { CONNECT_TRANSPORT } from '../../../core/connect/transport';
-import { classifyLiveError } from '../../live-session/live-error';
-import { LiveStream, type StreamStatus } from '../../live-session/live-stream';
-import type { LiveErrorKind, LiveEventVm } from '../../live-session/live-session.types';
+import { classifyLiveError } from '../../../core/play/live-error';
+import { LiveStream, type StreamStatus } from '../../../core/play/live-stream';
+import type { LiveErrorKind, LiveEventVm } from '../../../core/play/live-session.types';
 
 /** A burst of news (a token dragged, a door and its vision) makes one read. */
 export const MAP_LIVE_DEBOUNCE_MS = 150;

@@ -24,7 +24,8 @@ import {
   CampaignCharactersSource,
   CampaignCharactersVm,
 } from './characters/campaign-characters.types';
-import { GameSessionSource, GameSessionVm } from './game-session/game-session-card.types';
+import { GameSessionSource, GameSessionVm } from '../../core/play/game-session-card.types';
+import { nextTurn } from '../../../test-settle';
 
 /** `CampaignCharacters` (the "Personagens" section) and `GameSessionCard`
  * (the master's "Sessão" card) are children of this page too — see
@@ -108,10 +109,6 @@ function deferred<T>() {
  * the next detectChanges() — more robust here than relying solely on
  * `fixture.whenStable()`, since the async work is not itself signal-driven
  * until the very end of the chain. */
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
 describe('CampaignDetail', () => {
   let fake: FakeCampaignsService;
   const experience = vi.fn();
@@ -156,7 +153,7 @@ describe('CampaignDetail', () => {
   async function render(): Promise<HTMLElement> {
     const fixture = TestBed.createComponent(CampaignDetail);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
@@ -428,14 +425,14 @@ describe('CampaignDetail', () => {
 
     const fixture = TestBed.createComponent(CampaignDetail);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     // Navigate to B before A answers; B answers first (a player there), then the slow A (the master there).
     params$.next(convertToParamMap({ id: 'camp-b' }));
-    await flush();
+    await nextTurn();
     pending.get('camp-b')!.resolve({ campaign: campaign('camp-b', 'Campanha B', Role.PLAYER) });
-    await flush();
+    await nextTurn();
     pending.get('camp-a')!.resolve({ campaign: campaign('camp-a', 'Campanha A', Role.MASTER) });
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const h1 = (fixture.nativeElement as HTMLElement).querySelector('h1')?.textContent ?? '';
@@ -474,7 +471,7 @@ describe('CampaignDetail', () => {
     it('shows every member the panel, loaded once with the history', async () => {
       asRole(Role.PLAYER);
       const el = await render();
-      await flush();
+      await nextTurn();
       expect(el.querySelector('app-experience-panel h2')?.textContent).toBe('Experiência');
       expect(experience).toHaveBeenCalledTimes(1);
       expect(listAwards).toHaveBeenCalledTimes(1);
@@ -483,7 +480,7 @@ describe('CampaignDetail', () => {
     it('puts it after "Sessão" and "Sessões anteriores", and gives only the master "Dar XP"', async () => {
       asRole(Role.MASTER);
       const el = await render();
-      await flush();
+      await nextTurn();
       const column = el.querySelector('.campaign-layout__column')!;
       const order = Array.from(column.children).map((c) => c.tagName.toLowerCase());
       expect(order.indexOf('app-past-sessions-panel')).toBe(
@@ -507,7 +504,7 @@ describe('CampaignDetail', () => {
     it('puts a player\'s characters right after "Sessão", before the XP and the dice', async () => {
       asRole(Role.PLAYER);
       const el = await render();
-      await flush();
+      await nextTurn();
       const order = columnOrder(el);
       expect(order.indexOf('app-campaign-characters')).toBe(
         order.indexOf('app-game-session-card') + 1,
@@ -520,7 +517,7 @@ describe('CampaignDetail', () => {
     it("keeps the master's characters at the end of the column", async () => {
       asRole(Role.MASTER);
       const el = await render();
-      await flush();
+      await nextTurn();
       expect(columnOrder(el).at(-1)).toBe('app-campaign-characters');
     });
 
@@ -544,7 +541,7 @@ describe('CampaignDetail', () => {
         hasLivingCharacter: true,
       });
       const el = await render();
-      await flush();
+      await nextTurn();
       const fixtureEl = el.querySelector('app-campaign-characters')!;
       expect(fixtureEl.querySelector('app-level-up-tag')?.textContent).toContain(
         'Pode subir de nível',

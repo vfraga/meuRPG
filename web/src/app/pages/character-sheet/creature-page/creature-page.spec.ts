@@ -11,6 +11,7 @@ import {
 } from '../../../core/creatures/creatures-testing';
 import { CharacterSheetSource } from '../character-sheet.types';
 import { CreaturePage } from './creature-page';
+import { nextTurn } from '../../../../test-settle';
 
 function deferred<T>() {
   let resolve!: (v: T) => void;
@@ -19,8 +20,6 @@ function deferred<T>() {
   });
   return { promise, resolve };
 }
-
-const tick = () => new Promise((r) => setTimeout(r));
 
 describe('CreaturePage', () => {
   it('shows the creature of the route when the answer for the one the person left lands last', async () => {
@@ -50,20 +49,20 @@ describe('CreaturePage', () => {
     const fixture = TestBed.createComponent(CreaturePage);
     const el = fixture.nativeElement as HTMLElement;
     fixture.detectChanges();
-    await tick();
+    await nextTurn();
     // The person goes to B before A's (slow) answer arrives: the same component is reused.
     params.next(convertToParamMap({ id: 'camp-1', characterId: 'char-1', creatureId: 'cr-B' }));
     fixture.detectChanges();
-    await tick();
+    await nextTurn();
     expect(api.list).toHaveBeenCalledTimes(2);
     pending[1].resolve([a, b]); // B's answer first
-    await tick();
-    await tick();
+    await nextTurn();
+    await nextTurn();
     fixture.detectChanges();
     expect(flat(el.querySelector('h1'))).toBe('Beta');
     pending[0].resolve([a, b]); // then the stale answer for A
-    await tick();
-    await tick();
+    await nextTurn();
+    await nextTurn();
     fixture.detectChanges();
     expect(flat(el.querySelector('h1'))).toBe('Beta');
   });

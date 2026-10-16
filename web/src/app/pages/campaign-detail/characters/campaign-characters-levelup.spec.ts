@@ -10,8 +10,8 @@ import {
 } from '../../../../gen/meurpg/characters/v1/characters_pb';
 import { LevelUpClient } from '../../../core/levelup/levelup-client';
 import { LevelUpFeed } from '../../../core/levelup/levelup-feed';
-import { OpenSessions } from '../../../shell/live-notice/open-sessions';
-import { XpWatcher } from '../../character-sheet/xp-watcher';
+import { OpenSessions } from '../../../core/play/open-sessions';
+import { XpWatcher } from '../../../core/play/xp-watcher';
 import { CampaignCharacters } from './campaign-characters';
 import { CampaignCharactersSource, type CampaignCharactersVm } from './campaign-characters.types';
 

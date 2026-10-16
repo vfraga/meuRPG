@@ -932,9 +932,12 @@ export function logLine(
         return { ...base, icon: 'favorite', ...reviveCastText(e, ctx) };
       }
       const cast = castText(e, ctx);
-      // "Sortudo: 1 → 14": a spell attack's d20 the halfling's Lucky rolled again (the server sends the roll to whoever
-      // may read it), kept by the event so a reload still finds it.
-      const lucky = (e.spell?.targets ?? []).map((t) => luckyText(t.attackRoll)).filter(Boolean);
+      // "Sortudo: 1 → 14": a spell attack's d20 the halfling's Lucky rolled again, or a halfling player's save the app
+      // rolled again by itself (the server sends the roll to whoever may read it), kept by the event so a reload still
+      // finds it.
+      const lucky = (e.spell?.targets ?? [])
+        .flatMap((t) => [luckyText(t.attackRoll), luckyText(t.save?.roll)])
+        .filter(Boolean);
       return {
         ...base,
         icon: 'auto_awesome',

@@ -1,4 +1,4 @@
-import { article } from '../combat/combat-log';
+import { article } from '../format/article';
 import {
   AttackOutcome,
   PendingDamageStatus,
@@ -43,8 +43,10 @@ function saveWords(c: TrapCaught, master: boolean): string[] {
   const saves = c.saves.length > 0 ? c.saves : c.save ? [c.save] : [];
   return saves.map((s) => {
     const word = s.outcome === SaveOutcome.SAVED ? 'passou no teste' : 'falhou no teste';
+    // "Sortudo: 1 → 14": a halfling player's 1 the app rolled again by itself, beside the dice that have the new face.
+    const lucky = luckyText(s.roll);
     const dice = s.roll
-      ? ` (${rollText(s.roll)}${master && s.dc ? ` contra CD ${s.dc}` : ''})`
+      ? ` (${rollText(s.roll)}${master && s.dc ? ` contra CD ${s.dc}` : ''}${lucky ? `; ${lucky}` : ''})`
       : '';
     return `${word}${dice}`;
   });

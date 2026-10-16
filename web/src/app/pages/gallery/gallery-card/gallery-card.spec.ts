@@ -5,8 +5,7 @@ import type { GalleryImage } from '../../../../gen/meurpg/maps/v1/gallery_pb';
 import { GalleryClient } from '../../../core/images/gallery-client';
 import { FakeGalleryClient, galleryImage, plain } from '../../../core/images/gallery-testing';
 import { GalleryCard } from './gallery-card';
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { nextTurn } from '../../../../test-settle';
 
 describe('GalleryCard', () => {
   let gallery: FakeGalleryClient;
@@ -36,7 +35,7 @@ describe('GalleryCard', () => {
   });
 
   async function settle(): Promise<void> {
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   }

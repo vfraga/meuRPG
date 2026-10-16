@@ -6,6 +6,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient, mapMessage, mapResponse, mapToken } from '../../../core/maps/maps-testing';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { MapManage } from './map-manage';
+import { nextTurn } from '../../../../test-settle';
 
 describe("MapManage: the master's map on a phone (E9-01 7)", () => {
   let fixture: ComponentFixture<MapManage>;
@@ -50,7 +51,7 @@ describe("MapManage: the master's map on a phone (E9-01 7)", () => {
     fixture.detectChanges();
     el = fixture.nativeElement;
     await fixture.whenStable();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     fixture.detectChanges();
     return state;
   }
@@ -116,9 +117,9 @@ describe("MapManage: the master's map on a phone (E9-01 7)", () => {
       ({ ...api.layersResponse, layersRevision: 3, wall: Uint8Array.of(wall) }) as never;
     // The newer answer (one wall) is back first, the older one (two walls) after it.
     pending[1]!(walls(0b0000_0001));
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     pending[0]!(walls(0b0000_0011));
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     fixture.detectChanges();
     expect(el.querySelectorAll('app-editor-overlay .sq--wall')).toHaveLength(1);
   });

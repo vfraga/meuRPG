@@ -13,8 +13,8 @@ import { joinDots, tight } from '../../../../core/format/text';
 import { listNames } from '../../../../core/maps/scene-clues';
 import { PairFoot } from '../../../../shared/pair-foot/pair-foot';
 import { type PickRow, PersonPick } from '../../../../shared/person-pick/person-pick';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../combat/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the trap card hands "Revelar armadilha". */
 export interface TrapRevealData {

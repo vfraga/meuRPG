@@ -37,7 +37,7 @@ import {
 } from '../../core/spells/spells-filter';
 import { ContentWatcher } from '../../core/content/content-watcher';
 import { SpellsState } from '../../core/spells/spells-state';
-import { LiveSessionSourceLive } from '../live-session/live-session-source.live';
+import { LiveSessionSourceLive } from '../../core/play/live-session-source.live';
 import { mediaQuery } from '../../shared/map-view/media-query';
 import { isTableSpellKey, spellDetailsFromGen } from '../../shared/spell-details/spell-details-map';
 import { type SpellCardState, SpellCard } from './spell-card';

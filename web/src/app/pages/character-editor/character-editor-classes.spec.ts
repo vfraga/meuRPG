@@ -15,6 +15,7 @@ import {
   SubclassOptionVm,
   UpdateCharacterInput,
 } from './character-editor.types';
+import { nextTurn } from '../../../test-settle';
 
 // The editor with the table's own content (MR-025, RN-23, slice 10.12b): a table class, race and
 // background, the "Outro" background, a sheet of several classes (E10-02 states 5 and 6) and the
@@ -207,8 +208,6 @@ class FakeSource {
   }
 }
 
-const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
-
 async function render(
   params: Record<string, string> = { id: 'camp-1' },
   setup: (fake: FakeSource) => void = () => undefined,
@@ -225,7 +224,7 @@ async function render(
   setup(fake);
   const fixture = TestBed.createComponent(CharacterEditor);
   fixture.detectChanges();
-  await flush();
+  await nextTurn();
   await fixture.whenStable();
   fixture.detectChanges();
   return {
@@ -663,7 +662,7 @@ describe('an edit of a sheet of several classes', () => {
     };
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await settle(fixture);
     const el = fixture.nativeElement as HTMLElement;
     expect(el.querySelectorAll('app-class-block').length).toBe(2);
@@ -1069,7 +1068,7 @@ describe('the catalog read again (10.1d)', () => {
     fake.forEdit = emptyEdit();
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await settle(fixture);
     expect(watcher.following()).toBe('camp-1');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1077,7 +1076,7 @@ describe('the catalog read again (10.1d)', () => {
     cmp.fullForm.patchValue({ name: 'Mudei o nome' });
     fake.catalogCalls.length = 0;
     watcher.hint();
-    await flush();
+    await nextTurn();
     await settle(fixture);
     expect(fake.catalogCalls).toEqual(['ch-9']);
     expect(cmp.fullForm.value.name).toBe('Mudei o nome');
@@ -1101,7 +1100,7 @@ describe('the catalog read again (10.1d)', () => {
     fake.forEdit = emptyEdit();
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await settle(fixture);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const cmp = fixture.componentInstance as any;
@@ -1110,17 +1109,17 @@ describe('the catalog read again (10.1d)', () => {
       new Promise<RulesCatalogVm>((resolve) => reads.push(resolve))) as never;
     watcher.hint();
     watcher.hint();
-    await flush();
+    await nextTurn();
     expect(reads).toHaveLength(2);
     const spells = () => cmp.state().catalog.spells.length as number;
     const newer = catalog();
     expect(newer.spells.length).toBeGreaterThan(0);
     reads[1](newer);
-    await flush();
+    await nextTurn();
     await settle(fixture);
     // The older read lands last, with a catalog that has lost every spell: it must not win.
     reads[0]({ ...newer, spells: [] });
-    await flush();
+    await nextTurn();
     await settle(fixture);
     expect(spells()).toBe(newer.spells.length);
   });
@@ -1143,11 +1142,11 @@ describe('the catalog read again (10.1d)', () => {
     fake.forEdit = emptyEdit();
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await settle(fixture);
     fake.catalogOver = (c) => ({ ...c, spells: [] });
     watcher.hint();
-    await flush();
+    await nextTurn();
     await settle(fixture);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((fixture.componentInstance as any).state().catalog.spells).toHaveLength(0);
@@ -1175,7 +1174,7 @@ describe('the catalog read again (10.1d)', () => {
       });
       const fixture = TestBed.createComponent(CharacterEditor);
       fixture.detectChanges();
-      await flush();
+      await nextTurn();
       await settle(fixture);
       return watcher.following();
     };

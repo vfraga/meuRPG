@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { ImageGenClient } from '../../core/images/imagegen-client';
 import { FakeImageGenClient, imageStatus } from '../../core/images/imagegen-testing';
 import { GenerateImageButton } from './generate-image-button';
+import { nextTurn } from '../../../test-settle';
 
 const plain = (t: string | null | undefined) =>
   (t ?? '')
@@ -45,7 +46,7 @@ describe('GenerateImageButton (E10-07 8: generation off)', () => {
     fixture.componentInstance.done.subscribe((o) => done.push(o));
     fixture.detectChanges();
     await fixture.whenStable();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement, done };
   }
@@ -118,7 +119,7 @@ describe('GenerateImageButton, two taps in a row', () => {
     fixture.componentRef.setInput('origin', { kind: 'gallery' });
     fixture.detectChanges();
     await fixture.whenStable();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     const button = (fixture.nativeElement as HTMLElement).querySelector('button')!;
 
     button.click();
@@ -129,7 +130,7 @@ describe('GenerateImageButton, two taps in a row', () => {
     });
     // Both taps wait on the same import(): a second dialog would open in the same flush that opened the first, so
     // one macrotask later is enough to know it did not.
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     expect(opened.length + sheets.length).toBe(1);
   });
 });

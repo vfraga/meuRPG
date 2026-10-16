@@ -7,6 +7,7 @@ import { SceneState } from '../../../../core/play/scene-state';
 import { masterScene, playerScene, stageNpc } from '../../../../core/play/scene-testing';
 import { StagePlayer } from './stage-player';
 import { StageViewer } from './stage-viewer';
+import { nextTurn } from '../../../../../test-settle';
 
 /** The text of an element as read, without the icons' ligature names ("check"). */
 const flat = (e: Element | null | undefined) => {
@@ -54,7 +55,7 @@ describe('StagePlayer', () => {
   async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
     for (let i = 0; i < 3; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

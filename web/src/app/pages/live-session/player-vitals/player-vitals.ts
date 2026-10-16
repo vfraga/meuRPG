@@ -40,15 +40,15 @@ import { hitDiceLeftWords, totalDiceLeft } from '../../../core/resources/hit-dic
 import { arcaneRecoveryState } from '../hit-dice-sheet/arcane-recovery';
 import { openHitDice } from '../hit-dice-sheet/hit-dice-sheet';
 import { WildPools } from '../../../shared/wild-shape/wild-pools';
-import { PlayerSheetVm, VitalsVm } from '../live-session.types';
-import { SlotDots } from '../slot-dots/slot-dots';
+import { PlayerSheetVm, VitalsVm } from '../../../core/play/live-session.types';
+import { SlotDots } from '../../../shared/slot-dots/slot-dots';
 import {
   betterArmorClass,
   freeWords,
   hitPointsPercent,
   slotLevelLabel,
   slotRowLabel,
-} from '../vitals';
+} from '../../../core/play/vitals';
 
 /** How long "Acordado · testes contra a morte zerados" stays under the cards. */
 const WOKE_NOTICE_MS = 30000;

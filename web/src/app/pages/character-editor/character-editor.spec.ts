@@ -33,6 +33,7 @@ import {
   RulesCatalogVm,
   UpdateCharacterInput,
 } from './character-editor.types';
+import { nextTurn } from '../../../test-settle';
 
 const STORED_ROLLS: AbilityRollsVm = {
   sets: [
@@ -306,10 +307,6 @@ function routeParams(params: Record<string, string>, data: Record<string, unknow
   return { paramMap: of(convertToParamMap(params)), snapshot: { data } };
 }
 
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
 /** Opens a step by its tab, like a click. A step's content is built the first time it opens (EditorStepper), so a
  * spec that reads a step other than "Básico" opens it first. */
 async function openStep(fixture: ComponentFixture<CharacterEditor>, label: string): Promise<void> {
@@ -346,7 +343,7 @@ describe('CharacterEditor', () => {
   }> {
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
@@ -1801,7 +1798,7 @@ describe('CharacterEditor', () => {
       )!;
       help.focus();
       help.click();
-      await flush();
+      await nextTurn();
       await fixture.whenStable();
       fixture.detectChanges();
       return help;
@@ -1822,13 +1819,13 @@ describe('CharacterEditor', () => {
         .find((b) => b.textContent?.trim() === 'Fechar')!
         .click();
       // Animations are off in unit tests (src/test-providers.ts): the dialog is gone after one turn.
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
       expect(document.querySelector('app-spell-details')).toBeNull();
       expect(document.activeElement).toBe(help);
 
       help.click();
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
       expect(fake.loadSpellDetailsCalls.length).toBe(1);
     });
@@ -1963,7 +1960,7 @@ describe('CharacterEditor: what an NPC gives when defeated (E7-11, MR-016)', () 
   async function render() {
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
@@ -2229,7 +2226,7 @@ describe('CharacterEditor, the NPC portrait', () => {
   async function render() {
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
@@ -2428,7 +2425,7 @@ describe("CharacterEditor, a player making a new sheet by the table's rules (RN-
   async function render() {
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
@@ -2496,7 +2493,7 @@ describe("CharacterEditor, a player making a new sheet by the table's rules (RN-
     const cmp = fixture.componentInstance as any;
     fillBasics(cmp);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
 
     // The standard array is the first way: nothing is placed yet.
     expect(cmp.abilityMethod()).toBe('standard_array');
@@ -2512,7 +2509,7 @@ describe("CharacterEditor, a player making a new sheet by the table's rules (RN-
     ).find((i) => i.closest('label')?.textContent?.includes('Digitar'))!;
     typed.click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     cmp.fullForm
       .get('abilities')
       ?.patchValue({ str: 12, dex: 14, con: 13, int: 8, wis: 16, cha: 10 });
@@ -2539,7 +2536,7 @@ describe("CharacterEditor, a player making a new sheet by the table's rules (RN-
       .find((i) => i.closest('label')?.textContent?.includes('Digitar'))!
       .click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fake.createCharacterFn = () =>
       Promise.reject(
         new ConnectError('x', Code.FailedPrecondition, undefined, [
@@ -2600,7 +2597,7 @@ describe("CharacterEditor, a player making a new sheet by the table's rules (RN-
       .find((i) => i.closest('label')?.textContent?.includes('Digitar'))!
       .click();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fake.createCharacterFn = () =>
       Promise.reject(
         new ConnectError('x', Code.FailedPrecondition, undefined, [
@@ -2676,7 +2673,7 @@ describe("CharacterEditor, the master's switches (RN-23: an option switched off,
   async function render() {
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
@@ -2720,7 +2717,7 @@ describe("CharacterEditor, the master's switches (RN-23: an option switched off,
     cmp.fullForm.patchValue({ name: 'Ícaro', race: 'race:gnome' });
     fake.loadCatalogFn = () => Promise.resolve(withElf());
     watcher.hint();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(cmp.state().catalog.races.map((r: { key: string }) => r.key)).toEqual([
       'race:gnome',
@@ -2737,7 +2734,7 @@ describe("CharacterEditor, the master's switches (RN-23: an option switched off,
     configure({ id: 'camp-1' });
     const { fixture, el } = await render();
     watcher.hint();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(el.textContent).not.toContain('O mestre mudou as opções da mesa');
   });
@@ -2756,7 +2753,7 @@ describe("CharacterEditor, the master's switches (RN-23: an option switched off,
         classes: catalog().classes.map((c) => (c.key === 'class:wizard' ? { ...c, hitDie: 8 } : c)),
       });
     watcher.hint();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(wizardDie()).toBe(8);
     expect(el.textContent).not.toContain('O mestre mudou as opções da mesa');
@@ -2780,9 +2777,9 @@ describe("CharacterEditor, the master's switches (RN-23: an option switched off,
     fill(cmp);
     fake.createCharacterFn = () => Promise.reject(switchedOff('race:gnome'));
     await cmp.submit();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(fake.createCharacterCalls).toHaveLength(1);
     // The field is invalid with the error's own key, red and aria-invalid, with the sentence in its mat-error.
@@ -2814,9 +2811,9 @@ describe("CharacterEditor, the master's switches (RN-23: an option switched off,
     fake.createCharacterFn = () => Promise.reject(switchedOff('race:gnome'));
     fake.loadCatalogFn = () => Promise.resolve({ ...catalog(), races: [] });
     await cmp.submit();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     expect(cmp.state().catalog.races).toEqual([]);
     expect(cmp.fullForm.controls.race.getError('switchedOff')).toContain(
@@ -2934,7 +2931,7 @@ describe('CharacterEditor, leaving the route while a read or a save is in flight
   async function render() {
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2961,7 +2958,7 @@ describe('CharacterEditor, leaving the route while a read or a save is in flight
     fillValid(cmp);
 
     const done = cmp.submit() as Promise<void>;
-    await flush();
+    await nextTurn();
     expect(fake.createCharacterCalls.length).toBe(1);
     fixture.destroy();
     pending.resolve({ characterId: 'new-char' });
@@ -2979,7 +2976,7 @@ describe('CharacterEditor, leaving the route while a read or a save is in flight
     fake.updateCharacterFn = () => pending.promise;
 
     const done = cmp.submit() as Promise<void>;
-    await flush();
+    await nextTurn();
     expect(fake.updateCharacterCalls.length).toBe(1);
     fixture.destroy();
     pending.resolve({ revision: 8 });
@@ -3009,12 +3006,12 @@ describe('CharacterEditor, leaving the route while a read or a save is in flight
     const { fixture, cmp } = await render();
     // Same component instance, new params (/characters/A/edit -> /characters/B/edit).
     params$.next(convertToParamMap({ id: 'camp-1', characterId: 'B' }));
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     expect(cmp.fullForm.getRawValue().name).toBe('Bruxa B');
 
     slowA.resolve({ ...fullSheetFor({ name: 'Ana A' }), revision: 5 });
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
 
     expect(cmp.fullForm.getRawValue().name).toBe('Bruxa B');
@@ -3030,7 +3027,7 @@ describe('CharacterEditor, leaving the route while a read or a save is in flight
     expect(cmp.selectedSkills().size).toBe(1);
 
     params$.next(convertToParamMap({ id: 'camp-1', characterId: 'B' }));
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     expect(cmp.state().kind).toBe('story');
 
@@ -3073,7 +3070,7 @@ describe('CharacterEditor, the bard\'s "Perguntar" setting for Palavras de Inter
     fake.loadCharacterForEditFn = () => Promise.resolve({ ...fullSheetFor(over), featureKeys });
     const fixture = TestBed.createComponent(CharacterEditor);
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     return {

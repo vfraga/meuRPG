@@ -15,8 +15,7 @@ import {
 import { ImageUploader } from '../../core/images/image-uploader';
 import { UploadFailed } from '../../core/images/upload-errors';
 import { GalleryPage } from './gallery';
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { nextTurn } from '../../../test-settle';
 
 describe('GalleryPage', () => {
   let gallery: FakeGalleryClient;
@@ -47,7 +46,7 @@ describe('GalleryPage', () => {
   }
 
   async function settle(fixture: ComponentFixture<GalleryPage>): Promise<void> {
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   }
@@ -304,9 +303,9 @@ describe('GalleryPage when the campaign in the route changes', () => {
 
     // B answers first, then the slow answer of A arrives last.
     b.resolve({ images: [imgB], usage: galleryUsage([imgB]) });
-    await flush();
+    await nextTurn();
     a.resolve({ images: [imgA], usage: galleryUsage([imgA]) });
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const names = Array.from(
@@ -321,7 +320,7 @@ describe('GalleryPage when the campaign in the route changes', () => {
     const fixture = TestBed.createComponent(GalleryPage);
     fixture.detectChanges();
     a.resolve({ images: [], usage: galleryUsage() });
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
@@ -337,7 +336,7 @@ describe('GalleryPage when the campaign in the route changes', () => {
     // Same component instance moves to campaign B while the queue still holds "dois.jpg".
     params.next(convertToParamMap({ id: 'camp-B' }));
     uploader.pending[0].resolve(galleryImage('up-1', 'um', { campaignId: 'camp-A' }));
-    await flush();
+    await nextTurn();
 
     // Whatever was dropped on A must never be sent to B.
     expect(uploader.pending.map((p) => p.campaignId)).not.toContain('camp-B');

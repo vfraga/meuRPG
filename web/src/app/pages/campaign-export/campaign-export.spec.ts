@@ -18,8 +18,7 @@ import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { plain } from '../../core/images/gallery-testing';
 import { OUTCOME_UNKNOWN } from '../../core/connect/connect-errors';
 import { CampaignExportPage, EXPORT_POLL_MS } from './campaign-export';
-
-const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+import { nextTurn } from '../../../test-settle';
 
 const MIB = 1024 * 1024;
 
@@ -66,7 +65,7 @@ describe('CampaignExportPage', () => {
   }
 
   async function settle(fixture: ComponentFixture<CampaignExportPage>): Promise<void> {
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   }

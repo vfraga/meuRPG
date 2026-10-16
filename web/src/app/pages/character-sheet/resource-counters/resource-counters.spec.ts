@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
-import type { VitalsVm } from '../../live-session/live-session.types';
-import { pensantusVitals } from '../../live-session/testing';
+import type { VitalsVm } from '../../../core/play/live-session.types';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { ResourceCounters } from './resource-counters';
 
 describe('ResourceCounters (PM-07b 7)', () => {

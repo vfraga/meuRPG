@@ -14,6 +14,7 @@ import { TableContentClient } from '../../../core/content/content-client';
 import { SpellsClient } from '../../../core/spells/spells-client';
 import { fakeContentWatcher } from '../../../core/content/content-testing';
 import { ContentOptions } from './options';
+import { settle } from '../../../../test-settle';
 
 const opt = (
   kind: TableContentKind,
@@ -84,17 +85,8 @@ describe('ContentOptions bulk switches with the class filter', () => {
       ],
     });
     const fixture = TestBed.createComponent(ContentOptions);
-    await settle(fixture);
-    return { fixture, el: fixture.nativeElement as HTMLElement, settle: () => settle(fixture) };
-  }
-
-  async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
-    for (let i = 0; i < 4; i++) {
-      fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
-      await fixture.whenStable();
-    }
-    fixture.detectChanges();
+    await settle(fixture, 4);
+    return { fixture, el: fixture.nativeElement as HTMLElement, settle: () => settle(fixture, 4) };
   }
 
   // The text a person reads: the icons' ligature names ("check") are not words.

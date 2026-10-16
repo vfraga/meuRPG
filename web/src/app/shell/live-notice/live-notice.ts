@@ -2,7 +2,7 @@ import { Component, computed, inject, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 
-import { OpenSessions, sessionsToAnnounce } from './open-sessions';
+import { OpenSessions, sessionsToAnnounce } from '../../core/play/open-sessions';
 
 /**
  * The session notice under the app bar (RN-06, artboard E5-01): "A sessão 4

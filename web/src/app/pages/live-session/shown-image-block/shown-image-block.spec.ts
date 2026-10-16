@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import type { ShownImageVm } from '../live-session.types';
+import type { ShownImageVm } from '../../../core/play/live-session.types';
 import { ShownImageBlock } from './shown-image-block';
 
 const goblin: ShownImageVm = {

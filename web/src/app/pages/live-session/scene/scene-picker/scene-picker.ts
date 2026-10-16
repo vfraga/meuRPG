@@ -12,8 +12,8 @@ import { sceneErrorMessage } from '../../../../core/play/scene-errors';
 import type { SceneState } from '../../../../core/play/scene-state';
 import { clueCount } from '../../../../core/maps/scene-clues';
 import { actionCount } from '../../../../core/play/scene-view';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../combat/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the session page hands the picker. */
 export interface ScenePickerData {

@@ -3,8 +3,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MapPointKind, MapPointSchema } from '../../../../gen/meurpg/maps/v1/maps_pb';
 import { type LightOption, LightPresets } from '../../../core/maps/light-presets';
-import type { LightReach } from '../editor-overlay/editor-overlay';
+import type { LightReach } from '../../../shared/editor-overlay/editor-overlay';
 import { LightPointPanel } from './light-point-panel';
+import { nextTurn } from '../../../../test-settle';
 
 const options: LightOption[] = [
   {
@@ -70,7 +71,7 @@ describe('LightPointPanel', () => {
   }
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };

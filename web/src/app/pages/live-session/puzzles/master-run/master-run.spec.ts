@@ -34,6 +34,7 @@ import {
   sequencePuzzle,
 } from '../../../../core/puzzles/puzzles-testing';
 import { MasterRun } from './master-run';
+import { nextTurn } from '../../../../../test-settle';
 
 @Component({
   imports: [MasterRun],
@@ -126,7 +127,7 @@ describe('MasterRun (MR-038, E10-06 states 3 to 5)', () => {
       for (let i = 0; i < 3; i++) {
         fixture.detectChanges();
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
       }
       fixture.detectChanges();
     };

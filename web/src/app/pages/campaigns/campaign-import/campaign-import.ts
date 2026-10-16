@@ -43,7 +43,7 @@ import { describeConnectError } from '../../../core/connect/connect-errors';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { formatBytes } from '../../../core/images/image-format';
 import { UploadFailed } from '../../../core/images/upload-errors';
-import { creationRefusalText } from '../campaign-copy';
+import { creationRefusalText } from '../../../core/campaigns/campaign-copy';
 
 /** Where a failure happened, which is where "Tentar de novo" picks up: before the package was read, or when creating. */
 type Stage = 'upload' | 'create';
@@ -165,9 +165,20 @@ export class CampaignImportPage {
   private async loadKept(): Promise<void> {
     try {
       const { upload } = await this.client.getImport();
-      this.go({ status: 'choose', kept: upload ? keptUploadText(upload) : '', notice: '' });
+      this.openChoose({ status: 'choose', kept: upload ? keptUploadText(upload) : '', notice: '' });
     } catch (err) {
-      this.go({ status: 'choose', kept: '', notice: describeConnectError(err, {}) });
+      this.openChoose({ status: 'choose', kept: '', notice: describeConnectError(err, {}) });
+    }
+  }
+
+  /**
+   * Shows the first card once the kept-upload read ends, unless the person has already moved on: the file input
+   * is there while this loads, so a file chosen (and refused, or sent) before the answer arrives must not be
+   * wiped by that late answer.
+   */
+  private openChoose(state: ImportState): void {
+    if (this.state().status === 'loading') {
+      this.go(state);
     }
   }
 

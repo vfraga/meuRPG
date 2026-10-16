@@ -4,7 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import type { SpellClass } from '../../core/spells/spells-client';
 import { LEVEL_CHIPS, SCHOOLS, toggleLevel } from '../../core/spells/spells-filter';
 import type { SpellsState } from '../../core/spells/spells-state';
-import { RevealSwitch } from '../maps/reveal-switch/reveal-switch';
+import { RevealSwitch } from '../../shared/reveal-switch/reveal-switch';
 
 /** The player's own character, for "Só as que posso aprender". */
 export interface MineCharacter {

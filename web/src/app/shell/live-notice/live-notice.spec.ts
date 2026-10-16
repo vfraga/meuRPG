@@ -3,7 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { LiveNotice } from './live-notice';
-import { OpenSessionVm, OpenSessions } from './open-sessions';
+import { OpenSessions } from '../../core/play/open-sessions';
+import type { OpenSessionVm } from '../../core/play/open-sessions.types';
 
 describe('LiveNotice', () => {
   const sessions = signal<readonly OpenSessionVm[]>([]);

@@ -6,6 +6,7 @@ import type { ImagePickerData } from '../../../shared/gallery-picker/image-picke
 import { GalleryClient } from '../../../core/images/gallery-client';
 import { galleryImage, galleryUsage } from '../../../core/images/gallery-testing';
 import { PortraitField } from './portrait-field';
+import { nextTurn } from '../../../../test-settle';
 
 /** The text of an element as read, without the icons' ligature names. */
 const flat = (e: Element | null | undefined) => {
@@ -45,7 +46,7 @@ describe('PortraitField (E8-08)', () => {
   async function settle(fixture: { detectChanges(): void; whenStable(): Promise<unknown> }) {
     for (let i = 0; i < 3; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

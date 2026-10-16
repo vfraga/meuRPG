@@ -17,8 +17,8 @@ import {
   UseArcaneRecoveryResponseSchema,
 } from '../../../../gen/meurpg/play/v1/resources_pb';
 import { ResourceClient } from '../../../core/resources/resources-client';
-import type { VitalsVm } from '../live-session.types';
-import { pensantusVitals } from '../testing';
+import type { VitalsVm } from '../../../core/play/live-session.types';
+import { pensantusVitals } from '../../../core/play/live-testing';
 import { HitDiceSheet, type HitDiceSheetData } from './hit-dice-sheet';
 
 const flat = (n: Element | null | undefined) => n?.textContent?.replace(/\s+/g, ' ').trim();

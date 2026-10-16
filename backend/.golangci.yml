@@ -32,6 +32,8 @@ linters:
     - forcetypeassert # x.(T) without the comma-ok form can panic
     - gocyclo # branches per function
     - gocognit # how hard a function is to read (nesting counts)
+    # Added 16/10/2026, with the lower complexity limits below.
+    - maintidx # maintainability index: size, branches and operators together
     - mnd # magic numbers
     - goconst # the same string repeated
     - godot # comments end with a period
@@ -66,13 +68,23 @@ linters:
         # Copying a 100-byte struct in a range loop is not our bottleneck.
         - rangeValCopy
         - hugeParam
-    # Thresholds: the Go audit counted 128 functions over gocognit's default
-    # of 30. 50 flags only the worst (the god functions for the review);
-    # tighten it as they are split. gocyclo 30 is the same idea for branches.
+    # Limits for new code (16/10/2026): cyclomatic complexity at most 15,
+    # cognitive complexity at most 20 and a maintainability index of at least
+    # 20 (0 to 100). The ratchet (--new-from-merge-base, --new-from-rev)
+    # reports an issue only when its line changed, and these three linters
+    # report on the line with `func`. So a new function, and an old one whose
+    # `func` line changes (its name, receiver or first parameters) or moves in
+    # the diff, must meet the limits; a change to the body of an old function
+    # does not trigger them. The bodies are held by the totals gate instead
+    # (.github/scripts/go-complexity.sh, same limits): no function over a
+    # limit may appear or get worse. The functions over them today are in
+    # .github/go-complexity-baseline.txt; `make lint-all` lists them too.
     gocyclo:
-      min-complexity: 30
+      min-complexity: 15
     gocognit:
-      min-complexity: 50
+      min-complexity: 20
+    maintidx:
+      under: 20
     mnd:
       # Argument and operation contexts are the noisy ones; the checks left
       # (assign, case, condition, return) catch real magic numbers.
@@ -143,6 +155,7 @@ linters:
           - goconst
           - gocyclo
           - gocognit
+          - maintidx
           - forcetypeassert
     presets:
       - std-error-handling # e.g. unchecked errors from Close/Fprintln

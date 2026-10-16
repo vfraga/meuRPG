@@ -17,6 +17,7 @@ import {
   CharacterEditorSource,
 } from '../character-editor.types';
 import { TableAbilityScores } from './table-ability-scores';
+import { nextTurn } from '../../../../test-settle';
 
 const STORED: AbilityRollsVm = {
   sets: [
@@ -92,7 +93,7 @@ describe('TableAbilityScores', () => {
   async function settle() {
     for (let i = 0; i < 3; i++) {
       fixture.detectChanges();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       await fixture.whenStable();
     }
     fixture.detectChanges();

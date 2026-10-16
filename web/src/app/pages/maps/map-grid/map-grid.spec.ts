@@ -7,6 +7,7 @@ import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { FakeMapsClient, mapMessage, mapResponse } from '../../../core/maps/maps-testing';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { MapGrid } from './map-grid';
+import { nextTurn } from '../../../../test-settle';
 
 describe('MapGrid, the older grid page, on a calibrated map (RN-25)', () => {
   async function setup(map: ReturnType<typeof mapMessage>) {
@@ -42,7 +43,7 @@ describe('MapGrid, the older grid page, on a calibrated map (RN-25)', () => {
     const fixture = TestBed.createComponent(MapGrid);
     fixture.detectChanges();
     for (let i = 0; i < 3; i++) {
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       await fixture.whenStable();
       fixture.detectChanges();
     }
@@ -148,7 +149,7 @@ describe('MapGrid, the older grid page, on a calibrated map (RN-25)', () => {
     Array.from(el.querySelectorAll('button'))
       .find((b) => b.textContent?.includes('Salvar'))
       ?.click();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
     expect(api.calls.some((c) => c.startsWith('setGrid'))).toBe(false);
@@ -158,7 +159,7 @@ describe('MapGrid, the older grid page, on a calibrated map (RN-25)', () => {
     Array.from(el.querySelectorAll('button'))
       .find((b) => b.textContent?.includes('Salvar'))
       ?.click();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     expect(api.calls.some((c) => c === 'setGrid map-4 20 x6')).toBe(true);
   });

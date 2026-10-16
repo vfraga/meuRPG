@@ -194,7 +194,8 @@ func (e *logEntry) reactionLine(ctx context.Context, v combatViewer, byID map[st
 			if !re.Saved {
 				result = "falhou"
 			}
-			return fmt.Sprintf("%s usou Repreensão Infernal (%s) %s: teste de Destreza 1d20 (%d) + %d = %d contra CD %d: %s; %d de fogo.%s", who, rebukeCost(re), agg[1:], re.SaveD20, re.SaveBonus, re.SaveD20+re.SaveBonus, re.SaveDC, result, re.Fire, by), true
+			// The d20 the app rolled again for a halfling player's save (combat_lucky.go), with the numbers.
+			return fmt.Sprintf("%s usou Repreensão Infernal (%s) %s: teste de Destreza 1d20 (%d) + %d = %d contra CD %d: %s; %d de fogo.%s%s", who, rebukeCost(re), agg[1:], re.SaveD20, re.SaveBonus, re.SaveD20+re.SaveBonus, re.SaveDC, result, re.Fire, luckyNote(e.ev.Lucky), by), true
 		}
 		if seesOther {
 			if re.Saved {

@@ -8,6 +8,7 @@ import {
   changeTitle,
 } from './changed-content-format';
 import { ChangedContentNotice } from './changed-content';
+import { nextTurn } from '../../../../test-settle';
 
 // "A classe mudou" (E10-02 state 8, RN-23 question 80): the sentences are the server's, shown as they come.
 
@@ -105,7 +106,7 @@ describe('ChangedContentNotice', () => {
       ) as HTMLButtonElement
     ).click();
     await fixture.whenStable();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
     expect(document.querySelector('app-changed-content-sheet')).toBeNull();
   });
 
@@ -122,7 +123,7 @@ describe('ChangedContentNotice', () => {
         (b) => b.textContent?.trim() === 'Fechar',
       ) as HTMLButtonElement
     ).click();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
   });
 
   it("says the sheet's skills under a sentence about skills, as drawn, and not under another", async () => {
@@ -151,7 +152,7 @@ describe('ChangedContentNotice', () => {
         (b) => b.textContent?.trim() === 'Fechar',
       ) as HTMLButtonElement
     ).click();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
     buttons[1].click();
     fixture.detectChanges();
     await fixture.whenStable();
@@ -163,7 +164,7 @@ describe('ChangedContentNotice', () => {
         (b) => b.textContent?.trim() === 'Fechar',
       ) as HTMLButtonElement
     ).click();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
   });
 
   it('tells the master that the fix is theirs', async () => {
@@ -179,6 +180,6 @@ describe('ChangedContentNotice', () => {
         (b) => b.textContent?.trim() === 'Fechar',
       ) as HTMLButtonElement
     ).click();
-    await new Promise((r) => setTimeout(r, 0));
+    await nextTurn();
   });
 });

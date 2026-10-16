@@ -269,7 +269,14 @@ test(
       // "Gerar encontro": Moderada, Humanoide. The seed on screen gives the same encounter by the API, twice.
       await master.getByRole('button', { name: 'Gerar encontro' }).click();
       const gen = master.getByRole('dialog', { name: 'Gerar encontro' });
+      // Changing the type draws again while the first draw is still on screen: wait for the humanoid draw to land and
+      // the result to stop being busy, or the seed and the lines can come from two different draws.
+      const humanoidDrawn = master.waitForResponse(
+        (r) => r.url().includes('/meurpg.play.v1.EncounterService/GenerateEncounter') && (r.request().postData() ?? '').includes('humanoid'),
+      );
       await gen.locator('select[name=type]').selectOption('humanoid');
+      await humanoidDrawn;
+      await expect(gen.locator('section.res')).toHaveAttribute('aria-busy', 'false');
       await expect(gen.locator('.res__seed')).toContainText('Semente');
       const seed = Number((await gen.locator('.res__seed').innerText()).replace(/\D/g, ''));
       expect(seed).toBeGreaterThan(0);
@@ -371,6 +378,7 @@ test(
       await again.getByRole('button', { name: 'Voltar' }).click();
       await expect(again.getByText('Trocar o encontro guardado?')).toHaveCount(0);
       await again.getByRole('button', { name: 'Cancelar' }).click();
+      await expect(again).toHaveCount(0);
       // Nothing was replaced: the point still keeps the three creatures.
       const kept = await callRPC(master, 'meurpg.play.v1.EncounterService/GetBattleEncounter', { campaignId, mapPointId: pointId });
       expect(JSON.stringify(await kept.json())).toContain('"count":2');
@@ -457,6 +465,7 @@ test(
       await expect(master.getByText('Tirar o encontro do ponto?')).toBeVisible();
       await expect(master.getByRole('button', { name: 'Voltar' })).toBeFocused();
       await master.getByRole('button', { name: 'Voltar' }).click();
+      await expect(master.getByText('Tirar o encontro do ponto?')).toHaveCount(0);
       const stillThere = await callRPC(master, 'meurpg.play.v1.EncounterService/GetBattleEncounter', { campaignId, mapPointId: pointId });
       expect(JSON.stringify(await stillThere.json())).toContain('monster:goblin');
       await master.getByRole('button', { name: 'Tirar o encontro do ponto' }).click();

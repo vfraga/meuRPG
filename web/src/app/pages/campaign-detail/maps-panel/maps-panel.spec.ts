@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient, mapMessage } from '../../../core/maps/maps-testing';
 import { MapsPanel, mapRowSub } from './maps-panel';
+import { nextTurn } from '../../../../test-settle';
 
 async function render(isMaster: boolean, maps: FakeMapsClient): Promise<HTMLElement> {
   TestBed.configureTestingModule({
@@ -14,7 +15,7 @@ async function render(isMaster: boolean, maps: FakeMapsClient): Promise<HTMLElem
   fixture.componentRef.setInput('isMaster', isMaster);
   fixture.detectChanges();
   await fixture.whenStable();
-  await new Promise((r) => setTimeout(r));
+  await nextTurn();
   fixture.detectChanges();
   return fixture.nativeElement;
 }

@@ -1,4 +1,4 @@
-import { trapArea } from '../../core/traps/trap-area';
+import { trapArea } from './trap-area';
 
 describe('trapArea', () => {
   it('is the point square for size 1', () => {

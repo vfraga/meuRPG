@@ -26,6 +26,13 @@ import { MapState } from '../../../core/maps/map-state';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { RosterClient } from '../../../core/maps/roster-client';
 import { CombatView } from './combat-view';
+import { nextTurn } from '../../../../test-settle';
+
+// With --coverage test-setup.ts only hooks the first file of a worker, so the stubbed globals this file leaves on would
+// reach the next file (a real setTimeout never fires on a fake clock).
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 // A player's area spell hit hidden creatures and the table asks (PM-02c): the master's question and the held turn, as each
 // audience reads them.
@@ -162,7 +169,7 @@ function setup(opts: { master: boolean; me?: 'p' | 's'; held: boolean; questions
 
 async function settle(fixture: { detectChanges: () => void; whenStable: () => Promise<unknown> }) {
   await fixture.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await nextTurn();
   await fixture.whenStable();
   fixture.detectChanges();
 }

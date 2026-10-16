@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
 import { CountPips } from '../../../shared/count-pips/count-pips';
-import type { VitalsVm } from '../../live-session/live-session.types';
+import type { VitalsVm } from '../../../core/play/live-session.types';
 import { resourceBoxes, slotCounterRows, slotsFootnote } from './counters';
 
 /**

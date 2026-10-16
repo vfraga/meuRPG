@@ -11,8 +11,7 @@ import {
 } from '../../../core/images/gallery-testing';
 import { ImageUploader } from '../../../core/images/image-uploader';
 import { ImagePickerDialog } from './image-picker-dialog';
-
-const flush = () => new Promise((r) => setTimeout(r));
+import { nextTurn } from '../../../../test-settle';
 
 // RN-10: the players read the document, so a picture of the whole map asks before it goes in.
 describe("the document's ImagePickerDialog and a picture of the whole map", () => {
@@ -34,11 +33,11 @@ describe("the document's ImagePickerDialog and a picture of the whole map", () =
     const inserted: GalleryImage[] = [];
     fixture.componentInstance.picked.subscribe((i) => inserted.push(i));
     fixture.detectChanges();
-    await flush();
+    await nextTurn();
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const settle = async () => {
-      await flush();
+      await nextTurn();
       fixture.detectChanges();
     };
     const tile = (name: string) =>

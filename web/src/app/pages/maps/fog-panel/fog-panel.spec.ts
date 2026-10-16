@@ -4,6 +4,7 @@ import { LightLevel, type Map as MapMessage } from '../../../../gen/meurpg/maps/
 import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient, mapMessage } from '../../../core/maps/maps-testing';
 import { FogPanel } from './fog-panel';
+import { nextTurn } from '../../../../test-settle';
 
 describe('FogPanel', () => {
   let fixture: ComponentFixture<FogPanel>;
@@ -31,7 +32,7 @@ describe('FogPanel', () => {
   const text = () => (el.textContent ?? '').replace(/\s+/g, ' ');
   const settle = async () => {
     fixture.detectChanges();
-    await new Promise((r) => setTimeout(r));
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
   };

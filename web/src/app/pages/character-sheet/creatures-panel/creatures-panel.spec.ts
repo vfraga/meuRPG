@@ -18,8 +18,9 @@ import {
   raven,
   summonAnswer,
 } from '../../../core/creatures/creatures-testing';
-import { OpenSessions } from '../../../shell/live-notice/open-sessions';
+import { OpenSessions } from '../../../core/play/open-sessions';
 import { CreaturesPanel } from './creatures-panel';
+import { nextTurn } from '../../../../test-settle';
 
 const FAMILIAR = (): SpellAccess => ({ spells: [familiarSpell()] });
 type SpellAccess = { spells: ReturnType<typeof familiarSpell>[] };
@@ -69,7 +70,7 @@ describe('CreaturesPanel (E9-10, MR-037, RN-20)', () => {
     const settle = async () => {
       for (let i = 0; i < 4; i++) {
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         fixture.detectChanges();
       }
     };
@@ -369,8 +370,6 @@ describe('CreaturesPanel (E9-10, MR-037, RN-20)', () => {
   });
 });
 
-const tick = () => new Promise((r) => setTimeout(r));
-
 function deferred<T>() {
   let resolve!: (v: T) => void;
   const promise = new Promise<T>((res) => {
@@ -411,7 +410,7 @@ describe('CreaturesPanel, a druid in Wild Shape: the reads of her form', () => {
   const settle = async (f: { detectChanges(): void; whenStable(): Promise<unknown> }) => {
     for (let i = 0; i < 4; i++) {
       await f.whenStable();
-      await tick();
+      await nextTurn();
       f.detectChanges();
     }
   };
@@ -479,10 +478,10 @@ describe('CreaturesPanel, a druid in Wild Shape: the reads of her form', () => {
     api.vitals = vitals('');
 
     button.click();
-    await tick();
+    await nextTurn();
     fixture.detectChanges();
     button.click();
-    await tick();
+    await nextTurn();
     fixture.detectChanges();
     first.resolve({ vitals: undefined, encounter: undefined });
     await settle(fixture);

@@ -25,6 +25,7 @@ import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { AttackSheet } from './attack-sheet/attack-sheet';
 import { CombatView } from './combat-view';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 // The reaction window on the combat screen (PM-04): the sheet that opens by itself for the player, the master's cards,
 // the line that waits, and the sentence of a window that closed by itself.
@@ -176,7 +177,7 @@ async function settle(fixture: {
   whenStable: () => Promise<unknown>;
 }): Promise<void> {
   await fixture.whenStable();
-  await new Promise((r) => setTimeout(r, 0));
+  await nextTurn();
   await fixture.whenStable();
   fixture.detectChanges();
 }

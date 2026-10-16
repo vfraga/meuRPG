@@ -8,6 +8,7 @@ import { MapsClient } from '../../../core/maps/maps-client';
 import { FakeMapsClient } from '../../../core/maps/maps-testing';
 import type { CluePlayer } from '../../../core/maps/scene-clues';
 import { ClueList } from './clue-list';
+import { nextTurn } from '../../../../test-settle';
 
 function clue(id: string, text: string, to: string[] = []): SceneClue {
   return create(SceneClueSchema, {
@@ -62,7 +63,7 @@ describe('ClueList', () => {
   async function settle(): Promise<void> {
     for (let i = 0; i < 4; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

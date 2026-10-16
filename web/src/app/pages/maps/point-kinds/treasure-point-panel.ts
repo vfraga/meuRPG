@@ -24,7 +24,7 @@ import type { PointChanges } from '../../../core/maps/maps-client';
 import { MapsClient } from '../../../core/maps/maps-client';
 import { trapMapErrorMessage } from '../../../core/traps/trap-errors';
 import { foundLine, summaryLine } from '../../../core/traps/treasure-text';
-import { MapAsk } from '../map-ask/map-ask';
+import { MapAsk } from '../../../shared/map-ask/map-ask';
 import { PairFoot } from '../../../shared/pair-foot/pair-foot';
 import { type PickRow, PersonPick } from '../../../shared/person-pick/person-pick';
 import {

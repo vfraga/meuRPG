@@ -1,6 +1,7 @@
 import { isUnlimited } from '../../../core/combat/unlimited-uses';
-import type { ResourceUsageVm, VitalsVm } from '../../live-session/live-session.types';
-import { slotLevelLabel } from '../../live-session/vitals';
+import type { ResourceUsageVm } from '../../../core/play/resource-usage.types';
+import type { VitalsVm } from '../../../core/play/live-session.types';
+import { slotLevelLabel } from '../../../core/play/vitals';
 
 /** Up to this many uses the box draws a pip for each; above it the box shows only the number (PM-07b 7). */
 export const MAX_PIPS = 6;

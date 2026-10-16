@@ -576,6 +576,39 @@ describe('the log of spells, reactions, the fallen and conditions (slice 6.5c)',
     );
   });
 
+  it('notes the save the app rolled again for a halfling, for whoever reads its dice', () => {
+    const cast = (withRoll: boolean) =>
+      entry({
+        kind: CombatLogKind.SPELL_CAST,
+        actorLabel: 'Brisa',
+        keyNamePt: 'Chama Sagrada',
+        spell: {
+          targets: [
+            {
+              targetId: 't',
+              targetLabel: 'Toren',
+              save: {
+                outcome: 1,
+                dc: 13,
+                roll: withRoll
+                  ? {
+                      diceCount: 1,
+                      diceSides: 20,
+                      faces: [15],
+                      modifier: 2,
+                      total: 17,
+                      rerolled: [{ index: 0, from: 1, to: 15, sourceKey: 'trait:lucky' }],
+                    }
+                  : undefined,
+              },
+            },
+          ],
+        },
+      } as never);
+    expect(logLine(cast(true))?.notes).toEqual(['Sortudo: 1 → 15']);
+    expect(logLine(cast(false))?.notes).toBeUndefined();
+  });
+
   it("tells the master that an NPC's saving throw has no known bonus, and nobody else", () => {
     const cast = entry({
       kind: CombatLogKind.SPELL_CAST,

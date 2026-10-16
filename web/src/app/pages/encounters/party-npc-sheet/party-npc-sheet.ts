@@ -13,8 +13,8 @@ import { GUIDE_LABEL, encounterErrorMessage } from '../../../core/encounters/enc
 import { formatInt, tight } from '../../../core/format/text';
 import type { RosterEntry } from '../../../core/maps/roster-client';
 import { CountStepper } from '../../../shared/count-stepper/count-stepper';
-import { SheetFrame } from '../../live-session/combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../live-session/combat/sheet-host';
+import { SheetFrame } from '../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../shared/sheet/sheet-host';
 
 /** What the builder hands the sheet. */
 export interface PartyNpcData {

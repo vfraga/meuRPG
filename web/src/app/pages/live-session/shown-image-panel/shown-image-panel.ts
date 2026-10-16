@@ -21,7 +21,7 @@ import { GalleryClient } from '../../../core/images/gallery-client';
 import { openImagePicker } from '../../../shared/gallery-picker/image-picker-dialog/image-picker-dialog';
 import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
 import { LeftImagesList } from '../left-images-list/left-images-list';
-import { LiveSessionSource, ShownImageVm } from '../live-session.types';
+import { LiveSessionSource, ShownImageVm } from '../../../core/play/live-session.types';
 import { KeepSwitch } from './keep-switch';
 
 /** What the dialog's line says under the grid (E5-10). */

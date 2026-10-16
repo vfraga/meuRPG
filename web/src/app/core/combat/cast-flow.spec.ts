@@ -303,6 +303,30 @@ describe('the result of a cast', () => {
     expect(owed[0].owed).toBe(true);
   });
 
+  it('says "Sortudo: 1 → 14" under a save the app rolled again for a halfling, and only there', () => {
+    const d20 = (face: number, rerolled: boolean) => ({
+      diceCount: 1,
+      diceSides: 20,
+      faces: [face],
+      modifier: 2,
+      total: face + 2,
+      rerolled: rerolled ? [{ index: 0, from: 1, to: face, sourceKey: 'trait:lucky' }] : [],
+    });
+    const cast = create(SpellCastSchema, {
+      targets: [
+        { combatantId: 't', save: { outcome: SaveOutcome.SAVED, dc: 13, roll: d20(14, true) } },
+        { combatantId: 'p', save: { outcome: SaveOutcome.FAILED, dc: 13, roll: d20(1, false) } },
+      ],
+    });
+    const labels = new Map([
+      ['t', { label: 'Toren', state: CombatantState.UNHURT }],
+      ['p', { label: 'Pensantus', state: CombatantState.UNHURT }],
+    ]);
+    const rows = castRows(cast, new Map(), labels);
+    expect(rows[0].lines).toContain('Sortudo: 1 → 14');
+    expect(rows[1].lines.join(' ')).not.toContain('Sortudo');
+  });
+
   it("rolls one group for an area spell and one for each of Magic Missile's targets", () => {
     const p = (id: string, castId: string) =>
       ({ id, castId, status: PendingDamageStatus.AWAITING_ROLL }) as PendingDamage;

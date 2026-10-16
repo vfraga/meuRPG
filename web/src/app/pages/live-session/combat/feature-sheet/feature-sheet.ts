@@ -11,9 +11,9 @@ import { rollFormula } from '../../../../core/combat/combat-dice';
 import { RollAnimator, showOfDice } from '../../../../shared/roll-overlay/roll-animator';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
-import { RollPicker } from '../roll-picker/roll-picker';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet } from '../sheet-host';
+import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands the feature sheet. */
 export interface FeatureSheetData {

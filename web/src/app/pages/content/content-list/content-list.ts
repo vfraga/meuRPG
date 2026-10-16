@@ -39,7 +39,7 @@ import { type CatalogVm, catalogVm } from '../../../core/content/catalog';
 import { packFileName, packToText } from '../../../core/content/content-pack';
 import { saveTextFile } from '../../../core/content/save-file';
 import { ContentWatcher } from '../../../core/content/content-watcher';
-import { LiveSessionSourceLive } from '../../live-session/live-session-source.live';
+import { LiveSessionSourceLive } from '../../../core/play/live-session-source.live';
 import { TextField } from '../../../shared/form-fields/text-field';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
 import { mediaQuery, PHONE_QUERY } from '../../../shared/map-view/media-query';

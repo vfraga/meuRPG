@@ -53,6 +53,9 @@ type trapTarget struct {
 	saveAuto                   bool
 	// saveDice are the dice the target's effects add to its saving throw (Bênção, Perdição).
 	saveDice []effectDie
+	// lucky says the target is a halfling player's character: the app rolls a 1 on its saving
+	// throw again by itself (autoLucky, combat_lucky.go). The trap's attack roll is the trap's.
+	lucky bool
 }
 
 // trapDamageRoll is one damage part rolled for one creature.
@@ -93,6 +96,9 @@ type trapSaveRoll struct {
 	auto           bool
 	// extra are the dice the target's effects added to the roll, already in total and bonus.
 	extra []effectDie
+	// lucky is the d20 the app rolled again for a lucky target after it showed a 1 (d20, other
+	// and counted are the dice after it), nil when none was.
+	lucky *luckyReroll
 }
 
 // trapOutcome is what the trap did to one creature.
@@ -223,7 +229,7 @@ func resolveTrap( //nolint:gocognit,gocyclo // the attacks, the saves and the da
 				if t.saveAuto {
 					roll = trapSaveRoll{bonus: t.save, dc: int(sv.GetDc()), known: t.saveKnown, auto: true}
 				} else {
-					face, other, counted, err := rollModed(d20, t.saveMode)
+					face, other, counted, lucky, err := rollModedLucky(d20, t.saveMode, t.lucky)
 					if err != nil {
 						return nil, err
 					}
@@ -234,7 +240,7 @@ func resolveTrap( //nolint:gocognit,gocyclo // the attacks, the saves and the da
 							return nil, err
 						}
 					}
-					roll = trapSaveRoll{d20: face, bonus: t.save + delta, total: face + t.save + delta, dc: int(sv.GetDc()), known: t.saveKnown, other: other, counted: counted, mode: t.saveMode, extra: extra}
+					roll = trapSaveRoll{d20: face, bonus: t.save + delta, total: face + t.save + delta, dc: int(sv.GetDc()), known: t.saveKnown, other: other, counted: counted, mode: t.saveMode, extra: extra, lucky: lucky}
 					roll.saved = combat.SaveSucceeded(roll.total, roll.dc)
 				}
 				out[i].saves = append(out[i].saves, roll)
@@ -279,18 +285,29 @@ func clampInt32(n int) int32 { return clamp32(n, math.MinInt32, math.MaxInt32) }
 // disadvantage. It returns the die that counts, the other one (0 when there was one) and
 // which of the two was rolled first.
 func rollModed(d20 func() (int, error), mode combat.RollMode) (face, other, counted int, err error) {
+	face, other, counted, _, err = rollModedLucky(d20, mode, false)
+	return face, other, counted, err
+}
+
+// rollModedLucky is rollModed for a creature's saving throw: for a lucky creature (a halfling
+// player's character) the first die that shows a 1 is rolled again by itself before the die that
+// counts is picked (autoLucky, combat_lucky.go), and reroll says what it did (nil when nothing).
+func rollModedLucky(d20 func() (int, error), mode combat.RollMode, lucky bool) (face, other, counted int, reroll *luckyReroll, err error) {
 	faces := make([]int, mode.Dice())
 	for i := range faces {
 		if faces[i], err = d20(); err != nil {
-			return 0, 0, 0, err
+			return 0, 0, 0, nil, err
 		}
+	}
+	if faces, reroll, err = autoLucky(faces, lucky, d20); err != nil {
+		return 0, 0, 0, nil, err
 	}
 	counted = mode.Pick(faces)
 	face = faces[counted]
 	if len(faces) == pairDice {
 		other = faces[1-counted]
 	}
-	return face, other, counted, nil
+	return face, other, counted, reroll, nil
 }
 
 // trapExtraDice rolls the dice an effect adds to a creature's saving throw against a trap: the app

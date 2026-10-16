@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 
-import { XpWatcher } from '../character-sheet/xp-watcher';
-import { LiveSessionSourceLive } from '../live-session/live-session-source.live';
+import { XpWatcher } from '../../core/play/xp-watcher';
+import { LiveSessionSourceLive } from '../../core/play/live-session-source.live';
 import { CampaignCharactersSource } from './characters/campaign-characters.types';
 import { CampaignCharactersSourceLive } from './characters/campaign-characters-source.live';
-import { GameSessionSource } from './game-session/game-session-card.types';
-import { GameSessionSourceLive } from './game-session/game-session-source.live';
+import { GameSessionSource } from '../../core/play/game-session-card.types';
+import { GameSessionSourceLive } from '../../core/play/game-session-source.live';
 
 /**
  * Lazily loaded from `app.routes.ts` via `loadChildren` for `/campaigns/:id`

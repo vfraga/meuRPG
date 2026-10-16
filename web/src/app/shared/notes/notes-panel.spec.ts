@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { NotesClient } from '../../core/notes/notes-client';
 import { FakeNotesClient, note, scene } from '../../core/notes/notes-testing';
 import { NotesPanel } from './notes-panel';
+import { nextTurn } from '../../../test-settle';
 
 describe('NotesPanel (the character sheet)', () => {
   let api: FakeNotesClient;
@@ -34,7 +35,7 @@ describe('NotesPanel (the character sheet)', () => {
     const settle = async () => {
       for (let i = 0; i < 4; i++) {
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         fixture.detectChanges();
       }
     };

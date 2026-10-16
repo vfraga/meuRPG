@@ -2,7 +2,7 @@ import { Component, Signal, effect, inject } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 
-import type { ShownImageVm } from '../live-session.types';
+import type { ShownImageVm } from '../../../core/play/live-session.types';
 
 /**
  * "Ver em tela cheia" (E5-12, E5-13): the gallery lightbox in a read-only

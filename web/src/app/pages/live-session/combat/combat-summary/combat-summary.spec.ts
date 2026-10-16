@@ -21,6 +21,7 @@ import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { RosterClient } from '../../../../core/maps/roster-client';
 import { ProgressionClient } from '../../../../core/progression/progression-client';
 import { CombatSummary } from './combat-summary';
+import { nextTurn } from '../../../../../test-settle';
 
 const nbsp = ' ';
 const combatants = [
@@ -95,7 +96,7 @@ describe('CombatSummary and the XP (E7-06)', () => {
 
   async function ready(fixture: ReturnType<typeof setup>['fixture']) {
     for (let i = 0; i < 3; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

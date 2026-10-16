@@ -26,8 +26,8 @@ import {
   revealLabel,
   revealSummary,
 } from '../../../../core/maps/scene-clues';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../../combat/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the open scene hands "Revelar pista". */
 export interface RevealSheetData {

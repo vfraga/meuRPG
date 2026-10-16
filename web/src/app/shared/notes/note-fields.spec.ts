@@ -4,6 +4,7 @@ import { NoteEditing } from '../../core/notes/note-editing';
 import { FakeNotesClient, note, scene } from '../../core/notes/notes-testing';
 import { NotesState } from '../../core/notes/notes-state';
 import { NoteFields } from './note-fields';
+import { nextTurn } from '../../../test-settle';
 
 describe('NoteFields', () => {
   let api: FakeNotesClient;
@@ -36,7 +37,7 @@ describe('NoteFields', () => {
   async function settle() {
     for (let i = 0; i < 4; i++) {
       await fixture.whenStable();
-      await new Promise((r) => setTimeout(r));
+      await nextTurn();
       fixture.detectChanges();
     }
   }

@@ -18,6 +18,7 @@ import {
   outsideCast,
 } from '../../../core/casting/casting-testing';
 import { CastOutSheet, type CastOutData } from './cast-out-sheet';
+import { nextTurn } from '../../../../test-settle';
 
 const plain = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim();
 
@@ -49,7 +50,7 @@ describe('CastOutSheet (MR-048)', () => {
     const settle = async () => {
       for (let i = 0; i < 4; i++) {
         await fixture.whenStable();
-        await new Promise((r) => setTimeout(r));
+        await nextTurn();
         fixture.detectChanges();
       }
     };

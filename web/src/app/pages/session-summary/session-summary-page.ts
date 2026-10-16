@@ -33,10 +33,7 @@ import { setPageSubject } from '../../core/title/page-title';
 import { formatSessionSpan } from '../../shared/session-time/session-time';
 import { SessionStats } from '../../shared/session-summary/session-stats';
 import { SessionSummaryBody } from '../../shared/session-summary/session-summary-body';
-import {
-  GameSessionSource,
-  GameSessionVm,
-} from '../campaign-detail/game-session/game-session-card.types';
+import { GameSessionSource, GameSessionVm } from '../../core/play/game-session-card.types';
 
 const LOAD_ERROR = 'Não foi possível carregar o resumo da sessão. Tente de novo.';
 

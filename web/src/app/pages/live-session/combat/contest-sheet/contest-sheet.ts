@@ -65,8 +65,8 @@ import { joinDots, tight } from '../../../../core/format/text';
 import { CheckRollForm } from '../check-roll-form/check-roll-form';
 import { ContestRoll } from '../contest-roll/contest-roll';
 import { AttackSteps } from '../attack-sheet/attack-steps';
-import { SheetFrame } from '../sheet-frame/sheet-frame';
-import { injectSheet, openSheet } from '../sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';
 
 /** What the page hands the initiator's sheet: a grapple, a shove or an escape. */
 export interface ContestSheetData {

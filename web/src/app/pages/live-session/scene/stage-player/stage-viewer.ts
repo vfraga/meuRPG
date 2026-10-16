@@ -3,8 +3,8 @@ import { MatButtonModule } from '@angular/material/button';
 
 import type { StageNpc } from '../../../../../gen/meurpg/play/v1/scene_pb';
 import type { SceneState } from '../../../../core/play/scene-state';
-import { SheetFrame } from '../../combat/sheet-frame/sheet-frame';
-import { injectSheet } from '../../combat/sheet-host';
+import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
+import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { StageFigure } from './stage-figure';
 
 /** What a tap on a figure hands the view: the scene's state and the stage entry. */

@@ -7,6 +7,7 @@ import { AuthState, AuthService } from '../../core/auth/auth.service';
 import { Campaign, Role, XpMode } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { CampaignsService } from '../../core/campaigns/campaigns.service';
 import { InviteAccept } from './invite-accept';
+import { nextTurn } from '../../../test-settle';
 
 @Injectable()
 class FakeAuthService {
@@ -37,10 +38,6 @@ function campaign(id: string): Campaign {
  * callback, and accept()'s own `await`s all hop through a few of them) — a
  * macrotask only runs once the microtask queue is empty, so this is a more
  * robust "let everything settle" than a fixed number of `Promise.resolve()`s. */
-function flush(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}
-
 describe('InviteAccept', () => {
   let auth: FakeAuthService;
   let campaigns: FakeCampaignsService;
@@ -115,7 +112,7 @@ describe('InviteAccept', () => {
       user: { id: 'u1', displayName: null },
       sessionExpiresAt: null,
     });
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
 
     expect(campaigns.acceptInvite).toHaveBeenCalledWith('abc123');
@@ -134,7 +131,7 @@ describe('InviteAccept', () => {
       user: { id: 'u1', displayName: null },
       sessionExpiresAt: null,
     });
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
 
     expect(navigateSpy).toHaveBeenCalledWith(['/campaigns', 'camp-1']);
@@ -155,7 +152,7 @@ describe('InviteAccept', () => {
       user: { id: 'u1', displayName: null },
       sessionExpiresAt: null,
     });
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
 
     expect(navigateSpy).toHaveBeenCalledWith(['/campaigns', 'camp-1', 'characters', 'new']);
@@ -176,7 +173,7 @@ describe('InviteAccept', () => {
       user: { id: 'u1', displayName: null },
       sessionExpiresAt: null,
     });
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
 
     expect(navigateSpy).toHaveBeenCalledWith(['/campaigns', 'camp-1']);
@@ -193,7 +190,7 @@ describe('InviteAccept', () => {
       user: { id: 'u1', displayName: null },
       sessionExpiresAt: null,
     });
-    await flush();
+    await nextTurn();
     await fixture.whenStable();
     fixture.detectChanges();
 
