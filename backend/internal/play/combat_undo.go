@@ -233,6 +233,8 @@ func (s *Service) UndoLastAction(
 		if vitals, err = s.takeBack(ctx, c, last.Kind, ev); err != nil {
 			return nil, err
 		}
+		// The effects the action ended are back (takeBack): their "ended" lines go too.
+		alsoUndone = append(alsoUndone, ev.EndedLines...)
 		if last.Kind == eventCombatantMoved {
 			undoneMove = &ev
 		}
@@ -249,7 +251,7 @@ func (s *Service) UndoLastAction(
 					return nil, err
 				}
 				vitals = append(vitals, more...)
-				alsoUndone = append(alsoUndone, older.ID)
+				alsoUndone = append(append(alsoUndone, older.ID), pe.EndedLines...)
 			}
 		}
 		if last.Kind == eventTrapTriggered {
@@ -265,7 +267,7 @@ func (s *Service) UndoLastAction(
 					return nil, err
 				}
 				vitals = append(vitals, more...)
-				alsoUndone = append(alsoUndone, older.ID)
+				alsoUndone = append(append(alsoUndone, older.ID), pe.EndedLines...)
 			}
 		}
 		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {

@@ -32,8 +32,9 @@ func maneuverOf(sheet link.Sheet, key, applies string) (link.Maneuver, bool) {
 }
 
 // markMeleeHit records that the attacker hit with a melee weapon attack this turn, which a
-// maneuver that starts a grapple needs.
-func markMeleeHit(ctx context.Context, c *combatTx, attacker playdb.Combatant, attack link.Attack) error {
+// maneuver that starts a grapple needs. The attack's event keeps the mark it replaces, so
+// that the master's undo of the hit puts that one back.
+func markMeleeHit(ctx context.Context, c *combatTx, attacker playdb.Combatant, attack link.Attack, ev *actionEvent) error {
 	if attacker.Kind != kindPlayer || !attack.Weapon || !attack.Melee {
 		return nil
 	}
@@ -41,6 +42,7 @@ func markMeleeHit(ctx context.Context, c *combatTx, attacker playdb.Combatant, a
 	if err := c.q.SetCombatantMeleeHitTurn(ctx, playdb.SetCombatantMeleeHitTurnParams{ID: attacker.ID, MeleeHitTurn: &key}); err != nil {
 		return fmt.Errorf("note the melee hit: %w", err)
 	}
+	ev.MeleeHit, ev.MeleeHitBefore = true, deref(attacker.MeleeHitTurn)
 	return nil
 }
 

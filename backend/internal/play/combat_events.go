@@ -386,6 +386,12 @@ type actionEvent struct {
 	AsBonus         bool   `json:"as_bonus,omitempty"`
 	AttackKeyBefore string `json:"attack_key_before,omitempty"`
 	FlurryBefore    int32  `json:"flurry_before,omitempty"`
+	// MeleeHit says the attack's hit marked the attacker's turn with a melee weapon hit
+	// (markMeleeHit, combat_maneuvers.go), and MeleeHitBefore is the mark it replaced
+	// (empty: none). The undo of the attack puts that one back, not none: a second hit of
+	// the turn taken back leaves the first one's mark, and the grapple maneuver with it.
+	MeleeHit       bool   `json:"melee_hit,omitempty"`
+	MeleeHitBefore string `json:"melee_hit_before,omitempty"`
 
 	// A death save, or damage at 0 hit points: the counts before and after,
 	// the outcome and the failures the damage caused.
@@ -412,8 +418,12 @@ type actionEvent struct {
 	Lasting *lastingEvent `json:"lasting,omitempty"`
 	// Extra are the dice effects added to the roll (Bênção, Perdição).
 	Extra []effectDie `json:"extra,omitempty"`
-	// Restore are the effects the action ended: its undo puts them back.
-	Restore []playdb.CombatantState `json:"restore,omitempty"`
+	// Restore are the effects the action ended: its undo puts them back. EndedLines are
+	// the IDs of the "ended" lines (lasting_effect_ended) the action wrote for them,
+	// before its own event: its undo takes them back with it (UndoneAlso), so that no
+	// log still says the effects ended and the lines do not stop the undo chain.
+	Restore    []playdb.CombatantState `json:"restore,omitempty"`
+	EndedLines []string                `json:"ended_lines,omitempty"`
 	// ExtraUsed says the action spent the extra action of an effect (Velocidade).
 	ExtraUsed bool `json:"extra_used,omitempty"`
 
@@ -519,7 +529,9 @@ type actionEvent struct {
 	Undone     string `json:"undone_id,omitempty"`
 	UndoneKind string `json:"undone_kind,omitempty"`
 	// UndoneAlso are the older events taken back with it: the other parts of a
-	// trap's firing that was written as several events.
+	// trap's firing that was written as several events, the concentration a damage
+	// ended at 0 hit points, and the "ended" lines of the effects the action ended
+	// (EndedLines).
 	UndoneAlso []string `json:"undone_also,omitempty"`
 
 	// The character's creatures (MR-037): the owner's character, the creatures a

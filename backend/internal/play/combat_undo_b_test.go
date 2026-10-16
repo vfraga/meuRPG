@@ -81,7 +81,7 @@ func TestUndoKindAttackRolledBardicDie(t *testing.T) {
 	e := a.inspired(t)
 	w := newUndoWatch(t, a)
 
-	w.runWithHolds(t, "an attack with the die", slices.Concat(deltaMeleeHit, deltaAnsweredHold(5, 6, false)), func() {
+	w.runWithHolds(t, "an attack with the die", deltaAnsweredHold(5, 6, false), func() {
 		a.h.roller.queue(5)
 		held, err := a.attack(t, a.caio, e, "Tavo", battleaxe, "Goblin", inAppRoll)
 		if err != nil {
@@ -103,7 +103,7 @@ func TestUndoKindAttackRolledExtraAction(t *testing.T) {
 	a.mustAddEffect(t, e, "spell:haste", []string{"Toren"}, a.rounds(t, 3, "Toren"))
 	w := newUndoWatch(t, a)
 
-	w.run(t, "an attack with the extra action", deltaMeleeHit, func() {
+	w.run(t, "an attack with the extra action", nil, func() {
 		a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Goblin", func(r *playv1.RollAttackRequest) { d20(15)(r); useExtra(r) })
 	})
 }
@@ -141,7 +141,7 @@ func TestUndoKindAttackRolledFlurry(t *testing.T) {
 	e := a.threeAndAGoblin(t)
 	w := newUndoWatch(t, a)
 
-	w.run(t, "the Attack action's strike", deltaMeleeHit, func() { a.mustAttack(t, a.caio, e, "Toren", unarmed, "Goblin", d20(15)) })
+	w.run(t, "the Attack action's strike", nil, func() { a.mustAttack(t, a.caio, e, "Toren", unarmed, "Goblin", d20(15)) })
 	w.run(t, "the Martial Arts strike", nil, func() { a.mustAttack(t, a.caio, e, "Toren", unarmed, "Goblin", d20(15)) })
 	e = a.turnOf(t, "Toren")
 	a.mustAttack(t, a.caio, e, "Toren", unarmed, "Goblin", d20(15))
@@ -163,7 +163,7 @@ func TestUndoKindAttackRolledLucky(t *testing.T) {
 	e := a.luckyFight(t)
 	w := newUndoWatch(t, a)
 
-	w.runWithHolds(t, "a rerolled attack", slices.Concat(deltaMeleeHit, deltaAnsweredHold(1, 5, true)), func() {
+	w.runWithHolds(t, "a rerolled attack", deltaAnsweredHold(1, 5, true), func() {
 		held, err := a.attack(t, a.caio, e, "Pipo", battleaxe, "Goblin", d20(1))
 		if err != nil {
 			t.Fatalf("RollAttack() error = %v", err)

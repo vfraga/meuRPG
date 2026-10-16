@@ -222,10 +222,14 @@ func (u *undoer) spendResourceBack(ctx context.Context, who playdb.Combatant, ke
 }
 
 // attackRolled: the action (or the reaction) comes back and the damage the hit
-// opened goes away. A Bardic Inspiration die the roll used is held again.
+// opened goes away. A Bardic Inspiration die the roll used is held again, and the
+// turn's melee hit mark is the one before the hit.
 func (u *undoer) attackRolled(ctx context.Context, ev actionEvent) error {
 	if who, ok := u.find(ev.Actor); ok {
 		if err := u.attackerBack(ctx, who, ev); err != nil {
+			return err
+		}
+		if err := u.meleeHitBack(ctx, who, ev); err != nil {
 			return err
 		}
 	}
@@ -267,6 +271,20 @@ func (u *undoer) attackerBack(ctx context.Context, who playdb.Combatant, ev acti
 		return err
 	}
 	return u.attackCounters(ctx, who, ev)
+}
+
+// meleeHitBack puts back the melee hit mark the attack's hit replaced (none when the
+// turn had none): only this hit's mark comes off, so an earlier hit of the same turn
+// still opens the grapple maneuver. An attack written before its event kept the mark (no
+// MeleeHit) leaves the mark as it is.
+func (u *undoer) meleeHitBack(ctx context.Context, who playdb.Combatant, ev actionEvent) error {
+	if !ev.MeleeHit {
+		return nil
+	}
+	if err := u.c.q.SetCombatantMeleeHitTurn(ctx, playdb.SetCombatantMeleeHitTurnParams{ID: who.ID, MeleeHitTurn: nilIfEmpty(ev.MeleeHitBefore)}); err != nil {
+		return fmt.Errorf("put back the melee hit mark: %w", err)
+	}
+	return nil
 }
 
 // attackCounters puts back the attacks made, the attack of the action and the
