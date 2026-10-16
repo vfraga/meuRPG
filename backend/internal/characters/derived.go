@@ -54,7 +54,7 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 	out.HitDice = mapToProto(d.HitDice, derivedHitDiceToProto)
 	out.Senses = mapToProto(d.Senses, senseToProto)
 	out.Spellcasting = mapToProto(d.Spellcasting, spellcastingToProto)
-	out.SpellSlots = spellSlotsToProto(d.SpellSlots)
+	out.SpellSlots = derivedSlotsToProto(d.SpellSlots)
 	if d.PactMagic != nil {
 		out.PactMagic = &rulesv1.PactMagic{SlotLevel: i32(d.PactMagic.SlotLevel), Count: i32(d.PactMagic.Slots)}
 	}
@@ -155,9 +155,9 @@ func spellcastingToProto(sc rules.Spellcasting) *rulesv1.Spellcasting {
 	return p
 }
 
-// spellSlotsToProto lists the circles that have slots; index 0 of the engine's list is
+// derivedSlotsToProto lists the circles that have slots; index 0 of the engine's list is
 // the 1st circle.
-func spellSlotsToProto(slots []int) []*rulesv1.SpellSlots {
+func derivedSlotsToProto(slots []int) []*rulesv1.SpellSlots {
 	var out []*rulesv1.SpellSlots
 	for i, n := range slots {
 		if n > 0 {
