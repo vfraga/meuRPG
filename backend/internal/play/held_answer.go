@@ -199,7 +199,7 @@ func (s *Service) rollDieAnswer(ctx context.Context, m authz.Membership, h heldR
 	if err != nil {
 		return err
 	}
-	if h.table == rollHolds {
+	if h.Kind == heldWeaponAttack {
 		if err := s.mayAnswerHeld(ctx, m, h); err != nil {
 			return err
 		}
@@ -227,9 +227,10 @@ func (s *Service) mustRollAs(ctx context.Context, m authz.Membership, in rollInp
 }
 
 // dieToUse is the die the roller holds now, which the answer uses. A weapon attack's is its combatant's, in
-// the round the roll was held; every other roll's is wherever its character keeps it.
+// the round the roll was held, whichever table keeps it (a creature or the copy of an NPC shares its character
+// with others, which hold dice of their own); every other roll's is wherever its character keeps it.
 func (s *Service) dieToUse(ctx context.Context, h heldRoll) (rollerState, error) {
-	if h.table == rollHolds {
+	if h.Kind == heldWeaponAttack {
 		who, found, err := s.holdCombatant(ctx, h)
 		if err != nil {
 			return rollerState{}, err
@@ -272,7 +273,7 @@ func (s *Service) rerunHeld(ctx context.Context, h heldRoll, a heldReply, state 
 	if !ok || def.rerun == nil {
 		return nil, errHeldNotFound()
 	}
-	if state != answerSettled || h.table != rollHolds {
+	if state != answerSettled || h.Kind != heldWeaponAttack {
 		ctx = withHeldReply(ctx, a)
 	}
 	return def.rerun(ctx, s, h, a.key)
