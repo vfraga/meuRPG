@@ -432,8 +432,8 @@ func (s *Service) addLastingEffectTx(ctx context.Context, c *combatTx, m authz.M
 	}
 	ev := addedPayload(c, rows, spec.key)
 	c.characterID = &targets[0].CharacterID
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, none, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, none, err
 	}
 	return rows, ev, nil
 }
@@ -716,15 +716,6 @@ func loadEffectGroup(ctx context.Context, c *combatTx, effID string) ([]playdb.C
 		return nil, fmt.Errorf("list the effects: %w", err)
 	}
 	return groupRowsOf(all, effID)
-}
-
-// touchEncounter marks the combat as changed by the call.
-func touchEncounter(ctx context.Context, c *combatTx) error {
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
-	}
-	return nil
 }
 
 // roundsLeftOf are the rounds from the one that runs to the end of a row, none for one with no end.

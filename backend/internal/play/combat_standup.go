@@ -121,7 +121,7 @@ func (s *Service) standUpWrite(ctx context.Context, c *combatTx, call standUpCal
 	if err := setConditionsOf(ctx, c, target, withoutCondition(target.Conditions, condProne)); err != nil {
 		return nil, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID

@@ -499,7 +499,7 @@ func (s *Service) writeContest(ctx context.Context, r *contestRun) (contestID, l
 			return "", "", "", fmt.Errorf("settle the contest: %w", err)
 		}
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return "", "", "", err
 	}
 	return inserted.ID, line, winner, nil
@@ -789,7 +789,7 @@ func (s *Service) answerContestTx(ctx context.Context, c *combatTx, ans contestA
 	if err != nil {
 		return actionEvent{}, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	c.characterID = &r.defender.CharacterID
@@ -1022,7 +1022,7 @@ func (s *Service) resolveShoveTx(ctx context.Context, c *combatTx, req shoveChoi
 	if _, err := c.q.SetContestState(ctx, playdb.SetContestStateParams{EncounterID: c.enc.ID, ID: r.row.ID, Status: contestResolved, ShoveOutcome: &stored, ResolvedAt: &c.now}); err != nil {
 		return actionEvent{}, fmt.Errorf("settle the shove: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	c.characterID = &r.shover.CharacterID
@@ -1114,7 +1114,7 @@ func (s *Service) closeContestTx(ctx context.Context, c *combatTx, req contestCl
 	if _, err := c.q.SetContestState(ctx, playdb.SetContestStateParams{EncounterID: c.enc.ID, ID: row.ID, Status: contestClosed, ShoveOutcome: row.ShoveOutcome, ResolvedAt: &c.now}); err != nil {
 		return actionEvent{}, fmt.Errorf("close the contest: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	return actionEvent{
@@ -1184,7 +1184,7 @@ func (s *Service) releaseTx(ctx context.Context, c *combatTx, m authz.Membership
 	if err := releaseHold(ctx, c, grappled); err != nil {
 		return actionEvent{}, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	c.characterID = &grappler.CharacterID

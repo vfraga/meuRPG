@@ -633,9 +633,8 @@ func (f *castFlow) settleCountered(ctx context.Context) (any, error) {
 	made := &f.out.made
 	made.Secret = f.caster.Hidden
 	made.Reaction = &reactionEvent{Kind: string(reaction.CounterspellKind), Countered: true, Spell: f.call.spellKey, Level: int32(f.slotLevel)} //nolint:gosec // a slot level, 0 to 9
-	var err error
-	if f.c.enc, err = f.c.q.TouchEncounter(ctx, f.c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, f.c); err != nil {
+		return nil, err
 	}
 	f.c.characterID = &f.caster.CharacterID
 	return *made, nil
@@ -759,8 +758,8 @@ func (f *castFlow) seal(ctx context.Context) error {
 			return err
 		}
 	}
-	if f.c.enc, err = f.c.q.TouchEncounter(ctx, f.c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, f.c); err != nil {
+		return err
 	}
 	f.c.characterID = &f.caster.CharacterID
 	return nil

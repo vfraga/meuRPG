@@ -506,9 +506,8 @@ func (f *takeActionFlow) secondWind(ctx context.Context, sheet link.Sheet) error
 
 // touch marks the encounter as changed and names the character the event belongs to.
 func (f *takeActionFlow) touch(ctx context.Context) error {
-	var err error
-	if f.c.enc, err = f.c.q.TouchEncounter(ctx, f.c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, f.c); err != nil {
+		return err
 	}
 	f.c.characterID = &f.who.CharacterID
 	return nil

@@ -93,7 +93,7 @@ func (s *Service) revealHiderIn(ctx context.Context, c *combatTx, combID string)
 	if len(snaps) == 0 {
 		return actionEvent{}, errContest(playv1.ContestBlockedReason_CONTEST_BLOCKED_REASON_NOT_HIDDEN, "the combatant is not hidden")
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	c.characterID = &hider.CharacterID

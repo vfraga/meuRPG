@@ -116,8 +116,8 @@ func (s *Service) endAidTx(ctx context.Context, c *combatTx, v combatViewer, com
 		return nil, err // nothing to end: no event
 	}
 	*vitals = after
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &target.CharacterID
 	return actionEvent{Round: c.enc.Round, Secret: target.Hidden, Actor: target.ID, EffectEnd: end}, nil

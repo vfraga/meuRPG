@@ -233,7 +233,7 @@ func (s *Service) giveHelp(ctx context.Context, c *combatTx, m authz.Membership,
 	if err != nil {
 		return actionEvent{}, fmt.Errorf("keep the help: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	c.characterID = &helper.CharacterID
@@ -425,7 +425,7 @@ func clearHelp(ctx context.Context, c *combatTx, helpID string) (actionEvent, er
 	if err := c.q.SetHelpCleared(ctx, playdb.SetHelpClearedParams{ID: help.ID, ClearedAt: &c.now}); err != nil {
 		return actionEvent{}, fmt.Errorf("clear the help: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	return actionEvent{Round: c.enc.Round, Contest: &contestEvent{HelpID: help.ID}}, nil

@@ -397,8 +397,8 @@ func (s *Service) shieldChange(ctx context.Context, c *combatTx, v combatViewer,
 	if err != nil {
 		return made, vitals, err
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return made, vitals, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return made, vitals, err
 	}
 	made.Round = c.enc.Round
 	return made, vitals, nil
@@ -474,8 +474,8 @@ func (s *Service) DeclineReaction(
 		if err != nil {
 			return nil, err
 		}
-		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-			return nil, fmt.Errorf("touch the encounter: %w", err)
+		if err = touchEncounter(ctx, c); err != nil {
+			return nil, err
 		}
 		ev.Round = c.enc.Round
 		return ev, nil

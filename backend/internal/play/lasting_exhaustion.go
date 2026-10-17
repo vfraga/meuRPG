@@ -196,8 +196,8 @@ func (s *Service) writeExhaustion(ctx context.Context, c *combatTx, m authz.Memb
 		}
 	}
 	if c.enc.ID != "" {
-		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-			return nil, fmt.Errorf("touch the encounter: %w", err)
+		if err = touchEncounter(ctx, c); err != nil {
+			return nil, err
 		}
 	}
 	// The exhaustion is the owner's and the master's: no line for the other players (RN-10).

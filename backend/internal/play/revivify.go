@@ -375,9 +375,8 @@ func (s *Service) revivifyWrite(ctx context.Context, c *combatTx, m authz.Member
 func (s *Service) revivifyCountered(ctx context.Context, c *combatTx, caster playdb.Combatant, slot *slotRef, out *revivifyOutcome) (any, error) {
 	out.made.Secret = caster.Hidden
 	out.made.Reaction = &reactionEvent{Kind: string(reaction.CounterspellKind), Countered: true, Spell: revivifyKey, Level: slot.Level}
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &caster.CharacterID
 	return out.made, nil

@@ -165,7 +165,7 @@ func (s *Service) deathSaveWrite(ctx context.Context, c *combatTx, call deathSav
 	}); err != nil {
 		return nil, fmt.Errorf("save the death save: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &who.CharacterID
@@ -323,7 +323,7 @@ func mustBeDying(who playdb.Combatant) error {
 // runs the combat is only touched.
 func takeOutOfTheTurn(ctx context.Context, c *combatTx, cs []playdb.Combatant, who playdb.Combatant, turnPassed *bool) error {
 	if c.enc.Status != statusActive {
-		return touch(ctx, c)
+		return touchEncounter(ctx, c)
 	}
 	if _, err := leaveTurn(ctx, c, cs, who); err != nil {
 		return err

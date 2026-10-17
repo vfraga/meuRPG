@@ -267,7 +267,7 @@ func (s *Service) revealWrite(ctx context.Context, c *combatTx, call revealCall,
 	if _, err := c.q.AnswerHiddenReveal(ctx, playdb.AnswerHiddenRevealParams{EncounterID: c.enc.ID, ID: q.ID, State: call.answer, AnsweredAt: &c.now}); err != nil {
 		return nil, fmt.Errorf("answer the hidden reveal: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	return made, nil

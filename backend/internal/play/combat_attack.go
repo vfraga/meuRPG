@@ -764,9 +764,8 @@ func (f *attackFlow) answerOffer(ctx context.Context) error {
 
 // settle moves the combat's revision and says whose character acted.
 func (f *attackFlow) settle(ctx context.Context) error {
-	var err error
-	if f.c.enc, err = f.c.q.TouchEncounter(ctx, f.c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, f.c); err != nil {
+		return err
 	}
 	f.c.characterID = &f.attacker.CharacterID
 	return nil

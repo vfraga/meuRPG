@@ -156,7 +156,7 @@ func (s *Service) surprisedWrite(ctx context.Context, c *combatTx, combatantID s
 	if err := markSurprise(ctx, c, who, surprised); err != nil {
 		return nil, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &who.CharacterID

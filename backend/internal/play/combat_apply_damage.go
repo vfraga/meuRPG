@@ -333,9 +333,8 @@ func (f *applyDamageFlow) afterHit(ctx context.Context) error {
 
 // touch moves the encounter's revision and names the character the change was about.
 func (f *applyDamageFlow) touch(ctx context.Context) error {
-	var err error
-	if f.c.enc, err = f.c.q.TouchEncounter(ctx, f.c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, f.c); err != nil {
+		return err
 	}
 	f.c.characterID = &f.target.CharacterID
 	return nil
@@ -464,9 +463,8 @@ func (f *discardDamageFlow) drop(ctx context.Context) error {
 
 // touch moves the encounter's revision and names the character the change was about.
 func (f *discardDamageFlow) touch(ctx context.Context) error {
-	var err error
-	if f.c.enc, err = f.c.q.TouchEncounter(ctx, f.c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, f.c); err != nil {
+		return err
 	}
 	f.c.characterID = &f.attacker.CharacterID
 	return nil

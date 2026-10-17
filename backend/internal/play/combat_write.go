@@ -780,6 +780,16 @@ func errEncounter(reason playv1.EncounterBlockedReason, msg string, edit ...func
 	return err
 }
 
+// touchEncounter bumps the encounter's revision, as every change of a combat does.
+func touchEncounter(ctx context.Context, c *combatTx) error {
+	enc, err := c.q.TouchEncounter(ctx, c.enc.ID)
+	if err != nil {
+		return fmt.Errorf("touch the encounter: %w", err)
+	}
+	c.enc = enc
+	return nil
+}
+
 // combatantByID finds a combatant of the list by id.
 func combatantByID(cs []playdb.Combatant, id string) (playdb.Combatant, bool) {
 	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.ID == id })

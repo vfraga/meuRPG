@@ -170,7 +170,7 @@ func (s *Service) attemptHide(ctx context.Context, c *combatTx, m authz.Membersh
 	if err != nil {
 		return actionEvent{}, vitals, fmt.Errorf("keep the hide attempt: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, vitals, err
 	}
 	c.characterID = &who.CharacterID
@@ -405,7 +405,7 @@ func (s *Service) decideHide(ctx context.Context, c *combatTx, m authz.Membershi
 	}); err != nil {
 		return actionEvent{}, fmt.Errorf("decide the hide attempt: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	c.characterID = &hider.CharacterID

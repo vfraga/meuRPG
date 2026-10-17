@@ -765,9 +765,8 @@ func (s *Service) saveMove(ctx context.Context, a *moveAttempt) error {
 	}); err != nil {
 		return fmt.Errorf("move the combatant: %w", err)
 	}
-	var err error
-	if a.c.enc, err = a.c.q.TouchEncounter(ctx, a.c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, a.c); err != nil {
+		return err
 	}
 	return nil
 }
@@ -1251,8 +1250,8 @@ func (s *Service) sideIn(ctx context.Context, c *combatTx, call masterTargetCall
 	}); err != nil {
 		return nil, fmt.Errorf("pass over the offers between allies: %w", err)
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &target.CharacterID
 	return actionEvent{Round: c.enc.Round, Secret: target.Hidden, Actor: target.ID, Side: side, SideBefore: target.Side}, nil
@@ -1306,8 +1305,8 @@ func (s *Service) coverIn(ctx context.Context, c *combatTx, call masterTargetCal
 	if err := c.q.SetCombatantCoverMark(ctx, playdb.SetCombatantCoverMarkParams{ID: target.ID, CoverMark: mark}); err != nil {
 		return nil, fmt.Errorf("set the cover: %w", err)
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &target.CharacterID
 	return actionEvent{Round: c.enc.Round, Secret: target.Hidden, Actor: target.ID, CoverMark: mark, CoverMarkBefore: target.CoverMark}, nil

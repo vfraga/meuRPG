@@ -527,9 +527,8 @@ func (s *Service) shapeSeal(ctx context.Context, c *combatTx, r *shapeRun) (any,
 		if r.made.Actor == "" { // in SETUP no action is spent: still the combatant's
 			r.made.Round, r.made.Secret, r.made.Actor = c.enc.Round, r.who.Hidden, r.who.ID
 		}
-		var err error
-		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-			return nil, fmt.Errorf("touch the encounter: %w", err)
+		if err := touchEncounter(ctx, c); err != nil {
+			return nil, err
 		}
 	}
 	c.characterID = &r.characterID

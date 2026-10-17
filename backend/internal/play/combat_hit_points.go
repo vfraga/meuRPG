@@ -189,9 +189,8 @@ func (f *adjustHitPointsFlow) save(ctx context.Context) error {
 
 // touch moves the encounter's revision, names the character the change was about and builds the event.
 func (f *adjustHitPointsFlow) touch(ctx context.Context) error {
-	var err error
-	if f.c.enc, err = f.c.q.TouchEncounter(ctx, f.c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, f.c); err != nil {
+		return err
 	}
 	before := hpOf(f.target)
 	f.c.characterID = &f.target.CharacterID

@@ -103,8 +103,8 @@ func (s *Service) holdAttackRoll(ctx context.Context, c *combatTx, m authz.Membe
 	if ev, err = s.holdAction(ctx, c, m, "attack", attacker, req, holdData{}, specs, ev); err != nil {
 		return ev, false, err
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return ev, false, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return ev, false, err
 	}
 	c.characterID = &attacker.CharacterID
 	return ev, true, nil
@@ -249,8 +249,8 @@ func (s *Service) holdDamage(ctx context.Context, c *combatTx, m authz.Membershi
 	if err != nil {
 		return ev, false, err
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return ev, false, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return ev, false, err
 	}
 	c.characterID = &attacker.CharacterID
 	return ev, true, nil

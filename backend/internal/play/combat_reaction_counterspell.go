@@ -139,8 +139,8 @@ func (s *Service) holdCast(ctx context.Context, c *combatTx, m authz.Membership,
 	if ev, err = s.holdAction(ctx, c, m, "cast", caster, req, holdData{}, specs, ev); err != nil {
 		return ev, false, err
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return ev, false, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return ev, false, err
 	}
 	c.characterID = &caster.CharacterID
 	return ev, true, nil

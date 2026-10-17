@@ -424,8 +424,8 @@ func (s *Service) writeTrapSearch(ctx context.Context, ts *trapSearch, r *search
 	ts.told = found.Users
 	ts.ev = trapSearchEvent(ts, r, d, found)
 	if ts.place.spent {
-		if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-			return fmt.Errorf("touch the encounter: %w", err)
+		if err = touchEncounter(ctx, c); err != nil {
+			return err
 		}
 		ts.place.enc = c.enc
 	}

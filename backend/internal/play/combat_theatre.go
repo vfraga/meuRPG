@@ -264,9 +264,8 @@ func (s *Service) spendTheatreFeet(ctx context.Context, c *combatTx, target play
 	}); err != nil {
 		return nil, fmt.Errorf("spend the movement: %w", err)
 	}
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &target.CharacterID
 	run.hidden = target.Hidden
@@ -414,8 +413,8 @@ func (s *Service) insertOffer(ctx context.Context, c *combatTx, mover, reactor p
 	if err != nil {
 		return nil, fmt.Errorf("offer the opportunity attack: %w", err)
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &reactor.CharacterID
 	// ByHand: an undo never takes the offer back (it is withdrawn), and it

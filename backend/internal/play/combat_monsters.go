@@ -180,7 +180,7 @@ func (s *Service) monstersWrite(ctx context.Context, c *combatTx, call addMonste
 	if err != nil {
 		return nil, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	*done = call.asked

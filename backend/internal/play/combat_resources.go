@@ -156,9 +156,8 @@ func (s *Service) startFlow(ctx context.Context, c *combatTx, m authz.Membership
 
 // finishFlow touches the combat's revision, which every change does.
 func (s *Service) finishFlow(ctx context.Context, c *combatTx, f *resourceFlow) (actionEvent, error) {
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return actionEvent{}, fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, c); err != nil {
+		return actionEvent{}, err
 	}
 	return f.made, nil
 }

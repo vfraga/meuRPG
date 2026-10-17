@@ -90,9 +90,8 @@ func storeAnswer(ctx context.Context, c *combatTx, o playdb.OpportunityOffer, st
 	if _, err := c.q.SetOpportunityOfferState(ctx, playdb.SetOpportunityOfferStateParams{ID: o.ID, State: state, AnsweredAt: &c.now}); err != nil {
 		return fmt.Errorf("answer the opportunity offer: %w", err)
 	}
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, c); err != nil {
+		return err
 	}
 	return nil
 }

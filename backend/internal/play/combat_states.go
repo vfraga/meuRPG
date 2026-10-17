@@ -273,9 +273,8 @@ func (s *Service) askRageEnd(ctx context.Context, c *combatTx, current playdb.Co
 	if err := c.q.SetCombatantRageFlags(ctx, playdb.SetCombatantRageFlagsParams{ID: current.ID, RageEndPending: true}); err != nil {
 		return fmt.Errorf("ask about the rage: %w", err)
 	}
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, c); err != nil {
+		return err
 	}
 	return nil
 }
@@ -395,8 +394,8 @@ func (s *Service) answerRageIn(ctx context.Context, c *combatTx, call rageCall, 
 	if !who.RageEndPending {
 		return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_RAGE_END_NOT_PENDING, "no question waits")
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &who.CharacterID
 	if err := c.q.SetCombatantRageFlags(ctx, playdb.SetCombatantRageFlagsParams{ID: who.ID, AttackedHostile: who.AttackedHostile, TookDamage: who.TookDamage}); err != nil {
@@ -464,8 +463,8 @@ func (s *Service) endRageIn(ctx context.Context, c *combatTx, call rageCall) (an
 	if err := s.endRage(ctx, c, who, "by_choice"); err != nil {
 		return nil, err
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	c.characterID = &who.CharacterID
 	return actionEvent{Round: c.enc.Round, Secret: who.Hidden, Actor: who.ID, StateKind: stateRage, StateReason: "by_choice", BonusBefore: who.BonusActionUsed}, nil

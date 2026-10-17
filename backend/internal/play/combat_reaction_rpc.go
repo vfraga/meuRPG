@@ -148,8 +148,8 @@ func (s *Service) answerWindow(ctx context.Context, c *combatTx, m authz.Members
 	if got.kind != "" {
 		c.kind = got.kind
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return nil, fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return nil, err
 	}
 	got.ev.Round = c.enc.Round
 	return got.ev, nil
@@ -217,8 +217,8 @@ func (s *Service) markRolling(ctx context.Context, c *combatTx, m authz.Membersh
 	if _, err := c.q.SetReactionWindowStep(ctx, playdb.SetReactionWindowStepParams{ID: w.ID, Step: w.Step, Trigger: body}); err != nil {
 		return fmt.Errorf("mark the window as being rolled: %w", err)
 	}
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err = touchEncounter(ctx, c); err != nil {
+		return err
 	}
 	return nil
 }

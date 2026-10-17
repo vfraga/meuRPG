@@ -45,9 +45,8 @@ func (s *Service) reviveCombatant(ctx context.Context, c *combatTx, who playdb.C
 			return fmt.Errorf("give the creature its hit point: %w", err)
 		}
 	}
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, c); err != nil {
+		return err
 	}
 	return nil
 }

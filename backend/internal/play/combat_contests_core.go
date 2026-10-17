@@ -582,16 +582,6 @@ func holdOn(holds map[string]playdb.CombatHold, c playdb.Combatant) (playdb.Comb
 // oppositeSide says whether two combatants are on different sides.
 func oppositeSide(a, b playdb.Combatant) bool { return a.Side != b.Side }
 
-// eventTouch bumps the encounter's revision, as every change of a combat does.
-func touch(ctx context.Context, c *combatTx) error {
-	enc, err := c.q.TouchEncounter(ctx, c.enc.ID)
-	if err != nil {
-		return fmt.Errorf("touch the encounter: %w", err)
-	}
-	c.enc = enc
-	return nil
-}
-
 // trimReason cleans the master's one sentence: trimmed, one line, 1 to 120 characters.
 func trimReason(raw string) (string, error) {
 	s := strings.TrimSpace(raw)

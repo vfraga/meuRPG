@@ -265,9 +265,8 @@ func (s *Service) closeRider(ctx context.Context, c *combatTx, row playdb.HitRid
 	if err := c.q.UseHitRider(ctx, playdb.UseHitRiderParams{EncounterID: c.enc.ID, ID: row.ID, Choice: &choice}); err != nil {
 		return actionEvent{}, fmt.Errorf("close the offer: %w", err)
 	}
-	var err error
-	if c.enc, err = c.q.TouchEncounter(ctx, c.enc.ID); err != nil {
-		return actionEvent{}, fmt.Errorf("touch the encounter: %w", err)
+	if err := touchEncounter(ctx, c); err != nil {
+		return actionEvent{}, err
 	}
 	c.characterID = &attacker.CharacterID
 	return ev, nil

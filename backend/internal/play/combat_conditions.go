@@ -122,7 +122,7 @@ func (s *Service) conditionsWrite(ctx context.Context, c *combatTx, call conditi
 	if !changed {
 		return nil, nil // nothing differs from what is stored: no event
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID

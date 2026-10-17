@@ -143,7 +143,7 @@ func (s *Service) initiativeWrite(ctx context.Context, c *combatTx, call initiat
 	if _, err := saveOrder(ctx, c.q, cs, orderCombatants(cs)); err != nil {
 		return nil, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID
@@ -290,7 +290,7 @@ func (s *Service) orderWrite(ctx context.Context, c *combatTx, call orderCall) (
 	if _, err := saveOrder(ctx, c.q, cs, withOrder(orderCombatants(cs), call.ids)); err != nil {
 		return nil, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	return map[string]any{"combatant_ids": call.ids}, nil
@@ -444,7 +444,7 @@ func (s *Service) hiddenWrite(ctx context.Context, c *combatTx, m authz.Membersh
 	if err := c.q.SetCombatantHidden(ctx, playdb.SetCombatantHiddenParams{ID: target.ID, Hidden: hidden}); err != nil {
 		return nil, fmt.Errorf("hide the combatant: %w", err)
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID
@@ -504,7 +504,7 @@ func (s *Service) addWrite(ctx context.Context, c *combatTx, parts []planned) (a
 	if err != nil {
 		return nil, err
 	}
-	if err := touch(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	return map[string]any{"added": len(added)}, nil
