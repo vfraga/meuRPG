@@ -780,6 +780,38 @@ func errEncounter(reason playv1.EncounterBlockedReason, msg string, edit ...func
 	return err
 }
 
+// callHead reads what every combat call starts with, in the order its refusals come: who may
+// call (the master only when masterOnly), the idempotency key, then the combat.
+func callHead(ctx context.Context, masterOnly bool, campaignID, keyRaw, encounterRaw string) (m authz.Membership, key, encID string, err error) {
+	if masterOnly {
+		m, err = authz.RequireCampaignRole(ctx, campaignID, authz.RoleMaster)
+	} else {
+		m, err = authz.RequireCampaignMember(ctx, campaignID)
+	}
+	if err != nil {
+		return m, "", "", err
+	}
+	if key, err = parseKey(keyRaw); err != nil {
+		return m, "", "", err
+	}
+	if encID, err = parseCombatID(encounterRaw, "encounter"); err != nil {
+		return m, "", "", err
+	}
+	return m, key, encID, nil
+}
+
+// contestCaller reads the head of a call any member may make: the caller, the idempotency key and
+// the combat.
+func contestCaller(ctx context.Context, campaignID, keyRaw, encounterRaw string) (m authz.Membership, key, encID string, err error) {
+	return callHead(ctx, false, campaignID, keyRaw, encounterRaw)
+}
+
+// masterCaller reads the head of a call only the master may make: who may call, the key, then the
+// encounter.
+func masterCaller(ctx context.Context, campaignID, keyRaw, encounterRaw string) (m authz.Membership, key, encID string, err error) {
+	return callHead(ctx, true, campaignID, keyRaw, encounterRaw)
+}
+
 // touchEncounter bumps the encounter's revision, as every change of a combat does.
 func touchEncounter(ctx context.Context, c *combatTx) error {
 	enc, err := c.q.TouchEncounter(ctx, c.enc.ID)

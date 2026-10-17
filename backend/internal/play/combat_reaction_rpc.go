@@ -39,15 +39,7 @@ type answerInput struct {
 // parseAnswerInput reads the caller and the request of AnswerReaction, in the order its
 // refusals have always come: the member, the key, the combat, the window, the answer.
 func parseAnswerInput(ctx context.Context, msg *playv1.AnswerReactionRequest) (authz.Membership, answerInput, error) {
-	m, err := authz.RequireCampaignMember(ctx, msg.GetCampaignId())
-	if err != nil {
-		return m, answerInput{}, err
-	}
-	key, err := parseKey(msg.GetIdempotencyKey())
-	if err != nil {
-		return m, answerInput{}, err
-	}
-	encID, err := parseCombatID(msg.GetEncounterId(), "encounter")
+	m, key, encID, err := contestCaller(ctx, msg.GetCampaignId(), msg.GetIdempotencyKey(), msg.GetEncounterId())
 	if err != nil {
 		return m, answerInput{}, err
 	}

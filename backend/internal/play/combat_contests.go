@@ -38,21 +38,6 @@ import (
 // The contest waits without a timeout; the master may answer for anyone or close it.
 // The wait is a reaction window of kind CONTEST (combat_contests_window.go).
 
-// contestCaller reads what every contest call starts with: the caller, the idempotency
-// key and the combat.
-func contestCaller(ctx context.Context, campaignID, keyRaw, encounterRaw string) (m authz.Membership, key, encID string, err error) {
-	if m, err = authz.RequireCampaignMember(ctx, campaignID); err != nil {
-		return m, "", "", err
-	}
-	if key, err = parseKey(keyRaw); err != nil {
-		return m, "", "", err
-	}
-	if encID, err = parseCombatID(encounterRaw, "encounter"); err != nil {
-		return m, "", "", err
-	}
-	return m, key, encID, nil
-}
-
 // mustBeRunning refuses a contest call when the combat is not running.
 func mustBeRunning(c *combatTx) error {
 	if err := notEnded(c.enc); err != nil {
@@ -1073,15 +1058,7 @@ type contestClose struct {
 // parseContestClose is the first phase of CloseContest: only the master closes, and the
 // refusals come in the order they always have.
 func parseContestClose(ctx context.Context, msg *playv1.CloseContestRequest) (contestClose, error) {
-	m, err := authz.RequireCampaignRole(ctx, msg.GetCampaignId(), authz.RoleMaster)
-	if err != nil {
-		return contestClose{}, err
-	}
-	key, err := parseKey(msg.GetIdempotencyKey())
-	if err != nil {
-		return contestClose{}, err
-	}
-	encID, err := parseCombatID(msg.GetEncounterId(), "encounter")
+	m, key, encID, err := masterCaller(ctx, msg.GetCampaignId(), msg.GetIdempotencyKey(), msg.GetEncounterId())
 	if err != nil {
 		return contestClose{}, err
 	}

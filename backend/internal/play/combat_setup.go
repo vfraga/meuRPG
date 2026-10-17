@@ -24,21 +24,6 @@ import (
 // minTiedCombatants is how few combatants an order of a tie can name.
 const minTiedCombatants = 2
 
-// masterCaller reads the head of a request only the master may make, in the order the answers
-// are given: who may call, the key, then the encounter.
-func masterCaller(ctx context.Context, campaignID, keyRaw, encounterRaw string) (m authz.Membership, key, encID string, err error) {
-	if m, err = authz.RequireCampaignRole(ctx, campaignID, authz.RoleMaster); err != nil {
-		return m, "", "", err
-	}
-	if key, err = parseKey(keyRaw); err != nil {
-		return m, "", "", err
-	}
-	if encID, err = parseCombatID(encounterRaw, "encounter"); err != nil {
-		return m, "", "", err
-	}
-	return m, key, encID, nil
-}
-
 // listCombatants reads the combatants of the combat c.enc.
 func listCombatants(ctx context.Context, c *combatTx) ([]playdb.Combatant, error) {
 	cs, err := c.q.ListCombatants(ctx, c.enc.ID)

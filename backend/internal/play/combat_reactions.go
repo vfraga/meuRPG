@@ -368,14 +368,8 @@ func (s *Service) UseReaction(
 // parseReactionCall reads the caller's membership and the ids of a Shield answer, in the order the
 // handlers always checked them.
 func parseReactionCall(ctx context.Context, campaignID, keyRaw, encounterRaw, pendingRaw string) (m authz.Membership, key string, encID, pendingID string, err error) {
-	if m, err = authz.RequireCampaignMember(ctx, campaignID); err != nil {
-		return m, key, "", "", err
-	}
-	if key, err = parseKey(keyRaw); err != nil {
-		return m, key, "", "", err
-	}
-	if encID, err = parseCombatID(encounterRaw, "encounter"); err != nil {
-		return m, key, "", "", err
+	if m, key, encID, err = contestCaller(ctx, campaignID, keyRaw, encounterRaw); err != nil {
+		return m, key, encID, "", err
 	}
 	if pendingID, err = parseCombatID(pendingRaw, "pending damage"); err != nil {
 		return m, key, encID, "", err
