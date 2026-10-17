@@ -140,7 +140,7 @@ func (s *Service) removePartInTx(ctx context.Context, c *combatTx, r partRemoval
 	if err != nil {
 		return actionEvent{}, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	c.characterID = &attacker.CharacterID

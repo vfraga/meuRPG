@@ -317,7 +317,7 @@ func (s *Service) storeRollModeRequest(ctx context.Context, c *combatTx, m authz
 	if err != nil {
 		return zero, fmt.Errorf("keep the request: %w", err)
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return zero, err
 	}
 	c.characterID = &ask.attacker.CharacterID
@@ -400,7 +400,7 @@ func (s *Service) answerRollMode(ctx context.Context, c *combatTx, reqID string,
 	if _, err := c.q.AnswerRollModeRequest(ctx, playdb.AnswerRollModeRequestParams{ID: row.ID, DecidedMode: &mode, AnsweredAt: &c.now}); err != nil {
 		return nil, fmt.Errorf("answer the roll mode request: %w", err)
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	cs, err := c.q.ListCombatants(ctx, c.enc.ID)
@@ -477,7 +477,7 @@ func (s *Service) cancelRollMode(ctx context.Context, c *combatTx, m authz.Membe
 	if err := c.q.CloseRollModeRequest(ctx, playdb.CloseRollModeRequestParams{ID: row.ID, AnsweredAt: &c.now}); err != nil {
 		return nil, fmt.Errorf("close the roll mode request: %w", err)
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &attacker.CharacterID

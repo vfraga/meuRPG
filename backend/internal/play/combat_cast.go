@@ -758,7 +758,7 @@ func (f *castFlow) seal(ctx context.Context) error {
 			return err
 		}
 	}
-	if err = touchEncounter(ctx, f.c); err != nil {
+	if err := touchEncounter(ctx, f.c); err != nil {
 		return err
 	}
 	f.c.characterID = &f.caster.CharacterID

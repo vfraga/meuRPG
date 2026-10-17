@@ -196,7 +196,7 @@ func (s *Service) writeExhaustion(ctx context.Context, c *combatTx, m authz.Memb
 		}
 	}
 	if c.enc.ID != "" {
-		if err = touchEncounter(ctx, c); err != nil {
+		if err := touchEncounter(ctx, c); err != nil {
 			return nil, err
 		}
 	}

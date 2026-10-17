@@ -298,7 +298,7 @@ func (s *Service) fireByHandChange(ctx context.Context, c *combatTx, trap maplin
 	if err != nil {
 		return actionEvent{}, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return actionEvent{}, err
 	}
 	return actionEvent{Round: c.enc.Round, Trap: fired}, nil

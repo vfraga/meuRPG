@@ -164,7 +164,7 @@ func (f *damageFlow) run(ctx context.Context) (any, error) {
 			return nil, err
 		}
 	}
-	if err = touchEncounter(ctx, f.c); err != nil {
+	if err := touchEncounter(ctx, f.c); err != nil {
 		return nil, err
 	}
 	f.c.characterID = &f.attacker.CharacterID

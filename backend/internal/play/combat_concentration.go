@@ -118,7 +118,7 @@ func (s *Service) handSaveToMaster(ctx context.Context, c *combatTx, w playdb.Re
 	if _, err := c.q.SetReactionWindowStep(ctx, playdb.SetReactionWindowStepParams{ID: w.ID, Step: w.Step, Trigger: body}); err != nil {
 		return fmt.Errorf("hand the save to the master: %w", err)
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return err
 	}
 	return nil
@@ -306,7 +306,7 @@ func (s *Service) writeConcentrationSave(ctx context.Context, c *combatTx, call 
 	if _, err := s.closeWindow(ctx, c, w, windowAnswered, reaction.ReasonNone, windowOutcome{ByMaster: master, Used: true}, ""); err != nil {
 		return nil, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &reactor.CharacterID

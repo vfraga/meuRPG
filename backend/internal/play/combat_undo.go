@@ -394,7 +394,7 @@ func (s *Service) undoInTx(ctx context.Context, c *combatTx, expected string, ru
 	if err := s.takeBackCompanions(ctx, c, run, recent, last, ev); err != nil {
 		return nil, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	// The undo is told to the players who were told of the action it takes back,

@@ -1250,7 +1250,7 @@ func (s *Service) sideIn(ctx context.Context, c *combatTx, call masterTargetCall
 	}); err != nil {
 		return nil, fmt.Errorf("pass over the offers between allies: %w", err)
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID
@@ -1305,7 +1305,7 @@ func (s *Service) coverIn(ctx context.Context, c *combatTx, call masterTargetCal
 	if err := c.q.SetCombatantCoverMark(ctx, playdb.SetCombatantCoverMarkParams{ID: target.ID, CoverMark: mark}); err != nil {
 		return nil, fmt.Errorf("set the cover: %w", err)
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID

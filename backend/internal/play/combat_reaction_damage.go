@@ -103,7 +103,7 @@ func (s *Service) holdAttackRoll(ctx context.Context, c *combatTx, m authz.Membe
 	if ev, err = s.holdAction(ctx, c, m, "attack", attacker, req, holdData{}, specs, ev); err != nil {
 		return ev, false, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return ev, false, err
 	}
 	c.characterID = &attacker.CharacterID
@@ -249,7 +249,7 @@ func (s *Service) holdDamage(ctx context.Context, c *combatTx, m authz.Membershi
 	if err != nil {
 		return ev, false, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return ev, false, err
 	}
 	c.characterID = &attacker.CharacterID

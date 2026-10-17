@@ -116,7 +116,7 @@ func (s *Service) endAidTx(ctx context.Context, c *combatTx, v combatViewer, com
 		return nil, err // nothing to end: no event
 	}
 	*vitals = after
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID

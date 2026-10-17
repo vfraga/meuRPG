@@ -394,7 +394,7 @@ func (s *Service) answerRageIn(ctx context.Context, c *combatTx, call rageCall, 
 	if !who.RageEndPending {
 		return nil, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_RAGE_END_NOT_PENDING, "no question waits")
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &who.CharacterID
@@ -463,7 +463,7 @@ func (s *Service) endRageIn(ctx context.Context, c *combatTx, call rageCall) (an
 	if err := s.endRage(ctx, c, who, "by_choice"); err != nil {
 		return nil, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &who.CharacterID

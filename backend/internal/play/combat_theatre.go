@@ -413,7 +413,7 @@ func (s *Service) insertOffer(ctx context.Context, c *combatTx, mover, reactor p
 	if err != nil {
 		return nil, fmt.Errorf("offer the opportunity attack: %w", err)
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &reactor.CharacterID

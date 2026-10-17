@@ -486,7 +486,7 @@ func (s *Service) endConcentrationTx(ctx context.Context, c *combatTx, m authz.M
 	if err := s.stopConcentrating(ctx, c, target, &ev); err != nil {
 		return nil, err
 	}
-	if err = touchEncounter(ctx, c); err != nil {
+	if err := touchEncounter(ctx, c); err != nil {
 		return nil, err
 	}
 	c.characterID = &target.CharacterID
