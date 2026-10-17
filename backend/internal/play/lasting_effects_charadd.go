@@ -158,7 +158,7 @@ func (s *Service) giveCharacterEffect(ctx context.Context, tx pgx.Tx, m authz.Me
 	if err := s.syncArmorBase(ctx, c, slices.Clone(made.Targets)...); err != nil { // it sorts what it is given: the event keeps the order of the request
 		return charEffectEvent{}, nil, err
 	}
-	if err := s.writeCharEffectEvent(ctx, q, session.ID, m.UserID, in.key, hash, made); err != nil {
+	if err := s.appendKeyedEvent(ctx, q, keyedEvent{sessionID: session.ID, kind: eventLastingAdded, userID: m.UserID, key: in.key, hash: hash}, made); err != nil {
 		return charEffectEvent{}, nil, err
 	}
 	return made, c.told, nil
@@ -406,23 +406,4 @@ func withCharEffectDef(p *playdb.InsertCharacterEffectParams, def *rules.EffectD
 	if t := def.Trigger; t != nil {
 		p.TriggerDice, p.TriggerDamageType, p.TriggerMaxTriggers = &t.Dice, &t.DamageType, new(int32(t.MaxTriggers)) //nolint:gosec // a small number of the file
 	}
-}
-
-// writeCharEffectEvent appends the session event that keeps the key and what was made.
-func (s *Service) writeCharEffectEvent(ctx context.Context, q *playdb.Queries, sessionID, userID, key string, hash *string, made charEffectEvent) error {
-	payload, err := json.Marshal(made)
-	if err != nil {
-		return fmt.Errorf("encode the event payload: %w", err)
-	}
-	seq, err := q.NextSessionEventSeq(ctx, sessionID)
-	if err != nil {
-		return fmt.Errorf("next event number: %w", err)
-	}
-	if _, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
-		GameSessionID: sessionID, Seq: seq, Kind: eventLastingAdded, ActorUserID: &userID,
-		Payload: payload, IdempotencyKey: &key, IdempotencyHash: hash, CreatedAt: s.now(),
-	}); err != nil {
-		return fmt.Errorf("insert session event: %w", err)
-	}
-	return nil
 }
