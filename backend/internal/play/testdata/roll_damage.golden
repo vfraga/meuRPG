@@ -917,13 +917,6 @@ combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | f
 combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
 combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
 damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
-== refused a pending damage that is not a UUID ==
-refused not_found: pending damage not found
-combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
-combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
-combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
-combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
-damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
 == refused a pending damage that is not there ==
 refused not_found: pending damage not found
 combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
@@ -939,13 +932,6 @@ combatant Goblin | 0 | 0 | true | 0 | 0 | - | false | - | - | false | 4 | 3 | fa
 combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
 combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
 damage equipment:battleaxe | applied | false | 1 | 8 | 3 | damage-type:slashing | {8} | false | 11 | -1 | 11 | false | false | -1 | 0 | false | 0 | [] | null | null | -1 | {"hp": 7} | true
-== refused a typed part named twice ==
-refused invalid_argument: typed_parts must name each part once
-combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
-combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
-combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
-combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
-damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
 == refused a typed part of another key ==
 refused invalid_argument: typed_sum must be 1 to 8
 combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
@@ -955,13 +941,6 @@ combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 
 damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
 == refused a typed part out of range ==
 refused invalid_argument: typed_sum must be 1 to 8
-combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
-combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
-combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
-combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
-damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
-== refused a typed part with no name ==
-refused invalid_argument: typed_parts must name each part once
 combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
 combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
 combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
@@ -981,13 +960,6 @@ combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | f
 combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
 combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
 damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
-== refused an encounter that is not a UUID ==
-refused not_found: encounter not found
-combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
-combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
-combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
-combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
-damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
 == refused an encounter that is not there ==
 refused not_found: encounter not found
 combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
@@ -997,20 +969,6 @@ combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 
 damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
 == refused another player's attacker ==
 refused permission_denied: only the combatant's player or the master may do this
-combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
-combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
-combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
-combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
-damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
-== refused no roll at all ==
-refused invalid_argument: set roll_in_app, typed_sum or typed_parts
-combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
-combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
-combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
-combatant Toren | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 3 | 3 | false | false
-damage equipment:battleaxe | awaiting_roll | false | 1 | 8 | 3 | damage-type:slashing | {} | false | -1 | -1 | -1 | false | false | -1 | 0 | false | 0 | [] | [] | [] | -1 | - | false
-== refused roll_in_app false ==
-refused invalid_argument: roll_in_app must be true
 combatant Brisa | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 8 | 8 | false | false
 combatant Goblin | 7 | 0 | false | 0 | 0 | - | false | - | - | false | 4 | 3 | false | false
 combatant Pensantus | <nil> | <nil> | false | 0 | 0 | - | false | - | - | false | 10 | 3 | false | false
