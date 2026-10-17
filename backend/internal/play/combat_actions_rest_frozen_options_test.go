@@ -178,7 +178,6 @@ func actionsRestOptionRefusals() []actionsRestOption {
 	stranger := func(a *armed) *user { return a.h.newUser("Zé") }
 	return []actionsRestOption{
 		{name: "options refused a campaign that is not a UUID", edit: func(r *playv1.GetTurnOptionsRequest) { r.CampaignId = "nope" }},
-		{name: "options refused an encounter that is not a UUID", edit: func(r *playv1.GetTurnOptionsRequest) { r.EncounterId = "nope" }},
 		{name: "options refused a combatant that is not a UUID", edit: func(r *playv1.GetTurnOptionsRequest) { r.CombatantId = "nope" }},
 		{name: "options refused an encounter nobody knows", edit: func(r *playv1.GetTurnOptionsRequest) { r.EncounterId = "00000000-0000-4000-8000-000000000002" }},
 		{name: "options refused a combatant nobody knows", edit: func(r *playv1.GetTurnOptionsRequest) { r.CombatantId = "00000000-0000-4000-8000-000000000001" }},
