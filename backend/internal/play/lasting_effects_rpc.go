@@ -568,11 +568,7 @@ func (s *Service) holdConcentration(ctx context.Context, c *combatTx, spec effec
 		return nil
 	}
 	if caster.ConcentrationSpell != nil && *caster.ConcentrationSpell != spec.key {
-		stop := actionEvent{Round: c.enc.Round, Secret: caster.Hidden, Actor: caster.ID}
-		if err := s.stopConcentrating(ctx, c, *caster, &stop); err != nil {
-			return err
-		}
-		if err := insertEvent(ctx, c, eventConditionsSet, &c.actorUserID, nil, stop); err != nil {
+		if err := s.endConcentrationWithLine(ctx, c, *caster); err != nil {
 			return err
 		}
 	}

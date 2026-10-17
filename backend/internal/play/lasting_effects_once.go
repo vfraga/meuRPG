@@ -114,11 +114,10 @@ func (s *Service) stopHeldConcentration(ctx context.Context, cc *combatTx, cs []
 	if j < 0 {
 		return false, nil
 	}
-	ev := actionEvent{Round: cc.enc.Round, Secret: cs[j].Hidden, Actor: cs[j].ID}
-	if err := s.stopConcentrating(ctx, cc, cs[j], &ev); err != nil {
+	if err := s.endConcentrationWithLine(ctx, cc, cs[j]); err != nil {
 		return false, err
 	}
-	return true, insertEvent(ctx, cc, eventConditionsSet, &cc.actorUserID, nil, ev)
+	return true, nil
 }
 
 // spendAttackEffects spends the effects on the attacker whose disadvantage its attack roll used

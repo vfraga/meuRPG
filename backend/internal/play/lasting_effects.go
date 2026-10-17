@@ -491,11 +491,7 @@ func (s *Service) dropConcentrationIfIncapacitated(ctx context.Context, c *comba
 	if cb.ConcentrationSpell == nil || !(combat.Creature{Conditions: cb.Conditions}).Incapacitated() {
 		return nil
 	}
-	ev := actionEvent{Round: c.enc.Round, Secret: cb.Hidden, Actor: cb.ID}
-	if err := s.stopConcentrating(ctx, c, cb, &ev); err != nil {
-		return err
-	}
-	return insertEvent(ctx, c, eventConditionsSet, &c.actorUserID, nil, ev)
+	return s.endConcentrationWithLine(ctx, c, cb)
 }
 
 // casting is the rows of one casting of an effect: they share a group and a source key.

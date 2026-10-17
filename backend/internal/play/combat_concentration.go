@@ -299,7 +299,7 @@ func (s *Service) writeConcentrationSave(ctx context.Context, c *combatTx, call 
 		}
 	}
 	if !kept {
-		if err := s.loseConcentration(ctx, c, reactor); err != nil {
+		if err := s.endConcentrationWithLine(ctx, c, reactor); err != nil {
 			return nil, err
 		}
 	}
@@ -314,12 +314,13 @@ func (s *Service) writeConcentrationSave(ctx context.Context, c *combatTx, call 
 	return ev, nil
 }
 
-// loseConcentration ends the concentration, and the spell with it, of a creature that failed its
-// save: the line of the log says what stopped (written before the save's own event, as a cast's
+// endConcentrationWithLine ends the concentration, and the spell with it, of a creature that lost
+// it (a failed save, a new concentration spell, incapacity, the end of the spell): the line of the
+// log says what stopped (written before the event of the change that caused it, as a cast's
 // creatures are).
-func (s *Service) loseConcentration(ctx context.Context, c *combatTx, reactor playdb.Combatant) error {
-	stop := actionEvent{Round: c.enc.Round, Secret: reactor.Hidden, Actor: reactor.ID}
-	if err := s.stopConcentrating(ctx, c, reactor, &stop); err != nil {
+func (s *Service) endConcentrationWithLine(ctx context.Context, c *combatTx, caster playdb.Combatant) error {
+	stop := actionEvent{Round: c.enc.Round, Secret: caster.Hidden, Actor: caster.ID}
+	if err := s.stopConcentrating(ctx, c, caster, &stop); err != nil {
 		return err
 	}
 	return insertEvent(ctx, c, eventConditionsSet, &c.actorUserID, nil, stop)
