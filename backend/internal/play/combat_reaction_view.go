@@ -389,13 +389,11 @@ func (wv *windowView) shieldPrompt(w playdb.ReactionWindow, reactor *playdb.Comb
 	p := &playv1.ShieldPrompt{PendingDamageId: deref(w.PendingDamageID), MagicMissile: t.Magic, SpellNamePt: wv.names(shield)}
 	p.AttackerLabel, p.AttackNamePt = wv.attackerOf(t)
 	if reactor != nil {
-		k, ok, err := wv.s.kitOf(wv.ctx, nil, wv.m.CampaignID, *reactor)
+		k, err := wv.kitFor(reactor)
 		if err != nil {
-			return wv.s.dbError(wv.ctx, "work out the reaction", err)
+			return err
 		}
-		if ok {
-			p.Slots = k.slotsFor(spellShield)
-		}
+		p.Slots = k.slotsFor(spellShield)
 		if wv.v.master {
 			with := clamp32(int(t.AC)-int(reactor.AcBonus)+5, 0, math.MaxInt32)
 			if out.Trigger != nil {

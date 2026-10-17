@@ -120,7 +120,7 @@ func (s *Service) reactionPrompts(ctx context.Context, m authz.Membership, d *en
 	}
 	var out []*playv1.ReactionPrompt
 	for _, w := range open {
-		prompt, ok, err := s.shieldPrompt(ctx, m, d, v, names, w)
+		prompt, ok, err := s.legacyShieldPrompt(ctx, m, d, v, names, w)
 		if err != nil {
 			return nil, err
 		}
@@ -131,8 +131,9 @@ func (s *Service) reactionPrompts(ctx context.Context, m authz.Membership, d *en
 	return out, nil
 }
 
-// shieldPrompt is the prompt of one open window, when it is a Shield window the viewer may read.
-func (s *Service) shieldPrompt(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, names func(key string) string, w playdb.ReactionWindow) (*playv1.ReactionPrompt, bool, error) {
+// legacyShieldPrompt is the reaction_prompts entry of one open window, when it is a Shield window the
+// viewer may read; the prompt of the same window in reaction_windows is windowView.shieldPrompt.
+func (s *Service) legacyShieldPrompt(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, names func(key string) string, w playdb.ReactionWindow) (*playv1.ReactionPrompt, bool, error) {
 	if w.Kind != string(reaction.Shield) || w.PendingDamageID == nil || w.ReactorID == nil {
 		return nil, false, nil
 	}
@@ -152,13 +153,14 @@ func (s *Service) shieldPrompt(ctx context.Context, m authz.Membership, d *encou
 	if v.master {
 		prompt.AttackerId = t.Actor
 	}
-	s.nameShieldAttacker(ctx, m, d, v, t, prompt)
+	s.legacyShieldAttacker(ctx, m, d, v, t, prompt)
 	return prompt, true, nil
 }
 
-// nameShieldAttacker says who attacked, and with what, only when the viewer sees the attacker
-// (RN-20): the screen says "Capitão Goblin · Cimitarra", and a hidden attacker stays hidden.
-func (s *Service) nameShieldAttacker(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, t windowTrigger, prompt *playv1.ReactionPrompt) {
+// legacyShieldAttacker says who attacked, and with what, only when the viewer sees the attacker
+// (RN-20): the screen says "Capitão Goblin · Cimitarra", and a hidden attacker stays hidden. The
+// window view says the same through windowView.attackerOf.
+func (s *Service) legacyShieldAttacker(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, t windowTrigger, prompt *playv1.ReactionPrompt) {
 	j := slices.IndexFunc(d.cs, func(c playdb.Combatant) bool { return c.ID == t.Actor })
 	if j < 0 || !v.sees(d.cs[j]) {
 		return

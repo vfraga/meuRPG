@@ -169,12 +169,9 @@ func (wv *windowView) counterspellPrompt(w playdb.ReactionWindow, reactor *playd
 
 // counterspellSlots gives the prompt the free slots of the reactor and, to the master, what each does.
 func (wv *windowView) counterspellSlots(reactor playdb.Combatant, t windowTrigger, p *playv1.CounterspellPrompt, out *playv1.ReactionWindow) error {
-	k, ok, err := wv.s.kitOf(wv.ctx, nil, wv.m.CampaignID, reactor)
+	k, err := wv.kitFor(&reactor)
 	if err != nil {
-		return wv.s.dbError(wv.ctx, "work out the reaction", err)
-	}
-	if !ok {
-		return nil
+		return err
 	}
 	p.SlotOptions = k.slotsFor(spellCounterspell)
 	if wv.v.master && out.Trigger != nil {
