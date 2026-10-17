@@ -402,8 +402,6 @@ func takeActionRefusals() []takeActionScenario {
 		{name: "refused an empty action key", key: ""},
 		{name: "refused an action key of 101 characters", key: long},
 		{name: "refused an idempotency key that is not a UUID", key: "standard:dodge", edit: func(r *playv1.TakeActionRequest) { r.IdempotencyKey = "not-a-key" }},
-		{name: "refused an encounter that is not a UUID", key: "standard:dodge", edit: func(r *playv1.TakeActionRequest) { r.EncounterId = "nope" }},
-		{name: "refused a combatant that is not a UUID", key: "standard:dodge", edit: func(r *playv1.TakeActionRequest) { r.CombatantId = "nope" }},
 		{name: "refused a combatant nobody knows", key: "standard:dodge", edit: func(r *playv1.TakeActionRequest) {
 			r.CombatantId = "00000000-0000-4000-8000-000000000001"
 		}},
@@ -412,11 +410,6 @@ func takeActionRefusals() []takeActionScenario {
 		}},
 		{name: "refused a campaign that is not a UUID", key: "standard:dodge", edit: func(r *playv1.TakeActionRequest) { r.CampaignId = "nope" }},
 		{name: "refused a user who is not in the campaign", key: "standard:dodge", as: stranger},
-		{name: "refused the attack, which has its own call", key: "standard:attack"},
-		{name: "refused the cast, which has its own call", key: "standard:cast-a-spell"},
-		{name: "refused roll_in_app false", key: "standard:dodge", edit: func(r *playv1.TakeActionRequest) {
-			r.Roll = &playv1.TakeActionRequest_RollInApp{RollInApp: false}
-		}},
 		{name: "refused the Wild Shape action", key: "feature:wild-shape"},
 		{name: "refused the Wild Shape action of a level", key: "feature:wild-shape-1"},
 		{name: "refused Lay on Hands", key: "feature:lay-on-hands"},

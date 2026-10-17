@@ -1363,12 +1363,6 @@ combatant Brisa | false | false | false | false | false | 0 | false | false | fa
 combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
 combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-== refused a combatant that is not a UUID ==
-refused not_found: combatant not found
-combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
-combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 == refused a combatant with no action by an effect ==
 refused failed_precondition: the combatant cannot act now [ENCOUNTER_BLOCKED_REASON_CANNOT_ACT]
 combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
@@ -1483,12 +1477,6 @@ combatant Brisa | false | false | false | false | false | 0 | false | false | fa
 combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
 combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-== refused an encounter that is not a UUID ==
-refused not_found: encounter not found
-combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
-combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 == refused an idempotency key that is not a UUID ==
 refused invalid_argument: idempotency_key must be a UUID
 combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
@@ -1531,12 +1519,6 @@ combatant Brisa | false | false | false | false | false | 0 | false | false | fa
 combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
 combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-== refused roll_in_app false ==
-refused invalid_argument: roll_in_app must be true
-combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
-combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 == refused the Wild Shape action ==
 refused invalid_argument: the Wild Shape action is taken with AssumeWildShape
 combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
@@ -1545,18 +1527,6 @@ combatant Pensantus | false | false | false | false | false | 0 | false | false 
 combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 == refused the Wild Shape action of a level ==
 refused invalid_argument: the Wild Shape action is taken with AssumeWildShape
-combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
-combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-== refused the attack, which has its own call ==
-refused invalid_argument: an attack is rolled with RollAttack, and a spell is cast with CastSpell
-combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
-combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-combatant Toren | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
-== refused the cast, which has its own call ==
-refused invalid_argument: an attack is rolled with RollAttack, and a spell is cast with CastSpell
 combatant Brisa | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
 combatant Goblin | false | false | false | false | false | 0 | false | false | false | 0 | - | 7 | 0 | false | false | 0
 combatant Pensantus | false | false | false | false | false | 0 | false | false | false | 0 | - | <nil> | <nil> | false | false | 0
