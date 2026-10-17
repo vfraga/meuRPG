@@ -38,6 +38,8 @@ const (
 // trapSearch is one SearchForTraps call: the request as it was read, and what its transaction
 // works out for the answer and for the streams after the commit.
 type trapSearch struct {
+	searchTurn // what the transaction works out before the dice, new in every attempt
+
 	m      authz.Membership
 	key    string
 	hash   *string
@@ -57,7 +59,8 @@ type trapSearch struct {
 }
 
 // searchTurn is what the transaction of a search works out before the dice: the character's numbers
-// for the check, its mode and the answer of the held-roll gate.
+// for the check, its mode and the answer of the held-roll gate. A retried transaction starts it
+// again from nothing.
 type searchTurn struct {
 	c        *combatTx
 	opt      link.SceneOption
@@ -177,28 +180,23 @@ func searchRollOf(msg *playv1.SearchForTrapsRequest, skill string) (rollInput, i
 			return in, 0, err
 		}
 	}
-	typed2, err := searchSecondFace(msg, in, skill)
-	return in, typed2, err
-}
-
-// searchSecondFace is d20_face_2, read only where it counts: a Perception search with a typed die.
-func searchSecondFace(msg *playv1.SearchForTrapsRequest, in rollInput, skill string) (int, error) {
+	// d20_face_2 counts only for a Perception search with a typed die.
 	f := msg.D20Face_2
 	if f == nil || in.inApp || skill != searchPerception {
-		return 0, nil
+		return in, 0, nil
 	}
 	typed2 := int(*f)
 	if typed2 < searchMinFace || typed2 > searchMaxFace {
-		return 0, connect.NewError(connect.CodeInvalidArgument, errors.New("d20_face_2 must be 1 to 20"))
+		return in, 0, connect.NewError(connect.CodeInvalidArgument, errors.New("d20_face_2 must be 1 to 20"))
 	}
-	return typed2, nil
+	return in, typed2, nil
 }
 
 // searchInTx is the change: the retry of a search already made, the checks of the state, the place,
 // the d20, what the roll finds and the event.
 func (s *Service) searchInTx(ctx context.Context, tx pgx.Tx, ts *trapSearch) error {
 	q := s.queries.WithTx(tx)
-	ts.repeated, ts.told, ts.place, ts.offer, ts.lucky = false, nil, searchPlace{}, nil, nil
+	ts.repeated, ts.told, ts.place, ts.offer, ts.lucky, ts.searchTurn = false, nil, searchPlace{}, nil, nil, searchTurn{}
 	session, err := lockOpenSession(ctx, q, ts.m.CampaignID)
 	if err != nil {
 		return err
@@ -217,16 +215,21 @@ func (s *Service) searchInTx(ctx context.Context, tx pgx.Tx, ts *trapSearch) err
 	if ts.place, err = s.searcherPlace(ctx, c, ts.who); err != nil {
 		return err
 	}
-	r := &searchTurn{c: c, opt: opt, reliable: opt.ReliableTalent}
-	held, err := s.prepareSearchRoll(ctx, tx, q, ts, r)
+	ts.c, ts.opt, ts.reliable = c, opt, opt.ReliableTalent
+	held, err := s.prepareSearchRoll(ctx, ts)
 	if err != nil || held {
 		return err
 	}
-	d, err := s.rollSearch(ts, r)
+	var d searchDice
+	if ts.cm.Mode != combat.ModeNormal {
+		d, err = s.rollSearchWithMode(ts)
+	} else {
+		d, err = s.rollSearchNormal(ts)
+	}
 	if err != nil {
 		return err
 	}
-	return s.writeTrapSearch(ctx, ts, r, d)
+	return s.writeTrapSearch(ctx, ts, d)
 }
 
 // searchRetried answers a retry of a search already made with that search, and changes nothing. It
@@ -275,36 +278,36 @@ func (s *Service) searchGuards(ctx context.Context, tx pgx.Tx, q *playdb.Queries
 // prepareSearchRoll works out the mode and the bonus of the check, asks the held-roll gate and spends
 // what the roll uses up. It says whether the d20 was kept for a question: then nothing else is
 // written.
-func (s *Service) prepareSearchRoll(ctx context.Context, tx pgx.Tx, q *playdb.Queries, ts *trapSearch, r *searchTurn) (bool, error) {
+func (s *Service) prepareSearchRoll(ctx context.Context, ts *trapSearch) (bool, error) {
 	ability, isCheck := checkKey(searchCheckKey[ts.skill])
-	cm, err := s.checkModeOf(ctx, tx, ts.m.CampaignID, r.c.session.ID, ts.who.ID, searchCheckKey[ts.skill], ability, isCheck)
+	cm, err := s.checkModeOf(ctx, ts.c.tx, ts.m.CampaignID, ts.c.session.ID, ts.who.ID, searchCheckKey[ts.skill], ability, isCheck)
 	// Reliable Talent: a d20 of 9 or lower counts as 10 for a skill the character is
 	// proficient in, each die of a search with disadvantage before the lower is
 	// chosen. Not for the light's penalty: that is the second die, as before.
 	if err != nil {
 		return false, err
 	}
-	r.cm = cm
-	if r.names, err = s.namerFor(ctx, tx, ts.m.CampaignID); err != nil {
+	ts.cm = cm
+	if ts.names, err = s.namerFor(ctx, ts.c.tx, ts.m.CampaignID); err != nil {
 		return false, err
 	}
-	ts.shown = shownSources(r.cm.Sources, r.names)
-	if r.bonus, err = s.withEffectDice(ts.in, ts.in.extraFaces, &r.cm, r.opt.Bonus); err != nil {
+	ts.shown = shownSources(ts.cm.Sources, ts.names)
+	if ts.bonus, err = s.withEffectDice(ts.in, ts.in.extraFaces, &ts.cm, ts.opt.Bonus); err != nil {
 		return false, err
 	}
-	if held, err := s.askSearchGate(ctx, tx, q, ts, r); held || err != nil {
+	if held, err := s.askSearchGate(ctx, ts); held || err != nil {
 		return held, err
 	}
-	if r.step.Bonus != nil {
-		r.dieFace = int(r.step.Bonus.Face)
+	if ts.step.Bonus != nil {
+		ts.dieFace = int(ts.step.Bonus.Face)
 	}
-	if err := s.spendOnceEffects(ctx, r.c, r.cm.Rolled); err != nil {
+	if err := s.spendOnceEffects(ctx, ts.c, ts.cm.Rolled); err != nil {
 		return false, err
 	}
-	if err := s.spendCheckHelps(ctx, r.c, r.cm.Helps); err != nil {
+	if err := s.spendCheckHelps(ctx, ts.c, ts.cm.Helps); err != nil {
 		return false, err
 	}
-	ts.shown = r.cm.shownCheck(r.names)
+	ts.shown = ts.cm.shownCheck(ts.names)
 	return false, nil
 }
 
@@ -312,49 +315,41 @@ func (s *Service) prepareSearchRoll(ctx context.Context, tx pgx.Tx, q *playdb.Qu
 // Bardic Inspiration die, before anything is spent or written (the Search action of a combat has spent
 // the action by now, and rolls as always), and so for a halfling's d20 that shows a 1, for the Lucky
 // question. The answer brings the d20 back. It says whether a question is open.
-func (s *Service) askSearchGate(ctx context.Context, tx pgx.Tx, q *playdb.Queries, ts *trapSearch, r *searchTurn) (bool, error) {
+func (s *Service) askSearchGate(ctx context.Context, ts *trapSearch) (bool, error) {
 	if ts.place.spent {
 		return false, nil
 	}
 	held := ts.in
-	if len(ts.in.typedFaces) > 0 && r.cm.Mode == combat.ModeNormal { // the second die of a Perception search is not the held one
+	if len(ts.in.typedFaces) > 0 && ts.cm.Mode == combat.ModeNormal { // the second die of a Perception search is not the held one
 		held.typed, held.typedFaces = ts.in.typedFaces[0], nil
 	}
-	step, err := s.heldGate(ctx, s.outsideGate(tx, q), rollSpec{
+	step, err := s.heldGate(ctx, s.outsideGate(ts.c.tx, ts.c.q), rollSpec{
 		Kind: heldTrapSearch, Key: ts.key, Request: ts.req, Roller: heldRoller{CampaignID: ts.m.CampaignID, CharacterID: ts.who.ID, UserID: ts.m.UserID},
-		In: held, Modifier: r.bonus, Mode: r.cm.Mode, Reliable: r.reliable, Lucky: r.opt.Lucky, MayAsk: true,
+		In: held, Modifier: ts.bonus, Mode: ts.cm.Mode, Reliable: ts.reliable, Lucky: ts.opt.Lucky, MayAsk: true,
 	})
 	if err != nil {
 		return false, err
 	}
-	r.step = step
+	ts.step = step
 	if step.Held == nil {
 		return false, nil
 	}
-	ts.offer, ts.lucky = s.outsideOffers(ctx, tx, step.Held)
+	ts.offer, ts.lucky = s.outsideOffers(ctx, ts.c.tx, step.Held)
 	return true, nil
-}
-
-// rollSearch rolls the d20 of the search, or takes the one the gate decided.
-func (s *Service) rollSearch(ts *trapSearch, r *searchTurn) (searchDice, error) {
-	if r.cm.Mode != combat.ModeNormal {
-		return s.rollSearchWithMode(ts, r)
-	}
-	return s.rollSearchNormal(ts, r)
 }
 
 // rollSearchWithMode is a roll under advantage or disadvantage: two dice, the better or the worse
 // counts. Where the light is dim to a Perception searcher, that disadvantage cancels an advantage
 // and doubles up with another disadvantage: the second total is the one for the dim squares (SRD 5.1,
 // "Advantage and Disadvantage").
-func (s *Service) rollSearchWithMode(ts *trapSearch, r *searchTurn) (searchDice, error) {
-	rolled := r.step.Roll
-	if !r.step.Settled {
+func (s *Service) rollSearchWithMode(ts *trapSearch) (searchDice, error) {
+	rolled := ts.step.Roll
+	if !ts.step.Settled {
 		var err error
-		if rolled, err = s.d20With(ts.in, r.bonus, r.cm.Mode); err != nil {
+		if rolled, err = s.d20With(ts.in, ts.bonus, ts.cm.Mode); err != nil {
 			return searchDice{}, err
 		}
-		rolled = reliableD20(rolled, r.bonus, r.reliable)
+		rolled = reliableD20(rolled, ts.bonus, ts.reliable)
 	}
 	d := searchDice{
 		face: rolled.Faces[0], face2: rolled.Faces[1], counted: rolled.Index,
@@ -363,8 +358,8 @@ func (s *Service) rollSearchWithMode(ts *trapSearch, r *searchTurn) (searchDice,
 	if ts.skill != searchPerception {
 		return d, nil
 	}
-	if r.cm.Mode == combat.ModeAdvantage {
-		d.totals = append(d.totals, countedFace(d.face, r.reliable)+r.bonus+r.dieFace)
+	if ts.cm.Mode == combat.ModeAdvantage {
+		d.totals = append(d.totals, countedFace(d.face, ts.reliable)+ts.bonus+ts.dieFace)
 	} else {
 		d.totals = append(d.totals, rolled.Total)
 	}
@@ -373,7 +368,7 @@ func (s *Service) rollSearchWithMode(ts *trapSearch, r *searchTurn) (searchDice,
 
 // rollSearchNormal is a roll with one d20; a Perception search is rolled twice in the app (the lower
 // counts where the light is dim to the searcher), and with a real die the second one is typed.
-func (s *Service) rollSearchNormal(ts *trapSearch, r *searchTurn) (searchDice, error) {
+func (s *Service) rollSearchNormal(ts *trapSearch) (searchDice, error) {
 	in, typed2 := ts.in, ts.typed2
 	if len(in.typedFaces) > 0 {
 		in.typed = in.typedFaces[0]
@@ -382,11 +377,11 @@ func (s *Service) rollSearchNormal(ts *trapSearch, r *searchTurn) (searchDice, e
 		}
 	}
 	var d searchDice
-	if r.step.Settled {
-		d.face, d.roll = r.step.Roll.Face(), dice.Result{Total: r.step.Roll.Total, Physical: r.step.Roll.Physical}
+	if ts.step.Settled {
+		d.face, d.roll = ts.step.Roll.Face(), dice.Result{Total: ts.step.Roll.Total, Physical: ts.step.Roll.Physical}
 	} else {
 		var err error
-		if d.face, d.roll, err = s.checkD20(in, r.bonus, r.reliable); err != nil {
+		if d.face, d.roll, err = s.checkD20(in, ts.bonus, ts.reliable); err != nil {
 			return d, err
 		}
 	}
@@ -394,23 +389,23 @@ func (s *Service) rollSearchNormal(ts *trapSearch, r *searchTurn) (searchDice, e
 	switch {
 	case ts.skill != searchPerception:
 	case in.inApp:
-		face2, roll2, err := s.checkD20(rollInput{inApp: true}, r.opt.Bonus, r.reliable)
+		face2, roll2, err := s.checkD20(rollInput{inApp: true}, ts.opt.Bonus, ts.reliable)
 		if err != nil {
 			return d, err
 		}
 		d.face2 = face2
-		d.totals = append(d.totals, roll2.Total+r.dieFace)
+		d.totals = append(d.totals, roll2.Total+ts.dieFace)
 	case typed2 > 0:
 		d.face2 = typed2
-		d.totals = append(d.totals, countedFace(typed2, r.reliable)+r.opt.Bonus+r.dieFace)
+		d.totals = append(d.totals, countedFace(typed2, ts.reliable)+ts.opt.Bonus+ts.dieFace)
 	}
 	return d, nil
 }
 
 // writeTrapSearch asks the maps module what the roll finds and writes the event. Only the master
 // and the searcher hear of the roll (RN-20); the history keeps the ids and the numbers, never the DC.
-func (s *Service) writeTrapSearch(ctx context.Context, ts *trapSearch, r *searchTurn, d searchDice) error {
-	c := r.c
+func (s *Service) writeTrapSearch(ctx context.Context, ts *trapSearch, d searchDice) error {
+	c := ts.c
 	found, err := s.traps.SearchTraps(ctx, c.tx, ts.m.CampaignID, ts.place.mapID, maplink.Observer{CharacterID: ts.who.ID, At: ts.place.at}, ts.skill, d.totals, c.now)
 	if errors.Is(err, maplink.ErrSearchNeedsTwoDice) {
 		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SEARCH_NEEDS_TWO_DICE, "a Perception search in dim light has disadvantage: roll a second die")
@@ -419,7 +414,7 @@ func (s *Service) writeTrapSearch(ctx context.Context, ts *trapSearch, r *search
 		return err
 	}
 	ts.told = found.Users
-	ts.ev = trapSearchEvent(ts, r, d, found)
+	ts.ev = trapSearchEvent(ts, d, found)
 	if ts.place.spent {
 		if err := touchEncounter(ctx, c); err != nil {
 			return err
@@ -430,17 +425,17 @@ func (s *Service) writeTrapSearch(ctx context.Context, ts *trapSearch, r *search
 }
 
 // trapSearchEvent is what the history keeps of the search.
-func trapSearchEvent(ts *trapSearch, r *searchTurn, d searchDice, found maplink.SearchResult) actionEvent {
+func trapSearchEvent(ts *trapSearch, d searchDice, found maplink.SearchResult) actionEvent {
 	ev := actionEvent{
-		Round: r.c.enc.Round, Actor: ts.place.combatantID, Key: ts.skill, D20: clampInt32(d.face), Modifier: clampInt32(r.opt.Bonus + r.dieFace), Total: clampInt32(d.roll.Total),
-		Physical: d.roll.Physical, Found: found.Found, OnTurn: ts.place.spent, D20B: clampInt32(d.face2), ReliableTalent: r.reliable,
-		Lucky: r.step.Lucky, // the held d20 Lucky rolled again: the first of a Perception search's two
+		Round: ts.c.enc.Round, Actor: ts.place.combatantID, Key: ts.skill, D20: clampInt32(d.face), Modifier: clampInt32(ts.opt.Bonus + ts.dieFace), Total: clampInt32(d.roll.Total),
+		Physical: d.roll.Physical, Found: found.Found, OnTurn: ts.place.spent, D20B: clampInt32(d.face2), ReliableTalent: ts.reliable,
+		Lucky: ts.step.Lucky, // the held d20 Lucky rolled again: the first of a Perception search's two
 	}
-	if r.cm.Mode != combat.ModeNormal {
-		ev.RollMode, ev.Counted = modeKey(r.cm.Mode), clampInt32(d.counted)
+	if ts.cm.Mode != combat.ModeNormal {
+		ev.RollMode, ev.Counted = modeKey(ts.cm.Mode), clampInt32(d.counted)
 	}
-	if r.step.Bonus != nil {
-		ev.Res = &resourceEvent{Kind: resBardicUse, Sides: r.step.Bonus.Sides, Face: r.step.Bonus.Face}
+	if ts.step.Bonus != nil {
+		ev.Res = &resourceEvent{Kind: resBardicUse, Sides: ts.step.Bonus.Sides, Face: ts.step.Bonus.Face}
 	}
 	return ev
 }
