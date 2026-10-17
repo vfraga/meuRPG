@@ -51,6 +51,7 @@ A rider that asks a saving throw is not cast outside a combat (`castCharacterEff
 ## What a player may read
 
 `effectViewer` (`lasting_effects_view.go`) decorates the combat the way every viewer may read it (`readsEffect`, `conditionHidden`, `decorate`).
+The master's table (`ListLastingEffects`, with the turn clock, the concentrations and the catalog) is built in `lasting_effects_table.go`; the master's commands on the effects are in `lasting_effects_rpc.go`.
 The master reads everything; a player reads the effects the master leaves visible on the creatures they see, with the owner-class conditions limited to the owner.
 The label of an effect that gives conditions (`labelFor`, `labelForOthers`) and the log's `CONDITIONS_CHANGED` line (`withoutOwnerOnly`) leave out the ones the viewer may not read, and a log line whose readable conditions did not change is not sent.
 An effect the master hides turns, in the sources of a roll, into `OTHER_SOURCE` ("Outra fonte", `hiddenFrom`, `hideFor`).
