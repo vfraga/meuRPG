@@ -69,30 +69,6 @@ func (s *Service) takeBackCast(ctx context.Context, c *combatTx, r playdb.SpellC
 	return s.takeBackMaxHP(ctx, c, r)
 }
 
-// armorOf is the armor class a cast gave a character.
-func armorOf(r playdb.SpellCast, characterID string) int32 {
-	for _, t := range castTargetsOf(r) {
-		if t.ID == characterID && t.Effect == castArmor {
-			return t.AC
-		}
-	}
-	return 0
-}
-
-// otherCastsOn lists the casts of the same spell, other than r, that still last and
-// name the character as a target.
-func (s *Service) otherCastsOn(ctx context.Context, c *combatTx, r playdb.SpellCast, characterID, effect string) ([]playdb.SpellCast, error) {
-	probe, err := json.Marshal([]map[string]string{{"id": characterID, "effect": effect}})
-	if err != nil {
-		return nil, fmt.Errorf("encode the target: %w", err)
-	}
-	rows, err := c.q.ListLiveSpellCastsOnTarget(ctx, playdb.ListLiveSpellCastsOnTargetParams{CampaignID: r.CampaignID, Target: probe})
-	if err != nil {
-		return nil, fmt.Errorf("list the casts on a target: %w", err)
-	}
-	return slices.DeleteFunc(rows, func(o playdb.SpellCast) bool { return o.ID == r.ID || o.SpellKey != r.SpellKey }), nil
-}
-
 // dismissConcentrationCreatures sends away the creatures that lasted only while the
 // caster concentrated, and writes the line of each (MR-037, RN-22).
 func (s *Service) dismissConcentrationCreatures(ctx context.Context, c *combatTx, characterID string) ([]string, error) {
