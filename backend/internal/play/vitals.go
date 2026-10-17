@@ -111,7 +111,7 @@ func (s *Service) adjustVitalsTx(ctx context.Context, tx pgx.Tx, call adjustCall
 	}
 	if again {
 		if done.CharacterID == nil || *done.CharacterID != call.charText {
-			return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+			return errKeyReused()
 		}
 		run.repeated = true // a retry of a correction already made
 		return nil

@@ -209,7 +209,7 @@ func eventByKey(ctx context.Context, q *playdb.Queries, sessionID, key, kind str
 	switch {
 	case err == nil:
 		if done.Kind != kind || hashDiffers(done.IdempotencyHash, hash) {
-			return done, false, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+			return done, false, errKeyReused()
 		}
 		return done, true, nil
 	case errors.Is(err, pgx.ErrNoRows):
@@ -582,7 +582,7 @@ func (s *Service) requireCharacterOwnerOrMaster(ctx context.Context, tx pgx.Tx, 
 // character; what names the event in the error of a payload that cannot be read.
 func replayCharacterEvent(done playdb.GetSessionEventByIdempotencyKeyRow, characterID, what string, into any) error {
 	if done.CharacterID == nil || *done.CharacterID != characterID {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+		return errKeyReused()
 	}
 	if err := json.Unmarshal(done.Payload, into); err != nil {
 		return fmt.Errorf("read the %s event: %w", what, err)

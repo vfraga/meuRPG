@@ -234,11 +234,6 @@ type puzzleEvent struct {
 
 // --- errors ---
 
-// errKeyReused is the refusal of an idempotency key that was used for another change.
-func errKeyReused() error {
-	return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
-}
-
 // puzzleBlocked is PuzzleService's failed_precondition, with the PuzzleBlocked
 // detail the app reads.
 func puzzleBlocked(reason playv1.PuzzleBlockedReason, msg string) error {

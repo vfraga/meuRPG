@@ -746,11 +746,6 @@ type sceneRollCall struct {
 	out      *sceneRolled
 }
 
-// errBadIdempotencyKey is the refusal of a key that was used for another change.
-func errBadIdempotencyKey() error {
-	return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
-}
-
 // sceneRollInput reads how the player rolls: in the app, or the faces they typed.
 func sceneRollInput(req *playv1.RollSceneCheckRequest) (rollInput, error) {
 	var in rollInput
@@ -906,10 +901,10 @@ func (c *sceneRollCall) replay(ctx context.Context, sessionID string) (bool, err
 	}
 	c.out.doneRow = done
 	if done.Kind != eventSceneCheckRolled {
-		return false, errBadIdempotencyKey()
+		return false, errKeyReused()
 	}
 	if done.ActorUserID == nil || *done.ActorUserID != c.m.UserID || hashDiffers(done.IdempotencyHash, c.hash) {
-		return false, errBadIdempotencyKey()
+		return false, errKeyReused()
 	}
 	c.out.repeated = true
 	c.out.rollID, c.out.at = done.ID, done.CreatedAt
@@ -1125,7 +1120,7 @@ func (g grantSceneCall) replay(ctx context.Context, q *playdb.Queries, sessionID
 	var prev sceneGrantEvent
 	if done.Kind != eventSceneAttemptGranted || json.Unmarshal(done.Payload, &prev) != nil ||
 		prev.ActionID != g.actionID || deref(done.CharacterID) != g.characterID {
-		return false, errBadIdempotencyKey()
+		return false, errKeyReused()
 	}
 	return true, nil
 }

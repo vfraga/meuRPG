@@ -621,7 +621,7 @@ func (f *outsideFiring) replay(ctx context.Context, q *playdb.Queries, sessionID
 	switch {
 	case err == nil:
 		if done.Kind != eventTrapTriggered || hashDiffers(done.IdempotencyHash, f.hash) {
-			return false, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+			return false, errKeyReused()
 		}
 		var ev actionEvent
 		if err := json.Unmarshal(done.Payload, &ev); err != nil {

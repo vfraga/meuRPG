@@ -239,7 +239,7 @@ func (s *Service) searchRetried(ctx context.Context, q *playdb.Queries, session 
 	switch {
 	case err == nil:
 		if done.Kind != eventTrapSearched || done.ActorUserID == nil || *done.ActorUserID != ts.m.UserID || hashDiffers(done.IdempotencyHash, ts.hash) {
-			return true, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+			return true, errKeyReused()
 		}
 		ts.repeated = true
 		return true, json.Unmarshal(done.Payload, &ts.ev)

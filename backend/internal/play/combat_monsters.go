@@ -197,7 +197,7 @@ func (s *Service) monstersWrite(ctx context.Context, c *combatTx, call addMonste
 func retriedMonsters(payload []byte, asked monstersEvent) (monstersEvent, error) {
 	ev, err := readEvent(payload)
 	if err != nil || ev.Monsters == nil || !ev.Monsters.sameAdd(asked) {
-		return monstersEvent{}, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+		return monstersEvent{}, errKeyReused()
 	}
 	return *ev.Monsters, nil
 }

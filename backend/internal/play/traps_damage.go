@@ -335,7 +335,7 @@ func (st *trapSettle) replayByEvent(ctx context.Context, q *playdb.Queries, sess
 	case err == nil:
 		var prior actionEvent
 		if done.Kind != st.kind || json.Unmarshal(done.Payload, &prior) != nil || prior.Pending != st.row.ID {
-			return false, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+			return false, errKeyReused()
 		}
 		st.repeated = true // a retry: the damage is as the first call left it
 		return true, nil

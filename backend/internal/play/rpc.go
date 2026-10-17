@@ -256,6 +256,11 @@ func errNoOpenSession() error {
 		"the campaign has no open game session")
 }
 
+// errKeyReused is the refusal of an idempotency key that was used for another change.
+func errKeyReused() error {
+	return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+}
+
 // errBlocked is PlayService's failed_precondition, with the
 // GameSessionBlocked detail that tells the app why.
 func errBlocked(reason playv1.GameSessionBlockedReason, msg string) error {

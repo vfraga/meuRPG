@@ -2,7 +2,6 @@ package play
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"strconv"
@@ -232,7 +231,7 @@ func (s *Service) sightChange(ctx context.Context, campaignID, rawCharacter, raw
 func (s *Service) answerFormChange(ctx context.Context, m authz.Membership, characterID string, res combatResult, ev actionEvent, vitals *playv1.CharacterVitals) (*playv1.CharacterVitals, *playv1.Encounter, error) {
 	if res.repeated && ev.OwnerCharacter != characterID {
 		// The key is another character's change: never answer with that character's vitals.
-		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+		return nil, nil, errKeyReused()
 	}
 	if res.repeated {
 		var err error

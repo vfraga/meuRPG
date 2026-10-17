@@ -121,7 +121,7 @@ func (s *Service) giveOutsideTx(ctx context.Context, m authz.Membership, key str
 // replayGive answers a key the caller already used: the bard, and nothing written.
 func (s *Service) replayGive(ctx context.Context, tx pgx.Tx, m authz.Membership, done playdb.GetSessionEventByIdempotencyKeyRow, given *outsideGiven) error {
 	if done.ActorUserID == nil || *done.ActorUserID != m.UserID {
-		return connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+		return errKeyReused()
 	}
 	bard, _, err := s.myCharacter(ctx, tx, m)
 	given.bard = bard

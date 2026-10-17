@@ -74,7 +74,7 @@ func (s *Service) StartEncounter(
 	}
 	if res.repeated && !sameStart(res.payload, call.digest) {
 		// A retry answers with the first start only when it asks for the same one.
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
+		return nil, errKeyReused()
 	}
 	enc, err := s.finishStart(ctx, call.m, res, out)
 	if err != nil {
