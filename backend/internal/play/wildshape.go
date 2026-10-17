@@ -297,74 +297,6 @@ func (s *Service) LeaveWildShape(
 	return connect.NewResponse(&playv1.LeaveWildShapeResponse{Vitals: vitals, Encounter: enc}), nil
 }
 
-// playerCharacterOf finds the character a caller may change inside a write: a
-// living player's character of the campaign that the master, or its own player,
-// acts for. It returns it, and the combat it is in, if it is a combatant of one that
-// is not ended (c.enc is then set).
-func (s *Service) playerCharacterOf(ctx context.Context, c *combatTx, m authz.Membership, characterID string) (link.Character, *playdb.Combatant, []playdb.Combatant, error) {
-	chars, err := s.roster.CombatCharacters(ctx, c.tx, m.CampaignID, []string{characterID})
-	if err != nil {
-		return link.Character{}, nil, nil, err
-	}
-	if len(chars) != 1 || !chars[0].Player {
-		return link.Character{}, nil, nil, errCharacterNotFound()
-	}
-	if m.Role != authz.RoleMaster && chars[0].PlayerUserID != m.UserID {
-		return link.Character{}, nil, nil, connect.NewError(connect.CodePermissionDenied, errors.New("only the character's player or the master may do this"))
-	}
-	enc, cs, found, err := openCombatants(ctx, c.q, c.session.ID)
-	if err != nil {
-		return link.Character{}, nil, nil, err
-	}
-	if !found {
-		return chars[0], nil, nil, nil
-	}
-	isHer := playerRowOf(characterID)
-	for i := range cs {
-		if isHer(cs[i]) {
-			c.enc = enc
-			return chars[0], &cs[i], cs, nil
-		}
-	}
-	return chars[0], nil, nil, nil
-}
-
-// spendAction spends the combatant's action (or its bonus action) for a change
-// made on its turn in a running combat, and fills in what an undo puts back. The
-// master may act again with the action used. It checks that it is the combatant's
-// turn and that it may act, and adds what an undo puts back to ev.
-func (s *Service) spendAction(ctx context.Context, c *combatTx, v combatViewer, who playdb.Combatant, bonus bool, ev *actionEvent) error {
-	if err := s.mustActNow(ctx, c, who); err != nil {
-		return err
-	}
-	used, reason, what := who.ActionUsed, playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ACTION_USED, "the action of this turn is used"
-	if bonus {
-		used, reason, what = who.BonusActionUsed, playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_BONUS_ACTION_USED, "the bonus action of this turn is used"
-	}
-	if used && !v.master {
-		return errEncounter(reason, what)
-	}
-	run, err := breakRun(ctx, c, who)
-	if err != nil {
-		return err
-	}
-	ev.Round, ev.Secret, ev.Actor, ev.RunBefore = c.enc.Round, who.Hidden, who.ID, run
-	ev.ActionBefore, ev.BonusBefore, ev.ReactionBefore, ev.DashedBefore = who.ActionUsed, who.BonusActionUsed, who.ReactionUsed, who.Dashed
-	ev.Spent = true
-	after := who
-	if bonus {
-		after.BonusActionUsed = true
-	} else {
-		after.ActionUsed = true
-	}
-	if err := c.q.SetCombatantEconomy(ctx, playdb.SetCombatantEconomyParams{
-		ID: who.ID, ActionUsed: after.ActionUsed, BonusActionUsed: after.BonusActionUsed, ReactionUsed: after.ReactionUsed, Dashed: after.Dashed,
-	}); err != nil {
-		return fmt.Errorf("spend the action: %w", err)
-	}
-	return nil
-}
-
 // shapeRun is what an AssumeWildShape or LeaveWildShape works with inside its
 // transaction, and what the answer reads after it.
 type shapeRun struct {
@@ -376,16 +308,13 @@ type shapeRun struct {
 
 	made   actionEvent
 	vitals *playv1.CharacterVitals
-	mapID  string
 
-	// who is the character's combatant, when it is in a combat; turns says the
-	// combat has begun, so the change costs an action of a turn. before is the
-	// vitals of a form that is left, and body the numbers the combatant takes.
-	who      *playdb.Combatant
-	inCombat bool
-	turns    bool
-	before   *playv1.CharacterVitals
-	body     link.Character
+	// formScene is where the character stands; the change costs an action of a turn when the
+	// combat has begun. before is the vitals of a form that is left, and body the numbers the
+	// combatant takes.
+	formScene
+	before *playv1.CharacterVitals
+	body   link.Character
 }
 
 // shapeChange is AssumeWildShape (leave false) and LeaveWildShape (leave true):
@@ -436,16 +365,10 @@ func (s *Service) shapeChange(ctx context.Context, campaignID, rawCharacter, raw
 // shapeTx is the Wild Shape transaction: the form is checked, the turn's cost is
 // paid, the form changes and the event gets its fields.
 func (s *Service) shapeTx(ctx context.Context, c *combatTx, r *shapeRun) (any, error) {
-	r.made, r.vitals, r.mapID = actionEvent{}, nil, deref(c.session.CurrentMapID)
-	_, who, _, err := s.playerCharacterOf(ctx, c, r.m, r.characterID)
-	if err != nil {
+	r.made, r.vitals = actionEvent{}, nil
+	var err error
+	if r.formScene, err = s.formSceneOf(ctx, c, r.m, r.characterID); err != nil {
 		return nil, err
-	}
-	r.who = who
-	r.inCombat = who != nil
-	r.turns = r.inCombat && c.enc.Status == statusActive // in SETUP nobody has a turn to spend
-	if r.inCombat {
-		r.mapID = deref(c.enc.MapID)
 	}
 	if err := s.shapeCheck(ctx, c, r); err != nil {
 		return nil, err
@@ -511,24 +434,16 @@ func (s *Service) shapeApply(ctx context.Context, c *combatTx, r *shapeRun) erro
 	return err
 }
 
-// shapeSeal fills in the event's owner and, in a combat, gives the combatant the
-// numbers of its form, sets the event's combat, round and actor and touches the
-// combat.
+// shapeSeal gives the combatant the numbers of its form, in a combat, and seals the event.
 func (s *Service) shapeSeal(ctx context.Context, c *combatTx, r *shapeRun) (any, error) {
-	r.made.OwnerCharacter = r.characterID
 	if r.inCombat {
 		if err := applyBody(ctx, c, *r.who, r.body); err != nil {
 			return nil, err
 		}
-		r.made.EncounterID = c.enc.ID
-		if r.made.Actor == "" { // in SETUP no action is spent: still the combatant's
-			r.made.Round, r.made.Secret, r.made.Actor = c.enc.Round, r.who.Hidden, r.who.ID
-		}
-		if err := touchEncounter(ctx, c); err != nil {
-			return nil, err
-		}
 	}
-	c.characterID = &r.characterID
+	if err := r.seal(ctx, c, r.characterID, &r.made); err != nil {
+		return nil, err
+	}
 	return r.made, nil
 }
 

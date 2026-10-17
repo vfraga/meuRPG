@@ -179,14 +179,8 @@ type sightRun struct {
 
 	made   actionEvent
 	vitals *playv1.CharacterVitals
-	mapID  string
 
-	// who and cs are the character's combatant and the combat's, when it is in one;
-	// turns says the combat has begun, so the sight costs the action of a turn.
-	who      *playdb.Combatant
-	cs       []playdb.Combatant
-	inCombat bool
-	turns    bool
+	formScene // where the character stands; the sight costs the action of a turn when it has begun
 }
 
 // sightChange is StartFamiliarSight (stop false) and StopFamiliarSight (stop true).
@@ -225,47 +219,13 @@ func (s *Service) sightChange(ctx context.Context, campaignID, rawCharacter, raw
 	return vitals, out, nil
 }
 
-// answerFormChange is what a change of a form or a sight answers with, after its
-// transaction: a retry of another character's change is refused, a retry answers
-// with the vitals as they are now, and a change made in a combat tells the combat.
-func (s *Service) answerFormChange(ctx context.Context, m authz.Membership, characterID string, res combatResult, ev actionEvent, vitals *playv1.CharacterVitals) (*playv1.CharacterVitals, *playv1.Encounter, error) {
-	if res.repeated && ev.OwnerCharacter != characterID {
-		// The key is another character's change: never answer with that character's vitals.
-		return nil, nil, errKeyReused()
-	}
-	if res.repeated {
-		var err error
-		if vitals, err = s.vitals.GetVitals(ctx, m.CampaignID, characterID); err != nil {
-			return nil, nil, s.dbError(ctx, "get vitals", err)
-		}
-	}
-	if ev.EncounterID == "" {
-		return vitals, nil, nil
-	}
-	res.encounterID = ev.EncounterID
-	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
-		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
-		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	return vitals, out, nil
-}
-
 // sightTx is the sight transaction: where the character stands in the table's
 // play, then the start or the stop, then the event's own fields.
 func (s *Service) sightTx(ctx context.Context, c *combatTx, r *sightRun) (any, error) {
-	r.made, r.vitals, r.mapID = actionEvent{}, nil, deref(c.session.CurrentMapID)
-	_, who, cs, err := s.playerCharacterOf(ctx, c, r.m, r.characterID)
-	if err != nil {
+	r.made, r.vitals = actionEvent{}, nil
+	var err error
+	if r.formScene, err = s.formSceneOf(ctx, c, r.m, r.characterID); err != nil {
 		return nil, err
-	}
-	r.who, r.cs = who, cs
-	r.inCombat = who != nil
-	r.turns = r.inCombat && c.enc.Status == statusActive
-	if r.inCombat {
-		r.mapID = deref(c.enc.MapID)
 	}
 	now, err := s.vitals.GetVitalsTx(ctx, c.tx, c.session.CampaignID, r.characterID)
 	if err != nil {
@@ -373,20 +333,11 @@ func (s *Service) sightInReach(ctx context.Context, c *combatTx, r *sightRun, fa
 	return nil
 }
 
-// sightSeal fills in the event's owner and, in a combat, its combat, round and
-// actor, and touches the combat.
+// sightSeal seals the event of the sight.
 func (s *Service) sightSeal(ctx context.Context, c *combatTx, r *sightRun) (any, error) {
-	r.made.OwnerCharacter = r.characterID
-	if r.inCombat {
-		r.made.EncounterID = c.enc.ID
-		if r.made.Actor == "" {
-			r.made.Round, r.made.Secret, r.made.Actor = c.enc.Round, r.who.Hidden, r.who.ID
-		}
-		if err := touchEncounter(ctx, c); err != nil {
-			return nil, err
-		}
+	if err := r.seal(ctx, c, r.characterID, &r.made); err != nil {
+		return nil, err
 	}
-	c.characterID = &r.characterID
 	return r.made, nil
 }
 
@@ -466,26 +417,6 @@ func (s *Service) sightUndo(ctx context.Context, c *combatTx, ev actionEvent, fi
 	}
 	keep(after)
 	c.told = append(c.told, after)
-	return nil
-}
-
-// putBackSpentAction gives back what a change spent on its turn: the economy and
-// the running start the event kept. It does nothing for a change that spent
-// nothing (the master's, or one made in SETUP).
-func putBackSpentAction(ctx context.Context, c *combatTx, who playdb.Combatant, ev actionEvent) error {
-	if !ev.Spent {
-		return nil
-	}
-	if err := c.q.SetCombatantEconomy(ctx, playdb.SetCombatantEconomyParams{
-		ID: who.ID, ActionUsed: ev.ActionBefore, BonusActionUsed: ev.BonusBefore, ReactionUsed: ev.ReactionBefore, Dashed: ev.DashedBefore,
-	}); err != nil {
-		return fmt.Errorf("put back the economy: %w", err)
-	}
-	if ev.RunBefore != 0 {
-		if err := c.q.SetCombatantRun(ctx, playdb.SetCombatantRunParams{ID: who.ID, LastMoveDft: ev.RunBefore}); err != nil {
-			return fmt.Errorf("put back the running start: %w", err)
-		}
-	}
 	return nil
 }
 
