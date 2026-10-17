@@ -250,7 +250,7 @@ func (s *Service) applyHintTry(ctx context.Context, tx pgx.Tx, m authz.Membershi
 // lock locks the session's row, reads the shown puzzle and locks its run.
 func (h *hintTryTx) lock(ctx context.Context, puzzleID string) error {
 	var err error
-	if h.session, err = lockOpenSession(ctx, h.q, h.m.CampaignID); err != nil {
+	if h.session, err = lockOpenSessionOr(ctx, h.q, h.m.CampaignID, errNoOpenSessionForPuzzle); err != nil {
 		return err
 	}
 	if h.d, _, err = h.s.shownRun(ctx, h.q, h.session, h.m.CampaignID, puzzleID); err != nil {

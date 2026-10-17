@@ -160,6 +160,25 @@ func openSessionWith(ctx context.Context, q *playdb.Queries, campaignID string) 
 	return session, nil
 }
 
+// lockOpenSession locks the campaign's open game session inside the transaction of q, or
+// refuses with the answer of a table without one.
+func lockOpenSession(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, error) {
+	return lockOpenSessionOr(ctx, q, campaignID, errNoOpenSession)
+}
+
+// lockOpenSessionOr is lockOpenSession for a call that tells the lack of a session in its own
+// words: noSession builds the refusal.
+func lockOpenSessionOr(ctx context.Context, q *playdb.Queries, campaignID string, noSession func() error) (playdb.GameSession, error) {
+	session, err := q.GetOpenGameSessionForUpdate(ctx, campaignID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return playdb.GameSession{}, noSession()
+	}
+	if err != nil {
+		return playdb.GameSession{}, fmt.Errorf("lock the open session: %w", err)
+	}
+	return session, nil
+}
+
 // encounterInSessionWith finds an encounter of the open session, or the
 // "encounter not found" error. Like openSessionWith, for a read-only transaction.
 func encounterInSessionWith(ctx context.Context, q *playdb.Queries, sessionID, encounterID string) (playdb.Encounter, error) {

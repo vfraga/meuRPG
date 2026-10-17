@@ -584,12 +584,9 @@ func charactersCaught(living []link.Character, at map[string]grid.Square, trap m
 func (s *Service) fireOutsideTx(ctx context.Context, tx pgx.Tx, f *outsideFiring) error {
 	q := s.queries.WithTx(tx)
 	f.fired, f.firingID, f.repeated = nil, "", false
-	session, err := q.GetOpenGameSessionForUpdate(ctx, f.campaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession()
-	}
+	session, err := lockOpenSession(ctx, q, f.campaignID)
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	if done, err := f.replay(ctx, q, session.ID); err != nil || done {
 		return err

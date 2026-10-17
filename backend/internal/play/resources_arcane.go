@@ -128,7 +128,7 @@ func (s *Service) UseArcaneRecovery(
 // keeper's recovery, the short rest it needs, the event.
 func (s *Service) arcaneRecoveryTx(ctx context.Context, tx pgx.Tx, call arcaneCall, run *arcaneRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID)
+	session, err := lockOpenSession(ctx, q, call.m.CampaignID)
 	if err != nil {
 		return err
 	}

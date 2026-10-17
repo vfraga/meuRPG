@@ -71,12 +71,9 @@ type gameTimeDone struct {
 // the first call did; a combat that runs stops it.
 func (s *Service) advanceGameTimeIn(ctx context.Context, tx pgx.Tx, m authz.Membership, keyText string, hash *string, seconds int32, done *gameTimeDone) error {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession()
-	}
+	session, err := lockOpenSession(ctx, q, m.CampaignID)
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	first, again, err := eventByKey(ctx, q, session.ID, keyText, eventGameTimeAdvanced, hash)
 	if err != nil {

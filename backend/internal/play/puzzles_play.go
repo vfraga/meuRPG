@@ -239,7 +239,7 @@ func (s *Service) MakePuzzleMove(
 // change where the pieces end.
 func (s *Service) applyMove(ctx context.Context, tx pgx.Tx, m authz.Membership, puzzleID, key string, mv *playv1.PuzzleMove, res *moveResult) (runNames, error) {
 	q := s.queriesIn(tx)
-	session, err := lockOpenSession(ctx, q, m.CampaignID)
+	session, err := lockOpenSessionOr(ctx, q, m.CampaignID, errNoOpenSessionForPuzzle)
 	if err != nil {
 		return nil, err
 	}

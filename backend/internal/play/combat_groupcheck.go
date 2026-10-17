@@ -71,12 +71,9 @@ func (s *Service) groupWrite(ctx context.Context, m authz.Membership, key string
 	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
 		ev, repeated = groupCheckEvent{}, false
 		q := s.queries.WithTx(tx)
-		session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return errNoOpenSession()
-		}
+		session, err := lockOpenSession(ctx, q, m.CampaignID)
 		if err != nil {
-			return fmt.Errorf("lock the open session: %w", err)
+			return err
 		}
 		replayed, found, err := groupReplay(ctx, q, session.ID, call)
 		if err != nil {

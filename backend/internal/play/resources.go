@@ -290,7 +290,7 @@ func (s *Service) TakeRest(
 // and the clock, the combats that show the vitals, the event.
 func (s *Service) takeRestTx(ctx context.Context, tx pgx.Tx, call restCall, run *restRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID)
+	session, err := lockOpenSession(ctx, q, call.m.CampaignID)
 	if err != nil {
 		return err
 	}
@@ -495,7 +495,7 @@ func (s *Service) SpendHitDice(
 // spendHitDiceTx is the transaction of SpendHitDice: lock, retry, who may, roll, spend, write.
 func (s *Service) spendHitDiceTx(ctx context.Context, tx pgx.Tx, call hitDiceCall, run *hitDiceRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID)
+	session, err := lockOpenSession(ctx, q, call.m.CampaignID)
 	if err != nil {
 		return err
 	}
@@ -550,19 +550,6 @@ func (s *Service) spendHitDieRolled(ctx context.Context, tx pgx.Tx, q *playdb.Qu
 		SongSides: clamp32(songSides, 0, maxHitDie), SongFace: clamp32(songFace, 0, maxHitDie),
 	}
 	return nil
-}
-
-// lockOpenSessionOrNone locks the campaign's open session in the transaction of q, or
-// refuses with the answer of a table without one.
-func lockOpenSessionOrNone(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, error) {
-	session, err := q.GetOpenGameSessionForUpdate(ctx, campaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return playdb.GameSession{}, errNoOpenSession()
-	}
-	if err != nil {
-		return playdb.GameSession{}, fmt.Errorf("lock the open session: %w", err)
-	}
-	return session, nil
 }
 
 // requireCharacterOwnerOrMaster refuses a member who is neither the master nor the

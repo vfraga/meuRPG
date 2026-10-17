@@ -120,7 +120,7 @@ func (s *Service) changeRun(ctx context.Context, m authz.Membership, rawID strin
 // lockRunTx takes the locks of a change in their one order: the session's row, the puzzle, the run
 // (none yet: the puzzle was never shown in this session).
 func (s *Service) lockRunTx(ctx context.Context, q *playdb.Queries, m authz.Membership, id string) (*runTx, error) {
-	session, err := lockOpenSession(ctx, q, m.CampaignID)
+	session, err := lockOpenSessionOr(ctx, q, m.CampaignID, errNoOpenSessionForPuzzle)
 	if err != nil {
 		return nil, err
 	}

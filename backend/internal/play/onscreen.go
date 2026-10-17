@@ -56,12 +56,9 @@ func (s *Service) SetCurrentMap(
 		q := s.queries.WithTx(tx)
 		// Lock the open session, like every change made during it: an end
 		// in progress finishes first, and this call then sees no session.
-		session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return errNoOpenSession()
-		}
+		session, err := lockOpenSession(ctx, q, m.CampaignID)
 		if err != nil {
-			return fmt.Errorf("lock the open session: %w", err)
+			return err
 		}
 		if mapID != nil {
 			// The players see the current map, so it is revealed with it,
@@ -182,12 +179,9 @@ func (s *Service) swapShownImage(ctx context.Context, campaignID string, imageID
 // swapShownImageIn is swapShownImage's transaction.
 func (s *Service) swapShownImageIn(ctx context.Context, tx pgx.Tx, campaignID string, imageID *string, keep bool, shownCopy ShownCopy, out *shownOutcome) error {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, campaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession()
-	}
+	session, err := lockOpenSession(ctx, q, campaignID)
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	// An image kept leaves with the players when it stops being shown:
 	// replaced by another, or by nothing. The same image again only

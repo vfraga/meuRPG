@@ -163,12 +163,9 @@ func (s *Service) changeStage(ctx context.Context, m authz.Membership, what stri
 	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.queries.WithTx(tx)
 		changed = false
-		session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return errNoOpenSession()
-		}
+		session, err := lockOpenSession(ctx, q, m.CampaignID)
 		if err != nil {
-			return fmt.Errorf("lock the open session: %w", err)
+			return err
 		}
 		sessionID = session.ID
 		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now()})

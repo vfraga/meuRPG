@@ -133,12 +133,9 @@ func (s *Service) RequestRevivify(
 	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
 		replayed = false
 		q := s.queries.WithTx(tx)
-		session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return errNoOpenSession()
-		}
+		session, err := lockOpenSession(ctx, q, m.CampaignID)
 		if err != nil {
-			return fmt.Errorf("lock the open session: %w", err)
+			return err
 		}
 		get := func(ctx context.Context, k *string) (playdb.RevivifyRequest, error) {
 			return q.GetRevivifyRequestByCreateKey(ctx, playdb.GetRevivifyRequestByCreateKeyParams{CampaignID: m.CampaignID, CreateKey: k})
@@ -339,12 +336,9 @@ func (s *Service) ConfirmRevivifyTime(
 // "já passou" ends the request at no cost.
 func (s *Service) answerRevivify(ctx context.Context, tx pgx.Tx, m authz.Membership, in revivifyAnswer, out *revivifyAnswered) error {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession()
-	}
+	session, err := lockOpenSession(ctx, q, m.CampaignID)
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	row, replayed, err := s.pendingRevivify(ctx, q, session, m, in)
 	if err != nil {

@@ -199,12 +199,9 @@ func searchSecondFace(msg *playv1.SearchForTrapsRequest, in rollInput, skill str
 func (s *Service) searchInTx(ctx context.Context, tx pgx.Tx, ts *trapSearch) error {
 	q := s.queries.WithTx(tx)
 	ts.repeated, ts.told, ts.place, ts.offer, ts.lucky = false, nil, searchPlace{}, nil, nil
-	session, err := q.GetOpenGameSessionForUpdate(ctx, ts.m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession()
-	}
+	session, err := lockOpenSession(ctx, q, ts.m.CampaignID)
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	if done, err := s.searchRetried(ctx, q, session, ts); done || err != nil {
 		return err

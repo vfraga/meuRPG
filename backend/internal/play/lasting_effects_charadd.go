@@ -127,12 +127,9 @@ func (s *Service) AddCharacterEffect(
 // answers what was made and the vitals the streams are told after the commit.
 func (s *Service) giveCharacterEffect(ctx context.Context, tx pgx.Tx, m authz.Membership, in charEffectInput, hash *string, msg *playv1.AddCharacterEffectRequest) (charEffectEvent, []*playv1.CharacterVitals, error) {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return charEffectEvent{}, nil, errNoOpenSession()
-	}
+	session, err := lockOpenSession(ctx, q, m.CampaignID)
 	if err != nil {
-		return charEffectEvent{}, nil, fmt.Errorf("lock the open session: %w", err)
+		return charEffectEvent{}, nil, err
 	}
 	done, again, err := eventByKey(ctx, q, session.ID, in.key, eventLastingAdded, hash)
 	if err != nil {

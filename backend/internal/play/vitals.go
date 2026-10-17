@@ -101,7 +101,7 @@ func (s *Service) AdjustCharacterVitals(
 // event, the beast form that ended, the combat that shows it, the concentration.
 func (s *Service) adjustVitalsTx(ctx context.Context, tx pgx.Tx, call adjustCall, run *adjustRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID) // RN-02: during the session
+	session, err := lockOpenSession(ctx, q, call.m.CampaignID) // RN-02: during the session
 	if err != nil {
 		return err
 	}

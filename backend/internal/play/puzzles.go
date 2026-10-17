@@ -595,19 +595,6 @@ func puzzleSessionEvent(ctx context.Context, q *playdb.Queries, session playdb.G
 	return nil
 }
 
-// lockOpenSession locks the campaign's open session inside tx, the first step of
-// every change to a run, or fails with NO_OPEN_SESSION.
-func lockOpenSession(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, error) {
-	session, err := q.GetOpenGameSessionForUpdate(ctx, campaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return playdb.GameSession{}, errNoOpenSessionForPuzzle()
-	}
-	if err != nil {
-		return playdb.GameSession{}, fmt.Errorf("lock the open session: %w", err)
-	}
-	return session, nil
-}
-
 // requireMaster is the check at the top of the master's handlers.
 func requireMaster(ctx context.Context, campaignID string) (authz.Membership, error) {
 	return authz.RequireCampaignRole(ctx, campaignID, authz.RoleMaster)

@@ -181,12 +181,9 @@ func (s *Service) endCharacterEffect(
 // retry from the event it wrote, end the effect or its casting, and write the event.
 func (s *Service) endCharacterEffectTx(ctx context.Context, tx pgx.Tx, m authz.Membership, msg *playv1.EndLastingEffectRequest, id, key string, hash *string, out *endCharacterEnd) error {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession()
-	}
+	session, err := lockOpenSession(ctx, q, m.CampaignID)
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	done, again, err := eventByKey(ctx, q, session.ID, key, eventLastingEnded, hash)
 	if err != nil {

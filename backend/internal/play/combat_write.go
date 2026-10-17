@@ -329,12 +329,9 @@ func (s *Service) writeOnce(ctx context.Context, w combatWrite, sight *fogSight,
 // key already used, the change itself, what follows from it and its event.
 func (s *Service) changeInTx(ctx context.Context, tx pgx.Tx, w combatWrite, sight *fogSight, do func(c *combatTx) (payload any, err error), run *changeRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, w.m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession() // MR-013: during the session
-	}
+	session, err := lockOpenSession(ctx, q, w.m.CampaignID) // MR-013: during the session
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	run.res.session = session
 
