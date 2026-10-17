@@ -560,23 +560,6 @@ func setConditionsOf(ctx context.Context, c *combatTx, who playdb.Combatant, con
 	return nil
 }
 
-func combatantByID(cs []playdb.Combatant, id string) (playdb.Combatant, bool) {
-	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.ID == id })
-	if i < 0 {
-		return playdb.Combatant{}, false
-	}
-	return cs[i], true
-}
-
-// withIDs is the combatants of a list by id.
-func combatantsByID(cs []playdb.Combatant) map[string]playdb.Combatant {
-	out := make(map[string]playdb.Combatant, len(cs))
-	for _, c := range cs {
-		out[c.ID] = c
-	}
-	return out
-}
-
 // isGrappled says whether a combatant carries the Grappled condition.
 func isGrappled(c playdb.Combatant) bool { return slices.Contains(c.Conditions, condGrappled) }
 

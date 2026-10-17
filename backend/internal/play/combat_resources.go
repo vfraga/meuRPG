@@ -900,10 +900,7 @@ func layOnHandsTargets(terrain grid.Terrain, cs []playdb.Combatant, who playdb.C
 func bardicInspirationTargets(terrain grid.Terrain, cs []playdb.Combatant, who playdb.Combatant, v combatViewer, enc playdb.Encounter) *playv1.ResourceTargets {
 	theatre := isTheatre(enc)
 	voice := resourceList(bardicInspirationFt)
-	byID := map[string]playdb.Combatant{}
-	for _, c := range cs {
-		byID[c.ID] = c
-	}
+	byID := combatantsByID(cs)
 	for _, t := range targetsFor(terrain, cs, who, v, rules.BardicInspirationRangeFt, theatre) {
 		voice.Targets = append(voice.Targets, &playv1.ResourceTarget{Target: t, DisabledReasonPt: bardicTargetReason(t, byID[t.GetCombatantId()], theatre, enc.Round)})
 	}

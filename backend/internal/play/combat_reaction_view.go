@@ -66,10 +66,7 @@ func (s *Service) reactionView(ctx context.Context, m authz.Membership, d *encou
 	if len(open) == 0 && len(offers) == 0 && len(reveals) == 0 {
 		return nil, nil, nil
 	}
-	wv := &windowView{s: s, ctx: ctx, m: m, v: v, d: d, names: names, byID: make(map[string]playdb.Combatant, len(d.cs))}
-	for _, x := range d.cs {
-		wv.byID[x.ID] = x
-	}
+	wv := &windowView{s: s, ctx: ctx, m: m, v: v, d: d, names: names, byID: combatantsByID(d.cs)}
 	var wait reaction.Wait
 	holds := reaction.HoldsTurn
 	holdsSet := false

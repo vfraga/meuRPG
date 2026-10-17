@@ -482,7 +482,7 @@ func statesFor(states []playdb.CombatantState, cs []playdb.Combatant, v combatVi
 		if isEffect(st) { // the effects that last have their own cards (lasting_effects_view.go)
 			continue
 		}
-		source, _ := findByID(cs, deref(st.SourceID))
+		source, _ := combatantByID(cs, deref(st.SourceID))
 		if st.Kind == stateMark && !v.master && !v.owns(source) {
 			continue
 		}
@@ -506,14 +506,6 @@ func statesFor(states []playdb.CombatantState, cs []playdb.Combatant, v combatVi
 		out = append(out, e)
 	}
 	return out
-}
-
-func findByID(cs []playdb.Combatant, id string) (playdb.Combatant, bool) {
-	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.ID == id })
-	if i < 0 {
-		return playdb.Combatant{}, false
-	}
-	return cs[i], true
 }
 
 func derefInt32(n *int32) int32 {
@@ -665,7 +657,7 @@ func (s *Service) afterConditionsSet(ctx context.Context, c *combatTx, target pl
 func conditionSourcesFor(who playdb.Combatant, cs []playdb.Combatant, v combatViewer, names func(string) string) []*playv1.ConditionSource {
 	var out []*playv1.ConditionSource
 	for _, src := range readConditionSources(who.ConditionSources) {
-		source, _ := findByID(cs, src.SourceID)
+		source, _ := combatantByID(cs, src.SourceID)
 		if source.ID != "" && !v.sees(source) {
 			continue // what a player does not see never explains a condition (RN-10)
 		}
@@ -682,7 +674,7 @@ func conditionSourcesFor(who playdb.Combatant, cs []playdb.Combatant, v combatVi
 		if source.Label != "" {
 			item.TextPt += " (" + source.Label + ")"
 		}
-		if ends, ok := findByID(cs, src.EndsCombatantID); ok && v.sees(ends) {
+		if ends, ok := combatantByID(cs, src.EndsCombatantID); ok && v.sees(ends) {
 			when := "até o fim da vez de "
 			if src.EndsPhase == "start_of_turn" {
 				when = "até o começo da vez de "
@@ -699,7 +691,7 @@ func conditionSourcesFor(who playdb.Combatant, cs []playdb.Combatant, v combatVi
 func (s *Service) rollModeRequestsFor(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer) []*playv1.RollModeRequest {
 	var out []*playv1.RollModeRequest
 	for _, r := range d.requests {
-		who, ok := findByID(d.cs, r.CombatantID)
+		who, ok := combatantByID(d.cs, r.CombatantID)
 		if !ok || (!v.master && !v.owns(who)) {
 			continue
 		}

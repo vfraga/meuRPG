@@ -2,7 +2,6 @@ package play
 
 import (
 	"context"
-	"slices"
 
 	"connectrpc.com/connect"
 
@@ -33,20 +32,11 @@ func (s *Service) opportunityOffers(ctx context.Context, m authz.Membership, d *
 	return out, nil
 }
 
-// combatantIn finds a combatant of the list by id.
-func combatantIn(cs []playdb.Combatant, id string) (playdb.Combatant, bool) {
-	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.ID == id })
-	if i < 0 {
-		return playdb.Combatant{}, false
-	}
-	return cs[i], true
-}
-
 // offerForViewer is one pending offer as v reads it, or false when it is not v's
 // to know.
 func (s *Service) offerForViewer(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, o playdb.OpportunityOffer) (*playv1.OpportunityOffer, bool) {
-	mover, ok1 := combatantIn(d.cs, o.MoverID)
-	reactor, ok2 := combatantIn(d.cs, o.ReactorID)
+	mover, ok1 := combatantByID(d.cs, o.MoverID)
+	reactor, ok2 := combatantByID(d.cs, o.ReactorID)
 	// The mover is judged on the square it left: a retreating NPC the player saw
 	// leave still has the offer for their reactor, though they do not see it now.
 	if !ok1 || !ok2 || !v.seesAtOffer(mover, o) {

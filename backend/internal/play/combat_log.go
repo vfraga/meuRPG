@@ -184,10 +184,7 @@ func (s *Service) ListCombatLog(
 	}
 
 	names := &keyNames{s: s, campaignID: m.CampaignID, byCharacter: map[string]link.Sheet{}}
-	byID := make(map[string]playdb.Combatant, len(snap.cs))
-	for _, c := range snap.cs {
-		byID[c.ID] = c
-	}
+	byID := combatantsByID(snap.cs)
 	// Latest first, in groups by round.
 	for _, e := range slices.Backward(entries) {
 		out, ok := e.view(ctx, v, byID, names, lastID)

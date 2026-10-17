@@ -780,6 +780,24 @@ func errEncounter(reason playv1.EncounterBlockedReason, msg string, edit ...func
 	return err
 }
 
+// combatantByID finds a combatant of the list by id.
+func combatantByID(cs []playdb.Combatant, id string) (playdb.Combatant, bool) {
+	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.ID == id })
+	if i < 0 {
+		return playdb.Combatant{}, false
+	}
+	return cs[i], true
+}
+
+// combatantsByID maps the combatants of a list by id.
+func combatantsByID(cs []playdb.Combatant) map[string]playdb.Combatant {
+	out := make(map[string]playdb.Combatant, len(cs))
+	for _, c := range cs {
+		out[c.ID] = c
+	}
+	return out
+}
+
 // findCombatant returns the combatant with the ID, or `not_found`; for a
 // player, a hidden one is not found either (RN-10), and one that is not
 // theirs is `permission_denied`.

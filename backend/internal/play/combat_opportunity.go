@@ -219,10 +219,7 @@ func (s *Service) pruneOffers(ctx context.Context, c *combatTx) error {
 	if err != nil {
 		return fmt.Errorf("list the combatants: %w", err)
 	}
-	byID := make(map[string]playdb.Combatant, len(cs))
-	for _, m := range cs {
-		byID[m.ID] = m
-	}
+	byID := combatantsByID(cs)
 	for _, o := range pending {
 		dead, err := s.nobodyCanAnswer(ctx, c, byID, o)
 		if err != nil {

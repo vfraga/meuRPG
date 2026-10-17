@@ -81,10 +81,7 @@ func (s *Service) effectViewerFor(ctx context.Context, m authz.Membership, d *en
 	if err != nil {
 		return nil, s.dbError(ctx, "read the rules content", err)
 	}
-	ev := &effectViewer{s: s, m: m, v: v, d: d, content: content, names: names, byID: make(map[string]playdb.Combatant, len(d.cs))}
-	for _, c := range d.cs {
-		ev.byID[c.ID] = c
-	}
+	ev := &effectViewer{s: s, m: m, v: v, d: d, content: content, names: names, byID: combatantsByID(d.cs)}
 	return ev, nil
 }
 

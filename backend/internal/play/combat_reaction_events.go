@@ -125,10 +125,7 @@ func (s *Service) publishReactions(ctx context.Context, campaignID string, res c
 		s.logger.WarnContext(ctx, "play: cannot read the combatants to tell the reactions", "error", err)
 		return
 	}
-	byID := make(map[string]playdb.Combatant, len(cs))
-	for _, x := range cs {
-		byID[x.ID] = x
-	}
+	byID := combatantsByID(cs)
 	for _, n := range res.notes {
 		s.publishNote(campaignID, res.encounterID, n, byID)
 	}

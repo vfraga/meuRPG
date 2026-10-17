@@ -169,10 +169,7 @@ func (s *Service) castProto(ctx context.Context, res combatResult, ev actionEven
 	if err != nil {
 		return nil, s.dbError(ctx, "list the combatants", err)
 	}
-	byID := make(map[string]playdb.Combatant, len(cs))
-	for _, c := range cs {
-		byID[c.ID] = c
-	}
+	byID := combatantsByID(cs)
 	caster := byID[ev.Actor]
 	out := castHeaderProto(ev, v, caster)
 	for _, h := range ev.Hits {
