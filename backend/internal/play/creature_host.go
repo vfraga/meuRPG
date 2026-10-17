@@ -65,6 +65,52 @@ func (s *Service) CreaturesLeaving(ctx context.Context, tx pgx.Tx, campaignID, a
 	return enc.ID, nil
 }
 
+// openCombatants is the open combat of the session and its combatants; false when the session
+// has no combat that is not ended.
+func openCombatants(ctx context.Context, q *playdb.Queries, sessionID string) (playdb.Encounter, []playdb.Combatant, bool, error) {
+	enc, err := q.GetOpenEncounter(ctx, sessionID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return enc, nil, false, nil
+	}
+	if err != nil {
+		return enc, nil, false, fmt.Errorf("find the open encounter: %w", err)
+	}
+	cs, err := q.ListCombatants(ctx, enc.ID)
+	if err != nil {
+		return enc, nil, false, fmt.Errorf("list the combatants: %w", err)
+	}
+	return enc, cs, true, nil
+}
+
+// The questions "is this character in the combat" differ on purpose, so each one has a
+// predicate of its own and the caller names the one it asks.
+
+// undismissedOf matches a combatant of the character, of any kind, that was not dismissed: a
+// defeated one still counts (a cast outside the combat is refused for it).
+func undismissedOf(characterID string) func(playdb.Combatant) bool {
+	return func(o playdb.Combatant) bool { return o.CharacterID == characterID && !o.Dismissed }
+}
+
+// playerRowOf matches the character's player combatant, dismissed or defeated or not.
+func playerRowOf(characterID string) func(playdb.Combatant) bool {
+	return func(o playdb.Combatant) bool { return o.Kind == kindPlayer && o.CharacterID == characterID }
+}
+
+// playerNotDefeatedOf matches the character's player combatant while it is still up: a defeated
+// one is out of the fight, so a Revivify request is allowed for it.
+func playerNotDefeatedOf(characterID string) func(playdb.Combatant) bool {
+	return func(o playdb.Combatant) bool {
+		return o.Kind == kindPlayer && o.CharacterID == characterID && !o.Defeated
+	}
+}
+
+// defeatedPlayerRowOf matches the character's player combatant once it is defeated.
+func defeatedPlayerRowOf(characterID string) func(playdb.Combatant) bool {
+	return func(o playdb.Combatant) bool {
+		return o.Kind == kindPlayer && o.CharacterID == characterID && o.Defeated
+	}
+}
+
 // openCombatOf is the campaign's open session, locked, and its open combat; false when
 // there is no session or no combat.
 func openCombatOf(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, playdb.Encounter, bool, error) {

@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
@@ -182,18 +181,11 @@ func stageOf(ctx context.Context, q *playdb.Queries, sessionID string) (map[stri
 
 // inCombat says the character is a combatant of the session's combat that is not ended.
 func (s *Service) inCombat(ctx context.Context, q *playdb.Queries, sessionID, characterID string) (bool, error) {
-	enc, err := q.GetOpenEncounter(ctx, sessionID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return false, nil
+	_, cs, found, err := openCombatants(ctx, q, sessionID)
+	if err != nil || !found {
+		return false, err
 	}
-	if err != nil {
-		return false, fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return false, fmt.Errorf("list the combatants: %w", err)
-	}
-	return slices.ContainsFunc(cs, func(o playdb.Combatant) bool { return o.CharacterID == characterID && !o.Dismissed }), nil
+	return slices.ContainsFunc(cs, undismissedOf(characterID)), nil
 }
 
 // guardCast reads the caster and the targets of a cast and checks who may cast for

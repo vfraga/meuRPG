@@ -176,16 +176,9 @@ func (s *Service) requireOutsideCombat(ctx context.Context, tx pgx.Tx, q *playdb
 			return connect.NewError(connect.CodeNotFound, errors.New("character not found"))
 		}
 	}
-	enc, err := q.GetOpenEncounter(ctx, sessionID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return fmt.Errorf("list the combatants: %w", err)
+	_, cs, fighting, err := openCombatants(ctx, q, sessionID)
+	if err != nil || !fighting {
+		return err
 	}
 	if slices.ContainsFunc(cs, func(o playdb.Combatant) bool {
 		return slices.Contains(characterIDs, o.CharacterID) && backedByCharacter(o)

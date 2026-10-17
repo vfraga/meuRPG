@@ -8,7 +8,6 @@ import (
 	"uuid"
 
 	"connectrpc.com/connect"
-	"github.com/jackc/pgx/v5"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
@@ -330,18 +329,11 @@ func (s *Service) summonCaster(ctx context.Context, c *combatTx, r *summonRun) e
 // summonNotInCombat refuses the cast of a character that is in a combat: there it
 // is CastSpell's, with the initiative roll.
 func (s *Service) summonNotInCombat(ctx context.Context, c *combatTx, characterID string) error {
-	enc, err := c.q.GetOpenEncounter(ctx, c.session.ID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil
+	_, cs, found, err := openCombatants(ctx, c.q, c.session.ID)
+	if err != nil || !found {
+		return err
 	}
-	if err != nil {
-		return fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := c.q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return fmt.Errorf("list the combatants: %w", err)
-	}
-	if slices.ContainsFunc(cs, func(o playdb.Combatant) bool { return o.Kind == kindPlayer && o.CharacterID == characterID }) {
+	if slices.ContainsFunc(cs, playerRowOf(characterID)) {
 		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_SUMMON_IN_COMBAT,
 			"the character is in a combat: cast the spell there")
 	}

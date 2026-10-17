@@ -187,20 +187,11 @@ func (s *Service) openRevivifyRequest(ctx context.Context, tx pgx.Tx, q *playdb.
 // refuseCasterInCombat stops a cast outside a combat for a caster that is in one: there the
 // minute is counted.
 func (s *Service) refuseCasterInCombat(ctx context.Context, q *playdb.Queries, sessionID string, caster link.Character) error {
-	enc, err := q.GetOpenEncounter(ctx, sessionID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil
+	_, cs, found, err := openCombatants(ctx, q, sessionID)
+	if err != nil || !found {
+		return err
 	}
-	if err != nil {
-		return fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return fmt.Errorf("list the combatants: %w", err)
-	}
-	if slices.ContainsFunc(cs, func(c playdb.Combatant) bool {
-		return c.Kind == kindPlayer && c.CharacterID == caster.ID && !c.Defeated
-	}) {
+	if slices.ContainsFunc(cs, playerNotDefeatedOf(caster.ID)) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("the caster is in a combat: cast Revivify inside it"))
 	}
 	return nil

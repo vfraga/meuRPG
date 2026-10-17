@@ -217,18 +217,11 @@ func (s *Service) publishAdjusted(ctx context.Context, campaignID string, run ad
 // touched, nil when the character is not in the combat; the caller publishes
 // encounter_changed after the commit. It runs in the change's transaction.
 func (s *Service) touchCombatOf(ctx context.Context, q *playdb.Queries, sessionID, characterID string, ownBody *link.Character) (*playdb.Encounter, error) {
-	enc, err := q.GetOpenEncounter(ctx, sessionID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+	enc, cs, found, err := openCombatants(ctx, q, sessionID)
+	if err != nil || !found {
+		return nil, err
 	}
-	if err != nil {
-		return nil, fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return nil, fmt.Errorf("list the combatants: %w", err)
-	}
-	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.Kind == kindPlayer && c.CharacterID == characterID })
+	i := slices.IndexFunc(cs, playerRowOf(characterID))
 	if i < 0 {
 		return nil, nil
 	}

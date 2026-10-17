@@ -663,20 +663,11 @@ func (s *Service) blockCombatant(ctx context.Context, tx pgx.Tx, q *playdb.Queri
 // blockDeadInCombat carries the switch of a dead character to its combatant in the open combat,
 // if it died there. It returns the combat that changed, empty when none did.
 func (s *Service) blockDeadInCombat(ctx context.Context, q *playdb.Queries, sessionID, characterID string, blocked bool) (string, error) {
-	enc, err := q.GetOpenEncounter(ctx, sessionID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return "", nil
+	enc, cs, found, err := openCombatants(ctx, q, sessionID)
+	if err != nil || !found {
+		return "", err
 	}
-	if err != nil {
-		return "", fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return "", fmt.Errorf("list the combatants: %w", err)
-	}
-	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool {
-		return c.Kind == kindPlayer && c.CharacterID == characterID && c.Defeated
-	})
+	i := slices.IndexFunc(cs, defeatedPlayerRowOf(characterID))
 	if i < 0 {
 		return "", nil
 	}
@@ -693,16 +684,12 @@ func (s *Service) blockDeadInCombat(ctx context.Context, q *playdb.Queries, sess
 // combatantInOpenSession finds a combatant of the combat of the open session that is not ended,
 // or not_found.
 func (s *Service) combatantInOpenSession(ctx context.Context, q *playdb.Queries, sessionID, combatantID string) (playdb.Combatant, error) {
-	enc, err := q.GetOpenEncounter(ctx, sessionID)
-	if errors.Is(err, pgx.ErrNoRows) {
+	_, cs, found, err := openCombatants(ctx, q, sessionID)
+	if err != nil {
+		return playdb.Combatant{}, err
+	}
+	if !found {
 		return playdb.Combatant{}, errCombatantNotFound()
-	}
-	if err != nil {
-		return playdb.Combatant{}, fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return playdb.Combatant{}, fmt.Errorf("list the combatants: %w", err)
 	}
 	for _, c := range cs {
 		if c.ID == combatantID {

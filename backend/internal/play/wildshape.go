@@ -73,7 +73,7 @@ func (s *Service) shapeLine(ctx context.Context, q *playdb.Queries, sessionID, c
 	if err != nil {
 		return "", 0, "", false
 	}
-	i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.Kind == kindPlayer && c.CharacterID == characterID })
+	i := slices.IndexFunc(cs, playerRowOf(characterID))
 	if i < 0 {
 		return "", 0, "", false
 	}
@@ -312,19 +312,16 @@ func (s *Service) playerCharacterOf(ctx context.Context, c *combatTx, m authz.Me
 	if m.Role != authz.RoleMaster && chars[0].PlayerUserID != m.UserID {
 		return link.Character{}, nil, nil, connect.NewError(connect.CodePermissionDenied, errors.New("only the character's player or the master may do this"))
 	}
-	enc, err := c.q.GetOpenEncounter(ctx, c.session.ID)
-	if errors.Is(err, pgx.ErrNoRows) {
+	enc, cs, found, err := openCombatants(ctx, c.q, c.session.ID)
+	if err != nil {
+		return link.Character{}, nil, nil, err
+	}
+	if !found {
 		return chars[0], nil, nil, nil
 	}
-	if err != nil {
-		return link.Character{}, nil, nil, fmt.Errorf("find the open encounter: %w", err)
-	}
-	cs, err := c.q.ListCombatants(ctx, enc.ID)
-	if err != nil {
-		return link.Character{}, nil, nil, fmt.Errorf("list the combatants: %w", err)
-	}
+	isHer := playerRowOf(characterID)
 	for i := range cs {
-		if cs[i].Kind == kindPlayer && cs[i].CharacterID == characterID {
+		if isHer(cs[i]) {
 			c.enc = enc
 			return chars[0], &cs[i], cs, nil
 		}
