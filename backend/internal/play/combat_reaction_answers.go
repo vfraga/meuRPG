@@ -208,7 +208,7 @@ func (s *Service) answerCuttingWords(ctx context.Context, c *combatTx, w playdb.
 		return err
 	}
 	c.lastAnswered = reaction.CuttingWords
-	cut := &playv1.CuttingWordsResult{Die: diceRoll(1, int32(sides), []int32{clamp32(face, 1, 20)}, 0, clamp32(face, 1, 20), r.Physical), Effective: effective, RollKind: cuttingRollKind(t.Roll)} //nolint:gosec // a die size
+	cut := &playv1.CuttingWordsResult{Die: diceRoll(1, int32(sides), []int32{clamp32(face, 1, 20)}, 0, clamp32(face, 1, 20), r.Physical), Effective: effective, RollKind: rollKindOf(t.Roll)} //nolint:gosec // a die size
 	got.result = &playv1.ReactionResult{Kind: playv1.ReactionKind_REACTION_KIND_CUTTING_WORDS, ByMaster: c.master, Used: true, Result: &playv1.ReactionResult_CuttingWords{CuttingWords: cut}}
 	got.fill = cuttingFill(re, cut)
 	c.characterID = &reactor.CharacterID
@@ -226,17 +226,6 @@ func (s *Service) spendCuttingWords(ctx context.Context, c *combatTx, reactor pl
 		got.vitals = append(got.vitals, vit)
 	}
 	return s.spendReaction(ctx, c, reactor)
-}
-
-// cuttingRollKind is the kind of roll a Cutting Words window was about, as the answer tells it.
-func cuttingRollKind(roll string) playv1.ReactionRollKind {
-	switch roll {
-	case "damage":
-		return playv1.ReactionRollKind_REACTION_ROLL_KIND_DAMAGE
-	case "test":
-		return playv1.ReactionRollKind_REACTION_ROLL_KIND_TEST
-	}
-	return playv1.ReactionRollKind_REACTION_ROLL_KIND_ATTACK
 }
 
 // cuttingFill completes the result with what the roll became, known when the held action is

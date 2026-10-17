@@ -339,6 +339,7 @@ func (wv *windowView) trigger(w playdb.ReactionWindow) *playv1.ReactionTrigger {
 	if reaction.Kind(w.Kind) == reaction.Concentration {
 		out.ConcentrationSpellKey = t.Spell
 	}
+	// Unlike rollKindOf, an empty roll stays unspecified.
 	switch t.Roll {
 	case "attack":
 		out.RollKind = playv1.ReactionRollKind_REACTION_ROLL_KIND_ATTACK
