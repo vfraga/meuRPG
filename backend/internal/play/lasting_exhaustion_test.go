@@ -109,3 +109,22 @@ func TestDeathEndsTheEffectsAndReviveBringsNoneBack(t *testing.T) {
 		t.Errorf("the revived Toren has %d old effects (%v), want none", n, err)
 	}
 }
+
+// The line of an exhaustion change is the owner's and the master's, so the hint that the combat log
+// changed goes to the master alone: a player who must not read the line is not told it exists (the
+// owner is told through the vitals).
+func TestSetExhaustionTellsTheLogChangedToTheMasterAlone(t *testing.T) {
+	t.Parallel()
+	a := newEffectsParty(t)
+	e := a.closeFight(t)
+	h := a.listen(t)
+	if _, err := a.setExhaustion(t, e, "Toren", 1, 0, false); err != nil {
+		t.Fatalf("SetExhaustion() error = %v", err)
+	}
+	const hint = "CombatLogChanged"
+	got := a.heard(t, h)
+	want := "master[EncounterChanged," + hint + ",VitalsChanged] caio[EncounterChanged,VitalsChanged] ana[EncounterChanged] bia[EncounterChanged]"
+	if got != want {
+		t.Errorf("heard = %s, want %s", got, want)
+	}
+}

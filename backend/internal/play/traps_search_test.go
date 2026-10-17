@@ -474,20 +474,18 @@ func TestSearchForTrapsEffectDiceAndSources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SearchForTraps() error = %v", err)
 	}
-	// 9 + 4 (Intelligence) + 3 (the d4) = 16 clears DC 14.
-	// Finding: the answer's roll leaves the effect die out of its total (13, not the 16 the search
-	// counted and wrote in the history), and the die is told only in the sources (traps.go:410).
-	if res.GetRoll().GetTotal() != 13 || res.GetRoll().GetModifier() != 4 || len(res.GetFoundPointIds()) != 1 || len(res.GetBonusDice()) != 0 ||
+	// 9 + 4 (Intelligence) + 3 (the d4) = 16 clears DC 14; the modifier of the answer holds the die.
+	if res.GetRoll().GetTotal() != 16 || res.GetRoll().GetModifier() != 7 || len(res.GetFoundPointIds()) != 1 || len(res.GetBonusDice()) != 0 ||
 		len(res.GetSources()) != 1 || res.GetSources()[0].GetKind() != playv1.AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_EFFECT_DIE {
-		t.Errorf("the search = %v, want the roll 9 + 4 = 13, the pit found (16 counted) and the die in the sources", res)
+		t.Errorf("the search = %v, want the roll 9 + 7 = 16, the pit found and the die in the sources", res)
 	}
 	var left int
 	if err := r.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM character_effects WHERE character_id = $1`, r.pens.GetId()).Scan(&left); err != nil || left != 0 {
 		t.Errorf("effects left on Pensantus = %d (%v), want the once-die spent", left, err)
 	}
 	ev := r.trapSearchEvents(t)[0]
-	if ev.Modifier != 4 || ev.Total != 16 || ev.D20 != 9 {
-		t.Errorf("the event = %s, want d20 9, modifier 4, total 16", eventSummary(ev))
+	if ev.Modifier != 7 || ev.Total != 16 || ev.D20 != 9 {
+		t.Errorf("the event = %s, want d20 9, modifier 7, total 16", eventSummary(ev))
 	}
 }
 

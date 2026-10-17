@@ -121,6 +121,9 @@ type exhaustionChange struct {
 type exhaustionDone struct {
 	level, hpMax int32
 	vitals       *playv1.CharacterVitals
+	// hintLog says the players are told the log changed: false when the line is the owner's and the
+	// master's, or secret.
+	hintLog bool
 }
 
 // changeExhaustion sets the level (a negative number takes that many levels off the one it is
@@ -140,8 +143,7 @@ func (s *Service) changeExhaustion(ctx context.Context, m authz.Membership, key 
 	if res.encounterID != "" {
 		enc, err = s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 			s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
-			// The stream is told the log changed for everyone; a hidden NPC's line is Secret in the event itself.
-			s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, true)
+			s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, done.hintLog)
 		})
 		if err != nil {
 			return 0, 0, nil, err
@@ -205,6 +207,7 @@ func (s *Service) writeExhaustion(ctx context.Context, c *combatTx, m authz.Memb
 	if who != nil {
 		ev.Lasting.Targets = []string{who.ID}
 	}
+	done.hintLog = !ev.Secret && !ev.Lasting.OwnerOnly
 	return ev, nil
 }
 
