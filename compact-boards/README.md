@@ -26,6 +26,8 @@ Os quadros das telas compactas (menos rolagem para agir), desenhados no sistema 
 | `C6-09` | Painel "Ficha" na sessão, celular, escuro |
 | `C6-10` | Estados da barra da sessão, do trilho, das abas e das dobras, 1280 e 390, claro |
 | `C6-11` | Quem vê uma imagem mostrada: numa cena aberta só para alguns jogadores, "Só quem está na cena" (o padrão), "Toda a mesa" ou "Escolher quem vê…"; na linha sob as imagens, "Mostrar a toda a mesa" e "Mudar quem vê"; o seletor de jogadores, 1280 e 390, claro |
+| `C7-02` | Combate do mestre B com a opção C de Samuel (pergunta 94): sem abas sob o mapa; "Mais do combate" no trilho, embaixo do "Turno", com "Efeitos" aberto; a faixa "Mapa · Cena · Espelhar" só aparece quando houver uma segunda opção, 1280, claro. **Substitui as abas sob o mapa de `Main` e `C1-02`.** |
+| `C7-03` | O mesmo no escuro, com a ordem recolhida, oito jogadores e "Névoa e luz" aberta no trilho |
 
 Decidido com Samuel: combate do mestre B, com a ordem que se recolhe; campanha em abas "Mesa · Preparação · Regras", com ícones; a Conversa ao lado a partir de 1024 px, com as falas de quem lê à direita; "Copiar link da sessão" e "Encerrar sessão" no menu "Sessão"; no celular, a navegação fixa no rodapé e "Ficha" como painel dentro da sessão; no combate do jogador, o mapa em cima, o movimento sob ele (nada flutua sobre o mapa) e as ações em abas que vêm das opções do personagem; na cena do mestre, "Cena · Mapa · Grupo", o olho por NPC e por ação e a cena aberta só para alguns jogadores; toda lista de pessoas funciona com um e com oito jogadores.
 
