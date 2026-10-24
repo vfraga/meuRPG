@@ -15,7 +15,17 @@ Os quadros das telas compactas (menos rolagem para agir), desenhados no sistema 
 | `C4-04` | O mesmo para Toren (guerreiro), com a aba da classe |
 | `C5-01` | Cena do jogador, navegação fixa "Cena · Ficha · Conversa", três jogadores, celular, claro |
 | `C5-02` | O mesmo, com oito jogadores |
+| `C6-01` | Combate do mestre no celular: abas "Turno · Ordem · Mapa", barra fixa com "Próximo turno", navegação "Combate · Grupo · Conversa", escuro |
+| `C6-02` | Campanha do mestre, aba "Preparação", desktop, escuro |
+| `C6-03` | Campanha do mestre, aba "Regras", desktop, claro |
+| `C6-04` | Campanha do mestre, aba "Mesa", celular, claro |
+| `C6-05` | Sessão do mestre, aba "Mapa" com "Névoa e luz" aberta e a Conversa ao lado, desktop, escuro |
+| `C6-06` | Sessão do mestre, aba "Grupo": grupo, descanso, efeitos em jogo, magias, desktop, claro |
+| `C6-07` | Combate do jogador, sua vez, desktop: barra fixa com "Mover" e "Encerrar turno", trilho "Ações · Conversa", claro |
+| `C6-08` | Cena do jogador, desktop: imagem à mostra e cena lado a lado, mapa embaixo, trilho "Conversa · Ficha", claro |
+| `C6-09` | Painel "Ficha" na sessão, celular, escuro |
+| `C6-10` | Estados da barra da sessão, do trilho, das abas e das dobras, 1280 e 390, claro |
 
 Decidido com Samuel: combate do mestre B, com a ordem que se recolhe; campanha em abas "Mesa · Preparação · Regras", com ícones; a Conversa ao lado a partir de 1024 px, com as falas de quem lê à direita; "Copiar link da sessão" e "Encerrar sessão" no menu "Sessão"; no celular, a navegação fixa no rodapé e "Ficha" como painel dentro da sessão; no combate do jogador, o mapa em cima, o movimento sob ele (nada flutua sobre o mapa) e as ações em abas que vêm das opções do personagem; na cena do mestre, "Cena · Mapa · Grupo", o olho por NPC e por ação e a cena aberta só para alguns jogadores; toda lista de pessoas funciona com um e com oito jogadores.
 
-Os quadros que ainda faltam (combate do mestre no celular, as abas "Preparação" e "Regras", a campanha no celular, as abas "Mapa" e "Grupo" da sessão do mestre, o combate e a cena do jogador no computador, o painel "Ficha", os estados da barra da sessão e do trilho) entram nesta pasta quando forem aprovados.
+Todos os quadros desta rodada estão aqui. Os comentários de Samuel entram numa rodada seguinte.
