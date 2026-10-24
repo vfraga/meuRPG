@@ -1,6 +1,6 @@
 # Compact screens, shared pieces (feat/compact-shared): harness captures
 
-**These are HARNESS CAPTURES, not the live stack** (the VM has no Docker daemon or CockroachDB). The real components were rendered in Chromium with fake data: `app-session-header` (real inputs; `LiveSessionSource` faked), `app-session-tabs` (the pinned nav), `app-session-rail` with `appRailPanel` panels, `app-tab-list` and `app-fold`. The page around them (the app bar, the cards, the fake conversation lines and composer, the fake turn bar) is a stand-in drawn by the harness, so it differs from the boards. Rendered from commit `a8d1600f9` (branch `feat/compact-shared`) by a throwaway harness in a detached worktree, never committed to the feature branch. Nothing ran against the server or the stream. Fonts are the app's own.
+**These are HARNESS CAPTURES, not the live stack** (the VM has no Docker daemon or CockroachDB). The real components were rendered in Chromium with fake data: `app-session-header` (real inputs; `LiveSessionSource` faked), `app-session-tabs` (the pinned nav), `app-session-rail` with `appRailPanel` panels, `app-tab-list` and `app-fold`. The page around them (the app bar, the cards, the fake conversation lines and composer, the fake turn bar) is a stand-in drawn by the harness, so it differs from the boards. Rendered from commit `6efe8e360` (branch `feat/compact-shared`) by a throwaway harness in a detached worktree, never committed to the feature branch. Nothing ran against the server or the stream. Fonts are the app's own.
 
 Matrix: widths 320 (568 high), 390 (844), 768 (1024) and 1280 (900), light and dark (`prefers-color-scheme`), device scale 1. File name: `<state>-<width>-<claro|escuro>.png`. `medidas.json` has the measurements of every capture (bar box, buttons, nav, rail, horizontal scroll).
 
@@ -15,14 +15,17 @@ Matrix: widths 320 (568 high), 390 (844), 768 (1024) and 1280 (900), light and d
 
 ## Measured
 
-- The bar is 56 px high at every width, in every state, with no horizontal scroll and no button outside the screen; every control is 44 px high.
+- The bar is 60 px high from 768 px and 56 px on a phone (as C6-10 draws it), in every state, with no horizontal scroll and no button outside the screen; every control is 44 px high.
 - The pinned nav ends at the bottom edge of the screen; the turn bar sits right above it.
+
+## Against C6-10 (the approved states board)
+
+Matched: the bar (chevron back link, a 1 px rule, "Sessão 3" 28 px / 800 on a computer and 24 px on a phone, the pill, "desde 20:12", buttons 44 px high with a 8 px radius and 12 px between them); "Sessão" with its word and a chevron at the right; the menu panel (250 px, a  border, two 44 px items, "Copiar link da sessão" and "Encerrar sessão…"); the end confirmation on the warning surface with a bold question, "Cancelar" focused with a 2 px accent ring and "Confirmar encerramento" outlined in the danger ink; reconnecting with the pill kept, "Dados" on a dashed border and the notice under the bar (without the time on a phone); the three 390 bars (the master's three dots open the "Sessão" menu); tab counts in amber, grená and neutral; the loading, error and empty states of a rail panel; a tab that does not apply is left out; a 390 list wider than the screen scrolls sideways with an edge fade and keeps the open tab in view; a spent group row, folded and open (`abas-e-dobras`, full page).
 
 ## Known differences from the boards
 
-1. The board's "Sessão 3" is larger; the build uses 28 px (22 px on a phone) so the one row stays 56 px.
-2. The board draws a thin chevron as the back link; the build uses the Material `arrow_back` icon (the set the app ships).
-3. At 320 px the live pill leaves the bar (there is no room for it beside the master's two icon buttons); the app bar's "Ao vivo" link still says it. On a phone the master's "Dados" is an icon only (aria-label "Dados"); the player's keeps its word down to 359 px.
-4. The master's "Iniciar combate" is the first item of the menu on a phone: no master phone board exists yet.
-5. The states board for the bar and the rail is not here yet, so the bar's confirm, menu and offline states follow the proposal text; the rail's look (a plain column with its tab list) follows the proposal, not a board.
-6. Not run here: the real e2e and a11y scans (CI runs them) and the layout audit on these captures.
+1. The board's note under the master's bar ("Num combate, a barra do combate toma o lugar de “Iniciar combate”.", with an info icon) is built as an annotation of the board, not as text on the screen: in a combat the button is simply absent.
+2. At 320 px the live pill leaves the bar (there is no room for it beside the master's controls) and "Dados" is an icon; the app bar's "Ao vivo" link still says it.
+3. On a phone the master's "Iniciar combate" is the first item of the "Sessão" menu (the ⋯ button), as the board's caption says the menu opens there; the master phone combat board `C6-01` is another unit's.
+4. The harness page around the pieces (the app bar, the cards, the fake turn bar and lines) is a stand-in, so it differs from the boards.
+5. Not run here: the real e2e and a11y scans (CI runs them) and the layout audit on these captures.
