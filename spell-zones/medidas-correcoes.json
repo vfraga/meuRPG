@@ -1,0 +1,225 @@
+{
+ "renderedFrom": "b7c3a52d1",
+ "files": [
+  {
+   "file": "zonas-mover-mestre-390-claro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": 772,
+   "cancelarBottom": 828,
+   "containerScrolls": false,
+   "containerScrollHeight": 685,
+   "containerClientHeight": 685,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-mestre-390-escuro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": 772,
+   "cancelarBottom": 828,
+   "containerScrolls": false,
+   "containerScrollHeight": 685,
+   "containerClientHeight": 685,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-mestre-390x667-claro.png",
+   "viewportHeight": 667,
+   "moverAZonaBottom": 595,
+   "cancelarBottom": 651,
+   "containerScrolls": false,
+   "containerScrollHeight": 627,
+   "containerClientHeight": 627,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-mestre-390x667-escuro.png",
+   "viewportHeight": 667,
+   "moverAZonaBottom": 595,
+   "cancelarBottom": 651,
+   "containerScrolls": false,
+   "containerScrollHeight": 627,
+   "containerClientHeight": 627,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-jogador-390-claro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": 772,
+   "cancelarBottom": 828,
+   "containerScrolls": false,
+   "containerScrollHeight": 709,
+   "containerClientHeight": 709,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-jogador-390-escuro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": 772,
+   "cancelarBottom": 828,
+   "containerScrolls": false,
+   "containerScrollHeight": 709,
+   "containerClientHeight": 709,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-jogador-390x667-claro.png",
+   "viewportHeight": 667,
+   "moverAZonaBottom": 595,
+   "cancelarBottom": 651,
+   "containerScrolls": false,
+   "containerScrollHeight": 627,
+   "containerClientHeight": 627,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-jogador-390x667-escuro.png",
+   "viewportHeight": 667,
+   "moverAZonaBottom": 595,
+   "cancelarBottom": 651,
+   "containerScrolls": false,
+   "containerScrollHeight": 627,
+   "containerClientHeight": 627,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": null
+  },
+  {
+   "file": "zonas-mover-longe-jogador-390-claro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": 772,
+   "cancelarBottom": 828,
+   "containerScrolls": false,
+   "containerScrollHeight": 767,
+   "containerClientHeight": 767,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "blockLonge demais: a área anda até 18 m do ponto atual. Faltam 4,5 m."
+  },
+  {
+   "file": "zonas-mover-longe-jogador-390-escuro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": 772,
+   "cancelarBottom": 828,
+   "containerScrolls": false,
+   "containerScrollHeight": 767,
+   "containerClientHeight": 767,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "blockLonge demais: a área anda até 18 m do ponto atual. Faltam 4,5 m."
+  },
+  {
+   "file": "zonas-mover-longe-jogador-390x667-claro.png",
+   "viewportHeight": 667,
+   "moverAZonaBottom": 595,
+   "cancelarBottom": 651,
+   "containerScrolls": false,
+   "containerScrollHeight": 627,
+   "containerClientHeight": 627,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "blockLonge demais: a área anda até 18 m do ponto atual. Faltam 4,5 m."
+  },
+  {
+   "file": "zonas-mover-longe-jogador-390x667-escuro.png",
+   "viewportHeight": 667,
+   "moverAZonaBottom": 595,
+   "cancelarBottom": 651,
+   "containerScrolls": false,
+   "containerScrollHeight": 627,
+   "containerClientHeight": 627,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "blockLonge demais: a área anda até 18 m do ponto atual. Faltam 4,5 m."
+  },
+  {
+   "file": "zonas-aviso-teste-cd-conjurador-390-claro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": null,
+   "cancelarBottom": null,
+   "containerScrolls": false,
+   "containerScrollHeight": 547,
+   "containerClientHeight": 547,
+   "cdLines": [
+    1
+   ],
+   "horizontalPageScroll": false,
+   "notice": "infoTeste de resistência de Constituição, CD 14. Se falhar: sofre dano radiante. Se passar: metade do dano."
+  },
+  {
+   "file": "zonas-aviso-teste-cd-conjurador-390-escuro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": null,
+   "cancelarBottom": null,
+   "containerScrolls": false,
+   "containerScrollHeight": 547,
+   "containerClientHeight": 547,
+   "cdLines": [
+    1
+   ],
+   "horizontalPageScroll": false,
+   "notice": "infoTeste de resistência de Constituição, CD 14. Se falhar: sofre dano radiante. Se passar: metade do dano."
+  },
+  {
+   "file": "zonas-aviso-teste-jogador-390-claro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": null,
+   "cancelarBottom": null,
+   "containerScrolls": false,
+   "containerScrollHeight": 547,
+   "containerClientHeight": 547,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "infoTeste de resistência de Constituição. Se falhar: sofre dano radiante. Se passar: metade do dano."
+  },
+  {
+   "file": "zonas-aviso-teste-jogador-390-escuro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": null,
+   "cancelarBottom": null,
+   "containerScrolls": false,
+   "containerScrollHeight": 547,
+   "containerClientHeight": 547,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "infoTeste de resistência de Constituição. Se falhar: sofre dano radiante. Se passar: metade do dano."
+  },
+  {
+   "file": "zonas-aviso-teia-jogador-390-claro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": null,
+   "cancelarBottom": null,
+   "containerScrolls": false,
+   "containerScrollHeight": 528,
+   "containerClientHeight": 528,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "infoTeste de resistência de Destreza. Se falhar, você fica contido até se soltar. Soltar-se gasta uma ação."
+  },
+  {
+   "file": "zonas-aviso-teia-jogador-390-escuro.png",
+   "viewportHeight": 844,
+   "moverAZonaBottom": null,
+   "cancelarBottom": null,
+   "containerScrolls": false,
+   "containerScrollHeight": 528,
+   "containerClientHeight": 528,
+   "cdLines": [],
+   "horizontalPageScroll": false,
+   "notice": "infoTeste de resistência de Destreza. Se falhar, você fica contido até se soltar. Soltar-se gasta uma ação."
+  }
+ ]
+}
