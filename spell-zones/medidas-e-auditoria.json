@@ -1,0 +1,7472 @@
+{
+ "zonas-mapa-mestre-390-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 168,
+    "right": 334
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 198,
+    "right": 320
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 52,
+    "right": 242
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-mestre-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 168,
+    "right": 334
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 198,
+    "right": 320
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 52,
+    "right": 242
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-mestre-768-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 423,
+    "right": 590
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 462,
+    "right": 585
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 184,
+    "right": 374
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-mestre-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 423,
+    "right": 590
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 462,
+    "right": 585
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 184,
+    "right": 374
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-mestre-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 412,
+    "right": 579
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 451,
+    "right": 573
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 182,
+    "right": 373
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-mestre-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 412,
+    "right": 579
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 451,
+    "right": 573
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 182,
+    "right": 373
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-jogador-390-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_in_fullVer mapa",
+    "w": 320,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-jogador-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_in_fullVer mapa",
+    "w": 320,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-jogador-768-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_in_fullVer mapa",
+    "w": 130,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-jogador-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_in_fullVer mapa",
+    "w": 130,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-jogador-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_in_fullVer mapa",
+    "w": 130,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mapa-jogador-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_in_fullVer mapa",
+    "w": 130,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [],
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-encerrar-mestre-390-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Não",
+    "w": 77,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Sim, encerrar",
+    "w": 134,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Sim, encerrar"
+  ],
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 168,
+    "right": 334
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 198,
+    "right": 320
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 52,
+    "right": 242
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-encerrar-mestre-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Não",
+    "w": 77,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Sim, encerrar",
+    "w": 134,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Sim, encerrar"
+  ],
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 168,
+    "right": 334
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 198,
+    "right": 320
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 52,
+    "right": 242
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-encerrar-mestre-768-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Não",
+    "w": 77,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Sim, encerrar",
+    "w": 134,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Sim, encerrar"
+  ],
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 423,
+    "right": 590
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 462,
+    "right": 585
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 184,
+    "right": 374
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-encerrar-mestre-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Não",
+    "w": 77,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Sim, encerrar",
+    "w": 134,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Sim, encerrar"
+  ],
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 423,
+    "right": 590
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 462,
+    "right": 585
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 184,
+    "right": 374
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-encerrar-mestre-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Não",
+    "w": 77,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Sim, encerrar",
+    "w": 134,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Sim, encerrar"
+  ],
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 412,
+    "right": 579
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 451,
+    "right": 573
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 182,
+    "right": 373
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-encerrar-mestre-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "fullscreenTela cheia",
+    "w": 132,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "open_withMover",
+    "w": 109,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Não",
+    "w": 77,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Sim, encerrar",
+    "w": 134,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "closeEncerrar zona",
+    "w": 157,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Sim, encerrar"
+  ],
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 412,
+    "right": 579
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 451,
+    "right": 573
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 182,
+    "right": 373
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-jogador-390-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 297,
+   "w": 390,
+   "h": 547,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-jogador-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 297,
+   "w": 390,
+   "h": 547,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-jogador-768-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 270,
+   "w": 480,
+   "h": 484,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-jogador-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 270,
+   "w": 480,
+   "h": 484,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-jogador-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 208,
+   "w": 480,
+   "h": 484,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-jogador-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 208,
+   "w": 480,
+   "h": 484,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-cd-conjurador-390-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 297,
+   "w": 390,
+   "h": 547,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-cd-conjurador-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 297,
+   "w": 390,
+   "h": 547,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-cd-conjurador-768-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 270,
+   "w": 480,
+   "h": 484,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-cd-conjurador-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 270,
+   "w": 480,
+   "h": 484,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-cd-conjurador-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 208,
+   "w": 480,
+   "h": 484,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teste-cd-conjurador-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 208,
+   "w": 480,
+   "h": 484,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teia-jogador-390-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 316,
+   "w": 390,
+   "h": 528,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Teia de Pensantus"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teia-jogador-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 316,
+   "w": 390,
+   "h": 528,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Teia de Pensantus"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teia-jogador-768-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 270,
+   "w": 480,
+   "h": 484,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Teia de Pensantus"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teia-jogador-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 270,
+   "w": 480,
+   "h": 484,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Teia de Pensantus"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teia-jogador-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 208,
+   "w": 480,
+   "h": 484,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Teia de Pensantus"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-teia-jogador-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 432,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "casinoRolar no app"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 208,
+   "w": 480,
+   "h": 484,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Teia de Pensantus"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-dado-fisico-jogador-390-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Confirmar",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Confirmar"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 86,
+   "w": 390,
+   "h": 758,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-dado-fisico-jogador-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Confirmar",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 354,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Confirmar"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 86,
+   "w": 390,
+   "h": 758,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-dado-fisico-jogador-768-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Confirmar",
+    "w": 432,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Confirmar"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 161,
+   "w": 480,
+   "h": 703,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-dado-fisico-jogador-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Confirmar",
+    "w": 432,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Confirmar"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 144,
+   "y": 161,
+   "w": 480,
+   "h": 703,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-dado-fisico-jogador-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Confirmar",
+    "w": 432,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Confirmar"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 99,
+   "w": 480,
+   "h": 703,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-aviso-dado-fisico-jogador-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Confirmar",
+    "w": 432,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Deixar o mestre rolar por mim",
+    "w": 432,
+    "h": 44,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Confirmar"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 400,
+   "y": 99,
+   "w": 480,
+   "h": 703,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Raio Lunar de Bartolo"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-mestre-390-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 87,
+   "w": 390,
+   "h": 757,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 168,
+    "right": 334
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 198,
+    "right": 320
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 52,
+    "right": 242
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-mestre-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 87,
+   "w": 390,
+   "h": 757,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 196,
+    "right": 338
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 168,
+    "right": 334
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 198,
+    "right": 320
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 52,
+    "right": 242
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-mestre-768-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 16,
+   "y": 83,
+   "w": 736,
+   "h": 859,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 423,
+    "right": 590
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 462,
+    "right": 585
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 184,
+    "right": 374
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-mestre-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 16,
+   "y": 83,
+   "w": 736,
+   "h": 859,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 470,
+    "right": 612
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 423,
+    "right": 590
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 462,
+    "right": 585
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 184,
+    "right": 374
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-mestre-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 260,
+   "y": 60,
+   "w": 760,
+   "h": 780,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 412,
+    "right": 579
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 451,
+    "right": 573
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 182,
+    "right": 373
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-mestre-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 260,
+   "y": 60,
+   "w": 760,
+   "h": 780,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 141,
+    "h": 22,
+    "x": 458,
+    "right": 599
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 167,
+    "h": 22,
+    "x": 412,
+    "right": 579
+   },
+   {
+    "t": "Teia · Pensantus psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 122,
+    "h": 22,
+    "x": 451,
+    "right": 573
+   },
+   {
+    "t": "visibility_off Nuvem Mortal · Cultista 1",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px dashed",
+    "w": 190,
+    "h": 22,
+    "x": 182,
+    "right": 373
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 9 rodadas",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Bartolo",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "schedulerestam 6 rodadas",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Nuvem Mortal · Cultista 1 visibility_off",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-jogador-390-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 102,
+   "w": 390,
+   "h": 742,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-jogador-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 102,
+   "w": 390,
+   "h": 742,
+   "vh": 844,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-jogador-768-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 16,
+   "y": 81,
+   "w": 736,
+   "h": 863,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-jogador-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 16,
+   "y": 81,
+   "w": 736,
+   "h": 863,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-jogador-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 260,
+   "y": 60,
+   "w": 760,
+   "h": 780,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-jogador-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 133,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 260,
+   "y": 60,
+   "w": 760,
+   "h": 780,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-longe-jogador-390-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 84,
+   "w": 390,
+   "h": 760,
+   "vh": 844,
+   "scrolls": true
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-longe-jogador-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 354,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 354,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "bottom-sheet",
+   "x": 0,
+   "y": 84,
+   "w": 390,
+   "h": 760,
+   "vh": 844,
+   "scrolls": true
+  },
+  "panel": {
+   "w": 358,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 206,
+    "right": 328
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 178,
+    "right": 324
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 208,
+    "right": 310
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 49,
+    "right": 213
+   }
+  ],
+  "map": {
+   "w": 320,
+   "h": 224
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-longe-jogador-768-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 135,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 16,
+   "y": 65,
+   "w": 736,
+   "h": 894,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-longe-jogador-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 135,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 16,
+   "y": 65,
+   "w": 736,
+   "h": 894,
+   "vh": 1024,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 736,
+   "x": 16
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 480,
+    "right": 602
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 433,
+    "right": 580
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 472,
+    "right": 575
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 163,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 698,
+   "h": 489
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-longe-jogador-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 135,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 260,
+   "y": 60,
+   "w": 760,
+   "h": 780,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-mover-longe-jogador-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "Fechar",
+    "w": 44,
+    "h": 44,
+    "filled": false
+   },
+   {
+    "n": "Mover a zona",
+    "w": 135,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Cancelar",
+    "w": 106,
+    "h": 48,
+    "filled": false
+   }
+  ],
+  "filled": [
+   "Mover a zona"
+  ],
+  "sheet": {
+   "kind": "dialog",
+   "x": 260,
+   "y": 60,
+   "w": 760,
+   "h": 780,
+   "vh": 900,
+   "scrolls": false
+  },
+  "panel": {
+   "w": 500,
+   "x": 756
+  },
+  "labels": [
+   {
+    "t": "Raio Lunar · Bartolo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 121,
+    "h": 22,
+    "x": 468,
+    "right": 589
+   },
+   {
+    "t": "Nuvem de Adagas · bilbo",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 147,
+    "h": 22,
+    "x": 422,
+    "right": 569
+   },
+   {
+    "t": "Teia · Pensantus",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 102,
+    "h": 22,
+    "x": 461,
+    "right": 563
+   },
+   {
+    "t": "Espíritos Guardiões · Tor psychology",
+    "fs": "13px",
+    "fw": "700",
+    "color": "rgb(27, 34, 48)",
+    "bg": "rgb(255, 255, 255)",
+    "border": "1px solid",
+    "w": 164,
+    "h": 22,
+    "x": 162,
+    "right": 326
+   }
+  ],
+  "map": {
+   "w": 670,
+   "h": 469
+  },
+  "chips": [
+   {
+    "t": "schedulerestam 10 min",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Concentração de Tor",
+    "h": 24,
+    "fs": "13px"
+   },
+   {
+    "t": "Aqui: Tor",
+    "h": 24,
+    "fs": "13px"
+   }
+  ],
+  "titles": [
+   "Raio Lunar · Bartolo",
+   "Nuvem de Adagas · bilbo",
+   "Teia · Pensantus",
+   "Espíritos Guardiões · Tor",
+   "Mover o Raio Lunar"
+  ],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-estados-mestre-390-claro.png": {
+  "buttons": [
+   {
+    "n": "casinoRolar dano",
+    "w": 286,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 286,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 324,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 324,
+    "h": 44,
+    "filled": true
+   }
+  ],
+  "filled": [
+   "casinoRolar dano",
+   "Digitar o resultado",
+   "casinoRolar no app",
+   "Digitar o resultado"
+  ],
+  "titles": [],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-estados-mestre-390-escuro.png": {
+  "buttons": [
+   {
+    "n": "casinoRolar dano",
+    "w": 286,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 286,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 324,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 324,
+    "h": 44,
+    "filled": true
+   }
+  ],
+  "filled": [
+   "casinoRolar dano",
+   "Digitar o resultado",
+   "casinoRolar no app",
+   "Digitar o resultado"
+  ],
+  "titles": [],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-estados-mestre-768-claro.png": {
+  "buttons": [
+   {
+    "n": "casinoRolar dano",
+    "w": 488,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 488,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 526,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 526,
+    "h": 44,
+    "filled": true
+   }
+  ],
+  "filled": [
+   "casinoRolar dano",
+   "Digitar o resultado",
+   "casinoRolar no app",
+   "Digitar o resultado"
+  ],
+  "titles": [],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-estados-mestre-768-escuro.png": {
+  "buttons": [
+   {
+    "n": "casinoRolar dano",
+    "w": 488,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 488,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 526,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 526,
+    "h": 44,
+    "filled": true
+   }
+  ],
+  "filled": [
+   "casinoRolar dano",
+   "Digitar o resultado",
+   "casinoRolar no app",
+   "Digitar o resultado"
+  ],
+  "titles": [],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-estados-mestre-1280-claro.png": {
+  "buttons": [
+   {
+    "n": "casinoRolar dano",
+    "w": 488,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 488,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 526,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 526,
+    "h": 44,
+    "filled": true
+   }
+  ],
+  "filled": [
+   "casinoRolar dano",
+   "Digitar o resultado",
+   "casinoRolar no app",
+   "Digitar o resultado"
+  ],
+  "titles": [],
+  "hscroll": false,
+  "audit": []
+ },
+ "zonas-estados-mestre-1280-escuro.png": {
+  "buttons": [
+   {
+    "n": "casinoRolar dano",
+    "w": 488,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 488,
+    "h": 44,
+    "filled": true
+   },
+   {
+    "n": "casinoRolar no app",
+    "w": 526,
+    "h": 48,
+    "filled": true
+   },
+   {
+    "n": "Digitar o resultado",
+    "w": 526,
+    "h": 44,
+    "filled": true
+   }
+  ],
+  "filled": [
+   "casinoRolar dano",
+   "Digitar o resultado",
+   "casinoRolar no app",
+   "Digitar o resultado"
+  ],
+  "titles": [],
+  "hscroll": false,
+  "audit": []
+ }
+}
