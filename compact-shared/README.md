@@ -20,7 +20,7 @@ Matrix: widths 320 (568 high), 390 (844), 768 (1024) and 1280 (900), light and d
 
 ## Known differences from the boards
 
-1. The board's "Sessão 3" is larger (about 36 px at 1280, 28 px on a phone); the build keeps the page's display size of 28 px (22 px on a phone) so the one row stays 56 px.
+1. The board's "Sessão 3" is larger ; the build uses 28 px (22 px on a phone) so the one row stays 56 px.
 2. The board draws a thin chevron as the back link; the build uses the Material `arrow_back` icon (the set the app ships).
 3. At 320 px the live pill leaves the bar (there is no room for it beside the master's two icon buttons); the app bar's "Ao vivo" link still says it. On a phone the master's "Dados" is an icon only (aria-label "Dados"); the player's keeps its word down to 359 px.
 4. The master's "Iniciar combate" is the first item of the menu on a phone: no master phone board exists yet.
