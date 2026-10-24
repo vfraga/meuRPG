@@ -11,6 +11,9 @@ Capturas do app real (a pilha local: API, banco e o app compilado), nos quatro l
 | `cena-rolagens-aberta` | "Rolagens da mesa" aberta |
 | `ficha-conjurador` | "Ficha" de Pensantus (mago): painel (celular), aba do trilho (1280), sob a cena (768) |
 | `ficha-guerreiro` | "Ficha" de Toren (guerreiro) |
+| `ficha-clerigo` | "Ficha" de Ilaria (clériga) com "Revivificar" |
+| `cena-aba-mapa`, `cena-aba-imagens` | Celular: a cena em abas (C7-07), "Mapa" e "Imagens" abertas |
+| `cena-aba-mapa-teste-em-grupo` | Celular: "Ações · 1" em âmbar com um teste em grupo esperando, aba "Mapa" aberta |
 | `cena-com-conversa` | 1280: o trilho em "Conversa" |
 | `*-tela` | Celular: só a tela, sem rolar (a barra fixa embaixo) |
 
