@@ -11,7 +11,7 @@ map. File names end in the width and the theme (`-claro`, `-escuro`).
 | 1280, one player | `03-computador-1-jogador` |
 | A row opened in place | `04-linha-aberta` |
 | The order folded to a strip | `05-ordem-recolhida` |
-| The tabs under the map: "Registro", "Efeitos", "Névoa e luz" | `06`, `07`, `08` |
+| "Mais do combate" in the rail (option C, C7-02/C7-03): closed, "Efeitos" open, "Névoa e luz" open with the order folded and eight players, "Registro" open | `05` to `08` |
 | The rail's "Conversa" tab | `09-coluna-conversa` |
 | 1100, 1024 | `10`, `11` |
 | Initiative setup ("Começar o combate" in the bar) | `12-preparo-da-iniciativa`, `21-celular-preparo` |
@@ -27,8 +27,9 @@ eight-player, one-player, setup and theatre states.
 - The harness has no roll result and no "Aplicar 5 de dano" block in the rail's NPC card (its fixture is not the server's shape): the card
   shows the three stat boxes, the economy chips and the grapple block only.
 - The rail's "Conversa" in these captures is a stand-in; its "Enviar" is outlined in the real conversation while a combat runs (`MasterComposer`).
-- "Efeitos" has no count in its tab (nothing cheap to count); "Armadilhas" and "Tesouro" show the map's points.
-- "Névoa e luz", "Armadilhas", "Tesouro" and "Quebra-cabeças" are the existing panels, projected into the tab set; they are not redrawn.
+- "Efeitos" has no count in its row (nothing cheap to count); "Armadilhas" and "Tesouro" show the map's points. "Registro" is a closed row, as on the board.
+- "Névoa e luz", "Armadilhas", "Tesouro" and "Quebra-cabeças" are the existing panels, projected into their rows of "Mais do combate"; they are not redrawn (the harness stubs are empty, and the panels keep their own heading and card inside the row).
+- The map card is its natural height, not stretched to the column: the map's column is sticky and scrolls by itself if it overflows.
 - Between 1024 and 1279 px the order sits in the rail under "Turno" (no third column); the initiative setup keeps one column below 1280.
 - On the phone the nav's "Grupo" still goes to the campaign page; the "Grupo" panel is a later unit.
 - The sticky heights (combat bar, app bar) are constants (`--tri-top: 164px`).
