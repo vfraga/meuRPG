@@ -1,4 +1,4 @@
-# Combate do jogador, telas compactas (quarta rodada: os estados afetados e uma amostra foram refeitos em 450b56661; o restante e da terceira rodada, 109994a90)
+# Combate do jogador, telas compactas (quinta rodada: alcance, fire-bolt, cobertura, misseis e antes-de-rolar a 320/390 e pensantus-turno-acoes-390-escuro refeitos em 66230e8d2; quarta rodada: os estados afetados e uma amostra foram refeitos em 450b56661; o restante e da terceira rodada, 109994a90)
 
 Todas as capturas sao da **pilha real** (backend, devidp, CockroachDB e o app Angular compilado de `feat/compact-player-combat` @ 109994a90), semeada pelos helpers do e2e (Playwright, Chromium); **nenhuma e harness**. Claro/escuro por `prefers-color-scheme`. 320, 390 e 768 em 2x; 1280 em 1x.
 
