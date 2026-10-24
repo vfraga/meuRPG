@@ -1,0 +1,5490 @@
+[
+ {
+  "name": "barra-jogador",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 265,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 265,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 265,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 265,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-reconectando",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 242,
+    "y": 70,
+    "w": 132,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 242,
+    "y": 70,
+    "w": 132,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 588,
+    "y": 70,
+    "w": 132,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 588,
+    "y": 70,
+    "w": 132,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 1100,
+    "y": 70,
+    "w": 132,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-jogador-rolando",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Rolando…",
+    "x": 1100,
+    "y": 70,
+    "w": 132,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 38,
+   "h": 28,
+   "r": 303,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 38,
+   "h": 28,
+   "r": 303,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-em-combate",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": null,
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-reconectando",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 38,
+   "h": 28,
+   "r": 303,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 38,
+   "h": 28,
+   "r": 303,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-menu",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": 64,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": 70,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": 70,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": 78,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": 106
+  },
+  "status": {
+   "x": 139,
+   "y": 78,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": 106
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 38,
+   "h": 28,
+   "r": 303,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 315,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 483,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 491,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 600,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 608,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 38,
+   "h": 28,
+   "r": 303,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "barra-mestre-encerrar",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "swordsIniciar combate",
+    "x": 827,
+    "y": 70,
+    "w": 168,
+    "h": 44,
+    "r": 995,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1003,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1112,
+    "b": 114
+   },
+   {
+    "t": "Sessão",
+    "x": 1120,
+    "y": 70,
+    "w": 112,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-jogador",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -186,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": -130
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -180,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -136
+   },
+   {
+    "t": "Dados",
+    "x": 260,
+    "y": -180,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": -136
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -172,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -144
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": {
+   "x": 0,
+   "y": 443,
+   "w": 320,
+   "h": 61,
+   "r": 320,
+   "b": 504
+  },
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-jogador",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -186,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": -130
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -180,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -136
+   },
+   {
+    "t": "Dados",
+    "x": 260,
+    "y": -180,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": -136
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -172,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -144
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": {
+   "x": 0,
+   "y": 443,
+   "w": 320,
+   "h": 61,
+   "r": 320,
+   "b": 504
+  },
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-jogador",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -120,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": -64
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -114,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -70
+   },
+   {
+    "t": "Dados",
+    "x": 265,
+    "y": -114,
+    "w": 109,
+    "h": 44,
+    "r": 374,
+    "b": -70
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -106,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -78
+  },
+  "status": {
+   "x": 139,
+   "y": -106,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": -78
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": {
+   "x": 0,
+   "y": 566,
+   "w": 390,
+   "h": 61,
+   "r": 390,
+   "b": 627
+  },
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-jogador",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -120,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": -64
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -114,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -70
+   },
+   {
+    "t": "Dados",
+    "x": 265,
+    "y": -114,
+    "w": 109,
+    "h": 44,
+    "r": 374,
+    "b": -70
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -106,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -78
+  },
+  "status": {
+   "x": 139,
+   "y": -106,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": -78
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": {
+   "x": 0,
+   "y": 566,
+   "w": 390,
+   "h": 61,
+   "r": 390,
+   "b": 627
+  },
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-mestre",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -186,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": -130
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -180,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -136
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": -180,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": -136
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": -180,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": -136
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -172,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -144
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-mestre",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -186,
+   "w": 288,
+   "h": 56,
+   "r": 304,
+   "b": -130
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -180,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -136
+   },
+   {
+    "t": "Dados",
+    "x": 208,
+    "y": -180,
+    "w": 44,
+    "h": 44,
+    "r": 252,
+    "b": -136
+   },
+   {
+    "t": "Sessão",
+    "x": 260,
+    "y": -180,
+    "w": 44,
+    "h": 44,
+    "r": 304,
+    "b": -136
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -172,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -144
+  },
+  "status": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "r": 0,
+   "b": 0
+  },
+  "nav": {
+   "x": 0,
+   "y": 503,
+   "w": 320,
+   "h": 65,
+   "r": 320,
+   "b": 568
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-mestre",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -120,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": -64
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -114,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -70
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": -114,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": -70
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": -114,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": -70
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -106,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -78
+  },
+  "status": {
+   "x": 139,
+   "y": -106,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": -78
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "nav-mestre",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": {
+   "x": 16,
+   "y": -120,
+   "w": 358,
+   "h": 56,
+   "r": 374,
+   "b": -64
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 8,
+    "y": -114,
+    "w": 40,
+    "h": 44,
+    "r": 48,
+    "b": -70
+   },
+   {
+    "t": "Dados",
+    "x": 278,
+    "y": -114,
+    "w": 44,
+    "h": 44,
+    "r": 322,
+    "b": -70
+   },
+   {
+    "t": "Sessão",
+    "x": 330,
+    "y": -114,
+    "w": 44,
+    "h": 44,
+    "r": 374,
+    "b": -70
+   }
+  ],
+  "title": {
+   "x": 56,
+   "y": -106,
+   "w": 75,
+   "h": 28,
+   "r": 131,
+   "b": -78
+  },
+  "status": {
+   "x": 139,
+   "y": -106,
+   "w": 78,
+   "h": 28,
+   "r": 217,
+   "b": -78
+  },
+  "nav": {
+   "x": 0,
+   "y": 779,
+   "w": 390,
+   "h": 65,
+   "r": 390,
+   "b": 844
+  },
+  "turn": null,
+  "rail": null,
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-conversa",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 48,
+   "y": 947,
+   "w": 672,
+   "h": 924,
+   "r": 720,
+   "b": 1871
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-conversa",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 48,
+   "y": 947,
+   "w": 672,
+   "h": 924,
+   "r": 720,
+   "b": 1871
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-conversa",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 832,
+   "y": 136,
+   "w": 400,
+   "h": 780,
+   "r": 1232,
+   "b": 916
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-conversa",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 832,
+   "y": 136,
+   "w": 400,
+   "h": 780,
+   "r": 1232,
+   "b": 916
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-ficha",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 48,
+   "y": 947,
+   "w": 672,
+   "h": 218,
+   "r": 720,
+   "b": 1165
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-ficha",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 672,
+   "h": 56,
+   "r": 720,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 611,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 720,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 48,
+   "y": 947,
+   "w": 672,
+   "h": 218,
+   "r": 720,
+   "b": 1165
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-ficha",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 832,
+   "y": 136,
+   "w": 400,
+   "h": 780,
+   "r": 1232,
+   "b": 916
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "trilho-ficha",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": {
+   "x": 48,
+   "y": 64,
+   "w": 1184,
+   "h": 56,
+   "r": 1232,
+   "b": 120
+  },
+  "btns": [
+   {
+    "t": "Voltar para a campanha M",
+    "x": 40,
+    "y": 70,
+    "w": 105,
+    "h": 44,
+    "r": 145,
+    "b": 114
+   },
+   {
+    "t": "Dados",
+    "x": 1123,
+    "y": 70,
+    "w": 109,
+    "h": 44,
+    "r": 1232,
+    "b": 114
+   }
+  ],
+  "title": {
+   "x": 157,
+   "y": 76,
+   "w": 96,
+   "h": 32,
+   "r": 252,
+   "b": 108
+  },
+  "status": {
+   "x": 264,
+   "y": 78,
+   "w": 153,
+   "h": 28,
+   "r": 417,
+   "b": 106
+  },
+  "nav": null,
+  "turn": null,
+  "rail": {
+   "x": 832,
+   "y": 136,
+   "w": 400,
+   "h": 780,
+   "r": 1232,
+   "b": 916
+  },
+  "overflowBar": false
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 320,
+  "h": 568,
+  "scheme": "light",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 320,
+  "h": 568,
+  "scheme": "dark",
+  "vw": 320,
+  "vh": 568,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 390,
+  "h": 844,
+  "scheme": "light",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 390,
+  "h": 844,
+  "scheme": "dark",
+  "vw": 390,
+  "vh": 844,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 768,
+  "h": 1024,
+  "scheme": "light",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 768,
+  "h": 1024,
+  "scheme": "dark",
+  "vw": 768,
+  "vh": 1024,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 1280,
+  "h": 900,
+  "scheme": "light",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ },
+ {
+  "name": "abas-e-dobras",
+  "w": 1280,
+  "h": 900,
+  "scheme": "dark",
+  "vw": 1280,
+  "vh": 900,
+  "hscroll": false,
+  "bar": null,
+  "btns": [],
+  "title": null,
+  "status": null,
+  "nav": null,
+  "turn": null,
+  "rail": null,
+  "overflowBar": null
+ }
+]
