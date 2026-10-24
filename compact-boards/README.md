@@ -29,4 +29,4 @@ Os quadros das telas compactas (menos rolagem para agir), desenhados no sistema 
 
 Decidido com Samuel: combate do mestre B, com a ordem que se recolhe; campanha em abas "Mesa · Preparação · Regras", com ícones; a Conversa ao lado a partir de 1024 px, com as falas de quem lê à direita; "Copiar link da sessão" e "Encerrar sessão" no menu "Sessão"; no celular, a navegação fixa no rodapé e "Ficha" como painel dentro da sessão; no combate do jogador, o mapa em cima, o movimento sob ele (nada flutua sobre o mapa) e as ações em abas que vêm das opções do personagem; na cena do mestre, "Cena · Mapa · Grupo", o olho por NPC e por ação e a cena aberta só para alguns jogadores; toda lista de pessoas funciona com um e com oito jogadores.
 
-Todos os quadros desta rodada estão aqui. Os comentários de Samuel entram numa rodada seguinte.
+Todos os quadros desta rodada estão aqui. Os comentários de Samuel entram numa rodada seguinte; `C7-01` é uma pergunta para ele (a barra do mapa no combate do mestre, três leituras), não um quadro para construir.
