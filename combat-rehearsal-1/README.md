@@ -1,6 +1,6 @@
 # Combat rehearsal fixes (branch `fix/combat-rehearsal-1`)
 
-Before = `origin/main` b8949efd7. After = `fix/combat-rehearsal-1` f7eb911ed. Each screen is the real component (`NpcCard`, `CombatBar`, `JointCard`) mounted on a throw-away page with mocked data (master's view), rendered at 390 and 1280 px. Files are `<item>-<before|after>-<light|dark>-<390|1280>.png`. Dark exists only for the d20 choice.
+Before = `origin/main` b8949efd7. After = `fix/combat-rehearsal-1` f7eb911ed (`idle-after-*` re-shot from e7e7b8049, which fixes the confirmation button label). Each screen is the real component (`NpcCard`, `CombatBar`, `JointCard`) mounted on a throw-away page with mocked data (master's view), rendered at 390 and 1280 px. Files are `<item>-<before|after>-<light|dark>-<390|1280>.png`. Dark exists only for the d20 choice.
 
 | Item | Files | Shows |
 | --- | --- | --- |
@@ -14,4 +14,3 @@ Before = `origin/main` b8949efd7. After = `fix/combat-rehearsal-1` f7eb911ed. Ea
 - The "A vez passou para" line is a screen-reader live region (visually hidden in the app). The `stale-*` shots reveal it with an injected dashed box so it can be compared; "(linha vazia)" in the after shots is a label added by the capture, not by the app.
 - Not visible in any shot: the server rules for the unconscious target (`combat_rollmode.go`, `combat_reaction_window.go`) and the `by_master` attribution; the backend tests cover them.
 - The mocked d20 choice never rolls; "Rolar 2d20 no app" and "Digitar o resultado" are the existing buttons, unchanged.
-- In `idle-after-*` the "Passar a vez" button renders with no visible label (white on white): the `.ask__buttons button { background: var(--mr-surface) }` rule in `next-turn.ts` also paints the filled button, whose label is white. This is how the branch really renders and is shown as is.
