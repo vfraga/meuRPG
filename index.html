@@ -1,0 +1,2845 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dados em 2D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:wght@700;800&family=Alegreya+Sans:wght@400;500;700&display=swap">
+<style>
+  /* The "ficha de papel" look: warm paper, dark ink, garnet, gold for criticals. */
+  :root {
+    color-scheme: light;
+    --ground: #f4eee2;
+    --surface: #fcf9f3;
+    --surface-sunk: #efe7d7;
+    --ink: #221b16;
+    --ink-muted: #5e5347;
+    --line: #dccfba;
+    --control-line: #85776a;
+    --accent: #8b1e2e;
+    --accent-strong: #6d1522;
+    --on-accent: #fff8ef;
+    --accent-soft: #f5e3e1;
+    --gold-ink: #7d5a05;
+    --danger-ink: #8c1d18;
+    --focus: #8b1e2e;
+    --font-display: 'Alegreya', Georgia, 'Times New Roman', serif;
+    --font-text: 'Alegreya Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+    /* The tray and the dice (read by DiceTray from the canvas). */
+    --tray-floor: #e8dcc3;
+    --tray-rim: #6e1a27;
+    --tray-rim-hi: #93323f;
+    --tray-rim-lo: #4b0f19;
+    --tray-shadow: #3d2a18;
+    --die-paper: #fbf6ea;
+    --die-paper-ink: #221b16;
+    --die-paper-shade: #6f5c47;
+    --die-garnet: #8b1e2e;
+    --die-garnet-ink: #fff6e9;
+    --die-garnet-shade: #2b0810;
+    --die-edge: #221b16;
+    --die-gold: #e8b73c;
+    --die-gold-on: #2a1d02;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #15120e;
+      --surface: #1f1b16;
+      --surface-sunk: #29241d;
+      --ink: #f0e7d8;
+      --ink-muted: #b9ad9b;
+      --line: #3b342b;
+      --control-line: #8c8070;
+      --accent: #e48a97;
+      --accent-strong: #f0a9b3;
+      --on-accent: #2a0a10;
+      --accent-soft: #3a1e22;
+      --gold-ink: #ebc66a;
+      --danger-ink: #f4b4ae;
+      --focus: #e48a97;
+      --tray-floor: #2a241e;
+      --tray-rim: #521520;
+      --tray-rim-hi: #6f2633;
+      --tray-rim-lo: #2d0910;
+      --tray-shadow: #000000;
+      --die-paper: #ece2cf;
+      --die-paper-ink: #1e1814;
+      --die-paper-shade: #5d4c3b;
+      --die-garnet: #a3374a;
+      --die-garnet-ink: #fff4e6;
+      --die-garnet-shade: #2d0a12;
+      --die-edge: #0e0b09;
+      --die-gold: #f2c75a;
+      --die-gold-on: #2a1d02;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #15120e;
+    --surface: #1f1b16;
+    --surface-sunk: #29241d;
+    --ink: #f0e7d8;
+    --ink-muted: #b9ad9b;
+    --line: #3b342b;
+    --control-line: #8c8070;
+    --accent: #e48a97;
+    --accent-strong: #f0a9b3;
+    --on-accent: #2a0a10;
+    --accent-soft: #3a1e22;
+    --gold-ink: #ebc66a;
+    --danger-ink: #f4b4ae;
+    --focus: #e48a97;
+    --tray-floor: #2a241e;
+    --tray-rim: #521520;
+    --tray-rim-hi: #6f2633;
+    --tray-rim-lo: #2d0910;
+    --tray-shadow: #000000;
+    --die-paper: #ece2cf;
+    --die-paper-ink: #1e1814;
+    --die-paper-shade: #5d4c3b;
+    --die-garnet: #a3374a;
+    --die-garnet-ink: #fff4e6;
+    --die-garnet-shade: #2d0a12;
+    --die-edge: #0e0b09;
+    --die-gold: #f2c75a;
+    --die-gold-on: #2a1d02;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 400 1rem/1.5 var(--font-text);
+  }
+
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  .page { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  .top { margin-bottom: 20px; }
+  .eyebrow { margin: 0 0 4px; color: var(--ink-muted); font-size: .875rem; font-weight: 500; }
+  h1 { margin: 0 0 8px; font: 800 2rem/1.15 var(--font-display); }
+  .lede { margin: 0; max-width: 62em; color: var(--ink-muted); }
+
+  .layout { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  @media (min-width: 980px) {
+    .layout { grid-template-columns: minmax(0, 528px) minmax(0, 1fr); }
+    .stage { position: sticky; top: 16px; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+  }
+
+  .tray-wrap { display: flex; justify-content: center; }
+  #tray { display: block; width: 100%; height: auto; touch-action: manipulation; }
+
+  .result { min-height: 8.5rem; padding: 12px 4px 4px; text-align: center; }
+  .result__label { margin: 0; color: var(--ink-muted); font-size: .9375rem; font-weight: 500; }
+  .result__line {
+    margin: 2px 0 0;
+    font: 700 1.5rem/1.25 var(--font-display);
+    font-variant-numeric: lining-nums tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .result__line--waiting { color: var(--ink-muted); }
+  .result__note { margin: 4px 0 0; color: var(--ink-muted); }
+  .result__word { margin: 6px 0 0; font: 800 1.5rem/1.2 var(--font-display); }
+  .result__word--crit { color: var(--gold-ink); }
+  .result__word--crit::after {
+    content: ''; display: block; width: 3.5em; height: 3px; margin: 4px auto 0;
+    border-radius: 2px; background: var(--die-gold);
+  }
+  .result__word--fumble { color: var(--accent); font-size: 1.25rem; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 12px; }
+  .seed-note { margin: 10px 0 0; text-align: center; color: var(--ink-muted); font-size: .875rem; font-variant-numeric: tabular-nums; }
+
+  .btn {
+    min-height: 48px; padding: 0 20px; border-radius: 10px; cursor: pointer;
+    font: 700 1rem/1 var(--font-text);
+  }
+  .btn--primary { background: var(--accent); color: var(--on-accent); border: 0; }
+  .btn--primary:hover { background: var(--accent-strong); }
+  .btn--secondary { background: transparent; color: var(--ink); border: 1px solid var(--control-line); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .controls { display: grid; gap: 20px; }
+  .group + .group { padding-top: 20px; border-top: 1px solid var(--line); }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  legend, .group__title {
+    display: block; float: left; width: 100%; padding: 0; margin: 0 0 10px;
+    font: 700 1.0625rem/1.3 var(--font-display);
+  }
+
+  legend + *, .group__title + * { clear: both; }
+  .scenarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .scn {
+    position: relative; min-height: 48px; padding: 8px 12px 8px 16px; text-align: left; cursor: pointer;
+    border: 1px solid var(--control-line); border-radius: 10px; background: var(--surface); color: var(--ink);
+    font: 500 .9375rem/1.25 var(--font-text);
+  }
+  .scn[aria-pressed="true"] { border: 2px solid var(--accent); padding: 7px 11px 7px 15px; background: var(--accent-soft); font-weight: 700; }
+  .scn[aria-pressed="true"]::before {
+    content: ''; position: absolute; left: 5px; top: 9px; bottom: 9px; width: 3px; border-radius: 2px; background: var(--accent);
+  }
+
+  .fields { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 560px) { .fields { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); } }
+  .field { display: grid; gap: 4px; align-content: start; }
+  .field label { font-weight: 700; font-size: .9375rem; }
+  .field input {
+    width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--control-line); border-radius: 8px;
+    background: var(--surface); color: var(--ink); font: 400 1rem var(--font-text);
+  }
+  .field input::placeholder { color: var(--ink-muted); opacity: 1; }
+  .field input:disabled { opacity: .55; }
+  .field input[aria-invalid="true"] { border: 2px solid var(--danger-ink); }
+  .hint { margin: 0; color: var(--ink-muted); font-size: .875rem; }
+  .error { margin: 0; color: var(--danger-ink); font-size: .875rem; font-weight: 700; }
+
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  .choice {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 16px 0 12px; cursor: pointer;
+    border: 1px solid var(--control-line); border-radius: 999px; background: var(--surface);
+  }
+  .choice input { accent-color: var(--accent); width: 18px; height: 18px; margin: 0; }
+  .choice input:focus-visible { outline: none; }
+  .choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+  .choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  .speed { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+  .speed input { width: 100%; min-height: 44px; accent-color: var(--accent); margin: 0; }
+  .speed output { min-width: 3.2em; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .mix-hint { margin-bottom: 8px; }
+  .mix { display: grid; gap: 4px 24px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 560px) { .mix { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .mix__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; }
+  .mix__row label { font-weight: 700; font-size: .9375rem; }
+  .mix__row output { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mix__row input { grid-column: 1 / -1; width: 100%; min-height: 44px; accent-color: var(--accent); margin: 0; }
+
+  .switches { display: grid; gap: 4px; }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; cursor: pointer; }
+  .switch__text { display: grid; }
+  .switch__hint { color: var(--ink-muted); font-size: .875rem; }
+  .switch input {
+    appearance: none; -webkit-appearance: none; position: relative; flex: none; margin: 0; cursor: pointer;
+    width: 48px; height: 28px; border-radius: 14px; border: 1px solid var(--control-line); background: var(--surface-sunk);
+    transition: background-color .15s;
+  }
+  .switch input::before {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: var(--control-line); transition: transform .15s;
+  }
+  .switch input:checked { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked::before { transform: translateX(20px); background: var(--on-accent); }
+
+  .how { margin-top: 16px; }
+  .how summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+  .how ul { margin: 4px 0 0; padding-left: 1.2em; color: var(--ink-muted); }
+  .how li + li { margin-top: 6px; }
+
+  @media (max-width: 420px) {
+    h1 { font-size: 1.75rem; }
+    .result__line { font-size: 1.3125rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <p class="eyebrow">MeuRPG · protótipo</p>
+    <h1>Dados em 2D</h1>
+    <p class="lede">Dados de verdade, vistos de cima e desenhados chapados, rolando numa bandeja pequena. O número final vem do servidor: a animação só escolhe o caminho até ele.</p>
+  </header>
+
+  <main class="layout">
+    <section class="card stage" aria-labelledby="stage-title">
+      <h2 id="stage-title" class="sr-only">Bandeja</h2>
+      <div class="tray-wrap"><canvas id="tray" aria-hidden="true"></canvas></div>
+      <div class="result">
+        <p class="result__label" id="r-label">Escolha um cenário</p>
+        <p class="result__line result__line--waiting" id="r-line">A bandeja está vazia.</p>
+        <p class="result__note" id="r-note" hidden></p>
+        <p class="result__word" id="r-word" hidden></p>
+      </div>
+      <p class="sr-only" id="live" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" class="btn btn--primary" id="again">Rolar de novo</button>
+        <button type="button" class="btn btn--secondary" id="replay" disabled>Repetir esta rolagem</button>
+      </div>
+      <p class="seed-note" id="seed-note" hidden></p>
+    </section>
+
+    <section class="card controls" aria-labelledby="controls-title">
+      <h2 id="controls-title" class="sr-only">Controles</h2>
+
+      <div class="group">
+        <h3 class="group__title" id="scn-title">Cenário</h3>
+        <div class="scenarios" id="scenarios" role="group" aria-labelledby="scn-title"></div>
+      </div>
+
+      <fieldset class="group">
+        <legend>Resultado do servidor</legend>
+        <div class="fields">
+          <div class="field">
+            <label for="results">Resultados</label>
+            <input id="results" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="aleatório" aria-describedby="results-hint">
+            <p class="hint" id="results-hint"></p>
+          </div>
+          <div class="field">
+            <label for="mod">Modificador</label>
+            <input id="mod" type="number" step="1" min="-10" max="20" aria-describedby="mod-hint">
+            <p class="hint" id="mod-hint"></p>
+          </div>
+          <div class="field">
+            <label for="seed">Semente</label>
+            <input id="seed" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="aleatória" aria-describedby="seed-hint">
+            <p class="hint" id="seed-hint">Vazia: uma nova a cada rolagem.</p>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>Bandeja</legend>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="size" value="phone"> Celular (320)</label>
+          <label class="choice"><input type="radio" name="size" value="laptop"> Notebook (480)</label>
+        </div>
+      </fieldset>
+
+      <div class="group">
+        <label class="group__title" for="speed">Velocidade</label>
+        <div class="speed">
+          <input id="speed" type="range" min="0.5" max="1.5" step="0.25" value="1" aria-describedby="speed-out">
+          <output id="speed-out" for="speed">1×</output>
+        </div>
+      </div>
+
+      <div class="group switches">
+        <label class="switch">
+          <span class="switch__text"><span>Movimento reduzido</span><span class="switch__hint">Os dados aparecem parados, já com o resultado.</span></span>
+          <input type="checkbox" id="reduced">
+        </label>
+        <label class="switch">
+          <span class="switch__text"><span>Som</span><span class="switch__hint">Cada choque, queda e virada do dado na mesa.</span></span>
+          <input type="checkbox" id="sound">
+        </label>
+      </div>
+
+      <fieldset class="group">
+        <legend>Ajustar o som</legend>
+        <p class="hint mix-hint">Com o som ligado, mexa e role de novo. Os números ajudam a dizer o que ficou melhor.</p>
+        <div class="mix">
+          <div class="mix__row">
+            <label for="mix-volume">Volume</label><output id="mix-volume-out" for="mix-volume">1,0×</output>
+            <input id="mix-volume" type="range" min="0" max="2" step="0.1" value="1">
+          </div>
+          <div class="mix__row">
+            <label for="mix-taps">Toques ao rolar</label><output id="mix-taps-out" for="mix-taps">1,0×</output>
+            <input id="mix-taps" type="range" min="0" max="3" step="0.1" value="1">
+          </div>
+          <div class="mix__row">
+            <label for="mix-rumble">Ronco do rolar</label><output id="mix-rumble-out" for="mix-rumble">1,0×</output>
+            <input id="mix-rumble" type="range" min="0" max="3" step="0.1" value="1">
+          </div>
+          <div class="mix__row">
+            <label for="mix-room">Sala</label><output id="mix-room-out" for="mix-room">1,0×</output>
+            <input id="mix-room" type="range" min="0" max="3" step="0.1" value="1">
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>Tema</legend>
+        <div class="choices">
+          <label class="choice"><input type="radio" name="theme" value="auto" checked> Automático</label>
+          <label class="choice"><input type="radio" name="theme" value="light"> Claro</label>
+          <label class="choice"><input type="radio" name="theme" value="dark"> Escuro</label>
+        </div>
+      </fieldset>
+    </section>
+  </main>
+
+  <details class="card how">
+    <summary>Como funciona</summary>
+    <ul>
+      <li>A rolagem inteira é calculada antes de aparecer, em passos fixos de 1/120 s. Por isso a mesma semente repete a mesma rolagem, em qualquer tela.</li>
+      <li>Cada dado é um poliedro de verdade (o d10 é um trapezoedro pentagonal). A animação é montada de trás para frente, a partir do resultado do servidor parado na mesa: cada virada é uma virada de verdade sobre uma aresta. Por isso o dado cai de face em cada virada e para no resultado, com o número quase de pé, sem nada saltar no fim.</li>
+      <li>As colisões são entre círculos, então a orientação do dado não muda o movimento: a física não é empurrada para lugar nenhum.</li>
+      <li>Vistos de cima, sem perspectiva e com sombreado em faixas, os dados parecem um desenho, mas rolam como dados.</li>
+      <li>O som também sai da simulação: cada choque (dado com dado, dado na borda), cada queda e cada virada de face no feltro vira um toque, marcado no relógio do áudio um pouco antes de aparecer na tela. Por baixo, um ronco baixo acompanha a velocidade dos dados. Tudo passa por um compressor, então muitos dados juntos se misturam em vez de se amontoar.</li>
+      <li>Com movimento reduzido, os dados aparecem parados, já com o resultado.</li>
+    </ul>
+  </details>
+</div>
+
+<script>
+/*
+ * DiceTray: dice rolling in a small tray, drawn flat from above on a 2D canvas, with no dependencies.
+ *
+ *   const tray = DiceTray.create(canvas, { width: 480, height: 260, reducedMotion: false, sound: false });
+ *   const out = await tray.roll([{ sides: 20, result: 17 }, { sides: 20, result: 4, discarded: true }], { seed: 42, speed: 1 });
+ *
+ * The results always come from the caller (the server): the animation never decides them.
+ *
+ * How a roll is made:
+ * 1. The whole roll is simulated first, headless, at a fixed step (PHYS.dt), and every step is recorded.
+ *    Each die is a circle on the table (x, y), with a height (z) for the throw, a flat spin, and a "tumble":
+ *    a progress p from 0 to 1 through tipping over one edge onto the next face. Rolling on the felt drives p
+ *    (rolling without slipping); in the air it keeps turning; balanced on an edge, it falls back before
+ *    half-way and over after it. Every time p passes 1, the die lands on a new face (k counts them).
+ * 2. Hindsight: the dice are real polyhedra (d4 to d20, the d10 a pentagonal trapezohedron). Walking the
+ *    recording backwards from the server's result at rest, each tumble becomes a real tip over a real edge
+ *    of the face it was resting on. So the die lands flat on every face on the way and ends on the result
+ *    with its number upright. The collisions are circles, so the orientation never changes the motion:
+ *    nothing is steered and nothing snaps at the end.
+ * 3. Playback draws the recorded steps with requestAnimationFrame, interpolated, at the chosen speed: each
+ *    die projected straight from above (orthographic), with flat, banded shading, so it reads as a drawing.
+ */
+const DiceTray = (() => {
+  'use strict';
+
+  const TAU = Math.PI * 2;
+
+  /*
+   * Physics, in tray pixels and seconds, for a die 24 px in radius. Lengths, speeds and accelerations are
+   * multiplied by (die radius / 24), so a phone tray rolls in the same time as a laptop one.
+   */
+  const PHYS = Object.freeze({
+    dt: 1 / 120,             // fixed step (s): the same seed gives the same roll at any frame rate
+    gravity: 2400,           // px/s²: pulls a die in the air back to the felt
+    throwHeight: [34, 52],   // px above the felt where a die enters
+    throwLift: [-20, 70],    // px/s: its vertical speed as it enters
+    throwSpeed: [480, 820],  // px/s across the tray (a wide range: some rolls stop mid-tray, some hit the far wall)
+    throwSpin: [3, 11],      // rad/s: turning flat on the table
+    airTumble: [7, 13],      // faces/s while in the air
+    landQuiet: 120,          // px/s: a landing slower than this does not bounce
+    floorBounce: 0.36,       // vertical restitution when a die lands
+    landKeep: 0.88,          // share of the horizontal speed kept on a bouncing landing
+    wallBounce: 0.5,         // restitution against the walls
+    wallFriction: 0.3,       // Coulomb friction at the walls: a glancing hit turns into spin
+    diceBounce: 0.45,        // restitution die against die
+    diceFriction: 0.2,       // friction die against die (turns into spin on both)
+    rollDecel: 220,          // px/s²: rolling resistance of the felt
+    rollDrag: 0.6,           // 1/s: a small viscous part on top of it
+    spinDecel: 9,            // rad/s²: friction on the flat spin
+    spinDrag: 1.2,           // 1/s
+    tipCouple: 22,           // 1/s: how firmly the tumble follows the rolling speed
+    gripSpeed: 2.5,          // faces/s: slower than this, a die pivots on its edge instead of rolling
+    tipGravity: 22,          // faces/s²: balanced on an edge, it falls back before half-way, over after it
+    tipDrag: 3,              // 1/s
+    tipSettle: 4,            // 1/s: extra drag on the tumble of a die that has (nearly) stopped rolling
+    faceSlap: 0.4,           // share of the tumble speed kept when a rocking die slaps back onto its face
+    softEnd: 1.6,            // s: after this the felt brakes harder, so a roll ends by about 2 s
+    brake: 10,               // 1/s²: how fast that extra drag grows
+    hardEnd: 3,              // s: nothing is simulated past this; a die still moving is laid down
+    restSpeed: 3,            // px/s: slower than this (and flat, and still) a die is at rest
+    restSpin: 0.3,           // rad/s
+    clickSpeed: 90,          // px/s: an impact harder than this is an event (sound)
+    landTick: 40,            // px/s: a landing too soft to bounce still taps the felt above this
+    rollTap: 0.2,            // the softest face-onto-felt tap, as a share of the hardest hit
+    rockTick: 0.8,           // faces/s: a die rocking back onto its face faster than this taps the felt
+    rumbleSpeed: 500,        // px/s: a die rolling this fast rumbles at full
+  });
+
+  /*
+   * Per die: step = distance rolled per face, in die radii (a round d20 tips over far more often than a cube);
+   * keep = share of the speed kept each time it lands on a new face on the felt (a d4 stops dead, a d20 runs on);
+   * wall / hit = collision radius against the walls and against other dice, in die radii;
+   * pitch = how its size moves the pitch of its sounds (a d4 is small and light, a d20 big and round).
+   */
+  const KIND = Object.freeze({
+    4: { step: 1.7, keep: 0.66, wall: 1.1, hit: 1.04, pitch: 1.14 },
+    6: { step: 1.5, keep: 0.78, wall: 1.05, hit: 1.0, pitch: 1.0 },
+    8: { step: 1.3, keep: 0.83, wall: 1.1, hit: 1.04, pitch: 1.06 },
+    10: { step: 1.2, keep: 0.85, wall: 1.1, hit: 1.04, pitch: 1.03 },
+    12: { step: 1.05, keep: 0.88, wall: 1.1, hit: 1.05, pitch: 0.96 },
+    20: { step: 0.9, keep: 0.91, wall: 1.2, hit: 1.14, pitch: 0.9 },
+  });
+
+  const INERTIA = 0.4;          // moment of inertia / (mass · r²): between a disc (0.5) and a ring of corners
+  const FRAME = 10;             // floats recorded per die per step
+  const SQUASH_KEEP = Math.exp(-16 * PHYS.dt); // the impact squash fades in about 0.15 s
+  const REST_TILT = (14 * Math.PI) / 180;     // a die stops within ±14° of upright (0 = all aligned)
+  const AFTERGLOW = 1.6;        // s of overlay animation after the dice settle (glow, sparks, labels)
+  const RIM = 9;                // px: the tray's wall, drawn and collided
+  const SIDES = [4, 6, 8, 10, 12, 20, 100];
+  const STYLES = ['paper', 'garnet'];
+  const TENS = ['00', '10', '20', '30', '40', '50', '60', '70', '80', '90'];
+  const UNITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+  const LABELS = {};
+  for (const s of [4, 6, 8, 10, 12, 20]) LABELS[s] = Array.from({ length: s }, (_, i) => String(i + 1));
+
+  const clamp = (v, lo, hi) => (v < lo ? lo : v > hi ? hi : v);
+  const between = (range, u) => range[0] + (range[1] - range[0]) * u;
+
+  /** A small, fast, seedable generator (mulberry32). */
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function randomSeed() {
+    try {
+      return globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
+    } catch {
+      return Math.floor(Math.random() * 4294967296);
+    }
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The dice the caller asks for, as bodies (a d100 is two d10: tens and units).
+  // ---------------------------------------------------------------------------------------------
+
+  function expand(dice) {
+    if (!Array.isArray(dice) || dice.length === 0) throw new TypeError('DiceTray.roll: pass at least one die');
+    const out = [];
+    dice.forEach((d, source) => {
+      const sides = d && d.sides;
+      const result = d && d.result;
+      if (!SIDES.includes(sides)) throw new RangeError(`DiceTray.roll: d${sides} is not a die`);
+      if (!Number.isInteger(result) || result < 1 || result > sides) {
+        throw new RangeError(`DiceTray.roll: ${result} does not fit a d${sides}`);
+      }
+      const base = {
+        source,
+        discarded: !!d.discarded,
+        tag: d.tag ? String(d.tag) : '',
+        critical: !!d.critical,
+        fumble: !!d.fumble,
+        part: '',
+      };
+      if (sides === 100) {
+        out.push({ ...base, kind: 10, labels: TENS, target: TENS[Math.floor((result % 100) / 10)],
+          style: STYLES.includes(d.style) ? d.style : 'garnet', part: 'dezenas' });
+        out.push({ ...base, kind: 10, labels: UNITS, target: UNITS[result % 10],
+          style: STYLES.includes(d.unitsStyle) ? d.unitsStyle : 'paper', part: 'unidades' });
+      } else {
+        out.push({ ...base, kind: sides, labels: LABELS[sides], target: String(result),
+          style: STYLES.includes(d.style) ? d.style : sides === 20 ? 'garnet' : 'paper' });
+      }
+    });
+    if (out.length > 12) throw new RangeError('DiceTray.roll: at most 12 dice fit the tray');
+    return out;
+  }
+
+  /** The die radius for a tray and a number of dice: smaller when the tray gets crowded. */
+  function dieRadius(width, height, count) {
+    const inner = Math.min(width, height) - 2 * RIM;
+    return inner * 0.14 * (count > 6 ? 0.72 : count > 4 ? 0.8 : count > 2 ? 0.9 : 1);
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The simulation: pure and deterministic (same dice, tray and seed: same frames).
+  // ---------------------------------------------------------------------------------------------
+
+  function simulateBodies(bodies, { width, height, seed }) {
+    const rng = mulberry32(seed);
+    const n = bodies.length;
+    const R = dieRadius(width, height, n);
+    const S = R / 24;
+    const box = { l: RIM, t: RIM, r: width - RIM, b: height - RIM };
+    const st = bodies.map((b, i) => {
+      const k = KIND[b.kind];
+      return {
+        i, rw: R * k.wall, rh: R * k.hit, stepLen: R * k.step, keep: k.keep, pitch: k.pitch,
+        x: 0, y: 0, vx: 0, vy: 0, z: 0, vz: 0, angle: 0, spin: 0,
+        p: 0, w: 0, k: 0, tdx: 1, tdy: 0, sq: 0, sqAng: NaN,
+        entry: '', entering: true, rest: false,
+      };
+    });
+    throwIn(st, rng, box, S);
+    const maxSteps = Math.ceil(PHYS.hardEnd / PHYS.dt);
+    const frames = new Float64Array((maxSteps + 1) * n * FRAME);
+    const events = [];
+    const rolling = new Float32Array(maxSteps + 1);
+    record(frames, st, 0);
+    let steps = 0;
+    while (steps < maxSteps && !st.every((b) => b.rest)) {
+      advance(st, steps * PHYS.dt, box, S, events);
+      steps += 1;
+      record(frames, st, steps);
+      rolling[steps] = rollingNow(st, S);
+    }
+    const forced = !st.every((b) => b.rest);
+    if (forced) {
+      for (const b of st) layDown(b);
+      record(frames, st, steps);
+    }
+    return {
+      R, S, n, steps, frames, events, forced,
+      rolling: rolling.subarray(0, steps + 1),
+      duration: steps * PHYS.dt,
+      flips: st.map((b) => b.k),
+      angles: st.map((b) => b.angle),
+    };
+  }
+
+  /** How much rolling goes on, for the rumble: each die on the felt counts up to 1, at full speed. */
+  function rollingNow(st, S) {
+    let sum = 0;
+    for (const b of st) {
+      if (!b.rest && b.z <= 0) sum += Math.min(1, Math.hypot(b.vx, b.vy) / (PHYS.rumbleSpeed * S));
+    }
+    return sum;
+  }
+
+  /**
+   * A sound event: when (simulation s), how hard (0 to 1), what hit what, which dice, their pitch and
+   * where across the tray (0 left, 1 right: the pan).
+   */
+  function sound(events, t, s, kind, box, a, b = null) {
+    events.push({
+      t, s: Math.min(1, s), kind, i: a.i, j: b ? b.i : -1,
+      pitch: b ? (a.pitch + b.pitch) / 2 : a.pitch,
+      x: clamp(((b ? (a.x + b.x) / 2 : a.x) - box.l) / (box.r - box.l), 0, 1),
+    });
+  }
+
+  function record(frames, st, i) {
+    let o = i * st.length * FRAME;
+    for (const b of st) {
+      frames[o] = b.x; frames[o + 1] = b.y; frames[o + 2] = b.angle; frames[o + 3] = b.z;
+      frames[o + 4] = b.p; frames[o + 5] = b.k; frames[o + 6] = b.tdx; frames[o + 7] = b.tdy;
+      frames[o + 8] = b.sq; frames[o + 9] = b.sqAng;
+      o += FRAME;
+    }
+  }
+
+  /** The dice come in through one edge, in the air, already tumbling, spread along it. */
+  function throwIn(st, rng, box, S) {
+    const u = rng();
+    const edge = u < 0.4 ? 'left' : u < 0.8 ? 'right' : 'bottom';
+    const n = st.length;
+    const slots = st.map((_, i) => i);
+    for (let i = n - 1; i > 0; i -= 1) {
+      const j = Math.floor(rng() * (i + 1));
+      [slots[i], slots[j]] = [slots[j], slots[i]];
+    }
+    const midY = (box.t + box.b) / 2;
+    const midX = (box.l + box.r) / 2;
+    st.forEach((b, i) => {
+      const R = b.rw;
+      const slot = clamp((slots[i] + 0.5) / n + (rng() - 0.5) * 0.12, 0, 1);
+      const back = R * (1.2 + rng() * 1.1);
+      // from the player's side the tray is short: a softer throw, or every die ends against the far wall
+      const speed = between(PHYS.throwSpeed, rng()) * S * (edge === 'bottom' ? 0.62 : 1);
+      const spread = (rng() - 0.5) * 0.6;
+      if (edge === 'bottom') {
+        b.x = box.l + (box.r - box.l) * (0.15 + 0.7 * slot);
+        b.y = box.b + back;
+        const ang = spread + ((midX - b.x) / (box.r - box.l)) * 0.5;
+        b.vx = speed * Math.sin(ang);
+        b.vy = -speed * Math.cos(ang);
+      } else {
+        const dir = edge === 'left' ? 1 : -1;
+        b.y = box.t + (box.b - box.t) * (0.18 + 0.64 * slot);
+        b.x = edge === 'left' ? box.l - back : box.r + back;
+        // aim a little toward the middle, so the dice do not hug a side wall
+        const ang = spread + ((midY - b.y) / (box.b - box.t)) * 0.5;
+        b.vx = dir * speed * Math.cos(ang);
+        b.vy = speed * Math.sin(ang);
+      }
+      b.z = between(PHYS.throwHeight, rng()) * S;
+      b.vz = between(PHYS.throwLift, rng()) * S;
+      b.spin = between(PHYS.throwSpin, rng()) * (rng() < 0.5 ? -1 : 1);
+      b.w = between(PHYS.airTumble, rng());
+      b.p = rng(); // already part-way through a tumble when it comes in
+      b.entry = edge;
+      aim(b);
+    });
+  }
+
+  function aim(b) {
+    const sp = Math.hypot(b.vx, b.vy);
+    if (sp > 1e-6) {
+      b.tdx = b.vx / sp;
+      b.tdy = b.vy / sp;
+      return true;
+    }
+    return false;
+  }
+
+  function squash(b, amount, angle) {
+    if (amount > b.sq) {
+      b.sq = amount;
+      b.sqAng = angle;
+    }
+  }
+
+  function advance(st, t, box, S, events) {
+    const dt = PHYS.dt;
+    const brake = t > PHYS.softEnd ? (t - PHYS.softEnd) * PHYS.brake : 0;
+    for (const b of st) {
+      if (b.rest) continue;
+      // Height: a thrown die hops two or three times before it rolls.
+      if (b.z > 0 || b.vz > 0) {
+        b.vz -= PHYS.gravity * S * dt;
+        b.z += b.vz * dt;
+        if (b.z <= 0) {
+          b.z = 0;
+          const impact = -b.vz;
+          if (impact > PHYS.landQuiet * S) {
+            b.vz = impact * PHYS.floorBounce;
+            b.vx *= PHYS.landKeep;
+            b.vy *= PHYS.landKeep;
+            squash(b, Math.min(0.14, impact / (3200 * S)), NaN);
+            sound(events, t, impact / (900 * S), 'floor', box, b);
+          } else {
+            b.vz = 0;
+            if (impact > PHYS.landTick * S) sound(events, t, impact / (900 * S), 'floor', box, b);
+          }
+        }
+      }
+      const grounded = b.z <= 0;
+      if (grounded) {
+        const sp = Math.hypot(b.vx, b.vy);
+        if (sp > 0) {
+          const ns = Math.max(0, sp - (PHYS.rollDecel * S + (PHYS.rollDrag + brake) * sp) * dt);
+          b.vx *= ns / sp;
+          b.vy *= ns / sp;
+        }
+        const as = Math.abs(b.spin);
+        if (as > 0) b.spin *= Math.max(0, as - (PHYS.spinDecel + (PHYS.spinDrag + brake) * as) * dt) / as;
+      }
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.angle += b.spin * dt;
+      tumble(b, grounded, t, box, S, events);
+      b.sq *= SQUASH_KEEP;
+    }
+    for (let pass = 0; pass < 2; pass += 1) {
+      for (let i = 0; i < st.length; i += 1) {
+        for (let j = i + 1; j < st.length; j += 1) collide(st[i], st[j], t, events, S, pass === 0, box);
+      }
+    }
+    for (const b of st) walls(b, box, t, events, S);
+    for (const b of st) checkRest(b, S);
+  }
+
+  /*
+   * The tumble: p goes from 0 (flat on face k) to 1 (flat on face k + 1), tipping over the edge that faces
+   * the direction (tdx, tdy). On the felt it follows rolling without slipping; slowed down, the edge balance
+   * decides: before half-way it falls back (and may rock onto the opposite edge), after it falls over.
+   */
+  function tumble(b, grounded, t, box, S, events) {
+    const dt = PHYS.dt;
+    if (!grounded) {
+      b.p += b.w * dt;
+    } else {
+      const sp = Math.hypot(b.vx, b.vy);
+      const roll = (b.vx * b.tdx + b.vy * b.tdy) / b.stepLen;
+      const grip = Math.min(1, sp / (b.stepLen * PHYS.gripSpeed));
+      b.w += (roll - b.w) * Math.min(1, PHYS.tipCouple * grip * dt);
+      // never balanced on the edge for long: the push does not fade to nothing at half-way
+      const lean = Math.cos(Math.PI * b.p);
+      b.w -= PHYS.tipGravity * (Math.abs(lean) < 0.35 ? (lean < 0 ? -0.35 : 0.35) : lean) * dt;
+      b.w *= Math.max(0, 1 - (PHYS.tipDrag + PHYS.tipSettle * (1 - grip)) * dt);
+      b.p += b.w * dt;
+    }
+    if (b.p >= 1) {
+      b.p -= 1;
+      b.k += 1;
+      if (grounded) {
+        // the new face taps the felt: the rolling sound is these taps, closer together the faster it rolls
+        sound(events, t, PHYS.rollTap + Math.hypot(b.vx, b.vy) / (700 * S), 'roll', box, b);
+        b.vx *= b.keep;
+        b.vy *= b.keep;
+        squash(b, 0.035, NaN);
+        // a slow die falling onto its new face lands flat instead of tipping on toward the next one
+        const grip = Math.min(1, Math.hypot(b.vx, b.vy) / (b.stepLen * PHYS.gripSpeed));
+        b.w *= PHYS.faceSlap + (1 - PHYS.faceSlap) * grip;
+      }
+      aim(b);
+    } else if (b.p < 0) {
+      // Rocked back past flat: the face slaps the felt (losing most of the rock when slow), and it tips
+      // over the opposite edge, or the way it is sliding.
+      const sp = Math.hypot(b.vx, b.vy);
+      const grip = grounded ? Math.min(1, sp / (b.stepLen * PHYS.gripSpeed)) : 1;
+      if (grounded && Math.abs(b.w) > PHYS.rockTick) sound(events, t, Math.abs(b.w) / 6, 'rock', box, b);
+      b.p = -b.p;
+      b.w = -b.w * (PHYS.faceSlap + (1 - PHYS.faceSlap) * grip);
+      if (!(grounded && sp > b.stepLen * 1.5 && aim(b))) {
+        b.tdx = -b.tdx;
+        b.tdy = -b.tdy;
+      }
+    }
+  }
+
+  /** Two dice: circles with restitution and friction (the friction spins both). */
+  function collide(a, b, t, events, S, report, box) {
+    if (a.entering || b.entering || (a.rest && b.rest)) return;
+    if (Math.abs(a.z - b.z) > a.rh) return;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const rr = a.rh + b.rh;
+    const d2 = dx * dx + dy * dy;
+    if (d2 >= rr * rr) return;
+    const d = Math.sqrt(d2);
+    const nx = d > 1e-6 ? dx / d : 1;
+    const ny = d > 1e-6 ? dy / d : 0;
+    const pen = (rr - d) / 2;
+    a.x -= nx * pen; a.y -= ny * pen;
+    b.x += nx * pen; b.y += ny * pen;
+    // velocity of each contact point: v + spin × r
+    const rvx = (b.vx + b.spin * ny * b.rh) - (a.vx - a.spin * ny * a.rh);
+    const rvy = (b.vy - b.spin * nx * b.rh) - (a.vy + a.spin * nx * a.rh);
+    const vn = rvx * nx + rvy * ny;
+    if (vn >= 0) return;
+    a.rest = false;
+    b.rest = false;
+    const jn = (-(1 + PHYS.diceBounce) * vn) / 2;
+    a.vx -= jn * nx; a.vy -= jn * ny;
+    b.vx += jn * nx; b.vy += jn * ny;
+    const tx = -ny;
+    const ty = nx;
+    const vt = rvx * tx + rvy * ty;
+    const lim = PHYS.diceFriction * jn;
+    const jt = clamp(-vt / (2 + 2 / INERTIA), -lim, lim);
+    a.vx -= jt * tx; a.vy -= jt * ty;
+    b.vx += jt * tx; b.vy += jt * ty;
+    a.spin -= jt / (INERTIA * a.rh);
+    b.spin -= jt / (INERTIA * b.rh);
+    const ang = Math.atan2(ny, nx);
+    squash(a, Math.min(0.12, -vn / (3000 * S)), ang);
+    squash(b, Math.min(0.12, -vn / (3000 * S)), ang);
+    if (report && -vn > PHYS.clickSpeed * S) sound(events, t, -vn / (700 * S), 'dice', box, a, b);
+  }
+
+  function walls(b, box, t, events, S) {
+    if (b.rest) return;
+    if (b.entering) {
+      const inside = b.entry === 'left' ? b.x - b.rw >= box.l
+        : b.entry === 'right' ? b.x + b.rw <= box.r
+          : b.y + b.rw <= box.b;
+      if (inside) {
+        b.entering = false;
+      } else {
+        // whatever happened, keep it coming in
+        const min = 60 * S;
+        if (b.entry === 'left' && b.vx < min) b.vx = min;
+        if (b.entry === 'right' && b.vx > -min) b.vx = -min;
+        if (b.entry === 'bottom' && b.vy > -min) b.vy = -min;
+      }
+    }
+    const skip = b.entering ? b.entry : '';
+    let hit = 0;
+    if (skip !== 'left' && b.x - b.rw < box.l) hit = Math.max(hit, wallHit(b, 1, 0, box.l - (b.x - b.rw)));
+    if (skip !== 'right' && b.x + b.rw > box.r) hit = Math.max(hit, wallHit(b, -1, 0, b.x + b.rw - box.r));
+    if (b.y - b.rw < box.t) hit = Math.max(hit, wallHit(b, 0, 1, box.t - (b.y - b.rw)));
+    if (skip !== 'bottom' && b.y + b.rw > box.b) hit = Math.max(hit, wallHit(b, 0, -1, b.y + b.rw - box.b));
+    if (hit > PHYS.clickSpeed * S) sound(events, t, hit / (700 * S), 'wall', box, b);
+  }
+
+  /** A wall with inward normal (nx, ny): restitution, and friction at the contact point turned into spin. */
+  function wallHit(b, nx, ny, pen) {
+    b.x += nx * pen;
+    b.y += ny * pen;
+    const r = b.rw;
+    const cvx = b.vx + b.spin * ny * r;
+    const cvy = b.vy - b.spin * nx * r;
+    const vn = cvx * nx + cvy * ny;
+    if (vn >= 0) return 0;
+    const jn = -(1 + PHYS.wallBounce) * vn;
+    b.vx += jn * nx;
+    b.vy += jn * ny;
+    const tx = -ny;
+    const ty = nx;
+    const vt = cvx * tx + cvy * ty;
+    const lim = PHYS.wallFriction * jn;
+    const jt = clamp(-vt / (1 + 1 / INERTIA), -lim, lim);
+    b.vx += jt * tx;
+    b.vy += jt * ty;
+    b.spin -= jt / (INERTIA * r);
+    squash(b, Math.min(0.14, -vn / (2600 * (r / 24))), Math.atan2(ny, nx));
+    return -vn;
+  }
+
+  function checkRest(b, S) {
+    if (b.rest || b.entering || b.z > 0 || b.vz !== 0) return;
+    if (Math.hypot(b.vx, b.vy) < PHYS.restSpeed * S && Math.abs(b.spin) < PHYS.restSpin
+      && b.p < 0.02 && Math.abs(b.w) < 0.6) {
+      b.rest = true;
+      b.vx = 0; b.vy = 0; b.spin = 0; b.w = 0; b.p = 0;
+    }
+  }
+
+  /** The hard cap: whatever still moves is laid down on the nearer face. */
+  function layDown(b) {
+    if (b.p > 0.5) b.k += 1;
+    b.p = 0; b.w = 0; b.vx = 0; b.vy = 0; b.spin = 0; b.z = 0; b.vz = 0;
+    b.rest = true;
+    b.entering = false;
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The dice are real polyhedra. Seen from straight above (orthographic) with flat, banded shading
+  // they read as drawings, but they really turn over their edges as they roll.
+  // Coordinates here: x right, y up (the screen's up), z toward the viewer.
+  // ---------------------------------------------------------------------------------------------
+
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const v3 = {
+    sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+    scale: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+    dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+    cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+    norm: (a) => {
+      const l = Math.hypot(a[0], a[1], a[2]) || 1;
+      return [a[0] / l, a[1] / l, a[2] / l];
+    },
+    mean: (pts) => {
+      const c = [0, 0, 0];
+      for (const p of pts) { c[0] += p[0]; c[1] += p[1]; c[2] += p[2]; }
+      return [c[0] / pts.length, c[1] / pts.length, c[2] / pts.length];
+    },
+  };
+
+  /** 3×3 rotation matrices, row-major arrays of 9. */
+  const m3 = {
+    mul(a, b) {
+      const r = new Array(9);
+      for (let i = 0; i < 3; i += 1) {
+        for (let j = 0; j < 3; j += 1) r[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+      }
+      return r;
+    },
+    apply: (m, v) => [
+      m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
+      m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
+      m[6] * v[0] + m[7] * v[1] + m[8] * v[2]],
+    /** Rotation by angle a about the unit axis u (Rodrigues). */
+    rot(u, a) {
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      const t = 1 - c;
+      const [x, y, z] = u;
+      return [t * x * x + c, t * x * y - s * z, t * x * z + s * y,
+        t * x * y + s * z, t * y * y + c, t * y * z - s * x,
+        t * x * z - s * y, t * y * z + s * x, t * z * z + c];
+    },
+    rotZ(a) {
+      const c = Math.cos(a);
+      const s = Math.sin(a);
+      return [c, -s, 0, s, c, 0, 0, 0, 1];
+    },
+    /** The rotation that takes the body basis (r, u, n) onto the world basis (R, U, N). */
+    basis(r, u, n, R, U, N) {
+      const out = new Array(9);
+      for (let i = 0; i < 3; i += 1) {
+        for (let j = 0; j < 3; j += 1) out[i * 3 + j] = R[i] * r[j] + U[i] * u[j] + N[i] * n[j];
+      }
+      return out;
+    },
+  };
+
+  /** The faces of a convex solid from its face normals: the vertices furthest along each normal, in turn. */
+  function facesFromNormals(verts, normals) {
+    return normals.map((n0) => {
+      const n = v3.norm(n0);
+      let best = -Infinity;
+      for (const v of verts) best = Math.max(best, v3.dot(v, n));
+      return verts.map((v, i) => [i, v3.dot(v, n)]).filter(([, d]) => d > best - 1e-6).map(([i]) => i);
+    });
+  }
+
+  function signs(list) {
+    const out = [];
+    for (const p of list) {
+      const options = p.map((x) => (x === 0 ? [0] : [x, -x]));
+      for (const a of options[0]) for (const b of options[1]) for (const c of options[2]) out.push([a, b, c]);
+    }
+    return out;
+  }
+
+  const ICOSA = () => signs([[0, 1, PHI], [1, PHI, 0], [PHI, 0, 1]]);
+  // the dual of ICOSA: its vertices sit over ICOSA's face centres
+  const DODECA = () => signs([[1, 1, 1], [1 / PHI, 0, PHI], [0, PHI, 1 / PHI], [PHI, 1 / PHI, 0]]);
+
+  /*
+   * Silhouette radius at rest, in die radii (R): sets each solid's size, so the dice look alike in
+   * size at rest; and how big a face's number is, against the face's inradius.
+   */
+  const LOOK = Object.freeze({
+    4: { rest: 1.5, digits: 0.62 },
+    6: { rest: 1.14, digits: 1.25 },
+    8: { rest: 1.26, digits: 1.35 },
+    10: { rest: 1.3, digits: 1.35 },
+    12: { rest: 1.22, digits: 1.35 },
+    20: { rest: 1.36, digits: 1.5 },
+  });
+
+  const POLY = {};
+  for (const kind of [4, 6, 8, 10, 12, 20]) POLY[kind] = buildPoly(kind);
+
+  function buildPoly(kind) {
+    let verts;
+    let faceIdx;
+    if (kind === 4) {
+      verts = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]];
+      faceIdx = facesFromNormals(verts, verts.map((v) => v3.scale(v, -1)));
+    } else if (kind === 6) {
+      verts = signs([[1, 1, 1]]);
+      faceIdx = facesFromNormals(verts, [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]);
+    } else if (kind === 8) {
+      verts = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+      faceIdx = facesFromNormals(verts, signs([[1, 1, 1]]));
+    } else if (kind === 12) {
+      verts = DODECA();
+      faceIdx = facesFromNormals(verts, ICOSA());
+    } else if (kind === 20) {
+      verts = ICOSA();
+      faceIdx = facesFromNormals(verts, DODECA());
+    } else {
+      // A pentagonal trapezohedron: two apexes, two rings of five, ten kites. The ring height z0 and the
+      // apex height h keep each kite flat: h = z0 (1 + cos 36°) / (1 − cos 36°).
+      const z0 = 0.105;
+      const c36 = Math.cos(Math.PI / 5);
+      const h = (z0 * (1 + c36)) / (1 - c36);
+      verts = [[0, 0, h], [0, 0, -h]];
+      for (let k = 0; k < 5; k += 1) verts.push([Math.cos((k * TAU) / 5), Math.sin((k * TAU) / 5), z0]);
+      for (let k = 0; k < 5; k += 1) verts.push([Math.cos((k * TAU) / 5 + Math.PI / 5), Math.sin((k * TAU) / 5 + Math.PI / 5), -z0]);
+      faceIdx = [];
+      for (let k = 0; k < 5; k += 1) {
+        const k1 = (k + 1) % 5;
+        faceIdx.push([0, 2 + k, 7 + k, 2 + k1]);
+        faceIdx.push([1, 7 + k, 2 + k1, 7 + k1]);
+      }
+    }
+    const radius = Math.max(...verts.map((v) => Math.hypot(v[0], v[1], v[2])));
+    verts = verts.map((v) => v3.scale(v, 1 / radius));
+
+    const faces = faceIdx.map((idx0) => {
+      const c = v3.mean(idx0.map((i) => verts[i]));
+      let n = v3.norm(v3.cross(v3.sub(verts[idx0[1]], verts[idx0[0]]), v3.sub(verts[idx0[2]], verts[idx0[0]])));
+      if (v3.dot(n, c) < 0) n = v3.scale(n, -1);
+      // counter-clockwise seen from outside
+      const e1 = v3.norm(v3.sub(verts[idx0[0]], c));
+      const e2 = v3.cross(n, e1);
+      const angle = (i) => {
+        const d = v3.sub(verts[i], c);
+        return Math.atan2(v3.dot(d, e2), v3.dot(d, e1));
+      };
+      const idx = idx0.slice().sort((a, b) => angle(a) - angle(b));
+      // where a number's top points: the apex of a kite, a corner of a triangle or pentagon, an edge of a square
+      let toward;
+      if (kind === 10) toward = verts[idx.find((i) => i < 2)];
+      else if (kind === 6) toward = v3.mean([verts[idx[0]], verts[idx[1]]]);
+      else toward = verts[idx[0]];
+      const up = v3.norm(v3.sub(toward, c));
+      let inr = Infinity;
+      idx.forEach((a, i) => {
+        const b = idx[(i + 1) % idx.length];
+        const ab = v3.sub(verts[b], verts[a]);
+        const ac = v3.sub(c, verts[a]);
+        const t = v3.dot(ac, ab) / v3.dot(ab, ab);
+        const foot = [verts[a][0] + ab[0] * t, verts[a][1] + ab[1] * t, verts[a][2] + ab[2] * t];
+        inr = Math.min(inr, Math.hypot(...v3.sub(c, foot)));
+      });
+      return { idx, c, n, up, right: v3.cross(up, n), inr, edges: [] };
+    });
+
+    // Edges, the two faces on each, and the angle a die turns when it tips over that edge.
+    const byKey = new Map();
+    faces.forEach((f, fi) => f.idx.forEach((a, i) => {
+      const b = f.idx[(i + 1) % f.idx.length];
+      const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+      if (!byKey.has(key)) byKey.set(key, { a, b, f0: fi, f1: -1 });
+      else byKey.get(key).f1 = fi;
+    }));
+    const edges = [...byKey.values()];
+    for (const e of edges) {
+      e.beta = Math.acos(clamp(v3.dot(faces[e.f0].n, faces[e.f1].n), -1, 1));
+      e.mid = v3.mean([verts[e.a], verts[e.b]]);
+      faces[e.f0].edges.push(e);
+      faces[e.f1].edges.push(e);
+    }
+
+    // Sized so the silhouette, flat on a face, has the radius LOOK[kind].rest (in die radii).
+    const flat = restingOn(faces[0]);
+    const sil = Math.max(...verts.map((v) => {
+      const w = m3.apply(flat, v);
+      return Math.hypot(w[0], w[1]);
+    }));
+    // A d4 shows its result on the top corner: the number goes on every face, near each corner.
+    const corners = kind === 4 ? faces.map((f) => f.idx.map((vi) => {
+      const up = v3.norm(v3.sub(verts[vi], f.c));
+      return { vi, at: v3.sub(f.c, v3.scale(v3.sub(f.c, verts[vi]), 0.3)), up, right: v3.cross(up, f.n) };
+    })) : null;
+    return { kind, verts, faces, edges, size: LOOK[kind].rest / sil, digits: LOOK[kind].digits, corners };
+  }
+
+  /** A pose with face f flat on the table (its normal pointing down). */
+  function restingOn(f) {
+    const n = f.n;
+    const r = v3.norm(Math.abs(n[2]) < 0.9 ? v3.cross([0, 0, 1], n) : v3.cross([1, 0, 0], n));
+    const u = v3.cross(n, r);
+    return m3.basis(r, u, n, [1, 0, 0], [0, -1, 0], [0, 0, -1]);
+  }
+
+  /*
+   * Where the numbers go: a real layout, opposite faces adding up to the same total (1 and 20, 2 and 19...).
+   * A d4 carries its numbers on the corners. The layout is the same on every roll, like a real die.
+   */
+  const layouts = new Map();
+  function layoutOf(kind, values) {
+    const key = `${kind}:${values.join(',')}`;
+    if (layouts.has(key)) return layouts.get(key);
+    const poly = POLY[kind];
+    let out;
+    if (kind === 4) {
+      out = { byCorner: true, labels: values.slice() };
+    } else {
+      const rng = mulberry32(kind * 7919);
+      const order = poly.faces.map((_, i) => i);
+      for (let i = order.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(rng() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      const labels = new Array(poly.faces.length);
+      let next = 0;
+      for (const fi of order) {
+        if (labels[fi] !== undefined) continue;
+        const n = poly.faces[fi].n;
+        const opposite = poly.faces.findIndex((f) => v3.dot(f.n, n) < -0.999);
+        labels[fi] = values[next];
+        labels[opposite] = values[values.length - 1 - next];
+        next += 1;
+      }
+      out = { byCorner: false, labels };
+    }
+    layouts.set(key, out);
+    return out;
+  }
+
+  /** The pose at rest showing `target` on top, its number upright, turned by `yaw` (radians). */
+  function finalPose(poly, layout, target, yaw) {
+    const R = [Math.cos(yaw), Math.sin(yaw), 0];
+    const U = [-Math.sin(yaw), Math.cos(yaw), 0];
+    const Z = [0, 0, 1];
+    if (layout.byCorner) {
+      const vi = layout.labels.indexOf(target);
+      const top = v3.norm(poly.verts[vi]);
+      // one of the three faces around the top corner sits at the bottom, so its copy of the number reads upright
+      const f = poly.faces.find((x) => x.idx.includes(vi));
+      const d = v3.sub(poly.verts[vi], f.c);
+      const h = v3.norm(v3.sub(d, v3.scale(top, v3.dot(d, top))));
+      return m3.basis(v3.cross(h, top), h, top, R, U, Z);
+    }
+    const f = poly.faces[layout.labels.indexOf(target)];
+    return m3.basis(f.right, f.up, f.n, R, U, Z);
+  }
+
+  /** In a pose at rest, the edge of the bottom face whose outward direction (on the table) is nearest to d. */
+  function edgeToward(poly, pose, d) {
+    let bottom = poly.faces[0];
+    let low = Infinity;
+    for (const f of poly.faces) {
+      const z = m3.apply(pose, f.n)[2];
+      if (z < low) { low = z; bottom = f; }
+    }
+    const c = m3.apply(pose, bottom.c);
+    let best = null;
+    let score = -Infinity;
+    for (const e of bottom.edges) {
+      // the outward direction square to the edge (a kite's centre is not square to its edges' midpoints)
+      const m = m3.apply(pose, e.mid);
+      const pa = m3.apply(pose, poly.verts[e.a]);
+      const pb = m3.apply(pose, poly.verts[e.b]);
+      let ex = pb[0] - pa[0];
+      let ey = pb[1] - pa[1];
+      const el = Math.hypot(ex, ey) || 1;
+      ex /= el;
+      ey /= el;
+      let ox = m[0] - c[0];
+      let oy = m[1] - c[1];
+      const along = ox * ex + oy * ey;
+      ox -= along * ex;
+      oy -= along * ey;
+      const l = Math.hypot(ox, oy) || 1;
+      ox /= l;
+      oy /= l;
+      const s = ox * d[0] + oy * d[1];
+      if (s > score) {
+        score = s;
+        best = { ox, oy, beta: e.beta };
+      }
+    }
+    return best;
+  }
+
+  /*
+   * Hindsight. The simulation recorded, per step, the tumble (k faces done, progress p on the next, the
+   * direction it tips) and the flat spin. Walking it backwards from the server's result at rest, each
+   * stretch of one tumble becomes a real tip over a real edge: the pose where it started is the pose where
+   * it ended, turned back over the trailing edge by that edge's angle. So the die lands flat on every face
+   * on the way, ends on the result with its number upright, and the motion is exactly what was simulated.
+   */
+  function orient(bodies, sim, seed) {
+    const rng = mulberry32((seed ^ 0x9e3779b9) >>> 0);
+    const { frames, steps, n } = sim;
+    return bodies.map((b, j) => {
+      const poly = POLY[b.kind];
+      const layout = layoutOf(b.kind, b.labels);
+      const at = (i, field) => frames[(i * n + j) * FRAME + field];
+      const segs = [];
+      const segOf = new Int32Array(steps + 1);
+      for (let i = 0; i <= steps; i += 1) {
+        const k = at(i, 5);
+        const tdx = at(i, 6);
+        const tdy = at(i, 7);
+        const s = segs[segs.length - 1];
+        if (s && s.k === k && s.tdx === tdx && s.tdy === tdy) s.last = i;
+        else segs.push({ first: i, last: i, k, tdx, tdy, u: null, beta: 0, P: null });
+        segOf[i] = segs.length - 1;
+      }
+      const angleEnd = at(steps, 2);
+      const rest = finalPose(poly, layout, b.target, (rng() * 2 - 1) * REST_TILT);
+      for (let s = segs.length - 1; s >= 0; s -= 1) {
+        const seg = segs[s];
+        const next = segs[s + 1];
+        // the tumble direction, in the frame without the flat spin (the spin is turned back at the end)
+        const psi = -(at(seg.last, 2) - angleEnd);
+        const c = Math.cos(-psi);
+        const sn = Math.sin(-psi);
+        const wx = seg.tdx;
+        const wy = -seg.tdy;
+        const dx = wx * c - wy * sn;
+        const dy = wx * sn + wy * c;
+        if (next && next.k === seg.k + 1) {
+          // it tipped over onto the next stretch's face: undo that over the next pose's trailing edge
+          const e = edgeToward(poly, next.P, [-dx, -dy]);
+          seg.u = [e.oy, -e.ox, 0]; // z × (−o): tipping forward, away from the trailing edge
+          seg.beta = e.beta;
+          seg.P = m3.mul(m3.rot(seg.u, -e.beta), next.P);
+        } else {
+          // it rocked on its leading edge and fell back (or this is the last stretch, at rest)
+          const base = next ? next.P : rest;
+          const e = edgeToward(poly, base, [dx, dy]);
+          seg.u = [-e.oy, e.ox, 0]; // z × o
+          seg.beta = e.beta;
+          seg.P = base;
+        }
+      }
+      return { poly, layout, segs, segOf, angleEnd, rest };
+    });
+  }
+
+  /** The face (or corner, for a d4) that points up in a pose. */
+  function topLabel(poly, layout, pose) {
+    if (layout.byCorner) {
+      let best = 0;
+      let high = -Infinity;
+      poly.verts.forEach((v, i) => {
+        const z = m3.apply(pose, v)[2];
+        if (z > high) { high = z; best = i; }
+      });
+      return layout.labels[best];
+    }
+    let best = 0;
+    let high = -Infinity;
+    poly.faces.forEach((f, i) => {
+      const z = m3.apply(pose, f.n)[2];
+      if (z > high) { high = z; best = i; }
+    });
+    return layout.labels[best];
+  }
+
+  /** For tuning the sound: the events by kind, and the longest stretch with a die rolling and no event. */
+  function soundStats(sim) {
+    const byKind = {};
+    for (const e of sim.events) byKind[e.kind] = (byKind[e.kind] || 0) + 1;
+    let quiet = 0;
+    let last = 0;
+    let next = 0;
+    for (let i = 0; i < sim.rolling.length; i += 1) {
+      const t = i * PHYS.dt;
+      while (next < sim.events.length && sim.events[next].t <= t) {
+        last = sim.events[next].t;
+        next += 1;
+      }
+      if (sim.rolling[i] > 0.06) quiet = Math.max(quiet, t - last); // some die rolls faster than 30 px/s
+    }
+    return { byKind, quietMs: Math.round(quiet * 1000) };
+  }
+
+  /** For tests and tuning: the roll a tray of this size would show, without drawing it. */
+  function simulate(dice, { width = 480, height = 260, seed = 1 } = {}) {
+    const bodies = expand(dice);
+    const sim = simulateBodies(bodies, { width, height, seed: seed >>> 0 });
+    const plan = orient(bodies, sim, seed >>> 0);
+    return {
+      durationMs: sim.duration * 1000,
+      forced: sim.forced,
+      flips: sim.flips.slice(),
+      // read back from the final pose (not copied from the input): proves the dice land on the results
+      finalFaces: plan.map((o) => {
+        const last = o.segs[o.segs.length - 1];
+        return topLabel(o.poly, o.layout, last.P);
+      }),
+      events: sim.events.length,
+      sound: soundStats(sim),
+      dieRadius: sim.R,
+      steps: sim.steps,
+    };
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // Colours: the theme's tokens, read from the canvas (custom properties), with fallbacks.
+  // ---------------------------------------------------------------------------------------------
+
+  const TOKENS = {
+    floor: ['--tray-floor', '#e8dcc3'], rim: ['--tray-rim', '#6e1a27'], rimHi: ['--tray-rim-hi', '#93323f'],
+    rimLo: ['--tray-rim-lo', '#4b0f19'], shadow: ['--tray-shadow', '#3d2a18'],
+    paper: ['--die-paper', '#fbf6ea'], paperInk: ['--die-paper-ink', '#221b16'], paperShade: ['--die-paper-shade', '#6f5c47'],
+    garnet: ['--die-garnet', '#8b1e2e'], garnetInk: ['--die-garnet-ink', '#fff6e9'], garnetShade: ['--die-garnet-shade', '#2b0810'],
+    edge: ['--die-edge', '#221b16'], gold: ['--die-gold', '#e8b73c'], goldOn: ['--die-gold-on', '#2a1d02'],
+    surface: ['--surface', '#fcf9f3'], ink: ['--ink', '#221b16'], line: ['--line', '#dccfba'],
+    accent: ['--accent', '#8b1e2e'], muted: ['--ink-muted', '#5e5347'],
+  };
+
+  function parseColor(s) {
+    const v = (s || '').trim();
+    let m = /^#([0-9a-f]{3})$/i.exec(v);
+    if (m) return m[1].split('').map((c) => parseInt(c + c, 16));
+    m = /^#([0-9a-f]{6})$/i.exec(v);
+    if (m) return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+    m = /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/i.exec(v);
+    if (m) return [+m[1], +m[2], +m[3]];
+    return null;
+  }
+
+  const css = (c, a = 1) => (a >= 1
+    ? `rgb(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])})`
+    : `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a.toFixed(3)})`);
+  const mix = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
+
+  function readTheme(canvas) {
+    const cs = canvas.ownerDocument.defaultView.getComputedStyle(canvas);
+    const theme = {};
+    for (const [key, [token, fallback]] of Object.entries(TOKENS)) {
+      theme[key] = parseColor(cs.getPropertyValue(token)) || parseColor(fallback);
+    }
+    theme.display = cs.getPropertyValue('--font-display').trim() || 'Alegreya, Georgia, serif';
+    theme.text = cs.getPropertyValue('--font-text').trim() || "'Alegreya Sans', system-ui, sans-serif";
+    return theme;
+  }
+
+  // The light comes from the upper left and above; a face's tone depends on its normal only (flat shading).
+  const LIGHT = (() => {
+    const v = [-0.45, 0.65, 1]; // x right, y up, z toward the viewer
+    const l = Math.hypot(v[0], v[1], v[2]);
+    return v.map((c) => c / l);
+  })();
+
+  // ---------------------------------------------------------------------------------------------
+  // Sound (Web Audio, only after a user gesture). Nothing is loaded: every sound is synthesized here.
+  // Resin on resin (dice), resin on the wooden rim (wall), a landing on the felt (floor), a face tipping
+  // onto the felt as a die rolls on (roll) and a die rocking back onto its face (rock), four takes of
+  // each, plus a low rumble that follows how fast the dice roll. The simulation already knows every
+  // impact, so each one is scheduled on the audio clock a little ahead of the frame, not fired late.
+  // Everything goes through one compressor, with a touch of a small room: many dice blend instead of
+  // piling up.
+  // ---------------------------------------------------------------------------------------------
+
+  const SOUND = Object.freeze({
+    level: { dice: 0.5, wall: 0.55, floor: 0.45, roll: 0.3, rock: 0.2 }, // gain of the hardest hit of each kind
+    takes: 4,           // synthesized variants of each sound, so a repeat never sounds the same
+    lookahead: 0.12,    // s of sound scheduled ahead of the frame
+    late: 0.05,         // s: drift past this re-syncs to the frame; an impact this late (a stalled tab) is skipped
+    sameDie: 0.018,     // s: one die sounds at most once in this time (unless the later hit is much harder)
+    crowd: 6,           // voices starting within `crowdWindow`: past this the soft ones (roll, rock) drop out
+    crowdWindow: 0.03,  // s
+    rumble: 0.03,       // gain of the rumble with the dice rolling at full speed (it sits under the taps)
+    rumbleBand: 600,    // Hz: the rumble's band (a phone's speaker plays next to nothing below about 300 Hz)
+    rumbleRate: 30,     // Hz: how often the rumble's level follows the simulation
+    wet: 0.14,          // gain of the small room
+    pan: 0.5,           // how far left or right a die at the tray's edge sounds (0 = centre, 1 = one ear)
+    master: 0.55,       // after the compressor (which adds its own make-up gain); quiet on purpose
+  });
+
+  /** The sounds, synthesized once per audio context: { dice, wall, floor, roll: [takes], rumble, room }. */
+  function synthSounds(ac) {
+    const sr = ac.sampleRate;
+    const rng = mulberry32(0x5eed);
+    const len = (seconds) => Math.ceil(seconds * sr);
+    const peak1 = (a) => {
+      let m = 0;
+      for (const v of a) m = Math.max(m, Math.abs(v));
+      if (m > 0) for (let n = 0; n < a.length; n += 1) a[n] /= m;
+      return a;
+    };
+    // damped partials [amplitude, Hz, decay s]: the ring of a small hard body
+    const modes = (seconds, list) => {
+      const out = new Float32Array(len(seconds));
+      for (const [amp, f, tau] of list) {
+        const ph = rng() * 2 * Math.PI;
+        for (let n = 0; n < out.length; n += 1) {
+          const env = Math.exp(-n / sr / tau);
+          if (env < 1e-4) break;
+          out[n] += amp * env * Math.sin((2 * Math.PI * f * n) / sr + ph);
+        }
+      }
+      return peak1(out);
+    };
+    // a noise burst, low-passed (cut > 0) or high-passed (cut < 0) with one pole, fading with tau
+    const burst = (seconds, tau, cut) => {
+      const out = new Float32Array(len(seconds));
+      const a = Math.exp((-2 * Math.PI * Math.abs(cut)) / sr);
+      let lp = 0;
+      for (let n = 0; n < out.length; n += 1) {
+        const w = rng() * 2 - 1;
+        lp = (1 - a) * w + a * lp;
+        out[n] = Math.exp(-n / sr / tau) * (cut < 0 ? w - lp : lp);
+      }
+      return peak1(out);
+    };
+    // a body landing on cloth: a short sine whose pitch falls from f0 to f1 Hz
+    const thump = (seconds, f0, f1, tau) => {
+      const out = new Float32Array(len(seconds));
+      let ph = 0;
+      for (let n = 0; n < out.length; n += 1) {
+        const tt = n / sr;
+        ph += (2 * Math.PI * (f1 + (f0 - f1) * Math.exp(-tt / 0.01))) / sr;
+        out[n] = Math.exp(-tt / tau) * Math.sin(ph);
+      }
+      return peak1(out);
+    };
+    const buffer = (parts) => {
+      const n = Math.max(...parts.map(([, a]) => a.length));
+      const mix = new Float32Array(n);
+      for (const [g, a] of parts) for (let i = 0; i < a.length; i += 1) mix[i] += g * a[i];
+      peak1(mix);
+      const fade = Math.min(n, len(0.004)); // no click at the end
+      for (let i = 0; i < fade; i += 1) mix[n - 1 - i] *= i / fade;
+      const buf = ac.createBuffer(1, n, sr);
+      buf.getChannelData(0).set(mix);
+      return buf;
+    };
+    // each take a little apart from the others in pitch (±5 %)
+    const takes = (make) => Array.from({ length: SOUND.takes }, (_, v) => make(v, 1 + (rng() - 0.5) * 0.1));
+    return {
+      // two dice: a bright, short clack
+      dice: takes((v, j) => {
+        const f = (2500 + 260 * v) * j;
+        return buffer([
+          [0.75, modes(0.07, [[1, f, 0.02], [0.6, f * 1.59, 0.014], [0.42, f * 2.33, 0.01], [0.25, f * 3.1, 0.007]])],
+          [0.45, burst(0.01, 0.0012, -2000)],
+        ]);
+      }),
+      // a die against the wooden rim: a knock, with the die's own click on top
+      wall: takes((v, j) => {
+        const w = (330 + 45 * v) * j;
+        const f = (2300 + 200 * v) * j;
+        return buffer([
+          [0.8, modes(0.1, [[1, w, 0.03], [0.55, w * 2.63, 0.018], [0.3, w * 4.9, 0.009]])],
+          [0.35, modes(0.04, [[1, f, 0.012], [0.5, f * 1.62, 0.008], [0.3, f * 2.4, 0.006]])],
+          [0.35, burst(0.015, 0.002, 3000)],
+        ]);
+      }),
+      // a die landing on the felt: a muffled thud and a little click
+      floor: takes((v, j) => buffer([
+        [0.8, thump(0.08, 210 * j, 110 * j, 0.016)],
+        [0.7, burst(0.05, 0.01, 1100)],
+        [0.12, modes(0.02, [[1, (2600 + 150 * v) * j, 0.005]])],
+      ])),
+      // a face tipping onto the felt: softer and shorter (a rock is the same tap, played lower)
+      roll: takes((v, j) => buffer([
+        [0.8, burst(0.03, 0.005, 800)],
+        [0.5, thump(0.04, 170 * j, 120 * j, 0.008)],
+        [0.1, modes(0.01, [[1, (3000 + 200 * v) * j, 0.003]])],
+      ])),
+      rumble: rumbleLoop(ac, rng),
+      room: roomResponse(ac, rng),
+    };
+  }
+
+  /**
+   * 1.5 s of noise in the rumble's band, looping without a seam (its end fades into its start), at a
+   * known loudness (RMS 0.25), so SOUND.rumble means the same whatever the band.
+   */
+  function rumbleLoop(ac, rng) {
+    const sr = ac.sampleRate;
+    const n = Math.ceil(1.5 * sr);
+    const fade = Math.ceil(0.1 * sr);
+    const warm = Math.ceil(0.05 * sr); // the filter settles before anything is kept
+    // a band-pass biquad (Robert Bristow-Johnson's cookbook, 0 dB at the centre)
+    const w0 = (2 * Math.PI * SOUND.rumbleBand) / sr;
+    const alpha = Math.sin(w0) / (2 * 0.8);
+    const a0 = 1 + alpha;
+    const a1 = -2 * Math.cos(w0);
+    const a2 = 1 - alpha;
+    const raw = new Float32Array(n + fade);
+    let x1 = 0; let x2 = 0; let y1 = 0; let y2 = 0;
+    for (let i = -warm; i < raw.length; i += 1) {
+      const x = rng() * 2 - 1;
+      const y = (alpha * x - alpha * x2 - a1 * y1 - a2 * y2) / a0;
+      x2 = x1; x1 = x; y2 = y1; y1 = y;
+      if (i >= 0) raw[i] = y;
+    }
+    const out = raw.slice(0, n);
+    for (let i = 0; i < fade; i += 1) out[i] = raw[i] * (i / fade) + raw[n + i] * (1 - i / fade);
+    let sum = 0;
+    let peak = 0;
+    for (const v of out) {
+      sum += v * v;
+      peak = Math.max(peak, Math.abs(v));
+    }
+    const k = Math.min(0.25 / Math.sqrt(sum / n), 1 / peak);
+    const buf = ac.createBuffer(1, n, sr);
+    buf.getChannelData(0).set(out.map((v) => v * k));
+    return buf;
+  }
+
+  /** A small room's answer (0.3 s, stereo): what makes many taps sound like one table. */
+  function roomResponse(ac, rng) {
+    const sr = ac.sampleRate;
+    const n = Math.ceil(0.3 * sr);
+    const buf = ac.createBuffer(2, n, sr);
+    for (let c = 0; c < 2; c += 1) {
+      const d = buf.getChannelData(c);
+      let lp = 0;
+      for (let i = 0; i < n; i += 1) {
+        lp = 0.6 * lp + 0.4 * (rng() * 2 - 1); // a little darker than white noise
+        d[i] = lp * Math.exp(-i / sr / 0.06);
+      }
+    }
+    return buf;
+  }
+
+  /** The multipliers a listener can tune: the whole volume, the taps while rolling, the rumble, the room. */
+  const LEVELS = Object.freeze({ volume: 1, taps: 1, rumble: 1, room: 1 });
+
+  /** The output chain: every roll → one compressor (and the small room into it) → the speakers. */
+  function mixer(ac, levels) {
+    const sounds = synthSounds(ac);
+    const bus = ac.createGain();
+    const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -16;
+    comp.knee.value = 12;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.15;
+    const room = ac.createConvolver();
+    room.buffer = sounds.room;
+    const wet = ac.createGain();
+    wet.gain.value = SOUND.wet * levels.room;
+    const out = ac.createGain();
+    out.gain.value = SOUND.master * levels.volume;
+    bus.connect(comp);
+    bus.connect(room).connect(wet).connect(comp);
+    comp.connect(out).connect(ac.destination);
+    return { ac, sounds, bus, wet, out, levels, later: (fn, ms) => setTimeout(fn, ms) };
+  }
+
+  /**
+   * The sound of one roll. play(t) schedules what happens up to a little past simulation time t (call it
+   * every frame); stop() fades it out now (a new roll, finish(), the sound switched off); end() lets the
+   * last taps ring out. fixed = true (an offline render) ignores the clock: everything plays at its time.
+   */
+  function soundTake(mix, sim, speed, fixed = false) {
+    const { ac, sounds, bus } = mix;
+    const gate = ac.createGain();
+    gate.connect(bus);
+    const lastAt = new Float64Array(sim.n).fill(-1);
+    const lastS = new Float64Array(sim.n);
+    const recent = [];
+    let anchor = fixed ? 0 : NaN; // the audio time of simulation time 0
+    let next = 0;
+    let rumbling = false;
+    let done = false;
+
+    // the rumble: looped band noise, its level following the simulation's rolling
+    function rumble() {
+      rumbling = true;
+      const step = Math.max(1, Math.round(1 / (SOUND.rumbleRate * PHYS.dt)));
+      const count = Math.floor((sim.rolling.length - 1) / step) + 1;
+      if (count < 2) return;
+      const curve = new Float32Array(count + 1); // the last point is silence
+      const top = SOUND.rumble * mix.levels.rumble;
+      for (let i = 0; i < count; i += 1) curve[i] = top * (1 - Math.exp(-sim.rolling[i * step]));
+      const span = (count * step * PHYS.dt) / speed;
+      const at = Math.max(ac.currentTime, anchor);
+      const src = ac.createBufferSource();
+      src.buffer = sounds.rumble;
+      src.loop = true;
+      const g = ac.createGain();
+      g.gain.value = 0;
+      src.connect(g).connect(gate);
+      g.gain.setValueCurveAtTime(curve, at, span);
+      src.start(at);
+      src.stop(at + span + 0.05);
+    }
+
+    function voice(e, when) {
+      if (when - lastAt[e.i] < SOUND.sameDie && e.s < lastS[e.i] * 1.5) return; // the same die, a hair later
+      while (recent.length && when - recent[0] > SOUND.crowdWindow) recent.shift();
+      const soft = e.kind === 'roll' || e.kind === 'rock';
+      if (soft && recent.length >= SOUND.crowd) return;
+      const duck = recent.length >= SOUND.crowd ? SOUND.crowd / (recent.length + 1) : 1;
+      recent.push(when);
+      lastAt[e.i] = when;
+      lastS[e.i] = e.s;
+      if (e.j >= 0) {
+        lastAt[e.j] = when;
+        lastS[e.j] = e.s;
+      }
+      const set = sounds[soft ? 'roll' : e.kind];
+      const src = ac.createBufferSource();
+      src.buffer = set[(e.i * 3 + Math.round(e.t * 480)) % set.length];
+      // a harder hit rings a little higher and brighter; a rock is the roll's tap, lower
+      src.playbackRate.value = e.pitch * (0.95 + 0.1 * e.s) * (e.kind === 'rock' ? 0.85 : 1);
+      const tone = ac.createBiquadFilter();
+      tone.type = 'lowpass';
+      tone.frequency.value = 1000 + 11000 * e.s ** 1.3;
+      const g = ac.createGain();
+      g.gain.value = SOUND.level[e.kind] * (0.1 + 0.9 * e.s) ** 1.6 * duck * (soft ? mix.levels.taps : 1);
+      let tail = src.connect(tone).connect(g);
+      if (typeof ac.createStereoPanner === 'function') {
+        const pan = ac.createStereoPanner();
+        pan.pan.value = (e.x * 2 - 1) * SOUND.pan;
+        tail = tail.connect(pan);
+      }
+      tail.connect(gate);
+      src.start(when);
+    }
+
+    return {
+      play(t) {
+        if (done) return;
+        const ev = sim.events;
+        const horizon = t + SOUND.lookahead * speed;
+        if (!fixed && ac.state !== 'running') {
+          // no clock to schedule on (the context is still starting): drop these, never pile them up
+          while (next < ev.length && ev[next].t <= horizon) next += 1;
+          return;
+        }
+        const now = ac.currentTime;
+        if (!fixed && (Number.isNaN(anchor) || Math.abs(now - (anchor + t / speed)) > SOUND.late)) {
+          anchor = now - t / speed; // the first frame, or the page stalled (a hidden tab): follow the frame
+        }
+        if (!rumbling) rumble();
+        while (next < ev.length && ev[next].t <= horizon) {
+          const e = ev[next];
+          next += 1;
+          if (!fixed && e.t < t - SOUND.late * speed) continue; // its moment has passed
+          voice(e, Math.max(now, anchor + e.t / speed));
+        }
+      },
+      stop() {
+        if (done) return;
+        done = true;
+        const now = ac.currentTime;
+        gate.gain.setValueAtTime(1, now);
+        gate.gain.setTargetAtTime(0, now, 0.015);
+        mix.later(() => gate.disconnect(), 300);
+      },
+      end() {
+        if (done) return;
+        done = true;
+        mix.later(() => gate.disconnect(), 1500); // the last taps and the room ring out first
+      },
+    };
+  }
+
+  function makeAudio(win) {
+    let mix = null;
+    const levels = { ...LEVELS };
+    return {
+      enable() {
+        const AC = win.AudioContext || win.webkitAudioContext;
+        if (!AC) return false;
+        if (!mix) {
+          mix = mixer(new AC(), levels);
+          mix.later = (fn, ms) => win.setTimeout(fn, ms);
+        }
+        if (mix.ac.state === 'suspended') mix.ac.resume().catch(() => {});
+        return true;
+      },
+      /** The sound of a roll about to play, or null (no audio context yet). */
+      take(sim, speed) {
+        return mix ? soundTake(mix, sim, speed) : null;
+      },
+      /** Changes some of the levels (multipliers, 0 to 3); the volume and the room change at once. */
+      setLevels(changes) {
+        for (const key of Object.keys(LEVELS)) {
+          const v = Number(changes[key]);
+          if (key in changes && Number.isFinite(v)) levels[key] = clamp(v, 0, 3);
+        }
+        if (!mix) return;
+        const now = mix.ac.currentTime;
+        mix.out.gain.setTargetAtTime(SOUND.master * levels.volume, now, 0.02);
+        mix.wet.gain.setTargetAtTime(SOUND.wet * levels.room, now, 0.02);
+      },
+      close() {
+        if (mix) mix.ac.close().catch(() => {});
+        mix = null;
+      },
+    };
+  }
+
+  /**
+   * For tuning the sound: a roll's audio rendered offline (no tray, no speakers), as an AudioBuffer.
+   * Browsers only.
+   */
+  function renderSound(dice, { width = 480, height = 260, seed = 1, speed = 1, sampleRate = 44100, levels = {} } = {}) {
+    const OAC = globalThis.OfflineAudioContext || globalThis.webkitOfflineAudioContext;
+    if (!OAC) return Promise.reject(new Error('DiceTray.renderSound: no OfflineAudioContext'));
+    const sim = simulateBodies(expand(dice), { width, height, seed: seed >>> 0 });
+    const ac = new OAC(2, Math.ceil((sim.duration / speed + 1) * sampleRate), sampleRate);
+    soundTake(mixer(ac, { ...LEVELS, ...levels }), sim, speed, true).play(sim.duration);
+    return ac.startRendering();
+  }
+
+  // ---------------------------------------------------------------------------------------------
+  // The tray.
+  // ---------------------------------------------------------------------------------------------
+
+  function create(canvas, options = {}) {
+    if (!canvas || typeof canvas.getContext !== 'function') throw new TypeError('DiceTray.create: pass a <canvas>');
+    const doc = canvas.ownerDocument;
+    const win = doc.defaultView;
+    const ctx = canvas.getContext('2d');
+    let W = options.width || 320;
+    let H = options.height || 200;
+    let reduced = !!options.reducedMotion;
+    let soundOn = false;
+    let theme = readTheme(canvas);
+    let tones = new Map();
+    let metrics = new Map();
+    let dev = 1;
+    let floorLayer = null;
+    let rimLayer = null;
+    let scene = null;
+    let run = null;
+    let shown = { tSim: 0, oT: Infinity };
+    const audio = makeAudio(win);
+    if (options.sound) soundOn = audio.enable();
+
+    function applySize() {
+      canvas.style.maxWidth = `${W}px`;
+      canvas.style.aspectRatio = `${W} / ${H}`;
+    }
+
+    function layer(pw, ph) {
+      if (typeof win.OffscreenCanvas === 'function') return new win.OffscreenCanvas(pw, ph);
+      const c = doc.createElement('canvas');
+      c.width = pw;
+      c.height = ph;
+      return c;
+    }
+
+    function fit() {
+      const cssW = canvas.getBoundingClientRect().width || W;
+      const dpr = Math.min(3, win.devicePixelRatio || 1);
+      const pw = Math.max(1, Math.round(cssW * dpr));
+      const ph = Math.max(1, Math.round((pw * H) / W));
+      if (canvas.width !== pw) canvas.width = pw;
+      if (canvas.height !== ph) canvas.height = ph;
+      dev = pw / W;
+      buildLayers(pw, ph);
+    }
+
+    function roundRect(c, x, y, w, h, r) {
+      c.moveTo(x + r, y);
+      c.arcTo(x + w, y, x + w, y + h, r);
+      c.arcTo(x + w, y + h, x, y + h, r);
+      c.arcTo(x, y + h, x, y, r);
+      c.arcTo(x, y, x + w, y, r);
+      c.closePath();
+    }
+
+    /** The felt and the rim are drawn once per size and theme. */
+    function buildLayers(pw, ph) {
+      floorLayer = layer(pw, ph);
+      const f = floorLayer.getContext('2d');
+      f.setTransform(dev, 0, 0, dev, 0, 0);
+      f.beginPath();
+      roundRect(f, 0, 0, W, H, 16);
+      f.fillStyle = css(theme.floor);
+      f.fill();
+      // The walls shade the felt: wider along the top and the left (the light comes from the upper left).
+      const band = (x0, y0, x1, y1, a) => {
+        const g = f.createLinearGradient(x0, y0, x1, y1);
+        g.addColorStop(0, css(theme.shadow, a));
+        g.addColorStop(1, css(theme.shadow, 0));
+        return g;
+      };
+      f.fillStyle = band(0, RIM, 0, RIM + 16, 0.16);
+      f.fillRect(RIM, RIM, W - 2 * RIM, 16);
+      f.fillStyle = band(RIM, 0, RIM + 14, 0, 0.12);
+      f.fillRect(RIM, RIM, 14, H - 2 * RIM);
+      f.fillStyle = band(0, H - RIM, 0, H - RIM - 6, 0.07);
+      f.fillRect(RIM, H - RIM - 6, W - 2 * RIM, 6);
+      f.fillStyle = band(W - RIM, 0, W - RIM - 6, 0, 0.07);
+      f.fillRect(W - RIM - 6, RIM, 6, H - 2 * RIM);
+
+      rimLayer = layer(pw, ph);
+      const r = rimLayer.getContext('2d');
+      r.setTransform(dev, 0, 0, dev, 0, 0);
+      r.beginPath();
+      roundRect(r, 0, 0, W, H, 16);
+      roundRect(r, RIM, RIM, W - 2 * RIM, H - 2 * RIM, 8);
+      r.fillStyle = css(theme.rim);
+      r.fill('evenodd');
+      r.beginPath();
+      roundRect(r, 0.75, 0.75, W - 1.5, H - 1.5, 15.5);
+      r.strokeStyle = css(theme.rimHi);
+      r.lineWidth = 1.5;
+      r.stroke();
+      r.beginPath();
+      roundRect(r, RIM - 0.75, RIM - 0.75, W - 2 * RIM + 1.5, H - 2 * RIM + 1.5, 8.5);
+      r.strokeStyle = css(theme.rimLo);
+      r.lineWidth = 1.5;
+      r.stroke();
+    }
+
+    // -- scenes ----------------------------------------------------------------------------------
+
+    function decorate(bodies, R, plan, seed) {
+      const rng = mulberry32((seed ^ 0x85ebca6b) >>> 0);
+      return bodies.map((b, i) => {
+        let o = plan ? plan[i] : null;
+        if (!o) {
+          const poly = POLY[b.kind];
+          const layout = layoutOf(b.kind, b.labels);
+          const rest = finalPose(poly, layout, b.target, 0);
+          o = { poly, layout, segs: [{ u: [1, 0, 0], beta: 0, P: rest }], segOf: null, angleEnd: 0, rest };
+        }
+        return { ...b, R, ...o, sparks: b.critical ? makeSparks(rng, R) : null };
+      });
+    }
+
+    function makeSparks(rng, R) {
+      return Array.from({ length: 18 }, () => ({
+        ang: rng() * TAU,
+        speed: (2.4 + rng() * 4.6) * R,
+        life: 0.55 + rng() * 0.4,
+        size: (0.1 + rng() * 0.1) * R,
+        rot: rng() * TAU,
+      }));
+    }
+
+    function blankView() {
+      return { x: 0, y: 0, z: 0, psi: 0, p: 0, seg: 0, sq: 0, sqAng: NaN, shape: null };
+    }
+
+    /** Dice laid out in rows, centred, at rest: the reduced-motion roll, and what a resize shows. */
+    function staticScene(bodies, seed) {
+      const n = bodies.length;
+      const R = dieRadius(W, H, n);
+      const gap = 2.8 * R;
+      const rowGap = 3.1 * R;
+      const cols = Math.max(1, Math.min(n, Math.floor((W - 2 * RIM) / gap)));
+      const rows = Math.ceil(n / cols);
+      const views = bodies.map((_, i) => {
+        const row = Math.floor(i / cols);
+        const inRow = row < rows - 1 ? cols : n - cols * (rows - 1);
+        const v = blankView();
+        v.x = W / 2 + ((i % cols) - (inRow - 1) / 2) * gap;
+        v.y = H / 2 + (row - (rows - 1) / 2) * rowGap - 0.3 * R;
+        return v;
+      });
+      return { bodies: decorate(bodies, R, null, seed), views, sim: null, order: bodies.map((_, i) => i), R };
+    }
+
+    function animatedScene(bodies, sim, seed) {
+      return {
+        bodies: decorate(bodies, sim.R, orient(bodies, sim, seed), seed),
+        views: bodies.map(blankView),
+        sim,
+        order: bodies.map((_, i) => i),
+        R: sim.R,
+      };
+    }
+
+    /** The recorded state at sim time t, interpolated between the two steps around it. */
+    function sample(sc, t) {
+      const views = sc.views;
+      const sim = sc.sim;
+      if (!sim) return views;
+      const { frames, steps, n } = sim;
+      const f = clamp(t / PHYS.dt, 0, steps);
+      const i0 = Math.floor(f);
+      const i1 = Math.min(steps, i0 + 1);
+      const a = f - i0;
+      for (let j = 0; j < n; j += 1) {
+        const bd = sc.bodies[j];
+        const o0 = (i0 * n + j) * FRAME;
+        const o1 = (i1 * n + j) * FRAME;
+        const v = views[j];
+        v.x = frames[o0] + (frames[o1] - frames[o0]) * a;
+        v.y = frames[o0 + 1] + (frames[o1 + 1] - frames[o0 + 1]) * a;
+        v.psi = -(frames[o0 + 2] + (frames[o1 + 2] - frames[o0 + 2]) * a - bd.angleEnd);
+        v.z = frames[o0 + 3] + (frames[o1 + 3] - frames[o0 + 3]) * a;
+        v.sq = frames[o0 + 8] + (frames[o1 + 8] - frames[o0 + 8]) * a;
+        v.sqAng = frames[o1 + 9];
+        const same = bd.segOf[i0] === bd.segOf[i1];
+        const src = same || a < 0.5 ? i0 : i1;
+        const os = (src * n + j) * FRAME;
+        v.seg = bd.segOf[src];
+        v.p = same ? frames[o0 + 4] + (frames[o1 + 4] - frames[o0 + 4]) * a : frames[os + 4];
+      }
+      return views;
+    }
+
+    // -- drawing ---------------------------------------------------------------------------------
+
+    /** Flat shading in bands: the face's tone depends on its normal only, a few steps from the die's colour. */
+    function tone(style, n) {
+      const b = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2] - LIGHT[2];
+      const q = Math.round(b / 0.09);
+      const key = `${style}${q}`;
+      let c = tones.get(key);
+      if (!c) {
+        const base = style === 'garnet' ? theme.garnet : theme.paper;
+        const dark = style === 'garnet' ? theme.garnetShade : theme.paperShade;
+        const v = q * 0.09;
+        c = css(v >= 0 ? mix(base, [255, 255, 255], Math.min(0.5, v * 1.3)) : mix(base, dark, Math.min(0.9, -v * 0.75)));
+        tones.set(key, c);
+      }
+      return c;
+    }
+
+    /** Scale by `along` in direction (ux, uy) and by `across` perpendicular to it. */
+    function axisScale(ux, uy, along, across) {
+      const d = along - across;
+      ctx.transform(across + d * ux * ux, d * ux * uy, d * ux * uy, across + d * uy * uy, 0, 0);
+    }
+
+    function measure(label) {
+      const key = `${ctx.font}|${label}`;
+      let m = metrics.get(key);
+      if (!m) {
+        const t = ctx.measureText(label);
+        const size = parseFloat(ctx.font.split('px')[0].split(' ').pop()) || 12;
+        m = {
+          w: t.width,
+          asc: Number.isFinite(t.actualBoundingBoxAscent) ? t.actualBoundingBoxAscent : size * 0.7,
+          desc: Number.isFinite(t.actualBoundingBoxDescent) ? t.actualBoundingBoxDescent : 0,
+        };
+        if (metrics.size > 600) metrics.clear();
+        metrics.set(key, m);
+      }
+      return m;
+    }
+
+    function inkOf(bd, crit) {
+      const ink = bd.style === 'garnet' ? theme.garnetInk : theme.paperInk;
+      return crit > 0 ? css(mix(ink, theme.gold, crit)) : css(ink);
+    }
+
+    /** The die's pose now: the world rotation, and its vertices and face normals on screen (px, y down). */
+    function shapeOf(bd, v) {
+      const seg = bd.segs[v.seg];
+      const O = v.p > 0 ? m3.mul(m3.rot(seg.u, seg.beta * v.p), seg.P) : seg.P;
+      const M = v.psi !== 0 ? m3.mul(m3.rotZ(v.psi), O) : O;
+      const S = bd.R * bd.poly.size;
+      const pts = bd.poly.verts.map((p) => {
+        const w = m3.apply(M, p);
+        return [w[0] * S, -w[1] * S];
+      });
+      const normals = bd.poly.faces.map((f) => m3.apply(M, f.n));
+      return { M, S, pts, normals };
+    }
+
+    function facePath(pts, idx) {
+      ctx.moveTo(pts[idx[0]][0], pts[idx[0]][1]);
+      for (let i = 1; i < idx.length; i += 1) ctx.lineTo(pts[idx[i]][0], pts[idx[i]][1]);
+      ctx.closePath();
+    }
+
+    /*
+     * A number printed on a face: the face's own axes, projected, are the text's axes, so a face turning
+     * away squeezes its number exactly as it would look from above.
+     */
+    function printOn(sh, at, up, right, label, px, maxW, color, alpha, upright) {
+      const P = m3.apply(sh.M, at);
+      const U = m3.apply(sh.M, up);
+      const Rr = m3.apply(sh.M, right);
+      ctx.save();
+      ctx.globalAlpha *= alpha;
+      if (upright) {
+        // A d4's faces are steep: seen from above its corner numbers would be squashed to a third. They keep
+        // their place and their turn, but not the squash.
+        const l = Math.hypot(U[0], U[1]) || 1;
+        const ux = U[0] / l;
+        const uy = -U[1] / l;
+        ctx.transform(-uy, ux, -ux, -uy, P[0] * sh.S, -P[1] * sh.S);
+      } else {
+        ctx.transform(Rr[0], -Rr[1], -U[0], U[1], P[0] * sh.S, -P[1] * sh.S);
+      }
+      ctx.font = `800 ${px.toFixed(2)}px ${theme.display}`;
+      let m = measure(label);
+      if (m.w > maxW) {
+        px *= maxW / m.w;
+        ctx.font = `800 ${px.toFixed(2)}px ${theme.display}`;
+        m = measure(label);
+      }
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      const base = (m.asc - m.desc) / 2;
+      ctx.fillText(label, 0, base);
+      if (label === '6' || label === '9') {
+        // the underline that tells a 6 from a 9
+        ctx.fillRect(-m.w * 0.34, base + px * 0.1, m.w * 0.68, Math.max(1, px * 0.075));
+      }
+      ctx.restore();
+    }
+
+    function drawDie(bd, v, fx) {
+      const sh = v.shape;
+      const poly = bd.poly;
+      ctx.save();
+      ctx.globalAlpha = fx.alpha;
+      ctx.translate(v.x + fx.dx, v.y);
+      let s = 1 + v.z / (5.5 * bd.R); // higher is a little bigger: with the shadow, the only depth cue
+      if (v.sq > 0.002) {
+        if (Number.isNaN(v.sqAng)) s *= 1 + v.sq * 0.6; // landing: it flattens, so it looks wider from above
+        else axisScale(Math.cos(v.sqAng), Math.sin(v.sqAng), 1 - v.sq, 1 + v.sq * 0.5); // a wall or a die
+      }
+      ctx.scale(s, s);
+      const lw = 1 / s;
+      const visible = sh.normals.map((n) => n[2] > 1e-3);
+
+      poly.faces.forEach((f, i) => {
+        if (!visible[i]) return;
+        ctx.beginPath();
+        facePath(sh.pts, f.idx);
+        ctx.fillStyle = tone(bd.style, sh.normals[i]);
+        ctx.fill();
+      });
+
+      // Once the dice settle, the result stays strong and the numbers on the sides step back.
+      const plain = inkOf(bd, 0);
+      const strong = inkOf(bd, fx.crit);
+      const side = 1 - 0.72 * fx.settle;
+      const labels = bd.layout.labels;
+      let topCorner = -1;
+      if (poly.corners) {
+        let high = -Infinity;
+        poly.verts.forEach((p, vi) => {
+          const z = m3.apply(sh.M, p)[2];
+          if (z > high) { high = z; topCorner = vi; }
+        });
+      }
+      poly.faces.forEach((f, i) => {
+        const nz = sh.normals[i][2];
+        // a face seen edge-on shows no number (a d4's side faces are steep even at rest: a lower bar)
+        const alpha = poly.corners ? clamp((nz - 0.05) / 0.2, 0, 1) : clamp((nz - 0.12) / 0.3, 0, 1);
+        if (alpha <= 0) return;
+        const px = f.inr * sh.S * poly.digits;
+        if (poly.corners) {
+          for (const c of poly.corners[i]) {
+            const top = c.vi === topCorner;
+            printOn(sh, c.at, c.up, c.right, labels[c.vi], px, f.inr * sh.S, top ? strong : plain, alpha * (top ? 1 : side), true);
+          }
+        } else {
+          const top = nz > 0.98;
+          printOn(sh, f.c, f.up, f.right, labels[i], px, f.inr * sh.S * 1.85, top ? strong : plain, alpha * (top ? 1 : side));
+        }
+      });
+
+      // the edges between visible faces, thin; the outline, where a visible face meets a hidden one, firm
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (const e of poly.edges) {
+        if (visible[e.f0] && visible[e.f1]) {
+          ctx.moveTo(sh.pts[e.a][0], sh.pts[e.a][1]);
+          ctx.lineTo(sh.pts[e.b][0], sh.pts[e.b][1]);
+        }
+      }
+      ctx.strokeStyle = css(theme.edge, 0.32);
+      ctx.lineWidth = lw;
+      ctx.stroke();
+      if (fx.ash > 0) {
+        ctx.beginPath();
+        poly.faces.forEach((f, i) => { if (visible[i]) facePath(sh.pts, f.idx); });
+        ctx.fillStyle = css(theme.edge, 0.22 * fx.ash);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      for (const e of poly.edges) {
+        if (visible[e.f0] !== visible[e.f1]) {
+          ctx.moveTo(sh.pts[e.a][0], sh.pts[e.a][1]);
+          ctx.lineTo(sh.pts[e.b][0], sh.pts[e.b][1]);
+        }
+      }
+      ctx.strokeStyle = fx.crit > 0.5 ? css(theme.gold) : css(theme.edge, 0.9);
+      ctx.lineWidth = (fx.crit > 0.5 ? 2.2 : 1.5) * lw;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawShadow(bd, v, fx) {
+      const R = bd.R;
+      const sh = v.shape;
+      const off = 0.1 * R + v.z * 0.45;
+      ctx.save();
+      ctx.globalAlpha = 0.2 * (1 - Math.min(0.6, v.z / (4 * R))) * fx.alpha;
+      ctx.translate(v.x + fx.dx + off * 0.6, v.y + off);
+      const s = 1 + v.z / (9 * R);
+      ctx.scale(s, s);
+      ctx.beginPath();
+      bd.poly.faces.forEach((f, i) => { if (sh.normals[i][2] > 1e-3) facePath(sh.pts, f.idx); });
+      ctx.fillStyle = css(theme.shadow);
+      ctx.fill(); // one fill of every visible face: their union, no darker seams
+      ctx.restore();
+    }
+
+    function drawGlow(bd, v, oT) {
+      const k = Math.min(1, oT / 0.3);
+      const live = Number.isFinite(oT) && oT < AFTERGLOW && !reduced;
+      const r = bd.R * (2.1 + (live ? 0.14 * Math.sin(oT * 7) : 0));
+      const g = ctx.createRadialGradient(v.x, v.y, bd.R * 0.6, v.x, v.y, r);
+      g.addColorStop(0, css(theme.gold, 0.7 * k));
+      g.addColorStop(1, css(theme.gold, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(v.x, v.y, r, 0, TAU);
+      ctx.fill();
+      if (live && oT < 0.7) {
+        const e = 1 - (1 - oT / 0.7) ** 3;
+        ctx.strokeStyle = css(theme.gold, 0.85 * (1 - e));
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(v.x, v.y, bd.R * (1.1 + 1.8 * e), 0, TAU);
+        ctx.stroke();
+      }
+    }
+
+    function drawSparks(bd, v, oT) {
+      if (reduced || !Number.isFinite(oT)) return;
+      ctx.fillStyle = css(theme.gold);
+      for (const sp of bd.sparks) {
+        if (oT > sp.life) continue;
+        const u = oT / sp.life;
+        const dist = bd.R * 1.05 + sp.speed * (oT - (oT * oT) / (2 * sp.life));
+        const x = v.x + Math.cos(sp.ang) * dist;
+        const y = v.y + Math.sin(sp.ang) * dist;
+        const size = sp.size * (1 - 0.5 * u);
+        ctx.save();
+        ctx.globalAlpha = 1 - u;
+        ctx.translate(x, y);
+        ctx.rotate(sp.rot + oT * 3);
+        ctx.beginPath();
+        for (let i = 0; i < 8; i += 1) {
+          const r = i % 2 === 0 ? size : size * 0.38;
+          const a = (i * Math.PI) / 4;
+          if (i === 0) ctx.moveTo(r * Math.cos(a), r * Math.sin(a));
+          else ctx.lineTo(r * Math.cos(a), r * Math.sin(a));
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    const PILL_FONT = { crit: (t) => `800 15px ${t.display}`, other: (t) => `700 12.5px ${t.text}` };
+
+    function pillSize(text, look) {
+      ctx.font = (look === 'crit' ? PILL_FONT.crit : PILL_FONT.other)(theme);
+      const big = look === 'crit';
+      return { w: ctx.measureText(text).width + (big ? 20 : 16), h: big ? 24 : 20 };
+    }
+
+    function pill(text, cx, cy, size, look, alpha, pop) {
+      const { w, h } = size;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = (look === 'crit' ? PILL_FONT.crit : PILL_FONT.other)(theme);
+      ctx.translate(cx, cy);
+      if (pop !== 1) ctx.scale(pop, pop);
+      ctx.beginPath();
+      roundRect(ctx, -w / 2, -h / 2, w, h, h / 2);
+      const fill = { crit: theme.gold, vale: theme.surface, fumble: theme.surface, quiet: theme.surface, part: theme.surface }[look];
+      const line = { crit: theme.goldOn, vale: theme.accent, fumble: theme.accent, quiet: theme.line, part: theme.line }[look];
+      const ink = { crit: theme.goldOn, vale: theme.accent, fumble: theme.accent, quiet: theme.muted, part: theme.ink }[look];
+      ctx.fillStyle = css(fill);
+      ctx.fill();
+      ctx.lineWidth = look === 'vale' || look === 'fumble' ? 1.5 : 1;
+      ctx.strokeStyle = css(line);
+      ctx.stroke();
+      ctx.fillStyle = css(ink);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 0, 0.5);
+      ctx.restore();
+    }
+
+    function labelOf(bd) {
+      if (bd.critical) return { text: 'Crítico!', look: 'crit' };
+      if (bd.fumble) return { text: 'Falha crítica', look: 'fumble' };
+      if (bd.tag) return { text: bd.tag, look: 'vale' };
+      if (bd.discarded) return { text: 'descartado', look: 'quiet' };
+      if (bd.part) return { text: bd.part, look: 'part' };
+      return null;
+    }
+
+    /*
+     * Where each label goes: the first spot (under, over, under and shifted, beside) that stays inside the
+     * tray and covers no other die and no label already placed. With none free, under (clamped).
+     */
+    function placeLabels(sc, views) {
+      const dice = views.map((v, i) => ({ x: v.x, y: v.y, r: sc.bodies[i].R * 1.12 }));
+      const placed = [];
+      const out = [];
+      const hits = (x, y, w, h, self) => {
+        const x0 = x - w / 2 - 2;
+        const x1 = x + w / 2 + 2;
+        const y0 = y - h / 2 - 2;
+        const y1 = y + h / 2 + 2;
+        if (x0 < RIM || x1 > W - RIM || y0 < RIM || y1 > H - RIM) return true;
+        for (let j = 0; j < dice.length; j += 1) {
+          if (j === self) continue;
+          const d = dice[j];
+          const dx = d.x - clamp(d.x, x0, x1);
+          const dy = d.y - clamp(d.y, y0, y1);
+          if (dx * dx + dy * dy < d.r * d.r) return true;
+        }
+        return placed.some((p) => x0 < p.x1 && x1 > p.x0 && y0 < p.y1 && y1 > p.y0);
+      };
+      sc.bodies.forEach((bd, i) => {
+        const label = labelOf(bd);
+        if (!label) return;
+        const size = pillSize(label.text, label.look);
+        const v = views[i];
+        const dy = bd.R * 1.2 + size.h / 2 + 2;
+        const dx = bd.R * 1.2 + size.w / 2 + 2;
+        const under = [0, dy];
+        const over = [0, -dy];
+        const spots = label.look === 'crit'
+          ? [over, under, [dx, 0], [-dx, 0]]
+          : [under, over, [size.w * 0.45, dy], [-size.w * 0.45, dy], [size.w * 0.45, -dy], [-size.w * 0.45, -dy], [dx, 0], [-dx, 0]];
+        const spot = spots.find(([ox, oy]) => !hits(v.x + ox, v.y + oy, size.w, size.h, i)) || under;
+        const x = clamp(v.x + spot[0], RIM + size.w / 2 + 2, W - RIM - size.w / 2 - 2);
+        const y = clamp(v.y + spot[1], RIM + size.h / 2 + 2, H - RIM - size.h / 2 - 2);
+        placed.push({ x0: x - size.w / 2 - 2, x1: x + size.w / 2 + 2, y0: y - size.h / 2 - 2, y1: y + size.h / 2 + 2 });
+        out.push({ i, x, y, size, ...label });
+      });
+      return out;
+    }
+
+    /** The words beside the dice once they settle: never colour alone. Placed once per settled scene. */
+    function drawLabels(sc, views, oT) {
+      const a = Math.min(1, oT / 0.2);
+      if (!sc.labels) sc.labels = placeLabels(sc, views);
+      for (const l of sc.labels) {
+        let pop = 1;
+        if (l.look === 'crit' && !reduced && Number.isFinite(oT)) {
+          const e = Math.min(1, oT / 0.35);
+          pop = 0.6 + 0.4 * (1 + 2.2 * (e - 1) ** 3 + 1.2 * (e - 1) ** 2); // a small overshoot
+        }
+        pill(l.text, l.x, l.y, l.size, l.look, a, pop);
+      }
+    }
+
+    function effects(bd, oT) {
+      const settled = oT >= 0;
+      const k = settled ? Math.min(1, oT / 0.25) : 0;
+      const shaking = bd.fumble && settled && !reduced && Number.isFinite(oT) && oT < 0.35;
+      return {
+        settle: k,
+        alpha: bd.discarded ? 1 - 0.5 * k : 1,
+        crit: bd.critical ? k : 0,
+        ash: bd.fumble ? k : 0,
+        dx: shaking ? Math.sin(oT * 75) * 2.2 * (bd.R / 24) * (1 - oT / 0.35) : 0,
+      };
+    }
+
+    /** One frame: tSim is the sim time; oT the seconds since the dice settled (-1 while rolling). */
+    function paint(tSim, oT) {
+      shown = { tSim, oT };
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dev, 0, 0, dev, 0, 0);
+      if (floorLayer) ctx.drawImage(floorLayer, 0, 0, W, H);
+      if (!scene) {
+        if (rimLayer) ctx.drawImage(rimLayer, 0, 0, W, H);
+        return;
+      }
+      const views = sample(scene, tSim);
+      scene.bodies.forEach((bd, i) => { views[i].shape = shapeOf(bd, views[i]); });
+      const order = scene.order;
+      order.sort((i, j) => views[i].z - views[j].z);
+      const fx = scene.bodies.map((bd) => effects(bd, oT));
+      for (const i of order) drawShadow(scene.bodies[i], views[i], fx[i]);
+      if (oT >= 0) {
+        for (const i of order) if (scene.bodies[i].critical) drawGlow(scene.bodies[i], views[i], oT);
+      }
+      const lift = scene.R * 0.35; // higher than this, a die is drawn over the rim
+      for (const i of order) if (views[i].z <= lift) drawDie(scene.bodies[i], views[i], fx[i]);
+      if (rimLayer) ctx.drawImage(rimLayer, 0, 0, W, H);
+      for (const i of order) if (views[i].z > lift) drawDie(scene.bodies[i], views[i], fx[i]);
+      if (oT >= 0) {
+        for (const i of order) if (scene.bodies[i].sparks) drawSparks(scene.bodies[i], views[i], oT);
+        drawLabels(scene, views, oT);
+      }
+    }
+
+    // -- playback --------------------------------------------------------------------------------
+
+    function summary(dice, seed, durationMs, cancelled) {
+      return {
+        cancelled,
+        seed,
+        durationMs,
+        dice: dice.map((d) => ({ sides: d.sides, result: d.result, discarded: !!d.discarded })),
+      };
+    }
+
+    function stop(cancelled) {
+      if (!run) return;
+      const r = run;
+      run = null;
+      win.cancelAnimationFrame(r.raf);
+      if (r.sound) r.sound.stop();
+      if (!r.resolved) {
+        r.resolved = true;
+        r.resolve(summary(r.dice, r.seed, cancelled ? 0 : Math.round((r.sim.duration * 1000) / r.speed), cancelled));
+      }
+    }
+
+    function fire(r, t) {
+      if (r.sound) r.sound.play(t);
+    }
+
+    function tick(ts) {
+      const r = run;
+      if (!r) return;
+      if (r.start === null) r.start = ts;
+      const t = ((ts - r.start) / 1000) * r.speed;
+      const end = r.sim.duration;
+      if (t < end) {
+        fire(r, t);
+        paint(t, -1);
+        r.raf = win.requestAnimationFrame(tick);
+        return;
+      }
+      if (r.settledAt === null) {
+        r.settledAt = ts;
+        fire(r, end);
+        if (r.sound) r.sound.end();
+        r.resolved = true;
+        r.resolve(summary(r.dice, r.seed, Math.round((end * 1000) / r.speed), false));
+      }
+      if (run !== r) return; // a new roll started from the resolve handler
+      const oT = (ts - r.settledAt) / 1000;
+      if (oT < AFTERGLOW) {
+        paint(end, oT);
+        r.raf = win.requestAnimationFrame(tick);
+      } else {
+        paint(end, Infinity);
+        run = null;
+      }
+    }
+
+    /**
+     * Rolls the dice to the given results. Each die: { sides: 4|6|8|10|12|20|100, result, discarded?, tag?,
+     * critical?, fumble?, style?: 'paper'|'garnet' }. Options: { seed (uint32), speed (playback, 1 = normal) }.
+     * Resolves when every die has settled, with { cancelled, seed, durationMs, dice }. A new roll cancels the
+     * one in flight (that one resolves with cancelled: true).
+     */
+    function roll(dice, opts = {}) {
+      let bodies;
+      try {
+        bodies = expand(dice);
+      } catch (err) {
+        return Promise.reject(err);
+      }
+      const seed = (opts.seed ?? randomSeed()) >>> 0;
+      const speed = clamp(Number(opts.speed) || 1, 0.25, 3);
+      stop(true);
+      fit(); // picks up a zoom or a new screen since the last roll
+      if (soundOn) audio.enable();
+      if (reduced) {
+        scene = staticScene(bodies, seed);
+        paint(0, Infinity);
+        return Promise.resolve(summary(dice, seed, 0, false));
+      }
+      const sim = simulateBodies(bodies, { width: W, height: H, seed });
+      scene = animatedScene(bodies, sim, seed);
+      return new Promise((resolve) => {
+        run = { dice, seed, speed, sim, resolve, resolved: false, start: null, settledAt: null, raf: 0,
+          sound: soundOn ? audio.take(sim, speed) : null };
+        paint(0, -1);
+        run.raf = win.requestAnimationFrame(tick);
+      });
+    }
+
+    /** Jumps to the end of the roll in flight (its promise resolves now). */
+    function finish() {
+      if (!run) return;
+      const end = run.sim.duration;
+      stop(false);
+      paint(end, Infinity);
+    }
+
+    function relayout() {
+      if (!scene) return;
+      const bodies = scene.bodies.map(({ poly, layout, segs, segOf, angleEnd, rest, sparks, R, ...b }) => b);
+      scene = staticScene(bodies, 0);
+    }
+
+    function redrawNow() {
+      if (run) return; // the next frame paints anyway
+      paint(shown.tSim, shown.oT);
+    }
+
+    applySize();
+    fit();
+    paint(0, Infinity);
+    const observer = typeof win.ResizeObserver === 'function' ? new win.ResizeObserver(() => { fit(); redrawNow(); }) : null;
+    if (observer) observer.observe(canvas);
+
+    return Object.freeze({
+      roll,
+      finish,
+      /** Changes the tray's size (tray pixels). What was on the tray is laid out again, at rest. */
+      resize(width, height) {
+        finish();
+        W = width;
+        H = height;
+        applySize();
+        fit();
+        relayout();
+        paint(0, Infinity);
+      },
+      /** Reduced motion: no motion at all, the dice simply appear with their results. */
+      setReducedMotion(on) {
+        reduced = !!on;
+        if (reduced) finish();
+      },
+      /** Call from a user gesture (a tap or a click): browsers only start audio after one. */
+      setSound(on) {
+        soundOn = on ? audio.enable() : false;
+        if (!soundOn && run && run.sound) {
+          run.sound.stop();
+          run.sound = null;
+        }
+      },
+      /** Tunes the sound: { volume, taps, rumble, room }, multipliers from 0 to 3 (1 = as designed). */
+      setSoundLevels(levels) {
+        audio.setLevels(levels || {});
+      },
+      /** Re-reads the colours and fonts from the canvas's custom properties (after a theme change). */
+      refreshTheme() {
+        theme = readTheme(canvas);
+        tones = new Map();
+        metrics = new Map();
+        if (scene) scene.labels = null;
+        fit();
+        redrawNow();
+      },
+      /** Redraws (after the web fonts load, say). */
+      redraw() {
+        metrics = new Map();
+        if (scene) scene.labels = null;
+        redrawNow();
+      },
+      clear() {
+        stop(true);
+        scene = null;
+        paint(0, Infinity);
+      },
+      destroy() {
+        stop(true);
+        if (observer) observer.disconnect();
+        audio.close();
+      },
+      get size() {
+        return { width: W, height: H };
+      },
+    });
+  }
+
+  return Object.freeze({ create, simulate, renderSound, PHYS, SOUND, version: '0.2.0' });
+})();
+</script>
+
+<script>
+(() => {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const root = document.documentElement;
+  const reduceQuery = matchMedia('(prefers-reduced-motion: reduce)');
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const TRAYS = { phone: { width: 320, height: 200 }, laptop: { width: 480, height: 260 } };
+
+  // The server stand-in: in the app the server rolls. Here a seeded generator does, so a seed replays all.
+  function serverRandom(seed) {
+    let a = (seed ^ 0xa5a5a5a5) >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0];
+  const signed = (m) => (m === 0 ? '' : m > 0 ? ` + ${m}` : ` − ${-m}`);
+  const total = (list) => list.reduce((a, b) => a + b, 0);
+
+  function pair(r, m, mode) {
+    const keep = mode === 'vantagem' ? (r[0] >= r[1] ? 0 : 1) : (r[0] <= r[1] ? 0 : 1);
+    const kept = r[keep];
+    const other = r[1 - keep];
+    return {
+      dice: r.map((x, i) => ({ sides: 20, result: x, tag: i === keep ? 'vale' : '', discarded: i !== keep })),
+      line: `1d20 (${kept})${signed(m)} = ${kept + m}`,
+      note: r[0] === r[1]
+        ? `Com ${mode}: rolou ${r[0]} e ${r[1]}, vale o ${kept}.`
+        : `Com ${mode}: rolou ${r[0]} e ${r[1]}, vale o ${kept} e o ${other} foi descartado.`,
+    };
+  }
+
+  const SCENARIOS = [
+    {
+      id: 'd20', name: '1d20', label: 'Teste de Atletismo', sides: [20], mod: 5,
+      build: (r, m) => ({ dice: [{ sides: 20, result: r[0] }], line: `1d20 (${r[0]})${signed(m)} = ${r[0] + m}` }),
+    },
+    {
+      id: 'adv', name: 'Vantagem (2d20)', label: 'Ataque com vantagem', sides: [20, 20], mod: 5,
+      build: (r, m) => pair(r, m, 'vantagem'),
+    },
+    {
+      id: 'dis', name: 'Desvantagem (2d20)', label: 'Ataque com desvantagem', sides: [20, 20], mod: 5,
+      build: (r, m) => pair(r, m, 'desvantagem'),
+    },
+    {
+      id: 'abil', name: '4d6 (habilidade, descarta o menor)', label: 'Valor de habilidade', sides: [6, 6, 6, 6], mod: null,
+      build: (r) => {
+        const drop = r.indexOf(Math.min(...r));
+        const kept = r.filter((_, i) => i !== drop);
+        return {
+          dice: r.map((x, i) => ({ sides: 6, result: x, discarded: i === drop })),
+          line: `4d6 sem o menor (${kept.join(' + ')}) = ${total(kept)}`,
+          note: `O ${r[drop]} foi descartado.`,
+        };
+      },
+    },
+    {
+      id: 'fireball', name: 'Bola de Fogo (8d6)', label: 'Dano da Bola de Fogo', sides: [6, 6, 6, 6, 6, 6, 6, 6], mod: 0,
+      build: (r, m) => ({
+        dice: r.map((x) => ({ sides: 6, result: x, style: 'garnet' })),
+        line: `8d6 (${r.join(' + ')})${signed(m)} = ${total(r) + m}`,
+        note: 'De dano de fogo.',
+      }),
+    },
+    {
+      id: 'missile', name: 'Mísseis Mágicos (3 × 1d4+1)', label: 'Dano de Mísseis Mágicos', sides: [4, 4, 4], mod: null,
+      build: (r) => ({
+        dice: r.map((x) => ({ sides: 4, result: x })),
+        line: `3 × (1d4 + 1): ${r.map((x) => `(${x} + 1)`).join(' + ')} = ${total(r) + 3}`,
+        note: 'De dano de energia: 3 dardos, cada um acerta sem rolagem de ataque.',
+      }),
+    },
+    {
+      id: 'crit', name: 'Crítico (20 natural)', label: 'Ataque com Espada longa', sides: [20], mod: 5, fixed: [20],
+      build: (r, m) => ({
+        dice: [{ sides: 20, result: r[0], critical: r[0] === 20 }],
+        line: `1d20 (${r[0]})${signed(m)} = ${r[0] + m}`,
+        word: r[0] === 20 ? 'Crítico!' : '',
+        wordKind: 'crit',
+      }),
+    },
+    {
+      id: 'fumble', name: 'Falha (1 natural)', label: 'Ataque com Espada longa', sides: [20], mod: 5, fixed: [1],
+      build: (r, m) => ({
+        dice: [{ sides: 20, result: r[0], fumble: r[0] === 1 }],
+        line: `1d20 (${r[0]})${signed(m)} = ${r[0] + m}`,
+        word: r[0] === 1 ? 'Falha crítica' : '',
+        wordKind: 'fumble',
+      }),
+    },
+    {
+      id: 'pct', name: 'Percentil (d100)', label: 'Rolagem de percentil', sides: [100], mod: null,
+      build: (r) => {
+        const tens = String(Math.floor((r[0] % 100) / 10) * 10).padStart(2, '0');
+        return {
+          dice: [{ sides: 100, result: r[0] }],
+          line: `d100 (${tens} + ${r[0] % 10}) = ${r[0]}`,
+          note: r[0] === 100 ? 'Dezenas e unidades: 00 e 0 valem 100.' : 'Um dado das dezenas e um das unidades.',
+        };
+      },
+    },
+    {
+      id: 'all', name: 'Todos os tipos (10 dados)', label: 'Todos os dados', sides: [4, 6, 8, 10, 12, 20, 100, 6, 6], mod: null,
+      build: (r) => ({
+        dice: r.map((x, i) => ({ sides: [4, 6, 8, 10, 12, 20, 100, 6, 6][i], result: x })),
+        line: r.map((x, i) => `d${[4, 6, 8, 10, 12, 20, 100, 6, 6][i]} (${x})`).join(', '),
+        note: 'Cada formato, e o desempenho com 10 dados na bandeja (o d100 são dois d10).',
+      }),
+    },
+  ];
+
+  const ui = {
+    tray: $('tray'), scenarios: $('scenarios'), results: $('results'), resultsHint: $('results-hint'),
+    mod: $('mod'), modHint: $('mod-hint'), seed: $('seed'), seedHint: $('seed-hint'),
+    speed: $('speed'), speedOut: $('speed-out'), reduced: $('reduced'), sound: $('sound'),
+    again: $('again'), replay: $('replay'), seedNote: $('seed-note'),
+    label: $('r-label'), line: $('r-line'), note: $('r-note'), word: $('r-word'), live: $('live'),
+  };
+
+  let size = window.innerWidth < 600 ? 'phone' : 'laptop';
+  document.querySelector(`input[name="size"][value="${size}"]`).checked = true;
+  ui.reduced.checked = reduceQuery.matches;
+  let reducedTouched = false;
+
+  const tray = DiceTray.create(ui.tray, { ...TRAYS[size], reducedMotion: ui.reduced.checked, sound: false });
+
+  let current = SCENARIOS[0];
+  let last = null;
+  let ticket = 0;
+
+  // -- the scenario buttons ----------------------------------------------------------------------
+  const buttons = SCENARIOS.map((s) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'scn';
+    b.textContent = s.name;
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => {
+      choose(s);
+      roll(s, false);
+    });
+    ui.scenarios.append(b);
+    return b;
+  });
+
+  function rangeText(sides) {
+    const same = sides.every((x) => x === sides[0]);
+    if (!same) return `${sides.length} números, na ordem ${sides.map((x) => `d${x}`).join(', ')}.`;
+    const n = sides.length;
+    return `${n} ${n === 1 ? 'número' : 'números'} de 1 a ${sides[0]}.`;
+  }
+
+  function choose(s) {
+    current = s;
+    SCENARIOS.forEach((x, i) => buttons[i].setAttribute('aria-pressed', String(x === s)));
+    ui.results.value = '';
+    setError(ui.results, ui.resultsHint, '');
+    ui.resultsHint.textContent = `${rangeText(s.sides)} ${s.fixed ? `Vazio: ${s.fixed.join(', ')}.` : 'Vazio: aleatório.'}`;
+    if (s.mod === null) {
+      ui.mod.value = '';
+      ui.mod.disabled = true;
+      ui.modHint.textContent = 'Este cenário não soma modificador.';
+    } else {
+      ui.mod.disabled = false;
+      ui.mod.value = String(s.mod);
+      ui.modHint.textContent = 'Somado ao total.';
+    }
+  }
+
+  function setError(input, hint, message) {
+    if (message) {
+      input.setAttribute('aria-invalid', 'true');
+      hint.textContent = message;
+      hint.className = 'error';
+    } else {
+      input.removeAttribute('aria-invalid');
+      hint.className = 'hint';
+    }
+  }
+
+  /** The typed results: null when empty, false when invalid (the error is shown). */
+  function readResults(s) {
+    const text = ui.results.value.trim();
+    if (!text) {
+      setError(ui.results, ui.resultsHint, '');
+      return null;
+    }
+    const parts = text.split(/[\s,;]+/).filter(Boolean);
+    const nums = parts.map((p) => (/^\d+$/.test(p) ? Number(p) : NaN));
+    const ok = nums.length === s.sides.length && nums.every((x, i) => Number.isInteger(x) && x >= 1 && x <= s.sides[i]);
+    if (!ok) {
+      setError(ui.results, ui.resultsHint, `Use ${rangeText(s.sides).replace(/\.$/, '')}, separados por vírgula.`);
+      ui.results.focus();
+      return false;
+    }
+    setError(ui.results, ui.resultsHint, '');
+    ui.resultsHint.textContent = `${rangeText(s.sides)} ${s.fixed ? `Vazio: ${s.fixed.join(', ')}.` : 'Vazio: aleatório.'}`;
+    return nums;
+  }
+
+  function readSeed() {
+    const text = ui.seed.value.trim();
+    if (!text) {
+      setError(ui.seed, ui.seedHint, '');
+      ui.seedHint.textContent = 'Vazia: uma nova a cada rolagem.';
+      return null;
+    }
+    if (!/^\d+$/.test(text) || Number(text) > 4294967295) {
+      setError(ui.seed, ui.seedHint, 'Use um número inteiro de 0 a 4294967295.');
+      ui.seed.focus();
+      return false;
+    }
+    setError(ui.seed, ui.seedHint, '');
+    ui.seedHint.textContent = 'Fixa: toda rolagem usa esta semente.';
+    return Number(text);
+  }
+
+  function readMod(s) {
+    if (s.mod === null) return 0;
+    const m = Number.parseInt(ui.mod.value, 10);
+    return Number.isFinite(m) ? Math.max(-10, Math.min(20, m)) : 0;
+  }
+
+  const decimal = (x, digits) => x.toFixed(digits).replace('.', ',');
+
+  function show(el, text) {
+    el.textContent = text || '';
+    el.hidden = !text;
+  }
+
+  async function roll(s, replay) {
+    let results;
+    let seed;
+    let mod;
+    if (replay && last) {
+      ({ results, seed, mod } = last);
+    } else {
+      const typed = readResults(s);
+      const fixedSeed = readSeed();
+      if (typed === false || fixedSeed === false) return;
+      seed = fixedSeed ?? newSeed();
+      mod = readMod(s);
+      const rnd = serverRandom(seed);
+      results = typed ?? (s.fixed ? s.fixed.slice() : s.sides.map((n) => 1 + Math.floor(rnd() * n)));
+    }
+    const built = s.build(results, mod);
+    const mine = ++ticket;
+    ui.label.textContent = s.label;
+    ui.line.textContent = 'Rolando…';
+    ui.line.classList.add('result__line--waiting');
+    show(ui.note, '');
+    show(ui.word, '');
+    ui.live.textContent = '';
+    ui.seedNote.hidden = false;
+    ui.seedNote.textContent = `Semente ${seed} · rolando…`;
+    let out;
+    try {
+      out = await tray.roll(built.dice, { seed, speed: Number(ui.speed.value) });
+    } catch (err) {
+      ui.line.textContent = `Não deu para rolar: ${err.message}`;
+      return;
+    }
+    if (out.cancelled || mine !== ticket) return;
+    ui.line.textContent = built.line;
+    ui.line.classList.remove('result__line--waiting');
+    show(ui.note, built.note);
+    show(ui.word, built.word);
+    ui.word.className = `result__word${built.word ? ` result__word--${built.wordKind}` : ''}`;
+    ui.seedNote.hidden = false;
+    ui.seedNote.textContent = out.durationMs > 0
+      ? `Semente ${seed} · os dados pararam em ${decimal(out.durationMs / 1000, 2)} s`
+      : `Semente ${seed} · sem animação`;
+    ui.live.textContent = [`${s.label}: ${built.line}.`, built.note, built.word].filter(Boolean).join(' ');
+    last = { scenario: s, results, seed, mod };
+    ui.replay.disabled = false;
+  }
+
+  ui.again.addEventListener('click', () => roll(current, false));
+  ui.replay.addEventListener('click', () => {
+    if (!last) return;
+    choose(last.scenario);
+    roll(last.scenario, true);
+  });
+
+  for (const r of document.querySelectorAll('input[name="size"]')) {
+    r.addEventListener('change', () => {
+      if (!r.checked) return;
+      size = r.value;
+      tray.resize(TRAYS[size].width, TRAYS[size].height);
+    });
+  }
+
+  const speedText = () => `${decimal(Number(ui.speed.value), Number(ui.speed.value) % 1 === 0 ? 0 : 2).replace(/,?0+$/, '')}×`;
+  ui.speed.addEventListener('input', () => {
+    ui.speedOut.textContent = speedText();
+    ui.speed.setAttribute('aria-valuetext', speedText());
+  });
+
+  ui.reduced.addEventListener('change', () => {
+    reducedTouched = true;
+    tray.setReducedMotion(ui.reduced.checked);
+  });
+  reduceQuery.addEventListener('change', () => {
+    if (reducedTouched) return;
+    ui.reduced.checked = reduceQuery.matches;
+    tray.setReducedMotion(reduceQuery.matches);
+  });
+
+  ui.sound.addEventListener('change', () => tray.setSound(ui.sound.checked));
+  for (const key of ['volume', 'taps', 'rumble', 'room']) {
+    const input = $(`mix-${key}`);
+    const out = $(`mix-${key}-out`);
+    const apply = () => {
+      const v = Number(input.value);
+      out.textContent = `${v.toFixed(1).replace('.', ',')}×`;
+      tray.setSoundLevels({ [key]: v });
+    };
+    input.addEventListener('input', apply);
+    apply();
+  }
+
+  for (const r of document.querySelectorAll('input[name="theme"]')) {
+    r.addEventListener('change', () => {
+      if (!r.checked) return;
+      if (r.value === 'auto') delete root.dataset.theme;
+      else root.dataset.theme = r.value;
+      tray.refreshTheme();
+    });
+  }
+  darkQuery.addEventListener('change', () => tray.refreshTheme());
+
+  choose(current);
+  ui.speed.setAttribute('aria-valuetext', speedText());
+  const start = () => roll(current, false);
+  if (document.fonts && document.fonts.ready) {
+    let started = false;
+    const go = () => { if (!started) { started = true; tray.redraw(); start(); } };
+    document.fonts.ready.then(go);
+    setTimeout(go, 1200); // the fonts are a nicety: never wait on them for long
+  } else {
+    start();
+  }
+})();
+</script>
+</body>
+</html>
