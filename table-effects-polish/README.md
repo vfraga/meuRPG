@@ -1,6 +1,6 @@
 # table-effects-polish: acabamento das telas de efeitos da mesa (fix/table-effects-polish)
 
-**Capturas do harness, não da pilha real** (a VM não tem Docker nem CockroachDB): os componentes reais montados numa página descartável com dados de exemplo inventados e magias do SRD. Os arquivos são `<tela>-<before|after>-<light|dark>-<390|1280>.png`. "before" é o `main` (dc0f0249d), "after" é o ramo (b7a8a74ac, mais um commit de status vazio). Larguras 390 e 1280, tema claro e escuro.
+**Capturas do harness, não da pilha real** (a VM não tem Docker nem CockroachDB): os componentes reais montados numa página descartável com dados de exemplo inventados e magias do SRD. Os arquivos são `<tela>-<before|after>-<light|dark>-<390|1280>.png`. "before" é o `main` (dc0f0249d), "after" é o ramo; `cast-focus-after-*` foi refeita no a36974a68 (anel de foco desenhado por dentro do cartão, `outline-offset: -4px`), as demais no 37c3c6369 (b7a8a74ac mais um commit de status). Larguras 390 e 1280, tema claro e escuro.
 
 | Tela | O que mudou (compare before e after) |
 | --- | --- |
@@ -17,6 +17,5 @@
 - O "before" das telas `cast-*`, `die-*` e `editor-*` recebe os mesmos dados do "after"; só muda o componente.
 - Não aparece: o servidor, o gasto de recurso e o dado somado ao resultado.
 
-## O que ainda não está certo
-- **Anel de foco cortado dos lados** (`cast-focus-after-*`): o cartão de opção com foco tem anel de 2 px com distância de 2 px e o rótulo ocupa a largura inteira do corpo da ficha (432 px em 1280), que tem `overflow: auto`; as laterais do anel ficam cortadas (cima e baixo aparecem). Visível em `cast-focus-after-dark-1280.png` e em 390.
-- O texto longo de "Onde o dado entra" ("Teste de habilidade (todos, ou os de perícias e ...") é cortado em 1280, pela largura da coluna de 352 px e não pela seta; é o mesmo antes e depois.
+## Nota
+- O texto longo de "Onde o dado entra" ("Teste de habilidade (todos, ou os de perícias e ...") fica cortado em 1280 porque é a opção de um select nativo; é igual antes e depois.
