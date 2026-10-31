@@ -147,9 +147,9 @@ The `e2e` workflow runs the Playwright suite against the local stack.
 - `lint and typecheck` needs no Docker, so a mistake fails in about a minute.
 - `images` builds the production image and the devidp image once (with the GitHub Actions layer cache) and hands both over as an artifact; each shard runs `docker load`, so a broken Dockerfile fails before any shard.
 - `database` migrates an empty CockroachDB once, beside `images`: it builds `migrate` from the checkout, runs it against the in-memory database of `compose.ci.yaml`, and backs the database up (`BACKUP DATABASE`, to the folder `compose.ci-db.yaml` mounts) as the artifact `e2e-database`.
-  The backup holds the state right after the migrations, seed rows included, and is a few hundred kilobytes.
+  The backup holds the state right after the migrations, seed rows included.
   It runs beside `images`, not inside it, so neither waits for the other.
-- Every shard but plain 1/3 restores that backup (`RESTORE DATABASE`, about a second) instead of running the migrations (about 90 s); `migrate` then finds every migration applied and changes nothing.
+- Every shard but plain 1/3 restores that backup (`RESTORE DATABASE`) instead of running the migrations; `migrate` then finds every migration applied and changes nothing.
   Plain 1/3 starts from an empty database and runs every migration, so a broken migration still fails `e2e`.
   The other workflows that start the stack (`repeat-changed`, `flake-check`, `nightly-hunt`) migrate from an empty database.
 - Each shard starts the stack in the background (the composite action `start-e2e-stack`) while it installs Node, the e2e dependencies and Chromium, which the stack does not need.

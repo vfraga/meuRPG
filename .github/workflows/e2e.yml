@@ -184,7 +184,7 @@ jobs:
           cache-write: "true"
 
   # Migrates an empty CockroachDB once and backs it up (BACKUP to a folder, uploaded as an artifact), so the shards
-  # RESTORE it in about a second instead of each running the 270-odd migrations (about 90 s). It runs beside `image`,
+  # RESTORE it instead of each running every migration. It runs beside `image`,
   # not inside it: `migrate` is built here from the same checkout, so neither job waits for the other. One shard
   # (plain 1/3) still migrates from an empty database, so a broken migration still fails e2e.
   database:
