@@ -276,7 +276,7 @@ func attackToProto(a rules.Attack) *rulesv1.Attack {
 		SaveDc:              i32(a.SaveDC),
 		SaveAbility:         abilityToProto[a.SaveAbility],
 		VersatileDamage:     a.VersatileDamage,
-		RangeFt:             i32(a.RangeFt),
+		RangeFt:             i32(max(a.RangeFt, a.ReachFt)), // the proto promises a range_ft of at least the reach of a melee attack
 		LongRangeFt:         i32(a.LongRangeFt),
 		Melee:               a.Melee,
 		Notes:               a.Notes,

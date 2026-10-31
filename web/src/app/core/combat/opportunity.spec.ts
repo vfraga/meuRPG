@@ -227,6 +227,16 @@ describe('reachingAttacks', () => {
     expect(found).toEqual([{ key: 'glaive', name: 'Glaive' }]);
   });
 
+  it('offers a thrown weapon for a target within the reach a weapon rule gives it, not beyond', () => {
+    const dagger = weapon('dagger', { namePt: 'Adaga', rangeFt: 20, longRangeFt: 60, reachFt: 30 });
+    expect(
+      reachingAttacks(options([dagger], { dagger: [{ distanceFt: 30, tooFar: false }] })),
+    ).toHaveLength(1);
+    expect(
+      reachingAttacks(options([dagger], { dagger: [{ distanceFt: 35, tooFar: false }] })),
+    ).toEqual([]);
+  });
+
   it('offers a thrown weapon only for a target next to the player, whatever its range', () => {
     const dagger = weapon('dagger', { namePt: 'Adaga', rangeFt: 20, longRangeFt: 60 });
     expect(

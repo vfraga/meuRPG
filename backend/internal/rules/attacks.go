@@ -96,7 +96,7 @@ func (x *deriver) weaponAttack(i int, key string, martialArts bool, martialDie i
 	}
 	a.RangeFt, a.LongRangeFt = weaponRange(w)
 	if a.Melee && t.reachFt > 0 {
-		a.RangeFt, a.ReachFt = max(a.RangeFt, t.reachFt), t.reachFt
+		a.ReachFt = t.reachFt // the weapon keeps its own range: a reach is not a throwing range
 	}
 	a.DamageDice, _ = ParseDice(a.Damage)
 	a.VersatileDice, _ = ParseDice(a.VersatileDamage)

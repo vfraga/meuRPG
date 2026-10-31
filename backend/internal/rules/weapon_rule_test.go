@@ -122,9 +122,12 @@ func TestWeaponRuleBonusesAddUpAndMayBeNegative(t *testing.T) {
 func TestWeaponRuleReachWidensMeleeLinesOnly(t *testing.T) {
 	a := ruleAttacks(t, ruleBuild(), Effect{Type: "weapon_rule", Weapon: WeaponAny, ReachFt: 10})
 	base := baseAttacks(t)
-	for _, k := range []string{ruleLongsword, ruleRapier, UnarmedStrikeKey} {
-		if a[k].ReachFt != 10 || a[k].RangeFt != 10 {
-			t.Errorf("%s: reach %d, range %d, want 10 and 10", k, a[k].ReachFt, a[k].RangeFt)
+	if u := a[UnarmedStrikeKey]; u.ReachFt != 10 || u.RangeFt != 10 {
+		t.Errorf("unarmed strike: reach %d, range %d, want 10 and 10 (it has no range of its own)", u.ReachFt, u.RangeFt)
+	}
+	for _, k := range []string{ruleLongsword, ruleRapier} {
+		if a[k].ReachFt != 10 || a[k].RangeFt != baseAttacks(t)[k].RangeFt {
+			t.Errorf("%s: reach %d, range %d, want a reach of 10 and the weapon's own range %d", k, a[k].ReachFt, a[k].RangeFt, baseAttacks(t)[k].RangeFt)
 		}
 	}
 	if a[ruleShortbow].RangeFt != base[ruleShortbow].RangeFt || a[ruleShortbow].ReachFt != 0 {
@@ -380,5 +383,20 @@ func TestWeaponEffectsAreOnTheEffectMenu(t *testing.T) {
 	}
 	if got := valueKeys(menuList(t, menu, ListWeaponKinds)); !slices.Equal(got, []string{WeaponMelee, WeaponRanged}) {
 		t.Errorf("weapon kinds = %v", got)
+	}
+}
+
+// A weapon rule's reach is the melee reach of the line, never the weapon's range: a dagger (thrown 20/60 ft)
+// with a 30 ft reach still throws at 20/60.
+func TestWeaponRuleReachNeverChangesTheThrowingRange(t *testing.T) {
+	base := baseAttacks(t)[ruleDagger]
+	if base.LongRangeFt != 60 || base.RangeFt != 20 {
+		t.Fatalf("dagger = %+v, want it thrown 20/60", base)
+	}
+	for _, reach := range []int{30, 60} {
+		got := ruleAttacks(t, ruleBuild(), Effect{Type: "weapon_rule", Weapon: WeaponAny, ReachFt: reach})[ruleDagger]
+		if got.ReachFt != reach || got.RangeFt != 20 || got.LongRangeFt != 60 {
+			t.Errorf("dagger with a %d ft reach = reach %d, range %d/%d, want the reach and 20/60", reach, got.ReachFt, got.RangeFt, got.LongRangeFt)
+		}
 	}
 }

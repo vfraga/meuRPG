@@ -173,7 +173,8 @@ const MELEE_REACH_FT = 5;
 
 /** The melee weapon attacks a player can make off turn as an opportunity attack: the ones with a target the server
  * says is within the weapon's reach (`tooFar`: 10 ft for a glaive or a whip, not only 5). A thrown weapon (it has a
- * long range) reaches only 5 ft in melee, whatever range it has when thrown. */
+ * long range) reaches only its melee reach (5 ft, or the `reachFt` a weapon rule gives it), whatever range it has
+ * when thrown. */
 export function reachingAttacks(opts: GetTurnOptionsResponse): { key: string; name: string }[] {
   return (opts.options?.attacks ?? []).flatMap((a) => {
     const atk = a.attack;
@@ -186,7 +187,7 @@ export function reachingAttacks(opts: GetTurnOptionsResponse): { key: string; na
         (t) =>
           t.distanceFt !== undefined &&
           !t.tooFar &&
-          (atk.longRangeFt === 0 || t.distanceFt <= MELEE_REACH_FT),
+          (atk.longRangeFt === 0 || t.distanceFt <= Math.max(MELEE_REACH_FT, atk.reachFt)),
       );
     return inReach ? [{ key: atk.key, name: atk.namePt || atk.name }] : [];
   });

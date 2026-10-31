@@ -534,7 +534,7 @@ func (f *attackFlow) holdForWindow(ctx context.Context) (bool, error) {
 func (f *attackFlow) modeShape() attackShape {
 	shape := shapeOfAttack(f.attack)
 	if f.call.opportunity() {
-		shape.Thrown, shape.RangeFt, shape.LongRangeFt = false, meleeReachFt, 0
+		shape.Thrown, shape.RangeFt, shape.LongRangeFt = false, shape.MeleeReachFt, 0
 	}
 	return shape
 }

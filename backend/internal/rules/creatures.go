@@ -793,6 +793,9 @@ func (c *content) monsterAttack(m *srd51.Monster, a srd51.MonsterAction, key str
 	}
 	if mm := reachRe.FindStringSubmatch(a.Desc); mm != nil {
 		at.RangeFt, _ = strconv.Atoi(mm[1])
+		if at.RangeFt > unarmedReachFt {
+			at.ReachFt = at.RangeFt // the melee reach, which the throwing range below does not replace
+		}
 	}
 	// A thrown weapon ("reach 5 ft. or range 20/60 ft.") stays a melee attack and
 	// carries its throwing range, as a character's thrown weapon does.

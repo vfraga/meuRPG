@@ -29,9 +29,9 @@ func attackMeleeReach(a link.Attack) int {
 // opportunity attack the melee reach, whatever range the weapon has when thrown.
 func attackReach(a link.Attack, asReaction bool) int32 {
 	if asReaction {
-		return meleeReachFt
+		return clamp32(attackMeleeReach(a), 0, math.MaxInt32)
 	}
-	return reachFt(clamp32(a.RangeFt, 0, math.MaxInt32), clamp32(a.LongRangeFt, 0, math.MaxInt32))
+	return max(reachFt(clamp32(a.RangeFt, 0, math.MaxInt32), clamp32(a.LongRangeFt, 0, math.MaxInt32)), clamp32(a.ReachFt, 0, math.MaxInt32))
 }
 
 // distanceFt is the distance between two combatants on the grid for an attack's

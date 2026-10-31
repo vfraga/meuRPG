@@ -695,3 +695,25 @@ func TestCreaturePerceptionFollowsTheSRD(t *testing.T) {
 		}
 	}
 }
+
+// A creature's attack that says "reach 10 ft. or range 20/60 ft." keeps both: the reach it has in melee and
+// the range it throws at.
+func TestAMonsterAttackKeepsItsReachAndItsThrowingRange(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	m := &srd51.Monster{ProficiencyBonus: 2}
+	for _, tc := range []struct {
+		desc                string
+		reach, rng, longRng int
+	}{
+		{"Melee or Ranged Weapon Attack: +4 to hit, reach 10 ft. or range 20/60 ft., one target.", 10, 20, 60},
+		{"Melee or Ranged Weapon Attack: +4 to hit, reach 5 ft. or range 20/60 ft., one target.", 0, 20, 60},
+		{"Melee Weapon Attack: +4 to hit, reach 10 ft., one target.", 10, 10, 0},
+		{"Melee Weapon Attack: +4 to hit, reach 5 ft., one target.", 0, 5, 0},
+	} {
+		a := c.c.monsterAttack(m, srd51.MonsterAction{Name: "Lança", Desc: tc.desc, HasAttack: true, AttackBonus: 4}, "attack:test", map[Ability]int{})
+		if a.ReachFt != tc.reach || a.RangeFt != tc.rng || a.LongRangeFt != tc.longRng {
+			t.Errorf("%q: reach %d, range %d/%d, want %d, %d/%d", tc.desc, a.ReachFt, a.RangeFt, a.LongRangeFt, tc.reach, tc.rng, tc.longRng)
+		}
+	}
+}

@@ -62,7 +62,7 @@ type provoker struct {
 
 // meleeReachOf is how far a sheet's melee attacks reach: the largest of their reaches
 // (a sheet that gives none reaches 5 ft). An attack with a long range is a thrown
-// weapon, whose range is not a reach.
+// weapon, whose range is not a reach: only the reach its line gives counts.
 func meleeReachOf(sheet link.Sheet) int {
 	reach, found := meleeReachFt, false
 	for _, a := range sheet.Attacks {
@@ -70,6 +70,7 @@ func meleeReachOf(sheet link.Sheet) int {
 			continue
 		}
 		found = true
+		reach = max(reach, attackMeleeReach(a))
 		if a.LongRangeFt == 0 {
 			reach = max(reach, a.RangeFt)
 		}

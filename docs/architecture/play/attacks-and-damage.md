@@ -142,10 +142,15 @@ Death saves and initiative are untouched.
   A melee weapon is a thrown weapon when its long range is beyond its melee reach (a spear, a dagger, a javelin).
   A thrown weapon is a melee attack up to its melee reach, and a ranged attack made by throwing it beyond the reach, up to its throwing range.
   The melee reach is 5 ft, or the longer reach a `weapon_rule` or a `pseudo_weapon` gives the line (`link.Attack.ReachFt`, read by `attackMeleeReach`).
+  On a creature's stat block, an attack that says "reach 10 ft. or range 20/60 ft." has both: `ReachFt` 10 and the throwing range 20/60.
+  A `weapon_rule` leaves the `RangeFt` and `LongRangeFt` of a weapon from the SRD list alone: its reach is `ReachFt`.
+  The unarmed strike and a `pseudo_weapon` keep `RangeFt` equal to their reach.
+  The proto attack (`range_ft`) is at least the reach of a melee attack, so the screens that read `range_ft` as a reach and the list of targets keep working.
+  `thrownAtRange` and the roll mode both ask the shape (`shapeOfAttack`, `rangedAt`).
+  An opportunity attack is a melee attack at the line's melee reach.
   Cover, Rage and the other rules for a ranged attack follow the same reach.
   Without a map the distance is unknown, and a thrown weapon with the usual 5 ft reach is a melee attack within 5 ft.
   A thrown weapon with a longer reach has no known "within 5 ft" there, like any reach weapon: a hit on a paralyzed or unconscious target is not a critical hit by itself, and a prone target gives no advantage.
-  An opportunity attack is melee at any distance.
 - **Spell attacks.** `GetTurnOptions` writes the same `roll_mode`, `sources` and `critical_on_hit` on each target of a spell that makes an attack roll (`turnModes.annotateShape` with `shapeOfSpell`), so the cast sheet suggests the mode `CastSpell` will roll and asks for the right number of typed d20.
   A spell attack of the `half_on_miss` kind (Acid Arrow) that misses opens a pending damage with `half` set: the dice are rolled as usual and the amount is half of the total, rounded down, taken through the target's resistance like any damage.
 
