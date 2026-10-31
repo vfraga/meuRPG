@@ -166,6 +166,38 @@ test('uma página que de fato fechou aparece como fechada pelo teste, sem sonda'
   expect(diagnostics.report()).toContain('state: closed by the test, not probed');
 });
 
+test('uma página fechada com page.close() aparece como fechada, sem pedidos abertos', async ({ browser }) => {
+  const diagnostics = new PageDiagnostics();
+  const context = await openWatched(browser, diagnostics);
+  try {
+    const page = await context.newPage();
+    await page.route('**/nunca-responde', () => {});
+    await serve(page, '<script>fetch("/nunca-responde").catch(() => {});</script>');
+    await expect.poll(() => diagnostics.report() ?? '').toContain('/nunca-responde');
+    await page.close();
+    await diagnostics.probe();
+    const report = diagnostics.report() ?? '';
+    expect(report).toContain('state: closed by the test, not probed');
+    expect(report).not.toContain('requests still open');
+    expect(report).not.toContain('/nunca-responde');
+  } finally {
+    await context.close();
+  }
+});
+
+test('o console entrega os argumentos de cada mensagem: nenhum fica retido', async () => {
+  // A fake page: the handler of 'console' must release the arguments of an error and of any other message.
+  const handlers = new Map<string, (arg: unknown) => void>();
+  const page = { on: (event: string, handler: (arg: unknown) => void) => handlers.set(event, handler) } as unknown as Page;
+  new PageDiagnostics().watchPage(page, 'fake');
+  const released: string[] = [];
+  const handle = (name: string) => ({ dispose: () => (released.push(name), Promise.resolve()) });
+  const message = (type: string, args: string[]) => ({ type: () => type, text: () => 'texto', location: () => ({ url: 'u', lineNumber: 1 }), args: () => args.map(handle) });
+  handlers.get('console')?.(message('log', ['a', 'b']));
+  handlers.get('console')?.(message('error', ['c']));
+  expect(released).toEqual(['a', 'b', 'c']);
+});
+
 test('o browser volta ao protótipo: nenhuma camada de embrulho fica depois de cada teste', async ({ browser }) => {
   const prototype = Object.getPrototypeOf(browser) as { newContext: unknown; newPage: unknown };
   for (let i = 0; i < 3; i++) {
@@ -211,7 +243,7 @@ function runNested(args: string[], env: NodeJS.ProcessEnv, deadlineMs: number): 
 
 test('um teste que falha anexa o diagnóstico: o pedido que não voltou no fixture e a página que caiu num contexto fechado pelo teste', async () => {
   // A nested run of diagnostics-fixture, whose tests fail on purpose (the attachment is made after the test body,
-  // so only a real failing test shows it). Two failures of a few seconds each, hence the longer timeout.
+  // so only a real failing test shows it). Three failures of a few seconds each (the third runs out two 5 s limits), hence the longer timeout.
   test.setTimeout(90_000);
   const { PLAYWRIGHT_JSON_OUTPUT_NAME: _name, ...env } = process.env;
   // One folder for each run: the repeats of this test run side by side, and a run empties its output folder.
@@ -243,4 +275,9 @@ test('um teste que falha anexa o diagnóstico: o pedido que não voltou no fixtu
   expect(waiting).toContain('state: answers');
   expect(waiting).toMatch(/requests still open \(1\):\n {4}GET http:\/\/diagnostics.test\/never/);
   expect(attachment('a page that crashed in a context the test closes itself')).toContain('state: crashed');
+  // The limit the docs name: Playwright's own screenshot and trace of a failed test wait for a page in a loop until
+  // their 5 s run out, and then the fixtures end without the attachment.
+  const stuck = results.get('a page stuck in a loop that never ends');
+  expect(stuck?.status).toMatch(/failed|timedOut/);
+  expect(stuck?.attachments.map((a) => a.name)).not.toContain('page-diagnostics');
 });

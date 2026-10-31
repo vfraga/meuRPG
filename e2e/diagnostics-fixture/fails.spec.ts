@@ -25,3 +25,21 @@ test('a page that crashed in a context the test closes itself', async ({ browser
     await context.close();
   }
 });
+
+test('a page stuck in a loop that never ends', async ({ page }) => {
+  await page.route('http://diagnostics.test/', (route) => route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<button>pedir</button>' }));
+  await page.goto('http://diagnostics.test/');
+  let busyStarted!: () => void;
+  const busy = new Promise<void>((resolve) => (busyStarted = resolve));
+  await page.exposeFunction('busyStarted', () => busyStarted());
+  void page
+    .evaluate(() => {
+      void (window as unknown as { busyStarted(): void }).busyStarted();
+      for (;;) {
+        // busy
+      }
+    })
+    .catch(() => undefined);
+  await busy;
+  await page.getByRole('button', { name: 'pedir' }).click();
+});

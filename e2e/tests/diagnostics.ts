@@ -11,6 +11,8 @@ import { test as base, type Browser, type BrowserContext, type ConsoleMessage, t
  * runs only after the test failed, in the `context` fixture, which ends before Playwright closes the contexts (a stuck
  * page makes that close overrun the teardown, and the attachment would be lost). A context the test closed itself has
  * no page left to ask; for its pages the report keeps what the browser had seen and the requests open at the close.
+ * A page in a CPU loop is out of reach: Playwright's own screenshot and trace of the failed test wait for it, and the
+ * test ends without the attachment.
  */
 
 /** How long a page gets to answer the probe; the probe never keeps a test or its teardown waiting longer. */
@@ -109,6 +111,15 @@ export class PageDiagnostics {
     page.on('pageerror', (error) => note(watched.errors, `pageerror: ${firstLine(error)}`));
     page.on('console', (message: ConsoleMessage) => {
       if (message.type() === 'error') note(watched.errors, `console.error: ${message.text()} (${message.location().url}:${message.location().lineNumber})`);
+      // Playwright hands every message's arguments to Node as handles that stay alive until they are released; only
+      // the text of an error is kept, so none of them is needed.
+      for (const arg of message.args()) void arg.dispose().catch(() => undefined);
+    });
+    page.on('close', () => {
+      // A page that closed has no request left to wait for, so none is listed (their ages would only grow until the
+      // report). A context closed by the test already kept its list, and a page that crashed keeps what it left open.
+      watched.closedWith ??= watched.crashed ? openRequestLines(watched.open.values(), Date.now()) : [];
+      watched.open.clear();
     });
     page.on('request', (request) => watched.open.set(request, { description: `${request.method()} ${request.url()}`, since: Date.now() }));
     page.on('requestfinished', (request) => watched.open.delete(request));

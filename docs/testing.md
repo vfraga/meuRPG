@@ -306,12 +306,18 @@ A failed or timed-out test attaches `page-diagnostics` to its report.
 It covers the pages of the `page` and `context` fixtures and of every context made with `browser.newContext()`, including `newSignedInContext`.
 For each page it says whether the page crashed, the `pageerror` and `console.error` it reported, the requests that failed, and the requests still open with their age.
 For a page still open when the test fails it also says whether the page replied to a probe within 1.5 s.
-A page that really closed (the test closed its context) is not probed; the attachment lists the requests open when the test asked for the close.
+A page that really closed is not probed.
+When the test closed its context, the attachment lists the requests open when the test asked for the close.
+When the test closed the page with `page.close()`, the attachment says it closed and lists no requests, even if one was open.
 A page still open after the close was asked for is probed like any other.
 Requests made with `page.request` or `callRPC` are not page requests and are not listed.
-A page stuck in a loop makes Playwright's own trace and screenshot wait, and then no attachment is made.
+A page stuck in a CPU loop gets no attachment.
+Playwright's own screenshot and trace of the failed test wait for the page, and the test ends without `page-diagnostics`.
+`diagnostics-fixture/` runs such a page, and `diagnostics.spec.ts` checks it.
+A test must not read `message.args()` of a `console` event: the fixture releases the arguments of every message.
+Use `message.text()`.
 Read the attachment in the HTML report, or in the `playwright-report-*` artifact of a failed shard.
-`diagnostics.spec.ts` makes pages crash, hang and fail on purpose; its last test runs `diagnostics-fixture/` to see the attachment of a real failed test.
+`diagnostics.spec.ts` makes pages crash, hang and fail on purpose; its last test runs `diagnostics-fixture/` to see what a real failed test attaches.
 
 A failed CI run keeps `stack-logs/stack.log` (every container of the stack, with timestamps) in the `playwright-report-*` artifact.
 The `flake-check` traces artifact (`flake-traces-*`) holds the same file, one per job.
