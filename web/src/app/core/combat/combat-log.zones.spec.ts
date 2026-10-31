@@ -52,6 +52,29 @@ describe('the log lines of spell zones', () => {
     expect(text(pass)).toBe('Tor começou o turno na Teia e passou no teste de Destreza');
   });
 
+  it('says a creature was in the area at the cast, or ended its turn in it', () => {
+    const cast = effect({
+      change: CombatLogEffectChange.SAVE_FAILED,
+      reason: 'zone_cast',
+      sourceNamePt: 'Área Escorregadia',
+      targetLabels: ['Tor'],
+      abilityNamePt: 'Destreza',
+    });
+    expect(text(cast)).toBe(
+      'Tor estava na Área Escorregadia quando a magia foi conjurada e falhou no teste de Destreza',
+    );
+    const end = effect({
+      change: CombatLogEffectChange.SAVED,
+      reason: 'zone_end',
+      sourceNamePt: 'Área Escorregadia',
+      targetLabels: ['Tor'],
+      abilityNamePt: 'Destreza',
+    });
+    expect(text(end)).toBe(
+      'Tor terminou o turno na Área Escorregadia e passou no teste de Destreza',
+    );
+  });
+
   it('says a creature came into a zone, with the numbers only for the master', () => {
     const e = effect({
       change: CombatLogEffectChange.SAVE_FAILED,

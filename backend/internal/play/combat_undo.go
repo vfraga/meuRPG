@@ -106,6 +106,7 @@ func (c chainEvent) payload() (ev actionEvent, ok bool) {
 // that says something decides. The last one always does.
 var chainRules = []func(c chainEvent) chainVerdict{
 	chainCreatures,
+	chainCastZoneCatch,
 	chainConcentrationEnd,
 	chainStateEndedByVitals,
 	chainOffer,
@@ -150,6 +151,19 @@ func chainStateEndedByVitals(c chainEvent) chainVerdict {
 		return chainGoOn
 	}
 	if ev, ok := c.payload(); ok && ev.StateKind == stateTable && !ev.StateStarted && (ev.StateReason == stateEndIncapacitated || ev.StateReason == stateEndMaster) {
+		return chainSkip
+	}
+	return chainGoOn
+}
+
+// chainCastZoneCatch: a creature caught by a zone at the cast (Grease, Entangle) is written after the cast's own
+// event, which is what an undo acts on: the line stays, what it changed goes with the cast, and it never closes
+// the undo chain. The same holds for the answer of a player's character to that catch.
+func chainCastZoneCatch(c chainEvent) chainVerdict {
+	if c.row.Kind != eventZoneTriggered && c.row.Kind != eventLastingSaved {
+		return chainGoOn
+	}
+	if ev, ok := c.payload(); ok && ev.Lasting != nil && ev.Lasting.Reason == zoneWhyCast {
 		return chainSkip
 	}
 	return chainGoOn

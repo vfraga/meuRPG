@@ -10,7 +10,7 @@ import (
 )
 
 // The spells that keep an area on the map while they last (SRD 5.1): Spirit Guardians, Moonbeam,
-// Cloudkill and Web. The cast puts a zone on the map (the spell_zones table); what the zone does,
+// Cloudkill, Web, Grease and Entangle. The cast puts a zone on the map (the spell_zones table); what the zone does,
 // where it stands and how it moves is written here, one row for each spell, in our own words:
 //
 //   - Spirit Guardians: an aura around the caster that goes where the caster goes. A creature that
@@ -25,9 +25,13 @@ import (
 //   - Web: a cube of sticky strands at a point. The cast puts its effect on who is inside, as it always
 //     did; the zone adds who comes in later: a Dexterity save on entering or beginning a turn there, and
 //     a failure restrains.
+//   - Grease: a 10-foot square at a point, with no concentration. Who stands in it at the cast, comes in
+//     or ends a turn there makes a Dexterity save or falls prone.
+//   - Entangle: a 20-foot square at a point. Only who stands in it at the cast makes a Strength save,
+//     and a failure restrains until the spell ends.
 //
 // A creature is hit at most once on a turn by the same zone, whether it came in or began the turn
-// inside. The cast itself hits nobody: a creature standing in the area when the spell is cast is hit
+// inside. For the first four the cast itself hits nobody: a creature standing in the area when the spell is cast is hit
 // when it begins its turn there or comes back in.
 
 // zoneKind says what a zone does to the creature it catches.
@@ -36,8 +40,10 @@ type zoneKind int
 const (
 	// zoneDamage: a saving throw, damage on a failure and half of it on a pass.
 	zoneDamage zoneKind = iota
-	// zoneRestrain: a saving throw; a failure restrains the creature in the web.
+	// zoneRestrain: a saving throw; a failure restrains the creature (Web, Entangle).
 	zoneRestrain
+	// zoneProne: a saving throw; a failure knocks the creature prone (Grease).
+	zoneProne
 )
 
 // zoneDef is what a spell's zone is.
@@ -60,8 +66,13 @@ type zoneDef struct {
 	// onEnter and onStart say when the zone catches a creature: when it comes in the first time on a turn,
 	// when it starts its turn inside.
 	onEnter, onStart bool
+	// onCast says the zone catches the creatures standing in the area when the spell is cast, and onTurnEnd the
+	// creature that ends its turn inside (Grease).
+	onCast, onTurnEnd bool
+	// restrainKey is the effect a failed save puts on the creature of a restraining zone.
+	restrainKey string
 	// slows says a creature the zone catches moves at half speed for the turn (Spirit Guardians), and
-	// difficult says the squares are difficult terrain (Web).
+	// difficult says the squares are difficult terrain (Web, Grease, Entangle).
 	slows, difficult bool
 	// corners says the area spreads around corners: it is the part of the shape the origin reaches.
 	corners bool
@@ -76,6 +87,8 @@ const (
 	moonbeamFt        = 5
 	cloudkillFt       = 20
 	webFt             = 20
+	greaseFt          = 10
+	entangleFt        = 20
 )
 
 // moveRangeFt is how far the caster moves an area with an action (Moonbeam), and driftFt how far a
@@ -100,17 +113,26 @@ var zoneDefs = map[string]zoneDef{
 	},
 	"spell:web": {
 		kind: zoneRestrain, onEnter: true, onStart: true, shape: grid.ShapeCube, sizeFt: webFt, save: "dex", keepsCastHits: true, difficult: true,
+		restrainKey: webRestrainedKey,
+		placement:   playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
+	},
+	"spell:grease": {
+		kind: zoneProne, onCast: true, onEnter: true, onTurnEnd: true, shape: grid.ShapeCube, sizeFt: greaseFt, save: "dex", difficult: true,
+		placement: playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
+	},
+	"spell:entangle": {
+		kind: zoneRestrain, onCast: true, shape: grid.ShapeCube, sizeFt: entangleFt, save: "str", difficult: true, restrainKey: entangleRestrainedKey,
 		placement: playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
 	},
 }
 
-// zoneDefOf is the zone one of the SRD's four spells keeps.
+// zoneDefOf is the zone one of the SRD's six spells keeps.
 func zoneDefOf(spellKey string) (zoneDef, bool) {
 	d, ok := zoneDefs[spellKey]
 	return d, ok
 }
 
-// zoneDefOfSpell is the zone a spell keeps, if it keeps one: the row of the SRD's four, or the table spell's own
+// zoneDefOfSpell is the zone a spell keeps, if it keeps one: the row of the SRD's six, or the table spell's own
 // area, which the master wrote as the model says. Both are the same value, so the zone is made and worked the
 // same way from either.
 func zoneDefOfSpell(sp link.Spell) (zoneDef, bool) {
@@ -149,7 +171,7 @@ type zoneDefJSON struct {
 	Corners   bool   `json:"corners,omitempty"`
 }
 
-// storedDef is the definition as the zone row keeps it, nil for one of the SRD's four (the code's table is its truth).
+// storedDef is the definition as the zone row keeps it, nil for one of the SRD's six (the code's table is its truth).
 func storedDef(spellKey string, d zoneDef) []byte {
 	if _, srd := zoneDefOf(spellKey); srd {
 		return nil

@@ -39,7 +39,7 @@ What the casting does depends on what the spell is:
 | Reads HP (Sleep, Colour Spray, Power Word, Spare the Dying, Heal, False Life, Aid) | The server reads each target's HP and applies the effect at once, in the same transaction | None |
 | Revivify | See [Death and revival](death-and-revival.md) | None |
 | Teleport (Misty Step, with `destination`) | Spends the slot and the bonus action, then puts the caster on the chosen square; see below | None |
-| Zone spell (Web, Spirit Guardians, Moonbeam, Cloudkill, or a table spell with a zone), cast at a point on the map | Spends and logs, lays the zone, and Web puts its effect on the creatures inside; the zone then makes the later saves and damage ([Spell zones](spell-zones.md)) | None at the cast; the zone's damage is pending damage of its own |
+| Zone spell (Web, Spirit Guardians, Moonbeam, Cloudkill, Grease, Entangle, or a table spell with a zone), cast at a point on the map | Spends and logs, lays the zone, and Web puts its effect on the creatures inside; Grease and Entangle make the creatures inside save at once (prone, restrained); the zone then makes the later saves and damage ([Spell zones](spell-zones.md)) | None at the cast; the zone's damage is pending damage of its own |
 | The rest (Misty Step without a square, which only the master may send) | Spends and logs; the effect is the table's, and the master marks conditions afterwards | None |
 
 **A teleport on a map.** `CastSpellRequest.destination` is the square the caster lands on (`teleportReachFt` has the spells and their reach: Misty Step, 30 ft).
@@ -53,7 +53,7 @@ A player's character must send `destination` on a map with a grid: without it `r
 A trap armed on the landing square fires through the move's own hook (`trapHook.fire`, after the teleport is written): the cast's event is written first and the firing is the change's own event, carrying the cast's fields so a retry under the same key still answers the cast. An undo takes the firing back, then the cast.
 
 **What a casting rolls at once and what stays with the master (RN-22).** A casting opens the saving throw and damage the spell asks for when it is cast.
-Saves that come later, when a creature enters the area or begins its turn in it, are automated for the spells that keep a zone on the map (Web, Spirit Guardians, Moonbeam, Cloudkill, and a table spell with a zone), when the cast chose a point: see [Spell zones](spell-zones.md).
+Saves that come later, when a creature enters the area or begins its turn in it, are automated for the spells that keep a zone on the map (Web, Spirit Guardians, Moonbeam, Cloudkill, Grease, Entangle, and a table spell with a zone), when the cast chose a point: see [Spell zones](spell-zones.md).
 For the others (Flaming Sphere, Sleet Storm, Earthquake) they are not: the data records their dice without a saving throw, so a casting spends the slot, logs and rolls nothing, and the master calls for each save as creatures move.
 A lasting effect with an end-of-turn save uses the reaction window (see [Lasting effects](lasting-effects.md)).
 

@@ -33,6 +33,10 @@ describe('the save prompt of a spell zone', () => {
     expect(zoneReasonText('zone_start', '')).toBe('A zona atingiu você no começo do seu turno.');
     expect(zoneReasonText('zone_enter', 'Tor')).toBe('Tor entrou na zona.');
     expect(zoneReasonText('zone_start', 'Tor')).toBe('A zona atingiu Tor no começo do turno.');
+    expect(zoneReasonText('zone_cast', '')).toBe(
+      'Você estava na área quando a magia foi conjurada.',
+    );
+    expect(zoneReasonText('zone_end', 'Tor')).toBe('Tor terminou o turno na zona.');
     expect(zoneReasonText('', '')).toBe('');
   });
 

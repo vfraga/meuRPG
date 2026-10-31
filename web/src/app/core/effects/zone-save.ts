@@ -20,6 +20,14 @@ export function zoneReasonText(reason: string, who: string): string {
       ? `A zona atingiu ${who} no começo do turno.`
       : 'A zona atingiu você no começo do seu turno.';
   }
+  if (reason === 'zone_cast') {
+    return who
+      ? `${who} estava na área quando a magia foi conjurada.`
+      : 'Você estava na área quando a magia foi conjurada.';
+  }
+  if (reason === 'zone_end') {
+    return who ? `${who} terminou o turno na zona.` : 'Você terminou o turno na zona.';
+  }
   return '';
 }
 

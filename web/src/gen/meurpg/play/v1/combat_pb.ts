@@ -14869,7 +14869,7 @@ export enum CombatLogEffectChange {
   /**
    * A spell's area moved (Moonbeam moved by its caster, Cloudkill drifting). A creature the
    * area catches (it came in, or began its turn there) is a SAVED or SAVE_FAILED line with
-   * `reason` zone_enter or zone_start, the roll, and the damage in `amount`.
+   * `reason` zone_enter, zone_start, zone_cast or zone_end, the roll, and the damage in `amount`.
    *
    * @generated from enum value: COMBAT_LOG_EFFECT_CHANGE_ZONE_MOVED = 9;
    */

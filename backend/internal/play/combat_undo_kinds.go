@@ -705,9 +705,9 @@ func (u *undoer) castDieBack(ctx context.Context, who playdb.Combatant, ev actio
 // castEffectsBack takes away the effects the cast put on its targets and the mark of
 // Hunter's Mark, and puts back the marks the cast took off.
 func (u *undoer) castEffectsBack(ctx context.Context, who playdb.Combatant, ev actionEvent) error {
-	if ev.CastID != "" { // the area the cast kept on the map
-		if err := u.c.q.DeleteSpellZonesOfCast(ctx, playdb.DeleteSpellZonesOfCastParams{EncounterID: u.c.enc.ID, CastID: ev.CastID}); err != nil {
-			return fmt.Errorf("take the spell zone of the cast away: %w", err)
+	if ev.CastID != "" { // the area the cast kept on the map, and what the answers to it put on the players' characters
+		if err := u.castZonesBack(ctx, ev.CastID); err != nil {
+			return err
 		}
 	}
 	if ev.Lasting != nil { // the effects the cast put on its targets
@@ -726,6 +726,36 @@ func (u *undoer) castEffectsBack(ctx context.Context, who playdb.Combatant, ev a
 		}
 	}
 	return u.marksBack(ctx, ev.MarksBefore)
+}
+
+// castZonesBack takes the zones of a cast away, with the questions they had open and the effects their answers added.
+func (u *undoer) castZonesBack(ctx context.Context, castID string) error {
+	if err := u.s.closeCastZoneWindows(ctx, u.c, castID); err != nil {
+		return err
+	}
+	if err := u.c.q.DeleteSpellZonesOfCast(ctx, playdb.DeleteSpellZonesOfCastParams{EncounterID: u.c.enc.ID, CastID: castID}); err != nil {
+		return fmt.Errorf("take the spell zone of the cast away: %w", err)
+	}
+	return u.zoneEffectsBack(ctx, castID)
+}
+
+// zoneEffectsBack takes away the effects of the cast's group, which a player's answer to a zone of the cast added.
+func (u *undoer) zoneEffectsBack(ctx context.Context, castID string) error {
+	rows, err := u.c.q.ListLastingEffects(ctx, u.c.enc.ID)
+	if err != nil {
+		return fmt.Errorf("list the effects: %w", err)
+	}
+	var who []string
+	for _, st := range rows {
+		if conv.OrZero(st.GroupID) != castID {
+			continue
+		}
+		if err := u.c.q.DeleteLastingEffect(ctx, st.ID); err != nil {
+			return fmt.Errorf("take the effects of the cast away: %w", err)
+		}
+		who = append(who, st.CombatantID)
+	}
+	return u.s.refreshCombatants(ctx, u.c, who...)
 }
 
 // marksBack puts back, with their IDs and rounds, the Hunter's Marks a cast took off: the

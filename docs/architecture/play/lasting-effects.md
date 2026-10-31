@@ -56,7 +56,7 @@ A rider that asks a saving throw is not cast outside a combat (`castCharacterEff
 
 ## What a player may read
 
-The area a spell keeps on the map (Spirit Guardians, Moonbeam, Cloudkill, Web) is not an effect on a creature; it is a zone with its own table and hooks, and the concentration, the clock and the web's effect it shares with the effects are described in [Spell zones](spell-zones.md).
+The area a spell keeps on the map (Spirit Guardians, Moonbeam, Cloudkill, Web, Grease, Entangle) is not an effect on a creature; it is a zone with its own table and hooks, and the concentration, the clock and the web's effect it shares with the effects are described in [Spell zones](spell-zones.md).
 
 The master's table (`ListLastingEffects`: the rows, the loose conditions, the turn clock, the concentrations and the catalog) is built in `lasting_effects_table.go`; the commands on it are in `lasting_effects_rpc.go`.
 

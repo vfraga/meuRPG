@@ -6,10 +6,17 @@ import { zoneView, type ZoneViewer } from './zones';
 const master: ZoneViewer = { master: true, combatants: [] };
 
 describe('the pattern of a zone', () => {
-  it('gives each of the four spells its own pattern, the same every time', () => {
-    const keys = ['spell:moonbeam', 'spell:web', 'spell:cloudkill', 'spell:spirit-guardians'];
+  it('gives each of the six spells its own pattern, the same every time', () => {
+    const keys = [
+      'spell:moonbeam',
+      'spell:web',
+      'spell:cloudkill',
+      'spell:spirit-guardians',
+      'spell:grease',
+      'spell:entangle',
+    ];
     const picked = keys.map(zonePattern);
-    expect(new Set(picked).size).toBe(4);
+    expect(new Set(picked).size).toBe(6);
     expect(keys.map(zonePattern)).toEqual(picked);
   });
 

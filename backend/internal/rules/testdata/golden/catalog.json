@@ -16,7 +16,7 @@
   "empty: spells": "n=319 sha=5e3e349848574cff",
   "empty: subclasses": "n=12 sha=15fdac77667f5819",
   "empty: subraces": "n=4 sha=08bff111a1609ee8",
-  "empty: version": "srd51@a8abc93b235c+fx.51+mesa.1|This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+  "empty: version": "srd51@a8abc93b235c+fx.52+mesa.1|This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.",
   "empty: weapons": "n=37 sha=b6f862d197fdf487",
   "srd: abilities": "n=6 sha=0cc55e940b0ecdb2",
   "srd: armor": "n=12 sha=e90d6c4395dc8f14",
@@ -34,7 +34,7 @@
   "srd: spells": "n=319 sha=5e3e349848574cff",
   "srd: subclasses": "n=12 sha=15fdac77667f5819",
   "srd: subraces": "n=4 sha=08bff111a1609ee8",
-  "srd: version": "srd51@a8abc93b235c+fx.51|This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+  "srd: version": "srd51@a8abc93b235c+fx.52|This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.",
   "srd: weapons": "n=37 sha=b6f862d197fdf487",
   "table: abilities": "n=6 sha=0cc55e940b0ecdb2",
   "table: armor": "n=12 sha=e90d6c4395dc8f14",
@@ -53,6 +53,6 @@
   "table: spells": "n=324 sha=ab708d3f5c21969d",
   "table: subclasses": "n=24 sha=d2c07eddca8bf9e6",
   "table: subraces": "n=5 sha=dc2a580f3ea95aba",
-  "table: version": "srd51@a8abc93b235c+fx.51+mesa.7|This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.",
+  "table: version": "srd51@a8abc93b235c+fx.52+mesa.7|This work includes material taken from the System Reference Document 5.1 (\"SRD 5.1\") by Wizards of the Coast LLC and available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License available at https://creativecommons.org/licenses/by/4.0/legalcode.",
   "table: weapons": "n=37 sha=b6f862d197fdf487"
 }

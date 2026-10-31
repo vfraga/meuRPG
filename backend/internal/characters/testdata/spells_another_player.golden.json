@@ -1,7 +1,7 @@
 [
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.51+mesa.4",
+      "contentVersion": "srd51@a8abc93b235c+fx.52+mesa.4",
       "spells": [
         {
           "classKeys": [
@@ -22,14 +22,14 @@
   },
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.51+mesa.4"
+      "contentVersion": "srd51@a8abc93b235c+fx.52+mesa.4"
     },
     "logs": null,
     "request": "the switched-off wizard's 3rd circle of evocation"
   },
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.51+mesa.4",
+      "contentVersion": "srd51@a8abc93b235c+fx.52+mesa.4",
       "spells": [
         {
           "classKeys": [
@@ -92,7 +92,7 @@
   },
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.51+mesa.4"
+      "contentVersion": "srd51@a8abc93b235c+fx.52+mesa.4"
     },
     "logs": null,
     "request": "an unknown class"
@@ -107,7 +107,7 @@
   },
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.51+mesa.4",
+      "contentVersion": "srd51@a8abc93b235c+fx.52+mesa.4",
       "nextPageToken": "czEwOjQ0YTllYzdjOWMxNg",
       "spells": [
         {
@@ -225,7 +225,7 @@
     },
     "logs": null,
     "next page": {
-      "contentVersion": "srd51@a8abc93b235c+fx.51+mesa.4",
+      "contentVersion": "srd51@a8abc93b235c+fx.52+mesa.4",
       "spells": [
         {
           "classKeys": [
@@ -296,7 +296,7 @@
   },
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.51+mesa.4",
+      "contentVersion": "srd51@a8abc93b235c+fx.52+mesa.4",
       "spells": [
         {
           "classKeys": [

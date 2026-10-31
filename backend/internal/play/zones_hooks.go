@@ -180,6 +180,28 @@ func (s *Service) zonesAtTurnStart(ctx context.Context, c *combatTx, ids []strin
 	return s.catchWhoStarts(ctx, c, zs, ids, mark, round)
 }
 
+// zonesAtTurnEnd is what the end of a creature's part of the turn does to the zones: it is caught by each
+// zone that asks for the creatures that end their turn inside (Grease).
+func (s *Service) zonesAtTurnEnd(ctx context.Context, c *combatTx, who playdb.Combatant) error {
+	if isTheatre(c.enc) || c.enc.Status != statusActive || !placed(who) {
+		return nil
+	}
+	zs, err := listZones(ctx, c)
+	if err != nil {
+		return err
+	}
+	mark := currentMark(c) + ":end"
+	for _, z := range zs {
+		if !z.def.onTurnEnd || !z.has(squareOfCombatant(who)) {
+			continue
+		}
+		if err := s.catchByID(ctx, c, zoneCatch{z: z, why: zoneWhyEnd, mark: mark, round: c.enc.Round}, who.ID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // endZonesOutOfTime ends the zones of the casters that start their turn at or after the round the
 // zone's time is out, and returns the zones that are left.
 func (s *Service) endZonesOutOfTime(ctx context.Context, c *combatTx, zs []*zone, ids []string, round int32) ([]*zone, error) {

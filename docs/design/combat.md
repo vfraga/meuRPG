@@ -88,7 +88,7 @@ Fog, layers and doors are in [maps.md](maps.md).
 
 ### Spell zones
 
-The areas Spirit Guardians, Moonbeam, Cloudkill and Web keep on the map (RN-37) are a layer of `app-combat-map-card` (`app-zone-layer`), drawn from the squares the server sent, under the tokens and over the fog drawing; it takes no pointer and is `aria-hidden`, because the list is its accessible twin.
+The areas Spirit Guardians, Moonbeam, Cloudkill, Web, Grease and Entangle keep on the map (RN-37) are a layer of `app-combat-map-card` (`app-zone-layer`), drawn from the squares the server sent, under the tokens and over the fog drawing; it takes no pointer and is `aria-hidden`, because the list is its accessible twin.
 Each spell has a line pattern (vertical lines, dots, slanted lines, waves, triangles, horizontal lines) in one of the map's two inks, a 2.5 px outline with a white halo and a pill label "Raio Lunar · Bartolo" over the top edge (under the bottom edge at the top of the map), with a concentration icon. A zone of a hidden caster has a dashed outline and a crossed-eye icon on its label; only the master receives it.
 The legend names each spell that has a zone, with the pattern's swatch ("Nuvem Mortal só você vê" when every zone of the spell is the master's alone).
 

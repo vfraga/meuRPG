@@ -1,5 +1,5 @@
 {
-  "source": "SRD 5.1 (CC BY 4.0): \"Conditions\" (the 15 conditions and exhaustion), \"Duration\", \"Concentration\", \"Combat\" (the Dodge action), and the spells Bless, Bane, Haste, Hold Person, Web, Mage Armor, Pass without Trace, Longstrider, Guidance, Resistance, Enhance Ability, Heroism, Shield of Faith and Vicious Mockery. The texts shown to the table are ours.",
+  "source": "SRD 5.1 (CC BY 4.0): \"Conditions\" (the 15 conditions and exhaustion), \"Duration\", \"Concentration\", \"Combat\" (the Dodge action), and the spells Bless, Bane, Haste, Hold Person, Web, Entangle, Mage Armor, Pass without Trace, Longstrider, Guidance, Resistance, Enhance Ability, Heroism, Shield of Faith and Vicious Mockery. The texts shown to the table are ours.",
   "conditions": {
     "condition:blinded": {
       "visibility": "public",
@@ -224,6 +224,14 @@
       "conditions": ["condition:restrained"],
       "break_free": "str",
       "player_label_pt": "Preso numa teia"
+    },
+    "effect:entangle-restrained": {
+      "kind": "spell",
+      "duration": {"kind": "concentration"},
+      "visibility": "public",
+      "conditions": ["condition:restrained"],
+      "break_free": "str",
+      "player_label_pt": "Preso pelas plantas"
     },
     "effect:spirit-guardians-slowed": {
       "kind": "spell",

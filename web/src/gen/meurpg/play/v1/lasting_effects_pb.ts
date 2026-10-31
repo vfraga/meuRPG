@@ -656,8 +656,9 @@ export type EffectSavePrompt = Message<"meurpg.play.v1.EffectSavePrompt"> & {
 
   /**
    * The save is the one an area a spell keeps on the map asks (Moonbeam, Spirit Guardians, Cloudkill,
-   * Web): `effect_id` is then the zone's id. `zone_reason` is "zone_enter" (the creature came in, the first
-   * time on this turn) or "zone_start" (it began its turn inside).
+   * Web, Grease, Entangle): `effect_id` is then the zone's id. `zone_reason` is "zone_enter" (the creature came
+   * in, the first time on this turn), "zone_start" (it began its turn inside), "zone_cast" (it stood in the area
+   * when the spell was cast) or "zone_end" (it ended its turn inside).
    *
    * @generated from field: string zone_id = 16;
    */

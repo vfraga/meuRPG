@@ -304,13 +304,14 @@ Columns: `source_id` (a Berserker's frenzy has its own combatant as source), `en
 
 ## `spell_zones`
 
-`spell_zones` are the areas spells keep on the map while they last (RN-37): Spirit Guardians, Moonbeam, Cloudkill and Web.
+`spell_zones` are the areas spells keep on the map while they last (RN-37): Spirit Guardians, Moonbeam, Cloudkill, Web, Grease and Entangle.
 A row belongs to the combat (`encounter_id`) and to its caster (`owner_id`), and goes away with either.
 `spell_key` and `cast_id` (the id of the cast that made it, which the undo of the cast finds it by); `slot_level`; `origin_col`, `origin_row` and `squares` (JSON, `[[col,row],...]`, at most 1,024: where it stands now, after the walls cut it).
 The cast keeps what a trigger needs, so none reads the caster's sheet: `save_ability`, `save_dc`, `damage_dice` (at the slot level, such as `3d8`) and `damage_type` (the one the caster picked).
 `concentration` says the owner's concentration holds the zone; `started_round` and `ends_round` (the round whose start of the owner's turn ends it; `NULL` for one with no time).
 `hit_marks` is JSON, `{combatant id: "<round>:<first combatant of the turn>"}`: the turn each creature was last caught on, so that a zone catches a creature once on a turn.
-`def` is JSON, `{shape, size_ft, placement, movement, save, on_enter, on_start, corners}`: the definition of a zone the table's own spell keeps, kept at cast time (migration 00268); `NULL` for the SRD's four, whose definition is the code's.
+A catch at the cast adds `:cast` to the mark and one at the end of a turn adds `:end`, so each kind of catch asks once.
+`def` is JSON, `{shape, size_ft, placement, movement, save, on_enter, on_start, corners}`: the definition of a zone the table's own spell keeps, kept at cast time (migration 00268); `NULL` for the SRD's six, whose definition is the code's.
 A zone is not a lasting effect: it has no single target, it carries squares, and its clock and its end are three places in the code ([Spell zones](../architecture/play/spell-zones.md)).
 
 ## Contest, hold, hide, help, surprise (RN-34)

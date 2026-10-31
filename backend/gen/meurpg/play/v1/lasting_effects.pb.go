@@ -1400,8 +1400,9 @@ type EffectSavePrompt struct {
 	// Whether the effect is the master's to skip ("Pular o teste", a table option).
 	Skippable bool `protobuf:"varint,15,opt,name=skippable,proto3" json:"skippable,omitempty"`
 	// The save is the one an area a spell keeps on the map asks (Moonbeam, Spirit Guardians, Cloudkill,
-	// Web): `effect_id` is then the zone's id. `zone_reason` is "zone_enter" (the creature came in, the first
-	// time on this turn) or "zone_start" (it began its turn inside).
+	// Web, Grease, Entangle): `effect_id` is then the zone's id. `zone_reason` is "zone_enter" (the creature came
+	// in, the first time on this turn), "zone_start" (it began its turn inside), "zone_cast" (it stood in the area
+	// when the spell was cast) or "zone_end" (it ended its turn inside).
 	ZoneId     string `protobuf:"bytes,16,opt,name=zone_id,json=zoneId,proto3" json:"zone_id,omitempty"`
 	ZoneReason string `protobuf:"bytes,17,opt,name=zone_reason,json=zoneReason,proto3" json:"zone_reason,omitempty"`
 	// What a failure does to who answers: the damage type's Portuguese name ("radiante"; empty

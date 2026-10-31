@@ -36,7 +36,7 @@ Also built:
 | The map outside combat: the group on the map and the players moving their own characters | [MR-012](product/stories.md#mr-012-follow-the-session) |
 | The light warning: the master is told of a character that sees nothing where it stands on a fog map | [MR-036](product/stories.md#mr-036-fog-of-war-by-sight), [Fog](architecture/maps/fog.md#the-masters-light-warning) |
 | The master plays a character's turn for an absent player | [MR-053](product/stories.md#mr-053-the-master-acts-for-a-players-character) |
-| Spell zones: Spirit Guardians, Moonbeam, Cloudkill and Web keep their area on the map | [RN-37](product/rules.md#rn-37-areas-that-spells-keep-on-the-map), [Spell zones](architecture/play/spell-zones.md) |
+| Spell zones: Spirit Guardians, Moonbeam, Cloudkill, Web, Grease and Entangle keep their area on the map | [RN-37](product/rules.md#rn-37-areas-that-spells-keep-on-the-map), [Spell zones](architecture/play/spell-zones.md) |
 | Compact screens: the turn is a strip from 1024 px, and the session page has a one-row bar | [MR-014](product/stories.md#mr-014-your-turn), [MR-012](product/stories.md#mr-012-follow-the-session) |
 | A creature's actions from its turn, and answering its rider | [MR-054](product/stories.md#mr-054-use-a-creatures-action-from-its-turn), [MR-055](product/stories.md#mr-055-answer-a-creatures-rider) |
 | Held rolls: the master answers every question the app asks about a held roll | [Held rolls](architecture/play/held-rolls.md) |

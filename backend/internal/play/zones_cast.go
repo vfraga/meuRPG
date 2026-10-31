@@ -23,19 +23,45 @@ func (f *castFlow) affectZone(ctx context.Context, def zoneDef) error {
 			return err
 		}
 	}
-	return f.s.createZone(ctx, f.c, f.caster, f.sp, f.slotLevel, f.out.made.CastID, f.plan)
+	z, err := f.s.createZone(ctx, f.c, f.caster, f.sp, f.slotLevel, f.out.made.CastID, f.plan)
+	if err != nil || z == nil {
+		return err
+	}
+	return f.s.catchWhoIsInside(ctx, f.c, z, &f.out.made)
+}
+
+// catchWhoIsInside catches each creature standing in the area of a zone that has just been cast, when the zone
+// asks for it (Grease and Entangle): the ones that come in later are the business of the other triggers.
+func (s *Service) catchWhoIsInside(ctx context.Context, c *combatTx, z *zone, made *actionEvent) error {
+	if !z.def.onCast {
+		return nil
+	}
+	cs, err := listCombatants(ctx, c)
+	if err != nil {
+		return err
+	}
+	mark := currentMark(c) + ":cast"
+	for _, who := range cs {
+		if !placed(who) || !z.has(squareOfCombatant(who)) {
+			continue
+		}
+		if err := s.catchByID(ctx, c, zoneCatch{z: z, why: zoneWhyCast, mark: mark, round: c.enc.Round, made: made}, who.ID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // createZone puts the area of the cast on the map. It runs after the concentration is set, so the zone
 // the caster held before has already gone with it.
-func (s *Service) createZone(ctx context.Context, c *combatTx, owner playdb.Combatant, sp link.Spell, slotLevel int, castID string, plan areaPlan) error {
+func (s *Service) createZone(ctx context.Context, c *combatTx, owner playdb.Combatant, sp link.Spell, slotLevel int, castID string, plan areaPlan) (*zone, error) {
 	def, ok := zoneDefOfSpell(sp)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	content, err := s.contentOf(ctx, c)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var ends *int32
 	if rounds := content.SpellEffectRounds(sp.Key); rounds > 0 {
@@ -43,7 +69,7 @@ func (s *Service) createZone(ctx context.Context, c *combatTx, owner playdb.Comb
 	}
 	dice, dtype := zoneDamageOf(sp)
 	switch {
-	case def.kind == zoneRestrain: // the web's fire is the master's to light
+	case def.kind != zoneDamage: // no damage: the web's fire is the master's to light
 		dice, dtype = "", ""
 	case dice == "":
 		dice, dtype = def.dice, def.dtype
@@ -52,15 +78,17 @@ func (s *Service) createZone(ctx context.Context, c *combatTx, owner playdb.Comb
 	if dc == 0 {
 		dc = sp.SaveDC
 	}
-	if _, err := c.q.InsertSpellZone(ctx, playdb.InsertSpellZoneParams{
+	row, err := c.q.InsertSpellZone(ctx, playdb.InsertSpellZoneParams{
 		EncounterID: c.enc.ID, OwnerID: owner.ID, SpellKey: sp.Key, CastID: castID, SlotLevel: clamp32(slotLevel, 0, 9),
 		OriginCol: clamp32(plan.origin.Col, 0, 1<<30), OriginRow: clamp32(plan.origin.Row, 0, 1<<30), Squares: squaresToJSON(plan.squares),
 		SaveAbility: def.save, SaveDc: clamp32(dc, 0, 40), DamageDice: dice, DamageType: dtype,
 		Concentration: sp.Concentration, StartedRound: c.enc.Round, EndsRound: ends, CreatedAt: c.now, Def: storedDef(sp.Key, def),
-	}); err != nil {
-		return fmt.Errorf("put the spell zone on the map: %w", err)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("put the spell zone on the map: %w", err)
 	}
-	return nil
+	z, _ := readZone(row) // the spell's own definition: always known
+	return z, nil
 }
 
 // zoneDamageOf are the dice and the type of the damage a zone deals, as the cast's slot and the

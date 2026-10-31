@@ -1,6 +1,6 @@
 # Spell zones
 
-The areas that Spirit Guardians, Moonbeam, Cloudkill and Web keep on the map (RN-37).
+The areas that Spirit Guardians, Moonbeam, Cloudkill, Web, Grease and Entangle keep on the map (RN-37).
 The code is `zones_*.go` in `backend/internal/play`; the rules are in [Rules](../../product/rules.md#rn-37-areas-that-spells-keep-on-the-map).
 
 ## The model
@@ -11,7 +11,7 @@ A lasting effect belongs to one target and has its own clock; a zone has no sing
 Its life has three points, each a single call: the cast makes it (`createZone`), the end of a concentration deletes it (`endZonesOf`, called by `endConcentrationEffects`, so every way a concentration ends reaches it, `stopConcentrating` and `endConcentrationAtZero` included), and the start of the caster's turn deletes it when its round is out (`endZonesOutOfTime`).
 The foreign keys delete it with the combat or the caster.
 
-`zoneDefs` (`zones_catalog.go`) is the table of the four spells: kind (damage or restrain), shape and size, how the cast places it (`AreaPlacement`), how it moves, the save, whether it spares the caster's side, and whether the cast still hits the creatures inside.
+`zoneDefs` (`zones_catalog.go`) is the table of the six spells: kind (damage, restrain or prone), shape and size, how the cast places it (`AreaPlacement`), how it moves, the save, when it catches (`onEnter`, `onStart`, `onCast`, `onTurnEnd`), the effect a restraint puts on a creature (`restrainKey`), whether it spares the caster's side, and whether the cast still hits the creatures inside.
 Another spell with a lingering area is another row, plus its entry in the catalogue of lasting effects if it also puts an effect on its targets.
 `placementOf`, `areaOf` and the area fields of the turn options read the row first, so the preview, the cast and the options lay the area out as the zone does.
 A cube is centred on its point (`Area.FromPoint`, an even side puts the extra square on the larger side).
@@ -22,12 +22,22 @@ A table spell with `TableSpell.zone` (`rules/v1/table_content.proto`: a trigger 
 
 ## The cast
 
-A zone is laid only when the request chooses a point (`origin`): `placeArea` then sets `Spell.ZoneLaid`, which makes `placementOf` and `areaOf` read the zone's own layout (a cube at a distance, Spirit Guardians around the caster, whose point only says the cast lays the zone). Without a point the cast is the spell as it was before the zones (its targets and effects, no zone). Moonbeam and Cloudkill are placed at a point by their own data, so without one they are refused as they always were. `PreviewSpellArea` and the drawing of the cast read the same flag.
+A zone is laid only when the request chooses a point (`origin`): `placeArea` then sets `Spell.ZoneLaid`, which makes `placementOf` and `areaOf` read the zone's own layout (a cube at a distance, Spirit Guardians around the caster, whose point only says the cast lays the zone). Without a point the cast is the spell with its targets and effects, and no zone. Moonbeam and Cloudkill are placed at a point by their own data, so without one they are refused. `PreviewSpellArea` and the drawing of the cast read the same flag.
 
 `castFlow.affect` hands a placed cast of a zone spell to `affectZone`.
-Moonbeam, Spirit Guardians and Cloudkill hit nobody at the cast; Web still runs `hitTarget` and `applyLastingSpell`, so the creatures inside get the effect they always got.
+Moonbeam, Spirit Guardians and Cloudkill hit nobody at the cast.
+Grease and Entangle catch the creatures standing in the area once the zone exists (`catchWhoIsInside`, reason `zone_cast`).
+Web runs `hitTarget` and `applyLastingSpell`, so the creatures inside get the web's effect.
 `createZone` keeps `plan.origin` and `plan.squares` (what `planArea` worked out, walls included), the caster's DC, the damage at the cast's slot level and the end round (`SpellEffectRounds`).
-The cast keeps its place in the event as before (`placed`, `area_col`, `area_row`); the cast's `cast_id` is on the zone, and the undo of the cast deletes the zone with that id (`castEffectsBack`).
+The cast's event records every creature a catch at the cast caught, whatever its save: `made.Hits` holds one `castHit` for each, with the save of an NPC, and the conditions a player's character had before for Grease.
+The restraint of an NPC is in the cast's `Lasting.Effects`.
+So the hidden-creature reveal and the cast's line treat a creature that passed like one that failed.
+The answer of a player's character (`settleZoneSave`) puts the fall or the restraint on the creature after the cast's event is written.
+The undo of the cast puts it all back: the conditions from the recorded `castHit`, the restraint from the effects of the cast's group (`zoneEffectsBack`), and it closes the questions the zone opened (`closeCastZoneWindows`).
+The `spell_zone_triggered` lines of the cast and the `lasting_effect_saved` line of an answer to it never close the undo chain (`chainCastZoneCatch`).
+The cast's event keeps its place (`placed`, `area_col`, `area_row`).
+The cast's `cast_id` is on the zone.
+The undo of the cast deletes the zone with that id (`castEffectsBack`).
 Without a grid (`isTheatre`) a spell is not placed, so there is no zone.
 
 ## When a zone looks
@@ -36,6 +46,7 @@ Without a grid (`isTheatre`) a spell is not placed, so there is no zone.
 | --- | --- |
 | `zonesAfterSteps` (`zones_hooks.go`) | Called with the creatures that changed square: `moveInTx` (the mover and the creature it dragged; this also covers the master's move and a placement), `castFlow.teleport` (Misty Step's landing, `combat_teleport.go`), `pusher.enterZones` (a push by a cast or by the Open Hand technique) and the shove outcome (`shovePushes`). A step has where the creature stood and the squares it went through (the straight line for a walk, only the end for a jump, a push or a forced move). A zone catches a step that comes into it: one square inside whose predecessor is outside |
 | `zonesAtTurnStart` | Called at the end of `startOfTurnEffects`: ends the zones whose round is out, moves the zones that drift, then catches every creature that starts its turn inside |
+| `zonesAtTurnEnd` | Called when a member's part of the turn ends (`closeTurnPart`), right before the saves of the effects open: both questions are then open together, in no order. It catches the creature if it stands in a zone that asks at the end of the turn (Grease). Its hit mark is `"<round>:<leader>:end"`, so the entry and the end of one turn each ask once |
 | `followCaster` | Part of `zonesAfterSteps`: when the creature that moved owns a zone centred on it, the zone is placed on its square and the creatures the new area covers and the old one did not are caught as if they had come in |
 
 The undo of a move, of a push or of a shove puts the creature back and re-evaluates nothing.
@@ -44,11 +55,11 @@ The undo of a move, of a push or of a shove puts the creature back and re-evalua
 
 `catchZone` (`zones_trigger.go`) is the whole of it, in this order:
 
-1. The checks: the creature is on the map and standing; it is not spared (Spirit Guardians leaves the caster and the caster's `side` alone); the zone has not caught it on this turn (`hit_marks`, below). The web also skips a creature it holds or asks a save of already (`heldByWeb`).
+1. The checks: the creature is on the map and standing; it is not spared (Spirit Guardians leaves the caster and the caster's `side` alone); the zone has not caught it on this turn (`hit_marks`, below). A restraining zone also skips a creature the spell holds or asks a save of already (`heldByZone`). The cast's catch has its own mark (`"<mark>:cast"`), so a creature caught at the cast is asked again if it leaves and comes back on that turn.
 2. The turn is written first: `hit_marks[creature] = "<round>:<first combatant of the turn>"`. At a turn start the mark is built from the turn that starts; in the middle of a change it is built from the encounter's current turn.
 3. The saving throw: `zoneSave` calls `spellSave` with a `link.Spell` made of the zone's save, so it is the cast's save (modes, auto-fail, Lucky, effect dice).
-4. The effect: `dealZoneDamage` rolls the dice and halves them on a pass, applies resistance, and inserts an effect pending damage (`InsertEffectPendingDamage`, `effect_source_key` the spell), landed by `landDamage` (an NPC or creature takes it, a character's waits for the master); `afterDamage` then opens the concentration save as for any damage. The web instead adds `effect:web-restrained` (`restrainInWeb`) on a failure.
-5. One event, `spell_zone_triggered`, with a `lastingEvent` (change `saved` or `failed`, reason `zone_enter` or `zone_start`, the roll, the DC and the damage).
+4. The effect: `dealZoneDamage` rolls the dice and halves them on a pass, applies resistance, and inserts an effect pending damage (`InsertEffectPendingDamage`, `effect_source_key` the spell), landed by `landDamage` (an NPC or creature takes it, a character's waits for the master); `afterDamage` then opens the concentration save as for any damage. A restraining zone instead adds its `restrainKey` effect on a failure (`restrainInZone`: `effect:web-restrained`, `effect:entangle-restrained`; both are broken by a Strength check), and a prone zone gives `condition:prone` (`knockProne`), which lasts until the creature stands up.
+5. One event, `spell_zone_triggered`, with a `lastingEvent` (change `saved` or `failed`, reason `zone_enter`, `zone_start`, `zone_cast` or `zone_end`, the roll, the DC and the damage).
 
 The events a zone leaves (`spell_zone_triggered`, `spell_zone_moved`, and the `lasting_effect_ended` of a zone that timed out) are held on the change (`combatTx.zoneOut`) and written by `record` right after the change's own event, so the log reads the move and then what it brought.
 They are registered as effect lines in `logHandlers` and `effectLogKinds`; `COMBAT_LOG_EFFECT_CHANGE_ZONE_MOVED` is the one new change.
@@ -78,7 +89,7 @@ A player gets the numbers (`save_*`, damage, `notes`, `moves_per_turn_ft`, `roun
 
 ## Tests
 
-`zones_test.go` (Spirit Guardians, Moonbeam, Cloudkill, Web, the push, the forced move, the undo, the player's character, the permissions and the retry) and `zones_hidden_test.go` (the viewer matrix for a hidden caster, a revealed one and a hidden creature, and the stream hint); `internal/leaktest` classifies `MoveSpellZone`.
+`zones_grease_test.go` (Grease: the shape, the cast, entering, the end of the turn, the end of the zone and the undo; Entangle: the shape, the cast only, the end with the concentration and the undo) and `zones_test.go` (Spirit Guardians, Moonbeam, Cloudkill, Web, the push, the forced move, the undo, the player's character, the permissions and the retry) and `zones_hidden_test.go` (the viewer matrix for a hidden caster, a revealed one and a hidden creature, and the stream hint); `internal/leaktest` classifies `MoveSpellZone`.
 The grid cube is in `rules/grid/area_test.go`.
 
 ## The web
@@ -87,11 +98,11 @@ The zones ride on `Encounter.zones`: a change arrives as the usual `encounter_ch
 `core/combat/zones.ts` turns each `SpellZone` into a `ZoneView` (label, detail pieces, rounds left, concentration, occupants, the "Só você vê" flag, `canMove`, `canEnd`); a zone with `details_hidden` reads name, area, caster, concentration and occupants only, even if a field slipped through, and the client never fills what the server left out.
 `zone-move.ts` holds the move range copy (`ZONE_MOVE_RANGE_FT`, the server's `moveRangeFt`) and `zoneMovePreview`, which draws the open-floor squares with `sphereSquares`; no wall cuts the preview, the server cuts the area on commit.
 `MoveSpellZone` and `EndSpellZone` are in `CombatCastCalls`, one idempotency key per request kept across retries and renewed after success; `zone-errors.ts` words their refusals.
-The log lines for `ZONE_MOVED`, the `zone_enter` and `zone_start` catches and the end reasons are in `combat-log-effects.ts`.
+The log lines for `ZONE_MOVED`, the `zone_enter`, `zone_start`, `zone_cast` and `zone_end` catches and the end reasons are in `combat-log-effects.ts`.
 
 ### The map, the panel and the end
 
-- **Map layer.** `shared/combat-map/zone-layer` (`app-zone-layer`) is projected into `app-combat-map` by `app-combat-map-card`, the way the area overlay is, so it follows the map's zoom and crop and sits under the tokens. It draws each `ZoneView.squares` with `cellsPath` and `outlinePath`; `core/combat/zone-pattern.ts` gives each `spell_key` a pattern (the four catalog spells a fixed one, a table spell a hash of its key) and `zoneLegend` the entries the card lists. The layer and its labels are `aria-hidden`; the panel is the accessible version. The move page's map does not draw zones.
+- **Map layer.** `shared/combat-map/zone-layer` (`app-zone-layer`) is projected into `app-combat-map` by `app-combat-map-card`, the way the area overlay is, so it follows the map's zoom and crop and sits under the tokens. It draws each `ZoneView.squares` with `cellsPath` and `outlinePath`; `core/combat/zone-pattern.ts` gives each `spell_key` a pattern (each of the six catalog spells a fixed one; a table spell a hash of the key) and `zoneLegend` the entries the card lists. The layer and its labels are `aria-hidden`; the panel is the accessible version. The move page's map does not draw zones.
 - **Panel.** `pages/live-session/combat/zones-panel` (`app-zones-panel`) lists the zones: the master's column and the player's side column. Its live region (`zoneNotice`) compares the ids of the list with the last one it read. `details_hidden` cards render the name, the area and the caster only.
 - **End.** The panel asks in place and emits `end`; `ZoneFlow` (`zone-flow.ts`, built in `combat-view-parts.ts`) calls `endSpellZone` under the screen's one-call-at-a-time rule (`calls.busy`) and words a refusal with `zoneEndError`.
 - **Move.** "Mover" emits `move`; `ZoneFlow.move` (only for a zone whose view says `canMove`) sets `moving` and asks `CombatSheets.moveZone` to open `ZoneMoveSheet` (`pages/live-session/combat/zone-move`), a bottom sheet on a phone and a dialog from a tablet up (`openSheet`); a scene without a battle map opens nothing and says so in the panel. The sheet holds the picked square and wraps `app-zone-move-map` (`shared/area-picker`): `app-combat-map` in `pickSquares` mode (click, arrows from the zone's origin, Enter) with two `app-area-overlay` layers, the current footprint dimmed and the new one from `zoneMovePreview`. Past `ZONE_MOVE_RANGE_FT` a player's square is drawn refused with the `TARGET_OUT_OF_REACH` wording (`zoneOutOfReach`); the master has none. "Mover a zona" calls `moveSpellZone` once (the client's keyed helper), applies the encounter the server answers, closes on success and says `zoneMoveError` in place on a refusal; `moving` returns to `null` when the sheet closes.

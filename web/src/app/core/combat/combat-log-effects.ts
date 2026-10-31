@@ -55,7 +55,7 @@ function effectSaveWords(fx: CombatLogEffect): string {
   return name ? ` de ${name}` : '';
 }
 
-/** "entrou no Raio Lunar" or "começou o turno na Teia": how a creature met a zone (`reason` zone_enter, zone_start), or `''`. */
+/** "entrou no Raio Lunar" or "começou o turno na Teia": how a creature met a zone (`reason` zone_enter, zone_start, zone_cast, zone_end), or `''`. */
 function zoneMeeting(fx: CombatLogEffect): string {
   const inSpell = `${article(fx.sourceNamePt) === 'a' ? 'na' : 'no'} ${fx.sourceNamePt}`;
   switch (fx.reason) {
@@ -63,6 +63,10 @@ function zoneMeeting(fx: CombatLogEffect): string {
       return `entrou ${inSpell}`;
     case 'zone_start':
       return `começou o turno ${inSpell}`;
+    case 'zone_cast':
+      return `estava ${inSpell} quando a magia foi conjurada`;
+    case 'zone_end':
+      return `terminou o turno ${inSpell}`;
     default:
       return '';
   }
