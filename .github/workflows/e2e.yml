@@ -23,6 +23,8 @@ on:
       - ".github/workflows/e2e.yml"
       - ".github/scripts/e2e-no-retries.sh"
       - ".github/scripts/e2e-shards.mjs"
+      - ".github/scripts/e2e-list-reporter.mjs"
+      - ".github/scripts/flake.mjs"
       - ".github/actions/build-e2e-images/**"
       - ".github/actions/start-e2e-stack/**"
       - ".node-version"
@@ -44,6 +46,14 @@ concurrency:
 # no extra permission.
 permissions:
   contents: read
+
+env:
+  # How many runners the plain tests and the @a11y tests are split across: the `plan` job's matrix and the lint job's
+  # check of the lists both read them.
+  PLAIN_SHARDS: 3
+  A11Y_SHARDS: 6
+  # The plain shard that migrates from an empty database (the others restore the backup).
+  FRESH_SHARD: 1
 
 jobs:
   # Chooses what runs (docs/ci.md, "What runs when"). `run`: the workflow at all, for a change to what it judges. The
@@ -83,7 +93,7 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|proto/|web/|e2e/|deploy/local/|\.dockerignore$|Makefile$|\.github/workflows/e2e\.yml$|\.github/scripts/(e2e-no-retries\.sh|e2e-shards\.mjs)$|\.github/actions/(build-e2e-images|start-e2e-stack)/|\.node-version$)'
+          pattern: '^(backend/|proto/|web/|e2e/|deploy/local/|\.dockerignore$|Makefile$|\.github/workflows/e2e\.yml$|\.github/scripts/(e2e-no-retries\.sh|e2e-shards\.mjs|e2e-list-reporter\.mjs|flake\.mjs)$|\.github/actions/(build-e2e-images|start-e2e-stack)/|\.node-version$)'
           ignore-md: "true"
 
       - name: Are the accessibility shards selected
@@ -91,17 +101,16 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(web/|e2e/|deploy/local/|\.github/workflows/e2e\.yml$|\.node-version$)'
+          pattern: '^(web/|e2e/|deploy/local/|\.github/workflows/e2e\.yml$|\.github/scripts/e2e-(shards|list-reporter)\.mjs$|\.node-version$)'
 
       - name: Choose the shards
         id: plan
         env:
           A11Y: ${{ steps.all.outputs.a11y || steps.a11y.outputs.selected }}
         run: |
-          a11y="$A11Y"
-          matrix=$(jq -nc --argjson a11y "$a11y" '
-            [range(1; 4) | {part: "\(.)/3", grep: "--grep-invert @a11y", shard: "\(.)/3"}]
-            + (if $a11y then [range(1; 7) | {part: "a11y \(.)/6", grep: "--grep @a11y", shard: "\(.)/6"}] else [] end)
+          matrix=$(jq -nc --argjson a11y "$A11Y" --argjson plain "$PLAIN_SHARDS" --argjson slow "$A11Y_SHARDS" --argjson freshShard "$FRESH_SHARD" '
+            [range(1; $plain + 1) | {part: "\(.)/\($plain)", grep: "--grep-invert @a11y", shard: "\(.)/\($plain)", fresh: (. == $freshShard), fresh_shard: $freshShard}]
+            + (if $a11y then [range(1; $slow + 1) | {part: "a11y \(.)/\($slow)", grep: "--grep @a11y", shard: "\(.)/\($slow)"}] else [] end)
             | {include: .}')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
           echo "$matrix"
@@ -158,11 +167,11 @@ jobs:
         run: .github/scripts/e2e-no-retries.sh
 
       - name: Check that the shard lists hold every test once
-        # The counts are the matrix's (plan job). Each list is read back through Playwright's own --test-list.
+        # The counts are the plan job's (the workflow's env). Each list is read back through Playwright's own --test-list.
         working-directory: e2e
         run: |
-          node ../.github/scripts/e2e-shards.mjs check 3 --grep-invert @a11y
-          node ../.github/scripts/e2e-shards.mjs check 6 --grep @a11y
+          node ../.github/scripts/e2e-shards.mjs check "$PLAIN_SHARDS" --fresh-shard="$FRESH_SHARD" --grep-invert @a11y
+          node ../.github/scripts/e2e-shards.mjs check "$A11Y_SHARDS" --grep @a11y
 
   # Builds the two images once (the production image and devidp) and hands them
   # to the shards, which used to build them four times over (124 to 162 s each,
@@ -191,15 +200,20 @@ jobs:
           cache-write: "true"
 
   # Migrates an empty CockroachDB once and backs it up (BACKUP to a folder, uploaded as an artifact), so the shards
-  # RESTORE it instead of each running every migration. It runs beside `image`,
-  # not inside it: `migrate` is built here from the same checkout, so neither job waits for the other. One shard
-  # (plain 1/3) still migrates from an empty database, so a broken migration still fails e2e.
+  # RESTORE it instead of each running every migration. It runs beside `image`, not inside it: `migrate` is built here
+  # from the same checkout, because the image's exists only after the image build, so neither job waits for the other.
+  # One shard (the `fresh` one, plain 1/3) migrates from an empty database and does not need this job, so a broken
+  # migration still fails e2e whatever happens here.
   database:
     needs: plan
     if: ${{ needs.plan.outputs.run == 'true' }}
     name: database (migrated once, backed up)
     runs-on: ubuntu-26.04
     timeout-minutes: 15
+    env:
+      # The files of every `docker compose` call of the job. compose.ci-db.yaml needs E2E_DB_DIR (set by the first step
+      # that starts CockroachDB), so a step that runs before it cannot use compose.
+      COMPOSE_FILE: deploy/local/compose.yaml:deploy/local/compose.ci.yaml:deploy/local/compose.ci-db.yaml
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -222,21 +236,22 @@ jobs:
           # compose.ci-db.yaml mounts this folder into CockroachDB, for BACKUP.
           echo "E2E_DB_DIR=$RUNNER_TEMP/database" >> "$GITHUB_ENV"
           mkdir -p "$RUNNER_TEMP/database"
-          E2E_DB_DIR="$RUNNER_TEMP/database" docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-db.yaml up --detach --wait cockroach
+          E2E_DB_DIR="$RUNNER_TEMP/database" docker compose up --detach --wait cockroach
 
       - name: Migrate and back up
         env:
           DATABASE_URL: postgresql://root@127.0.0.1:26257/meurpg?sslmode=disable
         run: |
           "$RUNNER_TEMP/migrate" up
-          docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-db.yaml exec -T cockroach \
+          docker compose exec -T cockroach \
             cockroach sql --insecure --host=localhost:26257 -e "BACKUP DATABASE meurpg INTO 'nodelocal://1/e2e'"
           # CockroachDB runs as root: the runner needs to read the files to upload them.
           sudo chown -R "$(id -u):$(id -g)" "$E2E_DB_DIR"
 
       - name: Show the database log
-        if: failure()
-        run: docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-db.yaml logs --no-color
+        # E2E_DB_DIR exists once "Start CockroachDB" began: an earlier failure has no database to show.
+        if: ${{ failure() && env.E2E_DB_DIR != '' }}
+        run: docker compose logs --no-color
 
       - name: Upload the migrated database
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -253,8 +268,10 @@ jobs:
     name: playwright ${{ matrix.part }} (local stack with devidp)
     runs-on: ubuntu-26.04
     timeout-minutes: 30
+    # Waits for `database` but does not depend on its success: the `fresh` shard migrates from an empty database and runs
+    # even when the backup failed. The shards that restore it then fail at the download, with the artifact's name.
     needs: [image, database, plan]
-    if: ${{ needs.plan.outputs.run == 'true' }}
+    if: ${{ !cancelled() && needs.plan.outputs.run == 'true' && needs.image.result == 'success' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
@@ -267,12 +284,17 @@ jobs:
       # The images and the local stack (compose.ci.yaml keeps CockroachDB in memory; compose.ci-images.yaml points the
       # services at the loaded images, --no-build), started in the background while Node, the e2e dependencies (no
       # install scripts) and Chromium for the exact @playwright/test version the lockfile pins install.
+      - name: Note when the shard's setup starts
+        id: setup
+        run: echo "started=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Start the local stack (CockroachDB, migrations, devidp, API)
+        id: stack
         uses: ./.github/actions/start-e2e-stack
         with:
           artifact: e2e-images
-          # Plain 1/3 migrates from an empty database; the others restore the one the `database` job migrated.
-          database-artifact: ${{ matrix.part != '1/3' && 'e2e-database' || '' }}
+          # The `fresh` shard migrates from an empty database; the others restore the one the `database` job migrated.
+          database-artifact: ${{ !matrix.fresh && 'e2e-database' || '' }}
           npm-cache: npm
 
       - name: Type-check the tests
@@ -284,9 +306,12 @@ jobs:
         # backend/Dockerfile, the production image. devidp signs anyone in
         # without a password and must only ever exist in its own image (deploy/local/devidp.Dockerfile).
         # One runner checks it: they all run the same image.
-        if: matrix.part == '1/3'
+        if: matrix.fresh
+        env:
+          COMPOSE_FILE: ${{ steps.stack.outputs.compose-file }}
+          E2E_DB_DIR: ${{ steps.stack.outputs.database-dir }}
         run: |
-          container=$(docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml ps --quiet api)
+          container=$(docker compose ps --quiet api)
           files=$(docker cp "$container:/app" - | tar -t)
           if ! grep -qx 'app/api' <<<"$files"; then
             echo "::error::/app/api not found; this check no longer matches the image layout." >&2
@@ -303,15 +328,23 @@ jobs:
       - name: Choose this shard's tests
         # The tests are split by measured time (e2e/timings.json), not by Playwright's own --shard, which counts
         # tests: the accessibility scans are the long ones. Every shard computes the same split from the same
-        # files, so each test is in exactly one list. A test the file does not know still runs.
+        # files, so each test is in exactly one list. A test the file does not know still runs. The fresh shard
+        # is given fewer tests: its setup (the migrations, the devidp check) takes longer than the others'.
+        # What the setup took goes in the timing artifact, to refresh that cost (docs/ci.md).
         working-directory: e2e
         env:
           GREP: ${{ matrix.grep }}
           SHARD: ${{ matrix.shard }}
+          FRESH_FLAG: ${{ matrix.fresh_shard && format('--fresh-shard={0}', matrix.fresh_shard) || '' }}
+          FRESH: ${{ matrix.fresh || false }}
+          STARTED: ${{ steps.setup.outputs.started }}
         run: |
           # GREP holds several flags, so it is word-split on purpose.
           # shellcheck disable=SC2086
-          node ../.github/scripts/e2e-shards.mjs list "$SHARD" $GREP > "$RUNNER_TEMP/tests.txt"
+          node ../.github/scripts/e2e-shards.mjs setup "$FRESH" "$STARTED" $GREP | tee "$RUNNER_TEMP/e2e-setup.json"
+          # FRESH_FLAG and GREP hold flags, so they are word-split on purpose.
+          # shellcheck disable=SC2086
+          node ../.github/scripts/e2e-shards.mjs list "$SHARD" $FRESH_FLAG $GREP > "$RUNNER_TEMP/tests.txt"
           wc -l < "$RUNNER_TEMP/tests.txt"
 
       - name: Run the Playwright tests
@@ -329,22 +362,30 @@ jobs:
           npx playwright test $GREP --test-list "$RUNNER_TEMP/tests.txt"
 
       - name: Upload the timing of the tests
+        # A help for refreshing e2e/timings.json: when it fails, the shard stays green if its tests passed.
         if: success()
+        continue-on-error: true
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: e2e-timing-${{ strategy.job-index }}
-          path: ${{ runner.temp }}/e2e-timing.json
+          path: |
+            ${{ runner.temp }}/e2e-timing.json
+            ${{ runner.temp }}/e2e-setup.json
           retention-days: 14
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Show and save the stack logs
         # The backend log (the api container) next to the report: a test that fails on a page that never showed a
         # change needs the server's side of it (did the stream push the revision?). One read feeds the job page
         # and the file, which the report artifact keeps.
-        if: failure()
+        # Not when the action failed before it started the stack: it prints its own log, and there are no files to name.
+        if: ${{ failure() && steps.stack.outputs.compose-file != '' }}
+        env:
+          COMPOSE_FILE: ${{ steps.stack.outputs.compose-file }}
+          E2E_DB_DIR: ${{ steps.stack.outputs.database-dir }}
         run: |
           mkdir -p e2e/stack-logs
-          docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml logs --no-color --timestamps | tee e2e/stack-logs/stack.log
+          docker compose logs --no-color --timestamps | tee e2e/stack-logs/stack.log
 
       - name: Upload the Playwright report
         if: failure()

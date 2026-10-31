@@ -43,34 +43,40 @@ export function parsePlaywrightText(text) {
   }
 }
 
+/**
+ * Calls `visit(test, spec, titles)` for every test of a Playwright JSON report, in file order. `titles` are the
+ * describes that hold the spec, the file's own suite left out. Every reader of the report walks it through here.
+ */
+export function eachTest(report, visit) {
+  const walk = (suite, titles) => {
+    for (const spec of suite.specs ?? []) for (const t of spec.tests ?? []) visit(t, spec, titles);
+    for (const child of suite.suites ?? []) walk(child, [...titles, child.title]);
+  };
+  for (const file of report.suites ?? []) walk(file, []);
+}
+
 /** Playwright's JSON report: one entry per repetition of the `chrome` project (the sign-in setup is not a test). */
 export function parsePlaywright(report) {
   const out = { passed: 0, failed: 0, failures: [] };
-  const visit = (suite) => {
-    for (const spec of suite.specs ?? []) {
-      for (const t of spec.tests ?? []) {
-        // A failed sign-in setup skips every test after it: the runner counted nothing, which is not "no such test".
-        if (t.projectName === 'setup' && t.status !== 'expected' && t.status !== 'skipped') {
-          out.failed++;
-          out.failures.push({ test: '(sign-in setup)', signature: signatureOf(t.results?.[t.results.length - 1]?.error?.message ?? 'the sign-in setup failed') });
-          continue;
-        }
-        if (t.projectName && t.projectName !== 'chrome') continue;
-        if (t.status === 'skipped') continue;
-        if (t.status === 'expected') {
-          out.passed++;
-          continue;
-        }
-        out.failed++;
-        const results = t.results ?? [];
-        const last = results[results.length - 1] ?? {};
-        const message = last.error?.message ?? last.errors?.[0]?.message ?? (last.status ? `the test ${last.status}` : '');
-        out.failures.push({ test: spec.title, signature: signatureOf(message) });
-      }
+  eachTest(report, (t, spec) => {
+    // A failed sign-in setup skips every test after it: the runner counted nothing, which is not "no such test".
+    if (t.projectName === 'setup' && t.status !== 'expected' && t.status !== 'skipped') {
+      out.failed++;
+      out.failures.push({ test: '(sign-in setup)', signature: signatureOf(t.results?.[t.results.length - 1]?.error?.message ?? 'the sign-in setup failed') });
+      return;
     }
-    for (const s of suite.suites ?? []) visit(s);
-  };
-  for (const s of report.suites ?? []) visit(s);
+    if (t.projectName && t.projectName !== 'chrome') return;
+    if (t.status === 'skipped') return;
+    if (t.status === 'expected') {
+      out.passed++;
+      return;
+    }
+    out.failed++;
+    const results = t.results ?? [];
+    const last = results[results.length - 1] ?? {};
+    const message = last.error?.message ?? last.errors?.[0]?.message ?? (last.status ? `the test ${last.status}` : '');
+    out.failures.push({ test: spec.title, signature: signatureOf(message) });
+  });
   // Errors of the run itself (a global setup that fails, a broken file) are failures with no test.
   for (const e of report.errors ?? []) {
     out.failed++;
