@@ -2,6 +2,9 @@
 # (CockroachDB, migrations, devidp, API), Node, the e2e dependencies and Chromium, as the `e2e` job of e2e.yml does.
 # The stack starts in the background while Node, the dependencies and Chromium install, and the last step waits for it:
 # the stack needs none of them. With `database-artifact` it restores the migrated database instead of migrating.
+# The action names the compose files once (the outputs `compose-file` and `database-dir`): a later step that runs
+# `docker compose` takes them as COMPOSE_FILE and E2E_DB_DIR, so it uses the files the stack started with, and none of
+# them can recreate CockroachDB without the restored folder.
 # The action ends only when the stack is up, or fails with the stack's log.
 name: Start the e2e stack
 description: Load the images and start the local stack while the e2e dependencies and Chromium install.
@@ -18,6 +21,13 @@ inputs:
   npm-cache:
     description: Set to "npm" to restore and save the npm cache. Empty (the default) caches nothing, for the workflows that run refs that are not main's.
     default: ""
+outputs:
+  compose-file:
+    description: The compose files of the stack, as a COMPOSE_FILE value (absolute paths).
+    value: ${{ steps.start.outputs.compose-file }}
+  database-dir:
+    description: The folder of the restored database, as an E2E_DB_DIR value. Empty when the stack migrated from zero.
+    value: ${{ steps.start.outputs.database-dir }}
 runs:
   using: composite
   steps:
@@ -35,6 +45,7 @@ runs:
         path: ${{ runner.temp }}/database
 
     - name: Start the stack in the background
+      id: start
       working-directory: ${{ inputs.code-dir }}
       shell: bash
       env:
@@ -43,23 +54,31 @@ runs:
         STACK_DIR: ${{ runner.temp }}/stack
       run: |
         mkdir -p "$STACK_DIR"
+        # One list of compose files for the start and for the later steps, which read it from the outputs (absolute paths:
+        # a later step may run in another folder). A restored database also needs its folder, which compose.ci-db.yaml
+        # mounts.
+        files="$PWD/deploy/local/compose.yaml:$PWD/deploy/local/compose.ci.yaml:$PWD/deploy/local/compose.ci-images.yaml"
+        if [ -n "$DATABASE_DIR" ]; then
+          files="$files:$PWD/deploy/local/compose.ci-db.yaml"
+          export E2E_DB_DIR="$DATABASE_DIR"
+        fi
+        echo "compose-file=$files" >> "$GITHUB_OUTPUT"
+        echo "database-dir=$DATABASE_DIR" >> "$GITHUB_OUTPUT"
+        export COMPOSE_FILE="$files"
         # The script keeps its output in a file and its exit code in another, and holds none of this step's pipes.
         cat >"$STACK_DIR/start.sh" <<'SCRIPT'
         (
           set -euo pipefail
           docker load --input "$IMAGES_DIR/api.tar"
           docker load --input "$IMAGES_DIR/devidp.tar"
-          compose=(docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml)
           if [ -n "$DATABASE_DIR" ]; then
             # The migrated database replaces the empty one CockroachDB creates on its first boot; `migrate` then finds
             # every migration applied and changes nothing.
-            export E2E_DB_DIR="$DATABASE_DIR"
-            compose+=(-f deploy/local/compose.ci-db.yaml)
-            "${compose[@]}" up --no-build --detach --wait cockroach
-            "${compose[@]}" exec -T cockroach cockroach sql --insecure --host=localhost:26257 \
+            docker compose up --no-build --detach --wait cockroach
+            docker compose exec -T cockroach cockroach sql --insecure --host=localhost:26257 \
               -e "DROP DATABASE IF EXISTS meurpg CASCADE" -e "RESTORE DATABASE meurpg FROM LATEST IN 'nodelocal://1/e2e'"
           fi
-          "${compose[@]}" up --no-build --detach
+          docker compose up --no-build --detach
         ) >"$STACK_DIR/log" 2>&1
         echo "$?" >"$STACK_DIR/status"
         SCRIPT
@@ -90,6 +109,8 @@ runs:
       shell: bash
       env:
         STACK_DIR: ${{ runner.temp }}/stack
+        COMPOSE_FILE: ${{ steps.start.outputs.compose-file }}
+        E2E_DB_DIR: ${{ steps.start.outputs.database-dir }}
       run: |
         # The start step did not run (the download failed): there is no stack to wait for.
         if [ ! -f "$STACK_DIR/pid" ]; then exit 0; fi
@@ -103,6 +124,6 @@ runs:
         else
           cat "$STACK_DIR/log"
           echo "::error::The stack did not start (exit code $status)."
-          docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml logs --no-color || true
+          docker compose logs --no-color || true
           exit "$status"
         fi

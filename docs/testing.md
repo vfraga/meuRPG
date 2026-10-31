@@ -224,8 +224,8 @@ The acceptance tests through the screen live in `e2e/`, a Playwright project wit
 `make e2e` starts the local environment (like `make up`), installs the `e2e/` dependencies if missing, runs the tests and prints where the HTML report is (`cd e2e && npx playwright show-report`); the stack stays up until `make down`.
 
 - Locally the tests drive the installed Google Chrome (`channel: 'chrome'`); in CI they drive the Chromium that `npx playwright install chromium` downloads, at the version pinned by `package-lock.json`. `E2E_BROWSER_CHANNEL` overrides both (empty means Playwright's Chromium). `E2E_BASE_URL` and `E2E_IDP_ORIGIN` point the suite at another stack.
-- In CI every shard but plain 1/3 restores the backup the `database` job of `e2e` made (seed rows included) once CockroachDB is up, before `migrate` and the API start.
-  Plain 1/3 migrates an empty database, so a broken migration fails e2e.
+- In CI every shard but the `fresh` one (plain 1/3) restores the backup the `database` job of `e2e` made (seed rows included) once CockroachDB is up, before `migrate` and the API start.
+  The `fresh` shard migrates an empty database, so a broken migration fails e2e, and it runs even when the `database` job failed.
   See [CI](ci.md#end-to-end).
 - In CI each shard runs a list of tests balanced by measured time (`e2e/timings.json`), not Playwright's own `--shard`.
   A new test needs no change to the file: it runs in the shard with the least time.
