@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { TOREN_ACCOUNT, chooseReaders, feedOf, lineOf, messageBoxOf, onlyMaster, openConversaTable, say } from './conversa-support';
 import { pickRadio } from './move-support';

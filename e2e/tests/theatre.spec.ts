@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { type Encounter, adjustVitalsRPC, brisa, brisaSheet, combatRPC, getEncounterRPC, passTurnsTo } from './combat-support';
 import { openSessionPage } from './live-session-support';

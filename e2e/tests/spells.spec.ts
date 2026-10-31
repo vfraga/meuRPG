@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { archiveEntryRPC, createInkBladeRPC, listSpellsRPC, tableForSpells } from './spells-support';
 import { callRPC, newSignedInContext } from './support';

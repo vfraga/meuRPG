@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 test('o app carrega e mostra a versão do servidor', { tag: '@smoke' }, async ({ page }) => {
   await page.goto('/');

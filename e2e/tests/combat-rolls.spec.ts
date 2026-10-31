@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { combatRPC, getEncounterRPC, passTurnsTo, tableForCombat, waitTurnLeaves } from './combat-support';
 import { grog, pipo, rollsTable, vex } from './combat-rolls-support';

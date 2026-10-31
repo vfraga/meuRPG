@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { getEncounterRPC, waitTurnLeaves } from './combat-support';
 import { endOpenSessionRPC, openSessionPage, openSheetTab } from './live-session-support';

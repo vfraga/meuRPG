@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 // The terms of use and the privacy policy are public: the Google consent screen links to them, so
 // they must open with no session. The footer reaches them from every page, and the site asks search

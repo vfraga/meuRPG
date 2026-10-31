@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 // CC-BY-4.0 compliance: the repo root's NOTICE carries the exact SRD 5.1
 // attribution text (ADR-0008, private), and the public /credits page

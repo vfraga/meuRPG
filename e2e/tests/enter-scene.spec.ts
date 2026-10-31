@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';
 import { openSceneOnlyToRPC, readSceneRPC, setMayJoinRPC, tableForScenes } from './scene-support';

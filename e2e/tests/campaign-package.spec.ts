@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { exportThroughScreen, joinAsPlayer, tableForPackage, zipWithManifest } from './campaign-package-support';
 import { expectLoaded } from './loaded';

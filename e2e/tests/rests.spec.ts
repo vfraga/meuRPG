@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { endTurnOf, getEncounterRPC, passTurnsTo, tableForCombat, toren, torenSheet } from './combat-support';
 import { tableForLevelUp } from './levelup-support';

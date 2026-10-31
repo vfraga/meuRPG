@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Locator, type Page } from '@playwright/test';
+import { expect, type Browser, type Locator, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { combatRPC, passTurnsTo, tableForCombat, type Encounter } from './combat-support';
 import { vex } from './combat-rolls-support';

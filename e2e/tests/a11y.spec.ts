@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { canvasJpeg, newCampaign, uploadThroughPicker } from './gallery-support';
 import { saveDocumentRPC, tableWithDocumentParts } from './document-support';

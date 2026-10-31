@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { pdfPages, printRoute, summary, tableForPrinting } from './print-support';
 import { afterRender, boxOf, newSignedInContext } from './support';

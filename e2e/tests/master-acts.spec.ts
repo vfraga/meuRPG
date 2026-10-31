@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { adjustVitalsRPC, beginAttackCombatRPC, combatRPC, getEncounterRPC, passTurnsTo, pensantusCasting, tableForCombat, type CombatTable } from './combat-support';
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';

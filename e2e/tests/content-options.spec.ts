@@ -1,4 +1,5 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { catalogJSON, catalogText, optionSwitchesJSON, raceOptions, setSwitchesRPC } from './content-options-support';
 import { createEntryRPC, entryRoute, spellBody } from './content-support';

@@ -43,6 +43,20 @@ module.exports = tseslint.config(
       'playwright/consistent-spacing-between-blocks': 'off',
       // No exits: a skipped test hides a flake instead of fixing it, and `test.fixme` is a skip with a nicer name.
       'playwright/no-skipped-test': ['error', { disallowFixme: true }],
+      // `test` comes from tests/diagnostics.ts, whose automatic fixture attaches what the pages reported when a test
+      // fails (docs/testing.md, "A page that hangs"). No baseline: do not add suppressions for it.
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            ...['@playwright/test', 'playwright/test'].map((name) => ({
+              name,
+              importNames: ['test'],
+              message: "Import `test` from './diagnostics': it attaches the pages' diagnostics to a failed test.",
+            })),
+          ],
+        },
+      ],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/await-thenable': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
@@ -52,5 +66,10 @@ module.exports = tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
     },
+  },
+  {
+    // The one place that builds `test` on Playwright's.
+    files: ['tests/diagnostics.ts'],
+    rules: { 'no-restricted-imports': 'off' },
   },
 );

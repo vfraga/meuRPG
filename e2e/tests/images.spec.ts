@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { endOpenSessionRPC, showMasterTab } from './live-session-support';
 import { generateSceneRPC, generateTextureRPC, liveSessionAsPlayer, mapRoute, referenceRPC, statusRPC, tableForImages, type ImagesTable } from './images-support';

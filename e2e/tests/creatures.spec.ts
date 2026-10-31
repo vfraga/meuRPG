@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { endOpenSessionRPC } from './live-session-support';
 import { giveCreatureRPC, listCreaturesRPC, tableForCreatures } from './creatures-support';

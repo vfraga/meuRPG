@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { getMapRPC } from './editor-support';
 import { CAVE_COLUMNS, CAVE_ROWS, type FogTable, sessionRoute, squareBp, tableForFog } from './fog-support';

@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { tableWithOpenChoices } from './choices-support';
 import { endOpenSessionRPC } from './live-session-support';

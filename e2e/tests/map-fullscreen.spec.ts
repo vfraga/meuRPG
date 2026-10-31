@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { grog, rollsTable } from './combat-rolls-support';
 import { openSessionPage } from './live-session-support';

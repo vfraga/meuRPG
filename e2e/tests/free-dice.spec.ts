@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { cardNumbers, diceTable, freeRollsRPC, openDice, rollUntilRefused, stepModifier } from './free-dice-support';
 import { endOpenSessionRPC, openTableRolls, startSessionRPC } from './live-session-support';

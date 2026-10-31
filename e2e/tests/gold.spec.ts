@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { endOpenSessionRPC, openSessionPage, startSessionRPC, endSessionFromBar } from './live-session-support';
 import { callRPC, newSignedInContext, openXpHistory } from './support';

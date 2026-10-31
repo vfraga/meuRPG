@@ -1,4 +1,5 @@
-import { expect, test, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { cavePoints, clickSquare, dragSquares, editorRoute, getMapRPC, layersOf, mapToPaint, surfaceOf } from './editor-support';
 import { beginFogCombat, moveTo, sessionRoute, tableForFog, visionOf, type FogTable } from './fog-support';

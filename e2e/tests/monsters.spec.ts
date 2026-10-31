@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { combatRPC, getEncounterRPC, startEncounterRPC, tableForCombat, type CombatTable, type Encounter } from './combat-support';
 import { createPointRPC } from './maps-support';

@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { getEncounterRPC } from './combat-support';
 import { addEffectRPC, effectRow, effectsTable, effectsRPC, exhaustionOf, openPanel, setExhaustionRPC } from './effects-support';

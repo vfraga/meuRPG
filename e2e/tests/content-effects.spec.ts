@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { createEntryRPC, entryRoute } from './content-support';
 import { tableForMaps } from './maps-support';

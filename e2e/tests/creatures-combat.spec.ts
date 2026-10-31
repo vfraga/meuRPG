@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { combatRPC, endTurnOf, getEncounterRPC, passTurnsTo, type Encounter } from './combat-support';
 import { beginCreatureCombat, hitAndApply, sessionRoute, tableForCreatureCombat, tapCaveSquare, trapAt } from './creatures-combat-support';

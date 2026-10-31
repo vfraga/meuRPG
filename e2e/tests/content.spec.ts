@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './diagnostics';
 
 import { archiveEntryRPC, createEntryRPC, entryRoute, listEntriesJSON, raceBody, spellBody, updateEntryRPC } from './content-support';
 import { pickRadio } from './move-support';
