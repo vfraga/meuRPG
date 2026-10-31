@@ -659,6 +659,7 @@ func (c *content) monsterDerived(m *srd51.Monster) Derived {
 	if count, faces, ok := parseDice(m.HitDice); ok {
 		d.HitDice = []HitDice{{Die: faces, Count: count}}
 	}
+	d.StatBlockConditionImmunities = slices.Clone(m.ConditionImmunities)
 	mods := c.monsterAbilities(m, &d)
 	d.Initiative = mods[DEX]
 	c.monsterSkills(m, mods, &d)

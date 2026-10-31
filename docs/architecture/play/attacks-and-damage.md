@@ -94,6 +94,7 @@ The step is the usual resistance or immunity step with `combat.Step.Qualifier` s
 The steps are kept per type with their sources (`pending_damages.steps`) and shown to the master and the target's player as `DamageStep[]`.
 The master may leave a source out when applying (`ignore_modifiers`, at most `maxIgnoredSources`).
 An NPC's resistances reach the master alone (RN-20).
+The conditions a stat block is immune to do not go through these modifiers: they ride on the traits and `immuneToCondition` reads them when a condition is given (see [Creatures](creatures.md#what-the-combat-does-with-a-creature)).
 A trap's damage on an NPC or creature goes through the same adjustment.
 
 ### Damage by parts

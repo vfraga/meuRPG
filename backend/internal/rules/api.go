@@ -602,6 +602,9 @@ const (
 // shows that follows from the Build. The characters module maps it to
 // rules.v1.DerivedSheet.
 type Derived struct {
+	// StatBlockConditionImmunities are the condition keys a creature's stat block lists as immune
+	// ("condition:poisoned"); empty for a character. Content.ConditionImmunities lists them with the stat block.
+	StatBlockConditionImmunities []string `json:",omitempty"`
 	// ContentVersion is Content.Version() at the time of Derive.
 	ContentVersion string
 	// RaceNamePT and SubraceNamePT name the race and subrace, and

@@ -222,6 +222,9 @@ func (c *content) isCondition(k string) bool {
 	return strings.HasPrefix(k, "condition:") && c.exists(k)
 }
 
+// StatBlockSource is the Source of the condition immunities a creature's stat block lists.
+const StatBlockSource = "stat-block"
+
 // ConditionImmunity is a condition the character takes none of, from a feature or a
 // trait (a table's condition_immunity effect).
 type ConditionImmunity struct {
@@ -241,6 +244,9 @@ func (c *Content) ConditionImmunities(d Derived) []ConditionImmunity {
 				out = append(out, ConditionImmunity{Source: f.Key, NamePT: c.c.namePT(f.Key), Conditions: slices.Clone(e.Conditions)})
 			}
 		}
+	}
+	if len(d.StatBlockConditionImmunities) > 0 {
+		out = append(out, ConditionImmunity{Source: StatBlockSource, NamePT: "ficha da criatura", Conditions: slices.Clone(d.StatBlockConditionImmunities)})
 	}
 	return out
 }

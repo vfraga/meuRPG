@@ -44,6 +44,13 @@ Access is as `ListCharacterCreatures`; no HP goes in the response (RN-20).
 - **Whose row it is.** `combatants.character_id` is the owner (the column stays `NOT NULL` and the creature disappears with the character, in cascade) and `user_id` the owner's player, so the usual `mayAct` works: the player acts for the creature, and only they and the master.
   `Combatant.mine` stays true only for the player's own character; `controlled_by_me` also covers the creatures, and `owner_character_id` says whose it is.
   `character_id` is empty on a creature, even for the master.
+- **Condition immunities.** The conditions a stat block lists as immune (SRD 5.1: the Black Pudding is immune to prone and charmed) travel on the traits of a creature and of an NPC made from it.
+  `monsterDerived` copies them into `Derived.StatBlockConditionImmunities`, `basicDerived` does the same for the NPC, and `Content.ConditionImmunities` lists them with the source `stat-block`.
+  Every place that gives a condition asks `immuneToCondition`, which reads the sheet of a creature as it reads a character's.
+  A spell that lasts also keeps the stat block check of `noEffectWhy`, which knows the humanoid rule too.
+  When the stat block refuses a condition of a spell's effect (`giveCondition`), the hit carries `no_effect_why`.
+  Only the master reads it, as `SpellTargetResult.no_effect_reason_master` (RN-20, RN-29); a player's view is that of a hit nothing refused.
+  A rider, a hold or a trap refused by an immunity keeps its public outcome and carries no reason line.
 - **Turn and economy.** The creature has its own turn and economy, computed from `MonsterDerived`: attacks (each action with an attack bonus, the first damage part), Dash and the standard actions, without "Cast a spell".
   The familiar does not attack (no attacks nor the Attack action, even for the master: `CREATURE_CANNOT_ATTACK`); the Pact of the Chain's has its attacks disabled as an action (`REACTION_ONLY`) and only attacks with `as_reaction`; those of Animate Dead and Conjure Animals attack like any creature.
   On entering combat the creature copies, like the character, the side (`party`), the size, the flying speed (`size`, `speed_fly_ft`) and the jump (`combat.JumpLimits` from its Strength).
