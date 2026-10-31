@@ -47,7 +47,7 @@ test('o mestre faz uma fechadura que abre uma porta e a mostra; o jogador a reso
     await master.goto(puzzleRoute(table.campaignId, 'puzzles', 'new'));
     await expect(master.getByRole('heading', { level: 1, name: 'Novo quebra-cabeça' })).toBeVisible();
     await master.getByRole('radio', { name: /^Fechadura de combinação/ }).check();
-    await master.getByLabel('Nome').fill('O cofre do Refeitório');
+    await master.getByLabel('Nome', { exact: true }).fill('O cofre do Refeitório');
     await master.getByRole('group', { name: 'Solução da fechadura' }).getByRole('button', { name: 'Próximo símbolo: Roda 1' }).click();
     await master.getByLabel('Pista para os jogadores').fill('O fogo nasce antes da lua.');
     await master.getByRole('button', { name: 'Adicionar uma dica' }).click();
@@ -172,7 +172,7 @@ test('o mestre faz "Apagar as luzes" no formulário, edita, e arquiva e desarqui
   const table = await tableForPuzzles(master, player, `Lista ${Date.now()}`);
   try {
     await master.goto(puzzleRoute(table.campaignId, 'puzzles', 'new'));
-    await master.getByLabel('Nome').fill('O selo da Capela');
+    await master.getByLabel('Nome', { exact: true }).fill('O selo da Capela');
     // The start is the server's: the count of lights and the fewest touches arrive before the puzzle can be saved.
     await expect(master.getByText(/\d+ acesas?, \d+ apagadas?\./)).toBeVisible({ timeout: 30_000 });
     await expect(master.getByText(/Dá para resolver em \d+ toques?\./)).toBeVisible();
@@ -189,8 +189,8 @@ test('o mestre faz "Apagar as luzes" no formulário, edita, e arquiva e desarqui
     // The row is the link to the editor ("Editar" is not a button of the row: the board's row has a chevron).
     await panel.getByRole('link', { name: /^O selo da Capela/ }).click();
     await expect(master.getByRole('heading', { level: 1, name: 'Editar quebra-cabeça' })).toBeVisible();
-    await expect(master.getByLabel('Nome')).toHaveValue('O selo da Capela');
-    await master.getByLabel('Nome').fill('O selo da Cripta');
+    await expect(master.getByLabel('Nome', { exact: true })).toHaveValue('O selo da Capela');
+    await master.getByLabel('Nome', { exact: true }).fill('O selo da Cripta');
     await master.getByRole('button', { name: 'Salvar quebra-cabeça' }).click();
     // Saving goes back to the campaign page ("Mesa"); the list is on "Preparação".
     await expect(master).toHaveURL(puzzleRoute(table.campaignId));

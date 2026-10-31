@@ -73,7 +73,7 @@ test('o enigma: o mestre o faz no formulário, o jogador erra e depois acerta, e
     // The master's form: the riddle, the accepted answers one by one, and "Ao errar": two attempts for each player.
     await master.goto(puzzleRoute(table.campaignId, 'puzzles', 'new'));
     await master.getByRole('radio', { name: /^Enigma/ }).check();
-    await master.getByLabel('Nome').fill('A porta da Cripta pergunta');
+    await master.getByLabel('Nome', { exact: true }).fill('A porta da Cripta pergunta');
     await master.getByLabel('O enigma').fill(RIDDLE.text);
     await master.getByLabel('Pista para os jogadores').fill('Procure no chão da Cripta.');
     for (const answer of RIDDLE.answers) {
@@ -248,7 +248,7 @@ test('a cifra: a chave é uma pista da cena que o grupo acha, e o jogador decifr
     // The master's form: the server ciphers the message for him ("Como os jogadores a veem"), and the key is a scene clue.
     await master.goto(puzzleRoute(table.campaignId, 'puzzles', 'new'));
     await master.getByRole('radio', { name: /^Cifra/ }).check();
-    await master.getByLabel('Nome').fill('A carta do Capitão');
+    await master.getByLabel('Nome', { exact: true }).fill('A carta do Capitão');
     await master.getByLabel('Mensagem', { exact: true }).fill(CIPHER.message);
     await expect(master.locator('app-cipher-form .cipher')).toHaveText(CIPHER.ciphertext, { timeout: 30_000 });
     await master.getByLabel('Qual pista guarda a chave').selectOption(clueId);
@@ -402,7 +402,7 @@ test('a informação dividida: o mestre dá uma parte a cada jogador e cada um s
     // The master's form: two parts, each for one player's character.
     await master.goto(puzzleRoute(table.campaignId, 'puzzles', 'new'));
     await master.getByRole('radio', { name: /^Enigma/ }).check();
-    await master.getByLabel('Nome').fill('A porta da Cripta pergunta');
+    await master.getByLabel('Nome', { exact: true }).fill('A porta da Cripta pergunta');
     await master.getByLabel('O enigma').fill(RIDDLE.text);
     await master.getByLabel(/^(Uma|Outra) resposta$/).fill('sombra');
     await master.getByRole('button', { name: 'Adicionar', exact: true }).click();

@@ -59,7 +59,7 @@ test(
       await master.getByRole('button', { name: 'Criar mapa' }).click();
       await expect(master.getByText('Dê um nome ao mapa.')).toBeVisible();
       await expect(master.getByText('Escolha uma imagem para o mapa.')).toBeVisible();
-      await master.getByLabel('Nome').fill('Mirathel e arredores');
+      await master.getByLabel('Nome', { exact: true }).fill('Mirathel e arredores');
       await master.getByRole('radio', { name: /Mapa de Mirathel/ }).click();
       await master.getByRole('button', { name: 'Criar mapa' }).click();
       await expect(master).toHaveURL(/\/maps\/[^/]+$/);

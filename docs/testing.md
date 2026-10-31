@@ -316,6 +316,18 @@ Read the attachment in the HTML report, or in the `playwright-report-*` artifact
 A failed CI run keeps `stack-logs/stack.log` (every container of the stack, with timestamps) in the `playwright-report-*` artifact.
 The `flake-check` traces artifact (`flake-traces-*`) holds the same file, one per job.
 
+## Texts the app bar can repeat
+
+A session that is open puts the campaign name on every page. The app bar link reads `Ao vivo: sessão N de <campaign>`. The live notice reads `A sessão N de <campaign> começou.` and has a link `Entrar na sessão N de <campaign>`.
+
+`getByLabel('Nome')` matches a substring. If a campaign is called `Nomes e legenda 123`, it matches the live link too, and `fill` fails on a strict mode violation.
+
+The rule `meurpg/exact-shared-text` reads the campaign names in `e2e/tests` (template names that end in `${Date.now()}` and the strings passed to the helpers that build them). It reports a `getByLabel` string, or a `getByRole('link', { name })` string, that is a substring of one of them, case ignored, unless the call has `exact: true`. There is no baseline and no suppression.
+
+The rule does not read `getByText`. `exact: true` there would weaken `toHaveCount(0)` checks, so scope a `getByText` to a region instead. It does not read names built at run time.
+
+A field that `exact` cannot match, such as a `mat-select` whose name also carries its value, is found by role: `getByRole('combobox', { name })`. The live link has the role `link`, so it does not collide.
+
 ## Reproducing a flaky test
 
 A red test is a bug in the test or in the app until the evidence says which ([CI](ci.md#flaky-tests) has the rule and the banned fixes). Read the artifacts first, then reproduce before you fix.

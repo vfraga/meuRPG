@@ -5152,7 +5152,7 @@ async function scanPuzzleScreens(browser: Browser, colorScheme: 'light' | 'dark'
       await expect(master.getByText('Dê um nome ao quebra-cabeça.')).toBeVisible();
       await stepPasses(master, `Formulário com erro ${where}`);
       await openPage(master, puzzleRoute(campaignId, 'puzzles', lock, 'edit'));
-      await expect(master.getByLabel('Nome')).toHaveValue('O cofre do Refeitório');
+      await expect(master.getByLabel('Nome', { exact: true })).toHaveValue('O cofre do Refeitório');
       await stepPasses(master, `Editar a fechadura ${where}`);
 
       // The live view (states 3 to 5): each kind, the solution asked for, the two questions.
@@ -5338,7 +5338,7 @@ async function scanMorePuzzleScreens(browser: Browser, colorScheme: 'light' | 'd
       await openPage(master, puzzleRoute(campaignId, 'puzzles', 'new'));
       await master.getByRole('radio', { name: /^Enigma/ }).check();
       await stepPasses(master, `Novo quebra-cabeça: o enigma, vazio ${where}`);
-      await master.getByLabel('Nome').fill('A porta da Cripta pergunta');
+      await master.getByLabel('Nome', { exact: true }).fill('A porta da Cripta pergunta');
       await master.getByLabel('O enigma').fill('Moro embaixo de cada passo seu, mas nunca peso nada. O que sou?');
       for (const answer of ['sombra', 'a sombra']) {
         await master.getByLabel(/^(Uma|Outra) resposta$/).fill(answer);

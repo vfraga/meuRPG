@@ -9,6 +9,7 @@ const eslint = require('@eslint/js');
 const tseslint = require('typescript-eslint');
 const playwright = require('eslint-plugin-playwright');
 const rpcRevisionWait = require('./rules/rpc-revision-wait');
+const exactSharedText = require('./rules/exact-shared-text');
 
 // ESLint's bulk suppressions only cover errors, and the Playwright preset ships many rules as warnings.
 // Every rule of the preset is made an error so the ratchet sees it (a warning nobody reads is not a gate).
@@ -32,11 +33,14 @@ module.exports = tseslint.config(
         tsconfigRootDir: path.resolve(__dirname, '..'),
       },
     },
-    plugins: { meurpg: { rules: { 'rpc-revision-wait': rpcRevisionWait } } },
+    plugins: { meurpg: { rules: { 'rpc-revision-wait': rpcRevisionWait, 'exact-shared-text': exactSharedText } } },
     rules: {
       // A call that changes the server is followed by a wait for the page to show it before the next page action
       // (docs/testing.md, "Waiting for the page to show a change"). No baseline: do not add suppressions for it.
       'meurpg/rpc-revision-wait': 'error',
+      // A plain string that is part of a campaign name is `exact: true` on a page (docs/testing.md, "Texts the app bar can repeat").
+      // No baseline: do not add suppressions for it.
+      'meurpg/exact-shared-text': 'error',
       // Most tests assert through helpers (support.ts, *-support.ts), so "no expect in the test body" is noise;
       // the spacing rule is style, which Prettier owns.
       'playwright/expect-expect': 'off',

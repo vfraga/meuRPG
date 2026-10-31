@@ -20,7 +20,7 @@ test.describe('criar campanha', () => {
     await expect(page.getByRole('heading', { name: 'Minhas campanhas' })).toBeVisible();
     await waitForCampaignList(page);
     await page.getByLabel('Nome da campanha').fill(name);
-    await page.getByLabel('Modo de XP').click();
+    await page.getByRole('combobox', { name: 'Modo de XP' }).click();
     await page.getByRole('option', { name: 'Por inimigos derrotados' }).click();
     await page.getByRole('button', { name: 'Criar campanha' }).click();
 

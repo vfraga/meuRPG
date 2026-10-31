@@ -54,9 +54,9 @@ test(
       await m.getByLabel('Alcance', { exact: true }).selectOption({ label: 'Pessoal' });
       await pickRadio(m, 'Área');
       await expect(m.getByLabel('Comprimento')).toBeVisible();
-      await m.getByLabel('Forma').selectOption({ label: 'Cubo' });
-      await expect(m.getByLabel('Lado')).toBeVisible();
-      await m.getByLabel('Forma').selectOption({ label: 'Cone' });
+      await m.getByLabel('Forma', { exact: true }).selectOption({ label: 'Cubo' });
+      await expect(m.getByLabel('Lado', { exact: true })).toBeVisible();
+      await m.getByLabel('Forma', { exact: true }).selectOption({ label: 'Cone' });
       await m.getByLabel('Comprimento').fill('4,5');
       await pickRadio(m, 'Teste de resistência');
       await m.getByLabel('Dano', { exact: true }).fill('3d6');

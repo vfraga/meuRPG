@@ -142,7 +142,7 @@ test('o mestre cria um inimigo com ficha completa e um minion com ficha básica'
   await page.getByLabel('Classe de Armadura').fill('12');
   // The speed is typed in metres, in steps of 1,5 m (no feet on screen).
   await page.getByLabel('Deslocamento (m)').fill('9');
-  await page.getByLabel('Iniciativa').fill('+2');
+  await page.getByLabel('Iniciativa', { exact: true }).fill('+2');
   await page.getByRole('button', { name: 'Adicionar ataque' }).click();
   await page.getByLabel('Nome do ataque').fill('Cimitarra');
   await page.getByLabel('Bônus de ataque').fill('+4');

@@ -9,7 +9,7 @@
     "report": "playwright show-report",
     "lint:install": "npm ci --ignore-scripts --prefix lint",
     "lint": "lint/node_modules/.bin/eslint --config lint/eslint.config.js .",
-    "lint:test": "node --test lint/rules/rpc-revision-wait.test.js"
+    "lint:test": "node --test lint/rules/rpc-revision-wait.test.js lint/rules/exact-shared-text.test.js"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

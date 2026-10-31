@@ -48,7 +48,7 @@ test('antes de qualquer sessão, o jogador edita a própria ficha e a alteraçã
     await joinedPage.goto(`/campaigns/${campaignId}/characters/${character.id}`);
     await expect(joinedPage.getByText('Ficha travada desde', { exact: false })).toHaveCount(0);
     await joinedPage.getByRole('link', { name: 'Editar ficha' }).click();
-    await joinedPage.getByLabel('Nível').fill('4');
+    await joinedPage.getByLabel('Nível', { exact: true }).fill('4');
     // Wait for the save's own response before reading the character back:
     // a read sent right after the click can reach the server first and see
     // the old revision (it did, once the save took ~0.5 s on a busy stack).

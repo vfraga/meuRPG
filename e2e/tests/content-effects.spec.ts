@@ -43,8 +43,8 @@ test(
       // Native selects: the text of a select is every option's, so the chosen one is read by its value and its checked option.
       await expect(m.getByLabel('Tipo de dano')).toHaveValue('damage-type:fire');
       await expect(m.getByLabel('Tipo de dano').locator('option:checked')).toHaveText('fogo');
-      await expect(m.getByLabel('Arma')).toHaveValue('ranged');
-      await expect(m.getByLabel('Arma').locator('option:checked')).toHaveText('Ataque com arma à distância');
+      await expect(m.getByLabel('Arma', { exact: true })).toHaveValue('ranged');
+      await expect(m.getByLabel('Arma', { exact: true }).locator('option:checked')).toHaveText('Ataque com arma à distância');
       await expect(m.getByLabel('Quantas vezes')).toHaveValue('once_per_turn');
       await expect(m.getByLabel('Quantas vezes').locator('option:checked')).toHaveText('Uma vez por turno');
 
