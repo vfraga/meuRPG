@@ -199,7 +199,7 @@ func (x *deriver) stateRounds(a activeEffect) int {
 	}
 	n, err := a.effect.durationRounds.Int(x.env)
 	if err != nil {
-		x.issue(IssueFormula, "", "Um efeito de %s foi ignorado: a fórmula falhou.", x.c.namePT(a.owner))
+		x.issue(IssueFormula, "", "A duração de um efeito de %s não pôde ser calculada: o estado dura até acabar.", x.c.namePT(a.owner))
 		return 0
 	}
 	return min(max(n, 0), MaxStateRounds)

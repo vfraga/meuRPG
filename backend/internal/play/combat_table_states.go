@@ -174,7 +174,12 @@ const stateTable = "table"
 
 // statesNow reads the vitals of a combatant's character for its states. A character the
 // vitals do not list (dead, or gone from the table) has no state to end: nil, no error.
+// A character with no state stored is nil too, before its sheet is derived for the vitals.
 func (s *Service) statesNow(ctx context.Context, c *combatTx, who playdb.Combatant) (*playv1.CharacterVitals, error) {
+	has, err := s.vitals.HasActiveStates(ctx, c.tx, c.session.CampaignID, who.CharacterID)
+	if err != nil || !has {
+		return nil, err
+	}
 	now, err := s.vitals.GetVitalsTx(ctx, c.tx, c.session.CampaignID, who.CharacterID)
 	if connect.CodeOf(err) == connect.CodeNotFound {
 		return nil, nil

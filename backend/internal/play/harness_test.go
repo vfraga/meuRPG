@@ -186,6 +186,7 @@ type harness struct {
 	vision *visionCounter // how many times the fog was told that what the players see changed
 	clock  *fakeClock     // the service's clock, which a test moves on instead of waiting
 	voice  *voice.Fake    // makes the lines' audio; counts the voices it made
+	vitals *vitalsReads   // the vitals keeper the service uses: the characters' service, counting the vitals it derived
 }
 
 // newHarness serves the play, campaigns and characters services through
@@ -214,6 +215,7 @@ func newHarness(t *testing.T, live ...LiveConfig) *harness {
 	if err != nil {
 		t.Fatalf("characters.New() error = %v", err)
 	}
+	h.vitals = &vitalsReads{VitalsKeeper: chars}
 	h.vision = &visionCounter{SessionMaps: maps.NewSessionMaps(pool)}
 	chars.SetGallery(maps.NewSessionMaps(pool)) // an NPC's portrait is an image of the gallery (MR-031)
 	blobs, err := blob.NewFS(t.TempDir())
@@ -225,7 +227,7 @@ func newHarness(t *testing.T, live ...LiveConfig) *harness {
 	rel.add(func() { _ = blobs.Close() })
 	h.voice = &voice.Fake{}
 	messages := MessagesConfig{Profiles: h.users, Voice: h.voice, Blobs: blobs}
-	svc, err := New(Config{Messages: messages, Pool: pool, Sheets: chars, Vitals: chars, Campaigns: camps, Maps: h.vision, Roster: chars, Dice: testDice{camps}, Defaults: camps, Roller: h.roller, Live: liveConfig, Logger: logger, Now: clock.Now})
+	svc, err := New(Config{Messages: messages, Pool: pool, Sheets: chars, Vitals: h.vitals, Campaigns: camps, Maps: h.vision, Roster: chars, Dice: testDice{camps}, Defaults: camps, Roller: h.roller, Live: liveConfig, Logger: logger, Now: clock.Now})
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}

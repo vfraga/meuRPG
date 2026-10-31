@@ -457,3 +457,22 @@ func TestAClassFeatureAndAnOptionDefineTheirOwnStates(t *testing.T) {
 		}
 	}
 }
+
+func TestADurationThatFailsKeepsTheStateListedForUntilItEndsAndSaysSo(t *testing.T) {
+	effects := stanceEffects()
+	effects[1].DurationRounds = `10 / (classLevel("fighter") - 3)` // divides by zero at level 3
+	effects[1].EndsOn = []string{StateEndsDismiss}
+	c := withOverlay(t, stateOverlay(effects))
+	d := Derive(stateBuild(3), c)
+	s, ok := stateOf(d, stateKeyOfTest())
+	if !ok || s.DurationRounds != 0 {
+		t.Errorf("state = %+v (listed %v), want it listed with no duration: it lasts until it ends", s, ok)
+	}
+	i := slices.IndexFunc(d.Issues, func(i Issue) bool { return i.Code == IssueFormula })
+	if i < 0 {
+		t.Fatalf("issues = %+v, want a formula issue", d.Issues)
+	}
+	if got := d.Issues[i].Message; !strings.Contains(got, "dura até acabar") || strings.Contains(got, "ignorado") {
+		t.Errorf("message = %q, want it to say the state lasts until it ends and not that the effect was skipped", got)
+	}
+}

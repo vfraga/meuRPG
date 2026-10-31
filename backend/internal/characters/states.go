@@ -10,6 +10,7 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -78,12 +79,33 @@ func activeStatesProto(stored []storedState, defs []rules.State) []*playv1.Activ
 // storedOf is the column's value for the states the vitals show: the key and the rounds
 // left of each.
 func storedOf(states []*playv1.ActiveState) []byte {
+	raw, _ := json.Marshal(storedFrom(states)) // a list of plain structs cannot fail to encode
+	return raw
+}
+
+// storedFrom is the entries of the column for the states the vitals show.
+func storedFrom(states []*playv1.ActiveState) []storedState {
 	out := make([]storedState, 0, len(states))
 	for _, st := range states {
 		out = append(out, storedState{Key: st.GetKey(), RoundsLeft: max(st.GetRoundsLeft(), 0)})
 	}
-	raw, _ := json.Marshal(out) // a list of plain structs cannot fail to encode
-	return raw
+	return out
+}
+
+// HasActiveStates says the character has a state stored, without deriving its sheet. It
+// is false for a character that is not living and active in the campaign. It implements
+// play.VitalsKeeper, so the combat reads the vitals of a player's character for its states
+// only when it has some.
+func (s *Service) HasActiveStates(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (bool, error) {
+	id, ok := uid.Canonical(characterID)
+	if !ok {
+		return false, nil
+	}
+	rows, err := s.queriesIn(tx).ListCombatCharacters(ctx, charactersdb.ListCombatCharactersParams{CampaignID: campaignID, Ids: []string{id}})
+	if err != nil {
+		return false, s.dbError(ctx, "read the states of a character", err)
+	}
+	return len(rows) == 1 && len(parseStoredStates(rows[0].ActiveStates)) > 0, nil
 }
 
 // SetActiveStates puts the states that are on for the character at states (a key and the
@@ -106,7 +128,7 @@ func (s *Service) SetActiveStates(ctx context.Context, tx pgx.Tx, campaignID, ch
 			return nil, nil, invalidArgument(fieldErr("active_states", "the character's sheet has no state %q", st.GetKey()))
 		}
 	}
-	next := activeStatesProto(parseStoredStates(storedOf(states)), r.m.states)
+	next := activeStatesProto(storedFrom(states), r.m.states)
 	if equalStates(r.view.GetActiveStates(), next) {
 		return r.view, r.view, nil
 	}

@@ -231,6 +231,9 @@ Checked at its fields: `.class_key` (a class of the content), `.level` (1 to 20)
 A `state` effect defines a state; the character's player turns it on and off.
 `Derive` lists the states of the sheet in `Derived.States` (key = the feature's key, `#`, the state's name) and gives each an action in `Derived.Actions`, with `state_key` and `state_active`, so the card is the one of a granted action: "Ativar" spends the economy and the use of `resource`, "Encerrar" costs nothing.
 Which states are on is not on the sheet but a session input, `Build.ActiveStates` (the keys, kept per character; see [Characters](characters.md#temporary-states)); a key no state effect of the sheet defines is ignored.
+Mage Armor's armor class (`MageArmorAC`), worked out outside the combat, counts the states that are on, as the sheet does.
+A `duration_rounds` formula that fails when it runs leaves the state listed with no duration, so it lasts until it ends, and records an issue that says so.
+The state stays listed because one that is on must stay on the sheet to be ended.
 
 **The gate.** `while` is on `resistance`, `roll_mode`, `extra_damage`, `weapon_rule` and `pseudo_weapon` (`gatedEffectTypes` in `rules/gate.go`), and `when` of any type may read `active("name")`, a Bool that is true while the state of that name in the same entry is on.
 A name belongs to the entry of the effect, as a resource name does: `.while` and `active("x")` name a `state` effect of the same class, subclass, race, subrace, background or feat (refused `bad_reference`).

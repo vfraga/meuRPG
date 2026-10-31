@@ -564,6 +564,10 @@ func (noVitals) SetHitPointsMaxBonus(context.Context, pgx.Tx, string, string, in
 	return nil, nil, errors.New("not in this test")
 }
 
+func (noVitals) HasActiveStates(context.Context, pgx.Tx, string, string) (bool, error) {
+	return false, errors.New("not in this test")
+}
+
 func (noVitals) SetActiveStates(context.Context, pgx.Tx, string, string, []*playv1.ActiveState) (before, after *playv1.CharacterVitals, err error) {
 	return nil, nil, errors.New("not in this test")
 }
