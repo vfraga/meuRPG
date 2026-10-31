@@ -94,6 +94,11 @@ type templateDB struct {
 	// rows, and left alone when a database is emptied. Read from the migrated
 	// template, so a migration that seeds another table needs no change here.
 	reference []string
+
+	// EXPERIMENT: PostgreSQL (see postgres.go).
+	pg      bool
+	pgDump  string
+	refData map[string][]byte
 }
 
 // Enabled reports whether a test database is configured.
@@ -220,6 +225,15 @@ func NewPoolConns(t testing.TB, prefix string, conns int32) *pgxpool.Pool {
 		return poolFor(t, prefix, name, dsn, conns)
 	}
 	admin := open(t, rawURL)
+	if template.pg {
+		freeMu.Lock()
+		made = append(made, name)
+		freeMu.Unlock()
+		if err := pgClone(t.Context(), admin, template, name, dsn); err != nil {
+			t.Fatalf("copy the template: %v", err)
+		}
+		return poolFor(t, prefix, name, dsn, conns)
+	}
 	mustExec(t, admin, "CREATE DATABASE "+name)
 	freeMu.Lock()
 	made = append(made, name)
@@ -282,12 +296,28 @@ func dropAll(rawURL string) {
 	}
 }
 
+// dropOne drops a database of this process, for MEURPG_TEST_PG_REUSE=0.
+func dropOne(name string) {
+	conn, err := sql.Open("pgx", os.Getenv(EnvVar))
+	if err != nil {
+		return
+	}
+	defer func() { _ = conn.Close() }()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	_, _ = conn.ExecContext(ctx, "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
+}
+
 // poolFor connects to a test database and gives it back when the test ends:
 // the pool closes first (cleanups run last-in, first-out), then the database
 // is free for the next test with this prefix.
 func poolFor(t testing.TB, prefix, name, dsn string, conns int32) *pgxpool.Pool {
 	t.Helper()
 	t.Cleanup(func() {
+		if template.pg && !pgReuse() {
+			dropOne(name)
+			return
+		}
 		freeMu.Lock()
 		free[prefix] = append(free[prefix], name)
 		freeMu.Unlock()
@@ -530,12 +560,25 @@ func buildTemplate(rawURL string) (templateDB, error) {
 		return templateDB{}, err
 	}
 	defer func() { _ = tpl.Close() }()
-	provider, err := migrations.NewProvider(tpl)
+	postgres, err := isPostgres(ctx, admin)
 	if err != nil {
 		return templateDB{}, err
 	}
-	if err := ensureMigrated(ctx, admin, tpl, provider, name); err != nil {
+	newProvider := migrations.NewProvider
+	if postgres {
+		newProvider = migrations.NewPostgresProvider
+	}
+	provider, err := newProvider(tpl)
+	if err != nil {
 		return templateDB{}, err
+	}
+	if err := ensureMigrated(ctx, admin, tpl, provider, name, postgres); err != nil {
+		return templateDB{}, err
+	}
+	if postgres {
+		info, err := pgTemplateInfo(ctx, tpl, dsn)
+		info.name = name
+		return info, err
 	}
 
 	ddl, tables, err := schemaDDL(ctx, tpl)
@@ -557,11 +600,11 @@ func buildTemplate(rawURL string) (templateDB, error) {
 // ensureMigrated returns once the template name has every migration: made
 // and migrated here, or by another process. A template whose migrations
 // stalled is dropped and made again.
-func ensureMigrated(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string) error {
+func ensureMigrated(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string, postgres bool) error {
 	sources := provider.ListSources()
 	latest := sources[len(sources)-1].Version
 	for {
-		again, err := createOrAwait(ctx, admin, tpl, provider, name, latest)
+		again, err := createOrAwait(ctx, admin, tpl, provider, name, latest, postgres)
 		if !again {
 			return err
 		}
@@ -571,10 +614,15 @@ func ensureMigrated(ctx context.Context, admin, tpl *sql.DB, provider *goose.Pro
 // createOrAwait makes and migrates the template, or, when another process
 // made it, waits until it has the latest migration. again says the template
 // was stalled and is dropped: try once more.
-func createOrAwait(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string, latest int64) (again bool, _ error) {
+func createOrAwait(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string, latest int64, postgres bool) (again bool, _ error) {
 	_, err := admin.ExecContext(ctx, "CREATE DATABASE "+name)
 	if err == nil {
 		// This process creates it, so it migrates it.
+		if postgres {
+			if _, err := tpl.ExecContext(ctx, migrations.PostgresPrelude); err != nil {
+				return false, fmt.Errorf("prepare the PostgreSQL template: %w", err)
+			}
+		}
 		if _, err := provider.Up(ctx); err != nil {
 			return false, fmt.Errorf("migrate the template: %w", err)
 		}
