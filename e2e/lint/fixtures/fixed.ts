@@ -1,4 +1,4 @@
-import { combatRPC, openLive, step, waitForEncounterRevision, type Page } from './support';
+import { combatRPC, openLive, step, passTurnsToAndWait, waitForEncounterRevision, type Page } from './support';
 
 export async function clickRightAfter(m: Page): Promise<void> {
   const enc = await combatRPC(m, 'EndTurn');
@@ -54,4 +54,12 @@ export async function waitsAfterACallback(m: Page): Promise<void> {
   });
   await waitForEncounterRevision(m, enc);
   await m.getByRole('button').click();
+}
+
+// The helper waits on the pages in its last argument.
+export async function passTurnsWaitsOnBothPages(m: Page, p: Page): Promise<void> {
+  await combatRPC(m, 'EndTurn');
+  await passTurnsToAndWait(m, 'c', 'Sombra', [m, p]);
+  await m.getByRole('button').click();
+  await p.getByRole('button').click();
 }

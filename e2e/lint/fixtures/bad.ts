@@ -1,7 +1,7 @@
-import { combatRPC, getEncounterRPC, rollSceneRPC, step, waitForEncounterRevision, type Page } from './support';
+import { combatRPC, getEncounterRPC, rollSceneRPC, step, passTurnsToAndWait, waitForEncounterRevision, type Page } from './support';
 
-// Four errors: a click straight after the call, a click in an outer block, a wait that comes too late, and a wait on
-// the master's page before a click on the player's.
+// Five errors: a click straight after the call, a click in an outer block, a wait that comes too late, and a wait on
+// the master's page before a click on the player's, and the same through `passTurnsToAndWait`.
 export async function clickRightAfter(m: Page): Promise<void> {
   await combatRPC(m, 'EndTurn');
   await m.getByRole('button').click();
@@ -46,4 +46,11 @@ export async function endsACallback(m: Page): Promise<void> {
     await combatRPC(m, 'EndTurn');
   });
   await m.getByRole('button').click();
+}
+
+// An error: the helper waits on the master's page, and the click is on the player's.
+export async function passTurnsWaitsOnTheOtherPage(m: Page, p: Page): Promise<void> {
+  await combatRPC(m, 'EndTurn');
+  await passTurnsToAndWait(m, 'c', 'Sombra', m);
+  await p.getByRole('button').click();
 }

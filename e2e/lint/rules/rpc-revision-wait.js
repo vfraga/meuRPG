@@ -32,8 +32,10 @@ const ACTIONS = new Set([
   'setInputFiles',
   'clear',
 ]);
+/** An RPC helper that waits on the pages in its last argument. */
+const WAITING_RPC = 'passTurnsToAndWait';
 // A wait, or a load: a page that loads after the call reads the state itself.
-const WAIT_NAMES = new Set(['waitForEncounterRevision', 'openSessionPage', 'openPlayerMap', 'gotoCampaignTab', 'openLive']);
+const WAIT_NAMES = new Set(['waitForEncounterRevision', 'openSessionPage', 'openPlayerMap', 'gotoCampaignTab', 'openLive', WAITING_RPC]);
 // The receivers whose methods are page actions.
 const PLAYWRIGHT_TYPES = new Set(['Locator', 'Page', 'Keyboard', 'Mouse', 'Touchscreen']);
 // A read changes nothing on the server: there is no change for the page to show.
@@ -153,9 +155,12 @@ module.exports = {
       return null;
     };
 
-    /** The pages a wait call waits for: its first argument, a page or an array of pages. @param {any} call */
+    /**
+     * The pages a wait call waits for: its first argument (the last for `passTurnsToAndWait`), a page or an array of pages.
+     * @param {any} call
+     */
     const waitPages = (call) => {
-      const arg = call.arguments[0];
+      const arg = call.callee.name === WAITING_RPC ? call.arguments[3] : call.arguments[0];
       if (!arg) return [null];
       return arg.type === 'ArrayExpression' ? arg.elements.map((/** @type {any} */ e) => pageOf(e)) : [pageOf(arg)];
     };

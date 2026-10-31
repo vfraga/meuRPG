@@ -1,12 +1,11 @@
 import { expect, test } from '@playwright/test';
 
-import { combatRPC, endTurnOf, getEncounterRPC, passTurnsTo, type Encounter } from './combat-support';
+import { combatRPC, endTurnOf, getEncounterRPC, passTurnsTo, passTurnsToAndWait, type Encounter } from './combat-support';
 import { beginCreatureCombat, hitAndApply, sessionRoute, tableForCreatureCombat, tapCaveSquare, trapAt } from './creatures-combat-support';
 import { closeSheet } from './contests-support';
 import { endOpenSessionRPC } from './live-session-support';
 import { callRPC, newSignedInContext, openActionTab } from './support';
 import { openOrderRow } from './combat-layout';
-import { waitForEncounterRevision } from './revision-support';
 
 // MR-037 (a player's creatures in combat and the druid's Wild Shape) and RN-20 (a creature's hit points go only
 // to its owner's player and the master; another player gets the state word). The setup goes through the API; the
@@ -259,7 +258,7 @@ test(
 
       // Next round her action is free again: back through the bonus action, with no notice for what she did herself.
       await endTurnOf(p, m, campaignId, 'Sálvia');
-      await waitForEncounterRevision([m, p], await passTurnsTo(m, campaignId, 'Sálvia'));
+      await passTurnsToAndWait(m, campaignId, 'Sálvia', [m, p]);
       await expect(p.getByRole('heading', { name: 'Sua vez, Sálvia' })).toBeVisible();
       await openActionTab(p, 'Druida');
       await p.getByRole('button', { name: 'Transformar: Forma Selvagem' }).click();

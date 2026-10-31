@@ -220,7 +220,7 @@ export async function tapCaveSquare(page: Page, col: number, row: number): Promi
 }
 
 /** Passes the master's turns until nobody of `labels` acts any more (the NPCs' turns), or the turn reaches `target`. */
-export { passTurnsTo } from './combat-support';
+export { passTurnsTo, passTurnsToAndWait } from './combat-support';
 
 /**
  * The master has Goblin 1 hit `targetLabel` (as a reaction, so it works off its turn) and applies `amount` of damage: the

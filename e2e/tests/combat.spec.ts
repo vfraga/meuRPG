@@ -10,6 +10,7 @@ import {
   endTurnOf,
   getEncounterRPC,
   passTurnsTo,
+  passTurnsToAndWait,
   pensantusCasting,
   ragna,
   ragnaSheet,
@@ -713,8 +714,7 @@ test('caído: o teste contra a morte (sucesso), e com três falhas só o mestre 
     await adjustVitalsRPC(m, campaignId, table.characterId, { hitPointsCurrent: 0 });
     let enc = await getEncounterRPC(m, campaignId);
     enc = await combatRPC(m, 'EndTurn', { campaignId, encounterId: enc.id, expectedCombatantId: enc.currentCombatantId });
-    enc = await passTurnsTo(m, campaignId, 'Pensantus');
-    await waitForEncounterRevision(p, enc);
+    enc = await passTurnsToAndWait(m, campaignId, 'Pensantus', p);
     expect(enc.combatants.find((c) => c.label === 'Pensantus')?.deathSaveDue).toBe(true);
 
     // Round 2: the hero says so, the marks are empty, and he can't end the turn before rolling.
@@ -735,15 +735,13 @@ test('caído: o teste contra a morte (sucesso), e com três falhas só o mestre 
     await expect(await masterLog(m)).toContainText('Pensantus rola o teste contra a morte: 14 · dado físico, sucesso (1 sucesso, 0 falhas)');
 
     // Round 3: a natural 1 counts two failures; round 4: a 5 is the third.
-    enc = await passTurnsTo(m, campaignId, 'Pensantus');
-    await waitForEncounterRevision([m, p], enc);
+    enc = await passTurnsToAndWait(m, campaignId, 'Pensantus', [m, p]);
     await p.getByRole('button', { name: 'Digitar o resultado' }).click();
     await p.getByLabel(/Role 1d20 para o teste contra a morte/).fill('1');
     await p.getByRole('button', { name: 'Confirmar 1' }).click();
     await expect(p.getByText(/Teste contra a morte: 1 · dado físico\. Falha: um 1 conta duas falhas\./)).toBeVisible();
     await endTurnOf(p, m, campaignId, 'Pensantus');
-    enc = await passTurnsTo(m, campaignId, 'Pensantus');
-    await waitForEncounterRevision([m, p], enc);
+    enc = await passTurnsToAndWait(m, campaignId, 'Pensantus', [m, p]);
     await p.getByRole('button', { name: 'Digitar o resultado' }).click();
     await p.getByLabel(/Role 1d20 para o teste contra a morte/).fill('5');
     await p.getByRole('button', { name: 'Confirmar 5' }).click();

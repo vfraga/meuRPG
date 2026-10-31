@@ -1,9 +1,8 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
 
-import { adjustVitalsRPC, beginAttackCombatRPC, combatRPC, getEncounterRPC, passTurnsTo, pensantusCasting, tableForCombat, type CombatTable } from './combat-support';
+import { adjustVitalsRPC, beginAttackCombatRPC, combatRPC, getEncounterRPC, passTurnsTo, passTurnsToAndWait, pensantusCasting, tableForCombat, type CombatTable } from './combat-support';
 import { endOpenSessionRPC, openSessionPage } from './live-session-support';
 import { newSignedInContext } from './support';
-import { waitForEncounterRevision } from './revision-support';
 
 // The master acts for a player's character (MR-053, C8-01 to C8-03): "Agir por Pensantus" on the character's turn, the band and
 // "Voltar ao mestre", the one end-of-turn button named for the character, and the death save that starts a downed character's
@@ -112,8 +111,7 @@ test('o turno de um personagem caído começa pelo teste contra a morte e o mest
     await adjustVitalsRPC(m, campaignId, table.characterId, { hitPointsCurrent: 0 });
     let enc = await getEncounterRPC(m, campaignId);
     enc = await combatRPC(m, 'EndTurn', { campaignId, encounterId: enc.id, expectedCombatantId: enc.currentCombatantId });
-    enc = await passTurnsTo(m, campaignId, 'Pensantus');
-    await waitForEncounterRevision(m, enc);
+    enc = await passTurnsToAndWait(m, campaignId, 'Pensantus', m);
     expect(enc.combatants.find((c) => c.label === 'Pensantus')?.deathSaveDue).toBe(true);
 
     await expect(m.getByRole('heading', { name: 'Pensantus está caído: teste contra a morte' })).toBeVisible();

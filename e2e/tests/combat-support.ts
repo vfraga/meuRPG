@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 
 import { canvasPng, createMapRPC, placeTokenRPC, revealMapRPC, setCurrentMapRPC, tableForMaps, uploadImageRPC, type MapsTable } from './maps-support';
 import { startSessionRPC } from './live-session-support';
+import { waitForEncounterRevision } from './revision-support';
 import { callRPC, characterRpcBody, createCharacterRPC, pensantus, type CharacterBuild } from './support';
 
 // Setup for the combat specs (Etapa 6, MR-013), through the API: these tests
@@ -307,6 +308,17 @@ export async function passTurnsTo(master: Page, campaignId: string, label: strin
     });
   }
   throw new Error(`the turn never reached ${label}`);
+}
+
+/**
+ * `passTurnsTo`, then waits until `pages` show the change: the page the next action uses (both, `[m, p]`, if both act).
+ * `pages` are on the session; a page outside it throws.
+ * Use it whenever a page acts next; `passTurnsTo` alone is for a spec that reads the state over RPC or looks at the moment before the page sees the change.
+ */
+export async function passTurnsToAndWait(master: Page, campaignId: string, label: string, pages: Page | Page[]): Promise<Encounter> {
+  const enc = await passTurnsTo(master, campaignId, label);
+  await waitForEncounterRevision(pages, enc);
+  return enc;
 }
 
 /** Brisa, a human Cleric 3 of the Life domain, who prepares Curar Ferimentos. */

@@ -283,6 +283,8 @@ await m.getByRole('button', { name: 'Próximo turno' }).click();
   A page action is a call on a Playwright `Locator`, `Page`, or the page's keyboard, mouse or touchscreen, so `Set.clear()` is not one.
   A call that ends the body of an awaited callback (`test.step`) is judged with what follows the call.
   `goto`, `reload`, `openSessionPage`, `openPlayerMap`, `gotoCampaignTab` and `openLive` count as a wait, because the page then reads the state itself.
+  `passTurnsToAndWait(master, campaignId, label, pages)` passes the turn and waits on `pages`.
+  Use it when a page acts next; `passTurnsTo` alone is for a spec that reads the state over RPC or checks the moment before the page sees the change.
   Reads (`get*`, `list*`, `read*`) and moves (`MoveCombatant`, `movePensantus`) need none.
   The rule asks for a wait on every page that acts, because it cannot tell which pages show the session.
   It does not see calls that answer with nothing (a scene roll), helpers that click inside, or the next turn of a loop.

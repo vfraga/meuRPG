@@ -40,6 +40,7 @@ test('reports the call a page action follows without a revision wait', async () 
       ['meurpg/rpc-revision-wait', 18],
       ['meurpg/rpc-revision-wait', 24],
       ['meurpg/rpc-revision-wait', 46],
+      ['meurpg/rpc-revision-wait', 53],
     ],
   );
 });
