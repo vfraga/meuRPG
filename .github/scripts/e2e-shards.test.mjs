@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import { groupedTests } from './e2e-list-reporter.mjs';
-import { FRESH_KEY, freshOverhead, split as splitTests, testKey, testsOf, timingsOf } from './e2e-shards.mjs';
+import { FRESH_KEY, freshOverhead, groupProblems, MAX_FRESH_EXTRA_SECONDS, split as splitTests, testKey, testsOf, timingsOf } from './e2e-shards.mjs';
 
 // Invented tests: a file, a title and how long it takes.
 const key = (file, title) => testKey('chrome', file, [title]);
@@ -70,7 +70,12 @@ test('the split does not depend on who computes it', () => {
   const named = (shards) => shards.map((shard) => shard.map((k) => k.at(-1)));
   // Longest first: a, b, c go to shards 1, 2, 3; d joins c (3), e joins b (4), f joins a (5); g weighs the median (3) and comes last, to the first shard of the tie.
   assert.deepEqual(named(split(keys, timings, 3)), [['a', 'f', 'g'], ['b', 'e'], ['c', 'd']]);
+  // Ties go by key: the same split whatever the order the tests are listed in.
   assert.deepEqual(named(split([...keys].reverse(), timings, 3)).map((shard) => [...shard].sort()), [['a', 'f', 'g'], ['b', 'e'], ['c', 'd']]);
+  const tied = ['x', 'y', 'z', 'w'].map((name) => key('t.spec.ts', name));
+  const same = Object.fromEntries(tied.map((k) => [k, 5]));
+  const sortedShards = (list) => split(list, same, 2).map((shard) => [...shard].sort());
+  assert.deepEqual(sortedShards(tied), sortedShards([...tied].reverse()));
 });
 
 test('a serial group lands whole in one shard, as one unit of the summed time', () => {
@@ -106,7 +111,15 @@ test('the fresh shard costs its extra setup seconds times the workers, because d
   assert.equal(freshOverhead([{ fresh: true, seconds: 94, workers: 2 }, ...others]), 130);
   assert.equal(freshOverhead([{ fresh: true, seconds: 94, workers: 4 }, ...others]), 260);
   assert.equal(freshOverhead([{ fresh: true, seconds: 20, workers: 2 }, { fresh: false, seconds: 30, workers: 2 }]), 0);
-  assert.equal(freshOverhead([{ fresh: false, seconds: 30, workers: 2 }]), undefined);
+});
+
+test('a refresh refuses a fresh shard that stalled, and a run without the setup file of the fresh shard or the others', () => {
+  const others = [28, 30, 29].map((seconds) => ({ fresh: false, seconds, workers: 2 }));
+  assert.throws(() => freshOverhead([{ fresh: true, seconds: 29 + MAX_FRESH_EXTRA_SECONDS + 1, workers: 2 }, ...others]), /stalled/);
+  assert.doesNotThrow(() => freshOverhead([{ fresh: true, seconds: 29 + MAX_FRESH_EXTRA_SECONDS, workers: 2 }, ...others]));
+  assert.throws(() => freshOverhead(others), /fresh shard/);
+  assert.throws(() => freshOverhead([{ fresh: true, seconds: 90, workers: 2 }]), /other shards/);
+  assert.throws(() => timingsOf([suite(['a.spec.ts', 'one', 'passed', 1000])]), /fresh shard/);
 });
 
 test('a shard that loses the overhead in wall time ends with the others once the workers are counted', () => {
@@ -143,8 +156,9 @@ test('testsOf names a test by project, file and the titles of its describes', ()
 });
 
 test('timingsOf keeps the longest passed run in seconds and drops the tests that did not pass', () => {
-  const timings = timingsOf([suite(['a.spec.ts', 'one', 'passed', 1234], ['b.spec.ts', 'two', 'failed', 9000]), suite(['a.spec.ts', 'one', 'passed', 2051])]);
-  assert.deepEqual(timings, { '[chrome] › a.spec.ts › one': 2.1 });
+  const setups = [{ fresh: true, seconds: 90, workers: 2 }, { fresh: false, seconds: 60, workers: 2 }];
+  const timings = timingsOf([suite(['a.spec.ts', 'one', 'passed', 1234], ['b.spec.ts', 'two', 'failed', 9000]), suite(['a.spec.ts', 'one', 'passed', 2051]), ...setups]);
+  assert.deepEqual(timings, { '[chrome] › a.spec.ts › one': 2.1, [FRESH_KEY]: 60 });
 });
 
 test('unknown tests weigh the median of the known ones, and 1 second when nothing is known', () => {
@@ -189,4 +203,27 @@ test('the list reporter finds a serial group of a describe or of a whole file, a
   const old = build('parallel', 'parallel');
   delete old.suites[0]._parallelMode;
   assert.throws(() => groupedTests(old), /_parallelMode/);
+});
+
+test('the serial groups: one must exist, none may be cut by the flags or spread over shards', () => {
+  const inGroup = (title) => ({ key: key('s.spec.ts', title), group: 'g' });
+  const whole = [inGroup('one'), inGroup('two'), { key: key('x.spec.ts', 'x'), group: null }];
+  const keys = whole.map((test) => test.key);
+  const seen = new Map(keys.map((k) => [k, [1]]));
+  assert.deepEqual(groupProblems(whole, keys, seen), []);
+  assert.match(groupProblems([{ key: keys[2], group: null }], keys, seen)[0], /no serial group/);
+  // The flags select one of the two tests of the group.
+  assert.match(groupProblems(whole, [keys[0], keys[2]], seen)[0], /cut in two \(1 of 2/);
+  // None selected is fine: the group belongs to the other partition.
+  assert.deepEqual(groupProblems(whole, [keys[2]], seen), []);
+  assert.match(groupProblems(whole, keys, new Map([[keys[0], [1]], [keys[1], [2]]]))[0], /in shards \[1, 2\]/);
+});
+
+test('the split of a serial group does not depend on the order its tests are listed in either', () => {
+  const group = ['b', 'y'].map((title) => ({ key: key('g.spec.ts', title), group: 'g' }));
+  const solo = ['c', 'd', 'e'].map((title) => ({ key: key('s.spec.ts', title) }));
+  const timings = { ...Object.fromEntries(group.map((test) => [test.key, 5])), ...Object.fromEntries(solo.map((test) => [test.key, 10])) };
+  const sorted = (tests) => split(tests, timings, 2).map((shard) => [...shard].sort());
+  assert.deepEqual(sorted([...group, ...solo]), sorted([...group].reverse().concat(solo)));
+  assert.deepEqual(sorted([...group, ...solo]), sorted([...solo].reverse().concat(group)));
 });

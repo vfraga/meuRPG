@@ -24,7 +24,7 @@ on:
       - ".github/scripts/e2e-no-retries.sh"
       - ".github/scripts/e2e-shards.mjs"
       - ".github/scripts/e2e-list-reporter.mjs"
-      - ".github/scripts/flake.mjs"
+      - ".github/scripts/playwright-report.mjs"
       - ".github/actions/build-e2e-images/**"
       - ".github/actions/start-e2e-stack/**"
       - ".node-version"
@@ -93,7 +93,7 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|proto/|web/|e2e/|deploy/local/|\.dockerignore$|Makefile$|\.github/workflows/e2e\.yml$|\.github/scripts/(e2e-no-retries\.sh|e2e-shards\.mjs|e2e-list-reporter\.mjs|flake\.mjs)$|\.github/actions/(build-e2e-images|start-e2e-stack)/|\.node-version$)'
+          pattern: '^(backend/|proto/|web/|e2e/|deploy/local/|\.dockerignore$|Makefile$|\.github/workflows/e2e\.yml$|\.github/scripts/(e2e-no-retries\.sh|e2e-shards\.mjs|e2e-list-reporter\.mjs|playwright-report\.mjs)$|\.github/actions/(build-e2e-images|start-e2e-stack)/|\.node-version$)'
           ignore-md: "true"
 
       - name: Are the accessibility shards selected
@@ -101,7 +101,7 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(web/|e2e/|deploy/local/|\.github/workflows/e2e\.yml$|\.github/scripts/e2e-(shards|list-reporter)\.mjs$|\.node-version$)'
+          pattern: '^(web/|e2e/|deploy/local/|\.github/workflows/e2e\.yml$|\.github/scripts/(e2e-shards|e2e-list-reporter|playwright-report)\.mjs$|\.node-version$)'
 
       - name: Choose the shards
         id: plan
@@ -109,7 +109,7 @@ jobs:
           A11Y: ${{ steps.all.outputs.a11y || steps.a11y.outputs.selected }}
         run: |
           matrix=$(jq -nc --argjson a11y "$A11Y" --argjson plain "$PLAIN_SHARDS" --argjson slow "$A11Y_SHARDS" --argjson freshShard "$FRESH_SHARD" '
-            [range(1; $plain + 1) | {part: "\(.)/\($plain)", grep: "--grep-invert @a11y", shard: "\(.)/\($plain)", fresh: (. == $freshShard), fresh_shard: $freshShard}]
+            [range(1; $plain + 1) | {part: "\(.)/\($plain)", grep: "--grep-invert @a11y", shard: "\(.)/\($plain)", fresh: (. == $freshShard), split_fresh: true}]
             + (if $a11y then [range(1; $slow + 1) | {part: "a11y \(.)/\($slow)", grep: "--grep @a11y", shard: "\(.)/\($slow)"}] else [] end)
             | {include: .}')
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
@@ -335,7 +335,7 @@ jobs:
         env:
           GREP: ${{ matrix.grep }}
           SHARD: ${{ matrix.shard }}
-          FRESH_FLAG: ${{ matrix.fresh_shard && format('--fresh-shard={0}', matrix.fresh_shard) || '' }}
+          FRESH_FLAG: ${{ matrix.split_fresh && format('--fresh-shard={0}', env.FRESH_SHARD) || '' }}
           FRESH: ${{ matrix.fresh || false }}
           STARTED: ${{ steps.setup.outputs.started }}
         run: |

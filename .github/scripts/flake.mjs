@@ -16,6 +16,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { eachTest } from './playwright-report.mjs';
+
 const ANSI = /\u001b\[[0-9;]*[A-Za-z]/g;
 
 /** The first error line of a failure, normalized. */
@@ -41,18 +43,6 @@ export function parsePlaywrightText(text) {
   } catch {
     return { passed: 0, failed: 1, failures: [{ test: '(the run)', signature: 'the Playwright report is not valid JSON' }] };
   }
-}
-
-/**
- * Calls `visit(test, spec, titles)` for every test of a Playwright JSON report, in file order. `titles` are the
- * describes that hold the spec, the file's own suite left out. Every reader of the report walks it through here.
- */
-export function eachTest(report, visit) {
-  const walk = (suite, titles) => {
-    for (const spec of suite.specs ?? []) for (const t of spec.tests ?? []) visit(t, spec, titles);
-    for (const child of suite.suites ?? []) walk(child, [...titles, child.title]);
-  };
-  for (const file of report.suites ?? []) walk(file, []);
 }
 
 /** Playwright's JSON report: one entry per repetition of the `chrome` project (the sign-in setup is not a test). */

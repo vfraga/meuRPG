@@ -17,7 +17,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
-import { eachTest } from './flake.mjs';
+import { eachTest } from './playwright-report.mjs';
 
 const run = promisify(execFile);
 
@@ -57,7 +57,7 @@ export function split(tests, timings, count, startup = []) {
   const units = new Map();
   for (const test of tests.filter((test) => !isSetup(test))) {
     const id = test.group ?? test.key;
-    const unit = units.get(id) ?? { keys: [], seconds: 0, known: true };
+    const unit = units.get(id) ?? { id, keys: [], seconds: 0, known: true };
     unit.keys.push(test.key);
     unit.seconds += timings[test.key] ?? guess;
     unit.known &&= test.key in timings;
@@ -71,10 +71,11 @@ export function split(tests, timings, count, startup = []) {
     load[least] += unit.seconds;
     for (const key of unit.keys) shardOf.set(key, least);
   };
-  // The sort is stable and the ties keep the order of `tests`, so every shard computes the same split.
+  // Ties go by key, so the split does not depend on the order the tests are listed in.
+  const byKey = (a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   const all = [...units.values()];
-  for (const unit of all.filter((unit) => unit.known).sort((a, b) => b.seconds - a.seconds)) place(unit);
-  for (const unit of all.filter((unit) => !unit.known)) place(unit);
+  for (const unit of all.filter((unit) => unit.known).sort((a, b) => b.seconds - a.seconds || byKey(a, b))) place(unit);
+  for (const unit of all.filter((unit) => !unit.known).sort(byKey)) place(unit);
   for (const test of tests.filter(isSetup)) shardOf.set(test.key, 0);
   const shards = Array.from({ length: count }, () => []);
   for (const test of tests) shards[shardOf.get(test.key)].push(test.key);
@@ -84,16 +85,25 @@ export function split(tests, timings, count, startup = []) {
 // What the fresh shard's setup costs beyond the others', in the unit of the test durations: those are summed over a
 // shard's workers, and the setup is wall-clock time in which every worker would have run tests, so the extra seconds
 // are multiplied by the workers. The files are {fresh, seconds, workers} of every shard of a run.
+//
+// One sample decides, so a fresh shard that stalled (a slow `docker load`, a stuck migration) must not decide: more
+// than MAX_FRESH_EXTRA_SECONDS beyond the others is refused, and so is a run with no setup file of the fresh shard
+// (its shard was red) or of any other shard.
+export const MAX_FRESH_EXTRA_SECONDS = 180;
+
 export function freshOverhead(setups) {
   const fresh = setups.filter((setup) => setup.fresh);
   const others = setups.filter((setup) => !setup.fresh).map((setup) => setup.seconds);
-  if (fresh.length === 0 || others.length === 0) return undefined;
+  if (fresh.length === 0) throw new Error('no e2e-setup.json of the fresh shard: it did not pass in this run, so its extra setup time is unknown. Use a run where all nine shards passed.');
+  if (others.length === 0) throw new Error('no e2e-setup.json of the other shards: the extra setup time of the fresh shard has nothing to compare with.');
   const slowest = fresh.reduce((a, b) => (b.seconds > a.seconds ? b : a));
-  return Math.max(0, Math.round((slowest.seconds - median(others)) * (slowest.workers ?? 1)));
+  const extra = slowest.seconds - median(others);
+  if (extra > MAX_FRESH_EXTRA_SECONDS) throw new Error(`the fresh shard's setup took ${Math.round(extra)} s more than the others', over ${MAX_FRESH_EXTRA_SECONDS} s: it probably stalled. Use another run.`);
+  return Math.max(0, Math.round(extra * (slowest.workers ?? 1)));
 }
 
 // Durations in seconds of the passed tests of Playwright JSON reports; a test that several reports hold keeps its longest.
-// The entry of the fresh shard comes from the {fresh, seconds} files, when there are any.
+// The entry of the fresh shard comes from the {fresh, seconds, workers} files, which freshOverhead requires.
 export function timingsOf(files) {
   const reports = files.filter((file) => 'suites' in file);
   const seconds = {};
@@ -105,9 +115,26 @@ export function timingsOf(files) {
       seconds[key] = Math.max(seconds[key] ?? 0, Math.round(longest * 10) / 10);
     }
   }
-  const overhead = freshOverhead(files.filter((file) => 'seconds' in file));
-  if (overhead !== undefined) seconds[FRESH_KEY] = overhead;
+  seconds[FRESH_KEY] = freshOverhead(files.filter((file) => 'seconds' in file));
   return Object.fromEntries(Object.entries(seconds).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+}
+
+// What is wrong with the serial groups: `whole` are the tests of the whole suite, `keys` the ones the flags select and
+// `seen` the shards (by index) each selected key is listed in. A group must be in the suite, must be inside or outside
+// the flags as a whole (a tag on one of its tests would cut it between the plain and the @a11y shards), and must be in
+// one shard.
+export function groupProblems(whole, keys, seen) {
+  const groups = new Map();
+  for (const { key, group } of whole) if (group) groups.set(group, [...(groups.get(group) ?? []), key]);
+  const problems = [];
+  if (groups.size === 0) problems.push('no serial group found: the reporter no longer sees them (a Playwright that marks serial groups differently?), or the last one was removed and this check with it');
+  for (const [group, members] of groups) {
+    const selected = members.filter((key) => keys.includes(key)).length;
+    if (selected !== 0 && selected !== members.length) problems.push(`${group}: a serial group that the flags cut in two (${selected} of ${members.length} tests selected)`);
+    const inShards = new Set(members.flatMap((key) => seen.get(key) ?? []));
+    if (inShards.size > 1) problems.push(`${group}: a serial group in shards [${[...inShards].join(', ')}]`);
+  }
+  return problems;
 }
 
 const e2eDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'e2e');
@@ -115,13 +142,19 @@ const reporter = join(dirname(fileURLToPath(import.meta.url)), 'e2e-list-reporte
 
 // The tests `playwright test --list` selects, as {key, group}, and the workers a run would use.
 async function listTests(args, extra = []) {
+  let output;
   try {
-    const { stdout } = await run('npx', ['playwright', 'test', '--list', `--reporter=${reporter}`, ...args, ...extra], { cwd: e2eDir, env: process.env, encoding: 'utf8', maxBuffer: 1 << 28 });
-    const listed = JSON.parse(stdout);
-    return { workers: listed.workers, tests: listed.tests.map((test) => ({ key: testKey(test.project, test.file, test.titles), group: test.group })) };
+    output = await run('npx', ['playwright', 'test', '--list', `--reporter=${reporter}`, ...args, ...extra], { cwd: e2eDir, env: process.env, encoding: 'utf8', maxBuffer: 1 << 28 });
   } catch (error) {
     throw new Error(`playwright --list failed (${error.code ?? error.name}):\n${error.stderr ?? error.message}`);
   }
+  let listed;
+  try {
+    listed = JSON.parse(output.stdout);
+  } catch {
+    throw new Error(`playwright --list printed no JSON.\nstdout: ${output.stdout.slice(0, 500)}\nstderr: ${output.stderr.slice(-500)}`);
+  }
+  return { workers: listed.workers, tests: listed.tests.map((test) => ({ key: testKey(test.project, test.file, test.titles), group: test.group })) };
 }
 
 function readTimings() {
@@ -170,37 +203,41 @@ async function main(argv) {
     const { keys, tests, args, shards } = await shardsOf(rest.slice(1), count);
     // Playwright, not this script, decides what a list selects, so each list is read back through `--test-list`.
     // Without --no-deps every shard would list the setup project, which runs ahead of all of them.
+    // The groups of the whole suite are listed once more without the flags: a group must not cross them.
     const dir = mkdtempSync(join(tmpdir(), 'e2e-shards-'));
-    let readBack;
+    let settled;
     try {
-      readBack = await Promise.all(
-        shards.map((shard, i) => {
+      settled = await Promise.allSettled([
+        listTests([]),
+        ...shards.map(async (shard, i) => {
           const file = join(dir, `${i + 1}.txt`);
           writeFileSync(file, shard.join('\n') + '\n');
-          return listTests(args, ['--no-deps', '--test-list', file]).then((listed) => listed.tests);
+          return (await listTests(args, ['--no-deps', '--test-list', file])).tests;
         }),
-      );
+      ]);
     } finally {
+      // Every child has ended by now: the folder goes only after all of them.
       rmSync(dir, { recursive: true });
     }
+    const failed = settled.find((result) => result.status === 'rejected');
+    if (failed) throw failed.reason;
+    const [{ value: whole }, ...readBack] = settled;
     const seen = new Map();
-    readBack.forEach((tests, i) => {
+    readBack.forEach(({ value: tests }, i) => {
       for (const { key } of tests) if (!key.startsWith('[setup]')) seen.set(key, [...(seen.get(key) ?? []), i + 1]);
       // The setup project is never listed back: it runs ahead of every shard whatever the list says.
       for (const key of shards[i]) if (key.startsWith('[setup]')) seen.set(key, [...(seen.get(key) ?? []), i + 1]);
     });
     const problems = keys.filter((key) => (seen.get(key) ?? []).length !== 1).map((key) => `${key}: in shards [${(seen.get(key) ?? []).join(', ')}]`);
-    // A serial group runs whole in one shard.
-    const groups = new Map();
-    for (const { key, group } of tests) if (group) groups.set(group, new Set([...(groups.get(group) ?? []), ...(seen.get(key) ?? [])]));
-    for (const [group, inShards] of groups) if (inShards.size > 1) problems.push(`${group}: a serial group in shards [${[...inShards].join(', ')}]`);
+    const groups = new Set(whole.tests.map((test) => test.group).filter(Boolean));
+    problems.push(...groupProblems(whole.tests, keys, seen));
     const unknown = [...seen.keys()].filter((key) => !keys.includes(key));
     if (problems.length > 0 || unknown.length > 0) {
-      console.error(`::error::The ${count} lists do not hold every test exactly once.`);
+      console.error(`::error::The ${count} lists do not hold every test exactly once, or split a serial group.`);
       for (const line of [...problems, ...unknown.map((key) => `${key}: not a listed test`)]) console.error(line);
       process.exit(1);
     }
-    console.log(`${keys.length} tests, each in exactly one of ${count} lists.`);
+    console.log(`${keys.length} tests, each in exactly one of ${count} lists; ${groups.size} serial group(s), each whole.`);
   } else if (command === 'setup') {
     // The file a shard uploads next to its timing: how long its setup took (started is the epoch second it began).
     const seconds = Math.round(Date.now() / 1000) - Number(rest[1]);
