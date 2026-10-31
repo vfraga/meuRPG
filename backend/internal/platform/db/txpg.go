@@ -38,16 +38,7 @@ func runAttempt(tx pgx.Tx, fn func(pgx.Tx) error) error { return fn(tx) }
 func inTxLoop(ctx context.Context, conn TxStarter, opts pgx.TxOptions, policy crdb.RetryPolicy, fn func(pgx.Tx) error) error {
 	retry := policy.NewRetry()
 	for {
-		tx, err := conn.BeginTx(ctx, opts)
-		if err != nil {
-			return err
-		}
-		err = runAttempt(tx, fn)
-		if err == nil {
-			err = tx.Commit(ctx)
-		} else {
-			_ = tx.Rollback(ctx)
-		}
+		err := attempt(ctx, conn, opts, fn)
 		if err == nil || !retryable(err) {
 			return err
 		}
@@ -61,4 +52,27 @@ func inTxLoop(ctx context.Context, conn TxStarter, opts pgx.TxOptions, policy cr
 			return ctx.Err()
 		}
 	}
+}
+
+// attempt runs fn once in a transaction of its own. A panic, or a test's
+// t.Fatal (runtime.Goexit), in fn still rolls the transaction back, so the
+// connection goes back to the pool.
+func attempt(ctx context.Context, conn TxStarter, opts pgx.TxOptions, fn func(pgx.Tx) error) (err error) {
+	tx, err := conn.BeginTx(ctx, opts)
+	if err != nil {
+		return err
+	}
+	finished := false
+	defer func() {
+		if !finished {
+			_ = tx.Rollback(context.WithoutCancel(ctx))
+		}
+	}()
+	if err = runAttempt(tx, fn); err != nil {
+		finished = true
+		_ = tx.Rollback(ctx)
+		return err
+	}
+	finished = true
+	return tx.Commit(ctx)
 }

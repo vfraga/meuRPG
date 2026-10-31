@@ -317,35 +317,31 @@ jobs:
         # this fails if a package named in a group was renamed or deleted.
         run: ../.github/scripts/go-db-shard.sh --check
 
-      - name: Start CockroachDB (single node, insecure, in memory, CI only)
-        # Not a service container: those cannot pass arguments to the image,
-        # and CockroachDB needs `start-single-node`. Published on 127.0.0.1
-        # only. The store lives in memory (the data is thrown away with the
-        # runner anyway): schema changes, which the test databases are full
-        # of, take a quarter of the time they take on disk. Background work
-        # that only matters for a long-lived database (automatic statistics,
-        # merging empty ranges, keeping finished jobs) is turned off, and a
-        # dropped database gives its memory back after 10 minutes instead of
-        # the default 4 hours.
+      - name: Start PostgreSQL 17 (EXPERIMENT exp/postgres-tests, CI only)
+        # The experiment replaces CockroachDB in this job and changes nothing
+        # else. Transactions are SERIALIZABLE by default, as on CockroachDB,
+        # and fsync and the write-ahead extras are off: the data is thrown
+        # away with the runner, as the in-memory store of the CockroachDB it
+        # replaces. The image is Docker's official one, from AWS's public
+        # mirror (Docker Hub's anonymous pull limit); it is pinned by tag
+        # only, the experiment never merges.
         run: |
-          docker run --detach --name cockroach --publish 127.0.0.1:26257:26257 \
-            "$COCKROACH_IMAGE" start-single-node --insecure \
-            --store=type=mem,size=4GiB --cache=512MiB --max-sql-memory=2GiB
+          docker run --detach --name postgres --publish 127.0.0.1:5432:5432 \
+            --env POSTGRES_USER=root --env POSTGRES_DB=defaultdb \
+            --env POSTGRES_HOST_AUTH_METHOD=trust \
+            public.ecr.aws/docker/library/postgres:17 postgres \
+            -c default_transaction_isolation=serializable \
+            -c fsync=off -c synchronous_commit=off -c full_page_writes=off \
+            -c max_connections=500 -c shared_buffers=512MB
           for _ in $(seq 1 60); do
-            if docker exec cockroach cockroach sql --insecure --host=localhost:26257 -e 'SELECT 1' >/dev/null 2>&1; then
-              docker exec cockroach cockroach sql --insecure --host=localhost:26257 \
-                -e "SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false" \
-                -e "SET CLUSTER SETTING kv.range_merge.queue.enabled = false" \
-                -e "SET CLUSTER SETTING jobs.retention_time = '15s'" \
-                -e "SET CLUSTER SETTING diagnostics.reporting.enabled = false" \
-                -e "ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 600"
-              echo "CockroachDB is ready."
+            if docker exec postgres pg_isready --username=root --dbname=defaultdb >/dev/null 2>&1; then
+              echo "PostgreSQL is ready."
               exit 0
             fi
             sleep 2
           done
-          echo "::error::CockroachDB was not ready after 120 seconds." >&2
-          docker logs cockroach >&2
+          echo "::error::PostgreSQL was not ready after 120 seconds." >&2
+          docker logs postgres >&2
           exit 1
 
       - name: go test -race (this group, with the database)
@@ -359,7 +355,7 @@ jobs:
         # MEURPG_REQUIRE_DB=1: a missing URL fails the tests instead of
         # skipping them (about a thousand would skip and the job stay green).
         env:
-          MEURPG_TEST_DATABASE_URL: postgresql://root@localhost:26257/defaultdb?sslmode=disable
+          MEURPG_TEST_DATABASE_URL: postgresql://root@localhost:5432/defaultdb?sslmode=disable
           MEURPG_REQUIRE_DB: "1"
           GROUP: ${{ matrix.group }}
         run: |
