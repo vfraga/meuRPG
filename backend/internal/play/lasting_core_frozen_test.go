@@ -30,7 +30,7 @@ import (
 // other id by <uuid>, so that the text is the same in every run.
 func (a *armed) coreNames(t *testing.T, text string) string {
 	t.Helper()
-	rows, err := a.h.pool.Query(t.Context(), `SELECT id::STRING, label FROM combatants`)
+	rows, err := a.h.pool.Query(t.Context(), `SELECT id::TEXT, label FROM combatants`)
 	if err != nil {
 		t.Fatalf("read the labels: %v", err)
 	}
@@ -64,9 +64,9 @@ func (a *armed) coreNames(t *testing.T, text string) string {
 // effects and the exhaustion touch (only the labels named, when there are some).
 func (a *armed) coreCombatants(t *testing.T, encounterID string, only ...string) string {
 	t.Helper()
-	rows, err := a.h.pool.Query(t.Context(), `SELECT label, COALESCE(hp_current::STRING, '-'), COALESCE(hp_max::STRING, '-'), COALESCE(hp_max_base::STRING, '-'),
-			COALESCE(hp_temp::STRING, '-'), defeated, exhaustion_level, death_failures, array_to_string(conditions, ','), array_to_string(effect_conditions, ','),
-			effect_ac_bonus, effect_speed_pct, effect_speed_add_ft, effect_no_action, effect_no_reaction, effect_no_move, COALESCE(mage_armor_ac::STRING, '-'),
+	rows, err := a.h.pool.Query(t.Context(), `SELECT label, COALESCE(hp_current::TEXT, '-'), COALESCE(hp_max::TEXT, '-'), COALESCE(hp_max_base::TEXT, '-'),
+			COALESCE(hp_temp::TEXT, '-'), defeated, exhaustion_level, death_failures, array_to_string(conditions, ','), array_to_string(effect_conditions, ','),
+			effect_ac_bonus, effect_speed_pct, effect_speed_add_ft, effect_no_action, effect_no_reaction, effect_no_move, COALESCE(mage_armor_ac::TEXT, '-'),
 			COALESCE(concentration_spell, '-'), turn_state
 		FROM combatants WHERE encounter_id = $1 ORDER BY label`, encounterID)
 	if err != nil {
@@ -97,9 +97,9 @@ func (a *armed) coreCombatants(t *testing.T, encounterID string, only ...string)
 func (a *armed) coreEffects(t *testing.T, encounterID string) string {
 	t.Helper()
 	rows, err := a.h.pool.Query(t.Context(), `SELECT c.label, s.source_key, COALESCE(s.source_kind, '-'), s.concentration, COALESCE(s.duration_kind, '-'),
-			COALESCE(s.ends_round::STRING, '-'), COALESCE(e.label, '-'), COALESCE(s.ends_phase, '-'), s.spent_at IS NOT NULL, s.triggers_fired,
-			COALESCE(s.follows_key, '-'), COALESCE(src.label, '-'), s.player_visible, s.audience, COALESCE(s.player_label, '-'), COALESCE(s.save_dc::STRING, '-'),
-			array_to_string(s.condition_keys, ','), s.modifiers::STRING, s.started_round
+			COALESCE(s.ends_round::TEXT, '-'), COALESCE(e.label, '-'), COALESCE(s.ends_phase, '-'), s.spent_at IS NOT NULL, s.triggers_fired,
+			COALESCE(s.follows_key, '-'), COALESCE(src.label, '-'), s.player_visible, s.audience, COALESCE(s.player_label, '-'), COALESCE(s.save_dc::TEXT, '-'),
+			array_to_string(s.condition_keys, ','), s.modifiers::TEXT, s.started_round
 		FROM combatant_states s JOIN combatants c ON c.id = s.combatant_id
 		LEFT JOIN combatants e ON e.id = s.ends_combatant_id LEFT JOIN combatants src ON src.id = s.source_id
 		WHERE s.encounter_id = $1 AND s.kind = 'effect' ORDER BY c.label, s.source_key, s.created_at, s.id`, encounterID)
@@ -127,7 +127,7 @@ func (a *armed) coreEffects(t *testing.T, encounterID string) string {
 // coreEvents prints the events of the open session of the kinds, oldest first.
 func (a *armed) coreEvents(t *testing.T, kinds ...string) string {
 	t.Helper()
-	rows, err := a.h.pool.Query(t.Context(), `SELECT kind, payload::STRING FROM session_events WHERE kind = ANY($1) ORDER BY seq`, kinds)
+	rows, err := a.h.pool.Query(t.Context(), `SELECT kind, payload::TEXT FROM session_events WHERE kind = ANY($1) ORDER BY seq`, kinds)
 	if err != nil {
 		t.Fatalf("read the events: %v", err)
 	}
@@ -270,8 +270,8 @@ func (a *armed) coreInTx(t *testing.T, encounterID string, fn func(ctx context.C
 // coreCharacterEffects prints the rows of character_effects of a character, the effects out of a combat.
 func (a *armed) coreCharacterEffects(t *testing.T, characterID string) string {
 	t.Helper()
-	rows, err := a.h.pool.Query(t.Context(), `SELECT source_key, source_kind, duration_kind, COALESCE(seconds_left::STRING, '-'), modifiers::STRING, array_to_string(condition_keys, ','), player_visible
-		FROM character_effects WHERE character_id = $1 ORDER BY source_key, modifiers::STRING, id`, characterID)
+	rows, err := a.h.pool.Query(t.Context(), `SELECT source_key, source_kind, duration_kind, COALESCE(seconds_left::TEXT, '-'), modifiers::TEXT, array_to_string(condition_keys, ','), player_visible
+		FROM character_effects WHERE character_id = $1 ORDER BY source_key, modifiers::TEXT, id`, characterID)
 	if err != nil {
 		t.Fatalf("read the character's effects: %v", err)
 	}

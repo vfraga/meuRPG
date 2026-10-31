@@ -77,10 +77,10 @@ func (a *armed) partyNames(t *testing.T, e *playv1.Encounter) map[string]string 
 func (a *armed) characterEffectRows(t *testing.T) []string {
 	t.Helper()
 	rows, err := a.h.pool.Query(t.Context(), `
-		SELECT jsonb_strip_nulls(to_jsonb(x))::STRING FROM (
+		SELECT jsonb_strip_nulls(to_jsonb(x))::TEXT FROM (
 			SELECT character_id, source_key, source_kind, condition_keys, duration_kind, seconds_left, player_visible, audience, player_label,
 				end_save_ability, start_save_ability, on_fail_effect,
-				(SELECT string_agg(m->>'kind' || coalesce(':' || (m->>'value'), '') || coalesce((m->'abilities')::STRING, ''), ',') FROM jsonb_array_elements(modifiers) m) AS mods
+				(SELECT string_agg(m->>'kind' || coalesce(':' || (m->>'value'), '') || coalesce((m->'abilities')::TEXT, ''), ',') FROM jsonb_array_elements(modifiers) m) AS mods
 			FROM character_effects WHERE campaign_id = $1 ORDER BY source_key, character_id
 		) x`, a.campaignID)
 	if err != nil {
@@ -108,12 +108,12 @@ func (a *armed) characterEffectRows(t *testing.T) []string {
 func (a *armed) combatEffectRows(t *testing.T, e *playv1.Encounter) []string {
 	t.Helper()
 	rows, err := a.h.pool.Query(t.Context(), `
-		SELECT jsonb_strip_nulls(to_jsonb(x))::STRING FROM (
+		SELECT jsonb_strip_nulls(to_jsonb(x))::TEXT FROM (
 			SELECT c.label AS target, s.source_key, s.source_kind, s.condition_keys, s.duration_kind, s.started_round, s.ends_round,
 				(SELECT label FROM combatants WHERE id = s.ends_combatant_id) AS ends_on, s.ends_phase,
 				(SELECT label FROM combatants WHERE id = s.source_id) AS caster, s.concentration, s.player_visible, s.audience, s.player_label,
 				s.save_dc, s.end_save_ability, s.start_save_ability, s.on_fail_effect, s.follows_key,
-				(SELECT string_agg(m->>'kind' || coalesce(':' || (m->>'value'), '') || coalesce((m->'abilities')::STRING, ''), ',') FROM jsonb_array_elements(s.modifiers) m) AS mods
+				(SELECT string_agg(m->>'kind' || coalesce(':' || (m->>'value'), '') || coalesce((m->'abilities')::TEXT, ''), ',') FROM jsonb_array_elements(s.modifiers) m) AS mods
 			FROM combatant_states s JOIN combatants c ON c.id = s.combatant_id
 			WHERE s.encounter_id = $1 AND s.kind = 'effect'
 		) x ORDER BY x.target, x.source_key`, e.GetId())
@@ -159,8 +159,8 @@ func (a *armed) concentrations(t *testing.T, e *playv1.Encounter) string {
 func (a *armed) effectEvents(t *testing.T, e *playv1.Encounter) []string {
 	t.Helper()
 	rows, err := a.h.pool.Query(t.Context(), `
-		SELECT payload::STRING || ' key=' || (idempotency_key IS NOT NULL)::STRING || ' hash=' || (idempotency_hash IS NOT NULL)::STRING
-			|| ' enc=' || (encounter_id IS NOT NULL)::STRING || ' char=' || (character_id IS NOT NULL)::STRING || ' actor=' || (actor_user_id IS NOT NULL)::STRING
+		SELECT payload::TEXT || ' key=' || (idempotency_key IS NOT NULL)::TEXT || ' hash=' || (idempotency_hash IS NOT NULL)::TEXT
+			|| ' enc=' || (encounter_id IS NOT NULL)::TEXT || ' char=' || (character_id IS NOT NULL)::TEXT || ' actor=' || (actor_user_id IS NOT NULL)::TEXT
 		FROM session_events WHERE kind = 'lasting_effect_added' AND game_session_id IN (SELECT id FROM game_sessions WHERE campaign_id = $1) ORDER BY seq`, a.campaignID)
 	if err != nil {
 		t.Fatalf("read the events: %v", err)
@@ -257,8 +257,8 @@ func (a *armed) advanceGameTimeKeyed(t *testing.T, key string, seconds int32) {
 func (a *armed) encounterEvents(t *testing.T, e *playv1.Encounter) []string {
 	t.Helper()
 	rows, err := a.h.pool.Query(t.Context(), `
-		SELECT kind || ' ' || payload::STRING || ' key=' || (idempotency_key IS NOT NULL)::STRING || ' enc=' || (encounter_id IS NOT NULL)::STRING
-			|| ' char=' || (character_id IS NOT NULL)::STRING
+		SELECT kind || ' ' || payload::TEXT || ' key=' || (idempotency_key IS NOT NULL)::TEXT || ' enc=' || (encounter_id IS NOT NULL)::TEXT
+			|| ' char=' || (character_id IS NOT NULL)::TEXT
 		FROM session_events WHERE kind IN ('lasting_effect_added', 'conditions_set') AND game_session_id IN (SELECT id FROM game_sessions WHERE campaign_id = $1) ORDER BY seq`, a.campaignID)
 	if err != nil {
 		t.Fatalf("read the events: %v", err)

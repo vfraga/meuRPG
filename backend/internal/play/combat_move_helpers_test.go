@@ -73,7 +73,7 @@ var offerIDs = regexp.MustCompile(`"move_id": "[0-9a-f-]{36}"`)
 func (a *armed) lastMovePayload(t *testing.T, kind string) string {
 	t.Helper()
 	var payload string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::STRING FROM session_events WHERE kind = $1 ORDER BY seq DESC LIMIT 1`, kind).Scan(&payload); err != nil {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::TEXT FROM session_events WHERE kind = $1 ORDER BY seq DESC LIMIT 1`, kind).Scan(&payload); err != nil {
 		t.Fatalf("read the newest %s event: %v", kind, err)
 	}
 	for _, c := range a.get(t, a.master).GetCombatants() {

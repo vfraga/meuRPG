@@ -7,7 +7,7 @@
 -- equal by TestEveryEventKindOfTheCodeIsInTheTable. The kinds are reference data,
 -- not game data: nothing deletes them, and the test databases keep them.
 CREATE TABLE IF NOT EXISTS session_event_kinds (
-    kind STRING NOT NULL PRIMARY KEY
+    kind TEXT NOT NULL PRIMARY KEY
 );
 
 INSERT INTO session_event_kinds (kind) VALUES

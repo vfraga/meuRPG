@@ -274,7 +274,7 @@ func TestMR037_TheRitualFamiliarSpendsNoSlotAndANewOneReplacesTheOld(t *testing.
 		t.Errorf("creature_summoned events = %d, want 2", n)
 	}
 	var payload string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::STRING FROM session_events WHERE kind = 'creature_summoned' ORDER BY seq LIMIT 1`).Scan(&payload); err != nil {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::TEXT FROM session_events WHERE kind = 'creature_summoned' ORDER BY seq LIMIT 1`).Scan(&payload); err != nil {
 		t.Fatalf("read the event: %v", err)
 	}
 	if strings.Contains(payload, "Nanquim") || !strings.Contains(payload, "monster:owl") {

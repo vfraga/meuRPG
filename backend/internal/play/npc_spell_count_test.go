@@ -33,7 +33,7 @@ func TestSpentOfReadsWhatAnNPCFightSpent(t *testing.T) {
 func (a *armed) usedOf(t *testing.T, label string) string {
 	t.Helper()
 	var used string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT slots_used::STRING FROM combatants WHERE id = $1`, a.id(t, label)).Scan(&used); err != nil {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT slots_used::TEXT FROM combatants WHERE id = $1`, a.id(t, label)).Scan(&used); err != nil {
 		t.Fatalf("slots_used of %s: %v", label, err)
 	}
 	return used

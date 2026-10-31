@@ -129,7 +129,7 @@ func TestSeededTablesAreTheOnesTheMigrationsFill(t *testing.T) {
 		t.Fatalf("create the scratch database: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = scratch.ExecContext(context.WithoutCancel(ctx), "DROP DATABASE IF EXISTS "+name+" CASCADE")
+		_, _ = scratch.ExecContext(context.WithoutCancel(ctx), dropSQL(name))
 	})
 	dsn, err := withDatabase(rawURL, name)
 	if err != nil {

@@ -33,7 +33,7 @@ func TestMigrationsUpDownUp(t *testing.T) {
 	db := freshDatabase(t)
 	ctx := t.Context()
 
-	provider, err := NewProvider(db)
+	provider, err := testProvider(t, db)
 	if err != nil {
 		t.Fatalf("NewProvider() error = %v", err)
 	}
@@ -88,7 +88,7 @@ func freshDatabase(t *testing.T) *sql.DB {
 	// unique in the process, as dbtest does.
 	name := fmt.Sprintf("meurpg_migrations_test_%d_%d", time.Now().UnixNano(), freshCounter.Add(1))
 	exec(t, admin, "CREATE DATABASE "+name)
-	t.Cleanup(func() { exec(t, admin, "DROP DATABASE IF EXISTS "+name+" CASCADE") })
+	t.Cleanup(func() { exec(t, admin, dropSQL(t, admin, name)) })
 
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -154,7 +154,7 @@ func TestMigrationsAreSafeToRerun(t *testing.T) {
 	db := freshDatabase(t)
 	ctx := t.Context()
 
-	provider, err := NewProvider(db)
+	provider, err := testProvider(t, db)
 	if err != nil {
 		t.Fatalf("NewProvider() error = %v", err)
 	}
@@ -196,7 +196,7 @@ func TestMigrationsDownWorksOnTheatreRows(t *testing.T) {
 	t.Parallel()
 	db := freshDatabase(t)
 	ctx := t.Context()
-	provider, err := NewProvider(db)
+	provider, err := testProvider(t, db)
 	if err != nil {
 		t.Fatalf("NewProvider() error = %v", err)
 	}
@@ -264,7 +264,7 @@ func TestMigrationsBackfillAChainOfEditsOfAnyDepth(t *testing.T) {
 	t.Parallel()
 	db := freshDatabase(t)
 	ctx := t.Context()
-	provider, err := NewProvider(db)
+	provider, err := testProvider(t, db)
 	if err != nil {
 		t.Fatalf("NewProvider() error = %v", err)
 	}
@@ -345,7 +345,7 @@ func TestMigrationsBackfillAChainOfEditsOfAnyDepth(t *testing.T) {
 func TestEveryEventKindOfTheCodeIsInTheTable(t *testing.T) {
 	t.Parallel()
 	db := freshDatabase(t)
-	provider, err := NewProvider(db)
+	provider, err := testProvider(t, db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -448,7 +448,7 @@ func eventKindsInCode(t *testing.T, dir string) map[string]string {
 // deleting a character, an account or a combatant scans the whole table.
 func TestCascadeForeignKeysOfBigTablesAreIndexed(t *testing.T) {
 	sdb := freshDatabase(t)
-	provider, err := NewProvider(sdb)
+	provider, err := testProvider(t, sdb)
 	if err != nil {
 		t.Fatalf("NewProvider: %v", err)
 	}
@@ -478,7 +478,7 @@ func TestCascadeForeignKeysOfBigTablesAreIndexed(t *testing.T) {
 	bigTables := []string{"session_events", "pending_damages", "combatants"}
 
 	rows := run(`
-		SELECT c.conrelid::regclass::string || '.' || a.attname
+		SELECT c.conrelid::regclass::text || '.' || a.attname
 		FROM pg_constraint c
 		JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
 		WHERE c.contype = 'f' AND c.confdeltype IN ('c','n','d')

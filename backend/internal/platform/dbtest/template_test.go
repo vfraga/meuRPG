@@ -24,7 +24,7 @@ func scratchDatabase(t *testing.T, label string, stmts ...string) *sql.DB {
 	admin := open(t, rawURL)
 	name := fmt.Sprintf("meurpg_dbtest_%s_%d", label, time.Now().UnixNano())
 	mustExec(t, admin, "CREATE DATABASE "+name)
-	t.Cleanup(func() { mustExec(t, admin, "DROP DATABASE IF EXISTS "+name+" CASCADE") })
+	t.Cleanup(func() { mustExec(t, admin, dropSQL(name)) })
 	dsn, err := withDatabase(rawURL, name)
 	if err != nil {
 		t.Fatal(err)

@@ -148,3 +148,12 @@ func pgCreateFromTemplate(ctx context.Context, admin *sql.DB, template, name str
 		}
 	}
 }
+
+// dropSQL is DROP DATABASE as the server of the template takes it: CockroachDB
+// wants CASCADE, PostgreSQL WITH (FORCE) to drop a database others are connected to.
+func dropSQL(name string) string {
+	if template.pg {
+		return "DROP DATABASE IF EXISTS " + name + " WITH (FORCE)"
+	}
+	return "DROP DATABASE IF EXISTS " + name + " CASCADE"
+}

@@ -13,8 +13,8 @@ import (
 // Nothing in production uses this.
 //
 // PostgreSQL lacks three things the files use: row-level TTL (a WITH clause on
-// CREATE TABLE, or ALTER TABLE ... SET), the STRING type and unique_rowid().
-// The types and the function are made by PostgresPrelude before the first
+// CREATE TABLE, or ALTER TABLE ... SET), unique_rowid().
+// The function is made by PostgresPrelude before the first
 // migration. The TTL clauses are cut from the text goose reads.
 var (
 	ttlOnCreate = regexp.MustCompile(`(?s)\)\s*WITH\s*\(\s*ttl_[^;]*?\)\s*;`)
@@ -23,7 +23,6 @@ var (
 
 // PostgresPrelude is what PostgreSQL needs before the migrations run.
 const PostgresPrelude = `
-CREATE DOMAIN string AS text;
 CREATE SEQUENCE unique_rowid_seq;
 CREATE FUNCTION unique_rowid() RETURNS bigint LANGUAGE sql AS 'SELECT nextval(''unique_rowid_seq'')';
 `

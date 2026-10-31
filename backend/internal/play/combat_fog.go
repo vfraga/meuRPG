@@ -675,7 +675,7 @@ func (s *Service) visibleRevision(ctx context.Context, encounterID, userID strin
 	var n int64
 	err := s.pool.QueryRow(ctx, `
 		SELECT count(*) FROM session_events
-		WHERE encounter_id = $1 AND (payload->'fogged' IS NULL OR payload->'seen_by' @> to_jsonb($2::STRING))`,
+		WHERE encounter_id = $1 AND (payload->'fogged' IS NULL OR payload->'seen_by' @> to_jsonb($2::TEXT))`,
 		encounterID, userID).Scan(&n)
 	if err != nil {
 		return 0, fmt.Errorf("count the events a player could see: %w", err)

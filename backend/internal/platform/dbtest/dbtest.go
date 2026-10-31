@@ -275,7 +275,7 @@ func NewPoolConns(t testing.TB, prefix string, conns int32) *pgxpool.Pool {
 // but they pile up; they can be dropped by hand, see CONTRIBUTING.md).
 func Main(m *testing.M) {
 	code := m.Run()
-	if url := os.Getenv(EnvVar); url != "" && len(made) > 0 {
+	if url := os.Getenv(EnvVar); url != "" && len(made) > 0 && os.Getenv("MEURPG_TEST_KEEP_DBS") != "1" {
 		dropAll(url)
 	}
 	os.Exit(code)
@@ -291,7 +291,7 @@ func dropAll(rawURL string) {
 	defer func() { _ = conn.Close() }()
 	for _, name := range made {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		_, _ = conn.ExecContext(ctx, "DROP DATABASE IF EXISTS "+name+" CASCADE")
+		_, _ = conn.ExecContext(ctx, dropSQL(name))
 		cancel()
 	}
 }
@@ -305,7 +305,7 @@ func dropOne(name string) {
 	defer func() { _ = conn.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	_, _ = conn.ExecContext(ctx, "DROP DATABASE IF EXISTS "+name+" WITH (FORCE)")
+	_, _ = conn.ExecContext(ctx, dropSQL(name))
 }
 
 // poolFor connects to a test database and gives it back when the test ends:
@@ -372,6 +372,9 @@ const nestedAcquireTimeout = 90 * time.Second
 // blind and TestGuardCatchesANestedAcquisition (it needs the database, so it
 // runs in CI's go-db job) fails.
 const inTxClosure = "crdbpgxv5.ExecuteTx.func1"
+
+// inTxLoopFrame is the same on PostgreSQL (EXPERIMENT): db.runAttempt calls fn.
+const inTxLoopFrame = "platform/db.runAttempt"
 
 // errNestedAcquire is the cause of the canceled Acquire of a nested read.
 var errNestedAcquire = errors.New("dbtest: nested pool acquisition inside a db.InTx closure")
@@ -459,7 +462,7 @@ func inTxClosureAt(pc uintptr) bool {
 		return hit
 	}
 	f, _ := runtime.CallersFrames([]uintptr{pc}).Next()
-	hit := strings.Contains(f.Function, inTxClosure)
+	hit := strings.Contains(f.Function, inTxClosure) || strings.Contains(f.Function, inTxLoopFrame)
 	inTxPCs.Store(pc, hit)
 	return hit
 }
@@ -576,6 +579,7 @@ func buildTemplate(rawURL string) (templateDB, error) {
 		return templateDB{}, err
 	}
 	if postgres {
+		db.UsePostgresRetries(true)
 		info, err := pgTemplateInfo(ctx, tpl, dsn)
 		info.name = name
 		return info, err
@@ -636,7 +640,7 @@ func createOrAwait(ctx context.Context, admin, tpl *sql.DB, provider *goose.Prov
 	if !errors.Is(err, errStalled) {
 		return false, err
 	}
-	if _, err := admin.ExecContext(ctx, "DROP DATABASE IF EXISTS "+name+" CASCADE"); err != nil {
+	if _, err := admin.ExecContext(ctx, dropSQL(name)); err != nil {
 		return false, fmt.Errorf("drop a stalled template: %w", err)
 	}
 	return true, nil

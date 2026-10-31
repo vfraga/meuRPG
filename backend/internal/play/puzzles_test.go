@@ -1855,10 +1855,10 @@ func TestPuzzleRevealDoesNotNameAPointOfAHiddenMap(t *testing.T) {
 		seen = append(seen, "read: "+jsonOf(p.read(t, u, puz.GetId())))
 	}
 	var sid string
-	if err := p.h.pool.QueryRow(t.Context(), `SELECT id::STRING FROM game_sessions WHERE campaign_id = $1 LIMIT 1`, p.campaignID).Scan(&sid); err != nil {
+	if err := p.h.pool.QueryRow(t.Context(), `SELECT id::TEXT FROM game_sessions WHERE campaign_id = $1 LIMIT 1`, p.campaignID).Scan(&sid); err != nil {
 		t.Fatalf("read the session: %v", err)
 	}
-	rows, err := p.h.pool.Query(t.Context(), `SELECT kind, payload::STRING FROM session_events WHERE game_session_id = $1 ORDER BY seq`, sid)
+	rows, err := p.h.pool.Query(t.Context(), `SELECT kind, payload::TEXT FROM session_events WHERE game_session_id = $1 ORDER BY seq`, sid)
 	if err != nil {
 		t.Fatalf("read session_events: %v", err)
 	}

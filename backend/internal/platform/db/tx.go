@@ -49,6 +49,9 @@ func InTx(ctx context.Context, conn TxStarter, fn func(pgx.Tx) error) error {
 // inTx is InTx with a configurable retry policy, so tests can use a policy
 // without delays.
 func inTx(ctx context.Context, conn TxStarter, policy crdb.RetryPolicy, fn func(pgx.Tx) error) error {
+	if postgresRetries.Load() {
+		return inTxLoop(ctx, conn, pgx.TxOptions{}, policy, fn)
+	}
 	ctx = crdb.WithRetryPolicy(ctx, policy)
 	return crdbpgx.ExecuteTx(ctx, conn, pgx.TxOptions{}, fn)
 }
@@ -73,6 +76,9 @@ func ReadTx(ctx context.Context, conn TxStarter, fn func(pgx.Tx) error) error {
 }
 
 func readTx(ctx context.Context, conn TxStarter, policy crdb.RetryPolicy, fn func(pgx.Tx) error) error {
+	if postgresRetries.Load() {
+		return inTxLoop(ctx, conn, pgx.TxOptions{AccessMode: pgx.ReadOnly}, policy, fn)
+	}
 	ctx = crdb.WithRetryPolicy(ctx, policy)
 	// The READ ONLY option of BEGIN is not enough: cockroach-go restarts after
 	// a 40001 with ROLLBACK and a plain BEGIN, so the retry would run read-write.

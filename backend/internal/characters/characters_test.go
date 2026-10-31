@@ -450,7 +450,7 @@ func TestRN30_TheDefaultCharacterCapIsAThousand(t *testing.T) {
 	campaign := h.newCampaign(master, "Mirathel")
 	if _, err := h.pool.Exec(t.Context(), `
 INSERT INTO characters (campaign_id, kind, master_user_id, status, name, sheet, story, created_at, updated_at)
-SELECT $1, 'story', $2, 'active', 'Figurante ' || n::STRING, '{}', '{}', now(), now()
+SELECT $1, 'story', $2, 'active', 'Figurante ' || n::TEXT, '{}', '{}', now(), now()
 FROM generate_series(1, $3) AS n`, campaign, master.id, DefaultMaxCharactersPerCampaign-1); err != nil {
 		t.Fatalf("seed the campaign: %v", err)
 	}
