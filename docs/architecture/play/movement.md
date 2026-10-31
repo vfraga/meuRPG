@@ -40,7 +40,7 @@ It adds +2 or +5 to the AC of weapon and spell attacks and to a spell's Dexterit
 Total cover makes `RollAttack` and `CastSpell` refuse the player (`TARGET_COVER_TOTAL`; an area spell does not refuse) and the target list annotates it (`TargetInReach.cover`, `cover_source`, `untargetable`).
 The AC with cover (`target_armor_class`, `cover_bonus`) goes only to the master; it is stored in the pending damage (`pending_damages.attack_armor_class`) so Shield can compare the blow with it plus 5.
 A spell with the `ignores_cover` type in `effects/spells.json` (Sacred Flame; `Content.IgnoresCover`, `link.Spell.IgnoresCover`) adds no cover to the save, but total cover still refuses the target.
-An attacker whose table feat has a `ranged_attack` with `ignore_cover` (`link.Traits.SpellAttackIgnoresCover`, `RangedWeaponIgnoresCover`) gets no half or three-quarters cover against its ranged spell or weapon attacks (a thrown weapon beyond 5 ft too; an opportunity attack is melee): `coverView.ignoring` makes that cover none for the roll, the event and the target lists.
+An attacker whose table feat has a `ranged_attack` with `ignore_cover` (`link.Traits.SpellAttackIgnoresCover`, `RangedWeaponIgnoresCover`) gets no half or three-quarters cover against its ranged spell or weapon attacks (a thrown weapon beyond its melee reach too; an opportunity attack is melee): `coverView.ignoring` makes that cover none for the roll, the event and the target lists.
 A creature hidden from the players does not count as cover for a player's attack; when the master attacks, all count.
 
 ## Opportunity attacks

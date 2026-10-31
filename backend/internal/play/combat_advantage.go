@@ -198,13 +198,16 @@ type attackShape struct {
 	RangeFt, LongRangeFt int
 	// Thrown says a melee weapon that has a throwing range.
 	Thrown bool
+	// MeleeReachFt is how far it is a melee attack: up to there a thrown weapon is not
+	// thrown (5 ft, or the longer reach a weapon rule gives it).
+	MeleeReachFt int
 }
 
 // rangedAt says the attack is made at range: a ranged one, or a thrown weapon used on
-// a target beyond 5 ft (SRD 5.1, "Ranged Attacks"). known says dist is a real distance
+// a target beyond its melee reach (SRD 5.1, "Ranged Attacks"). known says dist is a real distance
 // (both on the map, not theatre of the mind): without it a thrown weapon is in melee.
 func (s attackShape) rangedAt(dist int32, known bool) bool {
-	return !s.Melee || (s.Thrown && known && dist > meleeReachFt)
+	return !s.Melee || (s.Thrown && known && dist > conv.Int32(s.MeleeReachFt))
 }
 
 // physical says the attack is made with Strength or Dexterity.
@@ -215,17 +218,17 @@ func (s attackShape) physical() bool { return combat.ArmorSpoilsAbility(s.Abilit
 func shapeOfAttack(a link.Attack) attackShape {
 	shape := attackShape{
 		Melee: a.Melee, Weapon: a.Weapon || (!a.Spell && !a.Save), UsesStrength: a.Ability == "str", Ability: a.Ability,
-		RangeFt: a.RangeFt, LongRangeFt: a.LongRangeFt,
+		RangeFt: a.RangeFt, LongRangeFt: a.LongRangeFt, MeleeReachFt: attackMeleeReach(a),
 	}
 	switch {
 	case a.Spell:
 		shape.Melee = a.RangeFt <= meleeReachFt
 		shape.Weapon = false
-	case a.Melee && a.RangeFt > meleeReachFt && a.LongRangeFt > 0:
+	case a.Melee && a.LongRangeFt > shape.MeleeReachFt:
 		shape.Thrown = true
 	}
 	if shape.Melee && !shape.Thrown {
-		shape.RangeFt = max(shape.RangeFt, meleeReachFt)
+		shape.RangeFt = max(shape.RangeFt, shape.MeleeReachFt)
 	}
 	return shape
 }
@@ -299,7 +302,7 @@ func (f modeFacts) scene(attacker, target playdb.Combatant, traits link.Traits, 
 	ranged := shape.rangedAt(dist, known)
 	reach, long := shape.RangeFt, shape.LongRangeFt
 	if shape.Thrown && !ranged {
-		reach, long = meleeReachFt, 0
+		reach, long = shape.MeleeReachFt, 0
 	}
 	s := combat.AttackScene{
 		Attacker: creatureFacts(attacker, f.states, traits), Target: creatureFacts(target, f.states, link.Traits{}),
@@ -731,7 +734,7 @@ func (t turnModes) annotate(attackKey string, targets []*playv1.TargetInReach) {
 
 // dropIgnoredCover takes off an attack's targets the half and three-quarters cover the
 // attacker's own feature ignores for it (a table feat's ranged_attack effect), as
-// RollAttack does: a thrown weapon only on the targets it is thrown at, beyond 5 ft.
+// RollAttack does: a thrown weapon only on the targets it is thrown at, beyond its melee reach.
 func (t turnModes) dropIgnoredCover(attackKey string, targets []*playv1.TargetInReach) {
 	i := slices.IndexFunc(t.sheet.Attacks, func(a link.Attack) bool { return a.Key == attackKey })
 	if i < 0 {

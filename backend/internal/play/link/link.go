@@ -347,6 +347,10 @@ type Attack struct {
 	// Melee says it is a melee weapon, thrown or not: the only kind an
 	// opportunity attack can use, with the melee reach.
 	Melee bool
+	// ReachFt is the melee reach a weapon rule or a pseudo-weapon gives the attack line,
+	// in feet; 0 when none does (a melee attack reaches 5 ft). A melee weapon with a
+	// throwing range is a melee attack up to this reach and a throw beyond it.
+	ReachFt int
 	// Beams is how many attack rolls the cantrip makes in one action (Eldritch
 	// Blast: 2, 3 and 4 beams from character levels 5, 11 and 17); 0 or 1 for
 	// anything else.

@@ -544,7 +544,7 @@ func (s *Service) CreatureSheet(ctx context.Context, tx pgx.Tx, campaignID, mons
 		out.Attacks = append(out.Attacks, link.Attack{
 			Key: a.Key, Name: name, Spell: a.Kind == "spell", ToHit: a.AttackBonus,
 			DiceCount: a.DamageDice.Count, DiceSides: a.DamageDice.Sides, DiceBonus: a.DamageDice.Bonus,
-			DamageType: a.DamageType, RangeFt: a.RangeFt, LongRangeFt: a.LongRangeFt, Melee: a.Melee,
+			DamageType: a.DamageType, RangeFt: a.RangeFt, LongRangeFt: a.LongRangeFt, Melee: a.Melee, ReachFt: a.ReachFt,
 			Ability: string(a.Ability), Weapon: a.Kind == "weapon", Magical: a.Magical,
 		})
 	}

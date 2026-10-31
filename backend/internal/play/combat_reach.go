@@ -19,6 +19,12 @@ func reachFt(rangeFt, longRangeFt int32) int32 {
 	return max(rangeFt, longRangeFt, meleeReachFt)
 }
 
+// attackMeleeReach is the melee reach of an attack: 5 ft, or the longer reach a weapon rule
+// gives its line.
+func attackMeleeReach(a link.Attack) int {
+	return max(meleeReachFt, a.ReachFt)
+}
+
 // attackReach is how far the attack reaches for a player: its range, or for an
 // opportunity attack the melee reach, whatever range the weapon has when thrown.
 func attackReach(a link.Attack, asReaction bool) int32 {

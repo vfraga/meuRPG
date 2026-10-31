@@ -223,8 +223,8 @@ func (h hitFacts) scene() combat.ExtraScene {
 	t := h.sheet.Traits
 	a := h.attack
 	key := turnKey(h.enc)
-	// A thrown melee weapon thrown at range (beyond 5 ft) is a ranged weapon attack: Rage and the
-	// melee extras do not apply to it; used in melee (within 5 ft) it is still a melee attack.
+	// A thrown melee weapon thrown at range (beyond its melee reach) is a ranged weapon attack: Rage and the
+	// melee extras do not apply to it; used in melee (within its melee reach) it is still a melee attack.
 	melee := a.Melee && !h.thrownAtRange()
 	return combat.ExtraScene{
 		Weapon: a.Weapon, Melee: melee, Finesse: a.Finesse, Ranged: a.Weapon && !melee, UsesStrength: a.Ability == "str",
@@ -248,11 +248,11 @@ func (h hitFacts) thrownAtRange() bool {
 // thrownAtRange is hitFacts.thrownAtRange for any attack: an opportunity attack is a melee
 // attack whatever the distance, and theatre of the mind has no distances.
 func thrownAtRange(enc playdb.Encounter, attack link.Attack, attacker, target playdb.Combatant, opportunity bool) bool {
-	if opportunity || !attack.Melee || attack.RangeFt <= meleeReachFt || attack.LongRangeFt <= 0 || isTheatre(enc) {
+	if opportunity || !attack.Melee || attack.LongRangeFt <= attackMeleeReach(attack) || isTheatre(enc) {
 		return false
 	}
 	d, ok := distanceFt(attacker, target)
-	return ok && d > meleeReachFt
+	return ok && int(d) > attackMeleeReach(attack)
 }
 
 // targetMarked says the attacker's Hunter's Mark is on the target.
