@@ -79,6 +79,81 @@ describe('RaceEditor', () => {
     expect(count.getAttribute('aria-invalid')).toBe('true');
   });
 
+  it('does not save "Idiomas à escolha" with text that is no whole number, and sends a "+2" as 2', async () => {
+    const { fixture, el } = setup();
+    const input = field(el, 'table_race.language_choices') as HTMLInputElement;
+    input.value = 'dois';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(input.value).toBe('dois');
+    expect(text(input.closest('app-text-field')!)).toContain('Escreva um número inteiro');
+    click(el, 'Salvar raça');
+    await settle(fixture, 3);
+    expect(save).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(input);
+    input.value = '+2';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(input.value).toBe('+2');
+    save.mockResolvedValue({ entry: corujeiro(), affected: [] });
+    click(el, 'Salvar raça');
+    await settle(fixture, 3);
+    expect(save.mock.calls[0][2].value.languageChoices).toBe(2);
+  });
+
+  it('reports every unreadable field and focuses the first, whichever kind it is', async () => {
+    const { fixture, el } = setup();
+    const type_ = field(el, 'table_race.traits[0].effects[0].type') as HTMLSelectElement;
+    type_.value = 'choice';
+    type_.dispatchEvent(new Event('change'));
+    await settle(fixture, 3);
+    const count = field(el, 'table_race.traits[0].effects[0].count') as HTMLInputElement;
+    count.value = 'x';
+    count.dispatchEvent(new Event('input'));
+    const dark = field(el, 'table_race.darkvision_ft') as HTMLInputElement;
+    dark.value = 'escuro';
+    dark.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    click(el, 'Salvar raça');
+    await settle(fixture, 3);
+    expect(save).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(dark);
+    expect(dark.getAttribute('aria-invalid')).toBe('true');
+    expect(count.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it("takes the server's earlier refusal off the screen when the client's own check stops the next save", async () => {
+    const { fixture, el } = setup();
+    save.mockRejectedValue(
+      new ConnectError('refused', Code.InvalidArgument, undefined, [
+        {
+          desc: TableContentRefusalSchema,
+          value: create(TableContentRefusalSchema, {
+            violations: [
+              create(TableContentViolationSchema, {
+                field: 'table_race.traits[1].effects[0].value',
+                reason: 'bad_formula',
+              }),
+            ],
+          }),
+        },
+      ]),
+    );
+    click(el, 'Salvar raça');
+    await settle(fixture, 3);
+    expect(text(el)).toContain('Esta fórmula não funciona.');
+    const dark = field(el, 'table_race.darkvision_ft') as HTMLInputElement;
+    dark.value = 'escuro';
+    dark.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    save.mockClear();
+    click(el, 'Salvar raça');
+    await settle(fixture, 3);
+    expect(save).not.toHaveBeenCalled();
+    expect(text(el)).not.toContain('Esta fórmula não funciona.');
+    expect(text(el)).not.toContain('Não foi possível salvar');
+  });
+
   it('draws the race of the artboard: the form from the entry and the traits with the effect picked', () => {
     const { el } = setup();
     expect((field(el, 'table_race.name_pt') as HTMLInputElement).value).toBe('Corujeiro');

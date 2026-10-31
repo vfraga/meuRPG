@@ -443,9 +443,12 @@ export class ClassEditor {
     if (this.saver.saving() || this.saveBlocked()) {
       return;
     }
-    const unreadable = unreadableClassPaths(this.draft().features, this.menu());
-    if (unreadable.length > 0) {
-      this.reveal(unreadable[0]);
+    if (
+      this.saver.blockOn(
+        unreadableClassPaths(this.draft().casting, this.draft().features, this.menu()),
+        (path) => this.reveal(path),
+      )
+    ) {
       return;
     }
     const body: EntryBody = { case: 'tableClass', value: draftToClass(this.draft(), this.menu()) };

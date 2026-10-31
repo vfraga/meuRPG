@@ -10,9 +10,17 @@ import {
 import {
   type EffectDraft,
   type EffectMenuVm,
+  UNREADABLE_RANGE,
   draftKey,
   emptyEffect,
+  unreadableNumber,
 } from '../../core/content/effect-draft';
+import {
+  UNREADABLE_BONUS,
+  UNREADABLE_COUNT,
+  readWhole,
+  wholeText,
+} from '../../core/content/whole-number';
 import { visibleFields } from '../../core/content/effect-visible';
 import type { EffectMenuField } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { CheckRow } from '../form-fields/check-row';
@@ -81,7 +89,7 @@ export class EffectPicker {
         f.alwaysShown ||
         f.name === 'only_proficient' ||
         this.filled(f) ||
-        this.issues(f.name).length > 0,
+        this.issuesShown(f.name).length > 0,
     ),
   );
   protected readonly hidden = computed(() => this.allFields().length - this.fields().length);
@@ -221,18 +229,20 @@ export class EffectPicker {
     return this.hintOf(f);
   }
 
-  /** What the draft holds for a field of the menu, by its proto name. */
+  /** What the draft holds for a field of the menu, by its proto name; a number shows what was typed while that still reads as the number. */
   protected read(name: string): string {
     const v = this.effect()[draftKey(name)];
-    return typeof v === 'string'
-      ? v
-      : typeof v === 'number'
-        ? Number.isNaN(v)
-          ? (this.unreadable()[this.typedKey(name)] ?? '')
-          : v !== 0
-            ? String(v)
-            : ''
-        : '';
+    if (typeof v === 'number') {
+      const typed = this.effect().typed?.[name];
+      return typed !== undefined && Object.is(readWhole(typed, this.signed(name)), v)
+        ? typed
+        : wholeText(v);
+    }
+    return typeof v === 'string' ? v : '';
+  }
+
+  private signed(name: string): boolean {
+    return (this.allFields().find((f) => f.name === name)?.min ?? 0) < 0;
   }
 
   protected list(name: string): readonly string[] {
@@ -265,33 +275,41 @@ export class EffectPicker {
     this.effectChange.emit({ ...this.effect(), [draftKey(name)]: text });
   }
 
-  /** What was typed in a number field of the effect shown that the draft cannot hold (a NaN there), by the effect's id and the field.
-   * It lives as long as this picker: a picker made new for the same effect, or reused for another, shows the error on an empty field. */
-  private readonly unreadable = signal<Readonly<Record<string, string>>>({});
-
-  private typedKey(name: string): string {
-    return `${this.effect().id}:${name}`;
-  }
-
   /** A whole number, with a sign where the menu allows one (a bonus may be negative, and "+1" reads as 1). An empty field is 0, "not set".
-   * Anything else is kept as typed and the draft holds a NaN, so an editor does not save instead of sending 0. */
+   * What was typed stays as typed; the draft holds the number, or a NaN for text that is no whole number the server stores, so an editor
+   * does not save instead of sending 0. */
   protected setNumber(f: EffectMenuField, text: string): void {
-    const t = text.trim();
-    const ok = (f.min < 0 ? /^[+-]?\d+$/ : /^\+?\d+$/).test(t);
-    const key = this.typedKey(f.name);
-    const { [key]: _, ...rest } = this.unreadable();
-    this.unreadable.set(t === '' || ok ? rest : { ...rest, [key]: text });
+    const n = readWhole(text, f.min < 0);
+    const { [f.name]: _, ...kept } = this.effect().typed ?? {};
+    const typed = text === wholeText(n) || text.trim() === '' ? kept : { ...kept, [f.name]: text };
     this.effectChange.emit({
       ...this.effect(),
-      [draftKey(f.name)]: t === '' ? 0 : ok ? Number(t) : Number.NaN,
+      [draftKey(f.name)]: n,
+      typed: Object.keys(typed).length > 0 ? typed : undefined,
     });
   }
 
-  /** The refusal of a number field whose text is no whole number; empty when it is one. */
-  protected numberIssues(f: EffectMenuField): readonly string[] {
-    return Number.isNaN(this.effect()[draftKey(f.name)])
-      ? [f.min < 0 ? UNREADABLE_BONUS : UNREADABLE_COUNT]
-      : [];
+  /** The refusals of each visible field, the client's own (text no number) after the server's. Computed once per change, not per cycle. */
+  protected readonly shownIssues = computed<ReadonlyMap<string, readonly string[]>>(() => {
+    const e = this.effect();
+    return new Map(
+      this.allFields().map((f) => {
+        const own =
+          f.kind === 'number' && unreadableNumber(e, f.name) ? [this.unreadableText(f)] : [];
+        return [f.name, [...this.issues(f.name), ...own]] as const;
+      }),
+    );
+  });
+
+  protected issuesShown(name: string): readonly string[] {
+    return this.shownIssues().get(name) ?? [];
+  }
+
+  private unreadableText(f: EffectMenuField): string {
+    if (f.name === 'range_ft' || f.name === 'reach_ft') {
+      return UNREADABLE_RANGE;
+    }
+    return f.min < 0 ? UNREADABLE_BONUS : UNREADABLE_COUNT;
   }
 
   protected setFlag(name: string, on: boolean): void {
@@ -319,9 +337,6 @@ export class EffectPicker {
     });
   }
 }
-
-const UNREADABLE_COUNT = 'Escreva um número inteiro, como 2.';
-const UNREADABLE_BONUS = 'Escreva um número inteiro, como 2 ou -1.';
 
 /** The labels of a hook's two resource fields: the one it spends and the one it gives back. */
 const OWN_HINT_REFS: ReadonlySet<string> = new Set(['restore', 'uses']);

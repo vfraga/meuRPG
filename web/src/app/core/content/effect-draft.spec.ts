@@ -171,7 +171,19 @@ describe("an effect from the server's menu (ADR-0018, section 4)", () => {
   });
 
   it('tells a range field it cannot read from an empty one', () => {
-    for (const text of ['18 m', '18m', '1.000,5', 'abc', '-3']) {
+    for (const text of [
+      '18 m',
+      '18m',
+      '1.000,5',
+      'abc',
+      '-3',
+      '1e9',
+      '999999999',
+      '0x10',
+      '1e3',
+      '+3',
+      '4,5,6',
+    ]) {
       expect(unreadableRange(text), text).toBe(true);
     }
     for (const text of ['', '  ', '0', '18', '4,5', '4.5']) {

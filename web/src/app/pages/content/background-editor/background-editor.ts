@@ -2,7 +2,6 @@ import {
   Component,
   ElementRef,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -16,7 +15,8 @@ import { MatIconModule } from '@angular/material/icon';
 import type { TableEntry } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { type CatalogVm } from '../../../core/content/catalog';
 import { type EntryBody, TableContentClient } from '../../../core/content/content-client';
-import { EntrySaver, focusAfterRender, focusField } from '../../../core/content/entry-saver';
+import { EntrySaver, focusAfterRender } from '../../../core/content/entry-saver';
+import { UNREADABLE_COUNT, readWhole, wholeText } from '../../../core/content/whole-number';
 import type { EffectMenuVm } from '../../../core/content/effect-draft';
 import {
   type BackgroundDraft,
@@ -128,16 +128,35 @@ export class BackgroundEditor {
     this.patch({ skills });
   }
 
+  /** What was typed in "Idiomas à escolha" when it is not how the number is written back ("+1", "007", text no number). */
+  private readonly countTyped = signal('');
+
+  /** The text of "Idiomas à escolha": what was typed while it still reads as the number, else the number. */
+  protected readonly countText = computed(() => {
+    const n = this.draft().languageChoices;
+    const typed = this.countTyped();
+    return typed !== '' && Object.is(readWhole(typed, false), n) ? typed : wholeText(n);
+  });
+
   protected setCount(text: string): void {
-    const n = Number(text.trim());
-    this.patch({ languageChoices: Number.isInteger(n) && n >= 0 ? n : 0 });
+    const n = readWhole(text, false);
+    this.countTyped.set(text === wholeText(n) ? '' : text);
+    this.patch({ languageChoices: n });
   }
 
   protected setFeature(feature: FeatureDraft): void {
     this.patch({ feature });
   }
 
-  protected readonly issuesOf = (path: string): readonly string[] => this.saver.issues(path);
+  /** The path of "Idiomas à escolha" while its text is no whole number. */
+  private readonly unreadableCount = computed<readonly string[]>(() =>
+    Number.isNaN(this.draft().languageChoices) ? ['table_background.language_choices'] : [],
+  );
+
+  protected readonly issuesOf = (path: string): readonly string[] => [
+    ...this.saver.issues(path),
+    ...(this.unreadableCount().includes(path) ? [UNREADABLE_COUNT] : []),
+  ];
 
   private readonly known = (path: string): boolean => {
     const p = 'table_background';
@@ -162,13 +181,15 @@ export class BackgroundEditor {
     if (this.saver.saving() || this.saveBlocked()) {
       return;
     }
-    const unreadable = unreadableFeaturePaths(
-      'table_background.feature',
-      this.draft().feature,
-      this.menu(),
-    );
-    if (unreadable.length > 0) {
-      focusAfterRender(this.host.nativeElement, this.injector, unreadable[0]);
+    const blocked = [
+      ...this.unreadableCount(),
+      ...unreadableFeaturePaths('table_background.feature', this.draft().feature, this.menu()),
+    ];
+    if (
+      this.saver.blockOn(blocked, (path) =>
+        focusAfterRender(this.host.nativeElement, this.injector, path),
+      )
+    ) {
       return;
     }
     const body: EntryBody = {
@@ -183,14 +204,6 @@ export class BackgroundEditor {
       this.saved.emit(res);
       return;
     }
-    afterNextRender(
-      () => {
-        const first = this.saver.placement().fields[0];
-        if (first) {
-          focusField(this.host.nativeElement, first);
-        }
-      },
-      { injector: this.injector },
-    );
+    this.saver.focusRefusal(this.host.nativeElement, this.injector);
   }
 }

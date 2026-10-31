@@ -310,7 +310,7 @@ export function featureOwnPaths(base: string, f: FeatureDraft, menu: EffectMenuV
   return out;
 }
 
-/** The paths of the number fields of one feature (and of its options) whose text is no whole number, at `base`. */
+/** The paths of the number fields of one feature (and of its named options: an unnamed one is not sent) whose text is no whole number, at `base`. */
 export function unreadableFeaturePaths(
   base: string,
   f: FeatureDraft,
@@ -318,7 +318,9 @@ export function unreadableFeaturePaths(
 ): string[] {
   return [
     ...unreadableNumberPaths(`${base}.effects`, f.effects, menu),
-    ...f.options.flatMap((o, k) => unreadableFeaturePaths(`${base}.options[${k}]`, o, menu)),
+    ...f.options.flatMap((o, k) =>
+      o.name.trim() === '' ? [] : unreadableFeaturePaths(`${base}.options[${k}]`, o, menu),
+    ),
   ];
 }
 

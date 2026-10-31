@@ -1,3 +1,4 @@
+import { unreadableCastingPaths } from '../../../core/content/whole-number';
 import type {
   GetClassTableDefaultsResponse,
   TableEntry,
@@ -333,12 +334,16 @@ export function subclassesOf(entries: readonly TableEntry[], classKey: string): 
     : [];
 }
 
-/** The paths of the number fields, in every feature of a class, whose text is no whole number. */
+/** The paths of the casting's start level and of the number fields, in every feature of a class, whose text is no whole number. */
 export function unreadableClassPaths(
+  casting: CastingDraft,
   features: readonly LevelFeature[],
   menu: EffectMenuVm,
 ): string[] {
-  return features.flatMap((f, i) =>
-    unreadableFeaturePaths(classFeatureBase(features, i), f.feature, menu),
-  );
+  return [
+    ...(casting.kind !== '' ? unreadableCastingPaths('table_class.casting', casting) : []),
+    ...features.flatMap((f, i) =>
+      unreadableFeaturePaths(classFeatureBase(features, i), f.feature, menu),
+    ),
+  ];
 }

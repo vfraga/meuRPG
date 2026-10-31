@@ -6,10 +6,11 @@ import type {
   GetEffectMenuResponse,
   TableEffect,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
-import { feetToMeters } from '../units';
+import { feetToMeters, metersToFeet } from '../units';
 import type { EffectDraft, EffectInit } from './effect-draft.types';
 import { visibleFields } from './effect-visible';
 import { EFFECT_WRITERS, rangeFeet } from './effect-writers';
+import { WHOLE_MAX } from './whole-number';
 
 export type { EffectDraft, EffectInit } from './effect-draft.types';
 export { onlyProficientApplies, rangeFeet, splitTags } from './effect-writers';
@@ -289,14 +290,18 @@ export function rangeMeters(ft: number): string {
   return ft > 0 ? String(feetToMeters(ft)).replace('.', ',') : '';
 }
 
-/** Whether a range field holds something that is not a number of metres (empty is fine: it means none). */
+/** Whether a range field holds something that is not a number of metres the server can store (empty is fine: it means none). The text is
+ * a plain decimal ("18", "4,5"), and its feet are a whole number within int32. */
 export function unreadableRange(text: string): boolean {
   const t = text.trim();
   if (t === '') {
     return false;
   }
-  const n = Number(t.replace(',', '.'));
-  return !Number.isFinite(n) || n < 0;
+  if (!/^\d+([.,]\d+)?$/.test(t)) {
+    return true;
+  }
+  const ft = metersToFeet(Number(t.replace(',', '.')));
+  return !Number.isSafeInteger(ft) || ft > WHOLE_MAX;
 }
 
 /** "text_pt" → "textPt": the draft's key for a proto field. */
@@ -304,9 +309,21 @@ export function draftKey(name: string): keyof EffectDraft {
   return name.replace(/_(\w)/g, (_, c: string) => c.toUpperCase()) as keyof EffectDraft;
 }
 
-/** The paths of the number fields of `effects` whose text is no whole number (the picker's mark is a NaN in the draft), `base` being
- * the path of the list ("table_feat.effects"). An editor does not save while there is one, since a NaN goes out as `null`, which the
- * server reads as "not set"; it opens the feature that holds the first and focuses its field. */
+/** Whether a number field of an effect holds text it cannot read: a NaN in the draft (the picker's mark for a count or a bonus), or a range
+ * or reach in metres that is no number. */
+export function unreadableNumber(e: EffectDraft, name: string): boolean {
+  if (name === 'range_ft') {
+    return unreadableRange(e.rangeM);
+  }
+  if (name === 'reach_ft') {
+    return unreadableRange(e.reachM);
+  }
+  return Number.isNaN(e[draftKey(name)]);
+}
+
+/** The paths of the number fields of `effects` whose text is no number the save can send, `base` being the path of the list
+ * ("table_feat.effects"). An editor does not save while there is one, since a NaN goes out as `null`, which the server reads as "not set",
+ * and an unreadable range as 0; it opens the feature that holds the first and focuses its field. */
 export function unreadableNumberPaths(
   base: string,
   effects: readonly EffectDraft[],
@@ -314,7 +331,7 @@ export function unreadableNumberPaths(
 ): string[] {
   return effects.flatMap((e, k) =>
     visibleFields(menu.fieldsOf(e.type), e)
-      .filter((f) => f.kind === 'number' && Number.isNaN(e[draftKey(f.name)]))
+      .filter((f) => f.kind === 'number' && unreadableNumber(e, f.name))
       .map((f) => `${base}[${k}].${f.name}`),
   );
 }
@@ -347,7 +364,7 @@ function choiceEmpty(d: EffectDraft, name: string): boolean {
   if (own) {
     return own(d);
   }
-  const v = d[name.replace(/_(\w)/g, (_, c: string) => c.toUpperCase()) as keyof EffectDraft];
+  const v = d[draftKey(name)];
   return typeof v === 'string' && v.trim() === '';
 }
 

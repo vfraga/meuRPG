@@ -23,7 +23,9 @@ import {
   noBonuses,
   raceToDraft,
   subraceToDraft,
+  unreadableFeaturePaths,
 } from './feature-draft';
+import { emptyEffect } from './effect-draft';
 
 describe('the race, subrace and background forms (E10-01 states 6 and 7)', () => {
   const m = menu();
@@ -247,5 +249,25 @@ describe('the option list of a feature (a table feature the player picks from)',
     const draft = featureToDraft(withOptions());
     const paths = featurePaths('table_subclass.levels[0].features', [draft], m);
     expect(paths).toContain('table_subclass.levels[0].features[0].options[1].name_pt');
+  });
+});
+
+describe('unreadableFeaturePaths', () => {
+  const bad = { ...emptyEffect('choice'), choice: 'skill', count: Number.NaN };
+
+  it('names the unreadable number of a named option, by its index', () => {
+    const f = {
+      ...emptyFeature(),
+      options: [
+        { ...emptyFeature(), name: 'Sem nome' },
+        { ...emptyFeature(), name: 'Com nome', effects: [bad] },
+      ],
+    };
+    expect(unreadableFeaturePaths('t', f, menu())).toEqual(['t.options[1].effects[0].count']);
+  });
+
+  it('does not block on an option without a name: the save does not send it', () => {
+    const f = { ...emptyFeature(), options: [{ ...emptyFeature(), name: '  ', effects: [bad] }] };
+    expect(unreadableFeaturePaths('t', f, menu())).toEqual([]);
   });
 });

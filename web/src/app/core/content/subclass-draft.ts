@@ -1,3 +1,4 @@
+import { unreadableCastingPaths } from './whole-number';
 import type {
   GetClassTableDefaultsResponse,
   TableSubclass,
@@ -45,11 +46,14 @@ export function subclassFeaturePaths(d: SubclassDraft, menu: EffectMenuVm): stri
   return d.features.flatMap((f, i) => featureOwnPaths(subclassFeatureBase(d, i), f.feature, menu));
 }
 
-/** The paths of the number fields, in every feature, whose text is no whole number. */
+/** The paths of the casting's start level and of the number fields, in every feature, whose text is no whole number. */
 export function unreadableSubclassPaths(d: SubclassDraft, menu: EffectMenuVm): string[] {
-  return d.features.flatMap((f, i) =>
-    unreadableFeaturePaths(subclassFeatureBase(d, i), f.feature, menu),
-  );
+  return [
+    ...(d.conjures ? unreadableCastingPaths('table_subclass.casting', d.casting) : []),
+    ...d.features.flatMap((f, i) =>
+      unreadableFeaturePaths(subclassFeatureBase(d, i), f.feature, menu),
+    ),
+  ];
 }
 
 /** "table_subclass.levels[2]": the row of a class level of a third caster, or '' when the request has none for it. */

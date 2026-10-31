@@ -3,7 +3,6 @@ import {
   Component,
   ElementRef,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -20,7 +19,7 @@ import {
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { type CatalogVm } from '../../../core/content/catalog';
 import { type EntryBody, TableContentClient } from '../../../core/content/content-client';
-import { EntrySaver, focusAfterRender, focusField } from '../../../core/content/entry-saver';
+import { EntrySaver, focusAfterRender } from '../../../core/content/entry-saver';
 import type { EffectMenuVm } from '../../../core/content/effect-draft';
 import type { FeatureDraft } from '../../../core/content/feature-draft';
 import {
@@ -195,9 +194,11 @@ export class OptionEditor {
     if (this.saver.saving() || this.saveBlocked()) {
       return;
     }
-    const unreadable = unreadableOptionPaths(this.draft(), this.menu());
-    if (unreadable.length > 0) {
-      focusAfterRender(this.host.nativeElement, this.injector, unreadable[0]);
+    if (
+      this.saver.blockOn(unreadableOptionPaths(this.draft(), this.menu()), (path) =>
+        focusAfterRender(this.host.nativeElement, this.injector, path),
+      )
+    ) {
       return;
     }
     const body: EntryBody = {
@@ -212,14 +213,6 @@ export class OptionEditor {
       this.saved.emit(res);
       return;
     }
-    afterNextRender(
-      () => {
-        const first = this.saver.placement().fields[0];
-        if (first) {
-          focusField(this.host.nativeElement, first);
-        }
-      },
-      { injector: this.injector },
-    );
+    this.saver.focusRefusal(this.host.nativeElement, this.injector);
   }
 }

@@ -41,6 +41,31 @@ export class EntrySaver {
   issues = (path: string): readonly string[] =>
     (this.placement().byField.get(path) ?? []).map((p) => p.text);
 
+  /** Stops a save the client already knows is bad (`paths` are the fields it cannot send, in the order to show them): an older refusal
+   * leaves the screen, so it does not sit beside the client's errors (the stale banner stays: the entry is out of date until it is reloaded), and `show` takes the person to the first path. Returns whether it stopped. */
+  blockOn(paths: readonly string[], show: (path: string) => void): boolean {
+    if (paths.length === 0) {
+      return false;
+    }
+    this.placement.set(NO_PLACEMENT);
+    this.summary.set('');
+    show(paths[0]);
+    return true;
+  }
+
+  /** After a refusal, focuses the first field it landed on once the render that shows the refusals is done. */
+  focusRefusal(root: ParentNode, injector: Injector): void {
+    afterNextRender(
+      () => {
+        const first = this.placement().fields[0];
+        if (first) {
+          focusField(root, first);
+        }
+      },
+      { injector },
+    );
+  }
+
   clear(): void {
     this.placement.set(NO_PLACEMENT);
     this.error.set('');

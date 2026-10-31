@@ -5,6 +5,9 @@ export interface EffectDraft {
   /** A stable id the editor tracks the row by (never sent): focus and "Mais opções" follow a moved item. */
   id: string;
   type: string;
+  /** What was typed in a number field when it is not how the number is written back ("+1", "007", text no number): the field keeps it, the
+   * saved value is the number. Keyed by the field's proto name; never sent. */
+  typed?: Readonly<Record<string, string>>;
   target: string;
   mode: string;
   value: string;

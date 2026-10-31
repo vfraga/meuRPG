@@ -758,6 +758,112 @@ describe('EffectPicker: a number field (whole numbers; an empty field is "not se
     expect(text(el)).toContain('Escreva um número inteiro, como 2.');
   });
 
+  it('keeps what was typed: "+1", "007" and "-0" stay in the field, and only the saved value is the number', () => {
+    setup(emptyEffect('weapon_rule'), stateMenu());
+    for (const [typed, value] of [
+      ['+1', 1],
+      ['007', 7],
+      ['-0', 0],
+    ] as const) {
+      const input = typeInto('attack_bonus', typed);
+      expect(input.value).toBe(typed);
+      expect(emitted.at(-1)?.attackBonus).toBe(value);
+    }
+    // a draft written back by the editor keeps it too
+    expect((field('attack_bonus') as HTMLInputElement).value).toBe('-0');
+  });
+
+  it('never sends what was typed: the request holds the number only', () => {
+    setup(emptyEffect('weapon_rule'), stateMenu());
+    typeInto('attack_bonus', '+1');
+    const effect = draftToEffect(emitted.at(-1)!, stateMenu());
+    expect(effect.attackBonus).toBe(1);
+    expect(JSON.stringify(effect)).not.toContain('typed');
+  });
+
+  it('shows the plain number again once what was typed is how it is written', () => {
+    setup(emptyEffect('weapon_rule'), stateMenu());
+    typeInto('attack_bonus', '+1');
+    const input = typeInto('attack_bonus', '1');
+    expect(input.value).toBe('1');
+    expect(emitted.at(-1)?.typed).toBeUndefined();
+  });
+
+  it('shows no sign for a bonus of text only: "-" gives no "+NaN" in the preview and sends no bonus', () => {
+    setup(emptyEffect('weapon_rule'), stateMenu());
+    typeInto('attack_bonus', '-');
+    expect(draftToEffect(emitted.at(-1)!, stateMenu()).attackBonus).toBeUndefined();
+  });
+
+  for (const [what, text] of [
+    ['400 digits', '9'.repeat(400)],
+    ['more than int32', '3000000000'],
+    ['an unsafe integer', '9007199254740993'],
+  ] as const) {
+    it(`refuses ${what} with the field's own error, and accepts the largest int32`, () => {
+      setup({ ...emptyEffect('choice'), choice: 'skill', count: 2 });
+      typeInto('count', text);
+      expect(emitted.at(-1)?.count).toBeNaN();
+      expect(asked()).toContain('Escreva um número inteiro, como 2.');
+      typeInto('count', '2147483647');
+      expect(emitted.at(-1)?.count).toBe(2147483647);
+      expect(asked()).not.toContain('Escreva um número inteiro');
+    });
+  }
+
+  it('lets a picker made new for the same effect show the text that was typed, and clearing it returns to "not set"', () => {
+    setup({ ...emptyEffect('choice'), choice: 'skill', count: 2 });
+    typeInto('count', 'abc');
+    const drafted = emitted.at(-1)!;
+    setup(drafted);
+    fixture.detectChanges();
+    const again = field('count') as HTMLInputElement;
+    expect(again.value).toBe('abc');
+    expect(asked()).toContain('Escreva um número inteiro, como 2.');
+    typeInto('count', '');
+    expect(emitted.at(-1)?.count).toBe(0);
+    expect(asked()).not.toContain('Escreva um número inteiro');
+    expect(unreadableNumberPaths('x', [emitted.at(-1)!], menu())).toEqual([]);
+  });
+
+  it('shows the error of a range or reach in metres that is no number, and keeps the save from sending 0', () => {
+    setup({ ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' });
+    expect(
+      unreadableNumberPaths(
+        'x',
+        [emitted.at(-1) ?? { ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' }],
+        menu(),
+      ),
+    ).toEqual([]);
+    const input = typeInto('range_ft', 'perto');
+    expect(input.value).toBe('perto');
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(text(el)).toContain('Escreva só o número de metros');
+    expect(unreadableNumberPaths('x', [emitted.at(-1)!], menu())).toEqual(['x[0].range_ft']);
+    typeInto('range_ft', '4,5');
+    expect(unreadableNumberPaths('x', [emitted.at(-1)!], menu())).toEqual([]);
+  });
+
+  it("takes the field's hint away while the field shows an error, as it does for a refusal", () => {
+    setup(emptyEffect('weapon_rule'), stateMenu());
+    const row = () => field('attack_bonus')!.closest('.frow')!;
+    expect(row().querySelector('.frow__hint')).not.toBeNull();
+    typeInto('attack_bonus', 'abc');
+    expect(row().querySelector('.frow__hint')).toBeNull();
+    typeInto('attack_bonus', '2');
+    expect(row().querySelector('.frow__hint')).not.toBeNull();
+  });
+
+  it('works the refusals of a field out once per change, not once per cycle', () => {
+    setup({ ...emptyEffect('choice'), choice: 'skill', count: 2 });
+    const shown = (fixture.componentInstance as unknown as { shownIssues: () => unknown })
+      .shownIssues;
+    const before = shown.call(fixture.componentInstance);
+    fixture.detectChanges();
+    fixture.detectChanges();
+    expect(shown.call(fixture.componentInstance)).toBe(before);
+  });
+
   it('reads an empty field as "not set", and a bonus may be negative', () => {
     setup({ ...emptyEffect('choice'), choice: 'skill', count: 2 });
     typeInto('count', '  ');

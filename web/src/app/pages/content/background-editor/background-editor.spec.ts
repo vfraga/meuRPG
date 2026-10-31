@@ -87,6 +87,27 @@ describe('BackgroundEditor (E10-01 state 7)', () => {
     expect(count.getAttribute('aria-invalid')).toBe('true');
   });
 
+  it('does not save "Idiomas à escolha" with text that is no whole number, and keeps "007" as typed', async () => {
+    const { fixture, el } = setup();
+    const input = field(el, 'table_background.language_choices') as HTMLInputElement;
+    input.value = 'um';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(text(input.closest('app-text-field')!)).toContain('Escreva um número inteiro');
+    click(el, 'Salvar antecedente');
+    await settle(fixture, 3);
+    expect(save).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(input);
+    input.value = '007';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(input.value).toBe('007');
+    save.mockResolvedValue({ entry: stored(), affected: [] });
+    click(el, 'Salvar antecedente');
+    await settle(fixture, 3);
+    expect(save.mock.calls[0][2].value.languageChoices).toBe(7);
+  });
+
   it('draws the form from the entry: two skills, the tools as chips, the equipment and the one feature', () => {
     const { el } = setup();
     expect((field(el, 'table_background.name_pt') as HTMLInputElement).value).toBe(

@@ -26,11 +26,11 @@ const positiveNumber =
   (d) =>
     d[key] > 0 ? ({ [key]: d[key] } as EffectInit) : {};
 
-/** Like positiveNumber, for a field that may be negative (a bonus): any value but 0 is sent. */
+/** Like positiveNumber, for a field that may be negative (a bonus): any value but 0 is sent, and an unreadable one (NaN) is not. */
 const signedNumber =
   (key: NumberKey): EffectWriter =>
   (d) =>
-    d[key] !== 0 ? ({ [key]: d[key] } as EffectInit) : {};
+    d[key] !== 0 && !Number.isNaN(d[key]) ? ({ [key]: d[key] } as EffectInit) : {};
 
 /** A text the server reads trimmed; an empty one is not sent. */
 const trimmedText =

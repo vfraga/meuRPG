@@ -60,7 +60,7 @@
         <h2 class="mr-panel__title" id="lang-t">Idiomas</h2>
         <app-pick-list label="Idiomas" addLabel="Adicionar idioma" [options]="languageOptions()" [values]="r.languages" [path]="prefix() + '.languages'" [issues]="issuesOf(prefix() + '.languages')" (added)="patchRace({ languages: [...r.languages, $event] })" (removed)="patchRace({ languages: r.languages.filter((k) => k !== $event) })" />
         <div class="grid grid--3">
-          <app-text-field label="Idiomas à escolha" [value]="r.languageChoices > 0 ? '' + r.languageChoices : ''" inputmode="numeric" [path]="prefix() + '.language_choices'" [issues]="issuesOf(prefix() + '.language_choices')" (valueChange)="setCount($event)" />
+          <app-text-field label="Idiomas à escolha" [value]="countText()" inputmode="numeric" [path]="prefix() + '.language_choices'" [issues]="issuesOf(prefix() + '.language_choices')" (valueChange)="setCount($event)" />
         </div>
       </section>
     }

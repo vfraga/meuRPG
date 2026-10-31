@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -9,6 +9,7 @@ import {
   type CastingKind,
   type Preparation,
 } from '../../../core/content/class-draft';
+import { UNREADABLE_COUNT, readWhole, wholeText } from '../../../core/content/whole-number';
 import { FieldNote } from '../../../shared/form-fields/field-note';
 import { PickList } from '../../../shared/form-fields/pick-list';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
@@ -121,9 +122,9 @@ const KINDS: readonly Segment<KindChoice>[] = [
           <app-text-field
             label="A conjuração começa no nível"
             inputmode="numeric"
-            [value]="casting().startLevel > 0 ? '' + casting().startLevel : ''"
+            [value]="startText()"
             [path]="basePath() + '.start_level'"
-            [issues]="issuesOf()(basePath() + '.start_level')"
+            [issues]="startIssues()"
             hint="Antes dele, a tabela fica sem truques e sem espaços."
             (valueChange)="setStart($event)"
           />
@@ -310,21 +311,45 @@ export class CastingFields {
       ? 'Elas se juntam às magias da mesa que citam esta classe.'
       : 'Esta classe usa a lista de outra classe. Para ter magias próprias, escolha "A própria lista da classe".',
   );
-  /** "Mais opções" starts open when something in it was refused or is not the default. */
+  /** Whether the start level's text was ever unreadable: once it opened the panel, fixing the text must not close it. */
+  private readonly startWasBad = signal(false);
+  /** "Mais opções" starts open when something in it was refused by the server, and opens when the start level's text cannot be read.
+   * It never closes a panel the person has open. */
   protected readonly moreOpen = computed(
     () =>
+      this.startWasBad() ||
       this.issuesOf()(this.basePath() + '.start_level').length +
         this.issuesOf()(this.basePath() + '.prepared_max').length >
-      0,
+        0,
   );
 
   protected withoutSpell(key: string): string[] {
     return this.casting().srdSpells.filter((k) => k !== key);
   }
 
+  /** What was typed in "A conjuração começa no nível" when it is not how the number is written back ("+3", "007", text no number). */
+  private readonly startTyped = signal('');
+
+  /** The text of the start level: what was typed while it still reads as the number, else the number. */
+  protected readonly startText = computed(() => {
+    const n = this.casting().startLevel;
+    const typed = this.startTyped();
+    return typed !== '' && Object.is(readWhole(typed, false), n) ? typed : wholeText(n);
+  });
+
+  /** The start level's refusals: the server's, and the client's while the text is no whole number. */
+  protected readonly startIssues = computed(() => [
+    ...this.issuesOf()(this.basePath() + '.start_level'),
+    ...(Number.isNaN(this.casting().startLevel) ? [UNREADABLE_COUNT] : []),
+  ]);
+
   protected setStart(text: string): void {
-    const n = Number(text.trim());
-    this.patch.emit({ startLevel: Number.isInteger(n) && n > 0 ? n : 0 });
+    const n = readWhole(text, false);
+    this.startTyped.set(text === wholeText(n) ? '' : text);
+    if (Number.isNaN(n)) {
+      this.startWasBad.set(true);
+    }
+    this.patch.emit({ startLevel: n });
   }
 
   protected readonly None = Ability.UNSPECIFIED as number;

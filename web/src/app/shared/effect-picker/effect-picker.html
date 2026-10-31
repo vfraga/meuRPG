@@ -55,7 +55,7 @@
                 suffix="m"
                 inputmode="decimal"
                 [path]="path(f.name)"
-                [issues]="issues(f.name)"
+                [issues]="issuesShown(f.name)"
                 (valueChange)="setMeters(f.name, $event)"
               />
             } @else {
@@ -64,7 +64,7 @@
                 [value]="read(f.name)"
                 [inputmode]="f.min < 0 ? 'text' : 'numeric'"
                 [path]="path(f.name)"
-                [issues]="[...issues(f.name), ...numberIssues(f)]"
+                [issues]="issuesShown(f.name)"
                 (valueChange)="setNumber(f, $event)"
               />
             }
@@ -100,7 +100,7 @@
         }
       </div>
       <!-- The hint sits beside its field (a refusal, when there is one, is under the field). -->
-      @if (issues(f.name).length === 0 && beside(f); as hint) {
+      @if (issuesShown(f.name).length === 0 && beside(f); as hint) {
         <p class="frow__hint">{{ hint }}</p>
       }
     </div>

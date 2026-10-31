@@ -2,7 +2,6 @@ import {
   Component,
   ElementRef,
   Injector,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -18,7 +17,8 @@ import { RouterLink } from '@angular/router';
 import type { TableEntry } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { type CatalogVm } from '../../../core/content/catalog';
 import { type EntryBody, TableContentClient } from '../../../core/content/content-client';
-import { EntrySaver, focusAfterRender, focusField } from '../../../core/content/entry-saver';
+import { EntrySaver, focusAfterRender } from '../../../core/content/entry-saver';
+import { UNREADABLE_COUNT, readWhole, wholeText } from '../../../core/content/whole-number';
 import {
   type EffectMenuVm,
   UNREADABLE_RANGE,
@@ -238,19 +238,27 @@ export class RaceEditor {
 
   protected addTrait(): void {
     this.setTraits([...this.traits(), emptyFeature()]);
-    afterNextRender(
-      () =>
-        focusField(
-          this.host.nativeElement,
-          `${this.prefix()}.traits[${this.traits().length - 1}].name_pt`,
-        ),
-      { injector: this.injector },
+    focusAfterRender(
+      this.host.nativeElement,
+      this.injector,
+      `${this.prefix()}.traits[${this.traits().length - 1}].name_pt`,
     );
   }
 
+  /** What was typed in "Idiomas à escolha" when it is not how the number is written back ("+1", "007", text no number). */
+  private readonly countTyped = signal('');
+
+  /** The text of "Idiomas à escolha": what was typed while it still reads as the number, else the number. */
+  protected readonly countText = computed(() => {
+    const n = this.race().languageChoices;
+    const typed = this.countTyped();
+    return typed !== '' && Object.is(readWhole(typed, false), n) ? typed : wholeText(n);
+  });
+
   protected setCount(text: string): void {
-    const n = Number(text.trim());
-    this.patchRace({ languageChoices: Number.isInteger(n) && n >= 0 ? n : 0 });
+    const n = readWhole(text, false);
+    this.countTyped.set(text === wholeText(n) ? '' : text);
+    this.patchRace({ languageChoices: n });
   }
 
   protected newSubraceLink(): string[] {
@@ -284,9 +292,17 @@ export class RaceEditor {
       : [];
   });
 
+  /** The path of "Idiomas à escolha" while its text is no whole number. */
+  private readonly unreadableCount = computed<readonly string[]>(() =>
+    this.isRace() && Number.isNaN(this.race().languageChoices)
+      ? [`${this.prefix()}.language_choices`]
+      : [],
+  );
+
   protected readonly issuesOf = (path: string): readonly string[] => [
     ...this.saver.issues(path),
     ...(this.unreadable().includes(path) ? [UNREADABLE_RANGE] : []),
+    ...(this.unreadableCount().includes(path) ? [UNREADABLE_COUNT] : []),
   ];
 
   private readonly known = (path: string): boolean => {
@@ -314,14 +330,18 @@ export class RaceEditor {
   };
 
   protected async save(): Promise<void> {
-    if (this.saver.saving() || this.saveBlocked() || this.unreadable().length > 0) {
+    if (this.saver.saving() || this.saveBlocked()) {
       return;
     }
     const unreadableNumber = this.traits().flatMap((t, i) =>
       unreadableFeaturePaths(`${this.prefix()}.traits[${i}]`, t, this.menu()),
     );
-    if (unreadableNumber.length > 0) {
-      focusAfterRender(this.host.nativeElement, this.injector, unreadableNumber[0]);
+    const blocked = [...this.unreadable(), ...this.unreadableCount(), ...unreadableNumber];
+    if (
+      this.saver.blockOn(blocked, (path) =>
+        focusAfterRender(this.host.nativeElement, this.injector, path),
+      )
+    ) {
       return;
     }
     const menu = this.menu();
@@ -336,14 +356,6 @@ export class RaceEditor {
       this.saved.emit(res);
       return;
     }
-    afterNextRender(
-      () => {
-        const first = this.saver.placement().fields[0];
-        if (first) {
-          focusField(this.host.nativeElement, first);
-        }
-      },
-      { injector: this.injector },
-    );
+    this.saver.focusRefusal(this.host.nativeElement, this.injector);
   }
 }

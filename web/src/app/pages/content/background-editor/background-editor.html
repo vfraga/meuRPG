@@ -16,7 +16,7 @@
       }
       <app-pick-list label="Ferramentas" addLabel="Adicionar ferramenta" [options]="toolOptions()" [values]="d.tools" path="table_background.tools" [issues]="issuesOf('table_background.tools')" hint="Da lista do SRD." (added)="patch({ tools: [...d.tools, $event] })" (removed)="patch({ tools: d.tools.filter((k) => k !== $event) })" />
       <div class="grid grid--2">
-        <app-text-field label="Idiomas à escolha" [value]="d.languageChoices > 0 ? '' + d.languageChoices : ''" inputmode="numeric" path="table_background.language_choices" [issues]="issuesOf('table_background.language_choices')" (valueChange)="setCount($event)" />
+        <app-text-field label="Idiomas à escolha" [value]="countText()" inputmode="numeric" path="table_background.language_choices" [issues]="issuesOf('table_background.language_choices')" (valueChange)="setCount($event)" />
       </div>
       <app-text-field label="Equipamento" [value]="d.equipment" [rows]="2" path="table_background.equipment_pt" [issues]="issuesOf('table_background.equipment_pt')" hint="Em texto, com as suas palavras." (valueChange)="patch({ equipment: $event })" />
     </section>

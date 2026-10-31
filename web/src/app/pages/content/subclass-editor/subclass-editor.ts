@@ -361,9 +361,11 @@ export class SubclassEditor {
     if (this.saver.saving() || this.saveBlocked()) {
       return;
     }
-    const unreadable = unreadableSubclassPaths(this.draft(), this.menu());
-    if (unreadable.length > 0) {
-      this.reveal(unreadable[0]);
+    if (
+      this.saver.blockOn(unreadableSubclassPaths(this.draft(), this.menu()), (path) =>
+        this.reveal(path),
+      )
+    ) {
       return;
     }
     const body: EntryBody = {
