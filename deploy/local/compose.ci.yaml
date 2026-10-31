@@ -2,10 +2,12 @@
 # thrown away with the runner, and the tests' writes and the migrations at
 # start-up run faster than on the runner's disk. Used by
 # .github/workflows/e2e.yml on top of compose.yaml; never by `make up`.
+#
+# --external-io-dir lets BACKUP and RESTORE use nodelocal://1 (the folder compose.ci-db.yaml mounts).
 services:
   cockroach:
     # The same digest as compose.yaml, from Cockroach Labs' registry on Google
     # Cloud: GitHub's shared runners hit Docker Hub's anonymous pull limit.
     image: us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:v26.2.8@sha256:1ad58b6a69928691e0c9289b847dcb35ac25108c6ead23fcabf47e37b9195e9a
-    command: ["start-single-node", "--insecure", "--store=type=mem,size=2GiB", "--cache=256MiB", "--max-sql-memory=1GiB"]
+    command: ["start-single-node", "--insecure", "--store=type=mem,size=2GiB", "--cache=256MiB", "--max-sql-memory=1GiB", "--external-io-dir=/extern"]
     volumes: !reset []

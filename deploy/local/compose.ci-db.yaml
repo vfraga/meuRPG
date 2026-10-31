@@ -1,0 +1,8 @@
+# CI only: a folder for the CockroachDB of compose.ci.yaml to BACKUP to and RESTORE from (nodelocal://1/<name>).
+# The e2e workflow's `database` job migrates once and backs up to it; the shards restore from it instead of
+# migrating (docs/ci.md, "e2e"). Used on top of compose.yaml and compose.ci.yaml, with E2E_DB_DIR set to the
+# folder on the runner; never by `make up`.
+services:
+  cockroach:
+    volumes:
+      - ${E2E_DB_DIR:?set E2E_DB_DIR to the folder on the runner}:/extern

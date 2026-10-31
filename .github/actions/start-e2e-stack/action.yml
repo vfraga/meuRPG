@@ -1,7 +1,8 @@
 # Gets a runner ready to run Playwright against the local stack: the images of build-e2e-images, the stack itself
 # (CockroachDB, migrations, devidp, API), Node, the e2e dependencies and Chromium, as the `e2e` job of e2e.yml does.
 # The stack starts in the background while Node, the dependencies and Chromium install, and the last step waits for it:
-# the stack needs none of them. The action ends only when the stack is up, or fails with the stack's log.
+# the stack needs none of them. With `database-artifact` it restores the migrated database instead of migrating.
+# The action ends only when the stack is up, or fails with the stack's log.
 name: Start the e2e stack
 description: Load the images and start the local stack while the e2e dependencies and Chromium install.
 inputs:
@@ -11,6 +12,9 @@ inputs:
   artifact:
     description: The name of the artifact build-e2e-images uploaded.
     required: true
+  database-artifact:
+    description: The name of the artifact the `database` job of e2e.yml uploaded (a BACKUP of the migrated database). When set, the stack RESTOREs it instead of migrating from zero. Empty (the default) migrates from zero.
+    default: ""
   npm-cache:
     description: Set to "npm" to restore and save the npm cache. Empty (the default) caches nothing, for the workflows that run refs that are not main's.
     default: ""
@@ -23,11 +27,19 @@ runs:
         name: ${{ inputs.artifact }}
         path: ${{ runner.temp }}/images
 
+    - name: Download the migrated database
+      if: ${{ inputs.database-artifact != '' }}
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: ${{ inputs.database-artifact }}
+        path: ${{ runner.temp }}/database
+
     - name: Start the stack in the background
       working-directory: ${{ inputs.code-dir }}
       shell: bash
       env:
         IMAGES_DIR: ${{ runner.temp }}/images
+        DATABASE_DIR: ${{ inputs.database-artifact != '' && format('{0}/database', runner.temp) || '' }}
         STACK_DIR: ${{ runner.temp }}/stack
       run: |
         mkdir -p "$STACK_DIR"
@@ -37,7 +49,17 @@ runs:
           set -euo pipefail
           docker load --input "$IMAGES_DIR/api.tar"
           docker load --input "$IMAGES_DIR/devidp.tar"
-          docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml up --no-build --detach
+          compose=(docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml)
+          if [ -n "$DATABASE_DIR" ]; then
+            # The migrated database replaces the empty one CockroachDB creates on its first boot; `migrate` then finds
+            # every migration applied and changes nothing.
+            export E2E_DB_DIR="$DATABASE_DIR"
+            compose+=(-f deploy/local/compose.ci-db.yaml)
+            "${compose[@]}" up --no-build --detach --wait cockroach
+            "${compose[@]}" exec -T cockroach cockroach sql --insecure --host=localhost:26257 \
+              -e "DROP DATABASE IF EXISTS meurpg CASCADE" -e "RESTORE DATABASE meurpg FROM LATEST IN 'nodelocal://1/e2e'"
+          fi
+          "${compose[@]}" up --no-build --detach
         ) >"$STACK_DIR/log" 2>&1
         echo "$?" >"$STACK_DIR/status"
         SCRIPT

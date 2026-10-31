@@ -10,7 +10,7 @@ How to run the same checks locally is in [CONTRIBUTING.md](../CONTRIBUTING.md); 
 | --- | --- | --- |
 | `backend` | PRs (all of a train) and pushes to `main` touching `backend/`, `proto/`, `web/`, the `Makefile`, `.node-version` or the Go CI files; nightly; manual | `changes`, `proto`, `go`, `govulncheck`, `go-db` (nine groups plus a gate), `go-coverage`, `report` |
 | `web` | `web/`, `.node-version`, the workflow; every pull request of a train | `test and build`, `coverage` |
-| `e2e` | `backend/`, `proto/`, `web/`, `e2e/`, `deploy/local/`, the `Makefile`, `.node-version`, the workflow; never for a Markdown-only change, except in a train; nightly; manual | `plan`, `lint and typecheck`, `images`, `playwright` shards, `report` |
+| `e2e` | `backend/`, `proto/`, `web/`, `e2e/`, `deploy/local/`, the `Makefile`, `.node-version`, the workflow; never for a Markdown-only change, except in a train; nightly; manual | `plan`, `lint and typecheck`, `images`, `database`, `playwright` shards, `report` |
 | `codeql` | PRs (all of a train) touching `backend/`, `web/src/`, `e2e/` or workflows; every push to `main`; weekly | Go (built from `backend/`), JavaScript/TypeScript and GitHub Actions, with the `security-extended` queries; findings go to the Security tab |
 | `osv-scan` | Every pull request of a train; changes to a lockfile (`backend/go.mod`, `backend/go.sum`, the `package-lock.json` of `web/`, `e2e/` and `e2e/lint/`), `osv-scanner.toml` or the workflow; pushes to `main`; nightly; manual | `osv-scanner (lockfiles)`, `report` |
 | `workflows-lint` | Changes under `.github/` or to `e2e/lint/package-lock.json`; every pull request of a train | `actionlint` and `zizmor`, at versions pinned by number and sha256; the unit tests of the CI scripts (`node --test`) |
@@ -146,8 +146,14 @@ The `e2e` workflow runs the Playwright suite against the local stack.
 - `plan` chooses the shards: three plain shards (`--grep-invert @a11y`) always, and six accessibility shards (`--grep @a11y`) on `main`, nightly, manual runs, and pull requests that touch `web/`, `e2e/`, `deploy/local/` or the workflow.
 - `lint and typecheck` needs no Docker, so a mistake fails in about a minute.
 - `images` builds the production image and the devidp image once (with the GitHub Actions layer cache) and hands both over as an artifact; each shard runs `docker load`, so a broken Dockerfile fails before any shard.
+- `database` migrates an empty CockroachDB once, beside `images`: it builds `migrate` from the checkout, runs it against the in-memory database of `compose.ci.yaml`, and backs the database up (`BACKUP DATABASE`, to the folder `compose.ci-db.yaml` mounts) as the artifact `e2e-database`.
+  The backup holds the state right after the migrations, seed rows included, and is a few hundred kilobytes.
+  It runs beside `images`, not inside it, so neither waits for the other.
+- Every shard but plain 1/3 restores that backup (`RESTORE DATABASE`, about a second) instead of running the migrations (about 90 s); `migrate` then finds every migration applied and changes nothing.
+  Plain 1/3 starts from an empty database and runs every migration, so a broken migration still fails `e2e`.
+  The other workflows that start the stack (`repeat-changed`, `flake-check`, `nightly-hunt`) migrate from an empty database.
 - Each shard starts the stack in the background (the composite action `start-e2e-stack`) while it installs Node, the e2e dependencies and Chromium, which the stack does not need.
-  The stack starts with `docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml up --no-build --detach` (`compose.ci.yaml` keeps the database in memory; `compose.ci-images.yaml` points at the loaded images).
+  The stack starts with `docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-images.yaml up --no-build --detach` (`compose.ci.yaml` keeps the database in memory and lets it BACKUP and RESTORE to a folder; `compose.ci-images.yaml` points at the loaded images).
   The last step of the action waits for it, and a stack that fails to start fails the job with its log.
   One shard then checks that the production image does not contain the devidp, and every shard runs the tests on Chromium.
   A failed shard shows the stack logs and keeps them (`stack-logs/stack.log`, with timestamps) with its Playwright report in the artifact `playwright-report-<n>`.

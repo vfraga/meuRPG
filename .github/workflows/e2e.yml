@@ -183,6 +183,62 @@ jobs:
           artifact: e2e-images
           cache-write: "true"
 
+  # Migrates an empty CockroachDB once and backs it up (BACKUP to a folder, uploaded as an artifact), so the shards
+  # RESTORE it in about a second instead of each running the 270-odd migrations (about 90 s). It runs beside `image`,
+  # not inside it: `migrate` is built here from the same checkout, so neither job waits for the other. One shard
+  # (plain 1/3) still migrates from an empty database, so a broken migration still fails e2e.
+  database:
+    needs: plan
+    if: ${{ needs.plan.outputs.run == 'true' }}
+    name: database (migrated once, backed up)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Build migrate
+        working-directory: backend
+        run: go build -o "$RUNNER_TEMP/migrate" ./cmd/migrate
+
+      - name: Start CockroachDB
+        run: |
+          # compose.ci-db.yaml mounts this folder into CockroachDB, for BACKUP.
+          echo "E2E_DB_DIR=$RUNNER_TEMP/database" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/database"
+          E2E_DB_DIR="$RUNNER_TEMP/database" docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-db.yaml up --detach --wait cockroach
+
+      - name: Migrate and back up
+        env:
+          DATABASE_URL: postgresql://root@127.0.0.1:26257/meurpg?sslmode=disable
+        run: |
+          "$RUNNER_TEMP/migrate" up
+          docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-db.yaml exec -T cockroach \
+            cockroach sql --insecure --host=localhost:26257 -e "BACKUP DATABASE meurpg INTO 'nodelocal://1/e2e'"
+          # CockroachDB runs as root: the runner needs to read the files to upload them.
+          sudo chown -R "$(id -u):$(id -g)" "$E2E_DB_DIR"
+
+      - name: Show the database log
+        if: failure()
+        run: docker compose -f deploy/local/compose.yaml -f deploy/local/compose.ci.yaml -f deploy/local/compose.ci-db.yaml logs --no-color
+
+      - name: Upload the migrated database
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-database
+          path: ${{ runner.temp }}/database
+          retention-days: 1
+          if-no-files-found: error
+
   e2e:
     # The suite is split across nine runners, each with its own stack: on
     # one runner the 171 tests took 13 minutes with 2 workers (04/10/2026).
@@ -197,7 +253,7 @@ jobs:
     name: playwright ${{ matrix.part }} (local stack with devidp)
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    needs: [image, plan]
+    needs: [image, database, plan]
     if: ${{ needs.plan.outputs.run == 'true' }}
     strategy:
       fail-fast: false
@@ -215,6 +271,8 @@ jobs:
         uses: ./.github/actions/start-e2e-stack
         with:
           artifact: e2e-images
+          # Plain 1/3 migrates from an empty database; the others restore the one the `database` job migrated.
+          database-artifact: ${{ matrix.part != '1/3' && 'e2e-database' || '' }}
           npm-cache: npm
 
       - name: Type-check the tests
@@ -279,7 +337,7 @@ jobs:
   # so a red main or nightly does not go unnoticed.
   report:
     name: report (issue when main is red)
-    needs: [lint, image, plan, e2e]
+    needs: [lint, image, database, plan, e2e]
     # Only the upstream repository has issues: a fork's red main (synced from upstream) has nowhere to report.
     if: ${{ always() && github.repository == 'PuraFome/meuRPG' && github.event_name != 'pull_request' && contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-26.04
