@@ -1,4 +1,5 @@
 import { combatRPC, openLive, step, waitForEncounterRevision, type Page } from './support';
+import type { Page as AppPage } from './app-page';
 
 export async function clickRightAfter(m: Page): Promise<void> {
   const enc = await combatRPC(m, 'EndTurn');
@@ -53,5 +54,63 @@ export async function waitsAfterACallback(m: Page): Promise<void> {
     enc = await combatRPC(m, 'EndTurn');
   });
   await waitForEncounterRevision(m, enc);
+  await m.getByRole('button').click();
+}
+
+// An awaited callback that runs after the call waits for the page itself.
+export async function waitsInALaterStep(m: Page): Promise<void> {
+  const enc = await combatRPC(m, 'EndTurn');
+  await step('click', async () => {
+    await waitForEncounterRevision(m, enc);
+    await m.getByRole('button').click();
+  });
+}
+
+// Not Playwright's `Page`: an app type with the same name is not a Playwright action.
+export async function appTypeNamedPage(m: Page, results: AppPage): Promise<void> {
+  await combatRPC(m, 'EndTurn');
+  await results.click();
+}
+
+// A handler runs later, when the page calls it: what is inside it is not what follows the call that registers it.
+export async function registersAHandler(m: Page): Promise<void> {
+  await combatRPC(m, 'EndTurn');
+  await m.route('**/rpc', async () => {
+    await m.getByRole('button').click();
+  });
+  await m.waitForEvent('response', () => {
+    void m.getByRole('button').click();
+    return true;
+  });
+}
+
+// A handler's own calls are a different moment from the test body.
+export async function callsInsideAHandler(m: Page): Promise<void> {
+  await m.route('**/rpc', async () => {
+    await combatRPC(m, 'EndTurn');
+  });
+  await m.getByRole('button').click();
+}
+
+// A listener is not awaited: it does not run before what follows it.
+export async function listens(m: Page): Promise<void> {
+  m.on('response', async () => {
+    await combatRPC(m, 'EndTurn');
+  });
+  await m.getByRole('button').click();
+}
+
+export async function exposesAFunction(m: Page): Promise<void> {
+  await combatRPC(m, 'EndTurn');
+  await m.exposeFunction('report', async () => {
+    await m.getByRole('button').click();
+  });
+}
+
+// A step nobody awaits does not run before what follows it.
+export async function startsAStepWithoutAwaiting(m: Page): Promise<void> {
+  void step('later', async () => {
+    await combatRPC(m, 'EndTurn');
+  });
   await m.getByRole('button').click();
 }

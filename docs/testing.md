@@ -280,8 +280,13 @@ await m.getByRole('button', { name: 'Próximo turno' }).click();
 - A page with no combat view (the bestiary, a player after the combat ended) cannot show a revision: disable the rule on that call with the reason.
 - `meurpg/rpc-revision-wait` (`e2e/lint/rules`) is an error when an awaited helper that returns an `Encounter` is followed by a page action with no wait on that action's page.
   A wait that comes after the action, or on another page, does not count.
-  A page action is a call on a Playwright `Locator`, `Page`, or the page's keyboard, mouse or touchscreen, so `Set.clear()` is not one.
-  A call that ends the body of an awaited callback (`test.step`) is judged with what follows the call.
+  A page action is a call on a Playwright `Locator`, `Page`, `Frame`, `ElementHandle`, or the page's keyboard, mouse or touchscreen, so `Set.clear()` is not one.
+  The actions are `click`, `dblclick`, `fill`, `press`, `pressSequentially`, `check`, `uncheck`, `setChecked`, `selectOption`, `type`, `hover`, `focus`, `tap`, `dragTo`, `dragAndDrop`, `dispatchEvent`, `selectText`, `setInputFiles`, `clear`, and the keyboard's and mouse's `down`, `up`, `insertText`, `move` and `wheel`.
+  The rule reads the receiver's type, where Playwright declares it: an app type called `Page` is not a page, and a receiver typed `any` is not seen.
+  A callback of a directly awaited call (`await test.step(..)`) runs where it is written: the rule reads into it, and judges a call that ends it with what follows.
+  `return step(..)`, `Promise.all([..])` and a step stored in a variable are not followed.
+  A handler the page calls later (`route`, `exposeFunction`, the predicate of `waitForEvent`) or that nobody awaits (`page.on`) is not that moment.
+  An action on a page the rule cannot name (a `Frame` or `ElementHandle` variable) is cleared by any wait.
   `goto`, `reload`, `openSessionPage`, `openPlayerMap`, `gotoCampaignTab` and `openLive` count as a wait, because the page then reads the state itself.
   Reads (`get*`, `list*`, `read*`) and moves (`MoveCombatant`, `movePensantus`) need none.
   The rule asks for a wait on every page that acts, because it cannot tell which pages show the session.

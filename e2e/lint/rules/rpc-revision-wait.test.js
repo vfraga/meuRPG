@@ -2,6 +2,7 @@
 // The rule fails on the bad fixture and passes on the fixed one. Run with `npm run lint:test` from e2e/.
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const { ESLint } = require('eslint');
 const tseslint = require('typescript-eslint');
@@ -32,15 +33,15 @@ async function lint(file) {
 
 test('reports the call a page action follows without a revision wait', async () => {
   const messages = await lint('bad.ts');
+  // The lines the fixture marks with `// error`: the call whose answer the page may not show yet.
+  const marked = fs
+    .readFileSync(path.join(fixtures, 'bad.ts'), 'utf8')
+    .split('\n')
+    .flatMap((line, i) => (line.endsWith('// error') ? [i + 1] : []));
+  assert.equal(marked.length, 24);
   assert.deepEqual(
     messages.map((m) => [m.ruleId, m.line]),
-    [
-      ['meurpg/rpc-revision-wait', 6],
-      ['meurpg/rpc-revision-wait', 12],
-      ['meurpg/rpc-revision-wait', 18],
-      ['meurpg/rpc-revision-wait', 24],
-      ['meurpg/rpc-revision-wait', 46],
-    ],
+    marked.map((line) => ['meurpg/rpc-revision-wait', line]),
   );
 });
 

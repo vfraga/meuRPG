@@ -778,3 +778,11 @@ export async function openCombatLog(page: Page): Promise<Locator> {
   await expect(log).toBeVisible();
   return log;
 }
+
+/** The value, or a failure naming `what` that was missing: it narrows without a conditional in the test. */
+export function required<T>(value: T | undefined, what: string): T {
+  if (value === undefined) {
+    throw new Error(`Missing: ${what}.`);
+  }
+  return value;
+}

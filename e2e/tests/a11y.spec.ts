@@ -8,7 +8,7 @@ import { expectAligned } from './layout';
 import { expectLoaded } from './loaded';
 import { diceTable, openDice, stepModifier } from './free-dice-support';
 import { chooseReaders, lineOf, messageBoxOf, openConversaTable, say } from './conversa-support';
-import { followMapLink, openChatTab, openPlayerMap, openSheetTab, endOpenSessionRPC, endSessionRPC, openRolls, openSessionPage, showMapTool, showMasterTab, startSessionRPC, tableWithPensantus, openSessionMenu, clickStartCombat, expectStartCombatOffered, endSessionFromBar } from './live-session-support';
+import { followMapLink, openChatTab, openPlayerMap, openSheetTab, endOpenSessionRPC, endSessionRPC, openRolls, openSessionPage, openLive, showMapTool, showMasterTab, startSessionRPC, tableWithPensantus, openSessionMenu, clickStartCombat, expectStartCombatOffered, endSessionFromBar } from './live-session-support';
 import { canvasPng, createMapRPC, createPointRPC, placeTokenRPC, revealMapRPC, setCurrentMapRPC, tableForMaps, uploadImageRPC } from './maps-support';
 import { type Encounter, adjustVitalsRPC, attackCombatSquares, beginAttackCombatRPC, setGridRPC, combatRPC, getEncounterRPC, startEncounterRPC, endTurnOf, passTurnsTo, pensantusCasting, waitTurnLeaves, tableForCombat, toren, torenSheet } from './combat-support';
 import { addActionRPC, attachTwoImagesRPC, cartActions, getOpenSceneRPC, openSceneOnlyToRPC, openSceneRPC, rollSceneRPC, sceneActionIdsRPC, setAttemptsRPC, setMayJoinRPC, setSceneImagesRPC, setShowDcRPC, tableForScenes } from './scene-support';
@@ -1893,11 +1893,6 @@ async function scanXpScreens(browser: Browser, colorScheme: 'light' | 'dark', wi
   const p = await player.newPage();
   const where = `(${colorScheme}, ${width}px)`;
   const campaigns: string[] = [];
-  /** A page that keeps its stream open never goes idle: wait for its h1 instead. */
-  const openLive = async (page: Page, route: string, heading?: string) => {
-    await page.goto(route);
-    await expect(heading ? page.getByRole('heading', { name: heading }) : page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 30_000 });
-  };
   try {
     await m.goto('/');
     await p.goto('/');
@@ -1907,7 +1902,8 @@ async function scanXpScreens(browser: Browser, colorScheme: 'light' | 'dark', wi
     const campaignId = combat.table.campaignId;
     campaigns.push(campaignId);
     await winCombatRPC(m, combat);
-    await openLive(m, `/campaigns/${campaignId}/session`, 'Combate encerrado');
+    // Going live takes several calls in a row, as in `openSessionPage`: wait up to 30 s.
+    await openLive(m, `/campaigns/${campaignId}/session`, 'Combate encerrado', 30_000);
     const block = m.getByRole('region', { name: 'Experiência do combate' });
     await expect(block.getByRole('button', { name: /^Dar 350 XP/ })).toBeVisible();
     await expectScreenPasses(m, `Fim do combate com Dar XP ${where}`);
@@ -6636,11 +6632,7 @@ async function scanTableSheetScreens(browser: Browser, colorScheme: 'light' | 'd
     // The level-up with the table class: the session locks the sheet. An open session keeps a stream going, so
     // the screens from here on are loaded by their heading, not by a quiet network.
     await lockAndMilestone(m, campaignId, characterId);
-    const openLive = async (route: string) => {
-      await page.goto(route);
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    };
-    await openLive(`/campaigns/${campaignId}/characters/${characterId}/level-up`);
+    await openLive(page, `/campaigns/${campaignId}/characters/${characterId}/level-up`);
     await passClassStep(page);
     await expect(page.getByText(/Passo 2 de \d · Vida/)).toBeVisible();
     await expectScreenPasses(page, `Subir de nível, a vida ${where}`);
@@ -6674,7 +6666,7 @@ async function scanTableSheetScreens(browser: Browser, colorScheme: 'light' | 'd
     (fighter.sheet as any).full.skillProficiencyKeys = ['skill:athletics', 'skill:perception'];
     const runico = await createSheetRPC(page, campaignD, fighter);
     await lockAndMilestone(m, campaignD, runico);
-    await openLive(`/campaigns/${campaignD}/characters/${runico}/level-up`);
+    await openLive(page, `/campaigns/${campaignD}/characters/${runico}/level-up`);
     await passClassStep(page);
     await page.getByRole('button', { name: 'Próximo' }).click();
     await page.locator('#pick-subclass').getByRole('radio', { name: /Lâmina de Tinta/ }).click();
@@ -6697,7 +6689,7 @@ async function scanTableSheetScreens(browser: Browser, colorScheme: 'light' | 'd
         preparedSpellKeys: ['spell:bless'],
       } },
     });
-    await openLive(`/campaigns/${campaignB}/characters/${cleric}/edit`);
+    await openLive(page, `/campaigns/${campaignB}/characters/${cleric}/edit`);
     await page.getByRole('tab', { name: 'Magias' }).click();
     await expect(page.locator('.granted')).toContainText('Sempre preparada');
     await expect(page.getByText(/Preparadas \d+ de \d+/)).toBeVisible();
@@ -6705,7 +6697,7 @@ async function scanTableSheetScreens(browser: Browser, colorScheme: 'light' | 'd
 
     // "A classe mudou" on the sheet, and its sheet.
     await changeGuardianSkillsRPC(m, campaignId, guardian, 1);
-    await openLive(`/campaigns/${campaignId}/characters/${characterId}`);
+    await openLive(page, `/campaigns/${campaignId}/characters/${characterId}`);
     await expect(page.getByText('A classe mudou.')).toBeVisible();
     await expectScreenPasses(page, `Ficha com "A classe mudou" ${where}`);
     await page.getByRole('button', { name: 'Ver o que mudou' }).click();

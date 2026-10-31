@@ -6,8 +6,16 @@
 // The rule looks at `await <helper>(...)` whose answer is an `Encounter` (a numeric `revision` and `combatants`): the helper
 // says which revision the server reached. After it, in the same block, in the blocks around it and after an awaited
 // callback that it ends (`test.step`), the first thing that is either a page action on a Playwright `Locator`, `Page`,
-// keyboard or mouse (click, fill, press, ...), a revision wait (`waitForEncounterRevision`) or a page load (`goto`,
-// `openSessionPage`, `openLive`) decides: an action first is an error. `goto` and `reload` are not actions: a fresh load reads the state itself.
+// `Frame`, `ElementHandle`, keyboard, mouse or touchscreen (click, fill, press, ...), a revision wait
+// (`waitForEncounterRevision`) or a page load (`goto`, `openSessionPage`, `openLive`) decides: an action first is an error.
+// `goto` and `reload` are not actions: a fresh load reads the state itself.
+//
+// A callback runs where it is written when a directly awaited call takes it (`await test.step(..)`): the rule reads into it, before and
+// after the call. A callback the page calls later (`route`, `exposeFunction`, a `waitForEvent` predicate), one that runs in the browser
+// (`evaluate`) or one nobody awaits (`page.on(..)`) is a different moment: the rule reads neither into it nor past it. Callbacks inside `Promise.all`, `expect.poll` or `toPass` are not followed.
+//
+// A receiver is a Playwright object by where its type is declared (playwright-core), not by its name: an intersection, a union,
+// a generic that extends `Locator` count by their members; an app type called `Page` does not.
 //
 // Limits, on purpose: only Playwright's own action methods count as actions (a helper that clicks inside is not seen);
 // a loop's next turn is not followed; a page the rule cannot name is judged by any wait.
@@ -31,11 +39,48 @@ const ACTIONS = new Set([
   'dragTo',
   'setInputFiles',
   'clear',
+  'dragAndDrop',
+  'dispatchEvent',
+  'selectText',
+  'down',
+  'up',
+  'insertText',
+  'move',
+  'wheel',
 ]);
 // A wait, or a load: a page that loads after the call reads the state itself.
 const WAIT_NAMES = new Set(['waitForEncounterRevision', 'openSessionPage', 'openPlayerMap', 'gotoCampaignTab', 'openLive']);
-// The receivers whose methods are page actions.
-const PLAYWRIGHT_TYPES = new Set(['Locator', 'Page', 'Keyboard', 'Mouse', 'Touchscreen']);
+// The Playwright types whose methods are page actions, and the one that names a page.
+const ACTION_TYPES = new Set(['Locator', 'Page', 'Frame', 'ElementHandle', 'Keyboard', 'Mouse', 'Touchscreen']);
+// Where Playwright's types are declared: `node_modules/playwright-core/types/types.d.ts`.
+const PLAYWRIGHT_DECLARATIONS = /[\\/]playwright-core[\\/]/;
+const PAGE_TYPES = new Set(['Page']);
+const LOCATOR_TYPES = new Set(['Locator']);
+// Methods that keep a callback for later (the page calls it) or run it away from the test: its body is not this moment.
+const LATER_CALLBACKS = new Set([
+  'route',
+  'unroute',
+  'routeFromHAR',
+  'routeWebSocket',
+  'exposeFunction',
+  'exposeBinding',
+  'addInitScript',
+  'addLocatorHandler',
+  'waitForEvent',
+  'waitForRequest',
+  'waitForResponse',
+  'waitForURL',
+  'waitForFunction',
+  'evaluate',
+  'evaluateAll',
+  'evaluateHandle',
+  '$eval',
+  '$$eval',
+  'on',
+  'once',
+  'addListener',
+  'prependListener',
+]);
 // A read changes nothing on the server: there is no change for the page to show.
 const READS = /^(get|list|read)[A-Z]\w*$/;
 const LOAD_METHODS = new Set(['goto', 'reload']);
@@ -49,6 +94,17 @@ const listOf = (parent) => {
   if (parent.type === 'BlockStatement' || parent.type === 'Program' || parent.type === 'StaticBlock') return parent.body;
   if (parent.type === 'SwitchCase') return parent.consequent;
   return null;
+};
+
+/**
+ * Whether a function runs where it is written: an awaited call takes it (`await test.step(..)`), and the method is not one that
+ * keeps the callback for later. @param {any} fn
+ */
+const runsNow = (fn) => {
+  const call = fn.parent;
+  if (call?.type !== 'CallExpression' || !call.arguments.includes(fn) || call.parent?.type !== 'AwaitExpression') return false;
+  const callee = call.callee;
+  return !(callee.type === 'MemberExpression' && !callee.computed && LATER_CALLBACKS.has(callee.property.name));
 };
 
 // A variable holds a locator (so it belongs to the page it was found on) when it is built by one of these methods;
@@ -92,12 +148,33 @@ module.exports = {
       return Boolean(prop) && Boolean(type.getProperty('combatants')) && (checker.getTypeOfSymbol(prop).flags & ts.TypeFlags.Number) !== 0;
     };
 
-    /** Whether a receiver is a Playwright `Locator`, `Page` or the page's keyboard, mouse or touchscreen: `Set.clear()` is no action. @param {any} node */
-    const isPlaywrightObject = (node) => {
-      const type = checker.getTypeAtLocation(services.esTreeNodeToTSNodeMap.get(node));
-      const types = checker.getNonNullableType(type);
-      return (types.isUnion() ? types.types : [types]).some((t) => PLAYWRIGHT_TYPES.has(t.symbol?.name ?? ''));
+    /**
+     * The types a type is made of: the members of a union or an intersection, the constraint of a generic. Nothing for `undefined`.
+     * @param {any} type @returns {any[]}
+     */
+    const partsOf = (type) => {
+      /** @type {any[]} */
+      const out = [];
+      /** @param {any} t */
+      const visit = (t) => {
+        const base = t.flags & ts.TypeFlags.TypeParameter ? checker.getBaseConstraintOfType(t) : t;
+        if (!base) return;
+        if (base.isUnion() || base.isIntersection()) base.types.forEach(visit);
+        else out.push(base);
+      };
+      visit(checker.getNonNullableType(type));
+      return out;
     };
+
+    /** Whether a type is one of Playwright's own `names`, by the file that declares it. @param {any} type @param {Set<string>} names */
+    const isPlaywrightType = (type, names) =>
+      partsOf(type).some((t) => {
+        const symbol = t.symbol;
+        return Boolean(symbol) && names.has(symbol.name) && (symbol.declarations ?? []).some((/** @type {any} */ d) => PLAYWRIGHT_DECLARATIONS.test(d.getSourceFile().fileName));
+      });
+
+    /** @param {any} node @param {Set<string>} names */
+    const isPlaywrightObject = (node, names = ACTION_TYPES) => isPlaywrightType(checker.getTypeAtLocation(services.esTreeNodeToTSNodeMap.get(node)), names);
 
     /** A move is patched into the page with no new revision (CombatState.applyMove): there is nothing to wait for. @param {any} call */
     const isMove = (call) =>
@@ -143,11 +220,10 @@ module.exports = {
         else break;
       }
       if (!cur || cur.type !== 'Identifier') return null;
-      const typeName = checker.getTypeAtLocation(services.esTreeNodeToTSNodeMap.get(cur)).symbol?.name;
-      if (typeName === 'Page') return cur.name;
+      if (isPlaywrightObject(cur, PAGE_TYPES)) return cur.name;
       // A locator belongs to the page it was found on, when we can see where it came from.
       const def = variableOf(cur, cur.name)?.defs[0];
-      if (typeName === 'Locator' && def?.type === 'Variable' && def.node.id.type === 'Identifier' && def.node.init && depth < 6) {
+      if (isPlaywrightObject(cur, LOCATOR_TYPES) && def?.type === 'Variable' && def.node.id.type === 'Identifier' && def.node.init && depth < 6) {
         return isLocatorExpression(def.node.init) ? pageOf(def.node.init, depth + 1) : null;
       }
       return null;
@@ -160,17 +236,23 @@ module.exports = {
       return arg.type === 'ArrayExpression' ? arg.elements.map((/** @type {any} */ e) => pageOf(e)) : [pageOf(arg)];
     };
 
+    /** What a statement does is read once, however many calls come before it. @type {WeakMap<object, any[]>} */
+    const scans = new WeakMap();
+
     /**
-     * What a statement does, in source order (function bodies are not entered): `action` on a page, `wait` for a page
+     * What a statement does, in source order (a callback is entered only where `runsNow` says
+     * it runs where it is written): `action` on a page, `wait` for a page
      * (a revision wait or a page load), or a later tracked `rpc`. @param {any} root
      */
     const scan = (root) => {
+      const known = scans.get(root);
+      if (known) return known;
       /** @type {{ kind: 'action' | 'wait' | 'rpc', page: string | null, pages?: (string | null)[], at: number }[]} */
       const events = [];
       /** @param {any} node */
       const walk = (node) => {
         if (!node || typeof node.type !== 'string') return;
-        if (isFunction(node)) return;
+        if (isFunction(node) && !runsNow(node)) return;
         if (node.type === 'AwaitExpression' && isTracked(node)) {
           events.push({ kind: 'rpc', page: null, at: node.range[0] });
         }
@@ -193,7 +275,9 @@ module.exports = {
         }
       };
       walk(root);
-      return events.sort((a, b) => a.at - b.at);
+      const sorted = events.sort((a, b) => a.at - b.at);
+      scans.set(root, sorted);
+      return sorted;
     };
 
     return {
@@ -218,8 +302,8 @@ module.exports = {
           const parent = cur.parent;
           // The call ends a callback's body (`test.step(..)`): what follows the callback is judged too.
           if (isFunction(parent)) {
-            // Only an awaited call, so that an event handler (`page.on(..)`) is not read as running before what follows.
-            if (parent.parent?.type !== 'CallExpression' || !parent.parent.arguments.includes(parent) || parent.parent.parent?.type !== 'AwaitExpression') break;
+            // Only a callback that runs now, so that an event handler (`page.on(..)`) or a route handler is not read as running before what follows.
+            if (!runsNow(parent)) break;
             cur = parent.parent;
             continue;
           }
