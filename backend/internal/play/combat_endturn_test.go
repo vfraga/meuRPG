@@ -60,7 +60,7 @@ func (a *armed) eventTrace(t *testing.T, e *playv1.Encounter, after int) []strin
 			}
 			return "?"
 		})
-		out = append(out, kind+" "+sortEmbeddedJSON(t, dbtest.SortJSONKeys(payload)))
+		out = append(out, kind+" "+sortEmbeddedJSON(dbtest.SortJSONKeys(payload)))
 	}
 	return out
 }
@@ -583,12 +583,11 @@ var embeddedJSON = regexp.MustCompile(`"Modifiers": "([A-Za-z0-9+/=]+)"`)
 
 // sortEmbeddedJSON puts in byte order the keys of the jsonb that an event payload carries as base64
 // (a []byte field), which PostgreSQL prints in another order than CockroachDB.
-func sortEmbeddedJSON(t *testing.T, payload string) string {
-	t.Helper()
+func sortEmbeddedJSON(payload string) string {
 	return embeddedJSON.ReplaceAllStringFunc(payload, func(m string) string {
 		raw, err := base64.StdEncoding.DecodeString(embeddedJSON.FindStringSubmatch(m)[1])
 		if err != nil {
-			t.Fatalf("decode the Modifiers of an event: %v", err)
+			return m
 		}
 		return `"Modifiers": "` + base64.StdEncoding.EncodeToString([]byte(dbtest.SortJSONKeys(string(raw)))) + `"`
 	})

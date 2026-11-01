@@ -40,7 +40,6 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/choicetest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice/dicetest"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/hinttest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/play/voice"
@@ -176,7 +175,6 @@ func (c *fakeClock) advance(d time.Duration) {
 }
 
 type harness struct {
-	hints  hinttest.Tracker // the sends of the maps service's hint gate that are still pending
 	t      *testing.T
 	pool   *pgxpool.Pool
 	users  *identity.PostgresStore

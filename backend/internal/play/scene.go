@@ -164,7 +164,7 @@ func insertSceneEvent(ctx context.Context, c *combatTx, kind string, actor, key 
 	if err != nil {
 		return "", fmt.Errorf("next event number: %w", err)
 	}
-	row, err := insertSessionEvent(ctx, c.q, playdb.InsertSessionEventParams{
+	row, err := c.q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
 		GameSessionID: c.session.ID, Seq: seq, Kind: kind, ActorUserID: actor, CharacterID: c.characterID,
 		Payload: body, IdempotencyKey: key, CreatedAt: c.now, IdempotencyHash: hashOf(c, key),
 	})

@@ -45,7 +45,7 @@ endif
 COCKROACH_VERSION := v26.2.8
 COCKROACH_STORE ?= $(HOME)/.meurpg/cockroach
 
-# The test CockroachDB (`make db-test-cockroach-start`): a second native node on port
+# The test CockroachDB (`make db-test-start`): a second native node on port
 # 26258 for the integration tests only, whose store lives in memory (2 GiB at
 # most) and disappears when it stops. Schema changes, which the test
 # databases are made of, take a quarter of the time they take on disk, and
@@ -54,7 +54,7 @@ COCKROACH_STORE ?= $(HOME)/.meurpg/cockroach
 # default 4 hours (gc.ttlseconds).
 #
 # TEST_DB_PORT starts more than one, each with its own memory and console
-# (`make db-test-cockroach-start TEST_DB_PORT=26259`): two runs of the integration
+# (`make db-test-start TEST_DB_PORT=26259`): two runs of the integration
 # tests then never wait for each other. The console port follows the SQL
 # port (26258 -> 8082, 26259 -> 8083...).
 TEST_DB_PORT ?= 26258
@@ -65,17 +65,6 @@ else
 TEST_DB_DIR ?= $(HOME)/.meurpg/cockroach-test-$(TEST_DB_PORT)
 endif
 TEST_DATABASE_URL := postgresql://root@localhost:$(TEST_DB_PORT)/defaultdb?sslmode=disable
-
-# The test PostgreSQL (`make db-test-start`): a native server on port 5433 for
-# the integration tests only, with the data directory under ~/.meurpg and the
-# settings CI uses (SERIALIZABLE by default, fsync off). The backend's tests
-# run on it, except the few that need CockroachDB itself
-# (backend/cockroach-only-tests.txt). The port is not 5432 so that it never
-# meets a PostgreSQL of your own.
-# TEST_PG_PORT starts a second one (`make db-test-start TEST_PG_PORT=5434`).
-TEST_PG_PORT ?= 5433
-TEST_PG_DIR ?= $(HOME)/.meurpg/postgres-test-$(TEST_PG_PORT)
-TEST_PG_DATABASE_URL := postgresql://root@localhost:$(TEST_PG_PORT)/postgres?sslmode=disable
 
 # sqlc is pinned: its version is written into every file it generates, so
 # every machine and CI must run the same one. `go run pkg@version` builds
@@ -89,7 +78,7 @@ SQLC := go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1
 # together. The first run compiles it (a minute or two); Go caches it after.
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 
-.PHONY: help proto sqlc proto-lint lint lint-all test test-postgres before-ready run migrate up down logs docker-build web-install web-test web-build e2e db-native-start db-native-stop db-test-start db-test-stop db-test-cockroach-start db-test-cockroach-stop elk-up elk-down elk-logs
+.PHONY: help proto sqlc proto-lint lint lint-all test before-ready run migrate up down logs docker-build web-install web-test web-build e2e db-native-start db-native-stop db-test-start db-test-stop elk-up elk-down elk-logs
 
 help: ## Show this help message
 	@echo "MeuRPG - available targets:"
@@ -133,9 +122,6 @@ lint-all: proto-lint ## Run all linters on the whole code, including the backlog
 test: ## Run backend Go tests with the race detector
 	cd backend && go test -race ./...
 
-test-postgres: ## Run the backend tests on the test PostgreSQL (make db-test-start), leaving out the tests that need CockroachDB (backend/cockroach-only-tests.txt)
-	cd backend && MEURPG_TEST_DATABASE_URL='$(TEST_PG_DATABASE_URL)' MEURPG_REQUIRE_DB=1 go test -race -skip "$$(../.github/scripts/cockroach-only.sh skip-regex)" ./...
-
 # shell-quote puts its argument in single quotes for the shell. It is called with $(value VAR), the
 # text of the variable as it was typed: make would otherwise read a `$` of a regex as a variable
 # ('^a$|^b$' would become '^a^b$').
@@ -148,7 +134,7 @@ shell-quote = '$(subst ','\'',$(1))'
 # every line. ONLY='internal/play$' (a Go regex on the package directory) narrows the lines to the
 # packages whose directory matches.
 before-ready: ## Run the golden, frozen, fixture and inventory tests the change can affect (all of them with ALL=1) (needs MEURPG_TEST_DATABASE_URL); run it before writing `ready:`
-	TEST_DATABASE_URL='$(TEST_PG_DATABASE_URL)' BEFORE_READY_ONLY=$(call shell-quote,$(or $(value ONLY),$(value BEFORE_READY_ONLY))) BEFORE_READY_ALL=$(call shell-quote,$(or $(value ALL),$(value BEFORE_READY_ALL))) bash .github/scripts/before-ready.sh
+	TEST_DATABASE_URL='$(TEST_DATABASE_URL)' BEFORE_READY_ONLY=$(call shell-quote,$(or $(value ONLY),$(value BEFORE_READY_ONLY))) BEFORE_READY_ALL=$(call shell-quote,$(or $(value ALL),$(value BEFORE_READY_ALL))) bash .github/scripts/before-ready.sh
 
 run: ## Run the API server on the host (needs `make up` for the DB)
 	cd backend && DATABASE_URL="$(DATABASE_URL)" go run ./cmd/api
@@ -212,30 +198,7 @@ db-native-stop: ## Stop the native CockroachDB started by db-native-start
 		echo "CockroachDB is not running (no live $(COCKROACH_STORE)/cockroach.pid)"; \
 	fi
 
-db-test-start: ## Start the test PostgreSQL on localhost:5433 (TEST_PG_PORT=5434 for a second one) for the integration tests
-	@command -v pg_ctl >/dev/null && command -v initdb >/dev/null || { echo "pg_ctl and initdb not found: brew install postgresql@17 and put its bin directory on PATH (CONTRIBUTING.md)"; exit 1; }
-	@mkdir -p "$(TEST_PG_DIR)"
-	@if pg_isready -q -h localhost -p $(TEST_PG_PORT); then \
-		echo "The test PostgreSQL is already running on localhost:$(TEST_PG_PORT)"; \
-	else \
-		[ -f "$(TEST_PG_DIR)/data/PG_VERSION" ] || initdb -D "$(TEST_PG_DIR)/data" -U root --auth=trust >"$(TEST_PG_DIR)/initdb.log" 2>&1 || { cat "$(TEST_PG_DIR)/initdb.log"; exit 1; }; \
-		pg_ctl -D "$(TEST_PG_DIR)/data" -l "$(TEST_PG_DIR)/server.log" -w start \
-			-o "-p $(TEST_PG_PORT) -c listen_addresses=localhost -c unix_socket_directories=$(TEST_PG_DIR) -c default_transaction_isolation=serializable -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=1000 -c max_pred_locks_per_transaction=256" \
-			>"$(TEST_PG_DIR)/start.log" 2>&1 || { cat "$(TEST_PG_DIR)/start.log" "$(TEST_PG_DIR)/server.log"; exit 1; }; \
-	fi
-	@echo "Test PostgreSQL on localhost:$(TEST_PG_PORT). Run the integration tests with: make test-postgres"
-	@echo "The tests that need CockroachDB itself are left out; run them on make db-test-cockroach-start (docs/testing.md)."
-	@echo "Stop it with: make db-test-stop TEST_PG_PORT=$(TEST_PG_PORT)"
-
-db-test-stop: ## Stop the test PostgreSQL started by db-test-start (TEST_PG_PORT, 5433 by default); its data stays for the next start
-	@if [ -f "$(TEST_PG_DIR)/data/postmaster.pid" ] && pg_ctl -D "$(TEST_PG_DIR)/data" status >/dev/null 2>&1; then \
-		pg_ctl -D "$(TEST_PG_DIR)/data" -m fast -w stop >/dev/null; \
-		echo "The test PostgreSQL on localhost:$(TEST_PG_PORT) stopped"; \
-	else \
-		echo "The test PostgreSQL on localhost:$(TEST_PG_PORT) is not running"; \
-	fi
-
-db-test-cockroach-start: ## Start an in-memory test CockroachDB on localhost:26258 (TEST_DB_PORT=26259 for a second one), for the tests that need it and for the e2e
+db-test-start: ## Start an in-memory test CockroachDB on localhost:26258 (TEST_DB_PORT=26259 for a second one) for the integration tests
 	@command -v cockroach >/dev/null || { echo "cockroach not found: brew install cockroachdb/tap/cockroach@26.2 (CONTRIBUTING.md, \"CockroachDB nativo\")"; exit 1; }
 	@mkdir -p "$(TEST_DB_DIR)"
 	@if cockroach sql --insecure --host=localhost:$(TEST_DB_PORT) -e 'SELECT 1' >/dev/null 2>&1; then \
@@ -254,9 +217,9 @@ db-test-cockroach-start: ## Start an in-memory test CockroachDB on localhost:262
 	fi
 	@echo "Test CockroachDB on localhost:$(TEST_DB_PORT) (console: http://localhost:$(TEST_DB_HTTP_PORT)). Run the integration tests with:"
 	@echo "  MEURPG_TEST_DATABASE_URL='$(TEST_DATABASE_URL)' make test"
-	@echo "Stop it (and throw its data away) with: make db-test-cockroach-stop TEST_DB_PORT=$(TEST_DB_PORT)"
+	@echo "Stop it (and throw its data away) with: make db-test-stop TEST_DB_PORT=$(TEST_DB_PORT)"
 
-db-test-cockroach-stop: ## Stop an in-memory test CockroachDB started by db-test-cockroach-start (TEST_DB_PORT, 26258 by default)
+db-test-stop: ## Stop an in-memory test CockroachDB started by db-test-start (TEST_DB_PORT, 26258 by default)
 	@if [ -f "$(TEST_DB_DIR)/cockroach.pid" ] && kill -0 $$(cat "$(TEST_DB_DIR)/cockroach.pid") 2>/dev/null; then \
 		kill $$(cat "$(TEST_DB_DIR)/cockroach.pid"); \
 		while kill -0 $$(cat "$(TEST_DB_DIR)/cockroach.pid") 2>/dev/null; do sleep 0.5; done; \

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -146,8 +145,12 @@ func TestSessionTimeouts(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 
-	if got := settingMillis(t, pool, "statement_timeout"); got != 300 {
-		t.Errorf("statement_timeout = %d ms, want 300 ms (the URL's value)", got)
+	var got string
+	if err := pool.QueryRow(t.Context(), "SHOW statement_timeout").Scan(&got); err != nil {
+		t.Fatalf("SHOW statement_timeout: %v", err)
+	}
+	if got != "300" {
+		t.Errorf("statement_timeout = %q, want 300 ms (the URL's value)", got)
 	}
 
 	_, err = pool.Exec(t.Context(), "SELECT pg_sleep(5)")
@@ -169,32 +172,18 @@ func TestSessionTimeouts(t *testing.T) {
 	_ = tx.Rollback(t.Context())
 }
 
-// settingMillis reads a timeout setting in milliseconds. SHOW prints a bare number of milliseconds on CockroachDB
-// ("30000") and a number with a unit on PostgreSQL ("30s", "1min", "300ms").
-func settingMillis(t *testing.T, pool *pgxpool.Pool, name string) int64 {
-	t.Helper()
-	var text string
-	if err := pool.QueryRow(t.Context(), "SHOW "+name).Scan(&text); err != nil {
-		t.Fatalf("SHOW %s: %v", name, err)
-	}
-	if n, err := strconv.ParseInt(text, 10, 64); err == nil {
-		return n
-	}
-	d, err := time.ParseDuration(strings.Replace(text, "min", "m", 1))
-	if err != nil {
-		t.Fatalf("SHOW %s = %q: not a duration", name, text)
-	}
-	return d.Milliseconds()
-}
-
 // TestDefaultSessionTimeouts: with nothing in the URL, the pool asks for 30 s
-// and 60 s.
+// and 60 s (SHOW prints milliseconds).
 func TestDefaultSessionTimeouts(t *testing.T) {
 	t.Parallel()
 	pool := testPool(t)
-	for name, want := range map[string]int64{"statement_timeout": 30000, "idle_in_transaction_session_timeout": 60000} {
-		if got := settingMillis(t, pool, name); got != want {
-			t.Errorf("%s = %d ms, want %d ms", name, got, want)
+	for name, want := range map[string]string{"statement_timeout": "30000", "idle_in_transaction_session_timeout": "60000"} {
+		var got string
+		if err := pool.QueryRow(t.Context(), "SHOW "+name).Scan(&got); err != nil {
+			t.Fatalf("SHOW %s: %v", name, err)
+		}
+		if got != want {
+			t.Errorf("%s = %q, want %q", name, got, want)
 		}
 	}
 }

@@ -111,7 +111,7 @@ func (s *Service) formEnds(ctx context.Context, q *playdb.Queries, tx pgx.Tx, se
 	if encID != "" {
 		encounterID = &encID
 	}
-	if _, err := insertSessionEvent(ctx, q, playdb.InsertSessionEventParams{
+	if _, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
 		GameSessionID: sessionID, Seq: seq, Kind: eventWildShapeEnded, CharacterID: &characterID, Payload: payload, CreatedAt: s.now(), EncounterID: encounterID,
 	}); err != nil {
 		return nil, fmt.Errorf("insert session event: %w", err)

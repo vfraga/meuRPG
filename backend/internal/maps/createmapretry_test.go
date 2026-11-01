@@ -1,6 +1,7 @@
 package maps
 
 import (
+	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -40,11 +41,18 @@ func TestCreateMapRetryChecksTheOriginalImage(t *testing.T) {
 	if _, err := master.maps.SetMapFog(t.Context(), connect.NewRequest(&mapsv1.SetMapFogRequest{CampaignId: campaign, MapId: fog.GetId(), FogEnabled: new(true)})); err != nil {
 		t.Fatal(err)
 	}
-	conn, err := pgx.Connect(t.Context(), h.pool.Config().ConnString())
+	conn, err := pgx.Connect(t.Context(), os.Getenv("MEURPG_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = conn.Close(t.Context()) })
+	var dbName string
+	if err := h.pool.QueryRow(t.Context(), "SELECT current_database()").Scan(&dbName); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.Exec(t.Context(), "USE "+dbName); err != nil {
+		t.Fatal(err)
+	}
 	rival = func() {
 		_, err := conn.Exec(t.Context(),
 			`INSERT INTO gallery_images (id, campaign_id, name, content_type, width, height, byte_size, created_at)

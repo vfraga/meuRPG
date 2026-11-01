@@ -48,26 +48,21 @@ The content loaders refuse malformed content, and `TestSnapshot`, `TestReference
 
 Integration tests run against a real database: set `MEURPG_TEST_DATABASE_URL` and run `make test`.
 The URL may name a PostgreSQL or a CockroachDB server: `backend/internal/platform/dbtest` asks the server which it is.
-A preflight (a pull request that is not a train) runs them on PostgreSQL 17, and a train pull request, a push to `main`, the nightly hunt and a manual run run them on CockroachDB, the production database; see [CI](ci.md#which-database-the-tests-run-on).
+CI runs the tests on CockroachDB, the production database.
 On PostgreSQL the test database is a native `CREATE DATABASE ... TEMPLATE` copy, and the CockroachDB-only parts of the migrations are adapted by the test runner (the migrations are not changed).
-
-The tests that need CockroachDB itself are listed in `backend/cockroach-only-tests.txt`, one per line with the reason.
-They run only in the CockroachDB job and are skipped by name (`go test -skip`) on PostgreSQL.
-A check runs every listed test on PostgreSQL and fails if one passes there, so a test that stops needing CockroachDB leaves the list.
-A test outside the list that needs CockroachDB fails the PostgreSQL run.
-Where PostgreSQL has an equivalent, a test runs on both (`dbtest.WaitingStatements` watches a lock wait in either).
+The tests that need CockroachDB itself are not skipped on PostgreSQL, so they fail there:
+- Row-level TTL: `TestOrphanedPlayerCharactersAreDeletedByTheDatabase` (characters), `TestRowLevelTTL` (identity), `TestInvitesAreDeletedByTheDatabase` (campaigns) and the TTL check of `campaigns/pending_test.go`.
+- Transaction priority and injected retry errors: `play/rosterretry_test.go`.
+- `SHOW CREATE`: `identity/store_integration_test.go` and `campaigns/campaigns_test.go`.
+- Lock watching through `crdb_internal` or `SHOW CLUSTER STATEMENTS`: `progression/gold_test.go`, `play/creatures_test.go` and `maps/kinds_test.go`.
 
 A test that compares a `jsonb` column read as text calls `dbtest.SortJSONKeys` on it, because the two databases print the keys in a different order.
 Without the variable they skip; with `MEURPG_REQUIRE_DB=1` (CI sets it) a missing variable fails them instead (`backend/internal/platform/testenv`).
 
 ```bash
-make db-test-start        # a PostgreSQL on port 5433
-make test-postgres
-make db-test-stop
-
-make db-test-cockroach-start   # an in-memory CockroachDB on port 26258
+make db-test-start        # an in-memory CockroachDB on port 26258
 MEURPG_TEST_DATABASE_URL='postgresql://root@localhost:26258/defaultdb?sslmode=disable' make test
-make db-test-cockroach-stop
+make db-test-stop
 ```
 
 Port 26257 (the `make up` or native database) also works, but the in-memory test database is faster and does not fill the development database.
@@ -77,7 +72,7 @@ How `backend/internal/platform/dbtest` shapes the tests:
 
 - **Databases are reused.** Migrations run once into a template database named after a hash of the migration files (`meurpg_tpl_<hash>`). A package copies the template's tables into as many test databases as it runs tests at once, and between tests only empties them with `DELETE`, child tables first. Parallel tests never share a database. Templates of old migration sets stay on the test server, empty, and can be dropped with `DROP DATABASE meurpg_tpl_... CASCADE`.
 - **Seeded tables survive.** Rows a migration inserts into a reference table (listed in `referenceTables`) are in the template and never emptied. A new table of that kind goes into that list.
-- **Every package that uses a database has a `TestMain` calling `dbtest.Main(m)`**, which drops the databases the package created. An interrupted run leaves `meurpg_<package>_test_...` databases to drop by hand; stopping the test CockroachDB (`make db-test-cockroach-stop`) deletes everything.
+- **Every package that uses a database has a `TestMain` calling `dbtest.Main(m)`**, which drops the databases the package created. An interrupted run leaves `meurpg_<package>_test_...` databases to drop by hand; stopping `make db-test-start` deletes everything.
 - **Each test pool has one connection** (`MaxConns = 1`) and tracks `Acquire`. A read through the pool from inside a `db.InTx` fails the test at once, with the stack, and a wait longer than 90 s for a connection brings down the package's test binary. So the suite proves that no write takes a second connection (see [Architecture](architecture/transactions.md#transactions-and-the-connection-pool)).
   - A test that races transactions asks for a bigger pool before building the harness, `dbtest.PoolSize(t, n)` with `n` at least the number of runners, and starts them together with `start := dbtest.NewBarrier(n)` and `start.Wait()` first thing in each goroutine.
   - A test that holds a transaction open while the service works uses `dbtest.SideConnection(t, pool).Begin(...)`.
@@ -181,7 +176,7 @@ The rule for what belongs in it: the tests that compare against a stored file or
 
 ```bash
 make db-test-start
-export MEURPG_TEST_DATABASE_URL='postgresql://root@localhost:5433/postgres?sslmode=disable'
+export MEURPG_TEST_DATABASE_URL='postgresql://root@localhost:26258/defaultdb?sslmode=disable'
 make before-ready
 ```
 

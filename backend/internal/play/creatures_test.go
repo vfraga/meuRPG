@@ -144,11 +144,10 @@ func TestGiveCreatureLocksTheSessionBeforeTheOwner(t *testing.T) {
 	// session's lock.
 	observer := dbtest.SideConnection(t, a.h.pool)
 	for waiting := false; !waiting; {
-		n, err := dbtest.WaitingStatements(ctx, observer, `%FROM game_sessions%FOR UPDATE%`)
-		if err != nil {
+		if err := observer.QueryRow(ctx, `SELECT count(*) > 0 FROM crdb_internal.cluster_queries
+			WHERE query LIKE '%FROM game_sessions%FOR UPDATE%' AND query NOT LIKE '%cluster_queries%'`).Scan(&waiting); err != nil {
 			t.Fatalf("look for the waiting gift: %v", err)
 		}
-		waiting = n > 0
 		select {
 		case err := <-given:
 			t.Fatalf("GiveCreature() returned while the session was locked: %v", err)

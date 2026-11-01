@@ -7,7 +7,7 @@
 // The package asks the server which database it is.
 // To run the tests, start a throwaway database (`make db-test-start`) and run:
 //
-//	MEURPG_TEST_DATABASE_URL='postgresql://root@localhost:5433/postgres?sslmode=disable' make test-postgres
+//	MEURPG_TEST_DATABASE_URL='postgresql://root@localhost:26258/defaultdb?sslmode=disable' make test
 //
 // Migrating a new database for every test is too slow on CockroachDB, where
 // each schema change is a job.
@@ -288,9 +288,6 @@ func Main(m *testing.M) {
 // dropAll drops every database this process made, in one statement each, and
 // gives up quietly on a server too busy to answer: the run is over.
 func dropAll(rawURL string) {
-	if errTemplate != nil {
-		return // no template, so no database was made, and the dialect is unknown
-	}
 	conn, err := sql.Open("pgx", rawURL)
 	if err != nil {
 		return
@@ -511,23 +508,13 @@ func take(prefix string) (string, bool) {
 }
 
 // emptyAll deletes every row of every table, children before parents.
-// On PostgreSQL it runs as READ COMMITTED: the server tracks serializable transactions across all
-// its databases, and when many test binaries run at once it summarizes the old ones and cancels a
-// DELETE of the whole database ("conflict out to old committed transaction", 40001). A cleanup
-// that nobody else reads needs no serializability.
 func (tpl templateDB) emptyAll() string {
 	var b strings.Builder
-	if tpl.postgres {
-		b.WriteString("BEGIN ISOLATION LEVEL READ COMMITTED;")
-	}
 	for _, v := range slices.Backward(tpl.tables) {
 		if v == "goose_db_version" || slices.Contains(tpl.reference, v) {
 			continue // the migrations it records, and the reference data, stay
 		}
 		b.WriteString("DELETE FROM " + pgx.Identifier{v}.Sanitize() + ";")
-	}
-	if tpl.postgres {
-		b.WriteString("COMMIT;")
 	}
 	return b.String()
 }
@@ -621,9 +608,7 @@ func createOrAwait(ctx context.Context, admin, tpl *sql.DB, provider *goose.Prov
 		}
 		return false, nil
 	}
-	// Two processes that create the same database at the same instant: PostgreSQL answers the second with
-	// 42P04 (duplicate_database) or, from the unique index of its catalog, 23505.
-	if !isCode(err, "42P04") && (!postgres || !isCode(err, "23505")) {
+	if !isCode(err, "42P04") { // duplicate_database
 		return false, fmt.Errorf("create the template: %w", err)
 	}
 	// Another process made it: wait until it is complete.

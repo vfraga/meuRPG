@@ -613,7 +613,7 @@ func (s *Service) insertKeyedEvent(ctx context.Context, q *playdb.Queries, e key
 		return "", time.Time{}, fmt.Errorf("next event number: %w", err)
 	}
 	at = s.now()
-	row, err := insertSessionEvent(ctx, q, playdb.InsertSessionEventParams{
+	row, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
 		GameSessionID: e.sessionID, Seq: seq, Kind: e.kind, ActorUserID: &e.userID, CharacterID: e.characterID,
 		Payload: body, IdempotencyKey: &e.key, IdempotencyHash: e.hash, CreatedAt: at,
 	})
