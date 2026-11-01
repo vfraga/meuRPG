@@ -3872,10 +3872,33 @@ message DieQuestion {
   string from_name = 2;
 }
 
+// IndomitableQuestion is the fighter's "Falhou na salvaguarda. Usar Indomitável para rolar de novo?" (SRD 5.1,
+// Fighter, Indomitable). It comes after the Lucky and the die's questions, on the saving throw as they left it:
+// `HeldRollOffer.d20.total` counts the die the roller added.
+message IndomitableQuestion {
+  // True when the saving throw failed. Set only when the roller may know it (the table shows the DC of a
+  // save, or it is a death save, whose result the owner always sees); otherwise the question comes on every
+  // save the roller could use Indomitable on, and says nothing about the result.
+  bool failed = 1;
+}
+
+// StrokeOfLuckQuestion is the rogue's "Errou o ataque. Usar Golpe de Sorte para acertar?" or "Falhou no teste. Usar
+// Golpe de Sorte para contar o d20 como 20?" (SRD 5.1, Rogue 20, Stroke of Luck). It comes after the Lucky and the
+// die's questions, on the attack or the ability check as they left it: `HeldRollOffer.d20.total` counts the die the
+// roller added. `HeldRollOffer.kind` says whether it is an attack (a miss becomes a hit) or a check (the d20 counts
+// as 20).
+message StrokeOfLuckQuestion {
+  // True when the attack missed or the check failed. Set only when the roller may know it (the armor class of an
+  // attack stays on the server but the player is told the hit; a check against a DC the table shows); otherwise
+  // the question comes on every attack or check the roller could use Stroke of Luck on, and says nothing about
+  // the result.
+  bool failed = 1;
+}
+
 // HeldRollOffer is the question a roll that waits asks, whichever roll it is: the d20 was rolled and
 // kept, nothing was resolved or written, and the roller decides before the result is told (SRD 5.1:
 // the creature can wait until after it rolls the d20 and must decide before the GM says whether the roll
-// succeeds). The Lucky question comes first; the die's comes after it, on the new roll. It carries
+// succeeds). The Lucky question comes first; the die's comes after it, on the new roll, and Indomitable's or Stroke of Luck's after the die's (a save and an attack or check never meet, so only one of them comes). It carries
 // what the roller already sees (the d20, the bonus, the die's size and giver), never a DC, an armor
 // class or an NPC's number. Only whoever may answer it gets it: the roller's player and the master
 // (RN-10, RN-20).
@@ -3896,6 +3919,8 @@ message HeldRollOffer {
   oneof question {
     LuckyQuestion lucky = 7;
     DieQuestion die = 8;
+    IndomitableQuestion indomitable = 12;
+    StrokeOfLuckQuestion stroke_of_luck = 13;
   }
   // The attack and its target; empty for a roll that is not a weapon attack.
   string attack_key = 9;
@@ -4049,7 +4074,9 @@ message TakeActionRequest {
   // (Action.cost_max above Action.cost): how many to spend, from `cost` to `cost_max` or what is left. 0 takes the
   // cost, the least. The server reads the points left in the same transaction as the use and refuses a number outside
   // the range with `invalid_argument` (nothing is spent); it never trusts the client with more than this number.
-  // Ignored by an action whose cost is fixed.
+  // Ignored by an action whose cost is fixed. An action that spends a spell slot (Action.spends_slot) reads it as the
+  // level of the slot, 1 to 9: a level with no free slot is refused with `failed_precondition` (ResourceBlocked
+  // NO_FREE_SLOT, nothing is spent) and a level outside 1 to 9 with `invalid_argument`.
   int32 spend = 103;
   // A feature action of the table's content that heals or gives temporary hit points (Action.heal, Action.temp_hp):
   // the combatant that gets them, the actor itself or one ally (another player's character). Empty: the actor. An NPC,

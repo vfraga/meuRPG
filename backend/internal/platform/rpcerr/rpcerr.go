@@ -19,6 +19,8 @@ import (
 	"connectrpc.com/connect"
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 )
 
 // SQLSTATEs that need a name. 57014 is query_canceled, which is what
@@ -83,7 +85,7 @@ func classify(ctx context.Context, err error) (connect.Code, slog.Level, string)
 	case errors.Is(err, context.DeadlineExceeded):
 		return connect.CodeDeadlineExceeded, slog.LevelWarn, "the request took too long, please try again"
 	}
-	if _, ok := errors.AsType[*crdb.AmbiguousCommitError](err); ok {
+	if _, ok := errors.AsType[*db.AmbiguousCommitError](err); ok {
 		// The connection broke while committing: the change may or may not
 		// have been saved. The error unwraps to the connection failure, so it
 		// is tested before that (a retry could duplicate a write).

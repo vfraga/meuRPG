@@ -23,7 +23,7 @@ import { checkFaces, hasModeInfo } from '../../../../core/play/check-roll';
 import type { HeldAnswer } from '../../../../core/held-rolls/held-roll-offer';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
-import { MultiRoll, type RollField } from '../../combat/multi-roll/multi-roll';
+import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { CheckMode } from '../../scene/check-mode/check-mode';
 

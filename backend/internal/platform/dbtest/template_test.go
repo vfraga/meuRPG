@@ -24,7 +24,7 @@ func scratchDatabase(t *testing.T, label string, stmts ...string) *sql.DB {
 	admin := open(t, rawURL)
 	name := fmt.Sprintf("meurpg_dbtest_%s_%d", label, time.Now().UnixNano())
 	mustExec(t, admin, "CREATE DATABASE "+name)
-	t.Cleanup(func() { mustExec(t, admin, "DROP DATABASE IF EXISTS "+name+" CASCADE") })
+	t.Cleanup(func() { mustExec(t, admin, migrations.DropDatabaseSQL(template.postgres, name)) })
 	dsn, err := withDatabase(rawURL, name)
 	if err != nil {
 		t.Fatal(err)
@@ -154,8 +154,12 @@ func TestBuildTemplateFindsTheMigratedTemplate(t *testing.T) {
 	if !slices.Contains(again.tables, "goose_db_version") || !slices.Contains(again.reference, "session_event_kinds") || slices.Contains(again.reference, "goose_db_version") {
 		t.Errorf("tables %v, reference %v", again.tables, again.reference)
 	}
-	if !strings.HasPrefix(again.ddl[0], "CREATE SEQUENCE public.goose_db_version_id_seq ") {
-		t.Errorf("ddl[0] = %q, want goose's sequence", again.ddl[0])
+	if again.postgres {
+		if len(again.ddl) != 0 {
+			t.Errorf("a PostgreSQL template keeps no DDL (it is copied natively), got %d statements", len(again.ddl))
+		}
+	} else if len(again.ddl) == 0 || !strings.HasPrefix(again.ddl[0], "CREATE SEQUENCE public.goose_db_version_id_seq ") {
+		t.Errorf("ddl = %q, want goose's sequence first", again.ddl)
 	}
 }
 
@@ -175,7 +179,13 @@ func TestGooseIDsOfACopiedDatabase(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT pg_get_serial_sequence('goose_db_version', 'id')`).Scan(&used); err != nil {
 		t.Fatal(err)
 	}
-	if used == "public.goose_db_version_id_seq" {
-		t.Errorf("goose_db_version uses %s: the finding is gone, update this test", used)
+	var version string
+	if err := pool.QueryRow(ctx, `SELECT version()`).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	// A PostgreSQL copy is native, so the table keeps the sequence it was made with; the DDL of
+	// CockroachDB's copy is where the defect is.
+	if postgres := !strings.Contains(version, "CockroachDB"); postgres != (used == "public.goose_db_version_id_seq") {
+		t.Errorf("goose_db_version uses %q on %q: the finding changed, update this test", used, version)
 	}
 }

@@ -43,10 +43,10 @@ flowchart LR
 | Piece | What it does |
 | --- | --- |
 | Storage | `campaign_content` (one row per entry; `data` is the kind's message as protojson) and `campaign_content_state` (the campaign's revision). It lives in `characters` and not in `campaigns` because `characters` does not write a column of another module. The switched-off keys are `campaign_content_off`. See [Data](../data/README.md). |
-| The protos | `rules/v1/table_content.proto`: one message per kind (`TableClass`, `TableSubclass`, `TableRace`, `TableSubrace`, `TableBackground`, `TableSpell`, `TableFeat`, `TableOption`) one to one with `rules`' `Table*` types, and `TableEntry`, which reads return. The writes and the full read are `TableContentService`; the catalogue stays `ContentService.ListContent`, which also carries the table's entries and the `archived` mark. |
+| The protos | `rules/v1/table_content.proto`: one message per kind (`TableClass`, `TableSubclass`, `TableRace`, `TableSubrace`, `TableBackground`, `TableSpell`, `TableFeat`, `TableOption`, `TableClassFeature`, `TableCreature`; ten kinds, `TableContentKind`) one to one with `rules`' `Table*` types, and `TableEntry`, which reads return. The writes and the full read are `TableContentService`; the catalogue stays `ContentService.ListContent`, which also carries the table's entries and the `archived` mark. |
 | Writes (master only) | `CreateTableEntry`, `UpdateTableEntry`, `ArchiveTableEntry`, `UnarchiveTableEntry`. Each is one transaction that starts by raising the revision (so two writes of a campaign run one after the other), reads all entries, applies the change and checks the campaign's whole content with `SRD.With`: a refused content changes nothing, the revision included. The error is `invalid_argument` with a `TableContentRefusal` detail, one `TableContentViolation{field, reason}` per engine error, with the path in the body's own names (`table_class.levels[4].features[0].effects[1].value`). The server adds `immutable` (kind, key, parent class or race changed; a feature key the entry never had; a spell going between cantrip and leveled), `duplicate_name` (another entry of the kind has the name, case-insensitive), `size_limit` (64 KiB an entry, `MaxTableEntryBytes`) and `limit` (more features or traits than the engine allows, counted in the handler before the transaction, so a huge body never holds the campaign's revision). A stale entry (`expected_revision` different from the entry's `revision`) is `aborted` with `TableContentBlocked` `STALE`. An archived entry can still be edited and stays archived; archiving twice is `ARCHIVED`, unarchiving one that is not archived is `NOT_ARCHIVED`. Archiving and unarchiving are not changes to the entry: they touch neither its `revision` nor its `updated_at`, but they raise the campaign's revision for the cache. |
 | Keys | The entry's key is born from the name (accents removed, `a-z0-9-`, up to 60, with `-2`, `-3`... if taken; the engine's reserved words become a single word) and never changes, not even when the name does. Feature keys are the server's: `feature:class-<start of name>-<hash>--<feature name>@mesa` (and `subclass`, `race`, `subrace`, `background` in place of `class`, with `trait:` and `background-feature:` on the last three). The start of the entry's name is up to 16 characters and the hash is 6 characters of a SHA-256 of the whole entry key, so two long names that start the same never collide and the feature still fits the engine's 60 characters; `--` never appears in a name. A feature keeps its key while it exists: the editor returns it on update and, if it does not, the one of the same level and name takes it back. A key the entry never had is refused (`immutable`). |
-| `ListTableEntries` | The entries in full, by kind and name. The master receives all (archived too, with `archived_at`) and, in each, how many sheets use it (`characters_using`, "Em uso por N fichas"). A player receives the entries they may see, in full (numbers and effects), never a count and never the archived or switched-off ones (a subclass or subrace whose class or race is switched off neither, unless their sheet uses it). A pending member does not read it. |
+| `ListTableEntries` | The entries in full, by kind and name. The master receives all (archived too, with `archived_at`) and, in each, how many sheets use it (`characters_using`, "Em uso por N fichas"). A player receives the entries they may see, in full (numbers and effects), never a count and never the archived or switched-off ones (a subclass or subrace whose class or race is switched off neither, unless their sheet uses it). Of the creature kind a player receives only the entries whose key a character of theirs holds, live, archived or switched off, whole. A pending member does not read it. |
 | What a player never receives of an archived entry | The players' catalogue is a copy (`proto.Clone`, filtering the six lists) without archived and switched-off entries. `GetLevelUpOptions` does not offer an archived subclass unless the player's sheet has it. `GetSpellDetails` answers `not_found` for an archived spell unless a sheet of theirs uses it. No archived key reaches a player even by reference: the catalogue, `ListTableEntries` (which also clears archived keys from each body's class lists, granted spells and always-prepared lists), the spell details and the level-up options clear them from the reference lists (`Spell.class_keys`, `list_class_key`, `TableSpell.class_keys`, `TableCasting.list_from`, `TableEffect.spells`...). The catalogues carry what is needed to read the engine's content: `Race.choice_bonuses`, `Race.choice_bonus_sets`, `Race.sizes`, `Race.size`, `Subclass.spellcasting`, `ClassSpellcasting.list_class_key`, `Background.equipment_pt`. |
 
 ## The live source
@@ -93,15 +93,16 @@ This is what the server stores and shows:
 
 ## Player options and the live hint
 
-The master switches on and off, per campaign, each class, subclass, race, subrace, background, spell, feat and option, from the SRD and the table (`campaign_content_off`, one row per switched-off option; no row means on).
+The master switches on and off, per campaign, each class, subclass, race, subrace, background, spell, feat, option, class feature and creature, from the SRD and the table (`campaign_content_off`, one row per switched-off option; no row means on).
+The options screen has no creature group, so creatures are switched through the API only.
 What is switched off never reaches a player, in any read; the master sees everything with the `off` mark.
 The engine side is [Switches and hidden keys](rules-table-content.md#switches-and-hidden-keys).
 
 | Piece | What it does |
 | --- | --- |
 | In the source and cache | `TableSource` reads the switched-off keys in the same transaction as the revision and adds them to the content; the cache stays by (campaign, revision). A campaign that only switched options off already has a revision and a content of its own. |
-| What the player never receives | A switched-off option is treated as archived at every point: the catalogue, `ListTableEntries` (which also clears switched-off keys from each body's references), `ListSpells` (`SpellFilter.Hidden`; a hidden `class_key` answers like an unknown one, an empty list, unless a sheet of theirs uses the class), `GetSpellDetails` (`not_found` unless a sheet of theirs uses it), the level-up options, and the reference lists inside other entries. Everything filters with the single predicate `Content.Hidden`. |
-| `ListOptionSwitches` (master only) | The screen's list by kind and name: every class, subclass, race, subrace, background, spell, feat and table option of the campaign, each with the key, kind, name, `table`, `off`, `archived`, `hidden`, `parent_key` (a subclass's class, a subrace's race), `level` (a spell's) and `characters_using` (how many player sheets use it, once per sheet). Reads the content and the sheets in one transaction. |
+| What the player never receives | A switched-off option is treated as archived at every point: the catalogue, `ListTableEntries` (which also clears switched-off keys from each body's references), `ListSpells` (`SpellFilter.Hidden`; a hidden `class_key` answers like an unknown one, an empty list, unless a sheet of theirs uses the class), `GetSpellDetails` (`not_found` unless a sheet of theirs uses it), `ListCreatures` (a table creature is left out of the list a player reads unless a character of theirs holds a live creature of that key) and `GetCreature` (`not_found` unless a character of theirs holds one), the level-up options, and the reference lists inside other entries. Everything but the creatures filters with the single predicate `Content.Hidden`; a table creature is the master's whatever its state, so a player reads it only when a character of theirs holds a live creature of its key (`callerHeldCreatures`). |
+| `ListOptionSwitches` (master only) | The screen's list by kind and name: every class, subclass, race, subrace, background, spell, feat, table option, table class feature and table creature of the campaign, each with the key, kind, name, `table`, `off`, `archived`, `hidden`, `parent_key` (a subclass's class, a subrace's race), `level` (a spell's) and `characters_using` (how many player sheets use it, once per sheet). Reads the content and the sheets in one transaction. |
 | `SetOptionSwitches` (master only) | Switches up to 1,400 options (`MaxOptionSwitches`: the SRD's 358 and the 1,000 entries of a table, so a whole campaign switches off in one call; about 0.2 s for 1,000 keys) in one transaction: reads the content, checks each key (`invalid_argument` for a key that is not switchable, a repeated one, none or more than 1,400), raises the campaign's revision and stores the set. The response is built without the live source (`SRD.With` of the rows the transaction sees plus the new set), because a write never fills the cache. An archived entry can also be switched. A request that changes nothing rolls the transaction back (the revision does not rise) and notifies nobody. The response carries the revision, how many options changed (`changed`) and those that changed for the players (`options`, the subclasses of a switched-off class included). |
 | The live hint | Every write to table content (create, edit, archive, unarchive, the switches, an import) sends `content_changed` (stream field 23, no fields) to everyone watching the campaign, after the commit. It carries neither the entry nor the key (RN-10): each reader reads again with their own role. `characters` calls `Live.PublishContentChanged`, which `play` implements with the puzzles' time gate (one hint per campaign every 250 ms; the last change is never left without a notice) and the hub's `Coalesce`. With no open session nobody listens, and readers read the current content on opening. |
 
@@ -174,6 +175,49 @@ The choice engine reads it with the SRD options: `GetLevelUpOptions`, `PreviewCh
 It goes through the same writes, archive mark, switch (`SetOptionSwitches`, `ListOptionSwitches`), pack and player view as the other kinds, and a sheet that has the class gets the notice "A classe mudou" when it changes.
 The engine side is [Table class features](rules-table-content.md#table-class-features).
 A player's copy drops a hidden class, a hidden replaced feature and the effects' hidden references.
+
+## Table creatures
+
+`TABLE_CONTENT_KIND_CREATURE` (`creature` rows of `campaign_content`, key `creature:<slug>@mesa`, migration 00289) is an SRD creature with adjustments: hit points, armor class, a damage bonus on its attacks and extra text traits.
+`TableCreature` has `base_key` (an SRD creature, which never changes: `immutable` at `table_creature.base_key`) and the adjustments; the limits and refusals are in [Table creatures](rules-table-content.md#table-creatures).
+A base the SRD lacks is refused as `dangling_reference` at `table_creature.base_key`, and an entry over 64 KiB as `size_limit`.
+It goes through the same writes, archive mark, switch (`SetOptionSwitches`, `ListOptionSwitches` lists it with the kind) and pack as the other kinds.
+Its player view is the whole entry or none: `playerReads` lets a creature row through only for a player who holds its key.
+Nothing is deleted: the way out of an entry is the archive mark or the switch.
+
+- **Where it resolves.** `GiveCreature` accepts its key where it accepts an SRD creature.
+  `GetCreature`, `ListCreatures`, `CreateNpcFromCreature` and the combat read it from the campaign's content.
+  The NPC made from it has "criatura da mesa" in its description.
+  "Pôr no combate" keeps one combat-only NPC per campaign and creature for the SRD's, whose stat blocks never change.
+  For a table creature the NPC's key also holds a digest of the numbers of the sheet the entry makes (the description is left out).
+  An edit that changes the numbers makes another NPC.
+  An edit that changes only the name, or changes the numbers back, finds the NPC it had.
+  A monster added after the edit has the entry's current numbers, and the monsters already in a fight keep the ones they joined with.
+- **When a number is copied.** `character_creatures.hp_max` is copied from the entry when the creature is given.
+  Editing the entry changes no creature already held.
+  The armor class (`CharacterCreature.armor_class`) and the actions are read from the content every time.
+  A held creature shows the entry's current armor class and attacks with its current damage bonus.
+- **Archived and switched off.** An archived or switched-off entry keeps resolving for the creatures already held.
+  They stay in the owner's list and join combats.
+  Archived, switched off or live, a table creature is the master's: a player reads it only while a character of theirs holds a live creature of its key.
+  `ListCreatures`, `GetCreature` and `ListTableEntries` leave it out for any other player (`GetCreature` answers `not_found`).
+  The holder reads it whatever the entry's state, and the master reads every entry and can give it.
+- **Who uses it.** `characters_using` is 0 for a creature entry, because a held creature is not part of a sheet.
+  No sheet gets the notice "A classe mudou" when a creature entry changes.
+- **What it is not.** The SRD spells' summon choices, Wild Shape, and the encounter generator, evaluator and swaps do not offer it.
+  The encounter tools refuse its key as unknown content.
+- **Packages.** A campaign package carries the creature entry with the rest of the table content.
+  A package without the creature of an NPC's link is refused as unknown content.
+  A package battle encounter that names a table creature is refused as unknown content.
+- **The web app.** It has no editor for creatures and no creature group in the options screen.
+  A creature is created and switched through the API or a content pack.
+
+## Wild Shape and spell slots
+
+`wild_shape`, `slot_recovery` and the `gives_slot` and `spends_slot` fields of `grant_action` are on the effect menu ([rules](rules-table-content.md#the-closed-menu-of-effects)); `tableEffectsOf` maps their proto fields (`max_cr`, `max_cr_from`, `form_cost`, `magical_attacks`, `no_fly`, `no_swim`, `gives_slot`, `spends_slot`, `recover_max_level`, `recover_levels`) like the others.
+`combatCharacter` fills `link.Character.WildShapeCost` from `Derived.WildShape.Cost`, and `featureActionOf` fills `link.FeatureAction.GivesSlot` and `SpendsSlot`.
+The vitals keeper has `GiveSpellSlot`, `SpendSpellSlot` and their undos; a slot made by `GiveSpellSlot` is counted as created, like Flexible Casting's, and goes with the next long rest.
+`UseArcaneRecovery` takes the feature key and reads `vitalsMax.recoveries` (`Derived.TableRecoveries`); with no key it is the wizard's own.
 
 ## Spell targets and the "Magias" page
 

@@ -39,7 +39,7 @@ import { rerollShow } from '../../../../shared/held-roll-prompt/held-roll-shows'
 import { RollAnimator, showOfDice } from '../../../../shared/roll-overlay/roll-animator';
 import { mediaQuery } from '../../../../shared/map-view/media-query';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
-import { MultiRoll, type RollField } from '../../combat/multi-roll/multi-roll';
+import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet, openSheet } from '../../../../shared/sheet/sheet-host';

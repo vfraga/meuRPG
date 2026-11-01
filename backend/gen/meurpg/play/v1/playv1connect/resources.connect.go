@@ -142,6 +142,11 @@ type ResourceServiceClient interface {
 	// back. It is allowed only while the latest rest of the open session is a short
 	// rest. The character's player or the master.
 	//
+	// With `feature_key` the call is the table feature's slot_recovery effect instead:
+	// it spends a use of the effect's resource and keeps to the effect's highest slot level
+	// and combined level, with the same short rest and the same refusals (NOT_AVAILABLE is
+	// the character not having the feature).
+	//
 	// Errors: `permission_denied` for another player's character;
 	// `invalid_argument` for no slots, a repeated level or a count below 1;
 	// `failed_precondition` with ResourceBlocked NOT_AVAILABLE (not a wizard),
@@ -605,6 +610,11 @@ type ResourceServiceHandler interface {
 	// long rest: the use is the `arcane_recovery` resource, which a long rest gives
 	// back. It is allowed only while the latest rest of the open session is a short
 	// rest. The character's player or the master.
+	//
+	// With `feature_key` the call is the table feature's slot_recovery effect instead:
+	// it spends a use of the effect's resource and keeps to the effect's highest slot level
+	// and combined level, with the same short rest and the same refusals (NOT_AVAILABLE is
+	// the character not having the feature).
 	//
 	// Errors: `permission_denied` for another player's character;
 	// `invalid_argument` for no slots, a repeated level or a count below 1;

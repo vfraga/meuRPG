@@ -87,7 +87,7 @@ func (s *Service) AppendEvent(ctx context.Context, tx pgx.Tx, campaignID, kind, 
 	if err != nil {
 		return false, fmt.Errorf("next event number: %w", err)
 	}
-	if _, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	if _, err := insertSessionEvent(ctx, q, playdb.InsertSessionEventParams{
 		GameSessionID: session.ID, Seq: seq, Kind: kind, ActorUserID: &actorUserID, Payload: payload, CreatedAt: at,
 	}); err != nil {
 		return false, fmt.Errorf("insert session event: %w", err)

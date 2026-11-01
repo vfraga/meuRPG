@@ -1,30 +1,32 @@
-// Package dbtest gives integration tests a real, freshly migrated
-// CockroachDB database. Only tests import it.
+// Package dbtest gives integration tests a real, freshly migrated database,
+// CockroachDB or PostgreSQL.
+// Only tests import it.
 //
 // The tests need MEURPG_TEST_DATABASE_URL; without it they skip (or fail, with
-// MEURPG_REQUIRE_DB=1, which CI sets), so
-// `go test ./...` works anywhere. To run them, start a throwaway CockroachDB
-// (`make up` does, on port 26257) and run:
+// MEURPG_REQUIRE_DB=1, which CI sets), so `go test ./...` works anywhere.
+// The package asks the server which database it is.
+// To run the tests, start a throwaway database (`make db-test-start`) and run:
 //
-//	MEURPG_TEST_DATABASE_URL='postgresql://root@localhost:26257/defaultdb?sslmode=disable' make test
+//	MEURPG_TEST_DATABASE_URL='postgresql://root@localhost:5433/postgres?sslmode=disable' make test-postgres
 //
-// Migrating a brand-new database for every test took about 25 seconds on
-// CockroachDB (each schema change is a job, and there are many
-// migrations), and the play package alone makes dozens of databases: CI hit
-// its 10-minute limit (PR #59). So the migrations run once per set of
-// migration files, into a template database named after their fingerprint
-// (meurpg_tpl_<hash>), and a test database copies the template's tables, functions
-// and triggers.
-// Even that copy took about 5 seconds, and dropping the database 1.5 more
-// (04/10/2026, 32 tables), for each of some 400 tests; so a package makes
-// only as many databases as it runs tests at once and reuses them: emptying
-// one with DELETE takes about 10 milliseconds. The schema is the one the
-// migrations build; the migrations package still tests the migrations
-// themselves, from scratch.
+// Migrating a new database for every test is too slow on CockroachDB, where
+// each schema change is a job.
+// So the migrations run once per set of migration files, into a template
+// database named after their fingerprint (meurpg_tpl_<hash>).
+// A test database is a copy of the template:
+//   - On PostgreSQL, a native CREATE DATABASE ... TEMPLATE.
+//   - On CockroachDB, which has no native copy, the template's DDL is replayed
+//     and its reference tables and goose's table are copied row by row.
+//
+// A copy still costs much more than emptying a database, so a package makes
+// only as many databases as it runs tests at once and reuses them, emptying
+// one with DELETE.
+// The schema is the one the migrations build; the migrations package still
+// tests the migrations themselves, from scratch.
 //
 // Every test process shares the template: the first one to create it
-// migrates it, and the others wait until it has every migration. A template
-// left half migrated (a run killed midway) is dropped and built again.
+// migrates it, and the others wait until it has every migration.
+// A template left half migrated (a run killed midway) is dropped and built again.
 // Templates of older migration sets stay on the test server; they are empty
 // and safe to drop.
 package dbtest
@@ -94,6 +96,9 @@ type templateDB struct {
 	// rows, and left alone when a database is emptied. Read from the migrated
 	// template, so a migration that seeds another table needs no change here.
 	reference []string
+	// postgres says the server is PostgreSQL: the copy is CREATE DATABASE ...
+	// TEMPLATE and ddl is empty (postgres.go).
+	postgres bool
 }
 
 // Enabled reports whether a test database is configured.
@@ -220,12 +225,27 @@ func NewPoolConns(t testing.TB, prefix string, conns int32) *pgxpool.Pool {
 		return poolFor(t, prefix, name, dsn, conns)
 	}
 	admin := open(t, rawURL)
+	if template.postgres {
+		freeMu.Lock()
+		made = append(made, name)
+		freeMu.Unlock()
+		if err := copyPostgresTemplate(t.Context(), admin, template.name, name); err != nil {
+			t.Fatalf("copy the template: %v", err)
+		}
+		return poolFor(t, prefix, name, dsn, conns)
+	}
 	mustExec(t, admin, "CREATE DATABASE "+name)
 	freeMu.Lock()
 	made = append(made, name)
 	freeMu.Unlock()
+	copyCockroachTemplate(t, open(t, dsn))
 
-	conn := open(t, dsn)
+	return poolFor(t, prefix, name, dsn, conns)
+}
+
+// copyCockroachTemplate copies the template's schema and rows into the empty database conn is open on.
+func copyCockroachTemplate(t testing.TB, conn *sql.DB) {
+	t.Helper()
 	for _, stmt := range template.ddl {
 		if _, err := conn.ExecContext(t.Context(), stmt); err != nil {
 			t.Fatalf("copy the template's schema: %v\n%s", err, stmt)
@@ -248,8 +268,6 @@ func NewPoolConns(t testing.TB, prefix string, conns int32) *pgxpool.Pool {
 		`SELECT setval('goose_db_version_id_seq', (SELECT max(id) FROM goose_db_version))`); err != nil {
 		t.Fatalf("move the migration version sequence: %v", err)
 	}
-
-	return poolFor(t, prefix, name, dsn, conns)
 }
 
 // Main runs a package's tests and then drops the databases this process
@@ -270,6 +288,9 @@ func Main(m *testing.M) {
 // dropAll drops every database this process made, in one statement each, and
 // gives up quietly on a server too busy to answer: the run is over.
 func dropAll(rawURL string) {
+	if errTemplate != nil {
+		return // no template, so no database was made, and the dialect is unknown
+	}
 	conn, err := sql.Open("pgx", rawURL)
 	if err != nil {
 		return
@@ -277,7 +298,7 @@ func dropAll(rawURL string) {
 	defer func() { _ = conn.Close() }()
 	for _, name := range made {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		_, _ = conn.ExecContext(ctx, "DROP DATABASE IF EXISTS "+name+" CASCADE")
+		_, _ = conn.ExecContext(ctx, migrations.DropDatabaseSQL(template.postgres, name))
 		cancel()
 	}
 }
@@ -335,13 +356,13 @@ const poolMaxConnsEnv = "MEURPG_TEST_POOL_MAX_CONNS"
 // answer from dozens of queries).
 const nestedAcquireTimeout = 90 * time.Second
 
-// inTxClosure is the frame of the function crdbpgxv5.ExecuteTx calls with the
-// transaction: db.InTx's fn runs under it, and nothing else does.
+// inTxClosure is the frame of the function db.InTx calls with the
+// transaction: its fn runs under it, and nothing else does.
 //
-// The name is cockroach-go's: if a new version renames it, the guard goes
-// blind and TestGuardCatchesANestedAcquisition (it needs the database, so it
-// runs in CI's go-db job) fails.
-const inTxClosure = "crdbpgxv5.ExecuteTx.func1"
+// If db renames that function, the guard goes blind and
+// TestGuardCatchesANestedAcquisition (it needs the database, so it runs in
+// CI's go-db job) fails.
+const inTxClosure = "platform/db.runAttempt"
 
 // errNestedAcquire is the cause of the canceled Acquire of a nested read.
 var errNestedAcquire = errors.New("dbtest: nested pool acquisition inside a db.InTx closure")
@@ -530,12 +551,19 @@ func buildTemplate(rawURL string) (templateDB, error) {
 		return templateDB{}, err
 	}
 	defer func() { _ = tpl.Close() }()
-	provider, err := migrations.NewProvider(tpl)
+	postgres, err := migrations.IsPostgres(ctx, admin)
+	if err != nil {
+		return templateDB{}, fmt.Errorf("create the template: %w", err)
+	}
+	provider, err := migrations.NewAdaptedProvider(tpl, postgres)
 	if err != nil {
 		return templateDB{}, err
 	}
-	if err := ensureMigrated(ctx, admin, tpl, provider, name); err != nil {
+	if err := ensureMigrated(ctx, admin, tpl, provider, name, postgres); err != nil {
 		return templateDB{}, err
+	}
+	if postgres {
+		return postgresTemplate(ctx, tpl, name)
 	}
 
 	ddl, tables, err := schemaDDL(ctx, tpl)
@@ -557,11 +585,11 @@ func buildTemplate(rawURL string) (templateDB, error) {
 // ensureMigrated returns once the template name has every migration: made
 // and migrated here, or by another process. A template whose migrations
 // stalled is dropped and made again.
-func ensureMigrated(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string) error {
+func ensureMigrated(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string, postgres bool) error {
 	sources := provider.ListSources()
 	latest := sources[len(sources)-1].Version
 	for {
-		again, err := createOrAwait(ctx, admin, tpl, provider, name, latest)
+		again, err := createOrAwait(ctx, admin, tpl, provider, name, latest, postgres)
 		if !again {
 			return err
 		}
@@ -571,16 +599,21 @@ func ensureMigrated(ctx context.Context, admin, tpl *sql.DB, provider *goose.Pro
 // createOrAwait makes and migrates the template, or, when another process
 // made it, waits until it has the latest migration. again says the template
 // was stalled and is dropped: try once more.
-func createOrAwait(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string, latest int64) (again bool, _ error) {
+func createOrAwait(ctx context.Context, admin, tpl *sql.DB, provider *goose.Provider, name string, latest int64, postgres bool) (again bool, _ error) {
 	_, err := admin.ExecContext(ctx, "CREATE DATABASE "+name)
 	if err == nil {
-		// This process creates it, so it migrates it.
+		// This process creates it, so it makes it ready and migrates it.
+		if err := migrations.PrepareTestDatabase(ctx, tpl); err != nil {
+			return false, err
+		}
 		if _, err := provider.Up(ctx); err != nil {
 			return false, fmt.Errorf("migrate the template: %w", err)
 		}
 		return false, nil
 	}
-	if !isCode(err, "42P04") { // duplicate_database
+	// Two processes that create the same database at the same instant: PostgreSQL answers the second with
+	// 42P04 (duplicate_database) or, from the unique index of its catalog, 23505.
+	if !isCode(err, "42P04") && (!postgres || !isCode(err, "23505")) {
 		return false, fmt.Errorf("create the template: %w", err)
 	}
 	// Another process made it: wait until it is complete.
@@ -588,7 +621,7 @@ func createOrAwait(ctx context.Context, admin, tpl *sql.DB, provider *goose.Prov
 	if !errors.Is(err, errStalled) {
 		return false, err
 	}
-	if _, err := admin.ExecContext(ctx, "DROP DATABASE IF EXISTS "+name+" CASCADE"); err != nil {
+	if _, err := admin.ExecContext(ctx, migrations.DropDatabaseSQL(postgres, name)); err != nil {
 		return false, fmt.Errorf("drop a stalled template: %w", err)
 	}
 	return true, nil

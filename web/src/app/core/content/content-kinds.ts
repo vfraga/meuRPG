@@ -143,6 +143,7 @@ export const KIND_WORDS: Readonly<Record<number, string>> = {
   [TableContentKind.FEAT]: 'Talento',
   [TableContentKind.OPTION]: 'Opção',
   [TableContentKind.CLASS_FEATURE]: 'Característica de classe',
+  [TableContentKind.CREATURE]: 'Criatura',
 };
 
 /** The noun of a kind with its article and the words that agree with it: "A magia … foi salva", "O antecedente … foi salvo". */
@@ -180,6 +181,12 @@ export const KIND_NOUNS: Readonly<Record<number, KindNoun>> = {
   [TableContentKind.CLASS_FEATURE]: {
     article: 'A',
     noun: 'característica de classe',
+    saved: 'salva',
+    archived: 'arquivada',
+  },
+  [TableContentKind.CREATURE]: {
+    article: 'A',
+    noun: 'criatura',
     saved: 'salva',
     archived: 'arquivada',
   },

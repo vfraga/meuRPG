@@ -147,6 +147,8 @@ type tableListing struct {
 	hidden func(string) bool
 	// mine are the keys the player's own sheets use (nil for the master).
 	mine map[string]bool
+	// held are the keys of the table creatures the player's characters hold (nil for the master).
+	held map[string]bool
 }
 
 // readTableListing reads, in tx, the revision, the entries, the master's counts, the
@@ -179,6 +181,9 @@ func (s *Service) readTableListing(ctx context.Context, tx pgx.Tx, m authz.Membe
 	if !l.master {
 		if l.mine, err = callerKeys(ctx, q, m); err != nil {
 			return nil, wrap("read the caller's sheets", err)
+		}
+		if l.held, err = callerHeldCreatures(ctx, q, m); err != nil {
+			return nil, wrap("read the caller's creatures", err)
 		}
 	}
 	return l, nil
@@ -219,6 +224,9 @@ func (l *tableListing) response() *rulesv1.ListTableEntriesResponse {
 // playerReads says whether a player receives the entry.
 func (l *tableListing) playerReads(e entryRow) bool {
 	key := e.row.ContentKey
+	if e.kind == rulesv1.TableContentKind_TABLE_CONTENT_KIND_CREATURE {
+		return l.held[key] // a table creature is the master's, unless a character of the player holds it (RN-23)
+	}
 	if e.row.ArchivedAt != nil || l.content.Off(key) {
 		return false // a player never receives a retired or switched off entry, or a draft
 	}
@@ -678,6 +686,8 @@ func immutableChange(kind rulesv1.TableContentKind, old, next tableBody) *rulesv
 		return nil
 	case rulesv1.TableContentKind_TABLE_CONTENT_KIND_CLASS_FEATURE:
 		from, to, field = parentKeys(old, next, (*rulesv1.TableClassFeature).GetClassKey, "table_class_feature.class_key")
+	case rulesv1.TableContentKind_TABLE_CONTENT_KIND_CREATURE:
+		from, to, field = parentKeys(old, next, (*rulesv1.TableCreature).GetBaseKey, "table_creature.base_key")
 	case rulesv1.TableContentKind_TABLE_CONTENT_KIND_OPTION:
 		from, to, field = parentKeys(old, next, (*rulesv1.TableOption).GetSet, "table_option.set")
 	case rulesv1.TableContentKind_TABLE_CONTENT_KIND_SUBCLASS:

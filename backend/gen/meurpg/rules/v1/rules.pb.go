@@ -4753,8 +4753,14 @@ type Action struct {
 	// key). Empty for any other action. One card does both: while `state_active` is false it
 	// starts the state ("Ativar"), spending `resource_key` and the `economy`; while it is
 	// true it ends it ("Encerrar"), for free.
-	StateKey      string `protobuf:"bytes,12,opt,name=state_key,json=stateKey,proto3" json:"state_key,omitempty"`
-	StateActive   bool   `protobuf:"varint,13,opt,name=state_active,json=stateActive,proto3" json:"state_active,omitempty"`
+	StateKey    string `protobuf:"bytes,12,opt,name=state_key,json=stateKey,proto3" json:"state_key,omitempty"`
+	StateActive bool   `protobuf:"varint,13,opt,name=state_active,json=stateActive,proto3" json:"state_active,omitempty"`
+	// The spell slot level the action creates from the uses it spends (a table feature's
+	// `gives_slot`); 0 when it creates none.
+	GivesSlotLevel int32 `protobuf:"varint,14,opt,name=gives_slot_level,json=givesSlotLevel,proto3" json:"gives_slot_level,omitempty"`
+	// The action spends a spell slot of the level the player picks (`spend`, 1 to 9) and
+	// heals by it: `heal` at level 1 and `heal_per_point` for each level above.
+	SpendsSlot    bool `protobuf:"varint,15,opt,name=spends_slot,json=spendsSlot,proto3" json:"spends_slot,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4876,6 +4882,20 @@ func (x *Action) GetStateKey() string {
 func (x *Action) GetStateActive() bool {
 	if x != nil {
 		return x.StateActive
+	}
+	return false
+}
+
+func (x *Action) GetGivesSlotLevel() int32 {
+	if x != nil {
+		return x.GivesSlotLevel
+	}
+	return 0
+}
+
+func (x *Action) GetSpendsSlot() bool {
+	if x != nil {
+		return x.SpendsSlot
 	}
 	return false
 }
@@ -12696,7 +12716,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x03max\x18\x03 \x01(\x05R\x03max\x125\n" +
 	"\brecharge\x18\x04 \x01(\x0e2\x19.meurpg.rules.v1.RechargeR\brecharge\x12\x1d\n" +
 	"\n" +
-	"source_key\x18\x05 \x01(\tR\tsourceKey\"\xd8\x03\n" +
+	"source_key\x18\x05 \x01(\tR\tsourceKey\"\xa3\x04\n" +
 	"\x06Action\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x128\n" +
@@ -12712,7 +12732,10 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	" \x01(\v2\x1c.meurpg.rules.v1.DiceFormulaR\fhealPerPoint\x12)\n" +
 	"\x11temp_hp_per_point\x18\v \x01(\x05R\x0etempHpPerPoint\x12\x1b\n" +
 	"\tstate_key\x18\f \x01(\tR\bstateKey\x12!\n" +
-	"\fstate_active\x18\r \x01(\bR\vstateActive\"t\n" +
+	"\fstate_active\x18\r \x01(\bR\vstateActive\x12(\n" +
+	"\x10gives_slot_level\x18\x0e \x01(\x05R\x0egivesSlotLevel\x12\x1f\n" +
+	"\vspends_slot\x18\x0f \x01(\bR\n" +
+	"spendsSlot\"t\n" +
 	"\vDiceFormula\x12\x14\n" +
 	"\x05count\x18\x01 \x01(\x05R\x05count\x12\x14\n" +
 	"\x05sides\x18\x02 \x01(\x05R\x05sides\x12\x14\n" +

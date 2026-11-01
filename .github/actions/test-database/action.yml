@@ -1,0 +1,57 @@
+name: Start the test database
+description: >-
+  Picks the database the backend tests run on and starts it (docs/ci.md, "Which database the tests run on").
+  A pull request that is not a train (a preflight, or any other branch) runs them on PostgreSQL, for the fast feedback.
+  A train (a branch refactor/train-* of this repository), main, the nightly run and a manual run run them on CockroachDB,
+  the production database, so it decides every merge. This is the one place that decides it: workflows read the
+  `database` output and never test the event themselves. Needs a checkout and Docker.
+inputs:
+  start:
+    description: "'false' to only pick, for a job that starts the database itself."
+    required: false
+    default: "true"
+outputs:
+  database:
+    description: "'postgres' or 'cockroach'."
+    value: ${{ steps.pick.outputs.database }}
+  url:
+    description: The value for MEURPG_TEST_DATABASE_URL.
+    value: ${{ steps.pick.outputs.url }}
+runs:
+  using: composite
+  steps:
+    - name: Pick the database
+      id: pick
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        HEAD_REF: ${{ github.head_ref }}
+        HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        REPO: ${{ github.repository }}
+      run: |
+        database=cockroach
+        if [ "$EVENT" = pull_request ]; then
+          database=postgres
+          # The same test as `changes` in backend.yml uses for a train: the branch name alone is not enough, a fork
+          # can name a branch like that.
+          case "${HEAD_REF,,}" in refactor/train-*) if [ "$HEAD_REPO" = "$REPO" ]; then database=cockroach; fi ;; esac
+        fi
+        if [ "$database" = postgres ]; then
+          echo "url=postgresql://root@localhost:5432/postgres?sslmode=disable" >> "$GITHUB_OUTPUT"
+        else
+          echo "url=postgresql://root@localhost:26257/defaultdb?sslmode=disable" >> "$GITHUB_OUTPUT"
+        fi
+        echo "database=$database" >> "$GITHUB_OUTPUT"
+        echo "The backend tests run on: $database"
+
+    - name: Start the database
+      if: ${{ inputs.start == 'true' }}
+      shell: bash
+      env:
+        DATABASE: ${{ steps.pick.outputs.database }}
+      run: |
+        if [ "$DATABASE" = postgres ]; then
+          "$GITHUB_ACTION_PATH/../../scripts/start-postgres.sh"
+        else
+          "$GITHUB_ACTION_PATH/../../scripts/start-cockroach.sh"
+        fi

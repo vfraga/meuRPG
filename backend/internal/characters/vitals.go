@@ -59,6 +59,8 @@ type vitalsMax struct {
 	// classLevels are the levels of the character in each class, by class key (the slot
 	// recoveries count one class alone).
 	classLevels map[string]int
+	// recoveries are the slot_recovery effects of the sheet, for its level.
+	recoveries []rules.TableSlotRecovery
 	// songSides is the die of the character's Song of Rest (0 without the feature).
 	songSides int
 	// conMod is the Constitution modifier: what a spent hit die adds to its roll.
@@ -106,7 +108,7 @@ func maxima(content *rules.Content, characterID string, doc []byte, beast *strin
 		return vitalsMax{}, nil
 	}
 	d := rules.Derive(buildWithStates(full, stateKeysOf(active)), content)
-	m := vitalsMax{hitPoints: max(d.HitPointsMax, 0), hitDice: d.HitDice, resources: d.Resources, songSides: d.SongOfRestSides, states: d.States, hooks: d.Hooks, hookNames: hookNamesOf(content, d.Hooks)}
+	m := vitalsMax{hitPoints: max(d.HitPointsMax, 0), hitDice: d.HitDice, resources: d.Resources, songSides: d.SongOfRestSides, states: d.States, hooks: d.Hooks, recoveries: d.TableRecoveries, hookNames: hookNamesOf(content, d.Hooks)}
 	if b, ok := content.MonsterDerived(conv.OrZero(beast)); ok && beast != nil {
 		m.beast, m.beastNamePT, m.beastMax = *beast, content.NamePT(*beast), max(b.HitPointsMax, 1)
 	}

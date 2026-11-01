@@ -132,6 +132,8 @@ type castHit struct {
 	// Lucky is the spell attack's d20 the halfling's Lucky rolled again after it showed a 1
 	// (inspiration_lucky.go): D20, D20B and Counted are the dice after it. Nil when none was.
 	Lucky *luckyReroll `json:"lucky,omitempty"`
+	// Stroke is the use of Stroke of Luck on the spell attack (held_stroke.go): the miss that became a hit.
+	Stroke *strokeUse `json:"stroke,omitempty"`
 	// A spell attack made with advantage or disadvantage: the other d20, which die
 	// counts (D20 is the one that does), the mode and the suggestion.
 	D20B          int32  `json:"d20_b,omitempty"`
@@ -289,6 +291,14 @@ type actionEvent struct {
 	// D20, D20B and Counted are the dice after it, and this keeps the 1 it replaced and where,
 	// so the log says "Sortudo: 1 → 14". Nil when there was no Lucky question or the 1 was kept.
 	Lucky *luckyReroll `json:"lucky,omitempty"`
+	// Indomitable is the saving throw the fighter rolled again (held_indomitable.go): D20 and the dice after it are
+	// the new roll, and this keeps the d20 it replaced, so the log says "Indomitável: 4 → 15". One use of the
+	// feature was spent; the undo of a death save gives it back. Nil when the save was not rerolled.
+	Indomitable *indomitableUse `json:"indomitable,omitempty"`
+	// Stroke is the use of Stroke of Luck on the roll (held_stroke.go): an attack's miss that became a hit, or a check's d20
+	// that counted as 20 (D20 and the dice after it hold the 20 then, and this keeps the d20 it replaced). One use of
+	// the feature was spent; the undo of an attack gives it back. Nil when the roll was not changed.
+	Stroke *strokeUse `json:"stroke,omitempty"`
 	// TargetAC is the armor class the total was compared with: only the
 	// master's answer carries it (RN-20), and a retry reads it back from here.
 	TargetAC int32 `json:"target_ac,omitempty"`
@@ -379,7 +389,7 @@ type actionEvent struct {
 	ByArea      bool `json:"by_area,omitempty"`
 	Heal        bool `json:"heal,omitempty"`
 	Concentrate bool `json:"concentrate,omitempty"`
-	// PointsSpent is how many uses of Resource a feature action of the table's content spent (0: one), TempTried says the
+	// PointsSpent is how many uses of Resource a feature action of the table's content or a Wild Shape start spent (0: one for an event without it), TempTried says the
 	// action gave temporary hit points and TempGained how many the target kept of them (they do not stack): an undo
 	// gives the uses back and puts the target's hit points as Before has them.
 	PointsSpent int32 `json:"points_spent,omitempty"`

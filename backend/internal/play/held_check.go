@@ -85,7 +85,7 @@ func (s *Service) gateCheck(ctx context.Context, c *combatTx, p preparedCheck, h
 	return s.heldGate(ctx, s.inspirationGate(c), rollSpec{
 		Kind: h.kind, Key: h.key, Request: h.req, Window: c.replay != nil, Roller: attackRoller(h.m, h.who, c.enc.Round),
 		In: rollInput{inApp: h.in.inApp, typedFaces: h.in.faces}, Modifier: p.n.Bonus - cutOf(c), Mode: rollModeOfCheck(p.mode), Reliable: p.n.Reliable,
-		Lucky: lucky, MayAsk: mayAsk,
+		Lucky: lucky, MayAsk: mayAsk, Stroke: opposedStrokeRule(),
 	})
 }
 
@@ -96,7 +96,7 @@ func (s *Service) finishCheck(ctx context.Context, c *combatTx, who playdb.Comba
 	if gate.Settled {
 		roll = contestRoll{
 			Skill: p.skill, Faces: faces32(gate.Roll.Faces), Modifier: conv.Int32(p.n.Bonus),
-			Total: conv.Int32(gate.Roll.Total), Physical: gate.Roll.Physical, Mode: checkModeKey(p.mode), Notes: p.notes, Unknown: !p.n.Known, Lucky: gate.Lucky,
+			Total: conv.Int32(gate.Roll.Total), Physical: gate.Roll.Physical, Mode: checkModeKey(p.mode), Notes: p.notes, Unknown: !p.n.Known, Lucky: gate.Lucky, Stroke: gate.Stroke,
 			CountedAs: countedAs(gate.Roll.Face(), countedFace(gate.Roll.Face(), p.n.Reliable)),
 		}
 		if gate.Bonus != nil {

@@ -370,7 +370,7 @@ func TestCastingGuidanceAndEnhanceAbilityOutsideACombatPutsTheEffectOnTheCharact
 	}
 	a.mustCastOut(t, a.bia, a.bri, enhanceAbilityKey, slotOfLevel(2), false, []*charactersv1.Character{a.toren}, func(r *playv1.CastSpellOutsideCombatRequest) { r.AbilityKey = "dex" })
 	var mods string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT modifiers::STRING FROM character_effects WHERE character_id = $1 AND source_key = $2`, a.toren.GetId(), enhanceAbilityKey).Scan(&mods); err != nil || !strings.Contains(mods, `"dex"`) {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT modifiers::TEXT FROM character_effects WHERE character_id = $1 AND source_key = $2`, a.toren.GetId(), enhanceAbilityKey).Scan(&mods); err != nil || !strings.Contains(mods, `"dex"`) {
 		t.Errorf("the Enhance Ability modifiers = %s (%v), want Dexterity", mods, err)
 	}
 }

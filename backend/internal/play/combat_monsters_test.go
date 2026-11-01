@@ -523,10 +523,26 @@ func TestMR042_ARetryIsCheckedAgainstWhatWasAdded(t *testing.T) {
 	}
 }
 
-// hitDice finds the dice "2d8" written as dice, not inside a longer run of hex
-// digits: every log entry carries random UUIDs, and one like "…e2d833…" must not
-// fail the test (it did once, 07/10/2026).
-var hitDice = regexp.MustCompile(`(^|[^0-9a-fA-F-])2d8`)
+// hitDice finds the dice "2d8" written as dice: not preceded by a hex digit or "-", and not
+// followed by a hex digit. Every log entry carries random UUIDs, and one like "…e2d833…" or one
+// that starts with "2d8" does not match.
+var hitDice = regexp.MustCompile(`(^|[^0-9a-fA-F-])2d8($|[^0-9a-fA-F])`)
+
+// TestHitDicePatternIgnoresUUIDs: the pattern finds the dice and not a UUID that holds "2d8".
+func TestHitDicePatternIgnoresUUIDs(t *testing.T) {
+	t.Parallel()
+	for text, want := range map[string]bool{
+		`"dice":"2d8+2"`:                       true,
+		`2d8`:                                  true,
+		`"id":"2d820bcd-6bd4-4eaf-bea5-ac9f8"`: false,
+		`"id":"b3e2d833-6bd4"`:                 false,
+		`"id":"b3e1-2d820bcd-6bd4"`:            false,
+	} {
+		if got := hitDice.MatchString(text); got != want {
+			t.Errorf("hitDice.MatchString(%q) = %v, want %v", text, got, want)
+		}
+	}
+}
 
 // TestMR042_OnlyTheMasterReadsTheCreatureAndItsHitDice: the master's combatant carries the
 // creature's key and ND; a player's copy has neither, nor the monster's character,

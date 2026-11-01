@@ -149,7 +149,7 @@ type groupHold struct {
 
 // asking says the roll was kept for one of the player's answers: nothing is written yet.
 func (g *groupHold) asking() bool {
-	return g.offer != nil || g.lucky != nil
+	return g.offer != nil || g.lucky != nil || g.held != nil
 }
 
 type groupHoldKey struct{}
@@ -519,6 +519,7 @@ func (s *Service) gatedMemberRoll(ctx context.Context, q *playdb.Queries, tx pgx
 	step, err := s.heldGate(ctx, s.outsideGate(tx, q), rollSpec{
 		Kind: heldGroupCheck, Key: gh.key, Request: gh.raw, Roller: heldRoller{CampaignID: gh.m.CampaignID, CharacterID: spec.characterID, UserID: gh.m.UserID},
 		In: rollInput{inApp: spec.in.inApp, typedFaces: spec.in.faces}, Modifier: spec.bonus, Mode: spec.mode.Mode, Reliable: spec.reliable, Lucky: spec.lucky, MayAsk: true,
+		Stroke: groupStrokeRule(spec.check),
 	})
 	if err != nil {
 		return contestRoll{}, false, false, err
@@ -533,7 +534,7 @@ func (s *Service) gatedMemberRoll(ctx context.Context, q *playdb.Queries, tx pgx
 	roll = contestRoll{
 		Skill: spec.check.SkillKey, Faces: faces32(step.Roll.Faces), Modifier: conv.Int32(spec.bonus),
 		Total: conv.Int32(step.Roll.Total), Physical: step.Roll.Physical,
-		Mode: checkModeKey(checkModeOfRoll(spec.mode.Mode)), Unknown: !spec.known, Lucky: step.Lucky,
+		Mode: checkModeKey(checkModeOfRoll(spec.mode.Mode)), Unknown: !spec.known, Lucky: step.Lucky, Stroke: step.Stroke,
 		CountedAs: countedAs(step.Roll.Face(), countedFace(step.Roll.Face(), spec.reliable)),
 	}
 	if step.Bonus != nil {

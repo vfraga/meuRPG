@@ -6,13 +6,14 @@
 
 `CombatService.AddMonsters` (`combat_monsters.go`) puts 1 to 10 monsters of an SRD creature into a combat in `SETUP` or `ACTIVE`, like `AddCombatants`, and only the master calls it.
 
-**Monsters are copies, in the combat, of a single NPC per campaign and creature** (RN-29, "one per creature").
+**Monsters are copies, in the combat, of a single NPC per campaign and creature** (RN-29, "one per creature"): one for an SRD creature, one for each set of numbers of a table creature.
 `characters` makes it the first time and reuses it (`CombatRoster.MonsterNpc`, `characters/combatmonsters.go`).
 It is a minion with the basic sheet "Criar NPC" makes (`npcSheetFromCreature`, the same function), average HP and `BasicSheet.combat_only` on (a server-only field: `checkSheet` zeroes it on input and `keepCreatureLink` keeps it).
-The creation key is a fixed UUID v5 of the campaign and the creature, and `INSERT ...
+The creation key is a fixed UUID v5 of the campaign and the creature (for a table creature, also of a digest of the numbers of the sheet its entry makes: an edit that changes them makes another NPC, and the monsters already in a fight keep the numbers they joined with), and `INSERT ...
 ON CONFLICT (campaign_id, create_key) DO NOTHING` followed by a read in the same transaction makes a single NPC even with two adds at once (`GetOpenGameSessionForUpdate` already queues them).
 The NPC never appears in the master's list (`ListCharacters` filters it by `sheet->'basic'->>'combat_only'`; no column), and `participants()` (`StartEncounter`, `AddCombatants`) and the stage refuse it with `invalid_argument`: the only way in is `AddMonsters`.
 It is never deleted: combatants, XP and the summary point to it.
+A campaign holds at most 1,000 of them (RN-30): making the 1,001st is `resource_exhausted`, and a creature that already has its NPC never makes another.
 
 Each monster's name and HP live on the combatant row.
 `planned` carries the base name (`copyLabels` counts from what is already in the combat, and a lone monster gets the plain name unless the combat already has a copy of it: "Goblin" or "Goblin 2"; a creature whose name only begins with it, "Goblin Boss", is not a copy) and each copy's HP, which `addParticipants` uses in place of the sheet's maximum.
@@ -88,7 +89,7 @@ flowchart LR
 
 `StartEncounter` carries `monsters` (the groups: creature key, quantity from 1 to 40, optional base name), `monster_hit_points` and `monsters_hidden`.
 The monsters travel in the request, not read from the point by the server: the master changes what the point stores before starting; theatre of the mind carries no point (`THEATRE_HAS_NO_MAP`), so a combat without a map started from a stored encounter only works if the monsters come in the request; and a read of the point inside the start's transaction would be one more cross-module calculation with no gain (the app reads the point first with `GetBattleEncounter`, and `StartEncounter` checks each creature again).
-The monsters enter in the same transaction as the start and under the same idempotency key, by the same code as `AddMonsters` (`planMonsters`): each creature's NPC (one per campaign and creature, RN-29), the average or rolled HP (everyone's dice before the d20s), the names numbered together, hidden by default, each with initiative rolled at once and without a square.
+The monsters enter in the same transaction as the start and under the same idempotency key, by the same code as `AddMonsters` (`planMonsters`): each creature's NPC (one per campaign and SRD creature, one per set of numbers of a table creature, RN-29), the average or rolled HP (everyone's dice before the d20s), the names numbered together, hidden by default, each with initiative rolled at once and without a square.
 The master's log line is written like `AddMonsters`' (a `combatants_added` event with the monsters, with no key of its own).
 With monsters, `participants` may come empty (the whole party enters); monsters and the party together are at most 40 combatants, counting the characters' living creatures; each creature may have up to 40 monsters (the start does not have `AddMonsters`' limit of 10).
 A repeated request with the same key returns the same combat without rolling anything: the start event stores a `digest` of the whole request (monsters, modes, participants, the combat's mode, the point and the name), and the same key with another request is `invalid_argument`.

@@ -53,8 +53,9 @@ A pull request that touches no file of a workflow still starts it, and its jobs 
 | `proto` | `buf lint`, `buf format`, `buf breaking` against `main`, and that `buf generate` and `make sqlc` leave the committed generated code unchanged |
 | `go (lint)` | `golangci-lint` as a ratchet, the [complexity limits](#complexity-limits) and the [`//nolint` cap](#the-nolint-cap). It runs no `go test`: `go-db` runs every package |
 | `govulncheck (called vulnerabilities)` | `govulncheck ./...` (version pinned): fails on a known vulnerability in a module or in the Go standard library that the code actually calls. See [Vulnerability scans](#vulnerability-scans) |
-| `go-db <group>` | `go test -race -covermode=atomic -coverpkg=./...` for one group of packages against its own in-memory CockroachDB (the image `COCKROACH_IMAGE`, pinned by digest, the same as `compose.yaml`), with `MEURPG_REQUIRE_DB=1`. Each package has a 25-minute `-timeout` inside the job's 30 |
-| `go (integration tests against CockroachDB)` | Waits for every group; the stable check for a branch protection rule |
+| `go-db <group>` | `go test -race -covermode=atomic -coverpkg=./...` for one group of packages against its own in-memory database, with `MEURPG_REQUIRE_DB=1`: [PostgreSQL or CockroachDB, by the event](#which-database-the-tests-run-on). Each package has a 25-minute `-timeout` inside the job's 30 |
+| `go-db cockroach-only list` | Checks the [list of the tests that need CockroachDB](#which-database-the-tests-run-on): every listed test exists and, on PostgreSQL, fails |
+| `go (integration tests against CockroachDB)` | Waits for every group and for the list check; the stable check for a branch protection rule. The name is stable for a branch protection rule; a preflight runs it on PostgreSQL |
 | `go (coverage)` | Merges the groups' profiles and enforces the [coverage floor](#coverage-floors) |
 
 **The groups** are defined in `.github/scripts/go-db-shard.sh`: `play-1` to `play-3`, `maps`, `characters`, `pure`, `leak`, `camp` and `rest`.
@@ -63,6 +64,34 @@ The `play` package is split by test: each part runs the tests whose name hashes 
 `go-db-shard.sh --check` (run by every group) fails unless the groups together are exactly `go list ./...` and the play parts together are exactly the tests `go test -list` prints.
 If a group nears its timeout, move a package between groups in that script.
 The architecture test (`internal/archtest`) runs in `rest`.
+
+### Which database the tests run on
+
+The backend tests run on CockroachDB, the production database, wherever a result decides a merge.
+A preflight (a pull request that is not a train) runs them on PostgreSQL 17, so the sessions get fast feedback.
+
+| Run | Database |
+| --- | --- |
+| A pull request from a `refactor/train-*` branch of the same repository | CockroachDB |
+| A push to `main`, the nightly run, a manual run | CockroachDB |
+| Any other pull request (a preflight) | PostgreSQL 17: `default_transaction_isolation=serializable`, `fsync`, `synchronous_commit` and `full_page_writes` off, data in memory |
+| `repeat-changed` | The same as the `go-db` jobs of that pull request |
+| `flake-check` | CockroachDB: it is dispatched on a train branch |
+
+The composite action `.github/actions/test-database` is the one place that decides it, from the event and the head ref, and starts the database.
+The workflows read its `database` and `url` outputs and never test the event themselves.
+It applies the train rule of the [table above](#what-runs-when): a branch named like a train in someone else's fork is not one.
+
+**The tests that need CockroachDB itself** are listed in `backend/cockroach-only-tests.txt`, one per line with the reason.
+A PostgreSQL run leaves them out by name (`go test -skip`) and prints the list at the start of the step; the CockroachDB runs run every test.
+Two checks keep the list true (`.github/scripts/cockroach-only.sh`):
+
+- `check-names` runs in every group: each entry is a top-level test of its package, and no other package has a test with that name.
+- `check-list` runs in the job `go-db cockroach-only list` on PostgreSQL: every listed test must fail there.
+  A test that passes on PostgreSQL does not need CockroachDB, and leaves the list.
+
+A test that needs CockroachDB and is not on the list fails in the PostgreSQL run: add it with its reason, or write it so it runs on both databases.
+`repeat-changed` leaves the listed tests out of its repeats on PostgreSQL.
 
 ## Go linters and the ratchet
 

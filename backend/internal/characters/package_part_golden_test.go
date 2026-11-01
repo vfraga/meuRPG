@@ -195,8 +195,8 @@ func packagePartRows(t *testing.T, h *harness, campaignID, masterID string) map[
 	t.Helper()
 	ctx := t.Context()
 	out := map[string]any{}
-	rows, err := h.pool.Query(ctx, `SELECT c.id::STRING, c.kind, c.status, c.name, c.sheet, c.story, c.reserved,
-			COALESCE(c.master_user_id::STRING = $2, false), c.player_user_id IS NULL, COALESCE(n.notes, '')
+	rows, err := h.pool.Query(ctx, `SELECT c.id::TEXT, c.kind, c.status, c.name, c.sheet, c.story, c.reserved,
+			COALESCE(c.master_user_id::TEXT = $2, false), c.player_user_id IS NULL, COALESCE(n.notes, '')
 		FROM characters AS c LEFT JOIN character_master_notes AS n ON n.character_id = c.id
 		WHERE c.campaign_id = $1 ORDER BY c.created_at, c.id`, campaignID, masterID)
 	if err != nil {
@@ -235,7 +235,7 @@ func packagePartRows(t *testing.T, h *harness, campaignID, masterID string) map[
 	rows.Close()
 	out["content"] = content
 	var off []string
-	if err := h.pool.QueryRow(ctx, `SELECT COALESCE(array_agg(content_key ORDER BY content_key), ARRAY[]::STRING[]) FROM campaign_content_off WHERE campaign_id = $1`, campaignID).Scan(&off); err != nil {
+	if err := h.pool.QueryRow(ctx, `SELECT COALESCE(array_agg(content_key ORDER BY content_key), ARRAY[]::TEXT[]) FROM campaign_content_off WHERE campaign_id = $1`, campaignID).Scan(&off); err != nil {
 		t.Fatal(err)
 	}
 	out["off"] = off

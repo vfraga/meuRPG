@@ -13,6 +13,7 @@ import {
 import { CombatantStateKind } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { d20TotalText, rollText } from './combat-dice';
 import { damageText } from './combat-log-attack';
+import { luckyText } from './lucky';
 import { modeWord } from './roll-mode';
 import { conditionName, listNames } from './conditions';
 import { metersFixed, metersText } from '../units';
@@ -104,6 +105,10 @@ export function deathSaveText(e: CombatLogEntry): string {
   let out = ` ${roll}${word}`;
   if (s.outcome !== DeathSaveOutcome.REVIVED) {
     out += ` (${countsSentence(s.successes, s.failures)})`;
+  }
+  const rerolled = luckyText(s.roll); // "Sortudo: 1 → 14" or "Indomitável: 4 → 15"
+  if (rerolled) {
+    out += `. ${rerolled}`;
   }
   if (s.hook) {
     out += `. ${hookStandUpSentence(s.hook, e.actorLabel || 'o personagem')}`;

@@ -7,6 +7,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
 // The held roll of the d20 rolls that are not a weapon attack (SRD 5.1, Bard 1: the creature
@@ -41,6 +42,7 @@ type spellAttackPre struct {
 func (s *Service) holdSpellAttack(
 	ctx context.Context, c *combatTx, m authz.Membership, req *playv1.CastSpellRequest, key string,
 	caster playdb.Combatant, targs []playdb.Combatant, sp link.Spell, in rollInput, modes *spellModes,
+	armor func(playdb.Combatant) (int, error),
 ) (*outsideAsk, error) {
 	if !spellMayAsk(c, m, caster, sp, targs) {
 		return nil, nil
@@ -51,9 +53,12 @@ func (s *Service) holdSpellAttack(
 		Kind: heldSpellAttack, Key: key, Request: req, Roller: heldRoller{CampaignID: m.CampaignID, CharacterID: caster.CharacterID, UserID: m.UserID},
 		In: in, Modifier: sp.ToHit, Lucky: modes.traits.Lucky, MayAsk: true, // a halfling: a d20 of 1 may be rolled again
 	}
+	// Stroke of Luck (held_stroke.go): the rogue of the 20th level is asked about a spell attack that missed.
+	blind := len(effectDiceFor(modes.in.states, caster.ID, rules.RollAppliesAttack)) > 0
+	spec.Stroke = attackStrokeRule(func() (int, error) { return armor(target) }, 0, blind)
 	_, forced := heldReplyOf(ctx)
 	before, err := s.spellDieBefore(ctx, env, spec, forced)
-	if err != nil || (!forced && !before.Holds && !spec.Lucky) {
+	if err != nil || (!forced && !before.Holds && !spec.Lucky && !s.strokeAvailable(ctx, env, spec)) {
 		return nil, err
 	}
 	// The mode is worked out as spellAttack does, without writing while the roll only waits and as the
@@ -99,6 +104,14 @@ func (s *Service) spellDieBefore(ctx context.Context, env gateEnv, spec rollSpec
 		return st, nil
 	}
 	return st, err
+}
+
+// strokeUsed is the use of Stroke of Luck the cast's spell attack made, for the undo; nil when none.
+func (m *spellModes) strokeUsed() *strokeUse {
+	if m == nil || m.pre == nil {
+		return nil
+	}
+	return m.pre.step.Stroke
 }
 
 // dieUsed is the Bardic Inspiration die the cast's spell attack used, for the undo; nil when none.

@@ -14,9 +14,19 @@ import (
 
 // own is true when the message is the caller's own: `mine` says it in map tokens and in
 // combatants.
-func own(_ *world, _ *person, m protoreflect.Message) bool {
+func own(w *world, p *person, m protoreflect.Message) bool {
 	fd := m.Descriptor().Fields().ByName("mine")
-	return fd != nil && m.Get(fd).Bool()
+	return (fd != nil && m.Get(fd).Bool()) || ownsCreature(w, p, m)
+}
+
+// ownsCreature is true for a creature combatant whose owner is the caller's character: its player plays it, so the
+// numbers of its turn are theirs.
+func ownsCreature(w *world, p *person, m protoreflect.Message) bool {
+	kind, owner := m.Descriptor().Fields().ByName("kind"), m.Descriptor().Fields().ByName("owner_character_id")
+	if kind == nil || owner == nil || m.Get(kind).Enum() != 3 { // COMBATANT_KIND_CREATURE
+		return false
+	}
+	return m.Get(owner).String() == w.ownCharacter(p).GetId() && (p == w.ana || p == w.caio || p == w.pending)
 }
 
 // notAPlayerCharacter is true for a combatant that is an NPC or a creature.

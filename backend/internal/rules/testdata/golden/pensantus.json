@@ -877,6 +877,7 @@
   "CriticalRange": 20,
   "BrutalCriticalDice": 0,
   "SongOfRestSides": 0,
+  "WildShape": null,
   "SavageAttacks": false,
   "ReliableTalent": false,
   "TwoWeaponFighting": false,

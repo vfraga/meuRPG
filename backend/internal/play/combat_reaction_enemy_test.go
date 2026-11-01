@@ -140,7 +140,7 @@ func TestTwoAnswersToOneWindowSettleToOne(t *testing.T) {
 		t.Fatalf("answers: %d won, %d failed; want one of each", won, failed)
 	}
 	var used string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT slots_used::STRING FROM combatants WHERE id = $1`, a.id(t, "Mago")).Scan(&used); err != nil || used != `{"1": 1}` {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT slots_used::TEXT FROM combatants WHERE id = $1`, a.id(t, "Mago")).Scan(&used); err != nil || used != `{"1": 1}` {
 		t.Errorf("the Mago's slots used = %q, %v; want one 1st-level slot", used, err)
 	}
 }

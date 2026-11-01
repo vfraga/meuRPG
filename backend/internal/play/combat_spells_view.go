@@ -77,13 +77,13 @@ func attackRollView(h castHit, v combatViewer, caster playdb.Combatant) *playv1.
 	if h.D20B == 0 {
 		roll := diceRoll(1, 20, []int32{h.D20}, h.Modifier, h.Total, h.Physical)
 		roll.ExtraDice = extraDiceProto(h.Extra, v.master, nil)
-		roll.Rerolled = h.Lucky.proto()
+		roll.Rerolled = strokeRerolls(h.Lucky, h.Stroke)
 		return roll
 	}
 	roll := diceRoll(2, 20, pairOf(h.D20, h.D20B, h.Counted), h.Modifier, h.Total, h.Physical)
 	roll.CountedIndex = h.Counted
 	roll.ExtraDice = extraDiceProto(h.Extra, v.master, nil)
-	roll.Rerolled = h.Lucky.proto() // "Sortudo: 1 → 14", with the d20 it changed
+	roll.Rerolled = strokeRerolls(h.Lucky, h.Stroke) // "Sortudo: 1 → 14", with the d20 it changed
 	return roll
 }
 

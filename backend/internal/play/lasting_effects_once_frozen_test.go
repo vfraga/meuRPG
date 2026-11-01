@@ -22,7 +22,7 @@ func (a *armed) coreSpend(t *testing.T, encounterID string, dice ...effectDie) {
 func (a *armed) coreCharacterEffectID(t *testing.T, characterID, key string) string {
 	t.Helper()
 	var id string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT id::STRING FROM character_effects WHERE character_id = $1 AND source_key = $2`, characterID, key).Scan(&id); err != nil {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT id::TEXT FROM character_effects WHERE character_id = $1 AND source_key = $2`, characterID, key).Scan(&id); err != nil {
 		t.Fatalf("find the effect %s of the character: %v", key, err)
 	}
 	return id

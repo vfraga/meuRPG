@@ -32,7 +32,7 @@ func asRules(fa link.FeatureAction) rules.Action {
 	if fa.Heal != nil {
 		r.Heal = &rules.DiceFormula{Count: fa.Heal.Count, Sides: fa.Heal.Sides, Bonus: fa.Heal.Bonus}
 	}
-	return rules.Action{Key: fa.Key, Resource: fa.Resource, Cost: fa.Cost, CostMax: fa.CostMax, Result: r}
+	return rules.Action{Key: fa.Key, Resource: fa.Resource, Cost: fa.Cost, CostMax: fa.CostMax, GivesSlot: fa.GivesSlot, SpendsSlot: fa.SpendsSlot, Result: r}
 }
 
 // pickSpend works out how many uses the use spends, from the number the player picked and the uses left, read in the

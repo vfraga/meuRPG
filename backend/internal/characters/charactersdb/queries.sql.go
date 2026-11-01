@@ -201,7 +201,9 @@ func (q *Queries) ClearWildShape(ctx context.Context, characterID string) error 
 
 const countCampaignCharacters = `-- name: CountCampaignCharacters :one
 
-SELECT count(*)::INT4 FROM characters WHERE campaign_id = $1::UUID
+SELECT count(*)::INT4 FROM characters
+WHERE campaign_id = $1::UUID
+  AND COALESCE(sheet->'basic'->>'combat_only', 'false') <> 'true'
 `
 
 // Every query names the campaign next to the character: a character ID of
@@ -209,9 +211,27 @@ SELECT count(*)::INT4 FROM characters WHERE campaign_id = $1::UUID
 // campaign_id is nullable in the table (a deleted campaign sets it to NULL),
 // so the argument is cast to UUID to make it a plain string in Go.
 // Every character of the campaign, of any kind and status (dead ones too),
-// for the cap on creating (RN-30). The index on campaign_id finds the rows.
+// for the cap on creating (RN-30). The NPCs the app makes for the creatures
+// of a combat (combat_only, RN-29) are not counted here: the master never lists
+// them and nothing deletes them. They have their own cap (CountCampaignCombatOnlyNpcs).
+// The index on campaign_id finds the rows.
 func (q *Queries) CountCampaignCharacters(ctx context.Context, campaignID string) (int32, error) {
 	row := q.db.QueryRow(ctx, countCampaignCharacters, campaignID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const countCampaignCombatOnlyNpcs = `-- name: CountCampaignCombatOnlyNpcs :one
+SELECT count(*)::INT4 FROM characters
+WHERE campaign_id = $1::UUID
+  AND COALESCE(sheet->'basic'->>'combat_only', 'false') = 'true'
+`
+
+// The NPCs the app made for the creatures of a combat (combat_only, RN-29),
+// for their own cap (RN-30). The index on campaign_id finds the rows.
+func (q *Queries) CountCampaignCombatOnlyNpcs(ctx context.Context, campaignID string) (int32, error) {
+	row := q.db.QueryRow(ctx, countCampaignCombatOnlyNpcs, campaignID)
 	var column_1 int32
 	err := row.Scan(&column_1)
 	return column_1, err

@@ -3,7 +3,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { MasterQuestion } from '../../../core/held-rolls/held-questions';
-import { asksLucky, dieOf } from '../../../core/held-rolls/held-roll-offer';
+import {
+  asksIndomitable,
+  asksLucky,
+  asksStroke,
+  dieOf,
+} from '../../../core/held-rolls/held-roll-offer';
 import {
   d20Chip,
   d20Line,
@@ -11,6 +16,7 @@ import {
   questionTitle,
   questionWhat,
 } from '../../../core/held-rolls/held-text';
+import { MultiRoll, type RollField } from '../../../shared/multi-roll/multi-roll';
 import { inspirationDieName, useLabel } from '../../../core/resources/bardic-inspiration';
 
 /** Each question's own heading id: the panel and the rows of the order may both show several. */
@@ -28,7 +34,7 @@ const D20_SIDES = 20;
 @Component({
   selector: 'app-held-question',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatIconModule],
+  imports: [MatButtonModule, MatIconModule, MultiRoll],
   templateUrl: './held-question.html',
   styleUrl: './held-question.scss',
 })
@@ -69,9 +75,23 @@ export class HeldQuestion {
     return offer ? d20Line(offer) : '';
   });
   protected readonly lucky = computed(() => asksLucky(this.offer()));
-  /** The size of the die the typed face is for: the d20 of Lucky's reroll, or the Bardic Inspiration die. */
+  /** The fighter's question: roll the failed saving throw again, or keep it. */
+  protected readonly indomitable = computed(() => asksIndomitable(this.offer()));
+  /** The rogue's Stroke of Luck: use it or keep the roll; nothing is rolled, so there is no typed face. */
+  protected readonly stroke = computed(() => asksStroke(this.offer()));
+  /** The question rolls a d20 again (Lucky's or Indomitable's), not the Bardic Inspiration die. */
+  protected readonly rerolls = computed(() => this.lucky() || this.indomitable());
+  /** With advantage or disadvantage Indomitable's new roll takes both dice, and a typed one is both faces. */
+  protected readonly pair = computed(
+    () => this.indomitable() && (this.offer()?.d20?.faces.length ?? 1) > 1,
+  );
+  protected readonly pairFields: readonly RollField[] = [
+    { key: 'd20-1', label: 'Primeiro d20', min: 1, max: 20 },
+    { key: 'd20-2', label: 'Segundo d20', min: 1, max: 20 },
+  ];
+  /** The size of the die the typed face is for: the d20 of a reroll, or the Bardic Inspiration die. */
   protected readonly sides = computed(() =>
-    this.lucky() ? D20_SIDES : (dieOf(this.offer())?.sides ?? 0),
+    this.rerolls() ? D20_SIDES : (dieOf(this.offer())?.sides ?? 0),
   );
   protected readonly dieName = computed(() => inspirationDieName(this.sides()));
   protected readonly useText = computed(() =>
@@ -91,19 +111,30 @@ export class HeldQuestion {
     return q.controller.refusal() ? '' : q.controller.error();
   });
 
+  protected useStroke(): void {
+    void this.question().answer({ kind: 'stroke', use: true });
+  }
+
   protected rollAgain(): void {
+    const roll = { inApp: true } as const;
     void this.question().answer(
       this.lucky()
-        ? { kind: 'lucky', reroll: true, roll: { inApp: true } }
-        : { kind: 'die', use: true, roll: { inApp: true } },
+        ? { kind: 'lucky', reroll: true, roll }
+        : this.indomitable()
+          ? { kind: 'indomitable', reroll: true, roll }
+          : { kind: 'die', use: true, roll },
     );
   }
 
   protected keep(): void {
     void this.question().answer(
-      this.lucky()
-        ? { kind: 'lucky', reroll: false, roll: null }
-        : { kind: 'die', use: false, roll: null },
+      this.stroke()
+        ? { kind: 'stroke', use: false }
+        : this.lucky()
+          ? { kind: 'lucky', reroll: false, roll: null }
+          : this.indomitable()
+            ? { kind: 'indomitable', reroll: false, roll: null }
+            : { kind: 'die', use: false, roll: null },
     );
   }
 
@@ -113,8 +144,17 @@ export class HeldQuestion {
     }
     const roll = { face: this.face() };
     void this.question().answer(
-      this.lucky() ? { kind: 'lucky', reroll: true, roll } : { kind: 'die', use: true, roll },
+      this.lucky()
+        ? { kind: 'lucky', reroll: true, roll }
+        : this.indomitable()
+          ? { kind: 'indomitable', reroll: true, roll }
+          : { kind: 'die', use: true, roll },
     );
+    this.typing.set(false);
+  }
+
+  protected sendPair(faces: number[]): void {
+    void this.question().answer({ kind: 'indomitable', reroll: true, roll: { faces } });
     this.typing.set(false);
   }
 

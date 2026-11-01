@@ -143,10 +143,11 @@ func TestGiveCreatureLocksTheSessionBeforeTheOwner(t *testing.T) {
 	// session's lock.
 	observer := dbtest.SideConnection(t, a.h.pool)
 	for waiting := false; !waiting; {
-		if err := observer.QueryRow(ctx, `SELECT count(*) > 0 FROM crdb_internal.cluster_queries
-			WHERE query LIKE '%FROM game_sessions%FOR UPDATE%' AND query NOT LIKE '%cluster_queries%'`).Scan(&waiting); err != nil {
+		n, err := dbtest.WaitingStatements(ctx, observer, `%FROM game_sessions%FOR UPDATE%`)
+		if err != nil {
 			t.Fatalf("look for the waiting gift: %v", err)
 		}
+		waiting = n > 0
 		select {
 		case err := <-given:
 			t.Fatalf("GiveCreature() returned while the session was locked: %v", err)
@@ -274,7 +275,7 @@ func TestMR037_TheRitualFamiliarSpendsNoSlotAndANewOneReplacesTheOld(t *testing.
 		t.Errorf("creature_summoned events = %d, want 2", n)
 	}
 	var payload string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::STRING FROM session_events WHERE kind = 'creature_summoned' ORDER BY seq LIMIT 1`).Scan(&payload); err != nil {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::TEXT FROM session_events WHERE kind = 'creature_summoned' ORDER BY seq LIMIT 1`).Scan(&payload); err != nil {
 		t.Fatalf("read the event: %v", err)
 	}
 	if strings.Contains(payload, "Nanquim") || !strings.Contains(payload, "monster:owl") {
@@ -853,6 +854,107 @@ func TestRN20_CreatureHitPointsOnlyToOwnerAndMaster(t *testing.T) {
 		ev := other.nextChange(t)
 		js := protojson.Format(ev)
 		if strings.Contains(js, "hitPoints") || strings.Contains(js, "monster") {
+			t.Fatalf("the other player's stream carries a creature's numbers: %s", js)
+		}
+		if ev.GetEncounterChanged() != nil {
+			sawEncounter = true
+		}
+		if ev.GetCombatLogChanged() != nil && sawEncounter {
+			break
+		}
+	}
+	if !sawEncounter {
+		t.Error("the other player's stream got no encounter_changed")
+	}
+}
+
+// TestRN20_TableCreatureHitPointsOnlyToOwnerAndMaster: the same for a table creature (issue #578), a skeleton
+// of the master's with 30 hit points and armor class 15 given to Toren. Its owner's player and the master
+// read its hit points; the master alone reads its armor class; another player's responses and stream carry
+// neither, and the key of a table creature has no "monster" in it.
+func TestRN20_TableCreatureHitPointsOnlyToOwnerAndMaster(t *testing.T) {
+	t.Parallel()
+	a := newSummoners(t)
+	if _, err := a.master.table.CreateTableEntry(t.Context(), connect.NewRequest(&rulesv1.CreateTableEntryRequest{
+		CampaignId: a.campaignID, Body: &rulesv1.CreateTableEntryRequest_TableCreature{TableCreature: &rulesv1.TableCreature{
+			NamePt: "Guarda Ossuda", BaseKey: "monster:skeleton", HitPoints: 30, ArmorClass: 15,
+		}},
+	})); err != nil {
+		t.Fatalf("CreateTableEntry(creature) error = %v", err)
+	}
+	if strings.Contains(tableSkeletonKey, "monster") {
+		t.Fatalf("the table creature's key %q has \"monster\" in it, which the stream check below relies on", tableSkeletonKey)
+	}
+	given := a.give(t, a.toren, tableSkeletonKey, "Guarda")
+	if given.GetHitPointsMax() != 30 || given.GetArmorClass() != 15 {
+		t.Fatalf("the gift = hp %d, armor class %d; want 30 and 15", given.GetHitPointsMax(), given.GetArmorClass())
+	}
+	e := a.start(t, plan{
+		npcs:     []*playv1.Participant{{CharacterId: a.goblin.GetId()}},
+		npcRolls: []int{2},
+		players:  map[string]int32{"Pensantus": 20, "Sálvia": 15, "Toren": 12, "Guarda": 10},
+		reveal:   []string{"Goblin"},
+		at:       map[string][2]int32{"Toren": {3, 3}, "Goblin": {4, 3}, "Pensantus": {10, 3}, "Sálvia": {6, 5}, "Guarda": {5, 3}},
+	})
+	other := a.ana.watch(t, a.campaignID)
+	other.ready(t)
+	a.h.roller.queue(15)
+	hit := a.mustAttackAsReaction(t, e, "Goblin", sword, "Guarda")
+	a.mustDamage(t, a.master, e, hit.GetPendingDamage().GetId(), typedDamage(6)) // 1d6 + 2: 8 damage, 30 - 8 = 22
+
+	hasNumbers := func(c *playv1.Combatant) bool {
+		return c.HitPointsCurrent != nil || c.HitPointsMax != nil || c.HitPointsTemporary != nil || c.ArmorClass != nil
+	}
+	for name, u := range map[string]*user{"another player": a.ana, "a third player": a.bia} {
+		enc := a.get(t, u)
+		guard := byLabel(t, enc, "Guarda")
+		if guard.GetKind() != playv1.CombatantKind_COMBATANT_KIND_CREATURE {
+			t.Fatalf("%s reads Guarda as %v, want a creature", name, guard.GetKind())
+		}
+		if hasNumbers(guard) || guard.GetMine() || guard.GetControlledByMe() || guard.GetCharacterId() != "" || guard.GetCreatureId() != "" || guard.GetInitiativeBonus() != 0 {
+			t.Errorf("%s reads Guarda as %v, want its state word only and no owner's numbers", name, guard)
+		}
+		if guard.GetOwnerCharacterId() != a.toren.GetId() || guard.GetMonsterKey() != tableSkeletonKey {
+			t.Errorf("%s reads Guarda as %v, want the owner and the kind (the party knows them)", name, guard)
+		}
+		if guard.GetState() != playv1.CombatantState_COMBATANT_STATE_HURT {
+			t.Errorf("%s reads a state of %v for the hurt skeleton, want hurt", name, guard.GetState())
+		}
+		if js := asJSON(t, enc); strings.Contains(js, `"hitPointsCurrent"`) || strings.Contains(js, `"hitPointsMax"`) {
+			t.Errorf("%s: the combat as JSON has hit points:\n%s", name, js)
+		}
+		if js := asJSON(t, a.log(t, u, e)); strings.Contains(js, "hitPointsAfter") {
+			t.Errorf("%s: the combat log has hit points:\n%s", name, js)
+		}
+		_, err := u.combat.GetTurnOptions(t.Context(), connect.NewRequest(&playv1.GetTurnOptionsRequest{CampaignId: a.campaignID, EncounterId: e.GetId(), CombatantId: guard.GetId()}))
+		wantCode(t, name+": GetTurnOptions of the skeleton", err, connect.CodePermissionDenied)
+		_, err = a.creatures(t, u, a.toren)
+		wantCode(t, name+": ListCharacterCreatures", err, connect.CodeNotFound)
+	}
+	// The owner's player and the master read the hit points; only the master reads the armor class.
+	for name, u := range map[string]*user{"the owner": a.caio, "the master": a.master} {
+		guard := byLabel(t, a.get(t, u), "Guarda")
+		if guard.GetHitPointsCurrent() != 22 || guard.GetHitPointsMax() != 30 || guard.GetMine() {
+			t.Errorf("%s reads Guarda as %v, want 22/30 hit points and not mine", name, guard)
+		}
+		if (u == a.master) != (guard.ArmorClass != nil) || (u == a.master && guard.GetArmorClass() != 15) {
+			t.Errorf("%s reads armor class %v for Guarda, want 15 for the master alone", name, guard.ArmorClass)
+		}
+	}
+	if enc := a.get(t, a.caio); !byLabel(t, enc, "Toren").GetMine() || !byLabel(t, enc, "Guarda").GetControlledByMe() {
+		t.Error("Toren's player must read Toren as mine and Guarda as controlled by them")
+	}
+	mine, err := a.creatures(t, a.caio, a.toren)
+	if err != nil || len(mine) != 1 || mine[0].GetHitPointsMax() != 30 || mine[0].GetArmorClass() != 15 {
+		t.Errorf("the owner's ListCharacterCreatures = %v, %v; want 30 hit points at most and armor class 15", mine, err)
+	}
+
+	// The stream: what the other player's stream got, since the hit, has no numbers and no "monster".
+	var sawEncounter bool
+	for range 20 {
+		ev := other.nextChange(t)
+		js := protojson.Format(ev)
+		if strings.Contains(js, "hitPoints") || strings.Contains(js, "armorClass") || strings.Contains(js, "monster") {
 			t.Fatalf("the other player's stream carries a creature's numbers: %s", js)
 		}
 		if ev.GetEncounterChanged() != nil {

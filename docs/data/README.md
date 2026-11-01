@@ -142,8 +142,14 @@ Migrations are numbered `NNNNN_description.sql` files in `backend/migrations/`, 
 - **Re-runnable:** CockroachDB commits before each schema change, so a migration with several statements is not all-or-nothing.
   Every statement is idempotent (`IF NOT EXISTS`, `IF EXISTS`), and a backfill touches only rows still in the old state.
   `TestMigrationsAreSafeToRerun` runs every `Up` twice.
+- **SQL both databases accept:** the tests can run on PostgreSQL as well as CockroachDB, so a new migration and every query in a `queries.sql` use `TEXT`, never `STRING`.
+  They use no `unique_rowid()`, no row TTL and no other CockroachDB-only syntax.
+  Rows that expire are swept by the application.
+  `TestNewMigrationsAndQueryFilesAvoidCockroachDBOnlySQL` refuses them in `queries.sql` and in migrations after 00288.
+  It does not read SQL written inside Go files.
+  Migrations up to 00288 may use CockroachDB-only syntax; the test runner adapts them on PostgreSQL in `backend/migrations/postgres.go`, the one place that knows the difference.
 - **Indexes in their own migration**, not inside `CREATE TABLE`, because sqlc reads the migrations with the PostgreSQL parser, which does not know CockroachDB's inline index syntax.
-  Covered columns use `INCLUDE`; row TTL goes in `WITH (...)` (see [Contributing](../../CONTRIBUTING.md#code-rules-that-bite)).
+  Covered columns use `INCLUDE` (see [Contributing](../../CONTRIBUTING.md#code-rules-that-bite)).
 - **Numbering has gaps.** goose accepts them.
   A new migration takes the number after the highest, never an unused one.
 - **Ownership:** each module's migrations only create and change that module's tables.

@@ -203,7 +203,7 @@ func (s *Service) ResolveConcentrationSave(
 	}
 	var run concentrationRun
 	res, err := s.write(ctx, combatWrite{m: call.m, key: call.key, hash: idem.Hash(req.Msg), kind: eventConcentrationSaveRolled, encounterID: call.encID}, func(c *combatTx) (any, error) {
-		run.result, run.offer, run.lucky = nil, nil, nil
+		run.result, run.offer, run.lucky, run.held = nil, nil, nil, nil
 		return s.writeConcentrationSave(ctx, c, call, &run)
 	})
 	if err != nil {
@@ -215,7 +215,7 @@ func (s *Service) ResolveConcentrationSave(
 // concentrationAnswer is the response of a save once the change is written: the question alone
 // when the d20 was kept for one, else the encounter and the result.
 func (s *Service) concentrationAnswer(ctx context.Context, m authz.Membership, res combatResult, run *concentrationRun) (*connect.Response[playv1.ResolveConcentrationSaveResponse], error) {
-	if run.offer != nil || run.lucky != nil { // nothing was written: the question is the whole answer
+	if run.offer != nil || run.lucky != nil || run.held != nil { // nothing was written: the question is the whole answer
 		out, err := s.finish(ctx, m, res, nil)
 		if err != nil {
 			return nil, err
@@ -265,7 +265,7 @@ func concentrationResultOf(ev actionEvent) *playv1.ConcentrationSaveResult {
 		}
 	}
 	out.Save = diceRoll(clamp32(len(faces), 1, 2), 20, faces, re.SaveBonus, ev.Total, ev.Physical)
-	out.Save.Rerolled = ev.Lucky.proto()
+	out.Save.Rerolled = ev.rerolls()
 	out.BonusDice = bonusDiceOf(ev)
 	return out
 }
@@ -299,7 +299,7 @@ func (s *Service) writeConcentrationSave(ctx context.Context, c *combatTx, call 
 	if err != nil {
 		return nil, err
 	}
-	if run.offer != nil || run.lucky != nil { // the d20 is kept for a question: nothing is written
+	if run.offer != nil || run.lucky != nil || run.held != nil { // the d20 is kept for a question: nothing is written
 		return nil, nil
 	}
 	if !kept {
@@ -381,7 +381,12 @@ func (s *Service) rollConcentration(
 	// A player's character that holds a Bardic Inspiration die has the d20 kept until the player
 	// answers (nothing has been written yet); the answer brings it back with the die added. So
 	// has a halfling's d20 that shows a 1, for the Lucky question first.
-	gate, err := s.heldGate(ctx, s.inspirationGate(c), saveSpec(call.m, heldConcentrationSave, reactor, call.key, call.msg, call.in, save.Bonus, mode, sheet.Traits.Lucky))
+	spec := saveSpec(call.m, heldConcentrationSave, reactor, call.key, call.msg, call.in, save.Bonus, mode, sheet.Traits.Lucky)
+	// Indomitable (held_indomitable.go): the dice an effect adds after the gate move the total, so the roller may not
+	// know the result yet, as when the table hides the DC.
+	extras := len(effectDiceFor(states, reactor.ID, rules.RollAppliesSave)) > 0 || call.msg.GetManeuverKey() != ""
+	spec.Save = &saveRule{DC: int(dc), Blind: !c.rules.ShowSaveDC || extras}
+	gate, err := s.heldGate(ctx, s.inspirationGate(c), spec)
 	if err != nil {
 		return false, err
 	}
@@ -412,8 +417,8 @@ func (s *Service) rollConcentration(
 func recordConcentrationRoll(ev *actionEvent, run *concentrationRun, gate gateResult, bonus, delta int, dc int32, spell string) bool {
 	roll := gate.Roll
 	bonusFace := 0
-	if gate.Bonus != nil {
-		bonusFace = int(gate.Bonus.Face) // the die the player added after rolling
+	if gate.Bonus != nil && gate.Indomitable == nil {
+		bonusFace = int(gate.Bonus.Face) // the die the player added after rolling (a reroll leaves it out of the total)
 	}
 	total := roll.Total + delta
 	kept := total >= int(dc)
@@ -421,11 +426,11 @@ func recordConcentrationRoll(ev *actionEvent, run *concentrationRun, gate gateRe
 	re.SaveD20, re.SaveBonus, re.Saved, re.Kept = clamp32(roll.Face(), 1, 20), conv.Int32(bonus+delta+bonusFace), kept, kept
 	ev.D20, ev.Modifier, ev.Total, ev.Physical = re.SaveD20, re.SaveBonus, conv.Int32(total), roll.Physical
 	ev.D20B, ev.Counted = clamp32(roll.otherFace(), 0, 20), clamp32(roll.Index, 0, 1)
-	ev.Lucky = gate.Lucky // the d20 Lucky rolled again: the log says "Sortudo: 1 → 14"
+	ev.Lucky, ev.Indomitable = gate.Lucky, gate.Indomitable // the d20 rolled again: the log says "Sortudo: 1 → 14"
 	run.result = &playv1.ConcentrationSaveResult{
 		Save: diceRoll(clamp32(len(roll.Faces), 1, 2), 20, faces32(roll.Faces), re.SaveBonus, ev.Total, roll.Physical), Dc: dc, Kept: kept, SpellKey: spell,
 	}
-	run.result.Save.Rerolled = gate.Lucky.proto()
+	run.result.Save.Rerolled = rerollsOf(gate.Lucky, gate.Indomitable)
 	if gate.Bonus != nil {
 		run.result.BonusDice = []*playv1.BonusDie{gate.Bonus}
 		ev.Res = &resourceEvent{Kind: resBardicUse, Sides: gate.Bonus.Sides, Face: gate.Bonus.Face} // a retry reads the die back from here

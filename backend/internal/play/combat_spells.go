@@ -481,6 +481,7 @@ func (s *Service) spellAttack(ctx context.Context, c *combatTx, m authz.Membersh
 	}
 	step := rolled.step
 	hit.Lucky = step.Lucky // the d20 Lucky rolled again: the cast's line says "Sortudo: 1 → 14"
+	hit.Stroke = step.Stroke
 	bonusFace := 0
 	if bonus := step.Bonus; bonus != nil {
 		bonusFace = int(bonus.Face) // the die the player added after rolling
@@ -517,6 +518,9 @@ func (s *Service) resolveSpellAttack(ctx context.Context, c *combatTx, m authz.M
 	}
 	hit.Extra = extra
 	result := combat.ResolveAttack(sp.ToHit+bonusFace+extraTotal, targetAC, face)
+	if rolled.step.Stroke != nil && !result.Hit { // Stroke of Luck: the miss the caster turned into a hit
+		result.Hit, result.Fumble = true, false
+	}
 	if result.Hit && rolled.truth.CriticalOnHit { // a paralyzed or unconscious target within 5 ft (SRD 5.1)
 		result.Critical = true
 	}

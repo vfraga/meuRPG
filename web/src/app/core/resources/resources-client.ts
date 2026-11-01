@@ -31,6 +31,37 @@ export type HitDieRoll =
 export type LayOnHandsEffect =
   { readonly amount: number } | { readonly cure: 'disease' | 'poison' };
 
+/** The oneof of the request for each question: Lucky's, the die's, Indomitable's and Stroke of Luck's. */
+function answerOf(answer: HeldAnswer) {
+  switch (answer.kind) {
+    case 'lucky':
+      return {
+        case: 'lucky',
+        value: { reroll: answer.reroll, roll: rollOf(answer.reroll, answer.roll) },
+      } as const;
+    case 'indomitable':
+      return {
+        case: 'indomitable',
+        value: {
+          reroll: answer.reroll,
+          roll:
+            answer.roll && 'faces' in answer.roll
+              ? { case: undefined }
+              : rollOf(answer.reroll, answer.roll),
+          typedFaces:
+            answer.reroll && answer.roll && 'faces' in answer.roll ? [...answer.roll.faces] : [],
+        },
+      } as const;
+    case 'stroke':
+      return { case: 'strokeOfLuck', value: { use: answer.use } } as const;
+    case 'die':
+      return {
+        case: 'die',
+        value: { use: answer.use, roll: rollOf(answer.use, answer.roll) },
+      } as const;
+  }
+}
+
 /** The roll of an answer that says how it comes: the app's or the typed face; nothing when the die is kept. */
 function rollOf(
   rolled: boolean,
@@ -42,9 +73,10 @@ function rollOf(
   if (!rolled || !roll) {
     return { case: undefined };
   }
-  return 'inApp' in roll
-    ? { case: 'rollInApp', value: true }
-    : { case: 'typedFace', value: roll.face };
+  if ('inApp' in roll) {
+    return { case: 'rollInApp', value: true };
+  }
+  return 'face' in roll ? { case: 'typedFace', value: roll.face } : { case: undefined };
 }
 
 /** How many dice of each size come back to one character on a long rest (`HitDiceChoice`). */
@@ -248,13 +280,7 @@ export class ResourceClient {
       campaignId,
       holdId,
       idempotencyKey,
-      answer:
-        answer.kind === 'lucky'
-          ? {
-              case: 'lucky',
-              value: { reroll: answer.reroll, roll: rollOf(answer.reroll, answer.roll) },
-            }
-          : { case: 'die', value: { use: answer.use, roll: rollOf(answer.use, answer.roll) } },
+      answer: answerOf(answer),
     });
   }
 

@@ -50,7 +50,11 @@ The history of what each revision changed is `git log` on `effects/revision.json
 - **`replaces`**, on a higher tier of a scaling feature (Channel Divinity twice between rests, Extra Attack 2, the Bardic Inspiration die...), names the lower tier's feature key: the sheet lists only the newest tier, while the lower one's effects still count. It takes that key and nothing else.
 - **`grant_action`** may carry `resource`, the key of a resource of another feature that each use spends (the monk's ki actions); without that resource at the character's level the action is not offered. Table content may add `cost`, `cost_max`, `value_per_point`, `heal`, `temp_hp` and `ability` (see [Costs, healing actions and hooks](architecture/rules-table-content.md#costs-healing-actions-and-hooks)); the SRD's own effects use none of them.
 - **`on_event`** is table content's alone: a hook of the owner on `short_rest`, `long_rest`, `death_save_failed` or `drop_to_zero`.
-- **`wild_shape`** is the druid's effect, with `max_cr`, `no_fly` and `no_swim`; loading refuses other fields and a `max_cr` that is not a CR.
+- **`wild_shape`** sets the limits of Wild Shape: `max_cr` or `max_cr_from`, `no_fly`, `no_swim`, `form_cost` and `magical_attacks`.
+  Loading refuses other fields and a `max_cr` that is not a CR.
+  It takes effect on a character with Wild Shape and at least one effect that sets a rating.
+- **`slot_recovery`** lets a feature use recover spell slots: `resource`, `recover_max_level` and `recover_levels`.
+  `grant_action` also takes `gives_slot` and `spends_slot`.
 
 ## The effect files
 

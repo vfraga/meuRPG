@@ -9933,7 +9933,8 @@ type CharacterCreature struct {
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// The character it belongs to (a UUID).
 	CharacterId string `protobuf:"bytes,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
-	// The SRD creature it is: "monster:wolf". The stat block is
+	// The creature it is: an SRD creature, "monster:wolf", or a table creature,
+	// "creature:lobo-da-mesa@mesa". The stat block is
 	// meurpg.rules.v1.ContentService.GetCreature; the Portuguese name of the
 	// kind is below.
 	MonsterKey string `protobuf:"bytes,3,opt,name=monster_key,json=monsterKey,proto3" json:"monster_key,omitempty"`
@@ -9956,7 +9957,11 @@ type CharacterCreature struct {
 	HitPointsMax     int32 `protobuf:"varint,11,opt,name=hit_points_max,json=hitPointsMax,proto3" json:"hit_points_max,omitempty"`
 	// When it was created (the creatures of one casting a microsecond apart, in
 	// the order of the casting).
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Its armor class, worked out from the creature's stat block in the campaign's content
+	// (so a table creature's adjusted armor class shows). Like its hit points, only the master and
+	// its owner's player get it here; 0 when the creature is not in the content.
+	ArmorClass    int32 `protobuf:"varint,13,opt,name=armor_class,json=armorClass,proto3" json:"armor_class,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10073,6 +10078,13 @@ func (x *CharacterCreature) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *CharacterCreature) GetArmorClass() int32 {
+	if x != nil {
+		return x.ArmorClass
+	}
+	return 0
 }
 
 // ListCharacterCreaturesRequest names a character.
@@ -13424,7 +13436,7 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x1a:\n" +
 	"\fNamesPtEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xea\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8b\x04\n" +
 	"\x11CharacterCreature\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12!\n" +
 	"\fcharacter_id\x18\x02 \x01(\tR\vcharacterId\x12\x1f\n" +
@@ -13440,7 +13452,9 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	" \x01(\x05R\x10hitPointsCurrent\x12$\n" +
 	"\x0ehit_points_max\x18\v \x01(\x05R\fhitPointsMax\x129\n" +
 	"\n" +
-	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"c\n" +
+	"created_at\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1f\n" +
+	"\varmor_class\x18\r \x01(\x05R\n" +
+	"armorClass\"c\n" +
 	"\x1dListCharacterCreaturesRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12!\n" +

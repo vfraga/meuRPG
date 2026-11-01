@@ -549,21 +549,29 @@ func planClass(p ActionPlan, desc string) string {
 func (c *content) buildPlans() error {
 	c.monsterPlans = make(map[string]*MonsterPlan, len(c.monsters))
 	for _, key := range sortedKeys(c.monsters) {
-		m := c.monsters[key]
-		plan := &MonsterPlan{Key: key}
-		seen := map[string]bool{}
-		for _, a := range m.Actions {
-			ap, err := c.planAction(m, a)
-			if err != nil {
-				return fmt.Errorf("data/monsters.json: %s: %w", key, err)
-			}
-			if seen[ap.Key] {
-				return fmt.Errorf("data/monsters.json: %s: two actions have the key %s", key, ap.Key)
-			}
-			seen[ap.Key] = true
-			plan.Actions = append(plan.Actions, ap)
+		plan, err := c.planOf(c.monsters[key])
+		if err != nil {
+			return fmt.Errorf("data/monsters.json: %s: %w", key, err)
 		}
 		c.monsterPlans[key] = plan
 	}
 	return nil
+}
+
+// planOf builds the plan of one creature's actions.
+func (c *content) planOf(m *srd51.Monster) (*MonsterPlan, error) {
+	plan := &MonsterPlan{Key: m.Key}
+	seen := map[string]bool{}
+	for _, a := range m.Actions {
+		ap, err := c.planAction(m, a)
+		if err != nil {
+			return nil, err
+		}
+		if seen[ap.Key] {
+			return nil, fmt.Errorf("two actions have the key %s", ap.Key)
+		}
+		seen[ap.Key] = true
+		plan.Actions = append(plan.Actions, ap)
+	}
+	return plan, nil
 }

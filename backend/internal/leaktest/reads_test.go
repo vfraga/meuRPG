@@ -260,7 +260,7 @@ var reads = []read{
 		},
 	},
 	{
-		procedure: rulesv1connect.ContentServiceListCreaturesProcedure, allow: members, ignore: []string{"monster-key"}, why: "the bestiary is public SRD data: it names every creature",
+		procedure: rulesv1connect.ContentServiceListCreaturesProcedure, allow: members, ignore: []string{"monster-key"}, why: "the bestiary is public SRD data: it names every creature of the SRD; a table creature is listed to the master and to the player whose character holds it, and to no one else",
 		req: func(w *world) proto.Message {
 			return &rulesv1.ListCreaturesRequest{CampaignId: w.campaign, PageSize: 400}
 		},
@@ -269,6 +269,24 @@ var reads = []read{
 		procedure: rulesv1connect.ContentServiceGetCreatureProcedure, allow: members, ignore: []string{"monster-key"}, why: "a stat block of the SRD is public",
 		req: func(w *world) proto.Message {
 			return &rulesv1.GetCreatureRequest{CampaignId: w.campaign, Key: "monster:bandit"}
+		},
+	},
+	{
+		procedure: rulesv1connect.ContentServiceGetCreatureProcedure, label: "a live table creature", allow: onlyAna, why: "a table creature is unknown to a player (not_found), except to the player whose character holds one: Ana's does, Caio's does not",
+		req: func(w *world) proto.Message {
+			return &rulesv1.GetCreatureRequest{CampaignId: w.campaign, Key: w.keyOf("creature-live")}
+		},
+	},
+	{
+		procedure: rulesv1connect.ContentServiceGetCreatureProcedure, label: "an archived table creature", allow: onlyAna, why: "a table creature is unknown to a player (not_found), archived or not, except to the player whose character holds one: it keeps resolving for Ana",
+		req: func(w *world) proto.Message {
+			return &rulesv1.GetCreatureRequest{CampaignId: w.campaign, Key: w.keyOf("creature-archived")}
+		},
+	},
+	{
+		procedure: rulesv1connect.ContentServiceGetCreatureProcedure, label: "a table creature switched off", allow: onlyCaio, why: "a table creature is unknown to a player (not_found), switched off or not, except to the player whose character holds one: it keeps resolving for Caio",
+		req: func(w *world) proto.Message {
+			return &rulesv1.GetCreatureRequest{CampaignId: w.campaign, Key: w.keyOf("creature-off")}
 		},
 	},
 	{
@@ -302,7 +320,7 @@ var reads = []read{
 
 	// ===== TableContentService (the master's editor)
 	{
-		procedure: rulesv1connect.TableContentServiceListTableEntriesProcedure, allow: members, why: "a player reads the entries that are not archived and not off (RN-23)",
+		procedure: rulesv1connect.TableContentServiceListTableEntriesProcedure, allow: members, why: "a player reads the entries that are not archived and not off (RN-23), and the table creatures their characters hold",
 		req: func(w *world) proto.Message {
 			return &rulesv1.ListTableEntriesRequest{CampaignId: w.campaign}
 		},

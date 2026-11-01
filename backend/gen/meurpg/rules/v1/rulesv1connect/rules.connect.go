@@ -152,17 +152,21 @@ type ContentServiceClient interface {
 	//   - `failed_precondition`: `character_id` is a character with a basic
 	//     sheet (an NPC), which has no casting classes.
 	ListSpells(context.Context, *connect.Request[v1.ListSpellsRequest]) (*connect.Response[v1.ListSpellsResponse], error)
-	// ListCreatures searches the SRD's 334 creatures (MR-037): the master's "Dar
-	// uma criatura", the Wild Shape list, the summon choices. It filters by
+	// ListCreatures searches the creatures of a campaign (MR-037): the SRD's 334
+	// creatures plus the campaign's table creatures (RN-23). It feeds the master's
+	// "Dar uma criatura", the Wild Shape list and the summon choices. It filters by
 	// part of the name (Portuguese or English, ignoring case and accents), by
 	// creature type, by size, by challenge rating (lowest and highest) and by
 	// speeds, sorts by Portuguese name, and answers a page at a time (page_size 1
 	// to 400, 50 by default, page_token; 400 holds the whole bestiary). Every row has the Portuguese and the
 	// English name, size, type, challenge rating, XP, armor class and average
-	// hit points (the bestiary's row, MR-042). The creatures are public SRD rules, the same for
-	// every campaign; only an active member of the campaign may ask, and a
-	// pending member (RN-15) gets `not_found` on purpose: a player waiting for
-	// approval needs no creature to build its character.
+	// hit points (the bestiary's row, MR-042). The SRD creatures are public rules,
+	// the same for every campaign. The master reads every table creature. A player
+	// reads a table creature only while a character of theirs holds a live
+	// creature of that key, whatever the state of the entry. Only an active member
+	// of the campaign may ask, and a pending member (RN-15) gets `not_found` on
+	// purpose: a player waiting for approval needs no creature to build its
+	// character.
 	//
 	// Errors:
 	//   - `not_found`: the campaign does not exist, or the caller is not an
@@ -177,11 +181,13 @@ type ContentServiceClient interface {
 	// resistances, senses, challenge rating, traits, actions with their attack
 	// bonus, damage and saving throw, reactions and legendary actions. Labels
 	// are in Portuguese; the text of the traits and actions is the SRD's
-	// English, as for spells. Same access as ListCreatures.
+	// English, as for spells. The access is the one of ListCreatures.
 	//
 	// Errors:
 	//   - `not_found`: the campaign does not exist, the caller is not an active
-	//     member of it, or no creature has that key.
+	//     member of it, no creature has that key, or the key is a table creature
+	//     that the caller is not allowed to read (a player whose characters hold
+	//     none of it).
 	GetCreature(context.Context, *connect.Request[v1.GetCreatureRequest]) (*connect.Response[v1.GetCreatureResponse], error)
 	// ListTrapPresets returns the SRD's eight sample traps (MR-035), in our
 	// words and with the SRD's numbers, to fill the master's trap form, and the
@@ -391,17 +397,21 @@ type ContentServiceHandler interface {
 	//   - `failed_precondition`: `character_id` is a character with a basic
 	//     sheet (an NPC), which has no casting classes.
 	ListSpells(context.Context, *connect.Request[v1.ListSpellsRequest]) (*connect.Response[v1.ListSpellsResponse], error)
-	// ListCreatures searches the SRD's 334 creatures (MR-037): the master's "Dar
-	// uma criatura", the Wild Shape list, the summon choices. It filters by
+	// ListCreatures searches the creatures of a campaign (MR-037): the SRD's 334
+	// creatures plus the campaign's table creatures (RN-23). It feeds the master's
+	// "Dar uma criatura", the Wild Shape list and the summon choices. It filters by
 	// part of the name (Portuguese or English, ignoring case and accents), by
 	// creature type, by size, by challenge rating (lowest and highest) and by
 	// speeds, sorts by Portuguese name, and answers a page at a time (page_size 1
 	// to 400, 50 by default, page_token; 400 holds the whole bestiary). Every row has the Portuguese and the
 	// English name, size, type, challenge rating, XP, armor class and average
-	// hit points (the bestiary's row, MR-042). The creatures are public SRD rules, the same for
-	// every campaign; only an active member of the campaign may ask, and a
-	// pending member (RN-15) gets `not_found` on purpose: a player waiting for
-	// approval needs no creature to build its character.
+	// hit points (the bestiary's row, MR-042). The SRD creatures are public rules,
+	// the same for every campaign. The master reads every table creature. A player
+	// reads a table creature only while a character of theirs holds a live
+	// creature of that key, whatever the state of the entry. Only an active member
+	// of the campaign may ask, and a pending member (RN-15) gets `not_found` on
+	// purpose: a player waiting for approval needs no creature to build its
+	// character.
 	//
 	// Errors:
 	//   - `not_found`: the campaign does not exist, or the caller is not an
@@ -416,11 +426,13 @@ type ContentServiceHandler interface {
 	// resistances, senses, challenge rating, traits, actions with their attack
 	// bonus, damage and saving throw, reactions and legendary actions. Labels
 	// are in Portuguese; the text of the traits and actions is the SRD's
-	// English, as for spells. Same access as ListCreatures.
+	// English, as for spells. The access is the one of ListCreatures.
 	//
 	// Errors:
 	//   - `not_found`: the campaign does not exist, the caller is not an active
-	//     member of it, or no creature has that key.
+	//     member of it, no creature has that key, or the key is a table creature
+	//     that the caller is not allowed to read (a player whose characters hold
+	//     none of it).
 	GetCreature(context.Context, *connect.Request[v1.GetCreatureRequest]) (*connect.Response[v1.GetCreatureResponse], error)
 	// ListTrapPresets returns the SRD's eight sample traps (MR-035), in our
 	// words and with the SRD's numbers, to fill the master's trap form, and the

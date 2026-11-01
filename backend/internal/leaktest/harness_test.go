@@ -41,6 +41,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/choicetest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice/dicetest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/hinttest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
 	"github.com/PuraFome/meuRPG/backend/internal/play"
 	"github.com/PuraFome/meuRPG/backend/internal/play/voice"
@@ -140,55 +141,6 @@ func (c *fakeClock) advance(d time.Duration) {
 	c.now = c.now.Add(d)
 }
 
-// hintTracker counts the sends the play service's hint gates have scheduled and not yet
-// made, so a test can wait for the state "no trailing hint is pending" instead of sleeping
-// past the gate's interval. The sends still run on the real clock.
-type hintTracker struct {
-	mu      sync.Mutex
-	pending int
-	idle    chan struct{} // closed when pending drops to zero; nil while nothing waits
-}
-
-func (h *hintTracker) after(d time.Duration, f func()) {
-	h.mu.Lock()
-	h.pending++
-	h.mu.Unlock()
-	time.AfterFunc(d, func() {
-		defer h.done()
-		f()
-	})
-}
-
-func (h *hintTracker) done() {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.pending--
-	if h.pending == 0 && h.idle != nil {
-		close(h.idle)
-		h.idle = nil
-	}
-}
-
-// settle returns once every scheduled hint send has been made.
-func (h *hintTracker) settle(t *testing.T) {
-	t.Helper()
-	h.mu.Lock()
-	if h.pending == 0 {
-		h.mu.Unlock()
-		return
-	}
-	if h.idle == nil {
-		h.idle = make(chan struct{})
-	}
-	idle := h.idle
-	h.mu.Unlock()
-	select {
-	case <-idle:
-	case <-time.After(30 * time.Second):
-		t.Fatal("the hint gate's trailing send never went out")
-	}
-}
-
 // dice adapts the campaigns service to play's DiceModes, as cmd/api does.
 type dice struct{ camps *campaigns.Service }
 
@@ -211,7 +163,7 @@ type stack struct {
 	server *httptest.Server
 	play   *play.Service
 	maps   *maps.Service
-	hints  *hintTracker
+	hints  *hinttest.Tracker
 	clock  *fakeClock       // the services' clock, which a test moves on instead of waiting
 	dice   *dicetest.Roller // the dice play rolls with: a test scripts a creature's initiative here
 }
@@ -223,7 +175,7 @@ const heartbeat = 100 * time.Millisecond
 func newStack(t *testing.T) *stack {
 	t.Helper()
 	pool := dbtest.NewPool(t, "meurpg_leaktest_test")
-	s := &stack{t: t, pool: pool, users: identity.NewPostgresStore(pool), hints: &hintTracker{}, dice: dicetest.New()}
+	s := &stack{t: t, pool: pool, users: identity.NewPostgresStore(pool), hints: &hinttest.Tracker{}, dice: dicetest.New()}
 	logger := slog.New(slog.DiscardHandler)
 	if os.Getenv("LEAKTEST_LOG") != "" { // the servers' own log lines, to find out why a call went wrong
 		logger = slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelWarn}))
@@ -256,7 +208,7 @@ func newStack(t *testing.T) *stack {
 	chars.SetGallery(sessionMaps)
 	live, err := play.New(play.Config{
 		Pool: pool, Sheets: chars, Vitals: chars, Campaigns: camps, Maps: sessionMaps, Roster: chars,
-		Dice: dice{camps}, Defaults: camps, Live: play.LiveConfig{Heartbeat: heartbeat, HintAfter: s.hints.after}, Roller: s.dice, Logger: logger, Now: clock.Now,
+		Dice: dice{camps}, Defaults: camps, Live: play.LiveConfig{Heartbeat: heartbeat, HintAfter: s.hints.After}, Roller: s.dice, Logger: logger, Now: clock.Now,
 		Messages: play.MessagesConfig{Profiles: s.users, Voice: &voice.Fake{}, Blobs: blobs},
 	})
 	if err != nil {
@@ -267,7 +219,7 @@ func newStack(t *testing.T) *stack {
 	chars.SetReviewHost(live)
 	msvc, err := maps.New(maps.Config{
 		Pool: pool, Blobs: blobs, Characters: chars, Live: live, Generator: &gen.Fake{}, Rules: srd, Combats: live,
-		Defaults: camps, Logger: logger, Now: clock.Now,
+		Defaults: camps, Logger: logger, Now: clock.Now, HintAfter: s.hints.AfterTimer,
 	})
 	if err != nil {
 		t.Fatalf("maps.New() error = %v", err)

@@ -42,7 +42,8 @@ type answerState int
 const (
 	// answerOpen: the question waits, and the answer is the first.
 	answerOpen answerState = iota
-	// answerRepeated: the Lucky answer again, while the die's question waits: nothing is rolled.
+	// answerRepeated: the Lucky answer again while the die's question waits, or the die's answer again while
+	// Indomitable's waits: nothing is rolled.
 	answerRepeated
 	// answerSettled: the roll is resolved already; the same answer again gives the result.
 	answerSettled
@@ -234,13 +235,54 @@ func (h heldRoll) replyTo(req answerRequest) (heldReply, answerState, error) {
 	if req.question == askLucky {
 		return h.luckyReplyTo(a)
 	}
+	if req.question == askIndomitable {
+		return h.indomitableReplyTo(a)
+	}
+	if req.question == askStroke {
+		return h.strokeReplyTo(a)
+	}
 	switch {
+	case h.DieAnswerKey != nil && *h.DieAnswerKey == req.key && h.AnswerKey != nil:
+		// The die's answer again, once Indomitable's question was answered too: the roll as it was resolved.
+		return heldReply{holdID: h.ID, key: *h.AnswerKey, question: askIndomitable}, answerSettled, nil
+	case h.DieAnswerKey != nil && *h.DieAnswerKey == req.key:
+		return a, answerRepeated, nil // the die was answered; Indomitable's question waits: nothing is rolled
 	case h.AnswerKey != nil && *h.AnswerKey != req.key:
 		return a, answerOpen, errAnsweredAlready()
 	case h.AnswerKey != nil:
 		return a, answerSettled, nil
+	case h.DieAnswerKey != nil:
+		return a, answerOpen, errAnsweredAlready()
 	case luckyAsks(h):
 		return a, answerOpen, resourceBlocked(playv1.ResourceBlockedReason_RESOURCE_BLOCKED_REASON_LUCKY_PENDING, "answer the Lucky question of the roll first")
+	}
+	return a, answerOpen, nil
+}
+
+// indomitableReplyTo is replyTo for the Indomitable question: it must have been asked, and an answer already given is
+// answered again, never twice with another key.
+func (h heldRoll) indomitableReplyTo(a heldReply) (heldReply, answerState, error) {
+	switch {
+	case !h.IndomAsk:
+		return a, answerOpen, connect.NewError(connect.CodeFailedPrecondition, errors.New("the roll asks no Indomitable question"))
+	case h.AnswerKey != nil && *h.AnswerKey != a.key:
+		return a, answerOpen, errAnsweredAlready()
+	case h.AnswerKey != nil:
+		return a, answerSettled, nil
+	}
+	return a, answerOpen, nil
+}
+
+// strokeReplyTo is replyTo for the Stroke of Luck question: it must have been asked, and an answer already given is
+// answered again, never twice with another key.
+func (h heldRoll) strokeReplyTo(a heldReply) (heldReply, answerState, error) {
+	switch {
+	case !h.StrokeAsk:
+		return a, answerOpen, connect.NewError(connect.CodeFailedPrecondition, errors.New("the roll asks no Stroke of Luck question"))
+	case h.AnswerKey != nil && *h.AnswerKey != a.key:
+		return a, answerOpen, errAnsweredAlready()
+	case h.AnswerKey != nil:
+		return a, answerSettled, nil
 	}
 	return a, answerOpen, nil
 }
@@ -278,6 +320,18 @@ func errAnsweredAlready() error {
 func (s *Service) rollAnswer(ctx context.Context, m authz.Membership, h heldRoll, req answerRequest, a *heldReply) error {
 	if req.question == askDie {
 		return s.rollDieAnswer(ctx, m, h, req, a)
+	}
+	if req.question == askStroke { // nothing is rolled: the answer is only use or keep
+		a.stroke = req.yes
+		return nil
+	}
+	if req.question == askIndomitable { // the gate rolls the d20 the way the save is rolled: only the way is kept here
+		if !req.yes {
+			return nil
+		}
+		in := req.in
+		a.indomitable = &in
+		return s.mustRollAs(ctx, m, req.in)
 	}
 	if !req.yes {
 		return nil
@@ -377,8 +431,9 @@ func (s *Service) rerunHeld(ctx context.Context, h heldRoll, a heldReply, state 
 // rollPick is the oneof an answer carries for the new die: roll_in_app or typed_face, nil for the one not
 // set.
 type rollPick struct {
-	app  *bool
-	face *int32
+	app   *bool
+	face  *int32
+	faces []int32 // the dice of a save with advantage or disadvantage (Indomitable's answer)
 }
 
 // rollOfAnswer reads how the new die of an answer comes: rolled in the app or typed from a real die. The
@@ -386,21 +441,42 @@ type rollPick struct {
 // die it is held.
 func rollOfAnswer(p rollPick, q questionKind) (rollInput, error) {
 	var in rollInput
+	if len(p.faces) > 0 && (q != askIndomitable || p.app != nil || p.face != nil) {
+		return in, connect.NewError(connect.CodeInvalidArgument, errors.New("typed_faces is only for Indomitable and excludes roll_in_app and typed_face"))
+	}
 	switch {
 	case p.app != nil:
 		if !*p.app {
 			return in, connect.NewError(connect.CodeInvalidArgument, errors.New("roll_in_app must be true"))
 		}
 		in.inApp = true
+	case len(p.faces) > 0:
+		faces, err := typedFacesOf(p.faces)
+		if err != nil {
+			return in, err
+		}
+		in.typedFaces = faces
 	case p.face != nil:
-		if q == askLucky && (*p.face < 1 || *p.face > d20Sides) {
+		if q != askDie && (*p.face < 1 || *p.face > d20Sides) {
 			return in, connect.NewError(connect.CodeInvalidArgument, errors.New("typed_face must be 1 to 20"))
 		}
 		in.typed = int(*p.face)
-	case q == askLucky:
+	case q == askLucky || q == askIndomitable:
 		return in, connect.NewError(connect.CodeInvalidArgument, errors.New("set roll_in_app or typed_face to roll again"))
 	default:
 		return in, connect.NewError(connect.CodeInvalidArgument, errors.New("set roll_in_app or typed_face to use the die"))
 	}
 	return in, nil
+}
+
+// typedFacesOf checks the d20 faces typed for a save with advantage or disadvantage.
+func typedFacesOf(faces []int32) ([]int, error) {
+	out := make([]int, 0, len(faces))
+	for _, f := range faces {
+		if f < 1 || f > d20Sides {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("typed_faces must be 1 to 20"))
+		}
+		out = append(out, int(f))
+	}
+	return out, nil
 }

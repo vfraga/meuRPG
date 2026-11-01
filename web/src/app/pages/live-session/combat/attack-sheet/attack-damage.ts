@@ -3,7 +3,7 @@ import { type Signal, computed } from '@angular/core';
 import { damageFormula, extraDiceOf } from '../../../../core/combat/combat-dice';
 import { criticalSentence, criticalSum, brutalTyped } from '../../../../core/combat/critical';
 import { activeParts, typedFields } from '../../../../core/combat/damage-parts';
-import type { RollField } from '../multi-roll/multi-roll';
+import type { RollField } from '../../../../shared/multi-roll/multi-roll';
 import {
   afterDamageText,
   brutalOf,

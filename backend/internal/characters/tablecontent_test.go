@@ -112,6 +112,11 @@ func testClass(name string) *rulesv1.TableClass {
 	return c
 }
 
+// testCreature is a wolf of the SRD with the hit points and armor class given.
+func testCreature(name string, hitPoints, armorClass int32) *rulesv1.TableCreature {
+	return &rulesv1.TableCreature{NamePt: name, BaseKey: "monster:wolf", HitPoints: hitPoints, ArmorClass: armorClass}
+}
+
 func testSubclass(name, class string) *rulesv1.TableSubclass {
 	return &rulesv1.TableSubclass{
 		NamePt: name, ClassKey: class, DescPt: []string{"Um caminho de teste."},
@@ -141,6 +146,8 @@ func createReq(campaign string, body proto.Message) *rulesv1.CreateTableEntryReq
 		r.Body = &rulesv1.CreateTableEntryRequest_TableOption{TableOption: b}
 	case *rulesv1.TableClassFeature:
 		r.Body = &rulesv1.CreateTableEntryRequest_TableClassFeature{TableClassFeature: b}
+	case *rulesv1.TableCreature:
+		r.Body = &rulesv1.CreateTableEntryRequest_TableCreature{TableCreature: b}
 	}
 	return r
 }
@@ -166,6 +173,8 @@ func updateReq(campaign, key string, revision int32, body proto.Message) *rulesv
 		r.Body = &rulesv1.UpdateTableEntryRequest_TableOption{TableOption: b}
 	case *rulesv1.TableClassFeature:
 		r.Body = &rulesv1.UpdateTableEntryRequest_TableClassFeature{TableClassFeature: b}
+	case *rulesv1.TableCreature:
+		r.Body = &rulesv1.UpdateTableEntryRequest_TableCreature{TableCreature: b}
 	}
 	return r
 }
@@ -187,6 +196,8 @@ func bodyMessage(e *rulesv1.TableEntry) proto.Message {
 		return b.TableSpell
 	case *rulesv1.TableEntry_TableFeat:
 		return b.TableFeat
+	case *rulesv1.TableEntry_TableCreature:
+		return b.TableCreature
 	}
 	return nil
 }
@@ -305,6 +316,7 @@ func TestTableContentEveryKindIsCreatedUpdatedArchivedAndBroughtBack(t *testing.
 		{"background", testBackground("Guarda de farol"), testBackground("Guarda Renomeado"), "background:guarda-de-farol@mesa"},
 		{"spell", testSpell("Raio de teste", "class:wizard"), testSpell("Raio Renomeado", "class:wizard"), "spell:raio-de-teste@mesa"},
 		{"feat", testFeat("Punho de ferro"), testFeat("Punho Renomeado"), "feat:punho-de-ferro@mesa"},
+		{"creature", testCreature("Lobo da Mesa", 40, 14), testCreature("Lobo Renomeado", 40, 14), "creature:lobo-da-mesa@mesa"},
 	}
 	if class.GetKey() != "class:guardiao-do-vale@mesa" {
 		t.Fatalf("the class key = %q, want one made from the name", class.GetKey())

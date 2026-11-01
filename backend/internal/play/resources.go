@@ -59,6 +59,8 @@ type RestKeeper interface {
 	// back the expended slots (a map of spell level to count), and returns the vitals before
 	// and after and the combined level recovered.
 	UseSlotRecovery(ctx context.Context, tx pgx.Tx, campaignID, characterID string, rec rules.SlotRecovery, slots map[int]int) (before, after *playv1.CharacterVitals, levels int, err error)
+	// UseTableSlotRecovery is the same for a table feature's slot_recovery effect, by the feature's key.
+	UseTableSlotRecovery(ctx context.Context, tx pgx.Tx, campaignID, characterID, feature string, slots map[int]int) (before, after *playv1.CharacterVitals, levels int, err error)
 	// CreateSpellSlot is Flexible Casting's creation of a slot; ConvertSpellSlot its
 	// conversion into sorcery points.
 	CreateSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (before, after *playv1.CharacterVitals, cost int, err error)
@@ -66,6 +68,13 @@ type RestKeeper interface {
 	// UndoCreateSpellSlot and UndoConvertSpellSlot take them back (the master's undo).
 	UndoCreateSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level, cost int) (*playv1.CharacterVitals, error)
 	UndoConvertSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level, gain int) (*playv1.CharacterVitals, error)
+	// GiveSpellSlot adds a free slot of the level until the next long rest (a table action
+	// that turns uses into a slot), SpendSpellSlot expends a free one (a table action that
+	// heals by it); the Undo ones take them back.
+	GiveSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error)
+	UndoGiveSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error)
+	SpendSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error)
+	UndoSpendSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error)
 }
 
 // resourceBlocked is the failed_precondition of a rule's refusal, with the
@@ -604,7 +613,7 @@ func (s *Service) insertKeyedEvent(ctx context.Context, q *playdb.Queries, e key
 		return "", time.Time{}, fmt.Errorf("next event number: %w", err)
 	}
 	at = s.now()
-	row, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	row, err := insertSessionEvent(ctx, q, playdb.InsertSessionEventParams{
 		GameSessionID: e.sessionID, Seq: seq, Kind: e.kind, ActorUserID: &e.userID, CharacterID: e.characterID,
 		Payload: body, IdempotencyKey: &e.key, IdempotencyHash: e.hash, CreatedAt: at,
 	})

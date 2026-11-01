@@ -107,6 +107,8 @@ The character checks are `characters`'; their refusals are `ResourceBlocked` rea
 The call needs the latest `rest_taken` of the open session to be a short rest (`NO_SHORT_REST` otherwise) and no combat open.
 `CharacterVitals.arcane_recovery_allowance` and `natural_recovery_allowance` let the sheet word the allowance; each is 0 for a character without the feature.
 The short rest sheet has one section for each recovery the character has.
+With `feature_key` on `UseArcaneRecovery` the call is a table feature's `slot_recovery` effect: it spends a use of the effect's resource and keeps to the effect's highest slot level and combined level (`rules.TableSlotRecovery.Check`, run by `characters.UseTableSlotRecovery`), with the same refusals; a key the character does not have is `NOT_AVAILABLE`.
+The `arcane_recovery_used` event carries the feature key.
 
 ### Lay on Hands (paladin 1)
 
@@ -127,6 +129,24 @@ The `superiority_die` effects of applies `check`, `save` and `initiative` ([Rule
 - On the initiative the die is rolled after the d20 is settled (in the app, or `maneuver_face` with physical dice) and added to the total (`initiativeManeuver`).
 
 Not covered: the trap search, the puzzle hint, the group check, the checks of a contest, Hide and the Counterspell check, the death save, and the rolls made on someone else's call. Another creature's roll (an ally's) takes no die of the character.
+
+### Indomitable (fighter 9)
+
+The resource `indomitable` has 1, 2 or 3 uses (levels 9, 13 and 17) and recharges on a long rest.
+It is spent when the player rerolls a failed saving throw (the held-roll question in [held rolls](held-rolls.md#indomitable-fighter-9-13-and-17)), through `spendResource` on the vitals.
+Keeping the roll spends nothing.
+The undo of a death save gives the use back (`spendResourceBack`).
+The effect save and the concentration save cannot be undone, so the use they spent stays spent.
+A saving throw rolled inside someone else's call never offers it.
+
+### Stroke of Luck (rogue 20)
+
+The resource `stroke_of_luck` has 1 use and recharges on a short or a long rest.
+It is spent when the player uses it on a missed attack or a failed ability check (the held-roll question in [held rolls](held-rolls.md#stroke-of-luck-rogue-20)).
+Outside a combat the use goes through the vitals (`AdjustVitals`), in a combat through `spendResource`.
+Keeping the roll spends nothing.
+The undo of an attack, a spell attack or a Counterspell gives the use back (`spendResourceBack`).
+The scene, group, contest and Hide checks cannot be undone, so the use they spent stays spent until a rest.
 
 ### Metamagic (sorcerer 3)
 

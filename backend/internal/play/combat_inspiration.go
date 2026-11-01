@@ -58,6 +58,8 @@ func heldAttackOffer(enc *playv1.Encounter, h *heldOffer, attackerID, targetID, 
 	case h.Asks == askLucky:
 		out.LuckyOffer = h.luckyOffer()
 		d20 = out.LuckyOffer.GetD20()
+	case h.Asks == askStroke: // the one question has no older field: the d20 alone
+		d20 = heldD20Of(h.Hold)
 	case h.State.Holds:
 		out.InspirationOffer = h.attackDieOffer(dieHeldBy(*h.State.Die.Combatant, h.State.Die.Round), cs)
 		d20 = out.InspirationOffer.GetD20()
@@ -79,7 +81,7 @@ func inspirationOfferView(d *encounterData, c playdb.Combatant, v combatViewer) 
 		if h.CombatantID != c.ID || derefInt32(h.Round) != d.enc.Round {
 			continue
 		}
-		if luckyAsks(h) {
+		if luckyAsks(h) || strokeAsks(h) {
 			return nil
 		}
 		return heldOffer{Hold: h, Asks: askDie}.attackDieOffer(die, d.cs)

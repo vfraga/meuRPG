@@ -139,7 +139,7 @@ func AcquireLock(ctx context.Context, db *sql.DB, opt LockOptions) (context.Cont
 func createLockTable(ctx context.Context, db *sql.DB) error {
 	const ddl = `CREATE TABLE IF NOT EXISTS migration_lock (
 		id INT4 NOT NULL PRIMARY KEY,
-		holder STRING NOT NULL,
+		holder TEXT NOT NULL,
 		expires_at TIMESTAMPTZ NOT NULL,
 		CONSTRAINT migration_lock_one_row CHECK (id = 1)
 	)`

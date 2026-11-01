@@ -13,6 +13,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 )
 
@@ -93,7 +94,7 @@ func (tb *vitalsDBTable) vitalsDBRow(characterID string) string {
 		}
 		tb.h.t.Fatalf("read the vitals row: %v", err)
 	}
-	return line
+	return dbtest.SortJSONKeys(line)
 }
 
 // wantVitalsRefusal checks a Connect error's code, its whole message and, for

@@ -8,6 +8,7 @@ interface Calls {
   readonly preview: unknown[];
   readonly rest: unknown[];
   readonly spend: unknown[];
+  readonly answers: unknown[];
 }
 
 function clientWith(calls: Calls): ResourceClient {
@@ -24,6 +25,10 @@ function clientWith(calls: Calls): ResourceClient {
       calls.rest.push(req);
       return Promise.resolve({ vitals: [{ characterId: 'c1' }] });
     },
+    answerHeldRoll: (req: unknown) => {
+      calls.answers.push(req);
+      return Promise.resolve({});
+    },
     spendHitDice: (req: unknown) => {
       calls.spend.push(req);
       return Promise.resolve({ face: 4, constitutionModifier: 2, healed: 6 });
@@ -34,7 +39,7 @@ function clientWith(calls: Calls): ResourceClient {
 
 describe('ResourceClient', () => {
   let calls: Calls;
-  beforeEach(() => (calls = { preview: [], rest: [], spend: [] }));
+  beforeEach(() => (calls = { preview: [], rest: [], spend: [], answers: [] }));
 
   it('asks what a rest would give back, writing nothing', async () => {
     await clientWith(calls).restPreview('camp', RestKind.LONG);
@@ -99,5 +104,46 @@ describe('ResourceClient', () => {
       },
     ]);
     expect(typed.healed).toBe(6);
+  });
+
+  it('answers Stroke of Luck with use or keep and no roll', async () => {
+    const client = clientWith(calls);
+    await client.answerHeldRoll('camp', 'h1', { kind: 'stroke', use: true }, 'k1');
+    await client.answerHeldRoll('camp', 'h1', { kind: 'stroke', use: false }, 'k2');
+    const answers = calls.answers.map(
+      (c) => (c as { answer: { case: string; value: unknown } }).answer,
+    );
+    expect(answers).toEqual([
+      { case: 'strokeOfLuck', value: { use: true } },
+      { case: 'strokeOfLuck', value: { use: false } },
+    ]);
+  });
+
+  it('answers Indomitable with a typed face, the two typed faces of a pair, or the app', async () => {
+    const client = clientWith(calls);
+    await client.answerHeldRoll(
+      'camp',
+      'h1',
+      { kind: 'indomitable', reroll: true, roll: { face: 12 } },
+      'k1',
+    );
+    await client.answerHeldRoll(
+      'camp',
+      'h1',
+      { kind: 'indomitable', reroll: true, roll: { faces: [4, 15] } },
+      'k2',
+    );
+    await client.answerHeldRoll(
+      'camp',
+      'h1',
+      { kind: 'indomitable', reroll: false, roll: null },
+      'k3',
+    );
+    const answers = calls.answers.map((c) => (c as { answer: { value: unknown } }).answer.value);
+    expect(answers).toEqual([
+      { reroll: true, roll: { case: 'typedFace', value: 12 }, typedFaces: [] },
+      { reroll: true, roll: { case: undefined }, typedFaces: [4, 15] },
+      { reroll: false, roll: { case: undefined }, typedFaces: [] },
+    ]);
   });
 });

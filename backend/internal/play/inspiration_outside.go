@@ -359,6 +359,7 @@ func (s *Service) outsideOffersOf(ctx context.Context, out *playv1.GetOutsideIns
 	state := rollerState{Die: die, Holds: found}
 	for _, h := range holds {
 		switch asked := askedBy(h, state); {
+		case asked.Asks == askIndomitable || asked.Asks == askStroke: // the one question has no older list
 		case asked.Asks == askLucky:
 			out.LuckyOffers = append(out.LuckyOffers, asked.luckyOffer())
 		case found:

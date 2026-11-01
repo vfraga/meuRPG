@@ -15,6 +15,7 @@ import (
 
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/testenv"
+	"github.com/PuraFome/meuRPG/backend/migrations"
 )
 
 // recorder is a testing.TB that keeps what the guard reports instead of
@@ -129,7 +130,7 @@ func TestSeededTablesAreTheOnesTheMigrationsFill(t *testing.T) {
 		t.Fatalf("create the scratch database: %v", err)
 	}
 	t.Cleanup(func() {
-		_, _ = scratch.ExecContext(context.WithoutCancel(ctx), "DROP DATABASE IF EXISTS "+name+" CASCADE")
+		_, _ = scratch.ExecContext(context.WithoutCancel(ctx), migrations.DropDatabaseSQL(template.postgres, name))
 	})
 	dsn, err := withDatabase(rawURL, name)
 	if err != nil {

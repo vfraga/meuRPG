@@ -91,7 +91,8 @@ The rate limits are in process memory ([architecture](../architecture/api.md#abu
 | Who may create campaigns | Anyone, or the `CAMPAIGN_CREATORS` list | Variable |
 | Generated images | 200 per campaign per month and 100 per server per day in production (the code's defaults are 20 and 100) | `IMAGE_MONTHLY_LIMIT`, `IMAGE_DAILY_LIMIT` |
 | Active invites per campaign | 50 | `campaigns.MaxActiveInvites` (code) |
-| Characters and NPCs per campaign | 1,000 | `characters.DefaultMaxCharactersPerCampaign` (code) |
+| Characters and NPCs per campaign (combat-only NPCs not counted toward it) | 1,000 | `characters.DefaultMaxCharactersPerCampaign` (code) |
+| Combat-only NPCs per campaign (their own cap) | 1,000 | `characters.DefaultMaxCombatOnlyNpcsPerCampaign` (code) |
 | Sign-in attempts | A per-IP and a global limit shared by `/auth/login` and `/auth/callback` | `identity` (`loginRateLimit`) |
 | Upload read time | 45 s to send the file while holding the one image-processing slot | `maps/upload.go` (`uploadSlotReadTimeout`) |
 

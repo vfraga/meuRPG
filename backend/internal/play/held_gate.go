@@ -93,6 +93,8 @@ type attackRolled struct {
 	// Lucky rolled again.
 	Bonus *bonusUse
 	Lucky *luckyReroll
+	// Stroke is the use of Stroke of Luck on the attack: its path turns the miss into a hit.
+	Stroke *strokeUse
 }
 
 // rollHeldAttack is the d20 of a weapon attack that may wait for a question: the mode is worked out
@@ -133,7 +135,7 @@ func (s *Service) rollHeldAttack(
 	if choice, err = s.keepReason(ctx, c, choice); err != nil {
 		return attackRolled{}, err
 	}
-	out := attackRolled{Choice: choice, D20: rolled.Roll, ToHit: toHit, Lucky: rolled.Lucky}
+	out := attackRolled{Choice: choice, D20: rolled.Roll, ToHit: toHit, Lucky: rolled.Lucky, Stroke: rolled.Stroke}
 	if rolled.Bonus != nil {
 		out.Bonus = answer.die
 	}
@@ -167,6 +169,12 @@ type rollSpec struct {
 	Reliable bool
 	// Lucky says the roller is a halfling: a d20 that shows a 1 asks even without a die.
 	Lucky bool
+	// Save is set by a path whose d20 is a saving throw of a player's character that may be rerolled with
+	// Indomitable (held_indomitable.go): how the gate tells it failed.
+	Save *saveRule
+	// Stroke is set by a path whose d20 is an attack or an ability check of a player's character that may use Stroke of Luck
+	// (held_stroke.go): how the gate tells the attack missed or the check failed.
+	Stroke *strokeRule
 	// MayAsk is the path's policy: false for the rolls that never wait for anybody (the master's rolls
 	// out of a combat, an NPC's saves). E4-10 changes it.
 	MayAsk bool
@@ -182,6 +190,13 @@ type gateResult struct {
 	Roll    d20Roll
 	Bonus   *playv1.BonusDie
 	Lucky   *luckyReroll
+	// Used is the Bardic Inspiration die the row kept from an earlier answer, with who gave it; Indomitable is the
+	// d20 the fighter rolled again, which replaces Lucky's.
+	Used        *bonusUse
+	Indomitable *indomitableUse
+	// Stroke is the use of Stroke of Luck the player made on the roll: a check's Roll already counts the 20, an attack's
+	// path turns the miss into a hit.
+	Stroke *strokeUse
 }
 
 // heldReply is the answer to a question, carried to the path that is run again.
@@ -193,6 +208,10 @@ type heldReply struct {
 	reroll *luckyReroll
 	// die is the Bardic Inspiration die the player rolled and added, nil when they kept it.
 	die *bonusUse
+	// indomitable is how the saving throw is rolled again, nil when the player kept the roll.
+	indomitable *rollInput
+	// stroke says the player uses Stroke of Luck; false keeps the roll.
+	stroke bool
 	// as is who the path runs as when another than the roller answers (the master): the roller. Nil when the
 	// answerer is the roller. Only answerHeld sets it, after checking that the caller may answer.
 	as *authz.Membership
@@ -213,6 +232,7 @@ func heldReplyOf(ctx context.Context) (heldReply, bool) {
 // answering is what a question needs to apply an answer: the environment, the path's spec and the
 // roller's state.
 type answering struct {
+	s *Service
 	gateEnv
 	spec rollSpec
 	st   rollerState
@@ -249,9 +269,12 @@ func (s *Service) heldMayWait(ctx context.Context, env gateEnv, spec rollSpec) (
 		return false, err
 	}
 	if a, answer := heldReplyOf(ctx); answer {
-		return a.question == askLucky && st.Holds, nil
+		if a.question != askLucky {
+			return false, nil
+		}
+		return st.Holds || s.strokeAvailable(ctx, env, spec), nil
 	}
-	return st.Holds || spec.Lucky, nil
+	return st.Holds || spec.Lucky || s.strokeAvailable(ctx, env, spec), nil
 }
 
 // heldModifier is the bonus a held roll was made with, which the answer settles on: the attack's, with a
@@ -283,11 +306,22 @@ func (s *Service) heldGate(ctx context.Context, env gateEnv, spec rollSpec) (gat
 	if err != nil {
 		return gateResult{}, err
 	}
-	ae := answering{gateEnv: env, spec: spec, st: st}
+	if st.Indom, err = s.indomitableLeft(ctx, env, spec); err != nil {
+		return gateResult{}, err
+	}
+	if st.Stroke, err = s.strokeLeft(ctx, env, spec); err != nil {
+		return gateResult{}, err
+	}
+	if st.Stroke && spec.Stroke.Prepare != nil {
+		if err := spec.Stroke.Prepare(); err != nil {
+			return gateResult{}, err
+		}
+	}
+	ae := answering{s: s, gateEnv: env, spec: spec, st: st}
 	if a, answer := heldReplyOf(ctx); answer {
 		return s.gateAnswer(ctx, ae, a)
 	}
-	if !st.Holds && !spec.Lucky {
+	if !st.Holds && !spec.Lucky && !st.Indom && !st.Stroke {
 		return s.gateRoll(spec)
 	}
 	return s.gateAsk(ctx, ae)
@@ -337,7 +371,9 @@ func (s *Service) gateAsk(ctx context.Context, ae answering) (gateResult, error)
 	}
 	// A lucky roller without a die is asked only about a 1: any other roll goes on at once.
 	luckyAt := luckyIndexOf(roll.Faces, spec.Lucky)
-	if !ae.st.Holds && luckyAt == nil {
+	ask, _ := ae.asksAtOnce(roll, luckyAt)
+	strokeAsk, _ := ae.asksStrokeAtOnce(roll, luckyAt)
+	if !ae.st.Holds && luckyAt == nil && !ask && !strokeAsk {
 		return gateResult{Settled: true, Roll: roll}, nil
 	}
 	return s.gateInsert(ctx, ae, stores, roll, luckyAt)
@@ -395,6 +431,8 @@ func (ae answering) newRoll(body []byte, roll d20Roll, luckyAt *int32) heldRoll 
 		Physical: roll.Physical, Request: body, Faces: roll.Faces, Counted: roll.Index, Modifier: spec.Modifier, Total: roll.Total,
 		LuckyIndex: luckyAt,
 	}
+	h.IndomAsk, h.IndomFailed = ae.asksAtOnce(roll, luckyAt)
+	h.StrokeAsk, h.StrokeFailed = ae.asksStrokeAtOnce(roll, luckyAt)
 	if r.Combatant != nil {
 		h.CombatantID, h.EncounterID, h.Round = r.Combatant.ID, r.Combatant.EncounterID, &r.Round
 		if h.CharacterID == "" {
@@ -419,7 +457,14 @@ func (s *Service) gateAnswer(ctx context.Context, ae answering, a heldReply) (ga
 	if err := h.answerable(ae.st, a.key); err != nil {
 		return gateResult{}, err
 	}
-	if a.question != askLucky {
+	switch {
+	case a.question == askIndomitable:
+		return s.gateIndomitableAnswer(ctx, ae, h, a)
+	case a.question == askStroke:
+		return s.gateStrokeAnswer(ctx, ae, h, a)
+	case a.question == askDie && h.DieAnswerKey != nil && *h.DieAnswerKey == a.key:
+		return gateResult{Held: new(askedBy(h, ae.st))}, nil // the die's answer again, while Indomitable's question waits
+	case a.question != askLucky:
 		return s.gateSettle(ctx, ae, h, a)
 	}
 	// The Lucky answer writes the new d20 in the roll first; a roller that holds a die is asked about it
@@ -455,14 +500,32 @@ func (s *Service) gateSettle(ctx context.Context, ae answering, h heldRoll, a he
 	roll := d20Roll{Faces: h.Faces, Index: int(clamp32(h.Counted, 0, len(h.Faces)-1)), Physical: h.Physical}
 	roll.Total = roll.Face() + modifier
 	roll = reliableD20(roll, modifier, ae.spec.Reliable)
+	die := a.die
+	if h.DieUsed != nil { // answered before Indomitable's question, which kept the roll open
+		die = h.DieUsed
+	}
+	if asked, ok, err := s.gateIndomitableNext(ctx, ae, h, a, roll, die); ok || err != nil {
+		return asked, err
+	}
+	if asked, ok, err := s.gateStrokeNext(ctx, ae, h, a, roll, die); ok || err != nil {
+		return asked, err
+	}
 	closed, err := (dieQuestion{}).apply(ctx, ae, h, a)
 	if err != nil {
 		return gateResult{}, err
 	}
-	out := gateResult{Settled: true, Roll: roll, Lucky: luckyOf(closed)}
-	if a.die != nil {
-		out.Roll.Total += int(a.die.Face)
-		out.Bonus = &playv1.BonusDie{SourceKey: bardicInspirationFt, Sides: ae.st.Die.Sides, Face: a.die.Face, Used: true}
+	out := gateResult{Settled: true, Roll: roll, Lucky: luckyOf(closed), Indomitable: indomitableOf(closed), Stroke: strokeOf(closed, ae.spec)}
+	if out.Indomitable != nil { // the new roll replaces the old: so does what the old one showed
+		out.Lucky = nil
+	}
+	if die != nil {
+		if out.Indomitable == nil { // a reroll leaves the die with the roll it was added to: it is spent, not added again
+			out.Roll.Total += int(die.Face)
+		}
+		out.Bonus = &playv1.BonusDie{SourceKey: bardicInspirationFt, Sides: die.Sides, Face: die.Face, Used: true}
+		if h.DieUsed != nil {
+			out.Used = h.DieUsed
+		}
 	}
 	return out, nil
 }

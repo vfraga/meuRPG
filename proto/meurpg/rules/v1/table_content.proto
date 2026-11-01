@@ -1,8 +1,8 @@
 syntax = "proto3";
 
 // The table's own rules content (MR-025, MR-025, RN-23, ADR-0018): the classes,
-// subclasses, races, subraces, backgrounds, spells and feats that the master writes
-// for one campaign, and the content pack that carries them from one campaign to
+// subclasses, races, subraces, backgrounds, spells, feats, options, class features
+// and creatures that the master writes for one campaign, and the content pack that carries them from one campaign to
 // another (ExportTableContent, ImportTableContent). The RPCs are TableContentService's, below; the catalog the
 // character editor builds from is ContentService.ListContent (rules.proto).
 //
@@ -54,6 +54,12 @@ enum TableContentKind {
   // character of the class has it from that level, and it may take the place of a
   // feature the class has (MR-025).
   TABLE_CONTENT_KIND_CLASS_FEATURE = 9;
+  // A creature: an SRD creature with a few adjustments (hit points, armor class, a
+  // damage bonus, extra traits). The creature list and sheet (for the master and for a
+  // player whose character holds it), giving it to a character, combat and "Criar NPC"
+  // read it by its own key. Summoning spells, Wild Shape and the encounter tools offer
+  // SRD creatures only.
+  TABLE_CONTENT_KIND_CREATURE = 10;
 }
 
 // TableEntry is one entry of the table's content, as ListTableEntries and the
@@ -96,6 +102,7 @@ message TableEntry {
     TableFeat table_feat = 17;
     TableOption table_option = 18;
     TableClassFeature table_class_feature = 19;
+    TableCreature table_creature = 20;
   }
 }
 
@@ -346,6 +353,38 @@ message TableEffect {
   int32 reach_ft = 64;
   string attack_name = 65;
   string damage_dice = 66;
+  // wild_shape: changes the druid's Wild Shape. `max_cr` is the highest challenge rating of
+  // the beasts ("0", "1/8", "1/4", "1/2" or a whole number up to 30) or `max_cr_from` an Int
+  // formula for a whole one from the level (such as "floor(level() / 3)"); not both.
+  // `no_fly` and `no_swim` leave out the beasts with those speeds. `form_cost` is an Int
+  // formula for the uses of the Wild Shape resource one change of form costs (empty is 1)
+  // and `magical_attacks` makes the beast form's attacks count as magical. The effect must
+  // set one of the four. The character takes the highest rating (with the limits of the
+  // effect that gives it), the lowest cost, and magical attacks if any effect gives them.
+  string max_cr = 67;
+  string max_cr_from = 68;
+  string form_cost = 69;
+  bool magical_attacks = 70;
+  bool no_fly = 71;
+  bool no_swim = 72;
+  // grant_action: the action turns the uses it spends (`resource` and `cost`) into a spell
+  // slot of the level this Int formula gives (1 to 9). The slot is free until the next long
+  // rest, like a slot Flexible Casting makes. It needs `resource` and takes no heal, no
+  // temp_hp and no cost_max.
+  string gives_slot = 73;
+  // grant_action: the action spends a spell slot, at the level the player picks at use
+  // (`spend`, 1 to 9, a level with a free slot), and heals: `heal` at level 1 plus
+  // `value_per_point` (dice, the same sides) for each level above 1. It needs `heal` and
+  // takes no resource, no cost, no cost_max and no temp_hp.
+  bool spends_slot = 74;
+  // slot_recovery: the character takes back expended spell slots after a short rest, as the
+  // wizard's Arcane Recovery does. A feature has one. `resource` is the resource whose use each
+  // recovery spends (an SRD resource, or one a resource effect of the entry or its class
+  // defines, which gives the uses and the rest they come back on), `recover_max_level` an Int formula for the highest level of a slot it takes
+  // back (1 to 9) and `recover_levels` an Int formula for the combined level of the slots
+  // (a level 2 slot counts 2). Both are required.
+  string recover_max_level = 75;
+  string recover_levels = 76;
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
@@ -453,6 +492,45 @@ message TableClassFeature {
   string replaces_feature_key = 5;
   // At most 20. A `choice` effect asks the player at the level, like any feature's.
   repeated TableEffect effects = 6;
+}
+
+// TableCreature is a creature the master adds as a table entry "creature:<slug>@mesa":
+// an SRD creature (`base_key`) with a few adjustments. The creature has everything the
+// base has (abilities, speeds, senses, actions, reactions) except what is adjusted here.
+// Once the entry exists it has a creature's key: the creature list and sheet (for the
+// master and for a player whose character holds it), giving it to a character, combat and
+// "Criar NPC" read it by that key. Summoning spells, Wild Shape and the encounter tools
+// offer SRD creatures only.
+// The web app has no editor for creatures: they are created through the API or a content pack.
+message TableCreature {
+  string name_pt = 1;
+  // The SRD creature it is made from ("monster:wolf"). It must exist, and it is always an
+  // SRD creature: a table creature is never the base of another. Never changes.
+  string base_key = 2;
+  // The creature's maximum hit points, 1 to 9999. 0 keeps the base's. The hit dice of the
+  // base stay as they are.
+  int32 hit_points = 3;
+  // The creature's armor class, 1 to 40. 0 keeps the base's. The kind and the notes the SRD
+  // gives for the base's armor class (natural armor, worn armor, a spell) are left out.
+  int32 armor_class = 4;
+  // A whole number from -10 to 30 added once to the damage of every attack action of the
+  // creature (to the first damage part of each), so a Multiattack's attacks each get it.
+  // 0 adds nothing. A flat damage stops at 0; dice that end in "+MOD" are left as they are.
+  // The text of the action is the base's and does not show it.
+  int32 damage_bonus = 5;
+  // Traits added after the base's special abilities, as text only: at most 10. A trait
+  // may not be named as one of the base's traits or actions (compared by the letters a to z and digits of the name,
+  // ignoring case), and may not be named "Magic Weapons",
+  // "Spellcasting" or "Innate Spellcasting" (ignoring case): the engine reads those names.
+  repeated TableCreatureTrait traits = 6;
+}
+
+// TableCreatureTrait is a trait of a table creature: a name and a text, no effects.
+message TableCreatureTrait {
+  // 1 to 80 characters, on one line.
+  string name_pt = 1;
+  // 1 to 4000 characters.
+  string text_pt = 2;
 }
 
 // TableCasting is how a class, or a third caster's subclass, casts.
@@ -1081,6 +1159,7 @@ message CreateTableEntryRequest {
     TableFeat table_feat = 17;
     TableOption table_option = 18;
     TableClassFeature table_class_feature = 19;
+    TableCreature table_creature = 20;
   }
   // Optional. 1 to 64 characters, chosen once by the app for this action: a retry with the
   // same key and the same request returns what the first call made instead of making another.
@@ -1116,6 +1195,7 @@ message UpdateTableEntryRequest {
     TableFeat table_feat = 17;
     TableOption table_option = 18;
     TableClassFeature table_class_feature = 19;
+    TableCreature table_creature = 20;
   }
 }
 
@@ -1278,7 +1358,8 @@ message ListOptionSwitchesRequest {
 // OptionSwitchEntry is one option in the master's list.
 message OptionSwitchEntry {
   string key = 1;
-  // The kind of the option (class, subclass, race, subrace, background, spell, feat).
+  // The kind of the option (class, subclass, race, subrace, background, spell, feat,
+  // option, class feature, creature).
   TableContentKind kind = 2;
   string name_pt = 3;
   // True for the table's own entry ("@mesa"), false for the SRD's.

@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 )
@@ -267,6 +268,132 @@ func TestBeastSpellsKeepTheDruidsSpellsInBeastForm(t *testing.T) {
 		}
 		if has, want := d.Spellcasting != nil && len(d.Spells) > 0, level >= 18; has != want {
 			t.Errorf("druid %d in wolf form keeps spellcasting = %v, want %v", level, has, want)
+		}
+	}
+}
+
+// wildSubclass is the table subclass of the SRD Druid whose level 2 feature carries the
+// effects given.
+const wildSubclass = "subclass:formas-da-mesa" + tableSuffix
+
+func wildOverlay(effects ...[]Effect) Overlay {
+	var features []TableFeature
+	for i, e := range effects {
+		features = append(features, tf(fmt.Sprintf("forma-%d", i), fmt.Sprintf("Forma %d", i), e...))
+	}
+	return Overlay{Revision: 1, Subclasses: []TableSubclass{{
+		Key: wildSubclass, NamePT: "Formas da Mesa", Class: "class:druid",
+		Levels: []TableSubclassLevel{{Level: 2, Features: features}},
+	}}}
+}
+
+func wildDruid(level int) Build {
+	b := salvia(level)
+	b.Classes = []ClassLevel{{Class: "class:druid", Level: level, Subclass: wildSubclass}}
+	return b
+}
+
+func TestATableFeatureChangesWildShape(t *testing.T) {
+	t.Parallel()
+	for name, tc := range map[string]struct {
+		level   int
+		effects [][]Effect
+		want    WildShapeLimit
+	}{
+		"the SRD alone": {2, nil, WildShapeLimit{MaxCR: "1/4", NoFly: true, NoSwim: true, Cost: 1}},
+		"a fixed rating": {
+			2,
+			[][]Effect{{{Type: "wild_shape", MaxCR: "2"}}},
+			WildShapeLimit{MaxCR: "2", Cost: 1},
+		},
+		"a rating from the level": {
+			9,
+			[][]Effect{{{Type: "wild_shape", MaxCRFrom: "floor(level() / 3)"}}},
+			WildShapeLimit{MaxCR: "3", Cost: 1},
+		},
+		"the highest of two effects, with the limits of the one that gives it": {6, [][]Effect{
+			{{Type: "wild_shape", MaxCR: "1", NoFly: true}},
+			{{Type: "wild_shape", MaxCRFrom: "floor(level() / 3)", NoSwim: true}},
+		}, WildShapeLimit{MaxCR: "2", NoSwim: true, Cost: 1}},
+		"a table rating under the SRD's does not lower it": {
+			8,
+			[][]Effect{{{Type: "wild_shape", MaxCR: "1/2"}}},
+			WildShapeLimit{MaxCR: "1", Cost: 1},
+		},
+		"the cheapest cost": {2, [][]Effect{
+			{{Type: "wild_shape", MaxCR: "1/4", FormCost: "3"}},
+			{{Type: "wild_shape", FormCost: "0"}},
+		}, WildShapeLimit{MaxCR: "1/4", Cost: 0}},
+		"a dearer cost does not raise the SRD's": {
+			2,
+			[][]Effect{{{Type: "wild_shape", FormCost: "2"}}},
+			WildShapeLimit{MaxCR: "1/4", NoFly: true, NoSwim: true, Cost: 1},
+		},
+		"magical attacks from any effect": {
+			2,
+			[][]Effect{{{Type: "wild_shape", MagicalAttacks: true}}},
+			WildShapeLimit{MaxCR: "1/4", NoFly: true, NoSwim: true, Cost: 1, Magical: true},
+		},
+	} {
+		c := withOverlay(t, wildOverlay(tc.effects...))
+		got, ok := c.WildShapeLimitFor(wildDruid(tc.level))
+		if !ok || got != tc.want {
+			t.Errorf("%s: limit = %+v (%v), want %+v", name, got, ok, tc.want)
+		}
+	}
+}
+
+func TestWildShapeFormsFollowTheMostPermissiveEffect(t *testing.T) {
+	t.Parallel()
+	c := withOverlay(t, wildOverlay([]Effect{{Type: "wild_shape", MaxCR: "2"}}))
+	// ListWildShapeForms and the check of a form read the same limit.
+	if !c.WildShapeAllows(wildDruid(2), "monster:dire-wolf") {
+		t.Error("the table's rating 2 does not allow a dire wolf (CR 1)")
+	}
+	if c.WildShapeAllows(wildDruid(2), "monster:giant-crocodile") {
+		t.Error("the table's rating 2 allows a giant crocodile (CR 5)")
+	}
+	plain := loadForTest(t)
+	if plain.WildShapeAllows(salvia(2), "monster:dire-wolf") {
+		t.Error("the SRD druid of level 2 may take a dire wolf")
+	}
+}
+
+func TestWildShapeMagicalAttacks(t *testing.T) {
+	t.Parallel()
+	c := withOverlay(t, wildOverlay([]Effect{{Type: "wild_shape", MagicalAttacks: true}}))
+	own := Derive(wildDruid(2), c)
+	shaped, err := c.WildShapeDerived(own, "monster:wolf")
+	if err != nil || len(shaped.Attacks) == 0 {
+		t.Fatalf("wolf form: %v, %d attacks", err, len(shaped.Attacks))
+	}
+	for _, a := range shaped.Attacks {
+		if !a.Magical {
+			t.Errorf("attack %s of the form is not magical", a.Key)
+		}
+	}
+	plain := loadForTest(t)
+	normal, _ := plain.WildShapeDerived(Derive(salvia(2), plain), "monster:wolf")
+	for _, a := range normal.Attacks {
+		if a.Magical {
+			t.Errorf("attack %s is magical without the effect", a.Key)
+		}
+	}
+}
+
+func TestATableWildShapeEffectRefusals(t *testing.T) {
+	t.Parallel()
+	srd := loadForTest(t)
+	for name, e := range map[string]Effect{
+		"both ratings":   {Type: "wild_shape", MaxCR: "1", MaxCRFrom: "level()"},
+		"nothing":        {Type: "wild_shape"},
+		"a rating of 31": {Type: "wild_shape", MaxCR: "31"},
+		"a bad formula":  {Type: "wild_shape", MaxCRFrom: "level( +"},
+		"a bad cost":     {Type: "wild_shape", FormCost: "nonsense()"},
+		"limits alone":   {Type: "wild_shape", NoFly: true, FormCost: "1"},
+	} {
+		if _, err := srd.With(wildOverlay([]Effect{e})); err == nil {
+			t.Errorf("%s: accepted", name)
 		}
 	}
 }

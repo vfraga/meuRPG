@@ -40,7 +40,7 @@ func TestMigrateUpRunsSerialize(t *testing.T) {
 				overlaps.Add(1)
 			}
 			defer inside.Add(-1)
-			provider, err := NewProvider(db)
+			provider, err := NewTestProvider(t.Context(), db)
 			if err != nil {
 				t.Errorf("NewProvider() error = %v", err)
 				return

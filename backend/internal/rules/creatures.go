@@ -226,16 +226,21 @@ func (c *content) actionDamageProblem(a *srd51.MonsterAction) string {
 func (c *content) buildCreatures() {
 	for _, k := range sortedKeys(c.monsters) {
 		m := c.monsters[k]
-		c.monsterEntries = append(c.monsterEntries, CreatureEntry{
-			Key: k, Name: m.Name, NamePT: c.namePT(k),
-			Size: m.Size, SizeNamePT: sizeNamePT[m.Size],
-			Type: m.Type, TypeNamePT: creatureTypeNamePT[m.Type], Subtype: m.Subtype,
-			ChallengeRating: m.ChallengeRating, XP: m.XP,
-			CanFly: m.Speed.Fly > 0, CanSwim: m.Speed.Swim > 0,
-			ArmorClass: m.ArmorClass, HitPoints: m.HitPoints,
-		})
+		c.monsterEntries = append(c.monsterEntries, c.creatureEntry(k, m))
 	}
 	sortPT(c.monsterEntries, func(e CreatureEntry) string { return e.NamePT })
+}
+
+// creatureEntry is the line of a creature in the lists.
+func (c *content) creatureEntry(k string, m *srd51.Monster) CreatureEntry {
+	return CreatureEntry{
+		Key: k, Name: m.Name, NamePT: c.namePT(k),
+		Size: m.Size, SizeNamePT: sizeNamePT[m.Size],
+		Type: m.Type, TypeNamePT: creatureTypeNamePT[m.Type], Subtype: m.Subtype,
+		ChallengeRating: m.ChallengeRating, XP: m.XP,
+		CanFly: m.Speed.Fly > 0, CanSwim: m.Speed.Swim > 0,
+		ArmorClass: m.ArmorClass, HitPoints: m.HitPoints,
+	}
 }
 
 // The reasons ListCreatures refuses a filter that cannot be right. They come

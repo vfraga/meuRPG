@@ -3,7 +3,6 @@ package maps
 import (
 	"context"
 	"errors"
-	"os"
 	"strings"
 	"testing"
 
@@ -53,18 +52,11 @@ func (u *user) mustSetFog(campaign, mapID string) {
 // InTx runs the closure again. Call it once the setup is done.
 func (h *harness) rivalCommits(imageID string) {
 	h.t.Helper()
-	conn, err := pgx.Connect(h.t.Context(), os.Getenv("MEURPG_TEST_DATABASE_URL"))
+	conn, err := pgx.Connect(h.t.Context(), h.pool.Config().ConnString())
 	if err != nil {
 		h.t.Fatal(err)
 	}
 	h.t.Cleanup(func() { _ = conn.Close(h.t.Context()) })
-	var dbName string
-	if err := h.pool.QueryRow(h.t.Context(), "SELECT current_database()").Scan(&dbName); err != nil {
-		h.t.Fatal(err)
-	}
-	if _, err := conn.Exec(h.t.Context(), "USE "+dbName); err != nil {
-		h.t.Fatal(err)
-	}
 	h.hookAfterQuery("-- name: GetGalleryUsage", func() {
 		_, err := conn.Exec(context.Background(),
 			`INSERT INTO gallery_images (id, campaign_id, name, content_type, width, height, byte_size, created_at)

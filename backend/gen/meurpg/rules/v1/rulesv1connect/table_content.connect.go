@@ -3,8 +3,8 @@
 // Source: meurpg/rules/v1/table_content.proto
 
 // The table's own rules content (MR-025, MR-025, RN-23, ADR-0018): the classes,
-// subclasses, races, subraces, backgrounds, spells and feats that the master writes
-// for one campaign, and the content pack that carries them from one campaign to
+// subclasses, races, subraces, backgrounds, spells, feats, options, class features
+// and creatures that the master writes for one campaign, and the content pack that carries them from one campaign to
 // another (ExportTableContent, ImportTableContent). The RPCs are TableContentService's, below; the catalog the
 // character editor builds from is ContentService.ListContent (rules.proto).
 //

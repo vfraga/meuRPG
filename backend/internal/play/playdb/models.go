@@ -339,27 +339,38 @@ type HitRider struct {
 }
 
 type InspirationHold struct {
-	ID             string
-	CampaignID     string
-	CharacterID    string
-	UserID         string
-	Kind           string
-	IdempotencyKey string
-	Request        []byte
-	Faces          []int32
-	Modifier       int32
-	Total          int32
-	Counted        int32
-	Physical       bool
-	AnswerKey      *string
-	CreatedAt      time.Time
-	Round          *int32
-	LuckyIndex     *int32
-	LuckyAnswerKey *string
-	LuckyTo        *int32
-	CombatantID    *string
-	EncounterID    *string
-	WindowHold     bool
+	ID                   string
+	CampaignID           string
+	CharacterID          string
+	UserID               string
+	Kind                 string
+	IdempotencyKey       string
+	Request              []byte
+	Faces                []int32
+	Modifier             int32
+	Total                int32
+	Counted              int32
+	Physical             bool
+	AnswerKey            *string
+	CreatedAt            time.Time
+	Round                *int32
+	LuckyIndex           *int32
+	LuckyAnswerKey       *string
+	LuckyTo              *int32
+	CombatantID          *string
+	EncounterID          *string
+	WindowHold           bool
+	IndomitableAsk       bool
+	IndomitableFailed    bool
+	IndomitableAnswerKey *string
+	IndomitableFrom      *int32
+	IndomitableTo        *int32
+	DieAnswerKey         *string
+	DieUsed              []byte
+	StrokeAsk            bool
+	StrokeFailed         bool
+	StrokeAnswerKey      *string
+	StrokeFrom           *int32
 }
 
 type OpportunityOffer struct {

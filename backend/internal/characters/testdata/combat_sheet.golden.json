@@ -300,6 +300,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -319,6 +321,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -466,6 +470,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -485,6 +491,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -770,6 +778,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -789,6 +799,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -961,6 +973,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -980,6 +994,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1127,6 +1143,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1146,6 +1164,8 @@
         "Standard": "standard:dodge",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1165,6 +1185,8 @@
         "Standard": "standard:disengage",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1184,6 +1206,8 @@
         "Standard": "standard:dash",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1203,6 +1227,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1222,6 +1248,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1521,6 +1549,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,
@@ -1540,6 +1570,8 @@
         "Standard": "",
         "Cost": 0,
         "CostMax": 0,
+        "GivesSlot": 0,
+        "SpendsSlot": false,
         "Heal": null,
         "HealPerPoint": {
           "Count": 0,

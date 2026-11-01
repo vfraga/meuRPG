@@ -930,8 +930,8 @@ func TestMR036_CarriedLight(t *testing.T) {
 // The master's change to a trap locks the point and then the session (the event it
 // records); the play module's trigger locks the session and then the point. When a
 // move fires a trap while the master reveals it, the two wait for each other:
-// CockroachDB aborts one (40001) and the retry of its transaction goes on, so the
-// master's call still succeeds and the trap is revealed.
+// the database aborts one (40001 on CockroachDB, 40P01 on PostgreSQL) and the retry of its
+// transaction goes on, so the master's call still succeeds and the trap is revealed.
 func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 	t.Parallel()
 	s := newScenes(t, true)
@@ -941,13 +941,17 @@ func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 	probe := dbtest.SideConnection(t, s.h.pool)
 	// The sessions of the two sides, to tell their statements from other tests' on the same server.
 	var masterSession, playSession string
-	if err := s.h.pool.QueryRow(ctx, `SHOW session_id`).Scan(&masterSession); err != nil {
+	masterConn, err := s.h.pool.Acquire(ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
+	if masterSession, err = dbtest.BackendID(ctx, masterConn); err != nil {
+		t.Fatal(err)
+	}
+	masterConn.Release()
 	// waiting counts the statements of the two sides asking for the trap's lock right now.
 	waiting := func() int {
-		var n int
-		err := probe.QueryRow(ctx, `SELECT count(*) FROM [SHOW CLUSTER STATEMENTS] WHERE session_id IN ($1, $2) AND query LIKE '%FROM map_points%FOR UPDATE%'`, masterSession, playSession).Scan(&n)
+		n, err := dbtest.WaitingStatements(ctx, probe, `%FROM map_points%FOR UPDATE%`, masterSession, playSession)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -984,7 +988,7 @@ func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer play.Rollback(ctx) //nolint:errcheck // rolled back unless it was committed
-	if err := play.QueryRow(ctx, `SHOW session_id`).Scan(&playSession); err != nil {
+	if playSession, err = dbtest.BackendID(ctx, play); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := play.Exec(ctx, `SELECT id FROM game_sessions WHERE campaign_id = $1 AND ended_at IS NULL FOR UPDATE`, s.campaign); err != nil {
@@ -1006,7 +1010,8 @@ func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 		err = play.Commit(ctx)
 	}
 	var pg *pgconn.PgError
-	if err != nil && (!errors.As(err, &pg) || pg.Code != "40001") {
+	// The abort is 40001 on CockroachDB and 40P01 (a deadlock) on PostgreSQL.
+	if err != nil && (!errors.As(err, &pg) || (pg.Code != "40001" && pg.Code != "40P01")) {
 		t.Fatalf("the move ended with %v, want success or a retryable abort", err)
 	}
 	_ = play.Rollback(ctx)

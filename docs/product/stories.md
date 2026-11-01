@@ -612,7 +612,7 @@ Each invite chooses whether it requires approval, and a refusal deletes the char
 - Rules: RN-23, RN-24, RN-25
 - Modules: rules, characters, campaigns, play, maps
 
-The story covers own classes **and** subclasses, races and subraces, backgrounds, spells, feats, the content pack (export and import), the option switches, the table rules and the campaign's grid.
+The story covers own classes **and** subclasses, races and subraces, backgrounds, spells, feats, options, class features, creatures, the content pack (export and import), the option switches, the table rules and the campaign's grid.
 A player's proposal (MR-026) and reading rules from a PDF (MR-027) are separate, later stories.
 The data rules, limits and the server side are in [Table content: rules](../architecture/rules-table-content.md) and [Table content: characters](../architecture/characters-table-content.md).
 
@@ -710,11 +710,42 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - **Given** the "Opções para os jogadores" screen, **when** the master switches a table option off, **then** players are not offered it and the server refuses it as a new pick; a sheet that already has it keeps it.
 - **Given** the option editor, **when** I save an option with an unknown set, a class or option or Pact Boon or spell that does not exist, a level outside 1 to 20, or another choice among its effects, **then** the server refuses each at its field, **and** the set of an option never changes after it is created.
 
+**Wild Shape and spell slots.**
+
+- **Given** a table feature that changes Wild Shape, **when** a druid with it opens the list of forms, **then** the list and the choice use the highest challenge rating, the lowest cost in uses and magical attacks if any of its features gives them; a beast above the rating is refused ("WILD_SHAPE_BEAST_NOT_ALLOWED").
+  A cost of 0 spends no use, and the undo gives back exactly what the change spent.
+- **Given** a table action that turns uses into a spell slot, **when** a character takes it, **then** its uses are spent and a free slot of that level exists until the next long rest; the combat log reads the uses and the slot's level, and the undo takes the slot away and gives the uses back.
+- **Given** a table action that spends a spell slot to heal, **when** the player picks a level, **then** that slot is expended and the heal grows by the dice of each level above the first; a level with no free slot is refused and nothing is spent.
+- **Given** a table feature that recovers spell slots, **when** the character recovers slots after a short rest, **then** one use of its resource is spent and the slots come back; a slot above its highest level, a combined level above its limit, a rest that is not short and a resource with no use left are refused and nothing changes.
+
 **Class features.**
 
 - **Given** I am the game master of "Mirathel", **when** I register a feature for a class (the SRD's or one of the table) at a class level, with its text and effects, **then** every character of that class reads it from that level on, in "Mirathel" only, like any feature of the class.
 - **Given** a class feature that replaces another feature of the class (an invented Ranger feature at level 1 that replaces Favored Enemy), **then** characters of the class no longer have the replaced feature from that level on, **and** the replaced feature is not asked for in their choices; **when** I switch the entry off, **then** the class reads as before and the replaced feature is back.
 - **Given** the editor, **when** I save a class feature with a class that does not exist, a level outside 1 to 20, or a replaced feature the class does not have at that level or later (or that it already had before), **then** the server refuses each at its field.
+
+**Creatures.**
+
+- **Given** I am the game master of "Mirathel", **when** I register a creature of my own from an SRD creature (a wolf with 40 hit points, armor class 17, +2 on each attack's damage and a trait of text), **then** it resolves where an SRD creature does: I give it to a player's character, it joins the combats with those numbers, and I can make an NPC from it.
+  The SRD creature itself never changes, and the entry's base cannot be swapped for another one later.
+  The web app has no editor for creatures: they are created through the API or a content pack.
+- **Given** I save a creature with a base the SRD does not have, hit points outside 1 to 9,999, armor class outside 1 to 40, a damage bonus outside -10 to 30, or more than 10 traits, **then** the server refuses each at its field, and a trait named like one of the base's traits or actions, or "Magic Weapons", "Spellcasting" or "Innate Spellcasting", is refused.
+- **Given** a creature already given to a character, **when** I edit the entry's hit points and armor class, **then** the creature keeps the hit points it was given **and** its armor class and its attacks follow the entry.
+- **Given** a creature entry, **then** a player finds it in the creature list and reads its sheet only while one of their characters holds it.
+  This holds whether the entry is live, archived or switched off.
+  The master reads every entry.
+  Archiving or switching it off changes nothing for the creatures already given, and nothing is deleted.
+- **Given** a monster of a table creature in a combat, **when** I edit its entry and put it in the combat again, **then** the new combatant has the entry's current armor class and attacks.
+  The monster already there keeps the numbers it joined with.
+- **Given** a table creature that a character holds, in a combat, **when** I edit its entry, **then** its armor class and attacks follow the entry at once.
+  Its hit points stay the ones it was given.
+- **Given** a creature of the table in a combat, **then** its hit points are a number only for the master and its owner's player, and its armor class only for the master; the other players read its state word.
+- **Given** a table creature in a combat, **then** every player there reads its name and key, as for an SRD summon or an NPC.
+  Its stat block, hit points and armor class stay hidden from a player who does not own it.
+  This holds even when the entry is archived or switched off.
+- **Given** an archived creature entry, **when** I give it to a character, **then** it is given.
+- **Given** a creature entry, **when** I switch it on or off, **then** I do it through the API, because the "Opções para os jogadores" screen has no creature group.
+- **Given** the summoning spells, Wild Shape and the encounter tools (generator, evaluator and swaps), **then** they offer SRD creatures only, because a table creature does not keep its base's challenge rating.
 
 **Swapping a pick.**
 
@@ -727,7 +758,7 @@ The data rules, limits and the server side are in [Table content: rules](../arch
   The notice clears itself when the numbers match again.
 - **Given** table content that a sheet uses, **when** the game master archives it, **then** the sheet keeps it **and** it no longer appears as a new choice; nothing in the table content is ever deleted.
   An archived entry can still be edited and can be unarchived, and then it is a new choice again.
-- **Given** the "Opções para os jogadores" screen, **when** the game master switches off a class, subclass, race, subrace, background, spell or feat (SRD or table), **then** players no longer see or pick it; what is on, they see in full, with numbers and effects.
+- **Given** the "Opções para os jogadores" screen, **when** the game master switches off a class, subclass, race, subrace, background, spell, feat, option, or class feature (SRD or table), **then** players no longer see or pick it; what is on, they see in full, with numbers and effects.
   A switched-off class takes its subclasses with it, and a switched-off race its subraces.
 - **Given** a switched-off or archived option, **when** a player creates or edits a sheet or levels up, **then** the server refuses it as a new choice, **and** a sheet that already has it keeps working and an unrelated edit is never refused.
   The game master is never refused.
@@ -1434,7 +1465,7 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - The file goes up in parts, so a dropped connection resumes. The upload belongs to the master's account, a person has one at a time, and unfinished parts are deleted an hour after the last one.
 - A preview counts what the package holds and lists every problem in plain words. Any problem blocks "Criar campanha": all or nothing, and a failure halfway leaves nothing behind.
 - A package is refused when it comes from a newer MeuRPG ("Este pacote é de uma versão mais nova do MeuRPG, e este servidor ainda não sabe abri-lo."), was changed, holds a field this server does not know, is over 200 MiB or 2,000 entries (10 MiB for an entry), is suspiciously compressed, has a name that climbs out of a folder, or refers to something it lacks.
-- Every rule of the app applies as if the master had typed the data: names, sizes, DCs, scene actions, traps, puzzles, sheets (with the package's own table content), the caps of a campaign (300 images, 200 maps, 200 points a map, 1,000 table entries, the characters and NPCs cap) and the account's cap of campaigns ("Você já tem 10 campanhas.") and the creators list. Images go through the upload's pipeline (re-encoded, metadata dropped).
+- Every rule of the app applies as if the master had typed the data: names, sizes, DCs, scene actions, traps, puzzles, sheets (with the package's own table content), the caps of a campaign (300 images, 200 maps, 200 points a map, 1,000 table entries, the characters and NPCs cap, which does not count the NPCs made for creatures in a combat; they have their own cap of 1,000) and the account's cap of campaigns ("Você já tem 10 campanhas.") and the creators list. Images go through the upload's pipeline (re-encoded, metadata dropped).
 - Ids are never reused: every thing gets a new id and every reference, including the links in the document, follows.
 - The players' characters arrive reserved (MR-049): invisible to the players until one claims it with the master's link.
 

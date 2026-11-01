@@ -224,6 +224,9 @@ Second Wind, Wholeness of Body, Action Surge, Preserve Life and Turn Undead chan
 
 A feature action from the table's content (a `grant_action`, see [Costs, healing actions and hooks](../rules-table-content.md#costs-healing-actions-and-hooks)) reaches `TakeAction` as `link.FeatureAction` with its `Cost`, `CostMax`, `Heal`, `HealPerPoint`, `TempHP` and `TempHPPerPoint` (`characters.featureActionOf`), and the option is off with `NO_USES` while fewer uses than one use costs are left (`actionOption`).
 `takeActionFlow.spendFeatureUse` reads the uses left in the transaction of the use and asks `rules.Action.Spend` for what to spend: `TakeActionRequest.spend` is the number the player picked (0 takes the cost; ignored when the cost is fixed), and a number outside the cost to `cost_max` or what is left is `invalid_argument` with nothing spent, never trusted beyond the number.
+An action with `spends_slot` reads `spend` as the level of the slot (1 to 9; outside it is `invalid_argument`) and expends a free slot of it through the vitals keeper (`SpendSpellSlot`; no free slot is `ResourceBlocked` `NO_FREE_SLOT`), and the heal is `Outcome(level)` with the level 1 as the base cost.
+An action with `gives_slot` spends its uses as above and then adds the slot (`GiveSpellSlot`).
+Both write `resourceEvent` (`slot_give`, `slot_spend`) with the slot's level, which the log shows as a resource line (`CombatLogResource.slot_level`, the uses in `spent`, the hit points in `healed` for the master and the players of the actor and the healed) and `takeBackResource` takes back.
 `grantResult` then gives the result:
 
 - **The heal** is `Action.Outcome(spent)`: the dice of `heal` plus those of `heal_per_point` for each point above the cost, rolled like a damage (RN-18: `roll_in_app` or `typed_sum`, which must be set for an action that heals), through `healCombatant`, so it never passes the maximum and whoever was at 0 stands up and the death saves reset.

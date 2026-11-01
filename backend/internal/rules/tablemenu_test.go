@@ -281,6 +281,8 @@ func TestEffectMenuRequiredFieldsAreRequired(t *testing.T) {
 		"ranged_attack":      {Type: "ranged_attack", Applies: RangedAttackSpell, IgnoreCover: true},
 		"extra_damage":       {Type: "extra_damage", Applies: ExtraDamageLargerTarget, Value: "2", Resource: "dados_de_teste"},
 		"ambush":             {Type: "ambush", Applies: AmbushUnactedAdvantage},
+		"wild_shape":         {Type: "wild_shape", MaxCR: "1"},
+		"slot_recovery":      {Type: "slot_recovery", Resource: "dados_de_teste", RecoverMaxLevel: "3", RecoverLevels: "2"},
 		"spell_modifier":     {Type: "spell_modifier", AppliesTo: SpellAppliesCantrip, SpellChange: SpellChangeExtraDice, Count: 1},
 		"on_event":           {Type: "on_event", Event: EventLongRest, TempHP: "level()"},
 		"resistance":         {Type: "resistance", Except: "damage-type:psychic", While: ResistanceWhileRage},
@@ -353,6 +355,10 @@ func TestEffectMenuRequiredFieldsAreRequired(t *testing.T) {
 			e.Choice = ""
 		case "from":
 			e.From = nil
+		case "recover_max_level":
+			e.RecoverMaxLevel = ""
+		case "recover_levels":
+			e.RecoverLevels = ""
 		default:
 			t.Fatalf("no way to clear %q", field)
 		}
@@ -363,7 +369,7 @@ func TestEffectMenuRequiredFieldsAreRequired(t *testing.T) {
 			return err
 		}
 		effects := []Effect{e}
-		if (e.Type == "superiority_die" || e.Type == "extra_damage") && e.Resource != "" {
+		if (e.Type == "superiority_die" || e.Type == "extra_damage" || e.Type == "slot_recovery") && e.Resource != "" {
 			// The die spends a resource the same class defines.
 			effects = []Effect{{Type: "resource", Resource: "dados_de_teste", Max: "4", Recharge: "short_rest"}, e}
 		}

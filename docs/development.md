@@ -59,10 +59,14 @@ make down LOCAL_STACK=native
 
 ## Test databases
 
-The integration tests need a CockroachDB of their own: see [Testing](testing.md#integration-tests).
-`make db-test-start` starts one on port 26258 with the data in memory (2 GiB at most, gone on shutdown); `TEST_DB_PORT=26259` starts a second one beside it, with the console on the port after the first one's (8082, 8083...).
-`make db-test-stop` (same `TEST_DB_PORT`) stops it.
+The integration tests need a database of their own: see [Testing](testing.md#integration-tests).
+`make db-test-start` starts a PostgreSQL on port 5433, with its data under `~/.meurpg/postgres-test-<port>`, SERIALIZABLE by default and `fsync` off, as a preflight runs it.
+`TEST_PG_PORT=5434` starts a second one beside it, and `make db-test-stop` (same `TEST_PG_PORT`) stops it.
+It needs `pg_ctl` and `initdb` on the `PATH` (`brew install postgresql@17`).
+`make db-test-cockroach-start` starts a CockroachDB on port 26258 with the data in memory (2 GiB at most, gone on shutdown), the database of the tests that need it and of a train; `TEST_DB_PORT=26259` starts a second one beside it, with the console on the port after the first one's (8082, 8083...).
+`make db-test-cockroach-stop` (same `TEST_DB_PORT`) stops it.
 It uses the same CockroachDB version as `db-native-start`.
+`make up` and the e2e tests always use CockroachDB.
 
 ## Sign-in with the devidp
 

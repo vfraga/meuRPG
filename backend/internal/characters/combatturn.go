@@ -228,7 +228,7 @@ func featureActionOf(d rules.Derived, a rules.Action) link.FeatureAction {
 	fa := link.FeatureAction{
 		Key: a.Key, Name: a.NamePT, Economy: a.Economy, Resource: a.Resource, Pool: poolResources[a.Resource], Standard: a.Standard,
 		State: a.State, StateActive: a.StateActive,
-		Cost: a.Cost, CostMax: a.CostMax, TempHP: a.Result.TempHP, TempHPPerPoint: a.Result.TempHPPerPoint,
+		Cost: a.Cost, CostMax: a.CostMax, GivesSlot: a.GivesSlot, SpendsSlot: a.SpendsSlot, TempHP: a.Result.TempHP, TempHPPerPoint: a.Result.TempHPPerPoint,
 		HealPerPoint: link.Dice{Count: a.Result.HealPerPoint.Count, Sides: a.Result.HealPerPoint.Sides, Bonus: a.Result.HealPerPoint.Bonus},
 	}
 	if h := a.Result.Heal; h != nil {

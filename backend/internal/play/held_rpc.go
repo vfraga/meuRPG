@@ -62,9 +62,20 @@ func heldRollOfferOf(o heldOffer, who offerRoller) *playv1.HeldRollOffer {
 	if who.Character {
 		out.CharacterId = h.CharacterID
 	}
-	if o.Asks == askLucky {
+	switch o.Asks {
+	case askLucky:
 		out.Question = &playv1.HeldRollOffer_Lucky{Lucky: &playv1.LuckyQuestion{LuckyIndex: derefInt32(h.LuckyIndex)}}
-	} else {
+	case askIndomitable:
+		out.Question = &playv1.HeldRollOffer_Indomitable{Indomitable: &playv1.IndomitableQuestion{Failed: h.IndomFailed}}
+		if h.DieUsed != nil { // the total the roller sees counts the die already added
+			out.D20.Total += h.DieUsed.Face
+		}
+	case askStroke:
+		out.Question = &playv1.HeldRollOffer_StrokeOfLuck{StrokeOfLuck: &playv1.StrokeOfLuckQuestion{Failed: h.StrokeFailed}}
+		if h.DieUsed != nil { // the total the roller sees counts the die already added
+			out.D20.Total += h.DieUsed.Face
+		}
+	default:
 		out.Question = &playv1.HeldRollOffer_Die{Die: &playv1.DieQuestion{Sides: o.State.Die.Sides, FromName: who.Giver}}
 	}
 	return out
@@ -157,8 +168,15 @@ func answerOfHeldRoll(msg *playv1.AnswerHeldRollRequest) (answerRequest, error) 
 	case *playv1.AnswerHeldRollRequest_Die:
 		ans.question, ans.yes = askDie, a.Die.GetUse()
 		p = rollPickOf(a.Die.GetRoll())
+	case *playv1.AnswerHeldRollRequest_Indomitable:
+		ans.question, ans.yes = askIndomitable, a.Indomitable.GetReroll()
+		p = rollPickOf(a.Indomitable.GetRoll())
+		p.faces = a.Indomitable.GetTypedFaces()
+	case *playv1.AnswerHeldRollRequest_StrokeOfLuck:
+		ans.question, ans.yes = askStroke, a.StrokeOfLuck.GetUse()
+		return ans, nil // nothing is rolled: no way of rolling to read
 	default:
-		return ans, connect.NewError(connect.CodeInvalidArgument, errors.New("answer must be set to a lucky or a die answer"))
+		return ans, connect.NewError(connect.CodeInvalidArgument, errors.New("answer must be set to a lucky, a die, an indomitable or a stroke of luck answer"))
 	}
 	if !ans.yes {
 		return ans, nil
@@ -179,6 +197,10 @@ func rollPickOf(roll any) rollPick {
 	case *playv1.DieAnswer_RollInApp:
 		p.app = &r.RollInApp
 	case *playv1.DieAnswer_TypedFace:
+		p.face = &r.TypedFace
+	case *playv1.IndomitableAnswer_RollInApp:
+		p.app = &r.RollInApp
+	case *playv1.IndomitableAnswer_TypedFace:
 		p.face = &r.TypedFace
 	}
 	return p
@@ -303,7 +325,7 @@ func (l *heldList) offerOf(ctx context.Context, h heldRoll) (*playv1.HeldRollOff
 	}
 	st := rollerState{Die: die, Holds: found}
 	asked := askedBy(h, st)
-	if h.stale(st) || (asked.Asks != askLucky && !found) {
+	if h.stale(st) || (asked.Asks != askLucky && asked.Asks != askStroke && !found) {
 		return nil, nil
 	}
 	return l.s.outsideHeldRollOffer(ctx, nil, asked), nil

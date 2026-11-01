@@ -33,6 +33,10 @@ type heldDie struct {
 type rollerState struct {
 	Die   heldDie
 	Holds bool
+	// Indom says the roller has Indomitable with a use left; the gate reads it for the saving throws only.
+	Indom bool
+	// Stroke says the roller has Stroke of Luck with a use left; the gate reads it for the attacks and checks that ask it.
+	Stroke bool
 }
 
 // stateOfCombatant is the state of a roller whose combatant the path already has: the die it holds in
@@ -174,7 +178,7 @@ func (h heldRoll) stale(st rollerState) bool {
 	if st.Die.Combatant == nil || st.Die.Round != *h.Round {
 		return true
 	}
-	return h.checksTheAnswer() && !st.Holds && !luckyAsks(h)
+	return h.checksTheAnswer() && !st.Holds && !luckyAsks(h) && !indomitableAsks(h) && !strokeAsks(h)
 }
 
 // fromSameRequest says the roll was made by the request with this key (a retry of it), which a reaction
@@ -186,6 +190,12 @@ func (h heldRoll) fromSameRequest(key string) bool { return !h.Window && h.Key =
 func heldRefusal(h heldRoll) error {
 	if luckyAsks(h) {
 		return resourceBlocked(playv1.ResourceBlockedReason_RESOURCE_BLOCKED_REASON_LUCKY_PENDING, "answer the Lucky question of the roll first")
+	}
+	if indomitableAsks(h) {
+		return resourceBlocked(playv1.ResourceBlockedReason_RESOURCE_BLOCKED_REASON_INDOMITABLE_PENDING, "answer the Indomitable question of the roll first")
+	}
+	if strokeAsks(h) {
+		return resourceBlocked(playv1.ResourceBlockedReason_RESOURCE_BLOCKED_REASON_STROKE_OF_LUCK_PENDING, "answer the Stroke of Luck question of the roll first")
 	}
 	return resourceBlocked(playv1.ResourceBlockedReason_RESOURCE_BLOCKED_REASON_INSPIRATION_PENDING, "answer the Bardic Inspiration question of the roll first")
 }

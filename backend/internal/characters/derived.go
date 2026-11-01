@@ -290,7 +290,7 @@ func attackToProto(a rules.Attack) *rulesv1.Attack {
 func actionToProto(a rules.Action) *rulesv1.Action {
 	return &rulesv1.Action{
 		Key: a.Key, NamePt: a.NamePT, Economy: economyToProto[a.Economy], ResourceKey: a.Resource, SourceKey: a.Source, StateKey: a.State, StateActive: a.StateActive,
-		Cost: i32(a.Cost), CostMax: i32(a.CostMax), TempHp: i32(a.Result.TempHP), TempHpPerPoint: i32(a.Result.TempHPPerPoint),
+		Cost: i32(a.Cost), CostMax: i32(a.CostMax), GivesSlotLevel: i32(a.GivesSlot), SpendsSlot: a.SpendsSlot, TempHp: i32(a.Result.TempHP), TempHpPerPoint: i32(a.Result.TempHPPerPoint),
 		HealPerPoint: diceToProto(a.Result.HealPerPoint), Heal: healToProto(a.Result.Heal),
 	}
 }

@@ -157,15 +157,15 @@ func newNotesRig(t *testing.T) *notesRig {
 		}
 		return id
 	}
-	rig.master = one(`INSERT INTO users DEFAULT VALUES RETURNING id::STRING`)
-	rig.ana = one(`INSERT INTO users DEFAULT VALUES RETURNING id::STRING`)
-	rig.bia = one(`INSERT INTO users DEFAULT VALUES RETURNING id::STRING`)
-	rig.campaign = one(`INSERT INTO campaigns (name, xp_mode, created_by) VALUES ('Mirathel', 'milestones', $1) RETURNING id::STRING`, rig.master)
+	rig.master = one(`INSERT INTO users DEFAULT VALUES RETURNING id::TEXT`)
+	rig.ana = one(`INSERT INTO users DEFAULT VALUES RETURNING id::TEXT`)
+	rig.bia = one(`INSERT INTO users DEFAULT VALUES RETURNING id::TEXT`)
+	rig.campaign = one(`INSERT INTO campaigns (name, xp_mode, created_by) VALUES ('Mirathel', 'milestones', $1) RETURNING id::TEXT`, rig.master)
 	image := one(`INSERT INTO gallery_images (id, campaign_id, name, content_type, width, height, byte_size, created_at)
-		VALUES (gen_random_uuid(), $1, 'Vila', 'image/png', 10, 10, 100, now()) RETURNING id::STRING`, rig.campaign)
-	mapID := one(`INSERT INTO maps (campaign_id, name, image_id, created_at, updated_at) VALUES ($1, 'Vila', $2, now(), now()) RETURNING id::STRING`, rig.campaign, image)
+		VALUES (gen_random_uuid(), $1, 'Vila', 'image/png', 10, 10, 100, now()) RETURNING id::TEXT`, rig.campaign)
+	mapID := one(`INSERT INTO maps (campaign_id, name, image_id, created_at, updated_at) VALUES ($1, 'Vila', $2, now(), now()) RETURNING id::TEXT`, rig.campaign, image)
 	for i, name := range []string{"A ponte", "A torre", "O poço"} {
-		rig.sceneIDs[i] = one(`INSERT INTO map_points (map_id, kind, name, x_bp, y_bp, created_at, updated_at) VALUES ($1, 'scene', $2, 10, 10, now(), now()) RETURNING id::STRING`, mapID, name)
+		rig.sceneIDs[i] = one(`INSERT INTO map_points (map_id, kind, name, x_bp, y_bp, created_at, updated_at) VALUES ($1, 'scene', $2, 10, 10, now(), now()) RETURNING id::TEXT`, mapID, name)
 	}
 	rig.scenes.discovered = []link.Scene{{ID: rig.sceneIDs[0], Name: "A ponte"}, {ID: rig.sceneIDs[1], Name: "A torre"}}
 
@@ -417,7 +417,7 @@ func TestUpdateNoteOrderAndFailures(t *testing.T) {
 	}
 	wantNotesNote(t, "UpdateNote(hidden tag)", got, "escondida", "", "")
 	var stored *string
-	if err := rig.pool.QueryRow(ctx, `SELECT scene_point_id::STRING FROM player_notes WHERE id = $1`, n0.GetId()).Scan(&stored); err != nil || stored == nil || *stored != rig.sceneIDs[0] {
+	if err := rig.pool.QueryRow(ctx, `SELECT scene_point_id::TEXT FROM player_notes WHERE id = $1`, n0.GetId()).Scan(&stored); err != nil || stored == nil || *stored != rig.sceneIDs[0] {
 		t.Errorf("stored tag = %v, %v, want %s kept", stored, err, rig.sceneIDs[0])
 	}
 

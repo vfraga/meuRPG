@@ -184,7 +184,7 @@ func (s *Service) leaveBeastForm(ctx context.Context, tx pgx.Tx, q *playdb.Queri
 	if encID != "" {
 		encounterID = &encID
 	}
-	if _, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	if _, err := insertSessionEvent(ctx, q, playdb.InsertSessionEventParams{
 		GameSessionID: sessionID, Seq: seq, Kind: eventWildShapeEnded, ActorUserID: &call.m.UserID, CharacterID: &call.charText, Payload: ended, CreatedAt: s.now(), EncounterID: encounterID,
 	}); err != nil {
 		return nil, adjusted, fmt.Errorf("insert session event: %w", err)

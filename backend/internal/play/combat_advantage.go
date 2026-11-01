@@ -679,7 +679,7 @@ func (ev actionEvent) d20Faces() []int32 {
 func d20Proto(ev actionEvent) *playv1.DiceRoll {
 	roll := diceRoll(clamp32(len(ev.d20Faces()), 1, 2), 20, ev.d20Faces(), ev.Modifier, ev.Total, ev.Physical)
 	roll.CountedIndex = ev.Counted
-	roll.Rerolled = ev.Lucky.proto()
+	roll.Rerolled = strokeRerolls(ev.Lucky, ev.Stroke)
 	return roll
 }
 

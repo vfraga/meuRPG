@@ -8,8 +8,16 @@ With a few simultaneous requests every one holds a connection and waits for anot
 
 | Helper | Use |
 | --- | --- |
-| `db.InTx(ctx, pool, fn)` | Every write. It runs `fn` in a transaction and, on SQLSTATE `40001` (CockroachDB's serialization conflict), rolls back and runs `fn` again, using the cockroach-go retry helper. |
-| `db.ReadTx(ctx, pool, fn)` | A read that joins several statements into one response. `READ ONLY`, with the same retry. |
+| `db.InTx(ctx, pool, fn)` | Every write. It runs `fn` in a transaction and, on SQLSTATE `40001` (a serialization conflict, on both databases), rolls back and runs `fn` again. SQLSTATE `40P01` (a deadlock) is retried too. |
+| `db.ReadTx(ctx, pool, fn)` | A read that joins several statements into one response. `READ ONLY` on every attempt, with the same retry. |
+
+Both run one loop of our own (`backend/internal/platform/db/tx.go`) on CockroachDB and on PostgreSQL.
+The loop backs off with the cockroach-go retry policy.
+It opens each attempt with `BEGIN` at `SERIALIZABLE` and the transaction's access mode.
+It reads the error of `COMMIT`.
+A lost serialization race can surface there, so a lost write is never reported as success.
+A `COMMIT` that PostgreSQL answers with `ROLLBACK` returns that error as a plain failure.
+A `COMMIT` whose outcome is unknown (`40003`, or a connection that broke) returns `*db.AmbiguousCommitError`, which `rpcerr` answers as an unknown outcome and never retries.
 
 `fn` may run more than once, so it follows the rules below.
 The pool opens at most 10 connections unless `pool_max_conns` is in `DATABASE_URL` (`db.defaultMaxConns`; why 10 is in [Operations](../operations/reference.md#database-connections)), and every statement has a 30 s `statement_timeout` (`db.defaultStatementTimeout`).
@@ -35,7 +43,7 @@ A cancelled call returns its connection to the pool after about 100 ms, the time
 
 A loose statement outside a transaction picks its own instant, so a write that commits between two statements of one response gives a view that mixes two states (the new combatant list next to the old revision).
 `db.ReadTx` opens a `READ ONLY` transaction, and all its statements see one instant.
-It sets `SET TRANSACTION READ ONLY` at the start of every attempt, because the retry begins with a plain `BEGIN`.
+It begins every attempt as `READ ONLY`.
 It does not use `AS OF SYSTEM TIME follower_read_timestamp()`: that reads data a few seconds old, and in live play a player must see what the table just did.
 An ordinary CockroachDB read transaction reads what was committed at its start and never blocks writers.
 The single-connection rule applies inside it too.

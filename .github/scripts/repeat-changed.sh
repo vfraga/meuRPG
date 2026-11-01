@@ -101,8 +101,11 @@ for chunk in "${chunks[@]}"; do
       E2E_COLOR_SCHEME="$field" timeout --kill-after=15 "$left_s" \
         npx playwright test "$file" --grep "$regex" --repeat-each="$n" --max-failures=1 ${workers[@]+"${workers[@]}"}
     else
+      # GO_SKIP (a -skip regex): on PostgreSQL, the tests that need CockroachDB itself are not repeated.
+      skip=()
+      [ -n "${GO_SKIP:-}" ] && skip=(-skip "$GO_SKIP")
       timeout --kill-after=15 "$left_s" \
-        go test -race -count="$n" -failfast -timeout 30m -run "$regex" "$field"
+        go test -race -count="$n" -failfast -timeout 30m -run "$regex" ${skip[@]+"${skip[@]}"} "$field"
     fi
     code=$?
     # Only a timeout is "cut off": 124, or 137 once the --kill-after had to kill the run at its time limit. A 137

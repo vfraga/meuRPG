@@ -136,7 +136,8 @@ An NPC stays in the campaign where it was created.
   Both are JSON objects of at most 128 KiB (`CHECK`); the API limits, in characters, are well below.
   `sheet_schema` marks the sheet document's version.
 - **Sheet fields that are not columns.** The NPC's `initiative_bonus`, `attacks`, `monster_key`, `ability_scores`, `challenge_rating`, `xp_value`, `portrait_image_id` (a gallery image of the campaign; deleting the image removes the field from the sheets and raises their `revision` in the same transaction), the XP (`FullSheet.experience_points`, which `progression` adds to), the content revision a sheet was saved with and its `known_issues` live inside the JSON.
-  `combat_only` marks the NPC the app keeps for each creature put in combat (RN-29): one per campaign and creature, reused by every combat, never shown in `ListCharacters` to the master and never deleted.
+  `combat_only` marks the NPC the app keeps for each creature put in combat (RN-29): one per campaign and creature (for a table creature, one per set of numbers), reused by every combat, never shown in `ListCharacters` to the master and never deleted.
+  The cap on characters (RN-30) does not count it; combat-only NPCs have their own cap of 1,000 per campaign.
 - **`active_states`** (JSONB, `'[]'`) is the list of temporary states that are on, `{"key": "<feature key>#<state name>", "rounds_left": N}` in the order they began, with `rounds_left` absent for a state that lasts until it ends.
   A `CHECK` allows an array of at most 32 items. It is on the character, not on `character_vitals`, because the sheet's numbers depend on it (see [Characters](../architecture/characters.md#temporary-states)).
 - **`story_editing_allowed`** is the master's story release, character by character (RN-01); the start of each session turns off all the campaign's releases.
@@ -234,21 +235,21 @@ Numbers only.
 
 A player character's creatures (MR-037): the familiar, animals and undead a spell summoned, those the master gave.
 They last from session to session until dismissed; the app never counts a spell's duration.
-`monster_key` is the SRD creature (the sheet comes from `rules`, never stored); `name` is the player's name for it, **free text of 1 to 40 characters** (listed in [Privacy](../privacy.md)); `source` is `familiar`, `animate_dead`, `conjure_animals` or `master`; `attack` is what the spell lets it do (`none`, `reaction`, `full`).
+`monster_key` is the SRD creature or the table creature (`creature:<slug>@mesa`, a `campaign_content` row of kind `creature`); the sheet comes from `rules`, never stored; `name` is the player's name for it, **free text of 1 to 40 characters** (listed in [Privacy](../privacy.md)); `source` is `familiar`, `animate_dead`, `conjure_animals` or `master`; `attack` is what the spell lets it do (`none`, `reaction`, `full`).
 `summon_group_id` groups the creatures of one casting (initiative and undo); `concentration_cast_id` marks those that last only while the caster concentrates.
-`hp_current` and `hp_max` (copied from the creature sheet at birth) are its HP outside combat, corrected by the master (RN-02).
+`hp_current` and `hp_max` (copied from the creature sheet at birth: a table creature's entry is copied when the creature is given, and a later edit of the entry does not change them) are its HP outside combat, corrected by the master (RN-02).
 A dismissed creature is not deleted: it keeps `dismissed_at` and `dismissed_reason` (`owner`, `master`, `defeated`, `concentration`, `replaced`, `undone`; both set or both NULL, `CHECK`), so the master's undo can bring it back.
 Partial index on the living ones of a character; indexes on the summon group and the campaign.
 Cascades with the campaign and the character.
 
 ## Table content
 
-The content the master adds to a campaign (MR-025, RN-23, ADR-0018): classes, subclasses, races, subraces, backgrounds, spells, feats, options and class features.
+The content the master adds to a campaign (MR-025, RN-23, ADR-0018): classes, subclasses, races, subraces, backgrounds, spells, feats, options, class features and creatures.
 It lives in `characters` and not in `campaigns` so that `characters` never writes another module's table.
 
 - **`campaign_content`**: one row per entry.
   The key is `<kind>:<name>@mesa`, built by the server at creation and never changed (`CHECK`).
-  `kind` is one of the kinds above.
+  `kind` is one of ten: `class`, `subclass`, `race`, `subrace`, `background`, `spell`, `feat`, `option`, `classfeature` and `creature` (the `campaign_content_kind_valid` `CHECK`; migration 00289 added `creature`).
   `name_pt` is the Portuguese name, `data` the protojson of the kind's message (`rules/v1/table_content.proto`), `revision` the campaign revision at the entry's last change.
   **Nothing is deleted**: what a sheet already uses must keep working, so the way out is `archived_at`.
   Archiving and unarchiving change only `archived_at` and the campaign revision (for the cache), not the entry's `revision` and `updated_at`; `updated_at` is the date of the last real change, the one the "A classe mudou" warning shows.
@@ -257,7 +258,7 @@ It lives in `characters` and not in `campaigns` so that `characters` never write
   Every write raises it in the same transaction, so two writes to one campaign run one after the other, and every content read reads this row inside the caller's transaction (see [Architecture](../architecture/characters-table-content.md#the-live-source)).
 - **`campaign_content_off`**: the options the master turned off for the players ("Opções para os jogadores").
   **No row means on**; turning on again deletes the row.
-  The key is that of an SRD or table class, subclass, race, subrace, background, spell or feat (`class:wizard`, `race:anao@mesa`); it is not a foreign key, because SRD keys live in the rules snapshot, and the server checks the key exists before writing.
+  The key is that of an SRD or table class, subclass, race, subrace, background, spell or feat, or of a table option, class feature or creature (`class:wizard`, `race:anao@mesa`, `creature:lobo-da-mesa@mesa`); it is not a foreign key, because SRD keys live in the rules snapshot, and the server checks the key exists before writing.
   Each write raises the campaign revision.
 - **`campaign_content_imports`**: the idempotency record of `ImportTableContent`, primary key `(campaign_id, create_key)`, with `create_hash` and the stored `response` (protobuf).
   See [Architecture](../architecture/characters-table-content.md#content-packs-exporttablecontent-importtablecontent).

@@ -8,7 +8,7 @@ The two meet in two small interfaces wired in `cmd/api`: `play.CombatRoster` (wh
 
 | Who | What |
 | --- | --- |
-| `CharacterService` | `ListCharacterCreatures` (the master and the owning player; any other player gets `not_found`, and the HP never reaches them), `GiveCreature` (master only, any SRD creature, up to 40 per character; it takes the open session's lock before the character's, the order every combat write uses), `RenameCreature` (its combatant in an open combat gets the new name), `DismissCreature` (the owner or the master; dismissing one already dismissed changes nothing), `AdjustCreatureHitPoints` (master only, RN-02, only outside combat; at 0 HP the creature is dismissed), `GetSummonOptions`, `ListWildShapeForms`. The creature's sheet is `ContentService.GetCreature` |
+| `CharacterService` | `ListCharacterCreatures` (the master and the owning player; any other player gets `not_found`, and the HP never reaches them), `GiveCreature` (master only, any SRD or table creature, up to 40 per character; it takes the open session's lock before the character's, the order every combat write uses), `RenameCreature` (its combatant in an open combat gets the new name), `DismissCreature` (the owner or the master; dismissing one already dismissed changes nothing), `AdjustCreatureHitPoints` (master only, RN-02, only outside combat; at 0 HP the creature is dismissed), `GetSummonOptions`, `ListWildShapeForms`. The creature's sheet is `ContentService.GetCreature` |
 | `PlayService.CastSummon` | Casting outside combat what does not fit inside it (below) |
 | `CombatService.CastSpell` | Conjure Animals in combat (below) |
 | `CombatService.EndConcentration` | Ends concentration (the player or the master) and dismisses that casting's creatures, with a `creature_dismissed` for each. `SetCombatantConditions` with `end_concentration` and casting another concentration spell do the same (RN-22) |
@@ -31,6 +31,50 @@ The group's bonus is the first creature's of the summon, whichever member the pl
 For a player character it answers what the cast sheet draws: for each summoning spell it may cast (on the sheet, prepared or in the spellbook; the Pact of the Chain gives the Find Familiar ritual) the key, the Portuguese name, the level, the time, whether it is a ritual and needs concentration, `can_ritual` and `can_cast_with_slot`; for each level it can use, the options `rules.SummonOptions` gives (the count already with the level, and the forms or the type and maximum CR); the slots (`SummonSlot`, pact ones with `pact`); and per spell what a casting would send away (the living familiar; the creatures of the current concentration).
 It is the same code `CheckSummon` uses (`summonStanding`), so the read and the casting agree; `CastSummon` still checks every choice.
 Access is as `ListCharacterCreatures`; no HP goes in the response (RN-20).
+
+## Table creatures
+
+A table creature is an SRD creature plus the master's adjustments: hit points, armor class, a damage bonus and extra text traits.
+It is a table entry of kind `creature`, with the key `creature:<slug>@mesa`; the fields and limits are in [Table creatures](../rules-table-content.md#table-creatures).
+The creature resolves wherever an SRD one does, so `GiveCreature`, the list, the creature sheet (`GetCreature`) and the combat read it by its key.
+
+- **What is copied and what is read.** `GiveCreature` copies the entry's maximum HP into `character_creatures.hp_max` when the creature is given.
+  Editing the entry later changes no creature already held: it keeps the HP it was given.
+  The armor class (`CharacterCreature.armor_class`) and the actions come from the content every time, so a held creature shows the entry's current armor class and attacks with its current damage bonus.
+- **Archived and switched off.** An archived or switched-off entry keeps resolving for the creatures already held.
+  They stay in the owner's list and join combats.
+  Entries are never deleted, so a held creature never loses its key.
+  A player who holds none of an archived or switched-off entry's creatures does not find it.
+- **Who sees what (RN-20, RN-23).** In combat the HP is a number for the owning player and the master and the armor class for the master alone.
+  Everyone else gets the state word, as for an SRD creature.
+  The owner's list (`ListCharacterCreatures`) carries both numbers to the owner and the master, and to nobody else.
+  The combatant's name and key are visible to everyone in the combat, as for SRD summons and NPCs.
+  The stat block, the HP and the armor class are not.
+  This holds when the entry is archived.
+  A table creature is the master's, live, archived or switched off.
+  A player's `ListCreatures` and `ListTableEntries` lack it, and `GetCreature` answers `not_found`, unless a character of theirs holds a live creature of its key.
+  The holder reads it whatever the entry's state.
+  The master reads them all.
+  `TestRN20_TableCreatureHitPointsOnlyToOwnerAndMaster` and the leak matrix pin this.
+- **Where it is not used.** The summoning spells offer SRD creatures only.
+  A table creature is not a Wild Shape form.
+  The encounter generator, evaluator and swaps leave it out, because it has the challenge rating and XP of its base, which its adjustments may not keep.
+  The encounter tools refuse its key as unknown content: `encounterEntries` answers `failed_precondition` and `GetBattleEncounter` lists the key in `unknown_creature_keys`.
+- **Giving.** The master can give an archived table creature.
+- **Editing and combats.** A held creature in a combat reads its armor class, attacks and traits from the entry every time.
+  An edit of the entry during the fight changes them at once.
+  Its hit points are its own, copied when it was given.
+  A monster put in a combat with "Pôr no combate" is a combatant made from the combat's NPC for the creature.
+  Its armor class, speed, initiative and sheet attacks are the NPC's.
+  Its hit points are the creature's at the time it is added.
+  Its traits, saving throws, skills, ability scores, passive Perception, attacks per action and the actions beyond the sheet attacks are read from the entry as it is now.
+  The NPC is keyed by the numbers the entry makes (`monsterNpcKeyOf`).
+  An edit that changes them makes another NPC, and the monsters already in a fight keep reading the old one.
+  An edit that changes only the name finds the NPC it had.
+- **Other limits.** The web app has no editor for creatures: they are created through the API or a content pack.
+  The master switches them on and off through the API only, because the options screen has no creature group.
+  A package battle encounter that names a table creature is refused on import as unknown content.
+  `characters_using` counts 0 for a held creature, since it is not part of a sheet.
 
 ## What the combat does with a creature
 
@@ -121,12 +165,13 @@ The druid's form is part of the vitals for the API (`CharacterVitals.wild_shape`
 It is a separate table because of locking: a call such as Shield's answer spends a slot (writes the vitals row) and then reads the sheet, through another connection, for the AC, and that read joins the form; with the form in the vitals row the read would wait for its own transaction's write.
 The beast's maximum is never stored; it comes from its sheet (`MonsterDerived`).
 The druid's own HP (`hit_points_current`) stays still and only takes the damage that remains when the beast falls.
+The table's `wild_shape` effects (`Derived.WildShape`: the highest challenge rating, the lowest cost, magical attacks if any gives them) set the limit, the cost (`link.Character.WildShapeCost`, which `shapeApply` spends and `shapeUndoStart` gives back from the event's `PointsSpent`) and whether the beast's attacks count as magical; `ListWildShapeForms`, `WildShapeAllows` and the choice read the same limit.
 `characters` is the only place that reads the form back into the character's numbers: `Service.derive` calls `rules.WildShapeDerived` (AC, attacks, speeds, senses and the beast's Strength, Dexterity and Constitution; no spells), and that is what the combat sheet, turn options, `combatCharacter` (speed, size, flying, jumps) and `PartyVision` use.
 
 | Call | Who | What it does |
 | --- | --- | --- |
-| `CharacterService.ListWildShapeForms` | The master and the owning player | The beasts Wild Shape allows now (`rules.WildShapeForms`: level 2, CR up to 1/4 without flying or swimming; 4, up to 1/2 without flying; 8, up to 1), by Portuguese name, with the limit that decided the list. Empty for non-druids |
-| `PlayService.AssumeWildShape` | The owning player and the master | In combat or out, with the session open. Spends one use of `wild_shape` (`NO_USES`; at druid level 20 it has 99, unlimited) and, in combat, the action, on the character's turn (the master may act again with the action spent). Typed refusals: `WILD_SHAPE_BEAST_NOT_ALLOWED`, `ALREADY_IN_WILD_SHAPE`, `ACTION_USED`, `NOT_YOUR_TURN`. The sheet's action (`feature:wild-shape...`) does not go through `TakeAction` (it refuses it with `invalid_argument`). Writes `wild_shape_started` |
+| `CharacterService.ListWildShapeForms` | The master and the owning player | The beasts Wild Shape allows now (`rules.WildShapeForms`: level 2, CR up to 1/4 without flying or swimming; 4, up to 1/2 without flying; 8, up to 1, or the highest rating a table feature's `wild_shape` effect gives), by Portuguese name, with the limit that decided the list. Empty for non-druids |
+| `PlayService.AssumeWildShape` | The owning player and the master | In combat or out, with the session open. Spends the cost in uses of `wild_shape` (1, or the lowest `form_cost` of the table's `wild_shape` effects, which may be 0; `NO_USES`; at druid level 20 it has 99, unlimited) and, in combat, the action, on the character's turn (the master may act again with the action spent). Typed refusals: `WILD_SHAPE_BEAST_NOT_ALLOWED`, `ALREADY_IN_WILD_SHAPE`, `ACTION_USED`, `NOT_YOUR_TURN`. The sheet's action (`feature:wild-shape...`) does not go through `TakeAction` (it refuses it with `invalid_argument`). Writes `wild_shape_started` |
 | `PlayService.LeaveWildShape` | The owning player and the master | "Voltar à forma normal": bonus action on the character's turn (the master's spends nothing). `NOT_IN_WILD_SHAPE` in own form. Writes `wild_shape_ended` (`reason: left`) |
 | `PlayService.AdjustCharacterVitals` | The master | `wild_shape_hit_points_current` (1 up to the beast's maximum; 0 ends the form, `wild_shape_ended` with `reason: master`). Without a form it is `invalid_argument` |
 

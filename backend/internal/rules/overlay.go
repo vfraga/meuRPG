@@ -32,7 +32,7 @@ const (
 	// The prefix before it is the SRD's, so every place that decides by prefix
 	// ("class:", "feature:", "spell:"...) keeps working.
 	tableSuffix = "@mesa"
-	// MaxOverlayEntries is the most entries (of the six kinds, features not
+	// MaxOverlayEntries is the most entries (of the ten kinds, features not
 	// counted) one table may have.
 	MaxOverlayEntries = 1000
 	// MaxTableFeatures is the most features one class may have, and the most
@@ -91,6 +91,7 @@ type Overlay struct {
 	Feats         []TableFeat
 	Options       []TableOption
 	ClassFeatures []TableClassFeature
+	Creatures     []TableCreature
 }
 
 // TableEntry is what every entry has. Key is "<kind>:<slug>@mesa" (kind is
@@ -674,6 +675,9 @@ func (c *content) isSwitchable(key string) bool {
 	case strings.HasPrefix(key, ClassFeatureKeyPrefix):
 		_, ok := c.classFeatureOf[key]
 		return ok
+	case strings.HasPrefix(key, CreatureKeyPrefix):
+		_, ok := c.creatureOf[key]
+		return ok
 	}
 	return false
 }
@@ -819,7 +823,9 @@ type overlayBuilder struct {
 	// classFeatures are the table class features added so far, and offKeys the keys the master switched off.
 	classFeatures []pendingClassFeature
 	offKeys       map[string]bool
-	resources     map[string]map[string]bool
+	// creaturesOwned says the clone's creature maps are copies (ownCreatures).
+	creaturesOwned bool
+	resources      map[string]map[string]bool
 	// resourceMax is the formula of the maximum of each resource an entry declares.
 	resourceMax map[string]map[string]string
 	// stateKeys are the states each entry defines, by name, with the key each has on the
@@ -868,6 +874,7 @@ const (
 	claimFeats
 	claimOptions
 	claimClassFeatures
+	claimCreatures
 )
 
 // overlayKinds lists the kinds in the order addEntries adds them.
@@ -925,6 +932,11 @@ func (b *overlayBuilder) overlayKinds(o *Overlay) []overlayKind {
 			entry: func(i int) TableEntry { return o.ClassFeatures[i].TableEntry },
 			add:   func(i int, path string) error { return b.addClassFeature(&o.ClassFeatures[i], path) },
 		},
+		{
+			list: "creatures", prefix: CreatureKeyPrefix, claimRank: claimCreatures, n: len(o.Creatures),
+			entry: func(i int) TableEntry { return o.Creatures[i].TableEntry },
+			add:   func(i int, path string) error { return b.addCreature(&o.Creatures[i], path) },
+		},
 	}
 }
 
@@ -964,6 +976,7 @@ func (b *overlayBuilder) build(o Overlay) error {
 	for _, k := range o.Off {
 		b.offKeys[k] = true
 	}
+	b.sortCreatures()
 	if err := b.applyClassFeatures(); err != nil {
 		return err
 	}
@@ -1245,6 +1258,7 @@ func (c *content) cloneForOverlay() *content {
 	n.feats = maps.Clone(c.feats)
 	n.optionSet = map[string]string{}
 	n.classFeatureOf = map[string]ClassFeatureEntry{}
+	n.creatureOf = map[string]CreatureTableEntry{}
 	n.optionPrereq = map[string]TableOptionPrerequisite{}
 	n.spells = maps.Clone(c.spells)
 	n.classLevels = maps.Clone(c.classLevels)

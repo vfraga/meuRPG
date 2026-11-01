@@ -539,7 +539,7 @@
             "SLOT_NOT_EXPENDED",
             "OVER_ALLOWANCE",
             "SONG_OF_REST_FACE_NEEDED",
-            "LUCKY_PENDING", "PLAYER_FIRST"
+            "LUCKY_PENDING", "PLAYER_FIRST", "INDOMITABLE_PENDING", "STROKE_OF_LUCK_PENDING"
           ],
           "unsent": []
         }

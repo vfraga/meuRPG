@@ -566,7 +566,7 @@ func TestClaimsReview_RevokeClaimLink(t *testing.T) {
 	// The player who used it deleted the account: the refusal names nobody.
 	ragna := tb.claimed(t, tb.h.newUser("Breve"), "Ragna")
 	var owner string
-	if err := tb.h.pool.QueryRow(t.Context(), "SELECT player_user_id::STRING FROM characters WHERE id = $1", ragna.GetId()).Scan(&owner); err != nil {
+	if err := tb.h.pool.QueryRow(t.Context(), "SELECT player_user_id::TEXT FROM characters WHERE id = $1", ragna.GetId()).Scan(&owner); err != nil {
 		t.Fatal(err)
 	}
 	tb.h.deleteUser(owner)

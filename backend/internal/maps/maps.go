@@ -263,6 +263,9 @@ type Config struct {
 	Logger *slog.Logger
 	// Now returns the current time. Nil means time.Now.
 	Now func() time.Time
+	// HintAfter schedules the send that ends the layer hint gate's interval. Nil means time.AfterFunc; a test
+	// passes a function that counts the sends it has scheduled, to wait for them.
+	HintAfter func(d time.Duration, f func()) *time.Timer
 	// MaxImages and MaxBytes are a campaign's gallery quota. Zero means
 	// DefaultMaxImages and DefaultMaxBytes; tests set small ones.
 	MaxImages int32
@@ -449,6 +452,7 @@ func New(cfg Config) (*Service, error) {
 		s.now = time.Now
 	}
 	s.layerHints.logger = s.logger
+	s.layerHints.afterFunc = cfg.HintAfter
 	if s.maxImages <= 0 {
 		s.maxImages = DefaultMaxImages
 	}

@@ -183,9 +183,9 @@ export class AttackRolls {
     this.settle(attack);
     const { answer } = done;
     this.play(
-      answer.kind === 'lucky'
-        ? rerollShow(attack.roll.d20, answer.roll)
-        : inspirationShow(attack.roll, answer.use, answer.roll),
+      answer.kind === 'die'
+        ? inspirationShow(attack.roll, answer.use, answer.roll)
+        : rerollShow(attack.roll.d20, answer.kind === 'stroke' ? null : answer.roll),
     );
   }
 

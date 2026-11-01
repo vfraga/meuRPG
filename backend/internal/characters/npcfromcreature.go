@@ -147,7 +147,7 @@ func npcSheetFromCreature(content *rules.Content, key string) (*charactersv1.Bas
 	}
 	basic := &charactersv1.BasicSheet{
 		HitPointsMax: i32(c.HitPoints), ArmorClass: i32(c.ArmorClass), SpeedFt: i32(min(speed, maxSpeedFt)),
-		Description:     "Baseado em " + c.NamePT + " (SRD 5.1).",
+		Description:     "Baseado em " + c.NamePT + creatureOrigin(key),
 		InitiativeBonus: i32(d.Initiative),
 		ChallengeRating: c.ChallengeRating, XpValue: i32(c.XP),
 		Size:       rulesv1.CreatureSize(rulesv1.CreatureSize_value["CREATURE_SIZE_"+strings.ToUpper(c.Size)]),
@@ -260,4 +260,12 @@ func keepCreatureLink(current charactersdb.Character, sheet *charactersv1.Charac
 	out.GetBasic().AbilityScores = saved.GetBasic().GetAbilityScores()
 	out.GetBasic().CombatOnly = saved.GetBasic().GetCombatOnly()
 	return out
+}
+
+// creatureOrigin is where the creature of an NPC comes from, for its description: the SRD, or the table.
+func creatureOrigin(key string) string {
+	if rules.IsTableKey(key) {
+		return " (criatura da mesa)."
+	}
+	return " (SRD 5.1)."
 }

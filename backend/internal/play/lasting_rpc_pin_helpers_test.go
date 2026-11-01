@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 )
 
 // The characterization of the master's calls on the effects that last (list, change the
@@ -89,7 +90,7 @@ type rpcSeen struct {
 func (a *armed) rpcLabels(t *testing.T) map[string]string {
 	t.Helper()
 	labels := map[string]string{}
-	rows, err := a.h.pool.Query(t.Context(), `SELECT id::STRING, label FROM combatants`)
+	rows, err := a.h.pool.Query(t.Context(), `SELECT id::TEXT, label FROM combatants`)
 	if err != nil {
 		t.Fatalf("read the combatants: %v", err)
 	}
@@ -104,7 +105,7 @@ func (a *armed) rpcLabels(t *testing.T) map[string]string {
 	if err := rows.Err(); err != nil {
 		t.Fatal(err)
 	}
-	states, err := a.h.pool.Query(t.Context(), `SELECT s.id::STRING, s.source_key, COALESCE(s.group_id::STRING, ''), c.label FROM combatant_states s JOIN combatants c ON c.id = s.combatant_id WHERE s.kind = 'effect'`)
+	states, err := a.h.pool.Query(t.Context(), `SELECT s.id::TEXT, s.source_key, COALESCE(s.group_id::TEXT, ''), c.label FROM combatant_states s JOIN combatants c ON c.id = s.combatant_id WHERE s.kind = 'effect'`)
 	if err != nil {
 		t.Fatalf("read the effects: %v", err)
 	}
@@ -134,7 +135,7 @@ func (a *armed) rpcLabels(t *testing.T) map[string]string {
 			labels[r.group] = "<group:" + r.key + ">"
 		}
 	}
-	char, err := a.h.pool.Query(t.Context(), `SELECT e.id::STRING, e.source_key, e.group_id::STRING, e.character_id::STRING FROM character_effects e`)
+	char, err := a.h.pool.Query(t.Context(), `SELECT e.id::TEXT, e.source_key, e.group_id::TEXT, e.character_id::TEXT FROM character_effects e`)
 	if err != nil {
 		t.Fatalf("read the characters' effects: %v", err)
 	}
@@ -293,7 +294,7 @@ func rpcCanonical(v any) string {
 // and the ids replaced.
 func (a *armed) rpcEvents(t *testing.T, kinds ...string) string {
 	t.Helper()
-	rows, err := a.h.pool.Query(t.Context(), `SELECT kind, payload::STRING, COALESCE(actor_user_id::STRING, '-') FROM session_events WHERE kind = ANY($1) ORDER BY seq`, kinds)
+	rows, err := a.h.pool.Query(t.Context(), `SELECT kind, payload::TEXT, COALESCE(actor_user_id::TEXT, '-') FROM session_events WHERE kind = ANY($1) ORDER BY seq`, kinds)
 	if err != nil {
 		t.Fatalf("read the events: %v", err)
 	}
@@ -304,6 +305,7 @@ func (a *armed) rpcEvents(t *testing.T, kinds ...string) string {
 		if err := rows.Scan(&r.kind, &r.payload, &r.actor); err != nil {
 			t.Fatalf("scan an event: %v", err)
 		}
+		r.payload = dbtest.SortJSONKeys(r.payload)
 		found = append(found, r)
 	}
 	rows.Close()
@@ -387,7 +389,7 @@ func rpcSortIDs(v any) any {
 func (a *armed) rpcRows(t *testing.T) string {
 	t.Helper()
 	rows, err := a.h.pool.Query(t.Context(), `SELECT c.label, s.source_key, COALESCE(s.source_kind, '-'), s.concentration, COALESCE(s.duration_kind, '-'),
-			COALESCE(s.ends_round::STRING, '-'), COALESCE(e.label, '-'), COALESCE(s.ends_phase, '-'), s.player_visible, s.audience, COALESCE(s.player_label, '-'),
+			COALESCE(s.ends_round::TEXT, '-'), COALESCE(e.label, '-'), COALESCE(s.ends_phase, '-'), s.player_visible, s.audience, COALESCE(s.player_label, '-'),
 			COALESCE(src.label, '-')
 		FROM combatant_states s JOIN combatants c ON c.id = s.combatant_id
 		LEFT JOIN combatants e ON e.id = s.ends_combatant_id LEFT JOIN combatants src ON src.id = s.source_id
@@ -414,8 +416,8 @@ func (a *armed) rpcRows(t *testing.T) string {
 // rpcCharRows prints the effects the database keeps on the characters.
 func (a *armed) rpcCharRows(t *testing.T) string {
 	t.Helper()
-	rows, err := a.h.pool.Query(t.Context(), `SELECT character_id::STRING, source_key, source_kind, concentration, duration_kind, COALESCE(seconds_left::STRING, '-'),
-			player_visible, audience, COALESCE(player_label, '-'), COALESCE(source_character_id::STRING, '-'), array_to_string(condition_keys, ',')
+	rows, err := a.h.pool.Query(t.Context(), `SELECT character_id::TEXT, source_key, source_kind, concentration, duration_kind, COALESCE(seconds_left::TEXT, '-'),
+			player_visible, audience, COALESCE(player_label, '-'), COALESCE(source_character_id::TEXT, '-'), array_to_string(condition_keys, ',')
 		FROM character_effects ORDER BY source_key, (SELECT name FROM characters WHERE characters.id = character_effects.character_id), seconds_left`)
 	if err != nil {
 		t.Fatalf("read the characters' effects: %v", err)

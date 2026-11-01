@@ -15,7 +15,7 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import { parseSum } from '../../../../core/combat/combat-dice';
+import { parseSum } from '../../core/combat/combat-dice';
 
 let nextId = 0;
 

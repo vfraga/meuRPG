@@ -18,7 +18,7 @@ import { restamText } from '../../../../core/combat/theatre';
 import { joinDots } from '../../../../core/format/text';
 import { metersFixed, reachSquares, squaresText } from '../../../../core/units';
 import { showOfDice, type RollShow } from '../../../../shared/roll-overlay/roll-animator';
-import type { RollField } from '../multi-roll/multi-roll';
+import type { RollField } from '../../../../shared/multi-roll/multi-roll';
 
 /** The d20 the master types when the roll has advantage or disadvantage: one field for each die. */
 export const D20_FIELDS: readonly RollField[] = [

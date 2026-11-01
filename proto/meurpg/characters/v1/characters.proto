@@ -3009,7 +3009,8 @@ message CharacterCreature {
   string id = 1;
   // The character it belongs to (a UUID).
   string character_id = 2;
-  // The SRD creature it is: "monster:wolf". The stat block is
+  // The creature it is: an SRD creature, "monster:wolf", or a table creature,
+  // "creature:lobo-da-mesa@mesa". The stat block is
   // meurpg.rules.v1.ContentService.GetCreature; the Portuguese name of the
   // kind is below.
   string monster_key = 3;
@@ -3033,6 +3034,10 @@ message CharacterCreature {
   // When it was created (the creatures of one casting a microsecond apart, in
   // the order of the casting).
   google.protobuf.Timestamp created_at = 12;
+  // Its armor class, worked out from the creature's stat block in the campaign's content
+  // (so a table creature's adjusted armor class shows). Like its hit points, only the master and
+  // its owner's player get it here; 0 when the creature is not in the content.
+  int32 armor_class = 13;
 }
 
 // ListCharacterCreaturesRequest names a character.

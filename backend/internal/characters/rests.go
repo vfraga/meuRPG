@@ -637,13 +637,7 @@ func (s *Service) CreateSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, ch
 	after = proto.CloneOf(r.view)
 	p, _ := resourceLeft(after, rules.SorceryPointsKey)
 	p.Used += i32(cost)
-	if slot := slotOf(after, i32(level)); slot != nil {
-		slot.Total++
-		slot.Created++
-	} else {
-		after.SpellSlots = append(after.SpellSlots, &playv1.SpellSlotUsage{Level: i32(level), Total: 1, Created: 1})
-		slices.SortFunc(after.SpellSlots, func(a, b *playv1.SpellSlotUsage) int { return int(a.GetLevel() - b.GetLevel()) })
-	}
+	addCreatedSlot(after, level)
 	if after, err = s.saveView(ctx, tx, r, after); err != nil {
 		return nil, nil, 0, err
 	}
@@ -747,14 +741,7 @@ func (s *Service) UndoCreateSpellSlot(ctx context.Context, tx pgx.Tx, campaignID
 		return nil, err
 	}
 	after := proto.CloneOf(r.view)
-	if slot := slotOf(after, i32(level)); slot != nil && slot.GetCreated() > 0 {
-		slot.Total--
-		slot.Created--
-		slot.Used = min(slot.GetUsed(), slot.GetTotal())
-		if slot.GetTotal() == 0 {
-			after.SpellSlots = slices.DeleteFunc(after.SpellSlots, func(x *playv1.SpellSlotUsage) bool { return x.GetLevel() == i32(level) })
-		}
-	}
+	removeCreatedSlot(after, level)
 	if points, _ := resourceLeft(after, rules.SorceryPointsKey); points != nil {
 		points.Used = max(points.GetUsed()-i32(cost), 0)
 	}
@@ -777,4 +764,132 @@ func (s *Service) UndoConvertSpellSlot(ctx context.Context, tx pgx.Tx, campaignI
 		points.Used = min(points.GetUsed()+i32(gain), points.GetTotal())
 	}
 	return s.saveView(ctx, tx, r, after)
+}
+
+// addCreatedSlot adds a free slot of the level to the vitals, until the next long rest.
+func addCreatedSlot(after *playv1.CharacterVitals, level int) {
+	if slot := slotOf(after, i32(level)); slot != nil {
+		slot.Total++
+		slot.Created++
+		return
+	}
+	after.SpellSlots = append(after.SpellSlots, &playv1.SpellSlotUsage{Level: i32(level), Total: 1, Created: 1})
+	slices.SortFunc(after.SpellSlots, func(a, b *playv1.SpellSlotUsage) int { return int(a.GetLevel() - b.GetLevel()) })
+}
+
+// removeCreatedSlot takes a slot addCreatedSlot made away again (a used one counts as used no more).
+func removeCreatedSlot(after *playv1.CharacterVitals, level int) {
+	slot := slotOf(after, i32(level))
+	if slot == nil || slot.GetCreated() < 1 {
+		return
+	}
+	slot.Total--
+	slot.Created--
+	slot.Used = min(slot.GetUsed(), slot.GetTotal())
+	if slot.GetTotal() == 0 {
+		after.SpellSlots = slices.DeleteFunc(after.SpellSlots, func(x *playv1.SpellSlotUsage) bool { return x.GetLevel() == i32(level) })
+	}
+}
+
+// GiveSpellSlot adds a free spell slot of the level, until the next long rest, for a table action that turns the
+// uses of a resource into a slot (the uses are spent apart, through the vitals like every spend). It returns the
+// vitals after. It implements play.RestKeeper.
+func (s *Service) GiveSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error) {
+	r, _, err := s.vitalsOfRow(ctx, tx, campaignID, characterID)
+	if err != nil {
+		return nil, err
+	}
+	after := proto.CloneOf(r.view)
+	addCreatedSlot(after, level)
+	return s.saveView(ctx, tx, r, after)
+}
+
+// UndoGiveSpellSlot takes back a slot GiveSpellSlot added. It implements play.RestKeeper.
+func (s *Service) UndoGiveSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error) {
+	r, _, err := s.vitalsOfRow(ctx, tx, campaignID, characterID)
+	if err != nil {
+		return nil, err
+	}
+	after := proto.CloneOf(r.view)
+	removeCreatedSlot(after, level)
+	return s.saveView(ctx, tx, r, after)
+}
+
+// SpendSpellSlot expends a free spell slot of the level, for a table action that spends a slot (it heals by the
+// level). link.ErrNoFreeSlot when the character has none free of that level. It returns the vitals after. It
+// implements play.RestKeeper.
+func (s *Service) SpendSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error) {
+	r, _, err := s.vitalsOfRow(ctx, tx, campaignID, characterID)
+	if err != nil {
+		return nil, err
+	}
+	slot := slotOf(r.view, i32(level))
+	if slot == nil || slot.GetUsed() >= slot.GetTotal() {
+		return nil, link.ErrNoFreeSlot
+	}
+	after := proto.CloneOf(r.view)
+	slotOf(after, i32(level)).Used++
+	return s.saveView(ctx, tx, r, after)
+}
+
+// UndoSpendSpellSlot makes the slot SpendSpellSlot expended free again. It implements play.RestKeeper.
+func (s *Service) UndoSpendSpellSlot(ctx context.Context, tx pgx.Tx, campaignID, characterID string, level int) (*playv1.CharacterVitals, error) {
+	r, _, err := s.vitalsOfRow(ctx, tx, campaignID, characterID)
+	if err != nil {
+		return nil, err
+	}
+	after := proto.CloneOf(r.view)
+	if slot := slotOf(after, i32(level)); slot != nil {
+		slot.Used = max(slot.GetUsed()-1, 0)
+	}
+	return s.saveView(ctx, tx, r, after)
+}
+
+// UseTableSlotRecovery spends a use of the resource of a table feature's slot_recovery effect and gives back the
+// expended spell slots: slots maps a spell level to how many slots of it come back, within the highest level and the
+// combined level the effect gives for the character. Only the spellcasting slots count, never the pact slots. It
+// returns the vitals before and after and the combined level recovered. The refusals are link's, as UseSlotRecovery's:
+// ErrNoResource (the character lacks the feature), ErrNoUsesLeft, ErrSlotLevelTooHigh, ErrSlotNotExpended and
+// ErrSlotRecoveryOver (a PointsError). It implements play.RestKeeper.
+func (s *Service) UseTableSlotRecovery(ctx context.Context, tx pgx.Tx, campaignID, characterID, feature string, slots map[int]int) (before, after *playv1.CharacterVitals, levels int, err error) {
+	r, _, err := s.vitalsOfRow(ctx, tx, campaignID, characterID)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	i := slices.IndexFunc(r.m.recoveries, func(x rules.TableSlotRecovery) bool { return x.Source == feature })
+	if i < 0 {
+		return nil, nil, 0, link.ErrNoResource
+	}
+	rec := r.m.recoveries[i]
+	use, left := resourceLeft(r.view, rec.Resource)
+	if use == nil {
+		return nil, nil, 0, link.ErrNoResource
+	}
+	if left < 1 {
+		return nil, nil, 0, link.ErrNoUsesLeft
+	}
+	for level := range slots {
+		if level > rec.MaxLevel {
+			return nil, nil, 0, link.ErrSlotLevelTooHigh
+		}
+	}
+	for level, count := range slots {
+		if slot := slotOf(r.view, i32(level)); slot == nil || int(slot.GetUsed()) < count {
+			return nil, nil, 0, link.ErrSlotNotExpended
+		}
+	}
+	levels, err = rec.Check(slots)
+	if err != nil {
+		return nil, nil, 0, &link.PointsError{Err: link.ErrSlotRecoveryOver, Needed: levels, Available: rec.Levels}
+	}
+	after = proto.CloneOf(r.view)
+	u, _ := resourceLeft(after, rec.Resource)
+	u.Used++
+	for level, count := range slots {
+		slotOf(after, i32(level)).Used -= i32(count)
+	}
+	if after, err = s.saveView(ctx, tx, r, after); err != nil {
+		return nil, nil, 0, err
+	}
+	return r.view, after, levels, nil
 }

@@ -40,7 +40,7 @@ import { spellDetailsFromGen } from '../../../../shared/spell-details/spell-deta
 import { SpellHelp } from '../../../../shared/spell-details/spell-help';
 import { AbilityPicker } from '../../effects/ability-picker/ability-picker';
 import { CheckRow } from '../../../../shared/form-fields/check-row';
-import { MultiRoll } from '../multi-roll/multi-roll';
+import { MultiRoll } from '../../../../shared/multi-roll/multi-roll';
 import { RollModePicker } from '../roll-mode/roll-mode-picker';
 import { CastArea } from './cast-area';
 import { CastCaller } from './cast-caller';

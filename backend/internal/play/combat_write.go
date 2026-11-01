@@ -632,7 +632,7 @@ func insertRaw(ctx context.Context, c *combatTx, kind string, actor, key *string
 	if c.enc.ID != "" {
 		encounterID = &c.enc.ID
 	}
-	row, err := c.q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	row, err := insertSessionEvent(ctx, c.q, playdb.InsertSessionEventParams{
 		GameSessionID: c.session.ID, Seq: seq, Kind: kind, ActorUserID: actor, CharacterID: c.characterID,
 		Payload: body, IdempotencyKey: key, CreatedAt: c.now, EncounterID: encounterID, IdempotencyHash: hashOf(c, key),
 	})

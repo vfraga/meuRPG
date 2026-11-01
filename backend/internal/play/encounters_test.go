@@ -1080,3 +1080,44 @@ func TestRN10_TheMapsModuleNeverReadsTheSavedEncounter(t *testing.T) {
 		}
 	}
 }
+
+// TestMR578_ATableCreatureIsRefusedByTheEncounterTools: the evaluator, the save and the swaps read the SRD's
+// challenge ratings, so a table creature's key is refused as an unknown creature (never an internal error), and a
+// saved encounter that holds one is read back with the key reported and the rest measured.
+func TestMR578_ATableCreatureIsRefusedByTheEncounterTools(t *testing.T) {
+	t.Parallel()
+	m := newMirathel(t)
+	ctx := t.Context()
+	if _, err := m.master.table.CreateTableEntry(ctx, connect.NewRequest(&rulesv1.CreateTableEntryRequest{
+		CampaignId: m.campaignID, Body: &rulesv1.CreateTableEntryRequest_TableCreature{TableCreature: &rulesv1.TableCreature{
+			NamePt: "Guarda Ossuda", BaseKey: "monster:skeleton", HitPoints: 30,
+		}},
+	})); err != nil {
+		t.Fatalf("CreateTableEntry(creature) error = %v", err)
+	}
+	wantRefused := func(what string, err error) {
+		t.Helper()
+		if connect.CodeOf(err) != connect.CodeFailedPrecondition {
+			t.Errorf("%s with a table creature: error = %v, want failed_precondition (an unknown creature)", what, err)
+		}
+	}
+	_, err := m.master.encounters.EvaluateEncounter(ctx, connect.NewRequest(&playv1.EvaluateEncounterRequest{CampaignId: m.campaignID, Entries: groups(tableSkeletonKey, 1)}))
+	wantRefused("EvaluateEncounter", err)
+	point := m.point(t, "Ossuário")
+	_, err = m.master.encounters.SaveBattleEncounter(ctx, connect.NewRequest(&playv1.SaveBattleEncounterRequest{CampaignId: m.campaignID, MapPointId: point, Encounter: &playv1.BattleEncounter{Monsters: groups(tableSkeletonKey, 1)}}))
+	wantRefused("SaveBattleEncounter", err)
+	_, err = m.master.encounters.ListEncounterSwaps(ctx, connect.NewRequest(&playv1.ListEncounterSwapsRequest{CampaignId: m.campaignID, CreatureKey: tableSkeletonKey}))
+	if connect.CodeOf(err) != connect.CodeInvalidArgument {
+		t.Errorf("ListEncounterSwaps with a table creature: error = %v, want invalid_argument", err)
+	}
+
+	// A saved encounter whose key is a table key (written by hand): the read does not fail.
+	m.save(t, point, &playv1.BattleEncounter{Monsters: groups(goblin, 2)})
+	if _, err := m.h.pool.Exec(ctx, `UPDATE battle_encounters SET encounter = replace(encounter::text, $1, $2)::jsonb WHERE map_point_id = $3`, goblin, tableSkeletonKey, point); err != nil {
+		t.Fatalf("rewrite the saved encounter: %v", err)
+	}
+	got := m.read(t, point)
+	if len(got.GetUnknownCreatureKeys()) != 1 || got.GetUnknownCreatureKeys()[0] != tableSkeletonKey {
+		t.Errorf("GetBattleEncounter unknown keys = %v, want the table creature's key", got.GetUnknownCreatureKeys())
+	}
+}

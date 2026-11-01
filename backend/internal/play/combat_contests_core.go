@@ -153,6 +153,8 @@ type contestRoll struct {
 	// Lucky is the d20 the halfling's Lucky rolled again after it showed a 1 (a group check's,
 	// inspiration_lucky.go): Faces hold the new face, and this the 1 it replaced and where.
 	Lucky *luckyReroll `json:"lucky,omitempty"`
+	// Stroke is the use of Stroke of Luck on the check (held_stroke.go): Faces hold the 20, and this keeps the d20 it replaced.
+	Stroke *strokeUse `json:"stroke,omitempty"`
 }
 
 func checkModeKey(m combat.CheckMode) string {
@@ -194,7 +196,7 @@ func (r contestRoll) proto() *playv1.CheckRoll {
 		Mode: checkModeProto(checkModeOfKey(r.Mode)), Notes: notesProto(r.Notes), BonusKnown: !r.Unknown, RolledByMaster: r.ByMaster,
 		BonusDieSides: r.BonusSides, BonusDieFace: r.BonusFace,
 		ManeuverKey: r.ManeuverKey, ManeuverNamePt: r.ManeuverName, ManeuverDieSides: r.ManeuverSides, ManeuverDieFace: r.ManeuverFace,
-		Rerolled: r.Lucky.proto(),
+		Rerolled: strokeRerolls(r.Lucky, r.Stroke),
 	}
 	if r.CountedAs != 0 {
 		out.TreatedAs, out.TreatedAsSource = new(r.CountedAs), reliableTalentSource

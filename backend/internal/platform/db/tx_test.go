@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"slices"
 	"testing"
 
@@ -13,7 +14,7 @@ import (
 )
 
 // These tests exercise the retry loop without a database: fakeConn hands out
-// a fakeTx that records the SQL the helper sends. The integration tests in
+// a fakeTx that records the calls the loop makes. The integration tests in
 // db_integration_test.go cover the same behavior against real CockroachDB.
 
 // fakeTx implements pgx.Tx. Embedding the interface satisfies the methods we
@@ -22,31 +23,42 @@ import (
 type fakeTx struct {
 	pgx.Tx
 
-	statements []string
 	committed  bool
 	rolledBack bool
-}
-
-func (f *fakeTx) Exec(_ context.Context, sql string, _ ...any) (pgconn.CommandTag, error) {
-	f.statements = append(f.statements, sql)
-	return pgconn.CommandTag{}, nil
+	commits    int
+	rollbacks  int
+	// commitErrs are the answers of the successive COMMITs (nil when it runs out).
+	commitErrs []error
 }
 
 func (f *fakeTx) Commit(context.Context) error {
-	f.committed = true
-	return nil
+	f.commits++
+	var err error
+	if len(f.commitErrs) > 0 {
+		err, f.commitErrs = f.commitErrs[0], f.commitErrs[1:]
+	}
+	f.committed = err == nil
+	return err
 }
 
 func (f *fakeTx) Rollback(context.Context) error {
 	f.rolledBack = true
+	f.rollbacks++
 	return nil
 }
 
-type fakeConn struct{ tx *fakeTx }
+type fakeConn struct {
+	tx *fakeTx
+	// opts are the options of each BEGIN.
+	opts []pgx.TxOptions
+}
 
 func (c *fakeConn) Begin(context.Context) (pgx.Tx, error) { return c.tx, nil }
 
-func (c *fakeConn) BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error) { return c.tx, nil }
+func (c *fakeConn) BeginTx(_ context.Context, opts pgx.TxOptions) (pgx.Tx, error) {
+	c.opts = append(c.opts, opts)
+	return c.tx, nil
+}
 
 // errSerializationFailure is the error pgx returns when CockroachDB aborts a
 // transaction that must be retried.
@@ -73,12 +85,126 @@ func TestInTxRetriesSerializationFailures(t *testing.T) {
 	if attempts != 3 {
 		t.Errorf("fn ran %d times, want 3", attempts)
 	}
-	if !conn.tx.committed || conn.tx.rolledBack {
-		t.Errorf("committed = %v, rolledBack = %v; want committed only", conn.tx.committed, conn.tx.rolledBack)
+	// Each retry is a new transaction: two rolled back, the third committed.
+	if len(conn.opts) != 3 || conn.tx.rollbacks != 2 || conn.tx.commits != 1 || !conn.tx.committed {
+		t.Errorf("begins = %d, rollbacks = %d, commits = %d; want 3, 2, 1", len(conn.opts), conn.tx.rollbacks, conn.tx.commits)
 	}
-	// Each retry starts over; the last statement makes the work durable.
-	if last := conn.tx.statements[len(conn.tx.statements)-1]; last != "RELEASE SAVEPOINT cockroach_restart" {
-		t.Errorf("last statement = %q, want the savepoint release", last)
+}
+
+// PostgreSQL reports a serialization failure at COMMIT: it is retried, and
+// the transaction is not reported as saved.
+func TestInTxRetriesAFailureAtCommit(t *testing.T) {
+	t.Parallel()
+
+	conn := &fakeConn{tx: &fakeTx{commitErrs: []error{errSerializationFailure, &pgconn.PgError{Code: "40P01"}}}}
+	attempts := 0
+
+	err := InTx(t.Context(), conn, func(pgx.Tx) error {
+		attempts++
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("InTx() error = %v, want nil", err)
+	}
+	if attempts != 3 || conn.tx.commits != 3 || !conn.tx.committed {
+		t.Errorf("attempts = %d, commits = %d, committed = %v; want 3, 3, true", attempts, conn.tx.commits, conn.tx.committed)
+	}
+}
+
+// A COMMIT that keeps failing with 40001 ends as an error, never as success.
+func TestInTxDoesNotReportALostCommitAsSuccess(t *testing.T) {
+	t.Parallel()
+
+	failures := []error{errSerializationFailure, errSerializationFailure, errSerializationFailure}
+	conn := &fakeConn{tx: &fakeTx{commitErrs: failures}}
+	policy := &crdb.LimitBackoffRetryPolicy{RetryLimit: 2}
+
+	err := inTx(t.Context(), conn, policy, func(pgx.Tx) error { return nil })
+
+	if _, ok := errors.AsType[*crdb.MaxRetriesExceededError](err); !ok {
+		t.Fatalf("InTx() error = %v, want *crdb.MaxRetriesExceededError", err)
+	}
+}
+
+func TestInTxCommitFailures(t *testing.T) {
+	t.Parallel()
+
+	answered := &pgconn.PgError{Code: "23505", Message: "duplicate key"}
+	broken := errors.New("write: connection reset")
+	unknown := &pgconn.PgError{Code: "40003", Message: "statement completion unknown"}
+	tests := []struct {
+		name      string
+		commitErr error
+		ambiguous bool
+	}{
+		{"the database answered with a constraint error", answered, false},
+		{"the connection broke", broken, true},
+		{"CockroachDB does not know", unknown, true},
+		{"PostgreSQL answered COMMIT with ROLLBACK", pgx.ErrTxCommitRollback, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			conn := &fakeConn{tx: &fakeTx{commitErrs: []error{tt.commitErr}}}
+			attempts := 0
+			err := InTx(t.Context(), conn, func(pgx.Tx) error { attempts++; return nil })
+			if !errors.Is(err, tt.commitErr) || attempts != 1 {
+				t.Fatalf("InTx() error = %v after %d attempts, want %v after 1", err, attempts, tt.commitErr)
+			}
+			_, ambiguous := errors.AsType[*AmbiguousCommitError](err)
+			if ambiguous != tt.ambiguous {
+				t.Errorf("ambiguous = %v, want %v", ambiguous, tt.ambiguous)
+			}
+		})
+	}
+}
+
+// Every attempt of a read-only transaction begins READ ONLY, so a retry
+// cannot turn into a read-write transaction.
+func TestReadTxBeginsReadOnlyOnEveryAttempt(t *testing.T) {
+	t.Parallel()
+
+	conn := &fakeConn{tx: &fakeTx{}}
+	attempts := 0
+	err := ReadTx(t.Context(), conn, func(pgx.Tx) error {
+		attempts++
+		if attempts < 3 {
+			return fmt.Errorf("read: %w", errSerializationFailure)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("ReadTx() error = %v", err)
+	}
+	if len(conn.opts) != 3 {
+		t.Fatalf("began %d transactions, want 3", len(conn.opts))
+	}
+	for i, o := range conn.opts {
+		if o.IsoLevel != pgx.Serializable {
+			t.Errorf("attempt %d began with isolation %q, want serializable", i+1, o.IsoLevel)
+		}
+		if o.AccessMode != pgx.ReadOnly {
+			t.Errorf("attempt %d began with access mode %q, want read only", i+1, o.AccessMode)
+		}
+	}
+}
+
+// A test that fails inside the closure (runtime.Goexit) still rolls back.
+func TestInTxRollsBackWhenFnExits(t *testing.T) {
+	t.Parallel()
+
+	conn := &fakeConn{tx: &fakeTx{}}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_ = InTx(context.Background(), conn, func(pgx.Tx) error {
+			runtime.Goexit()
+			return nil
+		})
+	}()
+	<-done
+	if !conn.tx.rolledBack || conn.tx.committed {
+		t.Errorf("committed = %v, rolledBack = %v; want rolled back only", conn.tx.committed, conn.tx.rolledBack)
 	}
 }
 

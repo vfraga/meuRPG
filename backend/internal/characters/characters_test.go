@@ -450,7 +450,7 @@ func TestRN30_TheDefaultCharacterCapIsAThousand(t *testing.T) {
 	campaign := h.newCampaign(master, "Mirathel")
 	if _, err := h.pool.Exec(t.Context(), `
 INSERT INTO characters (campaign_id, kind, master_user_id, status, name, sheet, story, created_at, updated_at)
-SELECT $1, 'story', $2, 'active', 'Figurante ' || n::STRING, '{}', '{}', now(), now()
+SELECT $1, 'story', $2, 'active', 'Figurante ' || n::TEXT, '{}', '{}', now(), now()
 FROM generate_series(1, $3) AS n`, campaign, master.id, DefaultMaxCharactersPerCampaign-1); err != nil {
 		t.Fatalf("seed the campaign: %v", err)
 	}
@@ -462,9 +462,10 @@ FROM generate_series(1, $3) AS n`, campaign, master.id, DefaultMaxCharactersPerC
 	wantCode(t, "the 1,001st character", err, connect.CodeResourceExhausted)
 }
 
-// RN-30: the NPC a combat makes for a monster counts too, and a monster
-// already made is found in a full campaign.
-func TestRN30_TheMonsterNpcOfACombatCountsInTheCap(t *testing.T) {
+// RN-30: the NPC a combat makes for a monster does not count in the cap, and a
+// character that does count still does, so the monsters of a combat never make a
+// full campaign and a full campaign still has monsters.
+func TestRN30_TheMonsterNpcOfACombatDoesNotCountInTheCap(t *testing.T) {
 	t.Parallel()
 	h := newHarnessWith(t, func(c *Config) { c.MaxCharactersPerCampaign = 1 })
 	master := h.newUser("Mestre")
@@ -475,13 +476,58 @@ func TestRN30_TheMonsterNpcOfACombatCountsInTheCap(t *testing.T) {
 			return err
 		})
 	}
-	if err := monsterNpc("monster:ogre"); err != nil {
-		t.Fatalf("the monster at the cap: %v", err)
+	for _, key := range []string{"monster:ogre", "monster:wolf", "monster:ogre"} {
+		if err := monsterNpc(key); err != nil {
+			t.Fatalf("the monster %s before any character: %v", key, err)
+		}
 	}
-	wantCode(t, "a second monster", monsterNpc("monster:wolf"), connect.CodeResourceExhausted)
-	if err := monsterNpc("monster:ogre"); err != nil {
-		t.Fatalf("the monster already made, in a full campaign: %v", err)
+	master.create(t, campaign, charactersv1.CharacterKind_CHARACTER_KIND_STORY, "Taverneiro", basicSheet()) // the 1st that counts
+	_, err := master.api.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+		CampaignId: campaign, Kind: charactersv1.CharacterKind_CHARACTER_KIND_STORY, Name: "Um a mais", Sheet: basicSheet(),
+	}))
+	wantCode(t, "CreateCharacter() over the cap, with two monsters' NPCs in the campaign", err, connect.CodeResourceExhausted)
+	if err := monsterNpc("monster:goblin"); err != nil {
+		t.Fatalf("a monster in a full campaign: %v", err)
 	}
+	var npcs int
+	if err := h.pool.QueryRow(t.Context(), "SELECT count(*) FROM characters WHERE campaign_id = $1 AND sheet->'basic'->>'combat_only' = 'true'", campaign).Scan(&npcs); err != nil || npcs != 3 {
+		t.Fatalf("the campaign holds %d combat-only NPCs, %v; want 3", npcs, err)
+	}
+}
+
+// RN-30: the NPCs of a combat have a cap of their own: the 1,001st distinct one is refused, one that
+// exists is still found at the cap, and the characters are not affected by them.
+func TestRN30_TheMonsterNpcsOfACombatHaveTheirOwnCap(t *testing.T) {
+	t.Parallel()
+	h := newHarness(t)
+	master := h.newUser("Mestre")
+	campaign := h.newCampaign(master, "Mirathel")
+	monsterNpc := func(key string) error {
+		return db.InTx(t.Context(), h.pool, func(tx pgx.Tx) error {
+			_, _, err := h.svc.MonsterNpc(t.Context(), tx, campaign, master.id, key, h.clock.Now())
+			return err
+		})
+	}
+	if err := monsterNpc("monster:ogre"); err != nil { // one real combat-only NPC, among the 1,000
+		t.Fatalf("the ogre's NPC: %v", err)
+	}
+	if _, err := h.pool.Exec(t.Context(), `
+INSERT INTO characters (campaign_id, kind, master_user_id, status, name, sheet, story, created_at, updated_at)
+SELECT $1, 'minion', $2, 'active', 'Criatura ' || n::STRING, '{"basic": {"combat_only": true}}', '{}', now(), now()
+FROM generate_series(1, $3) AS n`, campaign, master.id, DefaultMaxCombatOnlyNpcsPerCampaign-1); err != nil {
+		t.Fatalf("seed the campaign: %v", err)
+	}
+
+	err := monsterNpc("monster:wolf")
+	wantCode(t, "the 1,001st combat-only NPC", err, connect.CodeResourceExhausted)
+	if err := monsterNpc("monster:ogre"); err != nil {
+		t.Fatalf("the ogre's NPC at the cap: %v", err)
+	}
+	var npcs int
+	if err := h.pool.QueryRow(t.Context(), "SELECT count(*) FROM characters WHERE campaign_id = $1 AND sheet->'basic'->>'combat_only' = 'true'", campaign).Scan(&npcs); err != nil || npcs != DefaultMaxCombatOnlyNpcsPerCampaign {
+		t.Fatalf("the campaign holds %d combat-only NPCs, %v; want %d", npcs, err, DefaultMaxCombatOnlyNpcsPerCampaign)
+	}
+	master.create(t, campaign, charactersv1.CharacterKind_CHARACTER_KIND_STORY, "Taverneiro", basicSheet()) // characters are unaffected
 }
 
 // hillDwarfSheet is a Hill Dwarf fighter of the given level, who takes the

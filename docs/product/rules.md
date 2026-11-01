@@ -31,7 +31,7 @@ How the code does it lives in the [architecture docs](../architecture/README.md)
 | RN-20 | **What players see of enemies in combat.** Players do not see enemy hit points as a number. They see one word: "Ileso", "Ferido", "Muito ferido" or "Derrotado". | [Detail](#rn-20-what-players-see-of-enemies-in-combat) |
 | RN-21 | **Grid movement.** On the map grid, each square is 1.5 m and movement is a **circle**: the distance between two squares is the straight line between their centres, and what a combatant can reach is the circle of its remaining movement. | [Detail](#rn-21-grid-movement) |
 | RN-22 | **Conditions and concentration.** The app marks conditions (prone, poisoned...) and concentration, and reminds: when a concentrating character takes damage, the game asks its owner for the concentration save (RN-31). | [Detail](#rn-22-conditions-and-concentration) |
-| RN-23 | **Table content.** The master registers classes, subclasses, races, subraces, backgrounds and spells that hold only in their campaign, next to the SRD 5.1. Members read the campaign's content; only the master writes. | [Detail](#rn-23-table-content) |
+| RN-23 | **Table content.** The master registers classes, subclasses, races, subraces, backgrounds, spells, feats, options, class features and creatures that hold only in their campaign, next to the SRD 5.1. Members read the campaign's content, except creatures; only the master writes. | [Detail](#rn-23-table-content) |
 | RN-24 | **Table rules.** At the top of the "Regras da mesa" page is the **table style**: "Tudo no app" (dice in the app, combat with a map, fog on in new maps), "Mesa física" (physical dice, combat without a map by default, fog off) or "Teatro da mente" (each player picks the dice, combat without a map, no fog), and "Personalizado" when the choices match none. | [Detail](#rn-24-table-rules) |
 | RN-25 | **The grid and combat without a grid.** The rules count in 1.5 m squares on every map (RN-21). A map drawn with bigger squares is calibrated: "each square of this drawing is worth 3 m" makes the app count four 1.5 m squares in each one, and a 1.5 m reach stays the neighbour. | [Detail](#rn-25-the-grid-and-combat-without-a-grid) |
 | RN-26 | **Doors.** A closed door blocks movement, sight and light, like a wall, and counts as a wall for cover. A character who walks into it opens it, unless it is locked; the master opens, closes and locks any door, in the editor and in the session. | [Detail](#rn-26-doors) |
@@ -43,7 +43,7 @@ How the code does it lives in the [architecture docs](../architecture/README.md)
 | RN-32 | **Casting outside combat.** A character casts a spell outside a combat with no turn and no economy: a spell cast in an action takes effect at once, and one that takes minutes or hours (or a ritual) is finished by the master when the game time has passed. A ritual costs no spell slot and 10 more minutes. A cast that is interrupted fails and spends no slot. | [Detail](#rn-32-casting-outside-combat) |
 | RN-33 | **Class and race choices.** A class or a race can ask the player to pick something (a Fighting Style, a Draconic Ancestry, Pact Boon and invocations, Metamagic, a Favored Enemy, a terrain, the Half-Elf's +1s...). A character is not created with a choice open; a locked sheet that has one keeps working and completes it later, and a level-up also asks the choices that were left behind. | [Detail](#rn-33-class-and-race-choices) |
 | RN-34 | **Contests and special actions.** Grapple, shove and escape are contests of Strength (Athletics) against Strength (Athletics) or Dexterity (Acrobatics); a tie changes nothing. Dragging a grappled creature halves the speed. Hide compares the Stealth total with each creature's passive Perception (a tie keeps the hider noticed); Help gives advantage; a group check passes when at least half pass; a surprised creature does nothing on its first turn. A player never reads an NPC's numbers, the escape DC, who noticed a hider or another player's total. | [Detail](#rn-34-contests-and-special-actions) |
-| RN-35 | **Race traits and the monk's Slow Fall in combat.** A half-orc dropped to 0 hit points but not killed outright stays at 1 (Relentless Endurance, once per long rest, used by the app by itself); its critical hit with a melee weapon attack rolls one more weapon die (Savage Attacks); a monk's reaction takes 5 times its level off a pit's fall damage (Slow Fall); a goblin's Fuga Ágil is Disengage or Hide as a bonus action; a halfling whose d20 shows a 1 (an attack, or a check or saving throw the player rolls) is asked "Tirou 1: rolar de novo?" before the result, and the new roll stands; on a saving throw the app rolls for a player's halfling in someone else's action, the app rolls the 1 again by itself (Lucky). | [Detail](#rn-35-race-traits-and-the-monks-slow-fall-in-combat) |
+| RN-35 | **Race traits and the monk's Slow Fall in combat.** A half-orc dropped to 0 hit points but not killed outright stays at 1 (Relentless Endurance, once per long rest, used by the app by itself); its critical hit with a melee weapon attack rolls one more weapon die (Savage Attacks); a monk's reaction takes 5 times its level off a pit's fall damage (Slow Fall); a goblin's Fuga Ágil is Disengage or Hide as a bonus action; a halfling whose d20 shows a 1 (an attack, or a check or saving throw the player rolls) is asked "Tirou 1: rolar de novo?" before the result, and the new roll stands; on a saving throw the app rolls for a player's halfling in someone else's action, the app rolls the 1 again by itself (Lucky); a fighter who fails a saving throw (an effect's, concentration or a death save) is asked "Falhou na salvaguarda. Usar Indomitável para rolar de novo?" and the new roll stands (Indomitable); a rogue of level 20 whose attack misses or whose ability check fails is asked "Errou o ataque. Usar Golpe de Sorte para acertar?" or "Falhou no teste. Usar Golpe de Sorte para contar o d20 como 20?" (Stroke of Luck). | [Detail](#rn-35-race-traits-and-the-monks-slow-fall-in-combat) |
 | RN-36 | **Who reads a line of the scene's conversation.** A line is for the whole table or for chosen readers; the master always reads every line, can choose any set of players, and a player chooses everyone or "só o mestre". Whoever is not chosen never receives the line: not its text, its image, its existence, its count or a notice that it was sent, in a read, on the stream, in the summary or in the voice. The master speaks as the narrator or as an NPC of the campaign; a player as their own character (RN-18) or out of character. | [Detail](#rn-36-who-reads-a-line-of-the-scenes-conversation) |
 | RN-37 | **Areas that spells keep on the map.** Spirit Guardians, Moonbeam, Cloudkill, Web, Grease and Entangle leave their area on the map while they last. A creature makes the spell's saving throw when the area catches it, at most once on a turn for each area. Spirit Guardians, Moonbeam, Cloudkill and Web ask a creature that comes in and one that begins its turn inside, and the cast hits nobody (Web puts its effect on the creatures inside at the cast). Grease asks the creatures inside at the cast, a creature that comes in and one that ends its turn inside, never at the start of a turn. Entangle asks only the creatures inside at the cast. The area ends with the concentration or its time, and moves where the spell lets it. A hidden caster's area is the master's alone. | [Detail](#rn-37-areas-that-spells-keep-on-the-map) |
 | RN-38 | **A creature's save actions.** The master uses an NPC's action that asks a saving throw (a breath weapon, a gaze) from its turn. The app rolls each target's save against the stat block's DC, opens the damage the save governs (half on a success when the action says so) and spends the action. A player reads each target's result and the damage they take, never the DC or the stat block. | [Detail](#rn-38-a-creatures-save-actions) |
@@ -565,22 +565,47 @@ How it is built: [Architecture](../architecture/play/lasting-effects.md) and [ru
 
 ## RN-23: Table content
 
-The master registers classes, subclasses, races, subraces, backgrounds and spells that hold only in their campaign, next to the SRD 5.1.
-Members read the campaign's content; only the master writes.
+The master registers classes, subclasses, races, subraces, backgrounds, spells, feats, options, class features and creatures that hold only in their campaign, next to the SRD 5.1.
+Members read the campaign's content, except creatures (below); only the master writes.
 
 - **A change takes effect at once, locked sheets included.** The sheet recalculates, and whatever fell outside the rules shows on it as a notice ("A classe mudou") with the exact sentences, without blocking other edits. Only the owner and the master read it. It disappears by itself when what it says is fixed. Only the owners of the sheets that use the changed entry are notified.
 - **Nothing is deleted.** The master archives and unarchives; there is no "Apagar". An archived entry keeps working on the sheets that already use it, and is no longer offered as a new choice. The master is never given an archived entry as a new choice either: the screen names the refusal.
-- **Table content never runs code.** Effects come from a closed menu (modifier, proficiency, resource, sense, roll mode, action, extra attack, ranged attack, choice, note, granted spell, maneuver die). A feature with only text always holds. The server returns every violation of an entry at once, each pointing at the editor field it belongs to, and a refused save changes nothing.
+- **Table content never runs code.** Effects come from a closed menu (modifier, proficiency, resource, sense, roll mode, action, extra attack, ranged attack, Wild Shape, spell slots, choice, note, granted spell, maneuver die). A feature with only text always holds. The server returns every violation of an entry at once, each pointing at the editor field it belongs to, and a refused save changes nothing.
 - **What players see.** Every enabled playable option, whole (numbers and effects). They look up every enabled spell under "Magias" ([MR-045](stories.md#mr-045-look-up-spells)) and pick on the sheet only from their class's list (each class's list by the level in it, with multiclass).
-- **The switches.** On "Opções para os jogadores" the master turns each class, subclass, race, subrace, background and spell on or off, SRD and table alike (one switch per option, how many sheets use it, "Ligar todas" and "Desligar todas" per kind, saved at once). Everything is on by default. What is off never reaches a player in any read; sheets that already use it keep working; a switched-off class hides its subclasses and a switched-off race its subraces, except on a sheet that already has the parent. A player's new choice of a switched-off option is refused (on create, edit and level up), an unrelated edit never is, and the master is never refused. A player's sheet keeps, when edited or leveled up, what the master archived or switched off afterwards.
+- **The switches.** On "Opções para os jogadores" the master turns each class, subclass, race, subrace, background, spell, feat, option and class feature on or off, SRD and table alike (one switch per option, how many sheets use it, "Ligar todas" and "Desligar todas" per kind, saved at once). Everything is on by default. What is off never reaches a player in any read; sheets that already use it keep working; a switched-off class hides its subclasses and a switched-off race its subraces, except on a sheet that already has the parent. A player's new choice of a switched-off option is refused (on create, edit and level up), an unrelated edit never is, and the master is never refused. A player's sheet keeps, when edited or leveled up, what the master archived or switched off afterwards.
+  The master switches creatures on and off through the API only.
+  The screen has no creature group.
 - **Open screens follow.** When the master changes content or a switch, the players' open screens read the lists again, each with the role of its reader.
 - **A sheet that uses table content does not move to another campaign.** That check waits for copy character and reuse NPCs ([MR-021](stories.md#mr-021-copy-a-character), [MR-022](stories.md#mr-022-reuse-npcs)). Copying content to another campaign is [MR-026](stories.md#mr-026-propose-a-new-race-or-class), after the MVP.
 - **The target of a spell.** One creature, several (one more per level above, if the master wants), an area (cone, cube, cylinder, line or sphere, in steps of 1.5 m) or only the caster. The mechanics are optional: an attack or a saving throw, damage (more dice per level above or per cantrip tier) and healing. In combat a table spell goes through the same casting as an SRD spell.
 - **An area the spell keeps on the map.** A leveled table spell may keep its area while it lasts, as Moonbeam and Spirit Guardians do (RN-37): the master picks when it catches a creature (at the start of its turn, on its first entry, or both) and whether it follows the caster. The area is the spell's own target (a sphere, a cylinder or a cube), the damage and the saving throw are the spell's (a spell with no saving throw just deals the damage, to be rolled), and the time is its duration. It needs exactly one damage type, no attack and no healing, a timed duration or concentration, a distance (or the range Self if it follows the caster). Each field that is wrong is refused at its own field, one sentence each.
 - **Classes.** A table class brings the 20-level table (proficiency bonus, features, cantrips and spells known, slots or pact slots), hit die, saving throws, skills, proficiencies, the ability score improvement levels (4, 8, 12, 16 and 19 by default) and spellcasting (none, full, half or pact). The one-third caster is a subclass that casts. The class editor starts from the server's numbers. Multiclass at creation and level up work with table classes, with the SRD prerequisites as a sheet notice.
 - **Maneuvers.** A maneuver is a die from a resource. After a weapon hit the damage step offers each damage maneuver the character knows, one per attack; it adds the die to the damage (doubled on a critical hit), spends a use, and the master reads its rider on the roll. The die can also start a grapple or reduce a melee hit's damage as a reaction. The die on an attack roll can be registered but is not rolled yet.
+- **Wild Shape.** A table subclass or feature changes the druid's Wild Shape (MR-037): the highest challenge rating of the beasts (a fixed one, or one from the level such as the level divided by 3), how many uses of Wild Shape one change of form costs (none, for a free change), and whether the beast's attacks count as magical. The character takes the most permissive of what it has: the highest rating, the lowest cost, and magical attacks if any feature gives them. The list of forms and the choice agree.
+- **Spell slots.** A table feature can turn uses of its resource into a free spell slot of a level, until the next long rest; spend a spell slot of a level the player picks to heal more dice for each level; or, after a short rest, take expended slots back up to a level and a combined level, once per use of its resource (the shape of Arcane Recovery). Each spend goes through the character's numbers like any other, shows in the combat log with the slot's level, and the master's undo gives it back; the recovery, like Arcane Recovery, is not undone, the master adjusts the slots by hand.
 - **The background "Outro"** follows the SRD 5.1 rule "Customizing a Background".
-- **Limits:** 1,000 entries per campaign, 64 KiB per entry, 60 features per class, 60 traits per race and subrace, 6,000 effects and 500 distinct formulas (100 KiB of text) in all, each formula of at most 1,024 bytes.
+- **Creatures.**
+  A table creature is an SRD creature with other hit points (1 to 9,999), armor class (1 to 40), a damage bonus on each of its attacks (-10 to 30) and up to 10 traits that are text only.
+  The SRD creature it comes from never changes.
+  A table creature is never the base of another.
+  The creature list and sheet, giving it to a character, combat and "Criar NPC" read it by key.
+  The master gives it to a character, it joins combats with its numbers, and an NPC can be made from it.
+  The hit points are copied when the creature is given, so editing the entry does not change a creature already given.
+  The armor class and the attacks follow the entry.
+  A creature entry is the master's: a player reads it, in the creature list and on its sheet, only while one of their characters holds it.
+  A holder reads it whether the entry is live, archived or switched off.
+  A player who holds none does not find it.
+  The creatures already given keep working for their owners.
+  The master can give an archived creature.
+  Everyone in a combat reads a creature's name and key, as for an SRD summon or an NPC.
+  A creature a character holds follows the entry in a fight: an edit changes its armor class and attacks at once.
+  A monster put in a combat keeps the numbers it joined with: an edit changes the monsters added afterwards, not the ones already in a fight.
+  An edit that changes none of the numbers, such as a rename, finds the same NPC.
+  Its stat block, hit points and armor class stay with the master and, for the hit points, the owner.
+  Summoning spells, Wild Shape and the encounter generator, evaluator and swaps offer SRD creatures only.
+  A package battle encounter that names a table creature is refused as unknown content.
+  The web app has no editor for creatures: they are created through the API or a content pack.
+- **Limits:** 1,000 entries per campaign, 64 KiB per entry, 60 features per class, 60 traits per race and subrace, 10 traits per creature, 6,000 effects and 500 distinct formulas (100 KiB of text) in all, each formula of at most 1,024 bytes.
 
 On screen: "Conteúdo da mesa" (the list by kind with counts and each entry's state, editors for each kind, "Esta entrada mudou enquanto você editava" with "Recarregar", "N fichas ficaram com aviso" after an edit). On a phone the master only reads and archives. Details: [Design](../design/sheet.md#editors), [Architecture](../architecture/rules-table-content.md), [characters](../architecture/characters-table-content.md) and [web](../architecture/characters-web.md#table-content-screens). Stories: [MR-025](stories.md#mr-025-register-table-content), [MR-045](stories.md#mr-045-look-up-spells).
 
@@ -763,7 +788,8 @@ These limits stop one account from filling the server. The numbers are defaults 
 | --- | --- |
 | Campaigns one account is master of | 10 |
 | Invites that still work in a campaign (not revoked, not expired, with uses left) | 50 |
-| Characters and NPCs in a campaign, living or dead, pending included | 1,000 |
+| Characters and NPCs in a campaign, living or dead, pending included. The NPCs made for a creature in a combat do not count toward it; they have their own cap | 1,000 |
+| NPCs made for the creatures of a combat in a campaign | 1,000 |
 | AI images per campaign per month (RN-28) | 20 |
 | AI images for the whole server per Brasília day | 100 |
 | AI image requests alive at once on the server | 5 (one being made, four waiting) |
@@ -884,6 +910,52 @@ These SRD 5.1 traits change the numbers of a combat (Half-Orc, Halfling, Monk, R
   - **Where it asks:** the ability check of a Counterspell above the slot's level, the Stealth check of a Hide, either side's roll of a contest (a grapple, a shove, an escape; a Bardic Inspiration die moves the total), an initiative (a player's character, before the combat begins; the die adds to the total), a death save (a halfling's 1, and a Bardic Inspiration die the character holds, which moves the total across 10 but never a natural 1 or 20), weapon attacks and attack cantrips (the master rolling for the character gets the question too), a scene check, a group check, a trap search (out of a combat, or the Search action of a combat, which spends the action only once the question is answered), a puzzle hint try, and in a combat a spell attack against one target, an effect's saving throw and a concentration save. A roll the master makes for a player's character asks too (the question goes to the player and to the master, and the master's answer waits for the player's first 10 s).
   - **Where nobody can be asked** (a spell's save, a trap's save, the Dexterity save against Hellish Rebuke, rolled by the app inside someone else's action), the app rolls the 1 again by itself, since a reroll of a 1 never lowers the result. The line says "Sortudo: 1 → 14" to whoever sees that save's dice.
   - **Not covered:** an NPC never gets it, even with a halfling's sheet.
+- **Indomitable (fighter 9, 13 and 17).**
+  A fighter who fails a saving throw may roll it again and must use the new roll, even when it is worse.
+  It spends one use, and the uses come back with a long rest (1, 2 or 3 uses by level).
+  - **The app asks** "Falhou na salvaguarda. Usar Indomitável para rolar de novo?" only when the save failed and the character has a use left.
+    "Rolar de novo" rolls in the app or takes a real die (RN-18); "Manter" keeps the roll and spends nothing.
+    A save rolled with advantage or disadvantage takes both new dice.
+    The new roll is never asked about again.
+    The result and the log say "Indomitável: 4 → 15", for the roller's player and the master (RN-10).
+  - **Order.** Lucky first, then the Bardic Inspiration die, then Indomitable, on the total that results.
+  - **The die.** A Bardic Inspiration die added to the roll goes with that roll.
+    When the player rerolls, the die stays spent and is not added to the new roll.
+    When the player keeps the roll, the die stays in the total.
+  - **Where it asks:** the saving throw of a lasting effect, the concentration save and the death save (a natural 1 or a total below 10 fails; a natural 20 never does).
+    The player rolls it, or the master rolls it for the player's character.
+  - **Hidden DC.** When the table hides the saving throw DC, the question comes on every save the fighter has a use for and says nothing of the result.
+    It also comes on every save when dice of an effect (Bless, Bane, a maneuver) are added after the roll.
+  - **Who answers** is the same as Lucky: the roller's player, and the master after 10 seconds.
+  - **Undo.** Undoing a death save gives the use back.
+    The effect save and the concentration save cannot be undone, so their use stays spent.
+  - **Not covered:** a saving throw rolled inside someone else's action (a spell's, a trap's, a hit rider's, a Hellish Rebuke's) is never held, so it does not ask.
+    An NPC and the master's own creatures never ask.
+- **Stroke of Luck (rogue 20).**
+  A rogue whose attack misses may hit instead, or whose ability check fails may count the d20 as a 20 (SRD 5.1).
+  It spends one use, and the use comes back with a short or a long rest.
+  - **The app asks** only when the roll missed or failed and the character has a use left.
+    The attack roll asks "Errou o ataque. Usar Golpe de Sorte para acertar?", and a check asks "Falhou no teste. Usar Golpe de Sorte para contar o d20 como 20?".
+    "Usar" spends the use; "Manter" keeps the roll and spends nothing.
+    No dice are rolled for the answer, so there is no real-dice choice (RN-18).
+    The question is never asked twice about the same roll.
+  - **The attack roll.** A missed attack, a natural 1 included, becomes a hit.
+    It is an ordinary hit, not a critical hit: the d20 is not changed, and the damage is rolled as for any hit.
+    The player never learns the target's armor class from the question (RN-20).
+    The miss is judged against the armor class the app knows when the roll is made, so a Shield reaction the target takes later does not open the question.
+  - **The check.** The d20 counts as 20, and the total is 20 plus the check's modifier.
+  - **Order.** Lucky first, then the Bardic Inspiration die, then Stroke of Luck, on the total that results.
+  - **Hidden result.** When the table hides what the question would tell, it comes on every roll the rogue could use it on and says nothing of the result.
+    That is a scene or group check whose DC is hidden, the roll of a contest or of Hide, and an attack with dice of an effect (Bless, Bane) added after the roll.
+    A natural 20 on the d20 and a check with no DC never ask.
+  - **Where it asks:** weapon attacks and the spell attack against one target, the scene check, the group check, the checks of a contest and of Hide, and the Counterspell check.
+    The player rolls it, or the master rolls it for the player's character.
+  - **Privacy.** The question, the result and the log line "Golpe de Sorte" are for the roller's player and the master (RN-10).
+  - **Who answers** is the same as Lucky: the roller's player, and the master after 10 seconds.
+  - **Undo.** Undoing an attack, a spell attack or a Counterspell gives the use back.
+    The other checks cannot be undone, so their use stays spent until a rest.
+  - **Not covered:** the trap search, the puzzle hint, the saving throws and the death save, a cast with several attacks or targets, and the rolls made on someone else's action.
+    An NPC and the master's own creatures never ask.
 
 How it is built: [Architecture](../architecture/play/held-rolls.md) and [attacks and damage](../architecture/play/attacks-and-damage.md).
 Tests: `combat-rolls.spec.ts` and `scenes.spec.ts` (`@RN-35`).

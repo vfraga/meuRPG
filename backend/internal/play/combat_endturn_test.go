@@ -1,6 +1,7 @@
 package play
 
 import (
+	"encoding/base64"
 	"regexp"
 	"slices"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 )
 
 // These tests freeze what EndTurn does today, branch by branch: every refusal with its code,
@@ -58,7 +60,7 @@ func (a *armed) eventTrace(t *testing.T, e *playv1.Encounter, after int) []strin
 			}
 			return "?"
 		})
-		out = append(out, kind+" "+payload)
+		out = append(out, kind+" "+sortEmbeddedJSON(t, dbtest.SortJSONKeys(payload)))
 	}
 	return out
 }
@@ -575,4 +577,19 @@ func TestEndTurnNPCOnlyGroupWaitingOnSavesIsTheMastersLine(t *testing.T) {
 	if !slices.ContainsFunc(lines(a.log(t, a.master, e)), partEnded) {
 		t.Errorf("the master's log has no line for the Goblin's part: %v", lines(a.log(t, a.master, e)))
 	}
+}
+
+var embeddedJSON = regexp.MustCompile(`"Modifiers": "([A-Za-z0-9+/=]+)"`)
+
+// sortEmbeddedJSON puts in byte order the keys of the jsonb that an event payload carries as base64
+// (a []byte field), which PostgreSQL prints in another order than CockroachDB.
+func sortEmbeddedJSON(t *testing.T, payload string) string {
+	t.Helper()
+	return embeddedJSON.ReplaceAllStringFunc(payload, func(m string) string {
+		raw, err := base64.StdEncoding.DecodeString(embeddedJSON.FindStringSubmatch(m)[1])
+		if err != nil {
+			t.Fatalf("decode the Modifiers of an event: %v", err)
+		}
+		return `"Modifiers": "` + base64.StdEncoding.EncodeToString([]byte(dbtest.SortJSONKeys(string(raw)))) + `"`
+	})
 }

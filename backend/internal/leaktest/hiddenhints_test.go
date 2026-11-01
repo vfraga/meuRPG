@@ -15,13 +15,14 @@ import (
 // the positive control) got before it: an event of any kind there is a hint.
 func (w *world) hiddenOnlyEvents(act func()) map[string][]string {
 	// The world's setup ends with a table-content write, whose "content_changed" hint goes out
-	// up to 250 ms later (the hint gate's trailing send). Let it go before the streams open, or
+	// up to 250 ms later (the hint gate's trailing send), and with map edits whose "map_changed"
+	// hint goes out up to a second later (the layer gate's). Let it go before the streams open, or
 	// it lands in the hidden part and passes for a hint of the master's edit. The wait is on the
 	// gate's own scheduled sends (the stack's tracker), not on a sleep longer than its interval:
 	// a sleep that is too short on a slow runner lets the stale hint through, and one that is
 	// long enough only guesses. Not synctest: this test talks to the real database and the
 	// real HTTP stack, whose I/O is not durably blocking, so a bubble would never advance.
-	w.hints.settle(w.t)
+	w.hints.Settle(w.t)
 	watchers := map[*person]*streamWatcher{w.master: w.watchStream(w.master), w.ana: w.watchStream(w.ana), w.caio: w.watchStream(w.caio)}
 	act()
 	// a visible marker, so the end of the hidden part is known by the stream's own order

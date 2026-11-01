@@ -452,7 +452,7 @@ func (p *packagePart) stageChecked(in *campaignpackage.Import, content *rules.Co
 	if err != nil {
 		return nil, sheetReason(err)
 	}
-	if !p.keepCreatureLink(checked, creature) {
+	if !keepStagedCreatureLink(content, checked, creature) {
 		return nil, pkgv1.PackageProblemReason_PACKAGE_PROBLEM_REASON_UNKNOWN_CONTENT
 	}
 	story, err := checkStory(c.story)
@@ -495,15 +495,15 @@ func stageCharacterKind(in *campaignpackage.Import, c stageInput, sheet *charact
 	return kind, creature, true
 }
 
-// keepCreatureLink puts back on the checked sheet the link to the creature and
+// keepStagedCreatureLink puts back on the checked sheet the link to the creature and
 // its scores, which are the server's: only the NPC made from a creature has
 // them, and the package keeps them as they were. It says false for a creature
 // the bestiary does not have or scores out of the rules' range.
-func (p *packagePart) keepCreatureLink(checked *charactersv1.CharacterSheet, creature *charactersv1.BasicSheet) bool {
+func keepStagedCreatureLink(content *rules.Content, checked *charactersv1.CharacterSheet, creature *charactersv1.BasicSheet) bool {
 	if creature.GetMonsterKey() == "" {
 		return true
 	}
-	if _, known := p.s.srd.CreatureByKey(creature.GetMonsterKey()); !known || !validAbilityScores(creature.GetAbilityScores()) {
+	if _, known := content.CreatureByKey(creature.GetMonsterKey()); !known || !validAbilityScores(creature.GetAbilityScores()) {
 		return false
 	}
 	checked.GetBasic().MonsterKey, checked.GetBasic().AbilityScores = creature.GetMonsterKey(), creature.GetAbilityScores()

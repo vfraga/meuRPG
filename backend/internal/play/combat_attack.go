@@ -181,6 +181,7 @@ type attackFlow struct {
 	rolled      attackRolled
 	bonusFace   int
 	targetAC    int
+	acRead      bool
 	result      combat.AttackResult
 	extra       []effectDie
 }
@@ -556,6 +557,7 @@ func (f *attackFlow) rollD20(ctx context.Context) error {
 	if err := f.applyProtection(); err != nil {
 		return err
 	}
+	f.strokeSpec(ctx)
 	f.rolled, err = f.s.rollHeldAttack(ctx, f.c, f.v, f.req, f.spec, f.attacker, f.target, f.attackKey, f.truth.Mode, f.call.in, f.attack.ToHit)
 	if err != nil || f.rolled.Held != nil {
 		return err
@@ -571,16 +573,11 @@ func (f *attackFlow) rollD20(ctx context.Context) error {
 // resolve is what the roll did against the target's armor class (with the +5 of an active Escudo and the
 // cover). The class stays on the server (RN-20).
 func (f *attackFlow) resolve(ctx context.Context) error {
-	targetSheet, err := f.s.sheetOf(ctx, f.c.tx, f.m.CampaignID, f.target)
-	if err != nil {
+	if _, err := f.armorClass(ctx); err != nil {
 		return err
 	}
-	f.targetAC = targetSheet.ArmorClass + int(f.target.AcBonus) + int(f.target.EffectAcBonus) + f.cp.real.bonus()
 	// Improved Critical and Superior Critical are for weapon attacks only.
-	criticalFrom := f.sheet.CriticalRange
-	if f.attack.Spell {
-		criticalFrom = 0
-	}
+	criticalFrom := f.criticalFrom()
 	// Bênção and Perdição (SRD 5.1): a d4 added to or taken from the attack roll.
 	extra, extraTotal, err := f.s.rollEffectDice(f.call.in, effectDiceFor(f.modeIn.states, f.attacker.ID, rules.RollAppliesAttack), f.req.GetExtraDieFaces())
 	if err != nil {
@@ -588,6 +585,7 @@ func (f *attackFlow) resolve(ctx context.Context) error {
 	}
 	f.extra = extra
 	f.result = combat.ResolveAttackFrom(f.attack.ToHit+f.bonusFace+extraTotal, f.targetAC, f.rolled.D20.Face(), criticalFrom)
+	f.strokeHit() // Stroke of Luck: the miss the player turned into a hit
 	// A hit on a paralyzed or unconscious creature within 5 ft is a critical hit whatever the die says (SRD 5.1,
 	// Conditions).
 	if f.result.Hit && f.truth.CriticalOnHit {
@@ -649,7 +647,8 @@ func (f *attackFlow) attackEvent(run int32) actionEvent {
 	if b := f.rolled.Bonus; b != nil {
 		made.Res = &resourceEvent{Kind: resBardicUse, Sides: b.Sides, Face: b.Face, FromID: b.From, ExpiresRound: b.ExpiresRound}
 	}
-	made.Lucky = f.rolled.Lucky // the d20 Lucky rolled again: the log says "Sortudo: 1 → 14"
+	made.Lucky = f.rolled.Lucky   // the d20 Lucky rolled again: the log says "Sortudo: 1 → 14"
+	made.Stroke = f.rolled.Stroke // the use of Stroke of Luck: the log says the miss became a hit, the undo gives it back
 	made.ProtectedBy = f.protectedBy()
 	return made
 }

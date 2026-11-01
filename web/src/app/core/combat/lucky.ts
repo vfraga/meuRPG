@@ -29,10 +29,36 @@ export function luckyWhat(offer: { readonly d20?: DiceRoll } | null | undefined)
     : 'Sortudo: você pode rolar esse d20 de novo e fica com o novo resultado.';
 }
 
-/** "Sortudo: 1 → 14", beside the d20 Lucky rolled again; `''` when it rolled nothing (no 1, or the 1 kept). */
+/** The content key of the fighter's feature: a save it rolled again names it in `DiceRoll.rerolled`. */
+export const INDOMITABLE_FEATURE = 'feature:indomitable-1-use';
+
+/** The content key of the rogue's 20th-level feature: a roll it changed names it in `DiceRoll.rerolled`. On an attack
+ * `from` and `to` are the same face, because the d20 is not changed: the miss became a hit. */
+export const STROKE_FEATURE = 'feature:stroke-of-luck';
+
+function rerollText(r: {
+  readonly sourceKey: string;
+  readonly from: number;
+  readonly to: number;
+}): string {
+  if (r.sourceKey === STROKE_FEATURE) {
+    return r.from === r.to
+      ? 'Golpe de Sorte: o erro virou acerto'
+      : `Golpe de Sorte: ${r.from} → ${r.to}`;
+  }
+  return `${r.sourceKey === LUCKY_TRAIT ? 'Sortudo' : 'Indomitável'}: ${r.from} → ${r.to}`;
+}
+
+/** "Sortudo: 1 → 14", "Indomitável: 4 → 15" or "Golpe de Sorte: 6 → 20", beside the d20 the feature changed; `''` when it
+ * changed nothing (no 1, the 1 kept, the failed roll kept). */
 export function luckyText(roll: WithRerolls | undefined): string {
   return (roll?.rerolled ?? [])
-    .filter((r) => r.sourceKey === LUCKY_TRAIT)
-    .map((r) => `Sortudo: ${r.from} → ${r.to}`)
+    .filter(
+      (r) =>
+        r.sourceKey === LUCKY_TRAIT ||
+        r.sourceKey === INDOMITABLE_FEATURE ||
+        r.sourceKey === STROKE_FEATURE,
+    )
+    .map(rerollText)
     .join(', ');
 }

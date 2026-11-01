@@ -199,9 +199,29 @@ type Effect struct {
 	// out the beasts with a fly or a swim speed. The druid's features of
 	// levels 2, 4 and 8 each carry one; the most permissive one the
 	// character has wins.
-	MaxCR  string `json:"max_cr,omitempty"`
-	NoFly  bool   `json:"no_fly,omitempty"`
-	NoSwim bool   `json:"no_swim,omitempty"`
+	// MaxCRFrom is an Int formula for the highest whole challenge rating, from the
+	// character's level (such as "floor(level() / 3)"); it replaces MaxCR. FormCost is
+	// an Int formula for the uses of the Wild Shape resource one change of form costs
+	// (empty is 1), and MagicalAttacks makes the beast form's attacks count as magical.
+	// The character takes the highest rating, the lowest cost, and magical attacks from
+	// any effect.
+	MaxCR          string `json:"max_cr,omitempty"`
+	MaxCRFrom      string `json:"max_cr_from,omitempty"`
+	FormCost       string `json:"form_cost,omitempty"`
+	MagicalAttacks bool   `json:"magical_attacks,omitempty"`
+	NoFly          bool   `json:"no_fly,omitempty"`
+	NoSwim         bool   `json:"no_swim,omitempty"`
+
+	// grant_action and spell slots (actionslots.go): GivesSlot is an Int formula for the level
+	// (1 to 9) of the slot the action creates from the uses it spends, and SpendsSlot makes
+	// the action spend a spell slot of the level the player picks and heal by it.
+	// slot_recovery: Resource is the resource each recovery spends, RecoverMaxLevel an Int
+	// formula for the highest level of a slot it takes back and RecoverLevels one for the
+	// combined level of the slots.
+	GivesSlot       string `json:"gives_slot,omitempty"`
+	SpendsSlot      bool   `json:"spends_slot,omitempty"`
+	RecoverMaxLevel string `json:"recover_max_level,omitempty"`
+	RecoverLevels   string `json:"recover_levels,omitempty"`
 
 	// song_of_rest: the die of the bard's Song of Rest (6, 8, 10 or 12 sides),
 	// which the character's short rest adds to the hit points the party regains
@@ -265,7 +285,7 @@ type Effect struct {
 	TextPT string `json:"text_pt,omitempty"`
 
 	// Compiled formulas, filled at load.
-	value, when, preparedMax, max, rechargeIf, dice, durationRounds, fromLevel, cost, costMax, tempHP, perPointFlat *formula.Program
+	value, when, preparedMax, max, rechargeIf, dice, durationRounds, fromLevel, cost, costMax, tempHP, perPointFlat, maxCRFrom, formCost, givesSlot, recoverMaxLevel, recoverLevels *formula.Program
 
 	// What the overlay resolves for the state gate (gate.go), on the copy of the effect
 	// that is compiled: entry is the table entry the effect belongs to; stateKey is,
@@ -279,7 +299,7 @@ type Effect struct {
 var (
 	effectTypes = []string{
 		"modifier", "proficiency", "roll_mode", "sense", "spellcasting",
-		"resource", "choice", "grant_action", "extra_attack", "note", "handler", "wild_shape", "beast_spells", "replaces",
+		"resource", "choice", "grant_action", "extra_attack", "note", "handler", "wild_shape", "beast_spells", "replaces", "slot_recovery",
 		"ability_increase", "superiority_die", "song_of_rest", "ranged_attack", "extra_damage", "ambush", "resistance",
 		"state", "weapon_rule", "pseudo_weapon", "breathes_water", "condition_immunity", "granted_spell", "on_event", "spell_modifier",
 	}
@@ -383,6 +403,7 @@ var effectCheckers = map[string]func(x effectCompiler) error{
 	"ambush":             effectCompiler.ambush,
 	"extra_attack":       effectCompiler.extraAttack,
 	"wild_shape":         effectCompiler.wildShape,
+	"slot_recovery":      effectCompiler.slotRecovery,
 	"song_of_rest":       effectCompiler.songOfRest,
 	"beast_spells":       effectCompiler.beastSpells,
 	"handler":            effectCompiler.handler,
@@ -440,8 +461,8 @@ func (x effectCompiler) compileWhen(src string) (*formula.Program, error) {
 // strayFields refuses the fields of one type on an effect of another.
 func (x effectCompiler) strayFields() error {
 	e := x.e
-	if e.Type != "wild_shape" && (e.MaxCR != "" || e.NoFly || e.NoSwim) {
-		return x.fail("max_cr, no_fly and no_swim belong to wild_shape")
+	if err := x.strayShapeAndSlots(); err != nil {
+		return err
 	}
 	if e.Type != "song_of_rest" && e.Sides != 0 {
 		return x.fail("sides belongs to song_of_rest")
@@ -465,6 +486,22 @@ func (x effectCompiler) strayFields() error {
 		return err
 	}
 	return x.straySpellAndRangeFields()
+}
+
+// strayShapeAndSlots refuses the fields of wild_shape, of the slots of grant_action
+// and of slot_recovery on an effect of another type.
+func (x effectCompiler) strayShapeAndSlots() error {
+	e := x.e
+	if e.Type != "wild_shape" && (e.MaxCR != "" || e.MaxCRFrom != "" || e.FormCost != "" || e.MagicalAttacks || e.NoFly || e.NoSwim) {
+		return x.fail("max_cr, max_cr_from, form_cost, magical_attacks, no_fly and no_swim belong to wild_shape")
+	}
+	if e.Type != "grant_action" && (e.GivesSlot != "" || e.SpendsSlot) {
+		return x.fail("gives_slot and spends_slot belong to grant_action")
+	}
+	if e.Type != "slot_recovery" && (e.RecoverMaxLevel != "" || e.RecoverLevels != "") {
+		return x.fail("recover_max_level and recover_levels belong to slot_recovery")
+	}
+	return nil
 }
 
 // straySpellAndRangeFields refuses the fields of granted_spell and of
@@ -823,13 +860,33 @@ func (x effectCompiler) extraAttack() error {
 }
 
 func (x effectCompiler) wildShape() error {
-	if !x.takesOnly(func(o *Effect) { o.Type, o.MaxCR, o.NoFly, o.NoSwim = "", "", false, false }) {
-		return x.fail("wild_shape takes max_cr, no_fly and no_swim only")
+	if !x.takesOnly(func(o *Effect) {
+		o.Type, o.MaxCR, o.MaxCRFrom, o.FormCost, o.MagicalAttacks, o.NoFly, o.NoSwim = "", "", "", "", false, false, false
+		o.maxCRFrom, o.formCost = nil, nil
+	}) {
+		return x.fail("wild_shape takes max_cr, max_cr_from, form_cost, magical_attacks, no_fly and no_swim only")
 	}
-	if _, ok := crEighths(x.e.MaxCR); !ok {
-		return x.fail("wild_shape needs a max_cr that is a challenge rating, such as \"1/4\"")
+	e := x.e
+	if e.MaxCR != "" && e.MaxCRFrom != "" {
+		return x.fail("wild_shape takes max_cr or max_cr_from, not both")
 	}
-	return nil
+	if e.MaxCR == "" && e.MaxCRFrom == "" && e.FormCost == "" && !e.MagicalAttacks {
+		return x.fail("wild_shape needs a max_cr, a max_cr_from, a form_cost or magical_attacks")
+	}
+	if e.MaxCR != "" {
+		if _, ok := crEighths(e.MaxCR); !ok {
+			return x.fail("wild_shape needs a max_cr that is a challenge rating, such as \"1/4\"")
+		}
+	}
+	if e.MaxCR == "" && e.MaxCRFrom == "" && (e.NoFly || e.NoSwim) {
+		return x.fail("no_fly and no_swim go with a max_cr or a max_cr_from")
+	}
+	var err error
+	if e.maxCRFrom, err = x.compile(e.MaxCRFrom, formula.Int); err != nil {
+		return err
+	}
+	e.formCost, err = x.compile(e.FormCost, formula.Int)
+	return err
 }
 
 // otherSpeedTargets are the modifier targets whose formulas may read speedwalk().

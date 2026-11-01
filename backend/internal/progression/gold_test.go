@@ -233,8 +233,8 @@ func TestMR041_ATreasureIsConvertedOnce(t *testing.T) {
 	// treasure's lock; neither may have finished by then.
 	observer := dbtest.SideConnection(t, tb.h.pool)
 	for waiting, deadline := 0, time.Now().Add(30*time.Second); waiting < 2; time.Sleep(5 * time.Millisecond) {
-		if err := observer.QueryRow(t.Context(), `SELECT count(*) FROM crdb_internal.cluster_queries
-			WHERE query LIKE '%FOR UPDATE OF p%' AND query NOT LIKE '%cluster_queries%'`).Scan(&waiting); err != nil {
+		var err error
+		if waiting, err = dbtest.WaitingStatements(t.Context(), observer, `%FOR UPDATE OF p%`); err != nil {
 			t.Fatalf("look for the waiting awards: %v", err)
 		}
 		select {

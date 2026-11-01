@@ -39,6 +39,9 @@ type Outcome struct {
 // UnitCost is how many uses one use of the action spends at least: 0 for an
 // action with no resource, otherwise the cost (1 when it has none).
 func (a Action) UnitCost() int {
+	if a.SpendsSlot {
+		return 1 // the lowest slot level: the heal grows from there
+	}
 	if a.Resource == "" {
 		return 0
 	}
@@ -145,7 +148,7 @@ func (x *deriver) actionResult(act *Action, a activeEffect) {
 			r.TempHP = max(n, 0)
 		}
 	}
-	if e.ValuePerPoint == "" || act.CostMax == 0 {
+	if e.ValuePerPoint == "" || (act.CostMax == 0 && !act.SpendsSlot) {
 		return
 	}
 	if per, ok := ParseDice(e.ValuePerPoint); ok && per.Count > 0 {

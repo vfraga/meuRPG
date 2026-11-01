@@ -307,7 +307,7 @@ func (s *Service) counterspellCheck(ctx context.Context, c *combatTx, req *playv
 	if err != nil {
 		return out, err
 	}
-	step, err := s.counterspellD20(ctx, c, req, reactor, k, in)
+	step, err := s.counterspellD20(ctx, c, req, reactor, k, in, dc)
 	if err != nil || step.Held != nil {
 		if step.Held != nil {
 			out.held = s.heldCheckOffer(ctx, c, step)
@@ -319,14 +319,15 @@ func (s *Service) counterspellCheck(ctx context.Context, c *combatTx, req *playv
 	re.Check, re.CheckDC = conv.Int32(total), clamp32(dc, 0, math.MaxInt32)
 	// The Bardic Inspiration die the player added is in the total: the line shows it as part of the modifier.
 	out.roll = diceRoll(1, 20, []int32{clamp32(face, 1, 20)}, conv.Int32(total-face), re.Check, step.Roll.Physical)
-	out.roll.Rerolled = step.Lucky.proto()
+	out.roll.Rerolled = strokeRerolls(step.Lucky, step.Stroke)
+	re.Stroke = step.Stroke // the use of Stroke of Luck: the master's line says it and the undo gives it back
 	return out, nil
 }
 
 // counterspellD20 is the d20 of the check, put through the gate when the reactor is a player's character: a Bardic
 // Inspiration die the character holds, or a halfling's 1, keeps it for the player's answer (the check is an ability check,
 // SRD 5.1). Any other rolls at once, as it always did.
-func (s *Service) counterspellD20(ctx context.Context, c *combatTx, req *playv1.AnswerReactionRequest, reactor playdb.Combatant, k kit, in rollInput) (gateResult, error) {
+func (s *Service) counterspellD20(ctx context.Context, c *combatTx, req *playv1.AnswerReactionRequest, reactor playdb.Combatant, k kit, in rollInput, dc int) (gateResult, error) {
 	m := authz.Membership{CampaignID: c.session.CampaignID, UserID: c.actorUserID, Role: authz.RolePlayer}
 	if c.master {
 		m.Role = authz.RoleMaster
@@ -339,6 +340,7 @@ func (s *Service) counterspellD20(ctx context.Context, c *combatTx, req *playv1.
 		return s.heldGate(ctx, s.inspirationGate(c), rollSpec{
 			Kind: heldCounterspell, Key: req.GetIdempotencyKey(), Request: req, Roller: attackRoller(m, reactor, c.enc.Round),
 			In: in, Modifier: k.st.CastingMod, Mode: combat.ModeNormal, Lucky: sheet.Traits.Lucky, MayAsk: true,
+			Stroke: checkStrokeRule(dc, false), // the DC of the check is the log's: the reactor learns whether the spell was countered
 		})
 	}
 	face, roll, err := s.d20(in, k.st.CastingMod)

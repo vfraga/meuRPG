@@ -27,6 +27,8 @@ type questionKind int
 const (
 	askLucky questionKind = iota + 1
 	askDie
+	askIndomitable
+	askStroke
 )
 
 // question is one link of the chain.
@@ -41,14 +43,14 @@ type question interface {
 }
 
 // chain is every question a held roll may ask, first to last.
-var chain = []question{luckyQuestion{}, dieQuestion{}}
+var chain = []question{luckyQuestion{}, dieQuestion{}, indomitableQuestion{}, strokeQuestion{}}
 
 // askedBy is the question a roll asks now: the first of the chain that waits. A roll that waits for
 // none (the die ran out before a retry read it) still gets the die's: the path decides what to say.
 func askedBy(h heldRoll, st rollerState) heldOffer {
 	i := slices.IndexFunc(chain, func(q question) bool { return q.pending(h, st) })
 	if i < 0 {
-		i = len(chain) - 1
+		i = slices.IndexFunc(chain, func(q question) bool { return q.kind() == askDie })
 	}
 	return chain[i].offer(h, st)
 }
@@ -139,7 +141,9 @@ type dieQuestion struct{}
 func (dieQuestion) kind() questionKind { return askDie }
 
 // pending: the roller holds a die and nothing is answered. Its answer is final.
-func (dieQuestion) pending(h heldRoll, st rollerState) bool { return st.Holds && h.AnswerKey == nil }
+func (dieQuestion) pending(h heldRoll, st rollerState) bool {
+	return st.Holds && h.AnswerKey == nil && h.DieAnswerKey == nil
+}
 
 func (dieQuestion) offer(h heldRoll, st rollerState) heldOffer {
 	return heldOffer{Hold: h, State: st, Asks: askDie}
@@ -210,6 +214,9 @@ func (s *Service) outsideOffers(ctx context.Context, tx pgx.Tx, o *heldOffer) (*
 	held := s.outsideHeldRollOffer(ctx, tx, *o)
 	if o.Asks == askLucky {
 		return nil, o.luckyOffer(), held
+	}
+	if o.Asks == askIndomitable || o.Asks == askStroke { // only the one question, which has no older field
+		return nil, nil, held
 	}
 	return s.outsideDieOffer(ctx, tx, *o), nil, held
 }

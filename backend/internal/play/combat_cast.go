@@ -582,7 +582,7 @@ func (f *castFlow) holdForWindow(ctx context.Context) (bool, error) {
 // asked.
 func (f *castFlow) holdForDie(ctx context.Context) error {
 	var err error
-	f.out.asked, err = f.s.holdSpellAttack(ctx, f.c, f.m, f.req, f.call.key, f.caster, rayCombatants(f.sp, f.targets, f.targs), f.sp, f.call.in, f.out.modes)
+	f.out.asked, err = f.s.holdSpellAttack(ctx, f.c, f.m, f.req, f.call.key, f.caster, rayCombatants(f.sp, f.targets, f.targs), f.sp, f.call.in, f.out.modes, f.strokeArmor(ctx))
 	return err
 }
 
@@ -812,6 +812,7 @@ func (f *castFlow) seal(ctx context.Context) error {
 	made := &f.out.made
 	packCoverSeen(made)
 	made.Die = f.out.modes.dieUsed()
+	made.Stroke = f.out.modes.strokeUsed() // the miss the caster turned into a hit: the undo gives the use back
 	made.Secret = f.hidden
 	if f.placedArea {
 		if err := f.sealPlaced(ctx); err != nil {

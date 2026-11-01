@@ -114,6 +114,19 @@ func errCharacterCapReached(limit int) error {
 		fmt.Errorf("the campaign already has %d characters and NPCs, the most it may have; delete one to create another", limit))
 }
 
+// DefaultMaxCombatOnlyNpcsPerCampaign is the most NPCs the app may make for the creatures of the
+// campaign's combats (RN-30). They do not count toward the characters' cap, so they have their own:
+// a table creature edited many times makes one for each set of numbers, and each is loaded with the
+// campaign's sheets.
+const DefaultMaxCombatOnlyNpcsPerCampaign = 1000
+
+// errCombatOnlyNpcCapReached is the refusal of a combat that would make one more NPC for a creature
+// when the campaign already holds its most.
+func errCombatOnlyNpcCapReached(limit int) error {
+	return connect.NewError(connect.CodeResourceExhausted,
+		fmt.Errorf("the campaign already has %d NPCs made for the creatures of its combats, the most it may have; edit or use a creature that already has one", limit))
+}
+
 // checkRoom refuses a create when the campaign has no room for one more
 // character. It counts inside the create's transaction, which is SERIALIZABLE:
 // two creates racing for the last place conflict, and the one that retries

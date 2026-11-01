@@ -95,6 +95,18 @@ describe('the words of a refused "Pôr no combate" (by code and typed detail, ne
     expect(text).not.toContain('a combat has at most');
   });
 
+  it('says in words that the campaign reached the limit of NPCs for combat creatures', () => {
+    const text = addMonstersErrorMessage(
+      new ConnectError(
+        'the campaign already has 1000 NPCs made for the creatures',
+        Code.ResourceExhausted,
+      ),
+    );
+    expect(text).toContain('limite de NPCs');
+    expect(text).toContain('reaproveitar não conta');
+    expect(text).not.toContain('the campaign already has');
+  });
+
   it('maps the other codes', () => {
     expect(addMonstersErrorMessage(new ConnectError('x', Code.PermissionDenied))).toContain(
       'Só o mestre',

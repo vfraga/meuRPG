@@ -105,6 +105,9 @@ type searchRun struct {
 func searchWithEverySkill(t *testing.T, withTrap bool) searchRun {
 	t.Helper()
 	w := searchWorld(t, withTrap)
+	// The setup's map edits and table-content write have hints still waiting in the gates (up to a
+	// second): let them go before the stream opens, or they land on one side of it in one run only.
+	w.hints.Settle(t)
 	watcher := w.watchStream(w.caio)
 	run := searchRun{w: w, replies: map[string]reply{}, stream: map[string]int{}}
 	for _, skill := range srdSkills {

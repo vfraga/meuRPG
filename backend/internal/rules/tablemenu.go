@@ -189,7 +189,7 @@ var menuTypes = []MenuType{
 		{Name: "while", Kind: "state_ref"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "grant_action", NamePT: "Ação", HintPT: "Uma ação que o personagem passa a ter na vez dele: ação, ação bônus, reação, livre ou movimento. Pode gastar usos de um recurso que a entrada define (\"Gasta um uso de\"): o custo é uma fórmula (1 se vazio) e, com um custo máximo, o jogador escolhe na hora quantos gastar, do custo ao máximo (ou o que restar). Pode curar (dados, mais o modificador de uma habilidade) e dar pontos de vida temporários (uma fórmula) a si mesmo ou a uma criatura escolhida na hora; o valor por ponto soma, a cada ponto gasto acima do custo, mais dados de cura (os mesmos dados da cura) ou mais pontos temporários.", Fields: []MenuField{
+	{Type: "grant_action", NamePT: "Ação", HintPT: "Uma ação que o personagem passa a ter na vez dele: ação, ação bônus, reação, livre ou movimento. Pode gastar usos de um recurso que a entrada define (\"Gasta um uso de\"): o custo é uma fórmula (1 se vazio) e, com um custo máximo, o jogador escolhe na hora quantos gastar, do custo ao máximo (ou o que restar). Pode curar (dados, mais o modificador de uma habilidade) e dar pontos de vida temporários (uma fórmula) a si mesmo ou a uma criatura escolhida na hora; o valor por ponto soma, a cada ponto gasto acima do custo, mais dados de cura (os mesmos dados da cura) ou mais pontos temporários. Pode também transformar os usos que gasta num espaço de magia de um nível (\"Dá um espaço de nível\": uma fórmula de 1 a 9, livre até o próximo descanso longo) ou gastar um espaço de magia do nível que o jogador escolhe na hora (\"Gasta um espaço de magia\") para curar: os dados da cura valem para o nível 1 e o valor por ponto soma mais dados a cada nível acima.", Fields: []MenuField{
 		{Name: "economy", Required: true, Kind: "choice", List: ListEconomies},
 		{Name: "resource", Kind: "resource_ref"},
 		{Name: "cost", Kind: "formula"},
@@ -198,6 +198,8 @@ var menuTypes = []MenuType{
 		{Name: "ability", Kind: "choice", List: ListAbilities},
 		{Name: "temp_hp", Kind: "formula"},
 		{Name: "value_per_point", Kind: "formula"},
+		{Name: "gives_slot", Kind: "formula"},
+		{Name: "spends_slot", Kind: "yes_no"},
 		{Name: "when", Kind: "condition"},
 		{Name: "tags", Kind: "tags", List: ListTagPrefixes},
 		{Name: "text_pt", Kind: "text"},
@@ -233,6 +235,21 @@ var menuTypes = []MenuType{
 	}},
 	{Type: "ambush", NamePT: "Emboscada", HintPT: "Uma vantagem do personagem contra alvos pegos de surpresa: vantagem nas jogadas de ataque contra uma criatura que ainda não teve o seu turno no combate, ou acerto crítico em uma criatura surpresa (a marca de surpresa é a do mestre, no início do combate).", Fields: []MenuField{
 		{Name: "applies", Required: true, Kind: "choice", List: ListAmbushApplies},
+		{Name: "when", Kind: "condition"},
+		{Name: "text_pt", Kind: "text"},
+	}},
+	{Type: "wild_shape", NamePT: "Forma Selvagem", HintPT: "Muda a Forma Selvagem do druida: o maior nível de desafio das feras (um fixo ou tirado do nível, como o nível dividido por 3), quantos usos do recurso Forma Selvagem cada mudança de forma gasta, e se os ataques da fera contam como mágicos. Vale o mais permissivo entre os efeitos que o personagem tem: o maior nível de desafio, o menor custo e ataques mágicos se algum efeito der.", Fields: []MenuField{
+		{Name: "max_cr", Kind: "text", AlwaysShown: true},
+		{Name: "max_cr_from", Kind: "formula", AlwaysShown: true},
+		{Name: "no_fly", Kind: "yes_no"},
+		{Name: "no_swim", Kind: "yes_no"},
+		{Name: "form_cost", Kind: "formula", AlwaysShown: true},
+		{Name: "magical_attacks", Kind: "yes_no", AlwaysShown: true},
+	}},
+	{Type: "slot_recovery", NamePT: "Recuperar espaços de magia", HintPT: "Depois de um descanso curto, o personagem recupera espaços de magia gastos, como a Recuperação Arcana do mago: gasta um uso do recurso (que a entrada define, com os usos e o descanso que os devolve), recupera espaços de nível até o maior nível (uma fórmula de 1 a 9) e com nível combinado até o limite (uma fórmula; um espaço de nível 2 conta 2). Quem escolhe os espaços é o jogador, na hora.", Fields: []MenuField{
+		{Name: "resource", Required: true, Kind: "resource_ref"},
+		{Name: "recover_max_level", Required: true, Kind: "formula"},
+		{Name: "recover_levels", Required: true, Kind: "formula"},
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},

@@ -62,7 +62,7 @@ func newFogCaveWith(t *testing.T, c *cave) *fogCave {
 	if err != nil {
 		t.Fatalf("rules.LoadSRD() error = %v", err)
 	}
-	msvc, err := maps.New(maps.Config{Pool: c.h.pool, Characters: c.h.chars, Live: c.h.svc, Rules: content, Combats: c.h.svc, Logger: slog.New(slog.DiscardHandler)})
+	msvc, err := maps.New(maps.Config{Pool: c.h.pool, Characters: c.h.chars, Live: c.h.svc, Rules: content, Combats: c.h.svc, Logger: slog.New(slog.DiscardHandler), HintAfter: c.h.hints.AfterTimer})
 	if err != nil {
 		t.Fatalf("maps.New() error = %v", err)
 	}
@@ -328,6 +328,9 @@ type fogStreams struct {
 
 func (f *fogCave) watchAll(t *testing.T) fogStreams {
 	t.Helper()
+	// The map edits of the setup have a "map_changed" hint waiting in the maps service's gate (up to
+	// a second): let it go before the streams open, or it lands in what the test reads as the change's.
+	f.h.hints.Settle(t)
 	s := fogStreams{f.master.watch(t, f.campaignID), f.caio.watch(t, f.campaignID), f.ana.watch(t, f.campaignID), f.bia.watch(t, f.campaignID)}
 	for _, w := range []*watcher{s.master, s.caio, s.ana, s.bia} {
 		w.ready(t)

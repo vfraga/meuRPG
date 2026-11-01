@@ -327,6 +327,12 @@ The weapon attack waits here too (kind `weapon_attack`, `window_hold` for the on
 The partial index `inspiration_holds_open_combat_idx` on `(encounter_id, combatant_id)` where `answer_key IS NULL` serves the open questions of a combat.
 Lucky: `lucky_index` is the die that shows a 1 (0 for a single d20; 0 or 1 for a pair, in the order rolled; `NULL` with no Lucky question), `lucky_answer_key` the key of the answer and `lucky_to` the new face (1 to 20; `NULL` when the player kept the 1).
 The question waits while `lucky_index` is set and both keys are `NULL`; then `faces`, `counted` and `total` hold the d20 after the answer, which a die question (if the character holds one) is asked about next.
+Indomitable: `indomitable_ask` marks the question asked (after the result of a save is known) and `indomitable_failed` whether the roller may be told the save failed (`false` when the table hides it).
+`indomitable_answer_key` is the key of the answer, `indomitable_from` and `indomitable_to` the faces (1 to 20) before and after a reroll, both `NULL` when the player kept the roll.
+Stroke of Luck: `stroke_ask` marks the question asked (after the result of an attack or a check is known) and `stroke_failed` whether the roller may be told the roll missed or failed (`false` when the table hides it).
+`stroke_answer_key` is the key of the answer and `stroke_from` the d20 (1 to 20) that counted when the player used the feature, `NULL` when the player kept the roll.
+The check `inspiration_holds_stroke_face_valid` keeps `stroke_from` between 1 and 20.
+`die_answer_key` and `die_used` keep the Bardic Inspiration die answered while this question follows, since the row stays open.
 A hold out of a combat is not forgotten when the dice run out; one of a combat only when the round or the combat is over.
 
 ## `trap_damages`

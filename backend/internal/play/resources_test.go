@@ -638,7 +638,7 @@ func TestHitDiceStoredBeforeTheSizesWereKeptAreDerivedFromTheClasses(t *testing.
 		t.Errorf("after an unrelated correction the spent dice are %v, want them kept", d)
 	}
 	var stored string
-	if err := r.h.pool.QueryRow(t.Context(), `SELECT hit_dice_used_by_die::STRING FROM character_vitals WHERE character_id = $1`, r.multiclassed.GetId()).Scan(&stored); err != nil {
+	if err := r.h.pool.QueryRow(t.Context(), `SELECT hit_dice_used_by_die::TEXT FROM character_vitals WHERE character_id = $1`, r.multiclassed.GetId()).Scan(&stored); err != nil {
 		t.Fatalf("read the sizes: %v", err)
 	}
 	if !strings.Contains(stored, `"10": 3`) || !strings.Contains(stored, `"6": 1`) {

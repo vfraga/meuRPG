@@ -5,7 +5,7 @@ import { type RollNote, RollModeKind } from '../../../../../gen/meurpg/play/v1/c
 import { effectivePreference } from '../../../../core/campaigns/dice-labels';
 import type { CheckDie } from '../../../../core/combat/contest-client';
 import { modeLabel, noteLines } from '../../../../core/combat/contest-view';
-import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
+import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 
 /** The two d20 of a roll with advantage or disadvantage, in the order they are rolled. */

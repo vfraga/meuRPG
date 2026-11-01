@@ -47,7 +47,7 @@ import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { rollDiceFor } from '../../../../core/effects/roll-die';
 import { RollDieOffer } from '../../../../shared/roll-die-offer/roll-die-offer';
-import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
+import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';

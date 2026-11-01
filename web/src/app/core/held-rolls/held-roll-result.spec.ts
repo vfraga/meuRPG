@@ -6,7 +6,7 @@ import {
   RollAttackResponseSchema,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { answeredText, settledRoll } from './held-roll-result';
-import { heldAnswer, heldDie, heldLucky } from './held-roll-testing';
+import { heldAnswer, heldDie, heldLucky, heldStroke } from './held-roll-testing';
 
 /** The d20 as the server writes it once Lucky rolled the 1 again: 14 + 5 = 19. */
 const rerolled = create(DiceRollSchema, {
@@ -43,6 +43,15 @@ describe('what the master’s answer came to', () => {
   it('says the new face and the total when Lucky rolled the d20 again', () => {
     expect(answeredText('Brisa', reroll, heldLucky(), attackAnswer())).toBe(
       'Você respondeu por Brisa: rolou de novo e tirou 14 (19 com o bônus).',
+    );
+  });
+
+  it('says Stroke of Luck was used or the roll kept', () => {
+    expect(answeredText('Brisa', { kind: 'stroke', use: true }, heldStroke(), attackAnswer())).toBe(
+      'Você respondeu por Brisa: usou o Golpe de Sorte.',
+    );
+    expect(answeredText('Brisa', { kind: 'stroke', use: false }, heldStroke(), heldAnswer())).toBe(
+      'Você respondeu por Brisa: manteve o resultado.',
     );
   });
 

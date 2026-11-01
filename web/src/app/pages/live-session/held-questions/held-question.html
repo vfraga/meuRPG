@@ -49,9 +49,30 @@
         <p>{{ failure() }}</p>
       </div>
     }
-    @if (typing()) {
+    @if (stroke()) {
+      <div class="q__buttons">
+        <button matButton="outlined" type="button" class="q__btn q__btn--primary" [disabled]="waiting()" (click)="useStroke()">
+          Usar
+        </button>
+        <button matButton="outlined" type="button" class="q__btn q__btn--primary" [disabled]="waiting()" (click)="keep()">
+          Manter
+        </button>
+      </div>
+    } @else if (typing() && pair()) {
+      <app-multi-roll
+        [fields]="pairFields"
+        [canApp]="false"
+        [canType]="true"
+        hint="Role os dois d20 de novo e digite os dois números, na ordem em que saíram (1 a 20 cada)."
+        [busy]="waiting()"
+        (typed)="sendPair($event)"
+      />
+      <div class="q__buttons">
+        <button matButton type="button" class="q__btn" (click)="typing.set(false)">Voltar</button>
+      </div>
+    } @else if (typing()) {
       <label class="q__typed">
-        <span>Número que saiu no {{ lucky() ? 'd20' : dieName() }} (1 a {{ sides() }})</span>
+        <span>Número que saiu no {{ rerolls() ? 'd20' : dieName() }} (1 a {{ sides() }})</span>
         <input type="number" inputmode="numeric" [min]="1" [max]="sides()" [value]="face()" (input)="onFace($event)" />
       </label>
       <div class="q__buttons">
@@ -63,7 +84,7 @@
     } @else {
       <div class="q__buttons">
         <button matButton="outlined" type="button" class="q__btn q__btn--primary" [disabled]="waiting()" (click)="rollAgain()">
-          {{ lucky() ? 'Rolar de novo' : useText() }}
+          {{ rerolls() ? 'Rolar de novo' : useText() }}
         </button>
         @if (canType()) {
           <button matButton type="button" class="q__btn" [disabled]="waiting()" (click)="typing.set(true)">
@@ -71,7 +92,7 @@
           </button>
         }
         <button matButton="outlined" type="button" class="q__btn q__btn--primary" [disabled]="waiting()" (click)="keep()">
-          {{ lucky() ? 'Ficar com o 1' : 'Guardar o dado' }}
+          {{ lucky() ? 'Ficar com o 1' : indomitable() ? 'Manter' : 'Guardar o dado' }}
         </button>
       </div>
     }

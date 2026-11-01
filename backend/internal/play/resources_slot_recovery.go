@@ -26,6 +26,8 @@ import (
 type slotRecoveryEvent struct {
 	Slots  []slotRecoverySlot `json:"slots"`
 	Levels int32              `json:"levels"`
+	// Feature is the table feature whose slot_recovery effect the recovery was; empty for the SRD's own.
+	Feature string `json:"feature,omitempty"`
 }
 
 type slotRecoverySlot struct {
@@ -71,9 +73,11 @@ const maxSlotsPerLevel = 9
 // its name in logs and refusals.
 type slotRecovery struct {
 	rules rules.SlotRecovery
-	event string
-	name  string
-	log   string // the structured log event
+	// feature is the table feature whose slot_recovery effect this is, "" for the SRD's own (rules).
+	feature string
+	event   string
+	name    string
+	log     string // the structured log event
 }
 
 var (
@@ -89,6 +93,9 @@ type recoveryCall struct {
 	hash     *string
 	slots    map[int]int
 }
+
+// maxFeatureKeyLen bounds the feature key a request names (a table feature's key is a slug and a hash).
+const maxFeatureKeyLen = 200
 
 // recoveryRun is what the transaction of a recovery leaves for after the commit.
 type recoveryRun struct {
@@ -124,7 +131,14 @@ func (s *Service) UseArcaneRecovery(
 	ctx context.Context,
 	req *connect.Request[playv1.UseArcaneRecoveryRequest],
 ) (*connect.Response[playv1.UseArcaneRecoveryResponse], error) {
-	vitals, levels, err := s.useRecovery(ctx, arcaneRecovery, req.Msg)
+	rec := arcaneRecovery
+	if k := req.Msg.GetFeatureKey(); k != "" { // the table feature's recovery, with the table's limits
+		if len(k) > maxFeatureKeyLen {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("feature_key is too long"))
+		}
+		rec.feature = k
+	}
+	vitals, levels, err := s.useRecovery(ctx, rec, req.Msg)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +206,13 @@ func (s *Service) recoveryTx(ctx context.Context, tx pgx.Tx, rec slotRecovery, c
 	if err := activeCombatBlocks(ctx, q, session.ID); err != nil {
 		return err
 	}
-	_, afterVitals, levels, err := s.vitals.UseSlotRecovery(ctx, tx, call.m.CampaignID, call.charText, rec.rules, call.slots)
+	var afterVitals *playv1.CharacterVitals
+	var levels int
+	if rec.feature != "" {
+		_, afterVitals, levels, err = s.vitals.UseTableSlotRecovery(ctx, tx, call.m.CampaignID, call.charText, rec.feature, call.slots)
+	} else {
+		_, afterVitals, levels, err = s.vitals.UseSlotRecovery(ctx, tx, call.m.CampaignID, call.charText, rec.rules, call.slots)
+	}
 	if err != nil {
 		return resourceError(err)
 	}
@@ -201,6 +221,7 @@ func (s *Service) recoveryTx(ctx context.Context, tx pgx.Tx, rec slotRecovery, c
 	}
 	run.after = afterVitals
 	run.ev = recoveryEventOf(call.slots, levels)
+	run.ev.Feature = rec.feature
 	return s.appendKeyedEvent(ctx, q, keyedEvent{
 		sessionID: session.ID, kind: rec.event, userID: call.m.UserID, characterID: &call.charText, key: call.keyText, hash: call.hash,
 	}, run.ev)

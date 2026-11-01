@@ -38,7 +38,7 @@ import { ResourceClient } from '../../../../core/resources/resources-client';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
 import { rerollShow } from '../../../../shared/held-roll-prompt/held-roll-shows';
 import { RollAnimator, type RollShow } from '../../../../shared/roll-overlay/roll-animator';
-import { MultiRoll, type RollField } from '../../combat/multi-roll/multi-roll';
+import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';

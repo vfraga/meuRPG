@@ -19,28 +19,22 @@ type WildShapeLimit struct {
 	// out the beasts with a fly or a swim speed.
 	MaxCR         string
 	NoFly, NoSwim bool
+	// Cost is how many uses of the Wild Shape resource a change of form spends,
+	// and Magical says the beast's attacks count as magical.
+	Cost    int
+	Magical bool
 }
 
 // WildShapeLimitFor returns what the build's Wild Shape features allow, and
-// false when the build has none (not a druid of level 2). The most permissive
-// feature wins: the one with the highest challenge rating.
+// false when no wild_shape effect applies. The most permissive
+// effect wins in each part: the highest challenge rating, the cheapest cost, and
+// magical attacks if any effect gives them (Derived.WildShape).
 func (c *Content) WildShapeLimitFor(b Build) (WildShapeLimit, bool) {
-	var best *Effect
-	bestCR := -1
-	for _, f := range Derive(b, c).Features {
-		for _, e := range c.c.effects[f.Key] {
-			if e.Type != "wild_shape" {
-				continue
-			}
-			if v, _ := crEighths(e.MaxCR); v > bestCR {
-				best, bestCR = e, v
-			}
-		}
-	}
-	if best == nil {
+	r := Derive(b, c).WildShape
+	if r == nil {
 		return WildShapeLimit{}, false
 	}
-	return WildShapeLimit{MaxCR: best.MaxCR, NoFly: best.NoFly, NoSwim: best.NoSwim}, true
+	return WildShapeLimit{MaxCR: r.MaxCR, NoFly: r.NoFly, NoSwim: r.NoSwim, Cost: r.Cost, Magical: r.Magical}, true
 }
 
 // WildShapeForms lists the beasts the build's druid may take now, sorted by
@@ -51,7 +45,8 @@ func (c *Content) WildShapeForms(b Build) []CreatureEntry {
 		return nil
 	}
 	forms, _ := c.ListCreatures(CreatureFilter{Type: creatureBeast, MaxCR: limit.MaxCR, NoFly: limit.NoFly, NoSwim: limit.NoSwim})
-	return forms
+	// A table creature has its base's challenge rating, which its adjustments may not keep.
+	return slices.DeleteFunc(forms, func(e CreatureEntry) bool { _, table := c.c.creatureOf[e.Key]; return table })
 }
 
 // CastsInBeastForm says whether the character keeps its spells in a beast form:
@@ -94,9 +89,14 @@ func (c *Content) WildShapeDerived(character Derived, beast string) (Derived, er
 	d := character
 	d.ArmorClass, d.ArmorClassDescription = b.ArmorClass, b.ArmorClassDescription
 	d.HitPointsMax, d.HitPointsFromEffects, d.HitDice = b.HitPointsMax, 0, b.HitDice
-	d.SpeedWalkFt, d.SpeedFlyFt, d.SpeedSwimFt, d.SpeedClimbFt, d.SpeedBurrowFt, d.Hover =
-		b.SpeedWalkFt, b.SpeedFlyFt, b.SpeedSwimFt, b.SpeedClimbFt, b.SpeedBurrowFt, b.Hover
+	d.SpeedWalkFt, d.SpeedFlyFt, d.SpeedSwimFt, d.SpeedClimbFt, d.SpeedBurrowFt, d.Hover = b.SpeedWalkFt, b.SpeedFlyFt, b.SpeedSwimFt, b.SpeedClimbFt, b.SpeedBurrowFt, b.Hover
 	d.Attacks, d.AttacksPerAction, d.SaveActions = b.Attacks, b.AttacksPerAction, b.SaveActions
+	if character.WildShape != nil && character.WildShape.Magical {
+		d.Attacks = slices.Clone(d.Attacks)
+		for i := range d.Attacks {
+			d.Attacks[i].Magical = true
+		}
+	}
 
 	// The physical scores are the beast's; the mental ones stay.
 	oldMod, newMod := beastScores(&d, character, b)

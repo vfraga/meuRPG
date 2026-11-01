@@ -997,7 +997,7 @@ func (e *logEntry) attackDice(out *playv1.CombatLogEntry, v combatViewer) {
 	out.Reason = e.rolls.reasonOf(e.ev)
 	out.BonusDice = bonusDiceOf(e.ev)
 	out.AttackRoll.ExtraDice = extraDiceProto(e.ev.Extra, v.master, nil)
-	out.AttackRoll.Rerolled = e.ev.Lucky.proto() // "Sortudo: 1 → 14", with the d20 it changed
+	out.AttackRoll.Rerolled = strokeRerolls(e.ev.Lucky, e.ev.Stroke) // "Sortudo: 1 → 14", with the d20 it changed; "Golpe de Sorte" for a miss turned into a hit
 }
 
 func (e *logEntry) fillAction(c *logViewing, out *playv1.CombatLogEntry) bool {

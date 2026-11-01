@@ -237,7 +237,8 @@ The numbers are in `ratelimit.NewPolicy` and in the constants next to each limit
 | Campaigns an account is master of | `MAX_CAMPAIGNS_PER_USER`, default 10 (`campaigns.DefaultMaxCampaignsPerUser`). The local stacks and CI use `off`; the API refuses `off` on Cloud Run. | `resource_exhausted` with `CampaignCreationRefused` `LIMIT_REACHED` |
 | Who may create campaigns | `CAMPAIGN_CREATORS`: verified e-mails, comma-separated; empty means anyone. Someone invited to a campaign plays without being on the list. | `permission_denied` with `NOT_ALLOWED` |
 | Invites that still work in a campaign | 50 (`campaigns.MaxActiveInvites`): not revoked, not expired, with uses left | `resource_exhausted` |
-| Characters and NPCs in a campaign, living or dead | 1,000 (`characters.DefaultMaxCharactersPerCampaign`) | `resource_exhausted` |
+| Characters and NPCs in a campaign, living or dead (combat-only NPCs not counted toward it) | 1,000 (`characters.DefaultMaxCharactersPerCampaign`) | `resource_exhausted` |
+| Combat-only NPCs in a campaign (their own cap) | 1,000 (`characters.DefaultMaxCombatOnlyNpcsPerCampaign`) | `resource_exhausted` |
 | Images generated per campaign per month, and per server per Brasília day | `IMAGE_MONTHLY_LIMIT` and `IMAGE_DAILY_LIMIT` ([Operations](../operations/reference.md#generated-images-the-gemini-api)) | `failed_precondition` with reason `DAILY_LIMIT_REACHED` for the daily cap |
 | Voices made for the conversation, per server per Brasília day | `TTS_DAILY_LIMIT` ([Operations](../operations/reference.md)) | `429` on the audio route, reason `DAILY_LIMIT_REACHED` |
 

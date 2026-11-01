@@ -37,6 +37,8 @@ type reactionEvent struct {
 	Countered bool   `json:"countered,omitempty"`
 	Check     int32  `json:"check,omitempty"`
 	CheckDC   int32  `json:"check_dc,omitempty"`
+	// Stroke is the use of Stroke of Luck on the Counterspell check (held_stroke.go): Check holds the 20 counted, and the undo gives the use back.
+	Stroke *strokeUse `json:"stroke,omitempty"`
 	// Cutting Words, Deflect Missiles and Uncanny Dodge: what the roll or the
 	// damage was and became, and the die that came off.
 	Roll     string `json:"roll,omitempty"`

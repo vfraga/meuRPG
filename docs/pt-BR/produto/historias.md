@@ -612,7 +612,7 @@ Cada convite escolhe se exige aprovação, e uma recusa apaga o personagem e a p
 - Regras: RN-23, RN-24, RN-25
 - Módulos: rules, characters, campaigns, play, maps
 
-A história cobre classes **e** subclasses próprias, raças e sub-raças, antecedentes, magias, talentos, o pacote de conteúdo (exportar e importar), os interruptores de opções, as regras da mesa e a grade da campanha.
+A história cobre classes **e** subclasses próprias, raças e sub-raças, antecedentes, magias, talentos, opções, características de classe, criaturas, o pacote de conteúdo (exportar e importar), os interruptores de opções, as regras da mesa e a grade da campanha.
 A proposta de um jogador (MR-026) e a leitura de regras de um PDF (MR-027) são histórias à parte, para depois.
 As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa: regras](../../architecture/rules-table-content.md) e [Conteúdo da mesa: personagens](../../architecture/characters-table-content.md).
 
@@ -710,11 +710,42 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - **Dado** a tela "Opções para os jogadores", **quando** o mestre desliga uma opção da mesa, **então** os jogadores não a recebem como oferta e o servidor a recusa como escolha nova; a ficha que já a tem a mantém.
 - **Dado** o editor de opção, **quando** salvo uma opção com um conjunto desconhecido, uma classe, opção, Dádiva do Pacto ou magia que não existe, um nível fora de 1 a 20 ou outra escolha entre os efeitos, **então** o servidor recusa cada um no seu campo, **e** o conjunto de uma opção nunca muda depois de criada.
 
+**Forma Selvagem e espaços de magia.**
+
+- **Dado** uma característica da mesa que muda a Forma Selvagem, **quando** um druida com ela abre a lista de formas, **então** a lista e a escolha usam o maior nível de desafio, o menor custo em usos e ataques mágicos se alguma de suas características der; uma fera acima do nível é recusada ("WILD_SHAPE_BEAST_NOT_ALLOWED").
+  Um custo 0 não gasta uso, e o desfazer devolve exatamente o que a mudança gastou.
+- **Dado** uma ação da mesa que transforma usos em espaço de magia, **quando** um personagem a usa, **então** os usos são gastos e existe um espaço livre desse nível até o próximo descanso longo; o registro do combate lê os usos e o nível do espaço, e o desfazer tira o espaço e devolve os usos.
+- **Dado** uma ação da mesa que gasta um espaço de magia para curar, **quando** o jogador escolhe um nível, **então** esse espaço é gasto e a cura cresce com os dados de cada nível acima do primeiro; um nível sem espaço livre é recusado e nada é gasto.
+- **Dado** uma característica da mesa que recupera espaços de magia, **quando** o personagem recupera espaços depois de um descanso curto, **então** um uso do recurso dela é gasto e os espaços voltam; um espaço acima do nível máximo dela, um nível combinado acima do limite, um descanso que não é curto e um recurso sem uso são recusados e nada muda.
+
 **Características de classe.**
 
 - **Dado** que sou o mestre de "Mirathel", **quando** cadastro uma característica para uma classe (a do SRD ou uma da mesa) num nível de classe, com o texto e os efeitos, **então** todo personagem dessa classe a tem a partir desse nível, só em "Mirathel", como qualquer característica da classe.
 - **Dado** uma característica de classe que substitui outra da classe (uma característica inventada de Patrulheiro no nível 1 que substitui Inimigo Favorito), **então** os personagens da classe deixam de ter a substituída a partir desse nível, **e** ela não é pedida nas escolhas deles; **quando** desligo a entrada, **então** a classe volta a ser como antes e a característica substituída volta.
 - **Dado** o editor, **quando** salvo uma característica de classe com uma classe que não existe, um nível fora de 1 a 20 ou uma característica a substituir que a classe não tem nesse nível ou depois (ou que ela já tinha antes), **então** o servidor recusa cada um no seu campo.
+
+**Criaturas.**
+
+- **Dado** que sou o mestre de "Mirathel", **quando** cadastro uma criatura própria a partir de uma criatura do SRD (um lobo com 40 pontos de vida, classe de armadura 17, +2 no dano de cada ataque e um traço de texto), **então** ela vale onde vale uma criatura do SRD: eu a dou a um personagem de jogador, ela entra nos combates com esses números, e posso criar um NPC a partir dela.
+  A criatura do SRD em si nunca muda, e a base da entrada não pode ser trocada por outra depois.
+  O app web não tem editor de criaturas: elas são criadas pela API ou por um pacote de conteúdo.
+- **Dado** que salvo uma criatura com uma base que o SRD não tem, pontos de vida fora de 1 a 9.999, classe de armadura fora de 1 a 40, bônus de dano fora de -10 a 30, ou mais de 10 traços, **então** o servidor recusa cada um no próprio campo, e um traço com o nome de um traço ou de uma ação da base, ou "Magic Weapons", "Spellcasting" ou "Innate Spellcasting", é recusado.
+- **Dado** uma criatura já dada a um personagem, **quando** edito os pontos de vida e a classe de armadura da entrada, **então** a criatura mantém os pontos de vida com que foi dada **e** a classe de armadura e os ataques dela acompanham a entrada.
+- **Dado** uma entrada de criatura, **então** um jogador a acha na lista de criaturas e lê a ficha dela só enquanto um personagem dele a tem.
+  Isso vale com a entrada ativa, arquivada ou desligada.
+  O mestre lê todas as entradas.
+  Arquivar ou desligar não muda nada para as criaturas já dadas, e nada é apagado.
+- **Dado** um monstro de uma criatura da mesa em combate, **quando** edito a entrada e ponho a criatura de novo no combate, **então** o novo combatente tem a classe de armadura e os ataques atuais da entrada.
+  O monstro que já estava ali mantém os números com que entrou.
+- **Dado** uma criatura da mesa que um personagem tem, em combate, **quando** edito a entrada, **então** a classe de armadura e os ataques dela acompanham a entrada na hora.
+  Os pontos de vida continuam os que ela recebeu.
+- **Dado** uma criatura da mesa em combate, **então** os pontos de vida dela são um número só para o mestre e o jogador dono, e a classe de armadura só para o mestre; os outros jogadores leem a palavra de estado.
+- **Dado** uma criatura da mesa em combate, **então** todo jogador ali lê o nome e a chave dela, como numa invocação do SRD ou num NPC.
+  A ficha de estatísticas, os pontos de vida e a classe de armadura ficam escondidos de quem não é o dono.
+  Isso vale mesmo com a entrada arquivada ou desligada.
+- **Dado** uma entrada de criatura arquivada, **quando** a dou a um personagem, **então** ela é dada.
+- **Dado** uma entrada de criatura, **quando** a ligo ou desligo, **então** faço isso pela API, porque a tela "Opções para os jogadores" não tem grupo de criaturas.
+- **Dado** as magias de invocação, a Forma Selvagem e as ferramentas de encontro (gerador, avaliador e trocas), **então** elas oferecem só criaturas do SRD, porque uma criatura da mesa não mantém o nível de desafio da base.
 
 **Trocar uma escolha.**
 
@@ -727,7 +758,7 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
   O aviso some sozinho quando os números voltam a bater.
 - **Dado** um conteúdo da mesa que uma ficha usa, **quando** o mestre o arquiva, **então** a ficha o mantém **e** ele deixa de aparecer como escolha nova; nada do conteúdo da mesa é apagado.
   Uma entrada arquivada ainda pode ser editada e pode ser desarquivada, e então volta a ser uma escolha nova.
-- **Dado** a tela "Opções para os jogadores", **quando** o mestre desliga uma classe, subclasse, raça, sub-raça, antecedente, magia ou talento (do SRD ou da mesa), **então** os jogadores deixam de vê-lo e de escolhê-lo; o que está ligado eles veem por inteiro, com números e efeitos.
+- **Dado** a tela "Opções para os jogadores", **quando** o mestre desliga uma classe, subclasse, raça, sub-raça, antecedente, magia, talento, opção ou característica de classe (do SRD ou da mesa), **então** os jogadores deixam de vê-lo e de escolhê-lo; o que está ligado eles veem por inteiro, com números e efeitos.
   Uma classe desligada leva as subclasses dela junto, e uma raça desligada, as sub-raças.
 - **Dado** uma opção desligada ou arquivada, **quando** um jogador cria ou edita uma ficha ou sobe de nível, **então** o servidor a recusa como escolha nova, **e** uma ficha que já a tem continua funcionando e uma edição que não tem relação nunca é recusada.
   O mestre nunca é recusado.
@@ -1434,7 +1465,7 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - O arquivo sobe em partes, então uma conexão que cai recomeça de onde parou. O envio pertence à conta do mestre, uma pessoa tem um por vez, e as partes inacabadas são apagadas uma hora depois da última.
 - Uma prévia conta o que o pacote guarda e lista cada problema em palavras simples. Qualquer problema bloqueia "Criar campanha": tudo ou nada, e uma falha no meio não deixa nada para trás.
 - Um pacote é recusado quando vem de um MeuRPG mais novo ("Este pacote é de uma versão mais nova do MeuRPG, e este servidor ainda não sabe abri-lo."), foi alterado, traz um campo que este servidor não conhece, passa de 200 MiB ou 2.000 entradas (10 MiB por entrada), está suspeitamente comprimido, tem um nome que sobe para fora de uma pasta, ou se refere a algo que lhe falta.
-- Toda regra do app vale como se o mestre tivesse digitado os dados: nomes, tamanhos, CDs, ações de cena, armadilhas, quebra-cabeças, fichas (com o conteúdo de mesa do próprio pacote), os limites de uma campanha (300 imagens, 200 mapas, 200 pontos por mapa, 1.000 entradas de mesa, o limite de personagens e NPCs) e o limite de campanhas da conta ("Você já tem 10 campanhas.") e a lista de criadores. As imagens passam pelo pipeline do envio (recodificadas, sem metadados).
+- Toda regra do app vale como se o mestre tivesse digitado os dados: nomes, tamanhos, CDs, ações de cena, armadilhas, quebra-cabeças, fichas (com o conteúdo de mesa do próprio pacote), os limites de uma campanha (300 imagens, 200 mapas, 200 pontos por mapa, 1.000 entradas de mesa, o limite de personagens e NPCs, que não conta os NPCs feitos para criaturas num combate; eles têm um limite próprio de 1.000) e o limite de campanhas da conta ("Você já tem 10 campanhas.") e a lista de criadores. As imagens passam pelo pipeline do envio (recodificadas, sem metadados).
 - Os ids nunca são reaproveitados: cada coisa ganha um id novo e toda referência, inclusive os links no documento, o acompanha.
 - Os personagens dos jogadores chegam reservados (MR-049): invisíveis aos jogadores até um deles assumir com o link do mestre.
 

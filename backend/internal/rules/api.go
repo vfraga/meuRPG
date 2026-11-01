@@ -729,6 +729,12 @@ type Derived struct {
 	// without it: during a short rest, a creature that hears the song and spends
 	// hit dice regains one extra die of this size (see SongOfRestFor).
 	SongOfRestSides int
+	// WildShape is what the character's Wild Shape allows, nil without it
+	// (the most permissive of its wild_shape effects).
+	WildShape *WildShapeRule
+	// TableRecoveries are the ways the character takes expended spell slots back after a
+	// rest, from its slot_recovery effects (the SRD's own Arcane Recovery is not one).
+	TableRecoveries []TableSlotRecovery `json:",omitempty"`
 	// SavageAttacks says the character has the half-orc's Savage Attacks: a critical
 	// hit with a melee weapon attack rolls one more of the weapon's damage dice.
 	SavageAttacks bool
@@ -1140,3 +1146,14 @@ const (
 	// IssueRaceSize: the sheet picks a size the race does not offer.
 	IssueRaceSize = "race_size"
 )
+
+// WildShapeRule is what a character's wild_shape effects add up to: the challenge rating
+// limit ("1/4", "2"; NoFly and NoSwim leave out the beasts with those speeds), the uses of
+// the Wild Shape resource one change of form costs and whether the beast's attacks count
+// as magical.
+type WildShapeRule struct {
+	MaxCR         string
+	NoFly, NoSwim bool
+	Cost          int
+	Magical       bool
+}

@@ -9,7 +9,7 @@ For the engine around it see [Rules module](rules.md).
 
 | Piece | What it does |
 | --- | --- |
-| `Overlay` | The revision, the keys switched off, the entries of eight kinds (`TableClass`, `TableSubclass`, `TableRace`, `TableSubrace`, `TableBackground`, `TableSpell`, `TableFeat`, `TableOption`) and `Strict`, the keys being written now. Each entry starts with a `TableEntry` (key, Portuguese name, `Archived`, the revision and date of its last change) and carries the features (`TableFeature`: key, name, text, effects). The fields follow what the editors fill in, so the protos map one to one. |
+| `Overlay` | The revision, the keys switched off, the entries of ten kinds (`TableClass`, `TableSubclass`, `TableRace`, `TableSubrace`, `TableBackground`, `TableSpell`, `TableFeat`, `TableOption`, `TableClassFeature`, `TableCreature`) and `Strict`, the keys being written now. Each entry starts with a `TableEntry` (key, Portuguese name, `Archived`, the revision and date of its last change) and carries the features (`TableFeature`: key, name, text, effects). The fields follow what the editors fill in, so the protos map one to one. |
 | Keys | Every table key is `<kind>:<name>@mesa`, the name 1 to 60 characters of `[a-z0-9-]`; a feature's key starts `feature:`, `trait:` or `background-feature:`. `With` refuses a key without `@mesa`, of another kind, malformed or already taken (even by another entry's feature). Because the prefix is the SRD's, every place that decides by prefix works for table keys. |
 | Reserved words | `With` refuses (`reserved_key`) a key, of an entry or a feature, with `magical-secrets`, `wild-shape` or `ability-score-improvement` in the name, or ending in `-spellcasting`, because the engine, `play` and the web react to those words in SRD keys. The keys the engine writes carry the kind (`feature:class-<name>-spellcasting@mesa`, `feature:subclass-<name>-spellcasting@mesa`, `feature:class-<name>-ability-score-improvement-<n>@mesa`), so a class and a subclass of the same name never collide. |
 | Copy-on-write | The SRD is a singleton many requests read at once. `With` copies (shallowly) only the maps it changes, adds the entries, rebuilds the indexes and the catalogue, and leaves the values shared. A table subclass of an SRD class enters a copy of the class with the new subclass list; the same for a race's subraces. Two contents made from the same SRD do not see each other, and a `Content` that already has a table layer does not accept another. |
@@ -26,7 +26,7 @@ All checked in the first pass, before anything compiles; the error names the lim
 
 | What | Limit |
 | --- | --- |
-| Entries (of the eight kinds; features do not count) | 1,000 (`MaxOverlayEntries`) |
+| Entries (of the ten kinds; features do not count) | 1,000 (`MaxOverlayEntries`) |
 | Features | 60 per class and 60 per subclass, counted apart (`MaxTableFeatures`); the features the engine writes do not count |
 | Traits | 60 per race and per subrace (`MaxTraits`) |
 | Options in a feature's option list | 60 (`MaxFeatureOptions`) |
@@ -54,6 +54,9 @@ A table feature has effects of these types only; anything else is `forbidden_eff
 | `proficiency` with `only_proficient` | A switch of the effect with level `expertise` on a skill (`skill:*` is every skill): the skill is doubled only where the character already has its proficiency from another source when the sheet is worked out (the race, the background, the sheet's picks or another feature), never from the effect itself or from another `only_proficient` effect. Without the switch the effect doubles the skill, proficient or not. Any other level, a target that is not a skill and any other effect type refuse it at `.only_proficient` (`bad_value`). It is a `yes_no` field of the proficiency type in the effect menu. |
 | `resource` | With uses and recharge. The resource may not have the name of an SRD one. |
 | `grant_action` | May carry `resource`: the name of a `resource` effect of the same entry (a feat included), its class, or an SRD resource. Each use spends `cost` of it (1 when empty) and the action is off while fewer are left; see [Costs, healing actions and hooks](#costs-healing-actions-and-hooks). Refused as `bad_reference` when nothing defines the resource. |
+| `grant_action` with `gives_slot` or `spends_slot` | `gives_slot` is an Int formula (1 to 9; a literal outside is refused at `.gives_slot`, and a result outside it removes the action): the action spends `cost` uses of its `resource` (required) and adds a free slot of that level until the next long rest; it takes no `cost_max`, `heal`, `temp_hp` or `value_per_point`. `spends_slot` makes the action spend a spell slot of the level the player picks at use (`TakeActionRequest.spend`, 1 to 9) and heal: `heal` at level 1 plus `value_per_point` (dice of the same sides) for each level above; it needs `heal` and takes no `resource`, `cost`, `cost_max` or `temp_hp`. Not both. `Derived.Actions` carries `GivesSlot` and `SpendsSlot` (`actionslots.go`), `Action.UnitCost` is 1 for a spent slot. |
+| `wild_shape` | `max_cr` (a challenge rating, `0`, `1/8`, `1/4`, `1/2` or a whole number up to 30) or `max_cr_from` (an Int formula, such as `floor(level() / 3)`), not both; `no_fly` and `no_swim` with a rating; `form_cost` (an Int formula, the uses of `wild_shape` one change of form costs, 0 for a free change; empty is 1); `magical_attacks`. At least one of rating, cost or magical attacks. `Derived.WildShape` takes the highest rating (with the limits of the effect that gives it; a tie goes to the effect with fewer limits), the lowest cost and magical attacks if any effect gives them; the limits are those of the one effect with the highest rating. `WildShapeLimitFor`, `WildShapeForms` and `WildShapeAllows` read it, so the list and the check agree. A class without the SRD Wild Shape resource needs `form_cost: 0`: the change would spend a use it does not have. |
+| `slot_recovery` | `resource` (a resource of the entry or its class, `bad_reference` otherwise), `recover_max_level` (an Int formula, the highest slot level, a literal 1 to 9) and `recover_levels` (an Int formula, the combined level, a literal of at least 1), all required; `when` and `text_pt` are allowed. `Derived.TableRecoveries` carries them for the character's level. `UseArcaneRecovery` with a `feature_key` spends a use of the resource and recovers slots within them (`TableSlotRecovery.Check`). A feature carries one `slot_recovery`: the call reads the first. |
 | `on_event` | The owner's hook on `short_rest`, `long_rest`, `death_save_failed` or `drop_to_zero`; see [Costs, healing actions and hooks](#costs-healing-actions-and-hooks). |
 | `ranged_attack` | Checked at its fields: `applies` is `spell` or `weapon`; `range_multiplier` is 2 or 3 and only on `spell`; `no_long_range_disadvantage` only on `weapon`; an effect that sets none of the three switches is refused at `.type`; `tags` at `.tags`; the switches on any other type are stray fields. |
 | `resistance` | Resistance, immunity or vulnerability (`kind`: `resist`, the default, `immune` or `vulnerable`) to the `damage_types` it lists: `damage-type:` keys of the content, `all` (alone) or `nonmagical_bps` (bludgeoning, piercing and slashing from attacks that are not magical); or to every type but `except`. `except` and `damage_types` exclude each other and one is required. `while` is empty (always), `rage` or the `state_name` of a `state` effect of the same entry (`.while`: `bad_reference` for a state nothing defines). Refusals name the field: `.damage_types` (unknown type, empty, a type twice, `all` mixed with others, both `except` and `damage_types`), `.except` (`bad_reference`), `.kind`, `.while`, and `.when` or `.tags` (`bad_value`): `while` is the condition. See [Effects](rules.md#effects). |
@@ -71,7 +74,7 @@ A table feature has effects of these types only; anything else is `forbidden_eff
 | `superiority_die` | See [Maneuvers](#maneuvers). |
 | Spells in a `note` | A `note` with `spells` (like the SRD's Infernal Legacy): the character knows the cantrip, or a spell once per day when the same feature has a `resource`. The spell is on the sheet's list and does not count in the class numbers. Only a `note` carries `spells`. The structured way is [`granted_spell`](#granted-spells). |
 
-Never allowed: `handler` (not even one that exists, since a handler reads columns of an SRD class a table class lacks), `spellcasting` and `wild_shape` (the engine writes casting from the class), `replaces`, `beast_spells`, `song_of_rest`.
+Never allowed: `handler` (not even one that exists, since a handler reads columns of an SRD class a table class lacks), `spellcasting` (the engine writes casting from the class), `replaces`, `beast_spells`, `song_of_rest`.
 A text-only feature always holds.
 
 **Option lists.**
@@ -232,6 +235,39 @@ A switched-off entry is skipped entirely: the class reads as it did without it, 
 An archived entry still applies to the sheets that have the class.
 Checked at its fields: `.class_key` (a class of the content), `.level` (1 to 20), `.replaces_feature_key`, `.desc_pt` and `.effects`.
 
+## Table creatures
+
+`TableCreature` (`rules/overlay_creature.go`) is an SRD creature with a few adjustments.
+Its key is `creature:<slug>@mesa`.
+It names a `BaseKey` (an SRD creature such as `monster:wolf`) and changes `HitPoints`, `ArmorClass`, `DamageBonus` and `Traits`; the rest of the stat block is the base's.
+`With` copies the base's stat block, applies the adjustments and registers the copy under the entry's key, so the creature resolves where an SRD creature does: `MonsterDerived`, `CreatureByKey`, `MonsterPlan`, `ListCreatures` and the combat.
+The base is never written: the SRD's maps are copied before the first table creature goes in.
+
+| Field | What it does | Limit |
+| --- | --- | --- |
+| `BaseKey` | The SRD creature it is made from. A table creature is never the base of another. It never changes after the entry is created (`immutable` at `table_creature.base_key`) | Must exist in the SRD (`dangling_reference` at `.base_key`) |
+| `HitPoints` | The creature's maximum hit points. 0 keeps the base's. The base's hit dice stay and its hit points roll is dropped | 1 to 9,999 (`MaxCreatureHitPoints`) |
+| `ArmorClass` | The creature's armor class. 0 keeps the base's. The kind and the notes of the base's armor class are dropped | 1 to 40 (`MaxCreatureArmorClass`) |
+| `DamageBonus` | A whole number added once to the first damage part of every attack action, so each attack of a Multiattack gets it. 0 adds nothing. A flat damage stops at 0, and dice that end in `+MOD` are left as they are. The text of the action stays the base's | -10 to 30 |
+| `Traits` | Traits added after the base's special abilities, as text only: a name and a text, no effects | At most 10 (`MaxCreatureTraits`); a name of 1 to 80 characters on one line; a text of 1 to 4,000 characters |
+
+A trait name is refused (`bad_name`) when it repeats a trait or an action of the base, compared by its letters `a` to `z` and digits, or when it is `Magic Weapons`, `Spellcasting` or `Innate Spellcasting`, ignoring case, because the engine reads those names.
+An adjustment out of its range is `bad_value` at its field, a trait text out of its length is `bad_text` and too many traits is `limit`.
+The checks run before anything is built, so a creature reports every refusal at once.
+
+A table creature is left out of every use that depends on the base's challenge rating and XP, which the adjustments may not keep:
+
+- The encounter evaluator, the generator and the swaps (`EvaluateEncounter`, `GenerateEncounter`, `EncounterSwaps`) read the SRD's creatures only.
+- The summon choices of the SRD spells (`CheckSummon`) accept SRD creatures only.
+- The Wild Shape forms (`WildShapeForms`) are SRD beasts only.
+- The encounter tools refuse a table creature's key as unknown content, because `HasCreature` is true for SRD creatures only.
+
+An archived or switched-off entry keeps resolving.
+A creature already held, or an NPC made from it, keeps working.
+`Content.Creatures()` lists the table's creatures with the marks.
+`Content.Hidden` is true for it, as for any other kind (see [Switches](#switches-and-hidden-keys)).
+The server does not use that predicate for a table creature: a player reads one only when a character of theirs holds a live creature of its key, whatever the entry's state ([characters](characters-table-content.md#table-creatures)).
+
 ## States
 
 A `state` effect defines a state; the character's player turns it on and off.
@@ -312,7 +348,8 @@ Combat uses `Spellcasting.SpellList`, the list the caster reads: the class's or,
 
 ## Switches and hidden keys
 
-The master switches classes, subclasses, races, subraces, backgrounds, spells and feats on or off per campaign, SRD and table alike; everything is on by default.
+The master switches classes, subclasses, races, subraces, backgrounds, spells, feats, options, class features and creatures on or off per campaign, SRD and table alike; everything is on by default.
+The options screen has no creature group, so creatures are switched through the API only.
 `Overlay.Off` carries the switched-off keys to `With`, which stores them on a copy and ignores a key that is not switchable (`Content.Switchable`).
 
 - `Content.Off(key)` is the key's own switch.

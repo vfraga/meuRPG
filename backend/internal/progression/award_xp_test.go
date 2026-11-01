@@ -742,7 +742,7 @@ func TestARetryOfAnAwardWithoutAHashIsComparedByWhatItLeft(t *testing.T) {
 			t.Fatalf("MarkMilestoneReached() error = %v", err)
 		}
 		var reachedID string
-		if err := rig.h.pool.QueryRow(t.Context(), `SELECT id::STRING FROM xp_awards WHERE idempotency_key = $1`, reachKey).Scan(&reachedID); err != nil {
+		if err := rig.h.pool.QueryRow(t.Context(), `SELECT id::TEXT FROM xp_awards WHERE idempotency_key = $1`, reachKey).Scan(&reachedID); err != nil {
 			t.Fatalf("find the award: %v", err)
 		}
 		forget(t, rig, reachedID)

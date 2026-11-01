@@ -111,7 +111,7 @@ func (s *Service) formEnds(ctx context.Context, q *playdb.Queries, tx pgx.Tx, se
 	if encID != "" {
 		encounterID = &encID
 	}
-	if _, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	if _, err := insertSessionEvent(ctx, q, playdb.InsertSessionEventParams{
 		GameSessionID: sessionID, Seq: seq, Kind: eventWildShapeEnded, CharacterID: &characterID, Payload: payload, CreatedAt: s.now(), EncounterID: encounterID,
 	}); err != nil {
 		return nil, fmt.Errorf("insert session event: %w", err)
@@ -401,7 +401,7 @@ func (s *Service) shapeTx(ctx context.Context, c *combatTx, r *shapeRun) (any, e
 		}
 	}
 	if !r.leave {
-		r.made.Beast, r.made.Resource, r.made.ShapeSet = r.beast, wildShapeResource, true
+		r.made.Beast, r.made.ShapeSet = r.beast, true
 	}
 	return s.shapeSeal(ctx, c, r)
 }
@@ -439,10 +439,18 @@ func (s *Service) shapeApply(ctx context.Context, c *combatTx, r *shapeRun) erro
 	if _, r.vitals, r.body, err = s.vitals.AssumeWildShape(ctx, c.tx, c.session.CampaignID, r.characterID, r.beast); err != nil {
 		return errShape(err)
 	}
-	// One use of the Forma Selvagem resource (the character has no more when
-	// the app says "Sem usos": NO_USES, nothing is changed).
-	r.vitals, err = s.spendResource(ctx, c, r.characterID, wildShapeResource, 1)
-	return err
+	// The uses of the Forma Selvagem resource the change costs: one, unless a feature of the
+	// table makes it cheaper, even free (the character has no more when the app says "Sem
+	// usos": NO_USES, nothing is changed).
+	cost := r.body.WildShapeCost
+	if cost <= 0 {
+		return nil
+	}
+	if r.vitals, err = s.spendResource(ctx, c, r.characterID, wildShapeResource, cost); err != nil {
+		return err
+	}
+	r.made.Resource, r.made.PointsSpent = wildShapeResource, cost
+	return nil
 }
 
 // shapeSeal fills in the event's owner and, in a combat, gives the combatant the
@@ -488,7 +496,11 @@ func (s *Service) shapeUndo(ctx context.Context, c *combatTx, kind string, ev ac
 // druid is in its own shape.
 func (s *Service) shapeUndoStart(ctx context.Context, c *combatTx, ev actionEvent, who playdb.Combatant, ok bool, keep func(*playv1.CharacterVitals)) error {
 	if ev.Resource != "" {
-		v, err := s.spendResource(ctx, c, ev.OwnerCharacter, ev.Resource, -1)
+		back := ev.PointsSpent // an event without PointsSpent counts as one use
+		if back <= 0 {
+			back = 1
+		}
+		v, err := s.spendResource(ctx, c, ev.OwnerCharacter, ev.Resource, -back)
 		if err != nil {
 			return err
 		}

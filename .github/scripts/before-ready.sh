@@ -81,7 +81,7 @@ packages="$("$tool" -list "$list" -packages)"
 count="$(echo "$packages" | wc -l | tr -d ' ')"
 
 if [ -z "${MEURPG_TEST_DATABASE_URL:-}" ]; then
-  url="${TEST_DATABASE_URL:-postgresql://root@localhost:26258/defaultdb?sslmode=disable}"
+  url="${TEST_DATABASE_URL:-postgresql://root@localhost:5433/postgres?sslmode=disable}"
   cat >&2 <<EOF
 before-ready: MEURPG_TEST_DATABASE_URL is not set. Most of these tests need the test
 database, and without it they would skip and pass for nothing. Start it and point the tests
@@ -91,7 +91,7 @@ at it:
   export MEURPG_TEST_DATABASE_URL='$url'
   make before-ready
 
-(docs/testing.md#integration-tests; any other CockroachDB works the same way.)
+(docs/testing.md#integration-tests; any PostgreSQL or CockroachDB works the same way.)
 EOF
   exit 2
 fi

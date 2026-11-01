@@ -12,7 +12,7 @@ Related pages:
 | Page | Subject |
 | --- | --- |
 | [Level-up](rules-level-up.md) | What a level gives and what a locked sheet may change. |
-| [Table content](rules-table-content.md) | `Content.With`: the master's own classes, races, spells and feats over the SRD. |
+| [Table content](rules-table-content.md) | `Content.With`: the master's own classes, subclasses, races, subraces, backgrounds, spells, feats, options, class features and creatures over the SRD. |
 | [Creatures, items and presets](rules-creatures-items.md) | Creatures, summons, Wild Shape, magic items, trap and light presets. |
 | [Combat engine](rules-combat.md) | The pure arithmetic of the fight, spell details and reactions. |
 | [Grid, vision and dungeons](rules-maps.md) | Map geometry, fog of war and the dungeon generator. |
@@ -131,7 +131,8 @@ What the engine needs to know is written by hand in `effects/*.json`, in a close
 | `ability_increase` | Feats only: `count` different abilities from `from`, `value` 1 or 2 each. |
 | `beast_spells` | The druid's Beast Spells (level 18): the druid keeps its spellcasting in a beast form (`Content.CastsInBeastForm`). |
 | `song_of_rest` | The bard's Song of Rest die of the tier (`sides`: 6, 8, 10 or 12), read into `Derived.SongOfRestSides` (the largest wins). The rests use it. |
-| `wild_shape` | The druid's Wild Shape limits at levels 2, 4 and 8: `max_cr`, `no_fly`, `no_swim`. See [Creatures, items and presets](rules-creatures-items.md#wild-shape). |
+| `wild_shape` | The druid's Wild Shape limits at levels 2, 4 and 8: `max_cr`, `max_cr_from`, `no_fly`, `no_swim`, `form_cost`, `magical_attacks`. See [Creatures, items and presets](rules-creatures-items.md#wild-shape). |
+| `slot_recovery` | Only table content uses it. A feature use recovers spell slots up to `recover_max_level` with a combined level of `recover_levels`. See [Rules table content](rules-table-content.md). |
 | `replaces` | A higher tier of a scaling feature names the lower one it takes over from (Channel Divinity, Extra Attack, Action Surge, Indomitable, Brutal Critical, Bardic Inspiration and Song of Rest dice, Favored Enemy, Natural Explorer, Unarmored Movement, Wild Shape). `Derived.Features` keeps only the newest tier, after everything else is derived: the lower tier's effects, choices and options still count. The effect takes the feature key and nothing else; table content never uses it. |
 | `choice`, `note`, `handler` | Player choices, what appears only as text, and a registered Go function (SRD only: table content never uses `handler`). |
 

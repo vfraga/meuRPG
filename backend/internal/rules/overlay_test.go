@@ -875,8 +875,8 @@ func TestWithRefusals(t *testing.T) {
 		{"spellcasting effect", func(o *Overlay) {
 			feature(o).Effects = append(feature(o).Effects, Effect{Type: "spellcasting", Ability: "int", Progression: "full"})
 		}, []string{"feature:gen-none-vigor@mesa", "menu"}},
-		{"wild shape effect", func(o *Overlay) {
-			feature(o).Effects = append(feature(o).Effects, Effect{Type: "wild_shape", MaxCR: "1"})
+		{"beast spells effect", func(o *Overlay) {
+			feature(o).Effects = append(feature(o).Effects, Effect{Type: "beast_spells"})
 		}, []string{"menu"}},
 		{"unknown effect type", func(o *Overlay) { feature(o).Effects = []Effect{{Type: "teleport"}} }, []string{"menu"}},
 		{"choice from the table's own set", func(o *Overlay) {

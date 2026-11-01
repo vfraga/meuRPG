@@ -755,6 +755,8 @@ func (u *undoer) takeBackResource(ctx context.Context, ev actionEvent, who playd
 		u.keep(v)
 	case resBardicGive:
 		return u.bardicGiveBack(ctx, ev, who)
+	case resSlotGive, resSlotSpend:
+		return u.slotBack(ctx, res, who.CharacterID)
 	}
 	return nil
 }
@@ -818,6 +820,14 @@ func resourceLogView(ev actionEvent, v combatViewer, actor, target playdb.Combat
 		out.Key = flexibleCreate
 	case resConvert:
 		out.Key = flexibleConvert
+	case resSlotGive:
+		out.Key = ev.Key
+	case resSlotSpend:
+		out.Key = ev.Key
+		if ev.Heal && (v.master || v.owns(actor) || v.owns(target)) { // the hit points are the master's and the players' own
+			healed := ev.Amount
+			out.Healed = &healed
+		}
 	case resBardicGive:
 		out.Key = bardicInspirationFt
 		if v.master || v.owns(actor) || v.owns(target) {

@@ -10,6 +10,7 @@ import {
   entryState,
   entrySupport as entrySupportRaw,
   filterEntries,
+  KIND_WORDS,
   limitLine,
   navBySlug,
   countOfNav,
@@ -90,6 +91,10 @@ describe('the list of the table content (E10-01 states 1, 2 and 10)', () => {
     expect(savedSentence(TableContentKind.SUBRACE, 'Da Colina')).toBe(
       'A sub-raça Da Colina foi salva.',
     );
+    expect(savedSentence(TableContentKind.CREATURE, 'Lobo da Mesa')).toBe(
+      'A criatura Lobo da Mesa foi salva.',
+    );
+    expect(KIND_WORDS[TableContentKind.CREATURE]).toBe('Criatura');
   });
 
   it('says the state in words, for the master only', () => {

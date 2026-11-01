@@ -74,6 +74,10 @@ type Character struct {
 	// CastsInBeastForm says the character keeps its spells in a beast shape
 	// (a druid of level 18, Beast Spells); every other character has none there.
 	CastsInBeastForm bool
+	// WildShapeCost is how many uses of the Wild Shape resource one change of form spends
+	// (the cheapest of the character's wild_shape effects: 1 for the SRD druid, less or 0
+	// for a table feature that makes it cheaper).
+	WildShapeCost int32
 	// ArmorUntrained says the character wears armor or a shield it is not proficient with,
 	// and so cannot cast spells (rules.ArmorUntrained).
 	ArmorUntrained bool
@@ -397,6 +401,11 @@ type FeatureAction struct {
 	// Cost is the uses each use spends (0: one) and CostMax the most the player may choose to
 	// spend (0: the cost is fixed); the table's content sets them.
 	Cost, CostMax int
+	// GivesSlot is the level of the spell slot each use creates from the uses it spends, 0 for none; SpendsSlot says
+	// each use spends a spell slot of the level the player picks and heals by it (Heal at level 1, HealPerPoint for
+	// each level above).
+	GivesSlot  int
+	SpendsSlot bool
 	// Heal is the dice the action heals, nil for none, HealPerPoint what each point above the
 	// cost adds to it; TempHP is the temporary hit points it gives and TempHPPerPoint what each
 	// point above the cost adds.

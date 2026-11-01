@@ -168,7 +168,7 @@ func TestAddMilestoneStepByStep(t *testing.T) {
 	// The limit, and the retry that is answered at it.
 	if _, err := rig.h.pool.Exec(ctx, `
 		INSERT INTO planned_milestones (campaign_id, position, text, created_at, updated_at)
-		SELECT $1, g, 'Marco ' || g::STRING, now(), now() FROM generate_series(10, $2) AS g`, rig.campaign, 10+maxMilestones-len(rig.plannedRows(t))-1); err != nil {
+		SELECT $1, g, 'Marco ' || g::TEXT, now(), now() FROM generate_series(10, $2) AS g`, rig.campaign, 10+maxMilestones-len(rig.plannedRows(t))-1); err != nil {
 		t.Fatalf("fill the list: %v", err)
 	}
 	res, err := rig.master.xp.AddMilestone(ctx, connect.NewRequest(&progressionv1.AddMilestoneRequest{CampaignId: rig.campaign, Text: "Mais um", IdempotencyKey: "k4"}))

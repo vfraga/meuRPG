@@ -121,11 +121,12 @@ func (v creatureView) visibleTo(m authz.Membership) bool {
 // characterCreatureToProto builds the CharacterCreature the caller sees. The caller may
 // see it (visibleTo).
 func characterCreatureToProto(content *rules.Content, c charactersdb.CharacterCreature) *charactersv1.CharacterCreature {
+	d, _ := content.MonsterDerived(c.MonsterKey) // not in the content: no armor class
 	return &charactersv1.CharacterCreature{
 		Id: c.ID, CharacterId: c.CharacterID, MonsterKey: c.MonsterKey, MonsterNamePt: content.NamePT(c.MonsterKey), Name: c.Name,
 		Source: creatureSourceToProto[c.Source], Attack: creatureAttackNumber[c.Attack], SummonGroupId: c.SummonGroupID,
 		DependsOnConcentration: c.ConcentrationCastID != nil,
-		HitPointsCurrent:       c.HpCurrent, HitPointsMax: c.HpMax, CreatedAt: timestamppb.New(c.CreatedAt),
+		HitPointsCurrent:       c.HpCurrent, HitPointsMax: c.HpMax, CreatedAt: timestamppb.New(c.CreatedAt), ArmorClass: i32(d.ArmorClass),
 	}
 }
 

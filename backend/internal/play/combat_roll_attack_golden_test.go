@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 )
 
 // These tests freeze what RollAttack does today, scenario by scenario: every refusal with its code and
@@ -67,7 +68,7 @@ func (a *armed) rowsOf(t *testing.T, query string, args ...any) []string {
 		}
 		parts := make([]string, len(vals))
 		for i, v := range vals {
-			parts[i] = fmt.Sprint(v)
+			parts[i] = dbtest.SortJSONKeys(fmt.Sprint(v))
 		}
 		out = append(out, strings.Join(parts, " | "))
 	}

@@ -138,7 +138,7 @@ func TestAnNPCsShieldHoldsAPlayersAttack(t *testing.T) {
 	}
 	// What the Mage spent is counted on its stat block: one slot of the 1st level.
 	var used string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT slots_used::STRING FROM combatants WHERE id = $1`, mage.GetId()).Scan(&used); err != nil || !strings.Contains(used, `"1": 1`) {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT slots_used::TEXT FROM combatants WHERE id = $1`, mage.GetId()).Scan(&used); err != nil || !strings.Contains(used, `"1": 1`) {
 		t.Errorf("the Mage's slots used = %q, %v; want one 1st-level slot", used, err)
 	}
 }
@@ -254,7 +254,7 @@ func TestACounterspellPassedLetsTheCastHappen(t *testing.T) {
 	}
 	// The darts opened a pending damage the caster rolls.
 	var pending string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT id::STRING FROM pending_damages WHERE encounter_id = $1 AND attack_key = $2`, e.GetId(), magicMissileSpell).Scan(&pending); err != nil {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT id::TEXT FROM pending_damages WHERE encounter_id = $1 AND attack_key = $2`, e.GetId(), magicMissileSpell).Scan(&pending); err != nil {
 		t.Fatalf("the cast opened no pending damage: %v", err)
 	}
 	a.h.roller.queue(2, 2, 2)

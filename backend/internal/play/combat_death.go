@@ -166,9 +166,12 @@ func (s *Service) deathSaveWrite(ctx context.Context, c *combatTx, call deathSav
 	}
 	// A character that holds a Bardic Inspiration die, or a halfling whose d20 shows a 1, has the d20 kept until the
 	// player answers; the answer brings it back with the die added (SRD 5.1).
+	// Indomitable (held_indomitable.go) rerolls a death save that fails by the roll. The DC is the fixed 10, and the
+	// counts are the owner's even at a table that hides them from the others, so the question may say it failed.
 	gate, err := s.heldGate(ctx, s.inspirationGate(c), rollSpec{
 		Kind: heldDeathSave, Key: call.key, Request: call.msg, Roller: attackRoller(call.m, who, c.enc.Round), In: call.in,
 		Mode: combat.ModeNormal, Lucky: sheet.Traits.Lucky, MayAsk: playedBy(who, call.m),
+		Save: &saveRule{Death: true},
 	})
 	if err != nil {
 		return nil, err
@@ -183,10 +186,13 @@ func (s *Service) deathSaveWrite(ctx context.Context, c *combatTx, call deathSav
 	out.made = actionEvent{
 		Round: c.enc.Round, Actor: who.ID, D20: clamp32(face, 1, 20), Modifier: clamp32(bonus, 0, math.MaxInt32), Total: clamp32(roll.Total, 0, math.MaxInt32),
 		Physical: roll.Physical, DeathOutcome: deathOutcomeOf(face, bonus), DeathBefore: deathOf(who), DeathHidden: c.rules.DeathSavesHidden,
-		Lucky: gate.Lucky,
+		Lucky: gate.Lucky, Indomitable: gate.Indomitable,
 	}
 	if b := gate.Bonus; b != nil { // the die the player added: the log shows it and the undo gives it back
 		out.made.Res = &resourceEvent{Kind: resBardicUse, Sides: b.Sides, Face: b.Face, FromID: deref(who.InspirationFrom), ExpiresRound: derefInt32(who.InspirationExpiresRound)}
+		if u := gate.Used; u != nil { // the die was spent by an earlier answer: the row kept who gave it
+			out.made.Res.FromID, out.made.Res.ExpiresRound = u.From, u.ExpiresRound
+		}
 	}
 	after, err := s.deathCounts(ctx, c, who, sheet, r, out)
 	if err != nil {
@@ -278,7 +284,7 @@ func deathRoll(ev actionEvent) *playv1.DiceRoll {
 		total = ev.D20
 	}
 	roll := diceRoll(1, 20, []int32{ev.D20}, ev.Modifier, total, ev.Physical)
-	roll.Rerolled = ev.Lucky.proto()
+	roll.Rerolled = ev.rerolls()
 	return roll
 }
 

@@ -587,7 +587,7 @@ func puzzleSessionEvent(ctx context.Context, q *playdb.Queries, session playdb.G
 	if err != nil {
 		return fmt.Errorf("next event number: %w", err)
 	}
-	if _, err := q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	if _, err := insertSessionEvent(ctx, q, playdb.InsertSessionEventParams{
 		GameSessionID: session.ID, Seq: seq, Kind: kind, ActorUserID: &actorUserID, CharacterID: characterID, Payload: body, CreatedAt: now,
 	}); err != nil {
 		return fmt.Errorf("insert session event: %w", err)

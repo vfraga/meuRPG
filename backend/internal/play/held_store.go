@@ -63,6 +63,19 @@ type heldRoll struct {
 	Round                     *int32
 	LuckyIndex, LuckyTo       *int32
 	LuckyAnswerKey, AnswerKey *string
+	// Indomitable's question (held_indomitable.go): asked, whether it may say the save failed, its answer's key
+	// and the d20 that counted before and after the new roll; and the Bardic Inspiration die answered while it
+	// follows (its key, and the die the player added).
+	IndomAsk, IndomFailed bool
+	IndomAnswerKey        *string
+	IndomFrom, IndomTo    *int32
+	DieAnswerKey          *string
+	DieUsed               *bonusUse
+	// Stroke of Luck's question (held_stroke.go): asked, whether it may say the roll missed or failed, its answer's key
+	// and the d20 that counted when the player used the feature.
+	StrokeAsk, StrokeFailed bool
+	StrokeAnswerKey         *string
+	StrokeFrom              *int32
 	// CreatedAt is when the roll was held.
 	CreatedAt time.Time
 }
@@ -141,6 +154,14 @@ func (hs heldStores) answerLucky(ctx context.Context, before, after heldRoll, st
 	return hs.st.answerLucky(ctx, before, after, staysHeld)
 }
 
+func (hs heldStores) askIndomitable(ctx context.Context, h heldRoll) error {
+	return hs.st.askIndomitable(ctx, h)
+}
+
+func (hs heldStores) answerIndomitable(ctx context.Context, h heldRoll) error {
+	return hs.st.answerIndomitable(ctx, h)
+}
+
 func (hs heldStores) answer(ctx context.Context, h heldRoll, key string) error {
 	return hs.st.answer(ctx, h, key)
 }
@@ -170,6 +191,9 @@ func heldOfInspirationHold(row playdb.InspirationHold) heldRoll {
 		Faces: intsOf(row.Faces), Counted: int(row.Counted), Modifier: int(row.Modifier), Total: int(row.Total),
 		Round: row.Round, LuckyIndex: row.LuckyIndex, LuckyTo: row.LuckyTo, LuckyAnswerKey: row.LuckyAnswerKey,
 		AnswerKey: row.AnswerKey, CreatedAt: row.CreatedAt,
+		IndomAsk: row.IndomitableAsk, IndomFailed: row.IndomitableFailed, IndomAnswerKey: row.IndomitableAnswerKey,
+		IndomFrom: row.IndomitableFrom, IndomTo: row.IndomitableTo, DieAnswerKey: row.DieAnswerKey, DieUsed: dieUsedOf(row.DieUsed),
+		StrokeAsk: row.StrokeAsk, StrokeFailed: row.StrokeFailed, StrokeAnswerKey: row.StrokeAnswerKey, StrokeFrom: row.StrokeFrom,
 	}
 }
 
@@ -247,6 +271,7 @@ func (st inspirationHoldStore) insert(ctx context.Context, env gateEnv, h heldRo
 		Total: clamp32(h.Total, -heldBonusLimit, heldBonusLimit), Counted: clamp32(h.Counted, 0, 1), Physical: h.Physical,
 		CreatedAt: env.now, Round: h.Round, LuckyIndex: h.LuckyIndex,
 		CombatantID: nilIfEmpty(h.CombatantID), EncounterID: nilIfEmpty(h.EncounterID), WindowHold: h.Window && h.Kind == heldWeaponAttack,
+		IndomitableAsk: h.IndomAsk, IndomitableFailed: h.IndomFailed, StrokeAsk: h.StrokeAsk, StrokeFailed: h.StrokeFailed,
 	})
 	if err != nil {
 		return heldRoll{}, fmt.Errorf("hold the roll: %w", err)

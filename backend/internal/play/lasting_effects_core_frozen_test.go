@@ -16,7 +16,7 @@ import (
 func (a *armed) coreEffectID(t *testing.T, e *playv1.Encounter, label, key string) string {
 	t.Helper()
 	var id string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT s.id::STRING FROM combatant_states s WHERE s.encounter_id = $1 AND s.combatant_id = $2 AND s.source_key = $3 AND s.kind = 'effect'`,
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT s.id::TEXT FROM combatant_states s WHERE s.encounter_id = $1 AND s.combatant_id = $2 AND s.source_key = $3 AND s.kind = 'effect'`,
 		e.GetId(), a.id(t, label), key).Scan(&id); err != nil {
 		t.Fatalf("find the effect %s on %s: %v", key, label, err)
 	}

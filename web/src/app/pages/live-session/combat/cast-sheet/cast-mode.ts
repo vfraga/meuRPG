@@ -3,7 +3,7 @@ import { computed } from '@angular/core';
 import { DiceMode } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { d20Count, modeStatus, orNormal } from '../../../../core/combat/roll-mode';
-import type { RollField } from '../multi-roll/multi-roll';
+import type { RollField } from '../../../../shared/multi-roll/multi-roll';
 import type { CastChoices, CastHooks } from './cast-choices';
 import type { CastState } from './cast-state';
 

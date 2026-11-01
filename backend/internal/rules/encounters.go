@@ -139,7 +139,7 @@ func (c *Content) EvaluateEncounter(levels []int, entries []encounter.Entry) (En
 	maxCR := encounter.MaxCR(levels, maxCREighths)
 	ev := EncounterEvaluation{Budget: budget, LowestLevel: encounter.LowestLevel(levels), MaxCR: crLabel(maxCR)}
 	byKey := make(map[string]CreatureEntry, len(entries))
-	for _, e := range c.c.monsterEntries {
+	for _, e := range c.srdCreatureEntries() {
 		byKey[e.Key] = e
 	}
 	for _, e := range entries {
@@ -184,8 +184,9 @@ func (c *Content) GenerateEncounter(levels []int, band encounter.Band, kind stri
 	if err != nil {
 		return EncounterEvaluation{}, err
 	}
-	pool := make([]encounter.Creature, len(c.c.monsterEntries))
-	for i, e := range c.c.monsterEntries {
+	srd := c.srdCreatureEntries()
+	pool := make([]encounter.Creature, len(srd))
+	for i, e := range srd {
 		pool[i] = encounterCreature(e)
 	}
 	res, err := encounter.Generate(pool, encounter.Options{
@@ -207,7 +208,8 @@ func (c *Content) EncounterSwaps(key, kind string) ([]CreatureEntry, error) {
 	}
 	var cur CreatureEntry
 	found := false
-	for _, e := range c.c.monsterEntries {
+	srd := c.srdCreatureEntries()
+	for _, e := range srd {
 		if e.Key == key {
 			cur, found = e, true
 		}
@@ -216,7 +218,7 @@ func (c *Content) EncounterSwaps(key, kind string) ([]CreatureEntry, error) {
 		return nil, fmt.Errorf("%w: %q", ErrEncounterCreature, key)
 	}
 	var out []CreatureEntry
-	for _, e := range c.c.monsterEntries {
+	for _, e := range srd {
 		if e.XP == cur.XP && e.Key != cur.Key && (kind == "" || e.Type == kind) {
 			out = append(out, e)
 		}
@@ -224,8 +226,21 @@ func (c *Content) EncounterSwaps(key, kind string) ([]CreatureEntry, error) {
 	return out, nil
 }
 
-// HasCreature says whether the key is an SRD creature ("monster:ogre").
+// srdCreatureEntries are the creatures the encounter tools use: the SRD's. A table creature has the
+// challenge rating and the XP of its base, which its adjustments may not keep, so it is left out.
+func (c *Content) srdCreatureEntries() []CreatureEntry {
+	if len(c.c.creatureOf) == 0 {
+		return c.c.monsterEntries
+	}
+	return slices.DeleteFunc(slices.Clone(c.c.monsterEntries), func(e CreatureEntry) bool { _, table := c.c.creatureOf[e.Key]; return table })
+}
+
+// HasCreature says whether the key is an SRD creature ("monster:ogre"). A table creature is not: the
+// encounter tools measure with the SRD's challenge ratings.
 func (c *Content) HasCreature(key string) bool {
+	if _, table := c.c.creatureOf[key]; table {
+		return false
+	}
 	_, ok := c.c.monsters[key]
 	return ok
 }

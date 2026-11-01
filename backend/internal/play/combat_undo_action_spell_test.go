@@ -73,6 +73,11 @@ func deltaAnsweredHold(face, modifier int, lucky bool) undoDelta {
 		"+ db/inspiration_holds[#].kind=weapon_attack", "+ db/inspiration_holds[#].modifier=" + strconv.Itoa(modifier),
 		"+ db/inspiration_holds[#].physical=" + physical, "+ db/inspiration_holds[#].request=<blob>", "+ db/inspiration_holds[#].round=1",
 		"+ db/inspiration_holds[#].total=" + strconv.Itoa(face+modifier), "+ db/inspiration_holds[#].user_id=#", "+ db/inspiration_holds[#].window_hold=false",
+		"+ db/inspiration_holds[#].die_answer_key=<nil>", "+ db/inspiration_holds[#].die_used=<nil>",
+		"+ db/inspiration_holds[#].indomitable_answer_key=<nil>", "+ db/inspiration_holds[#].indomitable_ask=false",
+		"+ db/inspiration_holds[#].indomitable_failed=false", "+ db/inspiration_holds[#].indomitable_from=<nil>", "+ db/inspiration_holds[#].indomitable_to=<nil>",
+		"+ db/inspiration_holds[#].stroke_answer_key=<nil>", "+ db/inspiration_holds[#].stroke_ask=false", "+ db/inspiration_holds[#].stroke_failed=false",
+		"+ db/inspiration_holds[#].stroke_from=<nil>",
 	}
 	if lucky {
 		return append(out, "+ db/inspiration_holds[#].lucky_answer_key=#", "+ db/inspiration_holds[#].lucky_index=0", "+ db/inspiration_holds[#].lucky_to=15")
@@ -513,6 +518,11 @@ var deltaAnsweredInspirationHold = undoDelta{
 	"+ db/inspiration_holds[#].physical=true", "+ db/inspiration_holds[#].request=<blob>", "+ db/inspiration_holds[#].round=1",
 	"+ db/inspiration_holds[#].total=9", "+ db/inspiration_holds[#].user_id=#",
 	"+ db/inspiration_holds[#].window_hold=false",
+	"+ db/inspiration_holds[#].die_answer_key=<nil>", "+ db/inspiration_holds[#].die_used=<nil>",
+	"+ db/inspiration_holds[#].indomitable_answer_key=<nil>", "+ db/inspiration_holds[#].indomitable_ask=false",
+	"+ db/inspiration_holds[#].indomitable_failed=false", "+ db/inspiration_holds[#].indomitable_from=<nil>", "+ db/inspiration_holds[#].indomitable_to=<nil>",
+	"+ db/inspiration_holds[#].stroke_answer_key=<nil>", "+ db/inspiration_holds[#].stroke_ask=false", "+ db/inspiration_holds[#].stroke_failed=false",
+	"+ db/inspiration_holds[#].stroke_from=<nil>",
 }
 
 // TestUndoKindSpellCastBardicDie: the spell attack that used a Bardic Inspiration die holds

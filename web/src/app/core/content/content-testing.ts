@@ -44,6 +44,7 @@ export function entry(
     [TableContentKind.FEAT]: 'feat',
     [TableContentKind.OPTION]: 'option:invocation',
     [TableContentKind.CLASS_FEATURE]: 'classfeature',
+    [TableContentKind.CREATURE]: 'creature',
   }[kind as 1];
   const body: Body =
     over.body ??

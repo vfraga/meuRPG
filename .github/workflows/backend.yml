@@ -18,6 +18,10 @@ on:
       - "Makefile"
       - ".github/workflows/backend.yml"
       - ".github/scripts/go-db-shard.sh"
+      - ".github/scripts/cockroach-only.sh"
+      - ".github/scripts/start-cockroach.sh"
+      - ".github/scripts/start-postgres.sh"
+      - ".github/actions/test-database/**"
       - ".github/scripts/go-coverage.sh"
       - ".github/scripts/go-complexity.sh"
       - ".github/scripts/nolint-cap.sh"
@@ -79,14 +83,14 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|proto/|web/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap)\.sh$|\.github/nolint-cap$|\.node-version$)'
+          pattern: '^(backend/|proto/|web/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap|cockroach-only|start-(cockroach|postgres))\.sh$|\.github/actions/test-database/|\.github/nolint-cap$|\.node-version$)'
 
       - name: Do the Go jobs run
         id: go
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|proto/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap)\.sh$|\.github/nolint-cap$)'
+          pattern: '^(backend/|proto/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap|cockroach-only|start-(cockroach|postgres))\.sh$|\.github/actions/test-database/|\.github/nolint-cap$)'
 
   proto:
     name: proto (lint, breaking, generate)
@@ -315,53 +319,35 @@ jobs:
       - name: Check that the groups cover every package
         # Cheap (a `go list`). A new package falls into "rest" on its own;
         # this fails if a package named in a group was renamed or deleted.
-        run: ../.github/scripts/go-db-shard.sh --check
-
-      - name: Start CockroachDB (single node, insecure, in memory, CI only)
-        # Not a service container: those cannot pass arguments to the image,
-        # and CockroachDB needs `start-single-node`. Published on 127.0.0.1
-        # only. The store lives in memory (the data is thrown away with the
-        # runner anyway): schema changes, which the test databases are full
-        # of, take a quarter of the time they take on disk. Background work
-        # that only matters for a long-lived database (automatic statistics,
-        # merging empty ranges, keeping finished jobs) is turned off, and a
-        # dropped database gives its memory back after 10 minutes instead of
-        # the default 4 hours.
         run: |
-          docker run --detach --name cockroach --publish 127.0.0.1:26257:26257 \
-            "$COCKROACH_IMAGE" start-single-node --insecure \
-            --store=type=mem,size=4GiB --cache=512MiB --max-sql-memory=2GiB
-          for _ in $(seq 1 60); do
-            if docker exec cockroach cockroach sql --insecure --host=localhost:26257 -e 'SELECT 1' >/dev/null 2>&1; then
-              docker exec cockroach cockroach sql --insecure --host=localhost:26257 \
-                -e "SET CLUSTER SETTING sql.stats.automatic_collection.enabled = false" \
-                -e "SET CLUSTER SETTING kv.range_merge.queue.enabled = false" \
-                -e "SET CLUSTER SETTING jobs.retention_time = '15s'" \
-                -e "SET CLUSTER SETTING diagnostics.reporting.enabled = false" \
-                -e "ALTER RANGE default CONFIGURE ZONE USING gc.ttlseconds = 600"
-              echo "CockroachDB is ready."
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "::error::CockroachDB was not ready after 120 seconds." >&2
-          docker logs cockroach >&2
-          exit 1
+          ../.github/scripts/go-db-shard.sh --check
+          ../.github/scripts/cockroach-only.sh check-names
+
+      - name: Start the test database
+        # PostgreSQL in a preflight, CockroachDB in a train, on main, in the nightly run and in a manual run: the action
+        # decides (docs/ci.md, "Which database the tests run on"). It starts the same single node, insecure, in memory
+        # CockroachDB this job always had (.github/scripts/start-cockroach.sh), or a PostgreSQL 17 with SERIALIZABLE
+        # by default and durability off (.github/scripts/start-postgres.sh).
+        id: db
+        uses: ./.github/actions/test-database
 
       - name: go test -race (this group, with the database)
         # With MEURPG_TEST_DATABASE_URL set, the integration tests
-        # (migrations, stores, the 40001 retry, row TTL) run instead of
-        # being skipped. Each test creates and drops its own database.
+        # (migrations, stores, the 40001 retry) run instead of being skipped.
+        # Each test creates and drops its own database.
         # -timeout: each package gets 25 minutes, under the job's 30. Go's
         # default is 10 minutes per package; play and maps took 7 to 10
         # minutes sharing one CockroachDB with every other package (04 and
         # 07/10/2026). Each group now has its own database, so they have room.
         # MEURPG_REQUIRE_DB=1: a missing URL fails the tests instead of
         # skipping them (about a thousand would skip and the job stay green).
+        # On PostgreSQL the tests that need CockroachDB itself (backend/cockroach-only-tests.txt) are left out by name
+        # and printed here; they run in the CockroachDB runs. A test outside the list that needs CockroachDB fails.
         env:
-          MEURPG_TEST_DATABASE_URL: postgresql://root@localhost:26257/defaultdb?sslmode=disable
+          MEURPG_TEST_DATABASE_URL: ${{ steps.db.outputs.url }}
           MEURPG_REQUIRE_DB: "1"
           GROUP: ${{ matrix.group }}
+          DATABASE: ${{ steps.db.outputs.database }}
         run: |
           # -coverpkg=./... counts what the integration tests cover in OTHER
           # packages too (a store tested through its service); -covermode=
@@ -372,6 +358,11 @@ jobs:
           run_regex=$(../.github/scripts/go-db-shard.sh --run "$GROUP")
           run_args=()
           if [ -n "$run_regex" ]; then run_args=(-run "$run_regex"); fi
+          if [ "$DATABASE" = postgres ]; then
+            echo "On PostgreSQL these tests are left out; they run on CockroachDB:"
+            ../.github/scripts/cockroach-only.sh show
+            run_args+=(-skip "$(../.github/scripts/cockroach-only.sh skip-regex)")
+          fi
           go test -race -timeout 25m -covermode=atomic -coverpkg=./... \
             -coverprofile="cover-$GROUP.out" \
             "${run_args[@]}" "${packages[@]}"
@@ -386,12 +377,54 @@ jobs:
           retention-days: 3
 
 
+  # The list of the tests that need CockroachDB itself (backend/cockroach-only-tests.txt) is true: every listed test
+  # exists, and every one of them fails on PostgreSQL, so a test that stops needing CockroachDB leaves the list. The
+  # other half of the rule, a test outside the list that needs CockroachDB, fails in the groups above. Only on
+  # PostgreSQL there is something to check; in the CockroachDB runs the job ends after the names.
+  cockroach-only-list:
+    name: go-db cockroach-only list (the listed tests fail on PostgreSQL)
+    needs: changes
+    if: ${{ needs.changes.outputs.go == 'true' }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: backend/go.mod
+          cache: true
+          cache-dependency-path: backend/go.sum
+
+      - name: Check the names
+        run: .github/scripts/cockroach-only.sh check-names
+
+      - name: Pick the database
+        id: db
+        uses: ./.github/actions/test-database
+        with:
+          start: "false"
+
+      - name: Start PostgreSQL
+        if: ${{ steps.db.outputs.database == 'postgres' }}
+        run: .github/scripts/start-postgres.sh
+
+      - name: Run the listed tests on PostgreSQL
+        if: ${{ steps.db.outputs.database == 'postgres' }}
+        env:
+          MEURPG_TEST_DATABASE_URL: ${{ steps.db.outputs.url }}
+        run: .github/scripts/cockroach-only.sh check-list
+
   # One stable check for the whole matrix: the name below is the old job's, so
   # a branch protection rule can require it however the groups change. The
   # matrix jobs' own names carry the group.
   go-db:
     name: go (integration tests against CockroachDB)
-    needs: [changes, go-db-shard]
+    needs: [changes, go-db-shard, cockroach-only-list]
     # Not on a fork's push: `changes` is skipped there, and a skipped `changes` would fail the check below.
     if: ${{ always() && (github.repository == 'PuraFome/meuRPG' || github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-26.04
@@ -404,13 +437,14 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           GO: ${{ needs.changes.outputs.go }}
           RESULT: ${{ needs.go-db-shard.result }}
+          LIST: ${{ needs.cockroach-only-list.result }}
         run: |
-          echo "changes: $CHANGES, go: $GO, go-db groups: $RESULT"
+          echo "changes: $CHANGES, go: $GO, go-db groups: $RESULT, cockroach-only list: $LIST"
           [ "$CHANGES" = success ] || exit 1
           if [ "$GO" = true ]; then
-            [ "$RESULT" = success ]
+            [ "$RESULT" = success ] && [ "$LIST" = success ]
           else
-            [ "$RESULT" = skipped ]
+            [ "$RESULT" = skipped ] && [ "$LIST" = skipped ]
           fi
 
   # Merges the groups' coverage profiles into one total and a per-package

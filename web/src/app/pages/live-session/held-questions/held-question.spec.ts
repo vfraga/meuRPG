@@ -7,6 +7,8 @@ import {
   askedAt,
   heldAnswer,
   heldDie,
+  heldIndomitable,
+  heldStroke,
   heldLucky,
 } from '../../../core/held-rolls/held-roll-testing';
 import { HeldQuestion } from './held-question';
@@ -20,7 +22,10 @@ describe('HeldQuestion', () => {
   let hang = false;
 
   function mount(
-    offer: ReturnType<typeof heldLucky>,
+    offer:
+      | ReturnType<typeof heldLucky>
+      | ReturnType<typeof heldIndomitable>
+      | ReturnType<typeof heldStroke>,
     over: { layout?: 'row' | 'card'; canType?: boolean; target?: string } = {},
   ) {
     questions = new HeldQuestions({
@@ -133,6 +138,60 @@ describe('HeldQuestion', () => {
     button('Confirmar')?.click();
     await flush();
     expect(sent[2]).toEqual({ kind: 'lucky', reroll: true, roll: { face: 14 } });
+  });
+
+  it('asks Stroke of Luck’s question of the master with "Usar" and "Manter" and no typing', async () => {
+    const { el, button, flush } = mount(heldStroke(2, 5, true, askedAt(T0 - 12 * SECOND)));
+    expect(el.querySelector('h3')?.textContent).toContain(
+      'Errou o ataque. Usar Golpe de Sorte para acertar?',
+    );
+    expect(el.textContent).toContain('Gasta o uso');
+    expect(button('Digitar o resultado')).toBeUndefined();
+    expect(button('Rolar de novo')).toBeUndefined();
+    button('Usar')?.click();
+    await flush();
+    expect(sent).toEqual([{ kind: 'stroke', use: true }]);
+  });
+
+  it('keeps the roll when the master answers Stroke of Luck’s "Manter"', async () => {
+    const { button, flush } = mount(heldStroke(2, 5, true, askedAt(T0 - 12 * SECOND)));
+    button('Manter')?.click();
+    await flush();
+    expect(sent).toEqual([{ kind: 'stroke', use: false }]);
+  });
+
+  it('asks Indomitable’s question and answers it: roll again in the app, or keep', async () => {
+    const { el, button, flush } = mount(heldIndomitable(5, 2, true, askedAt(T0 - 12 * SECOND)));
+    expect(el.querySelector('h3')?.textContent).toContain('Usar Indomitável para rolar de novo?');
+    expect(el.textContent).toContain('mesmo que seja pior');
+    button('Rolar de novo')?.click();
+    await flush();
+    expect(sent).toEqual([{ kind: 'indomitable', reroll: true, roll: { inApp: true } }]);
+  });
+
+  it('types both faces for a save with advantage or disadvantage and answers them as `faces`', async () => {
+    const offer = heldIndomitable(5, 2, true, askedAt(T0 - 12 * SECOND));
+    offer.d20!.faces = [5, 8];
+    const { fixture, el, button, flush } = mount(offer);
+    button('Digitar o resultado')!.click();
+    fixture.detectChanges();
+    const fields = el.querySelectorAll<HTMLInputElement>('app-multi-roll input');
+    expect(fields).toHaveLength(2);
+    fields[0].value = '4';
+    fields[0].dispatchEvent(new Event('input'));
+    fields[1].value = '15';
+    fields[1].dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    el.querySelector('app-multi-roll form')!.dispatchEvent(new Event('submit'));
+    await flush();
+    expect(sent).toEqual([{ kind: 'indomitable', reroll: true, roll: { faces: [4, 15] } }]);
+  });
+
+  it('keeps the roll when the player answers "Manter"', async () => {
+    const { button, flush } = mount(heldIndomitable(5, 2, true, askedAt(T0 - 12 * SECOND)));
+    button('Manter')?.click();
+    await flush();
+    expect(sent).toEqual([{ kind: 'indomitable', reroll: false, roll: null }]);
   });
 
   it('refuses a typed face outside 1 to 20 and offers no typing when the table forces the app', () => {

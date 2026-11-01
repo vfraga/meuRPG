@@ -4,7 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -143,12 +146,8 @@ func TestSessionTimeouts(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 
-	var got string
-	if err := pool.QueryRow(t.Context(), "SHOW statement_timeout").Scan(&got); err != nil {
-		t.Fatalf("SHOW statement_timeout: %v", err)
-	}
-	if got != "300" {
-		t.Errorf("statement_timeout = %q, want 300 ms (the URL's value)", got)
+	if got := settingMillis(t, pool, "statement_timeout"); got != 300 {
+		t.Errorf("statement_timeout = %d ms, want 300 ms (the URL's value)", got)
 	}
 
 	_, err = pool.Exec(t.Context(), "SELECT pg_sleep(5)")
@@ -170,18 +169,32 @@ func TestSessionTimeouts(t *testing.T) {
 	_ = tx.Rollback(t.Context())
 }
 
+// settingMillis reads a timeout setting in milliseconds. SHOW prints a bare number of milliseconds on CockroachDB
+// ("30000") and a number with a unit on PostgreSQL ("30s", "1min", "300ms").
+func settingMillis(t *testing.T, pool *pgxpool.Pool, name string) int64 {
+	t.Helper()
+	var text string
+	if err := pool.QueryRow(t.Context(), "SHOW "+name).Scan(&text); err != nil {
+		t.Fatalf("SHOW %s: %v", name, err)
+	}
+	if n, err := strconv.ParseInt(text, 10, 64); err == nil {
+		return n
+	}
+	d, err := time.ParseDuration(strings.Replace(text, "min", "m", 1))
+	if err != nil {
+		t.Fatalf("SHOW %s = %q: not a duration", name, text)
+	}
+	return d.Milliseconds()
+}
+
 // TestDefaultSessionTimeouts: with nothing in the URL, the pool asks for 30 s
-// and 60 s (SHOW prints milliseconds).
+// and 60 s.
 func TestDefaultSessionTimeouts(t *testing.T) {
 	t.Parallel()
 	pool := testPool(t)
-	for name, want := range map[string]string{"statement_timeout": "30000", "idle_in_transaction_session_timeout": "60000"} {
-		var got string
-		if err := pool.QueryRow(t.Context(), "SHOW "+name).Scan(&got); err != nil {
-			t.Fatalf("SHOW %s: %v", name, err)
-		}
-		if got != want {
-			t.Errorf("%s = %q, want %q", name, got, want)
+	for name, want := range map[string]int64{"statement_timeout": 30000, "idle_in_transaction_session_timeout": 60000} {
+		if got := settingMillis(t, pool, name); got != want {
+			t.Errorf("%s = %d ms, want %d ms", name, got, want)
 		}
 	}
 }
@@ -296,8 +309,73 @@ func TestAQueuedRequestWaitsAtMostAsLongAsTheConnectionIsHeld(t *testing.T) {
 	}
 }
 
-// A 40001 restarts the transaction with a plain BEGIN; the retry must still
-// refuse writes.
+// Racers that each count the rows and insert one while the count is under a
+// cap end with exactly the cap, and every racer that was told "saved" has a
+// row. SERIALIZABLE makes the late ones fail, and InTx retries them: a
+// failure the database reports at COMMIT must not be reported as success.
+func TestInTxLosesNoWriteUnderContention(t *testing.T) {
+	t.Parallel()
+	url := testenv.DatabaseURL(t)
+	const racers, limit = 12, 4
+	pool, err := NewPoolWith(t.Context(), url, func(cfg *pgxpool.Config) { cfg.MaxConns = racers })
+	if err != nil {
+		t.Fatalf("NewPoolWith() error = %v", err)
+	}
+	t.Cleanup(pool.Close)
+	ctx := t.Context()
+	table := fmt.Sprintf("cap_test_%d", time.Now().UnixNano())
+	mustExec(t, pool, "CREATE TABLE "+table+" (id INT PRIMARY KEY)")
+	t.Cleanup(func() { _, _ = pool.Exec(context.Background(), "DROP TABLE IF EXISTS "+table) })
+
+	var (
+		wg    sync.WaitGroup
+		mu    sync.Mutex
+		saved []int
+	)
+	for id := range racers {
+		wg.Go(func() {
+			err := InTx(ctx, pool, func(tx pgx.Tx) error {
+				var n int
+				if err := tx.QueryRow(ctx, "SELECT count(*) FROM "+table).Scan(&n); err != nil {
+					return fmt.Errorf("count: %w", err)
+				}
+				if n >= limit {
+					return errCapReached
+				}
+				if _, err := tx.Exec(ctx, "INSERT INTO "+table+" VALUES ($1)", id); err != nil {
+					return fmt.Errorf("insert: %w", err)
+				}
+				return nil
+			})
+			if err == nil {
+				mu.Lock()
+				saved = append(saved, id)
+				mu.Unlock()
+			} else if !errors.Is(err, errCapReached) {
+				t.Errorf("racer %d: %v", id, err)
+			}
+		})
+	}
+	wg.Wait()
+
+	rows, err := pool.Query(ctx, "SELECT id FROM "+table+" ORDER BY id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stored, err := pgx.CollectRows(rows, pgx.RowTo[int])
+	if err != nil {
+		t.Fatal(err)
+	}
+	slices.Sort(saved)
+	if len(stored) != limit || !slices.Equal(saved, stored) {
+		t.Errorf("rows saved = %v, racers told \"saved\" = %v; want the same %d", stored, saved, limit)
+	}
+}
+
+var errCapReached = errors.New("cap reached")
+
+// A 40001 starts the transaction again; the new BEGIN must still be READ ONLY,
+// so the retry refuses writes.
 func TestReadTxStaysReadOnlyAfterRetry(t *testing.T) {
 	pool := testPool(t)
 	ctx := t.Context()

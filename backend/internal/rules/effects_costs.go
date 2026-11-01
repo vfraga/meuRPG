@@ -47,7 +47,10 @@ func (x effectCompiler) grantAction() error {
 	if err := x.checkHealAndTemp(); err != nil {
 		return err
 	}
-	return x.checkPerPoint()
+	if err := x.checkPerPoint(); err != nil {
+		return err
+	}
+	return x.checkSlotAction()
 }
 
 // checkCosts compiles the cost and the cost_max of an action or a hook: they name
@@ -123,8 +126,8 @@ func (x effectCompiler) checkPerPoint() error {
 	if e.ValuePerPoint == "" {
 		return nil
 	}
-	if e.CostMax == "" {
-		return x.fail("value_per_point needs cost_max: nothing is chosen, nothing to scale")
+	if e.CostMax == "" && !e.SpendsSlot {
+		return x.fail("value_per_point needs cost_max (or spends_slot): nothing is chosen, nothing to scale")
 	}
 	if e.Heal == "" && e.TempHP == "" {
 		return x.fail("value_per_point needs a heal or temp_hp to scale")

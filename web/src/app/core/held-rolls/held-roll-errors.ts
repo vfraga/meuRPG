@@ -50,7 +50,13 @@ export function heldRollErrorMessage(
     default:
       return classResourceErrorMessage(
         err,
-        answer.kind === 'lucky' ? 'responder ao Sortudo' : 'responder sobre a Inspiração de Bardo',
+        answer.kind === 'lucky'
+          ? 'responder ao Sortudo'
+          : answer.kind === 'indomitable'
+            ? 'responder ao Indomitável'
+            : answer.kind === 'stroke'
+              ? 'responder ao Golpe de Sorte'
+              : 'responder sobre a Inspiração de Bardo',
       );
   }
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -76,6 +77,11 @@ type Action struct {
 	// Both are 0 for an action with no Resource. See actionspend.go.
 	Cost    int `json:",omitempty"`
 	CostMax int `json:",omitempty"`
+	// GivesSlot is the level of the spell slot each use creates from the uses it spends (0: none);
+	// SpendsSlot says each use spends a spell slot of the level the player picks and heals by it:
+	// the Heal at level 1 and HealPerPoint for each level above. See actionslots.go.
+	GivesSlot  int  `json:",omitempty"`
+	SpendsSlot bool `json:",omitempty"`
 	// Result is what a use of the action gives: hit points regained, temporary hit points.
 	Result ActionResult `json:",omitzero"`
 }
@@ -133,6 +139,8 @@ func (x *deriver) resourcesAndActions() {
 	x.d.StandardActions = slices.Clone(x.c.standardActions)
 	x.d.AttacksPerAction = 1
 	x.criticalAndStyles()
+	x.wildShapeRule()
+	x.slotRecoveries()
 	x.extraAttacks()
 	// Two classes may share a resource name (Channel Divinity of the cleric and
 	// the paladin); the session counts them as one pool, which has the larger
@@ -233,6 +241,9 @@ func (x *deriver) grantAction(a activeEffect) {
 			return // the resource is not there: no ki, no ki action
 		}
 		act.Resource = spent
+	}
+	if !x.slotAction(&act, a) {
+		return
 	}
 	x.costAndResult(&act, a)
 	for _, route := range x.routes(act, a.effect.TextPT) {
@@ -344,4 +355,97 @@ func (x *deriver) criticalAndStyles() {
 			x.d.TwoWeaponFighting = true
 		}
 	}
+}
+
+// wildShapeRule fills Derived.WildShape from the wild_shape effects the character has: the
+// highest challenge rating (the effect that gives it brings its no_fly and no_swim; on a tie
+// the one with fewer limits), the lowest cost in uses and magical attacks if any effect gives them.
+func (x *deriver) wildShapeRule() {
+	var rule *WildShapeRule
+	var from *Effect
+	best := -1
+	for _, a := range x.active {
+		if a.effect.Type != "wild_shape" || !x.applies(a) {
+			continue
+		}
+		if rule == nil {
+			rule = &WildShapeRule{Cost: 1}
+		}
+		e := a.effect
+		rule.Cost = min(rule.Cost, x.wildShapeCost(a))
+		rule.Magical = rule.Magical || e.MagicalAttacks
+		eighths, ok := x.wildShapeRating(a)
+		if !ok {
+			continue
+		}
+		if eighths > best || (eighths == best && limits(e) < limits(from)) {
+			best, from = eighths, e
+			rule.MaxCR, rule.NoFly, rule.NoSwim = crString(eighths), e.NoFly, e.NoSwim
+		}
+	}
+	if rule != nil && best >= 0 {
+		x.d.WildShape = rule
+	}
+}
+
+// wildShapeCost is the uses one change of form costs under the effect: its form_cost (at least 0), or the
+// standard cost of 1 when it sets none (or its formula failed).
+func (x *deriver) wildShapeCost(a activeEffect) int {
+	if a.effect.FormCost == "" {
+		return 1
+	}
+	n, ok := x.evalInt(a.effect.formCost, a)
+	if !ok {
+		return 1
+	}
+	return max(n, 0)
+}
+
+// wildShapeRating is the highest challenge rating the effect allows, in eighths; ok is false when it sets none.
+func (x *deriver) wildShapeRating(a activeEffect) (eighths int, ok bool) {
+	e := a.effect
+	switch {
+	case e.MaxCR != "":
+		return crEighths(e.MaxCR)
+	case e.MaxCRFrom != "":
+		n, good := x.evalInt(e.maxCRFrom, a)
+		return eighthsPerRating * min(max(n, 0), maxChallengeRating), good
+	}
+	return 0, false
+}
+
+const (
+	// maxChallengeRating is the highest challenge rating of a creature.
+	maxChallengeRating = 30
+	// eighthsPerRating is how many eighths make one challenge rating.
+	eighthsPerRating = 8
+)
+
+// noLimitsKnown ranks an effect that is not there after one with any limit, in limits.
+const noLimitsKnown = 3
+
+// limits counts the restrictions a wild_shape effect puts on the forms.
+func limits(e *Effect) int {
+	if e == nil {
+		return noLimitsKnown
+	}
+	n := 0
+	if e.NoFly {
+		n++
+	}
+	if e.NoSwim {
+		n++
+	}
+	return n
+}
+
+// crFractions are the challenge ratings under 1, by their eighths.
+var crFractions = map[int]string{1: "1/8", 2: "1/4", 4: "1/2"}
+
+// crString is a challenge rating in eighths as the content writes it: "0", "1/8", "1/4", "1/2", "1"...
+func crString(eighths int) string {
+	if s, ok := crFractions[eighths]; ok {
+		return s
+	}
+	return strconv.Itoa(eighths / 8)
 }

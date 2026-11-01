@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 )
 
 // The characterization of MoveCombatant. These tests freeze what the call does
@@ -73,9 +74,10 @@ var offerIDs = regexp.MustCompile(`"move_id": "[0-9a-f-]{36}"`)
 func (a *armed) lastMovePayload(t *testing.T, kind string) string {
 	t.Helper()
 	var payload string
-	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::STRING FROM session_events WHERE kind = $1 ORDER BY seq DESC LIMIT 1`, kind).Scan(&payload); err != nil {
+	if err := a.h.pool.QueryRow(t.Context(), `SELECT payload::TEXT FROM session_events WHERE kind = $1 ORDER BY seq DESC LIMIT 1`, kind).Scan(&payload); err != nil {
 		t.Fatalf("read the newest %s event: %v", kind, err)
 	}
+	payload = dbtest.SortJSONKeys(payload)
 	for _, c := range a.get(t, a.master).GetCombatants() {
 		payload = strings.ReplaceAll(payload, c.GetId(), "<"+c.GetLabel()+">")
 	}

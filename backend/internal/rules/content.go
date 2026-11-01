@@ -137,6 +137,8 @@ type content struct {
 	// classFeatureOf says, for each table class feature, the class and the level it is at.
 	classFeatureOf map[string]ClassFeatureEntry
 	optionPrereq   map[string]TableOptionPrerequisite
+	// creatureOf says, for each table creature, the SRD creature it is made from (overlay_creature.go).
+	creatureOf map[string]CreatureTableEntry
 
 	// The table's layer (overlay.go); every one of these is empty in the
 	// SRD content.

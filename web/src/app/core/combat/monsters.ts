@@ -93,6 +93,8 @@ export function addMonstersErrorMessage(err: unknown): string {
       'Não deu para pôr os monstros: o combate tem no máximo 40 combatentes, e o nome pede de 1 a 30 letras, numa linha só. Confira e tente de novo.',
     [Code.NotFound]: 'Esse combate não existe mais. Feche e abra a folha de novo.',
     [Code.PermissionDenied]: 'Só o mestre da campanha põe monstros no combate.',
+    [Code.ResourceExhausted]:
+      'A campanha chegou ao limite de NPCs das criaturas dos combates (1.000). Use uma criatura que já tenha entrado em outro combate: reaproveitar não conta nesse limite.',
     [Code.Unavailable]: 'Não deu para pôr os monstros: o servidor não respondeu. Tente de novo.',
   });
 }

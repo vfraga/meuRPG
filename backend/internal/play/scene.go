@@ -101,6 +101,8 @@ type sceneRollEvent struct {
 	// D20, D20B and Counted are the dice after it, and this keeps the 1 it replaced and where, so
 	// the roll still says "Sortudo: 1 → 14". Nil when nothing was rolled again.
 	Lucky *luckyReroll `json:"lucky,omitempty"`
+	// Stroke is the use of Stroke of Luck on the roll (held_stroke.go): D20 and the dice after it hold the 20, and this keeps the d20 it replaced.
+	Stroke *strokeUse `json:"stroke,omitempty"`
 }
 
 // sceneGrantEvent is the payload of scene_attempt_granted: the action; the
@@ -162,7 +164,7 @@ func insertSceneEvent(ctx context.Context, c *combatTx, kind string, actor, key 
 	if err != nil {
 		return "", fmt.Errorf("next event number: %w", err)
 	}
-	row, err := c.q.InsertSessionEvent(ctx, playdb.InsertSessionEventParams{
+	row, err := insertSessionEvent(ctx, c.q, playdb.InsertSessionEventParams{
 		GameSessionID: c.session.ID, Seq: seq, Kind: kind, ActorUserID: actor, CharacterID: c.characterID,
 		Payload: body, IdempotencyKey: key, CreatedAt: c.now, IdempotencyHash: hashOf(c, key),
 	})
@@ -804,8 +806,8 @@ func sceneRollToProto(id, characterID, characterName string, at time.Time, ev sc
 		out.Roll.CountedIndex = ev.Counted
 		markTreated(out.Roll, ev.Modifier, ev.Total-ev.BonusFace)
 	}
-	out.Roll.Total = ev.Total            // with the Bardic Inspiration die, when the player used it
-	out.Roll.Rerolled = ev.Lucky.proto() // "Sortudo: 1 → 14", with the d20 it changed
+	out.Roll.Total = ev.Total                              // with the Bardic Inspiration die, when the player used it
+	out.Roll.Rerolled = strokeRerolls(ev.Lucky, ev.Stroke) // "Sortudo: 1 → 14", with the d20 it changed
 	if showPassed {
 		out.Passed = ev.Passed
 	}
@@ -967,7 +969,7 @@ func (s *Service) RollSceneCheck(
 		return nil, s.dbError(ctx, "roll a scene check", err)
 	}
 
-	if out.offer != nil || out.lucky != nil {
+	if out.offer != nil || out.lucky != nil || out.held != nil {
 		return connect.NewResponse(&playv1.RollSceneCheckResponse{InspirationOffer: out.offer, LuckyOffer: out.lucky, HeldRollOffer: out.held}), nil
 	}
 	return connect.NewResponse(&playv1.RollSceneCheckResponse{Roll: s.sceneRollAnswer(ctx, m, &out)}), nil
@@ -1038,6 +1040,7 @@ func (c *sceneRollCall) run(ctx context.Context) error {
 	step, err := c.s.heldGate(ctx, c.s.outsideGate(c.tx, c.q), rollSpec{
 		Kind: heldSceneCheck, Key: c.key, Request: c.req, Roller: heldRoller{CampaignID: c.m.CampaignID, CharacterID: c.out.who.ID, UserID: c.m.UserID},
 		In: c.in, Modifier: bonus, Mode: cm.Mode, Reliable: opt.ReliableTalent, Lucky: opt.Lucky, MayAsk: true,
+		Stroke: checkStrokeRule(action.DC, !scene.ShowDC),
 	})
 	if err != nil {
 		return err
@@ -1163,7 +1166,7 @@ func (c *sceneRollCall) write(ctx context.Context, session playdb.GameSession, s
 		PointID: scene.PointID, ActionID: action.ID, Key: action.Key,
 		D20: clamp32(d20.Face(), 1, d20Sides), Modifier: conv.Int32(bonus), Total: conv.Int32(d20.Total),
 		Physical: d20.Physical, DCShown: scene.ShowDC, D20B: clamp32(d20.otherFace(), 0, d20Sides), Counted: clamp32(d20.Index, 0, 1), RollMode: modeKey(cm.Mode),
-		Lucky: step.Lucky,
+		Lucky: step.Lucky, Stroke: step.Stroke,
 	}
 	if step.Bonus != nil {
 		ev.BonusSides, ev.BonusFace = step.Bonus.Sides, step.Bonus.Face

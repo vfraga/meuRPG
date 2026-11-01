@@ -12,6 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import { DiceMode } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
+import type { HeldRollOffer } from '../../../../gen/meurpg/play/v1/combat_pb';
 import type {
   AnswerHeldRollResponse,
   GetOutsideInspirationResponse,
@@ -19,7 +20,12 @@ import type {
 import { luckyText } from '../../../core/combat/lucky';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { HeldRollController } from '../../../core/held-rolls/held-roll-controller';
-import { type HeldAnswer, asksLucky, heldOfferOf } from '../../../core/held-rolls/held-roll-offer';
+import {
+  type HeldAnswer,
+  asksLucky,
+  asksStroke,
+  heldOfferOf,
+} from '../../../core/held-rolls/held-roll-offer';
 import { HeldVanishWatch } from '../../../core/held-rolls/held-vanish';
 import { settledRoll } from '../../../core/held-rolls/held-roll-result';
 import { ResourceClient } from '../../../core/resources/resources-client';
@@ -48,6 +54,15 @@ export function luckyAnswerText(res: AnswerHeldRollResponse, reroll: boolean): s
     : `${again}. Seu total: ${total}.`;
 }
 
+/** What the rogue reads once Stroke of Luck is answered: that it was used (with the total of a check) or kept. */
+export function strokeAnswerText(res: AnswerHeldRollResponse, use: boolean): string {
+  const said = use ? 'Você usou o Golpe de Sorte' : 'Você manteve o resultado';
+  const total = res.result.case === 'sceneCheck' ? res.result.value.roll?.roll?.total : undefined;
+  return total === undefined
+    ? `${said}. O mestre vê o resultado.`
+    : `${said}. Seu total: ${total}.`;
+}
+
 /**
  * "Inspiração de Bardo" on the session panel, outside a combat (SRD 5.1, Bard): the bard sees the uses left and gives the
  * die to a character of the party ("Dar a Tavo"); the character that holds a die reads "Você tem uma Inspiração de Bardo
@@ -64,7 +79,7 @@ export function luckyAnswerText(res: AnswerHeldRollResponse, reroll: boolean): s
   template: `
     @if (luckyShown()) {
       <section class="block" aria-labelledby="lucky-block-t">
-        <h2 id="lucky-block-t" class="t"><mat-icon aria-hidden="true">casino</mat-icon>Sortudo</h2>
+        <h2 id="lucky-block-t" class="t"><mat-icon aria-hidden="true">casino</mat-icon>{{ luckyHeading() }}</h2>
         @if (lucky(); as o) {
           @if (held.error()) {
             <div class="mr-notice mr-notice--danger" role="alert">
@@ -171,6 +186,9 @@ export class BardicBlock {
   readonly diceMode = input<DiceMode>(DiceMode.PLAYERS_CHOOSE);
   /** Moves when the table's game time or effects move: read the state again. */
   readonly tick = input(0);
+  /** The player's block also asks the rogue's Stroke of Luck question of a roll outside a combat, which only the list of
+   * held rolls carries (the master's block does not: the master reads the questions on the held-rolls panel). */
+  readonly strokeQuestions = input(false);
 
   protected readonly state = signal<GetOutsideInspirationResponse | null>(null);
   protected readonly busy = signal(false);
@@ -188,12 +206,16 @@ export class BardicBlock {
   protected readonly vanish = new HeldVanishWatch();
   protected readonly lucky = computed(() => {
     const asked = this.held.offer();
-    return asksLucky(asked) ? asked : null;
+    return asksLucky(asked) || asksStroke(asked) ? asked : null;
   });
   protected readonly die = computed(() => {
     const asked = this.held.offer();
-    return asked && !asksLucky(asked) ? asked : null;
+    return asked && !asksLucky(asked) && !asksStroke(asked) ? asked : null;
   });
+  /** The heading of the section: Lucky's, or the rogue's Stroke of Luck. */
+  protected readonly luckyHeading = computed(() =>
+    asksStroke(this.held.offer()) ? 'Golpe de Sorte' : 'Sortudo',
+  );
   /** The die section's error: the give's, or the answer's when the question is the die's. */
   protected readonly dieError = computed(() => (this.die() ? this.held.error() : ''));
   protected readonly minutes = minutesText;
@@ -224,6 +246,19 @@ export class BardicBlock {
     });
   }
 
+  /** The first Stroke of Luck question that waits for the caller, from the list of held rolls; `undefined` for none. */
+  private async strokeOffer(): Promise<HeldRollOffer | undefined> {
+    if (!this.strokeQuestions()) {
+      return undefined;
+    }
+    try {
+      const res = await this.api.listHeldRolls(this.campaignId());
+      return res.offers.find((o) => asksStroke(o));
+    } catch {
+      return undefined;
+    }
+  }
+
   private async load(): Promise<void> {
     try {
       const state = await this.api.outsideInspiration(this.campaignId());
@@ -232,7 +267,8 @@ export class BardicBlock {
         // The block lists what the server lists as older fields: the question of the first roll that waits, Lucky's first.
         const offer =
           heldOfferOf({ luckyOffer: state.luckyOffers[0] }) ??
-          heldOfferOf({ inspirationOffer: state.offers[0] });
+          heldOfferOf({ inspirationOffer: state.offers[0] }) ??
+          (await this.strokeOffer());
         this.held.ask(offer);
         this.vanish.observe(offer);
       }
@@ -273,7 +309,11 @@ export class BardicBlock {
 
   /** What the block says once an answer got through. */
   private say(res: AnswerHeldRollResponse, answer: HeldAnswer): void {
-    if (answer.kind === 'lucky') {
+    if (answer.kind === 'stroke') {
+      this.luckyAnswered.set(strokeAnswerText(res, answer.use));
+      return;
+    }
+    if (answer.kind !== 'die') {
       this.luckyAnswered.set(luckyAnswerText(res, answer.reroll));
       return;
     }

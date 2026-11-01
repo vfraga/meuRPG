@@ -16,6 +16,8 @@ on:
       - ".github/workflows/repeat-changed.yml"
       - ".github/scripts/flake*.mjs"
       - ".github/scripts/repeat-changed.sh"
+      - ".github/scripts/cockroach-only.sh"
+      - ".github/scripts/start-*.sh"
       - ".github/actions/**"
 
 concurrency:
@@ -163,8 +165,9 @@ jobs:
           cache: true
           cache-dependency-path: backend/go.sum
 
-      - name: Start CockroachDB (as the go-db jobs do)
-        run: .github/scripts/start-cockroach.sh
+      - name: Start the test database (the same one the go-db jobs use)
+        id: db
+        uses: ./.github/actions/test-database
 
       - name: Download the targets
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -174,6 +177,10 @@ jobs:
       - name: Repeat
         working-directory: backend
         env:
-          MEURPG_TEST_DATABASE_URL: postgresql://root@localhost:26257/defaultdb?sslmode=disable
+          MEURPG_TEST_DATABASE_URL: ${{ steps.db.outputs.url }}
           MEURPG_REQUIRE_DB: "1"
-        run: ../.github/scripts/repeat-changed.sh go ../targets.json
+          DATABASE: ${{ steps.db.outputs.database }}
+        run: |
+          # On PostgreSQL the tests that need CockroachDB itself are not repeated (backend/cockroach-only-tests.txt).
+          if [ "$DATABASE" = postgres ]; then GO_SKIP=$(../.github/scripts/cockroach-only.sh skip-regex); export GO_SKIP; fi
+          ../.github/scripts/repeat-changed.sh go ../targets.json

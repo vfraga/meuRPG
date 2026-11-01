@@ -5,8 +5,20 @@
 
 -- name: CountCampaignCharacters :one
 -- Every character of the campaign, of any kind and status (dead ones too),
--- for the cap on creating (RN-30). The index on campaign_id finds the rows.
-SELECT count(*)::INT4 FROM characters WHERE campaign_id = sqlc.arg(campaign_id)::UUID;
+-- for the cap on creating (RN-30). The NPCs the app makes for the creatures
+-- of a combat (combat_only, RN-29) are not counted here: the master never lists
+-- them and nothing deletes them. They have their own cap (CountCampaignCombatOnlyNpcs).
+-- The index on campaign_id finds the rows.
+SELECT count(*)::INT4 FROM characters
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID
+  AND COALESCE(sheet->'basic'->>'combat_only', 'false') <> 'true';
+
+-- name: CountCampaignCombatOnlyNpcs :one
+-- The NPCs the app made for the creatures of a combat (combat_only, RN-29),
+-- for their own cap (RN-30). The index on campaign_id finds the rows.
+SELECT count(*)::INT4 FROM characters
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID
+  AND COALESCE(sheet->'basic'->>'combat_only', 'false') = 'true';
 
 -- name: InsertCharacter :one
 -- status is 'active', or 'pending' for a character created by a pending

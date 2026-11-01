@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
+	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/rpcerr"
 )
 
@@ -86,23 +87,25 @@ func TestFromDBPassesAConnectErrorUntouchedAndSilently(t *testing.T) {
 	}
 }
 
-type releaseFailsTx struct{}
+// commitFailsTx is a transaction whose COMMIT fails as if the connection dropped.
+type commitFailsTx struct{ pgx.Tx }
 
-func (releaseFailsTx) Exec(_ context.Context, q string, _ ...interface{}) error {
-	if strings.HasPrefix(q, "RELEASE") {
-		return io.EOF // the connection dropped during COMMIT
-	}
-	return nil
+func (commitFailsTx) Commit(context.Context) error   { return io.EOF }
+func (commitFailsTx) Rollback(context.Context) error { return nil }
+
+type commitFailsConn struct{}
+
+func (commitFailsConn) Begin(context.Context) (pgx.Tx, error) { return commitFailsTx{}, nil }
+func (commitFailsConn) BeginTx(context.Context, pgx.TxOptions) (pgx.Tx, error) {
+	return commitFailsTx{}, nil
 }
-func (releaseFailsTx) Commit(context.Context) error   { return nil }
-func (releaseFailsTx) Rollback(context.Context) error { return nil }
 
 // A commit whose outcome is unknown must not be reported as a safe-to-retry
 // "unavailable": the write may have been applied and a retry would duplicate.
 func TestFromDBDoesNotCallAnAmbiguousCommitRetryable(t *testing.T) {
 	t.Parallel()
-	err := crdb.ExecuteInTx(context.Background(), releaseFailsTx{}, func() error { return nil })
-	if _, ok := errors.AsType[*crdb.AmbiguousCommitError](err); !ok {
+	err := db.InTx(context.Background(), commitFailsConn{}, func(pgx.Tx) error { return nil })
+	if _, ok := errors.AsType[*db.AmbiguousCommitError](err); !ok {
 		t.Fatalf("setup: want AmbiguousCommitError, got %T", err)
 	}
 	got := rpcerr.FromDB(context.Background(), slog.New(slog.DiscardHandler), "m", "save", err)

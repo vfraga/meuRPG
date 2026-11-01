@@ -88,14 +88,27 @@ export const INSPIRATION_PENDING_TEXT = 'Responda primeiro à pergunta da Inspir
 export const LUCKY_PENDING_TEXT =
   'Responda primeiro à pergunta do Sortudo (tirou 1: rolar de novo?).';
 
-/** The sentence of a refusal while a roll of the character waits for an answer (INSPIRATION_PENDING or LUCKY_PENDING),
- * `''` for any other reason. */
+/** The same while a failed saving throw of a fighter waits for the Indomitable answer (`ResourceBlocked`
+ * INDOMITABLE_PENDING). */
+export const INDOMITABLE_PENDING_TEXT =
+  'Responda primeiro à pergunta do Indomitável (rolar a salvaguarda de novo?).';
+
+/** The same while a roll of a rogue waits for the Stroke of Luck answer (`ResourceBlocked` STROKE_OF_LUCK_PENDING). */
+export const STROKE_OF_LUCK_PENDING_TEXT =
+  'Responda primeiro à pergunta do Golpe de Sorte (usar para acertar ou contar o d20 como 20?).';
+
+/** The sentence of a refusal while a roll of the character waits for an answer (INSPIRATION_PENDING, LUCKY_PENDING,
+ * INDOMITABLE_PENDING or STROKE_OF_LUCK_PENDING), `''` for any other reason. */
 export function pendingQuestionReasonText(reason: ResourceBlockedReason | undefined): string {
   switch (reason) {
     case ResourceBlockedReason.INSPIRATION_PENDING:
       return INSPIRATION_PENDING_TEXT;
     case ResourceBlockedReason.LUCKY_PENDING:
       return LUCKY_PENDING_TEXT;
+    case ResourceBlockedReason.INDOMITABLE_PENDING:
+      return INDOMITABLE_PENDING_TEXT;
+    case ResourceBlockedReason.STROKE_OF_LUCK_PENDING:
+      return STROKE_OF_LUCK_PENDING_TEXT;
     default:
       return '';
   }

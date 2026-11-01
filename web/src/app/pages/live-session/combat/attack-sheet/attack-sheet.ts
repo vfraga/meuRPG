@@ -37,7 +37,7 @@ import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { DamageParts } from '../damage-parts/damage-parts';
-import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
+import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollModePicker } from '../roll-mode/roll-mode-picker';
 import { AttackDamage } from './attack-damage';
 import { AttackMode } from './attack-mode';

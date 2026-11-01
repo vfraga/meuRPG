@@ -14,6 +14,14 @@ func (b *overlayBuilder) checkGrantAction(site effectSite, e *Effect) error {
 	return b.checkAffordable(site, e)
 }
 
+// checkSlotRecovery checks the resource a slot_recovery spends: the entry (or its class) defines it.
+func (b *overlayBuilder) checkSlotRecovery(site effectSite, e *Effect) error {
+	if !b.resourceDefined(site.owner, e.Resource) {
+		return site.fail(".resource", ReasonReference, "the recovery spends %q, which no resource effect of this entry or its class defines", e.Resource)
+	}
+	return nil
+}
+
 // checkAffordable refuses an action whose cost no level of the character can pay: the
 // resource it spends never has that many uses (a cost of 3 of a resource of 2).
 func (b *overlayBuilder) checkAffordable(site effectSite, e *Effect) error {

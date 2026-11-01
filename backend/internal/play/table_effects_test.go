@@ -35,6 +35,12 @@ func fxPool(key, limit, recharge string) *rulesv1.TableEffect {
 // session is open and nothing else has started.
 func fxTable(t *testing.T, traits ...*rulesv1.TableFeature) *armed {
 	t.Helper()
+	return fxTableOf(t, "class:fighter", traits...)
+}
+
+// fxTableOf is fxTable with Ragna of the class (a caster, for the slots).
+func fxTableOf(t *testing.T, class string, traits ...*rulesv1.TableFeature) *armed {
+	t.Helper()
 	return newArmedWith(t, func(a *armed) {
 		res, err := a.master.table.CreateTableEntry(t.Context(), connect.NewRequest(&rulesv1.CreateTableEntryRequest{
 			CampaignId: a.campaignID, Body: &rulesv1.CreateTableEntryRequest_TableRace{TableRace: &rulesv1.TableRace{
@@ -44,7 +50,7 @@ func fxTable(t *testing.T, traits ...*rulesv1.TableFeature) *armed {
 		if err != nil {
 			t.Fatalf("CreateTableEntry(race) error = %v", err)
 		}
-		a.toren = a.caio.hero(t, a.campaignID, "Ragna", "class:fighter", res.Msg.GetEntry().GetKey(), 5,
+		a.toren = a.caio.hero(t, a.campaignID, "Ragna", class, res.Msg.GetEntry().GetKey(), 5,
 			&rulesv1.AbilityScores{Strength: 16, Dexterity: 13, Constitution: 14, Intelligence: 10, Wisdom: 10, Charisma: 8}, []string{greataxe, shortbowKey}, nil)
 		a.pens = a.ana.hero(t, a.campaignID, "Pensantus", "class:wizard", "race:gnome", 1,
 			&rulesv1.AbilityScores{Strength: 10, Dexterity: 14, Constitution: 12, Intelligence: 16, Wisdom: 10, Charisma: 8}, nil, []string{fireBolt})

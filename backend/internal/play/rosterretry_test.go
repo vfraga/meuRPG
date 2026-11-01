@@ -1,7 +1,6 @@
 package play
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/testenv"
 )
 
 // Roster reads that the characters module runs inside play's db.InTx closure
@@ -21,7 +21,7 @@ func injectedRetry(t *testing.T, a *armed, read func(tx pgx.Tx) error) (int, err
 	t.Helper()
 	ctx := t.Context()
 	if _, err := a.h.pool.Exec(ctx, `SET inject_retry_errors_enabled = true`); err != nil {
-		t.Skipf("cannot inject retry errors: %v", err)
+		t.Fatalf("cannot inject retry errors: %v", err)
 	}
 	t.Cleanup(func() { _, _ = a.h.pool.Exec(ctx, `SET inject_retry_errors_enabled = false`) })
 	attempts := 0
@@ -64,10 +64,7 @@ func TestRosterReadInsideTxIsRetriedOn40001(t *testing.T) {
 func TestRosterReadInsideTxIsRetriedOnRealConflict(t *testing.T) {
 	a := newSummoners(t)
 	ctx := t.Context()
-	url := os.Getenv("MEURPG_TEST_DATABASE_URL")
-	if url == "" {
-		t.Skip("no MEURPG_TEST_DATABASE_URL")
-	}
+	url := testenv.DatabaseURL(t)
 	if _, err := a.h.pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS roster_retry_conflict (id INT PRIMARY KEY, v INT)`); err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +81,7 @@ func TestRosterReadInsideTxIsRetriedOnRealConflict(t *testing.T) {
 	cfg.Database = dbName
 	other, err := pgx.ConnectConfig(ctx, cfg)
 	if err != nil {
-		t.Skipf("second connection: %v", err)
+		t.Fatalf("second connection: %v", err)
 	}
 	defer other.Close(ctx)
 
@@ -119,7 +116,7 @@ func TestRosterReadInsideTxIsRetriedOnRealConflict(t *testing.T) {
 	}
 	n, err := run(func(tx pgx.Tx) error { _, err := tx.Exec(ctx, `SELECT 1`); return err })
 	if err != nil || n < 2 {
-		t.Skipf("control did not hit a real conflict: err = %v attempts = %d", err, n)
+		t.Fatalf("control did not hit a real conflict: err = %v attempts = %d", err, n)
 	}
 	n, err = run(func(tx pgx.Tx) error {
 		_, err := a.h.chars.GetVitalsTx(ctx, tx, a.campaignID, a.bri.GetId())

@@ -347,7 +347,7 @@ func TestUndoOfADamageRollGivesThePartsBack(t *testing.T) {
 	parts := func(when string) string {
 		t.Helper()
 		var got string
-		if err := a.h.pool.QueryRow(t.Context(), `SELECT parts::STRING FROM pending_damages WHERE id = $1`, id).Scan(&got); err != nil {
+		if err := a.h.pool.QueryRow(t.Context(), `SELECT parts::TEXT FROM pending_damages WHERE id = $1`, id).Scan(&got); err != nil {
 			t.Fatalf("%s: read the parts: %v", when, err)
 		}
 		return got

@@ -213,7 +213,7 @@ type sessionEvent struct {
 func (h *harness) sessionEvents(sessionID string) []sessionEvent {
 	h.t.Helper()
 	rows, err := h.pool.Query(h.t.Context(),
-		`SELECT seq, kind, actor_user_id::STRING, character_id::STRING, payload, idempotency_key::STRING
+		`SELECT seq, kind, actor_user_id::TEXT, character_id::TEXT, payload, idempotency_key::TEXT
 		 FROM session_events WHERE game_session_id = $1 ORDER BY seq`, sessionID)
 	if err != nil {
 		h.t.Fatalf("read session_events: %v", err)

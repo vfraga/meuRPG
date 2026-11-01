@@ -43,7 +43,7 @@ import { type EffectSaveAnswer, EffectsClient } from '../../../../core/effects/e
 import { zoneCasterLabel } from '../../../../core/effects/zone-save';
 import { ExtraDiceState } from '../../../../core/effects/extra-dice-state';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
-import { MultiRoll, type RollField } from '../multi-roll/multi-roll';
+import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import {
   bonusWord,
   concentrationBonus,

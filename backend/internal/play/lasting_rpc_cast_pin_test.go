@@ -61,7 +61,7 @@ func TestLastingRPCACastThatEndsWhileTheFightRunsTakesItsEffectsOutOfIt(t *testi
 // rpcArmor prints the base armor class the effects gave each combatant.
 func (a *armed) rpcArmor(t *testing.T) string {
 	t.Helper()
-	rows, err := a.h.pool.Query(t.Context(), `SELECT label, COALESCE(mage_armor_ac::STRING, '-') FROM combatants ORDER BY label`)
+	rows, err := a.h.pool.Query(t.Context(), `SELECT label, COALESCE(mage_armor_ac::TEXT, '-') FROM combatants ORDER BY label`)
 	if err != nil {
 		t.Fatalf("read the armor: %v", err)
 	}

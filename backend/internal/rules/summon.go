@@ -361,7 +361,7 @@ func (c *Content) CheckSummon(spell string, circle int, b Build, pick SummonPick
 			continue
 		}
 		m, ok := c.c.monsters[k]
-		if !ok || m.Type != opt.Type {
+		if _, table := c.c.creatureOf[k]; !ok || table || m.Type != opt.Type {
 			return nil, fmt.Errorf("%w: %s", ErrSummonCreature, k)
 		}
 		if v, _ := crEighths(m.ChallengeRating); v > limit {

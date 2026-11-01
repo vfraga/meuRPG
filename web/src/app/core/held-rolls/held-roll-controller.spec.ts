@@ -19,7 +19,14 @@ import {
 } from './held-roll-controller';
 import { HELD_ROLL_ANSWERED_TEXT, MASTER_TOO_EARLY_REASON } from './held-roll-errors';
 import type { HeldAnswer } from './held-roll-offer';
-import { askedAt, heldAnswer, heldDie, heldLucky } from './held-roll-testing';
+import {
+  askedAt,
+  heldAnswer,
+  heldDie,
+  heldIndomitable,
+  heldLucky,
+  heldStroke,
+} from './held-roll-testing';
 
 const failed = (code: Code, detail?: ConstructorParameters<typeof ConnectError>[3]) =>
   new ConnectError('x', code, undefined, detail);
@@ -99,6 +106,54 @@ describe('HeldRollController', () => {
     await held.answer(useDie);
     expect(sent.map((s) => s.answer)).toEqual([rerollInApp, useDie]);
     expect(held.offer()).toBeNull();
+  });
+
+  it('sends the Indomitable answer, then the new roll’s result closes the question', async () => {
+    const held = build();
+    held.ask(heldIndomitable());
+    const again: HeldAnswer = { kind: 'indomitable', reroll: true, roll: { inApp: true } };
+    await held.answer(again);
+    expect(sent.map((s) => s.answer)).toEqual([again]);
+    expect(settled).toHaveLength(1);
+    expect(held.offer()).toBeNull();
+  });
+
+  it('sends the two typed faces of a save with advantage as they are', async () => {
+    const held = build();
+    held.ask(heldIndomitable());
+    const pair: HeldAnswer = { kind: 'indomitable', reroll: true, roll: { faces: [4, 15] } };
+    await held.answer(pair);
+    expect(sent.map((s) => s.answer)).toEqual([pair]);
+  });
+
+  it('sends the Stroke of Luck answer and the result closes the question', async () => {
+    const held = build();
+    held.ask(heldStroke());
+    const use: HeldAnswer = { kind: 'stroke', use: true };
+    await held.answer(use);
+    expect(sent.map((s) => s.answer)).toEqual([use]);
+    expect(settled).toHaveLength(1);
+    expect(held.offer()).toBeNull();
+  });
+
+  it('words the Stroke of Luck question that blocks the next roll', async () => {
+    const held = build({
+      send: () => Promise.reject(blockedBy(ResourceBlockedReason.STROKE_OF_LUCK_PENDING)),
+    });
+    held.ask(heldStroke());
+    await held.answer({ kind: 'stroke', use: false });
+    expect(held.error()).toContain('Golpe de Sorte');
+    expect(held.offer()).not.toBeNull();
+  });
+
+  it('words the Indomitable question that blocks the next roll', async () => {
+    const held = build({
+      send: () => Promise.reject(blockedBy(ResourceBlockedReason.INDOMITABLE_PENDING)),
+    });
+    held.ask(heldIndomitable());
+    await held.answer({ kind: 'indomitable', reroll: false, roll: null });
+    expect(held.error()).toContain('Indomitável');
+    expect(held.offer()).not.toBeNull();
   });
 
   it('keeps one key for an answer repeated after a failure, and renews it once the answer got through', async () => {

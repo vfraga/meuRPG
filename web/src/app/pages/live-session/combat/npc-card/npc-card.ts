@@ -47,7 +47,7 @@ import { defaultTarget, isHostile } from '../../../../core/combat/attack-flow';
 import { isCreature } from '../../../../core/combat/creature-names';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import { Portrait } from '../../../../shared/portrait/portrait';
-import { MultiRoll } from '../multi-roll/multi-roll';
+import { MultiRoll } from '../../../../shared/multi-roll/multi-roll';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { MasterSpend } from '../theatre/master-spend';
 import { RollModePicker } from '../roll-mode/roll-mode-picker';

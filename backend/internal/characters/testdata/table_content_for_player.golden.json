@@ -380,6 +380,22 @@
     }
   },
   {
+    "step": "creature",
+    "value": {
+      "armorClass": 17,
+      "baseKey": "monster:wolf",
+      "damageBonus": 2,
+      "hitPoints": 40,
+      "namePt": "Criatura",
+      "traits": [
+        {
+          "namePt": "Pelo de Prata",
+          "textPt": "Brilha ao luar."
+        }
+      ]
+    }
+  },
+  {
     "step": "feat without a prerequisite",
     "value": {
       "effects": [

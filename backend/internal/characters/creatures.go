@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -14,6 +15,8 @@ import (
 
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
+	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -35,7 +38,8 @@ func (s *Service) ListCreatures(
 	req *connect.Request[rulesv1.ListCreaturesRequest],
 ) (*connect.Response[rulesv1.ListCreaturesResponse], error) {
 	// Active members only: a pending member needs no creature (RN-15).
-	if _, err := authz.RequireCampaignMember(ctx, req.Msg.GetCampaignId()); err != nil {
+	m, err := authz.RequireCampaignMember(ctx, req.Msg.GetCampaignId())
+	if err != nil {
 		return nil, err
 	}
 	page, err := readCreaturesPage(req.Msg)
@@ -49,6 +53,13 @@ func (s *Service) ListCreatures(
 	list, err := content.ListCreatures(page.filter)
 	if err != nil {
 		return nil, s.creatureListError(ctx, err)
+	}
+	if !isMaster(m) {
+		// A table creature is the master's, whatever its state (RN-23): the list is a choice, and a player is
+		// offered none. A creature a character of the caller holds is read by its key, and it is in the list.
+		if list, err = s.withoutUnheldTableCreatures(ctx, m, list); err != nil {
+			return nil, s.dbError(ctx, "read the caller's creatures", err)
+		}
 	}
 	res, err := page.of(list, req.Msg)
 	if err != nil {
@@ -137,7 +148,8 @@ func (s *Service) GetCreature(
 	ctx context.Context,
 	req *connect.Request[rulesv1.GetCreatureRequest],
 ) (*connect.Response[rulesv1.GetCreatureResponse], error) {
-	if _, err := authz.RequireCampaignMember(ctx, req.Msg.GetCampaignId()); err != nil {
+	m, err := authz.RequireCampaignMember(ctx, req.Msg.GetCampaignId())
+	if err != nil {
 		return nil, err
 	}
 	content, err := s.contentFor(ctx, nil, req.Msg.GetCampaignId())
@@ -148,6 +160,17 @@ func (s *Service) GetCreature(
 	if !ok {
 		return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
 	}
+	// A table creature answers a player as an unknown creature (RN-23), unless a character of the caller
+	// holds one: it resolves for its owner's player, whatever its state.
+	if rules.IsTableKey(req.Msg.GetKey()) && !isMaster(m) {
+		holds, err := s.callerHoldsCreature(ctx, m, req.Msg.GetKey())
+		if err != nil {
+			return nil, s.dbError(ctx, "read the caller's creatures", err)
+		}
+		if !holds {
+			return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
+		}
+	}
 	res := creatureToProto(c)
 	// The attacks "Criar NPC" would copy: the very sheet the creation builds, so they never differ.
 	if basic, err := npcSheetFromCreature(content, req.Msg.GetKey()); err == nil {
@@ -156,6 +179,51 @@ func (s *Service) GetCreature(
 		}
 	}
 	return connect.NewResponse(&rulesv1.GetCreatureResponse{Creature: res}), nil
+}
+
+// callerHoldsCreature says whether a character of the caller's holds a live creature of the key.
+func (s *Service) callerHoldsCreature(ctx context.Context, m authz.Membership, key string) (bool, error) {
+	held, err := callerHeldCreatures(ctx, s.queries, m)
+	return held[key], err
+}
+
+// withoutUnheldTableCreatures is the list without the table creatures the caller holds none of.
+func (s *Service) withoutUnheldTableCreatures(ctx context.Context, m authz.Membership, list []rules.CreatureEntry) ([]rules.CreatureEntry, error) {
+	if !slices.ContainsFunc(list, func(e rules.CreatureEntry) bool { return rules.IsTableKey(e.Key) }) {
+		return list, nil // nothing to hide: no query
+	}
+	held, err := callerHeldCreatures(ctx, s.queries, m)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(list, func(e rules.CreatureEntry) bool { return rules.IsTableKey(e.Key) && !held[e.Key] }), nil
+}
+
+// callerHeldCreatures is the set of keys of the live creatures the caller's characters hold, in two
+// queries however many there are.
+func callerHeldCreatures(ctx context.Context, q *charactersdb.Queries, m authz.Membership) (map[string]bool, error) {
+	sheets, err := q.ListCampaignSheets(ctx, m.CampaignID)
+	if err != nil {
+		return nil, err
+	}
+	var mine []string
+	for _, row := range sheets {
+		if conv.OrZero(row.PlayerUserID) == m.UserID {
+			mine = append(mine, row.ID)
+		}
+	}
+	out := map[string]bool{}
+	if len(mine) == 0 {
+		return out, nil
+	}
+	held, err := q.ListLiveCreaturesOfCharacters(ctx, charactersdb.ListLiveCreaturesOfCharactersParams{CampaignID: m.CampaignID, CharacterIds: mine})
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range held {
+		out[r.CharacterCreature.MonsterKey] = true
+	}
+	return out, nil
 }
 
 // creaturesFilterID is a short fingerprint of the filters, so a page token only

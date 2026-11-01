@@ -238,7 +238,7 @@ func (s *Service) RollEffectSave(
 	}
 	var run effectSaveRun
 	res, err := s.write(ctx, combatWrite{m: call.m, key: call.key, hash: idem.Hash(req.Msg), kind: eventLastingSaved, encounterID: call.encID}, func(c *combatTx) (any, error) {
-		run.result, run.offer, run.lucky = nil, nil, nil
+		run.result, run.offer, run.lucky, run.held = nil, nil, nil, nil
 		return s.writeEffectSave(ctx, c, call, req.Msg, &run)
 	})
 	if err != nil {
@@ -251,7 +251,7 @@ func (s *Service) RollEffectSave(
 // the d20 was kept for one, else the encounter and the result (rebuilt from the event on a retry
 // the change never ran for).
 func (s *Service) effectSaveAnswer(ctx context.Context, m authz.Membership, res combatResult, run *effectSaveRun) (*connect.Response[playv1.RollEffectSaveResponse], error) {
-	if run.offer != nil || run.lucky != nil { // nothing was written: the question is the whole answer
+	if run.offer != nil || run.lucky != nil || run.held != nil { // nothing was written: the question is the whole answer
 		out, err := s.finish(ctx, m, res, nil)
 		if err != nil {
 			return nil, err
@@ -427,7 +427,12 @@ func (s *Service) rollEffectSaveD20(ctx context.Context, c *combatTx, x *effectS
 	// A player's character that holds a Bardic Inspiration die has the d20 kept until the player
 	// answers (nothing has been written yet); the answer brings it back with the die added. So
 	// has a halfling's d20 that shows a 1, for the Lucky question first.
-	step, err := s.heldGate(ctx, s.inspirationGate(c), saveSpec(x.call.m, heldEffectSave, x.reactor, x.call.key, x.msg, x.call.in, f.save.Bonus, f.mode, f.sheet.Traits.Lucky))
+	spec := saveSpec(x.call.m, heldEffectSave, x.reactor, x.call.key, x.msg, x.call.in, f.save.Bonus, f.mode, f.sheet.Traits.Lucky)
+	// Indomitable (held_indomitable.go): the dice an effect adds after the gate move the total, so the roller may not
+	// know the result yet, as when the table hides the DC.
+	extras := len(effectDiceFor(f.states, x.reactor.ID, rules.RollAppliesSave)) > 0 || x.msg.GetManeuverKey() != ""
+	spec.Save = &saveRule{DC: int(x.dc), Blind: !c.rules.ShowSaveDC || extras}
+	step, err := s.heldGate(ctx, s.inspirationGate(c), spec)
 	if err != nil {
 		return false, false, err
 	}
@@ -479,7 +484,7 @@ func (s *Service) recordEffectSaveRoll(ctx context.Context, c *combatTx, x *effe
 	}
 	x.ev.D20, x.ev.Modifier, x.ev.Total, x.ev.Physical = result.D20, result.Modifier, result.Total, d20.Physical
 	// The d20 Lucky rolled again, as an index into D20Faces: the log says "Sortudo: 1 → 14".
-	x.ev.Lucky, result.Rerolled = step.Lucky, step.Lucky.proto()
+	x.ev.Lucky, x.ev.Indomitable, result.Rerolled = step.Lucky, step.Indomitable, rerollsOf(step.Lucky, step.Indomitable)
 	return saved, nil
 }
 
@@ -595,7 +600,7 @@ func savedResultOf(res combatResult, made actionEvent, showDC bool) *playv1.Effe
 		return &playv1.EffectSaveResult{}
 	}
 	le := ev.Lasting
-	out := &playv1.EffectSaveResult{D20: le.D20, Modifier: ev.Modifier, Total: le.Total, Physical: ev.Physical, Saved: le.Change == "saved", Skipped: le.Change == "skipped", EffectEnded: le.Reason == endSaved, Rerolled: ev.Lucky.proto()}
+	out := &playv1.EffectSaveResult{D20: le.D20, Modifier: ev.Modifier, Total: le.Total, Physical: ev.Physical, Saved: le.Change == "saved", Skipped: le.Change == "skipped", EffectEnded: le.Reason == endSaved, Rerolled: ev.rerolls()}
 	if ev.Res != nil && ev.Res.Kind == resBardicUse {
 		out.InspirationSides, out.InspirationFace = ev.Res.Sides, ev.Res.Face
 	}

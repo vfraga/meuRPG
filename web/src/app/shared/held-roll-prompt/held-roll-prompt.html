@@ -38,6 +38,97 @@
       </button>
     </section>
   </div>
+} @else if (stroke()) {
+  <div class="offer">
+    @if (look() === 'sheet') {
+      <p class="held">{{ heldLine() }}</p>
+    } @else if (look() === 'card') {
+      <p class="d20">
+        <span class="d20__face">{{ counted() }}</span>
+        <span class="d20__text"
+          >Seu d20{{ bonusText() }}.{{ strokeTold() ? '' : ' O resultado só aparece depois da sua escolha.' }}</span
+        >
+      </p>
+    }
+    <section class="ask" [attr.aria-labelledby]="titleId">
+      <h3 class="ask__title" [id]="titleId">{{ strokeTitle() }}</h3>
+      <p class="ask__what">{{ strokeWhat }}</p>
+      <button
+        matButton="filled"
+        type="button"
+        [disabled]="busy()"
+        disabledInteractive
+        (click)="answer.emit({ kind: 'stroke', use: true })"
+      >
+        Usar
+      </button>
+      <button
+        matButton="outlined"
+        type="button"
+        class="ask__keep"
+        [disabled]="busy()"
+        disabledInteractive
+        (click)="answer.emit({ kind: 'stroke', use: false })"
+      >
+        Manter
+      </button>
+    </section>
+  </div>
+} @else if (indomitable()) {
+  <div class="offer">
+    @if (look() === 'sheet') {
+      <p class="held">{{ heldLine() }}</p>
+    } @else if (look() === 'card') {
+      <p class="d20">
+        <span class="d20__face">{{ counted() }}</span>
+        <span class="d20__text">Seu d20{{ bonusText() }}. O resultado só aparece depois da sua escolha.</span>
+      </p>
+    }
+    <section class="ask" [attr.aria-labelledby]="titleId">
+      <h3 class="ask__title" [id]="titleId">{{ indomitableTitle() }}</h3>
+      <p class="ask__what">{{ indomitableWhat }}</p>
+      @if (indomitablePair()) {
+        <app-multi-roll
+          [fields]="indomitableFields"
+          [canApp]="canApp()"
+          [canType]="canType()"
+          [preferApp]="preferApp()"
+          appLabel="Rolar de novo"
+          hint="Role os dois d20 de novo e digite os dois números, na ordem em que saíram (1 a 20 cada)."
+          [busy]="busy()"
+          [(typing)]="typing"
+          (app)="answer.emit({ kind: 'indomitable', reroll: true, roll: { inApp: true } })"
+          (typed)="answer.emit({ kind: 'indomitable', reroll: true, roll: { faces: $event } })"
+        />
+      } @else {
+        <app-roll-picker
+          [canApp]="canApp()"
+          [canType]="canType()"
+          [preferApp]="preferApp()"
+          label="Role 1d20 de novo"
+          hint="Role o d20 de novo e digite o número que saiu (1 a 20)."
+          [min]="1"
+          [max]="20"
+          appLabel="Rolar de novo"
+          [hideTotal]="true"
+          [busy]="busy()"
+          [sticky]="false"
+          [(typing)]="typing"
+          (app)="answer.emit({ kind: 'indomitable', reroll: true, roll: { inApp: true } })"
+          (typed)="answer.emit({ kind: 'indomitable', reroll: true, roll: { face: $event } })"
+        />
+      }
+      <button
+        matButton="outlined"
+        type="button"
+        class="ask__keep"
+        [disabled]="busy()"
+        (click)="answer.emit({ kind: 'indomitable', reroll: false, roll: null })"
+      >
+        Manter
+      </button>
+    </section>
+  </div>
 } @else if (look() === 'attack') {
   <section class="ask" [attr.aria-labelledby]="titleId">
     <h3 class="ask__title" [id]="titleId">{{ dieTitle() }}</h3>
