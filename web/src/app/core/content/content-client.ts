@@ -26,6 +26,7 @@ import {
   SESSION_ENDED,
   isRateLimited,
   rateLimitedMessage,
+  requestRefusedText,
 } from '../connect/connect-errors';
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import { violationText } from './content-violations';
@@ -170,6 +171,11 @@ export function blockedReason(err: unknown): TableContentBlockedReason | null {
 /** The Portuguese words of an error that is not a refusal: stale, archived, no permission, too many calls, an outcome to check, offline. */
 export function contentErrorText(err: unknown, what: string): string {
   const e = ConnectError.from(err, Code.Unavailable);
+  // A field over its size limit, whatever the call: the server's words, not "confira os dados".
+  const refused = requestRefusedText(e);
+  if (refused !== null) {
+    return refused;
+  }
   const blocked = blockedReason(err);
   if (blocked === TableContentBlockedReason.STALE) {
     return 'Esta entrada mudou enquanto você editava. Recarregue para ver a versão nova.';

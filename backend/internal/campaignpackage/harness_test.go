@@ -44,6 +44,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice/dicetest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/play"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -242,7 +243,7 @@ func newHarness(t *testing.T, opts ...func(*options)) *harness {
 		t.Fatalf("notes.New() error = %v", err)
 	}
 	srv := httpserver.New(httpserver.Config{Logger: logger})
-	opt := connect.WithRequireConnectProtocolHeader()
+	opt := reqlimit.HandlerOption()
 	camps.Mount(srv.Handle, fakeSessions{}, opt)
 	chars.Mount(srv.Handle, fakeSessions{}, camps, opt)
 	live.Mount(srv.Handle, fakeSessions{}, camps, opt)

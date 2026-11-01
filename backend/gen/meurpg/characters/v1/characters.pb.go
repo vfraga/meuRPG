@@ -25,6 +25,7 @@
 package charactersv1
 
 import (
+	_ "github.com/PuraFome/meuRPG/backend/gen/meurpg/options/v1"
 	v1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -2944,6 +2945,7 @@ type FullSheet struct {
 	// Content keys of the spells known (levels 1 to 9): the spellbook of a
 	// Wizard, or the spells of a Bard, Ranger, Sorcerer or Warlock. At most
 	// 200, no repeats.
+	// The request limit is 200 items, the same as rules.MaxKnownSpells (backend/internal/rules/api.go).
 	KnownSpellKeys []string `protobuf:"bytes,15,rep,name=known_spell_keys,json=knownSpellKeys,proto3" json:"known_spell_keys,omitempty"`
 	// Content keys of the spells prepared for the day (levels 1 to 9), for a
 	// Cleric, Druid, Paladin or Wizard. At most 100, no repeats.
@@ -2974,6 +2976,7 @@ type FullSheet struct {
 	// Features and traits the rules content does not have, in the player's
 	// own words, such as those of a subclass from another book. 0 to 5,000
 	// characters, multi-line. Part of the game data: it locks with the sheet.
+	// The request limit is 20 KiB: 5,000 characters of up to 4 bytes (maxCustomFeaturesLength in backend/internal/characters/sheet.go).
 	CustomFeaturesText string `protobuf:"bytes,23,opt,name=custom_features_text,json=customFeaturesText,proto3" json:"custom_features_text,omitempty"`
 	// Options chosen for features and traits that offer them, as content
 	// keys: a fighting style ("feature:fighter-fighting-style-defense"), a
@@ -3030,11 +3033,17 @@ type FullSheet struct {
 	// compares against, so an issue the sheet already had is never blamed on a change.
 	// An issue that was flagged and still stands is left out, so a save never clears
 	// it; only fixing what it says does.
+	// The server computes it again on every save (checkFullSheet in backend/internal/characters/sheet.go).
+	// The editor sends back what it read (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232).
+	// The request limit is 1000 items, the table's most entries (backend/internal/rules/overlay.go).
 	KnownIssues []string `protobuf:"bytes,30,rep,name=known_issues,json=knownIssues,proto3" json:"known_issues,omitempty"`
 	// For each table entry the sheet is still flagged for (a changed entry with an
 	// unresolved issue tied to it), the content revision the sheet was last known to
 	// fit it at. Set by the server and ignored from the client; an entry not here
 	// uses `content_revision`.
+	// The server clears it on every save and sets it again from the stored sheet (checkFullSheet in backend/internal/characters/sheet.go).
+	// The editor sends back what it read (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232).
+	// The request limit is 1000 entries, the table's most entries (backend/internal/rules/overlay.go).
 	ContentBaselines map[string]int32 `protobuf:"bytes,31,rep,name=content_baselines,json=contentBaselines,proto3" json:"content_baselines,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
 	// The feats the character took (MR-025), as content keys: "feat:grappler" or a
 	// table's "feat:<slug>@mesa". Feats are an optional rule of the game (the
@@ -4155,6 +4164,7 @@ type CharacterStory struct {
 	Appearance  *Appearance            `protobuf:"bytes,2,opt,name=appearance,proto3" json:"appearance,omitempty"`
 	// The character's backstory ("história"): 0 to 10,000 characters,
 	// multi-line.
+	// The request limit is 40 KiB: 10,000 characters of up to 4 bytes (maxBackstoryLength in backend/internal/characters/sheet.go).
 	Backstory string `protobuf:"bytes,3,opt,name=backstory,proto3" json:"backstory,omitempty"`
 	// Allies and organizations ("aliados e organizações"): 0 to 2,000
 	// characters, multi-line.
@@ -5960,6 +5970,7 @@ type UpdateMasterNotesRequest struct {
 	CharacterId string                 `protobuf:"bytes,2,opt,name=character_id,json=characterId,proto3" json:"character_id,omitempty"`
 	// 0 to 20,000 characters, multi-line. Empty (or only spaces) deletes the
 	// notes.
+	// The request limit is 80 KiB: 20,000 characters of up to 4 bytes (MaxMasterNotesLength in backend/internal/characters/sheet.go).
 	Notes         string `protobuf:"bytes,3,opt,name=notes,proto3" json:"notes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8877,7 +8888,8 @@ type LevelUpChoices struct {
 	SubclassKey string `protobuf:"bytes,3,opt,name=subclass_key,json=subclassKey,proto3" json:"subclass_key,omitempty"`
 	// The new cantrips, spells known (or spellbook) and prepared spells. At most
 	// 30, 30 and 100 entries.
-	CantripKeys       []string `protobuf:"bytes,4,rep,name=cantrip_keys,json=cantripKeys,proto3" json:"cantrip_keys,omitempty"`
+	CantripKeys []string `protobuf:"bytes,4,rep,name=cantrip_keys,json=cantripKeys,proto3" json:"cantrip_keys,omitempty"`
+	// The request limit is 200 items, the same as rules.MaxKnownSpells (backend/internal/rules/api.go and backend/internal/characters/levelup_plan.go).
 	KnownSpellKeys    []string `protobuf:"bytes,5,rep,name=known_spell_keys,json=knownSpellKeys,proto3" json:"known_spell_keys,omitempty"`
 	PreparedSpellKeys []string `protobuf:"bytes,6,rep,name=prepared_spell_keys,json=preparedSpellKeys,proto3" json:"prepared_spell_keys,omitempty"`
 	// The options the new features offer, the new skills, and the new
@@ -12781,7 +12793,7 @@ var File_meurpg_characters_v1_characters_proto protoreflect.FileDescriptor
 
 const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\n" +
-	"%meurpg/characters/v1/characters.proto\x12\x14meurpg.characters.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bmeurpg/rules/v1/rules.proto\"\x81\f\n" +
+	"%meurpg/characters/v1/characters.proto\x12\x14meurpg.characters.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1emeurpg/options/v1/limits.proto\x1a\x1bmeurpg/rules/v1/rules.proto\"\x81\f\n" +
 	"\tCharacter\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vcampaign_id\x18\x02 \x01(\tR\n" +
@@ -12873,7 +12885,7 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\x0eCharacterSheet\x125\n" +
 	"\x04full\x18\x01 \x01(\v2\x1f.meurpg.characters.v1.FullSheetH\x00R\x04full\x128\n" +
 	"\x05basic\x18\x02 \x01(\v2 .meurpg.characters.v1.BasicSheetH\x00R\x05basicB\t\n" +
-	"\acontent\"\x9d\x10\n" +
+	"\acontent\"\xba\x10\n" +
 	"\tFullSheet\x12?\n" +
 	"\vbase_scores\x18\x01 \x01(\v2\x1e.meurpg.rules.v1.AbilityScoresR\n" +
 	"baseScores\x12\x19\n" +
@@ -12893,24 +12905,24 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\x06shield\x18\f \x01(\bR\x06shield\x12\x1f\n" +
 	"\vweapon_keys\x18\r \x03(\tR\n" +
 	"weaponKeys\x12!\n" +
-	"\fcantrip_keys\x18\x0e \x03(\tR\vcantripKeys\x12(\n" +
-	"\x10known_spell_keys\x18\x0f \x03(\tR\x0eknownSpellKeys\x12.\n" +
+	"\fcantrip_keys\x18\x0e \x03(\tR\vcantripKeys\x12/\n" +
+	"\x10known_spell_keys\x18\x0f \x03(\tB\x05\x88\xb5\x18\xc8\x01R\x0eknownSpellKeys\x12.\n" +
 	"\x13prepared_spell_keys\x18\x10 \x03(\tR\x11preparedSpellKeys\x128\n" +
 	"\tequipment\x18\x11 \x03(\v2\x1a.meurpg.characters.v1.ItemR\tequipment\x121\n" +
 	"\x05coins\x18\x12 \x01(\v2\x1b.meurpg.characters.v1.CoinsR\x05coins\x12\x1c\n" +
 	"\tlanguages\x18\x13 \x03(\tR\tlanguages\x12-\n" +
 	"\x12tool_proficiencies\x18\x14 \x03(\tR\x11toolProficiencies\x12+\n" +
 	"\x11experience_points\x18\x15 \x01(\x05R\x10experiencePoints\x12=\n" +
-	"\talignment\x18\x16 \x01(\x0e2\x1f.meurpg.characters.v1.AlignmentR\talignment\x120\n" +
-	"\x14custom_features_text\x18\x17 \x01(\tR\x12customFeaturesText\x12.\n" +
+	"\talignment\x18\x16 \x01(\x0e2\x1f.meurpg.characters.v1.AlignmentR\talignment\x128\n" +
+	"\x14custom_features_text\x18\x17 \x01(\tB\x06\x90\xb5\x18\x80\xa0\x01R\x12customFeaturesText\x12.\n" +
 	"\x13feature_choice_keys\x18\x18 \x03(\tR\x11featureChoiceKeys\x12)\n" +
 	"\x10challenge_rating\x18\x19 \x01(\tR\x0fchallengeRating\x12\x19\n" +
 	"\bxp_value\x18\x1a \x01(\x05R\axpValue\x12*\n" +
 	"\x11portrait_image_id\x18\x1b \x01(\tR\x0fportraitImageId\x12J\n" +
 	"\x0eability_origin\x18\x1c \x01(\v2#.meurpg.characters.v1.AbilityOriginR\rabilityOrigin\x12)\n" +
-	"\x10content_revision\x18\x1d \x01(\x05R\x0fcontentRevision\x12!\n" +
-	"\fknown_issues\x18\x1e \x03(\tR\vknownIssues\x12b\n" +
-	"\x11content_baselines\x18\x1f \x03(\v25.meurpg.characters.v1.FullSheet.ContentBaselinesEntryR\x10contentBaselines\x12\x1b\n" +
+	"\x10content_revision\x18\x1d \x01(\x05R\x0fcontentRevision\x12(\n" +
+	"\fknown_issues\x18\x1e \x03(\tB\x05\x88\xb5\x18\xe8\aR\vknownIssues\x12i\n" +
+	"\x11content_baselines\x18\x1f \x03(\v25.meurpg.characters.v1.FullSheet.ContentBaselinesEntryB\x05\x88\xb5\x18\xe8\aR\x10contentBaselines\x12\x1b\n" +
 	"\tfeat_keys\x18  \x03(\tR\bfeatKeys\x12M\n" +
 	"\n" +
 	"feat_slots\x18! \x03(\v2..meurpg.characters.v1.FullSheet.FeatSlotsEntryR\tfeatSlots\x12f\n" +
@@ -12989,13 +13001,13 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\fdamage_bonus\x18\x05 \x01(\x05R\vdamageBonus\x12A\n" +
 	"\vdamage_type\x18\x06 \x01(\x0e2 .meurpg.characters.v1.DamageTypeR\n" +
 	"damageType\x12\x19\n" +
-	"\brange_ft\x18\a \x01(\x05R\arangeFt\"\xcd\x01\n" +
+	"\brange_ft\x18\a \x01(\x05R\arangeFt\"\xd5\x01\n" +
 	"\x0eCharacterStory\x12C\n" +
 	"\vpersonality\x18\x01 \x01(\v2!.meurpg.characters.v1.PersonalityR\vpersonality\x12@\n" +
 	"\n" +
 	"appearance\x18\x02 \x01(\v2 .meurpg.characters.v1.AppearanceR\n" +
-	"appearance\x12\x1c\n" +
-	"\tbackstory\x18\x03 \x01(\tR\tbackstory\x12\x16\n" +
+	"appearance\x12$\n" +
+	"\tbackstory\x18\x03 \x01(\tB\x06\x90\xb5\x18\x80\xc0\x02R\tbackstory\x12\x16\n" +
 	"\x06allies\x18\x04 \x01(\tR\x06allies\"i\n" +
 	"\vPersonality\x12\x16\n" +
 	"\x06traits\x18\x01 \x01(\tR\x06traits\x12\x16\n" +
@@ -13116,12 +13128,12 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\x16GetMasterNotesResponse\x12\x14\n" +
 	"\x05notes\x18\x01 \x01(\tR\x05notes\x129\n" +
 	"\n" +
-	"updated_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"t\n" +
+	"updated_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"|\n" +
 	"\x18UpdateMasterNotesRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12!\n" +
-	"\fcharacter_id\x18\x02 \x01(\tR\vcharacterId\x12\x14\n" +
-	"\x05notes\x18\x03 \x01(\tR\x05notes\"l\n" +
+	"\fcharacter_id\x18\x02 \x01(\tR\vcharacterId\x12\x1c\n" +
+	"\x05notes\x18\x03 \x01(\tB\x06\x90\xb5\x18\x80\x80\x05R\x05notes\"l\n" +
 	"\x19UpdateMasterNotesResponse\x12\x14\n" +
 	"\x05notes\x18\x01 \x01(\tR\x05notes\x129\n" +
 	"\n" +
@@ -13338,13 +13350,13 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\treason_pt\x18\x02 \x01(\tR\breasonPt\"n\n" +
 	"\x10LevelUpHitPoints\x12D\n" +
 	"\x06method\x18\x01 \x01(\x0e2,.meurpg.characters.v1.LevelUpHitPointsMethodR\x06method\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x05R\x05value\"\x8a\a\n" +
+	"\x05value\x18\x02 \x01(\x05R\x05value\"\x91\a\n" +
 	"\x0eLevelUpChoices\x12\x1b\n" +
 	"\tclass_key\x18\x01 \x01(\tR\bclassKey\x12I\n" +
 	"\x10ability_increase\x18\x02 \x01(\v2\x1e.meurpg.rules.v1.AbilityScoresR\x0fabilityIncrease\x12!\n" +
 	"\fsubclass_key\x18\x03 \x01(\tR\vsubclassKey\x12!\n" +
-	"\fcantrip_keys\x18\x04 \x03(\tR\vcantripKeys\x12(\n" +
-	"\x10known_spell_keys\x18\x05 \x03(\tR\x0eknownSpellKeys\x12.\n" +
+	"\fcantrip_keys\x18\x04 \x03(\tR\vcantripKeys\x12/\n" +
+	"\x10known_spell_keys\x18\x05 \x03(\tB\x05\x88\xb5\x18\xc8\x01R\x0eknownSpellKeys\x12.\n" +
 	"\x13prepared_spell_keys\x18\x06 \x03(\tR\x11preparedSpellKeys\x12.\n" +
 	"\x13feature_choice_keys\x18\a \x03(\tR\x11featureChoiceKeys\x124\n" +
 	"\x16skill_proficiency_keys\x18\b \x03(\tR\x14skillProficiencyKeys\x120\n" +

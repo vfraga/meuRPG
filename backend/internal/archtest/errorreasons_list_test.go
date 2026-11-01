@@ -22,6 +22,7 @@ import (
 	_ "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	_ "github.com/PuraFome/meuRPG/backend/gen/meurpg/progression/v1"
 	_ "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	_ "github.com/PuraFome/meuRPG/backend/gen/meurpg/system/v1"
 )
 
 // reasonsFile is the closed list of everything the server can tell a client

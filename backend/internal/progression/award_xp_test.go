@@ -102,7 +102,7 @@ func TestAwardXPRefusesABadRequestExactly(t *testing.T) {
 		}, "invalid_argument: gold must be empty when treasure_point_ids is set"},
 		{"gold: 101 treasures", func(r *progressionv1.AwardXPRequest) {
 			r.Mode, r.Amount, r.TreasurePointIds = modeGoldAward, 0, many(101, func(int) string { return "x" })
-		}, "invalid_argument: treasure_point_ids must have at most 100 treasures"},
+		}, "invalid_argument: request over its size limit [request refused field=treasure_point_ids reason=REQUEST_REFUSED_REASON_LIST_TOO_LONG]"}, // the request size limit of the field, the same 100, refuses it before the handler
 		{"gold: a treasure that is not a UUID", func(r *progressionv1.AwardXPRequest) {
 			r.Mode, r.Amount, r.TreasurePointIds = modeGoldAward, 0, []string{newKey(), "x"}
 		}, "invalid_argument: treasure_point_ids must be UUIDs"},

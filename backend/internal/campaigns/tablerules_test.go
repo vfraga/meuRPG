@@ -22,6 +22,7 @@ import (
 	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1/campaignsv1connect"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/tablerules"
 )
 
@@ -527,8 +528,8 @@ func TestGetTableRulesIsOneSnapshotWhileTheMasterSaves(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, testSessions, connect.WithRequireConnectProtocolHeader())
-	server := httptest.NewServer(mux)
+	svc.Mount(mux.Handle, testSessions, reqlimit.HandlerOption())
+	server := httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(server.Close)
 
 	client := campaignsv1connect.NewCampaignServiceClient(server.Client(), server.URL, clientOptions(jogadora.id)...)

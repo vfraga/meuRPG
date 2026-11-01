@@ -74,7 +74,11 @@ type channelTurn struct {
 
 // readPreserveLife reads the hit points asked of Preserve Life: one entry for each creature, 1 or more points.
 func readPreserveLife(req *playv1.TakeActionRequest) ([]preserveHeal, error) {
+	if len(req.GetPreserveLife()) > maxCombatants {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("preserve_life must have at most %d entries", maxCombatants))
+	}
 	var out []preserveHeal
+	seen := make(map[string]struct{}, len(req.GetPreserveLife()))
 	for _, h := range req.GetPreserveLife() {
 		id, err := parseCombatID(h.GetCombatantId(), "combatant")
 		if err != nil {
@@ -83,9 +87,10 @@ func readPreserveLife(req *playv1.TakeActionRequest) ([]preserveHeal, error) {
 		if h.GetHitPoints() < 1 || h.GetHitPoints() > maxChannelPoints {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("hit_points must be 1 to 9999"))
 		}
-		if slices.ContainsFunc(out, func(p preserveHeal) bool { return p.target == id }) {
+		if _, dup := seen[id]; dup {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("a creature appears once in preserve_life"))
 		}
+		seen[id] = struct{}{}
 		out = append(out, preserveHeal{target: id, points: h.GetHitPoints()})
 	}
 	return out, nil

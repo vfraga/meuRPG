@@ -1,15 +1,19 @@
 package characters
 
 import (
+	"errors"
 	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	systemv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/system/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
 // The acceptance criteria of MR-025 (docs/product/stories.md) for the content pack: the
@@ -343,14 +347,9 @@ func TestMR025_ImportRefusesWhatIsWrongWithThePackItself(t *testing.T) {
 		}, "pack.entries[0].body", "bad_value"},
 		{"a name that is not the body's", func(p *rulesv1.TableContentPack) { p.Entries[0].NamePt = "Outro" }, "pack.entries[0].name_pt", "bad_value"},
 		{"the same key twice", func(p *rulesv1.TableContentPack) { p.Entries = append(p.Entries, feat("um")) }, "pack.entries[1].key", "duplicate_key"},
-		{"1001 entries", func(p *rulesv1.TableContentPack) {
-			for i := range 1001 {
-				p.Entries = append(p.Entries, feat("f"+strconv.Itoa(i)))
-			}
-		}, "pack.entries", "limit"},
 		{"a pack over 3 MiB", func(p *rulesv1.TableContentPack) {
 			big := strings.Repeat("a", 3000)
-			for i := range 300 {
+			for i := range 150 {
 				e := feat("g" + strconv.Itoa(i))
 				e.GetTableFeat().DescPt = []string{big, big, big, big, big, big, big, big}
 				p.Entries = append(p.Entries, e)
@@ -373,6 +372,47 @@ func TestMR025_ImportRefusesWhatIsWrongWithThePackItself(t *testing.T) {
 				}
 			}
 		})
+	}
+	if got := pt.entries(t, pt.to); len(got) != 0 {
+		t.Errorf("a refused pack wrote %d entries", len(got))
+	}
+}
+
+// TestMR025_ImportRefuses1001EntriesAsAMessageAndAsAFile: 1001 entries are over the limit of
+// `pack.entries` when the pack is a message (the request size limit, before the handler) and over
+// the table's limit when it is a file (the pack is read by the server).
+func TestMR025_ImportRefuses1001EntriesAsAMessageAndAsAFile(t *testing.T) {
+	t.Parallel()
+	pt := newPackTable(t)
+	pack := &rulesv1.TableContentPack{Format: PackFormat, Version: PackVersion}
+	for i := range rules.MaxOverlayEntries + 1 {
+		slug := "f" + strconv.Itoa(i)
+		pack.Entries = append(pack.Entries, &rulesv1.TableEntry{Key: "feat:" + slug + "@mesa", Kind: rulesv1.TableContentKind_TABLE_CONTENT_KIND_FEAT, NamePt: slug, Body: &rulesv1.TableEntry_TableFeat{TableFeat: &rulesv1.TableFeat{NamePt: slug}}})
+	}
+	file, err := protojson.Marshal(pack)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mode := range []rulesv1.TableImportMode{rulesv1.TableImportMode_TABLE_IMPORT_MODE_PREVIEW, rulesv1.TableImportMode_TABLE_IMPORT_MODE_APPLY} {
+		_, err := pt.importPack(pt.master, pt.to, pack, mode, "")
+		ce, ok := errors.AsType[*connect.Error](err)
+		if !ok || ce.Code() != connect.CodeInvalidArgument || len(ce.Details()) != 1 {
+			t.Fatalf("mode %v, as a message: error = %v, want invalid_argument with the request limit detail", mode, err)
+		}
+		if d, derr := ce.Details()[0].Value(); derr != nil {
+			t.Errorf("mode %v, as a message: detail: %v", mode, derr)
+		} else if r, ok := d.(*systemv1.RequestRefused); !ok || r.GetField() != "pack.entries" || r.GetReason() != systemv1.RequestRefusedReason_REQUEST_REFUSED_REASON_LIST_TOO_LONG {
+			t.Errorf("mode %v, as a message: detail = %v, want LIST_TOO_LONG at pack.entries", mode, d)
+		}
+
+		_, err = pt.master.table.ImportTableContent(t.Context(), connect.NewRequest(&rulesv1.ImportTableContentRequest{CampaignId: pt.to, PackJson: file, Mode: mode}))
+		found := false
+		for _, v := range violationsOfErr(t, err) {
+			found = found || (v.GetField() == "pack.entries" && v.GetReason() == "limit")
+		}
+		if !found {
+			t.Errorf("mode %v, as a file: error = %v, want a violation at pack.entries (limit)", mode, err)
+		}
 	}
 	if got := pt.entries(t, pt.to); len(got) != 0 {
 		t.Errorf("a refused pack wrote %d entries", len(got))

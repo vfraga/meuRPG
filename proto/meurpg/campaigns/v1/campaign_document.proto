@@ -3,6 +3,7 @@ syntax = "proto3";
 package meurpg.campaigns.v1;
 
 import "google/protobuf/timestamp.proto";
+import "meurpg/options/v1/limits.proto";
 
 // CampaignDocumentService keeps each campaign's document (MR-018): one
 // Markdown text per campaign that the master writes to prepare the game,
@@ -124,7 +125,9 @@ message UpdateCampaignDocumentRequest {
   //     that change text direction (as in every other text of the app).
   // Nothing else is changed: spaces at the start and end are kept, because
   // they can mean something in Markdown.
-  string body = 2;
+  // The request limit is 400 KiB, twice the document's 200 KiB.
+  // A Windows line break takes 2 bytes until the server changes it (MaxDocumentBytes and cleanDocument in backend/internal/campaigns/document.go).
+  string body = 2 [(meurpg.options.v1.max_len) = 409600];
   // The revision the caller read (CampaignDocument.revision): 0 for a
   // document that was never saved.
   int32 expected_revision = 3;

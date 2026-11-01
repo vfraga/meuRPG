@@ -21,6 +21,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1/campaignsv1connect"
 	"github.com/PuraFome/meuRPG/backend/internal/identity"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 )
 
 // These tests run against CockroachDB, because the rules they check live in
@@ -149,8 +150,8 @@ func newHarnessWith(t *testing.T, change func(*Config)) *harness {
 	svc.SetCharacters(&h.characters)
 	h.service = svc
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, testSessions, connect.WithRequireConnectProtocolHeader())
-	h.server = httptest.NewServer(mux)
+	svc.Mount(mux.Handle, testSessions, reqlimit.HandlerOption())
+	h.server = httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(h.server.Close)
 	return h
 }

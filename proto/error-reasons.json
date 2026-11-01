@@ -645,6 +645,21 @@
           "unsent": []
         }
       ]
+    },
+    {
+      "module": "platform",
+      "message": "meurpg.system.v1.RequestRefused",
+      "fields": [
+        {
+          "field": "reason",
+          "enum": "RequestRefusedReason",
+          "reasons": [
+            "LIST_TOO_LONG",
+            "TEXT_TOO_LONG"
+          ],
+          "unsent": []
+        }
+      ]
     }
   ],
   "body": [

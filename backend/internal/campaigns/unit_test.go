@@ -25,6 +25,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1/campaignsv1connect"
 	"github.com/PuraFome/meuRPG/backend/internal/campaigns/campaignsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/identity"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/secret"
 )
 
@@ -128,8 +129,8 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, testSessions, connect.WithRequireConnectProtocolHeader())
-	server := httptest.NewServer(mux)
+	svc.Mount(mux.Handle, testSessions, reqlimit.HandlerOption())
+	server := httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(server.Close)
 	c := campaignsv1connect.NewCampaignServiceClient(server.Client(), server.URL)
 	ctx := t.Context()
@@ -285,7 +286,7 @@ func TestReadsWithIDsArePostOnly(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, testSessions, connect.WithRequireConnectProtocolHeader())
+	svc.Mount(mux.Handle, testSessions, reqlimit.HandlerOption())
 
 	get := func(procedure, message string) int {
 		t.Helper()

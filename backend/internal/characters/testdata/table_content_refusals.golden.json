@@ -165,7 +165,7 @@
   },
   {
     "step": "too many switches",
-    "value": "invalid_argument: switches must have at most 1400 switches | invalid field=\"switches\""
+    "value": "invalid_argument: request over its size limit | request refused field=\"switches\" reason=REQUEST_REFUSED_REASON_LIST_TOO_LONG"
   },
   {
     "step": "a switch twice",

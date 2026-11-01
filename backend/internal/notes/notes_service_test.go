@@ -22,6 +22,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/notes/link"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 )
 
 // CreateNote and UpdateNote: the order of their checks, every refusal with its
@@ -187,8 +188,8 @@ func newNotesRig(t *testing.T) *notesRig {
 	}
 	members := notesMembers{rig.master: authz.RoleMaster, rig.ana: authz.RolePlayer, rig.bia: authz.RolePlayer}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, notesSessions{}, members, connect.WithRequireConnectProtocolHeader())
-	rig.server = httptest.NewServer(mux)
+	svc.Mount(mux.Handle, notesSessions{}, members, reqlimit.HandlerOption())
+	rig.server = httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(rig.server.Close)
 	return rig
 }

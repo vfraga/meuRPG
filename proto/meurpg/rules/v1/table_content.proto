@@ -26,6 +26,7 @@ syntax = "proto3";
 package meurpg.rules.v1;
 
 import "google/protobuf/timestamp.proto";
+import "meurpg/options/v1/limits.proto";
 import "meurpg/rules/v1/rules.proto";
 
 // TableContentKind says what an entry is.
@@ -173,7 +174,9 @@ message TableEffect {
   repeated string spells = 20;
   // The text for the sheet, in Portuguese, when a note, a resource or an action
   // needs one. "{value}" is the value with its sign, "{n}" without it.
-  string text_pt = 21;
+  // The effect text has at most 4,000 characters (maxTextRunes, checked in backend/internal/rules/overlay_budget.go).
+  // The request limit is 16 KiB: 4,000 characters of up to 4 bytes.
+  string text_pt = 21 [(meurpg.options.v1.max_len) = 16384];
   // superiority_die: a die an option (a maneuver) adds to a roll, spent from the
   // resource named in `resource` (one use each; the entry or its class defines it).
   // `value` is the die's sides (a formula), `applies` where it goes: "damage" (a
@@ -399,7 +402,9 @@ message TableFeature {
   string key = 1;
   string name_pt = 2;
   // The text, one paragraph per entry.
-  repeated string desc_pt = 3;
+  // Each paragraph has at most 4,000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB for each paragraph: 4,000 characters of up to 4 bytes.
+  repeated string desc_pt = 3 [(meurpg.options.v1.max_len) = 16384];
   repeated TableEffect effects = 4;
   // The option list of a class or subclass feature (a table's maneuvers): options the
   // player picks, each with a name, a text and effects of its own. An option is never
@@ -421,7 +426,9 @@ message TableFeature {
 message TableFeat {
   string name_pt = 1;
   // The text, one paragraph per entry.
-  repeated string desc_pt = 2;
+  // Each paragraph has at most 4,000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB for each paragraph: 4,000 characters of up to 4 bytes.
+  repeated string desc_pt = 2 [(meurpg.options.v1.max_len) = 16384];
   // What the feat asks of a character; unset asks nothing.
   FeatPrerequisite prerequisite = 3;
   // At most 20, and at most one ability_increase.
@@ -434,7 +441,9 @@ message TableFeat {
 message TableOption {
   string name_pt = 1;
   // The text, one paragraph per entry.
-  repeated string desc_pt = 2;
+  // Each paragraph has at most 4,000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB for each paragraph: 4,000 characters of up to 4 bytes.
+  repeated string desc_pt = 2 [(meurpg.options.v1.max_len) = 16384];
   // The option set: one of the closed list "option_set_names" of GetEffectMenu ("invocation",
   // "metamagic", "fighting_style", "pact_boon", "hunters_prey", "defensive_tactics",
   // "multiattack", "superior_hunters_defense" or "table_feature"). It never changes after the
@@ -480,7 +489,9 @@ message OptionClassLevel {
 message TableClassFeature {
   string name_pt = 1;
   // The text, one paragraph per entry.
-  repeated string desc_pt = 2;
+  // Each paragraph has at most 4,000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB for each paragraph: 4,000 characters of up to 4 bytes.
+  repeated string desc_pt = 2 [(meurpg.options.v1.max_len) = 16384];
   // The class that has it: an SRD class or a table class. Never changes.
   string class_key = 3;
   // The class level it comes at, 1 to 20.
@@ -529,8 +540,9 @@ message TableCreature {
 message TableCreatureTrait {
   // 1 to 80 characters, on one line.
   string name_pt = 1;
-  // 1 to 4000 characters.
-  string text_pt = 2;
+  // 1 to 4000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB: 4,000 characters of up to 4 bytes.
+  string text_pt = 2 [(meurpg.options.v1.max_len) = 16384];
 }
 
 // TableCasting is how a class, or a third caster's subclass, casts.
@@ -556,7 +568,8 @@ message TableCasting {
   // spells that name the class. Only a class whose list_from is empty has them;
   // a third caster's subclass and a class that does not cast have none. Each is
   // a spell of the SRD, named once, and a class names at most 400.
-  repeated string srd_spell_keys = 8;
+  // The request limit is 400 items, the same as rules.MaxClassSRDSpells (backend/internal/rules/overlay_budget.go).
+  repeated string srd_spell_keys = 8 [(meurpg.options.v1.max_items) = 400];
 }
 
 // TableClassLevel is one row of a class's 20-level table.
@@ -631,7 +644,9 @@ message TableSubclass {
   string class_key = 2;
   // The class level the choice happens at: the parent's, or 0 for "the parent's".
   int32 level = 3;
-  repeated string desc_pt = 4;
+  // Each paragraph has at most 4,000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB for each paragraph: 4,000 characters of up to 4 bytes.
+  repeated string desc_pt = 4 [(meurpg.options.v1.max_len) = 16384];
   repeated TableSubclassLevel levels = 5;
   // Makes the subclass a third caster ("third"); the parent class must not cast.
   // Its levels need a row, with the casting columns, for every level from the
@@ -696,7 +711,9 @@ message TableBackground {
   repeated string tools = 3;
   int32 language_choices = 4;
   // The equipment, as a text.
-  string equipment_pt = 5;
+  // The text has at most 4,000 characters (maxTextRunes, checked by checkTextAt in backend/internal/rules/overlay_spell.go).
+  // The request limit is 16 KiB: 4,000 characters of up to 4 bytes.
+  string equipment_pt = 5 [(meurpg.options.v1.max_len) = 16384];
   TableFeature feature = 6;
 }
 
@@ -779,7 +796,9 @@ message TableSpellComponents {
   bool somatic = 2;
   bool material = 3;
   // Describes the material; goes with `material`, and only with it.
-  string material_pt = 4;
+  // The text has at most 4,000 characters (maxTextRunes, checked by checkTextAt in backend/internal/rules/overlay_spell.go).
+  // The request limit is 16 KiB: 4,000 characters of up to 4 bytes.
+  string material_pt = 4 [(meurpg.options.v1.max_len) = 16384];
 }
 
 // TableSpellDamage is one damage type of a table spell. The dice are plain dice
@@ -820,8 +839,12 @@ message TableSpell {
   bool ritual = 9;
   // The classes (SRD or table) whose list has the spell.
   repeated string class_keys = 10;
-  repeated string desc_pt = 11;
-  repeated string higher_level_pt = 12;
+  // Each paragraph has at most 4,000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB for each paragraph: 4,000 characters of up to 4 bytes.
+  repeated string desc_pt = 11 [(meurpg.options.v1.max_len) = 16384];
+  // Each paragraph has at most 4,000 characters (maxTextRunes in backend/internal/rules/overlay.go).
+  // The request limit is 16 KiB for each paragraph: 4,000 characters of up to 4 bytes.
+  repeated string higher_level_pt = 12 [(meurpg.options.v1.max_len) = 16384];
   TableSpellTarget target = 13;
   // "melee", "ranged" or empty (no spell attack). Not together with `save`.
   string attack = 14;
@@ -880,7 +903,7 @@ message TableContentViolation {
   // a field the message does not have) and
   // "size_limit" (64 KiB of data). The 1000-entry limit is "limit", with an empty
   // field. In ImportTableContent a violation about the pack itself is at a field
-  // that starts with "pack": "pack" (over 3 MiB: "size_limit"), "pack.format" and
+  // that starts with "pack": "pack" (a `pack_json` over 3 MiB: "size_limit"), "pack.format" and
   // "pack.version" ("bad_value"), "pack.entries[3].key" ("bad_key" for a key that is
   // not "<kind>:<slug>@mesa" of the entry's kind, "duplicate_key" for one that
   // repeats) and "pack.entries[3].body" ("bad_value": no body, or one of another
@@ -1047,7 +1070,11 @@ service TableContentService {
   //
   // The limits are the ones of the editors, checked on the whole campaign: 1000
   // entries, 64 KiB of data per entry; and the pack itself is at most 3 MiB (in
-  // proto JSON), has `format` "meurpg.table-content" and `version` 1, and every key
+  // proto JSON). A `pack` message with more than 1000 entries, and a `pack_json` over
+  // 3 MiB in the binary protocol, are refused before the handler as `invalid_argument`
+  // with a RequestRefused detail (LIST_TOO_LONG at "pack.entries", TEXT_TOO_LONG at
+  // "pack_json"); the violations "limit" and "size_limit" of the pack are the ones of
+  // the file path (`pack_json`). The pack has `format` "meurpg.table-content" and `version` 1, and every key
   // is "<kind>:<slug>@mesa" of its entry's kind, without repeats. The
   // violation reasons of a pack are in TableContentViolation.
   //
@@ -1246,7 +1273,8 @@ message TableContentPack {
   string name = 3;
   // The entries. At most 1000. Each has `key`, `kind`, `name_pt` and its body; the
   // other fields of TableEntry are left out of an export and ignored in an import.
-  repeated TableEntry entries = 4;
+  // The request limit is 1000 items, the same as rules.MaxOverlayEntries (backend/internal/rules/overlay.go).
+  repeated TableEntry entries = 4 [(meurpg.options.v1.max_items) = 1000];
 }
 
 // ExportTableContentRequest names a campaign.
@@ -1284,8 +1312,9 @@ message ImportTableContentRequest {
   // reads it strictly, and a field it does not know (a misspelled "proficiency" for
   // "proficiency_key") is a violation of its entry at the path of the field (reason
   // "unknown_field"), never dropped. When set, `pack` must be unset. The 3 MiB limit is
-  // this field's size.
-  bytes pack_json = 5;
+  // this field's size; over it the request is refused as RequestRefused (TEXT_TOO_LONG).
+  // The request limit is 3 MiB, the same as characters.MaxPackBytes (backend/internal/characters/tablecontent_pack.go).
+  bytes pack_json = 5 [(meurpg.options.v1.max_len) = 3145728];
 }
 
 // TableImportStatus is what an import does with one entry of the pack.
@@ -1393,8 +1422,9 @@ message ListOptionSwitchesResponse {
 // SetOptionSwitchesRequest asks for the state of some options.
 message SetOptionSwitchesRequest {
   string campaign_id = 1;
-  // At least one, at most 700; a key once.
-  repeated OptionSwitch switches = 2;
+  // At least one, at most 1400; a key once.
+  // The request limit is 1400 items, the same as characters.MaxOptionSwitches (backend/internal/characters/tableswitches.go).
+  repeated OptionSwitch switches = 2 [(meurpg.options.v1.max_items) = 1400];
 }
 
 // SetOptionSwitchesResponse says what changed.

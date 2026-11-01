@@ -26,6 +26,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice/dicetest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -118,8 +119,8 @@ func TestNewValidatesItsConfig(t *testing.T) {
 func TestEveryMethodNeedsASession(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	offlineService(t).Mount(mux.Handle, testSessions, noMembers{}, connect.WithRequireConnectProtocolHeader())
-	server := httptest.NewServer(mux)
+	offlineService(t).Mount(mux.Handle, testSessions, noMembers{}, reqlimit.HandlerOption())
+	server := httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(server.Close)
 	c := charactersv1connect.NewCharacterServiceClient(server.Client(), server.URL)
 	content := rulesv1connect.NewContentServiceClient(server.Client(), server.URL)
@@ -208,7 +209,7 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 func TestReadsWithIDsArePostOnly(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	offlineService(t).Mount(mux.Handle, testSessions, noMembers{}, connect.WithRequireConnectProtocolHeader())
+	offlineService(t).Mount(mux.Handle, testSessions, noMembers{}, reqlimit.HandlerOption())
 
 	message := `{"campaignId":"6f1c7a52-3b5e-4c55-9d0b-2a51f0c1e001","characterId":"6f1c7a52-3b5e-4c55-9d0b-2a51f0c1e001"}`
 	reads := map[string]protoreflect.MethodDescriptor{}

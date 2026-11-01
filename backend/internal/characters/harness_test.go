@@ -27,6 +27,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice/dicetest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -148,9 +149,9 @@ func newHarnessWith(t *testing.T, tweak func(*Config)) *harness {
 	camps.SetCharacters(h.svc) // an ordinary invite approves a pending member's character
 	h.svc.SetCampaignNames(camps)
 	mux := http.NewServeMux()
-	camps.Mount(mux.Handle, testSessions, connect.WithRequireConnectProtocolHeader())
-	h.svc.Mount(mux.Handle, testSessions, camps, connect.WithRequireConnectProtocolHeader())
-	h.server = httptest.NewServer(mux)
+	camps.Mount(mux.Handle, testSessions, reqlimit.HandlerOption())
+	h.svc.Mount(mux.Handle, testSessions, camps, reqlimit.HandlerOption())
+	h.server = httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(h.server.Close)
 	return h
 }

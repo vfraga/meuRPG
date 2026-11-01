@@ -4,6 +4,7 @@ import {
   GameSessionBlockedReason,
   GameSessionBlockedSchema,
 } from '../../../gen/meurpg/play/v1/play_pb';
+import { requestRefusedText } from '../connect/connect-errors';
 import type { LiveErrorKind } from './live-session.types';
 
 /**
@@ -13,6 +14,10 @@ import type { LiveErrorKind } from './live-session.types';
  */
 export function classifyLiveError(err: unknown): LiveErrorKind {
   const connectErr = ConnectError.from(err, Code.Unavailable);
+  // A request with a field over its size limit is a request the server will never take.
+  if (requestRefusedText(connectErr) !== null) {
+    return 'invalid';
+  }
   switch (connectErr.code) {
     case Code.NotFound:
       return 'no-access';

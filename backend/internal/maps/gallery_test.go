@@ -31,6 +31,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/maps/images"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/blob"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	playlink "github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -599,8 +600,8 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, testSessions, noMembers{}, connect.WithRequireConnectProtocolHeader())
-	server := httptest.NewServer(mux)
+	svc.Mount(mux.Handle, testSessions, noMembers{}, reqlimit.HandlerOption())
+	server := httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(server.Close)
 	c := mapsv1connect.NewGalleryServiceClient(server.Client(), server.URL)
 	mc := mapsv1connect.NewMapServiceClient(server.Client(), server.URL)

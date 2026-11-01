@@ -14,6 +14,10 @@ import { GetCharacterResponseSchema } from '../../../gen/meurpg/characters/v1/ch
 import { ProficiencyLevel } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { Transport } from '@connectrpc/connect';
 
+import {
+  RequestRefusedReason,
+  RequestRefusedSchema,
+} from '../../../gen/meurpg/system/v1/request_limits_pb';
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import {
   LiveSessionSourceLive,
@@ -21,6 +25,15 @@ import {
   toShownImageVm,
   toVitalsVm,
 } from './live-session-source.live';
+
+function tooLong(): ConnectError {
+  return new ConnectError('request over its size limit', Code.InvalidArgument, undefined, [
+    {
+      desc: RequestRefusedSchema,
+      value: create(RequestRefusedSchema, { reason: RequestRefusedReason.TEXT_TOO_LONG }),
+    },
+  ]);
+}
 
 function blocked(reason: GameSessionBlockedReason): ConnectError {
   return new ConnectError('blocked', Code.FailedPrecondition, undefined, [
@@ -35,6 +48,10 @@ describe('classifyLiveError', () => {
     expect(classifyLiveError(new ConnectError('x', Code.InvalidArgument))).toBe('invalid');
     expect(classifyLiveError(new ConnectError('x', Code.PermissionDenied))).toBe('forbidden');
     expect(classifyLiveError(blocked(GameSessionBlockedReason.NO_OPEN_SESSION))).toBe('no-session');
+  });
+
+  it('reads a request over its size limit as invalid, whatever its code', () => {
+    expect(classifyLiveError(tooLong())).toBe('invalid');
   });
 
   it('treats everything else as worth another try', () => {

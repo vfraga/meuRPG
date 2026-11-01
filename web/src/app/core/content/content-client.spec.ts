@@ -12,6 +12,10 @@ import {
   TableContentRefusalSchema,
   TableContentViolationSchema,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import {
+  RequestRefusedReason,
+  RequestRefusedSchema,
+} from '../../../gen/meurpg/system/v1/request_limits_pb';
 import { OUTCOME_UNKNOWN, SESSION_ENDED } from '../connect/connect-errors';
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import {
@@ -30,6 +34,29 @@ function blocked(code: Code, reason: TableContentBlockedReason) {
     },
   ]);
 }
+
+describe('a table content call refused for the size of a field', () => {
+  const refused = (reason: RequestRefusedReason) =>
+    new ConnectError('request over its size limit', Code.InvalidArgument, undefined, [
+      {
+        desc: RequestRefusedSchema,
+        value: create(RequestRefusedSchema, { reason, field: 'pack' }),
+      },
+    ]);
+
+  it('says so instead of "confira os dados"', () => {
+    expect(contentErrorText(refused(RequestRefusedReason.LIST_TOO_LONG), 'importar')).toBe(
+      'O pedido tem itens demais. Reduza a lista e tente de novo.',
+    );
+    expect(contentErrorText(refused(RequestRefusedReason.TEXT_TOO_LONG), 'importar')).toBe(
+      'O texto é grande demais. Encurte e tente de novo.',
+    );
+  });
+
+  it('is not a refusal of the table rules', () => {
+    expect(refusalOf(refused(RequestRefusedReason.LIST_TOO_LONG))).toBeNull();
+  });
+});
 
 describe('the errors of the table content calls', () => {
   it('reads a refusal by its typed detail', () => {

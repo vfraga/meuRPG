@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/secret"
 )
 
@@ -377,7 +378,7 @@ func TestLoginFormCrossOrigin(t *testing.T) {
 	intent := newFakeIntent()
 	h := newHarness(t, withIntents(map[string]IntentHandler{testIntent: intent}))
 	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
-	h.svc.Mount(srv.Handle)
+	h.svc.Mount(srv.Handle, reqlimit.HandlerOption())
 	token, _ := secret.New()
 	form := intentForm("/invite", testIntent, token)
 

@@ -3,6 +3,7 @@ package characters
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -411,7 +412,7 @@ func TestTableContentRefusalsGolden(t *testing.T) {
 	leveled := testSpell("Truque", "class:wizard")
 	var manySwitches []*rulesv1.OptionSwitch
 	for i := range MaxOptionSwitches + 1 {
-		manySwitches = append(manySwitches, optionSwitchOf("spell:x"+strings.Repeat("y", i), true))
+		manySwitches = append(manySwitches, optionSwitchOf("spell:x"+strconv.Itoa(i), true))
 	}
 	goodPack := &rulesv1.TableContentPack{Format: PackFormat, Version: PackVersion, Entries: []*rulesv1.TableEntry{frozenPackEntry("um")}}
 	preview := rulesv1.TableImportMode_TABLE_IMPORT_MODE_PREVIEW

@@ -191,13 +191,18 @@ func (s *Service) parseGroupAsk(msg *playv1.RequestGroupCheckRequest) (groupAsk,
 		return groupAsk{}, connect.NewError(connect.CodeInvalidArgument, errors.New("skill_key must be a skill, an ability check or a saving throw"))
 	}
 	askedIDs := msg.GetCharacterIds()
-	for i, id := range askedIDs {
+	if len(askedIDs) > maxCombatants {
+		return groupAsk{}, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("character_ids must have at most %d entries", maxCombatants))
+	}
+	seen := make(map[string]struct{}, len(askedIDs))
+	for _, id := range askedIDs {
 		if _, err := parseCombatID(id, "character"); err != nil {
 			return groupAsk{}, err
 		}
-		if slices.Contains(askedIDs[:i], id) {
+		if _, dup := seen[id]; dup {
 			return groupAsk{}, connect.NewError(connect.CodeInvalidArgument, errors.New("character_ids names a character twice"))
 		}
+		seen[id] = struct{}{}
 	}
 	dc := msg.GetDc()
 	if dc < 0 || dc > maxGroupCheckDC {

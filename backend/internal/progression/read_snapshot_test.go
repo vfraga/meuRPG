@@ -17,6 +17,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/maps"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 )
 
 // afterQuery runs hook once, right after the first statement whose text
@@ -71,8 +72,8 @@ func (h *harness) tracedClient(u *user, match string, hook func()) progressionv1
 		h.t.Fatalf("New() error = %v", err)
 	}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, fakeSessions{}, h.camps, connect.WithRequireConnectProtocolHeader())
-	server := httptest.NewServer(mux)
+	svc.Mount(mux.Handle, fakeSessions{}, h.camps, reqlimit.HandlerOption())
+	server := httptest.NewServer(reqlimit.Middleware(mux))
 	h.t.Cleanup(server.Close)
 	return progressionv1connect.NewProgressionServiceClient(&http.Client{Transport: userTransport{userID: u.id, next: server.Client().Transport}}, server.URL)
 }

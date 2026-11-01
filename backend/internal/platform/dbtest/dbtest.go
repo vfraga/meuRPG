@@ -511,13 +511,23 @@ func take(prefix string) (string, bool) {
 }
 
 // emptyAll deletes every row of every table, children before parents.
+// On PostgreSQL it runs as READ COMMITTED: the server tracks serializable transactions across all
+// its databases, and when many test binaries run at once it summarizes the old ones and cancels a
+// DELETE of the whole database ("conflict out to old committed transaction", 40001). A cleanup
+// that nobody else reads needs no serializability.
 func (tpl templateDB) emptyAll() string {
 	var b strings.Builder
+	if tpl.postgres {
+		b.WriteString("BEGIN ISOLATION LEVEL READ COMMITTED;")
+	}
 	for _, v := range slices.Backward(tpl.tables) {
 		if v == "goose_db_version" || slices.Contains(tpl.reference, v) {
 			continue // the migrations it records, and the reference data, stay
 		}
 		b.WriteString("DELETE FROM " + pgx.Identifier{v}.Sanitize() + ";")
+	}
+	if tpl.postgres {
+		b.WriteString("COMMIT;")
 	}
 	return b.String()
 }

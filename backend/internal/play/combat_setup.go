@@ -266,21 +266,35 @@ func readOrderCall(ctx context.Context, req *playv1.SetInitiativeOrderRequest) (
 	if err != nil {
 		return orderCall{}, err
 	}
-	ids := make([]string, 0, len(req.GetCombatantIds()))
-	for _, raw := range req.GetCombatantIds() {
-		id, err := parseCombatID(raw, "combatant")
-		if err != nil {
-			return orderCall{}, err
-		}
-		if slices.Contains(ids, id) {
-			return orderCall{}, connect.NewError(connect.CodeInvalidArgument, errors.New("combatant_ids repeats a combatant"))
-		}
-		ids = append(ids, id)
+	ids, err := orderIDs(req.GetCombatantIds())
+	if err != nil {
+		return orderCall{}, err
 	}
 	if len(ids) < minTiedCombatants {
 		return orderCall{}, connect.NewError(connect.CodeInvalidArgument, errors.New("combatant_ids must name at least two combatants"))
 	}
 	return orderCall{m: m, key: key, encounterID: encID, ids: ids}, nil
+}
+
+// orderIDs reads the combatants of SetInitiativeOrder: at most maxCombatants, each once.
+func orderIDs(raw []string) ([]string, error) {
+	if len(raw) > maxCombatants {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("combatant_ids must have at most %d entries", maxCombatants))
+	}
+	ids := make([]string, 0, len(raw))
+	seen := make(map[string]struct{}, len(raw))
+	for _, r := range raw {
+		id, err := parseCombatID(r, "combatant")
+		if err != nil {
+			return nil, err
+		}
+		if _, dup := seen[id]; dup {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("combatant_ids repeats a combatant"))
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }
 
 // orderWrite is the transaction of SetInitiativeOrder: the combatants must be tied, and take

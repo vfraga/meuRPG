@@ -534,8 +534,12 @@ func (col *collector) customBackgroundFeature() {
 func (col *collector) classFeatures() {
 	x := col.x
 	replacedByFeat := map[string]bool{}
+	hasFeat := make(map[string]struct{}, len(x.b.Feats))
+	for _, f := range x.b.Feats {
+		hasFeat[f] = struct{}{}
+	}
 	for feat, slot := range x.b.FeatSlots {
-		if slices.Contains(x.b.Feats, feat) {
+		if _, ok := hasFeat[feat]; ok {
 			replacedByFeat[slot] = true
 		}
 	}

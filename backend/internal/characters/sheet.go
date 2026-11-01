@@ -117,7 +117,11 @@ func checkFullSheet(content *rules.Content, sent *charactersv1.FullSheet) (*char
 	// server's, never the client's.
 	full.ContentRevision = i32(content.TableRevision())
 	// A feat's place in the improvements only means something for a feat the sheet has.
-	maps.DeleteFunc(full.FeatSlots, func(feat, _ string) bool { return !slices.Contains(full.FeatKeys, feat) })
+	hasFeat := make(map[string]struct{}, len(full.FeatKeys))
+	for _, k := range full.FeatKeys {
+		hasFeat[k] = struct{}{}
+	}
+	maps.DeleteFunc(full.FeatSlots, func(feat, _ string) bool { _, ok := hasFeat[feat]; return !ok })
 	full.KnownIssues = issueIDs(rules.Derive(buildOf(full), content).Issues)
 	full.ContentBaselines = nil // the server's: carryFlags sets it when a save keeps a flag
 	if err := rules.Validate(buildOf(full), content); err != nil {
@@ -187,6 +191,9 @@ func checkSheetKind(kind string, sheet *charactersv1.CharacterSheet) error {
 // cleanFullSheet checks and trims the free text and the numbers of a full
 // sheet that package rules does not look at.
 func cleanFullSheet(f *charactersv1.FullSheet) error {
+	if err := checkFeatListSizes(f); err != nil {
+		return err
+	}
 	if err := cleanCustomSubclasses(f); err != nil {
 		return err
 	}
@@ -203,6 +210,18 @@ func cleanFullSheet(f *charactersv1.FullSheet) error {
 		return err
 	}
 	return cleanFullSheetTexts(f)
+}
+
+// checkFeatListSizes applies the request size limits to the feats of a full
+// sheet, before anything walks them.
+func checkFeatListSizes(f *charactersv1.FullSheet) error {
+	if len(f.GetFeatKeys()) > rules.MaxListLength {
+		return fieldErr("sheet.full.feat_keys", "must have at most %d entries", rules.MaxListLength)
+	}
+	if len(f.GetFeatSlots()) > rules.MaxListLength {
+		return fieldErr("sheet.full.feat_slots", "must have at most %d entries", rules.MaxListLength)
+	}
+	return nil
 }
 
 // cleanCustomSubclasses trims the names of the custom subclasses.

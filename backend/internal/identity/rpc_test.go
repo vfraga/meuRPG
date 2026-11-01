@@ -16,6 +16,7 @@ import (
 
 	identityv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/identity/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/identity/v1/identityv1connect"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/secret"
 )
 
@@ -523,7 +524,7 @@ func TestUserIDThroughAuthenticateRequest(t *testing.T) {
 func TestMountDisabled(t *testing.T) {
 	t.Parallel()
 	mux := http.NewServeMux()
-	MountDisabled(mux.Handle, connect.WithRequireConnectProtocolHeader())
+	MountDisabled(mux.Handle, reqlimit.HandlerOption())
 
 	for _, route := range []struct{ method, path string }{
 		{http.MethodGet, "/auth/login?return_to=/"},
@@ -537,7 +538,7 @@ func TestMountDisabled(t *testing.T) {
 		}
 	}
 
-	server := httptest.NewServer(mux)
+	server := httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(server.Close)
 	client := identityv1connect.NewIdentityServiceClient(server.Client(), server.URL)
 	if _, err := client.GetMe(t.Context(), connect.NewRequest(&identityv1.GetMeRequest{})); connect.CodeOf(err) != connect.CodeUnavailable {

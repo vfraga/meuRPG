@@ -27,8 +27,9 @@ import (
 	"connectrpc.com/connect"
 )
 
-// UnaryBodyTimeout is how long the body of a unary RPC has to arrive: the
-// largest one is 4 MiB, which a 1 Mbit/s connection sends in about 35 s.
+// UnaryBodyTimeout is how long the body of a unary RPC has to arrive. A body is
+// at most its procedure's read limit (platform/reqlimit: 64 KiB by default, 4 MiB
+// for the largest raised procedure), which a 1 Mbit/s connection sends in about 35 s.
 const UnaryBodyTimeout = time.Minute
 
 type controllerKey struct{}
@@ -46,7 +47,7 @@ func MiddlewareWith(unaryBody time.Duration) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			rc := http.NewResponseController(w)
 			ctx := context.WithValue(r.Context(), controllerKey{}, rc)
-			if isUnaryRPC(r) {
+			if IsUnaryRPC(r) {
 				// Set before the handler reads: Connect reads a unary body, up to its
 				// whole limit, before any interceptor (the session's included) runs.
 				if rc.SetReadDeadline(time.Now().Add(unaryBody)) == nil {
@@ -186,10 +187,10 @@ func (c *deadlineConn) Send(msg any) error {
 	return err
 }
 
-// isUnaryRPC reports whether r is the POST of a unary Connect call. A stream's
+// IsUnaryRPC reports whether r is the POST of a unary Connect call. A stream's
 // request (application/connect+...) is left out: its client may stay silent
 // after the one message for as long as it listens.
-func isUnaryRPC(r *http.Request) bool {
+func IsUnaryRPC(r *http.Request) bool {
 	if r.Method != http.MethodPost {
 		return false
 	}

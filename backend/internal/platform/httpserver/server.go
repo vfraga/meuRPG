@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/slowclient"
 )
 
@@ -133,8 +134,9 @@ func New(cfg Config) *Server {
 		Addr: cfg.Addr,
 		// Outermost first: the request log, the security headers, the slow-client
 		// deadlines (they need the real ResponseWriter; the others pass it through),
-		// then the rate limit (if any) and CSRF.
-		Handler:           logRequests(s.logger, cfg.TraceProject, securityHeaders(slowclient.Middleware(routes))),
+		// the limit on the size of a unary body (outside the deadlines, so their body
+		// stays the outermost one), then the rate limit (if any) and CSRF.
+		Handler:           logRequests(s.logger, cfg.TraceProject, securityHeaders(reqlimit.Middleware(slowclient.Middleware(routes)))),
 		Protocols:         &protocols,
 		ReadHeaderTimeout: readHeaderTimeout,
 		IdleTimeout:       idleTimeout,

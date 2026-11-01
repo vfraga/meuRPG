@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+// Package meurpg.options.v1 holds custom options for the API's own
+// conventions: the request size limits, where a field says how many items or
+// bytes the server accepts in it.
+// docs/architecture/api.md#request-size-limits describes how they are enforced.
+package meurpg.options.v1;
+
+import "google/protobuf/descriptor.proto";
+
+// Request size limits. Every repeated, map, string and bytes field of a
+// request has an effective limit, even without an option: the server falls
+// back to a default for the kind of field (backend/internal/platform/reqlimit).
+// An option only changes the limit of one field. A request over the limit of
+// any of its fields is refused as `invalid_argument` before the handler runs.
+extend google.protobuf.FieldOptions {
+  // Most items a repeated field, or most entries a map field, accepts.
+  // Unset (0) means the default for lists and maps. It applies to the count
+  // of the field itself, not to the elements inside it.
+  uint32 max_items = 50001;
+  // Most bytes a string or bytes field accepts. Unset (0) means the default for
+  // its kind. On a repeated string or bytes field it applies to each element,
+  // and on a map to every key and every value that is a string or bytes.
+  uint32 max_len = 50002;
+}

@@ -20,6 +20,7 @@ syntax = "proto3";
 package meurpg.characters.v1;
 
 import "google/protobuf/timestamp.proto";
+import "meurpg/options/v1/limits.proto";
 import "meurpg/rules/v1/rules.proto";
 
 // CharacterService creates, reads and edits a campaign's characters.
@@ -1400,7 +1401,8 @@ message FullSheet {
   // Content keys of the spells known (levels 1 to 9): the spellbook of a
   // Wizard, or the spells of a Bard, Ranger, Sorcerer or Warlock. At most
   // 200, no repeats.
-  repeated string known_spell_keys = 15;
+  // The request limit is 200 items, the same as rules.MaxKnownSpells (backend/internal/rules/api.go).
+  repeated string known_spell_keys = 15 [(meurpg.options.v1.max_items) = 200];
   // Content keys of the spells prepared for the day (levels 1 to 9), for a
   // Cleric, Druid, Paladin or Wizard. At most 100, no repeats.
   repeated string prepared_spell_keys = 16;
@@ -1430,7 +1432,8 @@ message FullSheet {
   // Features and traits the rules content does not have, in the player's
   // own words, such as those of a subclass from another book. 0 to 5,000
   // characters, multi-line. Part of the game data: it locks with the sheet.
-  string custom_features_text = 23;
+  // The request limit is 20 KiB: 5,000 characters of up to 4 bytes (maxCustomFeaturesLength in backend/internal/characters/sheet.go).
+  string custom_features_text = 23 [(meurpg.options.v1.max_len) = 20480];
   // Options chosen for features and traits that offer them, as content
   // keys: a fighting style ("feature:fighter-fighting-style-defense"), a
   // dragon ancestry ("trait:draconic-ancestry-red"), an eldritch
@@ -1486,12 +1489,18 @@ message FullSheet {
   // compares against, so an issue the sheet already had is never blamed on a change.
   // An issue that was flagged and still stands is left out, so a save never clears
   // it; only fixing what it says does.
-  repeated string known_issues = 30;
+  // The server computes it again on every save (checkFullSheet in backend/internal/characters/sheet.go).
+  // The editor sends back what it read (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232).
+  // The request limit is 1000 items, the table's most entries (backend/internal/rules/overlay.go).
+  repeated string known_issues = 30 [(meurpg.options.v1.max_items) = 1000];
   // For each table entry the sheet is still flagged for (a changed entry with an
   // unresolved issue tied to it), the content revision the sheet was last known to
   // fit it at. Set by the server and ignored from the client; an entry not here
   // uses `content_revision`.
-  map<string, int32> content_baselines = 31;
+  // The server clears it on every save and sets it again from the stored sheet (checkFullSheet in backend/internal/characters/sheet.go).
+  // The editor sends back what it read (web/src/app/pages/character-editor/character-editor-sheet-map.ts:211-232).
+  // The request limit is 1000 entries, the table's most entries (backend/internal/rules/overlay.go).
+  map<string, int32> content_baselines = 31 [(meurpg.options.v1.max_items) = 1000];
   // The feats the character took (MR-025), as content keys: "feat:grappler" or a
   // table's "feat:<slug>@mesa". Feats are an optional rule of the game (the
   // table's rule "Talentos"): a feat is taken in place of an Ability Score
@@ -1761,7 +1770,8 @@ message CharacterStory {
   Appearance appearance = 2;
   // The character's backstory ("história"): 0 to 10,000 characters,
   // multi-line.
-  string backstory = 3;
+  // The request limit is 40 KiB: 10,000 characters of up to 4 bytes (maxBackstoryLength in backend/internal/characters/sheet.go).
+  string backstory = 3 [(meurpg.options.v1.max_len) = 40960];
   // Allies and organizations ("aliados e organizações"): 0 to 2,000
   // characters, multi-line.
   string allies = 4;
@@ -2097,7 +2107,8 @@ message UpdateMasterNotesRequest {
   string character_id = 2;
   // 0 to 20,000 characters, multi-line. Empty (or only spaces) deletes the
   // notes.
-  string notes = 3;
+  // The request limit is 80 KiB: 20,000 characters of up to 4 bytes (MaxMasterNotesLength in backend/internal/characters/sheet.go).
+  string notes = 3 [(meurpg.options.v1.max_len) = 81920];
 }
 
 // UpdateMasterNotesResponse returns the notes as saved.
@@ -2690,7 +2701,8 @@ message LevelUpChoices {
   // The new cantrips, spells known (or spellbook) and prepared spells. At most
   // 30, 30 and 100 entries.
   repeated string cantrip_keys = 4;
-  repeated string known_spell_keys = 5;
+  // The request limit is 200 items, the same as rules.MaxKnownSpells (backend/internal/rules/api.go and backend/internal/characters/levelup_plan.go).
+  repeated string known_spell_keys = 5 [(meurpg.options.v1.max_items) = 200];
   repeated string prepared_spell_keys = 6;
   // The options the new features offer, the new skills, and the new
   // expertise. At most 100 entries each.

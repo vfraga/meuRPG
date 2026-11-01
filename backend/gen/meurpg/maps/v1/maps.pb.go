@@ -8,6 +8,7 @@ package mapsv1
 
 import (
 	v11 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
+	_ "github.com/PuraFome/meuRPG/backend/gen/meurpg/options/v1"
 	v1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -3129,6 +3130,7 @@ type CreateMapPointRequest struct {
 	TargetMapId string `protobuf:"bytes,8,opt,name=target_map_id,json=targetMapId,proto3" json:"target_map_id,omitempty"`
 	// Only for a SCENE point: the master's hooks, 0 to 4,000 characters, with
 	// line breaks. Any other kind with hooks is `invalid_argument`.
+	// The request limit is 16 KiB: 4,000 characters of up to 4 bytes (maxHooksLength in backend/internal/maps/mapservice.go).
 	Hooks string `protobuf:"bytes,9,opt,name=hooks,proto3" json:"hooks,omitempty"`
 	// Only for a SCENE point: true shows the scene's DCs to the players
 	// (MapPoint.show_dc). Any other kind with it true is `invalid_argument`.
@@ -3350,6 +3352,7 @@ type UpdateMapPointRequest struct {
 	Revealed *bool `protobuf:"varint,10,opt,name=revealed,proto3,oneof" json:"revealed,omitempty"`
 	// The new hooks of a SCENE point (MR-029), 0 to 4,000 characters; empty
 	// clears them. The point must be a SCENE point after the change.
+	// The request limit is 16 KiB: 4,000 characters of up to 4 bytes (maxHooksLength in backend/internal/maps/mapservice.go).
 	Hooks *string `protobuf:"bytes,11,opt,name=hooks,proto3,oneof" json:"hooks,omitempty"`
 	// Turns "Mostrar a CD aos jogadores" on or off (MapPoint.show_dc). The point
 	// must be a SCENE point after the change to turn it on; a point that stops
@@ -5996,6 +5999,7 @@ type PaintMapCellsRequest struct {
 	Value int32 `protobuf:"varint,4,opt,name=value,proto3" json:"value,omitempty"`
 	// The squares, 1 to 400, each inside the map's grid. A repeated square is
 	// painted once.
+	// The request limit is 400 items, the same as maxPaintSquares (backend/internal/maps/layers.go).
 	Squares       []*MapSquare `protobuf:"bytes,5,rep,name=squares,proto3" json:"squares,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7836,7 +7840,7 @@ var File_meurpg_maps_v1_maps_proto protoreflect.FileDescriptor
 
 const file_meurpg_maps_v1_maps_proto_rawDesc = "" +
 	"\n" +
-	"\x19meurpg/maps/v1/maps.proto\x12\x0emeurpg.maps.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a%meurpg/characters/v1/characters.proto\x1a\x1bmeurpg/rules/v1/rules.proto\"F\n" +
+	"\x19meurpg/maps/v1/maps.proto\x12\x0emeurpg.maps.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a%meurpg/characters/v1/characters.proto\x1a\x1emeurpg/options/v1/limits.proto\x1a\x1bmeurpg/rules/v1/rules.proto\"F\n" +
 	"\n" +
 	"MapBlocked\x128\n" +
 	"\x06reason\x18\x01 \x01(\x0e2 .meurpg.maps.v1.MapBlockedReasonR\x06reason\"\xf1\x06\n" +
@@ -8030,7 +8034,7 @@ const file_meurpg_maps_v1_maps_proto_rawDesc = "" +
 	"\acolumns\x18\x03 \x01(\x05R\acolumns\x12#\n" +
 	"\rsquare_factor\x18\x04 \x01(\x05R\fsquareFactor\";\n" +
 	"\x12SetMapGridResponse\x12%\n" +
-	"\x03map\x18\x01 \x01(\v2\x13.meurpg.maps.v1.MapR\x03map\"\xff\x03\n" +
+	"\x03map\x18\x01 \x01(\v2\x13.meurpg.maps.v1.MapR\x03map\"\x87\x04\n" +
 	"\x15CreateMapPointRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x15\n" +
@@ -8040,8 +8044,8 @@ const file_meurpg_maps_v1_maps_proto_rawDesc = "" +
 	"\vdescription\x18\x05 \x01(\tR\vdescription\x12\x11\n" +
 	"\x04x_bp\x18\x06 \x01(\x05R\x03xBp\x12\x11\n" +
 	"\x04y_bp\x18\a \x01(\x05R\x03yBp\x12\"\n" +
-	"\rtarget_map_id\x18\b \x01(\tR\vtargetMapId\x12\x14\n" +
-	"\x05hooks\x18\t \x01(\tR\x05hooks\x12\x17\n" +
+	"\rtarget_map_id\x18\b \x01(\tR\vtargetMapId\x12\x1c\n" +
+	"\x05hooks\x18\t \x01(\tB\x06\x90\xb5\x18\x80\x80\x01R\x05hooks\x12\x17\n" +
 	"\ashow_dc\x18\n" +
 	" \x01(\bR\x06showDc\x12,\n" +
 	"\x04trap\x18\v \x01(\v2\x18.meurpg.maps.v1.TrapSpecR\x04trap\x12/\n" +
@@ -8050,7 +8054,7 @@ const file_meurpg_maps_v1_maps_proto_rawDesc = "" +
 	"\x0fidempotency_key\x18\x0e \x01(\tR\x0eidempotencyKeyB\x14\n" +
 	"\x12_treasure_value_po\"H\n" +
 	"\x16CreateMapPointResponse\x12.\n" +
-	"\x05point\x18\x01 \x01(\v2\x18.meurpg.maps.v1.MapPointR\x05point\"\xc0\x05\n" +
+	"\x05point\x18\x01 \x01(\v2\x18.meurpg.maps.v1.MapPointR\x05point\"\xc8\x05\n" +
 	"\x15UpdateMapPointRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x15\n" +
@@ -8063,8 +8067,8 @@ const file_meurpg_maps_v1_maps_proto_rawDesc = "" +
 	"\x04y_bp\x18\b \x01(\x05H\x04R\x03yBp\x88\x01\x01\x12'\n" +
 	"\rtarget_map_id\x18\t \x01(\tH\x05R\vtargetMapId\x88\x01\x01\x12\x1f\n" +
 	"\brevealed\x18\n" +
-	" \x01(\bH\x06R\brevealed\x88\x01\x01\x12\x19\n" +
-	"\x05hooks\x18\v \x01(\tH\aR\x05hooks\x88\x01\x01\x12\x1c\n" +
+	" \x01(\bH\x06R\brevealed\x88\x01\x01\x12!\n" +
+	"\x05hooks\x18\v \x01(\tB\x06\x90\xb5\x18\x80\x80\x01H\aR\x05hooks\x88\x01\x01\x12\x1c\n" +
 	"\ashow_dc\x18\f \x01(\bH\bR\x06showDc\x88\x01\x01\x121\n" +
 	"\x04trap\x18\r \x01(\v2\x18.meurpg.maps.v1.TrapSpecH\tR\x04trap\x88\x01\x01\x12/\n" +
 	"\x11treasure_value_po\x18\x0e \x01(\x05H\n" +
@@ -8266,14 +8270,14 @@ const file_meurpg_maps_v1_maps_proto_rawDesc = "" +
 	"\x04clue\x18\x01 \x01(\v2\x19.meurpg.maps.v1.SceneClueR\x04clue\"/\n" +
 	"\tMapSquare\x12\x10\n" +
 	"\x03col\x18\x01 \x01(\x05R\x03col\x12\x10\n" +
-	"\x03row\x18\x02 \x01(\x05R\x03row\"\xc9\x01\n" +
+	"\x03row\x18\x02 \x01(\x05R\x03row\"\xd0\x01\n" +
 	"\x14PaintMapCellsRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x15\n" +
 	"\x06map_id\x18\x02 \x01(\tR\x05mapId\x12.\n" +
 	"\x05layer\x18\x03 \x01(\x0e2\x18.meurpg.maps.v1.MapLayerR\x05layer\x12\x14\n" +
-	"\x05value\x18\x04 \x01(\x05R\x05value\x123\n" +
-	"\asquares\x18\x05 \x03(\v2\x19.meurpg.maps.v1.MapSquareR\asquares\"Z\n" +
+	"\x05value\x18\x04 \x01(\x05R\x05value\x12:\n" +
+	"\asquares\x18\x05 \x03(\v2\x19.meurpg.maps.v1.MapSquareB\x05\x88\xb5\x18\x90\x03R\asquares\"Z\n" +
 	"\x15PaintMapCellsResponse\x12'\n" +
 	"\x0flayers_revision\x18\x01 \x01(\x05R\x0elayersRevision\x12\x18\n" +
 	"\achanged\x18\x02 \x01(\x05R\achanged\"u\n" +

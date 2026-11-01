@@ -24,6 +24,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/maps"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
 
@@ -55,7 +56,7 @@ func newPuzzleTable(t *testing.T) *puzzleTable {
 	a.h.svc.SetPuzzleMaps(msvc)
 	a.h.svc.SetTraps(msvc) // a wrong move may fire a trap point ("Ao errar")
 	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
-	msvc.Mount(srv.Handle, mapsSessions{testSessions}, a.h.camps, connect.WithRequireConnectProtocolHeader())
+	msvc.Mount(srv.Handle, mapsSessions{testSessions}, a.h.camps, reqlimit.HandlerOption())
 	server := httptest.NewServer(srv.Handler())
 	t.Cleanup(server.Close)
 	return &puzzleTable{armed: a, msvc: msvc, server: server}

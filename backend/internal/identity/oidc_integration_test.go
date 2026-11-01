@@ -17,6 +17,7 @@ import (
 
 	identityv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/identity/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/config"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 )
 
 // TestRealProviderSignIn signs in against a real OpenID Connect provider
@@ -68,7 +69,7 @@ func TestRealProviderSignIn(t *testing.T) {
 		t.Fatalf("discovery against the real provider failed: %v", err)
 	}
 	h := &harness{t: t, store: mem, mem: mem, logs: logs, svc: svc, mux: http.NewServeMux()}
-	svc.Mount(h.mux.Handle, connect.WithRequireConnectProtocolHeader())
+	svc.Mount(h.mux.Handle, reqlimit.HandlerOption())
 
 	browser := newProviderBrowser(t, svc.providers.p.client, env)
 

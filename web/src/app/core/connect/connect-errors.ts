@@ -1,11 +1,20 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 
+import {
+  RequestRefusedReason,
+  RequestRefusedSchema,
+} from '../../../gen/meurpg/system/v1/request_limits_pb';
+
 /** What every call says when the login session is gone: no retry fixes it, signing in again does. */
 export const SESSION_ENDED = 'Sua sessão acabou. Entre de novo para continuar.';
 
 /** What every call says when the server could not tell whether the change was saved (`unknown`): a blind retry could repeat it. */
 export const OUTCOME_UNKNOWN =
   'Não deu para confirmar se a alteração foi salva. Confira na tela antes de tentar de novo.';
+
+/** What a call says when the server refused it for a limit and nothing says which (`resource_exhausted`: the size of the body, a quota or a cap). */
+const REFUSED_BY_A_LIMIT =
+  'O servidor recusou o pedido por um limite. Reduza o conteúdo ou tente de novo mais tarde.';
 
 const GENERIC = 'Não foi possível falar com o servidor agora. Tente de novo em instantes.';
 
@@ -32,6 +41,11 @@ export function describeConnectError(
   if (isRateLimited(connectErr)) {
     return rateLimitedMessage(connectErr);
   }
+  // Any call can be refused for the size of a field: no screen's own wording applies.
+  const refused = requestRefusedText(connectErr);
+  if (refused !== null) {
+    return refused;
+  }
   const own = messages[connectErr.code];
   if (own !== undefined) {
     return own;
@@ -41,10 +55,29 @@ export function describeConnectError(
       return SESSION_ENDED;
     case Code.Unknown:
       return OUTCOME_UNKNOWN;
+    case Code.ResourceExhausted:
+      return REFUSED_BY_A_LIMIT;
     case Code.Unavailable:
       return messages[Code.Unavailable] ?? GENERIC;
     default:
       return GENERIC;
+  }
+}
+
+/**
+ * Why the server refused a field for its size (`RequestRefused`, on any call,
+ * docs/architecture/api.md#request-size-limits), in words, or `null` for any
+ * other error. It reads the typed reason, never the message.
+ */
+export function requestRefusedText(err: unknown): string | null {
+  const refusal = ConnectError.from(err, Code.Unavailable).findDetails(RequestRefusedSchema)[0];
+  switch (refusal?.reason) {
+    case RequestRefusedReason.LIST_TOO_LONG:
+      return 'O pedido tem itens demais. Reduza a lista e tente de novo.';
+    case RequestRefusedReason.TEXT_TOO_LONG:
+      return 'O texto é grande demais. Encurte e tente de novo.';
+    default:
+      return null;
   }
 }
 

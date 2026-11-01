@@ -36,6 +36,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice/dicetest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/play"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -245,7 +246,7 @@ func newHarnessRolling(t *testing.T, roller dice.Roller) *harness {
 	chars.SetLevelUps(svc)
 	camps.SetXPAwards(svc) // changing the XP mode asks once XP was awarded (RN-09)
 	srv := httpserver.New(httpserver.Config{Logger: logger})
-	opt := connect.WithRequireConnectProtocolHeader()
+	opt := reqlimit.HandlerOption()
 	var sessions Sessions = fakeSessions{}
 	camps.Mount(srv.Handle, sessions.(campaigns.Sessions), opt)
 	chars.Mount(srv.Handle, sessions.(characters.Sessions), camps, opt)

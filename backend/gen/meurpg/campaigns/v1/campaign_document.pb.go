@@ -7,6 +7,7 @@
 package campaignsv1
 
 import (
+	_ "github.com/PuraFome/meuRPG/backend/gen/meurpg/options/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -214,6 +215,8 @@ type UpdateCampaignDocumentRequest struct {
 	//     that change text direction (as in every other text of the app).
 	// Nothing else is changed: spaces at the start and end are kept, because
 	// they can mean something in Markdown.
+	// The request limit is 400 KiB, twice the document's 200 KiB.
+	// A Windows line break takes 2 bytes until the server changes it (MaxDocumentBytes and cleanDocument in backend/internal/campaigns/document.go).
 	Body string `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
 	// The revision the caller read (CampaignDocument.revision): 0 for a
 	// document that was never saved.
@@ -324,7 +327,7 @@ var File_meurpg_campaigns_v1_campaign_document_proto protoreflect.FileDescriptor
 
 const file_meurpg_campaigns_v1_campaign_document_proto_rawDesc = "" +
 	"\n" +
-	"+meurpg/campaigns/v1/campaign_document.proto\x12\x13meurpg.campaigns.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd5\x01\n" +
+	"+meurpg/campaigns/v1/campaign_document.proto\x12\x13meurpg.campaigns.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1emeurpg/options/v1/limits.proto\"\xd5\x01\n" +
 	"\x10CampaignDocument\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\x12\x12\n" +
@@ -337,11 +340,11 @@ const file_meurpg_campaigns_v1_campaign_document_proto_rawDesc = "" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
 	"campaignId\"`\n" +
 	"\x1bGetCampaignDocumentResponse\x12A\n" +
-	"\bdocument\x18\x01 \x01(\v2%.meurpg.campaigns.v1.CampaignDocumentR\bdocument\"\x81\x01\n" +
+	"\bdocument\x18\x01 \x01(\v2%.meurpg.campaigns.v1.CampaignDocumentR\bdocument\"\x89\x01\n" +
 	"\x1dUpdateCampaignDocumentRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
-	"campaignId\x12\x12\n" +
-	"\x04body\x18\x02 \x01(\tR\x04body\x12+\n" +
+	"campaignId\x12\x1a\n" +
+	"\x04body\x18\x02 \x01(\tB\x06\x90\xb5\x18\x80\x80\x19R\x04body\x12+\n" +
 	"\x11expected_revision\x18\x03 \x01(\x05R\x10expectedRevision\"c\n" +
 	"\x1eUpdateCampaignDocumentResponse\x12A\n" +
 	"\bdocument\x18\x01 \x01(\v2%.meurpg.campaigns.v1.CampaignDocumentR\bdocument2\x9c\x02\n" +

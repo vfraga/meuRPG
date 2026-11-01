@@ -26,6 +26,7 @@ import (
 	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1/campaignsv1connect"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 )
 
 // Tests of the campaign document (MR-018, document.go). The ones that use
@@ -591,8 +592,8 @@ func TestEveryDocumentMethodNeedsASession(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, testSessions, connect.WithRequireConnectProtocolHeader())
-	server := httptest.NewServer(mux)
+	svc.Mount(mux.Handle, testSessions, reqlimit.HandlerOption())
+	server := httptest.NewServer(reqlimit.Middleware(mux))
 	t.Cleanup(server.Close)
 	c := campaignsv1connect.NewCampaignDocumentServiceClient(server.Client(), server.URL)
 	ctx := t.Context()
@@ -626,7 +627,7 @@ func TestGetCampaignDocumentIsPostOnly(t *testing.T) {
 		t.Fatalf("New() error = %v", err)
 	}
 	mux := http.NewServeMux()
-	svc.Mount(mux.Handle, testSessions, connect.WithRequireConnectProtocolHeader())
+	svc.Mount(mux.Handle, testSessions, reqlimit.HandlerOption())
 
 	target := campaignsv1connect.CampaignDocumentServiceGetCampaignDocumentProcedure +
 		"?connect=v1&encoding=json&message=" + url.QueryEscape(`{"campaignId":"6f1c7a52-3b5e-4c55-9d0b-2a51f0c1e001"}`)

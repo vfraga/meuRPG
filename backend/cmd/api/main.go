@@ -101,6 +101,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/ratelimit"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/rpclog"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/slowclient"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/tasks"
@@ -128,9 +129,9 @@ var (
 	commit  = "unknown"
 )
 
-// maxRequestBytes caps the size of a single RPC message the server will
-// read, so a client cannot exhaust memory with one huge request.
-const maxRequestBytes = 4 << 20 // 4 MiB
+// maxRequestBytes caps the size of a single RPC message the server will read
+// (4 MiB). Every per-procedure read limit of reqlimit is at most that.
+const maxRequestBytes = reqlimit.Backstop
 
 // streamSendTimeout is how long one message of a live stream may take to be
 // written. A message is a few kilobytes; 30 s is generous for a bad mobile
@@ -788,6 +789,10 @@ func connectOptions(logger *slog.Logger, meter *traffic.Meter) []connect.Handler
 		// it, net/http only drops the stream, the client sees a network error
 		// (which the app may retry) and no `rpc` line is written.
 		connect.WithRecover(recoverRPC(logger)),
+		// Request size limits on the decoded fields (docs/architecture/api.md#request-size-limits).
+		// Inside rpclog, so a refusal is logged, and before the interceptors the
+		// services add, so no handler or session lookup runs for a request over a limit.
+		connect.WithInterceptors(reqlimit.Interceptor()),
 		// Each Send on a live stream gets streamSendTimeout to reach the client; a
 		// reader that stopped reading ends its stream (client_gone) instead of
 		// blocking the handler until Cloud Run closes the connection.

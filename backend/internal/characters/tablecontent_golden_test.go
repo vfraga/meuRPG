@@ -18,6 +18,7 @@ import (
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	systemv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/system/v1"
 )
 
 // The golden files of the table content's characterization (testdata/table_content_*.golden.json):
@@ -152,6 +153,8 @@ func tableRefusalShape(err error) string {
 			}
 		case *rulesv1.TableContentBlocked:
 			parts = append(parts, fmt.Sprintf("blocked reason=%s key=%q", m.GetReason(), m.GetKey()))
+		case *systemv1.RequestRefused:
+			parts = append(parts, fmt.Sprintf("request refused field=%q reason=%s", m.GetField(), m.GetReason()))
 		case *charactersv1.InvalidField:
 			parts = append(parts, fmt.Sprintf("invalid field=%q", m.GetField()))
 		default:

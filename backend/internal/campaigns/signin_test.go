@@ -29,6 +29,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/rpclog"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/secret"
 )
@@ -112,7 +113,7 @@ func newSignInStack(t *testing.T) *signInStack {
 	}
 	srv := httpserver.New(httpserver.Config{Logger: logger})
 	// The logging interceptor goes first, as in cmd/api.
-	opts := []connect.HandlerOption{connect.WithRequireConnectProtocolHeader(), connect.WithInterceptors(rpclog.Interceptor(logger))}
+	opts := []connect.HandlerOption{reqlimit.HandlerOption(), connect.WithInterceptors(rpclog.Interceptor(logger))}
 	signIn.Mount(srv.Handle, opts...)
 	campaigns.Mount(srv.Handle, signIn, opts...)
 	st.handler = srv.Handler()

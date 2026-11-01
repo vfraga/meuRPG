@@ -17,6 +17,7 @@ import (
 	identityv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/identity/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/identity/v1/identityv1connect"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/config"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 )
 
 // fakeClock is a clock the test moves by hand.
@@ -147,7 +148,7 @@ func newHarness(t *testing.T, opts ...harnessOption) *harness {
 	}
 	h.svc = svc
 	h.mux = http.NewServeMux()
-	svc.Mount(h.mux.Handle, connect.WithRequireConnectProtocolHeader())
+	svc.Mount(h.mux.Handle, reqlimit.HandlerOption())
 	return h
 }
 
@@ -239,7 +240,7 @@ func (h *harness) signIn(cookies ...*http.Cookie) *http.Cookie {
 // HTTP, sending the given session cookie (nil for none).
 func (h *harness) client(session *http.Cookie, opts ...connect.ClientOption) identityv1connect.IdentityServiceClient {
 	h.t.Helper()
-	server := httptest.NewServer(h.mux)
+	server := httptest.NewServer(reqlimit.Middleware(h.mux))
 	h.t.Cleanup(server.Close)
 	if session != nil {
 		cookie := session.Name + "=" + session.Value

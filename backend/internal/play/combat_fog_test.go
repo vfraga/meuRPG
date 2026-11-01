@@ -21,6 +21,7 @@ import (
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/maps"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -69,7 +70,7 @@ func newFogCaveWith(t *testing.T, c *cave) *fogCave {
 	c.h.svc.SetTerrain(msvc)
 	c.h.svc.SetFog(msvc)
 	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
-	msvc.Mount(srv.Handle, mapsSessions{testSessions}, c.h.camps, connect.WithRequireConnectProtocolHeader())
+	msvc.Mount(srv.Handle, mapsSessions{testSessions}, c.h.camps, reqlimit.HandlerOption())
 	server := httptest.NewServer(srv.Handler())
 	t.Cleanup(server.Close)
 	f := &fogCave{cave: c, msvc: msvc, server: server}

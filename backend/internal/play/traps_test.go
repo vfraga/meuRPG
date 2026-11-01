@@ -19,6 +19,7 @@ import (
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/maps"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/httpserver"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
 )
 
 // Traps in play (MR-035, RN-10, RN-02). These tests need the
@@ -54,7 +55,7 @@ func newTrapRigOn(t *testing.T, c *cave) *trapRig {
 	c.h.svc.SetTraps(msvc)
 	msvc.SetTrapFirer(c.h.svc)
 	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
-	msvc.Mount(srv.Handle, mapsSessions{testSessions}, c.h.camps, connect.WithRequireConnectProtocolHeader())
+	msvc.Mount(srv.Handle, mapsSessions{testSessions}, c.h.camps, reqlimit.HandlerOption())
 	server := httptest.NewServer(srv.Handler())
 	t.Cleanup(server.Close)
 	return &trapRig{cave: c, msvc: msvc, server: server}

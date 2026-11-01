@@ -90,7 +90,7 @@ What a person waits for, with that content cached:
 
 A sheet read walks the character's effects, not the table's, so it does not grow with the entries (about 2,300 allocations and 260 to 430 KiB).
 The lists the master and the players read, at 1,000 entries: `ListTableEntries` 48 ms and 776 KiB (79 ms and 942 KiB with 6,000 effects), `ListContent` 6 ms and 143 KiB, `ListOptionSwitches` 7 ms and 58 KiB with its 1,358 options.
-The largest request the server takes is 4 MiB and a pack of 1,000 entries is 1.1 to 1.4 MiB of JSON.
+The largest request the server takes is 4 MiB (the read limit of `ImportTableContent`, see [Request size limits](architecture/api.md#request-size-limits)) and a pack of 1,000 entries is 1.1 to 1.4 MiB of JSON.
 
 `SetOptionSwitches` with the database, a campaign of 1,000 entries (switching the keys off, then on):
 

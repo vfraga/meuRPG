@@ -157,8 +157,8 @@ func (s *Service) PaintMapCells(
 		return nil, err
 	}
 	squares := req.Msg.GetSquares()
-	if len(squares) == 0 || len(squares) > maxPaintSquares {
-		return nil, badSpec("squares must have 1 to %d squares", maxPaintSquares)
+	if err := checkPaintSquares(len(squares)); err != nil {
+		return nil, err
 	}
 
 	batch := paintBatch{campaignID: m.CampaignID, mapID: mapID, layer: layer, value: value, squares: squares}
@@ -311,6 +311,14 @@ func bumpPaintRevision(ctx context.Context, q *mapsdb.Queries, mapID string, don
 func playersRead(set layerSet) []byte {
 	p := set.forPlayers()
 	return slices.Concat(p.walls.Encode(), p.doors.Encode(), p.noPass.Encode())
+}
+
+// checkPaintSquares checks the number of squares of one PaintMapCells.
+func checkPaintSquares(n int) error {
+	if n == 0 || n > maxPaintSquares {
+		return badSpec("squares must have 1 to %d squares", maxPaintSquares)
+	}
+	return nil
 }
 
 // checkPaint checks that a value is one the layer holds.

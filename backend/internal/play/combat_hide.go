@@ -348,12 +348,17 @@ func parseResolveHidePlan(msg *playv1.ResolveHideRequest) (resolveHidePlan, erro
 	if p.refusal, err = trimReason(msg.GetRefusal()); err != nil {
 		return p, err
 	}
+	if len(msg.GetSeesClearlyIds()) > maxCombatants {
+		return p, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("sees_clearly_ids must have at most %d entries", maxCombatants))
+	}
+	seen := make(map[string]struct{}, len(msg.GetSeesClearlyIds()))
 	for _, id := range msg.GetSeesClearlyIds() {
 		cid, err := parseCombatID(id, "combatant")
 		if err != nil {
 			return p, err
 		}
-		if !slices.Contains(p.clearly, cid) {
+		if _, dup := seen[cid]; !dup {
+			seen[cid] = struct{}{}
 			p.clearly = append(p.clearly, cid)
 		}
 	}

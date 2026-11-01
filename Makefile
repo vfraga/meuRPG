@@ -220,7 +220,7 @@ db-test-start: ## Start the test PostgreSQL on localhost:5433 (TEST_PG_PORT=5434
 	else \
 		[ -f "$(TEST_PG_DIR)/data/PG_VERSION" ] || initdb -D "$(TEST_PG_DIR)/data" -U root --auth=trust >"$(TEST_PG_DIR)/initdb.log" 2>&1 || { cat "$(TEST_PG_DIR)/initdb.log"; exit 1; }; \
 		pg_ctl -D "$(TEST_PG_DIR)/data" -l "$(TEST_PG_DIR)/server.log" -w start \
-			-o "-p $(TEST_PG_PORT) -c listen_addresses=localhost -c unix_socket_directories=$(TEST_PG_DIR) -c default_transaction_isolation=serializable -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=300" \
+			-o "-p $(TEST_PG_PORT) -c listen_addresses=localhost -c unix_socket_directories=$(TEST_PG_DIR) -c default_transaction_isolation=serializable -c fsync=off -c synchronous_commit=off -c full_page_writes=off -c max_connections=1000 -c max_pred_locks_per_transaction=256" \
 			>"$(TEST_PG_DIR)/start.log" 2>&1 || { cat "$(TEST_PG_DIR)/start.log" "$(TEST_PG_DIR)/server.log"; exit 1; }; \
 	fi
 	@echo "Test PostgreSQL on localhost:$(TEST_PG_PORT). Run the integration tests with: make test-postgres"

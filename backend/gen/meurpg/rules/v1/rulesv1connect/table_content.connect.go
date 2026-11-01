@@ -185,7 +185,11 @@ type TableContentServiceClient interface {
 	//
 	// The limits are the ones of the editors, checked on the whole campaign: 1000
 	// entries, 64 KiB of data per entry; and the pack itself is at most 3 MiB (in
-	// proto JSON), has `format` "meurpg.table-content" and `version` 1, and every key
+	// proto JSON). A `pack` message with more than 1000 entries, and a `pack_json` over
+	// 3 MiB in the binary protocol, are refused before the handler as `invalid_argument`
+	// with a RequestRefused detail (LIST_TOO_LONG at "pack.entries", TEXT_TOO_LONG at
+	// "pack_json"); the violations "limit" and "size_limit" of the pack are the ones of
+	// the file path (`pack_json`). The pack has `format` "meurpg.table-content" and `version` 1, and every key
 	// is "<kind>:<slug>@mesa" of its entry's kind, without repeats. The
 	// violation reasons of a pack are in TableContentViolation.
 	//
@@ -508,7 +512,11 @@ type TableContentServiceHandler interface {
 	//
 	// The limits are the ones of the editors, checked on the whole campaign: 1000
 	// entries, 64 KiB of data per entry; and the pack itself is at most 3 MiB (in
-	// proto JSON), has `format` "meurpg.table-content" and `version` 1, and every key
+	// proto JSON). A `pack` message with more than 1000 entries, and a `pack_json` over
+	// 3 MiB in the binary protocol, are refused before the handler as `invalid_argument`
+	// with a RequestRefused detail (LIST_TOO_LONG at "pack.entries", TEXT_TOO_LONG at
+	// "pack_json"); the violations "limit" and "size_limit" of the pack are the ones of
+	// the file path (`pack_json`). The pack has `format` "meurpg.table-content" and `version` 1, and every key
 	// is "<kind>:<slug>@mesa" of its entry's kind, without repeats. The
 	// violation reasons of a pack are in TableContentViolation.
 	//
