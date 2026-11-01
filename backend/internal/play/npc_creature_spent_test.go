@@ -306,7 +306,8 @@ const inkSpent = spentRestPrefix + inkCloud
 func persistentOctopus(t *testing.T) (a *armed, e *playv1.Encounter, label, char string) {
 	t.Helper()
 	a, e, label = creatureFight(t, true, "monster:octopus", false)
-	return a, e, label, a.keepAsPersistent(t, label)
+	char = a.keepAsPersistent(t, label)
+	return a, e, label, char
 }
 
 // The octopus spends its Ink Cloud and is refused from then on, in this combat and in the next; a use a day of the
