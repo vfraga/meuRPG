@@ -104,11 +104,27 @@ The two PostgreSQL ways to copy the template:
 
 ## Timings in CI
 
-Pending: the draft PR's nine groups, each against main's CockroachDB run.
+The `go test -race` step of each group, in seconds, from the draft PR #81 (commit `9950e698`, PostgreSQL 17).
+The CockroachDB column is the median of five green pull-request runs of the same workflow on 31 October.
+The step includes compiling the `-race` binary, which is the same on both sides.
+Setup steps (checkout, Go, starting the database) are not in it.
 
-| Group                                                            | CockroachDB (main) | PostgreSQL (this branch) | Failing tests |
-| ---------------------------------------------------------------- | ------------------ | ------------------------ | ------------- |
-| play-1, play-2, play-3, maps, characters, pure, leak, camp, rest | pending            | pending                  | pending       |
+| Group      | CockroachDB, median | PostgreSQL | Result on PostgreSQL |
+| ---------- | ------------------- | ---------- | -------------------- |
+| play-1     | 1023                | 666        | tests failed         |
+| play-2     | 1131                | 670        | tests failed         |
+| play-3     | 1154                | 533        | tests failed         |
+| maps       | 776                 | 481        | tests failed         |
+| characters | 979                 | 174        | tests failed         |
+| camp       | 351                 | 171        | tests failed         |
+| rest       | 378                 | 396        | tests failed         |
+| leak       | 863                 | 524        | green                |
+| pure       | 1056                | 1083       | green                |
+
+The slowest group falls from about 1154 s (play-3) to 670 s (play-2).
+`pure` has no database and does not change.
+The failing groups still ran every package, but their numbers are an upper bound for the saving only if no test hung.
+The failures are the class (d) tests above and whatever the failing logs add; the real branches fix or list them.
 
 ## What CockroachDB gives that a move would lose
 
@@ -136,8 +152,13 @@ Pending: the draft PR's nine groups, each against main's CockroachDB run.
 
 ## Recommendation
 
-Pending the CI numbers.
-In the VM the database part of the test cost drops by about two orders of magnitude: a fresh migrate from 112 s to 0.5 s, and a template copy from 12 s to 0.04 s.
-The test suite is the slowest group's time on CI, so CI should show most of that.
-The one risk that is not about speed is class (b): code that works on CockroachDB reports success for lost writes on PostgreSQL unless `db/txpg.go` is the only transaction path.
-Weigh that, and the loss of online schema changes and built-in failover, against the saving.
+Run the tests on PostgreSQL in development and in the CI of pull requests and trains.
+Keep production, main and the nightly run on CockroachDB.
+
+1. The class (b) finding stands on its own: on PostgreSQL the cockroach-go helper reports success for lost writes.
+   Any transaction path that serves PostgreSQL must commit itself and read the `COMMIT` error.
+2. The saving is large: a fresh migrate goes from 112 s to 0.5 s, and a template copy from 12 s to 0.04 s.
+   In CI the slowest group falls from about 19 minutes to 11.
+   The rest of the time is the `-race` build and the CPU-bound packages, which no database changes.
+3. What the move would lose (TTL, online schema changes, built-in failover) matters in production, not in tests.
+   That is why production stays on CockroachDB.
