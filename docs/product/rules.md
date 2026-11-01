@@ -793,7 +793,7 @@ In theatre of the mind (RN-25) monsters have no square.
 A monster with Legendary Resistance (3/Day, SRD 5.1) can succeed on a saving throw it fails, at the master's choice.
 For the saves the master rolls for it (an effect's and the concentration's) he asks for the trait with the roll.
 A roll that fails becomes a success that spends one use.
-A roll that succeeds spends nothing, a creature without the trait or without uses left is refused with nothing changed, and the uses are the combat's (a new combat starts with all of them).
+A roll that succeeds spends nothing, a creature without the trait or without uses left is refused with nothing changed, and a monster's uses are the combat's (a new combat starts with all of them).
 The master's log line says the roll and the choice; the player's line says the save succeeded (RN-20).
 When a player's spell with a saving throw reaches it (on one target or many), the cast waits for the master (RN-31), whether the save passed or failed.
 The wait reveals nothing about the roll: a player reads the same wait and the same result either way.
@@ -825,7 +825,10 @@ A defeated monster does not roll, and an action with uses a day or after a rest 
 The master and the player who controls the monster read what each limited action has left and a log line with the d6.
 Every other player reads neither, and the turn looks the same to them with or without the roll (RN-20).
 "Desfazer última ação" gives the use back; the roll cannot be undone.
-A hand-made NPC has no stat block, so it keeps no limit, and a monster starts every combat with all its actions.
+A persistent NPC with a stat block (made from a creature) keeps what it spent of its N/day actions and of Legendary Resistance until the table's long rest.
+Several copies of it start with the count the NPC kept, and it keeps the highest count any copy reached, not the sum.
+A Recharge action and the legendary actions of a round are not kept: a new combat starts with every Recharge action available.
+A monster starts every combat with all its actions and uses, and an NPC with no stat block has no limits.
 How it is built: [Architecture](../architecture/play/creatures.md) and [encounters](../architecture/play/encounters.md).
 
 ## RN-30: Limits on what an account creates

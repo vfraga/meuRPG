@@ -1497,13 +1497,13 @@ SET slots_used = jsonb_set(slots_used, ARRAY[sqlc.arg(key)::text], to_jsonb(GREA
 WHERE id = sqlc.arg(id);
 
 -- name: SeedCombatantSlotsUsed :one
--- Gives a hand-made NPC's combatant what its character spent in earlier combats (npc_spell_use).
--- No row when the character has spent nothing.
+-- Gives a hand-made NPC's combatant what its character spent in earlier combats (npc_spell_use): its
+-- slots and uses, and its uses a day and Legendary Resistance. No row when the character has spent nothing.
 UPDATE combatants
-SET slots_used = npc.slots_used
+SET slots_used = npc.slots_used, creature_spent = combatants.creature_spent || npc.creature_spent
 FROM npc_spell_use npc
 WHERE combatants.id = sqlc.arg(id) AND npc.character_id = combatants.character_id
-RETURNING combatants.slots_used;
+RETURNING combatants.slots_used, combatants.creature_spent;
 
 -- name: SyncNPCSpellUse :exec
 -- Sets the NPC's own count under one key to the highest count any combatant of that character holds in
@@ -1529,20 +1529,47 @@ ON CONFLICT (character_id) DO UPDATE
 SET slots_used = jsonb_set(npc_spell_use.slots_used, ARRAY[sqlc.arg(key)::text], excluded.slots_used->sqlc.arg(key)::text, true),
     updated_at = now();
 
+-- name: SyncNPCCreatureSpent :exec
+-- Sets the NPC's own count under one key of creature_spent ("use:<action key>" or "legendary_resistance") to
+-- the highest count any combatant of that character holds in this combat, after the combatant's change: the
+-- row keeps what one individual spent, never the sum, and a count that falls to 0 leaves the row. A
+-- monster's character (combat_only), a creature and a player write nothing.
+WITH me AS (
+    SELECT cb.character_id, cb.encounter_id
+    FROM combatants cb
+    JOIN characters ch ON ch.id = cb.character_id
+    WHERE cb.id = sqlc.arg(id) AND cb.kind = 'npc'
+      AND COALESCE(ch.sheet->'basic'->>'combat_only', 'false') <> 'true'
+), top AS (
+    SELECT me.character_id, COALESCE(max(CASE WHEN jsonb_typeof(cb.creature_spent->sqlc.arg(key)::text) = 'number' THEN (cb.creature_spent->>sqlc.arg(key)::text)::int END), 0) AS n
+    FROM me
+    JOIN combatants cb ON cb.character_id = me.character_id AND cb.encounter_id = me.encounter_id
+    GROUP BY me.character_id
+)
+INSERT INTO npc_spell_use (character_id, creature_spent)
+SELECT character_id, jsonb_build_object(sqlc.arg(key)::text, n) FROM top
+WHERE n > 0 OR EXISTS (SELECT 1 FROM npc_spell_use own WHERE own.character_id = top.character_id)
+ON CONFLICT (character_id) DO UPDATE
+SET creature_spent = CASE WHEN excluded.creature_spent->sqlc.arg(key)::text = '0'::jsonb
+        THEN npc_spell_use.creature_spent - sqlc.arg(key)::text
+        ELSE jsonb_set(npc_spell_use.creature_spent, ARRAY[sqlc.arg(key)::text], excluded.creature_spent->sqlc.arg(key)::text, true) END,
+    updated_at = now();
+
 -- name: GetNPCSpellUse :one
 SELECT slots_used FROM npc_spell_use WHERE character_id = $1;
 
 -- name: ClearSetupCombatantsSpellUse :exec
--- A combat still in setup holds the count it copied when its NPC joined: the long rest clears it too.
+-- A combat still in setup holds the count it copied when its NPC joined: the long rest clears it too,
+-- its slots and uses and the keys of its uses a day and Legendary Resistance (the others stay).
 UPDATE combatants
-SET slots_used = '{}'
+SET slots_used = '{}', creature_spent = combatants.creature_spent - ARRAY(SELECT jsonb_object_keys(npc.creature_spent))
 FROM encounters e, npc_spell_use npc, characters ch
 WHERE e.id = combatants.encounter_id AND e.status = 'setup'
   AND npc.character_id = combatants.character_id
   AND ch.id = npc.character_id AND ch.campaign_id = $1;
 
 -- name: ResetNPCSpellUseOfCampaign :exec
--- The table's long rest: every hand-made NPC of the campaign gets its slots and uses back.
+-- The table's long rest: every hand-made NPC of the campaign gets its slots, its uses and its Legendary Resistance back.
 DELETE FROM npc_spell_use
 USING characters ch
 WHERE ch.id = npc_spell_use.character_id AND ch.campaign_id = $1;

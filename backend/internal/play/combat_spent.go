@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
@@ -15,13 +16,16 @@ import (
 //
 //   - "legendary_actions": legendary actions taken since the creature's last turn;
 //     ResetCombatantTurn clears it when the creature's own turn starts.
-//   - "legendary_resistance": uses of Legendary Resistance spent in this combat (the
-//     "day" is the table's rest between combats).
+//   - "legendary_resistance": uses of Legendary Resistance spent. A monster starts every combat
+//     with none spent; a persistent NPC keeps them until the table's long rest.
 //   - "use:<action key>": uses spent of an action with uses a day, or 1 once an action that
 //     recharges after a rest was used.
 //   - "recharge:<action key>": 1 while a Recharge action is spent.
 //
 // Every key this file does not know is kept as it is.
+//
+// A persistent NPC (a character that is not combat_only) keeps "legendary_resistance" and the "use:" keys until the table's long rest,
+// in npc_spell_use.creature_spent: bumpCreatureSpent follows them there. The other keys end with the combat.
 //
 // Only what was spent is stored: a combatant starts with '{}' and an absent key is 0. The monster's
 // reaction stays in combatants.reaction_used (one per round, RN-31).
@@ -91,8 +95,19 @@ func bumpCreatureSpent(ctx context.Context, q *playdb.Queries, id, key string, d
 	if err := writeCreatureSpent(ctx, q, id, spent); err != nil {
 		return nil, err
 	}
+	if keptUntilLongRest(key) {
+		if err := q.SyncNPCCreatureSpent(ctx, playdb.SyncNPCCreatureSpentParams{ID: id, Key: key}); err != nil {
+			return nil, fmt.Errorf("count what the NPC spent: %w", err)
+		}
+	}
 	body, _ := json.Marshal(spent)
 	return creatureSpentOf(body), nil
+}
+
+// keptUntilLongRest says a key of creature_spent lasts past the combat for a hand-made NPC: the uses a day
+// and Legendary Resistance come back on a long rest, a Recharge action and the legendary actions do not.
+func keptUntilLongRest(key string) bool {
+	return key == spentLegendaryResistance || strings.HasPrefix(key, spentUsePrefix)
 }
 
 // readCreatureSpent reads the column now.

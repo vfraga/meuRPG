@@ -793,7 +793,7 @@ No teatro da mente (RN-25) os monstros não têm quadrado.
 Um monstro com Resistência Lendária (3/dia, SRD 5.1) pode ter sucesso num teste de resistência que falha, por escolha do mestre.
 Nos testes de resistência que o mestre rola por ele (o de um efeito e o de concentração) ele pede a característica junto com a rolagem.
 Uma rolagem que falha vira sucesso e gasta um uso.
-Uma rolagem que tem sucesso não gasta nada, uma criatura sem a característica ou sem usos é recusada sem nada mudar, e os usos são do combate (um combate novo começa com todos).
+Uma rolagem que tem sucesso não gasta nada, uma criatura sem a característica ou sem usos é recusada sem nada mudar, e os usos de um monstro são do combate (um combate novo começa com todos).
 A linha do registro do mestre diz a rolagem e a escolha; a do jogador diz que o teste de resistência teve sucesso (RN-20).
 Quando a magia de um jogador com teste de resistência alcança o monstro (num alvo ou em vários), o lançamento espera o mestre (RN-31), quer o teste de resistência tenha passado, quer tenha falhado.
 A espera não revela nada sobre a rolagem: o jogador lê a mesma espera e o mesmo resultado nos dois casos.
@@ -825,7 +825,10 @@ Um monstro derrotado não rola, e uma ação com usos por dia ou depois de um de
 O mestre e o jogador que controla o monstro leem o que resta de cada ação com limite e uma linha do registro com o d6.
 Os outros jogadores não leem nenhum dos dois, e o turno parece o mesmo para eles com ou sem a rolagem (RN-20).
 "Desfazer última ação" devolve o uso; a rolagem não se desfaz.
-Um NPC feito à mão não tem ficha de criatura, então não guarda limite, e um monstro começa todo combate com todas as ações.
+Um NPC persistente com ficha de criatura (feito a partir de uma criatura) guarda o que gastou das ações N/dia e da Resistência Lendária até o descanso longo da mesa.
+Várias cópias dele começam com a contagem que o NPC guardou, e ele guarda a maior contagem que uma cópia atingiu, não a soma.
+Uma ação de Recarga e as ações lendárias de uma rodada não são guardadas: um combate novo começa com toda ação de Recarga disponível.
+Um monstro começa todo combate com todas as ações e usos, e um NPC sem ficha de criatura não tem limites.
 Como é construído: [Arquitetura](../../architecture/play/creatures.md) e [encontros](../../architecture/play/encounters.md).
 
 ## RN-30: Limites do que uma conta cria
