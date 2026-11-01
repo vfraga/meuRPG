@@ -83,13 +83,13 @@ func TestActionLimit_RechargeActionIsSpentAndRefused(t *testing.T) {
 func TestActionLimit_UsesADayAndRestRunOut(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
-		name, creature, action string
-		uses                   int
-		targets                []string
+		name, creature, action, prefix string
+		uses                           int
+		targets                        []string
 	}{
-		{"three a day", "monster:deva", healingTouch, healingTouchN, nil},
-		{"one a day with a save", "monster:dretch", fetidCloud, 1, []string{"Toren"}},
-		{"rest", "monster:octopus", inkCloud, 1, nil},
+		{"three a day", "monster:deva", healingTouch, spentUsePrefix, healingTouchN, nil},
+		{"one a day with a save", "monster:dretch", fetidCloud, spentUsePrefix, 1, []string{"Toren"}},
+		{"rest", "monster:octopus", inkCloud, spentRestPrefix, 1, nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -100,7 +100,7 @@ func TestActionLimit_UsesADayAndRestRunOut(t *testing.T) {
 				}
 				a.mustUseAction(t, a.master, e, who, tc.action, tc.targets)
 				l := a.limitedOf(t, a.master, who, tc.action)
-				if got := a.spentOf(t, a.id(t, who))[spentUsePrefix+tc.action]; got != i || int(l.GetUsesLeft()) != tc.uses-i || l.GetAvailable() != (i < tc.uses) {
+				if got := a.spentOf(t, a.id(t, who))[tc.prefix+tc.action]; got != i || int(l.GetUsesLeft()) != tc.uses-i || l.GetAvailable() != (i < tc.uses) {
 					t.Fatalf("after use %d of %d: spent %d, master reads %v", i, tc.uses, got, l)
 				}
 				e = a.ownTurnAgain(t, e, who)
@@ -108,7 +108,7 @@ func TestActionLimit_UsesADayAndRestRunOut(t *testing.T) {
 			events := a.events(t)
 			_, err := a.useAction(t, a.master, e, who, tc.action, tc.targets)
 			wantBlockedBy(t, "UseCreatureAction", err, noUsesLeft)
-			if a.events(t) != events || byLabel(t, a.get(t, a.master), who).GetActionUsed() || a.spentOf(t, a.id(t, who))[spentUsePrefix+tc.action] != tc.uses {
+			if a.events(t) != events || byLabel(t, a.get(t, a.master), who).GetActionUsed() || a.spentOf(t, a.id(t, who))[tc.prefix+tc.action] != tc.uses {
 				t.Errorf("the refusal changed something: events %d (was %d), spent %v", a.events(t), events, a.spentOf(t, a.id(t, who)))
 			}
 		})

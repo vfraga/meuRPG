@@ -40,7 +40,8 @@ The recharge of each resource is the effect's (`recharge`, and `recharge_if` for
 The table's content adds `restore_one_on_short_rest` (one use on a short rest, all on a long one) and `restore_one_on_long_rest` (one use on a long rest, none on a short one): `restResources` takes one use off `used` for `RecoverOne` and sets the preview's `back` to 1.
 A rest is refused with `COMBAT_OPEN` while a combat is running.
 A long rest, in the same transaction, deletes the campaign's `npc_spell_use` rows and empties the count of the persistent NPCs in a combat in setup (an ended combat is not touched), so every persistent NPC has its slots, uses, uses a day and Legendary Resistance back (see [Creatures](creatures.md#kept-until-the-long-rest)).
-A short rest leaves them.
+A short rest, in the same transaction and before the spells, removes the `rest:` keys from the campaign's `npc_spell_use` rows and from the persistent NPCs in a combat in setup, and drops a row left with nothing spent.
+It leaves the slots, the uses a day and Legendary Resistance.
 
 **The clock.** The SRD allows one long rest in 24 hours and the app keeps no game clock, so it records the rest and warns: `GetRestPreview.long_rest_already_taken` says the open session already had one, and `TakeRest` never refuses for it.
 **Not tracked:** the death saves (they live on the combatant of one combat).

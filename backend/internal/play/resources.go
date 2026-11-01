@@ -324,14 +324,8 @@ func (s *Service) takeRestTx(ctx context.Context, tx pgx.Tx, call restCall, run 
 	if _, run.after, err = s.vitals.TakeRest(ctx, tx, call.m.CampaignID, call.msg); err != nil {
 		return resourceError(err)
 	}
-	if call.kind == rules.RestLong {
-		// Hand-made NPCs get their spell slots and per-day uses back with the table.
-		if err := q.ClearSetupCombatantsSpellUse(ctx, &call.m.CampaignID); err != nil {
-			return fmt.Errorf("clear the NPCs' spell use in a combat in setup: %w", err)
-		}
-		if err := q.ResetNPCSpellUseOfCampaign(ctx, &call.m.CampaignID); err != nil {
-			return fmt.Errorf("give the NPCs' spell use back: %w", err)
-		}
+	if err := restNPCUses(ctx, q, call); err != nil {
+		return err
 	}
 	if err := s.restEndsSpells(ctx, tx, q, session, call, run); err != nil {
 		return err
@@ -343,6 +337,31 @@ func (s *Service) takeRestTx(ctx context.Context, tx pgx.Tx, call restCall, run 
 	return s.appendKeyedEvent(ctx, q, keyedEvent{
 		sessionID: session.ID, kind: eventRestTaken, userID: call.m.UserID, key: call.keyText, hash: call.hash,
 	}, restEvent{Kind: call.kind, Characters: ids})
+}
+
+// restNPCUses gives the hand-made NPCs what the rest returns: a long rest their spell slots, uses a day and
+// Legendary Resistance, and a short or long rest the actions that recharge after a rest. A combat in setup
+// holds a copy of it, cleared first.
+func restNPCUses(ctx context.Context, q *playdb.Queries, call restCall) error {
+	if call.kind == rules.RestLong {
+		if err := q.ClearSetupCombatantsSpellUse(ctx, &call.m.CampaignID); err != nil {
+			return fmt.Errorf("clear the NPCs' spell use in a combat in setup: %w", err)
+		}
+		if err := q.ResetNPCSpellUseOfCampaign(ctx, &call.m.CampaignID); err != nil {
+			return fmt.Errorf("give the NPCs' spell use back: %w", err)
+		}
+		return nil
+	}
+	if err := q.ClearSetupCombatantsRestUses(ctx, &call.m.CampaignID); err != nil {
+		return fmt.Errorf("clear the NPCs' rest uses in a combat in setup: %w", err)
+	}
+	if err := q.ResetNPCRestUsesOfCampaign(ctx, &call.m.CampaignID); err != nil {
+		return fmt.Errorf("give the NPCs' rest uses back: %w", err)
+	}
+	if err := q.DeleteEmptyNPCSpellUseOfCampaign(ctx, &call.m.CampaignID); err != nil {
+		return fmt.Errorf("drop the NPCs' empty rows: %w", err)
+	}
+	return nil
 }
 
 // restEndsSpells ends the spells that last end with the rest when their whole duration fits it

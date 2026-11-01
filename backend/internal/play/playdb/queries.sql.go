@@ -537,9 +537,27 @@ func (q *Queries) ClearScenePlayers(ctx context.Context, gameSessionID string) e
 	return err
 }
 
+const clearSetupCombatantsRestUses = `-- name: ClearSetupCombatantsRestUses :exec
+UPDATE combatants
+SET creature_spent = combatants.creature_spent - ARRAY(
+    SELECT k FROM jsonb_object_keys(combatants.creature_spent) k WHERE k LIKE 'rest:%')
+FROM encounters e, npc_spell_use npc, characters ch
+WHERE e.id = combatants.encounter_id AND e.status = 'setup'
+  AND npc.character_id = combatants.character_id
+  AND ch.id = npc.character_id AND ch.campaign_id = $1
+`
+
+// The short rest: a combat in setup gives back the actions that recharge after a rest ("rest:" keys) of its NPCs.
+func (q *Queries) ClearSetupCombatantsRestUses(ctx context.Context, campaignID *string) error {
+	_, err := q.db.Exec(ctx, clearSetupCombatantsRestUses, campaignID)
+	return err
+}
+
 const clearSetupCombatantsSpellUse = `-- name: ClearSetupCombatantsSpellUse :exec
 UPDATE combatants
-SET slots_used = '{}', creature_spent = combatants.creature_spent - ARRAY(SELECT jsonb_object_keys(npc.creature_spent))
+SET slots_used = '{}', creature_spent = combatants.creature_spent - ARRAY(
+    SELECT k FROM jsonb_object_keys(combatants.creature_spent) k
+    WHERE k = 'legendary_resistance' OR k LIKE 'use:%' OR k LIKE 'rest:%')
 FROM encounters e, npc_spell_use npc, characters ch
 WHERE e.id = combatants.encounter_id AND e.status = 'setup'
   AND npc.character_id = combatants.character_id
@@ -547,7 +565,7 @@ WHERE e.id = combatants.encounter_id AND e.status = 'setup'
 `
 
 // A combat still in setup holds the count it copied when its NPC joined: the long rest clears it too,
-// its slots and uses and the keys of its uses a day and Legendary Resistance (the others stay).
+// its slots and uses and the keys of its uses a day, rest actions and Legendary Resistance (the others stay).
 func (q *Queries) ClearSetupCombatantsSpellUse(ctx context.Context, campaignID *string) error {
 	_, err := q.db.Exec(ctx, clearSetupCombatantsSpellUse, campaignID)
 	return err
@@ -1047,6 +1065,19 @@ func (q *Queries) DeleteCombatantStatesOfKind(ctx context.Context, arg DeleteCom
 		return nil, err
 	}
 	return items, nil
+}
+
+const deleteEmptyNPCSpellUseOfCampaign = `-- name: DeleteEmptyNPCSpellUseOfCampaign :exec
+DELETE FROM npc_spell_use
+USING characters ch
+WHERE ch.id = npc_spell_use.character_id AND ch.campaign_id = $1
+  AND npc_spell_use.slots_used = '{}'::jsonb AND npc_spell_use.creature_spent = '{}'::jsonb
+`
+
+// A row of the campaign with nothing spent left goes.
+func (q *Queries) DeleteEmptyNPCSpellUseOfCampaign(ctx context.Context, campaignID *string) error {
+	_, err := q.db.Exec(ctx, deleteEmptyNPCSpellUseOfCampaign, campaignID)
+	return err
 }
 
 const deleteEndedCombatantStates = `-- name: DeleteEndedCombatantStates :many
@@ -8115,6 +8146,22 @@ func (q *Queries) ResetDeathSavesOfCharacter(ctx context.Context, arg ResetDeath
 	return err
 }
 
+const resetNPCRestUsesOfCampaign = `-- name: ResetNPCRestUsesOfCampaign :exec
+UPDATE npc_spell_use npc
+SET creature_spent = npc.creature_spent - ARRAY(
+    SELECT k FROM jsonb_object_keys(npc.creature_spent) k WHERE k LIKE 'rest:%'),
+    updated_at = now()
+FROM characters ch
+WHERE ch.id = npc.character_id AND ch.campaign_id = $1
+  AND EXISTS (SELECT 1 FROM jsonb_object_keys(npc.creature_spent) k WHERE k LIKE 'rest:%')
+`
+
+// The short rest: every hand-made NPC of the campaign gets its rest actions back.
+func (q *Queries) ResetNPCRestUsesOfCampaign(ctx context.Context, campaignID *string) error {
+	_, err := q.db.Exec(ctx, resetNPCRestUsesOfCampaign, campaignID)
+	return err
+}
+
 const resetNPCSpellUseOfCampaign = `-- name: ResetNPCSpellUseOfCampaign :exec
 DELETE FROM npc_spell_use
 USING characters ch
@@ -10175,7 +10222,7 @@ type SyncNPCCreatureSpentParams struct {
 	ID  string
 }
 
-// Sets the NPC's own count under one key of creature_spent ("use:<action key>" or "legendary_resistance") to
+// Sets the NPC's own count under one key of creature_spent ("use:<action key>", "rest:<action key>" or "legendary_resistance") to
 // the highest count any combatant of that character holds in this combat, after the combatant's change: the
 // row keeps what one individual spent, never the sum, and a count that falls to 0 leaves the row. A
 // monster's character (combat_only), a creature and a player write nothing.

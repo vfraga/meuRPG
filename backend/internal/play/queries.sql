@@ -1530,7 +1530,7 @@ SET slots_used = jsonb_set(npc_spell_use.slots_used, ARRAY[sqlc.arg(key)::text],
     updated_at = now();
 
 -- name: SyncNPCCreatureSpent :exec
--- Sets the NPC's own count under one key of creature_spent ("use:<action key>" or "legendary_resistance") to
+-- Sets the NPC's own count under one key of creature_spent ("use:<action key>", "rest:<action key>" or "legendary_resistance") to
 -- the highest count any combatant of that character holds in this combat, after the combatant's change: the
 -- row keeps what one individual spent, never the sum, and a count that falls to 0 leaves the row. A
 -- monster's character (combat_only), a creature and a player write nothing.
@@ -1560,13 +1560,42 @@ SELECT slots_used FROM npc_spell_use WHERE character_id = $1;
 
 -- name: ClearSetupCombatantsSpellUse :exec
 -- A combat still in setup holds the count it copied when its NPC joined: the long rest clears it too,
--- its slots and uses and the keys of its uses a day and Legendary Resistance (the others stay).
+-- its slots and uses and the keys of its uses a day, rest actions and Legendary Resistance (the others stay).
 UPDATE combatants
-SET slots_used = '{}', creature_spent = combatants.creature_spent - ARRAY(SELECT jsonb_object_keys(npc.creature_spent))
+SET slots_used = '{}', creature_spent = combatants.creature_spent - ARRAY(
+    SELECT k FROM jsonb_object_keys(combatants.creature_spent) k
+    WHERE k = 'legendary_resistance' OR k LIKE 'use:%' OR k LIKE 'rest:%')
 FROM encounters e, npc_spell_use npc, characters ch
 WHERE e.id = combatants.encounter_id AND e.status = 'setup'
   AND npc.character_id = combatants.character_id
   AND ch.id = npc.character_id AND ch.campaign_id = $1;
+
+-- name: ClearSetupCombatantsRestUses :exec
+-- The short rest: a combat in setup gives back the actions that recharge after a rest ("rest:" keys) of its NPCs.
+UPDATE combatants
+SET creature_spent = combatants.creature_spent - ARRAY(
+    SELECT k FROM jsonb_object_keys(combatants.creature_spent) k WHERE k LIKE 'rest:%')
+FROM encounters e, npc_spell_use npc, characters ch
+WHERE e.id = combatants.encounter_id AND e.status = 'setup'
+  AND npc.character_id = combatants.character_id
+  AND ch.id = npc.character_id AND ch.campaign_id = $1;
+
+-- name: ResetNPCRestUsesOfCampaign :exec
+-- The short rest: every hand-made NPC of the campaign gets its rest actions back.
+UPDATE npc_spell_use npc
+SET creature_spent = npc.creature_spent - ARRAY(
+    SELECT k FROM jsonb_object_keys(npc.creature_spent) k WHERE k LIKE 'rest:%'),
+    updated_at = now()
+FROM characters ch
+WHERE ch.id = npc.character_id AND ch.campaign_id = $1
+  AND EXISTS (SELECT 1 FROM jsonb_object_keys(npc.creature_spent) k WHERE k LIKE 'rest:%');
+
+-- name: DeleteEmptyNPCSpellUseOfCampaign :exec
+-- A row of the campaign with nothing spent left goes.
+DELETE FROM npc_spell_use
+USING characters ch
+WHERE ch.id = npc_spell_use.character_id AND ch.campaign_id = $1
+  AND npc_spell_use.slots_used = '{}'::jsonb AND npc_spell_use.creature_spent = '{}'::jsonb;
 
 -- name: ResetNPCSpellUseOfCampaign :exec
 -- The table's long rest: every hand-made NPC of the campaign gets its slots, its uses and its Legendary Resistance back.

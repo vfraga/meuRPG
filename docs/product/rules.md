@@ -816,7 +816,7 @@ The players read no spend, only the ordinary attack or movement line (RN-20).
 A hand-made NPC that casts keeps the spell slots and per-day uses it spent, from one combat to the next, until the table's long rest.
 A monster in combat starts each fight with all its slots and uses, because each fight brings a new individual.
 Several copies of one hand-made NPC each start with the count the NPC kept, and it keeps the highest count any copy reached, not the sum.
-A short rest changes nothing for an NPC.
+A short rest gives a persistent NPC back its actions that recharge after a short or long rest, and nothing else.
 An action of a monster with a limit is enforced by the server: "Recarga 5–6" (SRD 5.1: Recharge 5-6), "3/dia" (3/Day) and one that returns after a rest.
 A use spends it, in the same change as the attack or the action, and a spent action is refused with nothing changed.
 The refusal says the action has not recharged or has no uses left, to the master and to the player who controls the monster.
@@ -826,6 +826,8 @@ The master and the player who controls the monster read what each limited action
 Every other player reads neither, and the turn looks the same to them with or without the roll (RN-20).
 "Desfazer última ação" gives the use back; the roll cannot be undone.
 A persistent NPC with a stat block (made from a creature) keeps what it spent of its N/day actions and of Legendary Resistance until the table's long rest.
+It keeps an action that recharges after a short or long rest until the next short or long rest.
+The long rest gives back all three, and the short rest gives back only the last.
 Several copies of it start with the count the NPC kept, and it keeps the highest count any copy reached, not the sum.
 A Recharge action and the legendary actions of a round are not kept: a new combat starts with every Recharge action available.
 A monster starts every combat with all its actions and uses, and an NPC with no stat block has no limits.

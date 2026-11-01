@@ -233,12 +233,12 @@ Numbers only.
 
 ## `npc_spell_use`
 
-What a persistent NPC spent, kept from one combat to the next: its spell slots and per-day uses, its uses a day and its Legendary Resistance.
-Primary key `character_id`, which cascades with the character; `slots_used` is JSON with the keys of `combatants.slots_used` (`"1"` to `"9"`, `"pact"`, `"res:<resource>"`); `creature_spent` (migration 00308) is JSON `{"<key>": N}` with the keys `use:<action key>` and `legendary_resistance` of `combatants.creature_spent`, an object of at most 4096 bytes of text, only what was spent, absent is 0; `updated_at`.
+What a persistent NPC spent, kept from one combat to the next: its spell slots and per-day uses, its uses a day, its actions that recharge after a rest and its Legendary Resistance.
+Primary key `character_id`, which cascades with the character; `slots_used` is JSON with the keys of `combatants.slots_used` (`"1"` to `"9"`, `"pact"`, `"res:<resource>"`); `creature_spent` (migration 00305) is JSON `{"<key>": N}` with the keys `use:<action key>`, `rest:<action key>` and `legendary_resistance` of `combatants.creature_spent`, an object of at most 4096 bytes of text, only what was spent, absent is 0; `updated_at`.
 The Recharge state (`recharge:<action key>`) and the legendary actions of a round are never kept.
 A monster's `combat_only` NPC never has a row: each fight of it starts with an empty count.
 Several copies of one NPC share the row, and it keeps the highest count any copy of the combat holds, never the sum: `SyncNPCSpellUse` sets `slots_used` and `SyncNPCCreatureSpent` sets `creature_spent` after each change of the combatant's column (an undo too), so an undo lowers it only when no other copy holds more.
-`SeedCombatantSlotsUsed` copies the row into each combatant when the NPC joins a combat, and the table's long rest deletes the rows of the campaign.
+`SeedCombatantSlotsUsed` copies the row into each combatant when the NPC joins a combat, the table's long rest deletes the rows of the campaign, and a short rest removes the `rest:` keys from them and deletes a row left with nothing spent.
 The master alone reads what the row holds, as it reads the combatant's (RN-20, RN-29); no player call reads the table.
 
 ## `character_creatures`

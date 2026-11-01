@@ -23,8 +23,10 @@ func limitKeyOf(plan rules.ActionPlan) string {
 	switch plan.Usage.Kind {
 	case rules.UsageRecharge:
 		return spentRechargePrefix + plan.Key
-	case rules.UsagePerDay, rules.UsageRest:
+	case rules.UsagePerDay:
 		return spentUsePrefix + plan.Key
+	case rules.UsageRest:
+		return spentRestPrefix + plan.Key
 	}
 	return ""
 }

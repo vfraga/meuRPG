@@ -219,7 +219,7 @@ func TestCopiesOfAPersistentNPCKeepTheHighestUseCountNotTheSum(t *testing.T) {
 	}
 }
 
-// A short rest keeps the count; the table's long rest gives the uses and the Legendary Resistance back, on the NPC
+// A short rest keeps the count of the uses a day; the table's long rest gives the uses and the Legendary Resistance back, on the NPC
 // and on a combat in setup that copied them, and leaves the other keys of that combatant.
 func TestTheLongRestGivesAPersistentNPCsUsesBack(t *testing.T) {
 	t.Parallel()
@@ -297,5 +297,115 @@ func TestTheKeptUsesColumnHoldsAtMost4KiB(t *testing.T) {
 	}
 	if err := write(`[]`); err == nil {
 		t.Error("the database accepted a value that is not an object")
+	}
+}
+
+const inkSpent = spentRestPrefix + inkCloud
+
+// persistentOctopus is a combat where the octopus (an action that recharges after a short or long rest) is a persistent NPC.
+func persistentOctopus(t *testing.T) (a *armed, e *playv1.Encounter, label, char string) {
+	t.Helper()
+	a, e, label = creatureFight(t, true, "monster:octopus", false)
+	return a, e, label, a.keepAsPersistent(t, label)
+}
+
+// The octopus spends its Ink Cloud and is refused from then on, in this combat and in the next; a use a day of the
+// same NPC stays spent through the short rest, which gives the Ink Cloud back, and the long rest gives both back.
+func TestAPersistentNPCsRestActionComesBackWithAShortRest(t *testing.T) {
+	t.Parallel()
+	const perDay = spentUsePrefix + "monster:octopus#other"
+	a, e, octopus, char := persistentOctopus(t)
+	a.mustUseAction(t, a.master, e, octopus, inkCloud, nil)
+	if _, err := bumpCreatureSpent(t.Context(), playdb.New(a.h.pool), a.id(t, octopus), perDay, 1); err != nil {
+		t.Fatal(err)
+	}
+	e = a.ownTurnAgain(t, e, octopus)
+	_, err := a.useAction(t, a.master, e, octopus, inkCloud, nil)
+	wantBlockedBy(t, "UseCreatureAction", err, noUsesLeft)
+	a.endEncounter(t, e)
+
+	a.nextCombatOf(t, char, 1)
+	next := a.labelOfCharacter(t, char)
+	if l := a.limitedOf(t, a.master, next, inkCloud); l == nil || l.GetAvailable() {
+		t.Fatalf("the master reads %v in the next combat, want the Ink Cloud spent", l)
+	}
+	a.rest(t, playv1.RestKind_REST_KIND_SHORT)
+	if got, has := a.storedSpent(t, char); !has || got[perDay] != 1 || len(got) != 1 {
+		t.Errorf("the NPC's count after the short rest = %v, want only %s", got, perDay)
+	}
+	if got := a.spentOf(t, a.id(t, next)); got[perDay] != 1 || len(got) != 1 {
+		t.Errorf("the combat in setup after the short rest = %v, want only %s", got, perDay)
+	}
+	if l := a.limitedOf(t, a.master, next, inkCloud); l == nil || !l.GetAvailable() {
+		t.Errorf("the master reads %v after the short rest, want the Ink Cloud available", l)
+	}
+	a.rest(t, playv1.RestKind_REST_KIND_LONG)
+	if _, has := a.storedSpent(t, char); has {
+		t.Error("the NPC still has a row after the long rest")
+	}
+	if got := a.spentOf(t, a.id(t, next)); len(got) != 0 {
+		t.Errorf("the combat in setup after the long rest = %v, want nothing", got)
+	}
+}
+
+// A short rest that leaves the NPC nothing spent takes its row; the long rest gives both kinds back.
+func TestTheShortRestTakesTheRowOfAnNPCWithOnlyARestAction(t *testing.T) {
+	t.Parallel()
+	a, e, octopus, char := persistentOctopus(t)
+	a.mustUseAction(t, a.master, e, octopus, inkCloud, nil)
+	if got, has := a.storedSpent(t, char); !has || got[inkSpent] != 1 { // positive control
+		t.Fatalf("the NPC's count before the rest = %v", got)
+	}
+	a.endEncounter(t, e)
+	a.rest(t, playv1.RestKind_REST_KIND_SHORT)
+	if got, has := a.storedSpent(t, char); has {
+		t.Errorf("the NPC's count after the short rest = %v, want no row", got)
+	}
+}
+
+// The undo of the use of a rest action gives it back on the combatant and on the NPC.
+func TestTheUndoOfAPersistentNPCsRestActionGivesItBack(t *testing.T) {
+	t.Parallel()
+	a, e, octopus, char := persistentOctopus(t)
+	a.mustUseAction(t, a.master, e, octopus, inkCloud, nil)
+	if got, _ := a.storedSpent(t, char); got[inkSpent] != 1 {
+		t.Fatalf("the NPC's count after the use = %v", got)
+	}
+	a.undoLast(t, e)
+	if got, _ := a.storedSpent(t, char); got[inkSpent] != 0 {
+		t.Errorf("the NPC's count after the undo = %v, want nothing", got)
+	}
+	if l := a.limitedOf(t, a.master, octopus, inkCloud); l == nil || !l.GetAvailable() || a.spentOf(t, a.id(t, octopus))[inkSpent] != 0 {
+		t.Errorf("the master reads %v after the undo, want the Ink Cloud available", l)
+	}
+}
+
+// A combat in setup holds the keys its NPC copied: the short rest strips the rest: keys only, the long rest the
+// use:, rest: and legendary_resistance keys, and the others (a Recharge, the legendary actions) stay.
+func TestTheRestsClearTheKeysOfANPCInACombatInSetup(t *testing.T) {
+	t.Parallel()
+	const use, recharge = spentUsePrefix + "monster:octopus#x", spentRechargePrefix + "monster:octopus#y"
+	a, e, _, char := persistentOctopus(t)
+	a.endEncounter(t, e)
+	a.nextCombatOf(t, char, 1)
+	id := a.id(t, a.labelOfCharacter(t, char))
+	q := playdb.New(a.h.pool)
+	for _, key := range []string{use, inkSpent, spentLegendaryResistance, recharge, spentLegendaryActions} {
+		if _, err := bumpCreatureSpent(t.Context(), q, id, key, 1); err != nil {
+			t.Fatal(err)
+		}
+	}
+	a.rest(t, playv1.RestKind_REST_KIND_SHORT)
+	got := a.spentOf(t, id)
+	if len(got) != 4 || got[inkSpent] != 0 || got[use] != 1 || got[spentLegendaryResistance] != 1 || got[recharge] != 1 || got[spentLegendaryActions] != 1 {
+		t.Errorf("the combat in setup after the short rest = %v, want everything but %s", got, inkSpent)
+	}
+	if _, err := bumpCreatureSpent(t.Context(), q, id, inkSpent, 1); err != nil {
+		t.Fatal(err)
+	}
+	a.rest(t, playv1.RestKind_REST_KIND_LONG)
+	got = a.spentOf(t, id)
+	if len(got) != 2 || got[recharge] != 1 || got[spentLegendaryActions] != 1 {
+		t.Errorf("the combat in setup after the long rest = %v, want only %s and %s", got, recharge, spentLegendaryActions)
 	}
 }

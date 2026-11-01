@@ -130,7 +130,7 @@ func TestRecharge_OnlyASpentRechargeActionRolls(t *testing.T) {
 			who  string
 			key  string
 			name string
-		}{{b, eb, deva, spentUsePrefix + healingTouch, "per day"}, {c, ec, octopus, spentUsePrefix + inkCloud, "rest"}} {
+		}{{b, eb, deva, spentUsePrefix + healingTouch, "per day"}, {c, ec, octopus, spentRestPrefix + inkCloud, "rest"}} {
 			before := tc.a.h.roller.taken()
 			ne := tc.a.ownTurnAgain(t, tc.e, tc.who)
 			if got := tc.a.h.roller.taken() - before; got != 0 || tc.a.spentOf(t, tc.a.id(t, tc.who))[tc.key] != 1 || len(tc.a.rechargeLines(t, tc.a.master, ne)) != 0 {

@@ -816,7 +816,7 @@ Os jogadores não leem nenhum gasto, só a linha comum de ataque ou de movimento
 Um NPC feito à mão que conjura guarda os espaços de magia e os usos por dia que gastou, de um combate para o outro, até o descanso longo da mesa.
 Um monstro em combate começa cada luta com todos os seus espaços e usos, porque cada luta traz um indivíduo novo.
 Várias cópias de um NPC feito à mão começam com a contagem que o NPC guardou, e ele guarda a maior contagem que uma cópia atingiu, não a soma.
-Um descanso curto não muda nada para um NPC.
+Um descanso curto devolve a um NPC persistente as ações que recarregam depois de um descanso curto ou longo, e nada mais.
 Uma ação de monstro com limite é imposta pelo servidor: "Recarga 5–6" (SRD 5.1: Recharge 5-6), "3/dia" (3/Day) e a que volta depois de um descanso.
 Um uso a gasta, na mesma mudança do ataque ou da ação, e uma ação gasta é recusada sem mudar nada.
 A recusa diz que a ação não recarregou ou não tem mais usos, ao mestre e ao jogador que controla o monstro.
@@ -826,6 +826,8 @@ O mestre e o jogador que controla o monstro leem o que resta de cada ação com 
 Os outros jogadores não leem nenhum dos dois, e o turno parece o mesmo para eles com ou sem a rolagem (RN-20).
 "Desfazer última ação" devolve o uso; a rolagem não se desfaz.
 Um NPC persistente com ficha de criatura (feito a partir de uma criatura) guarda o que gastou das ações N/dia e da Resistência Lendária até o descanso longo da mesa.
+Ele guarda uma ação que recarrega depois de um descanso curto ou longo até o próximo descanso curto ou longo.
+O descanso longo devolve as três, e o descanso curto devolve só a última.
 Várias cópias dele começam com a contagem que o NPC guardou, e ele guarda a maior contagem que uma cópia atingiu, não a soma.
 Uma ação de Recarga e as ações lendárias de uma rodada não são guardadas: um combate novo começa com toda ação de Recarga disponível.
 Um monstro começa todo combate com todas as ações e usos, e um NPC sem ficha de criatura não tem limites.
