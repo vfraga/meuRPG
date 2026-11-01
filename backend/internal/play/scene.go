@@ -998,7 +998,7 @@ func (s *Service) sceneRollAnswer(ctx context.Context, m authz.Membership, out *
 	}
 	// The caller is a player: the pass or fail is in the answer only when the
 	// scene showed its DC (RN-20).
-	roll := sceneRollToProto(out.rollID, characterID, name, out.at, out.ev, out.ev.DCShown)
+	roll := sceneRollToProto(out.rollID, characterID, name, out.at, out.ev, out.ev.DCShown || heldViewerIsMaster(ctx, m))
 	roll.Sources = out.shown
 	return roll
 }

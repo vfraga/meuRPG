@@ -670,6 +670,7 @@ func timestampOrNil(t *time.Time) *timestamppb.Timestamp {
 // vitals: the master's copy carries their hit points, and every copy says
 // which of them are down.
 func (s *Service) viewFor(ctx context.Context, m authz.Membership, d *encounterData) (*playv1.Encounter, error) {
+	m = heldViewer(ctx, m) // a held roll's answer renders for who answered
 	v, err := s.viewerFor(ctx, m, d.enc, d.cs)
 	if err != nil {
 		return nil, s.dbError(ctx, "work out what the player sees", err)

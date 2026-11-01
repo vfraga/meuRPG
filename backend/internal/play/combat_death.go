@@ -110,7 +110,7 @@ func (s *Service) RollDeathSave(
 	if err != nil {
 		return nil, err
 	}
-	return connect.NewResponse(&playv1.RollDeathSaveResponse{Encounter: enc, DeathSave: deathSaveProto(ev, out.viewer, out.hookName)}), nil
+	return connect.NewResponse(&playv1.RollDeathSaveResponse{Encounter: enc, DeathSave: deathSaveProto(ev, viewerOf(heldViewer(ctx, call.m)), out.hookName)}), nil
 }
 
 // readDeathSaveRequest reads the request in the order the answers are given: who may call,

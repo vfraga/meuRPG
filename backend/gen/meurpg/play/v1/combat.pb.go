@@ -22010,8 +22010,8 @@ type ConcentrationSavePrompt struct {
 	// The damage that threatens it, from the source the window is for.
 	DamageTaken int32 `protobuf:"varint,3,opt,name=damage_taken,json=damageTaken,proto3" json:"damage_taken,omitempty"`
 	// 10 or half the damage, whichever is higher (SRD). The master's, and the
-	// roller's when the table rule "Os jogadores veem a CD dos testes de
-	// resistência" is on; 0 (absent) for the roller otherwise.
+	// player the response is rendered for (the answering member of a held roll) when the table rule "Os jogadores veem a CD dos testes de
+	// resistência" is on; 0 (absent) for that player otherwise.
 	Dc int32 `protobuf:"varint,4,opt,name=dc,proto3" json:"dc,omitempty"`
 	// What threatens it ("Bola de Fogo do Mago 1"), when the reactor sees the source.
 	SourceLabel string `protobuf:"bytes,5,opt,name=source_label,json=sourceLabel,proto3" json:"source_label,omitempty"`
@@ -23661,7 +23661,8 @@ func (x *ResolveConcentrationSaveResponse) GetHeldRollOffer() *HeldRollOffer {
 type ConcentrationSaveResult struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Save  *DiceRoll              `protobuf:"bytes,1,opt,name=save,proto3" json:"save,omitempty"`
-	// The save's DC: the master's, and the roller's when the table rule "Os
+	// The save's DC: the master's, and the player the response is rendered for (the
+	// answering member of a held roll) when the table rule "Os
 	// jogadores veem a CD dos testes de resistência" is on; 0 (absent) otherwise.
 	Dc          int32  `protobuf:"varint,2,opt,name=dc,proto3" json:"dc,omitempty"`
 	Kept        bool   `protobuf:"varint,3,opt,name=kept,proto3" json:"kept,omitempty"`

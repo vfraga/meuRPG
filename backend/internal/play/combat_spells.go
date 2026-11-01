@@ -446,7 +446,7 @@ func (s *Service) spellAttackD20(ctx context.Context, c *combatTx, sp link.Spell
 	}
 	var r spellAttackRolled
 	var err error
-	r.truth = modes.in.facts(c.enc, c.sight).attackMode(caster, target, modes.traits, shapeOfSpell(sp), actsNow(c.enc, caster), modes.v, modes.names)
+	r.truth = modes.in.facts(c.enc, c.sight).attackMode(caster, target, modes.traits, shapeOfSpell(sp), actsNow(c.enc, caster), modes.reader, modes.names)
 	if r.choice, err = s.chooseMode(ctx, c, modes.v, caster, target, sp.Key, r.truth.Mode, modes.ask); err != nil {
 		return r, err
 	}

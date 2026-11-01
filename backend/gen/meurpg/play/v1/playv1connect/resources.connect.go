@@ -318,6 +318,9 @@ type ResourceServiceClient interface {
 	// a group check) too: the master is asked in his own sheet, the player reads the same question, and the first
 	// answer after the 10 s wins.
 	//
+	// The response is rendered for the member who answers, whoever rolled.
+	// The same answer given again is rendered the same way.
+	//
 	// Errors: `not_found` for a hold that is gone or one the caller may not answer; `invalid_argument`
 	// for an answer of the wrong question, for a missing roll_in_app or typed_face, or a typed face outside
 	// the die; ResourceBlocked LUCKY_PENDING for the die's answer while the Lucky question of the same
@@ -786,6 +789,9 @@ type ResourceServiceHandler interface {
 	// player who left). This holds for the master's own rolls for a player's character (a save, a spell attack,
 	// a group check) too: the master is asked in his own sheet, the player reads the same question, and the first
 	// answer after the 10 s wins.
+	//
+	// The response is rendered for the member who answers, whoever rolled.
+	// The same answer given again is rendered the same way.
 	//
 	// Errors: `not_found` for a hold that is gone or one the caller may not answer; `invalid_argument`
 	// for an answer of the wrong question, for a missing roll_in_app or typed_face, or a typed face outside

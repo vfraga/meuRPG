@@ -215,6 +215,8 @@ type heldReply struct {
 	// as is who the path runs as when another than the roller answers (the master): the roller. Nil when the
 	// answerer is the roller. Only answerHeld sets it, after checking that the caller may answer.
 	as *authz.Membership
+	// caller is who answered, when it is not the roller: the member the response is rendered for. Set with as.
+	caller *authz.Membership
 }
 
 type heldReplyKey struct{}

@@ -754,6 +754,7 @@ func (s *Service) latestGroupCheckView(ctx context.Context, m authz.Membership) 
 
 // groupCheckView reads a group check back as the caller may read it.
 func (s *Service) groupCheckView(ctx context.Context, m authz.Membership, checkID string) (*playv1.GroupCheckView, error) {
+	m = heldViewer(ctx, m) // a held roll's answer renders for who answered
 	var check playdb.GroupCheck
 	var members []playdb.GroupCheckMember
 	err := db.ReadTx(ctx, s.pool, func(tx pgx.Tx) error {

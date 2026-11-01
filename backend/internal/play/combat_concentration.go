@@ -232,11 +232,29 @@ func (s *Service) concentrationAnswer(ctx context.Context, m authz.Membership, r
 	result := run.result
 	if result == nil && res.repeated {
 		result = concentrationResultOfRetry(res.payload)
+		if err := s.hideRetryDC(ctx, m, result); err != nil {
+			return nil, err
+		}
 	}
 	if result != nil {
 		result.SpellNamePt = s.namesFor(ctx, m.CampaignID)(result.SpellKey)
 	}
 	return connect.NewResponse(&playv1.ResolveConcentrationSaveResponse{Encounter: out, Result: result}), nil
+}
+
+// hideRetryDC zeroes the DC of a retried result for a member the table's rules do not show it to.
+func (s *Service) hideRetryDC(ctx context.Context, m authz.Membership, result *playv1.ConcentrationSaveResult) error {
+	if result == nil || heldViewerIsMaster(ctx, m) {
+		return nil
+	}
+	rules, err := s.tableRules(ctx, nil, m.CampaignID)
+	if err != nil {
+		return s.dbError(ctx, "read the table's rules", err)
+	}
+	if !rules.ShowSaveDC {
+		result.Dc = 0
+	}
+	return nil
 }
 
 // concentrationResultOfRetry is the result of a save that a retry of the same request asks for again: read back from the
@@ -320,7 +338,7 @@ func (s *Service) writeConcentrationSave(ctx context.Context, c *combatTx, call 
 
 // concentrationOutcome is the save of the window: kept as it is (the master's word) or rolled. It answers
 // whether the concentration is kept, and puts the result in run with the DC only for who reads it: the
-// master, and the roller's player when the table shows the DC of a saving throw.
+// master, and the answering member when the table shows the DC of a saving throw.
 func (s *Service) concentrationOutcome(ctx context.Context, c *combatTx, call concentrationCall, reactor playdb.Combatant, t windowTrigger, ev *actionEvent, run *concentrationRun) (bool, error) {
 	dc := ev.Reaction.SaveDC
 	kept := true
@@ -333,7 +351,7 @@ func (s *Service) concentrationOutcome(ctx context.Context, c *combatTx, call co
 			return false, err
 		}
 	}
-	if run.result != nil && !c.master && !c.rules.ShowSaveDC {
+	if run.result != nil && !heldViewerIsMaster(ctx, call.m) && !c.rules.ShowSaveDC {
 		run.result.Dc = 0
 	}
 	return kept, nil

@@ -266,7 +266,7 @@ func (s *Service) effectSaveAnswer(ctx context.Context, m authz.Membership, res 
 		return nil, err
 	}
 	if run.result == nil { // a retry the closure never ran for: the first answer is in the event
-		showDC := m.Role == authz.RoleMaster
+		showDC := heldViewerIsMaster(ctx, m)
 		if !showDC {
 			rules, err := s.tableRules(ctx, nil, m.CampaignID)
 			if err != nil {
@@ -476,7 +476,7 @@ func (s *Service) recordEffectSaveRoll(ctx context.Context, c *combatTx, x *effe
 	if err != nil {
 		return false, err
 	}
-	result.ExtraDice = extraDiceProto(extra, c.master, nm)
+	result.ExtraDice = extraDiceProto(extra, heldViewerIsMaster(ctx, x.call.m), nm)
 	x.le.D20, x.le.Total = result.D20, result.Total
 	x.le.Change = "failed"
 	if saved {
@@ -491,7 +491,7 @@ func (s *Service) recordEffectSaveRoll(ctx context.Context, c *combatTx, x *effe
 // settleEffectSave closes the window, does what the answer does to the effect, and writes the
 // event.
 func (s *Service) settleEffectSave(ctx context.Context, c *combatTx, x *effectSaveStep, saved bool) (any, error) {
-	if c.master || c.rules.ShowSaveDC { // the roller's player reads it when the table shows the DC of a save
+	if heldViewerIsMaster(ctx, x.call.m) || c.rules.ShowSaveDC { // the answering member gets it when the table shows the DC of a save
 		dc := x.dc
 		x.run.result.Dc = &dc
 	}

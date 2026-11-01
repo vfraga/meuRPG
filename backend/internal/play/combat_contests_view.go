@@ -100,6 +100,7 @@ type contestReader struct {
 }
 
 func (s *Service) contestReaderFor(ctx context.Context, m authz.Membership, d *contestData) (*contestReader, error) {
+	m = heldViewer(ctx, m) // a held roll's answer renders for who answered
 	v, sight, err := s.viewerWith(ctx, m, d.enc, d.cs)
 	if err != nil {
 		return nil, s.dbError(ctx, "work out what the player sees", err)

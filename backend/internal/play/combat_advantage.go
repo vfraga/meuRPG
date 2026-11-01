@@ -773,8 +773,10 @@ func (t turnModes) annotateShape(shape *attackShape, targets []*playv1.TargetInR
 // spellModes is what the d20 rolls of a cast need, and keeps the circumstances of each
 // target's roll for the answer.
 type spellModes struct {
-	in     attackModeInputs
-	v      combatViewer
+	in attackModeInputs
+	v  combatViewer
+	// reader is who the sources shown are for: v, unless a held roll's answer is rendered for another.
+	reader combatViewer
 	ask    modeAsk
 	names  func(string) string
 	traits link.Traits
@@ -799,8 +801,12 @@ func (s *Service) spellModes(ctx context.Context, c *combatTx, m authz.Membershi
 	if err != nil {
 		return nil, err
 	}
+	reader := v
+	if who, ok := heldCallerOf(ctx, m.CampaignID); ok {
+		reader = c.viewer(who, cs)
+	}
 	return &spellModes{
-		in: in, v: v, names: names, traits: sheet.Traits, ask: modeAsk{want: req.GetRollMode(), reason: req.GetModeReason()},
+		in: in, v: v, reader: reader, names: names, traits: sheet.Traits, ask: modeAsk{want: req.GetRollMode(), reason: req.GetModeReason()},
 		attack: map[string][]*playv1.AdvantageSource{}, save: map[string][]*playv1.AdvantageSource{},
 	}, nil
 }

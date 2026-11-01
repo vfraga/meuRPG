@@ -110,7 +110,7 @@ func hintRollInput(msg *playv1.TryPuzzleHintRequest) (rollInput, error) {
 // hintTryAnswer is the answer of a try that was written (or replayed): the player's run as it is
 // now, the roll, and the die that was added.
 func (s *Service) hintTryAnswer(ctx context.Context, m authz.Membership, res *hintTryResult, names runNames) (*connect.Response[playv1.TryPuzzleHintResponse], error) {
-	view, err := s.viewerOf(ctx, nil, m, res.d, res.run)
+	view, err := s.viewerOf(ctx, nil, heldViewer(ctx, m), res.d, res.run)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the puzzle after a try", err)
 	}

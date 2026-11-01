@@ -70,6 +70,9 @@ func (s *Service) answerHeld(ctx context.Context, m authz.Membership, req answer
 	if a.as, err = s.rollerOf(ctx, m, h); err != nil {
 		return nil, err
 	}
+	if a.as != nil {
+		a.caller = &m
+	}
 	out, err := s.rerunHeld(ctx, h, a, state)
 	if err != nil {
 		return nil, s.lostTheRace(ctx, h, req, err)
