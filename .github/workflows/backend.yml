@@ -26,6 +26,8 @@ on:
       - ".github/scripts/go-complexity.sh"
       - ".github/scripts/nolint-cap.sh"
       - ".github/nolint-cap"
+      - ".github/scripts/play-size-cap.sh"
+      - ".github/play-size-cap"
       - ".node-version"
   # The nightly run and a manual run test everything, with no path filter
   # (03:00 in São Paulo).
@@ -83,14 +85,14 @@ jobs:
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|proto/|web/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap|cockroach-only|start-(cockroach|postgres))\.sh$|\.github/actions/test-database/|\.github/nolint-cap$|\.node-version$)'
+          pattern: '^(backend/|proto/|web/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap|play-size-cap|cockroach-only|start-(cockroach|postgres))\.sh$|\.github/actions/test-database/|\.github/(nolint|play-size)-cap$|\.node-version$)'
 
       - name: Do the Go jobs run
         id: go
         if: env.DIFF == 'true'
         uses: ./.github/actions/select
         with:
-          pattern: '^(backend/|proto/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap|cockroach-only|start-(cockroach|postgres))\.sh$|\.github/actions/test-database/|\.github/nolint-cap$)'
+          pattern: '^(backend/|proto/|Makefile$|\.github/workflows/backend\.yml$|\.github/scripts/(go-(db-shard|coverage|complexity)|nolint-cap|play-size-cap|cockroach-only|start-(cockroach|postgres))\.sh$|\.github/actions/test-database/|\.github/(nolint|play-size)-cap$)'
 
   proto:
     name: proto (lint, breaking, generate)
@@ -242,6 +244,14 @@ jobs:
         # number is an edit the reviewer sees.
         if: ${{ !cancelled() }}
         run: ../.github/scripts/nolint-cap.sh
+
+      - name: No more code in the play package than the committed cap
+        # The package is the backend's largest, and its size only goes down:
+        # the code lines of backend/internal/play (tests, blank lines and
+        # comments left out) may not pass the number in .github/play-size-cap.
+        # A lower count passes; pure logic moves to a subpackage when touched.
+        if: ${{ !cancelled() }}
+        run: ../.github/scripts/play-size-cap.sh
 
   # The known vulnerabilities that the Go code actually calls (Dependabot and
   # osv-scan flag every vulnerable module, called or not). It runs on the same
