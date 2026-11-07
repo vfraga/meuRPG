@@ -7,6 +7,7 @@ import {
   listWithE,
   npcSpeedFt,
   typeAndSize,
+  typeAndSizeInWords,
 } from './bestiary-format';
 import { challengeBounds } from './creature-types';
 import { ogre, summary } from './creatures-testing';
@@ -22,6 +23,25 @@ describe("the bestiary's words (MR-042)", () => {
     expect(typeAndSize(wolf).replace(/\u00a0/g, ' ')).toBe('Fera · Médio');
     expect(acAndHp(wolf).replace(/\u00a0/g, ' ')).toBe('CA 13 · PV 11');
     expect(capitalized('')).toBe('');
+  });
+
+  it('says the type and the size in words, the size agreeing with the type, and falls back to the row form', () => {
+    const say = (typePt: string, sizePt: string) => typeAndSizeInWords({ typePt, sizePt });
+    expect(say('fera', 'Médio')).toBe('fera média');
+    expect(say('monstruosidade', 'Enorme')).toBe('monstruosidade enorme');
+    expect(say('fada', 'Miúdo')).toBe('fada miúda');
+    expect(say('morto-vivo', 'Médio')).toBe('morto-vivo médio');
+    expect(say('dragão', 'Imenso')).toBe('dragão imenso');
+    expect(say('Gigante', 'Grande')).toBe('gigante grande');
+    expect(say('construto', 'Médio')).toBe('construto médio');
+    expect(say('ínfero', 'Pequeno')).toBe('ínfero pequeno');
+    expect(say('gosma', 'Grande')).toBe('gosma grande');
+    expect(say('gosma', 'Médio')).toBe('gosma média');
+    expect(say('enxame de feras miúdas', 'Médio').replace(/\u00a0/g, ' ')).toBe(
+      'Enxame de feras miúdas · Médio',
+    );
+    expect(say('coisa', 'Médio').replace(/\u00a0/g, ' ')).toBe('Coisa · Médio');
+    expect(say('fera', 'Colossal').replace(/\u00a0/g, ' ')).toBe('Fera · Colossal');
   });
 
   it("the alignment is Portuguese when the table knows it, and the book's English (marked) when not", () => {

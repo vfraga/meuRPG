@@ -74,6 +74,8 @@ import {
 } from './content-entry-model';
 import { SubclassEditor } from '../subclass-editor/subclass-editor';
 
+const NO_READ = { rows: [], sections: [], text: [] };
+
 type PageState =
   | { status: 'loading' }
   | { status: 'not-found' }
@@ -214,9 +216,10 @@ export class ContentEntry {
   /** The entry a player reads (or the master where the app has no editor yet), written by `readEntry`. */
   protected readonly read = computed(() => {
     const e = this.entry();
-    return e
-      ? readEntry(e, this.nameOf(), (key) => this.catalog()?.subclassLevelOf(key) ?? 0)
-      : null;
+    // The master's creature on a phone is read by `app-creature-read`, which writes its own text.
+    const own = this.isMaster() && this.kind() === TableContentKind.CREATURE;
+    const sub = (key: string) => this.catalog()?.subclassLevelOf(key) ?? 0;
+    return e ? (own ? NO_READ : readEntry(e, this.nameOf(), sub)) : null;
   });
   /** "A raça Corujeiro" / "O antecedente Cartógrafo": the noun of the kind with its article, so the copy agrees. */
   protected readonly nounPhrase = computed(() => nounPhraseOf(this.entry()));
@@ -346,10 +349,6 @@ export class ContentEntry {
     return ['/campaigns', this.campaignId(), 'content'];
   }
 
-  protected entryLink(e: TableEntry): string[] {
-    return ['/campaigns', this.campaignId(), 'content', 'entries', e.key];
-  }
-
   protected goBack(): void {
     void this.router.navigate(this.backLink(), { queryParams: this.backQuery() });
   }
@@ -428,7 +427,8 @@ export class ContentEntry {
     done: () => void,
   ): Promise<void> {
     const e = this.entry();
-    if (!e) {
+    // The "⋮" stays enabled (the focus stays on it), so a second tap while the first call runs is ignored here.
+    if (!e || this.archiving()) {
       return;
     }
     this.archiving.set(true);

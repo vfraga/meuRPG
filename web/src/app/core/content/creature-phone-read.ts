@@ -1,6 +1,6 @@
 import type { Creature } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { TableCreature } from '../../../gen/meurpg/rules/v1/table_content_pb';
-import { typeAndSize } from '../creatures/bestiary-format';
+import { typeAndSizeInWords } from '../creatures/bestiary-format';
 import { joinDots } from '../format/text';
 import type { EntryRead, ReadItem, ReadRow } from './content-read-parts';
 import type { Carrier } from './creature-carriers';
@@ -30,9 +30,9 @@ function shapeOf(a: {
   return `À distância${far ? `, ${far}` : ''}${a.longRangeFt > 0 ? ` e ${metersText(a.longRangeFt)}` : ''}`;
 }
 
-/** "Lobo (SRD), fera · médio": the base as the master reads it, the name alone until the stat block comes. */
+/** "Lobo (SRD), fera média": the base as the master reads it, the name alone until the stat block comes. */
 function baseValue(base: Creature | null, baseName: string): string {
-  const facts = base?.summary ? typeAndSize(base.summary).toLowerCase() : '';
+  const facts = base?.summary ? typeAndSizeInWords(base.summary) : '';
   return facts === '' ? `${baseName} (SRD)` : `${baseName} (SRD), ${facts}`;
 }
 
@@ -61,8 +61,8 @@ export function readCreatureForMaster(
 ): EntryRead {
   const draft = creatureToDraft(c);
   const preview = creaturePreview(draft, base, baseName, nameOf);
-  const numbers = preview.rows.filter((r) => ['PV', 'CA', 'Bônus no dano'].includes(r.label));
   const order = ['PV', 'CA', 'Bônus no dano'];
+  const numbers = order.flatMap((o) => preview.rows.filter((r) => r.label === o));
   const attackBonus = withOwner(draft.attackBonusFormula);
   const mods = preview.mods.map((l) => ({
     label: l.kind,
@@ -70,10 +70,11 @@ export function readCreatureForMaster(
   }));
   const rows: ReadRow[] = [
     { label: 'Base', value: baseValue(base, baseName) },
-    ...order.flatMap((o) => numbers.filter((r) => r.label === o)),
+    ...numbers,
     ...(attackBonus === '' ? [] : [{ label: 'Bônus de ataque', value: attackBonus }]),
     ...mods,
   ].map((r) => ({ label: r.label, value: short(r.value) }));
+  // `creaturePreview` lists the base's attacks first, in the stat block's order, then the table's own, in the entry's order.
   const baseAttacks = (base?.actions ?? []).filter((a) => a.hasAttack);
   const attacks: ReadItem[] = preview.actions.map((a, i) => {
     const from = i < baseAttacks.length ? baseAttacks[i] : c.attacks[i - baseAttacks.length];
@@ -87,7 +88,7 @@ export function readCreatureForMaster(
   return {
     rows,
     rowsNote:
-      mods.length > 0 ? 'Só você lê as resistências, as imunidades e as vulnerabilidades.' : '',
+      mods.length > 0 ? 'Só você muda estas linhas. Quem tem a criatura as lê na ficha dela.' : '',
     sections:
       items.length > 0 || note !== ''
         ? [{ title: '', label: 'Traços e ataques', items, note }]

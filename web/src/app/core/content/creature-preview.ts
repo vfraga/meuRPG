@@ -48,9 +48,11 @@ interface PreviewRow {
 
 export interface CreaturePreview {
   readonly name: string;
-  /** "Fera média · base Lobo". */
+  /** "Fera média · base Lobo · CA 13 · PV 11 · 12 m". */
   readonly line: string;
   readonly rows: readonly PreviewRow[];
+  /** What the line cannot say: a number that follows the owner's formula, and the fixed damage bonus. */
+  readonly notes: readonly PreviewRow[];
   /** The attacks without an owner, the base's then the table's own. */
   readonly actions: readonly PreviewAction[];
   /** "Resistências e imunidades": the table's lines and the base's, one line for each kind. */
@@ -72,6 +74,13 @@ function numberRow(
   const base = baseValue === null ? '' : String(baseValue);
   const value = numberValue(!Number.isNaN(n) && n > 0 ? String(n) : base, formula);
   return value === '' ? null : { label, value: tieNumbers(value) };
+}
+
+const DOT = /\s·\s/;
+
+/** "CA 13" for a row that may go on to say the owner's formula, and "12 m" for the speed. */
+function briefOf(r: PreviewRow): string {
+  return r.label === 'Deslocamento' ? r.value : `${r.label} ${r.value.split(DOT)[0]}`;
 }
 
 function previewRows(d: CreatureDraft, base: Creature | null, fixedBonus: number): PreviewRow[] {
@@ -141,13 +150,16 @@ export function creaturePreview(
 ): CreaturePreview {
   const typed = readWhole(d.damageBonus, true);
   const fixedBonus = Number.isNaN(typed) ? 0 : typed;
+  const rows = previewRows(d, base, fixedBonus);
   return {
     name: d.name.trim() || 'Nova criatura',
     line: present([
       base?.summary ? typeAndSize(base.summary) : '',
       baseName ? `base ${baseName}` : '',
+      ...rows.filter((r) => r.label !== 'Bônus no dano').map(briefOf),
     ]),
-    rows: previewRows(d, base, fixedBonus),
+    rows,
+    notes: rows.filter((r) => r.label === 'Bônus no dano' || DOT.test(r.value)),
     actions: [...baseActions(base, fixedBonus), ...tableActions(d, fixedBonus, nameOf)],
     mods: previewMods(d.damageMods, base, nameOf),
     traits: d.traits.map((t) => t.name.trim()).filter((n) => n !== ''),

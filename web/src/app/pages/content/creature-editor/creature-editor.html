@@ -69,7 +69,7 @@
         </p>
       </section>
 
-      <app-creature-damage-mods [mods]="d.damageMods" [damageTypes]="catalog().damageTypes" [nameOf]="nameOf" [baseText]="baseMods()" [baseName]="baseName()" [issues]="messages" [refused]="hasIssue" (modsChange)="patch({ damageMods: $event })" />
+      <app-creature-damage-mods [mods]="d.damageMods" [damageTypes]="catalog().damageTypes" [nameOf]="nameOf" [baseText]="baseMods()" [baseName]="baseName()" [issues]="messages" (modsChange)="patch({ damageMods: $event })" />
 
       <section class="mr-panel block" aria-labelledby="cr-traits-t" data-field="table_creature.traits">
         <h2 class="mr-panel__title" id="cr-traits-t">Traços</h2>
@@ -203,7 +203,7 @@
           <p class="preview__line">{{ p.line }}</p>
         }
         <dl class="preview__rows">
-          @for (r of p.rows; track r.label) {
+          @for (r of p.notes; track r.label) {
             <div class="preview__row"><dt>{{ r.label }}</dt><dd>{{ r.value }}</dd></div>
           }
         </dl>

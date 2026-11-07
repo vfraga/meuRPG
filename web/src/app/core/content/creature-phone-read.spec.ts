@@ -55,7 +55,7 @@ describe('readCreatureForMaster', () => {
     });
     const r = readCreatureForMaster(c, base, 'Zumbi', nameOf, []);
     expect(plain(r.rows)).toEqual([
-      { label: 'Base', value: 'Zumbi (SRD), morto-vivo · médio' },
+      { label: 'Base', value: 'Zumbi (SRD), morto-vivo médio' },
       { label: 'PV', value: '11 · com dono, 4 + 4 × nível' },
       { label: 'CA', value: '8 · com dono, 13 + proficiência' },
       { label: 'Bônus no dano', value: 'com dono, proficiência' },
@@ -84,7 +84,7 @@ describe('readCreatureForMaster', () => {
       { label: 'Vulnerabilidade', value: 'radiante (da mesa)' },
       { label: 'Imunidade', value: 'veneno (da base)' },
     ]);
-    expect(r.rowsNote).toContain('Só você lê');
+    expect(r.rowsNote).toBe('Só você muda estas linhas. Quem tem a criatura as lê na ficha dela.');
   });
 
   it("puts the traits and the attacks (the base's too) in one card with who brings the creature", () => {

@@ -37,33 +37,20 @@ export const MOD_KINDS: readonly { value: string; label: string; icon: string }[
   { value: 'vulnerable', label: 'Vulnerabilidade', icon: 'gpp_maybe' },
 ];
 
-export const QUALIFIERS: readonly { value: string; label: string; hint: string; short: string }[] =
-  [
-    {
-      value: '',
-      label: 'Todo dano desses tipos',
-      hint: 'Vale contra qualquer ataque ou magia',
-      short: '',
-    },
-    {
-      value: 'nonmagical',
-      label: 'Só de ataque não mágico',
-      hint: 'Arma mágica ou magia passa inteira',
-      short: 'de ataque não mágico',
-    },
-    {
-      value: 'nonmagical_unless_silvered',
-      label: 'Só de ataque não mágico nem prateado',
-      hint: 'Arma prateada ou mágica passa inteira',
-      short: 'de ataque não mágico nem prateado',
-    },
-    {
-      value: 'nonmagical_unless_adamantine',
-      label: 'Só de ataque não mágico nem adamantino',
-      hint: 'Arma adamantina ou mágica passa inteira',
-      short: 'de ataque não mágico nem adamantino',
-    },
-  ];
+export const QUALIFIERS: readonly { value: string; label: string; short: string }[] = [
+  { value: '', label: 'Todo dano desses tipos', short: '' },
+  { value: 'nonmagical', label: 'Ataque não mágico', short: 'de ataque não mágico' },
+  {
+    value: 'nonmagical_unless_silvered',
+    label: 'Ataque não mágico nem prateado',
+    short: 'de ataque não mágico nem prateado',
+  },
+  {
+    value: 'nonmagical_unless_adamantine',
+    label: 'Ataque não mágico nem adamantino',
+    short: 'de ataque não mágico nem adamantino',
+  },
+];
 
 const PHYSICAL = ['damage-type:bludgeoning', 'damage-type:piercing', 'damage-type:slashing'];
 
@@ -99,6 +86,16 @@ export function modSub(m: DamageModDraft): string {
   return (
     shortOf(m.qualifier) || (m.types.length > 1 ? 'Todo dano desses tipos' : 'Todo dano desse tipo')
   );
+}
+
+/** "Necrótico está duas vezes. Tire o repetido.": the first damage type a row holds twice, or '' when it holds none twice. */
+export function duplicateText(types: readonly string[], nameOf: NameOf): string {
+  const twice = types.find((t, i) => types.indexOf(t) !== i);
+  if (twice === undefined) {
+    return '';
+  }
+  const name = nameOf(twice);
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} está duas vezes. Tire o repetido.`;
 }
 
 /** One part of a line of the preview: "a necrótico" and where it comes from. */

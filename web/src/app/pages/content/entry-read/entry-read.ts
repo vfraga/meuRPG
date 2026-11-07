@@ -24,7 +24,7 @@ import type { EntryRead as Read } from '../../../core/content/content-read-parts
           }
         </dl>
         @if (read().rowsNote) {
-          <p class="note"><mat-icon aria-hidden="true">visibility_off</mat-icon>{{ read().rowsNote }}</p>
+          <p class="note"><mat-icon aria-hidden="true">info</mat-icon>{{ read().rowsNote }}</p>
         }
       </section>
     }

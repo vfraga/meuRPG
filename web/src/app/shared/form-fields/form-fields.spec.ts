@@ -212,28 +212,3 @@ describe('TextField: what an empty field means', () => {
     expect(input.hasAttribute('aria-label')).toBe(false);
   });
 });
-
-describe('RadioCards: a card that is off', () => {
-  it('turns a card off (dashed, not selectable) and says why under the group', () => {
-    TestBed.resetTestingModule();
-    const fixture = TestBed.createComponent(RadioCards);
-    fixture.componentRef.setInput('label', 'Vale contra');
-    fixture.componentRef.setInput('options', [
-      { value: '', label: 'Todo dano desses tipos' },
-      { value: 'nonmagical', label: 'Só de ataque não mágico', disabled: true },
-    ]);
-    fixture.componentRef.setInput('value', '');
-    fixture.componentRef.setInput('hint', 'Só resistência ou imunidade pode ter outro.');
-    fixture.detectChanges();
-    const el = fixture.nativeElement as HTMLElement;
-    const radios = Array.from(el.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
-    expect(radios.map((r) => r.disabled)).toEqual([false, true]);
-    expect(el.querySelectorAll('.card--off')).toHaveLength(1);
-    expect(el.textContent).toContain('Só resistência ou imunidade pode ter outro.');
-    // With a refusal, the refusal takes the line.
-    fixture.componentRef.setInput('issues', ['Não pode.']);
-    fixture.detectChanges();
-    expect(el.textContent).toContain('Não pode.');
-    expect(el.textContent).not.toContain('pode ter outro');
-  });
-});

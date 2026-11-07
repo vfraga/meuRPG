@@ -132,7 +132,7 @@ describe('"Como fica na mesa"', () => {
     };
     const p = creaturePreview(d, base, 'Lobo', nameOf);
     expect(p.name).toBe('Lobo do Vale');
-    expect(tight(p.line)).toBe('Fera · Médio · base Lobo');
+    expect(tight(p.line)).toBe('Fera · Médio · base Lobo · CA 13 · PV 11 · 12 m');
     expect(p.rows.map((r) => [r.label, tight(r.value)])).toEqual([
       ['CA', '13 · com dono, 13 + bônus de proficiência'],
       ['PV', '11 · com dono, 4 + 4 × nível do dono'],

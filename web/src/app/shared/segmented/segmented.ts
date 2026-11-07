@@ -28,8 +28,8 @@ let nextId = 0;
   host: { '[class.seg--track]': "appearance() === 'track'" },
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="seg" role="radiogroup" [attr.aria-label]="label()" [attr.aria-invalid]="invalid() || null" [attr.aria-describedby]="describedBy() || null">
-      @for (s of segments(); track s.value; let first = $first) {
+    <div class="seg" role="radiogroup" [attr.aria-label]="label()">
+      @for (s of segments(); track s.value) {
         <label class="seg__item" [class.seg__item--on]="s.value === value()" [class.seg__item--off]="s.disabled">
           <input
             type="radio"
@@ -38,7 +38,6 @@ let nextId = 0;
             [value]="s.value"
             [checked]="s.value === value()"
             [disabled]="s.disabled ?? false"
-            [attr.data-field]="first ? path() || null : null"
             (change)="choose.emit(s.value)"
           />
           @if (appearance() === 'buttons') {
@@ -61,11 +60,6 @@ export class Segmented<T extends string> {
   readonly value = input.required<T>();
   /** `buttons`: separate bordered segments; `track`: one compact rounded track. */
   readonly appearance = input<'buttons' | 'track'>('buttons');
-  /** The path a refusal lands on (`data-field` of the first radio); none by default. */
-  readonly path = input('');
-  /** The group is refused: `aria-invalid`, with `describedBy` the id of the note that says why. */
-  readonly invalid = input(false);
-  readonly describedBy = input('');
   readonly choose = output<T>();
   protected readonly name = `seg-${nextId++}`;
 }

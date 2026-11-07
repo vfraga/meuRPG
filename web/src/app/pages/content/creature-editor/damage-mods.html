@@ -1,51 +1,65 @@
 <section class="mr-panel block" aria-labelledby="cr-mods-t" data-field="table_creature.damage_mods">
   <h2 class="mr-panel__title" id="cr-mods-t">Resistências, imunidades e vulnerabilidades</h2>
   <p class="mr-visually-hidden" role="status" aria-live="polite">{{ status() }}</p>
-  <p class="hint">Somam-se às da base e nunca tiram nenhuma. Até {{ max }}.</p>
-  @if (baseText()) {
-    <p class="hint mods__base"><mat-icon aria-hidden="true">menu_book</mat-icon>Da base ({{ baseName() }}): {{ baseText() }}.</p>
-  }
+  <p class="hint mods__intro"><mat-icon aria-hidden="true">menu_book</mat-icon>Somam-se às da base{{ baseText() ? ' (' + baseName() + ': ' + baseText() + ')' : '' }} e nunca tiram nenhuma. Até {{ max }}.</p>
   @for (m of issues()(path); track m) {
     <p class="inline-issue" role="note"><mat-icon aria-hidden="true">warning</mat-icon>{{ m }}</p>
   }
   @if (mods().length > 0) {
+    <div class="grid head" aria-hidden="true"><span>Tipo</span><span>Tipos de dano</span><span>Vale contra</span></div>
     <ul class="rows">
       @for (m of mods(); track m.id; let i = $index) {
         @let at = rowPath(i);
-        @let on = isOpen(m.id, i);
-        <li class="row" [class.row--open]="on">
-          <div class="row__head">
-            <button type="button" class="row__toggle" [attr.aria-expanded]="on" [attr.aria-controls]="'cr-m-' + m.id" (click)="toggle(m.id)">
-              <mat-icon aria-hidden="true">{{ on ? 'expand_more' : 'chevron_right' }}</mat-icon>
-              <span class="row__text">
-                @if (on) {
-                  <span class="row__name">{{ i + 1 }} · {{ kindLabel(m) }}</span>
-                } @else {
-                  <span class="row__name">{{ title(m) }}</span>
-                  <span class="row__sub">{{ sub(m) }}</span>
+        @let kind = kindOption(m);
+        @let qual = qualifierOption(m);
+        @let off = qualifierOff(m);
+        <li class="grid mod">
+          <div class="cell">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" [class.invalid]="invalid(at + '.kind')">
+              <mat-select [aria-label]="'Tipo da linha ' + (i + 1)" [attr.data-field]="at + '.kind'" [aria-describedby]="describedBy(m.id, 'kn', at + '.kind')" [value]="m.kind" (selectionChange)="setKind(m, $event.value)">
+                <mat-select-trigger><span class="opt"><mat-icon aria-hidden="true">{{ kind.icon }}</mat-icon>{{ kind.label }}</span></mat-select-trigger>
+                @for (k of kindOptions(m); track k.value) {
+                  <mat-option [value]="k.value"><span class="opt"><mat-icon aria-hidden="true">{{ k.icon }}</mat-icon>{{ k.label }}</span></mat-option>
                 }
-              </span>
-            </button>
-            <button type="button" class="row__more" [attr.aria-label]="'Mais ações da linha ' + (i + 1)" [matMenuTriggerFor]="modMenu">
-              <mat-icon aria-hidden="true">more_vert</mat-icon>
-            </button>
-            <mat-menu #modMenu="matMenu" xPosition="before">
-              <button mat-menu-item type="button" (click)="remove(m.id)"><mat-icon aria-hidden="true">delete</mat-icon>Remover linha</button>
-            </mat-menu>
+              </mat-select>
+            </mat-form-field>
+            <app-field-note [id]="'cr-kn-' + m.id" [issues]="issues()(at + '.kind')" />
           </div>
-          @if (on) {
-            <div class="row__body" [id]="'cr-m-' + m.id">
-              <div class="kind">
-                <app-segmented [label]="'Tipo da linha ' + (i + 1)" [segments]="kinds" [value]="m.kind" [path]="at + '.kind'" [invalid]="issues()(at + '.kind').length > 0" [describedBy]="'cr-kn-' + m.id" (choose)="setKind(m, $event)" />
-                <app-field-note [id]="'cr-kn-' + m.id" [issues]="issues()(at + '.kind')" />
-              </div>
-              <app-pick-list label="Tipos de dano" addLabel="Adicionar tipo de dano" [options]="damageTypes()" [values]="m.types" [path]="at + '.damage_types'" [issues]="issues()(at + '.damage_types')" (added)="addType(m, $event)" (removedAt)="removeTypeAt(m, $event)" />
-              <app-radio-cards label="Vale contra" [options]="cards(m)" [value]="m.qualifier" [path]="at + '.qualifier'" [issues]="issues()(at + '.qualifier')" [hint]="why(m)" (valueChange)="setQualifier(m, $event)" />
-            </div>
-          }
+          <div class="cell">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" [class.invalid]="invalid(at + '.damage_types')">
+              <mat-select multiple placeholder="Escolha os tipos" [aria-label]="'Tipos de dano da linha ' + (i + 1)" [attr.data-field]="at + '.damage_types'" [aria-describedby]="describedBy(m.id, 'tn', at + '.damage_types')" [value]="m.types" (selectionChange)="setTypes(m, $event.value)">
+                <mat-select-trigger>{{ typesText(m) }}</mat-select-trigger>
+                @for (o of typeOptions(m); track o.value) {
+                  <mat-option [value]="o.value">{{ o.label }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+            <app-field-note [id]="'cr-tn-' + m.id" [issues]="typeIssues(m, at)" />
+          </div>
+          <div class="cell">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" [class.invalid]="invalid(at + '.qualifier')" [class.off]="off">
+              <mat-select [aria-label]="'Vale contra da linha ' + (i + 1)" [attr.data-field]="at + '.qualifier'" [aria-describedby]="off ? 'cr-mods-info' : describedBy(m.id, 'qn', at + '.qualifier')" [disabled]="off" [value]="m.qualifier" (selectionChange)="setQualifier(m, $event.value)">
+                <mat-select-trigger>{{ qual.label }}</mat-select-trigger>
+                @for (q of qualifierOptions(m); track q.value) {
+                  <mat-option [value]="q.value" [disabled]="q.disabled">{{ q.label }}</mat-option>
+                }
+              </mat-select>
+              @if (off) {
+                <mat-icon matSuffix aria-hidden="true">block</mat-icon>
+              }
+            </mat-form-field>
+            <app-field-note [id]="'cr-qn-' + m.id" [issues]="issues()(at + '.qualifier')" />
+          </div>
+          <button type="button" class="mod__more" [attr.aria-label]="'Mais ações da linha ' + (i + 1)" [matMenuTriggerFor]="modMenu">
+            <mat-icon aria-hidden="true">more_vert</mat-icon>
+          </button>
+          <mat-menu #modMenu="matMenu" xPosition="before">
+            <button mat-menu-item type="button" (click)="remove(m.id)"><mat-icon aria-hidden="true">delete</mat-icon>Remover linha</button>
+          </mat-menu>
         </li>
       }
     </ul>
+    <p class="hint mods__info" id="cr-mods-info"><mat-icon aria-hidden="true">info</mat-icon>Passa inteiro: mágica sempre; prateada contra "nem prateado"; adamantina contra "nem adamantino". Outro "Vale contra" só para resistência ou imunidade a concussão, perfurante e cortante.</p>
   } @else {
     <p class="hint">Nenhuma linha da mesa ainda.</p>
   }

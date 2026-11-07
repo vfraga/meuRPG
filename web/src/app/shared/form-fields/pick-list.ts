@@ -16,11 +16,11 @@ let nextId = 0;
   selector: 'app-pick-list',
   imports: [FieldNote, MatFormFieldModule, MatInputModule, MatIconModule],
   template: `
-    <div class="pick" role="group" [attr.aria-label]="label()" [attr.data-field]="path() || null" [attr.aria-invalid]="issues().length > 0 || null" [attr.aria-describedby]="issues().length > 0 ? noteId : null">
-      @for (key of values(); track $index; let i = $index) {
+    <div class="pick" role="group" [attr.aria-label]="label()" [attr.data-field]="path() || null">
+      @for (key of values(); track key) {
         <span class="chip">
           {{ nameOf(key) }}
-          <button type="button" class="chip__x" [attr.aria-label]="'Tirar ' + nameOf(key)" [disabled]="disabled()" (click)="removed.emit(key); removedAt.emit(i)">
+          <button type="button" class="chip__x" [attr.aria-label]="'Tirar ' + nameOf(key)" [disabled]="disabled()" (click)="removed.emit(key)">
             <mat-icon aria-hidden="true">close</mat-icon>
           </button>
         </span>
@@ -115,8 +115,6 @@ export class PickList {
   readonly disabled = input(false);
   readonly added = output<string>();
   readonly removed = output<string>();
-  /** The same removal by place, for a list that may hold a key twice (it takes one off, not both). */
-  readonly removedAt = output<number>();
 
   protected readonly noteId = `fn-p${nextId++}`;
   protected readonly available = computed(() =>

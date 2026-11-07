@@ -1,6 +1,9 @@
 /** What the server's reason at a field of a table creature says in Portuguese (#578): the paths and reasons of
  * backend/internal/rules/overlay_creature.go and overlay_creature_formula.go. A formula that does not compile (`bad_formula`) is
  * worded for every field alike by `violationText`, and a name's `bad_name` is worded here, for the trait's and the attack's alike. */
+/** The refusal of a damage type a row holds twice; the row names the type itself (`duplicateText`). */
+export const DUPLICATE_TYPE_TEXT = 'Há um tipo de dano repetido nesta linha. Tire o repetido.';
+
 export const CREATURE_FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: string }[] = [
   {
     shape: /^table_creature\.base_key$/,
@@ -79,7 +82,7 @@ export const CREATURE_FIELD_TEXTS: readonly { shape: RegExp; reason?: string; te
   },
   {
     shape: /^table_creature\.damage_mods\[\]\.damage_types\[\]$/,
-    text: 'Há um tipo de dano repetido nesta linha. Tire o repetido.',
+    text: DUPLICATE_TYPE_TEXT,
   },
   {
     shape: /^table_creature\.damage_mods\[\]\.qualifier$/,

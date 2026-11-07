@@ -133,7 +133,7 @@ describe('ContentEntry', () => {
   const text = (el: Element) => (el.textContent ?? '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ');
   /** Opens the "⋮" menu of a phone and picks one of its items. */
   async function fromMenu(fixture: ComponentFixture<unknown>, el: HTMLElement, item: string) {
-    el.querySelector<HTMLButtonElement>('button[aria-label="Mais ações"]')!.click();
+    el.querySelector<HTMLButtonElement>('button[aria-label^="Mais ações"]')!.click();
     await settle(fixture, 4);
     Array.from(document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button'))
       .find((b) => text(b).includes(item))!
@@ -278,7 +278,7 @@ describe('ContentEntry', () => {
     expect(el.querySelector('app-class-editor')).toBeNull();
     expect(classDefaultsCall).not.toHaveBeenCalled();
     expect(text(el)).toContain('Testes de resistência');
-    expect(el.querySelector('button[aria-label="Mais ações"]')).not.toBeNull();
+    expect(el.querySelector('button[aria-label^="Mais ações"]')).not.toBeNull();
   });
 
   it('says when the defaults of the class table did not come, with "Tentar de novo"', async () => {
@@ -404,8 +404,22 @@ describe('ContentEntry', () => {
     const phone = await setup(Role.MASTER, wolf.key, [wolf], { phone: true });
     expect(phone.el.querySelector('app-creature-editor')).toBeNull();
     expect(phone.el.querySelector('app-creature-read')).not.toBeNull();
-    expect(text(phone.el)).toContain('Lobo (SRD), fera · médio');
+    expect(text(phone.el)).toContain('Lobo (SRD), fera média');
     expect(text(phone.el)).toContain('PV40');
+  });
+
+  it("gives a player the generic read of a creature, never the master's phone read", async () => {
+    const wolf = entry(TableContentKind.CREATURE, 'Lobo do Vale', {
+      body: {
+        case: 'tableCreature',
+        value: create(TableCreatureSchema, { baseKey: 'monster:wolf', hitPoints: 40 }),
+      },
+    });
+    const { el } = await setup(Role.PLAYER, wolf.key, [wolf]);
+    expect(el.querySelector('app-creature-read')).toBeNull();
+    expect(el.querySelector('app-entry-read')).not.toBeNull();
+    expect(text(el)).toContain('Pontos de vida');
+    expect(el.querySelector('button[aria-label^="Mais ações"]')).toBeNull();
   });
 
   it('reads the creature on a phone as the board says: tag, notice, rows, the traits and attacks, who brings it', async () => {

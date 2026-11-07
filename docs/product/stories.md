@@ -749,7 +749,7 @@ The data rules, limits and the server side are in [Table content: rules](../arch
   The master makes and edits table creatures in the web app, in the creature editor of "Conteúdo da mesa" on a laptop; a content pack carries them too.
 - **Given** I edit a table creature in the creature editor, **when** I add a line of resistance, immunity or vulnerability with its damage types and a "Vale contra", **then** it adds to the base's lists and never takes one away.
   There are up to 12 lines.
-  "Vale contra" is off for a vulnerability and for a damage type that is not bludgeoning, piercing or slashing, with the reason under it.
+  "Vale contra" is off for a vulnerability and for a damage type that is not bludgeoning, piercing or slashing, and the line under the rows says why.
   Whoever holds the creature reads the lines on its sheet; only I edit them.
 - **Given** I save a creature with a base the SRD does not have, hit points outside 1 to 9,999, armor class outside 1 to 40, a damage bonus outside -10 to 30, or more than 10 traits, **then** the server refuses each at its field, and a trait named like one of the base's traits or actions, or "Magic Weapons", "Spellcasting" or "Innate Spellcasting", is refused.
 - **Given** a creature with no formula already given to a character, **when** I edit the entry's hit points and armor class, **then** the creature keeps the hit points it was given **and** its armor class and its attacks follow the entry.

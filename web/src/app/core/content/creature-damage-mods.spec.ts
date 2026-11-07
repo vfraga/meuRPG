@@ -3,6 +3,7 @@ import { create } from '@bufbuild/protobuf';
 import { CreatureSchema } from '../../../gen/meurpg/rules/v1/rules_pb';
 import {
   baseModsText,
+  duplicateText,
   emptyDamageMod,
   listWords,
   modSub,
@@ -61,6 +62,13 @@ describe('the resistance rows of a table creature (#585)', () => {
     );
     expect(modSub(row('vulnerable', ['damage-type:radiant']))).toBe('Todo dano desse tipo');
     expect(modTitle(row('immune', []), nameOf)).toBe('Imunidade');
+  });
+
+  it('names the damage type a row holds twice', () => {
+    expect(duplicateText(['damage-type:necrotic', 'damage-type:necrotic'], nameOf)).toBe(
+      'Necrótico está duas vezes. Tire o repetido.',
+    );
+    expect(duplicateText(['damage-type:fire', 'damage-type:necrotic'], nameOf)).toBe('');
   });
 
   it('joins words with commas and an "e"', () => {

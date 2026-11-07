@@ -2,8 +2,57 @@
   gap: var(--mr-space-3);
 }
 
-.mods__base {
+.mods__intro,
+.mods__info {
   display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  margin: 0;
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+}
+
+// The kind, the damage types, "Vale contra" and the menu: the head and every row share the columns.
+.grid {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr) minmax(0, 1fr) 44px;
+  gap: 0 var(--mr-space-3);
+  align-items: start;
+}
+
+.head {
+  padding-bottom: var(--mr-space-1);
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+  color: var(--mr-ink-muted);
+}
+
+.rows {
+  gap: 0;
+}
+
+.mod {
+  padding: 6px 0;
+  border-top: 1px solid var(--mr-line);
+}
+
+.cell {
+  min-width: 0;
+
+  mat-form-field {
+    width: 100%;
+    --mat-form-field-container-height: 44px;
+    --mat-form-field-container-vertical-padding: 10px;
+  }
+}
+
+.opt {
+  display: inline-flex;
   align-items: center;
   gap: var(--mr-space-2);
 
@@ -12,6 +61,50 @@
     width: 18px;
     height: 18px;
     font-size: var(--mr-font-18);
+  }
+}
+
+.invalid {
+  --mat-form-field-outlined-outline-color: var(--mr-danger-ink);
+  --mat-form-field-outlined-hover-outline-color: var(--mr-danger-ink);
+  --mat-form-field-outlined-focus-outline-color: var(--mr-danger-ink);
+}
+
+// "Vale contra" cannot apply: dashed, with the block icon where the arrow was.
+.off {
+  color: var(--mr-ink-muted);
+
+  ::ng-deep .mdc-notched-outline > * {
+    border-style: dashed;
+  }
+
+  ::ng-deep .mat-mdc-select-arrow-wrapper {
+    display: none;
+  }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+}
+
+.mod__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mr-radius-sm);
+  background: none;
+  color: var(--mr-ink-muted);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-focus);
+    outline-offset: 2px;
   }
 }
 
