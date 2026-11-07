@@ -130,6 +130,8 @@ type zoneDef struct {
 	// silences says the creatures inside the zone are deafened and immune to thunder damage, and that no spell with a
 	// verbal component is cast from inside it (Silence).
 	silences bool
+	// call is the key of the master's call the spell leaves to the table (a line on the master's zone card).
+	call string
 }
 
 // The sizes the spells give their areas, in feet.
@@ -162,15 +164,15 @@ const (
 
 var zoneDefs = map[string]zoneDef{
 	"spell:fog-cloud": {
-		kind: zoneOpen, shape: grid.ShapeSphere, sizeFt: fogCloudFt, growsFt: fogCloudFt, level: 1, corners: true, sight: sightCloud,
+		kind: zoneOpen, shape: grid.ShapeSphere, sizeFt: fogCloudFt, growsFt: fogCloudFt, level: 1, corners: true, sight: sightCloud, call: "master_wind",
 		placement: playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
 	},
 	"spell:darkness": {
-		kind: zoneOpen, shape: grid.ShapeSphere, sizeFt: darknessFt, corners: true, sight: sightDark,
+		kind: zoneOpen, shape: grid.ShapeSphere, sizeFt: darknessFt, corners: true, sight: sightDark, call: "master_light",
 		placement: playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
 	},
 	"spell:stinking-cloud": {
-		kind: zoneRetch, onStart: true, shape: grid.ShapeSphere, sizeFt: stinkingCloudFt, save: "con", corners: true, sight: sightCloud,
+		kind: zoneRetch, onStart: true, shape: grid.ShapeSphere, sizeFt: stinkingCloudFt, save: "con", corners: true, sight: sightCloud, call: "master_breath",
 		placement: playv1.AreaPlacement_AREA_PLACEMENT_POINT, movement: playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_FIXED,
 	},
 	"spell:spike-growth": {
@@ -300,8 +302,9 @@ func withZoneSize(sp link.Spell, slotLevel int) link.Spell {
 	return sp
 }
 
-// notes are the keys of what else the zone does, for the screens.
-func (d zoneDef) notes() []string {
+// notes are the keys of what else the zone does, for the screens. The master's calls are the master's alone: the caster's
+// player gets the other notes and no call.
+func (d zoneDef) notes(master bool) []string {
 	var out []string
 	if d.slows {
 		out = append(out, "speed_halved")
@@ -311,6 +314,9 @@ func (d zoneDef) notes() []string {
 	}
 	if d.kind == zoneRestrain {
 		out = append(out, "restrains")
+	}
+	if d.call != "" && master {
+		out = append(out, d.call)
 	}
 	return out
 }

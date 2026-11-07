@@ -57,7 +57,8 @@ func (s *Service) GetTurnOptions(
 	if err != nil {
 		return nil, err
 	}
-	opts, code, err := s.workOutOptions(ctx, m, d, v, who)
+	reads := s.turnReadsOf(m.CampaignID, who)
+	opts, code, err := s.workOutOptions(ctx, m, d, v, who, reads)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func (s *Service) GetTurnOptions(
 	if err := s.listPendingDamage(ctx, m, res, d, v, who); err != nil {
 		return nil, err
 	}
-	if res.ManeuverDice, err = s.listManeuverDice(ctx, m.CampaignID, who); err != nil {
+	if res.ManeuverDice, err = s.listManeuverDice(ctx, who, reads); err != nil {
 		return nil, err
 	}
 	res.ContestAttackOptions, res.ContestState, err = s.contestOptionsFor(ctx, m, d, v, who, opts, code)
@@ -141,16 +142,16 @@ func (s *Service) locateTurnOptions(ctx context.Context, m authz.Membership, cal
 
 // workOutOptions works out the options of the combatant, and disables them all with the reason it cannot
 // act. It answers the reason too, which the contests read.
-func (s *Service) workOutOptions(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, who playdb.Combatant) (*rulesv1.TurnOptions, rulesv1.DisabledReasonCode, error) {
+func (s *Service) workOutOptions(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, who playdb.Combatant, reads *turnReads) (*rulesv1.TurnOptions, rulesv1.DisabledReasonCode, error) {
 	none := rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_UNSPECIFIED
 	opts, err := s.optionsOf(ctx, nil, m.CampaignID, who)
 	if err != nil {
 		return nil, none, s.dbError(ctx, "work out the turn options", err)
 	}
-	if err := s.attachMetamagic(ctx, nil, m.CampaignID, who, opts); err != nil {
+	if err := s.attachMetamagic(ctx, reads, who, opts); err != nil {
 		return nil, none, s.dbError(ctx, "work out the Metamagic", err)
 	}
-	if err := s.attachTableOptions(ctx, m.CampaignID, who, opts); err != nil {
+	if err := s.attachTableOptions(ctx, reads, who, opts); err != nil {
 		return nil, none, s.dbError(ctx, "work out the table's cast options", err)
 	}
 	code, err := s.gate(ctx, nil, m.CampaignID, d.enc, who)
@@ -250,11 +251,11 @@ func (s *Service) listPendingDamage(ctx context.Context, m authz.Membership, res
 // listManeuverDice lists the weapon-attack table dice of a player's character (the ones RollAttack takes as
 // maneuver_key), each with the uses left of its resource pool; a die with none left stays listed. Nothing for
 // an NPC.
-func (s *Service) listManeuverDice(ctx context.Context, campaignID string, who playdb.Combatant) ([]*playv1.ManeuverDieOption, error) {
+func (s *Service) listManeuverDice(ctx context.Context, who playdb.Combatant, reads *turnReads) ([]*playv1.ManeuverDieOption, error) {
 	if who.Kind != kindPlayer || !backedByCharacter(who) {
 		return nil, nil
 	}
-	sheet, err := s.roster.CombatSheet(ctx, nil, campaignID, who.CharacterID)
+	sheet, err := reads.sheetOf(ctx)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the character's maneuver dice", err)
 	}
@@ -264,7 +265,7 @@ func (s *Service) listManeuverDice(ctx context.Context, campaignID string, who p
 	if len(dice) == 0 {
 		return nil, nil
 	}
-	vit, err := s.vitals.GetVitals(ctx, campaignID, who.CharacterID)
+	vit, err := reads.vitalsOf(ctx)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the character's resources", err)
 	}

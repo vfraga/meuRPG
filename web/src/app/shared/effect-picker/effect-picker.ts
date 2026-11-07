@@ -394,20 +394,22 @@ export class EffectPicker {
 
   /** Writes a choice into a formula where the cursor is, and puts the cursor after it. */
   protected insert(f: EffectMenuField, text: string): void {
-    const input = this.host.nativeElement.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-      `[data-field="${this.path(f.name)}"]`,
-    );
+    // Looked up when used: a field drawn again leaves a node found earlier detached.
+    const input = () =>
+      this.host.nativeElement.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[data-field="${this.path(f.name)}"]`,
+      );
     const { next, caret } = insertAt(
       this.read(f.name),
       text,
-      input?.selectionStart,
-      input?.selectionEnd,
+      input()?.selectionStart,
+      input()?.selectionEnd,
     );
     this.setText(f.name, next);
     afterNextRender(
       () => {
-        input?.focus();
-        input?.setSelectionRange(caret, caret);
+        input()?.focus();
+        input()?.setSelectionRange(caret, caret);
       },
       { injector: this.injector },
     );

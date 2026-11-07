@@ -19,6 +19,7 @@ const sword: GearVm = {
   equipped: true,
   twoHanded: false,
   armorClassIfToggled: 0,
+  count: 1,
 };
 const shield: GearVm = { ...sword, key: 'equipment:shield', namePt: 'Escudo', kind: 'shield' };
 const bow: GearVm = {
@@ -28,6 +29,7 @@ const bow: GearVm = {
   equipped: false,
   twoHanded: true,
   armorClassIfToggled: 16,
+  count: 1,
 };
 
 const read = (over: Partial<GearRead> = {}): GearRead => ({
@@ -57,7 +59,7 @@ function flow(readFn: () => Promise<GearRead>, set = () => Promise.resolve()) {
         },
         campaignId: () => 'c1',
         characterId,
-        revision,
+        signature: () => String(revision()),
       }),
   );
   const settle = async () => {
@@ -78,7 +80,7 @@ describe('GearFlow', () => {
     expect(f.shieldIdle()).toBe(true);
   });
 
-  it('reads again when the encounter’s revision moves, so a change from elsewhere does not linger', async () => {
+  it('reads again when the own turn changes, so a change from elsewhere does not linger', async () => {
     let gear = [sword];
     const { f, calls, revision, settle } = flow(() => Promise.resolve(read({ gear })));
     await settle();
@@ -87,6 +89,20 @@ describe('GearFlow', () => {
     await settle();
     expect(calls.read).toBe(2);
     expect(f.gear()[0].equipped).toBe(false);
+  });
+
+  it('does not read while the fold is closed, and reads what moved when it opens', async () => {
+    const { f, calls, revision, settle } = flow(() => Promise.resolve(read()));
+    await settle();
+    f.setOpen(false);
+    revision.set(2);
+    revision.set(3);
+    await settle();
+    expect(calls.read).toBe(1);
+    f.setOpen(true);
+    revision.set(4);
+    await settle();
+    expect(calls.read).toBe(2);
   });
 
   it('asks the server, reads again and says the change with the server armor class', async () => {
@@ -182,14 +198,17 @@ describe('the cost of a change', () => {
 describe('the two-handed consequence', () => {
   it('warns before drawing a two-handed weapon with the shield in hand, with the server’s numbers', () => {
     expect(twoHandedWarnings([shield, bow], 18)).toEqual([
-      'Sacar Arco longo (duas mãos) deixa o escudo de lado: CA 18 → 16.',
+      {
+        key: bow.key,
+        text: 'Sacar Arco longo (duas mãos) deixa o escudo de lado: CA 18 → 16.',
+      },
     ]);
     expect(twoHandedWarnings([sword, bow], 18)).toEqual([]); // no shield in hand: nothing is lost
     expect(twoHandedWarnings([shield, bow], null)).toEqual([]);
   });
 
   it('gives the armor class the shield would give back while it waits behind a two-handed weapon', () => {
-    const drawn = { ...bow, equipped: true, armorClassIfToggled: 18 };
+    const drawn = { ...bow, equipped: true, armorClassIfToggled: 18, count: 1 };
     expect(shieldBackAc([shield, drawn], true)).toBe(18);
     expect(shieldBackAc([shield, drawn], false)).toBeNull();
   });

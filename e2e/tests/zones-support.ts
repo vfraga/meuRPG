@@ -47,28 +47,29 @@ const druid = (name: string): CharacterBuild => ({
 });
 
 /** An NPC druid with Raio Lunar prepared, and its id. */
-async function createDruidRPC(master: Page, campaignId: string, name: string): Promise<string> {
+async function createDruidRPC(master: Page, campaignId: string, name: string, spells: string[] = ['spell:moonbeam']): Promise<string> {
   const body = characterRpcBody('BOSS', druid(name)) as { sheet: { full: object } };
-  body.sheet.full = { ...body.sheet.full, preparedSpellKeys: ['spell:moonbeam'] };
+  body.sheet.full = { ...body.sheet.full, preparedSpellKeys: spells };
   const res = await createCharacterRPC(master, campaignId, body);
   expect(res.ok(), await res.text()).toBeTruthy();
   return (await res.json()).character.id as string;
 }
 
 /** `CastSpell` of a zone spell at the square `origin` from `page`, whoever the page is: the master for an NPC, the player for his own. */
-async function castZoneRPC(
+export async function castZoneRPC(
   page: Page,
   t: { campaignId: string; encounterId: string },
   casterId: string,
   spellKey: string,
   origin: { col: number; row: number },
+  slotLevel = 2,
 ): Promise<void> {
   const res = await callRPC(page, 'meurpg.play.v1.CombatService/CastSpell', {
     campaignId: t.campaignId,
     encounterId: t.encounterId,
     casterId,
     spellKey,
-    slot: { level: 2 },
+    slot: { level: slotLevel },
     targets: [],
     origin,
     idempotencyKey: crypto.randomUUID(),
@@ -179,4 +180,70 @@ export async function enterZoneRPC(t: ZoneTable, zone: ZoneJson): Promise<void> 
     row: zone.origin?.row ?? 0,
     forced: true,
   });
+}
+
+/** The spells the eight more zone specs cast (RN-37), by the level of the slot each takes. */
+export const MORE_ZONE_SPELLS = ['spell:fog-cloud', 'spell:darkness', 'spell:stinking-cloud', 'spell:grease', 'spell:entangle', 'spell:spike-growth', 'spell:silence'];
+
+/** A caster of the table of the eight zone spells: its label, the square it stands on and its initiative. */
+export interface MoreCaster {
+  label: string;
+  at: [number, number];
+  face: number;
+  hidden?: boolean;
+}
+
+/**
+ * The table of the specs of the eight spells: Pensantus (the player's, standing where the table puts him) and one NPC druid
+ * for each of `casters`, all with the eight spells prepared (a table's NPC may carry any prepared list), begun with the
+ * casters first. Nobody has cast yet: the spec casts with `cast` on the caster's turn (`passTurnsTo` moves the combat).
+ * `fog` turns the fog of the map on with a bright base light, so Darkness is what hides a square.
+ */
+export async function moreZonesTable(browser: Browser, name: string, casters: MoreCaster[], options: { width?: number; colorScheme?: 'light' | 'dark'; fog?: boolean } = {}): Promise<ZoneTable> {
+  const width = options.width ?? 1280;
+  const viewport = { width, height: width >= 768 ? 900 : 844 };
+  const master: BrowserContext = await newSignedInContext(browser, 'Mestre Teste', { viewport, colorScheme: options.colorScheme ?? 'light' });
+  const player: BrowserContext = await newSignedInContext(browser, 'Jogador Teste', { viewport, colorScheme: options.colorScheme ?? 'light' });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  await m.goto('/');
+  await p.goto('/');
+  const table = await tableForCombat(m, p, `${name} ${Date.now()}`, true, true, { sheet: pensantusCasting });
+  const campaignId = table.campaignId;
+  if (options.fog) {
+    const fog = await callRPC(m, 'meurpg.maps.v1.MapService/SetMapFog', { campaignId, mapId: table.mapId, fogEnabled: true, baseLight: 'LIGHT_LEVEL_BRIGHT' });
+    expect(fog.ok(), await fog.text()).toBeTruthy();
+  }
+  const ids = new Map<string, string>();
+  for (const c of casters) {
+    ids.set(c.label, await createDruidRPC(m, campaignId, c.label, MORE_ZONE_SPELLS));
+  }
+  let enc = await startEncounterRPC(
+    m,
+    table,
+    casters.map((c) => ({ characterId: ids.get(c.label)!, count: 1, hidden: c.hidden ?? false })),
+  );
+  const faces: Record<string, number> = { Pensantus: 1, ...Object.fromEntries(casters.map((c) => [c.label, c.face])) };
+  for (const c of enc.combatants) {
+    enc = await combatRPC(m, 'SubmitInitiative', { campaignId, encounterId: enc.id, combatantId: c.id, d20Face: faces[c.label] ?? 1 });
+  }
+  for (const c of casters) {
+    const combatantId = enc.combatants.find((x) => x.label === c.label)!.id;
+    enc = await combatRPC(m, 'MoveCombatant', { campaignId, encounterId: enc.id, combatantId, col: c.at[0], row: c.at[1] });
+  }
+  enc = await combatRPC(m, 'BeginCombat', { campaignId, encounterId: enc.id });
+  const combatants = new Map(enc.combatants.map((c) => [c.label, c.id]));
+  return {
+    m,
+    p,
+    table,
+    campaignId,
+    encounterId: enc.id,
+    id: (label: string) => combatants.get(label)!,
+    done: async () => {
+      await endOpenSessionRPC(m, campaignId);
+      await master.close();
+      await player.close();
+    },
+  };
 }

@@ -144,7 +144,8 @@ export class GearList {
       this.warns(g) && ac !== null
         ? `. A classe de armadura vai de ${ac} para ${g.armorClassIfToggled}`
         : '';
-    return `${shown} ${g.namePt}${change}`;
+    const many = g.count > 1 ? ` (${g.count} iguais, a troca vale para todas)` : '';
+    return `${shown} ${g.namePt}${many}${change}`;
   }
 
   protected ask(g: GearVm): void {

@@ -581,6 +581,21 @@ describe('EffectPicker: the named choices of a feat', () => {
       expect(emitted.at(-1)?.value).toBe('8 + score("@habilidade_2")');
     });
 
+    it('puts the cursor in the input drawn after the write, when the field was drawn again', () => {
+      setup(note('1 + '));
+      const old = field('value') as HTMLInputElement;
+      click('Modificador · Habilidade (1ª)');
+      // The field is drawn again before the render: a new native input takes the old one's place.
+      const fresh = old.cloneNode(true) as HTMLInputElement;
+      fresh.value = emitted.at(-1)?.value ?? '';
+      old.replaceWith(fresh);
+      fixture.detectChanges();
+      const caret = (emitted.at(-1)?.value ?? '').length;
+      expect(document.activeElement).toBe(fresh);
+      expect(fresh.selectionStart).toBe(caret);
+      expect(fresh.selectionEnd).toBe(caret);
+    });
+
     it('writes at the end when the field was never focused', () => {
       setup(note('1 + '));
       click('Modificador · Habilidade (1ª)');

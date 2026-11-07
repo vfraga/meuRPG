@@ -256,32 +256,7 @@
     "ArmorClass": 19,
     "ArmorClassDescription": "Cota de malha + escudo",
     "ShieldIdle": false,
-    "Gear": [
-      {
-        "Key": "equipment:chain-mail",
-        "NamePT": "Cota de malha",
-        "Kind": "armor",
-        "Equipped": true,
-        "TwoHanded": false,
-        "ArmorClassIfToggled": 14
-      },
-      {
-        "Key": "equipment:shield",
-        "NamePT": "Escudo",
-        "Kind": "shield",
-        "Equipped": true,
-        "TwoHanded": false,
-        "ArmorClassIfToggled": 17
-      },
-      {
-        "Key": "equipment:longsword",
-        "NamePT": "Espada longa",
-        "Kind": "weapon",
-        "Equipped": true,
-        "TwoHanded": false,
-        "ArmorClassIfToggled": 0
-      }
-    ],
+    "Gear": null,
     "ArmorCategory": "heavy",
     "ArmorUntrained": {
       "Armor": false,
@@ -1249,32 +1224,7 @@
     "ArmorClass": 19,
     "ArmorClassDescription": "Cota de malha + escudo",
     "ShieldIdle": false,
-    "Gear": [
-      {
-        "Key": "equipment:chain-mail",
-        "NamePT": "Cota de malha",
-        "Kind": "armor",
-        "Equipped": true,
-        "TwoHanded": false,
-        "ArmorClassIfToggled": 14
-      },
-      {
-        "Key": "equipment:shield",
-        "NamePT": "Escudo",
-        "Kind": "shield",
-        "Equipped": true,
-        "TwoHanded": false,
-        "ArmorClassIfToggled": 17
-      },
-      {
-        "Key": "equipment:longsword",
-        "NamePT": "Espada longa",
-        "Kind": "weapon",
-        "Equipped": true,
-        "TwoHanded": false,
-        "ArmorClassIfToggled": 0
-      }
-    ],
+    "Gear": null,
     "ArmorCategory": "heavy",
     "ArmorUntrained": {
       "Armor": false,

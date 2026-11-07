@@ -853,6 +853,9 @@ message GearEntry {
   // The armor class with this piece's state flipped (equipped to carried, or the other way round), when flipping it
   // changes the armor class; 0 otherwise. Spells and effects are not counted, as in `armor_class`.
   int32 armor_class_if_toggled = 6;
+  // How many of this piece the sheet lists: weapons with the same key are one row (their state is kept by key, so the
+  // copies move together). 1 for armor and the shield.
+  int32 count = 7;
 }
 
 // GearKind says which part of the gear a GearEntry is.

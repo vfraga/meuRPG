@@ -1,6 +1,6 @@
 @let f = flow();
 @if (f.gear().length || f.readFailed()) {
-  <app-fold appearance="row" [muted]="true" title="Sacar ou guardar" icon="back_hand" [level]="3" [open]="true">
+  <app-fold appearance="row" [muted]="true" title="Sacar ou guardar" icon="back_hand" [level]="3" [(open)]="opened">
     <span foldNote [attr.aria-label]="acLabel()">{{ acNote() }}</span>
     <p class="gear-fold__rule"><mat-icon aria-hidden="true">bolt</mat-icon>{{ rule }}</p>
     @for (w of warnings(); track w) {

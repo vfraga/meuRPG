@@ -44,6 +44,10 @@
     <mat-icon class="gear-row__icon" aria-hidden="true">{{ icon(g) }}</mat-icon>
     <span class="gear-row__text">
       <span class="gear-row__name">{{ g.namePt }}</span>
+      @if (g.count > 1) {
+        <span class="gear-row__count" aria-hidden="true">×{{ g.count }}</span>
+        <span class="mr-visually-hidden">, {{ g.count }} iguais</span>
+      }
       <span class="mr-visually-hidden">, {{ kindLabel(g) }}</span>
       @if (g.twoHanded && !combat()) {
         <span class="gear-row__kind mr-muted" aria-hidden="true">duas mãos</span>

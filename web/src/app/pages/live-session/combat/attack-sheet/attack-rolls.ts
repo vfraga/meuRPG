@@ -58,7 +58,14 @@ export class AttackRolls {
   readonly maneuverUses = computed(() =>
     Object.fromEntries(
       this.maneuverDice().flatMap((o) =>
-        o.die ? [[o.die.key, { left: o.usesLeft, resourceNamePt: o.resourceNamePt }]] : [],
+        o.die
+          ? [
+              [
+                o.die.key,
+                { resource: o.die.resource, left: o.usesLeft, resourceNamePt: o.resourceNamePt },
+              ],
+            ]
+          : [],
       ),
     ),
   );

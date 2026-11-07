@@ -362,7 +362,10 @@ export class CharacterSheetPage {
     const seq = ++this.sheetSeq;
     try {
       const vm = await this.source.getCharacterSheet(campaignId, this.characterId);
-      if (seq === this.sheetSeq && this.state().status === 'ready') {
+      if (seq !== this.sheetSeq) {
+        return true; // a newer read owns the screen (a stream's, a tab's): the sheet shown is at least as new
+      }
+      if (this.state().status === 'ready') {
         this.state.set({ status: 'ready', vm });
         this.refreshPendingChoices(campaignId, vm, seq);
         return true;

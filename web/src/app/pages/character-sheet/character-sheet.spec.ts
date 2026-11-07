@@ -35,9 +35,9 @@ import {
   CharacterSheetVm,
   CharacterStoryVm,
   FullSheetVm,
-  GearVm,
   ReviewVm,
 } from './character-sheet.types';
+import type { GearVm } from '../../core/characters/gear';
 import { nextTurn } from '../../../test-settle';
 
 @Injectable()
@@ -355,6 +355,7 @@ function gearPiece(overrides: Partial<GearVm> = {}): GearVm {
     equipped: true,
     twoHanded: false,
     armorClassIfToggled: 0,
+    count: 1,
     ...overrides,
   };
 }
@@ -1304,6 +1305,7 @@ describe('CharacterSheetPage', () => {
       kind: 'shield',
       equipped: false,
       armorClassIfToggled: 12,
+      count: 1,
     });
 
     function withGear(equippedSword: boolean, ac: number): CharacterSheetVm {
@@ -1342,6 +1344,75 @@ describe('CharacterSheetPage', () => {
         'Guardado: Espada longa. Classe de armadura 10.',
       );
       expect(button(el, 'Equipar Espada longa')).toBeTruthy();
+    });
+
+    it('does not say the sheet could not be read when a stream reload overtakes the change’s own reload', async () => {
+      configure();
+      openSessions.set([
+        {
+          sessionId: 's1',
+          campaignId: 'camp-1',
+          campaignName: 'Mirathel',
+          sessionNumber: 5,
+          startedAt: new Date(),
+          isMaster: false,
+        },
+      ]);
+      let reads = 0;
+      let stowed = false;
+      let late!: (v: CharacterSheetVm) => void;
+      fake.setEquippedFn = () => {
+        stowed = true;
+        return Promise.resolve();
+      };
+      fake.getCharacterSheetFn = () => {
+        reads++;
+        if (reads === 2) {
+          return new Promise((res) => (late = res)); // the change's own reload, slow
+        }
+        return Promise.resolve(withGear(!stowed, stowed ? 10 : 12));
+      };
+
+      const el = await render();
+      const onCharacter = xpWatcher.follow.mock.calls.at(-1)![6]!;
+      button(el, 'Guardar Espada longa').click();
+      await nextTurn();
+      onCharacter('char-1'); // the stream's reload starts later, ends first
+      await nextTurn();
+      late(withGear(false, 10));
+      await nextTurn();
+      await Promise.resolve();
+
+      const section = sectionTitled(el, 'Equipamento');
+      expect(section.textContent).not.toContain('não deu para ler a ficha');
+      expect(section.querySelector('[role="alert"]')).toBeNull();
+      expect(button(el, 'Equipar Espada longa')).toBeTruthy();
+      openSessions.set([]);
+    });
+
+    it('clears the previous notice when the next change starts', async () => {
+      configure();
+      let stowed = false;
+      let release!: () => void;
+      fake.setEquippedFn = () => {
+        if (stowed) {
+          return new Promise<void>((res) => (release = res));
+        }
+        stowed = true;
+        return Promise.resolve();
+      };
+      fake.getCharacterSheetFn = () => Promise.resolve(withGear(!stowed, 12));
+
+      const el = await render();
+      button(el, 'Guardar Espada longa').click();
+      await nextTurn();
+      await Promise.resolve();
+      const status = () => sectionTitled(el, 'Equipamento').querySelector('[role="status"]')!;
+      expect(status().textContent).toContain('Guardado: Espada longa');
+      button(el, 'Equipar Espada longa').click();
+      await nextTurn();
+      expect(status().textContent).not.toContain('Guardado');
+      release();
     });
 
     it('shows the server refusal and keeps the list', async () => {

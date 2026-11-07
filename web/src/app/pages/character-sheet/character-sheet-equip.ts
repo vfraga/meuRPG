@@ -59,6 +59,7 @@ export class SheetEquip {
     }
     this.busyKey.set(change.key);
     this.error.set('');
+    this.notice.set('');
     this.readFailed.set(false);
     try {
       await this.host.source.setEquipped(campaignId, characterId, change.key, change.equipped);

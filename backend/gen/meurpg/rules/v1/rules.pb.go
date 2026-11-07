@@ -4559,8 +4559,11 @@ type GearEntry struct {
 	// The armor class with this piece's state flipped (equipped to carried, or the other way round), when flipping it
 	// changes the armor class; 0 otherwise. Spells and effects are not counted, as in `armor_class`.
 	ArmorClassIfToggled int32 `protobuf:"varint,6,opt,name=armor_class_if_toggled,json=armorClassIfToggled,proto3" json:"armor_class_if_toggled,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// How many of this piece the sheet lists: weapons with the same key are one row (their state is kept by key, so the
+	// copies move together). 1 for armor and the shield.
+	Count         int32 `protobuf:"varint,7,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GearEntry) Reset() {
@@ -4631,6 +4634,13 @@ func (x *GearEntry) GetTwoHanded() bool {
 func (x *GearEntry) GetArmorClassIfToggled() int32 {
 	if x != nil {
 		return x.ArmorClassIfToggled
+	}
+	return 0
+}
+
+func (x *GearEntry) GetCount() int32 {
+	if x != nil {
+		return x.Count
 	}
 	return 0
 }
@@ -13034,7 +13044,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\fsave_ability\x18\b \x01(\x0e2\x18.meurpg.rules.v1.AbilityR\vsaveAbility\x12\x0e\n" +
 	"\x02dc\x18\t \x01(\x05R\x02dc\x12\x17\n" +
 	"\atext_pt\x18\n" +
-	" \x01(\tR\x06textPt\"\xd5\x01\n" +
+	" \x01(\tR\x06textPt\"\xeb\x01\n" +
 	"\tGearEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12-\n" +
@@ -13042,7 +13052,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\bequipped\x18\x04 \x01(\bR\bequipped\x12\x1d\n" +
 	"\n" +
 	"two_handed\x18\x05 \x01(\bR\ttwoHanded\x123\n" +
-	"\x16armor_class_if_toggled\x18\x06 \x01(\x05R\x13armorClassIfToggled\"{\n" +
+	"\x16armor_class_if_toggled\x18\x06 \x01(\x05R\x13armorClassIfToggled\x12\x14\n" +
+	"\x05count\x18\a \x01(\x05R\x05count\"{\n" +
 	"\n" +
 	"Resistance\x12\x1f\n" +
 	"\vdamage_type\x18\x01 \x01(\tR\n" +

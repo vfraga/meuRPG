@@ -154,7 +154,12 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     client: inject(GearClient),
     campaignId: () => this.campaignId(),
     characterId: () => (this.isMaster() ? '' : (this.own()?.characterId ?? '')),
-    revision: () => this.encounter()?.revision ?? 0,
+    signature: () => {
+      const o = this.own();
+      return o
+        ? `${o.objectInteractionUsed}|${o.actionUsed}|${o.bonusActionUsed}|${o.armorClassBonus}`
+        : '';
+    },
   });
 
   /** The master's questions about the rolls that wait for their roller (kept in step with the combat's, in its effects). */

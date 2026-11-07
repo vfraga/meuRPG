@@ -249,16 +249,7 @@
   "ArmorClass": 13,
   "ArmorClassDescription": "Sem armadura",
   "ShieldIdle": false,
-  "Gear": [
-    {
-      "Key": "equipment:quarterstaff",
-      "NamePT": "Bordão",
-      "Kind": "weapon",
-      "Equipped": true,
-      "TwoHanded": false,
-      "ArmorClassIfToggled": 0
-    }
-  ],
+  "Gear": null,
   "ArmorCategory": "none",
   "ArmorUntrained": {
     "Armor": false,

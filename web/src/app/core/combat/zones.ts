@@ -42,6 +42,8 @@ export interface ZoneView {
   readonly occupants: string;
   /** "Só você vê" for a zone of a hidden caster, else empty. */
   readonly masterOnly: string;
+  /** The master's call for this spell (RN-37), one line; empty for a player or a spell with none. */
+  readonly reminder: string;
   /** The map draws the outline dashed (the zone of a hidden caster). */
   readonly dashed: boolean;
   readonly detailsHidden: boolean;
@@ -50,6 +52,14 @@ export interface ZoneView {
   readonly origin: Square | null;
   readonly squares: readonly Square[];
 }
+
+/** The master's calls the spells leave to the table: one line each, for the master's card only. */
+const CALL_WORDS: Readonly<Record<string, string>> = {
+  master_light:
+    'Você decide: a luz de uma magia de nível 2 ou menor que toque a Escuridão é dissipada.',
+  master_wind: 'Você decide: um vento forte dispersa a Névoa em 1 rodada.',
+  master_breath: 'Você decide: quem não precisa respirar passa no teste sem rolar.',
+};
 
 const NOTE_WORDS: Readonly<Record<string, string>> = {
   restrains: 'contido',
@@ -132,6 +142,10 @@ export function zoneView(zone: SpellZone, viewer: ZoneViewer): ZoneView {
     concentration: zone.concentration ? `Concentração de ${zone.ownerLabel}` : '',
     occupants: occupantsText(zone, viewer),
     masterOnly: masterOnly ? 'Só você vê' : '',
+    reminder:
+      viewer.master && !zone.detailsHidden
+        ? (zone.notes.flatMap((n) => CALL_WORDS[n] ?? [])[0] ?? '')
+        : '',
     dashed: masterOnly,
     detailsHidden: zone.detailsHidden,
     // The server lets the caster's player move it too; the screen offers it to the master only (RN-37: the

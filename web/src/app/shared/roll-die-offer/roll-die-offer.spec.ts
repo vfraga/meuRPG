@@ -73,7 +73,9 @@ describe('RollDieOffer', () => {
 
   it('says the pool and the uses left on one line, under a visible legend', () => {
     const { f, el, host } = mount();
-    host.uses.set({ golpe: { left: 2, resourceNamePt: 'Reserva de Golpes' } });
+    host.uses.set({
+      golpe: { resource: 'dados_de_vigor', left: 2, resourceNamePt: 'Reserva de Golpes' },
+    });
     host.legend.set('Dados das suas características');
     f.detectChanges();
     const text = plain(el.textContent);
@@ -86,7 +88,9 @@ describe('RollDieOffer', () => {
 
   it('turns a die with no use left off, and says why under the group', () => {
     const { f, el, host, inputs } = mount();
-    host.uses.set({ golpe: { left: 0, resourceNamePt: 'Reserva de Golpes' } });
+    host.uses.set({
+      golpe: { resource: 'dados_de_vigor', left: 0, resourceNamePt: 'Reserva de Golpes' },
+    });
     f.detectChanges();
     expect(inputs()[0].disabled).toBe(true);
     expect(el.querySelector('.opt--off')).not.toBeNull();
@@ -101,13 +105,28 @@ describe('RollDieOffer', () => {
     expect(host.picked()).toBe('');
   });
 
+  it('keeps two pools of the same name apart, each with its own line and its own "why"', () => {
+    const { f, el, host, inputs } = mount();
+    const outro = die('outro', 'Ataque Outro', 6, 'dados_de_posto');
+    host.dice.set([certeiro, outro]);
+    host.uses.set({
+      golpe: { resource: 'dados_de_vigor', left: 0, resourceNamePt: 'Reserva' },
+      outro: { resource: 'dados_de_posto', left: 0, resourceNamePt: 'Reserva' },
+    });
+    f.detectChanges();
+    const lines = [...el.querySelectorAll('.offer__none')];
+    expect(lines).toHaveLength(2);
+    expect(inputs()[0].getAttribute('aria-describedby')).toContain(lines[0].id);
+    expect(inputs()[1].getAttribute('aria-describedby')).toContain(lines[1].id);
+  });
+
   it('is a radio group with "Nenhum" first and chosen when exclusive with two dice', () => {
     const { f, el, host, inputs } = mount();
     host.dice.set([certeiro, firme]);
     host.exclusive.set(true);
     host.uses.set({
-      golpe: { left: 2, resourceNamePt: 'Reserva de Golpes' },
-      firme: { left: 2, resourceNamePt: 'Reserva de Golpes' },
+      golpe: { resource: 'dados_de_vigor', left: 2, resourceNamePt: 'Reserva de Golpes' },
+      firme: { resource: 'dados_de_vigor', left: 2, resourceNamePt: 'Reserva de Golpes' },
     });
     f.detectChanges();
     expect(inputs().map((i) => i.type)).toEqual(['radio', 'radio', 'radio']);

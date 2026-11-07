@@ -4,65 +4,47 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"slices"
 	"time"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
-	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
 
 // Where a damage or a heal lands on its target, and the concentration save it owes.
 
-// afterResistance is the damage that lands on the target once its stat block's
-// resistances, vulnerabilities and immunities to the damage type are applied, after
-// the bonuses and the half of a saving throw (SRD 5.1).
-// A Silence the target stands in makes it immune to thunder.
-// Only a target that takes the damage at once and has a stat block is adjusted:
-// an NPC made from a creature and a creature. A player's character keeps its Rage and other resistances as
-// notes, for the master to apply when he sets the amount (RN-02).
+// afterResistance is the damage that lands on the target once its resistances, vulnerabilities and immunities to the
+// damage type are applied, after the bonuses and the half of a saving throw (SRD 5.1): settleDamage's amount.
 func (s *Service) afterResistance(ctx context.Context, c *combatTx, target playdb.Combatant, damageType string, amount int32) (int32, error) {
-	if !holdsHP(target) || damageType == "" || amount <= 0 {
-		return amount, nil
+	if !holdsHP(target) {
+		return amount, nil // a character's damage waits for the master: nothing here changes what lands
 	}
-	mods, err := s.roster.DamageModifiers(ctx, c.tx, c.session.CampaignID, target.CharacterID, conv.OrZero(target.MonsterKey))
-	if err != nil {
-		return 0, err
-	}
-	if damageType == silenceImmune { // the zones matter only for the damage Silence shields from
-		muted, err := mutedIn(ctx, c.q, c.enc.ID, target)
-		if err != nil {
-			return 0, err
-		}
-		if muted {
-			mods.Immune = append(slices.Clone(mods.Immune), silenceImmune)
-		}
+	_, after, err := s.settleDamage(ctx, c, target, damageType, amount)
+	return after, err
+}
+
+// settleDamage takes a damage that is no attack (a zone's, a trap's, an effect's) through the same modifiers an attack's
+// damage goes through (settleLanding: the creature's own, its lasting effects', a Silence's) and answers the steps and what
+// lands. Only a target that takes the damage at once is adjusted; for a player's character the steps are the preview the
+// master applies from, and the amount is the one given.
+func (s *Service) settleDamage(ctx context.Context, c *combatTx, target playdb.Combatant, damageType string, amount int32) (landing, int32, error) {
+	if damageType == "" || amount <= 0 {
+		return landing{}, amount, nil
 	}
 	rows, err := c.q.ListCombatantStates(ctx, c.enc.ID)
 	if err != nil {
-		return 0, fmt.Errorf("list the states: %w", err)
+		return landing{}, 0, fmt.Errorf("list the states: %w", err)
 	}
-	mods = withEffectResistances(mods, effectModsOf(statesOf(rows), target.ID), damageType)
-	return clamp32(combat.AdjustForType(int(amount), damageType, mods), 0, math.MaxInt32), nil
-}
-
-// withEffectResistances adds the resistance, immunity or vulnerability the effects' modifiers give to
-// the damage type. Nonmagical resistances do not cover this damage: it is no attack.
-func withEffectResistances(mods combat.TypeModifiers, effects []rules.EffectModifier, damageType string) combat.TypeModifiers {
-	resist, immune, vulnerable := combat.DamageKinds(effects, damageType, true)
-	if resist {
-		mods.Resistant = append(slices.Clone(mods.Resistant), damageType)
+	steps, err := s.settleLanding(ctx, c, statesOf(rows), target, map[string]int{damageType: int(amount)}, combat.Origin{})
+	if err != nil {
+		return landing{}, 0, err
 	}
-	if immune {
-		mods.Immune = append(slices.Clone(mods.Immune), damageType)
+	if holdsHP(target) && steps.changed {
+		return steps, steps.amount, nil
 	}
-	if vulnerable {
-		mods.Vulnerable = append(slices.Clone(mods.Vulnerable), damageType)
-	}
-	return mods
+	return steps, amount, nil
 }
 
 // landDamage puts a rolled damage or heal on its target, as far as the target's

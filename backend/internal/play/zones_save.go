@@ -186,12 +186,11 @@ func (s *Service) zoneResistsBack(ctx context.Context, c *combatTx, recent []pla
 func (wv *windowView) zoneSavePrompt(w playdb.ReactionWindow, reactor *playdb.Combatant, out *playv1.ReactionWindow) error {
 	t := windowTriggerOf(w)
 	p := &playv1.EffectSavePrompt{EffectId: t.Zone, ZoneId: t.Zone, ZoneReason: t.Phase, HandedToMaster: t.Handed, Skippable: wv.v.master}
-	i := slices.IndexFunc(wv.d.zones, func(z *zone) bool { return z.row.ID == t.Zone })
-	if i < 0 {
+	z := wv.zoneOfWindow(t.Zone)
+	if z == nil {
 		out.Prompt = &playv1.ReactionWindow_EffectSave{EffectSave: p}
 		return nil
 	}
-	z := wv.d.zones[i]
 	p.SourceNamePt, p.Ability, p.AbilityNamePt = wv.names(z.row.SpellKey), z.row.SaveAbility, wv.names("ability:"+z.row.SaveAbility)
 	if owner, ok := wv.byID[z.row.OwnerID]; (ok && (wv.v.master || wv.v.owns(owner))) || (reactor != nil && wv.v.saveDCFor(*reactor)) {
 		p.Dc = new(z.row.SaveDc)
@@ -208,6 +207,20 @@ func (wv *windowView) zoneSavePrompt(w playdb.ReactionWindow, reactor *playdb.Co
 	}
 	out.Prompt = &playv1.ReactionWindow_EffectSave{EffectSave: p}
 	return nil
+}
+
+// zoneOfWindow is the zone a window asks about. The view reads the zones and then the windows, each through the pool,
+// so a cast that commits between the two leaves a window whose zone the first read did not see: it is read again.
+func (wv *windowView) zoneOfWindow(id string) *zone {
+	if i := slices.IndexFunc(wv.d.zones, func(z *zone) bool { return z.row.ID == id }); i >= 0 {
+		return wv.d.zones[i]
+	}
+	row, err := wv.s.queries.GetSpellZone(wv.ctx, playdb.GetSpellZoneParams{ID: id, EncounterID: wv.d.enc.ID})
+	if err != nil {
+		return nil
+	}
+	z, _ := readZone(row)
+	return z
 }
 
 // zoneSaveText says what the save asks, without a number.

@@ -161,34 +161,16 @@ func (s *Service) GetCreature(
 	if !ok {
 		return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
 	}
-	// A table creature answers a player as an unknown creature (RN-23), unless a character of the caller
-	// holds one: it resolves for its owner's player, whatever its state.
-	if rules.IsTableKey(req.Msg.GetKey()) && !isMaster(m) {
-		holds, err := s.callerHoldsCreature(ctx, m, req.Msg.GetKey())
-		if err != nil {
-			return nil, s.dbError(ctx, "read the caller's creatures", err)
-		}
-		if !holds {
-			return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
-		}
+	if err := s.requireCreatureVisible(ctx, m, req.Msg.GetKey()); err != nil {
+		return nil, err
 	}
 	if id := req.Msg.GetCreatureId(); id != "" {
-		// A character's creature: its numbers as worked out for its owner when it arrived. Only the master and the
-		// owner's player read them (findCreature), and only for the creature's own key.
-		v, err := s.findCreature(ctx, s.queries, m, id, false)
+		resolved, err := s.creatureAsWorkedOut(ctx, m, content, id, req.Msg.GetKey())
 		if err != nil {
 			return nil, err
 		}
-		if v.MonsterKey != req.Msg.GetKey() {
-			return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
-		}
-		if len(v.StatBlock) > 0 {
-			var r rules.ResolvedCreature
-			if json.Unmarshal(v.StatBlock, &r) == nil && r.Key == v.MonsterKey {
-				if resolved, ok := content.CreatureOfResolved(r); ok {
-					c = resolved
-				}
-			}
+		if resolved != nil {
+			c = *resolved
 		}
 	}
 	res := creatureToProto(c)
@@ -199,6 +181,48 @@ func (s *Service) GetCreature(
 		}
 	}
 	return connect.NewResponse(&rulesv1.GetCreatureResponse{Creature: res}), nil
+}
+
+// requireCreatureVisible answers a player as an unknown creature for a table creature none of their characters
+// holds (RN-23); it resolves for its owner's player, whatever its state.
+func (s *Service) requireCreatureVisible(ctx context.Context, m authz.Membership, key string) error {
+	if !rules.IsTableKey(key) || isMaster(m) {
+		return nil
+	}
+	holds, err := s.callerHoldsCreature(ctx, m, key)
+	if err != nil {
+		return s.dbError(ctx, "read the caller's creatures", err)
+	}
+	if !holds {
+		return connect.NewError(connect.CodeNotFound, errUnknownCreature)
+	}
+	return nil
+}
+
+// creatureAsWorkedOut is a character's creature as worked out for its owner when it arrived (nil when none was
+// stored). Only the master and the owner's player read it (findCreature), and only for the creature's own key.
+func (s *Service) creatureAsWorkedOut(ctx context.Context, m authz.Membership, content *rules.Content, id, key string) (*rules.Creature, error) {
+	v, err := s.findCreature(ctx, s.queries, m, id, false)
+	if err != nil {
+		return nil, err
+	}
+	if v.MonsterKey != key {
+		return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
+	}
+	return resolvedCreatureOf(content, v.StatBlock, v.MonsterKey), nil
+}
+
+// resolvedCreatureOf reads the stored stat block of a character's creature; nil when there is none or it does
+// not read, so the page shows the entry as it is.
+func resolvedCreatureOf(content *rules.Content, stored []byte, key string) *rules.Creature {
+	var r rules.ResolvedCreature
+	if len(stored) == 0 || json.Unmarshal(stored, &r) != nil || r.Key != key {
+		return nil
+	}
+	if resolved, ok := content.CreatureOfResolved(r); ok {
+		return &resolved
+	}
+	return nil
 }
 
 // callerHoldsCreature says whether a character of the caller's holds a live creature of the key.

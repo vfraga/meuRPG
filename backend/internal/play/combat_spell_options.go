@@ -227,19 +227,19 @@ func (u *undoer) tableUsesBack(ctx context.Context, who playdb.Combatant, ev act
 
 // attachTableOptions lists, for each spell of the turn options, the cast options the caster's table features
 // offer at the spell's own level. Only a player's character has them.
-func (s *Service) attachTableOptions(ctx context.Context, campaignID string, who playdb.Combatant, opts *rulesv1.TurnOptions) error {
+func (s *Service) attachTableOptions(ctx context.Context, reads *turnReads, who playdb.Combatant, opts *rulesv1.TurnOptions) error {
 	if who.Kind != kindPlayer || len(opts.GetSpells()) == 0 {
 		return nil
 	}
-	sheet, err := s.sheetOf(ctx, nil, campaignID, who)
+	sheet, err := reads.sheetOf(ctx)
 	if err != nil || len(sheet.Traits.SpellModifiers) == 0 {
 		return err
 	}
-	content, err := s.roster.RulesContent(ctx, nil, campaignID)
+	content, err := s.roster.RulesContent(ctx, nil, reads.campaignID)
 	if err != nil {
 		return err
 	}
-	vitals, err := s.vitals.GetVitals(ctx, campaignID, who.CharacterID)
+	vitals, err := reads.vitalsOf(ctx)
 	if err != nil {
 		return err
 	}

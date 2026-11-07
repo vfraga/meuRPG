@@ -1762,6 +1762,7 @@
         "gear": [
           {
             "armorClassIfToggled": 13,
+            "count": 1,
             "equipped": true,
             "key": "equipment:chain-mail",
             "kind": "GEAR_KIND_ARMOR",
@@ -1769,12 +1770,14 @@
           },
           {
             "armorClassIfToggled": 16,
+            "count": 1,
             "equipped": true,
             "key": "equipment:shield",
             "kind": "GEAR_KIND_SHIELD",
             "namePt": "Escudo"
           },
           {
+            "count": 1,
             "equipped": true,
             "key": "equipment:longsword",
             "kind": "GEAR_KIND_WEAPON",

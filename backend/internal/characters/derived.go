@@ -71,7 +71,6 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 	out.Languages = mapToProto(d.Languages, func(l rules.NamedKey) string { return l.NamePT })
 	out.Proficiencies = proficienciesToProto(d.Proficiencies)
 	out.RollDice = rollDiceToProto(d.Maneuvers)
-	out.Gear = mapToProto(d.Gear, gearToProto)
 	out.Hints = mapToProto(d.Hints, func(h rules.Hint) *rulesv1.Hint { return &rulesv1.Hint{SourceKey: h.Source, Text: h.TextPT} })
 	out.Issues = mapToProto(d.Issues, func(is rules.Issue) *rulesv1.Issue {
 		return &rulesv1.Issue{Code: is.Code, Field: is.Field, Message: is.Message}

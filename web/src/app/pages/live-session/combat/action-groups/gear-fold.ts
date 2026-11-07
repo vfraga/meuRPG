@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -38,6 +38,12 @@ export class GearFold {
   readonly locked = input('');
 
   protected readonly rule = GEAR_RULE;
+  /** The fold's open state, told to the flow: a closed fold reads nothing. */
+  protected readonly opened = signal(true);
+
+  constructor() {
+    effect(() => this.flow().setOpen(this.opened()));
+  }
   private readonly turn = computed(() => {
     const extra = this.extra();
     return {
@@ -60,19 +66,11 @@ export class GearFold {
       .gear()
       .filter((g) => g.kind !== 'armor'),
   );
-  protected readonly warnings = computed(() =>
+  private readonly twoHanded = computed(() =>
     twoHandedWarnings(this.pieces(), this.flow().armorClass()),
   );
-  protected readonly warnedKeys = computed(() => {
-    const ac = this.flow().armorClass();
-    return this.pieces()
-      .filter(
-        (g) =>
-          g.twoHanded && !g.equipped && g.armorClassIfToggled > 0 && g.armorClassIfToggled !== ac,
-      )
-      .filter(() => this.warnings().length > 0)
-      .map((g) => g.key);
-  });
+  protected readonly warnings = computed(() => this.twoHanded().map((w) => w.text));
+  protected readonly warnedKeys = computed(() => this.twoHanded().map((w) => w.key));
   /** The header's armor class: "CA 18", or "CA 18 → 16" while the shield waits behind a two-handed weapon. */
   protected readonly acNote = computed(() => {
     const ac = this.flow().armorClass();

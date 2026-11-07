@@ -5,6 +5,7 @@ import {
   ReviewStatus,
 } from '../../core/characters/characters.types';
 import { DamageTypeKey, SkillProficiency } from '../../core/characters/character-labels';
+import type { GearVm } from '../../core/characters/gear';
 import type { SpellDetailsVm } from '../../shared/spell-details/spell-details.types';
 
 /**
@@ -165,9 +166,6 @@ export interface HintVm {
   readonly sourceKey: string;
   readonly text: string;
 }
-
-import type { GearVm } from '../../core/characters/gear';
-export type { GearVm };
 
 export interface EquipmentItemVm {
   readonly name: string;

@@ -820,3 +820,30 @@ func TestAHiddenCastersSpikeGrowthAndItsWalkReachNoPlayer(t *testing.T) {
 	}
 	requireHolds(t, master.name, "the master's stream", bytesOf(events[master]), []string{z.casterC}) // the stream names the combatant, not the name
 }
+
+// The master's calls ride a zone's notes (master_light, master_wind, master_breath) and belong to the master alone: the
+// caster's own player, who reads the zone's numbers, and another player get no such note in the raw body of the combat.
+func TestTheMastersCallsOfAZoneReachNoPlayer(t *testing.T) {
+	for spell, call := range map[string]string{"spell:darkness": "master_light", "spell:fog-cloud": "master_wind"} {
+		t.Run(spell, func(t *testing.T) {
+			z := newZoneTable(t, false)
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("%v", r)
+				}
+			}()
+			z.untilTurn(z.wizardC)
+			z.cast(z.ana, z.wizardC, spell, 2, foeCol+3, foeRow)
+
+			// The master reads the call (the positive control); the caster's player and the other player never do.
+			requireHolds(t, z.master.name, "the combat with the zone", z.read(z.master), []string{call})
+			for _, p := range []*person{z.ana, z.caio} {
+				body := z.read(p)
+				requireClean(t, p.name, "the combat", body, []string{"master_"})
+				if p == z.ana {
+					requireHolds(t, p.name, "the caster's own combat", body, []string{spell})
+				}
+			}
+		})
+	}
+}

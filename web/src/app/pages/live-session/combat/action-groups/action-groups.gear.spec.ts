@@ -14,6 +14,7 @@ const sword: GearVm = {
   equipped: true,
   twoHanded: false,
   armorClassIfToggled: 0,
+  count: 1,
 };
 const mace: GearVm = { ...sword, key: 'equipment:mace', namePt: 'Maça', equipped: false };
 const shield: GearVm = {
@@ -23,6 +24,7 @@ const shield: GearVm = {
   equipped: false,
   twoHanded: false,
   armorClassIfToggled: 17,
+  count: 1,
 };
 const armor: GearVm = {
   key: 'equipment:chain-mail',
@@ -31,6 +33,7 @@ const armor: GearVm = {
   equipped: true,
   twoHanded: false,
   armorClassIfToggled: 10,
+  count: 1,
 };
 
 describe('ActionGroups: "Sacar ou guardar" (#562)', () => {
@@ -66,7 +69,7 @@ describe('ActionGroups: "Sacar ou guardar" (#562)', () => {
           },
           campaignId: () => 'c1',
           characterId: () => 'ch1',
-          revision: () => 1,
+          signature: () => '',
         }),
     );
     await flow.load();
@@ -178,6 +181,7 @@ describe('ActionGroups: "Sacar ou guardar" (#562)', () => {
       equipped: false,
       twoHanded: true,
       armorClassIfToggled: 14,
+      count: 1,
     };
 
     it('warns before the drawing, marks the bow’s row and says the change in its label', async () => {
@@ -195,7 +199,7 @@ describe('ActionGroups: "Sacar ou guardar" (#562)', () => {
     });
 
     it('marks the shield "Parado" and the header "CA 18 → 16" once the bow is drawn', async () => {
-      const drawn: GearVm = { ...bow, equipped: true, armorClassIfToggled: 18 };
+      const drawn: GearVm = { ...bow, equipped: true, armorClassIfToggled: 18, count: 1 };
       const { el } = await setup({ gear: [hand, drawn], idle: true });
       const row = Array.from(el.querySelectorAll('.gear-row')).find((r) =>
         r.textContent?.includes('Escudo'),

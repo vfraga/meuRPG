@@ -74,7 +74,7 @@ import { treasureRoute } from './treasure-support';
 import { classBody, createClassRPC, createSubclassRPC, halfCasterBody, listEntries } from './classes-support';
 import { setSwitchesRPC } from './content-options-support';
 import { effectRow, effectsTable, openPanel, setExhaustionRPC } from './effects-support';
-import { enterZoneRPC, zoneCard, zoneLayer, zoneOf, zoneTable, zonesPanel } from './zones-support';
+import { castZoneRPC, enterZoneRPC, moreZonesTable, zoneCard, zoneLayer, zoneOf, zoneTable, zonesPanel } from './zones-support';
 import {
   changeGuardianSkillsRPC,
   createGuardianRPC,
@@ -9634,6 +9634,93 @@ test('as zonas de magia passam no axe e nas conferências de layout no tema clar
 test('as zonas de magia passam no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
   test.setTimeout(400_000);
   await scanZoneScreens(browser, 'dark', 390);
+});
+
+/**
+ * The eight spells that keep an area, past the three the scan above holds (RN-37): Fog Cloud, Darkness, Silence and Spike
+ * Growth on a fog map (the master's list with the call each spell leaves to the table, the player's list with none, the legend
+ * of the map), and the saving throw a player's character is asked for Grease and for Entangle. Each scan waits for the count
+ * of the list and the dialog it judges.
+ */
+async function scanMoreZoneScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `(${colorScheme}, ${width}px)`;
+  const t = await moreZonesTable(
+    browser,
+    `Acessibilidade mais zonas ${Date.now()}`,
+    [
+      { label: 'Druida', at: [3, 2], face: 20 },
+      { label: 'Mago', at: [3, 12], face: 19 },
+      { label: 'Bardo', at: [1, 6], face: 18 },
+      { label: 'Ervas', at: [8, 5], face: 17 },
+      { label: 'Graxa', at: [18, 12], face: 16 },
+      { label: 'Raiz', at: [10, 1], face: 15 },
+    ],
+    { width, colorScheme, fog: true },
+  );
+  const { m, p, campaignId } = t;
+  try {
+    const me = (await getEncounterRPC(m, campaignId)).combatants.find((c) => c.label === 'Pensantus')!;
+    const casts: [string, string, { col: number; row: number }, number][] = [
+      ['Druida', 'spell:fog-cloud', { col: 12, row: 3 }, 1],
+      ['Mago', 'spell:darkness', { col: 12, row: 10 }, 2],
+      ['Bardo', 'spell:silence', { col: 3, row: 7 }, 2],
+      ['Ervas', 'spike-growth', { col: 16, row: 7 }, 2],
+    ];
+    for (const [who, spell, origin, slot] of casts) {
+      await passTurnsTo(m, campaignId, who);
+      await castZoneRPC(m, t, t.id(who), spell.startsWith('spell:') ? spell : `spell:${spell}`, origin, slot);
+    }
+    await openSessionPage(m, campaignId);
+    await openSessionPage(p, campaignId);
+
+    await expect(zonesPanel(m).getByRole('heading', { level: 2 })).toHaveText('Zonas ativas (4)');
+    await expect(zoneCard(m, 'Escuridão · Mago')).toContainText('Você decide');
+    await expectScreenPasses(m, `Mais zonas no mapa e a lista, o mestre ${where}`);
+    await expect(zonesPanel(p).getByRole('heading', { level: 2 })).toHaveText('Zonas ativas (4)');
+    await expect(zoneLayer(p)).toContainText('Escuridão · Mago');
+    await expect(zonesPanel(p)).not.toContainText('Você decide');
+    await expectScreenPasses(p, `Mais zonas no mapa e a lista, o jogador ${where}`);
+
+    // The saving throw for what the player's character stood in at the cast: a slippery floor, then the roots.
+    for (const [who, spell, title, ability] of [
+      ['Graxa', 'spell:grease', 'Área Escorregadia de Graxa', 'Destreza'],
+      ['Raiz', 'spell:entangle', 'Constrição', 'Força'],
+    ] as const) {
+      await passTurnsToAndWait(m, campaignId, who, p);
+      await castZoneRPC(m, t, t.id(who), spell, { col: me.col ?? 0, row: me.row ?? 0 }, 1);
+      const save = p.getByRole('dialog', { name: new RegExp(`^${title}`) });
+      await expect(save).toContainText(`Teste de resistência de ${ability}.`);
+      await expectScreenPasses(p, `O teste de resistência de ${title}, o jogador ${where}`);
+      await save.getByRole('button', { name: 'Digitar o resultado' }).click();
+      await save.getByLabel(/Resultado do d20/).fill('20');
+      await save.getByRole('button', { name: 'Confirmar 20' }).click();
+      await expect(save).toContainText('Passou');
+      await save.getByRole('button', { name: 'Fechar', exact: true }).last().click();
+      await expect(save).toHaveCount(0);
+    }
+  } finally {
+    await t.done();
+  }
+}
+
+test('mais zonas de magia passam no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(500_000);
+  await scanMoreZoneScreens(browser, 'light', 1280);
+});
+
+test('mais zonas de magia passam no axe e nas conferências de layout no tema escuro, no desktop', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(500_000);
+  await scanMoreZoneScreens(browser, 'dark', 1280);
+});
+
+test('mais zonas de magia passam no axe e nas conferências de layout no tema claro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(500_000);
+  await scanMoreZoneScreens(browser, 'light', 390);
+});
+
+test('mais zonas de magia passam no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(500_000);
+  await scanMoreZoneScreens(browser, 'dark', 390);
 });
 
 /**

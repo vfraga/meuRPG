@@ -157,6 +157,7 @@ func (s *Service) characterToProto(content *rules.Content, row charactersdb.Char
 		build := buildWithStates(full, stateKeysOf(row.ActiveStates))
 		der := rules.Derive(build, content)
 		c.Derived = derivedToProto(der)
+		c.Derived.Gear = mapToProto(rules.DeriveGear(build, content, der), gearToProto)
 		addChangedContent(c.Derived, der.Issues, content, build, full)
 	}
 	return c, nil

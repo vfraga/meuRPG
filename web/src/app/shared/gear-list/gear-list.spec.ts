@@ -10,6 +10,7 @@ const sword: GearVm = {
   equipped: true,
   twoHanded: false,
   armorClassIfToggled: 0,
+  count: 1,
 };
 
 describe('GearList', () => {
@@ -33,6 +34,16 @@ describe('GearList', () => {
     ]);
   });
 
+  it('shows two weapons of one key as one row with their count, and says it in the label', () => {
+    const fixture = setup([{ ...sword, key: 'equipment:dagger', namePt: 'Adaga', count: 2 }]);
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelectorAll('.gear-row')).toHaveLength(1);
+    expect(el.querySelector('.gear-row__count')!.textContent).toContain('×2');
+    fixture.componentRef.setInput('canChange', true);
+    fixture.detectChanges();
+    expect(el.querySelector('button')!.getAttribute('aria-label')).toContain('2 iguais');
+  });
+
   it('shows the armor class a two-handed weapon would give, on its button and in its label', () => {
     const bow: GearVm = {
       ...sword,
@@ -41,6 +52,7 @@ describe('GearList', () => {
       equipped: false,
       twoHanded: true,
       armorClassIfToggled: 16,
+      count: 1,
     };
     const fixture = setup([bow]);
     fixture.componentRef.setInput('armorClass', 18);
@@ -57,6 +69,7 @@ describe('GearList', () => {
       namePt: 'Cota de malha',
       kind: 'armor',
       armorClassIfToggled: 16,
+      count: 1,
     };
     for (const combat of [false, true]) {
       const fixture = setup([armor, sword]);

@@ -194,14 +194,6 @@
       "sourcePt": "Escola de Evocação (Mago 2)"
     }
   ],
-  "gear": [
-    {
-      "equipped": true,
-      "key": "equipment:quarterstaff",
-      "kind": "GEAR_KIND_WEAPON",
-      "namePt": "Bordão"
-    }
-  ],
   "hints": [
     {
       "sourceKey": "trait:gnome-cunning",

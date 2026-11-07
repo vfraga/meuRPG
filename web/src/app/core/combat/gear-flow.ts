@@ -9,8 +9,9 @@ export interface GearFlowContext {
   readonly campaignId: () => string;
   /** The character of the screen's player; empty when the screen has none (the master's, a creature's). */
   readonly characterId: () => string;
-  /** The encounter's revision: the gear is read again when it moves, so a change from another tab never lingers. */
-  readonly revision: () => number;
+  /** What of the encounter the gear shows or spends (the own combatant's turn economy): the gear is read again only
+   * when it changes, so an attack of someone else costs no read. */
+  readonly signature: () => string;
 }
 
 /** The turn's economy as the gear rows need it. */
@@ -54,24 +55,28 @@ export function shieldBackAc(gear: readonly GearVm[], shieldIdle: boolean): numb
 }
 
 /** The warning before a drawing that changes the armor class: a two-handed weapon in the pack, the shield in hand. */
-export function twoHandedWarnings(gear: readonly GearVm[], armorClass: number | null): string[] {
+export function twoHandedWarnings(
+  gear: readonly GearVm[],
+  armorClass: number | null,
+): { key: string; text: string }[] {
   if (armorClass === null || !gear.some((g) => g.kind === 'shield' && g.equipped)) {
     return [];
   }
   return gear
     .filter((g) => g.kind === 'weapon' && g.twoHanded && !g.equipped)
     .filter((g) => g.armorClassIfToggled > 0 && g.armorClassIfToggled !== armorClass)
-    .map(
-      (g) =>
-        `Sacar ${g.namePt} (duas mãos) deixa o escudo de lado: CA ${armorClass} → ${g.armorClassIfToggled}.`,
-    );
+    .map((g) => ({
+      key: g.key,
+      text: `Sacar ${g.namePt} (duas mãos) deixa o escudo de lado: CA ${armorClass} → ${g.armorClassIfToggled}.`,
+    }));
 }
 
 /**
  * The player's gear in a combat: the list the server derives, "Equipar" / "Guardar" and what the server answers. The
  * economy it spends (the free object interaction, the action) is the combat's: the stream brings it back. The gear is read
- * when the screen's character is known and again whenever the encounter's revision moves; a read that fails says so
- * (`readFailed`) and `retry()` asks again.
+ * when the screen's character is known and again when the own turn's economy changes or the fold opens (`setOpen`),
+ * never for the others' moves and never while the fold is closed; a read that fails says so (`readFailed`) and
+ * `retry()` asks again.
  */
 export class GearFlow {
   readonly gear = signal<readonly GearVm[]>([]);
@@ -82,6 +87,7 @@ export class GearFlow {
   readonly error = signal('');
   /** The last read did not come back: what is shown (if anything) may be old. */
   readonly readFailed = signal(false);
+  private readonly open = signal(true);
   private loadedFor = '';
   private seq = 0;
 
@@ -89,9 +95,16 @@ export class GearFlow {
   constructor(private readonly ctx: GearFlowContext) {
     effect(() => {
       ctx.characterId();
-      ctx.revision();
-      untracked(() => void this.load());
+      ctx.signature();
+      if (this.open()) {
+        untracked(() => void this.load());
+      }
     });
+  }
+
+  /** The fold's open state: a closed fold reads nothing; opening it reads what moved meanwhile. */
+  setOpen(open: boolean): void {
+    this.open.set(open);
   }
 
   /** Reads the gear of the screen's character; a change in flight reads it again itself. */

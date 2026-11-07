@@ -52,8 +52,8 @@ let nextId = 0;
             (chosen)="choose(d)"
           />
         }
-        @for (r of spent(); track r; let i = $index) {
-          <p class="offer__none" [id]="group + '-none-' + i"><mat-icon aria-hidden="true">block</mat-icon>Sem usos de {{ r }}.</p>
+        @for (r of spent(); track r.key; let i = $index) {
+          <p class="offer__none" [id]="group + '-none-' + i"><mat-icon aria-hidden="true">block</mat-icon>Sem usos de {{ r.name }}.</p>
         }
       </fieldset>
     }
@@ -112,15 +112,17 @@ export class RollDieOffer {
 
   protected readonly group = `roll-die-offer-${nextId++}`;
   protected readonly radios = computed(() => this.exclusive() && this.dice().length > 1);
-  /** The pools with no use left, once each ("Reserva de Golpes"). */
-  protected readonly spent = computed(() => [
-    ...new Set(
-      this.dice().flatMap((d) => {
-        const u = this.uses()[d.key];
-        return u && u.left <= 0 ? [u.resourceNamePt] : [];
-      }),
-    ),
-  ]);
+  /** The pools with no use left, once each by the pool's key ("Reserva de Golpes"). */
+  protected readonly spent = computed(() => {
+    const pools = new Map<string, string>();
+    for (const d of this.dice()) {
+      const u = this.uses()[d.key];
+      if (u && u.left <= 0) {
+        pools.set(u.resource || d.key, u.resourceNamePt);
+      }
+    }
+    return [...pools].map(([key, name]) => ({ key, name }));
+  });
 
   protected cost(d: RollDie): string {
     const u = this.uses()[d.key];
@@ -130,7 +132,7 @@ export class RollDieOffer {
   /** The id of the "Sem usos de ..." line that says why the die is off. */
   protected noneId(d: RollDie): string {
     const u = this.uses()[d.key];
-    return `${this.group}-none-${this.spent().indexOf(u?.resourceNamePt ?? '')}`;
+    return `${this.group}-none-${this.spent().findIndex((r) => r.key === (u?.resource || d.key))}`;
   }
 
   protected empty(d: RollDie): boolean {
