@@ -28,8 +28,8 @@ func TestARefusedUndoSendsTheNumbersOfTheNPCToNoOne(t *testing.T) {
 	}
 	log := must(master.combat.ListCombatLog(t.Context(), rq(&playv1.ListCombatLogRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId()})))
 	undo := &playv1.UndoLastActionRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), ExpectedEventId: log.GetUndoableEventId(), IdempotencyKey: newKey()}
-	// Not inside an id or a timestamp: the number alone.
-	needle := regexp.MustCompile(`(^|[^0-9A-Za-z-])4217($|[^0-9A-Za-z-])`)
+	// Not inside an id (hyphens) or a timestamp (a fraction after a dot): the number alone.
+	needle := regexp.MustCompile(`(^|[^0-9A-Za-z.-])4217($|[^0-9A-Za-z.-])`)
 
 	for _, p := range []*person{w.ana, w.caio} {
 		r := p.call(playv1connect.CombatServiceUndoLastActionProcedure, undo)

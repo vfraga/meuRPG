@@ -1,6 +1,8 @@
 package play
 
 import (
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -176,14 +178,36 @@ func TestUndoOfAnEventWithoutHoldsIsNotChecked(t *testing.T) {
 // (run 42337730750 matched "4217" in one), and an id is not a hit point number.
 func withoutUUIDs(text string) string { return uuidText.ReplaceAllString(text, "<id>") }
 
+// hasNumber says the text holds n as a number: not inside a word or a timestamp (a fraction of a second follows a dot) either. A
+// canary of digits alone searched with strings.Contains matched "4217" in a random id and in a timestamp; the number is searched as one.
+func hasNumber(text string, n int) bool {
+	return regexp.MustCompile(`(^|[^0-9A-Za-z.-])` + strconv.Itoa(n) + `($|[^0-9A-Za-z.-])`).MatchString(text)
+}
+
+// TestHasNumberFindsTheNumberAndNotATimestampHoldingIt: a timestamp or a word holding the digits is no leak, the number itself is.
+func TestHasNumberFindsTheNumberAndNotATimestampHoldingIt(t *testing.T) {
+	t.Parallel()
+	for text, want := range map[string]bool{
+		"at 2026-11-07T05:25:26.4217Z":    false,
+		"abc4217def":                      false,
+		`{"hp_temp":4217}`:                true,
+		"the goblin has 4217 hit points":  true,
+		"the goblin has 42170 hit points": false,
+	} {
+		if got := hasNumber(text, 4217); got != want {
+			t.Errorf("hasNumber(%q, 4217) = %v, want %v", text, got, want)
+		}
+	}
+}
+
 // TestWithoutUUIDsKeepsTheNumberAndDropsTheID: an id holding the canary is not a leak, the bare number still is.
 func TestWithoutUUIDsKeepsTheNumberAndDropsTheID(t *testing.T) {
 	t.Parallel()
 	id := "0b1c2d3e-4217-4a5b-8c9d-1e2f3a4b5c6d"
-	if got := withoutUUIDs("combatant " + id + " changed"); strings.Contains(got, "4217") {
+	if got := withoutUUIDs("combatant " + id + " changed"); strings.Contains(got, "4217") { // canary-ok: the helper's own test, on a text it has stripped
 		t.Errorf("withoutUUIDs() = %q, want the id gone", got)
 	}
-	if got := withoutUUIDs("combatant " + id + " has 4217 hit points"); !strings.Contains(got, "4217") {
+	if got := withoutUUIDs("combatant " + id + " has 4217 hit points"); !strings.Contains(got, "4217") { // canary-ok: the helper's own test, on a text it has stripped
 		t.Errorf("withoutUUIDs() = %q, want the bare number kept", got)
 	}
 }
@@ -205,7 +229,7 @@ func TestUndoRefusalNamesWhoChangedAndNoNumbers(t *testing.T) {
 	// A player is refused before anything is read.
 	err := a.undo(t, a.caio, e, last)
 	wantCode(t, "UndoLastAction by a player", err, connect.CodePermissionDenied)
-	if strings.Contains(withoutUUIDs(err.Error()), "4217") {
+	if hasNumber(withoutUUIDs(err.Error()), secretHP) {
 		t.Errorf("the player's refusal leaks the hit points: %v", err)
 	}
 	// The master's refusal names who and says no number.
@@ -215,7 +239,7 @@ func TestUndoRefusalNamesWhoChangedAndNoNumbers(t *testing.T) {
 	if len(b.GetCombatantIds()) != 1 {
 		t.Errorf("combatant_ids = %v, want the goblin", b.GetCombatantIds())
 	}
-	if raw := b.String() + err.Error(); strings.Contains(withoutUUIDs(raw), "4217") {
+	if raw := b.String() + err.Error(); hasNumber(withoutUUIDs(raw), secretHP) {
 		t.Errorf("the master's refusal carries the hit points: %s", raw)
 	}
 }

@@ -453,7 +453,7 @@ func TestCanariesAreSearchedAsNumbersNotAsDigitsInText(t *testing.T) {
 	t.Parallel()
 	c := canaries{names: []string{"CanarioTesouro"}, numbers: []float64{4321}}
 	// The old search: the number as text, in the whole reply.
-	old := func(body string) bool { return strings.Contains(body, "4321") }
+	old := func(body string) bool { return strings.Contains(body, "4321") } // canary-ok: the old search, kept to show the case trips it
 	clean := `{"image":{"id":"1d07fab1-fc5a-4967-83f9-13443215479a"},"revision":"20264321","at":"2026-11-04T13:43:21Z"}`
 	if !old(clean) {
 		t.Fatal("the crafted reply does not hold the digits: the case proves nothing")

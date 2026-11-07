@@ -120,7 +120,7 @@ func TestCreatureSpentRefusesWhatDoesNotFitIn4KiB(t *testing.T) {
 		t.Fatalf("a column of %d bytes is refused: %v", full.Len(), err)
 	}
 	_, err := bumpCreatureSpent(ctx, q, id, "use:one-more-key-that-takes-it-over-the-limit", 1)
-	if !errors.Is(err, errCreatureSpentFull) || !strings.Contains(err.Error(), "4096") {
+	if !errors.Is(err, errCreatureSpentFull) || !strings.Contains(err.Error(), "4096") { // canary-ok: the limit the refusal itself names, a positive check
 		t.Errorf("bump over the limit error = %v, want errCreatureSpentFull naming 4096", err)
 	}
 	if got := a.spentOf(t, id); got["recharge:fill"] != 1 || got["use:one-more-key-that-takes-it-over-the-limit"] != 0 {
