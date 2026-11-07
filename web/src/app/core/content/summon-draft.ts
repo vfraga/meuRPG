@@ -43,6 +43,8 @@ export interface SummonDraft {
   count: string;
   /** The most creatures at a time as typed ("0" is no limit). */
   maxLive: string;
+  /** The creatures a circle above the spell's own adds, as typed (a spell's summon only: a feature's keeps the stored 0). */
+  perSlot: string;
   turnMode: TableSummonTurnMode;
   replaces: TableSummonReplaces;
   /** The name of the resource a use is spent from; empty until one is chosen. */
@@ -63,6 +65,7 @@ export function emptySummon(resourceKey = ''): SummonDraft {
     creatureKeys: [],
     count: '1',
     maxLive: '0',
+    perSlot: '0',
     turnMode: TableSummonTurnMode.OWN_INITIATIVE,
     replaces: TableSummonReplaces.NONE,
     resourceKey,
@@ -77,6 +80,7 @@ export function summonToDraft(s: TableSummon): SummonDraft {
     creatureKeys: [...s.creatureKeys],
     count: s.count,
     maxLive: String(s.maxLive),
+    perSlot: String(s.countPerSlotLevel),
     turnMode: s.turnMode,
     replaces: s.replaces,
     resourceKey: s.resourceKey,
@@ -97,7 +101,7 @@ export function summonToDraft(s: TableSummon): SummonDraft {
 }
 
 /** "12" is 12; "", " " is 0 (no limit); text that is no whole number is -1, which the server refuses at the field with its own words. */
-function maxLiveOf(text: string): number {
+export function wholeOf(text: string): number {
   const t = text.trim();
   if (t === '') {
     return 0;
@@ -110,7 +114,7 @@ export function draftToSummon(d: SummonDraft): TableSummon {
   const out = d.base ? clone(TableSummonSchema, d.base) : create(TableSummonSchema);
   out.creatureKeys = [...d.creatureKeys];
   out.count = d.count;
-  out.maxLive = maxLiveOf(d.maxLive);
+  out.maxLive = wholeOf(d.maxLive);
   out.turnMode = d.turnMode;
   out.replaces = d.replaces;
   out.resourceKey = d.resourceKey;

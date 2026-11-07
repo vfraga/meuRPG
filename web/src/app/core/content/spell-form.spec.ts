@@ -978,6 +978,7 @@ const EXPECTED_STORED: Record<string, unknown> = {
       healMore: '',
       healModifier: true,
       otherDamage: [],
+      summon: null,
     },
     request: {
       namePt: '',
@@ -1035,6 +1036,7 @@ const EXPECTED_STORED: Record<string, unknown> = {
       healMore: '',
       healModifier: true,
       otherDamage: [],
+      summon: null,
     },
     request: {
       namePt: '',
@@ -1095,6 +1097,7 @@ const EXPECTED_STORED: Record<string, unknown> = {
       otherDamage: [
         { damageTypeKey: 'damage-type:necrotic', dice: '1d4', perSlotLevel: '', perTier: '' },
       ],
+      summon: null,
     },
     request: {
       namePt: '',
@@ -1156,6 +1159,7 @@ const EXPECTED_STORED: Record<string, unknown> = {
       healMore: '',
       healModifier: true,
       otherDamage: [],
+      summon: null,
     },
     request: {
       namePt: '',
@@ -1214,6 +1218,7 @@ const EXPECTED_STORED: Record<string, unknown> = {
       healMore: '1d8',
       healModifier: true,
       otherDamage: [],
+      summon: null,
     },
     request: {
       namePt: '',
@@ -1272,6 +1277,7 @@ const EXPECTED_STORED: Record<string, unknown> = {
       healMore: '',
       healModifier: true,
       otherDamage: [],
+      summon: null,
     },
     request: {
       namePt: '',

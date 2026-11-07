@@ -1,11 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
-import {
-  type TableEntry,
-  TableSummonReplaces,
-  TableSummonTurnMode,
-} from '../../../gen/meurpg/rules/v1/table_content_pb';
+import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { SpellDurationKind } from '../../../gen/meurpg/rules/v1/rules_pb';
 import {
   MAX_SUMMON_LIVE,
@@ -26,39 +22,14 @@ import {
   timeValue,
 } from '../../core/content/summon-options';
 import { FieldNote } from '../form-fields/field-note';
-import { type RadioCard, RadioCards } from '../form-fields/radio-cards';
+import { RadioCards } from '../form-fields/radio-cards';
 import { SelectField, type SelectOption } from '../form-fields/select-field';
 import { SwitchField } from '../form-fields/switch-field';
 import { TextField } from '../form-fields/text-field';
+import { REPLACES_CARDS, TURN_CARDS } from './summon-cards';
 import { SummonCreatures } from './summon-creatures';
 
 let nextId = 0;
-
-const TURN_CARDS: readonly RadioCard[] = [
-  {
-    value: String(TableSummonTurnMode.OWN_INITIATIVE),
-    label: 'Iniciativa própria',
-    hint: 'Cada criatura rola a sua e age no seu turno.',
-  },
-  {
-    value: String(TableSummonTurnMode.OWNER_ROLL_GROUP),
-    label: 'Em grupo',
-    hint: 'Uma iniciativa para todas, rolada pelo jogador.',
-  },
-];
-
-const REPLACES_CARDS: readonly RadioCard[] = [
-  {
-    value: String(TableSummonReplaces.NONE),
-    label: 'As anteriores ficam',
-    hint: 'Até o máximo ao mesmo tempo.',
-  },
-  {
-    value: String(TableSummonReplaces.SAME_SUMMON),
-    label: 'As novas tomam o lugar',
-    hint: 'As anteriores vão embora.',
-  },
-];
 
 /**
  * "Invoca criaturas" on a feature's card (#578, board C2): a switch, and, when it is on, the creatures the holder may bring, how

@@ -51,6 +51,7 @@ export const MECHANIC_OPTIONS: readonly { value: MechanicChoice; label: string }
   { value: 'attack', label: 'Ataque' },
   { value: 'save', label: 'Teste de resistência' },
   { value: 'heal', label: 'Cura' },
+  { value: 'summon', label: 'Invocar' },
 ];
 
 export const SHAPE_OPTIONS: readonly { value: SpellDraft['shape']; label: string }[] = [

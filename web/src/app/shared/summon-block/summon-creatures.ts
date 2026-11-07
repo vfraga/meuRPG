@@ -34,7 +34,7 @@ let nextId = 0;
       <app-creature-pick class="head__pick" [campaignId]="campaignId()" label="Criaturas" placeholder="Procurar criatura" [disabled]="full()" (picked)="add($event)" />
       <p class="head__hint" [id]="id + '-hint'">De 1 a {{ max }}. Quem usa escolhe uma delas para cada criatura que vem.</p>
     </div>
-    <ul class="chips" role="group" aria-label="Criaturas que a característica invoca" [attr.data-field]="path() || null" tabindex="-1" [attr.aria-describedby]="issues().length > 0 ? id + '-note' : id + '-hint'" [attr.aria-invalid]="issues().length > 0 ? 'true' : null">
+    <ul class="chips" role="group" [attr.aria-label]="groupLabel()" [attr.data-field]="path() || null" tabindex="-1" [attr.aria-describedby]="issues().length > 0 ? id + '-note' : id + '-hint'" [attr.aria-invalid]="issues().length > 0 ? 'true' : null">
       @for (c of chips(); track c.key) {
         <li class="chip">
           <span class="chip__name">{{ c.name }}</span>
@@ -62,6 +62,8 @@ export class SummonCreatures {
   readonly campaignId = input.required<string>();
   /** The table's entries: a table creature is named by its own. */
   readonly entries = input<readonly TableEntry[]>([]);
+  /** What the group is called to a screen reader. */
+  readonly groupLabel = input('Criaturas que a característica invoca');
   readonly path = input('');
   readonly issues = input<readonly string[]>([]);
   readonly keysChange = output<string[]>();

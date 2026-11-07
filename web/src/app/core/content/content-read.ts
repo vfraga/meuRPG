@@ -132,7 +132,12 @@ function readSpell(s: TableSpell, nameOf: NameOf): EntryRead {
   const rows: ReadRow[] = [...previewRows(spellToDraft(s), nameOf)];
   const classes = names(s.classKeys, nameOf);
   if (classes) rows.push({ label: 'Classes', value: classes });
-  return { rows, sections: [], text: [...s.descPt, ...s.higherLevelPt] };
+  const summon = summonLine(s.summon, nameOf);
+  return {
+    rows,
+    sections: [],
+    text: [...s.descPt, ...s.higherLevelPt, ...(summon ? [summon] : [])],
+  };
 }
 
 export function readEntry(

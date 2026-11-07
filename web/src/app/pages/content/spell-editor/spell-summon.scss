@@ -1,0 +1,44 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+}
+
+// Three fields to a row from a tablet up (board C3); one below.
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mr-space-3) var(--mr-space-4);
+  align-items: start;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    &--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+.line {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-focus);
+    outline-offset: 2px;
+  }
+
+  .mat-icon {
+    flex: none;
+    width: var(--mr-font-16);
+    height: var(--mr-font-16);
+    margin-top: calc(var(--mr-space-1) / 2);
+    font-size: var(--mr-font-16);
+  }
+}

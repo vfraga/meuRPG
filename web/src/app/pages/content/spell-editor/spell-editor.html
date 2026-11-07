@@ -6,7 +6,7 @@
       <h2 class="mr-panel__title" id="data-t">Dados da magia</h2>
       <div class="grid grid--3">
         <app-text-field class="span-2" label="Nome" [value]="d.name" [maxlength]="60" path="table_spell.name_pt" [issues]="saver.issues('table_spell.name_pt')" (valueChange)="patch({ name: $event })" />
-        <app-select-field label="Nível da magia" [options]="levels()" [value]="d.level" path="table_spell.level" [issues]="saver.issues('table_spell.level')" (valueChange)="patch({ level: $event })" />
+        <app-select-field label="Nível da magia" [options]="levels()" [value]="d.level" path="table_spell.level" [issues]="fieldIssues('table_spell.level')" (valueChange)="patch({ level: $event })" />
       </div>
       <div class="grid grid--3">
         <app-select-field label="Escola" [options]="schools()" [value]="d.schoolKey" path="table_spell.school_key" [issues]="saver.issues('table_spell.school_key')" (valueChange)="patch({ schoolKey: $event })" />
@@ -23,7 +23,7 @@
         @if (d.range === 'ranged') {
           <app-text-field label="Distância" [value]="d.rangeM" suffix="m" inputmode="decimal" path="table_spell.range.distance_ft" [issues]="saver.issues('table_spell.range.distance_ft')" hint="Em passos de 1,5 m." (valueChange)="patch({ rangeM: $event })" />
         }
-        <app-select-field label="Duração" [options]="durationOptions" [value]="d.duration" path="table_spell.duration.kind" [issues]="saver.issues('table_spell.duration.kind')" (valueChange)="patch({ duration: $any($event) })" />
+        <app-select-field label="Duração" [options]="durationOptions" [value]="d.duration" path="table_spell.duration.kind" [issues]="fieldIssues('table_spell.duration.kind')" (valueChange)="patch({ duration: $any($event) })" />
       </div>
       @if (d.duration === 'timed') {
         <div class="grid grid--3">
@@ -47,10 +47,10 @@
         <app-switch-field label="Concentração" [checked]="d.concentration" path="table_spell.concentration" (toggled)="patch({ concentration: $event })" />
         <app-switch-field label="Ritual" [checked]="d.ritual" path="table_spell.ritual" (toggled)="patch({ ritual: $event })" />
       </div>
-      @if (saver.issues('table_spell.concentration').length > 0 || saver.issues('table_spell.ritual').length > 0) {
+      @if (saver.issues('table_spell.concentration').length > 0 || fieldIssues('table_spell.ritual').length > 0) {
         <p class="inline-issue" role="note">
           <mat-icon aria-hidden="true">warning</mat-icon>
-          {{ saver.issues('table_spell.concentration')[0] || saver.issues('table_spell.ritual')[0] }}
+          {{ saver.issues('table_spell.concentration')[0] || fieldIssues('table_spell.ritual')[0] }}
         </p>
       }
     </section>
@@ -63,8 +63,8 @@
         <p class="group__label" aria-hidden="true">Alvo</p>
         <app-segmented label="Alvo" [segments]="targetOptions" [value]="d.target" (choose)="setTarget($event)" />
       </div>
-      @if (saver.issues('table_spell.target.kind').length > 0) {
-        <p class="inline-issue" role="note"><mat-icon aria-hidden="true">warning</mat-icon>{{ saver.issues('table_spell.target.kind')[0] }}</p>
+      @if (fieldIssues('table_spell.target.kind').length > 0) {
+        <p class="inline-issue" role="note"><mat-icon aria-hidden="true">warning</mat-icon>{{ fieldIssues('table_spell.target.kind')[0] }}</p>
       }
       @switch (d.target) {
         @case ('creatures') {
@@ -94,7 +94,7 @@
 
       <div class="group" data-field="table_spell.attack">
         <p class="group__label" aria-hidden="true">Mecânica</p>
-        <app-segmented label="Mecânica" [segments]="mechanicOptions" [value]="d.mechanic" (choose)="patch({ mechanic: $any($event) })" />
+        <app-segmented label="Mecânica" [segments]="mechanicOptions" [value]="d.mechanic" (choose)="setMechanic($event)" />
       </div>
       @switch (d.mechanic) {
         @case ('attack') {
@@ -124,6 +124,11 @@
             <app-text-field label="Mais cura por nível de espaço" [value]="d.healMore" path="table_spell.heal.per_slot_level" [issues]="saver.issues('table_spell.heal.per_slot_level')" hint="Como 1d8, ao conjurar com um espaço maior." (valueChange)="patch({ healMore: $event })" />
             <app-check-row label="Soma o modificador de conjuração" [checked]="d.healModifier" path="table_spell.heal.adds_modifier" (toggled)="patch({ healModifier: $event })" />
           </div>
+        }
+        @case ('summon') {
+          @if (d.summon; as s) {
+            <app-spell-summon [summon]="s" [campaignId]="campaignId()" [entries]="entries()" [issuesOf]="fieldIssues" [lockIssues]="fieldIssues('table_spell.summon')" (summonChange)="patch({ summon: $event })" />
+          }
         }
       }
       @if (unappliedDamage()) {

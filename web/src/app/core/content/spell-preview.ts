@@ -11,6 +11,7 @@ import {
 } from '../../shared/spell-details/spell-details-format';
 import { rangeFeet } from './effect-draft';
 import { SHAPE_OPTIONS } from './spell-options';
+import { SUMMON_FIELD_PATHS } from './spell-summon';
 import type { SpellDraft } from './spell-types';
 
 /** One row of "Como os jogadores veem". */
@@ -220,6 +221,7 @@ function mechanicFieldPaths(d: SpellDraft): string[] {
     );
   }
   if (d.mechanic === 'heal') paths.push('heal.dice', 'heal.per_slot_level', 'heal.adds_modifier');
+  if (d.mechanic === 'summon') paths.push(...SUMMON_FIELD_PATHS);
   return paths;
 }
 

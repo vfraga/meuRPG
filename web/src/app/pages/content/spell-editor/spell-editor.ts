@@ -27,6 +27,7 @@ import {
   readableSpell,
   spellToDraft,
   unreadableSpellPaths,
+  withMechanic,
   withTarget,
 } from '../../../core/content/spell-draft';
 import {
@@ -56,12 +57,14 @@ import {
   shownWhole,
 } from '../../../core/content/whole-number';
 import { spellFieldPaths } from '../../../core/content/spell-preview';
+import { summonRefusals } from '../../../core/content/spell-summon';
 import { UNAPPLIED_DAMAGE_PT, unappliedDamage } from '../../../core/content/spell-warnings';
 import { CheckRow } from '../../../shared/form-fields/check-row';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
 import { SwitchField } from '../../../shared/form-fields/switch-field';
 import { TextField } from '../../../shared/form-fields/text-field';
 import { Segmented } from '../../../shared/segmented/segmented';
+import { SpellSummon } from './spell-summon';
 import { EntryRead } from '../entry-read/entry-read';
 import { previewRead } from '../../../core/content/preview';
 import { EditorAlerts, EditorBar } from '../editor-bar/editor-bar';
@@ -91,6 +94,7 @@ export interface EditorSaved {
     MatIconModule,
     Segmented,
     SelectField,
+    SpellSummon,
     SwitchField,
     TextField,
   ],
@@ -212,6 +216,24 @@ export class SpellEditor {
     this.dirty.set(true);
   }
 
+  protected setMechanic(value: string): void {
+    this.draft.update((d) => withMechanic(d, value as SpellDraft['mechanic']));
+    this.dirty.set(true);
+  }
+
+  /** What the engine will refuse about the spell next to "Invocar", said before the save (`summonRefusals`). */
+  private readonly advance = computed(() => summonRefusals(this.draft()));
+
+  /** The messages of one input: the server's, and the form's own (the spell's level, target or ritual that "Invocar" cannot take). */
+  protected readonly fieldIssues = (path: string): readonly string[] => {
+    return [
+      ...this.saver.issues(path),
+      ...this.advance()
+        .filter((r) => r.path === path)
+        .map((r) => r.text),
+    ];
+  };
+
   protected toggleClass(key: string, on: boolean): void {
     const d = this.draft();
     this.patch({ classKeys: on ? [...d.classKeys, key] : d.classKeys.filter((k) => k !== key) });
@@ -251,7 +273,7 @@ export class SpellEditor {
       return;
     }
     if (
-      this.saver.blockOn(this.unreadable(), (path) =>
+      this.saver.blockOn([...this.advance().map((r) => r.path), ...this.unreadable()], (path) =>
         focusAfterRender(this.host.nativeElement, this.injector, path),
       )
     ) {

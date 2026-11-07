@@ -55,3 +55,23 @@ export const SUMMON_FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text
     text: 'Confira as criaturas que esta característica invoca.',
   },
 ];
+
+/** The same fields under a table spell (`table_spell.summon.*`, overlay_summon.go): the spell pays with its slot, so a refusal of a resource or of the casting time, duration or concentration says the spell has its own. Before `SUMMON_FIELD_TEXTS`: the first row that matches is the one said. */
+export const SPELL_SUMMON_TEXTS: readonly { shape: RegExp; reason?: string; text: string }[] = [
+  {
+    shape: /^table_spell\.summon\.count_per_slot_level$/,
+    text: 'De 0 a 10 criaturas a mais por círculo acima do da magia.',
+  },
+  {
+    shape: /^table_spell\.summon\.(resource_key|resource_cost)$/,
+    text: 'A invocação de uma magia gasta o espaço de magia, não um recurso.',
+  },
+  {
+    shape: /^table_spell\.summon\.role$/,
+    text: 'A criatura invocada é sempre uma companheira.',
+  },
+  {
+    shape: /^table_spell\.summon$/,
+    text: 'Confira a magia: ela pede 1º círculo ou mais, alvo “Só quem conjura”, sem ataque, teste, dano, cura, área nem ritual, e o tempo, a duração e a concentração são os dela.',
+  },
+];

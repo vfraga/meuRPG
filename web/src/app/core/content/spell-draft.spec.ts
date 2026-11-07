@@ -10,7 +10,6 @@ import {
   TableSpellSchema,
   TableSpellTargetKind,
   TableSpellZoneSchema,
-  TableSummonSchema,
   TableZoneTrigger,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { draftToSpell, spellToDraft, withTarget } from './spell-draft';
@@ -268,7 +267,7 @@ describe('a count the text does not read as a number', () => {
 });
 
 describe('what the form has no control for', () => {
-  it('goes back as it was loaded: the effect, the zone and the summon', () => {
+  it('goes back as it was loaded: the effect and the zone', () => {
     const stored = create(TableSpellSchema, {
       namePt: 'Marca de Nanquim',
       level: 2,
@@ -282,14 +281,12 @@ describe('what the form has no control for', () => {
         trigger: TableZoneTrigger.START_OF_TURN,
         followsCaster: true,
       }),
-      summon: create(TableSummonSchema, { creatureKeys: ['creature:wolf'], count: '1' }),
     });
     const draft = { ...spellToDraft(stored), name: 'Marca de Cinza' };
     const sent = create(TableSpellSchema, draftToSpell(draft));
     expect(sent.namePt).toBe('Marca de Cinza');
     expect(sent.effect).toEqual(stored.effect);
     expect(sent.zone).toEqual(stored.zone);
-    expect(sent.summon).toEqual(stored.summon);
   });
 
   it('sends none of them for a spell that had none', () => {

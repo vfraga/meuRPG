@@ -101,3 +101,55 @@ describe("a violation the server echoes at the summon's own text", () => {
     expect(placed.fields).toEqual(['table_class_feature.desc_pt']);
   });
 });
+
+// The same fields under a table spell (overlay_summon.go, addSummon with no feature).
+const SPELL_CASES: [field: string, reason: string, text: string][] = [
+  ['table_spell.summon.creature_keys', 'limit', 'Escolha de 1 a 8 criaturas.'],
+  [
+    'table_spell.summon.creature_keys[1]',
+    'dangling_reference',
+    'Esta criatura não existe mais. Tire-a da lista.',
+  ],
+  [
+    'table_spell.summon.count',
+    'bad_value',
+    'Escreva quantas criaturas vêm: um número ou uma fórmula do dono, como 1 ou mod("cha").',
+  ],
+  [
+    'table_spell.summon.count_per_slot_level',
+    'bad_value',
+    'De 0 a 10 criaturas a mais por círculo acima do da magia.',
+  ],
+  [
+    'table_spell.summon.max_live',
+    'bad_value',
+    'De 0 (sem limite) a 40, e nunca abaixo de quantas vêm de uma vez.',
+  ],
+  [
+    'table_spell.summon.turn_mode',
+    'bad_value',
+    'Escolha iniciativa própria ou em grupo. Agir logo depois do dono ainda não existe.',
+  ],
+  [
+    'table_spell.summon.replaces',
+    'bad_value',
+    'Escolha se as anteriores ficam ou se as novas tomam o lugar.',
+  ],
+  ['table_spell.summon.role', 'bad_value', 'A criatura invocada é sempre uma companheira.'],
+  [
+    'table_spell.summon.resource_key',
+    'bad_value',
+    'A invocação de uma magia gasta o espaço de magia, não um recurso.',
+  ],
+  [
+    'table_spell.summon',
+    'bad_value',
+    'Confira a magia: ela pede 1º círculo ou mais, alvo “Só quem conjura”, sem ataque, teste, dano, cura, área nem ritual, e o tempo, a duração e a concentração são os dela.',
+  ],
+];
+
+describe("the sentence of a refusal at a spell's summon (#578)", () => {
+  it.each(SPELL_CASES)('%s (%s)', (field, reason, text) => {
+    expect(violationText({ field, reason }, { aOne: 'uma magia' })).toBe(text);
+  });
+});

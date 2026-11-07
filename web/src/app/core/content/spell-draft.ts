@@ -14,8 +14,11 @@ import {
   TableSpellTargetKind,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { rangeFeet, rangeMeters } from './effect-draft';
+import { draftToSpellSummon } from './spell-summon';
+import { emptySummon, summonToDraft } from './summon-draft';
 import {
   type DurationChoice,
+  type MechanicChoice,
   type RangeChoice,
   type SpellDraft,
   type SpellInit,
@@ -105,6 +108,9 @@ function targetToDraft(s: TableSpell): Partial<SpellDraft> {
 
 /** The attack, the saving throw or the healing the spell has (one of them), as the form's mechanic. */
 function mechanicToDraft(s: TableSpell): Partial<SpellDraft> {
+  if (s.summon) {
+    return { mechanic: 'summon', summon: summonToDraft(s.summon) };
+  }
   if (s.attack) {
     return { mechanic: 'attack', attack: s.attack === 'melee' ? 'melee' : 'ranged' };
   }
@@ -141,12 +147,12 @@ function damageToDraft(s: TableSpell): Partial<SpellDraft> {
   return out;
 }
 
-/** The effect, the zone and the summon of a stored spell: no control shows them, so the draft carries them through. */
+/** The effect and the zone of a stored spell: no control shows them, so the draft carries them through. */
 function keptToDraft(s: TableSpell): Partial<SpellDraft> {
-  if (!s.effect && !s.zone && !s.summon) {
+  if (!s.effect && !s.zone) {
     return {};
   }
-  return { kept: { effect: s.effect, zone: s.zone, summon: s.summon } };
+  return { kept: { effect: s.effect, zone: s.zone } };
 }
 
 /** A stored spell, as a form. */
@@ -289,15 +295,35 @@ export function draftToSpell(d: SpellDraft): SpellInit {
     target: targetInit(d),
     damage: damageInit(d),
     ...mechanicInit(d),
+    ...(d.mechanic === 'summon' && d.summon ? { summon: draftToSpellSummon(d.summon) } : {}),
     ...(d.kept?.effect ? { effect: d.kept.effect } : {}),
     ...(d.kept?.zone ? { zone: d.kept.zone } : {}),
-    ...(d.kept?.summon ? { summon: d.kept.summon } : {}),
   };
+}
+
+/**
+ * Choosing a mechanic. "Invocar" puts the caster as the target (the creatures appear next to it, and the range follows, as the
+ * server asks) and gives back the creatures it had; the level and the ritual stay as they are, and the form says what the engine
+ * will refuse about them (`summonRefusals`). The other mechanics keep what the summon had in the draft, and send none of it.
+ */
+export function withMechanic(d: SpellDraft, mechanic: MechanicChoice): SpellDraft {
+  if (mechanic !== 'summon') {
+    const { beforeSummon: was, ...rest } = d;
+    const back = d.mechanic === 'summon' && was && d.target === 'self' && d.range === 'self';
+    return { ...rest, mechanic, ...(back ? { target: was.target, range: was.range } : {}) };
+  }
+  if (d.mechanic === 'summon') {
+    return d;
+  }
+  const next = d.target === 'self' ? d : withTarget(d, 'self');
+  const beforeSummon = d.target === 'self' ? undefined : { target: d.target, range: d.range };
+  return { ...next, mechanic, summon: d.summon ?? emptySummon(), beforeSummon };
 }
 
 /** Choosing "Só quem conjura" makes the range "Pessoal" (the server asks for it); leaving it gives the distance back. */
 export function withTarget(d: SpellDraft, target: TargetChoice): SpellDraft {
-  const next = { ...d, target };
+  const { beforeSummon: _, ...kept } = d;
+  const next = { ...kept, target };
   if (target === 'self') {
     next.range = 'self';
   } else if (d.target === 'self' && d.range === 'self' && target !== 'area') {

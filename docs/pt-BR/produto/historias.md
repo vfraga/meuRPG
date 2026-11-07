@@ -785,6 +785,11 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
   Uma opção e um talento não têm esse interruptor.
   O servidor recusa cada campo errado no próprio campo, e "Como os jogadores veem" acrescenta "Invoca: Lobo.".
   Salvar uma característica no editor mantém uma invocação escrita pela API.
+- **Dado** que edito uma magia no notebook, **quando** escolho a mecânica "Invocar", **então** escolho de 1 a 8 criaturas.
+  Defino quantas vêm (uma fórmula que pode usar o círculo do espaço), quantas a mais por círculo acima, o máximo ao mesmo tempo, o turno e o que uma nova conjuração faz com as criaturas antigas.
+  Escolher a mecânica seleciona o alvo "Só quem conjura" e devolve o alvo e o alcance antigos se eu a deixar com o alvo ainda em quem conjura.
+  Antes de salvar, o editor diz no próprio campo o que o servidor recusa: um truque, um alvo que não seja quem conjura, um ritual, uma duração instantânea com efeito guardado, uma zona guardada, ou um efeito guardado para quem falha no teste ou é atingido.
+  "Salvar magia" para e vai ao primeiro deles, e a magia deve ser de 1º círculo ou mais.
 - **Dado** uma criatura dada com fórmulas, **quando** edito a entrada para não ter fórmula alguma, **então** a classe de armadura dela na lista e no combate continua a com que foi dada.
 - **Dado** uma criatura com fórmulas que ponho no combate com "Pôr no combate" ou da qual faço um NPC, **então** ela tem os números fixos da entrada, porque não tem dono.
 - **Dado** uma entrada de criatura, **então** um jogador a acha na lista de criaturas e lê a ficha dela só enquanto um personagem dele a tem.

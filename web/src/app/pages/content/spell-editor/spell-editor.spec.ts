@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 
@@ -11,6 +11,8 @@ import {
   TableContentViolationSchema,
   TableSpellSchema,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
+import { rememberCreatureName } from '../../../core/content/summon-names';
+import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { TableContentClient } from '../../../core/content/content-client';
 import { catalog, entry } from '../../../core/content/content-testing';
 import { SpellEditor } from './spell-editor';
@@ -37,7 +39,16 @@ describe('SpellEditor', () => {
     save.mockReset();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: TableContentClient, useValue: { save } }],
+      providers: [
+        { provide: TableContentClient, useValue: { save } },
+        {
+          provide: CreaturesClient,
+          useValue: {
+            statBlock: vi.fn().mockResolvedValue({ summary: { namePt: 'Lobo' } }),
+            search: vi.fn().mockResolvedValue({ creatures: [], total: 0 }),
+          },
+        },
+      ],
     });
     const fixture = TestBed.createComponent(SpellEditor);
     fixture.componentRef.setInput('campaignId', 'camp-1');
@@ -353,5 +364,181 @@ describe('SpellEditor', () => {
     await settle(fixture, 3);
     expect(el.querySelector('[data-warning="unapplied-damage"]')).toBeNull();
     expect(setup(true).el.querySelector('[data-warning="unapplied-damage"]')).toBeNull();
+  });
+
+  describe('"Invocar" (#578, board C3)', () => {
+    const SUMMON = {
+      level: 2,
+      target: { kind: 4 },
+      range: { kind: 2 },
+      summon: {
+        creatureKeys: ['monster:wolf'],
+        count: '1',
+        countPerSlotLevel: 1,
+        maxLive: 4,
+      },
+    };
+    const mechanic = (el: HTMLElement, label: string) =>
+      Array.from(el.querySelectorAll<HTMLInputElement>('app-segmented input[type="radio"]')).find(
+        (i) =>
+          i.closest('label')?.textContent?.includes(label) && i.closest('[aria-label="Mecânica"]'),
+      )!;
+    const choose = async (fixture: ComponentFixture<unknown>, el: HTMLElement, label: string) => {
+      mechanic(el, label).click();
+      await settle(fixture, 3);
+    };
+
+    it('offers "Invocar" as the fifth mechanic, and draws the board\'s fields and lines', async () => {
+      const { fixture, el } = setup();
+      expect(el.querySelector('app-spell-summon')).toBeNull();
+      await choose(fixture, el, 'Invocar');
+      const labels = Array.from(el.querySelectorAll('[aria-label="Mecânica"] label')).map((l) =>
+        text(l).replace('check', '').trim(),
+      );
+      expect(labels).toEqual(['Só texto', 'Ataque', 'Teste de resistência', 'Cura', 'Invocar']);
+      const block = text(el.querySelector('app-spell-summon')!);
+      for (const t of [
+        'Quantas vêm',
+        'Fórmula; pode usar o círculo do espaço.',
+        'A mais por círculo acima',
+        'De 0 a 10.',
+        'No máximo ao mesmo tempo',
+        '0: sem limite. Até 40.',
+        'Turno',
+        'Ao usar de novo',
+        'Sem recurso, tempo nem duração: a magia tem os seus.',
+        '“Invocar” pede uma magia de 1º círculo ou mais, com alvo “Só quem conjura”, sem ataque, teste, dano, cura ou área, e que não seja ritual.',
+      ]) {
+        expect(block).toContain(t);
+      }
+      expect(el.querySelector('app-spell-summon .lock mat-icon')?.textContent).toContain('lock');
+    });
+
+    it('opens a spell that summons on "Invocar", and the preview says who is summoned', async () => {
+      rememberCreatureName('monster:wolf', 'Lobo');
+      const { fixture, el } = setup(true, SUMMON);
+      expect(
+        (el.querySelector('[aria-label="Mecânica"] input:checked') as HTMLInputElement).closest(
+          'label',
+        )!.textContent,
+      ).toContain('Invocar');
+      const preview = text(el.querySelector('.preview')!);
+      expect(preview).toContain('Invoca: Lobo.');
+      expect(preview).toContain('Só quem conjura');
+      await choose(fixture, el, 'Cura');
+      expect(el.querySelector('app-spell-summon')).toBeNull();
+      expect(text(el.querySelector('.preview')!)).not.toContain('Invoca:');
+    });
+
+    it('sends the summon for "Invocar" and none for another mechanic', async () => {
+      const { fixture, el } = setup(true, SUMMON);
+      save.mockResolvedValue({
+        entry: entry(TableContentKind.SPELL, 'Lâmina de Nanquim'),
+        affected: [],
+      });
+      const count = field(el, 'table_spell.summon.count') as HTMLInputElement;
+      count.value = '2 + slot()';
+      count.dispatchEvent(new Event('input'));
+      await settle(fixture, 3);
+      click(el, 'Salvar magia');
+      await settle(fixture, 3);
+      expect(save.mock.calls[0][2].value.summon).toMatchObject({
+        creatureKeys: ['monster:wolf'],
+        count: '2 + slot()',
+        countPerSlotLevel: 1,
+        maxLive: 4,
+      });
+      await choose(fixture, el, 'Só texto');
+      click(el, 'Salvar magia');
+      await settle(fixture, 3);
+      expect(save.mock.calls[1][2].value.summon).toBeUndefined();
+    });
+
+    it('gives the old target and range back when "Invocar" is left, and keeps what the master chose since', async () => {
+      const { fixture, el } = setup(true, {
+        target: { kind: 1 },
+        range: { kind: 3, distanceFt: 60 },
+      });
+      expect(text(el.querySelector('.preview')!)).toContain('Uma criatura');
+      await choose(fixture, el, 'Invocar');
+      expect(text(el.querySelector('.preview')!)).toContain('Só quem conjura');
+      expect(text(el.querySelector('.preview')!)).toContain('Pessoal');
+      await choose(fixture, el, 'Só texto');
+      const back = text(el.querySelector('.preview')!);
+      expect(back).toContain('Uma criatura');
+      expect(back).toContain('60 m'.replace('60', '18'));
+      // a target the master picked on "Invocar" is theirs: leaving does not undo it
+      await choose(fixture, el, 'Invocar');
+      const area = Array.from(
+        el.querySelectorAll<HTMLInputElement>(
+          '[data-field="table_spell.target.kind"] input[type="radio"]',
+        ),
+      ).find((i) => i.closest('label')?.textContent?.includes('Várias'))!;
+      area.click();
+      await settle(fixture, 3);
+      await choose(fixture, el, 'Só texto');
+      expect(text(el.querySelector('.preview')!)).toContain('criaturas');
+    });
+
+    it('refuses in advance a stored effect that the caster alone cannot have, and one on an instantaneous spell', async () => {
+      const effect = { applies: 2, conditions: ['condition:blinded'] };
+      const { fixture, el } = setup(true, { ...SUMMON, effect });
+      expect(text(el.querySelector('app-spell-summon')!)).toContain('Escolha outra mecânica.');
+      expect(text(field(el, 'table_spell.duration.kind').closest('app-select-field')!)).toContain(
+        'escolha uma duração que não seja instantânea',
+      );
+      click(el, 'Salvar magia');
+      await settle(fixture, 3);
+      expect(save).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(field(el, 'table_spell.duration.kind'));
+    });
+
+    it('says before the save what the engine refuses, on each field, blocks the save and lands on the first', async () => {
+      const { fixture, el } = setup(true, { ...SUMMON, level: 0 });
+      // a cantrip stays a cantrip: the editor does not raise it
+      expect(text(field(el, 'table_spell.level').closest('app-select-field')!)).toContain(
+        'Um truque não invoca',
+      );
+      expect(field(el, 'table_spell.level').getAttribute('aria-invalid')).toBe('true');
+      const ritual = el.querySelector('[data-field="table_spell.ritual"]') as HTMLElement;
+      ritual.click();
+      await settle(fixture, 3);
+      expect(text(el)).toContain('Uma magia que invoca não é ritual');
+      click(el, 'Salvar magia');
+      await settle(fixture, 3);
+      expect(save).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(field(el, 'table_spell.level'));
+    });
+
+    it('puts every refusal of the summon on its own field, and the rest on the lock line', async () => {
+      const { fixture, el } = setup(true, SUMMON);
+      save.mockRejectedValue(
+        refusal(
+          ['table_spell.summon.creature_keys[0]', 'dangling_reference'],
+          ['table_spell.summon.count', 'bad_formula'],
+          ['table_spell.summon.count_per_slot_level', 'bad_value'],
+          ['table_spell.summon.max_live', 'bad_value'],
+          ['table_spell.summon.turn_mode', 'bad_value'],
+          ['table_spell.summon.replaces', 'bad_value'],
+          ['table_spell.summon', 'bad_value'],
+        ),
+      );
+      click(el, 'Salvar magia');
+      await settle(fixture, 3);
+      expect(text(el.querySelector('[role="alert"]')!)).toContain('7 campos precisam de ajuste');
+      expect(field(el, 'table_spell.summon.creature_keys').getAttribute('aria-invalid')).toBe(
+        'true',
+      );
+      for (const f of ['count', 'count_per_slot_level', 'max_live']) {
+        expect(field(el, `table_spell.summon.${f}`).getAttribute('aria-invalid')).toBe('true');
+      }
+      expect(text(el.querySelector('app-spell-summon')!)).toContain(
+        'De 0 a 10 criaturas a mais por círculo acima do da magia.',
+      );
+      expect(text(el.querySelector('app-spell-summon')!)).toContain('Confira a magia:');
+      expect(field(el, 'table_spell.summon.creature_keys').contains(document.activeElement)).toBe(
+        true,
+      );
+    });
   });
 });

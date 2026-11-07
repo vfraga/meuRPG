@@ -786,6 +786,11 @@ The data rules, limits and the server side are in [Table content: rules](../arch
   An option and a feat have no such switch.
   The server refuses each field wrong under the field itself, and "Como os jogadores veem" adds "Invoca: Lobo.".
   Saving a feature in the editor keeps a summon written through the API.
+- **Given** I edit a spell on a laptop, **when** I choose the mechanic "Invocar", **then** I pick 1 to 8 creatures.
+  I set how many come (a formula that may use the circle of the slot), how many more for each circle above, the most at a time, the turn and what a new casting does to the old creatures.
+  Choosing it selects the target "Só quem conjura" and gives the old target and range back if I leave it with the caster still chosen.
+  Before I save, the editor says on its own field what the server refuses: a cantrip, a target other than the caster, a ritual, an instantaneous duration with a stored effect, a stored zone, or a stored effect for those who fail a save or are hit.
+  "Salvar magia" stops and lands on the first of them, and the spell must be of the 1st circle or more.
 - **Given** a creature given with formulas, **when** I edit its entry to have no formula at all, **then** its armor class in the list and in the combat are still the ones it was given.
 - **Given** a creature with formulas that I put in a combat with "Pôr no combate" or make an NPC from, **then** it has the entry's static numbers, because it has no owner.
 - **Given** a creature entry, **then** a player finds it in the creature list and reads its sheet only while one of their characters holds it.

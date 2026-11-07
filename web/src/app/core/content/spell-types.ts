@@ -5,8 +5,8 @@ import type {
   TableSpellEffect,
   TableSpellSchema,
   TableSpellZone,
-  TableSummon,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import type { SummonDraft } from './summon-draft';
 
 /**
  * The spell editor's form (MR-025, RN-23, E10-01 states 4, 4b and 5) and what it sends. A table spell is a
@@ -20,7 +20,7 @@ export type SpellInit = MessageInitShape<typeof TableSpellSchema>;
 export type RangeChoice = 'ranged' | 'self' | 'touch' | 'sight' | 'unlimited';
 export type DurationChoice = 'instant' | 'timed' | 'until_dispelled';
 export type TargetChoice = 'creature' | 'creatures' | 'area' | 'self';
-export type MechanicChoice = 'text' | 'attack' | 'save' | 'heal';
+export type MechanicChoice = 'text' | 'attack' | 'save' | 'heal' | 'summon';
 export type TimeChoice = 'action' | 'bonus_action' | 'reaction' | 'minute' | 'hour';
 
 /** The number fields typed as whole numbers: a NaN in the draft marks text that is no whole number. */
@@ -69,7 +69,11 @@ export interface SpellDraft {
   otherDamage: readonly OtherDamage[];
   /** What was typed in a count field when it is not how the number is written back ("+2", "007", text no number); never sent. */
   typed?: Partial<Record<SpellCountField, string>>;
-  /** What the form has no control for: the stored effect, zone and summon go back as they were loaded. */
+  /** What "Invocar" edits (#578); only sent while that mechanic is chosen, kept here so choosing it again gives the creatures back. */
+  summon: SummonDraft | null;
+  /** The target and the range "Invocar" replaced with the caster's: given back when the mechanic is left and they are still the caster's. */
+  beforeSummon?: { target: TargetChoice; range: RangeChoice };
+  /** What the form has no control for: the stored effect and zone go back as they were loaded. */
   kept?: KeptSpellFields;
 }
 
@@ -77,7 +81,6 @@ export interface SpellDraft {
 export interface KeptSpellFields {
   readonly effect?: TableSpellEffect;
   readonly zone?: TableSpellZone;
-  readonly summon?: TableSummon;
 }
 
 export interface OtherDamage {
@@ -126,5 +129,6 @@ export function emptySpell(): SpellDraft {
     healMore: '',
     healModifier: true,
     otherDamage: [],
+    summon: null,
   };
 }
