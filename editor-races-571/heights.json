@@ -1,0 +1,110 @@
+{
+  "T7-mestre-le-sub-raca-390-light": {
+    "main": 857.5,
+    "routed": 793.5,
+    "header": 57,
+    "document": 1083
+  },
+  "T4-jogador-escolha-do-traco-390-light": {
+    "main": 1001.1,
+    "routed": 937.1,
+    "header": 57,
+    "document": 1227
+  },
+  "T5-jogador-talento-nao-cumpre-390-light": {
+    "main": 1333.8,
+    "routed": 1269.8,
+    "header": 57,
+    "document": 1560
+  },
+  "T7-mestre-le-sub-raca-768-light": {
+    "main": 2620.5,
+    "routed": 2552.5,
+    "header": 65,
+    "document": 2810
+  },
+  "T4-jogador-escolha-do-traco-768-light": {
+    "main": 787.8,
+    "routed": 719.8,
+    "header": 65,
+    "document": 978
+  },
+  "T5-jogador-talento-nao-cumpre-768-light": {
+    "main": 1867.8,
+    "routed": 1799.8,
+    "header": 65,
+    "document": 2058
+  },
+  "T7-mestre-le-sub-raca-1280-light": {
+    "main": 1823,
+    "routed": 1755,
+    "header": 65,
+    "document": 2013
+  },
+  "T4-jogador-escolha-do-traco-1280-light": {
+    "main": 736.4,
+    "routed": 668.4,
+    "header": 65,
+    "document": 926
+  },
+  "T5-jogador-talento-nao-cumpre-1280-light": {
+    "main": 1275.8,
+    "routed": 1207.8,
+    "header": 65,
+    "document": 1466
+  },
+  "T7-mestre-le-sub-raca-390-dark": {
+    "main": 857.5,
+    "routed": 793.5,
+    "header": 57,
+    "document": 1083
+  },
+  "T4-jogador-escolha-do-traco-390-dark": {
+    "main": 1001.1,
+    "routed": 937.1,
+    "header": 57,
+    "document": 1227
+  },
+  "T5-jogador-talento-nao-cumpre-390-dark": {
+    "main": 1333.8,
+    "routed": 1269.8,
+    "header": 57,
+    "document": 1560
+  },
+  "T7-mestre-le-sub-raca-768-dark": {
+    "main": 2620.5,
+    "routed": 2552.5,
+    "header": 65,
+    "document": 2810
+  },
+  "T4-jogador-escolha-do-traco-768-dark": {
+    "main": 787.8,
+    "routed": 719.8,
+    "header": 65,
+    "document": 978
+  },
+  "T5-jogador-talento-nao-cumpre-768-dark": {
+    "main": 1867.8,
+    "routed": 1799.8,
+    "header": 65,
+    "document": 2058
+  },
+  "T7-mestre-le-sub-raca-1280-dark": {
+    "main": 1823,
+    "routed": 1755,
+    "header": 65,
+    "document": 2013
+  },
+  "T4-jogador-escolha-do-traco-1280-dark": {
+    "main": 736.4,
+    "routed": 668.4,
+    "header": 65,
+    "document": 926
+  },
+  "T5-jogador-talento-nao-cumpre-1280-dark": {
+    "main": 1275.8,
+    "routed": 1207.8,
+    "header": 65,
+    "document": 1466
+  }
+}
