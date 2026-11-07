@@ -264,6 +264,21 @@ describe('initiativeLine', () => {
     );
   });
 
+  it('says what a table feature raised the d20 to, and adds a die on top of the raised number', () => {
+    const raised = {
+      initiativeFace: 3,
+      initiativeTreatedAs: 12,
+      initiativeTreatedAsSource: 'content:feat-keen',
+      initiativeTreatedAsSourceName: 'Olho Aguçado',
+    };
+    expect(initiativeLine(c({ ...raised, initiativeBonus: 4, initiative: 16 }))?.line).toBe(
+      '3 → 12 (Olho Aguçado) + 4 = 16',
+    );
+    expect(initiativeLine(c({ ...raised, initiativeBonus: 4, initiative: 19 }))?.line).toBe(
+      '3 → 12 (Olho Aguçado) + 4 + 3 = 19',
+    );
+  });
+
   it('is null while a number is missing, or there is no combatant', () => {
     expect(initiativeLine(c({ initiativeBonus: 4, initiative: 19 }))).toBeNull();
     expect(initiativeLine(c({ initiativeFace: 15, initiative: 19 }))).toBeNull();

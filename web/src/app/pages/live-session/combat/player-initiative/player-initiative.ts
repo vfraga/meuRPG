@@ -11,7 +11,7 @@ import type {
 import { effectivePreference, preferenceLabel } from '../../../../core/campaigns/dice-labels';
 import {
   combatantInitial,
-  initiativeFormula,
+  initiativeFormulaParts,
   isPlayer,
   ownCombatant,
   signed,
@@ -133,7 +133,12 @@ export class PlayerInitiative {
   protected readonly rolled = computed(() => this.own()?.initiative !== undefined);
   protected readonly formula = computed(() => {
     const own = this.own();
-    return own ? (initiativeFormula(own) ?? '') : '';
+    return own ? (initiativeFormulaParts(own)?.line ?? '') : '';
+  });
+  /** "d20: 3 → 12 (Pé de Vento)": what a table minimum did to the d20, under the formula; empty when nothing raised it. */
+  protected readonly raisedNote = computed(() => {
+    const own = this.own();
+    return own ? (initiativeFormulaParts(own)?.note ?? '') : '';
   });
   /** "20 natural" / "1 natural": the player's own roll only; information, initiative has no automatic result. */
   protected readonly mark = computed(() => {

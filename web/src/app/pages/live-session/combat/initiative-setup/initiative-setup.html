@@ -75,9 +75,14 @@
             }
           } @else {
             <span class="row__formula" [class.row__formula--wait]="c.initiative === undefined">
-              {{ formula(c) }}
-              @if (mark(c); as natural) {
-                <span class="mr-tag row__natural" data-testid="natural-mark">{{ natural }}</span>
+              <span class="row__sum">
+                {{ formula(c) }}
+                @if (mark(c); as natural) {
+                  <span class="mr-tag row__natural" data-testid="natural-mark">{{ natural }}</span>
+                }
+              </span>
+              @if (raisedNote(c); as note) {
+                <span class="row__raised" data-testid="raised-note">{{ note }}</span>
               }
             </span>
             <span class="row__actions">

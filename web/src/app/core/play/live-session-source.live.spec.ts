@@ -8,7 +8,7 @@ import {
   GameSessionBlockedSchema,
 } from '../../../gen/meurpg/play/v1/play_pb';
 import { FreeRollDieSchema, FreeRollSchema } from '../../../gen/meurpg/play/v1/free_dice_pb';
-import { Recharge } from '../../../gen/meurpg/rules/v1/rules_pb';
+import { Recharge, type DerivedSheet } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { TestBed } from '@angular/core/testing';
 import { GetCharacterResponseSchema } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { ProficiencyLevel } from '../../../gen/meurpg/rules/v1/rules_pb';
@@ -21,6 +21,7 @@ import {
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import {
   LiveSessionSourceLive,
+  checkFloorOfSheet,
   classifyLiveError,
   toShownImageVm,
   toVitalsVm,
@@ -559,6 +560,7 @@ describe('LiveSessionSourceLive.getPlayerSheet', () => {
             skills: [],
             senses: [],
             features: [],
+            rollMinimums: [],
             spells: spells.map((s) => ({ spell: { key: s.key }, prepared: s.prepared })),
           },
         },
@@ -658,5 +660,35 @@ describe('LiveSessionSourceLive.getPlayerSheet (the skills a search and a check 
       'skill:arcana',
       'skill:stealth',
     ]);
+  });
+});
+
+describe('checkFloorOfSheet', () => {
+  const min = (applies: string[], value: number, featureKey: string, featureName: string) =>
+    ({ applies, value, featureKey, featureName }) as DerivedSheet['rollMinimums'][number];
+
+  it('takes the highest minimum that covers checks, with the feature that gives it', () => {
+    const derived = {
+      rollMinimums: [
+        min(['attack'], 20, 'content:a', 'Ataque'),
+        min(['check', 'save'], 12, 'content:b', 'Olho Aguçado'),
+        min(['check'], 14, 'content:c', 'Mente Afiada'),
+        min(['check'], 14, 'content:d', 'Outro'),
+      ],
+    } as DerivedSheet;
+    expect(checkFloorOfSheet(derived)).toEqual({
+      value: 14,
+      source: 'content:c',
+      name: 'Mente Afiada',
+    });
+  });
+
+  it('is null when no minimum covers checks', () => {
+    expect(checkFloorOfSheet({ rollMinimums: [] } as unknown as DerivedSheet)).toBeNull();
+    expect(
+      checkFloorOfSheet({
+        rollMinimums: [min(['damage'], 6, 'content:a', 'Dano')],
+      } as DerivedSheet),
+    ).toBeNull();
   });
 });

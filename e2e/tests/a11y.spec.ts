@@ -67,7 +67,7 @@ import { combatWithTwoDown, reviveRPC, tableWithDead } from './revivify-support'
 import { brisa, brisaAidSheet, brisaSheet, dalila, dalilaSheet, ragna, ragnaSheet } from './combat-support';
 import { createFeatsRPC, createNightRaceRPC, createSnowSubraceRPC, tor } from './editor-races-support';
 import { createFeatOptionsRPC, expectInViewport, featShotScale, featViewport, openSelect, shootFeat, type FeatOptionsTable } from './feat-options-support';
-import { archiveEntryRPC, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, minimumFeatBody, raceBody, rerollFeatBody, spellBody, updateEntryRPC } from './content-support';
+import { archiveEntryRPC, checkMinimumFeatBody, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, giveFeatRPC, minimumFeatBody, raceBody, rerollFeatBody, spellBody, updateEntryRPC } from './content-support';
 import { rerollTable } from './reroll-support';
 import { generateSceneRPC, mapRoute, tableForImages } from './images-support';
 import { treasureRoute } from './treasure-support';
@@ -6157,6 +6157,113 @@ async function scanRollEffects(browser: Browser, colorScheme: 'light' | 'dark', 
   } finally {
     await Promise.all([mContext.close(), pContext.close()]);
   }
+}
+
+/**
+ * A table feat raises a d20 of a check (#757, MR-025): the player types a 3 on a scene check and reads "3 → 12 (feat) + 6 = 18"
+ * before sending, then "O d20 de 3 contou como 12: feat." in the result. The feat is on Pensantus's sheet through the API.
+ */
+async function scanRollMinimumSceneCheck(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  test.setTimeout(240_000);
+  const viewport = { width, height: width >= 768 ? 900 : 844 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const table = await tableForScenes(m, p, `Acessibilidade mínimo cena ${Date.now()}`);
+    campaignId = table.campaignId;
+    const feat = 'Pé de Vento';
+    await giveFeatRPC(m, campaignId, table.characterId, await createEntryRPC(m, campaignId, 'tableFeat', checkMinimumFeatBody(feat)));
+    await openSceneRPC(m, campaignId, table.cartId);
+    await openSessionPage(p, campaignId);
+    await p.getByRole('region', { name: 'Cena: A carroça tombada' }).getByRole('button', { name: 'Rolar Procurar pistas na carroça' }).click();
+    const sheet = p.getByRole('dialog', { name: 'Rolar Procurar pistas na carroça' });
+    await sheet.getByRole('button', { name: 'Digitar o resultado' }).click();
+    await sheet.getByLabel(/Role 1d20 para Investigação/).fill('3');
+    await expect(sheet.getByRole('status')).toContainText(`3 → 12 (${feat}) + 6 = 18`);
+    await p.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
+    await expectScreenPasses(p, `Cena, o d20 digitado com o mínimo da mesa, antes de enviar ${where}`);
+    await sheet.getByRole('button', { name: 'Confirmar 3', exact: true }).click();
+    await expect(sheet.getByText('Seu total em Investigação')).toBeVisible();
+    await expect(sheet.getByText(`d20: 3 → 12 (${feat}) + 6 = 18`)).toBeVisible();
+    await expect(sheet.getByText(`O d20 de 3 contou como 12: ${feat}.`)).toBeVisible();
+    await expectScreenPasses(p, `Cena, o resultado com o d20 que contou como 12 ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+/**
+ * The same feat raises the initiative d20 (a Dexterity check): the master types Pensantus's 3 and reads the total
+ * "1d20 (12) + 3 = 15" on the initiative row (Dexterity 16) with "d20: 3 → 12 (feat)" under it. The feat's name is
+ * as long as a name may be in the long rows: neither line may run past its row or the screen, and the total stays visible.
+ */
+async function scanRollMinimumInitiative(browser: Browser, colorScheme: 'light' | 'dark', width: number, feat = 'Pé de Vento'): Promise<void> {
+  test.setTimeout(240_000);
+  const viewport = { width, height: 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const table = await tableForCombat(m, p, `Acessibilidade mínimo iniciativa ${Date.now()}`, false);
+    campaignId = table.campaignId;
+    await giveFeatRPC(m, campaignId, table.characterId, await createEntryRPC(m, campaignId, 'tableFeat', checkMinimumFeatBody(feat)));
+    await m.goto(`/campaigns/${campaignId}/session`);
+    await expectStartCombatOffered(m);
+    await clickStartCombat(m);
+    await expect(m.getByRole('dialog', { name: 'Iniciar combate' })).toBeVisible();
+    await m.getByRole('dialog').getByRole('button', { name: 'Iniciar combate' }).click();
+    await expect(m.getByText('Os NPCs rolaram sozinhos.')).toBeVisible();
+    await m.getByRole('button', { name: 'Digitar pelo jogador' }).click();
+    await m.getByLabel(/Resultado do d20 de Pensantus/).fill('3');
+    await m.getByRole('button', { name: 'Salvar', exact: true }).click();
+    const row = m.locator('li.row', { has: m.locator('[data-testid="raised-note"]') });
+    const total = row.getByText('1d20 (12) + 3 = 15', { exact: true });
+    const note = row.locator('[data-testid="raised-note"]');
+    await expect(total).toBeVisible();
+    await expect(total).toContainText('= 15');
+    await expect(note).toHaveText(`d20: 3 → 12 (${feat})`);
+    // Neither line runs past its row or the screen (a long feature name wraps under the total; it never cuts the total).
+    const rowBox = (await row.boundingBox())!;
+    for (const [what, line] of [['o total', total], ['a nota', note]] as const) {
+      const box = (await line.boundingBox())!;
+      expect(box.x + box.width, `${what} passa da borda direita da linha ${where}`).toBeLessThanOrEqual(rowBox.x + rowBox.width + 0.5);
+      expect(box.x + box.width, `${what} passa da borda da tela ${where}`).toBeLessThanOrEqual(width);
+      expect(box.x, `${what} sai pela esquerda ${where}`).toBeGreaterThanOrEqual(0);
+    }
+    await expectScreenPasses(m, `Iniciativa do mestre, o d20 que contou como 12 ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+for (const [scheme, width] of [['light', 390], ['dark', 768], ['light', 1280], ['dark', 1280], ['dark', 390], ['light', 768]] as const) {
+  const theme = scheme === 'light' ? 'claro' : 'escuro';
+  test(`o d20 de um teste que o mínimo da mesa levantou passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+    await scanRollMinimumSceneCheck(browser, scheme, width);
+  });
+  test(`a iniciativa que o mínimo da mesa levantou passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+    await scanRollMinimumInitiative(browser, scheme, width);
+  });
+  test(`a iniciativa que o mínimo da mesa levantou, com o nome da característica de 32 letras, cabe na linha no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+    await scanRollMinimumInitiative(browser, scheme, width, 'Pé de Vento Muito Mais Que Longo');
+  });
 }
 
 /**

@@ -4,7 +4,12 @@
       <span class="mr-label done__label">Iniciativa de {{ me.label }}</span>
       <div class="done__result" role="status" aria-live="polite">
         <span class="done__total">{{ me.initiative }}</span>
-        <span class="done__formula">{{ formula() }}</span>
+        <span class="done__text">
+          <span class="done__formula">{{ formula() }}</span>
+          @if (raisedNote(); as note) {
+            <span class="done__raised" data-testid="raised-note">{{ note }}</span>
+          }
+        </span>
         @if (mark()) {
           <span class="mr-tag done__natural" data-testid="natural-mark">{{ mark() }}</span>
         }

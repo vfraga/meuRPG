@@ -66,6 +66,7 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 	out.States = mapToProto(d.States, stateToProto)
 	out.StandardActions = mapToProto(d.StandardActions, actionToProto)
 	out.Features = mapToProto(d.Features, featureToProto)
+	out.RollMinimums = rollMinimumsToProto(d.RollMinimums, d.Features)
 	out.BreathWeapon = breathWeaponToProto(d.BreathWeapon)
 	out.Resistances = mapToProto(d.Resistances, resistanceToProto)
 	out.Languages = mapToProto(d.Languages, func(l rules.NamedKey) string { return l.NamePT })
@@ -76,6 +77,23 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 	out.Issues = mapToProto(d.Issues, func(is rules.Issue) *rulesv1.Issue {
 		return &rulesv1.Issue{Code: is.Code, Field: is.Field, Message: is.Message}
 	})
+	return out
+}
+
+// rollMinimumsToProto lists the roll minimums whose source is in the feature list that
+// goes out with the sheet, named by that feature. A minimum of another source is left out,
+// so it never shows more than the feature list does.
+func rollMinimumsToProto(mins []rules.RollMinimum, features []rules.Feature) []*rulesv1.RollMinimum {
+	var out []*rulesv1.RollMinimum
+	for _, m := range mins {
+		i := slices.IndexFunc(features, func(f rules.Feature) bool { return f.Key == m.Source })
+		if i < 0 {
+			continue
+		}
+		out = append(out, &rulesv1.RollMinimum{
+			Applies: slices.Clone(m.Applies), Value: i32(m.Value), FeatureKey: m.Source, FeatureName: features[i].NamePT,
+		})
+	}
 	return out
 }
 

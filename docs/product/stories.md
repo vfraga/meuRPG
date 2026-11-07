@@ -665,6 +665,12 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - **Given** a feature with the effect "Valor mínimo no dado" on attack rolls with the value 12, **when** its owner's d20 shows 2, **then** the roll keeps the face 2, says it counts as 12 and names the feature, and the total uses 12.
   A value outside 2 to 20 is refused at its field, and a damage type on a minimum that covers more than damage is refused at its field.
   Of two minimums the higher counts, and a tie with Reliable Talent keeps Reliable Talent.
+- **Given** a feature with the effect "Valor mínimo no dado" on ability checks with the value 12, **when** its owner rolls a scene check or a puzzle hint and the d20 shows 3, **then** the line under the result reads "O d20 de 3 contou como 12: <the feature's name>."
+  The initiative reads "d20: 3 → 12 (<the feature's name>) + 4 = 16" for the master, never "1d20 (3) + 4 = 16".
+  While the player types the d20 of a scene check or a trap search, the total shown before sending already counts the highest minimum that covers checks; a tie with Reliable Talent keeps Reliable Talent.
+  A saving throw in a scene is not a check: the minimum is not previewed there.
+  The server decides the roll.
+- **Given** a feature with the effect "Valor mínimo no dado" on saving throws, **when** the d20 of a creature's rider save (an extra save of an attack) shows less than the value, **then** the log line reads "d20: 2 → 8 (<the feature's name>) + 2 = 10", with the number the total counts.
 - **Given** a feature with the effect "Valor mínimo no dado" on damage with the value 6, **when** its owner rolls a weapon's damage and a d4 shows 1, **then** the die counts as 4 (its highest face) and the damage line shows the 1 and what it counts as; **and** a d8 that shows 3 counts as 6 under the same minimum.
   Another player reads neither the face nor the number.
 - **Given** a feature with the effect "Rolar de novo" on attack rolls, at most 2, spending 1 use of a resource of the feature, **when** its owner's d20 shows 2 or lower and a use is left, **then** the player is asked "rolar de novo?" before the roll is said to succeed or fail; "sim" spends the use and the new d20 stands, "não" spends nothing.

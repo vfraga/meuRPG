@@ -211,7 +211,13 @@ export class TrapSearchSheet {
       return '';
     }
     const picked = this.skill() === 'other' ? this.otherKey() : `skill:${this.skill()}`;
-    return typedLineOf(f, this.chosen().bonus, picked, this.data.skills?.reliableTalent);
+    return typedLineOf(
+      f,
+      this.chosen().bonus,
+      picked,
+      this.data.skills?.reliableTalent,
+      this.data.skills?.checkFloor,
+    );
   });
   protected readonly confirmLabel = computed(() =>
     this.face() === null ? 'Confirmar' : `Confirmar ${this.face()}`,

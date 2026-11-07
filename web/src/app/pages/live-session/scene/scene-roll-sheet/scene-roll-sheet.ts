@@ -33,7 +33,7 @@ import { ResourceClient } from '../../../../core/resources/resources-client';
 import { SceneClient, type SceneDie } from '../../../../core/play/scene-client';
 import { sceneBlocked, sceneErrorMessage } from '../../../../core/play/scene-errors';
 import type { SceneState } from '../../../../core/play/scene-state';
-import { treatedPreview } from '../../../../core/combat/combat-dice';
+import { checkFloorOf, type CheckFloor, treatedPreview } from '../../../../core/combat/combat-dice';
 import { luckyText } from '../../../../core/combat/lucky';
 import {
   passText,
@@ -65,6 +65,8 @@ export interface SceneRollSheetData {
   readonly state: SceneState;
   /** The keys of the skills Talento Confiável raises for this character (empty without it): the typed die's preview shows "6 → 10". */
   readonly reliableTalent?: readonly string[];
+  /** The highest table minimum that covers checks, or `null`: the typed die's preview counts it as well. */
+  readonly checkFloor?: CheckFloor | null;
   /** The table dice the character may add to a roll (`DerivedSheet.roll_dice`); the sheet offers those that fit this action. */
   readonly rollDice?: readonly RollDie[];
   /** The hint that the questions of the held rolls changed (`held_rolls_changed`): the sheet reads them again when it moves. */
@@ -219,10 +221,12 @@ export class SceneRollSheet {
     const passed = this.roll()?.passed;
     return passed === undefined ? null : { ok: passed, text: passText(passed, this.action.dc) };
   });
-  /** The typed d20's live total, with Talento Confiável's account where the character's feature raises this check and the number is below 10. */
-  protected readonly typedFormula = this.data.reliableTalent?.includes(this.action.key)
-    ? (face: number) => treatedPreview(face, this.bonus, 'feature:reliable-talent')
-    : null;
+  /** The typed d20's live total, with the account of the floor (Talento Confiável or a table minimum) that raises this check when the number is below it. A saving throw ("save:wis") is not a check: the table's check minimum does not reach it. */
+  protected readonly typedFormula = (() => {
+    const table = this.action.key.startsWith('save:') ? null : this.data.checkFloor;
+    const floor = checkFloorOf(this.action.key, this.data.reliableTalent, table);
+    return floor ? (face: number) => treatedPreview(face, this.bonus, floor) : null;
+  })();
   protected readonly rollLabel = `Role 1d20 para ${this.action.checkName} (${this.bonusText})`;
 
   constructor() {

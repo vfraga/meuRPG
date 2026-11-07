@@ -109,3 +109,44 @@ describe('PlayerInitiative: the natural mark (information only)', () => {
     expect(mark(own(11))).toBeUndefined();
   });
 });
+
+describe('PlayerInitiative: a d20 a table minimum raised', () => {
+  function raised(over: Record<string, unknown>): HTMLElement {
+    const fixture = TestBed.createComponent(PlayerInitiative);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        combatants: [
+          {
+            ...salvia,
+            initiative: 15,
+            initiativeFace: 3,
+            initiativeBonus: 3,
+            initiativeTreatedAs: 12,
+            initiativeTreatedAsSource: 'content:feat-keen',
+            initiativeTreatedAsSourceName: 'Pé de Vento Muito Mais Que Longo',
+            ...over,
+          } as never,
+        ],
+      }),
+    );
+    fixture.componentRef.setInput('diceMode', DiceMode.PLAYERS_CHOOSE);
+    fixture.componentRef.setInput('dicePreference', DicePreference.APP);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('keeps the formula with the total and puts what the feature did under it', () => {
+    const el = raised({});
+    expect(el.querySelector('.done__formula')?.textContent?.trim()).toBe('1d20 (12) + 3 = 15');
+    expect(el.querySelector('[data-testid="raised-note"]')?.textContent?.trim()).toBe(
+      'd20: 3 → 12 (Pé de Vento Muito Mais Que Longo)',
+    );
+  });
+
+  it('shows no note when nothing raised the die', () => {
+    const el = raised({ initiativeTreatedAs: undefined, initiative: 6 });
+    expect(el.querySelector('.done__formula')?.textContent?.trim()).toBe('1d20 (3) + 3 = 6');
+    expect(el.querySelector('[data-testid="raised-note"]')).toBeNull();
+  });
+});

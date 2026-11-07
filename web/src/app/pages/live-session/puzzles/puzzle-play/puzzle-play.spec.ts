@@ -1042,7 +1042,9 @@ describe('PuzzlePlayPage (MR-038, RN-27, RN-10; E10-06 states 6 to 9)', () => {
       await settle();
       const notice = el.querySelector('.hints .mr-notice--success')!;
       expect(textOf(notice)).toContain('Seu total: 19.');
-      expect(textOf(notice)).toContain('O d20 de 6 contou como 10: perícia com proficiência.');
+      expect(textOf(notice)).toContain(
+        'O d20 de 6 contou como 10: Talento Confiável (perícia com proficiência).',
+      );
     });
 
     it('asks the session to read the dice mode again when the server says the table rolls the other way', async () => {

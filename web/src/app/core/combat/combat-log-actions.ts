@@ -11,7 +11,7 @@ import {
   HitRiderLogResult,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { CombatantStateKind } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
-import { d20TotalText, rollText } from './combat-dice';
+import { d20TotalText, rollText, type TreatedD20 } from './combat-dice';
 import { damageText } from './combat-log-attack';
 import { luckyText } from './lucky';
 import { modeWord } from './roll-mode';
@@ -164,10 +164,11 @@ export function channelNotes(e: CombatLogEntry): string[] {
     (h) =>
       `${h.label}: recuperou ${h.healed} PV (pedido ${h.asked}), agora com ${h.hitPointsAfter} PV`,
   );
-  const turns = c.turns.map(
-    (t) =>
-      `${t.label}: Sabedoria ${t.total} contra CD ${c.saveDc}, ${t.turned ? 'foi expulso' : 'resistiu'}`,
-  );
+  const turns = c.turns.map((t) => {
+    const raised = treatedOf(t);
+    const note = raised ? ` (${d20TotalText(t.d20, t.total, raised)})` : '';
+    return `${t.label}: Sabedoria ${t.total}${note} contra CD ${c.saveDc}, ${t.turned ? 'foi expulso' : 'resistiu'}`;
+  });
   return [...heals, ...turns];
 }
 
@@ -330,7 +331,7 @@ export function hitRiderText(e: CombatLogEntry): string {
     [HitRiderChoice.STUN]: 'o Golpe Atordoante',
   };
   const roll = r.numbers
-    ? ` (${d20TotalText(r.d20, r.saveTotal)}${r.dc > 0 ? ` contra ${dcLabel(r.dc)}` : ''})`
+    ? ` (${d20TotalText(r.d20, r.saveTotal, treatedOf(r))}${r.dc > 0 ? ` contra ${dcLabel(r.dc)}` : ''})`
     : '';
   let result = '';
   if (r.result === HitRiderLogResult.SAVED) {
@@ -351,6 +352,17 @@ function resistedRiderSave(target: string, roll: string, left: number): string {
   return `${target} falhou no teste${roll} e usou Resistência Lendária: sucesso (restam ${left})`;
 }
 
+/** The d20 a table feature's floor raised, from the fields the server sets beside the d20: `undefined` when it counted as it came up. */
+function treatedOf(r: {
+  treatedAs?: number;
+  treatedAsSource: string;
+  treatedAsSourceName: string;
+}): TreatedD20 | undefined {
+  return r.treatedAs === undefined
+    ? undefined
+    : { as: r.treatedAs, source: r.treatedAsSource, name: r.treatedAsSourceName };
+}
+
 /**
  * The line of a creature's rider the master answered (the extra save or the grapple of an attack): "usou Garras em Brisa: Brisa
  * falhou no teste (1d20 (8) + 2 = 10 contra CD 10); ficou Paralisado por 1 minuto". Only what the entry carries is written: a player
@@ -363,7 +375,7 @@ function creatureRiderText(e: CombatLogEntry, r: NonNullable<CombatLogEntry['hit
     return ` dispensou o efeito de ${name} em ${target}`;
   }
   const roll = r.numbers
-    ? ` (${d20TotalText(r.d20, r.saveTotal)}${r.dc > 0 ? ` contra ${dcLabel(r.dc)}` : ''})`
+    ? ` (${d20TotalText(r.d20, r.saveTotal, treatedOf(r))}${r.dc > 0 ? ` contra ${dcLabel(r.dc)}` : ''})`
     : '';
   // The damage the save governs (a spider's poison), rolled and applied after the rider: its words follow the save's.
   const damage = r.damage ? [r.damage, ...r.moreDamages].map(damageText).join('') : '';

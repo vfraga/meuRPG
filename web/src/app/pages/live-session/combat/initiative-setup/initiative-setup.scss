@@ -155,13 +155,30 @@
 .row__formula {
   display: flex;
   grid-area: formula;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  min-width: 0;
   font-family: var(--mr-font-display);
   font-size: var(--mr-font-22);
   font-weight: 700;
   line-height: 28px;
+}
+
+.row__sum {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
+}
+
+// The d20 a table minimum raised: the explanation (and the feature's name, as long as it is) wraps under the total.
+.row__raised {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--mr-font-sans);
+  font-size: var(--mr-font-14);
+  font-weight: 400;
+  line-height: 19px;
+  color: var(--mr-ink-muted);
 }
 
 .row__formula--wait {

@@ -665,6 +665,12 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - **Dado** uma característica com o efeito "Valor mínimo no dado" em jogadas de ataque com o valor 12, **quando** o d20 do dono mostra 2, **então** a jogada guarda a face 2, diz que ela conta como 12 e nomeia a característica, e o total usa 12.
   Um valor fora de 2 a 20 é recusado no próprio campo, e um tipo de dano num mínimo que cobre mais que dano é recusado no próprio campo.
   De dois mínimos vale o maior, e um empate com o Talento Confiável fica com o Talento Confiável.
+- **Dado** uma característica com o efeito "Valor mínimo no dado" em testes de habilidade com o valor 12, **quando** o dono rola um teste de cena ou uma dica de quebra-cabeça e o d20 mostra 3, **então** a linha sob o resultado diz "O d20 de 3 contou como 12: <nome da característica>."
+  A iniciativa diz "d20: 3 → 12 (<nome da característica>) + 4 = 16" para o mestre, nunca "1d20 (3) + 4 = 16".
+  Enquanto o jogador digita o d20 de um teste de cena ou de uma busca por armadilhas, o total mostrado antes de enviar já conta o maior mínimo que cobre testes; um empate com o Talento Confiável fica com o Talento Confiável.
+  Um teste de resistência numa cena não é um teste de habilidade: o mínimo não é mostrado antes ali.
+  Quem decide a jogada é o servidor.
+- **Dado** uma característica com o efeito "Valor mínimo no dado" em testes de resistência, **quando** o d20 do teste de uma técnica de criatura (um teste extra de um ataque) mostra menos que o valor, **então** a linha do registro diz "d20: 2 → 8 (<nome da característica>) + 2 = 10", com o número que o total conta.
 - **Dado** uma característica com o efeito "Valor mínimo no dado" em dano com o valor 6, **quando** o dono rola o dano de uma arma e um d4 mostra 1, **então** o dado conta como 4 (o seu maior valor) e a linha de dano mostra o 1 e como ele conta; **e** um d8 que mostra 3 conta como 6 sob o mesmo mínimo.
   Outro jogador não lê nem a face nem o número.
 - **Dado** uma característica com o efeito "Rolar de novo" em jogadas de ataque, no máximo 2, gastando 1 uso de um recurso da característica, **quando** o d20 do dono mostra 2 ou menos e sobra um uso, **então** o jogador recebe "rolar de novo?" antes de a jogada ser dita bem-sucedida ou falha; "sim" gasta o uso e o novo d20 vale, "não" não gasta nada.

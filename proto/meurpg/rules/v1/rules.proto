@@ -778,6 +778,25 @@ message DerivedSheet {
   // sheet's gear list reads them (the derived attacks skip a carried weapon, and the armor class description ignores a
   // carried armor).
   repeated GearEntry gear = 52;
+  // The roll minimums the character's features give (a table's `roll_minimum`
+  // effect), in the order of the effects, each with the feature that gives it.
+  // Only a minimum whose feature is in `features` is listed. The web previews the
+  // counted total of a typed d20 with them.
+  repeated RollMinimum roll_minimums = 53;
+}
+
+// RollMinimum is a roll minimum a feature gives: a die of the covered rolls that
+// shows less than `value` counts as `value`.
+message RollMinimum {
+  // The rolls it covers: "attack", "check", "save" or "damage".
+  repeated string applies = 1;
+  // The lowest a die counts as.
+  int32 value = 2;
+  // The key of the feature that gives it, one of `DerivedSheet.features`. The sheet names it from its own feature list,
+  // not from the name filling of the play answers, so these are not a source_key/source_name pair.
+  string feature_key = 3;
+  // The Portuguese name of that feature.
+  string feature_name = 4;
 }
 
 // DerivedState is a temporary state a feature defines: a stance, a form.

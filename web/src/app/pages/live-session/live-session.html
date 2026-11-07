@@ -499,6 +499,7 @@
               [diceMode]="state.campaign()?.diceMode ?? 1"
               [dicePreference]="state.campaign()?.dicePreference ?? 1"
               [reliableTalent]="state.playerSheet()?.skills?.reliableTalent ?? []"
+              [checkFloor]="state.playerSheet()?.skills?.checkFloor ?? null"
               [rollDice]="state.playerSheet()?.rollDice ?? []"
               [tabs]="sceneTabs()"
               [imagesCount]="state.leftImages().length"

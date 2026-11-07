@@ -64,6 +64,12 @@ func targetsPlayer(w *world, m protoreflect.Message) bool {
 	return false
 }
 
+// riderNumbers is true for a rider's line that carries the roll of the save: the master's, and the target's player's.
+func riderNumbers(_ *world, _ *person, m protoreflect.Message) bool {
+	fd := m.Descriptor().Fields().ByName("numbers")
+	return fd != nil && m.Get(fd).Bool()
+}
+
 func ownOrAnyPlayerCharacter(w *world, p *person, m protoreflect.Message) bool {
 	return own(w, p, m) || playerCharacter(w, p, m)
 }
@@ -138,6 +144,12 @@ var masterOnly = []masterOnlyField{
 	{"meurpg.play.v1.ConcentrationSaveResult", "resisted_left", "the uses of a creature's trait left are the master's", nil},
 	{"meurpg.play.v1.CombatLogHitRider", "resisted", "a rider's save the master made a success reads as a save that passed to a player (RN-20, RN-29)", nil},
 	{"meurpg.play.v1.CombatLogHitRider", "resisted_left", "the uses of a creature's trait left are the master's (RN-20, RN-29)", nil},
+	{"meurpg.play.v1.CombatLogHitRider", "treated_as", "what the save d20 counted as goes with the roll: only the master and the target's player (the line carries numbers)", riderNumbers},
+	{"meurpg.play.v1.CombatLogHitRider", "treated_as_source", "the feature that raised the save d20 goes with the roll: only the master and the target's player", riderNumbers},
+	{"meurpg.play.v1.CombatLogHitRider", "treated_as_source_name", "the name of that feature goes with its key: only the master and the target's player; a retired entry has none (RN-23)", riderNumbers},
+	{"meurpg.play.v1.ChannelDivinityTurn", "treated_as", "an undead's save counts by its own sheet, which holds no table feature; the line is the master's and the cleric's player's", nil},
+	{"meurpg.play.v1.ChannelDivinityTurn", "treated_as_source", "same as treated_as", nil},
+	{"meurpg.play.v1.ChannelDivinityTurn", "treated_as_source_name", "same as treated_as", nil},
 	{"meurpg.play.v1.Combatant", "character_id", "an NPC's character id is the master's", func(w *world, p *person, m protoreflect.Message) bool { return playerCharacter(w, p, m) }},
 	{"meurpg.play.v1.Combatant", "hit_points_current", "an NPC's numbers", func(w *world, p *person, m protoreflect.Message) bool { return ownOrAnyPlayerCharacter(w, p, m) }},
 	{"meurpg.play.v1.Combatant", "hit_points_max", "an NPC's numbers", func(w *world, p *person, m protoreflect.Message) bool { return ownOrAnyPlayerCharacter(w, p, m) }},
