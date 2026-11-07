@@ -1,0 +1,206 @@
+{
+  "O1-escolher-a-caracteristica-1280-dark": {
+    "main": 1110,
+    "routed": 1046,
+    "header": 65,
+    "document": 1300
+  },
+  "O1-escolher-a-caracteristica-1280-light": {
+    "main": 1110,
+    "routed": 1046,
+    "header": 65,
+    "document": 1300
+  },
+  "O1-escolher-a-caracteristica-768-dark": {
+    "main": 1364.2,
+    "routed": 1300.2,
+    "header": 65,
+    "document": 1554
+  },
+  "O1-escolher-a-caracteristica-768-light": {
+    "main": 1364.2,
+    "routed": 1300.2,
+    "header": 65,
+    "document": 1554
+  },
+  "O2-opcao-salva-1280-dark": {
+    "main": 1052,
+    "routed": 988,
+    "header": 65,
+    "document": 1242
+  },
+  "O2-opcao-salva-1280-light": {
+    "main": 1052,
+    "routed": 988,
+    "header": 65,
+    "document": 1242
+  },
+  "O2-opcao-salva-768-dark": {
+    "main": 1532.6,
+    "routed": 1468.6,
+    "header": 65,
+    "document": 1723
+  },
+  "O2-opcao-salva-768-light": {
+    "main": 1532.6,
+    "routed": 1468.6,
+    "header": 65,
+    "document": 1723
+  },
+  "O3-jogador-opcoes-1280-dark": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O3-jogador-opcoes-1280-light": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O3-jogador-opcoes-390-dark": {
+    "main": 828.8,
+    "routed": 764.8,
+    "header": 57,
+    "document": 1055
+  },
+  "O3-jogador-opcoes-390-light": {
+    "main": 828.8,
+    "routed": 764.8,
+    "header": 57,
+    "document": 1055
+  },
+  "O3-jogador-opcoes-768-dark": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O3-jogador-opcoes-768-light": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O3b-jogador-sem-caracteristica-1280-dark": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O3b-jogador-sem-caracteristica-1280-light": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O3b-jogador-sem-caracteristica-390-dark": {
+    "main": 828.8,
+    "routed": 764.8,
+    "header": 57,
+    "document": 1055
+  },
+  "O3b-jogador-sem-caracteristica-390-light": {
+    "main": 828.8,
+    "routed": 764.8,
+    "header": 57,
+    "document": 1055
+  },
+  "O3b-jogador-sem-caracteristica-768-dark": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O3b-jogador-sem-caracteristica-768-light": {
+    "main": 954.8,
+    "routed": 890.8,
+    "header": 65,
+    "document": 1145
+  },
+  "O4-mestre-opcao-390-dark": {
+    "main": 618,
+    "routed": 554,
+    "header": 57,
+    "document": 844
+  },
+  "O4-mestre-opcao-390-light": {
+    "main": 618,
+    "routed": 554,
+    "header": 57,
+    "document": 844
+  },
+  "O5a-sem-caracteristica-disponivel-1280-dark": {
+    "main": 1128,
+    "routed": 1064,
+    "header": 65,
+    "document": 1318
+  },
+  "O5a-sem-caracteristica-disponivel-1280-light": {
+    "main": 998,
+    "routed": 934,
+    "header": 65,
+    "document": 1188
+  },
+  "O5a-sem-caracteristica-disponivel-768-dark": {
+    "main": 1342.8,
+    "routed": 1278.8,
+    "header": 65,
+    "document": 1533
+  },
+  "O5a-sem-caracteristica-disponivel-768-light": {
+    "main": 1342.8,
+    "routed": 1278.8,
+    "header": 65,
+    "document": 1533
+  },
+  "O5b-antes-de-salvar-1280-dark": {
+    "main": 1110,
+    "routed": 1046,
+    "header": 65,
+    "document": 1300
+  },
+  "O5b-antes-de-salvar-1280-light": {
+    "main": 1110,
+    "routed": 1046,
+    "header": 65,
+    "document": 1300
+  },
+  "O5b-antes-de-salvar-768-dark": {
+    "main": 1324.8,
+    "routed": 1260.8,
+    "header": 65,
+    "document": 1515
+  },
+  "O5b-antes-de-salvar-768-light": {
+    "main": 1324.8,
+    "routed": 1260.8,
+    "header": 65,
+    "document": 1515
+  },
+  "O5c-recusa-do-servidor-1280-dark": {
+    "main": 1176,
+    "routed": 1112,
+    "header": 65,
+    "document": 1366
+  },
+  "O5c-recusa-do-servidor-1280-light": {
+    "main": 1176,
+    "routed": 1112,
+    "header": 65,
+    "document": 1366
+  },
+  "O5c-recusa-do-servidor-768-dark": {
+    "main": 1452.2,
+    "routed": 1388.2,
+    "header": 65,
+    "document": 1642
+  },
+  "O5c-recusa-do-servidor-768-light": {
+    "main": 1452.2,
+    "routed": 1388.2,
+    "header": 65,
+    "document": 1642
+  }
+}
