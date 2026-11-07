@@ -310,21 +310,35 @@
           }
         </app-combat-column>
         <app-proficiency-column class="sheet__proficiencies" [sheet]="full" />
-        <div class="sheet__traits">
-          <app-features-panel class="sheet__features" [sheet]="full" />
-          <!-- The player's own notes (E8-07); the master never gets this panel (RN-20). Under the game numbers: first in the fourth column from 1200px, one row that opens on a phone and a tablet. -->
-          @if (vm.characterKind === 'player' && vm.state === 'pending') {
-            <!-- A pending member has no notes and no creatures yet: one line says when they appear. -->
-            <section class="mr-panel sheet__pnotes" aria-labelledby="pending-panels-title">
-              <h2 class="mr-panel__title" id="pending-panels-title">Anotações e criaturas</h2>
-              <p class="mr-muted sheet__pending-note">Aparece quando o mestre aprovar o personagem.</p>
-            </section>
-          } @else if (!vm.isMaster) {
-            <app-notes-panel class="sheet__pnotes" [campaignId]="vm.campaignId" [collapsible]="narrow()" />
-          }
-          @if (vm.story) {
-            <app-story-panel class="sheet__tstory" [vm]="vm" (changed)="replaceVm($event)" />
-          }
+        <!-- The fourth column from 1200px: the player's notes first, then "Equipamento", then the traits. Under 1200px the wrapper dissolves and each part is a cell of the sheet's own grid. -->
+        <div class="sheet__col4">
+          <app-equipment-panel
+            class="sheet__equipment"
+            [sheet]="full"
+            [canEquip]="vm.state !== 'dead'"
+            [equipBusyKey]="gear.busyKey()"
+            [equipNotice]="gear.notice()"
+            [equipError]="gear.error()"
+            [equipRetry]="gear.readFailed()"
+            (equipRetried)="gear.retry()"
+            (gearToggled)="gear.toggle($event)"
+          />
+          <div class="sheet__traits">
+            <app-features-panel class="sheet__features" [sheet]="full" />
+            <!-- The player's own notes (E8-07); the master never gets this panel (RN-20). Under the game numbers: first in the fourth column from 1200px, one row that opens on a phone and a tablet. -->
+            @if (vm.characterKind === 'player' && vm.state === 'pending') {
+              <!-- A pending member has no notes and no creatures yet: one line says when they appear. -->
+              <section class="mr-panel sheet__pnotes" aria-labelledby="pending-panels-title">
+                <h2 class="mr-panel__title" id="pending-panels-title">Anotações e criaturas</h2>
+                <p class="mr-muted sheet__pending-note">Aparece quando o mestre aprovar o personagem.</p>
+              </section>
+            } @else if (!vm.isMaster) {
+              <app-notes-panel class="sheet__pnotes" [campaignId]="vm.campaignId" [collapsible]="narrow()" />
+            }
+            @if (vm.story) {
+              <app-story-panel class="sheet__tstory" [vm]="vm" (changed)="replaceVm($event)" />
+            }
+          </div>
         </div>
         @if (vm.canAccessMasterNotes) {
           <app-master-notes

@@ -46,7 +46,7 @@ let nextWhy = 0;
       </div>
     } @else {
       <button
-        matButton="filled"
+        [matButton]="quiet() ? 'outlined' : 'filled'"
         type="button"
         class="next"
         [class.next--off]="off()"
@@ -72,6 +72,8 @@ let nextWhy = 0;
 
     .next {
       --mat-button-filled-container-height: 52px;
+      --mat-button-outlined-container-height: 52px;
+      --mat-button-outlined-label-text-color: var(--mr-ink);
       width: 100%;
     }
 
@@ -180,6 +182,8 @@ export class NextTurn {
   readonly legendary = input('');
   /** A joint turn: each member ends its part from the Turno panel, so the button stays in its place, off, and says so. */
   readonly joint = input(false);
+  /** Another panel has the page's one filled button (the opportunity offer): this one is outlined while it is open. */
+  readonly quiet = input(false);
   protected readonly off = computed(() => this.waiting() || this.joint());
   protected readonly reason = computed(() =>
     this.joint() ? 'Cada um encerra a parte no painel Turno' : this.why(),

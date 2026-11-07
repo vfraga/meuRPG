@@ -11207,11 +11207,14 @@ type SummonSpellOptions struct {
 	// The feature that gives the summon, when it is a feature's: its key. The character casts it with a use of
 	// `resource_key` (`uses_left` remain) instead of a slot, at the one circle in `circles`, and CastSummon
 	// and CastSpell name the feature in `granted_by`. Empty for a spell the character has.
-	GrantedBy     string `protobuf:"bytes,11,opt,name=granted_by,json=grantedBy,proto3" json:"granted_by,omitempty"`
-	ResourceKey   string `protobuf:"bytes,12,opt,name=resource_key,json=resourceKey,proto3" json:"resource_key,omitempty"`
-	UsesLeft      int32  `protobuf:"varint,13,opt,name=uses_left,json=usesLeft,proto3" json:"uses_left,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	GrantedBy   string `protobuf:"bytes,11,opt,name=granted_by,json=grantedBy,proto3" json:"granted_by,omitempty"`
+	ResourceKey string `protobuf:"bytes,12,opt,name=resource_key,json=resourceKey,proto3" json:"resource_key,omitempty"`
+	UsesLeft    int32  `protobuf:"varint,13,opt,name=uses_left,json=usesLeft,proto3" json:"uses_left,omitempty"`
+	// Where a class feature's summon comes from, in words: the class and the level of the feature ("Druida 3"). Empty for a spell the
+	// character has and for a feature that is not an entry of the table's class features (a race trait).
+	GrantedByLabelPt string `protobuf:"bytes,14,opt,name=granted_by_label_pt,json=grantedByLabelPt,proto3" json:"granted_by_label_pt,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *SummonSpellOptions) Reset() {
@@ -11333,6 +11336,13 @@ func (x *SummonSpellOptions) GetUsesLeft() int32 {
 		return x.UsesLeft
 	}
 	return 0
+}
+
+func (x *SummonSpellOptions) GetGrantedByLabelPt() string {
+	if x != nil {
+		return x.GrantedByLabelPt
+	}
+	return ""
 }
 
 // SummonCircle is what a spell may bring at one circle.
@@ -13804,7 +13814,7 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\fcharacter_id\x18\x02 \x01(\tR\vcharacterId\"\x94\x01\n" +
 	"\x18GetSummonOptionsResponse\x12@\n" +
 	"\x06spells\x18\x01 \x03(\v2(.meurpg.characters.v1.SummonSpellOptionsR\x06spells\x126\n" +
-	"\x05slots\x18\x02 \x03(\v2 .meurpg.characters.v1.SummonSlotR\x05slots\"\xf3\x03\n" +
+	"\x05slots\x18\x02 \x03(\v2 .meurpg.characters.v1.SummonSlotR\x05slots\"\xa2\x04\n" +
 	"\x12SummonSpellOptions\x12\x1b\n" +
 	"\tspell_key\x18\x01 \x01(\tR\bspellKey\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x14\n" +
@@ -13821,7 +13831,8 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\n" +
 	"granted_by\x18\v \x01(\tR\tgrantedBy\x12!\n" +
 	"\fresource_key\x18\f \x01(\tR\vresourceKey\x12\x1b\n" +
-	"\tuses_left\x18\r \x01(\x05R\busesLeft\"d\n" +
+	"\tuses_left\x18\r \x01(\x05R\busesLeft\x12-\n" +
+	"\x13granted_by_label_pt\x18\x0e \x01(\tR\x10grantedByLabelPt\"d\n" +
 	"\fSummonCircle\x12\x16\n" +
 	"\x06circle\x18\x01 \x01(\x05R\x06circle\x12<\n" +
 	"\aoptions\x18\x02 \x03(\v2\".meurpg.characters.v1.SummonOptionR\aoptions\"\x9f\x01\n" +

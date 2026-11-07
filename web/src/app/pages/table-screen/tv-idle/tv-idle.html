@@ -1,0 +1,18 @@
+<section class="tv-idle" aria-labelledby="tv-idle-title">
+  <h2 class="tv-idle__title" id="tv-idle-title">Nada à mostra ainda</h2>
+  <p class="tv-idle__lead">O que o mestre mostrar à mesa aparece aqui.</p>
+  @if (party().length > 0) {
+    <p class="tv-idle__label" id="tv-idle-party">Na mesa</p>
+    <ul class="tv-idle__party" aria-labelledby="tv-idle-party" [appTvFit]="shown()" (fitted)="cut.set($event)">
+      @for (name of shown(); track $index) {
+        <li class="tv-idle__who" data-count>
+          <app-combatant-token [initial]="initial(name)" [size]="32" />
+          <span class="tv-idle__name">{{ name }}</span>
+        </li>
+      }
+    </ul>
+    @if (more() > 0) {
+      <p class="tv-idle__more" data-testid="tv-idle-more">+{{ more() }}</p>
+    }
+  }
+</section>

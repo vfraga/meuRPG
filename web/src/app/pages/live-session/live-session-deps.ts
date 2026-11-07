@@ -17,6 +17,8 @@ import { FamiliarEyesClient } from '../../core/play/familiar-eyes';
 import { LiveSessionSource } from '../../core/play/live-session.types';
 import { OpenSessions } from '../../core/play/open-sessions';
 import { SceneClient } from '../../core/play/scene-client';
+import { TableScreenClient } from '../../core/play/table-screen-client';
+import { TableScreenPanel } from '../../core/play/table-screen-panel';
 import { XpChanges } from '../../core/progression/xp-changes';
 import { PuzzlesClient } from '../../core/puzzles/puzzles-client';
 import { TrapsClient } from '../../core/traps/traps-client';
@@ -59,6 +61,7 @@ export interface LiveSessionServices {
   readonly trapsApi: TrapsClient;
   readonly puzzlesApi: PuzzlesClient;
   readonly freeDiceApi: FreeDiceClient;
+  readonly tableScreenApi: TableScreenClient;
   /** The dice overlay of the shell: the table's free rolls tumble on it. */
   readonly rollAnimator: RollAnimator;
   readonly sessionNotes: SessionNotes;
@@ -93,6 +96,7 @@ export function injectLiveSessionServices(): LiveSessionServices {
     trapsApi: inject(TrapsClient),
     puzzlesApi: inject(PuzzlesClient),
     freeDiceApi: inject(FreeDiceClient),
+    tableScreenApi: inject(TableScreenClient),
     rollAnimator: inject(RollAnimator),
     sessionNotes: inject(SessionNotes),
     openSessions: inject(OpenSessions),
@@ -136,6 +140,8 @@ export class LiveSessionParts {
   readonly notes: NotesState;
   /** The free dice roller (MR-052): the form, the result, the last rolls and the table's log. */
   readonly freeDice: FreeDiceState;
+  /** The master's table screen: the choice, the TV's presence and the labels of the bar's button. */
+  readonly tableScreen: TableScreenPanel;
 
   constructor(services: LiveSessionServices, state: LiveSessionState) {
     const { mapsApi } = services;
@@ -184,6 +190,7 @@ export class LiveSessionParts {
       () => state.isMaster(),
     );
     this.notes = new NotesState(services.notesApi, () => state.campaignId());
+    this.tableScreen = new TableScreenPanel(services.tableScreenApi, () => state.campaignId());
     this.freeDice = new FreeDiceState(services.freeDiceApi, {
       campaignId: () => state.campaignId(),
       isMaster: () => state.isMaster(),

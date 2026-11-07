@@ -94,6 +94,9 @@ import {
   TreasureFinderSchema,
 } from '../../../gen/meurpg/maps/v1/maps_pb';
 import { OpenSessions } from '../../core/play/open-sessions';
+import { TableScreenKind } from '../../../gen/meurpg/play/v1/table_screen_pb';
+import { TableScreenClient } from '../../core/play/table-screen-client';
+import { screenResponse } from '../../core/play/table-screen-testing';
 import { FreeDiceClient } from '../../core/free-dice/free-dice-client';
 import { FakeFreeDiceClient, freeRoll } from '../../core/free-dice/free-dice-testing';
 import { RollAnimator } from '../../shared/roll-overlay/roll-animator';
@@ -257,10 +260,13 @@ describe('LiveSession', () => {
     dismiss: vi.fn(),
   };
 
+  /** The master's table screen: unread (it fails) unless a spec answers. */
+  const tv = { get: vi.fn(), set: vi.fn() };
   let casting: FakeCastingClient;
   let freeDice: FakeFreeDiceClient;
 
   beforeEach(async () => {
+    tv.get.mockReset().mockRejectedValue(new Error('not read'));
     freeDice = new FakeFreeDiceClient();
     xpExperience.mockReset().mockResolvedValue(
       create(GetCampaignExperienceResponseSchema, {
@@ -319,6 +325,7 @@ describe('LiveSession', () => {
         { provide: CastingClient, useValue: casting },
         { provide: SceneClient, useValue: scenes },
         { provide: FreeDiceClient, useValue: freeDice },
+        { provide: TableScreenClient, useValue: tv },
         { provide: ConversationClient, useValue: conversation },
         { provide: ContestClient, useValue: contests.as() },
         { provide: RevivifyClient, useValue: { list: revivifyList, confirmTime: vi.fn() } },
@@ -3149,6 +3156,66 @@ describe('LiveSession', () => {
       await settle(fixture);
       pageOf(fixture).takeVitals([{ ...pensantusVitals(), hitPointsCurrent: 23, revision: 60 }]);
       expect(pageOf(fixture).vitals()[0].hitPointsCurrent).toBe(23);
+    });
+  });
+
+  describe('Tela da mesa (#648)', () => {
+    const original = window.matchMedia;
+    beforeEach(() => {
+      tv.get.mockReset().mockResolvedValue(
+        screenResponse({
+          presence: { open: true },
+          options: [{ kind: TableScreenKind.IDLE, available: true }],
+          stage: {
+            kind: TableScreenKind.SCENE,
+            body: { case: 'scene', value: { name: 'Taverna' } },
+          },
+        }),
+      );
+      // A 1280 px screen: the bar has the button.
+      window.matchMedia = ((query: string) => ({
+        matches: query.includes('min-width: 1024px'),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })) as never;
+    });
+
+    afterEach(() => {
+      window.matchMedia = original;
+    });
+
+    const asMaster = () => {
+      source.campaign = {
+        name: 'Mirathel',
+        isMaster: true,
+        awaitingApproval: false,
+        diceMode: 1,
+        dicePreference: 1,
+      };
+    };
+
+    it('reads the TV once the master is known, and the bar button says what it shows', async () => {
+      asMaster();
+      const el = await render();
+      expect(tv.get).toHaveBeenCalledWith('mirathel');
+      const tvButton = el.querySelector('[data-testid="tv-button"]');
+      expect(tvButton?.textContent).toContain('Na TV: Cena');
+      expect(tvButton?.classList).toContain('bar__tv--open');
+    });
+
+    it('opens the panel from the bar button', async () => {
+      asMaster();
+      const el = await render();
+      el.querySelector<HTMLButtonElement>('[data-testid="tv-button"]')!.click();
+      expect(document.querySelector('app-table-screen-sheet')).not.toBeNull();
+      document.querySelector<HTMLButtonElement>('app-table-screen-sheet .frame__close')?.click();
+    });
+
+    it('is not for a player: no read, no button', async () => {
+      const el = await render();
+      expect(tv.get).not.toHaveBeenCalled();
+      expect(el.querySelector('[data-testid="tv-button"]')).toBeNull();
     });
   });
 

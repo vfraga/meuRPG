@@ -1622,6 +1622,27 @@ message WatchGameSessionResponse {
     // The master applied the damage of an attack to a player's character (RN-02): to that character's player only,
     // so the sheet says whose blow it was, whether or not the attacker is hidden and its line is in the log.
     AttackHit attack_hit = 46;
+    // The table screen changed: the master's choice, or whether a TV tab is connected.
+    // Only the master gets it; no player's stream does (RN-10). The master's app reads
+    // TableScreenService.GetTableScreen again.
+    TableScreenChanged table_screen_changed = 47;
+  }
+
+  // TableScreenChanged tells the master's panel that the TV at the table changed. Only the master's
+  // streams get it. The TV tabs are counted in memory in each server instance, like the live streams: with
+  // more than one instance a tab is counted by the instance that holds it. It names no item of the stage.
+  message TableScreenChanged {
+    // True while at least one TV tab holds a stream ("Aberta"). Meaningful only when `presence_known`.
+    bool open = 1;
+    // When the last TV tab lost its stream ("Sem conexão desde 21:14"). Unset while a tab is open or
+    // when none ever connected. Meaningful only when `presence_known`.
+    google.protobuf.Timestamp lost_at = 2;
+    // The revision of the master's choice (SetTableScreen), so the panel reads it again only when it
+    // is newer than the one it holds.
+    int32 choice_revision = 3;
+    // True when a TV tab connected or left and `open` and `lost_at` were counted for this event; false
+    // when the event is only a change of the choice, and the panel keeps the presence it last heard.
+    bool presence_known = 4;
   }
 
   // AttackHit is the attack damage that landed on a player's character, as that player reads it: who hit (empty when the

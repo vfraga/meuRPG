@@ -88,12 +88,27 @@ const CASES: Record<string, [field: string, reason: string, ctx?: typeof CLASS_C
   'reroll face': ['table_class_feature.effects[1].at_most', 'bad_value'],
   'reroll dangling resource': ['table_feat.effects[0].resource', 'dangling_reference'],
   'feat effect value': ['table_feat.effects[0].value', 'bad_value'],
+  'feat options limit': ['table_feat.options', 'limit'],
+  'feat choice with its own options and a set': ['table_feat.effects[1].set', 'bad_value'],
+  'feat option reads a pick': ['table_feat.options[2].effects[0].target', 'bad_value'],
+  'feat option other field': ['table_feat.options[2].effects[0].value', 'bad_value'],
+  'feat pick before its choice': ['table_feat.effects[0].proficiency', 'dangling_reference'],
+  'feat option name twice': ['table_feat.options[1].name_pt', 'bad_name'],
   'option offered by, dangling': ['table_option.offered_by', 'dangling_reference'],
   // The editor drops the feature with the set, so this one is defensive: a body from another client can still carry it.
   'option offered by, another set': ['table_option.offered_by', 'bad_value'],
 };
 
 const EXPECTED: Record<string, string> = {
+  'feat options limit': 'O talento passou de 60 opções. Remova uma.',
+  'feat choice with its own options and a set':
+    'Este talento tem opções próprias: a escolha oferece elas ou um conjunto, não os dois.',
+  'feat option reads a pick':
+    'Uma opção do talento não usa as escolhas dele. Escolha um valor fixo.',
+  'feat option other field': 'Este valor não serve para este efeito.',
+  'feat pick before its choice':
+    'A escolha vem depois deste efeito. Suba a escolha ou desça este efeito.',
+  'feat option name twice': 'Duas opções desta característica têm o mesmo nome. Mude uma delas.',
   'option offered by, dangling':
     'Esta característica não existe mais ou não tem lista de opções. Escolha outra.',
   'option offered by, another set':

@@ -11,12 +11,32 @@
         [issuesOf]="issuesOf"
         [spellOptions]="spellOptions()"
         [featEditor]="true"
+        [choices]="choices()"
+        [sourceInCards]="true"
+        [afterFields]="sourceCards"
+        [afterFieldsAt]="choiceAt()"
         [flat]="true"
         nameLabel="Nome do talento"
         textLabel="Texto do talento"
         (featureChange)="setFeature($event)"
       />
     </section>
+    <ng-template #sourceCards>
+      @if (choice(); as c) {
+        <app-option-source [effect]="c" [menu]="menu()" [basePath]="'table_feat.effects[' + choiceAt() + ']'" [ownCount]="d.options.length" [issuesOf]="issuesOf" (effectChange)="setChoice($event)" />
+      }
+    </ng-template>
+
+    <app-feat-options
+      [options]="d.options"
+      [menu]="menu()"
+      [issuesOf]="issuesOf"
+      [spellOptions]="spellOptions()"
+      [choiceNumber]="choiceAt() + 1"
+      [setName]="setName()"
+      [refused]="refused()"
+      (optionsChange)="setOptions($event)"
+    />
 
     <section class="mr-panel block" aria-labelledby="feat-asks-t">
       <h2 class="mr-panel__title" id="feat-asks-t">O que o talento pede</h2>
@@ -67,6 +87,7 @@
     @if (entry(); as saved) {
       <app-players-switch [campaignId]="campaignId()" [entry]="saved" (switched)="switched.emit($event)" />
     }
+    <app-feat-choices [uses]="uses()" />
   </aside>
 </div>
-<app-editor-bar [sticky]="true" saveLabel="Salvar talento" [saving]="saver.saving()" [blocked]="saveBlocked()" (save)="save()" (cancel)="cancelled.emit()" />
+<app-editor-bar [sticky]="true" saveLabel="Salvar talento" [saving]="saver.saving()" [blocked]="blockReason()" (save)="save()" (cancel)="cancelled.emit()" />

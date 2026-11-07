@@ -273,7 +273,7 @@ func (s *Service) watchLoop(ctx context.Context, stream *connect.ServerStream[pl
 				return nil
 			}
 		case <-recheck.C:
-			if done, err := s.recheckTick(ctx, stream, m.CampaignID, session.ID); done {
+			if done, err := s.recheckTick(ctx, m.CampaignID, session.ID, false, func() error { return s.sendSessionEnded(ctx, stream, session.ID, m.CampaignID) }); done {
 				return err
 			}
 		}
@@ -281,25 +281,31 @@ func (s *Service) watchLoop(ctx context.Context, stream *connect.ServerStream[pl
 }
 
 // recheckTick is the periodic check of the stream: an instance that no longer receives calls ends it, and
-// otherwise the login session and participation are read again.
-func (s *Service) recheckTick(ctx context.Context, stream *connect.ServerStream[playv1.WatchGameSessionResponse], campaignID, sessionID string) (bool, error) {
+// otherwise the login session and participation are read again. sendEnded says the session ended.
+func (s *Service) recheckTick(ctx context.Context, campaignID, sessionID string, masterOnly bool, sendEnded func() error) (bool, error) {
 	if s.live.Idle != nil && s.live.Idle() {
 		return true, errWatchIdle()
 	}
-	return s.recheckWatch(ctx, stream, campaignID, sessionID)
+	return s.recheckWatch(ctx, campaignID, sessionID, masterOnly, sendEnded)
+}
+
+// endOfStream says why a hub subscription ended, as the error the stream ends with: nil for the
+// server shutting down.
+func endOfStream(sub *live.Subscription) error {
+	switch err := sub.Err(); {
+	case errors.Is(err, live.ErrSlow):
+		return errWatchSlow()
+	case errors.Is(err, live.ErrReplaced):
+		return errWatchReplaced()
+	}
+	return nil
 }
 
 // forwardHubEvent sends an event of the hub to the app. It says whether the
 // stream is over, and why: a nil error is an ordinary end.
 func forwardHubEvent(stream *connect.ServerStream[playv1.WatchGameSessionResponse], sub *live.Subscription, sessionID string, ev live.Event, ok bool) (bool, error) {
 	if !ok {
-		switch err := sub.Err(); {
-		case errors.Is(err, live.ErrSlow):
-			return true, errWatchSlow()
-		case errors.Is(err, live.ErrReplaced):
-			return true, errWatchReplaced()
-		}
-		return true, nil // the server is shutting down
+		return true, endOfStream(sub)
 	}
 	sub.Taken(ev) // a coalesced hint that follows is queued again
 	if ended := ev.Message.GetSessionEnded(); ended != nil && ended.GetGameSession().GetId() != sessionID {
@@ -312,17 +318,22 @@ func forwardHubEvent(stream *connect.ServerStream[playv1.WatchGameSessionRespons
 }
 
 // recheckWatch is what a stream does every Recheck: it reads the login again
-// and the open session. It says whether the stream is over, and why.
-func (s *Service) recheckWatch(ctx context.Context, stream *connect.ServerStream[playv1.WatchGameSessionResponse], campaignID, sessionID string) (bool, error) {
-	if _, err := authz.RecheckCampaignMember(ctx, campaignID); err != nil {
+// and the open session; masterOnly also requires the master's role. It says whether the stream is over,
+// and why. sendEnded is what the stream sends when the session ended without it hearing.
+func (s *Service) recheckWatch(ctx context.Context, campaignID, sessionID string, masterOnly bool, sendEnded func() error) (bool, error) {
+	m, err := authz.RecheckCampaignMember(ctx, campaignID)
+	if err != nil {
 		return true, err // unauthenticated or not_found, as a new call would get
+	}
+	if masterOnly && m.Role != authz.RoleMaster {
+		return true, connect.NewError(connect.CodePermissionDenied, errors.New("only the campaign's master can do this"))
 	}
 	// A session that ended without this stream hearing about it
 	// (it cannot happen with one server; it costs one read).
 	current, err := s.queries.GetOpenGameSession(ctx, campaignID)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows) || (err == nil && current.ID != sessionID):
-		return true, s.sendSessionEnded(ctx, stream, sessionID, campaignID)
+		return true, sendEnded()
 	case err != nil:
 		return true, s.dbError(ctx, "check the open session", err)
 	}

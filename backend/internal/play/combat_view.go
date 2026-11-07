@@ -44,6 +44,9 @@ import (
 type combatViewer struct {
 	master bool
 	userID string
+	// wholeKeys keeps the key of a stat block action in the log entries (shownKey blanks it for a player). Only the
+	// table screen sets it, to decide on the key before it is shown: the entries never reach the TV.
+	wholeKeys bool
 	// unseen are the NPC combatants the viewer does not see on a map with the fog of
 	// war on (combat_fog.go): for them they are like hidden combatants. Nil on a map
 	// without the fog, and for the master.
@@ -439,15 +442,11 @@ func (r combatantReader) read(c playdb.Combatant) *playv1.Combatant {
 		vit = r.vitals[c.CharacterID]
 	}
 	p := combatantToProto(c, v, r.ties[c.ID], vit, r.armorClass[sheetKey(c)], r.npcs[sheetKey(c)].portrait, actsNow(e, c), r.names)
-	if v.master { // the creature of a monster: the master's alone (RN-20)
-		p.BestiaryCreatureKey, p.ChallengeRating = r.npcs[sheetKey(c)].monsterKey, r.npcs[sheetKey(c)].challengeRating
-		p.Legendary = legendaryView(r.npcs[sheetKey(c)].legendary, r.npcs[sheetKey(c)].legendaryDetail, c, e)
-		if c.Kind == kindNPC && r.npcs[sheetKey(c)].parry {
-			p.ParryAsk = new(parryAsks(c))
-		}
+	if v.master {
+		r.masterView(p, c)
 	}
 	if v.master || v.owns(c) { // the limits of a creature: the master's and the player's who controls it (RN-29)
-		p.LimitedActions = limitedActionsView(r.npcs[sheetKey(c)].limited, c)
+		p.LimitedActions = limitedActionsView(r.npcs[sheetKey(c)].limited, c, r.npcs[sheetKey(c)].persistent && c.Kind == kindNPC)
 	}
 	if r.shared && inParty(c) && !v.owns(c) && inTurn(e, c) {
 		shareEconomy(p, c)
@@ -463,6 +462,16 @@ func (r combatantReader) read(c playdb.Combatant) *playv1.Combatant {
 		p.AttackedHostileSinceLastTurn, p.TookDamageSinceLastTurn = c.AttackedHostile, c.TookDamage
 	}
 	return p
+}
+
+// masterView adds what only the master reads of a creature of a monster (RN-20): its creature, rating, Legendary actions and Parry ask.
+func (r combatantReader) masterView(p *playv1.Combatant, c playdb.Combatant) {
+	npc := r.npcs[sheetKey(c)]
+	p.BestiaryCreatureKey, p.ChallengeRating = npc.monsterKey, npc.challengeRating
+	p.Legendary = legendaryView(npc.legendary, npc.legendaryDetail, c, r.d.enc)
+	if c.Kind == kindNPC && npc.parry {
+		p.ParryAsk = new(parryAsks(c))
+	}
 }
 
 // deathSaveGoal is how many death save successes make a character stable, and how many
@@ -502,6 +511,7 @@ func combatantToProto(c playdb.Combatant, v combatViewer, tieUnresolved bool, vi
 			out.ReactionKind, out.ReactionRound = reactionKindOf(c.ReactionKind), conv.OrZero(c.ReactionRound)
 		}
 		out.ArmorClassBonus = c.AcBonus + c.EffectAcBonus
+		out.ObjectInteractionUsed = c.ObjectInteractionUsed
 		out.DeathSaveDue = onTurn && deathSaveDue(c, vitals)
 	}
 	characterFormsFor(out, c, vitals, detail)
@@ -770,6 +780,9 @@ type masterNPC struct {
 	legendaryDetail map[string]string
 	// limited are the actions of its stat block that Recharge, have uses a day or wait for a rest.
 	limited []rules.ActionPlan
+	// persistent says the NPC is a character the table keeps (not combat_only): what it spent of its uses a day and of
+	// its rest actions outlasts the combat.
+	persistent bool
 	// parry says its stat block has a Parry that adds to the armor class (the master reads its mode).
 	parry bool
 }
@@ -797,7 +810,7 @@ func (s *Service) npcDetails(ctx context.Context, m authz.Membership, d *encount
 	}
 	out := make(map[string]masterNPC, len(chars))
 	for _, c := range chars {
-		n := masterNPC{monsterKey: c.MonsterKey, challengeRating: c.ChallengeRating}
+		n := masterNPC{monsterKey: c.MonsterKey, challengeRating: c.ChallengeRating, persistent: !c.CombatOnly}
 		if c.PortraitImageID != "" {
 			n.portrait = imagesPath + c.PortraitImageID
 		}

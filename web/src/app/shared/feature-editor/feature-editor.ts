@@ -1,12 +1,13 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, TemplateRef, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
-import type { EffectDraft, EffectMenuVm } from '../../core/content/effect-draft';
+import type { EffectDraft, EffectMenuVm, FeatChoice } from '../../core/content/effect-draft';
 import { emptyEffect } from '../../core/content/effect-draft';
 import { emptyFeature, type FeatureDraft, NAME_MAX } from '../../core/content/feature-draft';
 import { followResource, resourcesOf, type SummonDraft } from '../../core/content/summon-draft';
+import { latestInput } from '../latest-input';
 import { EffectPicker } from '../effect-picker/effect-picker';
 import { FieldNote } from '../form-fields/field-note';
 import { TextField } from '../form-fields/text-field';
@@ -52,12 +53,24 @@ export class FeatureEditor {
   readonly flat = input(false);
   /** The feat editor: its effects may be the types only a feat has. */
   readonly featEditor = input(false);
+  /**
+   * The named choices of the feat these effects belong to (`featChoices` of its effects), set by the feat's own editor: a field
+   * offers the ones before its effect. With none (null), no field offers a choice.
+   */
+  readonly choices = input<readonly FeatChoice[] | null>(null);
+  /** The feature is an option of a feat: its fields offer fixed values only, and say so. */
+  readonly featOption = input(false);
+  /** The feat editor holds where a choice of options comes from in its own cards: the picker leaves those fields out. */
+  readonly sourceInCards = input(false);
+  /** A block drawn inside the picker of the effect at `afterFieldsAt`, under its fields and above "Mais opções". */
+  readonly afterFields = input<TemplateRef<unknown> | null>(null);
+  readonly afterFieldsAt = input(-1);
   /** A narrow field projected between the name and the effect (`<… lead>`): the class editor's "Nível". */
   readonly withLead = input(false);
   /**
    * "Opções para escolher": a class or subclass feature may carry a list of options the player picks (a table's maneuvers),
    * each edited here as a feature of its own (name, text, effects). A feature that has options needs a "Uma opção de uma
-   * lista do SRD" choice, whose empty list offers them.
+   * lista" choice, whose empty list offers them.
    */
   readonly allowOptions = input(false);
   /**
@@ -82,6 +95,7 @@ export class FeatureEditor {
   });
 
   readonly featureChange = output<FeatureDraft>();
+  private readonly latest = latestInput(this.feature);
   readonly removed = output<void>();
   readonly moved = output<-1 | 1>();
 
@@ -113,7 +127,10 @@ export class FeatureEditor {
   protected readonly resources = computed(() => resourcesOf(this.feature()));
 
   protected patch(p: Partial<FeatureDraft>): void {
-    this.featureChange.emit(followResource(this.feature(), { ...this.feature(), ...p }));
+    const was = this.latest.current();
+    const next = followResource(was, { ...was, ...p });
+    this.latest.sent(next);
+    this.featureChange.emit(next);
   }
 
   protected setSummon(summon: SummonDraft | null): void {
@@ -121,7 +138,7 @@ export class FeatureEditor {
   }
 
   protected setEffect(i: number, e: EffectDraft): void {
-    const effects = [...this.feature().effects];
+    const effects = [...this.latest.current().effects];
     if (e.type === '') {
       // "Só texto" takes this effect away; the others stay.
       this.patch({ effects: effects.filter((_, k) => k !== i) });
@@ -132,24 +149,24 @@ export class FeatureEditor {
   }
 
   protected addEffect(): void {
-    this.patch({ effects: [...this.feature().effects, emptyEffect('note')] });
+    this.patch({ effects: [...this.latest.current().effects, emptyEffect('note')] });
   }
 
   protected setOption(i: number, o: FeatureDraft): void {
-    const options = [...this.feature().options];
+    const options = [...this.latest.current().options];
     options[i] = o;
     this.patch({ options });
   }
 
   protected addOption(): void {
-    this.patch({ options: [...this.feature().options, emptyFeature()] });
+    this.patch({ options: [...this.latest.current().options, emptyFeature()] });
   }
 
   protected removeOption(i: number): void {
-    this.patch({ options: this.feature().options.filter((_, k) => k !== i) });
+    this.patch({ options: this.latest.current().options.filter((_, k) => k !== i) });
   }
 
   protected removeEffect(i: number): void {
-    this.patch({ effects: this.feature().effects.filter((_, k) => k !== i) });
+    this.patch({ effects: this.latest.current().effects.filter((_, k) => k !== i) });
   }
 }

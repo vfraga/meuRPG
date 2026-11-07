@@ -35,6 +35,7 @@ import {
   offerMarks,
   opportunityAttacks,
   pendingRollOf,
+  rechargeRolls,
   stoppedByReaction,
   trapNote,
   unactedPlayerOnTurn,
@@ -375,6 +376,10 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   /** The newest attack of the one on turn was stopped by the target's Escudo (from the log). */
   protected readonly reactionStopped = computed(() =>
     stoppedByReaction(this.log.rounds(), this.subject()?.id),
+  );
+  /** The d6 rolled for the creature on turn at the start of its turn (a Recharge action it had spent), from the log. */
+  protected readonly rechargeRolls = computed(() =>
+    rechargeRolls(this.log.rounds(), this.encounter()?.round, this.subject()?.id),
   );
   /** What a trap did to this player's character this round (E9-08 E), from the combat log. */
   protected readonly trapNote = computed(() =>

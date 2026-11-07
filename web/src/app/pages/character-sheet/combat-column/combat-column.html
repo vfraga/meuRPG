@@ -191,47 +191,5 @@
   </section>
 }
 
-<!-- The creatures panel (MR-037) sits here: after Combate and Magias, before Equipamento (E9-10). -->
+<!-- The creatures panel (MR-037) sits here: after Combate and Magias (E9-10). -->
 <ng-content select="[creatures]" />
-
-<section class="mr-panel" aria-labelledby="equipamento-heading">
-  <h2 id="equipamento-heading" class="mr-panel__title">Equipamento</h2>
-  <ul class="gear">
-    <li>{{ armorName() ?? 'Sem armadura' }}</li>
-    @if (s.hasShield) {
-      <li>
-        Escudo
-        @if (s.shieldIdle) {
-          <span class="mr-muted">(sem efeito: arma de duas mãos)</span>
-        }
-      </li>
-    }
-    @for (weapon of weaponNames(); track $index) {
-      <li>{{ weapon }}</li>
-    }
-    @for (item of s.equipment; track $index) {
-      <li>
-        {{ item.name }}
-        @if (item.quantity > 1) {
-          <span class="mr-muted">(x{{ item.quantity }})</span>
-        }
-      </li>
-    }
-  </ul>
-  @if (s.backgroundEquipment) {
-    <p class="gear__background">
-      <span class="mr-muted">Do antecedente:</span> {{ backgroundEquipment() }}
-    </p>
-  }
-  @if (coins().length > 0) {
-    <ul class="coins" aria-label="Moedas">
-      @for (coin of coins(); track coin.abbreviation) {
-        <li>
-          {{ coin.amount }} <abbr [title]="coin.name">{{ coin.abbreviation }}</abbr>
-        </li>
-      }
-    </ul>
-  } @else {
-    <p class="coins mr-muted">Sem moedas</p>
-  }
-</section>

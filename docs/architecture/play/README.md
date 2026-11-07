@@ -31,6 +31,7 @@ Every subject has its own page, listed at the end.
 | Monsters in combat, the encounter builder | MR-042, MR-043 | [Encounters](encounters.md) |
 | Puzzles | MR-038, RN-27 | [Puzzles](puzzles.md) |
 | The free dice roller | MR-052, RN-10, RN-18 | [The free dice roller](free-dice-roller.md) |
+| The TV at the table | RN-10, RN-36 | [The table screen](table-screen.md) |
 
 ## Services
 
@@ -48,6 +49,7 @@ A service is separate when its contract grows large enough to deserve its own `.
 | `CastingService` | `casting.proto` | Spells cast outside combat |
 | `EncounterService` | `encounters.proto` | The encounter builder and stored battle encounters |
 | `PuzzleService` | `puzzles.proto` | Puzzles |
+| `TableScreenService` | `table_screen.proto` | The master's choice for the TV at the table, what the TV shows and its stream (see [The table screen](table-screen.md)) |
 
 ### `PlayService` calls
 
@@ -127,4 +129,4 @@ What a player may not see stays out of the response, never blank or zero.
 
 ## Pages
 
-[Live session](live-session.md) · [Vitals, rests and class resources](rests-and-resources.md) · [Held rolls](held-rolls.md) · [Scenes and stage](scenes-and-stage.md) · [Combat](combat.md) · [Attacks and damage](attacks-and-damage.md) · [Movement](movement.md) · [Spell zones](spell-zones.md) · [Casting](casting.md) · [Reactions](reactions.md) · [Death and revival](death-and-revival.md) · [Contests](contests.md) · [Lasting effects](lasting-effects.md) · [Table rules in combat](table-rules.md) · [Theatre of the mind](theatre.md) · [Undo](undo.md) · [Combat log and events](combat-log.md) · [Highlights and summary](highlights-and-summary.md) · [Combat under fog](fog.md) · [Traps](traps.md) · [Creatures](creatures.md) · [Encounters](encounters.md) · [Puzzles](puzzles.md) · [The free dice roller](free-dice-roller.md)
+[Live session](live-session.md) · [Vitals, rests and class resources](rests-and-resources.md) · [Held rolls](held-rolls.md) · [Scenes and stage](scenes-and-stage.md) · [Combat](combat.md) · [Attacks and damage](attacks-and-damage.md) · [Movement](movement.md) · [Spell zones](spell-zones.md) · [Casting](casting.md) · [Reactions](reactions.md) · [Death and revival](death-and-revival.md) · [Contests](contests.md) · [Lasting effects](lasting-effects.md) · [Table rules in combat](table-rules.md) · [Theatre of the mind](theatre.md) · [Undo](undo.md) · [Combat log and events](combat-log.md) · [Highlights and summary](highlights-and-summary.md) · [Combat under fog](fog.md) · [Traps](traps.md) · [Creatures](creatures.md) · [Encounters](encounters.md) · [Puzzles](puzzles.md) · [The free dice roller](free-dice-roller.md) · [The table screen](table-screen.md)

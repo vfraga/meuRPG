@@ -1,0 +1,34 @@
+@if (fog()) {
+  <section class="tv-map" [attr.aria-label]="'Mapa ' + map().name">
+    <app-fog-map
+      [mapName]="map().name"
+      [imageWidth]="image()?.width ?? 1"
+      [imageHeight]="image()?.height ?? 1"
+      [vision]="vision()"
+      [tokens]="tokens()"
+      [points]="points()"
+      [forCharacter]="viewer"
+      [pins]="true"
+      [tools]="false"
+      [caption]="false"
+    />
+  </section>
+} @else if (image(); as img) {
+  <section class="tv-map" [attr.aria-label]="'Mapa ' + map().name">
+    <div class="tv-map__plain" [style.--tv-ar]="img.width / img.height">
+      <app-map-view
+        [image]="img"
+        [mapName]="map().name"
+        [points]="markers()"
+        [tokens]="tokens()"
+        [mode]="'preview'"
+        [controls]="'none'"
+      >
+        <app-map-pins mapOverlay [points]="points()" [columns]="info()?.gridColumns ?? 0" [rows]="info()?.gridRows ?? 0" />
+      </app-map-view>
+    </div>
+    <app-map-pins-legend [points]="points()" [isMaster]="false" />
+  </section>
+} @else {
+  <app-tv-fog-card />
+}

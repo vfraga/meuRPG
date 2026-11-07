@@ -200,8 +200,8 @@ describe('SummonSheet: casting a summon outside combat (E9-10, MR-037)', () => {
     expect(el.textContent).not.toContain('Sem usos restantes');
     expect(el.textContent).not.toContain('Magia de');
     await pick('Esqueleto');
-    expect((flat(el.querySelector('p.line b')) ?? '').replace(/\u00a0/g, ' ')).toContain(
-      'gasta um uso · restam 2',
+    expect((flat(el.querySelector('.frame__sub')) ?? '').replace(/\u00a0/g, ' ')).toContain(
+      'gasta 1 uso (restam 2)',
     );
     button('Conjurar Chamado dos Mortos').click();
     await settle();

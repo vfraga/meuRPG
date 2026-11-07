@@ -1,0 +1,32 @@
+.gear-fold__note:empty {
+  display: none;
+}
+
+.gear-fold__rule,
+.gear-fold__warn,
+.gear-fold__note,
+.gear-fold__why {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  margin: var(--mr-space-2) 0 0;
+  font-size: var(--mr-font-14);
+  line-height: 1.35;
+
+  .mat-icon {
+    flex: none;
+    width: var(--mr-font-18);
+    height: var(--mr-font-18);
+    font-size: var(--mr-font-18);
+  }
+}
+
+.gear-fold__warn {
+  color: var(--mr-warning-ink);
+}
+
+.gear-fold__why {
+  flex-wrap: wrap;
+  align-items: center;
+  font-weight: 500;
+}

@@ -1,4 +1,14 @@
-import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  type Signal,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
@@ -16,6 +26,7 @@ import { rollDiceFor, sceneRollKind } from '../../../../core/effects/roll-die';
 import type { RollDie } from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { RollDieOffer } from '../../../../shared/roll-die-offer/roll-die-offer';
 import { checkFaces, hasModeInfo, needsTwoD20 } from '../../../../core/play/check-roll';
+import { HeldFollow } from '../../../../core/held-rolls/held-follow';
 import { HeldRollController } from '../../../../core/held-rolls/held-roll-controller';
 import type { HeldAnswer } from '../../../../core/held-rolls/held-roll-offer';
 import { ResourceClient } from '../../../../core/resources/resources-client';
@@ -56,6 +67,8 @@ export interface SceneRollSheetData {
   readonly reliableTalent?: readonly string[];
   /** The table dice the character may add to a roll (`DerivedSheet.roll_dice`); the sheet offers those that fit this action. */
   readonly rollDice?: readonly RollDie[];
+  /** The hint that the questions of the held rolls changed (`held_rolls_changed`): the sheet reads them again when it moves. */
+  readonly heldTick?: Signal<number>;
 }
 
 /** The roll sheet of one action: a bottom sheet on a phone, a dialog from a
@@ -130,6 +143,8 @@ export class SceneRollSheet {
     busy: this.busy,
     error: this.error,
   });
+  /** Tells the roller that the master answered the question for them: the question goes and a line takes its place. */
+  protected readonly follow = new HeldFollow(this.held);
   /** The server said the roll takes two d20 (advantage or disadvantage with a real die): the form shows two fields. */
   protected readonly pair = signal(false);
   /** The d4 an effect adds (Orientação, Bênção) with physical dice: asked when the server says the roll takes them. */
@@ -211,6 +226,15 @@ export class SceneRollSheet {
   protected readonly rollLabel = `Role 1d20 para ${this.action.checkName} (${this.bonusText})`;
 
   constructor() {
+    // The master answers the question for the roller: the sheet drops it, so it never offers an answer that is no longer open.
+    effect(() => {
+      this.data.heldTick?.();
+      this.held.offer();
+      this.held.refusal(); // a click the server refused as too late: the question may be gone already
+      untracked(
+        () => void this.follow.seeList(() => this.resources.listHeldRolls(this.data.campaignId)),
+      );
+    });
     // After the result the focus goes to its one action, as soon as it is drawn.
     effect(() => this.back()?.nativeElement.focus());
     // An error opens at the top of the scrolling body, where it is seen.

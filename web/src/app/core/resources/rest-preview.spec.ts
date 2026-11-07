@@ -271,3 +271,17 @@ describe("restSummary: the owner's hooks and the one-use recovery", () => {
     expect(lines).toContain('Reserva de Teste: Kai +1 uso · Outra: Kai 2 de 2.');
   });
 });
+
+describe('restSummary, the NPCs of the campaign that kept their uses', () => {
+  it("names them in a line of the master's preview, and says nothing when there are none", () => {
+    const preview = restPreviewResponse([restPreview({ characterId: 'k', name: 'Kai' })]);
+    const none = restSummary(RestKind.LONG, preview, rechargeOf).lines.map(text);
+    expect(none.some((l) => l.includes('NPCs da campanha'))).toBe(false);
+    preview.npcsBack = [
+      { $typeName: 'meurpg.play.v1.RestNPCBack', characterId: 'b', name: 'Bartolo' },
+      { $typeName: 'meurpg.play.v1.RestNPCBack', characterId: 'z', name: 'Zélia' },
+    ];
+    const lines = restSummary(RestKind.LONG, preview, rechargeOf).lines.map(text);
+    expect(lines).toContain('NPCs da campanha recuperam os usos: Bartolo e Zélia.');
+  });
+});

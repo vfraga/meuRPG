@@ -78,7 +78,11 @@ export interface RadioCard {
 
     .card {
       position: relative;
-      flex: 1 1 0;
+      // Stacked, a card is as tall as its text (a basis of 0 would shrink it to the minimum and spill the text); side by side they share the width.
+      flex: 0 0 auto;
+      @container (min-width: 520px) {
+        flex: 1 1 0;
+      }
       display: flex;
       align-items: flex-start;
       gap: 12px;

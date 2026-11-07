@@ -98,7 +98,7 @@
     </div>
     <div class="bar__actions">
       <!-- A joint turn has no "end the group's turn" (it passes when the last part ends): the button stays, off, so "Encerrar combate" never takes its place. -->
-      <app-next-turn class="next" [turn]="turnKey()" [pendingNote]="pendingNote()" [busy]="busy()" [waiting]="!!waitNote()" [why]="waitWhy()" [legendary]="legendary()" [label]="nextLabel()" [idle]="idle()" [joint]="!!banner().joint" (next)="next.emit($event)" />
+      <app-next-turn class="next" [turn]="turnKey()" [pendingNote]="pendingNote()" [busy]="busy()" [waiting]="!!waitNote()" [why]="waitWhy()" [legendary]="legendary()" [label]="nextLabel()" [idle]="idle()" [joint]="!!banner().joint" [quiet]="quiet()" (next)="next.emit($event)" />
       <button matButton="outlined" type="button" class="end" (click)="ask()">
         <mat-icon aria-hidden="true">flag</mat-icon>Encerrar combate
       </button>

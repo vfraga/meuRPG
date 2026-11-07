@@ -39,6 +39,14 @@ func newLogRolls(reasons []playdb.CombatReason, requests []playdb.RollModeReques
 	return out
 }
 
+// keyName is the Portuguese name of a content key, or "" without a names reader (a log built apart from the service).
+func (r *logRolls) keyName(key string) string {
+	if r == nil || r.names == nil {
+		return ""
+	}
+	return r.names(key)
+}
+
 // reasonOf is the text behind an event: the reason of a free change, or the one a
 // player gave to the master's request.
 func (r *logRolls) reasonOf(ev actionEvent) string {

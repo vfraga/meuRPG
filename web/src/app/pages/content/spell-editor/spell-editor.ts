@@ -158,7 +158,8 @@ export class SpellEditor {
     const original = e?.body.case === 'tableSpell' ? e.body.value.level : null;
     return Array.from({ length: 10 }, (_, level) => ({
       value: level,
-      label: circleLabel(level),
+      // The spell's circle in the editor's own words, as the summon's panel and the rules say it.
+      label: level === 0 ? circleLabel(0) : `${level}º círculo`,
       disabled: original !== null && (original === 0) !== (level === 0),
     }));
   });

@@ -7,7 +7,9 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
+  type Signal,
 } from '@angular/core';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
@@ -20,6 +22,7 @@ import type { AnswerHeldRollResponse } from '../../../../gen/meurpg/play/v1/reso
 import { type GroupCheckView, RollModeKind } from '../../../../gen/meurpg/play/v1/contest_types_pb';
 import { effectivePreference } from '../../../core/campaigns/dice-labels';
 import { ActionKey } from '../../../core/connect/idempotency';
+import { HeldFollow } from '../../../core/held-rolls/held-follow';
 import { HeldRollController } from '../../../core/held-rolls/held-roll-controller';
 import { ResourceClient } from '../../../core/resources/resources-client';
 import { RollAnimator, showOfCheck, showOfDice } from '../../../shared/roll-overlay/roll-animator';
@@ -45,6 +48,8 @@ export interface GroupCheckSheetData {
   readonly diceMode: DiceMode;
   readonly preference: DicePreference;
   readonly state: GroupCheckState;
+  /** The hint that the questions of the held rolls changed (`held_rolls_changed`): the sheet reads them again when it moves. */
+  readonly heldTick?: Signal<number>;
 }
 
 const STEPS = ['Rolar', 'Resultado'] as const;
@@ -116,6 +121,8 @@ export class GroupCheckSheet {
     busy: this.busy,
     error: this.error,
   });
+  /** Tells the roller that the master answered the question for them: the question goes and a line takes its place. */
+  protected readonly follow = new HeldFollow(this.held);
   protected readonly canApp = this.data.diceMode !== DiceMode.PHYSICAL;
   protected readonly canType = this.data.diceMode !== DiceMode.APP;
   protected readonly preferApp =
@@ -162,6 +169,15 @@ export class GroupCheckSheet {
   });
 
   constructor() {
+    // The master answers the question for the roller: the sheet drops it, so it never offers an answer that is no longer open.
+    effect(() => {
+      this.data.heldTick?.();
+      this.held.offer();
+      this.held.refusal(); // a click the server refused as too late: the question may be gone already
+      untracked(
+        () => void this.follow.seeList(() => this.resources.listHeldRolls(this.data.campaignId)),
+      );
+    });
     effect(() => this.sheet.lock(this.busy()));
     effect(() => {
       if (this.error()) {

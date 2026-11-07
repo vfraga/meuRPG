@@ -1,31 +1,38 @@
-import { Component, computed, input, output, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Injector,
+  TemplateRef,
+  afterNextRender,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import {
   CRITICAL_COPY,
   EFFECT_FIELD_HINTS,
-  EFFECT_FIELD_LABELS,
   EFFECT_TYPE_FIELD_HINTS,
-  EFFECT_TYPE_FIELD_LABELS,
   RESOURCE_PICK_COPY,
   ROLLS_NOTES,
+  formulaHintFor,
+  typeHintFor,
 } from '../../core/content/effect-field-copy';
 import {
   type EffectDraft,
   type EffectMenuVm,
-  UNREADABLE_RANGE,
+  type FeatChoice,
   draftKey,
   emptyEffect,
   meterKey,
   unreadableNumber,
 } from '../../core/content/effect-draft';
-import {
-  UNREADABLE_BONUS,
-  UNREADABLE_COUNT,
-  readWhole,
-  wholeText,
-} from '../../core/content/whole-number';
-import { capitalized } from '../../core/creatures/bestiary-format';
+import { readWhole, wholeText } from '../../core/content/whole-number';
 import { neverFolded, visibleFields } from '../../core/content/effect-visible';
 import type { EffectMenuField } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { CheckGroup, type CheckOption } from '../form-fields/check-group';
@@ -35,12 +42,20 @@ import { PickList } from '../form-fields/pick-list';
 import { RadioCards, type RadioCard } from '../form-fields/radio-cards';
 import { SelectField, type SelectOption } from '../form-fields/select-field';
 import { TextField } from '../form-fields/text-field';
+import { CHOICE_GROUP_ICON, insertAt } from './effect-picker-choices';
+import { FeatChoiceView } from './feat-choice-view';
 import {
   afterTarget,
+  fieldLabel,
+  fieldView,
+  fixedHint,
   fixedMode,
-  isCriticalRange,
+  listOptions,
+  modeLockNote,
+  refHint,
   refusalTexts,
   resourcePick,
+  unreadableText,
 } from './effect-picker-parts';
 
 /**
@@ -50,6 +65,10 @@ import {
  * formula, a text, a yes-or-no switch), and nothing else. Changing the type starts a new effect: what the old type had is dropped, which is also
  * what is never sent. Shared by the race, subrace and background editors and, in 10.12, the class and subclass features.
  *
+ * In a feat, the select of a field that may point at one of the feat's named choices (`choices`, from the effects before this one)
+ * offers them in the group "A escolha do talento" above the fixed values; a formula gets buttons that write `mod("@name")` and
+ * `score("@name")` at the cursor. A choice effect is named by the editor, so the master never types the name.
+ *
  * Every input carries its own path (`basePath` + the field) as `data-field`, so a refusal from the server lands on it.
  */
 @Component({
@@ -58,7 +77,9 @@ import {
     CheckGroup,
     CheckRow,
     FieldNote,
+    MatButtonModule,
     MatIconModule,
+    NgTemplateOutlet,
     PickList,
     RadioCards,
     SelectField,
@@ -84,6 +105,33 @@ export class EffectPicker {
   readonly siblings = input<readonly EffectDraft[]>([]);
   /** The label of the type select ("Efeito"). */
   readonly label = input('Efeito');
+  /**
+   * The named choices of the feat this effect is one of, in the order of its effects (`featChoices`): set only for an effect of
+   * the feat itself. With none (null), no field offers a choice, which is what a race, a class and an option of a feat do.
+   */
+  readonly choices = input<readonly FeatChoice[] | null>(null);
+  /** The place of this effect among the effects of the feat: a field offers only the choices that come before it. */
+  readonly effectIndex = input(0);
+  /** The effect is in an option of a feat: its fields offer fixed values only, and say so. */
+  readonly featOption = input(false);
+  /**
+   * The feat editor draws where a choice of options comes from in its own cards (`afterFields`), so the picker leaves out the
+   * "Conjunto" field and, once a set is offered, the list of marked options.
+   */
+  readonly sourceInCards = input(false);
+  /** A block drawn under the fields and above "Mais opções": the feat editor's cards. */
+  readonly afterFields = input<TemplateRef<unknown> | null>(null);
+
+  /** The feat's choices as this effect sees them. */
+  protected readonly feat = new FeatChoiceView({
+    effect: this.effect,
+    menu: this.menu,
+    choices: this.choices,
+    effectIndex: this.effectIndex,
+    featOption: this.featOption,
+    sourceInCards: this.sourceInCards,
+    siblings: this.siblings,
+  });
 
   readonly effectChange = output<EffectDraft>();
 
@@ -97,10 +145,17 @@ export class EffectPicker {
     const t = this.effect().type;
     return t === ''
       ? 'Só o texto aparece na ficha; o app não faz conta com ele.'
-      : (this.menu().typeOf(t)?.hintPt ?? '');
+      : typeHintFor(t, this.menu().typeOf(t)?.hintPt ?? '', this.inFeat());
   });
+  /** In the feat editor (its effects and its options) the hints are one line. */
+  private readonly inFeat = computed(() => this.featEditor() || this.featOption());
   protected readonly allFields = computed(() =>
-    visibleFields(this.menu().fieldsOf(this.effect().type), this.effect()),
+    visibleFields(this.menu().fieldsOf(this.effect().type), this.effect()).filter(
+      // The feat editor names a choice by itself ("habilidade"), so the field is not asked.
+      (f) =>
+        !(f.name === 'name' && this.featEditor()) &&
+        !this.feat.inCards(f, this.issuesOf()(this.path(f.name)).length > 0),
+    ),
   );
   /** "Mais opções": the optional fields stay folded until they hold something, a refusal points at them, or the person opens them;
    * a field the menu says is always shown (what the effect does lies in it, as ranged_attack's switches) is never folded. */
@@ -113,6 +168,7 @@ export class EffectPicker {
         f.alwaysShown ||
         neverFolded(this.effect().type, f.name) ||
         f.name === 'only_proficient' ||
+        f.name === 'cap' ||
         this.filled(f) ||
         this.issuesShown(f.name).length > 0,
     ),
@@ -136,20 +192,23 @@ export class EffectPicker {
   }
 
   protected issues(field: string): readonly string[] {
-    return refusalTexts(this.effect(), field, this.issuesOf()(this.path(field)));
+    const texts = refusalTexts(this.effect(), field, this.issuesOf()(this.path(field)));
+    return this.feat.withProblems(field, this.effect().type, texts);
+  }
+
+  /** The select of a field whose pick cannot be read shows "Escolha…": the draft keeps the text until the master picks another. */
+  protected unreadable(f: EffectMenuField): boolean {
+    return this.feat.problem(f) !== null;
+  }
+
+  protected selected(f: EffectMenuField): string {
+    return this.unreadable(f) ? '' : this.read(f.name);
   }
 
   /** How a field is drawn when the menu's kind is not the whole story: the rolls as check rows, a reroll's resource from the entry's
    * own, the critical range's scope as cards. */
   protected viewOf(f: EffectMenuField): string {
-    const type = this.effect().type;
-    if (f.name === 'rolls' && f.kind === 'choices') {
-      return 'rolls';
-    }
-    if (f.kind === 'resource_ref' && type === 'reroll' && this.resource().list) {
-      return 'uses';
-    }
-    return f.name === 'applies' && type === 'modifier' ? 'cards' : f.kind;
+    return fieldView(this.effect().type, f, this.resource().list);
   }
 
   /** Rows the whole width of the effect: the rolls and the scope cards. */
@@ -185,14 +244,20 @@ export class EffectPicker {
     return f.name === 'mode' && e.mode !== '' && e.mode === fixedMode(this.menu(), e.target);
   }
 
+  protected countLocked(f: EffectMenuField): boolean {
+    return this.feat.countLocked(f);
+  }
+
+  protected locked(f: EffectMenuField): boolean {
+    return this.modeLocked(f) || this.countLocked(f);
+  }
+
   /** The reason a locked field is locked, written beside it with its lock. */
   protected lockNote(f: EffectMenuField): string {
-    if (this.modeLocked(f)) {
-      return isCriticalRange(this.effect())
-        ? CRITICAL_COPY.modeLock
-        : 'Este alvo só aceita este modo.';
+    if (this.countLocked(f)) {
+      return this.feat.countNote();
     }
-    return '';
+    return this.modeLocked(f) ? modeLockNote(this.effect()) : '';
   }
 
   /** The id of a lock note: the locked control points `aria-describedby` at it. */
@@ -201,20 +266,7 @@ export class EffectPicker {
   }
 
   protected labelOf(f: EffectMenuField): string {
-    if (f.name === 'value' && isCriticalRange(this.effect())) {
-      return CRITICAL_COPY.value;
-    }
-    const typed = EFFECT_TYPE_FIELD_LABELS[this.effect().type]?.[f.name];
-    if (typed) {
-      return typed;
-    }
-    // The resource an action spends is the same proto field as a resource's own name; a hook's `restore` gives back.
-    if (f.kind === 'resource_ref') {
-      return this.effect().type === 'on_event'
-        ? (RESOURCE_REF_LABEL_HOOK[f.name] ?? 'Gasta usos de')
-        : 'Gasta usos de';
-    }
-    return EFFECT_FIELD_LABELS[f.name] ?? f.name;
+    return fieldLabel(this.effect(), f);
   }
 
   /** The hint of a field that is not showing a refusal: written beside it. */
@@ -228,22 +280,8 @@ export class EffectPicker {
     return f.name === 'from' || f.name === 'spells' ? this.pickHint(f) : this.hintOf(f);
   }
 
-  /** The hint a field has whatever the type: the bounds of a count, the tag prefixes, the critical range's own line; `undefined` for the rest. */
-  private fixedHint(f: EffectMenuField): string | undefined {
-    if (f.name === 'count' && f.max > 0) {
-      return `De ${f.min} a ${f.max}.`;
-    }
-    if (f.name === 'tags') {
-      return this.menu().tagHint();
-    }
-    if (f.name === 'value' && isCriticalRange(this.effect())) {
-      return CRITICAL_COPY.valueHint;
-    }
-    return undefined;
-  }
-
   protected hintOf(f: EffectMenuField): string {
-    const fixed = this.fixedHint(f);
+    const fixed = fixedHint(this.effect(), this.menu(), f);
     if (fixed !== undefined) {
       return fixed;
     }
@@ -251,74 +289,40 @@ export class EffectPicker {
       EFFECT_TYPE_FIELD_HINTS[this.effect().type]?.[f.name] ?? EFFECT_FIELD_HINTS[f.name] ?? '';
     if (f.kind === 'formula') {
       // One hint: a field's own sentence says what it is for; the menu's line (the functions) is the fallback
-      return own || this.menu().formulaHint();
+      return formulaHintFor(own, this.menu().formulaHint(), this.inFeat());
     }
     if (f.kind === 'resource_ref' || f.kind === 'state_ref') {
-      return this.refHint(f, own);
+      return refHint(this.effect(), this.menu(), f, own);
     }
     if (f.kind === 'condition') {
       return 'Deixe vazio para valer sempre. Uma condição, como as fórmulas; active("nome") vale enquanto o estado de mesmo nome desta entrada está ligado.';
     }
     if (f.kind === 'choice') {
-      const list = this.optionsOf(f);
-      const picked = list.find((o) => o.value === this.read(f.name));
-      return picked?.hint || own;
+      const value = this.read(f.name);
+      const picked = this.optionsOf(f).find((o) => o.value === value);
+      return picked?.hint || this.feat.hint(f, value) || own;
     }
     return own;
   }
 
-  /** The hint of a field that names a resource or a state of the entry. */
-  private refHint(f: EffectMenuField, own: string): string {
-    if (f.kind === 'state_ref') {
-      return this.stateRefHint(f);
-    }
-    // `uses` has its own sentence (an empty resource is at will, not a disabled action), as `restore` does
-    if (this.effect().type === 'state') {
-      return STATE_RESOURCE_HINT;
-    }
-    return OWN_HINT_REFS.has(f.name) ? own : RESOURCE_REF_HINT;
-  }
-
-  /** Under "Só enquanto o estado": the name of a state effect of the entry, and the ready values the menu lists ("rage"). */
-  private stateRefHint(f: EffectMenuField): string {
-    const ready = this.menu()
-      .list(f.list)
-      .map((o) => `${o.key} (${o.namePt})`);
-    const own =
-      'O nome de um estado que esta entrada define (o campo "Nome do estado" de um efeito Estado).';
-    return ready.length > 0 ? `${own} Também vale: ${ready.join(', ')}.` : own;
-  }
-
   /** The options of a closed list, with the menu's one-line explanation of each. */
   protected optionsOf(f: EffectMenuField): (SelectOption & { hint: string })[] {
-    if (f.name === 'spell') {
-      return this.spellOptions().map((o) => ({ ...o, hint: '' }));
-    }
-    const menu = this.menu();
-    const list =
-      f.name === 'from' && f.list === ''
-        ? this.effect().type === 'spell_modifier'
-          ? menu.list('damage_types')
-          : menu.fromOptions(this.effect().choice)
-        : f.name === 'spells'
-          ? []
-          : menu.list(f.list);
-    // The server writes a damage type in lower case ("fogo"); a list of them reads in sentence case, as every label does.
-    const damage =
-      f.list === 'damage_types' ||
-      (f.name === 'from' && f.list === '' && this.effect().type === 'spell_modifier');
-    return list.map((o) => ({
-      value: o.key,
-      label: damage ? capitalized(o.namePt) : o.namePt,
-      hint: o.hintPt,
-    }));
+    return listOptions(this.menu(), this.effect(), f, this.spellOptions());
   }
 
   /** A choice with a placeholder when it is required, and a real "Padrão" (the field left empty) when it is not. */
   protected choiceOptions(f: EffectMenuField): SelectOption[] {
-    const list = this.optionsOf(f);
+    const list = this.feat.withChoices(f, this.optionsOf(f));
     const empty = this.effect().type === 'roll_minimum' ? 'Qualquer tipo' : 'Padrão';
-    return f.required ? list : [{ value: '', label: empty }, ...list];
+    return f.required || this.unreadable(f) ? list : [{ value: '', label: empty }, ...list];
+  }
+
+  protected groupsOf(f: EffectMenuField) {
+    return this.feat.groups(f);
+  }
+
+  protected footerOf(f: EffectMenuField): string {
+    return this.feat.footer(f);
   }
 
   /** The cards of a short closed list (a resistance's kind), with the menu's line under each. */
@@ -332,7 +336,9 @@ export class EffectPicker {
   }
 
   protected pickOptions(f: EffectMenuField): SelectOption[] {
-    return f.name === 'spells' ? [...this.spellOptions()] : this.optionsOf(f);
+    return f.name === 'spells'
+      ? [...this.spellOptions()]
+      : this.feat.withChoices(f, this.optionsOf(f));
   }
 
   protected pickHint(f: EffectMenuField): string {
@@ -381,6 +387,32 @@ export class EffectPicker {
     return this.effect()[draftKey(name)] === true;
   }
 
+  protected readonly choiceIcon = CHOICE_GROUP_ICON;
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+
+  /** Writes a choice into a formula where the cursor is, and puts the cursor after it. */
+  protected insert(f: EffectMenuField, text: string): void {
+    const input = this.host.nativeElement.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+      `[data-field="${this.path(f.name)}"]`,
+    );
+    const { next, caret } = insertAt(
+      this.read(f.name),
+      text,
+      input?.selectionStart,
+      input?.selectionEnd,
+    );
+    this.setText(f.name, next);
+    afterNextRender(
+      () => {
+        input?.focus();
+        input?.setSelectionRange(caret, caret);
+      },
+      { injector: this.injector },
+    );
+  }
+
   protected setType(type: string): void {
     if (type !== this.effect().type) {
       this.expanded.set(false);
@@ -412,7 +444,9 @@ export class EffectPicker {
     return new Map(
       this.allFields().map((f) => {
         const own =
-          f.kind === 'number' && unreadableNumber(e, f.name) ? [this.unreadableText(f)] : [];
+          f.kind === 'number' && unreadableNumber(e, f.name)
+            ? [unreadableText(f, this.inMeters(f.name))]
+            : [];
         return [f.name, [...this.issues(f.name), ...own]] as const;
       }),
     );
@@ -420,13 +454,6 @@ export class EffectPicker {
 
   protected issuesShown(name: string): readonly string[] {
     return this.shownIssues().get(name) ?? [];
-  }
-
-  private unreadableText(f: EffectMenuField): string {
-    if (this.inMeters(f.name)) {
-      return UNREADABLE_RANGE;
-    }
-    return f.min < 0 ? UNREADABLE_BONUS : UNREADABLE_COUNT;
   }
 
   protected setFlag(name: string, on: boolean): void {
@@ -447,7 +474,13 @@ export class EffectPicker {
       this.effectChange.emit(afterTarget(this.menu(), next));
       return;
     }
-    this.effectChange.emit(f.name === 'choice' ? { ...next, from: [] } : next);
+    if (f.name === 'choice') {
+      // A feat's choice of an ability or a damage type is named by the editor; any other kind has no name.
+      const name = this.featEditor() ? this.feat.nameFor(value) : '';
+      this.effectChange.emit({ ...next, from: [], name });
+      return;
+    }
+    this.effectChange.emit(next);
   }
 
   /** The rolls checked. A damage type holds only on damage alone: checking anything else drops it. */
@@ -480,17 +513,3 @@ export class EffectPicker {
     });
   }
 }
-
-/** The labels of a hook's two resource fields: the one it spends and the one it gives back. */
-const OWN_HINT_REFS: ReadonlySet<string> = new Set(['restore', 'uses']);
-
-const RESOURCE_REF_LABEL_HOOK: Readonly<Record<string, string>> = {
-  resource: 'Gasta usos de',
-  restore: 'Devolve usos de',
-};
-
-const STATE_RESOURCE_HINT =
-  'O nome de um recurso que esta entrada define (o campo "Nome do recurso" de um efeito Recurso). Cada vez que o estado liga, gasta 1 uso; sem usos, o cartão fica desligado.';
-
-const RESOURCE_REF_HINT =
-  'O nome de um recurso que esta entrada define (o campo "Nome do recurso" de um efeito Recurso). Gasta o custo (1 se vazio); sem usos o bastante, a ação fica desligada.';

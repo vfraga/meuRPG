@@ -676,3 +676,21 @@ a.mr-list__row:hover .mr-list__name {
     animation: none;
   }
 }
+
+// A line of information with a die icon: "Golpe Certeiro (d8) pode entrar num ataque com arma ..." (not a control).
+.mr-die-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  margin: var(--mr-space-2) 0;
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+
+  mat-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}

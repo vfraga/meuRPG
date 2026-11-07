@@ -41,6 +41,8 @@ export class GroupCheckCard {
   readonly campaignId = input.required<string>();
   /** Goes up on every `group_check_changed` and every (re)connection of the stream. */
   readonly tick = input(0);
+  /** Moves when the stream says the questions of the held rolls changed: the sheet reads them again. */
+  readonly heldTick = input(0);
   readonly diceMode = input.required<DiceMode>();
   readonly preference = input.required<DicePreference>();
 
@@ -108,6 +110,7 @@ export class GroupCheckCard {
       diceMode: this.diceMode(),
       preference: this.preference(),
       state: this.state,
+      heldTick: this.heldTick,
     }).subscribe({
       complete: () => this.sheetOpen.set(false),
       error: () => this.sheetOpen.set(false),

@@ -5,6 +5,7 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import { AuthService, AuthState } from '../auth/auth.service';
 import {
   OPEN_SESSIONS_FETCHER,
+  isTableScreenPage,
   OpenSessions,
   POLL_INTERVAL_MS,
   sessionForLiveLink,
@@ -87,6 +88,28 @@ describe('OpenSessions (the RN-06 poll)', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
     expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('asks nothing while suspended (the TV tab), and asks again when it is let go', async () => {
+    service.suspend(true);
+    await signIn();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(service.sessions()).toEqual([]);
+
+    service.suspend(false);
+    TestBed.tick();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops a running poll when it is suspended', async () => {
+    await signIn();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    service.suspend(true);
+    TestBed.tick();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3);
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it('stops while the tab is hidden, and asks at once when it is visible again', async () => {
@@ -203,6 +226,11 @@ describe('sessionsToAnnounce', () => {
     expect(sessionsToAnnounce(sessions, new Set(), '/campaigns/c9/session')).toEqual([]);
   });
 
+  it('never announces on the table screen, the TV tab of the table', () => {
+    expect(sessionsToAnnounce(sessions, new Set(), '/campaigns/c2/table-screen')).toEqual([]);
+    expect(sessionsToAnnounce(sessions, new Set(), '/campaigns/c9/table-screen?x=1')).toEqual([]);
+  });
+
   it("doesn't announce to the master the session they started", () => {
     expect(sessionsToAnnounce([open('s3', 'c3', true)], new Set(), '/')).toEqual([]);
   });
@@ -225,7 +253,26 @@ describe('sessionForLiveLink', () => {
     expect(sessionForLiveLink([open('s1', 'c1')], '/campaigns/c1/session')).toBeNull();
   });
 
+  it('shows nothing on the table screen', () => {
+    expect(sessionForLiveLink([open('s1', 'c1')], '/campaigns/c1/table-screen')).toBeNull();
+    expect(sessionForLiveLink([open('s1', 'c1')], '/campaigns/c9/table-screen')).toBeNull();
+  });
+
   it('shows nothing without an open session', () => {
     expect(sessionForLiveLink([], '/')).toBeNull();
+  });
+});
+
+describe('isTableScreenPage', () => {
+  it('is the table screen route, with or without a query', () => {
+    expect(isTableScreenPage('/campaigns/c1/table-screen')).toBe(true);
+    expect(isTableScreenPage('/campaigns/c1/table-screen?x=1#y')).toBe(true);
+  });
+
+  it('is no other page of the campaign', () => {
+    expect(isTableScreenPage('/campaigns/c1/session')).toBe(false);
+    expect(isTableScreenPage('/campaigns/c1')).toBe(false);
+    expect(isTableScreenPage('/campaigns/c1/table-screen/extra')).toBe(false);
+    expect(isTableScreenPage('/')).toBe(false);
   });
 });

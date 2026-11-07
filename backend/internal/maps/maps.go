@@ -148,9 +148,14 @@ type LiveSession interface {
 	// ImageOnStage reports whether the image is the portrait of an NPC on the
 	// stage of the open scene of the campaign's open game session (MR-031),
 	// as the user sees that stage: a player outside a scene open to only some
-	// players sees none. An empty userID is nobody in particular: any NPC of the
-	// stage counts. False when no session or no scene is open.
+	// players sees none. An empty userID is nobody in particular, who sees the
+	// stage only of a scene open to the whole table. False when no session or no
+	// scene is open.
 	ImageOnStage(ctx context.Context, campaignID, userID, imageID string) (bool, error)
+	// ImageOnAnyStage reports whether the image is the portrait of an NPC shown on
+	// the stage of the open scene, whoever the scene is open to. It answers whether an
+	// image is in use; it never says what a player may fetch.
+	ImageOnAnyStage(ctx context.Context, campaignID, imageID string) (bool, error)
 	// ImageShownTo reports whether the image is the one the open session shows
 	// and the user is in the audience that sees it (MR-028, RN-10).
 	ImageShownTo(ctx context.Context, campaignID, userID, imageID string) (bool, error)

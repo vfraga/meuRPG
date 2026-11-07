@@ -11,8 +11,6 @@ import {
   viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { RouterLink } from '@angular/router';
-import { creatureSlug } from '../../../../core/creatures/bestiary-format';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
@@ -23,7 +21,9 @@ import {
   type GetTurnOptionsResponse,
   type TargetInReach,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import { type Attack, type Creature } from '../../../../../gen/meurpg/rules/v1/rules_pb';
+import { type Attack } from '../../../../../gen/meurpg/rules/v1/rules_pb';
+import { RechargeNotice } from './recharge-notice';
+import { StatBlockLoad } from './stat-block-load';
 import { CreaturesClient } from '../../../../core/creatures/creatures-client';
 import { CombatUndone } from '../../../../core/combat/combat-undone';
 import { CombatClient } from '../../../../core/combat/combat-client';
@@ -43,6 +43,7 @@ import {
   roundLabel,
 } from '../../../../core/combat/combat-view';
 import { joinDots } from '../../../../core/format/text';
+import type { RechargeRoll } from '../../../../core/combat/combat-derived';
 import { defaultTarget, isHostile } from '../../../../core/combat/attack-flow';
 import { isCreature } from '../../../../core/combat/creature-names';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
@@ -69,6 +70,7 @@ import {
   statsOf,
 } from './npc-card-view';
 import { attacksMade, routinesOf } from './multiattack';
+import { NpcCardMenu } from './npc-card-menu';
 import { PendingDamages } from './pending-damages';
 
 /**
@@ -96,13 +98,14 @@ import { PendingDamages } from './pending-damages';
     MatFormFieldModule,
     MatIconModule,
     MatSelectModule,
+    NpcCardMenu,
     PendingDamages,
     Portrait,
     RageStatus,
+    RechargeNotice,
     MultiRoll,
     RollModePicker,
     RollPicker,
-    RouterLink,
   ],
   templateUrl: './npc-card.html',
   styleUrl: './npc-card.scss',
@@ -123,14 +126,16 @@ export class NpcCard {
   readonly framed = input(true);
   /** The newest attack of this one was stopped by the target's Escudo (from the log). */
   readonly reactionStopped = input(false);
+  /** The d6 the server rolled for this creature at the start of its turn (a Recharge action it had spent), from the log. */
+  readonly rechargeRolls = input<readonly RechargeRoll[]>([]);
   /** The page's own call (the turn passing) is in flight. */
   readonly turnBusy = input(false);
-  /** The combat is played without a map (RN-25): movement is a number and the opportunity attack is the master's offer. */
+  /** The combat is played without a map (RN-25): movement is a number. The opportunity offer is in "Mais ações" with a map too. */
   readonly theatre = input(false);
-  /** The offer's form is open: "Oferecer ataque de oportunidade" says so. */
-  readonly offering = input(false);
   /** Why "Oferecer ataque de oportunidade" cannot be used now ("Ninguém pode reagir agora."), or `''`. */
   readonly offerWhy = input('');
+  /** The offer panel is open under the stats: the numbers and chips of what was used leave (screen readers keep them), so its buttons stay in view. */
+  readonly offerOpen = input(false);
   /** "Oferecer ataque de oportunidade": the page opens the form. */
   readonly offer = output<void>();
   /** "Conjurar" on an NPC's area spell placed on the map: the page opens the master's picker (PM-02d state 11). */
@@ -156,7 +161,9 @@ export class NpcCard {
   protected readonly last = signal<LastRoll | null>(null);
   private key = newKey();
   /** The creature's stat block, read once per kind (the client keeps it): its Multiattack routines. `null` until read, and when it cannot be. */
-  protected readonly block = signal<Creature | null>(null);
+  protected readonly statBlock = new StatBlockLoad();
+  protected readonly blockState = this.statBlock.state;
+  protected readonly block = this.statBlock.block;
   protected readonly creatureDamageIds = signal<readonly string[]>([]);
   /** The routine the master picked, when the creature has a choice between several. */
   protected readonly routineIdx = signal(0);
@@ -169,10 +176,6 @@ export class NpcCard {
   protected readonly round = computed(() => roundLabel(this.encounter().round));
   protected readonly initial = computed(() => combatantInitial(this.subject().label));
   protected readonly isCreatureSubject = computed(() => isCreature(this.subject()));
-  /** The creature's route segment when the subject is a monster of the bestiary ("bandit"); the key only reaches the master (RN-29). */
-  protected readonly creatureSlug = computed(() =>
-    creatureSlug(this.subject().bestiaryCreatureKey ?? ''),
-  );
   /** "Goblin · ND 1/4": what it is, under the title; empty for a character or a creature of a player. */
   protected readonly identity = computed(() => {
     const c = this.subject();
@@ -311,19 +314,13 @@ export class NpcCard {
       const key = this.subject().bestiaryCreatureKey ?? '';
       const campaignId = this.campaignId();
       untracked(() => {
-        this.block.set(null);
+        this.statBlock.reset(!!key);
         this.routineIdx.set(0);
-        if (!key) {
-          return;
+        if (key) {
+          this.statBlock.read(this.creatures, campaignId, key, () =>
+            untracked(() => this.subject().bestiaryCreatureKey ?? ''),
+          );
         }
-        this.creatures.statBlock(campaignId, key).then(
-          (block) => {
-            if (untracked(() => this.subject().bestiaryCreatureKey) === key) {
-              this.block.set(block);
-            }
-          },
-          () => undefined, // no routine to show: the card is as it was
-        );
       });
     });
     // A new turn (no attack counted) starts the routine again.

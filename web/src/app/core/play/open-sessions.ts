@@ -54,6 +54,8 @@ export class OpenSessions {
 
   private readonly sessionsSignal = signal<readonly OpenSessionVm[]>([]);
   private readonly dismissedSignal = signal<ReadonlySet<string>>(new Set());
+  /** The page asks for no poll at all (the table screen, a TV tab that may call only its own service). */
+  private readonly suspended = signal(false);
 
   /** Newest first. Empty while signed out. */
   readonly sessions = this.sessionsSignal.asReadonly();
@@ -73,7 +75,7 @@ export class OpenSessions {
   constructor() {
     // Poll only while signed in.
     effect(() => {
-      if (this.auth.state().status === 'signed-in') {
+      if (this.auth.state().status === 'signed-in' && !this.suspended()) {
         this.start();
       } else {
         this.stop();
@@ -92,6 +94,11 @@ export class OpenSessions {
    * master starts or ends a session, so the pill doesn't lag behind. */
   refresh(): Promise<void> {
     return this.polling ? this.poll() : Promise.resolve();
+  }
+
+  /** Stops the poll while a page that must call nothing else is shown (`true`), and starts it again after (`false`). */
+  suspend(on: boolean): void {
+    this.suspended.set(on);
   }
 
   /** Hides the notice of this session for the rest of this tab's life. */
@@ -170,10 +177,18 @@ export class OpenSessions {
   }
 }
 
-/** A page of a campaign (`/campaigns/<id>`, `/campaigns/<id>/session`, a sheet, a map...), from a router URL. */
+/** The table screen (`/campaigns/<id>/table-screen`): the master's TV tab, which shows no shell at all. */
+export function isTableScreenPage(url: string): boolean {
+  return /^\/campaigns\/[^/]+\/table-screen\/?$/.test(url.split(/[?#]/, 1)[0]);
+}
+
+/**
+ * A page of a campaign (`/campaigns/<id>`, `/campaigns/<id>/session`, a sheet, a map...), from a router URL.
+ * `session` is true on the live session and on the table screen: both are the table, with no notice and no "Ao vivo" link.
+ */
 function campaignPage(url: string): { campaignId: string; session: boolean } | null {
   const path = url.split(/[?#]/, 1)[0];
-  const match = /^\/campaigns\/([^/]+)(\/session)?(\/.*)?$/.exec(path);
+  const match = /^\/campaigns\/([^/]+)(\/session|\/table-screen)?(\/.*)?$/.exec(path);
   return match ? { campaignId: match[1], session: match[2] !== undefined && !match[3] } : null;
 }
 

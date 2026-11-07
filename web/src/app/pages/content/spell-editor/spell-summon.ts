@@ -4,6 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import type { TableEntry } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { SUMMON_LOCK_PT, SUMMON_TURN_LINE_PT } from '../../../core/content/spell-summon';
 import { MAX_SUMMON_LIVE, type SummonDraft } from '../../../core/content/summon-draft';
+import { latestInput } from '../../../shared/latest-input';
 import { FieldNote } from '../../../shared/form-fields/field-note';
 import { RadioCards } from '../../../shared/form-fields/radio-cards';
 import { TextField } from '../../../shared/form-fields/text-field';
@@ -58,6 +59,7 @@ export class SpellSummon {
   /** What the engine refuses about the spell as a whole, at `table_spell.summon`. */
   readonly lockIssues = input<readonly string[]>([]);
   readonly summonChange = output<SummonDraft>();
+  private readonly draft = latestInput(this.summon);
 
   protected readonly at = AT;
   protected readonly maxLive = MAX_SUMMON_LIVE;
@@ -75,6 +77,8 @@ export class SpellSummon {
   }
 
   protected patch(p: Partial<SummonDraft>): void {
-    this.summonChange.emit({ ...this.summon(), ...p });
+    const next = { ...this.draft.current(), ...p };
+    this.draft.sent(next);
+    this.summonChange.emit(next);
   }
 }

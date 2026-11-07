@@ -67,7 +67,7 @@ func modifierTagPT(m EffectModifier) string {
 	case ModifierSpeedMultiplier:
 		return fmt.Sprintf("Deslocamento %d%%", m.Value)
 	case ModifierSpeedAdd:
-		return fmt.Sprintf("Deslocamento +%d pés", m.Value)
+		return "Deslocamento +" + MetersPT(m.Value)
 	case ModifierConditionImmunity:
 		return "Imunidade a condições"
 	case ModifierCheckBonus:

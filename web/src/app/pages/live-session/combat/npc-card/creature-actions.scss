@@ -77,12 +77,82 @@
   font-size: var(--mr-font-16);
 }
 
+.act__usage {
+  // On its own line under the name (board 556-02), after the state and the uses, which stay beside the name.
+  order: 3;
+  flex-basis: 100%;
+}
+
 .act__usage,
 .act__note,
 .act__why,
 .done__note {
   font-size: var(--mr-font-14);
   color: var(--mr-ink-muted);
+}
+
+.act__tag-state,
+.act__uses {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+}
+
+.act__tag-state {
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 12px 0 8px;
+  border: 1px dashed var(--mr-control-line);
+  border-radius: var(--mr-radius-pill);
+  color: var(--mr-ink-muted);
+  line-height: 1;
+
+  .mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}
+
+.act__tag-state--ready {
+  border-style: solid;
+  border-color: transparent;
+  background: var(--mr-success-surface);
+  color: var(--mr-success-ink);
+}
+
+.act__dots {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.act__dot {
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border: 1.5px dashed var(--mr-control-line);
+  border-radius: 50%;
+}
+
+.act__dot--left {
+  border: 0;
+  background: var(--mr-ink);
+}
+
+.act__why {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
 }
 
 .act__line {
@@ -95,6 +165,7 @@
 }
 
 .act__tag {
+  display: block;
   font-weight: 700;
 }
 
@@ -165,4 +236,72 @@
 .pill--miss {
   background: var(--mr-danger-surface);
   color: var(--mr-danger-ink);
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  padding: var(--mr-space-3);
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+}
+
+.skeleton__bar {
+  height: 10px;
+  border-radius: var(--mr-radius-pill);
+  background: var(--mr-line);
+}
+
+.skeleton__bar--short {
+  width: 60%;
+}
+
+// "Usar" and the reason it is off share a line (wrapping on a phone), so a spent action costs no extra row.
+.act__use {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mr-space-1) var(--mr-space-3);
+}
+
+.act__use .act__why {
+  flex: 1 1 14rem;
+}
+
+.recharge-note {
+  padding: 8px 12px;
+  font-size: var(--mr-font-14);
+}
+
+// The small document icon beside an action's name opens its SRD text. The touch target is the 44px square; the icon stays small.
+.act__doc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--mr-radius-md);
+  background: none;
+  color: var(--mr-ink-muted);
+  cursor: pointer;
+
+  .mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: var(--mr-font-20);
+  }
+
+  &[aria-expanded='true'] {
+    color: var(--mr-ink);
+  }
+}
+
+// The live region stays in the accessibility tree while idle (`display: none` would drop it, and its text would not be
+// announced when it arrives): empty, it takes no room.
+.acts__live:empty {
+  position: absolute;
 }

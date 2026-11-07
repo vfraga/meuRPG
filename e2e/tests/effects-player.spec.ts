@@ -209,13 +209,15 @@ test(
       await expect(d4).toBeVisible();
       await expect(sheet).toContainText('Bênção soma 1d4 a esta jogada. Role um d4 além do d20.');
       await sheet.getByLabel(/Role 1d20 para Raio de Fogo/).fill('14');
-      await sheet.getByRole('button', { name: 'Confirmar 14' }).click();
+      // Until the d4 is typed the button carries no number: the total is not known yet.
+      await sheet.getByRole('button', { name: 'Confirmar', exact: true }).click();
       await expect(sheet.getByRole('alert')).toContainText('Digite o resultado do d4 antes de confirmar.');
       await expectNoSideScroll(t.p);
 
+      // With the d4 typed the button reads the total: the d20 14, the +6 to hit and the d4 3.
       await d4.fill('3');
-      await sheet.getByRole('button', { name: 'Confirmar 14' }).click();
-      await expect(sheet).toContainText('+ 1d4 (3)');
+      await sheet.getByRole('button', { name: 'Confirmar 23' }).click();
+      await expect(sheet).toContainText('+ Bênção 1d4 (3)');
       await expect(sheet).toContainText('Bênção');
     } finally {
       await t.done();

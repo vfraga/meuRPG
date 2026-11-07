@@ -67,6 +67,8 @@ export class CombatAttackCalls {
       // the extra action an effect gives (Velocidade).
       extraDieFaces: [...(effects.extraDieFaces ?? [])],
       useExtraAction: effects.useExtraAction ?? false,
+      // The table die ticked on a weapon attack (Golpe Certeiro): its face is the last of `extraDieFaces`.
+      ...(effects.maneuverKey ? { maneuverKey: effects.maneuverKey } : {}),
       legendaryOption: effects.legendaryOption ?? '',
     });
     return attackResult(res);

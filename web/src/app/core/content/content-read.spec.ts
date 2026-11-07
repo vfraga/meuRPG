@@ -425,6 +425,112 @@ describe('what a player reads of a feat (MR-025)', () => {
     noRawKeys(read.rows.map((r) => r.value));
   });
 
+  it('reads what the player picks, as one row for each choice', () => {
+    const read = (effects: object[], options: object[] = []) =>
+      readEntry(
+        entry(TableContentKind.FEAT, 'Escolhas', {
+          body: {
+            case: 'tableFeat',
+            value: create(TableFeatSchema, { namePt: 'Escolhas', effects, options }),
+          },
+        }),
+        nameOf,
+      ).rows.filter((r) => r.label === 'Escolha');
+    const own = [{ namePt: 'A' }, { namePt: 'B' }];
+    expect(read([{ type: 'choice', choice: 'feature', count: 1 }], own)).toEqual([
+      { label: 'Escolha', value: '1 de 2 opções' },
+    ]);
+    expect(read([{ type: 'choice', choice: 'feature', count: 1, from: ['x'] }], own)).toEqual([
+      { label: 'Escolha', value: '1 de 1 opção' },
+    ]);
+    expect(read([{ type: 'choice', choice: 'feature', count: 1, set: 'fighting_style' }])).toEqual([
+      { label: 'Escolha', value: '1 estilo de luta' },
+    ]);
+    expect(
+      read([
+        { type: 'choice', choice: 'ability', count: 1, name: 'habilidade' },
+        { type: 'choice', choice: 'damage_type', count: 1, name: 'tipo' },
+        { type: 'choice', choice: 'ability', count: 2 },
+      ]).map((r) => r.value),
+    ).toEqual(['1 habilidade', '1 tipo de dano', '2 habilidades']);
+    expect(read([{ type: 'choice', choice: 'feature', count: 1 }])).toEqual([]);
+    expect(read([{ type: 'modifier' }])).toEqual([]);
+  });
+
+  it('reads a minimum on the damage of the type the player picked, never the pick itself', () => {
+    const read = readEntry(
+      entry(TableContentKind.FEAT, 'Afinidade', {
+        body: {
+          case: 'tableFeat',
+          value: create(TableFeatSchema, {
+            namePt: 'Afinidade',
+            effects: [
+              {
+                type: 'roll_minimum',
+                rolls: ['damage'],
+                value: '2',
+                damageType: 'damage-type:@tipo',
+              },
+            ],
+          }),
+        },
+      }),
+      nameOf,
+    );
+    expect(read.effects?.[0].text).toContain('do tipo escolhido');
+    expect(read.effects?.[0].text).not.toContain('@');
+  });
+
+  it('lists the options of a feat under its text, leaving out one with no name', () => {
+    const read = readEntry(
+      entry(TableContentKind.FEAT, 'Estilo', {
+        body: {
+          case: 'tableFeat',
+          value: create(TableFeatSchema, {
+            namePt: 'Estilo',
+            descPt: ['Escolha um estilo.'],
+            options: [
+              { namePt: 'Guarda Alta', descPt: ['Classe de Armadura +1.'] },
+              { namePt: '', descPt: ['Sem nome.'] },
+            ],
+          }),
+        },
+      }),
+      nameOf,
+    );
+    expect(read.options?.map((o) => `${o.title}. ${o.text}`)).toEqual([
+      'Guarda Alta. Classe de Armadura +1.',
+    ]);
+  });
+
+  it('gives each option a few words of what it does only when the reader says them', () => {
+    const entryOf = () =>
+      entry(TableContentKind.FEAT, 'Estilo', {
+        body: {
+          case: 'tableFeat',
+          value: create(TableFeatSchema, {
+            namePt: 'Estilo',
+            options: [
+              { namePt: 'Guarda Alta', descPt: ['Você mantém a lâmina erguida.'] },
+              { namePt: 'Mão Firme', descPt: ['Seu golpe cai no mesmo ponto.'] },
+            ],
+          }),
+        },
+      });
+    const noSide = readEntry(entryOf(), nameOf);
+    expect(noSide.options?.map((o) => o.side)).toEqual([undefined, undefined]);
+    const withSide = readEntry(
+      entryOf(),
+      nameOf,
+      () => 0,
+      undefined,
+      undefined,
+      (o) => (o.namePt === 'Guarda Alta' ? 'Classe de Armadura +1' : ''),
+    );
+    expect(withSide.options?.map((o) => o.side)).toEqual(['Classe de Armadura +1', undefined]);
+    expect(withSide.options?.[0].text).toBe('Você mantém a lâmina erguida.');
+  });
+
   it('says "Nenhum" for a feat that asks nothing', () => {
     const e = entry(TableContentKind.FEAT, 'Livre', {
       body: { case: 'tableFeat', value: create(TableFeatSchema, { namePt: 'Livre' }) },

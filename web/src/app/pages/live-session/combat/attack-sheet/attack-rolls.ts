@@ -1,9 +1,10 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 
 import {
   AttackOutcome,
   type AttackRoll,
   type HeldRollOffer,
+  type ManeuverDieOption,
   type PendingDamage,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { AnswerHeldRollResponse } from '../../../../../gen/meurpg/play/v1/resources_pb';
@@ -18,15 +19,13 @@ import type {
   ModeChoice,
   PairDie,
 } from '../../../../core/combat/combat-client-types';
+import { ExtraDiceState } from '../../../../core/effects/extra-dice-state';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import type { HeldRollController } from '../../../../core/held-rolls/held-roll-controller';
 import { type HeldAnswer, asksLucky } from '../../../../core/held-rolls/held-roll-offer';
-import {
-  type ExtraDieField,
-  dieFields,
-  genericDieFields,
-  rollDiceOf,
-} from '../../../../core/effects/effects';
+import { dieFields, genericDieFields, rollDiceOf } from '../../../../core/effects/effects';
+import { resourceBlocked } from '../../../../core/resources/resources-errors';
+import { ResourceBlockedReason } from '../../../../../gen/meurpg/play/v1/resources_pb';
 import { rerollShow } from '../../../../shared/held-roll-prompt/held-roll-shows';
 import type { RollAnimator, RollShow } from '../../../../shared/roll-overlay/roll-animator';
 import { runBusy } from '../../../../shared/sheet/run-busy';
@@ -44,9 +43,25 @@ import type { AttackState } from './attack-state';
 /** The requests of the sheet that roll: the d20, the damage, and the follow-up of a hit that waited for a reaction.
  * Plain class the attack sheet builds. */
 export class AttackRolls {
-  /** The d4 the effects on the attacker add to the roll (Bênção, Perdição), typed when the roll is from physical dice. */
-  readonly extraFields = signal<readonly ExtraDieField[]>([]);
-  readonly extraFaces = signal<readonly (number | null)[]>([]);
+  /** The d4 the effects add (Bênção, Perdição) and the table die ticked (always the last), typed when the roll is from physical dice. */
+  private readonly extra = new ExtraDiceState();
+  /** The d4 the effects on the attacker add to the roll, typed when the roll is from physical dice. */
+  readonly extraFields = this.extra.asked;
+  /** What the sheet asks the player to type: the effects' d4, then the table die ticked. */
+  readonly typedFields = this.extra.fields;
+  readonly extraFaces = this.extra.faces;
+  /** The table die ticked (Golpe Certeiro): `null` for none. */
+  readonly maneuver = this.extra.maneuver;
+  /** The weapon-attack table dice with the uses left; read again when a roll finds none left. */
+  readonly maneuverDice = signal<readonly ManeuverDieOption[]>([]);
+  /** The same by key, for the offer. */
+  readonly maneuverUses = computed(() =>
+    Object.fromEntries(
+      this.maneuverDice().flatMap((o) =>
+        o.die ? [[o.die.key, { left: o.usesLeft, resourceNamePt: o.resourceNamePt }]] : [],
+      ),
+    ),
+  );
   /** One key per attack roll (target and die): the same values again are a retry, others a new attack. */
   private readonly attackKeys = new ActionKey();
   /** One key per damage roll: the same die again is a retry, another die (typed after an app roll was lost) is a new request. */
@@ -64,6 +79,7 @@ export class AttackRolls {
       readonly modeChoice: () => ModeChoice | undefined;
     },
   ) {
+    this.maneuverDice.set(s.data.maneuverDice ?? []);
     this.extraFields.set(
       dieFields(
         rollDiceOf(
@@ -80,6 +96,7 @@ export class AttackRolls {
       return;
     }
     const extra = this.typedExtra(die);
+    const maneuverKey = this.extra.maneuverKey();
     if (extra === null) {
       return;
     }
@@ -96,7 +113,14 @@ export class AttackRolls {
           this.host.attack.key,
           id,
           die,
-          this.attackKeys.keyFor({ id, die, mode, extra, spend: data.useExtraAction }),
+          this.attackKeys.keyFor({
+            id,
+            die,
+            mode,
+            extra,
+            spend: data.useExtraAction,
+            maneuver: maneuverKey,
+          }),
           data.asReaction ?? false,
           data.opportunity?.offerId ?? '',
           mode,
@@ -104,6 +128,7 @@ export class AttackRolls {
           {
             extraDieFaces: extra,
             useExtraAction: data.useExtraAction ?? false,
+            ...(maneuverKey ? { maneuverKey } : {}),
             legendaryOption: data.legendary?.option ?? '',
           },
         );
@@ -244,7 +269,21 @@ export class AttackRolls {
     }
   }
 
+  /** "Usar <dado>": the die ticked joins the roll; none ticked leaves it as it is. */
+  useDie(key: string): void {
+    this.extra.maneuver.set(this.maneuverDice().find((o) => o.die?.key === key)?.die ?? null);
+  }
+
   private fail(err: unknown): void {
+    const die = this.extra.maneuver();
+    if (die && resourceBlocked(err)?.reason === ResourceBlockedReason.NO_USES_LEFT) {
+      // The sheet was older than the table: nothing was spent; the offer shows the uses as they are now.
+      const pool = this.maneuverDice().find((o) => o.die?.key === die.key)?.resourceNamePt;
+      this.extra.maneuver.set(null);
+      this.s.error.set(`${die.namePt}: não há usos de ${pool || die.resource}. Nada foi gasto.`);
+      void this.refreshUses();
+      return;
+    }
     const refusal = rollRefusal(err);
     if (refusal.more > 0) {
       this.extraFields.set(genericDieFields(refusal.more, EFFECT_DIE_FACES));
@@ -252,9 +291,24 @@ export class AttackRolls {
     this.s.error.set(refusal.message);
   }
 
+  /** Reads the attacker's table dice again, so the offer says how many uses are left. */
+  private async refreshUses(): Promise<void> {
+    const { data } = this.s;
+    try {
+      const res = await this.host.api.moves.turnOptions(
+        data.campaignId,
+        data.encounterId,
+        data.attackerId,
+      );
+      this.maneuverDice.set(res.maneuverDice);
+    } catch {
+      // The offer keeps what it shows; the roll without the die still works.
+    }
+  }
+
   /** The faces of the d4 typed for a roll from physical dice; none for the app's dice, `null` while one is missing (the sheet says so). */
   private typedExtra(die: AttackDie | PairDie): readonly number[] | null {
-    const fields = this.extraFields();
+    const fields = this.typedFields();
     if ('inApp' in die || fields.length === 0) {
       return [];
     }

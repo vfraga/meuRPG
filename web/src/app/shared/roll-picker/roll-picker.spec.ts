@@ -170,4 +170,21 @@ describe('RollPicker', () => {
     type('27');
     expect(el.querySelector('[role="alert"]')?.closest('.actions')).not.toBeNull();
   });
+
+  it('shows no total and a plain "Confirmar" (no number) while an extra face is still missing', () => {
+    const { el, type, button, fixture } = setup({
+      canApp: false,
+      modifier: 6,
+      confirmTotal: true,
+      waiting: true,
+    });
+    type('12');
+    const confirm = button('Confirmar')!;
+    expect(confirm.textContent?.trim()).toBe('Confirmar');
+    expect(el.querySelector('.type__num')).toBeNull();
+    fixture.componentRef.setInput('waiting', false);
+    fixture.detectChanges();
+    expect(button('Confirmar')!.textContent?.trim()).toBe('Confirmar 18');
+    expect(el.querySelector('.type__num')?.textContent?.trim()).toBe('18');
+  });
 });

@@ -388,6 +388,17 @@ describe('FogMap', () => {
       expect(create().el.querySelector('[aria-label="Tela cheia"]')).toBeTruthy();
     });
 
+    it('leaves out the zoom, fit and full-screen buttons with [tools]="false" (the table screen), and keeps the map', () => {
+      fs = stubFullscreen(true);
+      const { el } = create({ tools: false });
+      expect(el.querySelector('.fm__tools')).toBeNull();
+      expect(el.querySelector('[aria-label="Zoom do mapa"]')).toBeNull();
+      expect(el.querySelector('[aria-label="Tela cheia"]')).toBeNull();
+      expect(el.querySelector('app-map-view')).not.toBeNull();
+      // And by default the tools are there.
+      expect(create().el.querySelector('[aria-label="Zoom do mapa"]')).not.toBeNull();
+    });
+
     it("asks the host for full screen, follows the browser's state and leaves on a second click", () => {
       fs = stubFullscreen(true);
       const { fixture, el } = create();

@@ -1,0 +1,95 @@
+:host {
+  display: block;
+}
+
+.tv-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-3);
+  padding: var(--mr-space-3) var(--mr-gutter);
+  background: var(--mr-surface);
+  border-bottom: 1px solid var(--mr-line);
+
+  @media (min-width: 1600px) {
+    gap: var(--mr-space-4);
+    padding: var(--mr-space-4) var(--mr-space-8);
+  }
+}
+
+.tv-head__icon {
+  flex: none;
+  width: var(--mr-font-32);
+  height: var(--mr-font-32);
+  font-size: var(--mr-font-32);
+  color: var(--mr-accent-text);
+
+  @media (min-width: 1600px) {
+    width: var(--mr-font-48);
+    height: var(--mr-font-48);
+    font-size: var(--mr-font-48);
+  }
+}
+
+.tv-head__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.tv-head__kicker {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 1.3;
+  color: var(--mr-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-22);
+  }
+}
+
+.tv-head__title {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 800;
+  font-size: var(--mr-font-24);
+  line-height: 1.2;
+  color: var(--mr-ink);
+  overflow-wrap: anywhere;
+
+  // On a TV one line, clipped with an ellipsis; on a phone the title wraps and nothing is cut.
+  @media (min-width: 900px) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--mr-font-30);
+  }
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-48);
+  }
+}
+
+.tv-head__chip {
+  flex: none;
+  font-weight: 700;
+  align-self: flex-start;
+
+  @media (min-width: 900px) {
+    align-self: center;
+  }
+
+  // On a big TV the chip is read from the sofa: its words and its height grow with the rest.
+  @media (min-width: 1600px) {
+    height: 44px;
+    padding-inline: var(--mr-space-4);
+    font-size: var(--mr-font-24);
+
+    .mat-icon {
+      width: var(--mr-font-24);
+      height: var(--mr-font-24);
+      font-size: var(--mr-font-24);
+    }
+  }
+}

@@ -134,6 +134,8 @@ func TestTheControllerOfACreatureReadsItsLimitsAndNoOtherPlayerDoes(t *testing.T
 					}
 					if l := tc.got.web[who]; l == nil || l.GetAvailable() != tc.open {
 						t.Errorf("%s: %s reads the Web as %v, want available %v", tc.name, who, l, tc.open)
+					} else if l.GetKept() {
+						t.Errorf("%s: %s reads kept on a Recharge action, which ends with the combat", tc.name, who)
 					}
 				}
 				if len(tc.got.rolls["Ana"]) != 0 || tc.got.web["Ana"] != nil {

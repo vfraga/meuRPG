@@ -913,7 +913,7 @@ func (s *Service) imageUsedElsewhere(ctx context.Context, campaignID, mapID, ima
 	} else if shown == imageID {
 		return true, nil
 	}
-	onStage, err := s.live.ImageOnStage(ctx, campaignID, "", imageID)
+	onStage, err := s.live.ImageOnAnyStage(ctx, campaignID, imageID)
 	if err != nil {
 		return false, fmt.Errorf("read the stage: %w", err)
 	}

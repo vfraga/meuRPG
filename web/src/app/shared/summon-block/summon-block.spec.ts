@@ -365,4 +365,39 @@ describe('SummonBlock ("Invoca criaturas")', () => {
       'duração por tempo',
     );
   });
+
+  it('a pick and a field edit in the same tick both reach the draft (each edit builds on the last one sent)', () => {
+    setup(on());
+    const pick = fixture.debugElement.query(
+      (d) => d.name === 'app-creature-pick',
+    ).componentInstance;
+    pick.picked.emit(create(CreatureSummarySchema, { key: 'monster:bear', namePt: 'Urso' }));
+    const count = field(at('count')) as HTMLInputElement;
+    count.value = '2';
+    count.dispatchEvent(new Event('input'));
+    // No detectChanges between the two: the input still holds the draft from before the pick.
+    expect(emitted[1]).toMatchObject({
+      count: '2',
+      creatureKeys: ['creature:lobo-do-vale@mesa', 'monster:wolf', 'monster:bear'],
+    });
+    const live = field(at('max_live')) as HTMLInputElement;
+    live.value = '3';
+    live.dispatchEvent(new Event('input'));
+    expect(emitted[2]).toMatchObject({ count: '2', maxLive: '3' });
+    fixture.componentRef.setInput('summon', emitted[2]);
+    fixture.detectChanges();
+    count.value = '4';
+    count.dispatchEvent(new Event('input'));
+    expect(emitted[3]).toMatchObject({ count: '4', maxLive: '3' });
+  });
+
+  it('two picks in the same tick keep both', () => {
+    setup(on({ creatureKeys: [] }));
+    const pick = fixture.debugElement.query(
+      (d) => d.name === 'app-creature-pick',
+    ).componentInstance;
+    pick.picked.emit(create(CreatureSummarySchema, { key: 'monster:wolf', namePt: 'Lobo' }));
+    pick.picked.emit(create(CreatureSummarySchema, { key: 'monster:bear', namePt: 'Urso' }));
+    expect(emitted[1]).toMatchObject({ creatureKeys: ['monster:wolf', 'monster:bear'] });
+  });
 });

@@ -1,0 +1,29 @@
+<header class="tv-head">
+  <mat-icon class="tv-head__icon" aria-hidden="true">{{ icon() }}</mat-icon>
+  <div class="tv-head__text">
+    @if (kicker()) {
+      <p class="tv-head__kicker">{{ kicker() }}</p>
+    }
+    <h1 class="tv-head__title" id="tv-title">{{ title() }}</h1>
+  </div>
+  @switch (link()) {
+    @case ('live') {
+      <app-live-pill class="tv-head__chip" />
+    }
+    @case ('late') {
+      <span class="mr-tag mr-tag--pending tv-head__chip" data-testid="tv-link-late">
+        <mat-icon aria-hidden="true">sync_problem</mat-icon>Reconectando…
+      </span>
+    }
+    @case ('ended') {
+      <span class="mr-tag tv-head__chip" data-testid="tv-link-ended">
+        <mat-icon aria-hidden="true">flag</mat-icon>Encerrada{{ endedAt() ? ' às ' + endedAt() : '' }}
+      </span>
+    }
+    @case ('lost') {
+      <span class="mr-tag mr-tag--pending tv-head__chip" data-testid="tv-link-lost">
+        <mat-icon aria-hidden="true">cloud_off</mat-icon>Sem conexão
+      </span>
+    }
+  }
+</header>

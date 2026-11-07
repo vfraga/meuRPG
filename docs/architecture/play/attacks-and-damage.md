@@ -20,6 +20,8 @@ The die is described in [Rests and resources](rests-and-resources.md#table-dice-
 It joins the dice an effect adds (Bless), after them.
 It is rolled with the attack, or typed as the last of `extra_die_faces`.
 It is added to the total and listed in the roll's `extra_dice` and in the attacker's log line.
+The log line names each extra die by its `source_name_pt`.
+A source the master hides reads "Outra fonte".
 The roll is refused for an NPC attacker, a spell attack and a die of another `applies` (`invalid_argument`).
 It is refused when the pool has no use left (`NO_USES_LEFT`).
 The checks run before the roll and again on the replay of a held roll.
@@ -30,6 +32,9 @@ A replay refused because the pool changed is dropped, and only the master reads 
 A natural 1 still misses, and a critical hit does not double the die.
 The die counts as an extra die for Stroke of Luck: the question comes blind, before the die is known.
 An opportunity attack and an attack as a reaction take the die like any other.
+`GetTurnOptionsResponse.maneuver_dice` lists those dice for a player's character, each with the name of its resource pool and the uses left.
+A die with no use left stays listed with `uses_left` 0.
+An NPC gets none.
 
 `RollDamage` rolls the damage dice (on a critical as the table rule says; the modifier once; the attack's type) or validates the typed sum (`dice.Physical`, from N to N × faces).
 

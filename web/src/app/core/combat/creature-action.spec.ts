@@ -1,9 +1,10 @@
-import { create } from '@bufbuild/protobuf';
+import { create, type MessageInitShape } from '@bufbuild/protobuf';
 import { describe, expect, it } from 'vitest';
 
 import {
   AreaPlacement,
   CreatureActionResultSchema,
+  LimitedActionSchema,
   SaveOutcome,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import {
@@ -22,6 +23,8 @@ import {
   classNote,
   creatureAreaText,
   durationPt,
+  limitView,
+  rechargeFaces,
   resultNotes,
   showsText,
   targetLines,
@@ -225,5 +228,61 @@ describe('what a used action did', () => {
       'Paralisado por 1 minuto.',
       'O alvo repete o teste no fim de cada turno dele; o app não conta o tempo.',
     ]);
+  });
+});
+
+describe('limitView', () => {
+  const limited = (o: MessageInitShape<typeof LimitedActionSchema>) =>
+    create(LimitedActionSchema, {
+      actionKey: 'x',
+      usesAllowed: 1,
+      usesLeft: 1,
+      available: true,
+      ...o,
+    });
+
+  it('reads the faces of a Recharge', () => {
+    expect(rechargeFaces('Recharge 5-6')).toBe('5 ou 6');
+    expect(rechargeFaces('Recharge 6')).toBe('6');
+  });
+
+  it('has no limit for an action the server did not list', () => {
+    expect(limitView(undefined, 'Dragão')).toMatchObject({ tag: '', uses: null, why: '' });
+  });
+
+  it('tags a Recharge ready or spent and says when it comes back', () => {
+    const ready = limitView(limited({ kind: 'recharge', usage: 'Recharge 5-6' }), 'Dragão');
+    expect(ready).toMatchObject({ tag: 'Pronta', why: '' });
+    const spent = limitView(
+      limited({ kind: 'recharge', usage: 'Recharge 5-6', available: false, usesLeft: 0 }),
+      'Dragão',
+    );
+    expect(spent.tag).toBe('Gasta');
+    expect(spent.why).toBe(
+      'Volta com 5 ou 6 no d6 que o app rola no começo de cada turno do Dragão.',
+    );
+  });
+
+  it('counts the uses a day and says what comes back, by whether the NPC keeps them', () => {
+    const some = limitView(limited({ kind: 'per_day', usesAllowed: 3, usesLeft: 2 }), 'Unicórnio');
+    expect(some).toMatchObject({ tag: '', usesText: '2 de 3', why: '' });
+    const none = limited({ kind: 'per_day', available: false, usesLeft: 0 });
+    expect(limitView(none, 'Vrock').why).toBe(
+      'Sem usos hoje. O Vrock tem de novo no próximo combate.',
+    );
+    expect(limitView({ ...none, kept: true }, 'Bartolo').why).toBe(
+      'Sem usos: voltam no descanso longo da mesa.',
+    );
+  });
+
+  it('tags an action that waits for a rest', () => {
+    const spent = limited({ kind: 'rest', available: false, usesLeft: 0 });
+    expect(limitView(spent, 'Cavaleiro')).toMatchObject({
+      tag: 'Gasta',
+      why: 'Volta no próximo combate.',
+    });
+    expect(limitView({ ...spent, kept: true }, 'Bartolo').why).toBe(
+      'Volta no próximo descanso curto ou longo.',
+    );
   });
 });

@@ -13,10 +13,14 @@ Other panels use a `line` border. A "burgundy border" is never used for anything
 
 - **Session bar** (`pages/live-session/session-header`, `app-session-header`): one row at the top of every live screen (60 px on a computer, 56 px on a phone), for the master and the players alike.
   It holds, left to right: the back link to the campaign (the campaign's name beside the arrow from 768 px, the arrow alone on a phone; its name is "Voltar para a campanha <nome>"), the title "Sessão 3" (the page's `h1`), the "Ao vivo" pill with "desde 20:12" ("desde 30/09 às 20:05" when it started on another day; "desde" goes on a phone), and at the right "Dados" (the free dice roller, below).
-  The master also has "Iniciar combate" while no combat is on, and the "Sessão" menu.
+  The master also has "Iniciar combate" while no combat is on, the "Tela da mesa" button (from 1024 px, below) and the "Sessão" menu.
   The master's "Iniciar combate" is an outlined button from 768 px and the menu's first item on a phone: the master's "Sessão" is a 44 px button with three dots, and under 360 px "Dados" is an icon for everyone and the live status leaves the bar.
   "Iniciar combate" opens the dialog of the same name (a full-screen dialog on a phone) with the session's current map; it waits while the map is read, and a map that could not be read puts a warning notice with "Tentar de novo" under the bar and starts nothing.
   The dialog's lead says what the old "Combate" strip said: "Escolha quem luta e o app pede a iniciativa de todos." (the theatre of the mind explains itself in the dialog).
+- **"Tela da mesa" button** (the master only, from 1024 px, `(min-width: 1024px)` in `session-header/wide-bar.ts`): an outlined button with the TV icon, before the "Sessão" menu, that opens the panel of [the table screen](#the-table-screen-tela-da-mesa).
+  Its words follow the TV: "Tela da mesa" while no TV tab is open, "Na TV: Cena" (or "Mapa", "Imagem", "Combate", "Espera") while one is, with a pin marker when the master fixed the item, and "TV sem conexão" with a warning icon and the warning look when the last TV tab lost its connection.
+  While a TV tab is open the button takes the accent look.
+  Under 1024 px the button leaves the bar and the "Sessão" menu has a line "Tela da mesa…" (the TV icon, and under it a second line: "Nenhuma tela aberta", "Na TV: Cena · espelhando", "Na TV: Mapa · fixo" or "Sem conexão desde 21:14") that opens the same panel.
 - **"Sessão" menu** (a Material menu, 250 px, `aria-haspopup="menu"`; the button has its word and a chevron from 768 px and three dots on a phone): "Copiar link da sessão" (RN-07), which turns the button into "Link copiado" for two seconds and, if the clipboard refuses, shows the link in a selected read-only field under the bar; and "Encerrar sessão…".
 - **Ending the session** asks in place under the bar, in a `role="group"` marked `data-confirm` (clicks are ignored for the first 500 ms) on the warning surface: "**Encerrar a sessão 3?** Ela não reabre depois.", "Cancelar" (focused, with a 2 px accent ring, in the neutral ink) and "Confirmar encerramento", the only one outlined in the danger ink; on a phone the two buttons are full width, equal and 48 px high. Cancelling returns focus to the "Sessão" button; a failure says "Não foi possível encerrar a sessão." under the bar.
 - **Reconnecting:** the pill and "desde" stay; the neutral notice, a full-width row under the title (one line on a phone), says "Reconectando… Última atualização às 21:14. Não dá para rolar sem conexão." (without the time on a phone), and "Dados" is off on a dashed border (still focusable, `aria-describedby` points at the notice).
@@ -56,6 +60,72 @@ Nothing here is drawn for a player, and no panel is rebuilt for it: the existing
   "Magias" counts the casts that wait in amber; a waiting cast is a line on the warning surface ("Pensantus conjura Identificar como ritual. 10 minutos, desde 20:31.") with an outlined "Concluir", and "O que foi conjurado nesta sessão · 4" is a fold.
 - **Conversa** is a rail (`shared/session-rail`) from 1024 px, its top level with the tab row, with the heading row (the icon, "Conversa", "4 na mesa" with its icon): a sticky `complementary` column beside the board as tall as the screen, with its own scroll. From 768 to 1023 px it is the board's fourth tab, "Conversa" (with the unread count in words), so it is never only at the bottom of a long page; on a phone it is the pinned nav's "Conversa". The composer keeps its draft across tab changes because the conversation is one component, not one per tab.
 - **Phone:** there is no "Mapa" tab; the map is a fold of "Cena" ("Mapa · <nome do mapa>"), and the scene's actions, clues and hooks fold too. The page uses the pinned nav (above) instead of the tab list.
+
+## The table screen (Tela da mesa)
+
+The table screen is the TV at the table: a tab the master opens and drags to a screen the whole table looks at, and the panel with which the master chooses what it shows ([MR-056](../product/stories.md#mr-056-show-the-table-on-a-screen), [RN-10](../product/rules.md#rn-10-map-without-spoilers)).
+
+### The TV page
+
+`pages/table-screen` is the route `/campaigns/:id/table-screen`, without the app's bar and footer.
+It is made to be read from a sofa, so its type is large: from 1600 px every size goes up one step (the header, the notice line, the panels).
+
+- **One screen, no scroll.** From 900 px the page is as tall as the window, and the header, the notices and the stage share it; nothing scrolls.
+  A list draws only the rows that fit and puts "+N" under it for the rows left out (`tv-fit`, [Web app](../architecture/web.md#the-table-screen-page)); a row is never cut in half.
+  Under 900 px the page is one column of natural height that scrolls like any other page.
+- **Header** (`app-tv-header`): the icon of the stage, a small line above ("Mapa · Mirathel · Sessão 3"; for the waiting screen only the campaign's name), the title of the stage (the map's name, the image's name, the scene's name, "Combate · Cripta do Corvo", "Combate sem mapa", or "Sessão 3") and the chip of the connection at the right.
+- **Chips:** "Ao vivo" (the live pill) while connected; "Reconectando…" (pending look) once the connection or a read has been bad for 3 s; "Sem conexão" (pending look, after a minute) and "Encerrada às 23:40" (neutral).
+  A chip always has its icon and its words.
+- **Late line:** under the header, a warning notice "Esta tela pode estar atrasada desde 21:14. Ela continua assim por até 1 minuto." while the chip says "Reconectando…".
+  After a minute without a connection the stage is hidden: the card "Sem conexão desde 21:14" says that the screen hid what it showed and comes back by itself.
+  The line has a polite live region of its own, always in the page, so its coming is read.
+- **Notice line:** when the master's pin could not be shown, a plain line under the header says why ("O combate acabou. A TV foi para a tela de espera.", "A cena está aberta só para alguns jogadores, então a TV não a mostra.", "O mapa tem névoa e a Visão do grupo está desligada, então a TV não o mostra.").
+  A change of stage is announced to a screen reader ("Na tela: Combate · Cripta do Corvo") in a polite status.
+- **Full screen:** a button bar at the top, "Pressione F11 ou clique na tela para pôr em tela cheia.", shows where the browser can; it goes away when the tab is full screen or once used.
+
+| Stage | Layout from 900 px | Under 900 px |
+| --- | --- | --- |
+| Waiting | Centred: "Nada à mostra ainda", "O que o mestre mostrar à mesa aparece aqui." and "Na mesa" with the characters (up to 12, the rest as "+N") | The same, centred |
+| Map | The map in a card, with the free rolls beside it (a column of 260 to 480 px) | The map, then the rolls |
+| Image | The picture as large as the room allows, with its name under it | The picture, then the name |
+| Scene | The scene's text, and beside it "Em cena" with the NPCs the table sees (up to 8, the speaking one marked "Fala agora"); with no NPC the text takes the whole width | One column |
+| Combat with a map | The map, and a column of 280 to 520 px with "Ordem", the rolls and "Último no combate" | One column: the map, the order, the rolls, the log |
+| Combat without a map | "Ordem" in the left half, and the rolls and the log in the right | One column |
+
+- **The map** (`app-tv-map`) is the player's map component with its zoom, fit and full-screen buttons off, as tall as its card allows: the picture never pushes the legend out of the card.
+  A map with the fog on is drawn from the group's tiles, black where the group does not see.
+- **"Ordem"** has one row per combatant the table sees: the token, the name and one word (RN-20), "Vez" for whoever has the turn (a larger token), and "Vez do mestre" with an eye-off icon when the turn is one the table does not see; the round is in the title.
+  When the list is longer than the room, the last rows are replaced by "+N".
+- **The fog card** (`app-tv-fog-card`): a map icon, "O mapa fica na tela de cada um." and "A névoa está ligada e cada jogador vê só o que o próprio personagem vê.", in a panel in the place of the map, only in a combat whose map the fog hides (the order, the rolls and the log stay).
+  A mirrored or pinned map the fog hides is not drawn at all: the waiting screen shows, with the notice line "O mapa tem névoa e a Visão do grupo está desligada, então a TV não o mostra."
+- **The refusals and the end** are one card each, centred, with a large icon: "Só o mestre abre a Tela da mesa." (a lock), "Entre para abrir a Tela da mesa." (the page then sends the viewer to sign in and back), "Não deu para abrir a Tela da mesa." (it tries again in 10 s), "Carregando a mesa…", and "A sessão 3 terminou às 23:40." with "Até a próxima sessão de Mirathel." and "O mestre pode fechar esta aba." under the header chip "Encerrada às 23:40".
+- **At 390 px** the TV page is the phone layout above: one column, every panel whole, the page scrolls, and the fit hides nothing.
+
+### The master's panel
+
+The panel is the sheet frame (`app-sheet-frame`, small title) opened by `openTableScreenSheet`: a bottom sheet on a phone, a dialog from a tablet up.
+It fits one screen in its longest state, at 390 x 844 and at 1280 x 800: the frame's rows sit closer than in the other sheets, and no state makes the body scroll.
+
+- **Title bar:** the TV icon, "Tela da mesa" and a tag at the right: "Aberta" (success look with a check), "Fechada" (neutral), "Abrindo…" after "Abrir a Tela da mesa" until a TV connects, and "Sem conexão" (pending look with a warning icon).
+- **States of the body:**
+  - Reading: "Lendo a Tela da mesa…".
+    A failed first read is a danger notice "Não deu para ler a Tela da mesa." with "Tentar de novo".
+  - No TV open: one line, "Abra a Tela da mesa na TV; depois escolha o que ela mostra.", and no rows.
+  - Lost: a warning notice "Sem conexão desde 21:14. Depois de 1 minuto a TV esconde o que mostra; volta sozinha quando a conexão voltar."
+  - A choice that did not go through: a danger notice "Não deu para mudar a Tela da mesa. A TV continua como estava." with "Tentar de novo"; it replaces the rows, so it is never out of sight.
+  - A TV open: "Na TV agora" with the icon and the name ("O mapa **Cripta do Corvo**, fixa."), or the neutral notice of the pin that could not be shown in its place, then the rows.
+- **Rows:** "O que a TV mostra" is a radio group.
+  The first row is "Espelhar o que eu mostro" ("A TV segue o que você mostra à mesa"); under "Fixar" come "Só o mapa", "Imagem", "Cena", "Combate" and "Tela de espera", each with the name of what it would show under its title.
+  Every row is a real radio button (the arrow keys move the choice; a screen reader hears the title, the line and "selecionado, 2 de 6"), at least 50 px high.
+  The chosen row has a 2 px accent border, the soft accent surface and the filled radio dot, so the choice is never only a colour.
+  While a choice is on its way no row can be picked.
+- **Dashed rows:** a row the table cannot fill is dashed, with a "not allowed" mark where the radio dot would be, muted, and cannot be picked; the line under its title is the reason ("Nenhum combate agora.", "Nenhuma imagem à mostra.", "Nenhuma cena aberta.", "A cena está aberta só para alguns.", "Nenhum mapa agora.", "Precisa da Visão do grupo (editor do mapa).").
+- **ⓘ:** at the right of "Espelhar", a 44 px button "Como o Espelhar escolhe" (`aria-expanded`).
+  Open, it takes the place of the pins: "A TV mostra o primeiro que houver:" and the list "uma imagem mostrada a toda a mesa; o combate; a cena aberta a todos; o mapa; a tela de espera.", and "Na TV agora" steps aside so the panel does not grow.
+- **Foot** (never scrolls away): the privacy line with an eye icon, "A TV mostra só o que toda a mesa pode ver. O que é só seu, ou só de alguns jogadores, fica fora."; then "Abrir a Tela da mesa" (a link that opens a new tab; filled in the phone's sheet, outlined in the dialog) and "Copiar o link" (outlined, 44 px).
+  "Copiar o link" turns into "Link copiado" with a check for a moment; if the clipboard refuses, the address is shown in a selected read-only field "Endereço da Tela da mesa".
+  While the tab opens, "Esperando a tela se conectar." is read under the buttons.
+- The link is only the tab's address, with no query and no key; the panel stores nothing in the browser.
 
 ## Images shown to players
 
@@ -183,7 +253,7 @@ The question is a `--warning` surface (`app-held-question`, `pages/live-session/
 - **The card** reads: the icon (clock while the roller has the time, triangle after; a reroll rule's question keeps the clock), the title, the status at the right, what was rolled ("Ataque com arma contra Goblin chefe." or the kind of the roll), the rule ("Sortudo: Brisa pode rolar esse d20 de novo e ficar com o novo resultado."), the d20 in a 44 px chip with "d20 · bônus +5" (the die's question adds the total), and the answers: "Rolar de novo" / "Digitar o resultado" / "Ficar com o 1", or "Somar o d8 (Inspiração de Orla)" / "Digitar o resultado" / "Guardar o dado". The primary buttons are 44 px, 48 px on a phone.
 - **States:** waiting ("Brisa responde primeiro · você em 7 s", buttons disabled), can answer ("Brisa não respondeu"), answering (`aria-busy`, "Rolando o d20 de novo…"), too early (the server refused: an alert "Ainda é a vez de Brisa responder." and the countdown resumes from when the roll was held), the roller answered first ("Brisa respondeu."), the master's own answer ("Você respondeu por Brisa: rolou de novo e tirou 14 (19 com o bônus)."), and another answer first ("Essa pergunta já foi respondida. O resultado está no registro do combate."). An ended question stays as a polite line for 6 s.
 - **Announcing:** the status line is a `role="status"` whose words change only when the state changes; the seconds are `aria-hidden`, so a countdown is never read out second by second.
-- **The roller** whose question is gone because the master answered reads "O mestre respondeu por você." in the notices of the combat (and in the Bardic block outside it), with "Entendi". The attack sheet that still shows the question drops it and says the same line, with no buttons. Their view has no result of the master's answer, so the line is the short one.
+- **The roller** whose question is gone because the master answered reads "O mestre respondeu por você." in the notices of the combat (and in the Bardic block outside it), with "Entendi". A sheet that still shows the question (attack, spell, scene check, group check, effect save) drops it and says the same line, with no buttons. Their view has no result of the master's answer, so the line is the short one.
 
 ## Experience and level up
 

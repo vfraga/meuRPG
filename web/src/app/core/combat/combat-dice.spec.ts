@@ -1,9 +1,13 @@
+import { create } from '@bufbuild/protobuf';
+
 import type { DiceRoll } from '../../../gen/meurpg/play/v1/combat_pb';
+import { ExtraDieSchema } from '../../../gen/meurpg/play/v1/lasting_effects_pb';
 import {
   d20TotalText,
   damageFormula,
   damageWords,
   extraDiceOf,
+  extraDiceText,
   parseFace,
   parseSum,
   rollFormula,
@@ -216,5 +220,58 @@ describe('a d20 that Talento Confiável raised (PM-03b)', () => {
     });
     expect(treatedPreview(10, 9, 'feature:reliable-talent')).toBeNull();
     expect(treatedPreview(14, 9, 'feature:reliable-talent')).toBeNull();
+  });
+});
+
+describe('the dice an effect or a maneuver added to the roll', () => {
+  const golpe = create(ExtraDieSchema, {
+    sourceKey: 'maneuver:golpe',
+    sourceNamePt: 'Golpe Certeiro',
+    faces: 8,
+    sign: 1,
+    face: 5,
+  });
+  const bless = create(ExtraDieSchema, {
+    sourceKey: 'spell:bless',
+    sourceNamePt: 'Bênção',
+    faces: 4,
+    sign: 1,
+    face: 3,
+  });
+  const curse = create(ExtraDieSchema, {
+    sourceKey: 'spell:bane',
+    sourceNamePt: 'Perdição',
+    faces: 4,
+    sign: -1,
+    face: 2,
+  });
+
+  it('writes each die after the modifier, and names its source when asked', () => {
+    const r = roll({ faces: [12], modifier: 6, total: 23, extraDice: [golpe] });
+    expect(extraDiceText(r)).toEqual({ text: ' + 1d8 (5)', sum: 5 });
+    expect(extraDiceText(r, true)).toEqual({ text: ' + Golpe Certeiro 1d8 (5)', sum: 5 });
+    expect(rollFormula(r)).toBe('1d20 (12) + 6 + 1d8 (5) = 23');
+    expect(rollFormula(r, true)).toBe('1d20 (12) + 6 + Golpe Certeiro 1d8 (5) = 23');
+  });
+
+  it('names the effects too, takes a die away with its sign, and skips a die not rolled', () => {
+    const r = roll({
+      faces: [12],
+      modifier: 6,
+      total: 19,
+      extraDice: [bless, curse, create(ExtraDieSchema, { ...golpe, face: 0 })],
+    });
+    expect(rollFormula(r, true)).toBe('1d20 (12) + 6 + Bênção 1d4 (3) − Perdição 1d4 (2) = 19');
+  });
+
+  it('leaves out an empty name, and the typed d20 shows what the player typed', () => {
+    const r = roll({
+      faces: [],
+      physical: true,
+      modifier: 6,
+      total: 23,
+      extraDice: [create(ExtraDieSchema, { ...golpe, sourceNamePt: '' })],
+    });
+    expect(rollFormula(r, true)).toBe('12 + 6 + 1d8 (5) = 23');
   });
 });

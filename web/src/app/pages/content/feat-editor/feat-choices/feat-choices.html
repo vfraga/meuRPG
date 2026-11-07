@@ -1,0 +1,14 @@
+@if (rows().length > 0) {
+  <section class="mr-panel panel" aria-labelledby="feat-choices-t">
+    <h2 class="mr-panel__title" id="feat-choices-t"><mat-icon aria-hidden="true">{{ icon }}</mat-icon>Escolhas deste talento</h2>
+    <ul class="list">
+      @for (r of rows(); track r.key) {
+        <li class="row">
+          <span><strong>{{ r.label }}</strong> · {{ r.place }}</span>&ngsp;
+          <span class="row__uses">{{ r.used }}</span>
+        </li>
+      }
+    </ul>
+    <p class="note">{{ note() }}</p>
+  </section>
+}

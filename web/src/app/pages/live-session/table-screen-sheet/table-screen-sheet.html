@@ -1,0 +1,156 @@
+<app-sheet-frame title="Tela da mesa" icon="tv" titleId="tv-sheet-t" [small]="true" [phone]="inSheet" (closed)="close()">
+  <span head-action class="mr-tag head-tag" [class.mr-tag--success]="badge().tone === 'success'" [class.mr-tag--pending]="badge().tone === 'pending'" data-testid="tv-state">
+    @switch (badge().tone) {
+      @case ('success') {
+        <mat-icon aria-hidden="true">check</mat-icon>
+      }
+      @case ('pending') {
+        <mat-icon aria-hidden="true">warning</mat-icon>
+      }
+    }
+    {{ badge().text }}
+  </span>
+
+  <div class="body" [attr.aria-busy]="loading() || panel.saving()">
+    @if (loading() && !panel.data()) {
+      <p class="line" role="status">Lendo a Tela da mesa…</p>
+    } @else if (unread()) {
+      <div class="mr-notice mr-notice--danger" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <p><strong>Não deu para ler a Tela da mesa.</strong> Confira a conexão e tente de novo.</p>
+      </div>
+      <button matButton="outlined" type="button" class="again js-read-again" (click)="read()">
+        <mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo
+      </button>
+    } @else if (panel.lost()) {
+      <div class="mr-notice mr-notice--warning" data-testid="tv-lost">
+        <mat-icon aria-hidden="true">wifi_off</mat-icon>
+        <p>
+          <strong>Sem conexão desde {{ lostAt() }}.</strong> Depois de 1 minuto a TV esconde o que mostra; volta sozinha quando a
+          conexão voltar.
+        </p>
+      </div>
+    } @else if (!open()) {
+      <p class="line line--plain" data-testid="tv-closed">
+        Nenhuma Tela da mesa aberta agora. O que você escolher vale assim que abrir uma.
+      </p>
+    } @else if (notSaved()) {
+      <!-- A save that did not go through: the notice and the retry are all the panel says, so they are never out of sight. -->
+      <div class="mr-notice mr-notice--danger" role="alert" data-testid="tv-not-saved">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <p><strong>Não deu para mudar a Tela da mesa.</strong> A TV continua como estava.</p>
+      </div>
+      <button matButton="outlined" type="button" class="again js-retry" (click)="retry()">
+        <mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo
+      </button>
+    } @else {
+      @if (!helpOpen()) {
+        @if (!panel.notice() && now(); as n) {
+          <p class="cap" id="tv-now-t">Na TV agora</p>
+          <p class="line now" aria-labelledby="tv-now-t tv-now" data-testid="tv-now">
+            <mat-icon aria-hidden="true">{{ n.icon }}</mat-icon>
+            <span id="tv-now">{{ n.before }}@if (n.name) {<b>{{ n.name }}</b>}{{ n.after }}</span>
+          </p>
+        }
+        @if (panel.notice()) {
+          <p class="mr-notice mr-notice--neutral note" data-testid="tv-notice">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <span>{{ panel.notice() }}</span>
+          </p>
+        }
+      }
+      <p class="cap" id="tv-what-t">O que a TV mostra</p>
+      <div class="rows" role="radiogroup" aria-labelledby="tv-what-t">
+        <app-tv-choice-row
+          [group]="group"
+          icon="cast"
+          title="Espelhar o que eu mostro"
+          sub="A TV segue o que você mostra à mesa"
+          [selected]="panel.mirror()"
+          [busy]="panel.saving()"
+          data-testid="tv-mirror"
+          (picked)="pickMirror()"
+        >
+          <button
+            type="button"
+            class="info"
+            aria-label="Como o Espelhar escolhe"
+            aria-controls="tv-order"
+            [attr.aria-expanded]="helpOpen()"
+            (click)="helpOpen.set(!helpOpen())"
+          >
+            <mat-icon aria-hidden="true">info</mat-icon>
+          </button>
+        </app-tv-choice-row>
+        @if (helpOpen()) {
+          <!-- Open, the order is all there is under "Espelhar" (the board): the pins come back when it closes. -->
+          <div id="tv-order" class="order" data-testid="tv-order">
+            <p><b>A TV mostra o primeiro que houver:</b></p>
+            <ol>
+              @for (step of mirrorOrder; track step) {
+                <li>{{ step }}</li>
+              }
+            </ol>
+          </div>
+        } @else {
+          <p class="cap cap--pin">Fixar</p>
+          @for (row of rows(); track row.kind) {
+            <app-tv-choice-row
+              [group]="group"
+              [icon]="row.icon"
+              [title]="row.title"
+              [sub]="row.sub"
+              [available]="row.available"
+              [selected]="isPinned(row.kind)"
+              [busy]="panel.saving()"
+              [attr.data-testid]="'tv-pin-' + row.key"
+              (picked)="pickPin(row.kind)"
+            />
+          }
+        }
+      </div>
+    }
+
+    @if (inSheet) {
+      <!-- On a phone the master opens the panel from the menu: this says how the TV gets the page (MasterPhoneSheet). -->
+      <p class="mr-notice mr-notice--neutral note" data-testid="tv-how">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <span>
+          Para a TV: no computador ligado a ela, abra esta sessão e use <b>Tela da mesa</b> na barra (numa tela estreita,
+          ⋮ › <b>Tela da mesa…</b>).
+        </span>
+      </p>
+    }
+    <p class="mr-visually-hidden" role="status">{{ announce() }}</p>
+  </div>
+
+  <div foot>
+    <p class="privacy">
+      <mat-icon aria-hidden="true">visibility</mat-icon>
+      A TV mostra só o que toda a mesa pode ver. O que é só seu, ou só de alguns jogadores, fica fora.
+    </p>
+    <div class="buttons">
+      <a
+        class="js-open"
+        [class.opening]="opening() && !open()"
+        [attr.href]="link"
+        target="_blank"
+        rel="noopener"
+        [matButton]="inSheet ? 'filled' : 'outlined'"
+        (click)="opening.set(true)"
+      >
+        <mat-icon aria-hidden="true">open_in_new</mat-icon>Abrir a Tela da mesa
+      </a>
+      <button matButton="outlined" type="button" class="js-copy" (click)="copyLink()">
+        <mat-icon aria-hidden="true">{{ copied() ? 'check' : 'content_copy' }}</mat-icon>{{ copied() ? 'Link copiado' : 'Copiar o link' }}
+      </button>
+    </div>
+    @if (opening() && !open()) {
+      <p class="waiting" role="status">Esperando a tela se conectar.</p>
+    }
+    @if (linkShown()) {
+      <input #linkField class="field" type="text" readonly aria-label="Endereço da Tela da mesa" [value]="link" />
+    }
+    <p class="mr-visually-hidden" role="status">{{ copied() ? 'Link copiado' : '' }}</p>
+  </div>
+</app-sheet-frame>

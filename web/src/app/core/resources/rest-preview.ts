@@ -119,6 +119,20 @@ function hookLines(characters: readonly RestPreview[], long: boolean): RestLine[
   );
 }
 
+/** The NPCs of the campaign that kept what they spent (the master's preview alone): a long rest gives back their uses a day and
+ * Legendary Resistance, a short rest their rest actions. */
+function npcLines(preview: GetRestPreviewResponse): RestLine[] {
+  if (preview.npcsBack.length === 0) {
+    return [];
+  }
+  return [
+    [
+      bold('NPCs da campanha'),
+      plain(` recuperam os usos: ${listWords(preview.npcsBack.map((n) => n.name))}.`),
+    ],
+  ];
+}
+
 /** What the confirmation lists: the board's lines, from what the server says each character gets back. `rechargeOf`
  * says, for a long rest, which resources also come back on a short one (the preview itself does not). */
 export function restSummary(
@@ -171,6 +185,8 @@ export function restSummary(
   }
 
   lines.push(...hookLines(characters, long));
+
+  lines.push(...npcLines(preview));
 
   return {
     title: `Começar o ${long ? 'descanso longo' : 'descanso curto'}?`,

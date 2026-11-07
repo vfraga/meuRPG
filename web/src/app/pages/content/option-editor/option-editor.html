@@ -19,6 +19,8 @@
             @if (noOfferer()) {
               <p class="hint offer__lock"><mat-icon aria-hidden="true">lock</mat-icon>Nenhuma classe ou subclasse da mesa tem uma característica com "Opções para escolher". Crie a lista lá e volte aqui.</p>
               <a class="offer__link" data-field="table_option.offered_by.help" [routerLink]="subclassesLink()" [queryParams]="{ kind: 'subclasses' }">Ver as subclasses da mesa<mat-icon aria-hidden="true">chevron_right</mat-icon></a>
+            } @else if (refused()) {
+              <!-- The refusal at the field speaks; nothing here describes the feature. -->
             } @else if (offering(); as f) {
               <p class="hint">{{ offeringList() }}</p>
               <a class="offer__link" [routerLink]="offeringLink()">Abrir {{ f.owner }}<mat-icon aria-hidden="true">chevron_right</mat-icon></a>

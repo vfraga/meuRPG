@@ -65,6 +65,10 @@ var (
 type Subscriber struct {
 	UserID string
 	Master bool
+	// Screen marks the stream of the master's TV tab. It hears what the master hears, and an event
+	// with Audience.NoScreens skips it. Its UserID is its own, so its streams are capped apart from
+	// the master's own.
+	Screen bool
 }
 
 // Audience says who may receive an event. The zero Audience reaches nobody.
@@ -82,10 +86,17 @@ type Audience struct {
 	UserID string
 	// Except lists players Players does not reach: "the players but these". It narrows Players only.
 	Except []string
+	// NoScreens leaves out the streams of the master's TV tab (Subscriber.Screen), which hear every
+	// event of the master's audience otherwise. An event about the TV tabs themselves sets it, so that a
+	// tab connecting does not tell the tabs.
+	NoScreens bool
 }
 
 // includes reports whether s may receive an event for this audience.
 func (a Audience) includes(s Subscriber) bool {
+	if a.NoScreens && s.Screen {
+		return false
+	}
 	return a.Everyone || (a.Master && s.Master) || (a.Players && !s.Master && !slices.Contains(a.Except, s.UserID)) || (a.UserID != "" && a.UserID == s.UserID)
 }
 

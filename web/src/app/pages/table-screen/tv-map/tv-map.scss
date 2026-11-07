@@ -1,0 +1,39 @@
+:host {
+  display: block;
+
+  @media (min-width: 900px) {
+    min-height: 0;
+  }
+}
+
+// What a card holds around the map's picture on a TV: the card's padding, the legend under the picture, the gaps.
+$chrome: 5rem;
+
+.tv-map {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  padding: var(--mr-space-3);
+  background: var(--mr-surface);
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-lg);
+  overflow: hidden;
+
+  // A TV: the card is the room it is given, and the picture is as tall as that room less the legend, so the legend
+  // stays inside the card. The card measures itself (`container-type: size`), which needs the height it has here.
+  @media (min-width: 900px) {
+    height: 100%;
+    min-height: 0;
+    container-type: size;
+    --fm-max-h: calc(100cqh - #{$chrome});
+    --tv-max-h: calc(100cqh - #{$chrome});
+  }
+}
+
+// A map with no fog is the picture as it is; on a TV it is as tall as the room under the header allows.
+.tv-map__plain {
+  width: 100%;
+  max-width: calc(var(--tv-max-h, 70dvh) * var(--tv-ar, 1.5));
+  margin-inline: auto;
+}

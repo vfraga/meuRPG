@@ -115,6 +115,14 @@ export interface LiveSnapshotVm {
   readonly shownImageKeep: boolean;
 }
 
+/** What `table_screen_changed` tells the master's panel. */
+export interface TableScreenChange {
+  readonly open: boolean;
+  readonly lostAt: Date | null;
+  readonly choiceRevision: number;
+  readonly presenceKnown: boolean;
+}
+
 /** One event of `WatchGameSession`. */
 export type LiveEventVm =
   | { readonly kind: 'ready' }
@@ -207,6 +215,9 @@ export type LiveEventVm =
   | { readonly kind: 'sessionMessage'; readonly message: SessionMessage }
   /** `master_typing` (MR-051): the master is writing. Carries no text, only how long to show the hint. */
   | { readonly kind: 'masterTyping'; readonly expiresInSeconds: number }
+  /** `table_screen_changed` (master only): a TV tab connected or left, or the master's choice moved. The presence is only
+   * meaningful when `presenceKnown`; otherwise the panel keeps the presence it last heard. */
+  | ({ readonly kind: 'tableScreenChanged' } & TableScreenChange)
   /** `attack_hit`: the master applied the damage of an attack to this player's character; who hit, how much, of what type. */
   | {
       readonly kind: 'attackHit';

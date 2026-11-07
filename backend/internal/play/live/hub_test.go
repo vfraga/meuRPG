@@ -330,3 +330,27 @@ func TestDefaultMaxPerUser(t *testing.T) {
 		t.Errorf("Count() = %d, want %d", got, DefaultMaxPerUser)
 	}
 }
+
+// An event with NoScreens reaches the master's session streams and not the TV tab's, which hears the rest
+// of what the master hears.
+func TestAudienceNoScreensSkipsTheTVStream(t *testing.T) {
+	t.Parallel()
+	h := New(0)
+	session, err := h.Subscribe("c", Subscriber{UserID: "m", Master: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	screen, err := h.Subscribe("c", Subscriber{UserID: "tv:m", Master: true, Screen: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := h.Publish("c", Event{Audience: Audience{Master: true, NoScreens: true}}); got != 1 {
+		t.Errorf("a NoScreens event reached %d streams, want 1", got)
+	}
+	if len(session.Events()) != 1 || len(screen.Events()) != 0 {
+		t.Errorf("queued: session %d, screen %d; want 1 and 0", len(session.Events()), len(screen.Events()))
+	}
+	if got := h.Publish("c", Event{Audience: Audience{Master: true}}); got != 2 {
+		t.Errorf("a master event reached %d streams, want both", got)
+	}
+}

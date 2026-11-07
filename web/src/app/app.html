@@ -1,3 +1,4 @@
+@if (!tv()) {
 <a class="skip-link" href="#main" (click)="skipToContent($event)">Pular para o conteúdo</a>
 
 <header class="app-bar">
@@ -55,21 +56,28 @@
     <app-user-menu class="app-bar__user" />
   </div>
 </header>
+}
 
-<main id="main" class="app-content" tabindex="-1" #main>
-  <app-live-notice [url]="url()" />
+<main id="main" class="app-content" [class.app-content--tv]="tv()" tabindex="-1" #main>
+  @if (!tv()) {
+    <app-live-notice [url]="url()" />
+  }
   @if (navigating()) {
     <p class="app-loading" role="status">Abrindo a página...</p>
   }
   <router-outlet />
 </main>
 
-@defer (on idle) {
-  <app-footer />
+@if (!tv()) {
+  @defer (on idle) {
+    <app-footer />
+  }
 }
 
 <!-- The dice overlay is the only thing in the shell that needs the generated rules and contest code (about 70 kB), and nothing
      rolls before a page that can roll has loaded (the chunk is requested when the browser is idle, right after the first screen). -->
-@defer (on idle) {
-  <app-roll-overlay />
+@if (!tv()) {
+  @defer (on idle) {
+    <app-roll-overlay />
+  }
 }

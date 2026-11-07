@@ -156,7 +156,7 @@ export function menuResponse(): GetEffectMenuResponse {
         name: 'choice_kinds',
         values: [
           { key: 'skill', namePt: 'Perícias' },
-          { key: 'feature', namePt: 'Uma opção de uma lista do SRD' },
+          { key: 'feature', namePt: 'Uma opção de uma lista' },
           { key: 'feat', namePt: 'Talentos' },
         ],
       },
@@ -187,6 +187,17 @@ export function menuResponse(): GetEffectMenuResponse {
         values: [
           { key: 'language:common', namePt: 'Comum' },
           { key: 'language:primordial', namePt: 'Primordial' },
+        ],
+      },
+      {
+        name: 'feat_option_sets',
+        values: [
+          { key: 'invocation', namePt: 'Invocação mística' },
+          {
+            key: 'fighting_style',
+            namePt: 'Estilo de luta',
+            hintPt: 'Os estilos de luta do guerreiro, do paladino e do patrulheiro.',
+          },
         ],
       },
       {

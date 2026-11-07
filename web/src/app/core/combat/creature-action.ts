@@ -12,6 +12,7 @@ import {
 import {
   AreaPlacement,
   type CreatureActionResult,
+  type LimitedAction,
   SaveOutcome,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { abilityName } from '../content/feat-text';
@@ -259,4 +260,94 @@ export function resultNotes(result: CreatureActionResult): string[] {
     notes.push('O alvo repete o teste no fim de cada turno dele; o app não conta o tempo.');
   }
   return notes;
+}
+
+/** What the card shows of a limited action's state (RN-29): a tag, or the dots of the uses left, and why "Usar" is off. */
+export interface LimitView {
+  /** "Pronta" or "Gasta" for a Recharge action and an action that waits for a rest; `''` for one with uses a day. */
+  readonly tag: '' | 'Pronta' | 'Gasta';
+  /** The uses a day: how many it has and how many are left (0 allowed: no dots). */
+  readonly uses: { readonly allowed: number; readonly left: number } | null;
+  /** "2 de 3", for the uses a day. */
+  readonly usesText: string;
+  /** Why the limit blocks "Usar" now, or `''`. */
+  readonly why: string;
+}
+
+const NO_LIMIT: LimitView = { tag: '', uses: null, usesText: '', why: '' };
+
+/** The faces a Recharge action comes back on, in words: "Recharge 5-6" is "5 ou 6", "Recharge 6" is "6". */
+export function rechargeFaces(usage: string): string {
+  const m = /(\d)\s*[-–]\s*(\d)/.exec(usage) ?? /(\d)/.exec(usage);
+  if (!m) {
+    return '';
+  }
+  return m[2] ? `${m[1]} ou ${m[2]}` : m[1];
+}
+
+/**
+ * The state of a limited action from the server's copy for the master and the creature's controller (`LimitedAction`),
+ * or no limit at all when the copy has none for the key. `creature` is the creature's label, for the reason.
+ */
+export function limitView(limited: LimitedAction | undefined, creature: string): LimitView {
+  if (!limited) {
+    return NO_LIMIT;
+  }
+  if (limited.kind === 'recharge') {
+    const faces = rechargeFaces(limited.usage);
+    return {
+      tag: limited.available ? 'Pronta' : 'Gasta',
+      uses: null,
+      usesText: '',
+      why: limited.available
+        ? ''
+        : `Volta com ${faces} no d6 que o app rola no começo de cada turno do ${creature}.`,
+    };
+  }
+  if (limited.kind === 'per_day') {
+    const left = limited.usesLeft;
+    return {
+      tag: '',
+      uses: { allowed: limited.usesAllowed, left },
+      usesText: `${left} de ${limited.usesAllowed}`,
+      why: limited.available
+        ? ''
+        : limited.kept
+          ? 'Sem usos: voltam no descanso longo da mesa.'
+          : `Sem usos hoje. O ${creature} tem de novo no próximo combate.`,
+    };
+  }
+  if (limited.kind === 'rest') {
+    return {
+      tag: limited.available ? 'Pronta' : 'Gasta',
+      uses: null,
+      usesText: '',
+      why: limited.available
+        ? ''
+        : limited.kept
+          ? 'Volta no próximo descanso curto ou longo.'
+          : 'Volta no próximo combate.',
+    };
+  }
+  return NO_LIMIT;
+}
+
+/** One line of the opened order row for a limited action: "Esporos · Recarga 6 · gasta", "Guincho atordoante · 1/dia · 1 de 1". */
+export interface LimitLine {
+  readonly key: string;
+  readonly text: string;
+  /** Material icon beside the words: a Recharge or rest action, or uses a day. */
+  readonly icon: 'autorenew' | 'looks_one';
+}
+
+export function limitLines(limited: readonly LimitedAction[]): LimitLine[] {
+  return limited.map((l) => {
+    const state = limitView(l, '');
+    const status = state.uses ? state.usesText : state.tag === 'Pronta' ? 'pronta' : 'gasta';
+    return {
+      key: l.actionKey,
+      text: `${l.namePt || l.name} · ${usageText(l.usage)} · ${status}`,
+      icon: l.kind === 'per_day' ? 'looks_one' : 'autorenew',
+    };
+  });
 }

@@ -64,7 +64,7 @@
           <span class="type__cap">{{ totalNote() }} · dado físico</span>
         } @else {
           <span class="type__dash" aria-hidden="true">—</span>
-          <span class="mr-visually-hidden">O total aparece quando todos os números forem digitados.</span>
+          <span class="mr-visually-hidden">{{ waiting() ? 'O total aparece quando todos os dados forem digitados.' : 'O total aparece quando todos os números forem digitados.' }}</span>
         }
       </div>
     }

@@ -101,6 +101,7 @@ export class LiveSessionEvents {
       onHeldRollsChanged: () => state.heldRollsTick.update((n) => n + 1),
       // Someone at the table rolled (never a secret roll): the log gets it and the dice tumble.
       onFreeRollRolled: (roll) => parts.freeDice.heard(roll),
+      onTableScreenChanged: (change) => parts.tableScreen.heard(change),
       onEnded: () => loader.ended(),
       onFatal: (kind) => {
         if (kind === 'signed-out') {

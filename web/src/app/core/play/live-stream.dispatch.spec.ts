@@ -96,6 +96,7 @@ describe('LiveStream: what each message hands the page', () => {
       onCallingYou: vi.fn(),
       onSessionMessage: vi.fn(),
       onMasterTyping: vi.fn(),
+      onTableScreenChanged: vi.fn(),
       onAttackHit: vi.fn(),
       onEnded: vi.fn(),
       onFatal: vi.fn(),
@@ -230,6 +231,26 @@ describe('LiveStream: what each message hands the page', () => {
     ],
     ['sessionMessage', { kind: 'sessionMessage', message: aLine }, 'onSessionMessage', [aLine]],
     ['masterTyping', { kind: 'masterTyping', expiresInSeconds: 6 }, 'onMasterTyping', [6]],
+    [
+      'tableScreenChanged',
+      {
+        kind: 'tableScreenChanged',
+        open: true,
+        lostAt: null,
+        choiceRevision: 2,
+        presenceKnown: true,
+      },
+      'onTableScreenChanged',
+      [
+        {
+          kind: 'tableScreenChanged',
+          open: true,
+          lostAt: null,
+          choiceRevision: 2,
+          presenceKnown: true,
+        },
+      ],
+    ],
     [
       'attackHit',
       { kind: 'attackHit', id: 'p1', actorLabel: 'Goblin', amount: 7, damageTypePt: 'cortante' },

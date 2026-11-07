@@ -3290,6 +3290,9 @@ message SummonSpellOptions {
   string granted_by = 11;
   string resource_key = 12;
   int32 uses_left = 13;
+  // Where a class feature's summon comes from, in words: the class and the level of the feature ("Druida 3"). Empty for a spell the
+  // character has and for a feature that is not an entry of the table's class features (a race trait).
+  string granted_by_label_pt = 14;
 }
 
 // SummonCircle is what a spell may bring at one circle.

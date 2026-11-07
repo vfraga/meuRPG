@@ -20,6 +20,7 @@ import {
 import { isTableCreature } from '../../core/creatures/creature-format';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { CreaturePick } from '../creature-pick/creature-pick';
+import { latestInput } from '../latest-input';
 import { FieldNote } from '../form-fields/field-note';
 import { TableMark } from '../table-mark/table-mark';
 
@@ -76,6 +77,11 @@ export class SummonCreatures {
   readonly path = input('');
   readonly issues = input<readonly string[]>([]);
   readonly keysChange = output<string[]>();
+  private readonly latest = latestInput(this.keys);
+  private send(keys: string[]): void {
+    this.latest.sent(keys);
+    this.keysChange.emit(keys);
+  }
 
   protected readonly full = computed(() => this.keys().length >= MAX_SUMMON_CREATURES);
   private readonly tableNames = computed(
@@ -112,12 +118,13 @@ export class SummonCreatures {
 
   protected add(c: CreatureSummary): void {
     rememberCreatureName(c.key, c.namePt);
-    if (!this.keys().includes(c.key) && !this.full()) {
-      this.keysChange.emit([...this.keys(), c.key]);
+    const keys = this.latest.current();
+    if (!keys.includes(c.key) && keys.length < MAX_SUMMON_CREATURES) {
+      this.send([...keys, c.key]);
     }
   }
 
   protected remove(key: string): void {
-    this.keysChange.emit(this.keys().filter((k) => k !== key));
+    this.send(this.latest.current().filter((k) => k !== key));
   }
 }

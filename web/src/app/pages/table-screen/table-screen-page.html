@@ -1,0 +1,105 @@
+<p class="mr-visually-hidden" role="status" data-testid="tv-announce">{{ announcement() }}</p>
+
+<!-- The F11 hint sits under the header (or at the top where a state has none), never above the title. -->
+<ng-template #hint>
+  @if (showHint()) {
+    <app-tv-fullscreen-hint (enter)="enterFullscreen()" />
+  }
+</ng-template>
+
+@if (phase(); as p) {
+  @switch (p.kind) {
+    @case ('ready') {
+      @if (heading(); as h) {
+        <app-tv-header [icon]="h.icon" [kicker]="h.kicker" [title]="h.title" [link]="link()" />
+      }
+      <ng-container *ngTemplateOutlet="hint" />
+      <div class="mr-live tv__late" role="status">
+        @if (late(); as text) {
+          <div class="mr-notice mr-notice--warning" data-testid="tv-late">
+            <mat-icon aria-hidden="true">history_toggle_off</mat-icon>
+            <p>{{ text }}</p>
+          </div>
+        }
+      </div>
+      @if (screen(); as s) {
+        @if (s.notice) {
+          <p class="tv__notice" data-testid="tv-notice">{{ s.notice }}</p>
+        }
+      }
+      <div class="tv__stage">
+        @if (screen(); as s) {
+          @switch (s.stage.kind) {
+            @case ('map') {
+              @if (s.stage.map.hiddenByFog) {
+                <app-tv-fog-card class="tv__fill" />
+              } @else {
+                <div class="tv__split">
+                  <app-tv-map [map]="s.stage.map" />
+                  <app-tv-rolls [rolls]="s.rolls" />
+                </div>
+              }
+            }
+            @case ('image') {
+              <app-tv-image [name]="s.stage.name" [url]="s.stage.url" [width]="s.stage.width" [height]="s.stage.height" />
+            }
+            @case ('scene') {
+              <app-tv-scene [description]="s.stage.description" [stage]="s.stage.stage" />
+            }
+            @case ('combat') {
+              <app-tv-combat
+                [round]="s.stage.round"
+                [order]="s.stage.order"
+                [mastersTurn]="s.stage.mastersTurn"
+                [log]="s.stage.log"
+                [map]="s.stage.map"
+                [rolls]="s.rolls"
+              />
+            }
+            @default {
+              <app-tv-idle [party]="s.party" />
+            }
+          }
+        }
+      </div>
+    }
+    @case ('loading') {
+      <ng-container *ngTemplateOutlet="hint" />
+      <div class="tv__stage" role="status">
+        <app-tv-message icon="hourglass_empty" [title]="p.text" />
+      </div>
+    }
+    @case ('error') {
+      <ng-container *ngTemplateOutlet="hint" />
+      <div class="tv__stage">
+        <app-tv-message icon="error_outline" [title]="p.title" [detail]="p.detail" />
+      </div>
+    }
+    @case ('stale') {
+      <app-tv-header icon="tv" [kicker]="p.campaignName" [title]="p.sessionLabel || 'Tela da mesa'" link="lost" />
+      <ng-container *ngTemplateOutlet="hint" />
+      <div class="tv__stage">
+        <app-tv-message icon="cloud_off" [title]="p.title" [detail]="p.detail" [level]="2" />
+      </div>
+    }
+    @case ('ended') {
+      <app-tv-header icon="flag" [kicker]="p.campaignName" [title]="p.sessionLabel || 'Tela da mesa'" link="ended" [endedAt]="p.endedAt" />
+      <ng-container *ngTemplateOutlet="hint" />
+      <div class="tv__stage">
+        <app-tv-message icon="flag" [title]="p.title" [detail]="p.farewell" [hint]="p.hint" [level]="2" />
+      </div>
+    }
+    @case ('no-access') {
+      <ng-container *ngTemplateOutlet="hint" />
+      <div class="tv__stage">
+        <app-tv-message icon="lock_outline" [title]="p.title" [detail]="p.detail" />
+      </div>
+    }
+    @case ('signed-out') {
+      <ng-container *ngTemplateOutlet="hint" />
+      <div class="tv__stage">
+        <app-tv-message icon="login" [title]="p.title" [detail]="p.detail" />
+      </div>
+    }
+  }
+}

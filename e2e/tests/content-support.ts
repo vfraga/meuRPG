@@ -160,3 +160,19 @@ export async function updateEntryRPC(master: Page, campaignId: string, key: stri
   const res = await callRPC(master, `${service}/UpdateTableEntry`, { campaignId, key, expectedRevision: current.revision, [kind]: body });
   expect(res.ok(), await res.text()).toBeTruthy();
 }
+
+/** No radio card's text spills out of its card (a card is as tall as its text, never a fixed height). */
+export async function expectCardsHoldTheirText(page: Page): Promise<void> {
+  const cards = page.locator('app-radio-cards .card');
+  expect(await cards.count()).toBeGreaterThan(0);
+  const spills = await cards.evaluateAll((els) =>
+    els
+      .filter((card) => {
+        const box = card.getBoundingClientRect();
+        const text = card.querySelector('.text')!.getBoundingClientRect();
+        return text.bottom > box.bottom + 0.5 || text.right > box.right + 0.5 || text.top < box.top - 0.5;
+      })
+      .map((card) => card.textContent?.trim().replace(/\s+/g, ' ')),
+  );
+  expect(spills, 'radio cards whose text spills out of the card').toEqual([]);
+}

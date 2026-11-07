@@ -13,6 +13,10 @@ import {
   BonusAttackRule,
   TurnOptionsSchema,
 } from '../../../../../gen/meurpg/rules/v1/rules_pb';
+import {
+  CombatantKind,
+  ManeuverDieOptionSchema,
+} from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { CombatState } from '../../../../core/combat/combat-state';
 import { combatant, encounter, reactionWindow } from '../../../../core/combat/combat-testing';
 import {
@@ -62,6 +66,35 @@ function request(over: Partial<AttackSheetRequest> = {}): AttackSheetRequest {
     ...over,
   };
 }
+
+const strike = create(ManeuverDieOptionSchema, {
+  die: { key: 'golpe', namePt: 'Golpe Certeiro', sides: 8, applies: 'attack' },
+  resourceNamePt: 'Reserva de Golpes',
+  usesLeft: 2,
+});
+
+describe('attackSheetData: the table dice of a weapon attack', () => {
+  const withDice = turn({ maneuverDice: [strike] });
+  const pc = combatant({ id: 't', label: 'Toren', kind: CombatantKind.PLAYER });
+
+  it("hands over the dice of the character's own weapon attack", () => {
+    const data = attackSheetData(request({ attacker: pc, options: withDice }));
+    expect(data?.maneuverDice).toEqual([strike]);
+  });
+
+  it('hands over none for a spell attack, an NPC, the master and the throw back', () => {
+    const spell = create(AttackSchema, { ...sword, key: 'attack:sword', kind: AttackKind.SPELL });
+    const spellOptions = turn({ maneuverDice: [strike] }, [{ attack: spell }]);
+    expect(attackSheetData(request({ attacker: pc, options: spellOptions }))?.maneuverDice).toEqual(
+      [],
+    );
+    expect(attackSheetData(request({ options: withDice }))?.maneuverDice).toEqual([]);
+    expect(
+      attackSheetData(request({ attacker: pc, options: withDice, master: true }))?.maneuverDice,
+    ).toEqual([]);
+    expect(attackSheetData(request({ attacker: pc, options: turn() }))?.maneuverDice).toEqual([]);
+  });
+});
 
 describe('attackSheetData', () => {
   it('hands the sheet the attack, its targets and the plain defaults of a combatant with no economy', () => {

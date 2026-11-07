@@ -51,6 +51,8 @@ export class RollPicker {
   readonly modifier = input(0);
   /** The button reads the total ("Confirmar 25", with the bonus added) in place of the typed number: damage, where the sum of the dice is only a part. */
   readonly confirmTotal = input(false);
+  /** Something typed beside this number is still missing (an extra die's face): no total and no number on the button until it is there. */
+  readonly waiting = input(false);
   /** The field's label ("Role 1d20 para o Machado de batalha (+5)"). */
   readonly label = input.required<string>();
   /** The line under it ("Role o seu dado e digite o número que saiu (1 a 20)."). */
@@ -98,6 +100,9 @@ export class RollPicker {
   /** The number on the button: the typed one, or the total when `confirmTotal` is on. */
   protected readonly confirmNumber = computed(() => {
     const v = this.value();
+    if (this.waiting()) {
+      return null;
+    }
     return v !== null && this.confirmTotal() ? (this.total()?.sum ?? v) : v;
   });
   protected readonly invalid = computed(() => this.text().trim() !== '' && this.value() === null);
@@ -108,11 +113,13 @@ export class RollPicker {
   protected readonly hintText = computed(() => tight(this.hint()));
   /** What a screen reader hears while the well shows only "—". */
   protected readonly waitText = computed(() =>
-    tight(`O total aparece quando o número for de ${this.min()} a ${this.max()}.`),
+    this.waiting()
+      ? 'O total aparece quando todos os dados forem digitados.'
+      : tight(`O total aparece quando o número for de ${this.min()} a ${this.max()}.`),
   );
   protected readonly total = computed(() => {
     const v = this.value();
-    if (v === null) {
+    if (v === null || this.waiting()) {
       return null;
     }
     const written = this.typedFormula()?.(v) ?? null;

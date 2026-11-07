@@ -1,0 +1,8 @@
+<app-radio-cards label="De onde vêm as opções" [options]="cards()" [value]="source()" [path]="path()" [issues]="issues()" (valueChange)="pick($event)" />
+@if (source() === 'set') {
+  <div class="set">
+    <app-select-field label="Conjunto" [options]="sets()" [value]="effect().set" (valueChange)="setSet($event)" />
+    <p class="set__note">{{ setHint() }}</p>
+  </div>
+  <p class="foot">As opções da mesa no conjunto entram junto; uma oculta não aparece para o jogador.</p>
+}

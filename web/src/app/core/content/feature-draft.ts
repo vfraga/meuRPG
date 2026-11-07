@@ -374,8 +374,15 @@ export function featurePaths(
   return features.flatMap((f, i) => featureOwnPaths(`${prefix}[${i}]`, f, menu));
 }
 
-/** The feature's options as the save sends them: only the named ones, and no field at all when there are none. */
+/** The options as the save sends them: only the named ones, and no field at all when there are none. */
+export function optionsInit(
+  options: readonly FeatureDraft[],
+  menu: EffectMenuVm,
+): { options?: FeatureInit[] } {
+  const named = options.filter((o) => o.name.trim() !== '').map((o) => draftToFeature(o, menu));
+  return named.length > 0 ? { options: named } : {};
+}
+
 function optionsOf(f: FeatureDraft, menu: EffectMenuVm): { options?: FeatureInit[] } {
-  const options = f.options.filter((o) => o.name.trim() !== '').map((o) => draftToFeature(o, menu));
-  return options.length > 0 ? { options } : {};
+  return optionsInit(f.options, menu);
 }

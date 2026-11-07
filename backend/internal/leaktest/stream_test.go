@@ -129,6 +129,9 @@ func checkStream(t *testing.T, w *world, got *answers) {
 	for _, p := range []*person{w.master, w.ana, w.caio} {
 		watchers[p] = w.watchStream(p)
 	}
+	// The TV's stream (WatchTableScreen) is the master's tab: it carries no content at all.
+	tvw := w.watchTV(w.master)
+	checkTVStreamIsRefused(t, w)
 	// A pending member, a stranger and someone with no session cannot open the stream.
 	for _, p := range []*person{w.pending, w.stranger, w.anonymous()} {
 		stream, err := p.play.WatchGameSession(t.Context(), connect.NewRequest(&playv1.WatchGameSessionRequest{CampaignId: w.campaign}))
@@ -153,8 +156,11 @@ func checkStream(t *testing.T, w *world, got *answers) {
 		}()
 		f()
 	}
+	// A hidden NPC moves: the TV's stream hears a `changed`, and what the TV reads is the same.
+	step("a hidden move on the TV", func() { checkAHiddenMoveShowsNothing(t, w, tvw, got) })
 	step("the stream script", w.streamScript)
 	w.assertFogShape(t) // the changes moved two characters: the fog must still be what the canaries assume
+	step("the table screen after the script", func() { checkTableScreenAfterTheScript(t, w, got) })
 	// The state the script left: everything is asked again, with the changes made.
 	for _, r := range reads {
 		if r.once {
@@ -196,6 +202,13 @@ func checkStream(t *testing.T, w *world, got *answers) {
 			}
 		}
 	}
+	select {
+	case <-tvw.done:
+	case <-time.After(30 * time.Second):
+		t.Fatalf("the TV's stream did not end with the session")
+	}
+	checkTVEvents(t, w, tvw, got)
+	checkTableScreenChangedIsTheMasters(t, w, watchers)
 	for _, c := range streamedCases() {
 		total := 0
 		for _, n := range cases {

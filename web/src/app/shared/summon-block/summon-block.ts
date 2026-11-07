@@ -22,6 +22,7 @@ import {
   timeOptions,
   timeValue,
 } from '../../core/content/summon-options';
+import { latestInput } from '../latest-input';
 import { FieldNote } from '../form-fields/field-note';
 import { RadioCards } from '../form-fields/radio-cards';
 import { SelectField, type SelectOption } from '../form-fields/select-field';
@@ -65,6 +66,11 @@ export class SummonBlock {
   readonly campaignId = input.required<string>();
   readonly entries = input<readonly TableEntry[]>([]);
   readonly summonChange = output<SummonDraft | null>();
+  private readonly draft = latestInput(this.summon);
+  private send(s: SummonDraft | null): void {
+    this.draft.sent(s);
+    this.summonChange.emit(s);
+  }
 
   protected readonly turnCardsFor = turnCardsFor;
   protected readonly replacesCardsFor = replacesCardsFor;
@@ -106,19 +112,19 @@ export class SummonBlock {
   });
 
   protected toggle(on: boolean): void {
-    const s = this.summon();
+    const s = this.draft.current();
     if (!on) {
       // Bound now to the resource it spends, so a rename or a removal while it is off is followed when it comes back.
       const own = this.resources().find((r) => r.key === s?.resourceKey.trim());
       this.stash.set(
         s && s.resourceEffect === undefined && own ? { ...s, resourceEffect: own.id } : s,
       );
-      this.summonChange.emit(null);
+      this.send(null);
       return;
     }
     const first = this.resources()[0];
     const stashed = this.stash();
-    this.summonChange.emit(
+    this.send(
       stashed
         ? restoredSummon(stashed, this.resources())
         : { ...emptySummon(first?.key ?? ''), resourceEffect: first?.id },
@@ -126,30 +132,31 @@ export class SummonBlock {
   }
 
   protected patch(p: Partial<SummonDraft>): void {
-    this.summonChange.emit({ ...this.summon()!, ...p });
+    this.send({ ...this.draft.current()!, ...p });
   }
 
   protected setDuration(value: string): void {
-    const duration = durationOf(value, this.summon()!.duration);
+    const duration = durationOf(value, this.draft.current()!.duration);
     // Concentration needs a duration by time: a duration that is not one takes it back.
     this.patch({
       duration,
-      concentration: duration.kind === SpellDurationKind.TIMED && this.summon()!.concentration,
+      concentration:
+        duration.kind === SpellDurationKind.TIMED && this.draft.current()!.concentration,
     });
   }
 
   protected setTime(value: string): void {
-    this.patch({ time: timeOf(value, this.summon()!.time) });
+    this.patch({ time: timeOf(value, this.draft.current()!.time) });
   }
 
   protected readonly timeValue = timeValue;
   protected readonly durationValue = durationValue;
 
   protected resetDefaults(): void {
-    this.patchAll(resetFixed(this.summon()!));
+    this.patchAll(resetFixed(this.draft.current()!));
   }
 
   private patchAll(s: SummonDraft): void {
-    this.summonChange.emit(s);
+    this.send(s);
   }
 }

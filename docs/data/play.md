@@ -14,6 +14,9 @@ erDiagram
         uuid open_scene_point_id FK
         bool open_scene_everyone
         text shown_image_audience
+        bool tv_mirror
+        smallint tv_pin
+        int tv_choice_revision
     }
     game_session_scene_players {
         uuid game_session_id PK,FK
@@ -188,6 +191,9 @@ What the session shows is on the row, all optional and independent, none set in 
 | `open_scene_point_id` | The `scene` map point the master opened, one at a time. Opening a hidden point does not reveal it (RN-10). `SET NULL` when the point is deleted. |
 | `open_scene_everyone` | True (the default) when the open scene is open to the whole table, a player who joins later included; false when it is open to exactly the players of `game_session_scene_players`. A column, not "no rows", so erasing the last player's account never opens the scene to everyone. Opening, closing or changing the scene sets it and the rows together. |
 | `shown_image_audience` | Who sees the shown image: `table` (every member, the default), `scene` (the players of `game_session_scene_players`, so it follows who is in the scene) or `chosen` (the players of `game_session_image_viewers`). When the scene stops being the image's (it closes, another opens, or it opens to everyone) the server turns `scene` into `chosen` with the players who were in. |
+| `tv_mirror` | True (the default) while the TV at the table follows what the table sees; false when the master pinned one item. |
+| `tv_pin` | The pinned item, read only while `tv_mirror` is false, always 1 to 5 (`game_sessions_tv_pin_valid`): 1 idle (the default), 2 map, 3 image, 4 scene, 5 combat. It stays when the item ends; the TV then shows the idle screen. |
+| `tv_choice_revision` | How many times the master wrote the choice. A write over another revision is refused. Nothing else reads or bumps it. |
 
 `play` keeps only the ids; the `maps` module owns the targets and `play` reads them through the `MapKeeper` interface (see [Architecture](../architecture/play/live-session.md#what-the-session-shows)).
 There is no index on these columns: only deleting a map or image searches for them, and the table is small.

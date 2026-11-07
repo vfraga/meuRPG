@@ -1461,7 +1461,7 @@ func (q *Queries) GetMapPointInCampaign(ctx context.Context, arg GetMapPointInCa
 }
 
 const getMapTileInfo = `-- name: GetMapTileInfo :one
-SELECT m.id, m.campaign_id, m.image_id, m.revealed_at, m.grid_columns, m.grid_factor, m.fog_enabled,
+SELECT m.id, m.campaign_id, m.image_id, m.revealed_at, m.grid_columns, m.grid_factor, m.fog_enabled, m.group_vision,
        g.width AS image_width, g.height AS image_height, g.content_type AS image_content_type
 FROM maps AS m
 JOIN gallery_images AS g ON g.id = m.image_id
@@ -1476,6 +1476,7 @@ type GetMapTileInfoRow struct {
 	GridColumns      *int32
 	GridFactor       int32
 	FogEnabled       bool
+	GroupVision      bool
 	ImageWidth       int32
 	ImageHeight      int32
 	ImageContentType string
@@ -1494,6 +1495,7 @@ func (q *Queries) GetMapTileInfo(ctx context.Context, id string) (GetMapTileInfo
 		&i.GridColumns,
 		&i.GridFactor,
 		&i.FogEnabled,
+		&i.GroupVision,
 		&i.ImageWidth,
 		&i.ImageHeight,
 		&i.ImageContentType,

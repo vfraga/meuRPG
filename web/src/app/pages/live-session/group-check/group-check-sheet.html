@@ -26,6 +26,11 @@
         [busy]="busy()"
         (answer)="held.answer($event)"
       />
+    } @else if (follow.vanish.notice(); as notice) {
+      <div class="mr-notice mr-notice--neutral" data-testid="sheet-held-vanished">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <p role="status">{{ notice }}</p>
+      </div>
     } @else {
       <div class="mr-notice mr-notice--neutral note">
         <mat-icon aria-hidden="true">info</mat-icon>
@@ -44,6 +49,13 @@
       />
     }
   } @else {
+    <!-- The master answered the question for the roller: the check was written, and the sheet tells who answered. -->
+    @if (follow.vanish.notice(); as notice) {
+      <div class="mr-notice mr-notice--neutral" data-testid="sheet-held-vanished">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <p role="status">{{ notice }}</p>
+      </div>
+    }
     @if (roll(); as r) {
       <app-contest-roll [roll]="r" />
     }

@@ -10,7 +10,9 @@ import (
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
+	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
 
@@ -72,6 +74,9 @@ func (s *Service) GetTurnOptions(
 		return nil, err
 	}
 	if err := s.listPendingDamage(ctx, m, res, d, v, who); err != nil {
+		return nil, err
+	}
+	if res.ManeuverDice, err = s.listManeuverDice(ctx, m.CampaignID, who); err != nil {
 		return nil, err
 	}
 	res.ContestAttackOptions, res.ContestState, err = s.contestOptionsFor(ctx, m, d, v, who, opts, code)
@@ -240,6 +245,46 @@ func (s *Service) listPendingDamage(ctx context.Context, m authz.Membership, res
 		}
 	}
 	return nil
+}
+
+// listManeuverDice lists the weapon-attack table dice of a player's character (the ones RollAttack takes as
+// maneuver_key), each with the uses left of its resource pool; a die with none left stays listed. Nothing for
+// an NPC.
+func (s *Service) listManeuverDice(ctx context.Context, campaignID string, who playdb.Combatant) ([]*playv1.ManeuverDieOption, error) {
+	if who.Kind != kindPlayer || !backedByCharacter(who) {
+		return nil, nil
+	}
+	sheet, err := s.roster.CombatSheet(ctx, nil, campaignID, who.CharacterID)
+	if err != nil {
+		return nil, s.dbError(ctx, "read the character's maneuver dice", err)
+	}
+	dice := slices.DeleteFunc(slices.Clone(sheet.Traits.Maneuvers), func(m link.Maneuver) bool {
+		return !maneuverFits(m, rules.ManeuverAttack, "", "")
+	})
+	if len(dice) == 0 {
+		return nil, nil
+	}
+	vit, err := s.vitals.GetVitals(ctx, campaignID, who.CharacterID)
+	if err != nil {
+		return nil, s.dbError(ctx, "read the character's resources", err)
+	}
+	names := map[string]string{}
+	for _, r := range vit.GetResources() {
+		names[r.GetKey()] = r.GetNamePt()
+	}
+	out := make([]*playv1.ManeuverDieOption, 0, len(dice))
+	for _, m := range dice {
+		left, _ := poolLeft(vit, m.Resource)
+		out = append(out, &playv1.ManeuverDieOption{
+			Die: &rulesv1.RollDie{
+				Key: m.Key, NamePt: m.NamePT, Applies: m.Applies, Sides: clamp32(m.Sides, 0, 100), Resource: m.Resource,
+				Targets: m.Targets, Ability: m.Ability, TextPt: m.TextPT,
+			},
+			ResourceNamePt: names[m.Resource],
+			UsesLeft:       max(left, 0),
+		})
+	}
+	return out, nil
 }
 
 // disableAll disables every option with the reason: nothing can be done off

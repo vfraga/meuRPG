@@ -102,7 +102,7 @@ func limitedActionsOf(p *rules.MonsterPlan) []rules.ActionPlan {
 
 // limitedActionsView is the copy of the limited actions of a creature with what it has spent of them, for the
 // master and the player who controls the creature. No other player gets it (RN-20, RN-29).
-func limitedActionsView(actions []rules.ActionPlan, who playdb.Combatant) []*playv1.LimitedAction {
+func limitedActionsView(actions []rules.ActionPlan, who playdb.Combatant, persistent bool) []*playv1.LimitedAction {
 	var out []*playv1.LimitedAction
 	for _, a := range actions {
 		allowed := a.Usage.UsesAllowed()
@@ -110,6 +110,7 @@ func limitedActionsView(actions []rules.ActionPlan, who playdb.Combatant) []*pla
 		out = append(out, &playv1.LimitedAction{
 			ActionKey: a.Key, Name: a.Name, NamePt: a.NamePT, Kind: a.Usage.Kind, Usage: a.Usage.Text,
 			Available: left > 0, UsesAllowed: conv.Int32(allowed), UsesLeft: conv.Int32(left),
+			Kept: persistent && keptUntilLongRest(limitKeyOf(a)),
 		})
 	}
 	return out

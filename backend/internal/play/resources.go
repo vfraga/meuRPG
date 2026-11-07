@@ -1,12 +1,14 @@
 package play
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
 	"uuid"
 
@@ -200,6 +202,9 @@ func (s *Service) GetRestPreview(
 		if res.Characters, err = s.vitals.PreviewRest(ctx, tx, m.CampaignID, req.Msg.GetKind()); err != nil {
 			return err
 		}
+		if res.NpcsBack, err = s.restNPCsBack(ctx, tx, m.CampaignID, req.Msg.GetKind()); err != nil {
+			return err
+		}
 		if req.Msg.GetKind() == playv1.RestKind_REST_KIND_LONG {
 			if res.LongRestAlreadyTaken, err = q.HasLongRestInSession(ctx, session.ID); err != nil {
 				return fmt.Errorf("find the long rest of the session: %w", err)
@@ -211,6 +216,32 @@ func (s *Service) GetRestPreview(
 		return nil, s.dbError(ctx, "preview a rest", err)
 	}
 	return connect.NewResponse(res), nil
+}
+
+// restNPCsBack names the NPCs of the campaign that this rest gives their kept uses back to (the master's preview). The roster
+// keeps the ones of this campaign and gives their names: the characters are its own.
+func (s *Service) restNPCsBack(ctx context.Context, tx pgx.Tx, campaignID string, kind playv1.RestKind) ([]*playv1.RestNPCBack, error) {
+	ids, err := s.queries.WithTx(tx).ListNPCsGivingBackToRest(ctx, kind == playv1.RestKind_REST_KIND_LONG)
+	if err != nil {
+		return nil, fmt.Errorf("find the NPCs the rest gives uses back to: %w", err)
+	}
+	if len(ids) == 0 {
+		return []*playv1.RestNPCBack{}, nil
+	}
+	found, err := s.roster.SessionCharacters(ctx, tx, campaignID, ids)
+	if err != nil {
+		return nil, fmt.Errorf("name the NPCs the rest gives uses back to: %w", err)
+	}
+	slices.SortFunc(found, func(a, b link.Character) int {
+		return cmp.Or(strings.Compare(a.Name, b.Name), strings.Compare(a.ID, b.ID))
+	})
+	out := make([]*playv1.RestNPCBack, 0, len(found))
+	for _, c := range found {
+		if !c.Player {
+			out = append(out, &playv1.RestNPCBack{CharacterId: c.ID, Name: c.Name})
+		}
+	}
+	return out, nil
 }
 
 // eventByKey finds the event a change with this key wrote and checks that the key

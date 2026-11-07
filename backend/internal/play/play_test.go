@@ -621,6 +621,14 @@ func (noMaps) MapGrid(context.Context, pgx.Tx, string, string) (link.Grid, error
 	return link.Grid{}, errors.New("not in this test")
 }
 
+func (noMaps) TableScreenMap(context.Context, string, string, link.MapGate) (link.TableScreenMap, error) {
+	return link.TableScreenMap{}, errors.New("not in this test")
+}
+
+func (noMaps) MapFog(context.Context, pgx.Tx, string, string) (link.MapFog, error) {
+	return link.MapFog{}, errors.New("not in this test")
+}
+
 func (noMaps) BattlePoint(context.Context, pgx.Tx, string, string) (link.BattlePoint, error) {
 	return link.BattlePoint{}, errors.New("not in this test")
 }
@@ -802,6 +810,10 @@ func (noDice) ForcedDice(context.Context, pgx.Tx, string, string) (DiceForce, er
 }
 
 type noCampaigns struct{}
+
+func (noCampaigns) CampaignName(context.Context, pgx.Tx, string) (string, error) {
+	return "", errors.New("not in this test")
+}
 
 func (noCampaigns) ActiveCampaigns(context.Context, string) ([]*campaignsv1.Campaign, error) {
 	return nil, errors.New("not in this test")

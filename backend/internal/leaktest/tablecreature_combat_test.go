@@ -1,6 +1,7 @@
 package leaktest
 
 import (
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -97,6 +98,8 @@ func TestAnArchivedTableCreatureInTheCombatShowsAThirdPlayerItsIdentityAndNothin
 			Roll: &playv1.SubmitInitiativeRequest_D20Face{D20Face: 10},
 		})))
 	}
+	// The combat begins, so the TV (which shows an active combat only) has an order to show.
+	must(m.combat.BeginCombat(ctx, rq(&playv1.BeginCombatRequest{CampaignId: w.campaign, EncounterId: e.GetId(), IdempotencyKey: newKey()})))
 	w.encounter = must(m.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
 	var creature, formulaCreature *playv1.Combatant
 	for _, c := range w.encounter.GetCombatants() {
@@ -123,6 +126,7 @@ func TestAnArchivedTableCreatureInTheCombatShowsAThirdPlayerItsIdentityAndNothin
 				return &playv1.ListCombatLogRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId()}
 			},
 		},
+		tvScreenRead, // what the TV shows of the active combat with a table creature the master archived: its name in the order, nothing of its stat block (RN-23)
 		{
 			procedure: playv1connect.CombatServiceGetTurnOptionsProcedure, label: "the table creature", allow: onlyAna, why: "the creature's options are its owner's and the master's",
 			req: func(w *world) proto.Message {
@@ -192,5 +196,19 @@ func TestAnArchivedTableCreatureInTheCombatShowsAThirdPlayerItsIdentityAndNothin
 			t.Errorf("Ana's list of creatures does not hold %s", kind)
 		}
 	}
+	// Positive control of the TV's row: the combat is active, so the TV's order holds the creatures by name (the name
+	// the whole combat reads), and the row above did not pass for an idle screen.
+	t.Run("the TV reads the creature's name", func(t *testing.T) {
+		tv := w.tvReader()
+		for _, kind := range []string{"fight-creature-name", "fight-formula-name"} {
+			needles := w.needlesOf(kind)
+			if len(needles) == 0 {
+				t.Fatalf("no canary of kind %q: the check would prove nothing", kind)
+			}
+			if !slices.ContainsFunc(needles, func(n string) bool { return got.holdsNeedle(tv, n) }) {
+				t.Errorf("the TV's answers do not hold %s: the combat is not on the screen", kind)
+			}
+		}
+	})
 	t.Run("canaries are reachable", func(t *testing.T) { checkCanariesAreReachable(t, w, got) })
 }

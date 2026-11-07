@@ -2,7 +2,7 @@
 
 # Stories and acceptance criteria
 
-The MVP has 45 stories: 43 stories plus 2 prerequisites (the invite, MR-002, which leads to MR-003, and the NPCs, MR-005, who are the combat enemies).
+The MVP has 46 stories: 44 stories plus 2 prerequisites (the invite, MR-002, which leads to MR-003, and the NPCs, MR-005, who are the combat enemies).
 Ten more stories are planned for after the MVP.
 
 A story is done when all its criteria pass.
@@ -68,6 +68,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 | [MR-053](#mr-053-the-master-acts-for-a-players-character) | Combat | MVP |
 | [MR-054](#mr-054-use-a-creatures-action-from-its-turn) | Combat | MVP |
 | [MR-055](#mr-055-answer-a-creatures-rider) | Combat | MVP |
+| [MR-056](#mr-056-show-the-table-on-a-screen) | Session | MVP |
 | [MR-002](#mr-002-generate-an-invite) | Campaign | MVP (prerequisite) |
 | [MR-005](#mr-005-create-npcs) | Character | MVP (prerequisite) |
 | [MR-007](#mr-007-import-a-sheet-from-pdf) | Character | Later |
@@ -136,7 +137,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 #### Acceptance criteria
 - **Given** a complete character, **when** the player opens the sheet on a phone, **then** they see the sections of the official sheet (abilities, skills, combat, spells, equipment) **and** the calculated values, such as modifiers, armor class, hit points, spell save DC and spell attack, come ready from the server.
 - **Given** the sheet's "Equipamento", **when** the player reads it, **then** it lists the armour, the shield, the weapons and the items, then the background's equipment as text ("Do antecedente: …", a table background's or what the player wrote for a custom "Outro" background), then the coins. A versatile weapon shows its two-handed damage under its damage ("Com duas mãos: 1d8+1").
-- **Given** armour, a shield or a weapon the sheet lists, **when** the owner equips or stows it after the lock (RN-01), **then** the server returns the armour class, the attacks and the Mage Armor check derived from the equipped gear only; what the character only carries is listed and counts for nothing. The API does this (`SetEquipped`); the sheet has no control for it.
+- **Given** armour, a shield or a weapon the sheet lists, **when** the owner equips or stows it after the lock (RN-01), **then** the server returns the armour class, the attacks and the Mage Armor check derived from the equipped gear only; what the character only carries is listed and counts for nothing. The sheet's "Equipamento" lists them in two groups, "Equipado" and "Carregado", each piece with "Equipar" or "Guardar" (the owner, the master, any time the character lives; a dead character's sheet has none); the names, the groups and the armour class a change would give come from the server (`DerivedSheet.gear`), and after a change the sheet says what moved and the new armour class and puts the focus on the moved piece's button.
 - **Given** the step "Perícias", **when** the race, the subrace or the background already give a skill, **then** it shows checked and locked with where it comes from ("da raça", "do antecedente") and does not count as a pick. The player picks another skill instead of repeating a proficiency, as the SRD allows.
 - **Given** a new character made above level 1 in a campaign that levels by XP from defeated enemies, **when** the editor opens, **then** the experience field starts at the XP of its level (6.500 at level 5) and follows the level until the player types in it. A milestone campaign keeps 0.
 - **Given** the subclass field, **when** the player edits the class, **then** it offers "Nenhuma", says at which level the class picks it ("O Bárbaro escolhe a subclasse no nível 3.") and changes the subclass when the class changes.
@@ -337,7 +338,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 - **Given** an attack, **when** the player attacks, **then** they pick a target (state and distance shown; "Longe demais: alcance de 36 m" is disabled), roll the d20 and then the damage in the app or typed (RN-18), and read the result (`1d20 (13) + 6 = 19`, "Acertou", "Crítico" or "Errou") and the defeated target, never armor class.
 - **Given** class abilities, **when** the player taps "Usar" (Second Wind, Action Surge), **then** the use is spent; with no uses left the app says "Sem usos: volta num descanso curto". Extra Attack shows "1 ataque restante".
 - **Given** the action or the bonus action is free, **when** the player looks at "Encerrar turno", **then** it is outlined and, with the action free, asks in place; it becomes the filled button when both are spent.
-- **Given** a combat running and a player on their turn, **when** they draw or stow a weapon, **then** the first one in the turn is free and the second, or the shield, spends the action (an extra action from Haste pays instead); armour is refused ("Vestir ou tirar armadura leva minutos: não dá em pleno combate"). On another player's turn nothing changes. The API does this (`SetEquipped`); the combat screen has no control for it.
+- **Given** a combat running and a player on their turn, **when** they draw or stow a weapon, **then** the first one in the turn is free and the second, or the shield, spends the action (an extra action from Haste pays instead); armour is refused ("Vestir ou tirar armadura leva minutos: não dá em pleno combate"). On another player's turn nothing changes. The player's "Ataques" tab has a "Sacar ou guardar" fold under the attacks with the armor class in its header, one rule line (first weapon free, then the action; shield: action; armour: only outside combat), each button saying its cost ("Guardar · grátis", "Sacar · ação"), a warning before drawing a two-handed weapon that would leave the shield idle, and the button disabled with its reason when neither the free interaction nor the action is left; a refusal is said in words (`ARMOR_IN_COMBAT`, `NOT_YOUR_TURN`, `ACTION_USED`, `COMBATANT_DOWN`). The master changes gear on the sheet, at no cost. Whether the turn's free interaction is spent is on the combatant (`Combatant.object_interaction_used`), for the owner and the master only.
 
 **Advantage and disadvantage**
 - **Given** an attack, a spell attack or save, a trap, a puzzle hint, a scene check or a search for traps, **when** the server finds a circumstance that gives advantage or disadvantage (a condition of either creature, a creature one cannot see, long range or a hostile within 5 ft for a ranged attack, Reckless Attack, Danger Sense, Pack Tactics, Dodge, a racial advantage on a save against the kind of source the save has: Bravura against fear, Ancestral Feérico against charm, Esperteza Gnômica on Intelligence, Wisdom and Charisma saves against magic, Resiliência Anã against poison), **then** the roll takes two d20, the higher or the lower counts (they cancel each other out when both apply), the screen lists the reasons the player can see **and** shows both dice, the one that counts marked "vale" and the other "descartado"; with real dice the player types both. A hit within 5 ft of a paralyzed or unconscious target is a critical hit (SRD 5.1, "Advantage and Disadvantage", Conditions).
@@ -896,6 +897,12 @@ The data rules, limits and the server side are in [Table content: rules](../arch
     Features have a level and an effect from the menu, with the counter "N de 60".
   - The subclass: features by level, "Esta subclasse conjura", always-prepared spells by class level and, when it has spells, "As magias da subclasse entram na lista da classe, para escolher".
   - The feat: "Novo talento", "Dados do talento", "O que o talento pede", "Salvar talento"; "Aumento de habilidade" is offered only there.
+    A feat that asks the player to pick shows "Opções do talento": the count "N de 60 opções", one folded row for each option, and "Adicionar uma opção", which waits at 60.
+    The choice's options come from one of three sources: the feat's own list, a whole SRD set ("Conjunto"), or SRD options marked by hand; a feat offers its list or a set, never both.
+    A choice of kind "Uma habilidade" or "Um tipo de dano" gets a name by itself ("habilidade", "habilidade_2"), and the card "Escolhas deste talento" lists each one with its effect and how many effects use it.
+    A later effect of the same feat points at the choice from the group "A escolha do talento" above "Valores fixos" in the fields that take it, and a formula reads it with "Modificador" and "Valor" buttons.
+    A field that points at a choice that was removed or sits below it says which one ("A escolha “habilidade” que este campo usava foi removida"), and "Salvar talento" waits until the master picks another value.
+    On a phone the master reads the feat with an "Opções" heading and one row for each option, its name at the left and what it does in a few words at the right ("Classe de Armadura +1"); a player reads the options with their texts.
 - **Refusals:** each violation returns on the field it names, in Portuguese, also on a table cell and on a collapsed feature, which opens.
   A summary on top says how many fields need adjusting, and what the game master typed stays.
   "Esta entrada mudou enquanto você editava" offers "Recarregar".
@@ -1249,7 +1256,9 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - **Given** the master places a character's creature token on a map, **when** the group looks, **then** everyone sees it (a group token, never hidden, even in fog).
 - **Given** a player who cannot have a creature, **when** they look at another character's sheet, **then** the "Criaturas" panel does not exist for them (RN-20).
 - **Given** a player who casts a summon of a spell or a feature that offers a table creature, **when** the list of creatures opens, **then** the table creature carries "Da mesa" and the line "Os números vêm da sua ficha quando ele chega." in place of numbers, and an SRD creature keeps its own line.
+  The list puts the table creature first, and the header says the class and level of the feature and the use it spends.
   After the cast, the creature's page carries "Da mesa" and the line "Os números vêm da ficha de <dono> quando ele chegou", with no level or proficiency, because the numbers do not change when I edit the entry later.
+  The page shows the numbers, attacks and damage worked out for my sheet when the creature arrived.
   The app knows a table creature by the "@mesa" end of its key, and the server sends no flag for it.
 
 #### In the app
@@ -1681,6 +1690,10 @@ See [Architecture](../architecture/campaign-package.md).
 - **Given** a spent Recharge action, **when** its creature's turn starts, **then** the server rolls a d6 for it, in the stat block's order, and a face in its range makes it available again; I read the d6 and the result in the log, as the master and as the player who controls the creature (no other player reads them), a defeated creature does not roll, and an action with uses a day or after a rest does not come back in the combat.
 - **Given** I undo the use of a limited action, **then** it is available again or has the use back; the roll at a turn start cannot be undone.
 - **Given** an NPC made from a creature spent uses of an action with uses a day or of Legendary Resistance, **when** a new combat starts with it, **then** I read the uses it has left, until the table's long rest gives them back; an action that recharges after a short or long rest is back after either rest; a monster of the bestiary starts every combat with all its uses, and a spent Recharge action is available again.
+- **Given** an NPC card with limited actions, **then** each shows its state beside its name: "Pronta" or "Gasta" for a Recharge action and one that waits for a rest, dots and "N de M" for uses a day; a spent action has a dashed "Usar" and says why ("Volta com 5 ou 6 no d6 que o app rola no começo de cada turno do <criatura>.", "Sem usos hoje.", "A ação deste turno já foi usada."); the opened row of the order lists the limits ("Esporos · Recarga 6 · gasta", "Guincho atordoante · 1/dia · 1 de 1"), and neither the card nor the row grows past one screen at 390 px and at 1280×800.
+- **Given** the turn of a creature that had a spent Recharge action starts, **then** the card says "Recarga no começo do turno: rolou N no d6. <ação> recarregou." (green) or "não recarregou (precisa de 5 ou 6)." (neutral), from the log line only the master and the controlling player read; a persistent NPC's card says "<nome> guarda o que gastou."; a stat block that cannot be read says so with "Tentar de novo" and the rest of the card works.
+- **Given** an action of the card whose SRD text the app does not calculate, **then** the English text stays folded behind the small document icon beside its name (opened and closed with the icon, which says "Texto do SRD de <ação>"), and the notice of the start of the turn is green only when every rolled action recharged; when only some did it is neutral and names each result.
+- **Given** I am the master and I ask for a rest, **when** an NPC of the campaign kept what it spent (uses a day, Legendary Resistance and slots after a long rest, an action that recharges after a rest after either), **then** the question says "NPCs da campanha recuperam os usos: <names>"; a player never reads that list.
 - **Given** I am a player who does not control the creature, **then** I read nothing of what it spent, of the roll or of the refusal, and a turn with a roll looks the same as one without (RN-20).
 - **Given** I am the player who controls the creature, **then** I read what each limited action has left, the d6 in the log and the reason a spent action is refused.
 - **Given** I am a player, **then** I find no "Outras ações", I read the log line with the action's name and, for the targets I see, whether each passed or failed and the damage I take, and never the stat block, the DC or which creature it is (RN-20).
@@ -1712,6 +1725,38 @@ See [Architecture](../architecture/campaign-package.md).
 
 #### Related
 - [MR-054](#mr-054-use-a-creatures-action-from-its-turn), [RN-40](rules.md#rn-40-a-rider-on-a-creatures-hit).
+
+### MR-056: Show the table on a screen
+
+**As a** game master, **I want** to open the table on a screen the whole table looks at (a TV), and choose what it shows, **so that** everyone follows the map, the combat, the scene or the image without leaning over a phone.
+
+- Priority: MVP
+- Rules: RN-10, RN-20, RN-36
+- Modules: play, maps
+
+#### Acceptance criteria
+- **Given** an open session, **when** the master taps "Abrir a Tela da mesa", **then** the screen opens in a new tab of the master's browser, to drag to the TV; **given** nothing is on the table, **then** it reads "Nada à mostra ainda" with the names of the characters at the table.
+- **Given** the TV tab, **then** it shows only what every player may read (RN-10): the map as the group sees it, the order with a word of state instead of hit points (RN-20), the lines of the log every player reads, the free rolls made for the table, the scene and the image shown to the whole table. It never shows hit points, armor class, a hidden NPC, the master's notes, hooks, clues and DCs, a roll "Só eu", or the conversation (RN-36).
+- **Given** "Espelhar o que eu mostro" is chosen (it is the default), **then** the TV shows the first that exists: an image shown to the whole table, the combat, a scene open to the whole table, the map, the waiting screen; and it follows each change the master makes, without a reload.
+- **Given** the master picks one row of "Fixar" (the map, an image, the scene, the combat or the waiting screen), **then** the TV shows that item whatever else is on the table, and the panel says "Na TV agora" with its name and "fixa".
+- **Given** the table has no combat, no image, no scene open to all or no map the TV can show, **then** the row of "Fixar" for it is dashed, cannot be picked and says why ("Nenhum combate agora.", "Nenhuma imagem à mostra.", "Nenhuma cena aberta.", "A cena está aberta só para alguns.", "Nenhum mapa agora.", "Precisa da Visão do grupo (editor do mapa).").
+- **Given** a pinned item that ends (the combat is over, the scene closes, the image or the map leaves the table), **then** the TV goes to the waiting screen with a line that says so ("O combate acabou. A TV foi para a tela de espera."); **when** an item of that kind comes back, **then** the pin shows it again.
+- **Given** a map with the fog on and "Visão do grupo" off, **then** the TV shows the waiting screen with the line "O mapa tem névoa e a Visão do grupo está desligada, então a TV não o mostra."; **given** a combat on that map, **then** the place of the map reads "O mapa fica na tela de cada um." and the order, the rolls and the log stay; **given** "Visão do grupo" on, **then** the TV shows the squares the group sees or remembers, and never the map's whole picture.
+- **Given** a scene open only to some players, **then** the TV does not show it and the panel says so; the same for an image meant for chosen players.
+- **Given** a player, a pending member or a stranger, **when** they open the address of the TV or ask the server for it, **then** the player reads the card "Só o mestre abre a Tela da mesa." and nobody receives anything of the campaign; the server answers a stranger as it does for a campaign that does not exist.
+- **Given** the master taps "Copiar o link", **then** what is copied is the address of the tab and nothing else: no query, no key, no token. The tab signs in as the master, and the server decides what it shows on every read.
+- **Given** the TV loses its connection, **then** after a few seconds it says "Reconectando…" and that it may be late, and after a minute it hides what it showed and says "Sem conexão desde 21:14"; **when** the connection returns, **then** it comes back by itself. The master's panel says "Sem conexão desde 21:14." too.
+- **Given** the session ends, **then** the TV says "A sessão 3 terminou às 23:40." and that the master may close the tab; **given** no session is open, it says "Não há sessão aberta.".
+- **Given** a TV from 900 px wide, **then** the screen fits the window with no page scroll, and draws only the rows that fit, with "+N" for the ones left out; **given** a phone, **then** it is one column that scrolls.
+- **Given** the master's session screen, **then** the panel "Tela da mesa" opens from a button in the bar (from 1024 px) or from a line of the "Sessão" menu (below it), shows whether a TV is "Aberta", "Fechada" or "Sem conexão", and fits one screen on a phone of 390 x 844 and on a laptop of 1280 x 800.
+
+#### In the app
+- A TV tab is a page of its own, without the app's top bar and footer, that asks nothing of the session's data: it reads one service, which answers only what the TV may show. See [Design](../design/session.md#the-table-screen-tela-da-mesa) and [The table screen](../architecture/play/table-screen.md).
+- The panel stores nothing in the browser; the choice is stored with the session, so a reload of the TV or of the master's page keeps it.
+- A screen for a player's own device, to watch the table from home, is not part of this story ([#764](https://github.com/PuraFome/meuRPG/issues/764)).
+
+#### Related
+- [MR-012](#mr-012-follow-the-session), [MR-028](#mr-028-show-an-image-to-the-players), [MR-036](#mr-036-fog-of-war-by-sight), [RN-10](rules.md#rn-10-map-without-spoilers).
 
 ## Priority: MVP (prerequisite)
 

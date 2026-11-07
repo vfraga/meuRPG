@@ -32,7 +32,7 @@ export async function tableForCreatures(master: Page, player: Page, name: string
 }
 
 /** The character's creatures as the app reads them (the owner's player and the master). */
-export async function listCreaturesRPC(page: Page, campaignId: string, characterId: string): Promise<{ id: string; name: string; hitPointsCurrent?: number; hitPointsMax?: number; monsterKey: string; source: string }[]> {
+export async function listCreaturesRPC(page: Page, campaignId: string, characterId: string): Promise<{ id: string; name: string; hitPointsCurrent?: number; hitPointsMax?: number; monsterKey: string; source: string; armorClass?: number }[]> {
   const res = await callRPC(page, 'meurpg.characters.v1.CharacterService/ListCharacterCreatures', { campaignId, characterId });
   expect(res.ok()).toBeTruthy();
   return ((await res.json()).creatures ?? []) as never;

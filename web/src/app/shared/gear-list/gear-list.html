@@ -1,0 +1,85 @@
+@if (gear().length === 0) {
+  <p class="mr-muted">Sem equipamento.</p>
+} @else {
+  <section class="gear-group" [attr.aria-labelledby]="'gear-eq-' + idBase">
+    <h3 class="gear-group__title" [class.mr-visually-hidden]="combat()" [id]="'gear-eq-' + idBase">Equipado</h3>
+    @if (equipped().length === 0) {
+      <p class="mr-muted">Nada equipado.</p>
+    } @else {
+      <ul class="gear-rows">
+        @for (g of equipped(); track g.key) {
+          <ng-container *ngTemplateOutlet="row; context: { $implicit: g }" />
+        }
+      </ul>
+    }
+  </section>
+  <section class="gear-group" [attr.aria-labelledby]="'gear-ca-' + idBase">
+    @if (folded()) {
+      <app-fold appearance="flush" [muted]="true" [title]="carriedTitle()" [level]="4" [open]="!combat()">
+        <ul class="gear-rows">
+          @for (g of carried(); track g.key) {
+            <ng-container *ngTemplateOutlet="row; context: { $implicit: g }" />
+          }
+        </ul>
+      </app-fold>
+    } @else {
+      <h3 class="gear-group__title gear-group__title--carried" [id]="'gear-ca-' + idBase">
+        <mat-icon fontIcon="backpack" aria-hidden="true"></mat-icon>{{ carriedTitle() }}
+      </h3>
+      @if (carried().length === 0) {
+        <p class="mr-muted">{{ combat() ? 'Nenhum.' : 'Nada guardado.' }}</p>
+      } @else {
+        <ul class="gear-rows">
+          @for (g of carried(); track g.key) {
+            <ng-container *ngTemplateOutlet="row; context: { $implicit: g }" />
+          }
+        </ul>
+      }
+    }
+  </section>
+}
+
+<ng-template #row let-g>
+  <li class="gear-row" [class.gear-row--idle]="idle(g)">
+    <mat-icon class="gear-row__icon" aria-hidden="true">{{ icon(g) }}</mat-icon>
+    <span class="gear-row__text">
+      <span class="gear-row__name">{{ g.namePt }}</span>
+      <span class="mr-visually-hidden">, {{ kindLabel(g) }}</span>
+      @if (g.twoHanded && !combat()) {
+        <span class="gear-row__kind mr-muted" aria-hidden="true">duas mãos</span>
+      }
+      @if (g.twoHanded && warns(g)) {
+        <mat-icon class="gear-row__warn" aria-hidden="true">warning</mat-icon>
+      }
+      @if (idle(g)) {
+        <span class="gear-row__idle">Parado</span>
+      }
+    </span>
+    @if (canChange()) {
+      <button
+        matButton="outlined"
+        type="button"
+        class="gear-row__button"
+        [attr.data-gear-key]="g.key"
+        [disabled]="busyKey() !== null || !!blocked()(g)"
+        [disabledInteractive]="!!blocked()(g)"
+        [attr.aria-label]="buttonLabel(g)"
+        [attr.aria-describedby]="blocked()(g) ? reasonId(g) : null"
+        (click)="busyKey() === null && !blocked()(g) && ask(g)"
+      >
+        {{ verb(g) }}
+        @if (cost()(g); as word) {
+          <span class="gear-row__cost">
+            <mat-icon [fontIcon]="word === 'grátis' ? 'bolt' : 'circle'" aria-hidden="true"></mat-icon>{{ word }}
+          </span>
+        }
+        @if (armorLine(g, armorClass()); as ac) {
+          <span class="gear-row__ac">{{ ac }}</span>
+        }
+      </button>
+    }
+    @if (canChange() && blocked()(g); as why) {
+      <span class="gear-row__line mr-muted" [id]="reasonId(g)">{{ why }}</span>
+    }
+  </li>
+</ng-template>

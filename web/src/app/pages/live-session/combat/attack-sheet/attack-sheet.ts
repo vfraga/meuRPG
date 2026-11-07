@@ -33,6 +33,7 @@ import { ResourceClient } from '../../../../core/resources/resources-client';
 import { metersText } from '../../../../core/units';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
+import { RollDieOffer } from '../../../../shared/roll-die-offer/roll-die-offer';
 import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
@@ -86,6 +87,7 @@ export type { AttackSheetData } from './attack-sheet-types';
     MatButtonModule,
     MatIconModule,
     MultiRoll,
+    RollDieOffer,
     RollModePicker,
     HeldRollPrompt,
     RollPicker,
@@ -144,7 +146,52 @@ export class AttackSheet {
     modeChoice: () => this.mode.choice(),
   });
   protected readonly extraFields = this.rolls.extraFields;
+  /** What the player types with physical dice besides the d20: the effects' d4, then the table die ticked. */
+  protected readonly typedFields = this.rolls.typedFields;
   protected readonly extraFaces = this.rolls.extraFaces;
+  /** The weapon-attack table dice (Golpe Certeiro) the offer lists; none for a spell attack or an NPC. */
+  protected readonly maneuverDice = computed(() =>
+    this.rolls.maneuverDice().flatMap((o) => (o.die ? [o.die] : [])),
+  );
+  protected readonly maneuverUses = this.rolls.maneuverUses;
+  protected readonly maneuverKey = computed(() => this.rolls.maneuver()?.key ?? '');
+  protected readonly maneuverLegend = computed(() =>
+    this.maneuverDice().length > 1
+      ? 'Dado da manobra neste ataque'
+      : 'Dados das suas características',
+  );
+  /** The extra dice typed beside the d20 (the effects' d4, then the table die), each with its sign. */
+  private typedExtras(): readonly { face: number; sign: number }[] | null {
+    const fields = this.typedFields();
+    const faces = this.extraFaces();
+    if (fields.length === 0 || faces.length !== fields.length || faces.some((f) => f === null)) {
+      return null;
+    }
+    return fields.map((f, i) => ({ face: faces[i] as number, sign: f.sign }));
+  }
+  /** With extra dice typed and all their faces there, the total adds them: "12 + 6 + 5 = 23". */
+  protected readonly typedFormula = (d20: number): { text: string; total: number } | null => {
+    const extras = this.typedExtras();
+    if (!extras) {
+      return null;
+    }
+    const bonus = this.attack.attackBonus;
+    const total = d20 + bonus + extras.reduce((n, e) => n + e.sign * e.face, 0);
+    const mod = bonus === 0 ? '' : ` ${bonus < 0 ? '−' : '+'} ${Math.abs(bonus)}`;
+    const text = extras.map((e) => ` ${e.sign < 0 ? '−' : '+'} ${e.face}`).join('');
+    return { text: `${d20}${mod}${text} = ${total}`, total };
+  };
+  /** Any extra die is asked beside the d20: the total and the confirm button read it. */
+  protected readonly hasExtras = computed(() => this.typedFields().length > 0);
+  /** An extra die is asked and its face is not typed yet: the total and "Confirmar" wait for it. */
+  protected readonly extrasPending = computed(
+    () => this.hasExtras() && this.typedExtras() === null,
+  );
+  /** The attack bonus with the typed extra dice, for the total of the two d20. */
+  protected readonly pairModifier = computed(() => {
+    const extras = this.typedExtras();
+    return this.attack.attackBonus + (extras?.reduce((n, e) => n + e.sign * e.face, 0) ?? 0);
+  });
   private readonly body = viewChild<ElementRef<HTMLElement>>('body');
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
 
@@ -198,7 +245,7 @@ export class AttackSheet {
     effectivePreference(this.data.diceMode, this.data.preference) === DicePreference.APP;
   protected readonly d20Formula = computed(() => {
     const r = this.s.roll()?.d20;
-    return r ? d20Formula(r) : '';
+    return r ? d20Formula(r, true) : '';
   });
   /** The d20 is rolled but a reaction holds the result: "Esperando o mestre. O resultado do seu ataque sai quando ele responder." */
   protected readonly held = computed(() => heldWait(this.s.roll(), this.data.state.encounter()));
@@ -224,13 +271,23 @@ export class AttackSheet {
   protected readonly title = computed(() =>
     this.s.typing()
       ? 'Digite o resultado do dado'
-      : (this.data.legendary?.title ?? `Atacar com ${this.name}`),
+      : this.data.opportunity
+        ? `Ataque de oportunidade\u00a0· ${this.name}`
+        : (this.data.legendary?.title ?? `Atacar com ${this.name}`),
   );
-  protected readonly subtitle = computed(() =>
-    this.s.typing()
-      ? `${this.name} contra ${this.targetLabel()} · Rodada ${this.data.round}`
-      : (this.data.legendary?.subtitle ?? this.detail),
-  );
+  /** An opportunity attack names who attacks and what it costs; the numbers of the weapon are on the list. */
+  protected readonly subtitle = computed(() => {
+    if (this.s.typing()) {
+      return `${this.name} contra ${this.targetLabel()} · Rodada ${this.data.round}`;
+    }
+    if (this.data.opportunity) {
+      const who = this.data.state
+        .encounter()
+        ?.combatants.find((c) => c.id === this.data.attackerId)?.label;
+      return who ? `${who} · gasta a sua reação` : 'Gasta a sua reação';
+    }
+    return this.data.legendary?.subtitle ?? this.detail;
+  });
   protected readonly rollLabel = computed(
     () => `Role 1d20 para ${this.name} (${signedBonus(this.attack.attackBonus)})`,
   );
@@ -344,6 +401,10 @@ export class AttackSheet {
 
   protected rollAttack(die: AttackDie | PairDie): Promise<void> {
     return this.rolls.rollAttack(die);
+  }
+
+  protected useDie(key: string): void {
+    this.rolls.useDie(key);
   }
 
   protected rollAttackTyped(face: number): Promise<void> {

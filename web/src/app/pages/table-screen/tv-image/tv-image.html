@@ -1,0 +1,16 @@
+<figure class="tv-image">
+  <div class="tv-image__frame">
+    <img
+      class="tv-image__img"
+      [src]="url()"
+      [alt]="name() || 'Imagem mostrada pelo mestre'"
+      [attr.width]="width() || null"
+      [attr.height]="height() || null"
+    />
+  </div>
+  @if (name()) {
+    <figcaption class="tv-image__caption" aria-hidden="true">
+      <mat-icon aria-hidden="true">image</mat-icon>{{ name() }}
+    </figcaption>
+  }
+</figure>

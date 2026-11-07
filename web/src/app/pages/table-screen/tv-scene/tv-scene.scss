@@ -1,0 +1,150 @@
+:host {
+  display: block;
+  min-height: 0;
+}
+
+.tv-scene {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mr-space-4);
+  padding: var(--mr-space-4) var(--mr-gutter);
+
+  @media (min-width: 900px) {
+    height: 100%;
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 30vw, 520px);
+    grid-template-rows: minmax(0, 1fr);
+    padding: var(--mr-space-5) var(--mr-space-6);
+  }
+
+  &--alone {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tv-scene__text,
+.tv-scene__npcs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.tv-scene__title {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  margin: 0 0 var(--mr-space-3);
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: var(--mr-font-21);
+  color: var(--mr-ink);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-34);
+  }
+}
+
+.tv-scene__description {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 600;
+  font-size: var(--mr-font-22);
+  line-height: 1.4;
+  color: var(--mr-ink);
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+
+  @media (min-width: 900px) {
+    font-size: var(--mr-font-30);
+    // Long text clips; it never scrolls.
+    display: -webkit-box;
+    -webkit-line-clamp: 12;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-40);
+  }
+}
+
+.tv-scene__list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  // The list clips (a TV never scrolls), and the ring of the one speaking is drawn 5 px outside its token: the room for it is
+  // padding the margin takes back, so the rows stay where they were and the ring is never cut.
+  margin: calc(var(--tv-ring) * -1);
+  padding: var(--tv-ring);
+  list-style: none;
+  --tv-ring: 6px;
+}
+
+.tv-scene__npc {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-3);
+  min-width: 0;
+  font-size: var(--mr-font-18);
+  color: var(--mr-ink);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-28);
+  }
+
+  &--speaking .tv-scene__who {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .tv-scene__name {
+    font-weight: 700;
+  }
+}
+
+.tv-scene__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-scene__speaking {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+  color: var(--mr-accent-text);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-22);
+  }
+}
+
+// "+N", under the list; its room is kept while it is empty.
+.tv-scene__more {
+  flex: none;
+  box-sizing: border-box;
+  height: 1.6em;
+  overflow: hidden;
+  line-height: 1.4;
+  margin: 0;
+  color: var(--mr-ink-muted);
+  font-weight: 700;
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-24);
+  }
+
+  &:empty {
+    @media (max-width: 899.98px) {
+      display: none;
+    }
+  }
+}

@@ -774,6 +774,10 @@ message DerivedSheet {
   // with the ones that are on marked. Which are on is the game session's, not the
   // sheet's. Each has an action in `actions`.
   repeated DerivedState states = 51;
+  // The armor, the shield and the weapons the sheet lists, equipped or carried, in that order, by the catalog's names. The
+  // sheet's gear list reads them (the derived attacks skip a carried weapon, and the armor class description ignores a
+  // carried armor).
+  repeated GearEntry gear = 52;
 }
 
 // DerivedState is a temporary state a feature defines: a stance, a form.
@@ -833,6 +837,30 @@ enum BreathShape {
   BREATH_SHAPE_LINE = 1;
   // A cone: size_ft long.
   BREATH_SHAPE_CONE = 2;
+}
+
+// GearEntry is one piece of the gear a sheet lists, equipped or carried.
+message GearEntry {
+  // Content key: the sheet's armor_key, a weapon key, or "equipment:shield".
+  string key = 1;
+  // The Portuguese name, such as "Cota de malha".
+  string name_pt = 2;
+  GearKind kind = 3;
+  // Equipped (it counts for armor class, attacks and properties) or carried.
+  bool equipped = 4;
+  // A weapon that takes both hands: it leaves the shield idle while it is equipped.
+  bool two_handed = 5;
+  // The armor class with this piece's state flipped (equipped to carried, or the other way round), when flipping it
+  // changes the armor class; 0 otherwise. Spells and effects are not counted, as in `armor_class`.
+  int32 armor_class_if_toggled = 6;
+}
+
+// GearKind says which part of the gear a GearEntry is.
+enum GearKind {
+  GEAR_KIND_UNSPECIFIED = 0;
+  GEAR_KIND_ARMOR = 1;
+  GEAR_KIND_SHIELD = 2;
+  GEAR_KIND_WEAPON = 3;
 }
 
 // Resistance is a damage type the character resists, and what gives it.
@@ -2452,6 +2480,10 @@ message GetCreatureRequest {
   string campaign_id = 1;
   // Content key of the creature, such as "monster:wolf".
   string key = 2;
+  // Optional. A character's creature (a UUID) of that key: a table creature with formulas then answers with the numbers
+  // worked out for its owner when it arrived (armor class, attack bonuses, damage), as its combat uses them, not the
+  // entry's static ones. Only the master and the owner's player may ask; for anyone else, or another key, it is `not_found`.
+  string creature_id = 3;
 }
 
 // GetCreatureResponse returns one stat block.

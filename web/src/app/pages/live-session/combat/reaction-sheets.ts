@@ -13,7 +13,7 @@ import {
   type EffectSaveSheetData,
 } from '../effects/effect-save-sheet/effect-save-sheet';
 import { AttackSheet, type AttackSheetData } from './attack-sheet/attack-sheet';
-import { throwBackAttack, THROW_BACK_KEY } from './attack-sheet/attack-sheet-data';
+import { THROW_BACK_KEY, maneuverDiceOf, throwBackAttack } from './attack-sheet/attack-sheet-data';
 import {
   OpportunitySheet,
   type OpportunityAnswer,
@@ -230,6 +230,7 @@ export class ReactionSheets {
       preference: this.ctx.preference(),
       state: this.ctx.state(),
       asReaction: true,
+      maneuverDice: maneuverDiceOf(options, attack, !byMaster),
       opportunity: {
         offerId: offer.id,
         targetId: offer.moverId,

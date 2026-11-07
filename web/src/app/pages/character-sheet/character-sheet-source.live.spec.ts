@@ -143,6 +143,7 @@ function minimalDerivedSheet(): DerivedSheet {
     hitPointsFromEffects: 0,
     resistances: [],
     shieldIdle: false,
+    gear: [],
     size: '',
     breathesWater: false,
     grantedSpells: [],

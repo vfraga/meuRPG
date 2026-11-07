@@ -495,6 +495,9 @@ var reads = []read{
 		},
 	},
 
+	// ===== TableScreenService
+	tvScreenRead,
+
 	// ===== RevivifyService
 	{
 		procedure: playv1connect.RevivifyServiceListRevivifyRequestsProcedure, allow: members, why: "a player reads the casts of their own characters; the fixture has none",

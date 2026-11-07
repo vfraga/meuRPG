@@ -168,6 +168,10 @@ export class SummonSheet {
   );
   /** A ritual spends no slot: the server says whether the character can cast this one as one. */
   protected readonly ritual = computed(() => !this.combat && (this.spell()?.canRitual ?? false));
+  /** The creatures come from a table's feature or spell: its list is of creatures to bring, named by the master. */
+  protected readonly bring = computed(
+    () => this.granted() !== '' || this.data.spellKey.endsWith('@mesa'),
+  );
   protected readonly familiar = computed(() => this.data.spellKey === FIND_FAMILIAR);
   /** A feature's summon spends a use of the feature's resource: no slot, and the one circle the server lists. */
   protected readonly granted = computed(() => this.spell()?.grantedBy ?? '');
@@ -247,6 +251,7 @@ export class SummonSheet {
       beasts: this.beasts(),
       beastBlocks: this.beastBlocks(),
       forms: this.forms(),
+      bring: this.bring(),
     }),
   );
   protected readonly loadingRows = computed(() => {
@@ -298,12 +303,7 @@ export class SummonSheet {
     // The forms (their numbers) are read once the spell is known; the beasts again when the option changes.
     effect(() => {
       const o = this.opt();
-      untracked(() => {
-        if (!o) {
-          return;
-        }
-        this.lists.load(o);
-      });
+      untracked(() => o && this.lists.load(o));
     });
   }
 
@@ -320,9 +320,7 @@ export class SummonSheet {
         this.name.set(spell.replaces[0].name);
       }
       const free = this.slotRows().find((r) => r.enabled);
-      if (free) {
-        this.slotKey.set(slotId(free));
-      }
+      this.slotKey.set(free ? slotId(free) : this.slotKey());
     } catch (err) {
       this.options.set(create(GetSummonOptionsResponseSchema, {}));
       this.error.set(creatureErrorMessage(err, 'read'));

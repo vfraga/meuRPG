@@ -24,6 +24,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/images"
+	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/blob"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/ratelimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/slowclient"
@@ -974,6 +975,24 @@ type tileAccess struct {
 	as     string
 	viewer string
 	src    tileSource
+	// tv says the master asks for the tiles the table screen shows (`as=tv`).
+	tv bool
+}
+
+// tileAsTV is the `as` of the master who asks for the tiles of the table screen. A character's ID is a
+// UUID, so it never clashes with it.
+const tileAsTV = "tv"
+
+// tileViewerOf is the key a viewer's tiles are kept under: a player's own, the character a master reads as,
+// or the table screen's of the campaign.
+func tileViewerOf(v viewer, campaignID, asCharacterID string) string {
+	switch {
+	case v.tv:
+		return "tv:" + campaignID
+	case v.preview:
+		return "as:" + asCharacterID
+	}
+	return "u:" + v.userID
 }
 
 // serveTile answers one tile request. Every refusal before the answer is the
@@ -1032,8 +1051,8 @@ func parseTilePath(r *http.Request) (mapID string, tx, ty int, err error) {
 }
 
 // authorizeTile checks that the caller may read tiles of the map: a member of its
-// campaign, a player (or the master reading `as` a player's character), on a
-// map with the fog on that the players see now.
+// campaign, a player (or the master reading `as` a player's character, or `as=tv`
+// the table screen), on a map with the fog on that the players see now.
 func (s *Service) authorizeTile(ctx context.Context, mapID, as string) (tileAccess, error) {
 	info, err := s.queries.GetMapTileInfo(ctx, mapID)
 	if err != nil {
@@ -1066,11 +1085,20 @@ func (s *Service) authorizeTile(ctx context.Context, mapID, as string) (tileAcce
 			return tileAccess{}, errMapNotFound()
 		}
 	}
-	viewer := "u:" + m.UserID
-	if master {
-		viewer = "as:" + as
+	return tileAccessOf(m, as, info, src)
+}
+
+// tileAccessOf is the access of a member that passed the checks: the viewer the tiles are kept under, and for
+// `as=tv` only a map the group has the vision of (the TV shows a fog map only as the group sees it). The
+// route has already checked that the fog is on, so this repeats the play module's mapOnTV rule (fog on and
+// "Visão do grupo" off: no map); the maps module cannot import play, and the tile route has no play call.
+func tileAccessOf(m authz.Membership, as string, info mapsdb.GetMapTileInfoRow, src tileSource) (tileAccess, error) {
+	tv := m.Role == authz.RoleMaster && as == tileAsTV
+	if tv && !info.GroupVision {
+		return tileAccess{}, errMapNotFound()
 	}
-	return tileAccess{m: m, as: as, viewer: viewer, src: src}, nil
+	key := tileViewerOf(viewer{userID: m.UserID, preview: m.Role == authz.RoleMaster, tv: tv}, info.CampaignID, as)
+	return tileAccess{m: m, as: as, viewer: key, src: src, tv: tv}, nil
 }
 
 // viewTilesOf returns the tiles the viewer has on the map, from memory or built
@@ -1080,7 +1108,7 @@ func (s *Service) viewTilesOf(ctx context.Context, acc tileAccess, mapID string)
 		return vt, acc.src, nil
 	}
 	gen := s.tiles.views.generation(mapID)
-	v, row, pv, err := s.visionOf(ctx, acc.m, mapID, acc.as)
+	v, row, pv, err := s.tileVision(ctx, acc, mapID)
 	if err != nil {
 		if connect.CodeOf(err) == connect.CodeUnavailable || connect.CodeOf(err) == connect.CodeInternal {
 			return nil, tileSource{}, err
@@ -1094,6 +1122,20 @@ func (s *Service) viewTilesOf(ctx context.Context, acc tileAccess, mapID string)
 	vt := buildTiles(pv, src)
 	s.tiles.views.put(mapID, acc.viewer, gen, vt)
 	return vt, src, nil
+}
+
+// tileVision is the view the tiles are built from: the table screen's, or the caller's own (or the
+// character the master reads as).
+func (s *Service) tileVision(ctx context.Context, acc tileAccess, mapID string) (viewer, mapsdb.ListMapDetailsRow, *playerView, error) {
+	if !acc.tv {
+		return s.visionOf(ctx, acc.m, mapID, acc.as)
+	}
+	v, err := s.tvViewer(ctx, acc.m.CampaignID)
+	if err != nil {
+		return viewer{}, mapsdb.ListMapDetailsRow{}, nil, err
+	}
+	row, pv, err := s.visionFor(ctx, acc.m.CampaignID, mapID, v)
+	return v, row, pv, err
 }
 
 // setTileHeaders sets what a player's tile is sent with: private, checked again

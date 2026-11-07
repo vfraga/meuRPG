@@ -28,6 +28,8 @@ export interface ReadItem {
   readonly text: string;
   /** Where the item comes from, after the title: "(de Corujeiro)". */
   readonly tag?: string;
+  /** What the item does in a few words, at the right of its title (a feat's option, for the master). */
+  readonly side?: string;
   /** The options of a trait that is a choice of one, each an item of its own. */
   readonly options?: readonly ReadItem[];
 }
@@ -50,6 +52,8 @@ export interface EntryRead {
   readonly text: readonly string[];
   /** The effects that change a roll, a lead and a sentence each, under the text. */
   readonly effects?: readonly ReadItem[];
+  /** The options a feat lists for its choice, under the text. */
+  readonly options?: readonly ReadItem[];
 }
 
 const RECHARGE_WORDS: Readonly<Record<string, string>> = {

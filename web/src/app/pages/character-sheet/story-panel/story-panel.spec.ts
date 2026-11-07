@@ -35,6 +35,7 @@ function fullSheet(overrides: Partial<FullSheetVm> = {}): FullSheetVm {
     wearsArmor: false,
     hasShield: false,
     shieldIdle: false,
+    gear: [],
     speedExtras: [],
     grantedSpells: [],
     hitPointsMax: 10,

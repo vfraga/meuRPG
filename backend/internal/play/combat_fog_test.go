@@ -48,6 +48,28 @@ func atBP(sq grid.Square) (x, y int32) {
 	return int32(xBP), int32(yBP) //nolint:gosec // G115: at most 10000
 }
 
+// mapsService starts the actual maps service next to play: it reads play, and play reads its fog and
+// terrain. The server serves its routes (tiles, images). The play side reads the table screen's map and
+// tells the fog that a map became visible only after h.vision.SetService(msvc).
+func (h *harness) mapsService(t *testing.T) (*maps.Service, *httptest.Server) {
+	t.Helper()
+	content, err := testRules()
+	if err != nil {
+		t.Fatalf("rules.LoadSRD() error = %v", err)
+	}
+	msvc, err := maps.New(maps.Config{Pool: h.pool, Characters: h.chars, Live: h.svc, Rules: content, Combats: h.svc, Logger: slog.New(slog.DiscardHandler), HintAfter: h.hints.AfterTimer})
+	if err != nil {
+		t.Fatalf("maps.New() error = %v", err)
+	}
+	h.svc.SetTerrain(msvc)
+	h.svc.SetFog(msvc)
+	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
+	msvc.Mount(srv.Handle, mapsSessions{testSessions}, h.camps, reqlimit.HandlerOption())
+	server := httptest.NewServer(srv.Handler())
+	t.Cleanup(server.Close)
+	return msvc, server
+}
+
 // newFogCave builds the cave of the fight (see newCave) with the fog on: the actual
 // maps service paints the walls, the rubble and the cover, and Toren carries a
 // torch. The base light is dark and no other light shines.
@@ -59,20 +81,7 @@ func newFogCave(t *testing.T) *fogCave {
 // newFogCaveWith is newFogCave on a cave the test made (another level and spells for Pensantus).
 func newFogCaveWith(t *testing.T, c *cave) *fogCave {
 	t.Helper()
-	content, err := testRules()
-	if err != nil {
-		t.Fatalf("rules.LoadSRD() error = %v", err)
-	}
-	msvc, err := maps.New(maps.Config{Pool: c.h.pool, Characters: c.h.chars, Live: c.h.svc, Rules: content, Combats: c.h.svc, Logger: slog.New(slog.DiscardHandler), HintAfter: c.h.hints.AfterTimer})
-	if err != nil {
-		t.Fatalf("maps.New() error = %v", err)
-	}
-	c.h.svc.SetTerrain(msvc)
-	c.h.svc.SetFog(msvc)
-	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
-	msvc.Mount(srv.Handle, mapsSessions{testSessions}, c.h.camps, reqlimit.HandlerOption())
-	server := httptest.NewServer(srv.Handler())
-	t.Cleanup(server.Close)
+	msvc, server := c.h.mapsService(t)
 	f := &fogCave{cave: c, msvc: msvc, server: server}
 
 	var walls, rubble, crates, column []*mapsv1.MapSquare

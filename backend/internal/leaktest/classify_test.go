@@ -285,6 +285,8 @@ var notReads = map[string]classified{
 	playv1connect.ResourceServiceUseNaturalRecoveryProcedure:                    {playerAction, "a Land druid's player recovers slots of their own character"},
 	playv1connect.ResourceServiceTakeRestProcedure:                              {masterWrite, masterOnlyWhy},
 	playv1connect.ResourceServiceUseLayOnHandsProcedure:                         {playerAction, "a paladin's player touches a creature with their own combatant"},
+	playv1connect.TableScreenServiceSetTableScreenProcedure:                     {masterWrite, masterOnlyWhy},
+	playv1connect.TableScreenServiceWatchTableScreenProcedure:                   {streamed, "the master's TV tab; it holds no data, every event is a hint to read GetTableScreen again (the stream test, stream_test.go)"},
 	playv1connect.RevivifyServiceConfirmRevivifyTimeProcedure:                   {masterWrite, masterOnlyWhy},
 	playv1connect.RevivifyServicePreviewRevivifyProcedure:                       {playerAction, "a player previews who their own caster could revive; the lists it holds are the revivify tests' (RN-10)"},
 	playv1connect.RevivifyServiceRequestRevivifyProcedure:                       {playerAction, "a player casts Revivify outside a combat with their own character"},

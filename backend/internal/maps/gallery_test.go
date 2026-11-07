@@ -488,6 +488,10 @@ func (noLive) ImageOnStage(context.Context, string, string, string) (bool, error
 	return false, errors.New("not in this test")
 }
 
+func (noLive) ImageOnAnyStage(context.Context, string, string) (bool, error) {
+	return false, nil
+}
+
 func (noLive) ImageShownTo(context.Context, string, string, string) (bool, error) {
 	return false, errors.New("not in this test")
 }

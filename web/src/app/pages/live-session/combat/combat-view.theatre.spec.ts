@@ -194,6 +194,18 @@ async function settle(fixture: {
 const press = (el: HTMLElement, name: string) =>
   [...el.querySelectorAll('button')].find((b) => plain(b.textContent).includes(name))!.click();
 
+/** The NPC card's "Mais ações" menu lives in the overlay: opens it and gives the row of the offer. */
+async function offerRow(
+  fixture: { detectChanges: () => void; whenStable: () => Promise<unknown> },
+  el: HTMLElement,
+): Promise<HTMLElement> {
+  el.querySelector<HTMLButtonElement>('button[aria-label^="Mais ações de"]')!.click();
+  await settle(fixture);
+  return [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find((b) =>
+    plain(b.textContent).includes('Oferecer ataque de oportunidade'),
+  )!;
+}
+
 describe("CombatView, the master's screen without a map", () => {
   it('draws a card, the order, the cover and the log: no map, no "Sem quadrado no mapa", and the mode\'s pill', async () => {
     const { fixture, el } = setup({ master: true, current: 'g' });
@@ -210,14 +222,12 @@ describe("CombatView, the master's screen without a map", () => {
     const { fixture, el, calls, state } = setup({ master: true, current: 'g' });
     await settle(fixture);
     expect(el.querySelector('app-offer-panel')).toBeNull();
-    press(el, 'Oferecer ataque de oportunidade');
-    fixture.detectChanges();
+    (await offerRow(fixture, el)).click();
+    await settle(fixture);
     const card = el.querySelector('app-npc-card')!;
     expect(card.querySelector('app-offer-panel')).not.toBeNull();
-    // The button comes before the form in the card.
-    const button = [...card.querySelectorAll('button')].find((b) =>
-      plain(b.textContent).includes('Oferecer ataque de oportunidade'),
-    )!;
+    // "Mais ações" comes before the form in the card.
+    const button = card.querySelector('button[aria-label^="Mais ações de"]')!;
     expect(
       button.compareDocumentPosition(card.querySelector('app-offer-panel')!) &
         Node.DOCUMENT_POSITION_FOLLOWING,
@@ -245,9 +255,7 @@ describe("CombatView, the master's screen without a map", () => {
     });
     const { fixture, el } = setup({ master: true, current: 'g', offers: [waiting] });
     await settle(fixture);
-    const offer = [...el.querySelectorAll('button')].find((b) =>
-      plain(b.textContent).includes('Oferecer ataque de oportunidade'),
-    )!;
+    const offer = await offerRow(fixture, el);
     expect(offer.getAttribute('aria-disabled')).not.toBe('true');
     const both = [
       create(OpportunityOfferSchema, { id: 'o1', moverId: 'g', reactorId: 't' }),
@@ -255,11 +263,10 @@ describe("CombatView, the master's screen without a map", () => {
     ];
     const alone = setup({ master: true, current: 'g', offers: both });
     await settle(alone.fixture);
-    const off = [...alone.el.querySelectorAll('button')].find((b) =>
-      plain(b.textContent).includes('Oferecer ataque de oportunidade'),
-    )!;
+    document.querySelectorAll('.cdk-overlay-container > *').forEach((n) => n.remove());
+    const off = await offerRow(alone.fixture, alone.el);
     expect(off.getAttribute('aria-disabled')).toBe('true');
-    expect(plain(alone.el.textContent)).toContain('Ninguém pode reagir agora.');
+    expect(plain(off.textContent)).toContain('Ninguém pode reagir agora.');
   });
 
   it('gives a player on turn the card with "Agir por", and none for a fallen one', async () => {
@@ -271,6 +278,7 @@ describe("CombatView, the master's screen without a map", () => {
     expect(plain(el.textContent)).toContain('Gastar movimento');
     expect(plain(el.textContent)).toContain('Agir por Toren');
     expect(plain(el.textContent)).not.toContain('Oferecer ataque de oportunidade');
+    expect(el.querySelector('button[aria-label^="Mais ações de"]')).toBeNull();
     const down = setup({
       master: true,
       current: 'b',

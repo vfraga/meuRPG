@@ -1796,7 +1796,7 @@ const endGameSession = `-- name: EndGameSession :one
 UPDATE game_sessions
 SET ended_at = COALESCE(ended_at, GREATEST($3::TIMESTAMPTZ, started_at))
 WHERE campaign_id = $1 AND id = $2
-RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
 `
 
 type EndGameSessionParams struct {
@@ -1826,6 +1826,9 @@ func (q *Queries) EndGameSession(ctx context.Context, arg EndGameSessionParams) 
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -2103,7 +2106,7 @@ func (q *Queries) GetEncounterInSession(ctx context.Context, arg GetEncounterInS
 }
 
 const getGameSessionByCreateKey = `-- name: GetGameSessionByCreateKey :one
-SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join FROM game_sessions WHERE create_key = $1
+SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision FROM game_sessions WHERE create_key = $1
 `
 
 // The session a StartGameSession with this idempotency key started, if any (the key carries the
@@ -2126,12 +2129,15 @@ func (q *Queries) GetGameSessionByCreateKey(ctx context.Context, createKey *stri
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
 
 const getGameSessionForUpdate = `-- name: GetGameSessionForUpdate :one
-SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join FROM game_sessions
+SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision FROM game_sessions
 WHERE campaign_id = $1 AND id = $2
 FOR UPDATE
 `
@@ -2160,13 +2166,16 @@ func (q *Queries) GetGameSessionForUpdate(ctx context.Context, arg GetGameSessio
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
 
 const getGameSessionInCampaign = `-- name: GetGameSessionInCampaign :one
 
-SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join FROM game_sessions
+SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision FROM game_sessions
 WHERE campaign_id = $1 AND id = $2
 `
 
@@ -2196,6 +2205,9 @@ func (q *Queries) GetGameSessionInCampaign(ctx context.Context, arg GetGameSessi
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -2539,7 +2551,7 @@ func (q *Queries) GetOpenEncounter(ctx context.Context, gameSessionID string) (E
 }
 
 const getOpenGameSession = `-- name: GetOpenGameSession :one
-SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join FROM game_sessions
+SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision FROM game_sessions
 WHERE campaign_id = $1 AND ended_at IS NULL
 `
 
@@ -2563,12 +2575,15 @@ func (q *Queries) GetOpenGameSession(ctx context.Context, campaignID string) (Ga
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
 
 const getOpenGameSessionForUpdate = `-- name: GetOpenGameSessionForUpdate :one
-SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join FROM game_sessions
+SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision FROM game_sessions
 WHERE campaign_id = $1 AND ended_at IS NULL
 FOR UPDATE
 `
@@ -2595,6 +2610,9 @@ func (q *Queries) GetOpenGameSessionForUpdate(ctx context.Context, campaignID st
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -4124,7 +4142,7 @@ const insertGameSession = `-- name: InsertGameSession :one
 INSERT INTO game_sessions (campaign_id, session_number, started_at, create_key, create_hash)
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (create_key) WHERE create_key IS NOT NULL DO NOTHING
-RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
 `
 
 type InsertGameSessionParams struct {
@@ -4162,6 +4180,9 @@ func (q *Queries) InsertGameSession(ctx context.Context, arg InsertGameSessionPa
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -6582,7 +6603,7 @@ func (q *Queries) ListFreeRollEvents(ctx context.Context, arg ListFreeRollEvents
 }
 
 const listGameSessions = `-- name: ListGameSessions :many
-SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join FROM game_sessions
+SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision FROM game_sessions
 WHERE campaign_id = $1
 ORDER BY session_number DESC
 `
@@ -6612,6 +6633,9 @@ func (q *Queries) ListGameSessions(ctx context.Context, campaignID string) ([]Ga
 			&i.OpenSceneEveryone,
 			&i.ShownImageAudience,
 			&i.ScenePlayersMayJoin,
+			&i.TvMirror,
+			&i.TvPin,
+			&i.TvChoiceRevision,
 		); err != nil {
 			return nil, err
 		}
@@ -6773,6 +6797,38 @@ func (q *Queries) ListLastingEffects(ctx context.Context, encounterID string) ([
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listNPCsGivingBackToRest = `-- name: ListNPCsGivingBackToRest :many
+SELECT npc.character_id
+FROM npc_spell_use npc
+WHERE ($1::bool AND (npc.slots_used <> '{}'::jsonb OR npc.creature_spent <> '{}'::jsonb))
+   OR EXISTS (SELECT 1 FROM jsonb_object_keys(npc.creature_spent) k WHERE k LIKE 'rest:%')
+ORDER BY npc.character_id
+`
+
+// The hand-made NPCs (of any campaign: the caller keeps its campaign's, by name, through the roster) that this rest gives something
+// back to: after a long rest every NPC that kept a spell slot, a use a day, a rest action or Legendary Resistance (what
+// ResetNPCSpellUseOfCampaign clears); after a short rest every NPC that kept a rest action (what ResetNPCRestUsesOfCampaign
+// clears). The master's rest preview.
+func (q *Queries) ListNPCsGivingBackToRest(ctx context.Context, longRest bool) ([]string, error) {
+	rows, err := q.db.Query(ctx, listNPCsGivingBackToRest, longRest)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var character_id string
+		if err := rows.Scan(&character_id); err != nil {
+			return nil, err
+		}
+		items = append(items, character_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -6977,7 +7033,7 @@ func (q *Queries) ListOpenCombatantsOfCreatures(ctx context.Context, arg ListOpe
 }
 
 const listOpenGameSessions = `-- name: ListOpenGameSessions :many
-SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join FROM game_sessions
+SELECT id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision FROM game_sessions
 WHERE campaign_id = ANY($1::UUID[]) AND ended_at IS NULL
 ORDER BY started_at DESC, id
 `
@@ -7008,6 +7064,9 @@ func (q *Queries) ListOpenGameSessions(ctx context.Context, campaignIds []string
 			&i.OpenSceneEveryone,
 			&i.ShownImageAudience,
 			&i.ScenePlayersMayJoin,
+			&i.TvMirror,
+			&i.TvPin,
+			&i.TvChoiceRevision,
 		); err != nil {
 			return nil, err
 		}
@@ -9630,7 +9689,7 @@ const setCurrentMap = `-- name: SetCurrentMap :one
 UPDATE game_sessions
 SET current_map_id = $1
 WHERE id = $2
-RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
 `
 
 type SetCurrentMapParams struct {
@@ -9657,6 +9716,9 @@ func (q *Queries) SetCurrentMap(ctx context.Context, arg SetCurrentMapParams) (G
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -9898,7 +9960,7 @@ const setOpenScene = `-- name: SetOpenScene :one
 UPDATE game_sessions
 SET open_scene_point_id = $1
 WHERE id = $2
-RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
 `
 
 type SetOpenSceneParams struct {
@@ -9926,6 +9988,9 @@ func (q *Queries) SetOpenScene(ctx context.Context, arg SetOpenSceneParams) (Gam
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -9934,7 +9999,7 @@ const setOpenSceneEveryone = `-- name: SetOpenSceneEveryone :one
 UPDATE game_sessions
 SET open_scene_everyone = $1
 WHERE id = $2
-RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
 `
 
 type SetOpenSceneEveryoneParams struct {
@@ -9962,6 +10027,9 @@ func (q *Queries) SetOpenSceneEveryone(ctx context.Context, arg SetOpenSceneEver
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -10413,7 +10481,7 @@ func (q *Queries) SetReactionWindowStep(ctx context.Context, arg SetReactionWind
 
 const setScenePlayersMayJoin = `-- name: SetScenePlayersMayJoin :one
 UPDATE game_sessions SET scene_players_may_join = $1 WHERE id = $2
-RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
 `
 
 type SetScenePlayersMayJoinParams struct {
@@ -10439,6 +10507,9 @@ func (q *Queries) SetScenePlayersMayJoin(ctx context.Context, arg SetScenePlayer
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -10447,7 +10518,7 @@ const setShownImage = `-- name: SetShownImage :one
 UPDATE game_sessions
 SET shown_image_id = $1, shown_image_keep = $2
 WHERE id = $3
-RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
 `
 
 type SetShownImageParams struct {
@@ -10475,6 +10546,9 @@ func (q *Queries) SetShownImage(ctx context.Context, arg SetShownImageParams) (G
 		&i.OpenSceneEveryone,
 		&i.ShownImageAudience,
 		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
 	)
 	return i, err
 }
@@ -10531,6 +10605,46 @@ func (q *Queries) SetStageSpeaker(ctx context.Context, arg SetStageSpeakerParams
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const setTableScreenChoice = `-- name: SetTableScreenChoice :one
+UPDATE game_sessions
+SET tv_mirror = $1, tv_pin = $2, tv_choice_revision = tv_choice_revision + 1
+WHERE id = $3
+RETURNING id, campaign_id, session_number, started_at, ended_at, current_map_id, shown_image_id, shown_image_keep, open_scene_point_id, create_key, create_hash, open_scene_everyone, shown_image_audience, scene_players_may_join, tv_mirror, tv_pin, tv_choice_revision
+`
+
+type SetTableScreenChoiceParams struct {
+	TvMirror bool
+	TvPin    int16
+	ID       string
+}
+
+// The master's choice for the TV; the caller holds the session's lock and has checked the
+// revision. It writes these three columns and nothing else.
+func (q *Queries) SetTableScreenChoice(ctx context.Context, arg SetTableScreenChoiceParams) (GameSession, error) {
+	row := q.db.QueryRow(ctx, setTableScreenChoice, arg.TvMirror, arg.TvPin, arg.ID)
+	var i GameSession
+	err := row.Scan(
+		&i.ID,
+		&i.CampaignID,
+		&i.SessionNumber,
+		&i.StartedAt,
+		&i.EndedAt,
+		&i.CurrentMapID,
+		&i.ShownImageID,
+		&i.ShownImageKeep,
+		&i.OpenScenePointID,
+		&i.CreateKey,
+		&i.CreateHash,
+		&i.OpenSceneEveryone,
+		&i.ShownImageAudience,
+		&i.ScenePlayersMayJoin,
+		&i.TvMirror,
+		&i.TvPin,
+		&i.TvChoiceRevision,
+	)
+	return i, err
 }
 
 const setTrapDamageStatus = `-- name: SetTrapDamageStatus :one

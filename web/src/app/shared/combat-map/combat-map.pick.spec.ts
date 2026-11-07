@@ -36,6 +36,22 @@ describe('CombatMap: choosing a target (C7-04)', () => {
     expect(map({}).el.querySelector('.cm__pick')).toBeNull();
   });
 
+  it("names the master's offer candidates, and says which one is chosen", () => {
+    const { el } = map({
+      pick: [
+        mark('g1', 'Goblin 1', { mode: 'offer', count: 1 }),
+        mark('g3', 'Goblin 3', { mode: 'offer' }),
+      ],
+    });
+    const buttons = [...el.querySelectorAll<HTMLButtonElement>('.cm__pick')];
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Oferecer a Goblin 1',
+      'Oferecer a Goblin 3',
+    ]);
+    expect(buttons.map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
+    expect(el.querySelectorAll('.cm__pick--offer').length).toBe(2);
+  });
+
   it('makes a button of each creature offered, with its name, and nothing of the others', () => {
     const { el } = map({
       pick: [mark('g1', 'Goblin 1'), mark('g3', 'Goblin 3', { reason: 'cobertura total' })],

@@ -1643,6 +1643,17 @@ FROM characters ch
 WHERE ch.id = npc.character_id AND ch.campaign_id = $1
   AND EXISTS (SELECT 1 FROM jsonb_object_keys(npc.creature_spent) k WHERE k LIKE 'rest:%');
 
+-- name: ListNPCsGivingBackToRest :many
+-- The hand-made NPCs (of any campaign: the caller keeps its campaign's, by name, through the roster) that this rest gives something
+-- back to: after a long rest every NPC that kept a spell slot, a use a day, a rest action or Legendary Resistance (what
+-- ResetNPCSpellUseOfCampaign clears); after a short rest every NPC that kept a rest action (what ResetNPCRestUsesOfCampaign
+-- clears). The master's rest preview.
+SELECT npc.character_id
+FROM npc_spell_use npc
+WHERE (sqlc.arg(long_rest)::bool AND (npc.slots_used <> '{}'::jsonb OR npc.creature_spent <> '{}'::jsonb))
+   OR EXISTS (SELECT 1 FROM jsonb_object_keys(npc.creature_spent) k WHERE k LIKE 'rest:%')
+ORDER BY npc.character_id;
+
 -- name: DeleteEmptyNPCSpellUseOfCampaign :exec
 -- A row of the campaign with nothing spent left goes.
 DELETE FROM npc_spell_use
@@ -2048,3 +2059,11 @@ UPDATE combatants SET creature_spent = $2 WHERE id = $1;
 -- What the combatant's stat block has spent now (JSON), read inside the change's
 -- transaction so two spends in one change add up.
 SELECT creature_spent FROM combatants WHERE id = $1;
+
+-- name: SetTableScreenChoice :one
+-- The master's choice for the TV; the caller holds the session's lock and has checked the
+-- revision. It writes these three columns and nothing else.
+UPDATE game_sessions
+SET tv_mirror = sqlc.arg(tv_mirror), tv_pin = sqlc.arg(tv_pin), tv_choice_revision = tv_choice_revision + 1
+WHERE id = sqlc.arg(id)
+RETURNING *;

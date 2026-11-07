@@ -96,6 +96,7 @@ const turnOptions = () => ({
       darts: [create(DartsAtSlotSchema, { slotLevel: 1, darts: 3 })],
     }),
   ],
+  maneuverDice: [],
 });
 
 async function mount(matches: readonly string[] = [PHONE_QUERY], map = true, master = false) {

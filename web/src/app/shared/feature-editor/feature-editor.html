@@ -40,6 +40,11 @@
         [issuesOf]="issuesOf()"
         [allowTextOnly]="true"
         [featEditor]="featEditor()"
+        [choices]="choices()"
+        [featOption]="featOption()"
+        [effectIndex]="0"
+        [sourceInCards]="sourceInCards()"
+        [afterFields]="afterFieldsAt() === 0 ? afterFields() : null"
         [spellOptions]="spellOptions()"
         [siblings]="feature().effects"
         (effectChange)="patch({ effects: [$event] })"
@@ -52,6 +57,11 @@
         [issuesOf]="issuesOf()"
         [allowTextOnly]="true"
         [featEditor]="featEditor()"
+        [choices]="choices()"
+        [featOption]="featOption()"
+        [effectIndex]="0"
+        [sourceInCards]="sourceInCards()"
+        [afterFields]="afterFieldsAt() === 0 ? afterFields() : null"
         [spellOptions]="spellOptions()"
         [siblings]="feature().effects"
         (effectChange)="setEffect(0, $event)"
@@ -83,6 +93,11 @@
           [siblings]="feature().effects"
           label="Outro efeito"
           [featEditor]="featEditor()"
+          [choices]="choices()"
+          [featOption]="featOption()"
+          [effectIndex]="e.index"
+          [sourceInCards]="sourceInCards()"
+          [afterFields]="afterFieldsAt() === e.index ? afterFields() : null"
           (effectChange)="setEffect(e.index, $event)"
         />
         <app-field-note class="grid__wide" [id]="path('effects[' + e.index + ']') + '-note'" [issues]="issuesOf()(path('effects[' + e.index + ']'))" />
@@ -114,7 +129,7 @@
         </p>
       } @else {
         <p class="options__hint">
-          Uma lista que o jogador escolhe, uma opção por vez (como manobras). Ponha na característica um efeito "Escolha" de "Uma opção de uma lista do SRD" com a quantidade, sem lista: ele oferece estas opções.
+          Uma lista que o jogador escolhe, uma opção por vez (como manobras). Ponha na característica um efeito "Escolha" de "Uma opção de uma lista" com a quantidade, sem lista: ele oferece estas opções.
         </p>
       }
       @for (o of feature().options; track o.id; let k = $index) {
@@ -125,6 +140,7 @@
           [issuesOf]="issuesOf()"
           [spellOptions]="spellOptions()"
           [isOption]="true"
+          [featOption]="featEditor() || featOption()"
           nameLabel="Nome da opção"
           textLabel="Texto da opção"
           removeLabel="Remover opção"

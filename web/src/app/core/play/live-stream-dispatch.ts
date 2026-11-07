@@ -47,6 +47,7 @@ const ROUTES: { [K in Exclude<Kind, OwnKind>]: (h: LiveStreamHandlers, e: Event<
   sessionMessage: (h, e) => h.onSessionMessage?.(e.message),
   attackHit: (h, e) => h.onAttackHit?.(e),
   masterTyping: (h, e) => h.onMasterTyping?.(e.expiresInSeconds),
+  tableScreenChanged: (h, e) => h.onTableScreenChanged?.(e),
 };
 
 /** Hands a message to the handler of its kind; a kind with none (a heartbeat, one this app does not know) does nothing. */

@@ -1,0 +1,50 @@
+@let s = sheet();
+<section class="mr-panel" aria-labelledby="equipamento-heading">
+  <h2 id="equipamento-heading" class="mr-panel__title">Equipamento</h2>
+  <p class="gear__ac">Classe de armadura <strong>{{ s.armorClass }}</strong></p>
+  <app-gear-list
+    [gear]="s.gear"
+    [armorClass]="s.armorClass"
+    [canChange]="canEquip()"
+    [busyKey]="equipBusyKey()"
+    (toggled)="gearToggled.emit($event)"
+  />
+  @if (s.shieldIdle) {
+    <p class="gear__note mr-muted">O escudo não vale nada com uma arma de duas mãos equipada: guarde a arma.</p>
+  }
+  <p class="gear__notice" role="status">{{ equipNotice() }}</p>
+  @if (equipError()) {
+    <p class="gear__error" role="alert">
+      {{ equipError() }}
+      @if (equipRetry()) {
+        <button matButton="outlined" type="button" (click)="equipRetried.emit()">Tentar de novo</button>
+      }
+    </p>
+  }
+  <ul class="gear">
+    @for (item of s.equipment; track $index) {
+      <li>
+        {{ item.name }}
+        @if (item.quantity > 1) {
+          <span class="mr-muted">(x{{ item.quantity }})</span>
+        }
+      </li>
+    }
+  </ul>
+  @if (s.backgroundEquipment) {
+    <p class="gear__background">
+      <span class="mr-muted">Do antecedente:</span> {{ backgroundEquipment() }}
+    </p>
+  }
+  @if (coins().length > 0) {
+    <ul class="coins" aria-label="Moedas">
+      @for (coin of coins(); track coin.abbreviation) {
+        <li>
+          {{ coin.amount }} <abbr [title]="coin.name">{{ coin.abbreviation }}</abbr>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p class="coins mr-muted">Sem moedas</p>
+  }
+</section>

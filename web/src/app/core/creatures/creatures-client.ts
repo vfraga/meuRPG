@@ -206,6 +206,15 @@ export class CreaturesClient {
     ).character;
   }
 
+  /** The stat block of a character's creature as worked out for its owner when it arrived (read again each time: it is the creature's own). */
+  async creatureBlock(campaignId: string, key: string, creatureId: string): Promise<Creature> {
+    const res = await this.content.getCreature({ campaignId, key, creatureId });
+    if (!res.creature) {
+      throw new Error('empty stat block');
+    }
+    return res.creature;
+  }
+
   /** One stat block, in memory after the first read. */
   statBlock(campaignId: string, key: string): Promise<Creature> {
     const known = this.statBlocks.get(key);

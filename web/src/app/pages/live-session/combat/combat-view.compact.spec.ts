@@ -67,6 +67,7 @@ const options = () => ({
       }),
     ],
   }),
+  maneuverDice: [],
 });
 
 async function mount(

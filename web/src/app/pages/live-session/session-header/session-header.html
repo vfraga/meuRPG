@@ -16,6 +16,25 @@
   </p>
 
   <div class="bar__actions">
+    @if (isMaster() && wide()) {
+      <!-- From 1024 px: the TV's panel, to the left of "Iniciar combate"; its words say what the TV shows (a pin marker when fixed). -->
+      <button
+        matButton="outlined"
+        type="button"
+        class="bar__button bar__tv"
+        [class.bar__tv--open]="tvOpen()"
+        [class.bar__tv--lost]="tvLost()"
+        aria-haspopup="dialog"
+        data-testid="tv-button"
+        (click)="openTableScreen.emit()"
+      >
+        <mat-icon aria-hidden="true">{{ tvLost() ? 'warning' : 'tv' }}</mat-icon><span class="bar__label">{{ tvLabel().text }}</span>
+        @if (tvLabel().pinned) {
+          <mat-icon class="bar__pin" aria-label="fixa">push_pin</mat-icon>
+        }
+        <mat-icon class="bar__chevron" aria-hidden="true">expand_more</mat-icon>
+      </button>
+    }
     @if (isMaster() && !inCombat() && !phone()) {
       <!-- Outside a combat: the "Combate" strip is gone, this opens its dialog. On a phone the same action is the first item of the menu. -->
       <button
@@ -60,6 +79,12 @@
         @if (phone() && !inCombat()) {
           <button mat-menu-item type="button" [disabled]="startOff()" (click)="startCombat.emit()">
             <mat-icon aria-hidden="true">swords</mat-icon>Iniciar combate
+          </button>
+        }
+        @if (!wide()) {
+          <button mat-menu-item type="button" class="bar__tv-item" data-testid="tv-menu-item" (click)="openTableScreen.emit()">
+            <mat-icon aria-hidden="true">tv</mat-icon>
+            <span class="bar__tv-text">Tela da mesa…<small class="bar__tv-line">{{ tvMenuLine() }}</small></span>
           </button>
         }
         <button mat-menu-item type="button" (click)="copyLink()">

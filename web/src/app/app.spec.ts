@@ -1,9 +1,9 @@
-import { Component, TemplateRef, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, TemplateRef, signal, viewChild } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
 import { AuthState, AuthService } from './core/auth/auth.service';
-import { OpenSessions } from './core/play/open-sessions';
+import { OPEN_SESSIONS_FETCHER, OpenSessions } from './core/play/open-sessions';
 import type { OpenSessionVm } from './core/play/open-sessions.types';
 import { SessionNotes } from './shell/session-notes/session-notes';
 import { App } from './app';
@@ -66,6 +66,7 @@ describe('App', () => {
         sessions: sessions.asReadonly(),
         dismissed: signal(new Set<string>()).asReadonly(),
         dismiss: () => undefined,
+        suspend: () => undefined,
       },
     });
     const fixture = TestBed.createComponent(App);
@@ -189,6 +190,110 @@ describe('App, the way into the content (WCAG 2.4.1, 2.4.3)', () => {
     await fixture.whenStable();
     expect(document.activeElement).toBe(inDialog);
     overlay.remove();
+    fixture.destroy();
+  });
+});
+
+describe('App on the table screen (the TV tab)', () => {
+  @Component({ template: '<h1>Tela</h1>', changeDetection: ChangeDetectionStrategy.OnPush })
+  class Tv {}
+  @Component({ template: '<h1>Campanha</h1>', changeDetection: ChangeDetectionStrategy.OnPush })
+  class Other {}
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        provideRouter([
+          { path: 'campaigns/:id/table-screen', component: Tv },
+          { path: 'campaigns/:id', component: Other },
+        ]),
+        {
+          provide: AuthService,
+          useValue: { state: signal<AuthState>({ status: 'unknown' }).asReadonly() },
+        },
+      ],
+    }).compileComponents();
+  });
+
+  async function openAt(url: string) {
+    const fixture = TestBed.createComponent(App);
+    await TestBed.inject(Router).navigateByUrl(url);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return { fixture, el: fixture.nativeElement as HTMLElement };
+  }
+
+  it('shows the page and nothing of the shell: no bar, no skip link, no notice, no footer', async () => {
+    const { fixture, el } = await openAt('/campaigns/c1/table-screen');
+    expect(el.querySelector('main h1')?.textContent).toBe('Tela');
+    expect(el.querySelector('header.app-bar')).toBeNull();
+    expect(el.querySelector('a.skip-link')).toBeNull();
+    expect(el.querySelector('app-live-notice')).toBeNull();
+    expect(el.querySelector('app-footer')).toBeNull();
+    expect(el.querySelector('app-roll-overlay')).toBeNull();
+    expect(el.querySelector('main.app-content--tv')).not.toBeNull();
+    fixture.destroy();
+  });
+
+  it('asks for no open sessions on the TV tab: its only calls are its own', async () => {
+    const fetch = vi.fn(() => Promise.resolve([]));
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [
+        provideRouter([
+          { path: 'campaigns/:id/table-screen', component: Tv },
+          { path: 'campaigns/:id', component: Other },
+        ]),
+        {
+          provide: AuthService,
+          useValue: {
+            state: signal<AuthState>({
+              status: 'signed-in',
+              user: { id: 'u1', displayName: null },
+              sessionExpiresAt: null,
+            }).asReadonly(),
+            refresh: () => Promise.resolve(),
+          },
+        },
+        { provide: OPEN_SESSIONS_FETCHER, useValue: () => Promise.resolve(fetch) },
+      ],
+    }).compileComponents();
+    // The tab opens on the TV's address, as a reload of it does.
+    await TestBed.inject(Router).navigateByUrl('/campaigns/c1/table-screen');
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fetch).not.toHaveBeenCalled();
+    // Leaving the TV tab for another page starts the poll.
+    await TestBed.inject(Router).navigateByUrl('/campaigns/c1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+  });
+
+  it('keeps the shell on the other pages of the campaign', async () => {
+    const { fixture, el } = await openAt('/campaigns/c1');
+    expect(el.querySelector('header.app-bar')).not.toBeNull();
+    expect(el.querySelector('a.skip-link')).not.toBeNull();
+    expect(el.querySelector('app-live-notice')).not.toBeNull();
+    expect(el.querySelector('main.app-content--tv')).toBeNull();
+    fixture.destroy();
+  });
+
+  it('brings the shell back when the master leaves the TV tab for another page', async () => {
+    const { fixture, el } = await openAt('/campaigns/c1/table-screen');
+    await TestBed.inject(Router).navigateByUrl('/campaigns/c1');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.querySelector('header.app-bar')).not.toBeNull();
     fixture.destroy();
   });
 });

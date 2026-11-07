@@ -53,6 +53,8 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
 export class CombatBar {
   readonly encounter = input.required<Encounter>();
   readonly busy = input(false);
+  /** The opportunity offer panel is open: it has the filled button, "Próximo turno" is outlined. */
+  readonly quiet = input(false);
   /** How many questions about the rolls that wait for their roller are open: a chip beside the combat's title. */
   readonly pending = input(0);
   protected readonly pendingText = computed(() => pendingCountText(this.pending()));

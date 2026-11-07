@@ -187,6 +187,7 @@ The editor reads from the answer `hit_points_from_effects` (what `hp.max` effect
 Only equipped pieces count for armor class, attacks and properties ([Rules](rules.md#carried-and-equipped-gear)).
 It changes nothing else, so the RN-01 lock does not apply; a dead character is refused.
 It is idempotent by state: asking for the state the piece has changes nothing.
+The answer is the carried keys and the revision, not the sheet: a screen reads the sheet again. `DerivedSheet.gear` lists every piece (equipped or carried) with its Portuguese name, whether it is two-handed and the armor class the sheet would have with that piece's state flipped (`armor_class_if_toggled`, derived by the server with the flipped state; 0 when it is not previewed, as for Mage Armor); the browser never computes an armor class. A carried piece therefore never leaves the list.
 Inside the transaction and before the write it asks play (`ReviewHost.EquipInCombat`) what a running combat charges ([Combat](play/combat.md#equipping-and-stowing-gear)).
 
 ## Class and race choices

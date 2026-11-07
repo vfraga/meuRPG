@@ -172,6 +172,13 @@ func (s *Service) GetMapVision(
 	if err != nil {
 		return nil, err
 	}
+	return connect.NewResponse(s.visionResponse(mapID, gen, tileViewerOf(v, row.CampaignID, req.Msg.GetAsCharacterId()), v, row, pv)), nil
+}
+
+// visionResponse is the view of the squares the viewer receives: the states, and on a fog map the tiles. The
+// tiles are kept under tileViewer, so the tile requests that follow need no view of their own. It is the one
+// code path of GetMapVision and of the table screen's vision.
+func (s *Service) visionResponse(mapID string, gen uint64, tileViewer string, v viewer, row mapsdb.ListMapDetailsRow, pv *playerView) *mapsv1.GetMapVisionResponse {
 	out := &mapsv1.GetMapVisionResponse{
 		GridColumns: int32(pv.g.Columns), GridRows: int32(pv.g.Rows), //nolint:gosec // G115: a grid is at most 200 x 400
 		States: pv.pack(), Revision: pv.revision(), CharacterOnMap: pv.onMap,
@@ -187,15 +194,11 @@ func (s *Service) GetMapVision(
 		if s.blobs != nil {
 			src := tileSourceOf(row.ID, row.CampaignID, row.ImageID, row.ImageContentType, row.GridColumns, row.GridFactor, row.ImageWidth, row.ImageHeight)
 			vt := buildTiles(pv, src)
-			viewer := "u:" + v.userID
-			if v.preview {
-				viewer = "as:" + req.Msg.GetAsCharacterId()
-			}
-			s.tiles.views.put(mapID, viewer, gen, vt) // the tile requests that follow need no view of their own
+			s.tiles.views.put(mapID, tileViewer, gen, vt)
 			out.TilesPath, out.TileSquares, out.Tiles = TilesPath+mapID+"/tiles/", tileSquares, vt.proto()
 		}
 	}
-	return connect.NewResponse(out), nil
+	return out
 }
 
 // visionOf reads what the caller may know of a map's squares: the viewer, the
@@ -207,25 +210,31 @@ func (s *Service) visionOf(ctx context.Context, m authz.Membership, mapID, asCha
 	if err != nil {
 		return viewer{}, mapsdb.ListMapDetailsRow{}, nil, err
 	}
-	cm, err := s.loadMaps(ctx, m.CampaignID)
+	row, pv, err := s.visionFor(ctx, m.CampaignID, mapID, v)
+	return v, row, pv, err
+}
+
+// visionFor is visionOf for a viewer already made.
+func (s *Service) visionFor(ctx context.Context, campaignID, mapID string, v viewer) (mapsdb.ListMapDetailsRow, *playerView, error) {
+	cm, err := s.loadMaps(ctx, campaignID)
 	if err != nil {
-		return viewer{}, mapsdb.ListMapDetailsRow{}, nil, s.dbError(ctx, "read a map", err)
+		return mapsdb.ListMapDetailsRow{}, nil, s.dbError(ctx, "read a map", err)
 	}
 	row, ok := cm.byID[mapID]
 	if !ok || !v.seesMap(row.ID, row.RevealedAt) {
-		return viewer{}, row, nil, errMapNotFound() // a hidden map is not found to a player (RN-10)
+		return row, nil, errMapNotFound() // a hidden map is not found to a player (RN-10)
 	}
 	g := gridOf(row.GridColumns, row.GridFactor, row.ImageWidth, row.ImageHeight)
 	if !g.Valid() {
-		return viewer{}, row, nil, errNoGrid()
+		return row, nil, errNoGrid()
 	}
 	pv := everything(g) // the master, and a map without the fog: every square seen
 	if foggedFor(v, row) {
 		if pv, _, _, err = s.fogViewOf(ctx, row, v); err != nil {
-			return viewer{}, row, nil, s.dbError(ctx, "work out what a player sees", err)
+			return row, nil, s.dbError(ctx, "work out what a player sees", err)
 		}
 	}
-	return v, row, pv, nil
+	return row, pv, nil
 }
 
 // ForgetMapVision implements mapsv1connect.MapServiceHandler.

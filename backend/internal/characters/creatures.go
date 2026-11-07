@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"slices"
 	"strconv"
@@ -169,6 +170,25 @@ func (s *Service) GetCreature(
 		}
 		if !holds {
 			return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
+		}
+	}
+	if id := req.Msg.GetCreatureId(); id != "" {
+		// A character's creature: its numbers as worked out for its owner when it arrived. Only the master and the
+		// owner's player read them (findCreature), and only for the creature's own key.
+		v, err := s.findCreature(ctx, s.queries, m, id, false)
+		if err != nil {
+			return nil, err
+		}
+		if v.MonsterKey != req.Msg.GetKey() {
+			return nil, connect.NewError(connect.CodeNotFound, errUnknownCreature)
+		}
+		if len(v.StatBlock) > 0 {
+			var r rules.ResolvedCreature
+			if json.Unmarshal(v.StatBlock, &r) == nil && r.Key == v.MonsterKey {
+				if resolved, ok := content.CreatureOfResolved(r); ok {
+					c = resolved
+				}
+			}
 		}
 	}
 	res := creatureToProto(c)

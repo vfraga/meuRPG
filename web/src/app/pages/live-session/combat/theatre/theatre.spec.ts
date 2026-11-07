@@ -272,7 +272,6 @@ describe('OfferPanel, "Oferecer ataque de oportunidade" (E10-04 state 3)', () =>
     ),
   ) {
     const fixture = TestBed.createComponent(OfferPanel);
-    fixture.componentRef.setInput('moverLabel', 'Goblin 1');
     fixture.componentRef.setInput('rows', rows);
     const offered: string[] = [];
     let cancelled = 0;
@@ -293,21 +292,21 @@ describe('OfferPanel, "Oferecer ataque de oportunidade" (E10-04 state 3)', () =>
     fixture.detectChanges();
     const text = plain(el.textContent);
     expect(text).toContain('Oferecer ataque de oportunidade');
-    expect(text).toContain('O Goblin 1 saiu do alcance de alguém?');
-    expect(text).toContain('atacar gasta a reação dele');
+    expect(text).toContain('O jogador decide no celular; atacar gasta a reação dele.');
+    expect(text).not.toContain('Os candidatos têm um anel no mapa.');
+    expect(text).not.toContain('A distância é do mapa');
+    expect(text).not.toContain('agora a ');
     expect(text).toContain('Saiu do alcance de');
     expect(text).toContain('Toren');
     expect(text).toContain('Guerreiro 4');
     // The one that can react is picked, and the offer names it.
     const go = button(el, 'Oferecer a Toren');
     expect(go).toBeTruthy();
-    // Both are outlined, at the same width: the page's one filled button is "Próximo turno".
+    // The two are the same size; "Oferecer a ..." is the page's one filled button while the panel is open.
     const no = button(el, 'Não oferecer');
-    expect(
-      [go, no].every(
-        (b) => b.classList.contains('mat-mdc-outlined-button') && b.classList.contains('btn'),
-      ),
-    ).toBe(true);
+    expect([go, no].every((b) => b.classList.contains('btn'))).toBe(true);
+    expect(go.classList.contains('mat-mdc-unelevated-button')).toBe(true);
+    expect(no.classList.contains('mat-mdc-outlined-button')).toBe(true);
     go.click();
     expect(offered).toEqual(['t']);
   });
@@ -336,6 +335,84 @@ describe('OfferPanel, "Oferecer ataque de oportunidade" (E10-04 state 3)', () =>
     const { el } = setup(rows);
     expect(plain(el.textContent)).toContain('Oferta feita');
     expect((el.querySelector('input[type="radio"]') as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it('on a map: one line for the rings, the distance of each candidate, the footer, and the first available one picked', async () => {
+    const rows = reactorRows(
+      theatre({
+        currentCombatantId: 'g1',
+        combatants: [toren, { ...toren, id: 't2', label: 'Brisa', reactionUsed: true }, goblin],
+      }),
+      (c) => (c.id === 't' ? 'Guerreiro 5' : ''),
+    );
+    const { fixture, el } = setup(rows);
+    fixture.componentRef.setInput('grid', true);
+    fixture.componentRef.setInput('mapBeside', true);
+    fixture.componentRef.setInput('hints', new Map([['t', 'agora a 3 m']]));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const text = plain(el.textContent);
+    expect(text).toContain('Os candidatos têm um anel no mapa.');
+    expect(text).toContain('Guerreiro 5 · agora a 3 m');
+    expect(text).toContain('A distância é do mapa, só para ajudar: quem decide é você.');
+    expect(fixture.componentInstance.picked()).toBe('t');
+    expect(button(el, 'Oferecer a Toren')).toBeTruthy();
+    // The one with the reaction spent keeps only its state, never a distance.
+    expect(text).toContain('Reação usada');
+    const radios = [...el.querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    expect(radios.map((r) => r.disabled)).toEqual([false, true]);
+  });
+
+  it('on a phone, where the map is another tab, says nothing of rings', async () => {
+    const { fixture, el } = setup();
+    fixture.componentRef.setInput('grid', true);
+    fixture.componentRef.setInput('mapBeside', false);
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const text = plain(el.textContent);
+    expect(text).toContain('Escolha quem saiu do alcance.');
+    expect(text).not.toContain('anel');
+    fixture.componentRef.setInput('mapBeside', true);
+    fixture.detectChanges();
+    expect(plain(el.textContent)).toContain('Os candidatos têm um anel no mapa.');
+  });
+
+  it('puts another candidate in the place of a pick that can no longer react', async () => {
+    const both = reactorRows(
+      theatre({
+        currentCombatantId: 'g1',
+        combatants: [toren, { ...toren, id: 't2', label: 'Brisa' }, goblin],
+      }),
+      () => '',
+    );
+    const { fixture } = setup(both);
+    await fixture.whenStable();
+    expect(fixture.componentInstance.picked()).toBe('t');
+    fixture.componentRef.setInput(
+      'rows',
+      both.map((r) => (r.id === 't' ? { ...r, spent: true } : r)),
+    );
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.picked()).toBe('t2');
+  });
+
+  it('keeps a candidate the page picked (a tap on its ring) instead of preselecting the first', async () => {
+    const rows = reactorRows(
+      theatre({
+        currentCombatantId: 'g1',
+        combatants: [toren, { ...toren, id: 't2', label: 'Brisa' }, goblin],
+      }),
+      () => '',
+    );
+    const fixture = TestBed.createComponent(OfferPanel);
+    fixture.componentRef.setInput('rows', rows);
+    fixture.componentRef.setInput('picked', 't2');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.picked()).toBe('t2');
+    expect(button(fixture.nativeElement, 'Oferecer a Brisa')).toBeTruthy();
   });
 
   it('cancels with "Não oferecer"', () => {

@@ -149,10 +149,23 @@ A marker a player may read has readers, and the test demands it in their respons
 The rest of the test, in order:
 
 - **The players' actions** (`actions_test.go`) run before the reads, so the reads see what the actions left.
-- **Images and fog tiles** are requested by each person. Whoever may gets `200`; the others get `404`, like an image that does not exist. Two players must receive different tiles, or the test could not tell a tile of theirs from one that is not.
+- **Images and fog tiles** are requested by each person. Whoever may gets `200`; the others get `404`, like an image that does not exist. Two players must receive different tiles, or the test could not tell a tile of theirs from one that is not. The table screen's tiles (`?as=tv`) are asked by everyone too: with "Visão do grupo" off, the master gets the `404` of a tile that does not exist as well.
 - **State the matrix does not reach** (`firedtrap_test.go`, `notescenes_test.go`).
 - **What is not a read** (`classify_test.go`): each RPC that writes is asked by someone who is not the master, with the IDs of the hidden things (`probe_test.go`). A master-only RPC never answers `OK`, and no error says what the request aimed at.
 - **The stream** (`stream_test.go`): the master and two players open `WatchGameSession`; the others are refused. Everything the stream announces is done, every read is asked again, and each event goes through the same three checks. An event kind the script does not cause fails the test unless it is in `notTriggered` with a reason.
+  The master also opens `WatchTableScreen`: every event of it must be `ready`, `heartbeat`, `changed` or `session_ended` with no field set, a hidden NPC's move must cause a `changed` and leave the next `GetTableScreen` equal to the one before, and `table_screen_changed` must reach the master's stream and no player's.
+  A player, a pending member, a stranger and someone without a session are refused the TV's stream.
+
+**The table screen's rows** (`tablescreen_test.go`).
+`GetTableScreen` is the one read the master asks and the response is inspected as a player's: the row has `asTV`, and the answer goes through the three checks as the TV's reader, a player with no account and no character.
+That reader reads a canary that is public or that both players read (a stage NPC, an image shown to the table), and nothing that only one player reads, nothing hidden and no secret number.
+What the group sees on a fog map with "Visão do grupo" on is added to the reader by the test that turns it on.
+The positive controls are the master's own reads of the same things, and `tvMustCarry` lists the canaries the TV has to read (the shown image's name, the open scene's name and description, an NPC on the stage), so a row that reads nothing fails.
+The master picks each item in turn (`checkTableScreen`) and the answer is inspected for each; `checkTableScreen` also demands the pin that falls to the idle screen with its notice, and no roll of the master's "Só eu" among the free rolls.
+The rows `asTV` are in the worlds with a combat of their own too (attack rolls, table creatures, summons), asked after each step, so the log and the order are inspected with hidden attackers and table creatures the master archived.
+The log line that names a table entry the master hid (RN-23) is proved in package `play` (`TestTableScreenLogNamesNoTableEntryTheMasterHid`, `TestTvLogLineNamesNoTableContent`).
+`TestRN10_TheTVReadsNoSceneNorImageMeantForChosenPlayers` covers a scene and an image for chosen players, and `TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees` the map and its tiles with "Visão do grupo" on and off.
+`tvFieldRows` has a leak row for every field of the TV's messages, and `TestEveryTableScreenFieldHasALeakRow` (no database) fails for a field that has none.
 
 **The completeness guard** `TestEveryProcedureIsClassified` (no database) reads the services' descriptors and fails for a procedure that is not in exactly one table: the reads (`reads`, `readsAfterTheCombat`, `readsAfterTheSession`), the actions (`actions`) or the rest (`notReads`, with the class and the reason).
 A new RPC must be classified for the suite to pass.
@@ -272,6 +285,8 @@ Tests then use `newSignedInContext(browser, 'Jogador Teste')` or `test.use({ sto
 - A test that signs out never reuses a session: it ends the real session on the server and would break every other test sharing it.
 - `browser.newContext()` without an explicit `storageState` inherits the one a file set through `test.use()`; a context that must start signed out lives in a file with no `test.use()` at all.
 - Only two player accounts have a saved state, so a table has the master and at most two players: `conversa.spec.ts` (RN-36) proves "a reader who was not chosen" with Pensantus and Toren, one chosen and the other not, and waits on a later line for everyone before it asserts that something is absent.
+- `e2e/tests/table-screen.spec.ts` (RN-10) drives the table screen through the real pages: the master's panel and the TV tab, the choice following the table, a player's refusal card, and the copied link, which must be only the tab's address with nothing stored in the browser.
+  Its network ruling records every request of the TV tab and fails if it calls anything outside `TableScreenService` (and `GetMe`, for the route's guard), if it calls a read of the master's session (`GetLiveSession`, `GetEncounter`, `ListCombatLog`, `ListOpenGameSessions`), or if it asks for a map image that is not a tile `?as=tv`; the control that the recorder saw `GetTableScreen` and `WatchTableScreen` keeps the ruling from passing on an empty list.
 - No test sets the display name of the shared accounts: `ui.spec.ts` expects "Minha conta", the default text with no name set.
 
 **Accessibility.** `a11y.spec.ts` runs axe (`@axe-core/playwright`) on the main screens in the light and dark themes, on desktop and mobile, and fails on any serious or critical violation of WCAG 2.1 A and AA.

@@ -57,6 +57,16 @@ export const routes: Routes = [
       import('./pages/live-session/live-session.routes').then((m) => m.LIVE_SESSION_ROUTES),
   },
   {
+    // The table screen: the tab the master drags to the TV at the table. Its own `TableScreenWatcher`, per route, and no
+    // shell around it (app.html hides the bar and the footer on this route). `loadChildren` for the same reason as
+    // `campaigns/:id` above — see table-screen.routes.ts.
+    path: 'campaigns/:id/table-screen',
+    title: 'Tela da mesa',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./pages/table-screen/table-screen.routes').then((m) => m.TABLE_SCREEN_ROUTES),
+  },
+  {
     // An ended session's summary (PM-01), kept for anyone in the campaign to reopen. The
     // number is the session's number in the campaign, not its id. `loadChildren` for the
     // same reason as `campaigns/:id` above — see session-summary.routes.ts.

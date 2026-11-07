@@ -13,6 +13,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/wiring"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 )
@@ -314,6 +315,24 @@ func (sm *SessionMaps) MapGrid(ctx context.Context, tx pgx.Tx, campaignID, mapID
 		return link.Grid{}, nil
 	}
 	return link.Grid{Columns: *row.GridColumns, Rows: gridRows(*row.GridColumns, row.GridFactor, row.ImageWidth, row.ImageHeight)}, nil
+}
+
+// MapFog returns whether the campaign's map has the fog of war on (it needs a grid, as for the
+// players' reads) and "Visão do grupo" on, or a `not_found` Connect error when mapID is not a map of
+// the campaign. It reads inside tx when the caller has one (nil: the pool).
+func (sm *SessionMaps) MapFog(ctx context.Context, tx pgx.Tx, campaignID, mapID string) (link.MapFog, error) {
+	id, ok := uid.Canonical(mapID)
+	if !ok {
+		return link.MapFog{}, errMapNotFound()
+	}
+	row, err := queriesIn(sm.queries, tx).GetMap(ctx, mapsdb.GetMapParams{CampaignID: campaignID, ID: id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return link.MapFog{}, errMapNotFound()
+	}
+	if err != nil {
+		return link.MapFog{}, fmt.Errorf("read the map's fog: %w", err)
+	}
+	return link.MapFog{Fog: fogged(row), GroupVision: row.GroupVision}, nil
 }
 
 // BattlePoint returns a battle point of the campaign: its map and the map of

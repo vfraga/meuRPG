@@ -92,6 +92,15 @@ export class CharacterSheetSourceLive implements CharacterSheetSource {
     return toCharacterSheetVm(res.character!);
   }
 
+  async setEquipped(
+    campaignId: string,
+    characterId: string,
+    key: string,
+    equipped: boolean,
+  ): Promise<void> {
+    await this.client.setEquipped({ campaignId, characterId, key, equipped });
+  }
+
   async approveCharacter(campaignId: string, characterId: string): Promise<CharacterSheetVm> {
     const res = await this.client.approveCharacter({ campaignId, characterId });
     return toCharacterSheetVm(res.character!);

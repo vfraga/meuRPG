@@ -120,6 +120,36 @@ export function stoppedByReaction(rounds: readonly CombatLogRound[], actorId: st
   return !!entry?.stoppedByReaction;
 }
 
+/** One roll of a Recharge action's d6 at the start of its creature's turn, from the log (the master's and the controller's). */
+export interface RechargeRoll {
+  readonly action: string;
+  readonly face: number;
+  readonly recharged: boolean;
+}
+
+/** The d6 the server rolled at the start of this round's turn of the creature, for each Recharge action it had spent. */
+export function rechargeRolls(
+  rounds: readonly CombatLogRound[],
+  round: number | undefined,
+  actorId: string | undefined,
+): RechargeRoll[] {
+  const out: RechargeRoll[] = [];
+  for (const entry of rounds.find((r) => r.round === round)?.entries ?? []) {
+    if (
+      entry.kind === CombatLogKind.RECHARGE_ROLLED &&
+      entry.actorId === actorId &&
+      entry.recharge
+    ) {
+      out.push({
+        action: entry.recharge.actionName,
+        face: entry.recharge.face,
+        recharged: entry.recharge.recharged,
+      });
+    }
+  }
+  return out;
+}
+
 /** The first trap of the round's log that caught the combatant. */
 function trapNoteIn(
   round: CombatLogRound | undefined,

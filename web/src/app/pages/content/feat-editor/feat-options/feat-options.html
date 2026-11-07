@@ -1,0 +1,89 @@
+<section class="mr-panel block" aria-labelledby="feat-options-t">
+  <div class="head">
+    <h2 class="mr-panel__title" id="feat-options-t">Opções do talento</h2>
+    <p class="count" [class.count--over]="over()" role="status">{{ over() ? count() + ' opções' : count() + ' de ' + max + ' opções' }}</p>
+  </div>
+  @if (offersSet()) {
+    <div class="mr-notice mr-notice--neutral">
+      <mat-icon aria-hidden="true">info</mat-icon>
+      <p>
+        <strong>Este talento oferece o conjunto {{ setName() }}.</strong>
+        Para escrever opções só dele, escolha “As opções do talento” no efeito {{ choiceNumber() }}.
+      </p>
+    </div>
+  } @else if (count() === 0) {
+    <p class="empty">
+      <mat-icon aria-hidden="true">format_list_bulleted</mat-icon>
+      <span><strong>Nenhuma opção ainda.</strong> Escreva aqui as opções só deste talento.</span>
+    </p>
+  } @else if (choiceNumber() > 0) {
+    <p class="hint">O jogador fica com a que escolher no efeito {{ choiceNumber() }}; os efeitos dela valem enquanto ele tiver o talento.</p>
+  } @else {
+    <p class="hint">Para o jogador escolher uma, o talento precisa de um efeito “Escolha” de “Uma opção de uma lista”.</p>
+  }
+  @if (count() > 0) {
+    <ol class="rows">
+      @for (r of rows(); track r.option.id) {
+        <li class="row" [class.row--open]="r.open">
+          <div class="row__head">
+            <button type="button" class="row__toggle" [attr.aria-expanded]="r.open" [attr.aria-controls]="'feat-option-' + r.index" (click)="toggle(r.option.id)">
+              <mat-icon aria-hidden="true">{{ r.open ? 'expand_more' : 'chevron_right' }}</mat-icon>
+              <span class="row__text">
+                <span class="row__title">{{ r.title }}</span>
+                @if (r.summary) {
+                  <span class="row__sub">{{ r.summary }}</span>
+                }
+              </span>
+            </button>
+            @if (count() > 1) {
+              <button type="button" class="icon" [attr.aria-label]="'Subir ' + r.place" [disabled]="r.index === 0" (click)="move(r.index, -1)">
+                <mat-icon aria-hidden="true">arrow_upward</mat-icon>
+              </button>
+              <button type="button" class="icon" [attr.aria-label]="'Descer ' + r.place" [disabled]="r.index === count() - 1" (click)="move(r.index, 1)">
+                <mat-icon aria-hidden="true">arrow_downward</mat-icon>
+              </button>
+            }
+            <button type="button" class="icon" [attr.aria-label]="'Mais ações de ' + r.place" [matMenuTriggerFor]="rowMenu" [matMenuTriggerData]="{ i: r.index, title: r.place }">
+              <mat-icon aria-hidden="true">more_vert</mat-icon>
+            </button>
+          </div>
+          <div class="row__body" [id]="'feat-option-' + r.index" [hidden]="!r.open">
+            <app-feature-editor
+              [feature]="r.option"
+              [menu]="menu()"
+              [basePath]="basePath + '[' + r.index + ']'"
+              [issuesOf]="issuesOf()"
+              [spellOptions]="spellOptions()"
+              [flat]="true"
+              [isOption]="true"
+              [featOption]="true"
+              nameLabel="Nome da opção"
+              textLabel="Texto da opção"
+              (featureChange)="set(r.index, $event)"
+            />
+          </div>
+        </li>
+      }
+    </ol>
+  }
+  <mat-menu #rowMenu="matMenu">
+    <ng-template matMenuContent let-i="i" let-title="title">
+      @if (i > 0) {
+        <button mat-menu-item type="button" (click)="move(i, -1)"><mat-icon aria-hidden="true">arrow_upward</mat-icon>Subir {{ title }}</button>
+      }
+      @if (i < count() - 1) {
+        <button mat-menu-item type="button" (click)="move(i, 1)"><mat-icon aria-hidden="true">arrow_downward</mat-icon>Descer {{ title }}</button>
+      }
+      <button mat-menu-item type="button" (click)="remove(i)"><mat-icon aria-hidden="true">delete</mat-icon>Remover {{ title }}</button>
+    </ng-template>
+  </mat-menu>
+  <div class="add">
+    <app-field-note class="add__issues" [id]="basePath + '-note'" [issues]="listIssues()" />
+    <button matButton="outlined" type="button" [attr.data-field]="basePath" [class.mr-button--off]="lock() !== ''" [disabledInteractive]="lock() !== ''" [disabled]="lock() !== ''" [attr.aria-describedby]="lock() !== '' ? 'feat-options-lock' : basePath + '-note'" (click)="add()">
+      <mat-icon aria-hidden="true">add</mat-icon>Adicionar uma opção
+    </button>
+    @if (lock() !== '') {
+      <p class="add__lock" id="feat-options-lock"><mat-icon aria-hidden="true">lock</mat-icon>{{ lock() }}</p>
+    }
+  </div>
+</section>

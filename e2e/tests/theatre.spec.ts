@@ -115,7 +115,8 @@ test(
       await combatRPC(m, 'EndTurn', { campaignId, encounterId: started.id, expectedCombatantId: (await getEncounterRPC(m, campaignId)).currentCombatantId, discardPendingDamage: true });
       await passTurnsToAndWait(m, campaignId, 'Goblin', [m, p]);
       await expect(m.getByRole('heading', { name: 'Vez do Goblin' })).toBeVisible();
-      await m.getByRole('button', { name: 'Oferecer ataque de oportunidade' }).click();
+      await m.getByRole('button', { name: 'Mais ações de Goblin', exact: true }).click();
+      await m.getByRole('menuitem', { name: /Oferecer ataque de oportunidade/ }).click();
       await expect(m.getByRole('heading', { name: 'Oferecer ataque de oportunidade' })).toBeVisible();
       await expect(m.getByText('Saiu do alcance de', { exact: true })).toBeVisible();
       await m.getByRole('button', { name: 'Oferecer a Toren' }).click();
@@ -133,7 +134,8 @@ test(
       const withdrawn = await getEncounterRPC(m, campaignId);
       expect((withdrawn.combatants.find((c) => c.label === 'Toren') as unknown as { reactionUsed?: boolean }).reactionUsed ?? false).toBe(false);
       // Offered again, this time the player answers: "Não atacar".
-      await m.getByRole('button', { name: 'Oferecer ataque de oportunidade' }).click();
+      await m.getByRole('button', { name: 'Mais ações de Goblin', exact: true }).click();
+      await m.getByRole('menuitem', { name: /Oferecer ataque de oportunidade/ }).click();
       await m.getByRole('button', { name: 'Oferecer a Toren' }).click();
       await expect(prompt).toBeVisible();
       await prompt.getByRole('button', { name: 'Não atacar' }).click();

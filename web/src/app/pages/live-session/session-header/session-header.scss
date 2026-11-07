@@ -274,3 +274,44 @@
     display: none;
   }
 }
+
+// "Tela da mesa" (from 1024 px): the word, the pin marker when the TV is fixed and a chevron; it turns to the warning look when the TV lost its connection.
+.bar__tv {
+  padding-inline: 16px 12px;
+
+  .bar__chevron {
+    order: 2;
+    margin: 0 0 0 4px;
+  }
+
+  .bar__pin {
+    width: 16px;
+    height: 16px;
+    margin: 0 0 0 6px;
+    font-size: var(--mr-font-16);
+  }
+}
+
+.bar__tv--open {
+  --mat-button-outlined-label-text-color: var(--mr-accent-text);
+  --mat-button-outlined-outline-color: var(--mr-accent);
+  background: var(--mr-accent-soft);
+}
+
+.bar__tv--lost {
+  --mat-button-outlined-label-text-color: var(--mr-warning-ink);
+  --mat-button-outlined-outline-color: var(--mr-warning-line);
+  background: var(--mr-warning-surface);
+  font-weight: 700;
+}
+
+// The phone's menu line: the title and, under it, what the TV shows.
+.bar__tv-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.bar__tv-line {
+  font-size: var(--mr-font-12);
+  color: var(--mr-ink-muted);
+}

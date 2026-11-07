@@ -1,6 +1,35 @@
-@if (actions().length) {
-<section class="acts" aria-labelledby="acts-title">
-  <h3 class="acts__cap" id="acts-title">Outras ações</h3>
+@if (blockState() === 'loading' || blockState() === 'failed' || actions().length) {
+<section class="acts" aria-labelledby="acts-title" [attr.aria-busy]="blockState() === 'loading'">
+  <h3 class="acts__cap" id="acts-title" tabindex="-1" #title>Outras ações</h3>
+
+  <!-- The live region stays mounted through loading, failing and retrying: only its text changes, so it is announced. -->
+  <div class="acts__live" aria-live="polite">
+    @if (blockState() === 'loading') {
+      <div class="skeleton">
+        <p class="act__line">Lendo a ficha da criatura…</p>
+        <span class="skeleton__bar"></span><span class="skeleton__bar skeleton__bar--short"></span>
+      </div>
+    }
+    @if (blockState() === 'failed') {
+      <div class="mr-notice mr-notice--danger">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <p>Não deu para ler as outras ações da criatura.</p>
+      </div>
+    }
+  </div>
+  @if (blockState() === 'failed') {
+    <button matButton="outlined" type="button" class="offer" (click)="tryAgain()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo
+    </button>
+  }
+
+  @if (blockState() !== 'loading' && blockState() !== 'failed') {
+  @if (keeps()) {
+    <p class="mr-notice mr-notice--neutral" data-testid="creature-keeps">
+      <mat-icon aria-hidden="true">history</mat-icon>
+      <span><b>{{ subject().label }} guarda o que gastou.</b> Os usos por dia gastos continuam gastos até o descanso longo da mesa; o que volta depois de um descanso curto também volta no descanso curto. A Recarga começa pronta em todo combate.</span>
+    </p>
+  }
 
   @if (needsTargets()) {
     <div class="targets" role="group" aria-labelledby="acts-targets">
@@ -21,8 +50,35 @@
       <li class="act">
         <p class="act__head">
           <b class="act__name">{{ c.name }}</b>
+          @if (c.text) {
+            <button
+              type="button"
+              class="act__doc"
+              [attr.aria-expanded]="textOpen().has(c.action.key)"
+              [attr.aria-controls]="'act-text-' + $index"
+              [attr.aria-label]="'Texto do SRD de ' + c.name"
+              (click)="toggleText(c.action.key)"
+            >
+              <mat-icon aria-hidden="true">description</mat-icon>
+            </button>
+          }
           @if (c.usage) {
             <span class="act__usage">{{ c.usage }}</span>
+          }
+          @if (c.limit.tag) {
+            <span class="act__tag-state" [class.act__tag-state--ready]="c.limit.tag === 'Pronta'">
+              <mat-icon aria-hidden="true">{{ c.limit.tag === 'Pronta' ? 'check' : 'autorenew' }}</mat-icon>{{ c.limit.tag }}
+            </span>
+          }
+          @if (c.limit.uses; as u) {
+            <span class="act__uses" [attr.aria-label]="c.limit.usesText + ' usos'">
+              <span class="act__dots" aria-hidden="true">
+                @for (d of dotsOf(u); track $index) {
+                  <i class="act__dot" [class.act__dot--left]="d"></i>
+                }
+              </span>
+              {{ c.limit.usesText }}
+            </span>
           }
         </p>
         @for (line of c.lines; track $index) {
@@ -31,25 +87,27 @@
         @if (c.note) {
           <p class="act__note">{{ c.note }}</p>
         }
-        @if (c.text) {
-          <p class="act__text"><span class="act__tag">Texto do SRD, em inglês</span> <span lang="en">{{ c.text }}</span></p>
+        @if (c.text && textOpen().has(c.action.key)) {
+          <p class="act__text" [id]="'act-text-' + $index"><span class="act__tag">Texto do SRD, em inglês</span><span lang="en">{{ c.text }}</span></p>
         }
-        <button
-          matButton="outlined"
-          type="button"
-          class="offer"
-          [class.mr-button--off]="!!c.why"
-          [attr.aria-label]="'Usar ' + c.name"
-          [attr.aria-describedby]="c.why ? 'act-why-' + $index : null"
-          [disabled]="busy() || turnBusy() || !!c.why"
-          disabledInteractive
-          (click)="use(c.action)"
-        >
-          <mat-icon aria-hidden="true">bolt</mat-icon>Usar
-        </button>
-        @if (c.why) {
-          <p class="act__why" [id]="'act-why-' + $index">{{ c.why }}</p>
-        }
+        <div class="act__use">
+          <button
+            matButton="outlined"
+            type="button"
+            class="offer"
+            [class.mr-button--off]="!!c.why"
+            [attr.aria-label]="'Usar ' + c.name"
+            [attr.aria-describedby]="c.why ? 'act-why-' + $index : null"
+            [disabled]="busy() || turnBusy() || !!c.why"
+            disabledInteractive
+            (click)="use(c.action)"
+          >
+            <mat-icon aria-hidden="true">bolt</mat-icon>Usar
+          </button>
+          @if (c.why) {
+            <p class="act__why" [id]="'act-why-' + $index"><mat-icon aria-hidden="true">block</mat-icon>{{ c.why }}</p>
+          }
+        </div>
       </li>
     }
   </ul>
@@ -101,6 +159,7 @@
       <mat-icon aria-hidden="true">error</mat-icon>
       <p>{{ error() }}</p>
     </div>
+  }
   }
 </section>
 }

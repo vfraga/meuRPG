@@ -82,8 +82,15 @@ func (w *world) setSceneTo(who ...*person) {
 
 // settle has the master show the map the table already shows: every stream gets a marker, in order, so when
 // all of ws have it, whatever the steps before sent them has arrived.
+//
+// The hint gates (content_changed, map_changed, puzzle_changed) send their last change on a timer, up to a
+// second after the write that made it, and that send goes to everyone it concerns, in no order with the
+// marker. The world's setup ends with such writes: left alone, the send lands in a later step and passes for
+// what that step sent. So the gates' scheduled sends go out first (the stack's tracker, not a sleep): then
+// they are before the marker, and every step's own events are what comes after it.
 func (w *world) settle(ws ...*streamWatcher) {
 	w.t.Helper()
+	w.hints.Settle(w.t)
 	count := func(sw *streamWatcher) int {
 		n := 0
 		for _, ev := range sw.since(0) {

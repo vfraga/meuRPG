@@ -398,3 +398,71 @@ describe('CombatMapCard: the player’s compact card (C4-03, C6-07)', () => {
     expect(el.querySelector('.bar')).toBeNull();
   });
 });
+
+describe("CombatMapCard: the master's offer rings on a phone", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const phoneMount = (mode: 'offer' | 'target') => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: /max-width: 767/.test(query),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(CombatMapCard);
+    const ref = fixture.componentRef;
+    ref.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'g',
+        gridColumns: 20,
+        gridRows: 14,
+        combatants: [
+          combatant({ id: 'g', label: 'Goblin', placed: true, col: 3, row: 5 }),
+          combatant({
+            id: 't',
+            label: 'Toren',
+            placed: true,
+            col: 9,
+            row: 6,
+            kind: CombatantKind.PLAYER,
+            side: CombatantSide.PARTY,
+          }),
+          combatant({
+            id: 'b',
+            label: 'Brisa',
+            placed: true,
+            col: 10,
+            row: 7,
+            kind: CombatantKind.PLAYER,
+            side: CombatantSide.PARTY,
+          }),
+        ],
+      }),
+    );
+    ref.setInput('image', { url: '', width: 2000, height: 1400 });
+    ref.setInput('isMaster', true);
+    ref.setInput('cropOnPhone', true);
+    ref.setInput(
+      'pick',
+      ['t', 'b'].map((id) => ({ id, label: id, reason: '', note: '', count: 0, mode })),
+    );
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  };
+  const shift = (el: HTMLElement) =>
+    [...el.querySelectorAll<HTMLElement>('[style*="translate("]')].map((n) => n.style.transform)[0];
+
+  it('keeps the mover, who is on turn and never "own" for the master, inside the window', () => {
+    const offer = shift(phoneMount('offer'));
+    const target = shift(phoneMount('target'));
+    expect(offer).toBeTruthy();
+    // The offer's window reaches back to the mover (column 3); the target's holds only the two candidates.
+    expect(offer).not.toBe(target);
+    const col = (s: string) => Number(/translate\((-?[\d.]+)%/.exec(s)![1]);
+    // The window starts one square before the mover (column 3 of 20: 10%), not at the first candidate.
+    expect(col(offer)).toBeCloseTo(-10);
+    expect(col(target)).toBeLessThan(col(offer));
+  });
+});

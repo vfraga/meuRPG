@@ -16,6 +16,7 @@ import type { LiveSessionParts, LiveSessionServices } from './live-session-deps'
 import type { LiveSessionState } from './live-session-state';
 import type { LiveSessionView } from './live-session-view';
 import { openFreeDice } from './free-dice/free-dice-sheet';
+import { openTableScreenSheet } from './table-screen-sheet/table-screen-sheet';
 import { openTrapSearch } from './traps/trap-search-sheet/trap-search-sheet';
 
 /** The sheets and dialogs the session page opens: each one answers back into the page's state. */
@@ -104,6 +105,23 @@ export class LiveSessionSheets {
       ),
       // RN-18 applies to the game's rolls: the sheet only says the app rolls this one.
       physical: state.campaign()?.diceMode === DiceMode.PHYSICAL,
+    })
+      .pipe(takeUntilDestroyed(services.destroyRef))
+      .subscribe(() => focusWithRing(opener));
+  }
+
+  /** "Tela da mesa": the master's panel of the TV tab, from the bar's button or the phone's menu. */
+  openTableScreen(): void {
+    const { state, services, parts } = this;
+    const opener = services.document.activeElement as HTMLElement | null;
+    openTableScreenSheet(services.dialog, services.bottomSheet, {
+      panel: parts.tableScreen,
+      campaignId: state.campaignId(),
+      names: computed(() => ({
+        map: parts.mapState.map()?.name ?? '',
+        image: state.shownImage()?.name ?? '',
+        scene: parts.scene.scene()?.name ?? '',
+      })),
     })
       .pipe(takeUntilDestroyed(services.destroyRef))
       .subscribe(() => focusWithRing(opener));

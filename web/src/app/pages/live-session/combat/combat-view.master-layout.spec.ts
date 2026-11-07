@@ -214,8 +214,8 @@ describe("CombatView, the master's phone (C6-01)", () => {
 
   it('puts the other panels in "Mais", at the end of "Turno", folded', async () => {
     const { fixture, el } = await mount();
-    const more = Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
-      b.textContent?.includes('Mais'),
+    const more = Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find(
+      (b) => b.textContent?.includes('Mais') && !b.textContent.includes('Mais ações'),
     )!;
     expect(more.getAttribute('aria-expanded')).toBe('false');
     expect(el.querySelector('.more')).toBeNull();

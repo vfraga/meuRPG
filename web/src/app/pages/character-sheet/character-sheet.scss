@@ -134,16 +134,17 @@ app-revive-blocked {
 .sheet {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: 'abilities' 'combat' 'proficiencies' 'traits' 'notes';
+  grid-template-areas: 'abilities' 'combat' 'equipment' 'proficiencies' 'traits' 'notes';
   align-items: start;
   gap: var(--mr-space-4);
 
   @media (min-width: 768px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto auto 1fr auto;
     grid-template-areas:
       'abilities abilities'
       'combat proficiencies'
+      'equipment proficiencies'
       'notes proficiencies'
       'traits traits';
     gap: var(--mr-space-4) 20px;
@@ -151,10 +152,11 @@ app-revive-blocked {
 
   @media (min-width: 1200px) {
     grid-template-columns: 124px 300px repeat(2, minmax(0, 1fr));
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
-      'abilities proficiencies combat traits'
-      'abilities proficiencies notes traits';
+      'abilities proficiencies combat column4'
+      'abilities proficiencies combat column4'
+      'abilities proficiencies notes column4';
     gap: var(--mr-space-4) var(--mr-space-6);
   }
 }
@@ -169,6 +171,30 @@ app-revive-blocked {
 
 .sheet__combat {
   grid-area: combat;
+}
+
+// "Equipamento" follows the combat numbers; from 1200px it is in the fourth column, under the player's notes (which
+// stay its first block), beside "Ataques".
+.sheet__equipment {
+  grid-area: equipment;
+}
+
+// The fourth column from 1200px: a column of "Anotações", "Equipamento" and the traits. Under 1200px the wrapper
+// and the traits' wrapper dissolve: each part is a cell of the sheet's grid, as before.
+.sheet__col4 {
+  display: contents;
+
+  @media (min-width: 1200px) {
+    grid-area: column4;
+    display: flex;
+    flex-direction: column;
+    gap: var(--mr-space-4);
+    min-width: 0;
+
+    .sheet__traits {
+      display: contents;
+    }
+  }
 }
 
 .sheet__notes {
@@ -219,7 +245,7 @@ app-revive-blocked {
 // the game numbers.
 .sheet--pnotes {
   @media (max-width: 1199.98px) {
-    grid-template-areas: 'abilities' 'combat' 'proficiencies' 'features' 'pnotes' 'tstory' 'notes';
+    grid-template-areas: 'abilities' 'combat' 'equipment' 'proficiencies' 'features' 'pnotes' 'tstory' 'notes';
 
     .sheet__traits {
       display: contents;
@@ -227,10 +253,11 @@ app-revive-blocked {
   }
 
   @media (min-width: 768px) and (max-width: 1199.98px) {
-    grid-template-rows: auto auto 1fr auto auto;
+    grid-template-rows: auto auto auto 1fr auto auto;
     grid-template-areas:
       'abilities abilities'
       'combat proficiencies'
+      'equipment proficiencies'
       'notes proficiencies'
       'features tstory'
       'pnotes pnotes';

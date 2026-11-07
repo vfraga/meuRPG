@@ -215,7 +215,7 @@ describe('SpellEditor', () => {
     const level = field(el, 'table_spell.level') as HTMLSelectElement;
     const options = Array.from(level.options).map((o) => `${o.text}${o.disabled ? ' (off)' : ''}`);
     expect(options[0]).toBe('Truque (off)');
-    expect(options[1]).toBe('1º nível');
+    expect(options[1]).toBe('1º círculo');
   });
 
   it('turns the save button off, with the reason written, while the archive question is open', () => {

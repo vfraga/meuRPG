@@ -1,0 +1,30 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+}
+
+.set {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mr-space-2) var(--mr-space-4);
+  align-items: center;
+
+  @media (min-width: 768px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  &__note {
+    margin: 0;
+    font-size: var(--mr-font-14);
+    line-height: 18px;
+    color: var(--mr-ink-muted);
+  }
+}
+
+.foot {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+}

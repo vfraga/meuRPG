@@ -131,6 +131,7 @@ function turnOptions(contest: ReturnType<typeof create<typeof ContestTurnStateSc
       }),
     ],
     contestState: contest,
+    maneuverDice: [],
   };
 }
 

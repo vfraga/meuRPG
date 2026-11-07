@@ -136,10 +136,19 @@ describe('AttackSheet: the dice an effect adds (RN-22)', () => {
     );
   });
 
+  it('frames an opportunity attack: the title, who attacks and the reaction it spends, and the chip on the target', () => {
+    const { el } = setup({ effects: [blessing] });
+    expect(plain(el.querySelector('#sheet-t')?.textContent)).toBe(
+      'Ataque de oportunidade · Espada longa',
+    );
+    expect(plain(el.querySelector('.sheet__sub')?.textContent)).toBe('Toren · gasta a sua reação');
+    expect(plain(el.querySelector('.chosen .mr-tag')?.textContent)).toBe('Ataque de oportunidade');
+    expect(el.querySelector('.chosen .link')).toBeNull();
+  });
+
   it('sends the d20 and the faces of the d4 together, and spends the extra action when asked', async () => {
     api.rollAttack.mockRejectedValue(new ConnectError('stop', Code.Aborted));
     const { fixture, el } = setup({ effects: [blessing], useExtraAction: true });
-    expect(plain(el.textContent)).toContain('Ação extra');
     fill(fixture, fieldOf(el, 'Resultado do d4 (Bênção)'), '3');
     fill(fixture, fieldOf(el, 'Role 1d20'), '14');
     button(el, 'Confirmar').click();

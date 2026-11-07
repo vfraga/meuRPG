@@ -60,7 +60,13 @@ export function rollEffectItem(e: TableEffect, nameOf: (key: string) => string):
           }
         : null;
     case 'roll_minimum': {
-      const type = e.damageType === '' ? '' : ` de ${nameOf(e.damageType).toLowerCase()}`;
+      // A feat's pick ("damage-type:@tipo") is the type the player chose, not a key the catalog names.
+      const type =
+        e.damageType === ''
+          ? ''
+          : e.damageType.includes('@')
+            ? ' do tipo escolhido'
+            : ` de ${nameOf(e.damageType).toLowerCase()}`;
       return e.rolls.length > 0 && WHOLE.test(e.value)
         ? {
             title: 'Valor mínimo no dado',

@@ -289,11 +289,14 @@ func TestEffectTagsPT(t *testing.T) {
 		{Kind: ModifierSaveDisadvantage, Abilities: []string{"wis", "cha"}},
 		{Kind: ModifierCheckDisadvantage, Abilities: []string{"str"}},
 		{Kind: ModifierNoMove},
+		{Kind: ModifierSpeedAdd, Value: 30},
+		{Kind: ModifierSpeedAdd, Value: 25},
 	})
 	want := []string{
 		"CA +2", "+1 em ataques", "-2 em resistências e testes", "PV temporários: 5", "Resistência a fogo, frio",
 		"Imunidade a todo dano", "Vulnerabilidade a trovejante", "Vantagem em ataques",
 		"Desvantagem em resistências (SAB e CAR)", "Desvantagem em testes (FOR)", "Sem deslocamento",
+		"Deslocamento +9 m", "Deslocamento +7,5 m",
 	}
 	if !slices.Equal(got, want) {
 		t.Errorf("EffectTagsPT =\n %q\nwant\n %q", got, want)

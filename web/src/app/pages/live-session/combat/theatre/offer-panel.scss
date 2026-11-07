@@ -5,9 +5,9 @@
 .offer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   box-sizing: border-box;
-  padding: 18px 20px;
+  padding: 12px 14px;
   border: 1px solid var(--mr-line);
   border-radius: var(--mr-radius-lg);
   background: var(--mr-surface);
@@ -16,9 +16,9 @@
 .offer__title {
   margin: 0;
   font-family: var(--mr-font-display);
-  font-size: var(--mr-font-22);
+  font-size: var(--mr-font-20);
   font-weight: 700;
-  line-height: 28px;
+  line-height: 26px;
 }
 
 .offer__text {
@@ -29,7 +29,7 @@
 }
 
 .offer__sub {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   font-weight: 700;
   font-size: var(--mr-font-16);
 }
@@ -53,7 +53,7 @@
 .rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .row {
@@ -61,8 +61,8 @@
   align-items: center;
   gap: 10px;
   box-sizing: border-box;
-  min-height: 48px;
-  padding: 8px 12px;
+  min-height: 40px;
+  padding: 4px 12px;
   border: 1px solid var(--mr-control-line);
   border-radius: var(--mr-radius-sm);
   cursor: pointer;
@@ -74,7 +74,7 @@
 }
 
 .row--on {
-  padding: 7px 11px;
+  padding: 3px 11px;
   border: 2px solid var(--mr-accent);
   background: var(--mr-accent-soft);
 }
@@ -98,40 +98,52 @@
   border: 6px solid var(--mr-accent);
 }
 
-.row__name {
+.row__text {
+  display: flex;
   flex: 1;
+  flex-direction: column;
   min-width: 0;
+}
+
+.offer__note {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.row__name {
   font-family: var(--mr-font-display);
-  font-size: var(--mr-font-18);
+  font-size: var(--mr-font-16);
   font-weight: 700;
+  line-height: 20px;
   overflow-wrap: anywhere;
 }
 
 .row__sub {
+  overflow: hidden;
   font-size: var(--mr-font-14);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--mr-ink-muted);
-  text-align: right;
 }
 
 .actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 4px;
-
-  // Two buttons of one size, from a phone to a desktop.
-  @media (min-width: 768px) {
-    grid-template-columns: repeat(2, 220px);
-  }
+  margin-top: 0;
 }
 
 .btn {
   --mat-button-outlined-container-height: 48px;
+  --mat-button-filled-container-height: 48px;
   --mat-button-outlined-label-text-color: var(--mr-ink);
   min-width: 0;
   white-space: nowrap;
 
   @media (min-width: 768px) {
     --mat-button-outlined-container-height: 44px;
+    --mat-button-filled-container-height: 44px;
   }
 }

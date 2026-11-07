@@ -70,6 +70,7 @@ export const EFFECT_FIELD_LABELS: Readonly<Record<string, string>> = {
   spell_change: 'O que muda na magia',
   rolls: 'Vale nas jogadas',
   at_most: 'Rola de novo se tirar até',
+  cap: 'Limite',
 };
 
 /** One line under a field, where the name alone does not say. This is screen copy; the formula functions and the tag
@@ -153,6 +154,43 @@ export const EFFECT_TYPE_FIELD_LABELS: Readonly<Record<string, Readonly<Record<s
     },
   };
 
+/**
+ * One line for each effect type, for the feat editor, where the menu's full text (several lines) would push the fields apart.
+ * A type with no line here shows the menu's own.
+ */
+/** The line under a formula in the feat editor, where the menu's list of functions would run several lines. */
+const FEAT_FORMULA_HINT = 'Um número ou uma fórmula, como 8 + prof().';
+
+const SHORT_TYPE_HINTS: Readonly<Record<string, string>> = {
+  modifier: 'Soma ou define um número da ficha.',
+  proficiency: 'Dá proficiência numa perícia ou teste.',
+  resource: 'Usos que voltam num descanso.',
+  sense: 'Dá visão no escuro ou outro sentido.',
+  roll_mode: 'Vantagem ou desvantagem em certas rolagens.',
+  grant_action: 'Uma ação nova na vez do personagem.',
+  superiority_die: 'Um dado que soma a uma rolagem.',
+  extra_attack: 'Quantos ataques a ação Atacar faz.',
+  extra_damage: 'Dano somado a um ataque que acertou.',
+  ambush: 'Vantagem contra quem é pego de surpresa.',
+  wild_shape: 'Muda a Forma Selvagem do druida.',
+  slot_recovery: 'Recupera espaços de magia no descanso.',
+  ranged_attack: 'Muda os ataques de longe do personagem.',
+  resistance: 'Resistência ou imunidade a dano.',
+  state: 'Algo que o personagem liga por um tempo.',
+  weapon_rule: 'Muda as armas que o filtro escolhe.',
+  pseudo_weapon: 'Dá à ficha um ataque próprio.',
+  condition_immunity: 'Não fica com as condições escolhidas.',
+  breathes_water: 'O personagem respira debaixo d’água.',
+  granted_spell: 'Dá uma magia ao personagem.',
+  on_event: 'Algo que ocorre com o dono num evento.',
+  spell_modifier: 'Muda o dano de certas magias.',
+  reroll: 'Rola de novo um dado que caiu baixo.',
+  roll_minimum: 'Um dado baixo conta como o valor.',
+  choice: 'Algo que o jogador escolhe uma vez.',
+  ability_increase: 'O jogador soma um valor a habilidades.',
+  note: 'Um lembrete na ficha.',
+};
+
 export const EFFECT_TYPE_FIELD_HINTS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   roll_minimum: {
     value: 'De 2 a 20. Um dado que mostrar menos conta como este valor.',
@@ -203,3 +241,13 @@ export const EFFECT_REFUSAL_TEXTS: Readonly<Record<string, string>> = {
   'modifier.critical_range.value': 'A margem vai de 15 a 20.',
   'modifier.critical_range.mode': CRITICAL_COPY.modeLock,
 };
+
+/** The hint of an effect type: the menu's, or in the feat editor the one line of `SHORT_TYPE_HINTS` when the type has one. */
+export function typeHintFor(type: string, menuHint: string, inFeat: boolean): string {
+  return (inFeat ? SHORT_TYPE_HINTS[type] : undefined) ?? menuHint;
+}
+
+/** The hint of a formula: the field's own sentence, else the menu's list of functions, or in the feat editor one line. */
+export function formulaHintFor(own: string, menuHint: string, inFeat: boolean): string {
+  return own || (inFeat ? FEAT_FORMULA_HINT : menuHint);
+}

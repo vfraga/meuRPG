@@ -228,6 +228,7 @@ func (v *summonView) combatRows(creature *playv1.Combatant, keys ...string) []re
 				return &playv1.ListCombatLogRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId()}
 			},
 		},
+		tvScreenLogRead, // what the TV shows of the combat: the summon's names are the table content the master may have hidden (RN-23)
 		{
 			procedure: charactersv1connect.CharacterServiceListCharacterCreaturesProcedure, allow: onlyAna,
 			req: func(w *world) proto.Message {

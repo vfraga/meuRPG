@@ -75,3 +75,74 @@
   font-weight: 700;
   cursor: pointer;
 }
+
+// What the master reads of a formula that points at a choice of the feat.
+.reading {
+  margin: 4px 0 0;
+  padding: 0 4px;
+  font-size: var(--mr-font-14);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+
+  &__choice {
+    color: var(--mr-ink);
+    font-weight: 700;
+  }
+}
+
+// The buttons that write a choice into a formula.
+.insert {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  margin-top: var(--mr-space-3);
+
+  &__title {
+    margin: 0;
+    font-size: var(--mr-font-14);
+    font-weight: 700;
+    color: var(--mr-ink);
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--mr-space-2);
+
+    button {
+      min-height: 44px;
+
+      .mat-icon {
+        color: var(--mr-accent-text);
+      }
+    }
+  }
+
+  &__note {
+    margin: 0;
+    font-size: var(--mr-font-14);
+    line-height: 18px;
+    color: var(--mr-ink-muted);
+  }
+}
+
+// The line under the fields of a named choice: what the other effects call it.
+.choice-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-3);
+  margin: 0;
+  padding: 10px var(--mr-space-4);
+  border: 1px solid var(--mr-line);
+  border-left: 3px solid var(--mr-accent);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-surface);
+  font-size: var(--mr-font-15);
+  line-height: 22px;
+
+  .mat-icon {
+    flex: none;
+    margin-top: -1px;
+    color: var(--mr-accent-text);
+  }
+}

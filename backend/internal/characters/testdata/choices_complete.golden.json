@@ -1759,6 +1759,28 @@
             "summaryPt": "+2 nas jogadas de ataque com armas à distância."
           }
         ],
+        "gear": [
+          {
+            "armorClassIfToggled": 13,
+            "equipped": true,
+            "key": "equipment:chain-mail",
+            "kind": "GEAR_KIND_ARMOR",
+            "namePt": "Cota de malha"
+          },
+          {
+            "armorClassIfToggled": 16,
+            "equipped": true,
+            "key": "equipment:shield",
+            "kind": "GEAR_KIND_SHIELD",
+            "namePt": "Escudo"
+          },
+          {
+            "equipped": true,
+            "key": "equipment:longsword",
+            "kind": "GEAR_KIND_WEAPON",
+            "namePt": "Espada longa"
+          }
+        ],
         "hints": [
           {
             "sourceKey": "equipment:chain-mail",

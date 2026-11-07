@@ -294,6 +294,7 @@ func (rt *rollsTable) buildRows() {
 				return &playv1.ListCombatLogRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId()}
 			},
 		},
+		tvScreenLogRead, // what the TV shows of the combat after each attack: the hidden attackers are not in it
 	)
 }
 

@@ -164,7 +164,6 @@ func (s *Service) ListCombatLog(
 	if err != nil {
 		return nil, s.dbError(ctx, "read the combat log", err)
 	}
-	slices.Reverse(snap.events) // oldest first, as buildLog reads them
 	// The log's lines are filtered by who could see them when they happened
 	// (actionEvent.SeenBy), not by what the viewer sees now; only the current
 	// rules about hidden combatants are worked out from the combatants as they are.
@@ -172,12 +171,6 @@ func (s *Service) ListCombatLog(
 	if err != nil {
 		return nil, err
 	}
-	entries := buildLog(snap.events)
-	rolls := newLogRolls(snap.reasons, snap.requests, s.namesFor(ctx, m.CampaignID))
-	for _, e := range entries {
-		e.rolls = rolls
-	}
-
 	res := &playv1.ListCombatLogResponse{}
 	var lastID string
 	if v.master {
@@ -186,21 +179,34 @@ func (s *Service) ListCombatLog(
 			res.UndoableEventId = last.ID
 		}
 	}
+	// Latest first, in groups by round.
+	for _, out := range s.logViews(ctx, m, &snap, v, lastID) {
+		res.Rounds = appendToRound(res.Rounds, out)
+	}
+	return connect.NewResponse(res), nil
+}
 
+// logViews are the lines of the snapshot's combat that the viewer reads, latest first. The snapshot's events
+// are turned around in place.
+func (s *Service) logViews(ctx context.Context, m authz.Membership, snap *logSnapshot, v combatViewer, lastID string) []*playv1.CombatLogEntry {
+	slices.Reverse(snap.events) // oldest first, as buildLog reads them
+	entries := buildLog(snap.events)
+	rolls := newLogRolls(snap.reasons, snap.requests, s.namesFor(ctx, m.CampaignID))
+	for _, e := range entries {
+		e.rolls = rolls
+	}
 	names := &keyNames{s: s, campaignID: m.CampaignID, byCharacter: map[string]link.Sheet{}}
 	byID := make(map[string]playdb.Combatant, len(snap.cs))
 	for _, c := range snap.cs {
 		byID[c.ID] = c
 	}
-	// Latest first, in groups by round.
+	var out []*playv1.CombatLogEntry
 	for _, e := range slices.Backward(entries) {
-		out, ok := e.view(ctx, v, byID, names, lastID)
-		if !ok {
-			continue
+		if view, ok := e.view(ctx, v, byID, names, lastID); ok {
+			out = append(out, view)
 		}
-		res.Rounds = appendToRound(res.Rounds, out)
 	}
-	return connect.NewResponse(res), nil
+	return out
 }
 
 // logViewer is who reads the log: the member, and for a player the table's rule on the
@@ -1035,7 +1041,7 @@ func (e *logEntry) attackDice(out *playv1.CombatLogEntry, v combatViewer) {
 	out.ModeChange = e.modeChange(e.ev, e.ev.ByMaster)
 	out.Reason = e.rolls.reasonOf(e.ev)
 	out.BonusDice = bonusDiceOf(e.ev)
-	out.AttackRoll.ExtraDice = extraDiceProto(e.ev.Extra, v.master, nil)
+	out.AttackRoll.ExtraDice = extraDiceProto(e.ev.Extra, v.master, e.rolls.keyName)
 	out.AttackRoll.Rerolled = strokeRerolls(e.ev.Lucky, e.ev.Stroke) // "Sortudo: 1 → 14", with the d20 it changed; "Golpe de Sorte" for a miss turned into a hit
 }
 

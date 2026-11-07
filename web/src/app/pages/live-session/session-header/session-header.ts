@@ -16,6 +16,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { RouterLink } from '@angular/router';
 
+import { WIDE_BAR_QUERY } from './wide-bar';
 import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
 import { LivePill } from '../../../shared/live-pill/live-pill';
 import { COPIED_FOR_MS, copyText, sessionLink } from '../../../shared/session-link/session-link';
@@ -47,6 +48,8 @@ export class SessionHeader implements OnDestroy {
   private readonly injector = inject(Injector);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly phone = mediaQuery(PHONE_QUERY);
+  /** From 1024 px the master's "Tela da mesa" is a button in the bar; below it, a line of the menu. */
+  protected readonly wide = mediaQuery(WIDE_BAR_QUERY);
 
   readonly campaignId = input.required<string>();
   readonly campaignName = input.required<string>();
@@ -61,10 +64,24 @@ export class SessionHeader implements OnDestroy {
   /** The current map is still being read (or could not be): "Iniciar combate" waits for it. */
   readonly startOff = input(false);
 
+  /** The bar button's words and whether the TV is pinned (`barButtonLabel`). */
+  readonly tvLabel = input<{ text: string; pinned: boolean }>({
+    text: 'Tela da mesa',
+    pinned: false,
+  });
+  /** The second line of the menu's "Tela da mesa…" (`menuLine`). */
+  readonly tvMenuLine = input('Nenhuma tela aberta');
+  /** A TV tab is connected: the bar button takes the accent look. */
+  readonly tvOpen = input(false);
+  /** The TV has no connection: the bar button turns to the warning look. */
+  readonly tvLost = input(false);
+
   /** The master ended the session from here. */
   readonly ended = output<void>();
   /** "Dados": the person wants the free dice roller. */
   readonly openDice = output<void>();
+  /** "Tela da mesa": the master wants the panel of the TV tab. */
+  readonly openTableScreen = output<void>();
   /** "Iniciar combate": the master wants the dialog that starts a combat. */
   readonly startCombat = output<void>();
 

@@ -30,6 +30,8 @@ import { AreaNotice } from '../../../../shared/area-picker/area-notice';
 import { AreaMap } from '../../../../shared/area-picker/area-map';
 import { AreaStep } from '../../../../shared/area-picker/area-step';
 import { TeleportMap } from '../../../../shared/area-picker/teleport-map';
+import { HeldFollow } from '../../../../core/held-rolls/held-follow';
+import { heldOfferOf } from '../../../../core/held-rolls/held-roll-offer';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
 import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
@@ -181,6 +183,8 @@ export class CastSheet {
     this.damage,
     { api: this.api, animator: this.animator },
   );
+  /** Tells the caster that the master answered the question for them: the question goes and a line takes its place. */
+  protected readonly follow = new HeldFollow(this.questions.held);
   // What the specs next to this one reach by name.
   protected readonly offer = this.questions.held.offer;
   protected readonly cast = this.s.cast;
@@ -202,6 +206,15 @@ export class CastSheet {
         this.s.details.set(d);
       } else {
         this.s.detailsFailed.set(true);
+      }
+    });
+    // The master answers the question for the caster: the sheet drops it, so it never offers an answer that is no longer open.
+    effect(() => {
+      const me = this.data.state.encounter()?.combatants.find((c) => c.id === this.data.casterId);
+      this.questions.held.offer();
+      this.questions.held.refusal(); // a click the server refused as too late: the question may be gone already
+      if (me) {
+        untracked(() => this.follow.see(heldOfferOf(me)));
       }
     });
     // After a result the focus goes to the one next action, as soon as it is drawn.

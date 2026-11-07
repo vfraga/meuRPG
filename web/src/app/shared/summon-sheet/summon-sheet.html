@@ -1,9 +1,9 @@
-<!-- A dialog (tablet and up) has a definite height, like "Dar uma criatura": the list takes what is left. The phone's bottom sheet keeps its own. -->
+<!-- A dialog (tablet and up) with a long, searchable list has a definite height, like "Dar uma criatura": the list takes what is left. A short list is as tall as it is. The phone's bottom sheet keeps its own. -->
 <app-sheet-frame
   [title]="title()"
   [subtitle]="subtitle()"
   [phone]="inSheet"
-  [height]="inSheet ? (combat ? 'calc(100dvh - 56px)' : '') : 'min(700px, calc(92dvh - 48px))'"
+  [height]="inSheet ? (combat ? 'calc(100dvh - 56px)' : '') : rows().length > 6 ? 'min(700px, calc(92dvh - 48px))' : ''"
   titleId="summon-t"
   (closed)="close()"
 >
@@ -97,7 +97,7 @@
             <app-creature-choice-list
               [rows]="rows()"
               [flow]="inSheet"
-              [attacksAlways]="!familiar() && (opt()?.forms?.length ?? 0) === 0"
+              [attacksAlways]="bring() || (!familiar() && (opt()?.forms?.length ?? 0) === 0)"
               [chosen]="single()"
               [multi]="several()"
               [counts]="counts()"
@@ -131,7 +131,7 @@
         }
         @if (missing()) {
           <p class="line line--missing" role="status"><mat-icon aria-hidden="true">block</mat-icon>{{ missing() }}</p>
-        } @else if (!combat) {
+        } @else if (!combat && costLine()) {
           <p class="line" role="status"><mat-icon aria-hidden="true">info</mat-icon><span><b>{{ costLine() }}</b></span></p>
         }
       }

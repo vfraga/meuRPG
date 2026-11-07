@@ -1,0 +1,51 @@
+:host {
+  display: block;
+  min-height: 0;
+
+  // On a TV the card fills the stage beside the order, as the board draws it.
+  @media (min-width: 900px) {
+    height: 100%;
+  }
+}
+
+.tv-fog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mr-space-2);
+  height: 100%;
+  min-height: 200px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.tv-fog__icon {
+  width: 40px;
+  height: 40px;
+  font-size: var(--mr-font-40);
+  color: var(--mr-ink-muted);
+}
+
+.tv-fog__title {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 800;
+  font-size: var(--mr-font-24);
+  color: var(--mr-ink);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-40);
+  }
+}
+
+.tv-fog__text {
+  margin: 0;
+  max-width: 32em;
+  font-size: var(--mr-font-16);
+  color: var(--mr-ink-muted);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-26);
+  }
+}

@@ -112,10 +112,15 @@ describe("NpcCard: the creature's other actions", () => {
     expect(root.querySelector('app-creature-actions')?.textContent).toContain('Sopro de fogo');
   });
 
-  it('shows nothing, and no error, for a stat block that cannot be read', async () => {
+  it('says the stat block could not be read and offers "Tentar de novo", the rest of the card working', async () => {
     const { root } = await open({});
-    expect(root.querySelector('app-creature-actions section')).toBeNull();
-    expect(root.querySelector('[role="alert"]')).toBeNull();
+    expect(root.querySelector('app-creature-actions .acts__live')?.textContent).toContain(
+      'Não deu para ler as outras ações da criatura.',
+    );
+    const retry = [...root.querySelectorAll('app-creature-actions button')].find((b) =>
+      (b.textContent ?? '').includes('Tentar de novo'),
+    );
+    expect(retry).toBeDefined();
   });
 
   it('applies the damage the action opened inside its result, once, not again in the card list', async () => {

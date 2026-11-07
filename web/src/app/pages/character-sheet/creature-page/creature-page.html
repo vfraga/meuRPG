@@ -42,43 +42,84 @@
       </div>
     </header>
 
-    <app-stat-block
-      [creature]="s.block"
-      [hp]="{ current: s.creature.hitPointsCurrent, max: s.creature.hitPointsMax }"
-    >
+    @if (compact(); as t) {
+      <section class="mr-panel tiles" aria-label="Números da criatura">
+        @for (tile of t.tiles; track tile.label) {
+          <div class="tile">
+            <span class="tile__l">{{ tile.label }}</span>
+            <span class="tile__v">{{ tile.value }}@if (tile.of) {&nbsp;<small>{{ tile.of }}</small>}</span>
+          </div>
+        }
+      </section>
+      @if (t.attacks.length > 0) {
+        <section class="mr-panel block" aria-labelledby="cp-attacks">
+          <h2 id="cp-attacks" class="block__t">Ações</h2>
+          <ul class="attacks">
+            @for (a of t.attacks; track $index) {
+              <li class="attack">
+                <b class="attack__n" [attr.lang]="a.english ? 'en' : null">{{ a.name }}</b>
+                <span class="attack__d">{{ a.detail }}</span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+      @if (t.traits.length > 0) {
+        <section class="mr-panel block" aria-labelledby="cp-traits">
+          <h2 id="cp-traits" class="block__t">Traços</h2>
+          @for (trait of t.traits; track $index) {
+            <p class="trait"><b>{{ trait.name }}.</b> {{ trait.text }}</p>
+          }
+        </section>
+      }
       @if (attackNote()) {
         <div class="mr-notice mr-notice--neutral">
           <mat-icon aria-hidden="true">info</mat-icon>
           <p>{{ attackNote() }}</p>
         </div>
       }
-      @if (mode(); as m) {
-        <app-creature-edit
-          [campaignId]="campaignId()"
-          [creature]="s.creature"
-          [mode]="m"
-          [ownerView]="!s.isMaster"
-          [ownerName]="s.ownerName"
-          (closed)="closed($event)"
-        />
-      } @else {
-        <div class="acts">
-          <button type="button" class="act js-rename" (click)="open('rename')">
-            <mat-icon aria-hidden="true">edit</mat-icon>Renomear
-          </button>
-          @if (s.isMaster) {
-            <button type="button" class="act js-hp" (click)="open('hp')">
-              <mat-icon aria-hidden="true">favorite</mat-icon>Corrigir PV
-            </button>
-          }
-          <button type="button" class="act act--danger js-dismiss" (click)="open('dismiss')">
-            <mat-icon aria-hidden="true">close</mat-icon>Dispensar
-          </button>
-        </div>
-      }
-    </app-stat-block>
-    @if (tableNote(); as note) {
-      <p class="table-note">{{ note }}</p>
+      <p class="table-note">{{ tableNote() }}</p>
+      <ng-container [ngTemplateOutlet]="actions" [ngTemplateOutletContext]="{ s }" />
+    } @else {
+      <app-stat-block
+        [creature]="s.block"
+        [hp]="{ current: s.creature.hitPointsCurrent, max: s.creature.hitPointsMax }"
+      >
+        @if (attackNote()) {
+          <div class="mr-notice mr-notice--neutral">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            <p>{{ attackNote() }}</p>
+          </div>
+        }
+        <ng-container [ngTemplateOutlet]="actions" [ngTemplateOutletContext]="{ s }" />
+      </app-stat-block>
     }
   }
 }
+
+<ng-template #actions let-s="s">
+  @if (mode(); as m) {
+    <app-creature-edit
+      [campaignId]="campaignId()"
+      [creature]="s.creature"
+      [mode]="m"
+      [ownerView]="!s.isMaster"
+      [ownerName]="s.ownerName"
+      (closed)="closed($event)"
+    />
+  } @else {
+    <div class="acts">
+      <button type="button" class="act js-rename" (click)="open('rename')">
+        <mat-icon aria-hidden="true">edit</mat-icon>Renomear
+      </button>
+      @if (s.isMaster) {
+        <button type="button" class="act js-hp" (click)="open('hp')">
+          <mat-icon aria-hidden="true">favorite</mat-icon>Corrigir PV
+        </button>
+      }
+      <button type="button" class="act act--danger js-dismiss" (click)="open('dismiss')">
+        <mat-icon aria-hidden="true">close</mat-icon>Dispensar
+      </button>
+    </div>
+  }
+</ng-template>

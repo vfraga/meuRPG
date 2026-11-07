@@ -132,11 +132,17 @@ export class OptionEditor {
         a.name.localeCompare(b.name, 'pt-BR'),
     ),
   );
+  /** True while the server's refusal of the chosen feature is on the field: the row then claims nothing about the feature. */
+  protected readonly refused = computed(() => this.saver.issues(OFFERED_BY_PATH).length > 0);
   protected readonly offeredOptions = computed<SelectOption[]>(() => {
     const chosen = this.draft().offeredBy;
+    const refused = this.refused();
     const rows = this.offerers().map((f) => ({
       value: f.key,
-      label: `${f.name} · nível ${f.level} · ${f.options.length} ${f.options.length === 1 ? 'opção' : 'opções'}`,
+      label:
+        refused && f.key === chosen
+          ? f.name
+          : `${f.name} · nível ${f.level} · ${f.options.length} ${f.options.length === 1 ? 'opção' : 'opções'}`,
       group: ownerLabel(f, this.catalog().nameOf),
     }));
     // A saved choice that is not on the list any more stays on screen, so the refusal lands on what the master sees.
@@ -150,6 +156,9 @@ export class OptionEditor {
     this.offerers().find((f) => f.key === this.draft().offeredBy),
   );
   protected readonly offeringHint = computed(() => {
+    if (this.noOfferer() || this.refused()) {
+      return '';
+    }
     const f = this.offering();
     if (!f) {
       return 'Só as características com lista de opções própria ("Opções para escolher").';
@@ -201,7 +210,7 @@ export class OptionEditor {
       { case: 'tableOption', value: draftToOption(this.draft(), this.menu()) },
       (key) => this.nameOf(key),
       undefined,
-      this.catalog().offeredByName,
+      this.catalog().offeredByRead,
     ),
   );
 

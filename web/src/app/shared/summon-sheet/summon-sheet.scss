@@ -90,11 +90,11 @@
   gap: 10px;
 }
 
-// A dialog (from a tablet up): the two buttons side by side, so the list keeps the room.
+// A dialog (from a tablet up): the two buttons side by side, so the list keeps the room; the filled one is the wider, so its label stays on one line.
 @media (min-width: 768px) {
   [foot] {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
 
     > :not(button),
     > button:only-child {
@@ -125,6 +125,7 @@
 }
 
 .go {
+  white-space: nowrap;
   --mat-button-filled-container-height: 48px;
   --mat-button-filled-focus-state-layer-opacity: 0;
 }

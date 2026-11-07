@@ -128,6 +128,79 @@ describe('form fields', () => {
     expect(select.disabled).toBe(true);
   });
 
+  it('select field: draws a group header with its icon, the side text of an option and a footer that cannot be picked', () => {
+    TestBed.resetTestingModule();
+    const f = TestBed.createComponent(SelectField);
+    f.componentRef.setInput('label', 'O que muda');
+    f.componentRef.setInput('value', '');
+    f.componentRef.setInput('options', [
+      { value: 'a', label: 'Valor · Habilidade', side: 'do efeito 1', group: 'A escolha' },
+      { value: 'b', label: 'Iniciativa', group: 'Valores fixos' },
+    ]);
+    f.componentRef.setInput('groups', { 'A escolha': { icon: 'alt_route', accent: true } });
+    f.componentRef.setInput('footer', 'Aparece nos efeitos de baixo.');
+    f.detectChanges();
+    const select = (f.nativeElement as HTMLElement).querySelector('select')!;
+    expect(select.classList.contains('rich')).toBe(true);
+    const group = select.querySelectorAll('optgroup')[0];
+    expect(group.classList.contains('accent')).toBe(true);
+    expect(group.querySelector('legend mat-icon')?.textContent?.trim()).toBe('alt_route');
+    const first = group.querySelector('option')!;
+    // The customizable list draws the side text after the label (CSS); the selected value shows the label alone.
+    expect(first.dataset['side']).toBe('do efeito 1');
+    expect(first.textContent).toBe('Valor · Habilidade');
+    expect(first.hasAttribute('label')).toBe(false);
+    const note = select.querySelector<HTMLOptionElement>('option.footer')!;
+    expect(note.disabled).toBe(true);
+    expect(note.textContent).toBe('Aparece nos efeitos de baixo.');
+    let got = '';
+    f.componentInstance.valueChange.subscribe((v) => (got = String(v)));
+    select.selectedIndex = 1;
+    select.dispatchEvent(new Event('change'));
+    expect(got).toBe('b');
+  });
+
+  it('select field: a plain list is not drawn as a rich one', () => {
+    TestBed.resetTestingModule();
+    const f = TestBed.createComponent(SelectField);
+    f.componentRef.setInput('label', 'Escola');
+    f.componentRef.setInput('value', '');
+    f.componentRef.setInput('options', [{ value: 'a', label: 'Alfa', group: 'Um' }]);
+    f.detectChanges();
+    const select = (f.nativeElement as HTMLElement).querySelector('select')!;
+    expect(select.classList.contains('rich')).toBe(false);
+    expect(select.querySelector('legend')).toBeNull();
+    expect(select.querySelector('option.footer')).toBeNull();
+  });
+
+  it('pick list: groups the values still free, with the side text and a footer', () => {
+    TestBed.resetTestingModule();
+    const f = TestBed.createComponent(PickList);
+    f.componentRef.setInput('label', 'Em quê');
+    f.componentRef.setInput('addLabel', 'Adicionar em quê');
+    f.componentRef.setInput('values', ['b']);
+    f.componentRef.setInput('options', [
+      { value: 'a', label: 'Teste · Habilidade', side: 'do efeito 1', group: 'A escolha' },
+      { value: 'b', label: 'Teste · Habilidade (2ª)', side: 'do efeito 2', group: 'A escolha' },
+      { value: 'c', label: 'Iniciativa', group: 'Valores fixos' },
+    ]);
+    f.componentRef.setInput('footer', 'Nota.');
+    f.detectChanges();
+    const root = f.nativeElement as HTMLElement;
+    const select = root.querySelector('select')!;
+    expect(Array.from(select.querySelectorAll('optgroup')).map((g) => g.label)).toEqual([
+      'A escolha',
+      'Valores fixos',
+    ]);
+    expect(Array.from(select.querySelectorAll('option')).map((o) => o.textContent)).toEqual([
+      '',
+      'Teste · Habilidade · do efeito 1',
+      'Iniciativa',
+      'Nota.',
+    ]);
+    expect(root.querySelector('.chip')?.textContent).toContain('Teste · Habilidade (2ª)');
+  });
+
   it('pick list: chips with a 44 px remove button, and a select for the values still free', () => {
     const list = el.querySelector('app-pick-list')!;
     expect(text(list)).toContain('Alfa');

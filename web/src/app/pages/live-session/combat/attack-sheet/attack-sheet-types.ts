@@ -1,6 +1,7 @@
 import type { DiceMode, DicePreference } from '../../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import type {
   HeldRollOffer,
+  ManeuverDieOption,
   PendingDamage,
   TargetInReach,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
@@ -70,6 +71,10 @@ export interface AttackSheetData {
   /** A roll of this sheet was held for a question (Lucky or Bardic Inspiration): the page learns the hold, so it does not
    * open the question a second time. */
   readonly onHeld?: (holdId: string) => void;
+  /** The weapon-attack table dice (Golpe Certeiro) a player's character may add to this roll, with the uses left. Set only
+   * for a weapon attack made by the player (never the master's roll, a spell attack or the monk's throw back); which dice
+   * exist, and none for an NPC or a creature, is the server's list in `GetTurnOptions`. */
+  readonly maneuverDice?: readonly ManeuverDieOption[];
   /** The monk's throw back after Defletir Projéteis: the reaction window that caught the missile
    * (`RollAttack.catch_window_id`). It is part of the same reaction, so it asks nothing more. */
   readonly catchWindowId?: string;

@@ -3,6 +3,8 @@ package leaktest
 import (
 	"testing"
 
+	"connectrpc.com/connect"
+
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
@@ -77,6 +79,17 @@ func TestAManeuverDieOnAnAttackIsTheAttackersAndTheMastersAlone(t *testing.T) {
 	}
 	if got := dice(caio); got != 0 {
 		t.Errorf("Caio reads %d dice on Ana's attack line, want none", got)
+	}
+	// The turn options list the die (maneuver_dice) with its uses: Ana and the master read it, Caio is refused.
+	for _, p := range []*person{m, ana} {
+		dice := rt.optionsOf(p, labelPens).GetManeuverDice()
+		if len(dice) != 1 || dice[0].GetDie().GetKey() != dieKey || dice[0].GetUsesLeft() != 1 {
+			t.Errorf("%s reads the maneuver dice %v, want the die with 1 use left (the positive control)", p.name, dice)
+		}
+	}
+	res, err := caio.combat.GetTurnOptions(t.Context(), rq(&playv1.GetTurnOptionsRequest{CampaignId: w.campaign, EncounterId: rt.encounter.GetId(), CombatantId: rt.ids[labelPens]}))
+	if connect.CodeOf(err) != connect.CodePermissionDenied || (res != nil && len(res.Msg.GetManeuverDice()) != 0) {
+		t.Errorf("Caio reads Ana's turn options = %v, %v; want permission_denied and no die", res, err)
 	}
 	t.Run("canaries are reachable", func(t *testing.T) { checkCanariesAreReachable(t, w, rt.got) })
 }

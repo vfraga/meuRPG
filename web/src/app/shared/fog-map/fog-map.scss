@@ -64,7 +64,8 @@
 .fm__stage {
   position: relative;
   width: 100%;
-  max-width: calc(78vh * var(--fm-ar, 1.5));
+  // `--fm-max-h`: the tallest the picture may be (the table screen sets it to the room its card has).
+  max-width: calc(var(--fm-max-h, 78vh) * var(--fm-ar, 1.5));
   margin-inline: auto;
 }
 

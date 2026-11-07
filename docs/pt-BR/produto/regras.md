@@ -306,6 +306,27 @@ O mestre pode abrir um ponto de cena escondido; a cena chega aos jogadores e o p
 **Personagens reservados** ([MR-049](historias.md#mr-049-personagens-reservados-e-links-para-assumir)).
 Nenhum jogador lê um personagem que o mestre fez para um jogador assumir, até alguém assumi-lo: nem em listas, nem por ID, nem no grupo, no combate, no mapa, no XP ou no resumo da sessão. A pessoa com o link, depois de logada, vê só nome, raça, classe, nível, quem o enviou e o nome da campanha.
 
+**A tela da mesa** (a TV da mesa).
+O mestre a abre numa tela que a mesa toda vê, e ela lê como um jogador sem personagem: o que todo jogador pode ler, e nada do que só um deles lê.
+O mestre escolhe seguir o que a mesa vê ou fixar um item, e o servidor decide o que aparece.
+O que vai para a TV:
+
+| Parte | A TV recebe | A TV nunca recebe |
+| --- | --- | --- |
+| "Mapa" | O mapa como o grupo o vê: pontos revelados, tokens visíveis e os quadrados que o grupo vê ou lembra. Com a névoa ligada e a "Visão do grupo" desligada, só que o mapa está escondido pela névoa | A imagem do mapa num mapa com névoa, pontos escondidos, armadilhas, tesouros, luz, células não vistas, um token que nenhum personagem vê |
+| "Ordem e vez" | Os combatentes que a mesa vê com nome, inicial e uma palavra de estado (RN-20), de quem é a vez e "Vez do mestre" quando a vez é de um combatente que a mesa não vê. Uma criatura da mesa no combate tem nome. O servidor manda a palavra de estado: FALLEN para um personagem de jogador caído ou estável, DEFEATED para um morto, como o jogador a lê | Pontos de vida, classe de armadura, iniciativa, condições, um NPC escondido, um NPC não visto num mapa com névoa |
+| "Combate" | A rodada e até 6 linhas do registro que todo jogador lê ("Último no combate"). O servidor manda até 6 em todo combate; o app escolhe quantas desenhar | Uma linha que só alguns jogadores leem, as linhas do mestre, um combatente escondido, os dados de um NPC, o nome de conteúdo da mesa que o mestre escondeu (RN-23). Só combate iniciado, combate encerrado, porta aberta e as entradas contadas como movimento, ataque, magia ou ação viram linha; nenhum outro tipo vira |
+| "Imagem e documento" | A imagem mostrada à mesa toda (a TV não tem documento próprio: o documento da campanha é do mestre) | Uma imagem para jogadores escolhidos, uma deixada com os jogadores, a galeria |
+| "Cena" | O nome e a descrição de uma cena aberta à mesa toda, e os NPCs que a mesa vê no palco, com quem fala agora | Uma cena para jogadores escolhidos, um NPC escondido, ganchos, pistas, ações e CDs |
+| "Rolagens" | Até 3 rolagens livres feitas para a mesa toda | Uma rolagem "Só eu" |
+| "Conversa" | Nada: a conversa nunca vai para a TV (RN-36) | Toda linha, a narração para a mesa toda inclusive |
+| "Conteúdo da mesa" | Só o nome que a ordem ou o registro já dá a todo jogador (uma criatura da mesa no combate). Uma magia ou ação da mesa é contada como "conjurou uma magia" ou "agiu", nunca pelo nome | Nunca a entrada em si nem uma entrada que o mestre escondeu |
+| "Do mestre" | Nada | Notas, o documento da campanha, ganchos, pistas e CDs, os ajustes do mestre, perguntas pendentes |
+
+Uma cena ou uma imagem para jogadores escolhidos não aparece; o painel do mestre avisa ("Cena aberta só para alguns").
+Só o mestre abre a tela da mesa: um jogador é recusado, e quem não é da campanha recebe a resposta de uma campanha que não existe.
+Ver [MR-056](historias.md#mr-056-mostrar-a-mesa-em-uma-tela) e [A tela da mesa](../../architecture/play/table-screen.md).
+
 **Outros segredos.**
 O motivo que o mestre dá ao pedir ajustes em um personagem (RN-15) chega só ao mestre e ao dono.
 As notas de um jogador são privadas dele. O mestre não as lê.
@@ -525,7 +546,12 @@ Sair do alcance de um inimigo provoca um ataque de oportunidade, que o app ofere
 - Quem controla o reator (o jogador, ou o mestre por um NPC) ataca, recusa ("Não atacar") ou, para um jogador ausente, o mestre segue sem esperar ("Seguir sem esperar"). O ataque é lido a partir do quadrado que quem se move deixou, e a cobertura conta dali.
 - **O turno de quem se move espera** ("Esperando a reação do mestre") até a oferta e o dano do ataque dele estarem resolvidos: o jogador não pode encerrar o turno, agir, atacar, conjurar nem se mover. O mestre nunca fica preso. Uma oferta que ninguém pode mais responder é pulada sozinha.
 - Se o ataque leva quem se move a 0 PV, ele volta ao quadrado onde saiu do alcance.
-- O mestre também pode oferecer um por conta própria ("Oferecer ataque de oportunidade"), para um alcance que o app não viu, com mapa ou sem; valem as mesmas regras, menos os lugares: alcance e quadrado são a palavra do mestre. O botão da grade chega com a tela dela. Na névoa, o jogador do reator ainda precisa ver quem se move para ser perguntado; senão o mestre retira a oferta ou segue sem esperar.
+- O mestre também pode oferecer um por conta própria ("Oferecer ataque de oportunidade"), para um alcance que o app não viu, com mapa ou sem; valem as mesmas regras, menos os lugares: alcance e quadrado são a palavra do mestre. Na névoa, o jogador do reator ainda precisa ver quem se move para ser perguntado; senão o mestre retira a oferta ou segue sem esperar.
+  A oferta é uma linha do menu "Mais ações" do cartão do NPC, com mapa ou sem.
+  O painel abre no próprio lugar.
+  Num mapa, os candidatos têm um anel.
+  A distância é só uma dica.
+  Quem decide é sempre o mestre.
 - Um jogador lê um aviso antes de um movimento que pode provocar ("Sair do alcance do Goblin 2 pode provocar um ataque de oportunidade"), montado só com o que ele vê, então pode errar para o lado do excesso. Um reator escondido provoca do mesmo jeito, e quem se move lê só "Esperando o mestre". Os outros jogadores não veem nada.
 - Um movimento que entra numa armadilha que o personagem conhece pergunta "Isso entra no Fosso escondido. Mover assim mesmo?".
 - "Desfazer última ação" desfaz movimentos, saltos e a marca de Desengajar. Um movimento cuja oferta foi respondida só pode ser desfeito depois de desfazer a resposta.
@@ -604,6 +630,7 @@ Os membros leem o conteúdo da campanha, menos as criaturas; só o mestre escrev
 - **Uma habilidade da mesa pode invocar criaturas.** Uma habilidade de classe, subclasse, traço de raça ou antecedente, ou uma habilidade que o mestre adiciona a uma classe como entrada própria, pode trazer criaturas da mesa ou do SRD.
   Elas seguem as mesmas regras de uma magia de invocação: concentração, substituição, dispensa e desfazer.
   A habilidade diz quantas criaturas vêm, quantas ao mesmo tempo, o turno e o que uma nova conjuração faz com as antigas.
+  Diz também em quanto tempo conjura e quanto dura.
   Cada conjuração gasta um uso de um recurso da habilidade (ou da classe).
   Os usos voltam pela recarga do próprio recurso.
   A habilidade não gasta espaço de magia, então um espaço maior não muda nada e `slot()` vale 0 na contagem.
@@ -636,7 +663,11 @@ Os membros leem o conteúdo da campanha, menos as criaturas; só o mestre escrev
   As opções próprias de um talento se escondem só com o talento.
   Só as opções de um conjunto de opções se escondem uma a uma.
   O jogador continua vendo as opções que a ficha dele já tem.
-- **Manobras.** Uma manobra é um dado de um recurso. Depois de um golpe de arma, a etapa de dano oferece cada manobra de dano que o personagem conhece, uma por ataque; ela soma o dado ao dano (dobrado num acerto crítico), gasta um uso, e o mestre lê o efeito adicional dela na jogada. O dado também pode iniciar uma agarrada ou reduzir o dano de um golpe corpo a corpo como reação. O jogador soma o dado de uma manobra de jogada de ataque a um ataque de arma do próprio personagem.
+- **Manobras.** Uma manobra é um dado de um recurso. Depois de um golpe de arma, a etapa de dano oferece cada manobra de dano que o personagem conhece, uma por ataque; ela soma o dado ao dano (dobrado num acerto crítico), gasta um uso, e o mestre lê o efeito adicional dela na jogada. O dado também pode iniciar uma agarrada ou reduzir o dano de um golpe corpo a corpo como reação. O jogador soma o dado de uma manobra de jogada de ataque a um ataque de arma do próprio personagem, inclusive o de oportunidade.
+  A lista de armas e a pergunta do ataque de oportunidade dizem que o dado pode entrar.
+  Elas dizem quantos usos restam.
+  Com dados físicos, o jogador digita a face dele ao lado do d20.
+  O registro nomeia cada dado extra pela fonte, como em "12 + 6 + Bênção 1d4 (3)"; uma fonte que o mestre esconde aparece como "Outra fonte".
   Uma manobra sem dado é uma ação em "Habilidades" que gasta um uso dos mesmos dados e a ação que ela declara.
 - **Forma Selvagem.** Uma subclasse ou característica da mesa muda a Forma Selvagem do druida (MR-037): o maior nível de desafio das feras (um fixo, ou tirado do nível, como o nível dividido por 3), quantos usos da Forma Selvagem cada mudança de forma gasta (nenhum, para uma mudança grátis) e se os ataques da fera contam como mágicos. O personagem vale-se do mais permissivo do que tem: o maior nível de desafio, o menor custo e ataques mágicos se alguma característica der. A lista de formas e a escolha concordam.
 - **A margem de acerto crítico.**

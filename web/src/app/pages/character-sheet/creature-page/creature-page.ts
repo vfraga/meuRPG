@@ -10,6 +10,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -24,11 +25,13 @@ import { CharacterSheetSource } from '../character-sheet.types';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { creatureErrorMessage, creaturesHidden } from '../../../core/creatures/creature-errors';
 import {
+  beastAttacks,
   isTableCreature,
   sourcePhrase,
   tableCreatureNote,
 } from '../../../core/creatures/creature-format';
 import { joinDots } from '../../../core/format/text';
+import { tilesOf } from '../../../shared/creatures/stat-block-view';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
 import { TableMark } from '../../../shared/table-mark/table-mark';
@@ -70,6 +73,7 @@ type PageState =
     CreatureEdit,
     MatIconModule,
     MatProgressSpinnerModule,
+    NgTemplateOutlet,
     RouterLink,
     StatBlock,
     TableMark,
@@ -122,6 +126,25 @@ export class CreaturePage {
     return s.status === 'ready' && isTableCreature(s.creature.monsterKey)
       ? tableCreatureNote(s.ownerName)
       : '';
+  });
+  /**
+   * A table creature's page: its numbers as worked out for its owner when it arrived (the server's stat block of this creature), its
+   * attacks and its traits, with no ability table. Another creature keeps the book's stat block.
+   */
+  protected readonly compact = computed(() => {
+    const s = this.state();
+    if (s.status !== 'ready' || !isTableCreature(s.creature.monsterKey)) {
+      return null;
+    }
+    return {
+      tiles: tilesOf(
+        s.block,
+        { current: s.creature.hitPointsCurrent, max: s.creature.hitPointsMax },
+        false,
+      ),
+      attacks: beastAttacks(s.block),
+      traits: s.block.traits,
+    };
   });
   /** Why there is no "Atacar": what the server decided for this creature. */
   protected readonly attackNote = computed(() => {
@@ -179,7 +202,10 @@ export class CreaturePage {
         return;
       }
       const [block, sheet] = await Promise.all([
-        this.client.statBlock(campaignId, creature.monsterKey),
+        // A table creature's numbers are the ones worked out for its owner when it arrived, not the entry's static ones.
+        isTableCreature(creature.monsterKey)
+          ? this.client.creatureBlock(campaignId, creature.monsterKey, creature.id)
+          : this.client.statBlock(campaignId, creature.monsterKey),
         this.sheets.getCharacterSheet(campaignId, characterId),
       ]);
       if (seq !== this.loadSeq) {

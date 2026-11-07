@@ -375,6 +375,16 @@ message GetRestPreviewResponse {
   // hours and the app does not count the hours, so the master is warned and
   // decides. Only for a long rest.
   bool long_rest_already_taken = 2;
+  // The hand-made NPCs of the campaign that this rest gives their spent uses back to (a long rest: slots, uses a day, rest
+  // actions and Legendary Resistance; a short rest: the actions that recharge after a rest), by name. The master's alone: the
+  // preview is refused to a player, and no copy of a player carries it.
+  repeated RestNPCBack npcs_back = 3;
+}
+
+// RestNPCBack is an NPC of the campaign whose kept uses the rest gives back.
+message RestNPCBack {
+  string character_id = 1;
+  string name = 2;
 }
 
 // RestPreview is what a rest gives back to one character.

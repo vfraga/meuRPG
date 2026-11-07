@@ -2908,6 +2908,10 @@ message Combatant {
   // decides it on its own (the default). Only the master gets it, and only for an NPC whose stat block has a
   // Parry; a player's copy never has the field, not even empty (RN-10, RN-20, RN-31).
   optional bool parry_ask = 112;
+
+  // The turn's free object interaction is spent (the first weapon drawn or stowed in the turn; SRD 5.1, "Other Activity on
+  // Your Turn"): the next change of gear costs the action. The owner's and the master's; never another player's.
+  bool object_interaction_used = 113;
 }
 
 // LimitedAction is an action of a stat block with a limit and what the creature has left of it.
@@ -2929,6 +2933,11 @@ message LimitedAction {
   // rest) and how many are left.
   int32 uses_allowed = 7;
   int32 uses_left = 8;
+  // Whether the creature keeps what it spent of this action after the combat: a persistent
+  // NPC's action with uses a day or after a rest. A Recharge action, a one-fight monster and a
+  // creature never keep it. It belongs to a persistent NPC, so only the master reads it: a
+  // creature a player controls never carries it (false in the controller's copy).
+  bool kept = 9;
 }
 
 // LegendaryState is what a legendary creature has left of its legendary actions this
@@ -3749,6 +3758,20 @@ message GetTurnOptionsResponse {
   repeated EffectNote effect_notes = 100;
   // The extra action an effect gives (Velocidade); unset when there is none.
   ExtraActionOption extra_action = 101;
+  // The weapon-attack table dice (rules.v1.RollDie.applies "attack") of the combatant's
+  // character, which RollAttack takes as `maneuver_key`, each with the uses left of its
+  // resource pool. Empty for an NPC and for a combatant with no such die.
+  repeated ManeuverDieOption maneuver_dice = 102;
+}
+
+// ManeuverDieOption is a weapon-attack table die the combatant can add to an attack roll.
+message ManeuverDieOption {
+  // The die, as in rules.v1.DerivedSheet.roll_dice.
+  meurpg.rules.v1.RollDie die = 1;
+  // The Portuguese name of the resource pool the die spends from.
+  string resource_name_pt = 2;
+  // The uses left in that pool, 0 or more. The die is listed at 0.
+  int32 uses_left = 3;
 }
 
 // ResourceTargets lists the creatures a feature action that picks one can choose.

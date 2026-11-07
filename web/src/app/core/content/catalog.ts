@@ -2,7 +2,7 @@ import { Ability, type Content } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import type { SelectOption } from '../../shared/form-fields/select-field';
 import { featureKeyName } from './class-feature-text';
-import { offeringFeatures, offeringLabel } from './offering-features';
+import { offeringFeatures, offeringLabel, offeringRead } from './offering-features';
 import { circleLabel } from './spell-options';
 
 /**
@@ -49,6 +49,8 @@ export interface CatalogVm {
   nameOf(key: string): string;
   /** "Truques de lâmina (Guarda do Corvo)" for the key of a feature with an option list, archived owners included; else the key's last word. */
   offeredByName(key: string): string;
+  /** "Truques de lâmina (Guarda do Corvo, Guerreiro 3)": the feature with its owner, then the class and the level it comes at. */
+  offeredByRead(key: string): string;
 }
 
 /** A table key ends with "@mesa". */
@@ -103,6 +105,9 @@ export function catalogVm(content: Content, entries: readonly TableEntry[] = [])
     names.set(`ability:${a.ability}`, a.name);
   }
   const offerers = new Map(offeringFeatures(entries, true).map((f) => [f.key, offeringLabel(f)]));
+  const offererReads = new Map(
+    offeringFeatures(entries, true).map((f) => [f.key, offeringRead(f, (k) => names.get(k) ?? k)]),
+  );
   const subclassLevels = new Map(content.classes.map((c) => [c.key, c.subclassLevel]));
 
   const schools = schoolNames(content.spells);
@@ -151,5 +156,6 @@ export function catalogVm(content: Content, entries: readonly TableEntry[] = [])
       .sort(byName),
     nameOf: (key) => names.get(key) ?? key,
     offeredByName: (key) => offerers.get(key) ?? featureKeyName(key, (k) => k),
+    offeredByRead: (key) => offererReads.get(key) ?? featureKeyName(key, (k) => k),
   };
 }

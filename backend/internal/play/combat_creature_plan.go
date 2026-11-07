@@ -243,7 +243,7 @@ const maxPlanPointFt = 120
 // names the creature's type, which a player must not learn from an NPC's line (RN-20). A player reads the
 // action's name instead; the master, and the key of a creature that belongs to a character, are whole.
 func shownKey(v combatViewer, actor playdb.Combatant, key string) string {
-	if !v.master && actor.Kind == kindNPC && strings.Contains(key, "#") {
+	if !v.master && !v.wholeKeys && actor.Kind == kindNPC && strings.Contains(key, "#") {
 		return ""
 	}
 	return key

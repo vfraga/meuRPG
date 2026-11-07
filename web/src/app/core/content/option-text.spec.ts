@@ -40,6 +40,10 @@ const option = (offeredBy: string) =>
   });
 const cat = catalogVm(create(ContentSchema, {}), [owner]);
 const nameOf = cat.nameOf;
+const named = catalogVm(
+  create(ContentSchema, { classes: [{ key: 'class:fighter', namePt: 'Guerreiro' }] }),
+  [owner],
+);
 
 describe('the feature that offers a table option (MR-025)', () => {
   it('names a feature with its owner for the offering lines only, and by its own name everywhere else', () => {
@@ -74,11 +78,11 @@ describe('the feature that offers a table option (MR-025)', () => {
   it('reads "Oferecida por" on the page only when the feature is named', () => {
     const read = (key: string) => {
       const e = option(key);
-      return readEntry(e, nameOf, () => 0, undefined, cat.offeredByName).rows;
+      return readEntry(e, nameOf, () => 0, undefined, named.offeredByRead).rows;
     };
     expect(read(crow)).toContainEqual({
       label: 'Oferecida por',
-      value: 'Truques de lâmina (Guarda do Corvo)',
+      value: 'Truques de lâmina (Guarda do Corvo, Guerreiro 3)',
     });
     expect(read('').map((r) => r.label)).not.toContain('Oferecida por');
   });

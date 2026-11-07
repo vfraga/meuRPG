@@ -52,6 +52,8 @@ export class MultiRoll {
   readonly totalNote = input('');
   /** How the numbers make the total: added up (damage), or the higher or lower one counts (the d20 pair). */
   readonly combine = input<'sum' | 'higher' | 'lower'>('sum');
+  /** Something typed beside these numbers is still missing (an extra die's face): no total until it is there. */
+  readonly waiting = input(false);
   readonly appLabel = input('Rolar no app');
   readonly hint = input('');
   readonly busy = input(false);
@@ -76,7 +78,7 @@ export class MultiRoll {
   );
   protected readonly anyInvalid = computed(() => this.invalid().some(Boolean));
   protected readonly total = computed(() => {
-    if (!this.complete()) {
+    if (!this.complete() || this.waiting()) {
       return null;
     }
     const v = this.values() as number[];

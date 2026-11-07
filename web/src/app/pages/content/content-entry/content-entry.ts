@@ -217,7 +217,9 @@ export class ContentEntry {
   protected readonly read = computed(() => {
     // The master's creature on a phone is read by `app-creature-read`, which writes its own text.
     const own = this.isMaster() && this.kind() === TableContentKind.CREATURE;
-    return own ? NO_READ : readOfEntry(this.entry(), this.nameOf(), this.catalog(), this.entries());
+    return own
+      ? NO_READ
+      : readOfEntry(this.entry(), this.nameOf(), this.catalog(), this.entries(), this.menu());
   });
   /** "A raça Corujeiro" / "O antecedente Cartógrafo": the noun of the kind with its article, so the copy agrees. */
   protected readonly nounPhrase = computed(() => nounPhraseOf(this.entry()));

@@ -284,7 +284,7 @@ describe('OptionEditor (MR-025)', () => {
       )!;
       expect(link.getAttribute('href')).toContain('/campaigns/camp-1/content/entries/');
       expect(text(el.querySelector('.preview')!)).toContain(
-        'Oferecida porTruques de lâmina (Guarda do Corvo)',
+        'Oferecida porTruques de lâmina (Guarda do Corvo, Paladino 3)',
       );
     });
 
@@ -295,6 +295,7 @@ describe('OptionEditor (MR-025)', () => {
       expect(offerer(el)!.disabled).toBe(true);
       expect(offerer(el)!.options[0].text).toBe('Nenhuma disponível');
       expect(text(el)).toContain('Crie a lista lá e volte aqui.');
+      expect(text(el)).not.toContain('Só as características com lista de opções própria');
       const link = Array.from(el.querySelectorAll('a')).find((a) =>
         text(a).includes('Ver as subclasses da mesa'),
       )!;
@@ -318,6 +319,25 @@ describe('OptionEditor (MR-025)', () => {
       const archivedOwners = owners().map((e) => ({ ...e, archived: true }));
       const { el } = setup(true, archivedOwners as ReturnType<typeof owners>, offered(crow));
       expect(offerer(el)!.selectedOptions[0].text).toBe('Truques de lâmina (Guarda do Corvo)');
+    });
+
+    it('shows only the name of a feature the server refused, and describes it again once the refusal is gone', async () => {
+      const { fixture, el } = setup(true, owners(), offered(crow));
+      const row = () => offerer(el)!.selectedOptions[0].text;
+      expect(row()).toBe('Truques de lâmina · nível 3 · 3 opções');
+      expect(text(el)).toContain('Entra na lista com');
+      save.mockRejectedValue(refusal(['table_option.offered_by', 'dangling_reference']));
+      click(el, 'Salvar opção');
+      await settle(fixture, 3);
+      expect(row()).toBe('Truques de lâmina');
+      expect(text(el)).not.toContain('Entra na lista com');
+      expect(text(el)).not.toContain('A opção entra na lista');
+      expect(Array.from(el.querySelectorAll('a')).some((a) => text(a).includes('Abrir '))).toBe(
+        false,
+      );
+      const note = text(offerer(el)!.closest('app-select-field')!);
+      expect(note).toContain('Escolha outra.');
+      expect(note).not.toContain('nível 3');
     });
 
     it('keeps a saved feature that is gone on screen and puts the refusal at the field', async () => {

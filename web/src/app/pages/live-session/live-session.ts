@@ -74,6 +74,7 @@ export class LiveSession {
   protected readonly puzzles = this.parts.puzzles;
   protected readonly notes = this.parts.notes;
   protected readonly freeDice = this.parts.freeDice;
+  protected readonly tableScreen = this.parts.tableScreen;
   protected readonly conversation = this.parts.conversation;
   protected readonly view = new LiveSessionView(this.state, this.parts);
   /** "Iniciar combate", from the session bar (the master, outside a combat). */

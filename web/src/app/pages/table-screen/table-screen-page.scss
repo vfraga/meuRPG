@@ -1,0 +1,91 @@
+// One screen: the header, the notices and the stage fill the window and never scroll. On a phone (under 900 px) the
+// page is one column of natural height and scrolls like any other.
+:host {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 100dvh;
+  background: var(--mr-ground);
+  color: var(--mr-ink);
+
+  // Full screen: the host is the element the browser shows, so it paints the ground itself. The browser fixes it to the
+  // window, so on a phone it scrolls inside itself (the page behind has no scroll to give).
+  &:fullscreen {
+    overflow-y: auto;
+  }
+
+  @media (min-width: 900px) {
+    height: 100%;
+    min-height: 0;
+
+    &:fullscreen {
+      height: 100dvh;
+      overflow: hidden;
+    }
+  }
+}
+
+.tv__late {
+  &:not(:empty) {
+    flex: none;
+  }
+
+  .mr-notice {
+    border-radius: 0;
+    border-width: 0 0 1px;
+  }
+}
+
+// What the master asked for and the TV could not do ("O combate acabou. A TV foi para a tela de espera.").
+.tv__notice {
+  flex: none;
+  margin: 0;
+  padding: var(--mr-space-2) var(--mr-gutter);
+  border-bottom: 1px solid var(--mr-line);
+  background: var(--mr-surface);
+  font-size: var(--mr-font-16);
+  color: var(--mr-ink-muted);
+
+  @media (min-width: 1600px) {
+    padding-inline: var(--mr-space-8);
+    font-size: var(--mr-font-24);
+  }
+}
+
+.tv__stage {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  @media (min-width: 900px) {
+    > * {
+      flex: 1 1 0;
+      min-height: 0;
+    }
+  }
+}
+
+.tv__fill {
+  padding: var(--mr-space-4) var(--mr-gutter);
+}
+
+// A map with the table's free rolls beside it.
+.tv__split {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mr-space-4);
+  padding: var(--mr-space-4) var(--mr-gutter);
+
+  @media (min-width: 900px) {
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 26vw, 480px);
+    grid-template-rows: minmax(0, 1fr);
+    padding: var(--mr-space-5) var(--mr-space-6);
+
+    > app-tv-rolls {
+      align-self: start;
+      max-height: 100%;
+    }
+  }
+}

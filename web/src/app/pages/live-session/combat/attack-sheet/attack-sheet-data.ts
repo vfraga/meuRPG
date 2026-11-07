@@ -6,6 +6,7 @@ import type {
   Encounter,
   GetTurnOptionsResponse,
   HeldRollOffer,
+  ManeuverDieOption,
   PendingDamage,
   ReactionWindow,
   TargetInReach,
@@ -16,6 +17,7 @@ import {
   AttackKind,
   AttackSchema,
 } from '../../../../../gen/meurpg/rules/v1/rules_pb';
+import { isPlayer } from '../../../../core/combat/combat-view';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import type { AttackSheetData } from './attack-sheet';
 
@@ -90,6 +92,22 @@ function heldOf(e: Encounter, held: HeldRollOffer | undefined) {
   return { held: held ? { offer: held, targetLabel: labelOf(e, held.targetId) } : undefined };
 }
 
+/**
+ * The table dice a weapon attack may take (`maneuver_dice` of the options): `own` is true when a player rolls it (not the
+ * master); then a weapon attack gets the dice the server listed, an opportunity attack included. A spell attack, a roll
+ * of the master and the monk's throw back get none. That an NPC or a creature has none is the server's list.
+ */
+export function maneuverDiceOf(
+  options: GetTurnOptionsResponse | null | undefined,
+  attack: Attack,
+  own: boolean,
+): readonly ManeuverDieOption[] {
+  const dice = options?.maneuverDice ?? [];
+  return own && attack.kind === AttackKind.WEAPON && attack.key !== THROW_BACK_KEY
+    ? dice.filter((d) => d.die)
+    : [];
+}
+
 /** What the attack sheet is handed, or `null` when the attack is not among the options (nothing to open). */
 export function attackSheetData(req: AttackSheetRequest): AttackSheetData | null {
   const found = findAttack(req.options, req.key, req.thrown);
@@ -116,6 +134,11 @@ export function attackSheetData(req: AttackSheetRequest): AttackSheetData | null
     ...(req.useExtraAction ? { useExtraAction: req.useExtraAction } : {}),
     ...(req.legendary ? { legendary: req.legendary } : {}),
     ...economyOf(req.options, found.option, found.attack),
+    maneuverDice: maneuverDiceOf(
+      req.options,
+      found.attack,
+      !req.master && isPlayer(req.attacker) && !req.thrown,
+    ),
     resume: req.resume
       ? { pending: req.resume, targetLabel: labelOf(e, req.resume.targetId) }
       : undefined,

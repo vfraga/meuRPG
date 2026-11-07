@@ -58,6 +58,11 @@
       [(typing)]="typing"
       (answer)="held.answer($event)"
     />
+  } @else if (follow.vanish.notice(); as notice) {
+    <div class="mr-notice mr-notice--neutral" data-testid="sheet-held-vanished">
+      <mat-icon aria-hidden="true">info</mat-icon>
+      <p role="status">{{ notice }}</p>
+    </div>
   } @else {
     @if (!typing()) {
       <div class="card">

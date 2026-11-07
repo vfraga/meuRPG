@@ -14,6 +14,21 @@ import { WHOLE_MAX } from './whole-number';
 
 export type { EffectDraft, EffectInit } from './effect-draft.types';
 export { onlyProficientApplies, rangeFeet, splitTags } from './effect-writers';
+export {
+  type ChoiceKind,
+  type ChoiceUse,
+  type FeatChoice,
+  type FormulaInsertion,
+  type MissingChoice,
+  choiceRef,
+  choiceUses,
+  choicesBefore,
+  defaultChoiceName,
+  featChoices,
+  formulaInsertions,
+  missingChoices,
+  referenceProblem,
+} from './effect-choices';
 
 /**
  * A feature's effect as the editor holds it (MR-025, ADR-0018, section 4), and the menu it is chosen from. The menu is the
@@ -198,6 +213,10 @@ export function draftToEffect(d: EffectDraft, menu: EffectMenuVm): EffectInit {
   for (const f of visibleFields(menu.fieldsOf(d.type), d)) {
     Object.assign(out, EFFECT_WRITERS.get(f.name)?.(d));
   }
+  // A named choice picks one: "@name" stands for a single pick, so "Quantos" is locked at 1.
+  if (d.type === 'choice' && d.name !== '') {
+    out.count = 1;
+  }
   return out;
 }
 
@@ -288,6 +307,8 @@ export class EffectMenuVm {
         return this.list('languages');
       case 'tool':
         return this.list('tools');
+      case 'damage_type':
+        return this.list('damage_types');
       case 'cantrip':
       case 'spell':
         return this.classIndexes.map((i) => ({

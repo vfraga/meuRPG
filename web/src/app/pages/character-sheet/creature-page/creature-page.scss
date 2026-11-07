@@ -119,3 +119,84 @@
     line-height: 32px;
   }
 }
+
+// A table creature's page: the numbers, the actions and the traits, in cards of their own.
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mr-space-3);
+  padding: 16px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 10px 8px;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-md);
+  text-align: center;
+}
+
+.tile__l {
+  font-size: var(--mr-font-13);
+  font-weight: 700;
+  line-height: 16px;
+  color: var(--mr-ink-muted);
+}
+
+.tile__v {
+  font-family: var(--mr-font-display);
+  font-size: var(--mr-font-22);
+  font-weight: 800;
+  line-height: 28px;
+
+  small {
+    font-family: var(--mr-font-sans);
+    font-size: var(--mr-font-14);
+    font-weight: 400;
+    color: var(--mr-ink-muted);
+  }
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  padding: 16px;
+}
+
+.block__t {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-size: var(--mr-font-22);
+  font-weight: 800;
+  line-height: 28px;
+}
+
+.attacks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attack {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px var(--mr-space-3);
+}
+
+.attack__d {
+  color: var(--mr-ink);
+}
+
+.trait {
+  margin: 0;
+}

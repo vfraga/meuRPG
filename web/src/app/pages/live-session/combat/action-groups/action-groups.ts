@@ -62,6 +62,9 @@ import {
 import { castRefOf } from '../../../../core/combat/cast-ref';
 import { freeText } from '../../../../core/combat/cast-flow';
 import { standUpRow } from '../../../../core/combat/stand-up';
+import { type ListedDie, maneuverLine } from '../../../../core/effects/roll-die';
+import type { GearFlow } from '../../../../core/combat/gear-flow';
+import { GearFold } from './gear-fold';
 import { Fold } from '../../../../shared/fold/fold';
 import { TabList, tabId, tabPanelId } from '../../../../shared/tab-list/tab-list';
 import type { PactSlotsVm, SlotUsageVm } from '../../../../core/play/resource-usage.types';
@@ -70,6 +73,7 @@ import { ActionRow, type RowEconomy } from './action-row';
 import { featureIsOff, featureLine, featureWhy } from '../../../../core/combat/action-spend';
 import { GroupState } from './group-state';
 import { EXTRA_NAMES, FRENZY_QUESTION, TAB_ICONS, shortCircle } from './action-groups-text';
+import { offersWeaponAttack } from './weapon-offer';
 
 /**
  * "O que você pode fazer" (E6-06 on a phone, E6-14 on a laptop): the options
@@ -94,6 +98,7 @@ import { EXTRA_NAMES, FRENZY_QUESTION, TAB_ICONS, shortCircle } from './action-g
   imports: [
     ActionRow,
     Fold,
+    GearFold,
     GroupState,
     MatButtonModule,
     MatIconModule,
@@ -106,6 +111,9 @@ import { EXTRA_NAMES, FRENZY_QUESTION, TAB_ICONS, shortCircle } from './action-g
 })
 export class ActionGroups {
   readonly options = input.required<TurnOptions>();
+  /** The player's gear in the combat (`GearFlow`), for "Sacar ou guardar" under the attacks; none outside the player's own turn screen. */
+  readonly gearFlow = input<GearFlow | null>(null);
+
   /** The key of the action whose target the player is choosing on the map (C7-05): its row says "Escolhendo o alvo". */
   readonly choosing = input('');
   /** The player's own combatant: its economy and movement. */
@@ -160,6 +168,9 @@ export class ActionGroups {
   readonly contestAttacks = input<readonly ContestAttackOption[]>([]);
   /** The contest facts of the turn: grappled (and who can escape), hidden, surprised (W7-X). */
   readonly contest = input<ContestTurnState | undefined>(undefined);
+
+  /** The table dice (Golpe Certeiro) a weapon attack of the player's own turn may take, with the uses left (`GetTurnOptions.maneuver_dice`); none for an NPC. */
+  readonly maneuverDice = input<readonly ListedDie[]>([]);
 
   /** The extra action an effect gives (Velocidade): its line, what it may be and why it is not there; `null` without one. */
   readonly extraAction = input<ExtraActionOption | null>(null);
@@ -256,6 +267,10 @@ export class ActionGroups {
       this.spentWord(),
       this.canUse,
     ),
+  );
+  /** The one line above the weapon rows: only with dice and at least one weapon attack still on offer. */
+  protected readonly maneuverNote = computed(() =>
+    offersWeaponAttack(this.attackParts().open) ? maneuverLine(this.maneuverDice(), 'list') : '',
   );
   protected readonly spellParts = computed(() =>
     partByEconomy(

@@ -135,6 +135,7 @@ These screens live in `web/src/app/pages/`, all lazy, on the generated `Campaign
 | `/claim` | Takes a reserved character with the master's link `/claim#t=<token>` | public (signed in or out) |
 | `/campaigns/:id/reserved/new` | The character editor in the master's mode, saving the character as reserved | `authGuard` |
 | `/profile` | "Meu perfil": the display name (1 to 40 characters, `UpdateProfile`) and, under "Sessões", counts the other signed-in devices and signs them out (`CountOtherSessions`, `SignOutOtherSessions`) | `authGuard` |
+| `/campaigns/:id/table-screen` | The table screen, the TV at the table ([below](#the-table-screen-page)) | `authGuard` |
 
 Other routes (the sheet, session, maps, gallery, export and import, rules...) are in `app.routes.ts`; they belong to their modules' pages.
 
@@ -168,6 +169,29 @@ Signed out, it asks the server nothing and posts `intent=character_claim`.
 Signed in, it calls `PreviewClaim` with the token, or with an empty one when returning from sign-in, and only the click on "Assumir este personagem" calls `ClaimCharacter`.
 "Não é você? Entrar com outra conta" ends this session (`endSessionHere`) and posts the same form with `prompt=select_account`, keeping the token in memory.
 The page never shows an e-mail or a rule id ([Campaigns](campaigns.md#claim-links)).
+
+### The table screen page
+
+`pages/table-screen` is the TV tab ([The table screen](play/table-screen.md), [Design](../design/session.md#the-table-screen-tela-da-mesa)).
+`TABLE_SCREEN_ROUTES` is loaded with `loadChildren` and provides its own `TableScreenWatcher`, so the page owns one stream and one read loop and the eager routes import nothing of the generated client behind it.
+
+- **No shell.** `app.html` draws the bar, the footer, the live-session notice and the dice overlay only when `isTableScreenPage(url)` (`core/play/open-sessions.ts`) is false, so the tab shows the page alone.
+- **Nothing else is called.** The shell calls `OpenSessions.suspend(true)` on this route, which stops the open-sessions poll (`ListOpenGameSessions`), and the page's only data services are `TableScreenWatcher` and `AuthService`.
+  The tab's calls are `GetMe` (the guard), `GetTableScreen`, `WatchTableScreen` and the map tiles `?as=tv`; `table-screen.spec.ts` in `e2e/` records them ([Testing](../testing.md#end-to-end-tests-playwright)).
+- **The watcher** (`core/play/table-screen-watcher.ts`) opens `WatchTableScreen` through `LiveStream` (backoff, dead-stream check, pause while the tab is hidden) and reads `GetTableScreen` after every `ready` and, gathered over 300 ms, after every `changed`.
+  Reads never overlap: a `changed` that comes during a read makes exactly one more read after it.
+  The stream carries no content, so the screen is only ever what a read answered.
+- **The state machine** (`core/play/table-screen-state.ts`, `TvScreenState`) turns the watcher's inputs (a good read, a failed read, the connection, the end, a refusal) into one `TvPhase`: `loading`, `error` (a new read every 10 s), `ready` (with the "late" text after 3 s without a connection or with failing reads), `stale` (a minute without one: the stage is hidden), `ended`, `no-access` and `signed-out` (the page sends the viewer to `AuthService.signIn`).
+  Its time comes from a `TvClock`, so a spec drives the 3 s, 10 s and 60 s without timers.
+  `table-screen-view.ts` maps the response to the view models (`toTvScreen`), and `table-screen-labels.ts` holds the words of the stage, the notice and the bar button.
+- **The master's side** is `TableScreenPanel` (`core/play/table-screen-panel.ts`), a plain class that `live-session` builds with its own `TableScreenClient`: it reads `GetTableScreen`, writes the choice with the revision it read, keeps the TV's presence from `table_screen_changed`, and feeds the bar button and the panel (`pages/live-session/table-screen-sheet`).
+  It reads only while the session is open, and the panel stores nothing in the browser.
+- **`tv-fit`** (`appTvFit`, `pages/table-screen/tv-fit`) draws only the children of a list that fit its height: it hides the first child that is cut and every one after it (the first child always stays), counts the ones with `data-count` and emits that count as `fitted` for the "+N".
+  It measures again after each render and whenever the list's size changes (`ResizeObserver`); a list with no height of its own (a phone) hides nothing.
+- **Layer rule.** The master's panel is in `pages/live-session` and the TV is in `pages/table-screen`; the two share only `core/play` (the client, the labels and the panel's state) and `shared/`.
+  dependency-cruiser's `page-not-to-other-page` fails an import between them, so the words both need (`table-screen-labels.ts`) live in `core/play`.
+- **`FogMap`** has a `tools` input (default on) that draws the zoom, fit and full-screen buttons; the TV passes `false` because nobody touches it.
+  Its picture is at most `--fm-max-h` tall (78 vh by default); the TV's map card sets it to the height of its own container, so the legend stays inside the card ([Design: fog of war](../design/maps.md#fog-of-war-sharedfog-map)).
 
 ## Tests
 

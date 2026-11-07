@@ -2,7 +2,7 @@
 
 # Histórias e critérios de aceite
 
-O MVP tem 45 histórias: 43 histórias mais 2 pré-requisitos (o convite, MR-002, que leva à MR-003, e os NPCs, MR-005, que são os inimigos do combate).
+O MVP tem 46 histórias: 44 histórias mais 2 pré-requisitos (o convite, MR-002, que leva à MR-003, e os NPCs, MR-005, que são os inimigos do combate).
 Outras dez histórias ficam para depois do MVP.
 
 Uma história está pronta quando todos os critérios dela passam.
@@ -68,6 +68,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 | [MR-053](#mr-053-o-mestre-age-pelo-personagem-de-um-jogador) | Combate | MVP |
 | [MR-054](#mr-054-usar-a-ação-de-uma-criatura-no-turno-dela) | Combate | MVP |
 | [MR-055](#mr-055-responder-ao-efeito-extra-de-uma-criatura) | Combate | MVP |
+| [MR-056](#mr-056-mostrar-a-mesa-em-uma-tela) | Sessão | MVP |
 | [MR-002](#mr-002-gerar-convite) | Campanha | MVP (pré-requisito) |
 | [MR-005](#mr-005-criar-npcs) | Personagem | MVP (pré-requisito) |
 | [MR-007](#mr-007-importar-ficha-em-pdf) | Personagem | Depois |
@@ -136,7 +137,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 #### Critérios de aceite
 - **Dado** um personagem completo, **quando** o jogador abre a ficha no celular, **então** vê as seções da ficha oficial (habilidades, perícias, combate, magias, equipamento) **e** os valores calculados, como modificadores, classe de armadura, pontos de vida, CD de resistência das magias e ataque mágico, vêm prontos do servidor.
 - **Dado** o "Equipamento" da ficha, **quando** o jogador o lê, **então** ele lista a armadura, o escudo, as armas e os itens, depois o equipamento do antecedente como texto ("Do antecedente: …", o de um antecedente da mesa ou o que o jogador escreveu para um antecedente "Outro" personalizado), depois as moedas. Uma arma versátil mostra o dano com duas mãos abaixo do dano normal ("Com duas mãos: 1d8+1").
-- **Dado** uma armadura, um escudo ou uma arma que a ficha lista, **quando** o dono a equipa ou a guarda depois da trava (RN-01), **então** o servidor devolve a classe de armadura, os ataques e a checagem de Armadura Arcana calculados só com o equipamento em uso; o que o personagem apenas carrega fica na lista e não conta para nada. A API faz isso (`SetEquipped`); a ficha não tem controle para isso.
+- **Dado** uma armadura, um escudo ou uma arma que a ficha lista, **quando** o dono a equipa ou a guarda depois da trava (RN-01), **então** o servidor devolve a classe de armadura, os ataques e a checagem de Armadura Arcana calculados só com o equipamento em uso; o que o personagem apenas carrega fica na lista e não conta para nada. O "Equipamento" da ficha as lista em dois grupos, "Equipado" e "Carregado", cada peça com "Equipar" ou "Guardar" (o dono e o mestre, a qualquer hora em que o personagem vive; a ficha de um personagem morto não tem o botão); os nomes, os grupos e a classe de armadura que a troca daria vêm do servidor (`DerivedSheet.gear`), e depois da troca a ficha diz o que mudou e a nova classe de armadura e leva o foco ao botão da peça que mudou.
 - **Dado** o passo "Perícias", **quando** a raça, a sub-raça ou o antecedente já dão uma perícia, **então** ela aparece marcada e travada com a origem ("da raça", "do antecedente") e não conta como escolha. O jogador escolhe outra perícia em vez de repetir uma proficiência, como o SRD permite.
 - **Dado** um personagem novo feito acima do nível 1 numa campanha que sobe de nível por XP de inimigos derrotados, **quando** o editor abre, **então** o campo de experiência começa no XP do nível dele (6.500 no nível 5) e acompanha o nível até o jogador digitar nele. Uma campanha por marcos mantém 0.
 - **Dado** o campo de subclasse, **quando** o jogador edita a classe, **então** ele oferece "Nenhuma", diz em que nível a classe escolhe a subclasse ("O Bárbaro escolhe a subclasse no nível 3.") e troca a subclasse quando a classe muda.
@@ -337,7 +338,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 - **Dado** um ataque, **quando** o jogador ataca, **então** escolhe um alvo (estado e distância mostrados; "Longe demais: alcance de 36 m" fica desativado), rola o d20 e depois o dano no app ou digitado (RN-18), e lê o resultado (`1d20 (13) + 6 = 19`, "Acertou", "Crítico" ou "Errou") e o alvo derrotado, nunca a classe de armadura.
 - **Dado** habilidades de classe, **quando** o jogador toca em "Usar" (Retomar o Fôlego, Surto de Ação), **então** o uso é gasto; sem usos o app diz "Sem usos: volta num descanso curto". Ataque Extra mostra "1 ataque restante".
 - **Dado** que a ação ou a ação bônus está livre, **quando** o jogador olha "Encerrar turno", **então** ele fica contornado e, com a ação livre, pergunta ali mesmo; vira o botão preenchido quando as duas estão gastas.
-- **Dado** um combate em andamento e um jogador na própria vez, **quando** ele saca ou guarda uma arma, **então** a primeira do turno é grátis e a segunda, ou o escudo, gasta a ação (uma ação extra de Velocidade paga no lugar); a armadura é recusada ("Vestir ou tirar armadura leva minutos: não dá em pleno combate"). Na vez de outro jogador nada muda. A API faz isso (`SetEquipped`); a tela de combate não tem controle para isso.
+- **Dado** um combate em andamento e um jogador na própria vez, **quando** ele saca ou guarda uma arma, **então** a primeira do turno é grátis e a segunda, ou o escudo, gasta a ação (uma ação extra de Velocidade paga no lugar); a armadura é recusada ("Vestir ou tirar armadura leva minutos: não dá em pleno combate"). Na vez de outro jogador nada muda. A aba "Ataques" do jogador tem, sob os ataques, a dobra "Sacar ou guardar" com a CA no cabeçalho, uma linha da regra (1ª arma grátis, depois a ação; escudo: ação; armadura: só fora do combate), cada botão dizendo o custo ("Guardar · grátis", "Sacar · ação"), um aviso antes de sacar uma arma de duas mãos que deixaria o escudo parado e o botão desativado, com o motivo, quando não sobra nem a interação gratuita nem a ação; a recusa vem em palavras (`ARMOR_IN_COMBAT`, `NOT_YOUR_TURN`, `ACTION_USED`, `COMBATANT_DOWN`). O mestre troca o equipamento na ficha, sem custo. Se a interação gratuita do turno já foi gasta está no combatente (`Combatant.object_interaction_used`), só para o dono e o mestre.
 
 **Vantagem e desvantagem**
 - **Dado** um ataque, um ataque mágico ou teste de resistência, uma armadilha, uma dica de quebra-cabeça, um teste de cena ou uma busca por armadilhas, **quando** o servidor encontra uma circunstância que dá vantagem ou desvantagem (uma condição de qualquer das criaturas, uma criatura que não se vê, alcance longo ou um hostil a 5 ft num ataque à distância, Ataque Descuidado, Sentido de Perigo, Tática de Matilha, Esquiva, uma vantagem racial num teste de resistência contra o tipo de fonte do teste: Bravura contra medo, Ancestral Feérico contra encanto, Esperteza Gnômica em testes de Inteligência, Sabedoria e Carisma contra magia, Resiliência Anã contra veneno), **então** a rolagem usa dois d20, o mais alto ou o mais baixo vale (eles se anulam quando as duas valem), a tela lista os motivos que o jogador pode ver **e** mostra os dois dados, o que vale marcado "vale" e o outro "descartado"; com dados reais o jogador digita os dois. Um acerto a 5 ft de um alvo paralisado ou inconsciente é um acerto crítico (SRD 5.1, "Advantage and Disadvantage", Conditions).
@@ -895,6 +896,12 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
     As características têm um nível e um efeito do menu, com o contador "N de 60".
   - A subclasse: características por nível, "Esta subclasse conjura", magias sempre preparadas por nível de classe e, quando tem magias, "As magias da subclasse entram na lista da classe, para escolher".
   - O talento: "Novo talento", "Dados do talento", "O que o talento pede", "Salvar talento"; "Aumento de habilidade" é oferecido só ali.
+    Um talento que pede uma escolha ao jogador mostra "Opções do talento": a contagem "N de 60 opções", uma linha dobrada para cada opção e "Adicionar uma opção", que espera nas 60.
+    As opções da escolha vêm de uma de três fontes: a lista do próprio talento, um conjunto inteiro do SRD ("Conjunto") ou opções do SRD marcadas à mão; um talento oferece a lista ou um conjunto, nunca os dois.
+    Uma escolha do tipo "Uma habilidade" ou "Um tipo de dano" ganha um nome sozinha ("habilidade", "habilidade_2"), e o cartão "Escolhas deste talento" lista cada uma com o efeito dela e em quantos efeitos é usada.
+    Um efeito seguinte do mesmo talento aponta para a escolha pelo grupo "A escolha do talento", acima de "Valores fixos", nos campos que a aceitam, e uma fórmula a lê com os botões "Modificador" e "Valor".
+    Um campo que aponta para uma escolha removida, ou que está abaixo dele, diz qual ("A escolha “habilidade” que este campo usava foi removida"), e "Salvar talento" espera até o mestre escolher outro valor.
+    No celular o mestre lê o talento com o título "Opções" e uma linha para cada opção, com o nome à esquerda e o que ela faz em poucas palavras à direita ("Classe de Armadura +1"); o jogador lê as opções com os textos delas.
 - **Recusas:** cada violação volta no campo que ela nomeia, em português, também numa célula da tabela e numa característica recolhida, que se abre.
   Um resumo no alto diz quantos campos precisam de ajuste, e o que o mestre digitou fica.
   "Esta entrada mudou enquanto você editava" oferece "Recarregar".
@@ -1248,7 +1255,9 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - **Dado** que o mestre põe o token da criatura de um personagem num mapa, **quando** o grupo olha, **então** todos o veem (um token de grupo, nunca escondido, nem na névoa).
 - **Dado** um jogador que não pode ter criatura, **quando** ele olha a ficha de outro personagem, **então** o painel "Criaturas" não existe para ele (RN-20).
 - **Dado** um jogador que conjura uma invocação de uma magia ou de uma habilidade que oferece uma criatura da mesa, **quando** a lista de criaturas abre, **então** a criatura da mesa leva "Da mesa" e a linha "Os números vêm da sua ficha quando ele chega." no lugar dos números, e uma criatura do SRD mantém a sua própria linha.
+  A lista põe a criatura da mesa primeiro, e o cabeçalho diz a classe e o nível da habilidade e o uso que ela gasta.
   Depois da conjuração, a página da criatura leva "Da mesa" e a linha "Os números vêm da ficha de <dono> quando ele chegou", sem nível nem proficiência, porque os números não mudam quando edito a entrada depois.
+  A página mostra os números, os ataques e o dano calculados para a minha ficha quando a criatura chegou.
   O app reconhece uma criatura da mesa pelo fim "@mesa" da chave, e o servidor não envia marca para isso.
 
 #### No app
@@ -1680,6 +1689,10 @@ Ver [Arquitetura](../../architecture/campaign-package.md).
 - **Dado** uma ação de Recarga gasta, **quando** o turno da criatura começa, **então** o servidor rola um d6 para ela, na ordem da ficha, e uma face dentro do intervalo a deixa disponível de novo; leio o d6 e o resultado no registro, como mestre e como o jogador que controla a criatura (nenhum outro jogador os lê), uma criatura derrotada não rola, e uma ação com usos por dia ou depois de um descanso não volta no combate.
 - **Dado** que desfaço o uso de uma ação com limite, **então** ela fica disponível de novo ou recupera o uso; a rolagem no começo de um turno não se desfaz.
 - **Dado** um NPC feito a partir de uma criatura que gastou usos de uma ação com usos por dia ou da Resistência Lendária, **quando** um combate novo começa com ele, **então** leio os usos que lhe restam, até o descanso longo da mesa devolvê-los; uma ação que recarrega depois de um descanso curto ou longo volta com qualquer um dos dois; um monstro do bestiário começa todo combate com todos os usos, e uma ação de Recarga gasta fica disponível de novo.
+- **Dado** um cartão de NPC com ações com limite, **então** cada uma mostra o estado ao lado do nome: "Pronta" ou "Gasta" para uma ação com Recarga e para uma que espera um descanso, pontos e "N de M" para usos por dia; uma ação gasta tem um "Usar" tracejado e diz por quê ("Volta com 5 ou 6 no d6 que o app rola no começo de cada turno do <criatura>.", "Sem usos hoje.", "A ação deste turno já foi usada."); a linha aberta da ordem lista os limites ("Esporos · Recarga 6 · gasta", "Guincho atordoante · 1/dia · 1 de 1"), e nem o cartão nem a linha passam de uma tela a 390 px e a 1280×800.
+- **Dado** que começa a vez de uma criatura que tinha uma ação com Recarga gasta, **então** o cartão diz "Recarga no começo do turno: rolou N no d6. <ação> recarregou." (verde) ou "não recarregou (precisa de 5 ou 6)." (neutro), a partir da linha do registro que só o mestre e o jogador que controla leem; o cartão de um NPC persistente diz "<nome> guarda o que gastou."; uma ficha que não pôde ser lida diz isso com "Tentar de novo" e o resto do cartão funciona.
+- **Dado** uma ação do cartão cujo texto do SRD o app não calcula, **então** o texto em inglês fica recolhido atrás do pequeno ícone de documento ao lado do nome (abre e fecha com o ícone, que diz "Texto do SRD de <ação>"), e o aviso do começo do turno só fica verde quando todas as ações roladas recarregaram; quando só algumas recarregaram ele é neutro e diz o resultado de cada uma.
+- **Dado** que sou o mestre e peço um descanso, **quando** um NPC da campanha guardou o que gastou (usos por dia, Resistência Lendária e espaços depois de um descanso longo, uma ação que recarrega depois de um descanso, depois de qualquer um), **então** a pergunta diz "NPCs da campanha recuperam os usos: <nomes>"; um jogador nunca lê essa lista.
 - **Dado** que sou um jogador que não controla a criatura, **então** não leio nada do que ela gastou, da rolagem nem da recusa, e um turno com rolagem parece o mesmo que um sem ela (RN-20).
 - **Dado** que sou o jogador que controla a criatura, **então** leio o que resta de cada ação com limite, o d6 no registro e o motivo da recusa de uma ação gasta.
 - **Dado** que sou jogador, **então** não encontro "Outras ações", leio a linha do registro com o nome da ação e, para os alvos que vejo, se cada um passou ou falhou e o dano que tomo, e nunca a ficha, a CD nem qual criatura é (RN-20).
@@ -1711,6 +1724,38 @@ Ver [Arquitetura](../../architecture/campaign-package.md).
 
 #### Relacionadas
 - [MR-054](#mr-054-usar-a-ação-de-uma-criatura-no-turno-dela), [RN-40](regras.md#rn-40-efeito-extra-no-acerto-de-uma-criatura).
+
+### MR-056: Mostrar a mesa em uma tela
+
+**Como** mestre, **quero** abrir a mesa em uma tela que a mesa toda olha (uma TV) e escolher o que ela mostra, **para que** todos acompanhem o mapa, o combate, a cena ou a imagem sem se debruçar sobre um celular.
+
+- Prioridade: MVP
+- Regras: RN-10, RN-20, RN-36
+- Módulos: play, maps
+
+#### Critérios de aceitação
+- **Dado** uma sessão aberta, **quando** o mestre aperta "Abrir a Tela da mesa", **então** a tela abre em uma aba nova do navegador do mestre, para arrastar até a TV; **dado** que nada está na mesa, **então** ela diz "Nada à mostra ainda" com os nomes dos personagens da mesa.
+- **Dado** a aba da TV, **então** ela mostra só o que todo jogador pode ler (RN-10): o mapa como o grupo o vê, a ordem com uma palavra de estado no lugar dos pontos de vida (RN-20), as linhas do registro que todo jogador lê, as rolagens livres feitas para a mesa, a cena e a imagem mostradas à mesa toda. Ela nunca mostra pontos de vida, classe de armadura, um NPC escondido, as notas do mestre, ganchos, pistas e CDs, uma rolagem "Só eu" nem a conversa (RN-36).
+- **Dado** que "Espelhar o que eu mostro" está escolhido (é o padrão), **então** a TV mostra o primeiro que houver: uma imagem mostrada à mesa toda, o combate, uma cena aberta a todos, o mapa, a tela de espera; e acompanha cada mudança do mestre, sem recarregar.
+- **Dado** que o mestre escolhe uma linha de "Fixar" (o mapa, uma imagem, a cena, o combate ou a tela de espera), **então** a TV mostra esse item, seja o que for que esteja na mesa, e o painel diz "Na TV agora" com o nome dele e "fixa".
+- **Dado** que a mesa não tem combate, imagem, cena aberta a todos ou mapa que a TV possa mostrar, **então** a linha de "Fixar" correspondente fica tracejada, não pode ser escolhida e diz por quê ("Nenhum combate agora.", "Nenhuma imagem à mostra.", "Nenhuma cena aberta.", "A cena está aberta só para alguns.", "Nenhum mapa agora.", "Precisa da Visão do grupo (editor do mapa).").
+- **Dado** um item fixo que acaba (o combate termina, a cena fecha, a imagem ou o mapa sai da mesa), **então** a TV vai para a tela de espera com uma linha que diz isso ("O combate acabou. A TV foi para a tela de espera."); **quando** um item desse tipo volta, **então** o fixo o mostra de novo.
+- **Dado** um mapa com a névoa ligada e a "Visão do grupo" desligada, **então** a TV mostra a tela de espera com a linha "O mapa tem névoa e a Visão do grupo está desligada, então a TV não o mostra."; **dado** um combate nesse mapa, **então** o lugar do mapa diz "O mapa fica na tela de cada um." e a ordem, as rolagens e o registro continuam; **dado** a "Visão do grupo" ligada, **então** a TV mostra os quadrados que o grupo vê ou lembra, e nunca a imagem inteira do mapa.
+- **Dado** uma cena aberta só para alguns jogadores, **então** a TV não a mostra e o painel diz isso; o mesmo vale para uma imagem para jogadores escolhidos.
+- **Dado** um jogador, um membro pendente ou um estranho, **quando** abre o endereço da TV ou o pede ao servidor, **então** lê o cartão "Só o mestre abre a Tela da mesa." e não recebe nada da campanha; o servidor responde a um estranho como a uma campanha que não existe.
+- **Dado** que o mestre aperta "Copiar o link", **então** o que se copia é o endereço da aba e nada mais: sem consulta, sem chave, sem token. A aba entra como o mestre, e o servidor decide o que ela mostra a cada leitura.
+- **Dado** que a TV perde a conexão, **então** depois de poucos segundos ela diz "Reconectando…" e que pode estar atrasada, e depois de um minuto esconde o que mostrava e diz "Sem conexão desde 21:14"; **quando** a conexão volta, **então** ela volta sozinha. O painel do mestre também diz "Sem conexão desde 21:14.".
+- **Dado** que a sessão termina, **então** a TV diz "A sessão 3 terminou às 23:40." e que o mestre pode fechar a aba; **dado** que não há sessão aberta, ela diz "Não há sessão aberta.".
+- **Dado** uma TV a partir de 900 px de largura, **então** a tela cabe na janela sem rolagem de página e desenha só as linhas que cabem, com "+N" para as que ficaram de fora; **dado** um celular, **então** ela é uma coluna que rola.
+- **Dado** a tela de sessão do mestre, **então** o painel "Tela da mesa" abre por um botão na barra (a partir de 1024 px) ou por uma linha do menu "Sessão" (abaixo disso), diz se a TV está "Aberta", "Fechada" ou "Sem conexão", e cabe em uma tela num celular de 390 x 844 e num notebook de 1280 x 800.
+
+#### No app
+- A aba da TV é uma página própria, sem a barra de cima nem o rodapé do app, que não pede nada dos dados da sessão: ela lê um só serviço, que responde apenas o que a TV pode mostrar. Ver [Design](../../design/session.md#the-table-screen-tela-da-mesa) e [A tela da mesa](../../architecture/play/table-screen.md).
+- O painel não guarda nada no navegador; a escolha fica guardada com a sessão, então recarregar a TV ou a página do mestre a mantém.
+- Uma tela para o aparelho do próprio jogador, para ver a mesa de casa, não faz parte desta história ([#764](https://github.com/PuraFome/meuRPG/issues/764)).
+
+#### Relacionadas
+- [MR-012](#mr-012-acompanhar-a-sessão), [MR-028](#mr-028-mostrar-uma-imagem-aos-jogadores), [MR-036](#mr-036-névoa-de-guerra-pela-visão), [RN-10](regras.md#rn-10-mapa-sem-spoiler).
 
 ## Prioridade: MVP (pré-requisito)
 

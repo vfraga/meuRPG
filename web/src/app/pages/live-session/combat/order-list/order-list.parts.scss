@@ -74,6 +74,21 @@
   color: var(--mr-ink);
 }
 
+.row__limit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--mr-ink);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}
+
 .row__conc {
   display: flex;
   align-items: center;

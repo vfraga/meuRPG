@@ -947,11 +947,57 @@ func (s *Service) playerViewOf(ctx context.Context, in fogInput, points []mapsdb
 	if err != nil {
 		return nil, err
 	}
-	memory, err := s.memoryOf(ctx, nil, in, userID)
+	var memory *grid.Layer
+	if userID == tableScreenUser {
+		memory, err = s.groupMemoryOf(ctx, in, sg.members)
+	} else {
+		memory, err = s.memoryOf(ctx, nil, in, userID)
+	}
 	if err != nil {
 		return nil, err
 	}
 	return sg.newView(userID, memory), nil
+}
+
+// tableScreenUser is the user id of the table screen's viewer: the whole table and nobody in particular. No
+// account has it, so the view it gets is the group's, never a player's own.
+const tableScreenUser = ""
+
+// groupMemoryOf is what the table screen remembers of a map: the squares any member of the party remembers,
+// in the map's current epoch. Without "Visão do grupo" the table is no group and remembers nothing, as it
+// sees nothing.
+func (s *Service) groupMemoryOf(ctx context.Context, in fogInput, members []link.PartyMember) (*grid.Layer, error) {
+	memory := grid.NewLayer(in.g)
+	if !in.group {
+		return memory, nil
+	}
+	stored, err := s.queries.ListMapVisionMemory(ctx, in.mapID)
+	if err != nil {
+		return nil, fmt.Errorf("read what the players saw: %w", err)
+	}
+	party := make(map[string]bool, len(members))
+	for _, m := range members {
+		party[m.UserID] = true
+	}
+	for _, row := range stored {
+		if row.Epoch != in.epoch || !party[row.UserID] {
+			continue
+		}
+		addSquares(memory, decodeMemory(in.g, row.Seen))
+	}
+	return memory, nil
+}
+
+// addSquares sets in dst every square set in src (both of one grid).
+func addSquares(dst, src *grid.Layer) {
+	g := dst.Grid()
+	for row := range g.Rows {
+		for col := range g.Columns {
+			if src.Get(col, row) {
+				dst.Set(col, row, true)
+			}
+		}
+	}
 }
 
 // visionState remembers, per map and player, the revision of what the player

@@ -147,8 +147,24 @@ func (s *Service) stageCharacters(ctx context.Context, campaignID string, rows [
 // players see on the stage of the open scene of the campaign's open session. It implements
 // maps.LiveSession: the image route lets a player fetch a portrait only then
 // (RN-10, RN-20), so a portrait is 404 for them the moment the NPC leaves the
-// stage or the scene closes.
+// stage or the scene closes. An empty userID is nobody in particular: it sees the stage only of a
+// scene open to the whole table.
 func (s *Service) ImageOnStage(ctx context.Context, campaignID, userID, imageID string) (bool, error) {
+	return s.portraitOnStage(ctx, campaignID, imageID, func(session playdb.GameSession) (bool, error) {
+		return outsideOpenScene(ctx, s.queries, session, userID)
+	})
+}
+
+// ImageOnAnyStage says whether the gallery image is the portrait of an NPC shown on the stage of the
+// open scene, whoever the scene is open to. It implements maps.LiveSession, for the question of whether an
+// image is in use (never for what a player may fetch).
+func (s *Service) ImageOnAnyStage(ctx context.Context, campaignID, imageID string) (bool, error) {
+	return s.portraitOnStage(ctx, campaignID, imageID, func(playdb.GameSession) (bool, error) { return false, nil })
+}
+
+// portraitOnStage is the question of ImageOnStage; outside says whether the reader is out of a scene open to
+// only some players, who sees no stage.
+func (s *Service) portraitOnStage(ctx context.Context, campaignID, imageID string, outside func(playdb.GameSession) (bool, error)) (bool, error) {
 	session, err := s.queries.GetOpenGameSession(ctx, campaignID)
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && session.OpenScenePointID == nil) {
 		return false, nil // no session, or no scene: no stage
@@ -156,9 +172,7 @@ func (s *Service) ImageOnStage(ctx context.Context, campaignID, userID, imageID 
 	if err != nil {
 		return false, fmt.Errorf("find the open session: %w", err)
 	}
-	// A player out of a scene open to only some players sees no stage (an empty userID is nobody in
-	// particular: any NPC counts).
-	if out, err := outsideOpenScene(ctx, s.queries, session, userID); err != nil || out {
+	if out, err := outside(session); err != nil || out {
 		return false, err
 	}
 	// A point the master turned into another kind is no open scene (GetOpenScene

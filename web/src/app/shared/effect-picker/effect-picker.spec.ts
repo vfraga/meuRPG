@@ -131,7 +131,7 @@ describe('EffectPicker (the closed menu of ADR-0018, from the server)', () => {
     expect(emitted.at(-1)?.from).toEqual(['skill:arcana', 'skill:perception']);
     (pick.querySelector('.chip__x') as HTMLButtonElement).click();
     expect(emitted.at(-1)?.from).toEqual([]);
-    change(field('choice') as HTMLSelectElement, 'Uma opção de uma lista do SRD');
+    change(field('choice') as HTMLSelectElement, 'Uma opção de uma lista');
     expect(emitted.at(-1)).toMatchObject({ choice: 'feature', from: [] });
   });
 

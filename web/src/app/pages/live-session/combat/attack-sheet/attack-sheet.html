@@ -86,6 +86,8 @@
         </span>
         @if (!data.opportunity) {
           <button type="button" class="link" (click)="change()">Trocar</button>
+        } @else {
+          <span class="mr-tag">Ataque de oportunidade</span>
         }
       </div>
       @if (mode.hasMode()) {
@@ -109,9 +111,20 @@
         }
       }
       @if (mode.ready()) {
+        @if (maneuverDice().length > 0) {
+          <!-- The table die of a weapon attack (Golpe Certeiro): added to the roll, spending a use of its pool. -->
+          <app-roll-die-offer
+            [dice]="maneuverDice()"
+            [uses]="maneuverUses()"
+            [exclusive]="true"
+            [legend]="maneuverLegend()"
+            [picked]="maneuverKey()"
+            (pickedChange)="useDie($event)"
+          />
+        }
         <!-- The d4 an effect adds (Bênção, Perdição) with physical dice: typed before the d20 is confirmed. -->
-        @if (extraFields().length > 0 && (s.typing() || !canApp)) {
-          <app-extra-dice class="sheet__extra" [fields]="extraFields()" [(faces)]="extraFaces" />
+        @if (typedFields().length > 0 && (s.typing() || !canApp)) {
+          <app-extra-dice class="sheet__extra" [fields]="typedFields()" [(faces)]="extraFaces" />
         }
         @if (mode.faceCount() === 1) {
           <app-roll-picker
@@ -122,6 +135,9 @@
             hint="Role o seu dado e digite o número que saiu (1 a 20)."
             totalNote="Total do ataque"
             [modifier]="attack.attackBonus"
+            [typedFormula]="hasExtras() ? typedFormula : null"
+            [confirmTotal]="hasExtras()"
+            [waiting]="extrasPending()"
             [busy]="s.busy()"
             [sticky]="true"
             [(typing)]="s.typing"
@@ -135,7 +151,8 @@
             [canType]="canType"
             [preferApp]="preferApp"
             [combine]="mode.combine()"
-            [modifier]="attack.attackBonus"
+            [modifier]="pairModifier()"
+            [waiting]="extrasPending()"
             totalNote="Total do ataque"
             [appLabel]="'Rolar 2d20 no app'"
             [hint]="'Role os dois d20 e digite os dois números, na ordem em que saíram (1 a 20 cada). Conta o ' + (mode.combine() === 'lower' ? 'menor' : 'maior') + '.'"

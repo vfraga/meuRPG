@@ -1,0 +1,19 @@
+:host {
+  display: block;
+}
+
+.trigger {
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+}
+
+.item__why {
+  font-size: var(--mr-font-14);
+  color: var(--mr-ink-muted);
+}

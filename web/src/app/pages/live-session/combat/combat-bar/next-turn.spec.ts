@@ -18,6 +18,18 @@ describe('NextTurn', () => {
     expect(sent).toEqual([false]);
   });
 
+  it('is outlined while another panel (the opportunity offer) has the filled button, and filled again after', () => {
+    const { fixture, el } = setup(null);
+    const button = () => el.querySelector<HTMLButtonElement>('.next')!;
+    expect(button().classList.contains('mat-mdc-unelevated-button')).toBe(true);
+    fixture.componentRef.setInput('quiet', true);
+    fixture.detectChanges();
+    expect(button().classList.contains('mat-mdc-outlined-button')).toBe(true);
+    fixture.componentRef.setInput('quiet', false);
+    fixture.detectChanges();
+    expect(button().classList.contains('mat-mdc-unelevated-button')).toBe(true);
+  });
+
   it('asks in place when a damage is owed, "Voltar" keeps the turn and "Passar o turno" discards it', async () => {
     const { fixture, el, sent } = setup('Falta aplicar 5 de dano');
     el.querySelector<HTMLButtonElement>('.next')!.click();

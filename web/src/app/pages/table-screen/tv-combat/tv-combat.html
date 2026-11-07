@@ -1,0 +1,29 @@
+<ng-template #orderCard>
+  <app-tv-order class="tv-combat__order" [order]="order()" [round]="round()" [mastersTurn]="mastersTurn()" />
+</ng-template>
+
+<div class="tv-combat" [class.tv-combat--map]="map() !== null">
+  @if (map(); as m) {
+    <app-tv-map class="tv-combat__map" [map]="m" />
+  } @else {
+    <ng-container *ngTemplateOutlet="orderCard" />
+  }
+  <div class="tv-combat__side">
+    @if (map() !== null) {
+      <ng-container *ngTemplateOutlet="orderCard" />
+    }
+    <app-tv-rolls class="tv-combat__rolls" [rolls]="rolls()" />
+    @if (lines().length > 0) {
+      <section class="mr-panel tv-combat__log" aria-labelledby="tv-log-title">
+        <h2 class="tv-combat__log-title" id="tv-log-title">
+          <mat-icon aria-hidden="true">history</mat-icon>Último no combate
+        </h2>
+        <ul class="tv-combat__lines" [appTvFit]="lines()">
+          @for (line of lines(); track $index) {
+            <li class="tv-combat__line">{{ line }}</li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+</div>

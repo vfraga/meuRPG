@@ -2,12 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   effect,
   inject,
   input,
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -35,6 +37,7 @@ import {
   areaPlacementOf,
   asksSave,
   classNote,
+  limitView,
   resultNotes,
   showsText,
   usableActions,
@@ -77,6 +80,11 @@ export class CreatureActions {
   readonly creature = input<Creature | null>(null);
   /** The damage waiting for the master, from the turn's options: the part the last use opened shows under its result. */
   readonly pendings = input<readonly PendingDamage[]>([]);
+  /** Where the stat block is: `loading` shows a skeleton, `failed` the notice with "Tentar de novo". */
+  readonly blockState = input<'idle' | 'loading' | 'failed' | 'ready'>('ready');
+  /** "Tentar de novo" on the stat block that could not be read. */
+  readonly retry = output<void>();
+  private readonly title = viewChild<ElementRef<HTMLElement>>('title');
   /** The combat has no map: the master names the targets, even for an area. */
   readonly theatre = input(false);
   /** The page's own call (the turn passing) is in flight. */
@@ -110,6 +118,8 @@ export class CreatureActions {
   protected readonly needsTargets = computed(() =>
     this.actions().some((a) => this.takesTargets(a)),
   );
+  /** The creature keeps what it spent after the combat (a persistent NPC's uses a day or rest action). */
+  protected readonly keeps = computed(() => this.subject().limitedActions.some((l) => l.kept));
   protected readonly spent = computed(() => this.subject().actionUsed);
   protected readonly cards = computed(() =>
     this.actions().map((a) => ({
@@ -119,6 +129,7 @@ export class CreatureActions {
       note: classNote(a),
       text: showsText(a) ? a.text : '',
       usage: usageText(a.usage),
+      limit: this.limitOf(a),
       why: this.whyNot(a),
     })),
   );
@@ -188,10 +199,44 @@ export class CreatureActions {
     return this.theatre() || areaPlacementOf(a) === null;
   }
 
+  /** "Tentar de novo": the button goes with the error, so the focus moves to the section's heading first and stays there. */
+  protected tryAgain(): void {
+    this.title()?.nativeElement.focus();
+    this.retry.emit();
+  }
+
+  /** The actions whose SRD text is open: it is a reminder, folded behind the document icon beside the name. */
+  protected readonly textOpen = signal<ReadonlySet<string>>(new Set());
+
+  protected toggleText(key: string): void {
+    this.textOpen.update((s) => {
+      const next = new Set(s);
+      if (!next.delete(key)) {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  /** One filled dot for each use left, one empty for each spent. */
+  protected dotsOf(u: { allowed: number; left: number }): boolean[] {
+    return Array.from({ length: u.allowed }, (_, i) => i < u.left);
+  }
+
+  /** The state of the action's limit, from the server's copy for the master and the controller (`''` tag and no uses: no limit). */
+  private limitOf(a: CreatureAction) {
+    const copy = this.subject().limitedActions.find((l) => l.actionKey === a.key);
+    return limitView(copy, this.subject().label);
+  }
+
   /** Why "Usar" cannot be pressed now, or `''`. */
   private whyNot(a: CreatureAction): string {
     if (this.spent()) {
       return 'A ação deste turno já foi usada.';
+    }
+    const limit = this.limitOf(a).why;
+    if (limit) {
+      return limit;
     }
     if (this.takesTargets(a) && this.chosen().size === 0) {
       return 'Escolha ao menos um alvo.';

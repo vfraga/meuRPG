@@ -179,6 +179,11 @@
           @if (facts(c); as line) {
             <span class="row__facts">{{ line }}</span>
           }
+          @if (limits(c); as lines) {
+            @for (l of lines; track l.key) {
+              <span class="row__limit" data-testid="order-limit"><mat-icon aria-hidden="true">{{ l.icon }}</mat-icon>{{ l.text }}</span>
+            }
+          }
           @if (c.hitPointsMax !== undefined && formPool(c); as beast) {
             <span class="row__pv-inline">{{ beast }}</span>
           }

@@ -108,9 +108,7 @@
 }
 
 .slots,
-.spells__names,
-.gear,
-.coins {
+.spells__names {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -250,31 +248,6 @@
   line-height: 18px;
   font-weight: 500;
   color: var(--mr-ink-muted);
-}
-
-.gear {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  line-height: 22px;
-}
-
-.gear__background {
-  margin: var(--mr-space-2) 0 0;
-  line-height: 22px;
-  white-space: pre-line;
-}
-
-.coins {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--mr-space-3);
-  margin-top: var(--mr-space-2);
-  font-size: var(--mr-font-15);
-
-  abbr {
-    text-decoration: none;
-  }
 }
 
 .breath {

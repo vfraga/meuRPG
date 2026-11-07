@@ -1,0 +1,40 @@
+<section class="mr-panel tv-order" aria-labelledby="tv-order-title">
+  <div class="tv-order__head">
+    <h2 class="tv-order__title" id="tv-order-title"><mat-icon aria-hidden="true">swords</mat-icon>Ordem</h2>
+    <p class="tv-order__round">Rodada {{ round() }}</p>
+  </div>
+  <ol class="tv-order__list" [appTvFit]="list()" (fitted)="cut.set($event)">
+    @if (mastersTurn()) {
+      <li class="tv-order__row tv-order__row--turn" data-testid="tv-masters-turn">
+        <mat-icon class="tv-order__masters" aria-hidden="true">visibility_off</mat-icon>
+        <span class="tv-order__name">Vez do mestre</span>
+      </li>
+    }
+    @for (row of list().rows; track $index) {
+      @if (row.kind === 'round') {
+        <li class="tv-order__round-line" data-testid="tv-round-line">{{ row.label }}</li>
+      } @else {
+        <li class="tv-order__row" data-count [class.tv-order__row--turn]="row.who.onTurn" [attr.aria-current]="row.who.onTurn ? 'step' : null">
+          <app-combatant-token
+            [initial]="row.who.initial"
+            [npc]="!row.who.isPlayer"
+            [current]="row.who.onTurn"
+            [defeated]="out(row.who)"
+            [size]="row.who.onTurn ? 40 : 28"
+          />
+          <span class="tv-order__name">{{ row.who.name }}</span>
+          @if (row.who.onTurn) {
+            <span class="tv-order__word tv-order__word--turn">Vez</span>
+          } @else if (row.who.stateWord) {
+            <span class="tv-order__word">{{ row.who.stateWord }}</span>
+          }
+        </li>
+      }
+    }
+  </ol>
+  <p class="tv-order__more" data-testid="tv-order-more">
+    @if (more() > 0) {
+      +{{ more() }}
+    }
+  </p>
+</section>

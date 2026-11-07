@@ -3,7 +3,6 @@ import type { MessageInitShape } from '@bufbuild/protobuf';
 import type { AbilityScores } from '../../../gen/meurpg/rules/v1/rules_pb';
 import {
   type TableFeat,
-  type TableFeature,
   type TableFeatSchema,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import {
@@ -17,6 +16,10 @@ import {
   ABILITY_FIELDS,
   type AbilityField,
   emptyFeature,
+  featureOwnPaths,
+  featureToDraft,
+  optionsInit,
+  unreadableFeaturePaths,
 } from './feature-draft';
 import { paragraphs } from './spell-draft';
 
@@ -26,6 +29,9 @@ import { paragraphs } from './spell-draft';
  * effects (`feature`, with no key: a feat has none); the prerequisite fields are kept as text so a half-typed number
  * is never rewritten. Whether a character meets the prerequisite is the server's.
  */
+
+/** The most options a feat has (`MaxFeatureOptions`); the server refuses more. */
+export const MAX_FEAT_OPTIONS = 60;
 
 export type FeatInit = MessageInitShape<typeof TableFeatSchema>;
 
@@ -59,10 +65,10 @@ export interface FeatDraft {
   /** As typed; empty asks nothing. */
   level: string;
   /**
-   * The feat's own option list: the editor has no input for it yet, so it is kept as the feat has it and saving the feat
-   * does not drop it.
+   * The feat's own option list, in order. An option the server made keeps its key; a new one has none and the server
+   * makes it. An unnamed option is not sent.
    */
-  options: TableFeature[];
+  options: FeatureDraft[];
 }
 
 export function emptyFeat(): FeatDraft {
@@ -117,7 +123,7 @@ export function featToDraft(f: TableFeat): FeatDraft {
     raceKey: p?.raceKey ?? '',
     ...whoOf(p),
     level: p && p.level > 0 ? String(p.level) : '',
-    options: [...f.options],
+    options: f.options.map(featureToDraft),
   };
 }
 
@@ -153,7 +159,7 @@ export function draftToFeat(d: FeatDraft, menu: EffectMenuVm): FeatInit {
       level: level === '' ? 0 : Number(level),
     },
     effects: d.feature.effects.map((e) => draftToEffect(e, menu)),
-    ...(d.options.length > 0 ? { options: d.options } : {}),
+    ...optionsInit(d.options, menu),
   };
 }
 
@@ -174,6 +180,7 @@ export function featPaths(d: FeatDraft, menu: EffectMenuVm): string[] {
     `${p}.prerequisite.level`,
     `${p}.prerequisite.spellcasting`,
     `${p}.effects`,
+    `${p}.options`,
   ];
   for (const a of ABILITY_FIELDS) {
     out.push(`${p}.prerequisite.minimums.${a}`, `${p}.prerequisite.any_of.${a}`);
@@ -186,10 +193,16 @@ export function featPaths(d: FeatDraft, menu: EffectMenuVm): string[] {
       out.push(`${at}.${field.name}`);
     }
   });
+  d.options.forEach((o, k) => out.push(...featureOwnPaths(`${p}.options[${k}]`, o, menu)));
   return out;
 }
 
 /** The paths of the feat's number fields whose text is no whole number. */
 export function unreadableFeatPaths(d: FeatDraft, menu: EffectMenuVm): string[] {
-  return unreadableNumberPaths('table_feat.effects', d.feature.effects, menu);
+  return [
+    ...unreadableNumberPaths('table_feat.effects', d.feature.effects, menu),
+    ...d.options.flatMap((o, k) =>
+      o.name.trim() === '' ? [] : unreadableFeaturePaths(`table_feat.options[${k}]`, o, menu),
+    ),
+  ];
 }

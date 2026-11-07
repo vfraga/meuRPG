@@ -7,6 +7,7 @@ import {
   SummonSpellOptionsSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { CombatantSchema } from '../../../gen/meurpg/play/v1/combat_pb';
+import { CreatureActionSchema, CreatureSchema } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { SlotRow } from '../../core/combat/cast-flow';
 import {
   concentrationLineOf,
@@ -210,9 +211,25 @@ describe('summon views: the lines of the sheet', () => {
       resourceKey: 'chamados',
       usesLeft: 2,
     });
-    expect(plain(costLineOf(feature, false, null, 2))).toBe(
-      '2 criaturas · 1 ação · gasta um uso · restam 2',
-    );
+    // The subtitle says the time and the use; the line says what it adds.
+    expect(plain(costLineOf(feature, false, null, 2))).toBe('2 criaturas');
+    expect(costLineOf(feature, false, null, 1)).toBe('');
+    expect(
+      plain(
+        subtitleOf({
+          spell: spell({ ...feature, grantedByLabelPt: 'Druida 3', usesLeft: 1 }),
+          done: false,
+          inCombat: false,
+          ritual: false,
+          slot: null,
+        }),
+      ),
+    ).toBe('Druida 3 · 1 ação · gasta 1 uso (resta 1)');
+    expect(
+      plain(
+        subtitleOf({ spell: feature, done: false, inCombat: false, ritual: false, slot: null }),
+      ),
+    ).toBe('Habilidade · 1 ação · gasta 1 uso (restam 2)');
   });
 });
 
@@ -241,6 +258,43 @@ describe('summon views: the list, the keys and the dice', () => {
         beasts: [{ key: 'monster:bat', namePt: 'Morcego' } as never],
       }).map((r) => [r.key, r.title, r.attacks]),
     ).toEqual([['monster:bat', 'Morcego', undefined]]);
+  });
+
+  it("a table feature's list puts the table's creature first and tells a book creature as a beast row does (ND, CA, PV, attacks)", () => {
+    const forms = create(SummonOptionSchema, {
+      forms: [
+        { monsterKey: 'monster:wolf', namePt: 'Lobo' },
+        { monsterKey: 'creature:lobo-do-vale@mesa', namePt: 'Lobo do Vale' },
+      ],
+    });
+    const wolf = create(CreatureSchema, {
+      summary: { key: 'monster:wolf', namePt: 'Lobo', sizePt: 'Médio', challengeRating: '1/4' },
+      armorClass: 13,
+      hitPoints: 11,
+      speedWalkFt: 40,
+      actions: [
+        create(CreatureActionSchema, {
+          name: 'Bite',
+          namePt: 'Mordida',
+          hasAttack: true,
+          attackBonus: 4,
+          damage: [{ dice: '2d4+2', damageTypePt: 'perfurante' }],
+        }),
+      ],
+    });
+    const rows = rowsOf({
+      option: forms,
+      beasts: null,
+      beastBlocks: new Map(),
+      forms: [wolf],
+      bring: true,
+    });
+    expect(rows.map((r) => [r.title, r.table])).toEqual([
+      ['Lobo do Vale', true],
+      ['Lobo', false],
+    ]);
+    expect(plain(rows[1].subtitle)).toBe('Médio · ND 1/4 · 12 m · CA 13 · PV 11');
+    expect(rows[1].attacks?.[0]).toMatchObject({ name: 'Mordida' });
   });
 
   it('marks the table creatures by the "@mesa" suffix, in the forms and in the beasts', () => {

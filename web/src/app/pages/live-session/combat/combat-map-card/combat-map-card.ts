@@ -100,7 +100,7 @@ export class CombatMapCard {
   readonly cropOnPhone = input(false);
   /** The player's own turn (C4-03, C6-07): no head and no "Tela cheia"; the map's name is a chip and "Ver mapa" an icon over the map's top on a phone (a row above it from 768px), and what the page projects as `mapFoot` (the movement row) closes the card. */
   readonly compact = input(false);
-  /** The player chooses a target on the map (C7-04, C7-05): the creatures offered are ringed buttons, the card has the accent border and, on a phone, the map is the part of it that holds them. */
+  /** The player chooses a target on the map (C7-04, C7-05), or the master ringed the candidates of an opportunity offer (`mode: 'offer'`): the creatures offered are ringed buttons, the card has the accent border and, on a phone, the map is the part of it that holds them. */
   readonly pick = input<readonly PickMark[] | null>(null);
   /** Why the creature just tapped cannot be the target. */
   readonly pickNote = input<PickNote | null>(null);
@@ -206,11 +206,23 @@ export class CombatMapCard {
       return null;
     }
     return pickWindow(
-      e.combatants.filter((c) => c.placed && (offered.has(c.id) || c.id === mine)),
+      // The master's offer rings the candidates: the mover (who is on turn, never "own" for the master) must stay in the window.
+      e.combatants.filter(
+        (c) =>
+          c.placed &&
+          (offered.has(c.id) ||
+            c.id === mine ||
+            (this.offerRing() && c.id === e.currentCombatantId)),
+      ),
       columns,
       rows,
     );
   }
+
+  /** The ringed ones are the master's candidates for an opportunity offer: the legend names the ring. */
+  protected readonly offerRing = computed(() =>
+    (this.pick() ?? []).some((m) => m.mode === 'offer'),
+  );
 
   protected readonly preview = computed(
     () => this.cropOnPhone() && this.isMaster() && this.phone() && !this.pick(),

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Browser, type Page } from '@playwright/test';
+import { expect, type Browser, type Locator, type Page } from '@playwright/test';
 import { test } from './diagnostics';
 
 import { canvasJpeg, newCampaign, uploadThroughPicker } from './gallery-support';
@@ -21,6 +21,7 @@ import { classCard, passClassStep, tableForLevelUp } from './levelup-support';
 import { aurora, auroraSheet, beginPlacedCombatRPC, nael, naelSheet, orla, orlaSheet, spendForRestRPC } from './rests-support';
 import { castSheet, choiceCard, openCastOf, pickChoice, pickSlotRadio, pickTargetOf, tableForCasting } from './casting-support';
 import { paintRPC, pickRadio, tapSquare } from './move-support';
+import { beginManeuverCombatRPC, maneuverTable, spendPoolRPC } from './maneuver-support';
 import { beginFogCombat, moveTo, sessionRoute, setCarriedLightRPC, tableForFog } from './fog-support';
 import { beginCreatureCombat, hitAndApply, tableForCreatureCombat } from './creatures-combat-support';
 import { claimRoute, linkRPC, reservedRPC, revokeLinkRPC, rowOf } from './claim-support';
@@ -65,7 +66,8 @@ import { beginTheatreRPC, secondPlayer } from './theatre-support';
 import { combatWithTwoDown, reviveRPC, tableWithDead } from './revivify-support';
 import { brisa, brisaAidSheet, brisaSheet, dalila, dalilaSheet, ragna, ragnaSheet } from './combat-support';
 import { createFeatsRPC, createNightRaceRPC, createSnowSubraceRPC, tor } from './editor-races-support';
-import { archiveEntryRPC, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, minimumFeatBody, raceBody, rerollFeatBody, spellBody, updateEntryRPC } from './content-support';
+import { createFeatOptionsRPC, expectInViewport, featShotScale, featViewport, openSelect, shootFeat, type FeatOptionsTable } from './feat-options-support';
+import { archiveEntryRPC, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, expectCardsHoldTheirText, minimumFeatBody, raceBody, rerollFeatBody, spellBody, updateEntryRPC } from './content-support';
 import { rerollTable } from './reroll-support';
 import { generateSceneRPC, mapRoute, tableForImages } from './images-support';
 import { treasureRoute } from './treasure-support';
@@ -86,6 +88,8 @@ import {
 } from './table-sheet-support';
 import { openCombatPanel, openMap, openOrderRow, openTurn } from './combat-layout';
 import { waitForEncounterRevision } from './revision-support';
+import { WIDTHS, beginVrockFight, pagesFor, shoot, useCreatureActionRPC, viewportOf } from './recharge-support';
+import { chooseRow, openTvPanel, rollForTableRPC, tvRoute } from './table-screen-support';
 
 // docs/design/README.md#how-a-screen-is-made: every screen passes axe with no
 // serious or critical violation of WCAG 2.1 A and AA, in the light and the
@@ -3903,6 +3907,12 @@ async function scanCreatureScreens(browser: Browser, colorScheme: 'light' | 'dar
       await expect(dpanel.getByRole('status')).toContainText('A criatura chegou.');
       await dpanel.getByRole('link', { name: /^Ver a ficha de / }).click();
       await expect(p.locator('.table-note')).toHaveText('Os números vêm da ficha de Sálvia quando ele chegou');
+      // The page is compact (the numbers worked out for the owner, the creature's own attacks and traits), so the note that ends it is on the first screen.
+      await expect(p.locator('.tiles')).toContainText(/CA\s*\d+/);
+      await expect(p.locator('.attacks')).toContainText('Mordida Sombria');
+      await expect(p.locator('.block').last()).toContainText('Faro do Vale');
+      await expect(p.locator('.abilities')).toHaveCount(0);
+      await expect(p.locator('.table-note')).toBeVisible();
       await expectScreenPasses(p, `A ficha da criatura da mesa ${where}`);
       await p.goBack();
       await expect(dpanel.getByRole('button', { name: 'Conjurar Animais' })).toBeVisible();
@@ -5792,7 +5802,8 @@ async function scanTheatreScreens(browser: Browser, colorScheme: 'light' | 'dark
     await passTurnsToAndWait(m, campaignId, 'Goblin', [m, p]);
     await expect(m.getByRole('heading', { name: /^(Ações do|Vez do) Goblin$/ })).toBeVisible();
     await expectScreenPasses(m, `Combate sem mapa, mestre, vez de um NPC ${where}`);
-    await m.getByRole('button', { name: 'Oferecer ataque de oportunidade' }).click();
+    await m.getByRole('button', { name: 'Mais ações de Goblin', exact: true }).click();
+    await m.getByRole('menuitem', { name: /Oferecer ataque de oportunidade/ }).click();
     await expect(m.getByRole('heading', { name: 'Oferecer ataque de oportunidade' })).toBeVisible();
     await expectScreenPasses(m, `Oferecer ataque de oportunidade ${where}`);
     await m.getByRole('radio', { name: /Toren/ }).check({ force: true });
@@ -6041,10 +6052,9 @@ async function scanTableContent(browser: Browser, colorScheme: 'light' | 'dark',
       await m.getByRole('switch', { name: 'Invoca criaturas' }).click();
       await m.getByRole('combobox', { name: 'Criaturas' }).fill('Lobo do Vale');
       await m.getByRole('option').filter({ has: m.locator('.pick__pt', { hasText: /^Lobo do Vale$/ }) }).click();
-      // The chip first: the next field patches from the block's rendered summon, so a fill before the render would drop the pick.
-      await expect(m.getByRole('group', { name: /^Criaturas que a/ }).getByText('Lobo do Vale', { exact: true })).toBeVisible();
       await m.getByLabel('Quantas vêm').fill('1');
       await expect(m.getByLabel('Gasta 1 uso de')).toBeVisible();
+      await expectCardsHoldTheirText(m);
       await expectScreenPasses(m, `Característica de classe, a invocação ligada ${where}`);
       await m.getByRole('button', { name: 'Salvar característica' }).click();
       await expect(m.getByText('A característica de classe Companheiro do Vale foi salva.')).toBeVisible();
@@ -6053,6 +6063,7 @@ async function scanTableContent(browser: Browser, colorScheme: 'light' | 'dark',
       await m.getByLabel('Nome', { exact: true }).fill('Chamado do Vale');
       await m.locator('[aria-label="Mecânica"] label', { hasText: 'Invocar' }).click();
       await expect(m.getByText('Sem recurso, tempo nem duração: a magia tem os seus.')).toBeVisible();
+      await expectCardsHoldTheirText(m);
       await expectScreenPasses(m, `Editor de magia, Invocar ${where}`);
       const undead = await createEntryRPC(m, campaignId, 'tableCreature', damageCreatureBody());
       await open(m, entryRoute(campaignId, undead));
@@ -6285,7 +6296,7 @@ async function scanOptionOfferedBy(browser: Browser, colorScheme: 'light' | 'dar
       await open(m, entryRoute(campaignId, option));
       await expect(m.getByLabel('Característica que oferece')).toHaveValue(feature);
       await expect(m.getByRole('link', { name: 'Abrir Guarda do Corvo' })).toBeVisible();
-      await expect(m.locator('.preview')).toContainText('Truques de lâmina (Guarda do Corvo)');
+      await expect(m.locator('.preview')).toContainText('Truques de lâmina (Guarda do Corvo, Guerreiro 3)');
       await expectScreenPasses(m, `Editor de opção, uma opção salva ${where}`);
       // A feature loses its option list while the form is open: the server refuses and the refusal lands at the field, with the choice kept.
       const ashes = await createSubclassRPC(m, campaignId, { ...subclassBody([withOptions('Brasas', ['Brasa viva', 'Cinza fria'])]), namePt: 'Guarda de Cinza' });
@@ -6304,6 +6315,7 @@ async function scanOptionOfferedBy(browser: Browser, colorScheme: 'light' | 'dar
       await expect(m.getByLabel('Característica que oferece')).toHaveAttribute('aria-invalid', 'true');
       await expect(m.getByText('Esta característica não existe mais ou não tem lista de opções. Escolha outra.')).toBeVisible();
       await expect(m.getByLabel('Característica que oferece')).toBeFocused();
+      await expect(m.getByText('Entra na lista com')).toHaveCount(0);
       await expectScreenPasses(m, `Editor de opção, a recusa da característica que perdeu a lista ${where}`);
     } else {
       await open(m, entryRoute(campaignId, option));
@@ -7822,6 +7834,221 @@ test('o painel de perguntas pendentes fora do combate passa no axe e nas confer�
   await scanHeldPanelScreens(browser, 'dark', 390);
 });
 
+/** The master answers a halfling's question for them while the roll sheet is open: the scene check's sheet and the group check's sheet
+ * swap the question for "O mestre respondeu por você.", with no answer left to give. */
+async function scanSheetMasterAnswers(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `(${colorScheme}, ${width}px)`;
+  const viewport = sizeOf(width);
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableForScenes(m, p, `Acessibilidade mestre respondeu ${Date.now()}`, true, { raceKey: 'race:halfling', subraceKey: 'subrace:lightfoot-halfling' });
+    campaignId = table.campaignId;
+    await openSceneRPC(m, campaignId, table.cartId);
+    await openSessionPage(m, campaignId);
+    await openSessionPage(p, campaignId);
+    const panel = m.getByRole('region', { name: 'Perguntas pendentes' });
+    const answerForThem = async (): Promise<void> => {
+      const keep = panel.getByRole('button', { name: 'Ficar com o 1' });
+      await expect(keep).toBeEnabled({ timeout: 30_000 });
+      await keep.click();
+    };
+
+    // The scene check: the sheet is open at the question when the master keeps the 1.
+    await p.getByRole('region', { name: 'Cena: A carroça tombada' }).getByRole('button', { name: 'Rolar Procurar pistas na carroça' }).click();
+    const sceneSheet = p.getByRole('dialog', { name: 'Rolar Procurar pistas na carroça' });
+    await typeD20(sceneSheet, 1);
+    await expect(sceneSheet.getByRole('heading', { name: 'Tirou 1: rolar de novo?' })).toBeVisible();
+    await answerForThem();
+    await expect(sceneSheet.getByTestId('sheet-held-vanished')).toContainText('O mestre respondeu por você.');
+    await expect(sceneSheet.getByRole('button', { name: 'Rolar de novo' })).toHaveCount(0);
+    await expect(sceneSheet.getByRole('button', { name: /^Ficar com o/ })).toHaveCount(0);
+    await expectScreenPasses(p, `O teste de cena, o mestre respondeu pelo jogador ${where}`);
+    await closeSheet(sceneSheet);
+
+    // The group check: the same, on its own sheet.
+    await m.getByRole('button', { name: 'Pedir teste em grupo' }).click();
+    const ask = m.getByTestId('group-ask');
+    await ask.getByLabel('Teste', { exact: true }).selectOption({ label: 'Furtividade' });
+    await ask.getByLabel(/^CD \(/).fill('13');
+    await ask.getByRole('button', { name: 'Pedir o teste' }).click();
+    const groupSheet = p.getByRole('dialog');
+    await typeD20(groupSheet, 1);
+    await expect(groupSheet.getByRole('heading', { name: 'Tirou 1: rolar de novo?' })).toBeVisible();
+    await answerForThem();
+    await expect(groupSheet.getByTestId('sheet-held-vanished')).toContainText('O mestre respondeu por você.');
+    await expect(groupSheet.getByRole('button', { name: 'Rolar de novo' })).toHaveCount(0);
+    await expect(groupSheet.getByRole('button', { name: /^Ficar com o/ })).toHaveCount(0);
+    await expectScreenPasses(p, `O teste em grupo, o mestre respondeu pelo jogador ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+test('a folha que perdeu a pergunta, o mestre respondeu, passa no axe e nas conferências de layout no tema claro, no celular', { tag: ['@a11y', '@MR-014', '@RN-35'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanSheetMasterAnswers(browser, 'light', 390);
+});
+
+test('a folha que perdeu a pergunta, o mestre respondeu, passa no axe e nas conferências de layout no tema escuro, no desktop', { tag: ['@a11y', '@MR-014', '@RN-35'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanSheetMasterAnswers(browser, 'dark', 1280);
+});
+
+/** The saving throw of the end of the turn, held for a reroll rule's question: the master keeps the d20 and the sheet the player has
+ * open swaps the question for "O mestre respondeu por você.", with no answer left to give. */
+async function scanEffectSaveMasterAnswers(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = { width, height: 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableForCombat(m, p, `Acessibilidade salvaguarda mestre ${Date.now()}`, true, true, { sheet: pensantusCasting });
+    campaignId = table.campaignId;
+    // The feat that rolls a d20 of 2 or lower again is given after the combat began, as the master may change a sheet.
+    const feat = await createEntryRPC(m, campaignId, 'tableFeat', rerollFeatBody());
+    const got = await callRPC(m, 'meurpg.characters.v1.CharacterService/GetCharacter', { campaignId, characterId: table.characterId });
+    expect(got.ok(), await got.text()).toBeTruthy();
+    const character = (await got.json()).character as { id: string; name: string; revision: number; sheet: { full: Record<string, unknown> } };
+    const gave = await callRPC(m, 'meurpg.characters.v1.CharacterService/UpdateCharacter', {
+      campaignId,
+      characterId: character.id,
+      revision: character.revision,
+      name: character.name,
+      sheet: { full: { ...character.sheet.full, featKeys: [...((character.sheet.full.featKeys as string[] | undefined) ?? []), feat] } },
+    });
+    expect(gave.ok(), await gave.text()).toBeTruthy();
+    const enc = await beginAttackCombatRPC(m, table, { Pensantus: 20, 'Capitão Goblin': 15, 'Goblin 1': 5, 'Goblin 2': 4 });
+    const me = enc.combatants.find((c) => c.label === 'Pensantus')!.id;
+    const captain = enc.combatants.find((c) => c.label === 'Capitão Goblin')!.id;
+    const added = await callRPC(m, 'meurpg.play.v1.LastingEffectService/AddLastingEffect', {
+      campaignId,
+      encounterId: enc.id,
+      idempotencyKey: crypto.randomUUID(),
+      targetIds: [me],
+      catalogKey: 'spell:hold-person',
+      casterId: captain,
+      duration: { kind: 'EFFECT_DURATION_KIND_ROUNDS', rounds: 10 },
+      playerVisible: true,
+      audience: 'EFFECT_AUDIENCE_ALL',
+    });
+    expect(added.ok(), await added.text()).toBeTruthy();
+    await openSessionPage(m, campaignId);
+    await openSessionPage(p, campaignId);
+    await p.getByRole('button', { name: 'Encerrar turno' }).click();
+    const save = p.getByRole('dialog', { name: /^(Teste de resistência do fim do turno|Fim do seu turno)$/ });
+    await save.getByRole('button', { name: 'Digitar o resultado' }).click();
+    // A gnome saves against a spell with advantage: two d20, and the best of them (2) is the one the rule covers.
+    await save.getByLabel('Primeiro d20').fill('1');
+    await save.getByLabel('Segundo d20').fill('2');
+    await save.getByRole('button', { name: /Confirmar/ }).click();
+    await expect(save.getByRole('heading', { name: 'Tirou 2: rolar de novo?' })).toBeVisible();
+    await openSessionPage(m, campaignId);
+    const keep = m.getByRole('region', { name: /Tirou 2: rolar de novo\?/ }).getByRole('button', { name: 'Ficar com o 2' });
+    await expect(keep).toBeEnabled({ timeout: 30_000 });
+    await keep.click();
+    // The window is settled with the answer, so the sheet says so where it says that the test no longer waits.
+    await expect(save.getByText('O mestre respondeu por você.')).toBeVisible();
+    await expect(save.getByRole('button', { name: 'Rolar de novo' })).toHaveCount(0);
+    await expect(save.getByRole('button', { name: /^Ficar com o/ })).toHaveCount(0);
+    await expect(save.getByRole('button', { name: 'Rolar no app' })).toHaveCount(0);
+    await expectScreenPasses(p, `O teste de resistência do fim do turno, o mestre respondeu pelo jogador ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+test('a resistência do fim do turno que perdeu a pergunta, o mestre respondeu, passa no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@MR-014', '@RN-35', '@RN-22'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanEffectSaveMasterAnswers(browser, 'light', 1280);
+});
+
+test('a resistência do fim do turno que perdeu a pergunta, o mestre respondeu, passa no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@MR-014', '@RN-35', '@RN-22'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanEffectSaveMasterAnswers(browser, 'dark', 390);
+});
+
+/** The gear (#562): the sheet's "Equipamento" with "Equipar" / "Guardar", and the combat's "Sacar ou guardar" with the cost of each change. */
+async function scanGearScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = { width, height: 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const gear = { weaponKeys: ['equipment:longsword', 'equipment:mace'], armorKey: 'equipment:chain-mail', shield: true, carriedKeys: ['equipment:mace'] };
+    const table = await tableForCombat(m, p, `Acessibilidade trocas de arma ${Date.now()}`, true, true, { build: toren, sheet: gear });
+    campaignId = table.campaignId;
+
+    // The sheet: the two groups, then a shield stowed (the notice and the focus on the moved row).
+    await openLive(p, `/campaigns/${campaignId}/characters/${table.characterId}`);
+    const equipment = p.getByRole('region', { name: 'Equipamento' });
+    await expect(equipment.getByRole('heading', { name: 'Equipado', level: 3 })).toBeVisible();
+    await expect(equipment.getByRole('heading', { name: 'Carregado', level: 3 })).toBeVisible();
+    await expectScreenPasses(p, `Ficha, Equipamento ${where}`);
+    await equipment.getByRole('button', { name: /^Guardar .*Escudo$/ }).click();
+    await expect(equipment.getByRole('status')).toContainText('Guardado: Escudo.');
+    await expect(equipment.getByRole('button', { name: /^Equipar .*Escudo$/ })).toBeFocused();
+    await expectScreenPasses(p, `Ficha, Equipamento depois de guardar o escudo ${where}`);
+    await equipment.getByRole('button', { name: /^Equipar .*Escudo$/ }).click();
+    await expect(equipment.getByRole('button', { name: /^Guardar .*Escudo$/ })).toBeFocused();
+
+    // The combat: the fold under the attacks on the player's turn, with what each change costs inside its button.
+    await beginAttackCombatRPC(m, table, { Toren: 20, 'Capitão Goblin': 15, 'Goblin 1': 5, 'Goblin 2': 4 });
+    await openSessionPage(p, campaignId);
+    const tab = await openActionTab(p, 'Ataques');
+    await expect(tab.getByRole('button', { name: 'Sacar ou guardar' })).toBeVisible();
+    await expect(tab.getByText('1ª arma do turno: grátis; depois, a ação. Escudo: ação. Armadura: só fora do combate.')).toBeVisible();
+    await expect(tab.getByRole('button', { name: /^Guardar grátis Espada longa$/ })).toBeVisible();
+    await expect(tab.getByRole('button', { name: /Cota de malha/ })).toHaveCount(0);
+    await expectScreenPasses(p, `Combate, Sacar ou guardar ${where}`);
+    await tab.getByRole('button', { name: /^Guardar grátis Espada longa$/ }).click();
+    await expect(tab.getByRole('status').filter({ hasText: 'Guardado: Espada longa.' })).toBeVisible();
+    await expect(tab.getByRole('button', { name: /^Sacar .* Espada longa$/ })).toBeFocused();
+    // The free interaction is spent: the next change costs the action.
+    await expect(tab.getByRole('button', { name: /^Sacar ação Maça$/ })).toBeVisible();
+    await expectScreenPasses(p, `Combate, Sacar ou guardar, depois da interação gratuita ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+test('o equipamento passa no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@562'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanGearScreens(browser, 'light', 1280);
+});
+
+test('o equipamento passa no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@562'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanGearScreens(browser, 'dark', 390);
+});
+
 /** The question of a table feature's reroll (R6, R7, R9): the player's "Tirou 2: rolar de novo?" and the answer on its way, and the
  * master's card while the roller answers first, when it is the master's turn to answer, and once the roller did. */
 async function scanRerollQuestionScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
@@ -9039,7 +9266,7 @@ async function scanEffectsPlayerScreens(browser: Browser, colorScheme: 'light' |
     await attack.getByLabel('Primeiro d20').fill('2');
     await attack.getByLabel('Segundo d20').fill('5');
     await attack.getByRole('button', { name: /^Confirmar/ }).click();
-    await expect(attack).toContainText('+ 1d4 (3)');
+    await expect(attack).toContainText('+ Bênção 1d4 (3)');
     await expectScreenPasses(p, `Atacar com Bênção, o resultado com o d4 ${where}`);
     await p.keyboard.press('Escape');
     await expect(attack).toBeHidden();
@@ -9631,6 +9858,98 @@ test('as ações de criatura do mestre passam no axe e nas conferências de layo
   await scanCreatureActions(browser, 'dark', 390);
 });
 
+/** The table die on a weapon attack (Golpe Certeiro, #643): the weapon list's line, the attack sheet's "Rolar" step with the
+ * die (one die: a checkbox, ticked, with the physical d8; two dice: the radio group with "Nenhum"), and the pool with no use left. */
+async function scanManeuverSheetScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number, dice: 1 | 2): Promise<void> {
+  const viewport = { width, height: 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px, ${dice === 1 ? 'um dado' : 'dois dados'})`;
+  let campaignId = '';
+  const openSheet = async () => {
+    await p.getByRole('button', { name: 'Atacar com Machado grande' }).click();
+    await viaTargetList(p, p.getByRole('dialog'));
+    await p.locator('label', { hasText: 'Goblin 1' }).click();
+    await expect(p.getByText('Usar Golpe Certeiro')).toBeVisible();
+  };
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await maneuverTable(m, p, `Acessibilidade dado de manobra ${Date.now()}`, dice);
+    campaignId = table.campaignId;
+    await beginManeuverCombatRPC(m, table);
+    await openSessionPage(p, campaignId);
+
+    // The weapon list says the die can go in the attack.
+    const note = p.getByTestId('maneuver-note');
+    await expect(note).toContainText(dice === 1 ? 'pode entrar num ataque com arma' : 'podem entrar num ataque com arma');
+    await expectScreenPasses(p, `Ataques, a linha do dado de manobra ${where}`);
+
+    // "Rolar": the die offer, nothing chosen.
+    await openSheet();
+    const sheet = p.getByRole('dialog');
+    if (dice === 1) {
+      await expect(sheet.getByRole('checkbox', { name: /Usar Golpe Certeiro/ })).not.toBeChecked();
+    } else {
+      await expect(sheet.getByRole('radio', { name: 'Nenhum' })).toBeChecked();
+    }
+    await expectScreenPasses(p, `Atacar, rolar com o dado de manobra ${where}`);
+
+    // The die ticked, and its d8 typed with the physical dice.
+    if (dice === 1) {
+      await pickRadio(sheet, 'Usar Golpe Certeiro');
+    } else {
+      await pickRadio(sheet, 'Usar Golpe Firme');
+    }
+    await expectScreenPasses(p, `Atacar, o dado de manobra marcado ${where}`);
+    await sheet.getByRole('button', { name: 'Digitar o resultado' }).click();
+    await expect(sheet.getByLabel(dice === 1 ? /Resultado do d8 \(Golpe Certeiro\)/ : /Resultado do d6 \(Golpe Firme\)/)).toBeVisible();
+    await expectScreenPasses(p, `Rolagem física com o dado de manobra, vazia ${where}`);
+    await sheet.getByLabel(dice === 1 ? /Resultado do d8/ : /Resultado do d6/).fill('5');
+    await sheet.getByLabel(/Role 1d20/).fill('14');
+    await expectScreenPasses(p, `Rolagem física com o dado de manobra, preenchida ${where}`);
+    await sheet.getByRole('button', { name: 'Fechar' }).first().click();
+    await expect(sheet).toHaveCount(0);
+
+    // No use left: the die is off, with the reason under the group.
+    await spendPoolRPC(m, table);
+    await p.reload();
+    await expect(p.getByTestId('maneuver-note')).toContainText('sem usos');
+    await openSheet();
+    await expect(sheet.getByText('Sem usos de Reserva de Golpes.')).toBeVisible();
+    await expect(sheet.getByRole(dice === 1 ? 'checkbox' : 'radio', { name: /Usar Golpe Certeiro/ })).toBeDisabled();
+    await expectScreenPasses(p, `Atacar, rolar sem usos do dado de manobra ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+test('o dado de manobra no ataque (um dado) passa no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@MR-014', '@MR-025'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanManeuverSheetScreens(browser, 'light', 1280, 1);
+});
+
+test('o dado de manobra no ataque (um dado) passa no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@MR-014', '@MR-025'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanManeuverSheetScreens(browser, 'dark', 390, 1);
+});
+
+test('o dado de manobra no ataque (dois dados, com "Nenhum") passa no axe e nas conferências de layout no tema escuro, no desktop', { tag: ['@a11y', '@MR-014', '@MR-025'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanManeuverSheetScreens(browser, 'dark', 1280, 2);
+});
+
+test('o dado de manobra no ataque (dois dados, com "Nenhum") passa no axe e nas conferências de layout no tema claro, no celular', { tag: ['@a11y', '@MR-014', '@MR-025'] }, async ({ browser }) => {
+  test.setTimeout(240_000);
+  await scanManeuverSheetScreens(browser, 'light', 390, 2);
+});
+
 // The editor screens of the race, subrace and feat (MR-025, RN-23; #571 and #716), and what a player and the master read of them.
 // A race whose trait asks the player to pick one of two options, a subrace that replaces a trait and the bonuses of its race, and
 // feats that ask for races, a size and a feature the character must not have, all through the API.
@@ -9850,6 +10169,176 @@ test('a lista de talentos do subir de nível com o que não cumpre passa no axe 
   await scanFeatList(browser, 'dark', 390);
 });
 
+// The feat editor's options and named choices (MR-025, RN-23): the list of options, the most it takes, a whole set offered, a named ability choice
+// with its group open, a named damage type choice, the refusals and the choice that was removed, and the formula that reads a choice.
+// Each row is judged in the light and the dark theme at 390 (the master reads: the editor is read-only below 768), 768 and 1280 px;
+// E2E_SHOTS_DIR, when set, also saves the viewport screenshots (feat-options-support.ts).
+
+type FeatOptionsScreen = 'options' | 'limit' | 'set' | 'choice' | 'damage' | 'refusals' | 'formula';
+
+/** What the master reads on a phone, by the feat: the row of what the player picks, and one line of what it lists. */
+const featRead: Record<FeatOptionsScreen, { key: keyof FeatOptionsTable; name: string; picks: string; sees: string }> = {
+  options: { key: 'veteran', name: 'Estilo do Veterano', picks: '1 de 4 opções', sees: 'Classe de Armadura +1' },
+  limit: { key: 'limit', name: 'Livro de Estilos', picks: '1 de 60 opções', sees: 'Um livro de estilos de luta' },
+  set: { key: 'school', name: 'Escola de Armas', picks: '1 estilo de luta', sees: 'Escolha um estilo de luta ao pegar o talento.' },
+  choice: { key: 'resilient', name: 'Resiliente', picks: '1 habilidade', sees: 'Escolha uma habilidade' },
+  damage: { key: 'affinity', name: 'Afinidade Elemental', picks: '1 tipo de dano', sees: 'Escolha um elemento.' },
+  refusals: { key: 'veteran', name: 'Estilo do Veterano', picks: '1 de 4 opções', sees: 'Dano de arma corpo a corpo +1' },
+  formula: { key: 'command', name: 'Voz de Comando', picks: '1 habilidade', sees: 'Sua voz faz o grupo se firmar.' },
+};
+
+/** The screen as the master reads it on a phone: the heading, what the player picks, and what the feat says. */
+async function expectFeatRead(m: Page, screen: FeatOptionsScreen): Promise<void> {
+  const read = featRead[screen];
+  await expect(m.getByRole('heading', { level: 1, name: read.name })).toBeVisible();
+  await expect(m.getByLabel('Nome do talento')).toHaveCount(0);
+  await expect(m.getByRole('definition').filter({ hasText: read.picks })).toBeVisible();
+  await expect(m.getByText(read.sees).first()).toBeVisible();
+}
+
+/** The states of a screen from a tablet up, each judged and saved: opens the route, brings the state up and returns its name. */
+async function featStates(m: Page, screen: FeatOptionsScreen, table: FeatOptionsTable, campaignId: string, width: number, scheme: 'light' | 'dark'): Promise<void> {
+  const where = `(${scheme}, ${width}px)`;
+  const judge = async (state: string, name: string, fullPage = false) => {
+    await expectScreenPasses(m, `Editor de talento, ${state} ${where}`);
+    await shootFeat(m, name, width, scheme, fullPage);
+  };
+  const route = (key: string) => open(m, entryRoute(campaignId, key));
+  const panel = m.getByRole('region', { name: 'Opções do talento' });
+  switch (screen) {
+    case 'options': {
+      await route(table.veteran);
+      await expect(m.getByLabel('Nome do talento').first()).toHaveValue('Estilo do Veterano');
+      await expect(panel).toContainText('4 de 60 opções');
+      await m.getByRole('button', { name: /Opção 2 · Mão Firme/ }).click();
+      await expect(panel.getByLabel('Nome da opção').nth(1)).toBeVisible();
+      await judge('a lista de opções com uma aberta', 'opcoes');
+      break;
+    }
+    case 'limit': {
+      await route(table.limit);
+      await expect(panel).toContainText('60 de 60 opções');
+      const add = panel.getByRole('button', { name: 'Adicionar uma opção' });
+      await expect(add).toHaveAttribute('aria-disabled', 'true');
+      await expect(panel.getByText('No máximo 60 opções. Remova uma para pôr outra.')).toBeVisible();
+      await add.scrollIntoViewIfNeeded();
+      await judge('a lista no limite de 60 opções', 'limite');
+      break;
+    }
+    case 'set': {
+      await route(table.school);
+      await expect(panel).toContainText('Este talento oferece o conjunto Estilo de luta.');
+      const set = m.getByRole('combobox', { name: 'Conjunto' });
+      await expect(set).toHaveValue('fighting_style');
+      await judge('o conjunto inteiro oferecido', 'conjunto');
+      await openSelect(set);
+      await judge('o conjunto aberto', 'conjunto-aberto');
+      await set.press('Escape');
+      break;
+    }
+    case 'choice': {
+      await route(table.resilient);
+      const side = m.getByRole('region', { name: 'Escolhas deste talento' });
+      await expect(side).toContainText('Habilidade · efeito 1');
+      await expect(side).toContainText('usada em 2 efeitos');
+      await judge('a escolha nomeada e o cartão "Escolhas deste talento"', 'resiliente');
+      const proficiency = m.locator('[data-field="table_feat.effects[2].proficiency"]');
+      await expect(proficiency).toHaveValue('save.@habilidade');
+      await openSelect(proficiency);
+      await expect(proficiency.locator('optgroup legend').first()).toContainText('A escolha do talento');
+      await expectInViewport(m, proficiency.locator('option.footer'));
+      await judge('o grupo "A escolha do talento" aberto', 'resiliente-grupo-aberto');
+      await proficiency.press('Escape');
+      break;
+    }
+    case 'damage': {
+      await route(table.affinity);
+      const type = m.locator('[data-field="table_feat.effects[1].damage_type"]');
+      await expect(type).toHaveValue('damage-type:@tipo_de_dano');
+      await judge('a escolha de um tipo de dano', 'afinidade');
+      await openSelect(type);
+      await judge('o tipo de dano aberto', 'afinidade-aberto');
+      await type.press('Escape');
+      break;
+    }
+    case 'refusals': {
+      await route(table.veteran);
+      await pickRadio(m, /Um conjunto inteiro/);
+      await m.getByRole('button', { name: 'Salvar talento' }).click();
+      await expect(m.getByRole('alert').filter({ hasText: 'Não foi possível salvar o talento.' })).toBeVisible();
+      await expect(m.getByText('Este talento tem opções próprias: a escolha oferece elas ou um conjunto, não os dois.')).toBeVisible();
+      await judge('a recusa do servidor no campo', 'recusas');
+      // The choice that was removed: the feat's first effect becomes text only, and what pointed at it has nothing to point at.
+      await route(table.resilient);
+      await m.locator('[data-field="table_feat.effects[0].type"]').selectOption({ label: 'Só texto' });
+      const proficiency = m.locator('[data-field="table_feat.effects[1].proficiency"]');
+      await expect(m.getByText('A escolha “habilidade” que este campo usava foi removida. Escolha outro valor.').first()).toBeVisible();
+      await expect(proficiency.locator('option:checked')).toHaveText('Escolha…');
+      const save = m.getByRole('button', { name: 'Salvar talento' });
+      await expect(save).toHaveAttribute('aria-disabled', 'true');
+      await expect(m.locator('#bar-reason')).toContainText('Escolha outro valor.');
+      await judge('a escolha removida, com o salvar travado', 'escolha-removida');
+      break;
+    }
+    case 'formula': {
+      await route(table.command);
+      const formula = m.locator('[data-field="table_feat.effects[1].value"]');
+      await expect(formula).toHaveValue('8 + prof() + mod("@habilidade")');
+      await expect(m.getByText('Lê-se:').first()).toBeVisible();
+      await judge('a fórmula com os botões da escolha', 'formula');
+      await formula.focus();
+      await m.getByRole('button', { name: 'Valor · Habilidade' }).click();
+      await expect(formula).toHaveValue('8 + prof() + mod("@habilidade") + score("@habilidade")');
+      await expect(m.locator('.reading', { hasText: 'Lê-se: 8' })).toContainText('modificador da escolha Habilidade + valor da escolha Habilidade');
+      await judge('a fórmula depois de pôr a escolha', 'formula-inserida');
+      break;
+    }
+  }
+}
+
+async function scanFeatOptionsScreen(browser: Browser, screen: FeatOptionsScreen): Promise<void> {
+  const context = await browser.newContext({ storageState: authStatePath('Mestre Teste'), viewport: featViewport(1280), ...featShotScale });
+  const m = await context.newPage();
+  try {
+    await m.goto('/');
+    const campaignId = await masterCampaign(m, `Acessibilidade opções do talento ${Date.now()}`);
+    const table = await createFeatOptionsRPC(m, campaignId);
+    for (const scheme of ['light', 'dark'] as const) {
+      await m.emulateMedia({ colorScheme: scheme });
+      for (const width of [390, 768, 1280]) {
+        await m.setViewportSize(featViewport(width));
+        if (width === 390) {
+          await open(m, entryRoute(campaignId, table[featRead[screen].key]));
+          await expectFeatRead(m, screen);
+          await expectScreenPasses(m, `Talento lido pelo mestre no celular, ${featRead[screen].name} (${scheme}, 390px)`);
+          await shootFeat(m, `leitura-${screen}`, width, scheme);
+        } else {
+          await featStates(m, screen, table, campaignId, width, scheme);
+        }
+      }
+    }
+  } finally {
+    await context.close();
+  }
+}
+
+const featRows: [FeatOptionsScreen, string][] = [
+  ['options', 'a lista de opções do talento'],
+  ['limit', 'a lista no limite de 60 opções'],
+  ['set', 'o conjunto inteiro oferecido pela escolha'],
+  ['choice', 'a escolha nomeada de uma habilidade com o grupo aberto'],
+  ['damage', 'a escolha nomeada de um tipo de dano'],
+  ['refusals', 'as recusas do servidor e a escolha removida'],
+  ['formula', 'a fórmula com os botões da escolha'],
+];
+
+for (const [screen, name] of featRows) {
+  test(`${name} do editor de talento passa no axe e nas conferências de layout nos dois temas, em 390, 768 e 1280`, { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+    test.setTimeout(300_000);
+    await scanFeatOptionsScreen(browser, screen);
+  });
+}
+
 /** The master's legendary offers and the Parry switch: the Legendary Resistance window of a stunned dragon, its legendary-actions
  * card (open, folded, spent), the master-only log line, the "Aparar" menu entry and window, and the player's neutral "Esperando o mestre".
  * Each screen is judged at 390, 768 and 1280 px; E2E_SHOTS_DIR, when set, also saves the screenshots (legendary-support.ts). */
@@ -9885,4 +10374,368 @@ test('as ofertas lendárias e o Aparar passam no axe e nas conferências de layo
 test('as ofertas lendárias e o Aparar passam no axe e nas conferências de layout no tema escuro, em 390, 768 e 1280', { tag: ['@a11y', '@PM-04', '@RN-10'] }, async ({ browser }) => {
   test.setTimeout(400_000);
   await scanLegendaryScreens(browser, 'dark');
+});
+
+/** The master's Recharge and uses-per-day screens (#556): one test per screen and theme, each on its own Vrock fight (Esporos, Recharge 6;
+ * Guincho atordoante, 1/day), the state reached through the API, then checked (axe and layout) and saved at 390, 768 and 1280 px
+ * (E2E_SHOTS_DIR). */
+async function rechargeScreen(browser: Browser, colorScheme: 'light' | 'dark', screen: (s: RechargeScreen) => Promise<void>): Promise<void> {
+  const { m, p, close } = await pagesFor(browser, colorScheme, 1280);
+  try {
+    const fight = await beginVrockFight(m, p, 'Acessibilidade recarga');
+    const acts = fight.card.locator('app-creature-actions');
+    const everyWidth = async (page: Page, name: string, what: string, at?: () => Locator, where: 'turn' | 'order' | 'stay' = 'turn') => {
+      for (const width of WIDTHS) {
+        await page.setViewportSize(viewportOf(width));
+        // The order is its own tab on a phone: its screen opens the row there, every other screen is the turn's.
+        if (where === 'order') {
+          await openOrderRow(page, fight.label);
+        } else if (where === 'turn') {
+          await openTurn(page);
+        }
+        await expectScreenPasses(page, `${what} (${colorScheme}, ${width}px)`);
+        await shoot(page, name, width, colorScheme, at?.());
+      }
+    };
+    await screen({ m, p, fight, acts, everyWidth });
+  } finally {
+    await close();
+  }
+}
+
+type RechargeScreen = {
+  m: Page;
+  p: Page;
+  fight: Awaited<ReturnType<typeof beginVrockFight>>;
+  acts: Locator;
+  everyWidth: (page: Page, name: string, what: string, at?: () => Locator, where?: 'turn' | 'order' | 'stay') => Promise<void>;
+};
+
+for (const [colorScheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
+  const tags = { tag: ['@a11y', '@MR-012', '@RN-20', '@RN-29'] };
+  test(`a recarga e os usos por dia passam no axe e nas conferências de layout no tema ${theme}: as ações prontas, a 390, 768 e 1280 px`, tags, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await rechargeScreen(browser, colorScheme, async ({ m, fight, acts, everyWidth }) => {
+      await expect(acts.getByText('Pronta')).toBeVisible();
+      await expect(acts.getByText('1 de 1')).toBeVisible();
+      await everyWidth(m, 'recarga-pronta', 'Recarga: as ações prontas', () => acts);
+      expect(fight.label).toBeTruthy();
+    });
+  });
+  test(`a recarga e os usos por dia passam no axe e nas conferências de layout no tema ${theme}: Esporos gasta no turno, com o "Usar" tracejado e o motivo, a 390, 768 e 1280 px`, tags, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await rechargeScreen(browser, colorScheme, async ({ m, fight, acts, everyWidth }) => {
+      await useCreatureActionRPC(m, fight, 'spores');
+      await m.reload();
+      await openSessionPage(m, fight.campaignId);
+      const spores = acts.locator('li.act').filter({ hasText: 'Esporos' });
+      await expect(spores.getByText('Gasta')).toBeVisible();
+      await expect(spores.getByText('A ação deste turno já foi usada.')).toBeVisible();
+      await expect(spores.getByRole('button', { name: /^Usar Esporos/ })).toHaveAttribute('aria-disabled', 'true');
+      await everyWidth(m, 'recarga-gasta', 'Recarga: Esporos gasta no turno', () => spores);
+    });
+  });
+  test(`a recarga e os usos por dia passam no axe e nas conferências de layout no tema ${theme}: a rolagem do d6 no começo do turno, a 390, 768 e 1280 px`, tags, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await rechargeScreen(browser, colorScheme, async ({ m, fight, acts, everyWidth }) => {
+      await useCreatureActionRPC(m, fight, 'spores');
+      await fight.nextTurn();
+      const rolled = m.getByTestId('recharge-rolled');
+      await expect(rolled).toContainText(/rolou \d no d6\./);
+      const spores = acts.locator('li.act').filter({ hasText: 'Esporos' });
+      // The d6 is the server's and random: whichever face came, the whole state is asserted, the same lines for both results.
+      const recharged = !/não recarregou/.test((await rolled.textContent()) ?? '');
+      await expect(rolled).toHaveClass(recharged ? /mr-notice--success/ : /mr-notice--neutral/);
+      await expect(rolled).toContainText(recharged ? /Esporos recarregou\./ : /Esporos não recarregou \(precisa de 6\)\./);
+      await expect(spores.getByText(recharged ? 'Pronta' : 'Gasta')).toBeVisible();
+      await expect(spores.getByText(recharged ? 'Gasta' : 'Pronta')).toHaveCount(0);
+      await expect(spores.getByText(/Volta com 6 no d6 que o app rola no começo de cada turno do/)).toHaveCount(recharged ? 0 : 1);
+      expect((await spores.getByRole('button', { name: /^Usar Esporos/ }).getAttribute('aria-disabled')) === 'true').toBe(!recharged);
+      // The notice sits under the action chips and above the attacks, in view with the chips.
+      const chips = fight.card.getByRole('list', { name: 'O que ele já usou neste turno' });
+      const above = await Promise.all([chips.boundingBox(), rolled.boundingBox(), acts.boundingBox()]);
+      expect(above[1]!.y).toBeGreaterThan(above[0]!.y);
+      expect(above[1]!.y).toBeLessThan(above[2]!.y);
+      await everyWidth(m, 'recarga-comeco-do-turno', 'Recarga: a rolagem no começo do turno', () => rolled);
+    });
+  });
+  test(`a recarga e os usos por dia passam no axe e nas conferências de layout no tema ${theme}: Guincho atordoante sem usos hoje, a 390, 768 e 1280 px`, tags, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await rechargeScreen(browser, colorScheme, async ({ m, fight, acts, everyWidth }) => {
+      await useCreatureActionRPC(m, fight, 'stunning-screech');
+      await fight.nextTurn();
+      const screech = acts.locator('li.act').filter({ hasText: 'Guincho atordoante' });
+      await expect(screech.getByText('0 de 1')).toBeVisible();
+      await expect(screech.getByText(`Sem usos hoje. O ${fight.label} tem de novo no próximo combate.`)).toBeVisible();
+      // Scrolled to the state it is named for: the list from the card's first header to the whole row, its uses and its reason.
+      await everyWidth(m, 'usos-por-dia-sem-usos', 'Usos por dia: sem usos hoje', () => acts.locator('.acts__list'));
+    });
+  });
+  test(`a recarga e os usos por dia passam no axe e nas conferências de layout no tema ${theme}: os limites na linha da ordem e a jogadora que não os lê, a 390, 768 e 1280 px`, tags, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await rechargeScreen(browser, colorScheme, async ({ m, p, fight, everyWidth }) => {
+      await useCreatureActionRPC(m, fight, 'spores');
+      await fight.nextTurn();
+      await useCreatureActionRPC(m, fight, 'stunning-screech');
+      await openOrderRow(m, fight.label);
+      const lines = m.getByTestId('order-limit');
+      await expect(lines).toHaveCount(2);
+      await expect(lines.filter({ hasText: /Esporos · Recarga 6 · (pronta|gasta)/ })).toHaveCount(1);
+      await expect(lines.filter({ hasText: 'Guincho atordoante · 1/dia · 0 de 1' })).toHaveCount(1);
+      await everyWidth(m, 'ordem-limites', 'Recarga: os limites na linha da ordem', () => lines.first(), 'order');
+      // A player reads nothing of it: no state, no uses, no roll, no "Outras ações".
+      await p.reload();
+      await openSessionPage(p, fight.campaignId);
+      // Searched where the master's card writes them, never in the whole page: its session bar reads "desde 14:03" (a "de 1" in the
+      // afternoon) and the player's own hit points read "24 de 24". The Vrock's row of the order and the combat view are the
+      // places; the uses are the master's "N de M" (the same shape) in the Vrock's row and the elements that carry them.
+      const area = p.locator('app-combat-view');
+      const vrockRow = p.locator('li.row').filter({ hasText: fight.label });
+      await expect(vrockRow).toBeVisible();
+      await expect(area).toContainText(fight.label); // the area is the combat the player reads, so its silence on the limits means something
+      for (const word of ['Outras ações', 'Pronta', 'Gasta', 'no d6', 'Recarga', 'Esporos', 'Guincho']) {
+        await expect(area).not.toContainText(word);
+      }
+      await expect(vrockRow).not.toContainText(/\d+ de \d+/);
+      for (const mine of ['app-creature-actions', '[data-testid="order-limit"]', '[data-testid="recharge-rolled"]', '.act__uses']) {
+        await expect(p.locator(mine)).toHaveCount(0);
+      }
+      await everyWidth(p, 'jogador-sem-limites', 'Recarga: a jogadora não lê os limites', undefined, 'stay');
+    });
+  });
+  test(`a recarga e os usos por dia passam no axe e nas conferências de layout no tema ${theme}: a ficha da criatura lenta e a que não pôde ser lida, a 390, 768 e 1280 px`, tags, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await rechargeScreen(browser, colorScheme, async ({ m, fight, everyWidth }) => {
+      let release: () => void = () => undefined;
+      const held = new Promise<void>((resolve) => (release = resolve));
+      await m.route('**/meurpg.rules.v1.ContentService/GetCreature', async (route) => {
+        await held;
+        await route.abort();
+      });
+      await m.reload();
+      await openSessionPage(m, fight.campaignId);
+      const acts = () => fight.card.locator('app-creature-actions');
+      await expect(fight.card.getByText('Lendo a ficha da criatura…')).toBeVisible();
+      await everyWidth(m, 'ficha-lendo', 'Recarga: lendo a ficha da criatura', acts);
+      release();
+      await expect(fight.card.locator('.acts__live')).toContainText('Não deu para ler as outras ações da criatura.');
+      await everyWidth(m, 'ficha-erro', 'Recarga: a ficha não pôde ser lida', acts);
+      await m.unroute('**/meurpg.rules.v1.ContentService/GetCreature');
+      const retry = fight.card.getByRole('button', { name: 'Tentar de novo' });
+      await retry.focus();
+      await retry.click();
+      // The focus stays in the section (its heading) while the card reads again, never on the page's body.
+      await expect(fight.card.getByRole('button', { name: /^Usar Esporos/ })).toBeVisible();
+      await expect(m.locator('body')).not.toBeFocused();
+    });
+  });
+  test(`a recarga e os usos por dia passam no axe e nas conferências de layout no tema ${theme}: o descanso longo devolve os usos dos NPCs, a 390, 768 e 1280 px`, tags, async ({ browser }) => {
+    test.setTimeout(240_000);
+    await rechargeScreen(browser, colorScheme, async ({ m, fight, everyWidth }) => {
+      // The table has no NPC of its own that kept any use, so the preview's answer is the server's with one name added: what the
+      // server sends is held by the leak rows (leaktest).
+      await m.route('**/meurpg.play.v1.ResourceService/GetRestPreview', async (route) => {
+        const res = await route.fetch();
+        const body = (await res.json()) as Record<string, unknown>;
+        await route.fulfill({ response: res, json: { ...body, npcsBack: [{ characterId: 'bartolo', name: 'Bartolo' }] } });
+      });
+      await combatRPC(m, 'EndEncounter', { campaignId: fight.campaignId, encounterId: (await getEncounterRPC(m, fight.campaignId)).id });
+      await openSessionPage(m, fight.campaignId, 'grupo');
+      await m.getByRole('button', { name: 'Voltar à sessão' }).click();
+      const rest = m.getByRole('region', { name: 'Descanso' });
+      await rest.getByRole('button', { name: 'Descanso longo' }).click();
+      const question = rest.getByRole('alertdialog', { name: 'Começar o descanso longo?' });
+      await expect(question).toContainText('NPCs da campanha recuperam os usos: Bartolo.');
+      await everyWidth(m, 'descanso-longo-npcs', 'Recarga: o descanso longo devolve os usos dos NPCs', () => question, 'stay');
+      await m.unroute('**/meurpg.play.v1.ResourceService/GetRestPreview');
+    });
+  });
+}
+
+/** The Tela da mesa (#648): the master's panel in the live session (open, then with a pin that has a dashed row beside it) and the TV tab it opens
+ * (the waiting screen, the map with a roll, the combat on the map), in one table with the fog on. The TV tab is a page of the master's own context. */
+async function scanTableScreen(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = { width, height: 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const pensantusPlayer = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const torenPlayer = await browser.newContext({ storageState: authStatePath('E-mail Não Verificado'), colorScheme, viewport });
+  const m = await master.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    const ap = await pensantusPlayer.newPage();
+    const bp = await torenPlayer.newPage();
+    await Promise.all([m.goto('/'), ap.goto('/'), bp.goto('/')]);
+    const table = await tableForFog(m, ap, bp, `Acessibilidade tela da mesa ${Date.now()}`);
+    campaignId = table.campaignId;
+    const fog = await callRPC(m, 'meurpg.maps.v1.MapService/SetMapFog', { campaignId, mapId: table.mapId, groupVision: true });
+    expect(fog.ok(), await fog.text()).toBeTruthy();
+    await openSessionPage(m, campaignId);
+
+    const tv = await master.newPage();
+    await tv.goto(tvRoute(campaignId));
+    await expect(tv.locator('app-fog-map img[src$="as=tv"]').first()).toBeVisible();
+
+    // The panel with the TV open and following the table.
+    const panel = await openTvPanel(m);
+    await expect(panel.getByTestId('tv-state')).toContainText('Aberta');
+    await expect(panel.getByTestId('tv-pin-combat').getByRole('radio')).toBeDisabled();
+    await expectScreenPasses(m, `Tela da mesa, o painel aberto ${where}`);
+
+    // Pinned to the waiting screen: the combat row stays dashed, with its reason.
+    await chooseRow(panel, 'tv-pin-idle');
+    await expect(panel.getByTestId('tv-now')).toContainText('A tela de espera, fixa.');
+    await expectScreenPasses(m, `Tela da mesa, a TV fixa na espera e a linha tracejada ${where}`);
+    await expect(tv.getByRole('heading', { level: 2, name: 'Nada à mostra ainda' })).toBeVisible();
+    await expectLoaded(tv);
+    await expectScreenPasses(tv, `A TV, a tela de espera ${where}`);
+
+    // Following the table again: the map the group sees, with a roll beside it.
+    await chooseRow(panel, 'tv-mirror');
+    await rollForTableRPC(m, campaignId);
+    await expect(tv.locator('app-fog-map img[src$="as=tv"]').first()).toBeVisible();
+    await expect(tv.getByTestId('tv-roll-last')).toBeVisible();
+    await expectLoaded(tv);
+    await expectScreenPasses(tv, `A TV, o mapa e a rolagem ${where}`);
+
+    // The combat, drawn on the map.
+    await beginFogCombat(m, table);
+    await expect(tv.getByRole('heading', { level: 2, name: 'Ordem' })).toBeVisible();
+    await expectLoaded(tv);
+    await expectScreenPasses(tv, `A TV, o combate no mapa ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await pensantusPlayer.close();
+    await torenPlayer.close();
+  }
+}
+
+test('a Tela da mesa, o painel do mestre e a TV, passa no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@RN-10'] }, async ({ browser }) => {
+  await scanTableScreen(browser, 'light', 1280);
+});
+
+test('a Tela da mesa, o painel do mestre e a TV, passa no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@RN-10'] }, async ({ browser }) => {
+  await scanTableScreen(browser, 'dark', 390);
+});
+
+/** "Mais ações" of the NPC's card and the opportunity attack (#643): the menu with the offer on, the offer panel in place with the
+ * candidates ringed on the map, the player's prompt with the die line and the attack sheet's die, then the menu with the offer off
+ * and its reason (the only one who could react spent the reaction). The menu is driven with the keyboard. */
+async function scanOfferScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = { width, height: width >= 1024 ? 800 : 844 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await maneuverTable(m, p, `Acessibilidade oferta ${Date.now()}`, 1);
+    campaignId = table.campaignId;
+    const start = await beginManeuverCombatRPC(m, table, { 'Goblin 1': 20, Brutus: 15, 'Capitão Goblin': 10, 'Goblin 2': 4 });
+    await openSessionPage(p, campaignId);
+    await openSessionPage(m, campaignId);
+    await expect(m.getByText('Vez do Goblin 1').first()).toBeVisible();
+    // Two NPCs on the party's side: three candidates for the offer.
+    // The sides are setup, set through the API; the page waits for the combat it shows to have them.
+    const setSides = async (side: 'COMBATANT_SIDE_PARTY' | 'COMBATANT_SIDE_ENEMY') => {
+      let enc = start;
+      for (const label of ['Goblin 2', 'Capitão Goblin']) {
+        enc = await combatRPC(m, 'SetCombatantSide', { campaignId, encounterId: start.id, combatantId: start.combatants.find((c) => c.label === label)!.id, side });
+      }
+      await waitForEncounterRevision(m, enc, 'the sides of the NPCs');
+    };
+    await setSides('COMBATANT_SIDE_PARTY');
+    await openTurn(m);
+
+    // The menu, with the offer on: Enter opens it, the arrow keys move, Escape gives the focus back to the button.
+    const trigger = m.getByRole('button', { name: 'Mais ações de Goblin 1' });
+    await trigger.focus();
+    await m.keyboard.press('Enter');
+    const offerItem = m.getByRole('menuitem', { name: /Oferecer ataque de oportunidade/ });
+    await expect(offerItem).toBeVisible();
+    await expect(offerItem).toBeEnabled();
+    await expectScreenPasses(m, `Mais ações do cartão do NPC, com a oferta ${where}`);
+    await m.keyboard.press('Escape');
+    await expect(offerItem).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+
+    // Chosen with Enter: the panel opens in the card and takes the focus; the candidates are ringed on the map beside it.
+    await m.keyboard.press('Enter');
+    await expect(offerItem).toBeFocused();
+    await m.keyboard.press('Enter');
+    const panel = m.getByRole('region', { name: 'Oferecer ataque de oportunidade' });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('radio').first()).toBeFocused();
+    await expect(panel.getByRole('radio')).toHaveCount(3);
+    await expect(panel.getByText(/agora a \d/).first()).toBeVisible();
+    if (width >= 1024) {
+      await expect(m.locator('.cm__pick--offer')).toHaveCount(3);
+    }
+    // The panel has the one filled button, and its actions are in view without scrolling ("Próximo turno" is outlined meanwhile).
+    const give = panel.getByRole('button', { name: /^Oferecer a / });
+    await expect(give).toHaveClass(/mat-mdc-unelevated-button/);
+    await expect(m.getByRole('button', { name: 'Próximo turno' }).first()).toHaveClass(/mat-mdc-outlined-button/);
+    if (width >= 1024) {
+      const box = await give.boundingBox();
+      expect(box!.y + box!.height).toBeLessThanOrEqual(m.viewportSize()!.height);
+    }
+    await expectScreenPasses(m, `Oferecer ataque de oportunidade, no lugar, no mapa ${where}`);
+    await panel.getByRole('button', { name: 'Não oferecer' }).click();
+    await expect(panel).toHaveCount(0);
+    // The two are enemies again: the only one who can react is Brutus (the offer is off once he has spent his reaction).
+    await setSides('COMBATANT_SIDE_ENEMY');
+    await openTurn(m);
+
+    // The goblin leaves Brutus's reach: the player's prompt names the die; the attack sheet offers it.
+    const goblin = start.combatants.find((c) => c.label === 'Goblin 1')!;
+    await combatRPC(m, 'MoveCombatant', { campaignId, encounterId: start.id, combatantId: goblin.id, col: 9, row: 7 });
+    const prompt = p.getByRole('alertdialog', { name: 'Ataque de oportunidade' });
+    await expect(prompt.getByRole('button', { name: 'Não atacar' })).toBeFocused();
+    await expect(prompt.locator('.mr-die-note')).toContainText('Golpe Certeiro (d8) pode entrar neste ataque');
+    await expectScreenPasses(p, `Ataque de oportunidade, o aviso com a linha do dado ${where}`);
+    await prompt.getByRole('button', { name: 'Atacar com Machado grande' }).click();
+    const sheet = p.getByRole('dialog');
+    await expect(sheet.getByRole('heading', { name: 'Ataque de oportunidade · Machado grande' })).toBeVisible();
+    await expect(sheet.getByText('gasta a sua reação')).toBeVisible();
+    await expect(sheet.getByText('Ataque de oportunidade', { exact: true })).toBeVisible();
+    await expect(sheet.getByText('Usar Golpe Certeiro')).toBeVisible();
+    await expectScreenPasses(p, `Ataque de oportunidade, rolar com o dado de manobra ${where}`);
+    await sheet.getByRole('button', { name: 'Digitar o resultado' }).click();
+    await sheet.getByLabel(/Role 1d20/).fill('1');
+    await sheet.getByRole('button', { name: 'Confirmar 1' }).click();
+    await expect(sheet.getByText('Sua reação foi usada.')).toBeVisible();
+    await sheet.getByRole('button', { name: 'Fechar' }).last().click();
+
+    // Nobody can react now: the offer stays in the menu, off, with its reason; Enter on it does nothing.
+    await waitForEncounterRevision(m, await getEncounterRPC(m, campaignId), 'Brutus spent his reaction');
+    await trigger.focus();
+    await m.keyboard.press('Enter');
+    await expect(offerItem).toHaveAttribute('aria-disabled', 'true');
+    await expect(offerItem).toHaveAccessibleDescription('Ninguém pode reagir agora.');
+    await expectScreenPasses(m, `Mais ações do cartão do NPC, com a oferta desligada e o motivo ${where}`);
+    await m.keyboard.press('Escape');
+    await expect(trigger).toBeFocused();
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+test('o menu "Mais ações" do NPC e a oferta de ataque de oportunidade passam no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@MR-014', '@MR-034'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanOfferScreens(browser, 'light', 1280);
+});
+
+test('o menu "Mais ações" do NPC e a oferta de ataque de oportunidade passam no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@MR-014', '@MR-034'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanOfferScreens(browser, 'dark', 390);
 });

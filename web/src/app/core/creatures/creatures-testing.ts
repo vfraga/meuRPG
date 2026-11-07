@@ -302,6 +302,15 @@ export class FakeCreaturesClient {
     }
     return b;
   });
+  /** The stat blocks of a character's creature (by its id): what the server worked out for its owner. */
+  ownBlocks = new Map<string, Creature>();
+  creatureBlock = vi.fn(async (_c: string, _key: string, id: string) => {
+    const b = this.ownBlocks.get(id);
+    if (!b) {
+      throw new Error('no stat block');
+    }
+    return b;
+  });
   vitalsOf = vi.fn(async () => this.vitals);
   summonOptions = vi.fn(async (_c: string, _ch: string) => {
     this.calls.push('options');

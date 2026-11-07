@@ -15,16 +15,21 @@
         <span class="card__kind">{{ line }}</span>
       }
     </div>
+    <app-npc-card-menu
+      class="card__more"
+      [campaignId]="campaignId()"
+      [encounter]="encounter()"
+      [subject]="subject()"
+      [offerWhy]="offerWhy()"
+      (offer)="offer.emit()"
+    />
   </div>
-  @if (creatureSlug(); as slug) {
-    <a class="card__sheet" [routerLink]="['/campaigns', campaignId(), 'bestiary', slug]">Ficha da criatura</a>
-  }
 
   <app-combatant-tags class="card__states" [names]="conditions()" [label]="subject().label" [states]="subject().states" [sources]="subject().conditionSources" [people]="encounter().combatants" />
   <app-rage-status class="card__rage" [subject]="subject()" [busy]="turnBusy()" (endRage)="endRage.emit(subject().id)" />
 
   @if (full()) {
-    <div class="stats">
+    <div class="stats" [class.mr-visually-hidden]="offerOpen() && isNpc()">
       @if (stats().hp; as hp) {
         <div class="stat">
           <span class="stat__cap">Pontos de vida</span>
@@ -43,7 +48,7 @@
       </div>
     </div>
 
-    <ul class="chips" aria-label="O que ele já usou neste turno">
+    <ul class="chips" [class.mr-visually-hidden]="offerOpen() && isNpc()" aria-label="O que ele já usou neste turno">
       <li class="chip" [class.chip--used]="actionChip().used">
         Ação <span class="chip__word">{{ actionChip().word }}</span>
       </li>
@@ -57,6 +62,7 @@
         Movimento <span class="chip__word">{{ stats().movement }}</span>
       </li>
     </ul>
+    <app-recharge-notice [rolls]="rechargeRolls()" [limited]="subject().limitedActions" />
     <!-- On a legendary creature's own turn the card tells what came back and that its legendary actions wait for another's turn. -->
     <ng-content select="[legendary-slot]" />
 
@@ -78,24 +84,8 @@
     @if (theatre() && !down()) {
       <app-master-spend [campaignId]="campaignId()" [encounterId]="encounter().id" [subject]="subject()" [state]="state()" />
     }
-    @if (theatre() && isNpc()) {
-      <button
-        matButton="outlined"
-        type="button"
-        class="offer"
-        [class.mr-button--off]="!!offerWhy()"
-        [attr.aria-expanded]="offering()"
-        [attr.aria-describedby]="offerWhy() ? 'offer-why' : null"
-        [disabled]="!!offerWhy()"
-        disabledInteractive
-        (click)="!offerWhy() && offer.emit()"
-      >
-        <mat-icon aria-hidden="true">swords</mat-icon>Oferecer ataque de oportunidade
-      </button>
-      @if (offerWhy()) {
-        <p class="offer__why" id="offer-why">{{ offerWhy() }}</p>
-      }
-      <!-- The form opens right here, under its button. -->
+    @if (isNpc()) {
+      <!-- The offer form (from "Mais ações") opens right here, under the stats. -->
       <ng-content select="[offer-slot]" />
     }
 
@@ -203,6 +193,8 @@
         [state]="state()"
         [creature]="block()"
         [pendings]="pendings()"
+        [blockState]="blockState()"
+        (retry)="statBlock.retry()"
         [theatre]="theatre()"
         [turnBusy]="turnBusy()"
         (damageOpened)="creatureDamageIds.set($event)"

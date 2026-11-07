@@ -40,6 +40,11 @@
   }
 }
 
+// The small title's line is 26 px high, not 30: the icon's middle follows it.
+.frame__head:has(.frame__title--small) .frame__icon {
+  margin-top: -1px;
+}
+
 .frame__titles {
   flex: 1;
   min-width: 0;

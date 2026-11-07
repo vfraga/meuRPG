@@ -126,6 +126,11 @@ func checkImagesAndTiles(t *testing.T, w *world) {
 			t.Errorf("%s got a tile of the fog map", p.name)
 		}
 	}
+	// The TV's tiles (`as=tv`, the master's, for the table screen): "Visão do grupo" is off in the fixture, so the TV has
+	// no tile of the fog map. Nobody gets one, the master neither: every answer is the one of a tile that does not exist.
+	// (With "Visão do grupo" on the master gets 200 and the others the same 404: TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees.)
+	known := vis[w.ana].GetTiles()[0]
+	checkTVTiles(t, w, "group vision off", "/images/maps/"+w.fogMap+"/tiles/", known, false)
 	_ = connect.CodeNotFound
 }
 

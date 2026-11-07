@@ -67,6 +67,7 @@ Events, after `ready`:
 | `xp_changed` | The campaign's XP changed |
 | `spell_casts_changed` | A cast outside combat started, finished or ended |
 | `creatures_changed`, `revivify_changed`, `character_changes_requested`, `character_resubmitted`, `character_revived`, `content_changed` | Contentless hints; the app reads again |
+| `table_screen_changed` | The master's choice for the TV changed, or a TV tab connected or left; the choice revision and, for presence, whether a tab is open and when the last one was lost. To the master alone; no player's stream gets it |
 | `puzzle_changed` | A puzzle changed; only its id |
 | `calling_you` | The master's nudge, to one player's streams only |
 | `free_roll_rolled` | A table roll of the free dice roller, carried whole, to everyone; a secret roll is sent to nobody ([The free dice roller](free-dice-roller.md)) |

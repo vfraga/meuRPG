@@ -27,6 +27,7 @@ import {
   spendText,
 } from '../../../../core/combat/opportunity';
 import { playerAutoPassText, playerSecondsLeft } from '../../../../core/combat/reaction-autopass';
+import { maneuverLine } from '../../../../core/effects/roll-die';
 import { tieNumbers } from '../../../../core/format/text';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
@@ -91,6 +92,9 @@ export type OpportunityAnswer = {
               <li><b>{{ a.name }}</b> {{ a.numbers }}</li>
             }
           </ul>
+          @if (dieLine()) {
+            <p class="mr-die-note"><mat-icon aria-hidden="true">casino</mat-icon><span>{{ dieLine() }}</span></p>
+          }
         } @else if (readFailed()) {
           <p class="small" role="status">Não deu para ler os seus ataques. Dá para tentar de novo, ou não atacar.</p>
         } @else {
@@ -142,6 +146,8 @@ export class OpportunitySheet {
   );
   protected readonly readFailed = signal(false);
   private options: GetTurnOptionsResponse | null = null;
+  /** The reactor's table dice (Golpe Certeiro) for this attack, once read; none for an NPC (the server lists none). */
+  protected readonly dieLine = signal('');
   /** The master's screen passes the offer after 30 s without an answer, like any optional reaction. */
   private readonly openedAt = Date.now();
   private readonly clock = signal(this.openedAt);
@@ -190,6 +196,7 @@ export class OpportunitySheet {
     try {
       const { attacks, options } = await this.data.load();
       this.options = options;
+      this.dieLine.set(maneuverLine(options.maneuverDice, 'attack'));
       // The numbers after the name: "+5 · 1d8 + 3 cortante".
       this.attacks.set(attacks.map((a) => ({ ...a, numbers: a.detail.replace(`${a.name} `, '') })));
     } catch {

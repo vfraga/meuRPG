@@ -400,6 +400,21 @@
     0 0 0 min(8px, calc(var(--cm-tk) * 0.6)) var(--mr-map-accent);
 }
 
+// The master's candidates for an opportunity offer: a dashed ring in the garnet, solid on the chosen one (not colour alone).
+.cm__pick--offer::before {
+  box-sizing: border-box;
+  // A gap of map between the token and a thin dashed line, so it never reads as the solid ring of the turn.
+  width: calc(var(--cm-tk) * var(--span, 1) + min(12px, var(--cm-tk) * 0.7));
+  height: calc(var(--cm-tk) * var(--span, 1) + min(12px, var(--cm-tk) * 0.7));
+  border: 2px dashed var(--mr-map-accent);
+  box-shadow: 0 0 0 1px var(--mr-map-token-surface);
+}
+
+.cm__pick--offer.cm__pick--on::before {
+  border-style: solid;
+  box-shadow: 0 0 0 min(3px, calc(var(--cm-tk) * 0.2)) var(--mr-map-token-surface);
+}
+
 // Dimmed: no ring, only the tap that tells why.
 .cm__pick--off::before {
   box-shadow: none;

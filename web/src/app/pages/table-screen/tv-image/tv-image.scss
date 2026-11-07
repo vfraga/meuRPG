@@ -1,0 +1,58 @@
+:host {
+  display: block;
+  min-height: 0;
+}
+
+.tv-image {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--mr-space-2);
+  height: 100%;
+  margin: 0;
+  padding: var(--mr-space-4) var(--mr-gutter);
+}
+
+.tv-image__frame {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  max-width: 100%;
+}
+
+.tv-image__img {
+  display: block;
+  max-width: 100%;
+  // On a TV the picture takes what the header and the caption leave; on a phone it is as tall as it is wide.
+  max-height: calc(100dvh - 12rem);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-surface);
+}
+
+.tv-image__caption {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  max-width: 100%;
+  font-size: var(--mr-font-17);
+  font-weight: 700;
+  color: var(--mr-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (min-width: 900px) {
+    white-space: nowrap;
+  }
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-28);
+  }
+}

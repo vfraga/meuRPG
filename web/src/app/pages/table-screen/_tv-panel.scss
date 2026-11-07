@@ -1,0 +1,6 @@
+// A TV panel in a column: the component's host takes the height its parent gives it and its card fills it.
+@mixin fill {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}

@@ -1,0 +1,14 @@
+<section class="tv-msg">
+  <mat-icon class="tv-msg__icon" aria-hidden="true">{{ icon() }}</mat-icon>
+  @if (level() === 1) {
+    <h1 class="tv-msg__title">{{ title() }}</h1>
+  } @else {
+    <h2 class="tv-msg__title">{{ title() }}</h2>
+  }
+  @if (detail()) {
+    <p class="tv-msg__detail">{{ detail() }}</p>
+  }
+  @if (hint()) {
+    <p class="tv-msg__hint">{{ hint() }}</p>
+  }
+</section>

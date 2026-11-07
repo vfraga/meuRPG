@@ -42,6 +42,7 @@ A swatch is `.mr-swatch` (22 px, `aria-hidden`); the words carry the meaning.
 The browser draws only what the server sends: each square comes from `GetMapVision` (`core/maps/vision.ts` only unpacks it), the image comes in 16 × 16-square tiles and tokens arrive filtered.
 One component (`app-fog-map`) serves the player, the master's own map ("Todos") and "Ver como".
 
+- **Inputs of the table screen:** `tools` (default on) draws the zoom, fit and full-screen buttons under the map, and the TV turns it off; the picture is at most `--fm-max-h` tall (78 vh by default) and the TV's card sets it to the height it has, so the legend never leaves the card.
 - **Square states:** Visto (the image as is), Penumbra (25% black), No escuro em cinza (no colour), Já visto (60% black with fine dots, no NPCs, layer marks faded) and Não visto (black). Contrast comes from brightness and texture.
 - **Loading** shows thin still stripes and "Carregando o mapa" only on the first load of a map and player; the party's tokens always show.
 - **Tokens:** the player's own has an `accent` ring and is above the others; creature tokens have the dashed ring.

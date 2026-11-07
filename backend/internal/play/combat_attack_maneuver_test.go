@@ -268,8 +268,8 @@ func TestTheDieOfAnAttackIsInTheLogOfWhoSeesTheDice(t *testing.T) {
 	}
 	extra := func(u *user) []*playv1.ExtraDie { return extraDiceOfLog(g.logEntries(t, u, e)) }
 	for name, u := range map[string]*user{"the master": g.master, "the attacker's player": g.ana} {
-		if got := extra(u); len(got) != 1 || got[0].GetFace() != 4 || got[0].GetFaces() != 8 {
-			t.Errorf("%s reads the log's dice %v, want the d8 of 4", name, got)
+		if got := extra(u); len(got) != 1 || got[0].GetFace() != 4 || got[0].GetFaces() != 8 || got[0].GetSourceNamePt() != "Golpe Preciso" {
+			t.Errorf("%s reads the log's dice %v, want the d8 of 4 named Golpe Preciso", name, got)
 		}
 	}
 	if got := extra(g.caio); len(got) != 0 {

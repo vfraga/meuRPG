@@ -13,10 +13,16 @@ interface Shape {
   readonly resource?: string;
   readonly cost?: string;
   readonly damageType?: string;
+  readonly cap?: number;
 }
 
 /** The modifier target whose scope ("Vale para") is asked: the critical range, the only target that reads `applies`. */
 export const CRITICAL_RANGE_TARGET = 'critical_range';
+
+/** Whether a modifier target is an ability score ("score.str", or the pick "score.@habilidade"): the only one that has a limit. */
+export function isScoreTarget(target: string): boolean {
+  return target.startsWith('score.');
+}
 
 /** The fields of a reroll, a roll minimum or a modifier that apply now. A field that holds a value stays, so a refusal of it has
  * somewhere to land: the damage type of a minimum on rolls other than damage alone, the cost of a reroll with no resource. */
@@ -28,10 +34,15 @@ function rollFieldsHidden(d: Shape): readonly string[] {
   if (d.type === 'reroll') {
     return (d.resource ?? '') !== '' || (d.cost ?? '') !== '' ? [] : ['cost'];
   }
-  if (d.type === 'modifier') {
-    return d.target === CRITICAL_RANGE_TARGET ? [] : ['applies'];
-  }
-  return [];
+  return d.type === 'modifier' ? modifierFieldsHidden(d) : [];
+}
+
+/** A modifier asks the scope only for the critical range and the limit only for a score (or where one is already typed). */
+function modifierFieldsHidden(d: Shape): readonly string[] {
+  return [
+    ...(d.target === CRITICAL_RANGE_TARGET ? [] : ['applies']),
+    ...(isScoreTarget(d.target ?? '') || (d.cap ?? 0) !== 0 ? [] : ['cap']),
+  ];
 }
 
 /** What a spell_modifier's change reads besides the fields every change has: the swap lists the types it swaps among, the bonus

@@ -1,0 +1,183 @@
+@use '../tv-panel' as tv;
+
+:host {
+  display: block;
+
+  @media (min-width: 900px) {
+    @include tv.fill;
+  }
+}
+
+.tv-order {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+
+  @media (min-width: 900px) {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+.tv-order__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mr-space-2);
+  padding: var(--mr-space-2) var(--mr-space-4);
+  border-bottom: 1px solid var(--mr-line);
+}
+
+.tv-order__title {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: var(--mr-font-21);
+  color: var(--mr-ink);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-34);
+  }
+}
+
+.tv-order__round {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 800;
+  font-size: var(--mr-font-17);
+  color: var(--mr-ink);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-28);
+  }
+}
+
+// On a TV the list is the room the panel has left, and only the rows that fit are drawn (`appTvFit`).
+.tv-order__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: 900px) {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.tv-order__row {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-3);
+  min-height: 44px;
+  padding: 0 var(--mr-space-4);
+  font-size: var(--mr-font-18);
+  color: var(--mr-ink);
+
+  & + & {
+    border-top: 1px solid var(--mr-rule);
+  }
+
+  @media (min-width: 1600px) {
+    min-height: 64px;
+    font-size: var(--mr-font-30);
+  }
+
+  &--turn {
+    min-height: 56px;
+    background: var(--mr-accent-soft);
+    font-weight: 800;
+    font-size: var(--mr-font-22);
+
+    @media (min-width: 1600px) {
+      min-height: 84px;
+      font-size: var(--mr-font-38);
+    }
+  }
+}
+
+.tv-order__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-order__word {
+  flex: none;
+  font-size: var(--mr-font-16);
+  color: var(--mr-ink-muted);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-26);
+  }
+
+  &--turn {
+    font-weight: 800;
+    color: var(--mr-accent-text);
+  }
+}
+
+.tv-order__masters {
+  flex: none;
+  color: var(--mr-ink-muted);
+}
+
+.tv-order__round-line {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-3);
+  padding: 4px var(--mr-space-4);
+  border-top: 1px solid var(--mr-rule);
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+  color: var(--mr-ink-muted);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1 1 0;
+    border-top: 1px solid var(--mr-rule);
+  }
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-22);
+  }
+}
+
+// "+N", under the list: its room is kept while it is empty, so the rows that fit do not change when it appears.
+.tv-order__more {
+  flex: none;
+  margin: 0;
+  // Same height empty and filled: the "+N" appearing must not shrink the list it just measured.
+  box-sizing: border-box;
+  height: 1.8em;
+  overflow: hidden;
+  line-height: 1.4;
+  padding: 2px var(--mr-space-4);
+  border-top: 1px solid var(--mr-rule);
+  font-weight: 700;
+  color: var(--mr-ink-muted);
+
+  &:empty {
+    border-top-color: transparent;
+  }
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-24);
+  }
+
+  @media (max-width: 899.98px) {
+    &:empty {
+      display: none;
+    }
+  }
+}

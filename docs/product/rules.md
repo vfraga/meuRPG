@@ -306,6 +306,27 @@ The master may open a hidden scene point; the scene reaches the players and the 
 **Reserved characters** ([MR-049](stories.md#mr-049-reserved-characters-and-claim-links)).
 No player reads a character the master made for a player to claim until someone claims it: not in lists, by ID, in the party, the combat, the map, the XP or the session summary. The person with the link, once signed in, sees only name, race, class, level, who sent it and the campaign's name.
 
+**The table screen** (the TV at the table).
+The master opens it on a screen the whole table sees, and it reads as a player with no character: what every player may read, and nothing that only one of them does.
+The master chooses to follow what the table sees or to pin one item, and the server decides what shows.
+What goes to the TV:
+
+| Part | The TV receives | The TV never receives |
+| --- | --- | --- |
+| "Mapa" | The map as the group sees it: revealed points, visible tokens and the squares the group sees or remembers. With the fog on and "Visão do grupo" off, only that the map is hidden by the fog | The map's image on a fog map, hidden points, traps, treasures, light, unseen cells, a token no character sees |
+| "Ordem e vez" | The combatants the table sees with name, initial and one word of state (RN-20), whose turn it is, and "Vez do mestre" when the turn is a combatant the table does not see. A table creature in the combat is named. The state word is sent by the server: FALLEN for a player character that is down or stable, DEFEATED for a dead one, as the player reads it | Hit points, armor class, initiative, conditions, a hidden NPC, an NPC unseen on a fog map |
+| "Combate" | The round and up to 6 lines of the log that every player reads ("Último no combate"). The server sends up to 6 in every combat; the app chooses how many to draw | A line only some players read, the master's lines, a hidden combatant, an NPC's dice, the name of table content the master hid (RN-23). Only combat begun, combat ended, door opened, and the entries told as a move, an attack, a spell or an action are lines; no other kind is |
+| "Imagem e documento" | The image shown to the whole table (the TV has no document of its own: the campaign document is the master's) | An image for chosen players, one left with the players, the gallery |
+| "Cena" | The name and description of a scene open to the whole table, and the NPCs the table sees on its stage, with the one who is speaking now | A scene for chosen players, a hidden NPC, hooks, clues, actions and DCs |
+| "Rolagens" | Up to 3 free rolls made for the whole table | A roll "Só eu" |
+| "Conversa" | Nothing: the conversation never goes to the TV (RN-36) | Every line, narration to the whole table included |
+| "Conteúdo da mesa" | Only the name the order or the log already gives every player (a table creature in the combat). A spell or action of the table is told as "conjurou uma magia" or "agiu", never by name | Never the entry itself or an entry the master hid |
+| "Do mestre" | Nothing | Notes, the campaign document, hooks, clues and DCs, the master's adjustments, pending questions |
+
+A scene or an image meant for chosen players is not shown; the master's panel says so ("Cena aberta só para alguns").
+Only the master opens the table screen: a player is refused, and someone who is not in the campaign gets the answer for a campaign that does not exist.
+See [MR-056](stories.md#mr-056-show-the-table-on-a-screen) and [The table screen](../architecture/play/table-screen.md).
+
 **Other secrets.**
 The reason the master gives when asking for changes to a character (RN-15) reaches only the master and the owner.
 A player's notes are private to them. The master does not read them.
@@ -525,7 +546,12 @@ Leaving an enemy's reach provokes an opportunity attack, which the app offers to
 - The reactor's controller (the player, or the master for an NPC) attacks, declines ("Não atacar") or, for an absent player, the master follows without waiting ("Seguir sem esperar"). The attack is read from the square the mover left, and cover counts from there.
 - **The mover's turn waits** ("Esperando a reação do mestre") until the offer and the damage of its attack are settled: the player cannot end the turn, act, attack, cast or move. The master is never held. An offer nobody can answer any more is skipped by itself.
 - If the attack takes the mover to 0 hit points, they go back to the square where they left the reach.
-- The master can also offer one by hand ("Oferecer ataque de oportunidade"), for a reach the app did not see, on a map or off it; the same rules apply, except the places: reach and square are the master's word. The grid's button comes with its screen. Under fog the reactor's player must still see the mover to be asked; otherwise the master withdraws or skips the offer.
+- The master can also offer one by hand ("Oferecer ataque de oportunidade"), for a reach the app did not see, on a map or off it; the same rules apply, except the places: reach and square are the master's word. Under fog the reactor's player must still see the mover to be asked; otherwise the master withdraws or skips the offer.
+  The offer is a row of the NPC card's "Mais ações" menu, on a map or off it.
+  The panel opens in place.
+  On a map the candidates have a ring.
+  The distance is only a hint.
+  The master always decides.
 - A player reads a warning before a move that may provoke ("Sair do alcance do Goblin 2 pode provocar um ataque de oportunidade"), built only from what they see, so it may err on the side of excess. A hidden reactor provokes all the same, and the mover reads only "Esperando o mestre". Other players see nothing.
 - A move that enters a trap the character knows asks "Isso entra no Fosso escondido. Mover assim mesmo?".
 - "Desfazer última ação" undoes moves, jumps and the Disengage flag. A move whose offer was answered can be undone only after undoing the answer.
@@ -604,6 +630,7 @@ Members read the campaign's content, except creatures (below); only the master w
 - **A table feature can summon creatures.** A class, subclass, race trait or background feature, or a feature the master adds to a class as its own entry, may bring creatures of the table or of the SRD.
   They follow the same rules as a summoning spell: concentration, replacement, dismissal and undo.
   The feature says how many creatures come, how many at a time, the turn and what a new casting does to the old ones.
+  It also says how fast it casts and how long it lasts.
   Each casting spends one use of a resource of the feature (or of its class).
   The uses come back through the resource's own recharge.
   The feature spends no slot, so a higher slot changes nothing and `slot()` is 0 in its count.
@@ -636,7 +663,11 @@ Members read the campaign's content, except creatures (below); only the master w
   A feat's own options hide only with the feat.
   Only the options of an option set hide one by one.
   A player keeps seeing the options the sheet already holds.
-- **Maneuvers.** A maneuver is a die from a resource. After a weapon hit the damage step offers each damage maneuver the character knows, one per attack; it adds the die to the damage (doubled on a critical hit), spends a use, and the master reads its rider on the roll. The die can also start a grapple or reduce a melee hit's damage as a reaction. A player adds the die of an attack-roll maneuver to a weapon attack of their own character.
+- **Maneuvers.** A maneuver is a die from a resource. After a weapon hit the damage step offers each damage maneuver the character knows, one per attack; it adds the die to the damage (doubled on a critical hit), spends a use, and the master reads its rider on the roll. The die can also start a grapple or reduce a melee hit's damage as a reaction. A player adds the die of an attack-roll maneuver to a weapon attack of their own character, an opportunity attack included.
+  The weapon list and the opportunity question say that the die can go in.
+  They say how many uses are left.
+  With physical dice the player types its face beside the d20.
+  The log names each extra die by its source, as in "12 + 6 + Bênção 1d4 (3)"; a source the master hides reads "Outra fonte".
   A maneuver with no die is an action under "Habilidades" that spends one use of the same dice and the action it declares.
 - **Wild Shape.** A table subclass or feature changes the druid's Wild Shape (MR-037): the highest challenge rating of the beasts (a fixed one, or one from the level such as the level divided by 3), how many uses of Wild Shape one change of form costs (none, for a free change), and whether the beast's attacks count as magical. The character takes the most permissive of what it has: the highest rating, the lowest cost, and magical attacks if any feature gives them. The list of forms and the choice agree.
 - **The critical range.**

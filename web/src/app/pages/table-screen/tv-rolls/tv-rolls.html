@@ -1,0 +1,30 @@
+@if (newest(); as last) {
+  <section class="mr-panel tv-rolls" aria-labelledby="tv-rolls-title">
+    <h2 class="tv-rolls__title" id="tv-rolls-title">
+      <mat-icon aria-hidden="true">casino</mat-icon>Rolagens da mesa
+    </h2>
+    <ul class="tv-rolls__list" [appTvFit]="rolls()">
+      <li class="tv-rolls__last" data-testid="tv-roll-last">
+        <span class="tv-rolls__text">
+          <p class="tv-rolls__who">{{ last.who }} rolou</p>
+          <p class="tv-rolls__what">
+            {{ last.expression }}
+            @if (last.faces.length > 0) {
+              <span class="tv-rolls__faces">· {{ faces(last.faces) }}</span>
+            }
+          </p>
+        </span>
+        <p class="tv-rolls__total">{{ last.total }}</p>
+      </li>
+      @for (roll of older(); track $index) {
+        <li class="tv-rolls__row">
+          <span class="tv-rolls__row-text">
+            <span class="tv-rolls__row-who">{{ roll.who }}</span>
+            <span class="tv-rolls__row-what">{{ roll.expression }}</span>
+          </span>
+          <span class="tv-rolls__row-total">{{ roll.total }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+}

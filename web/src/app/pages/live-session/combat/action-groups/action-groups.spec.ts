@@ -1,10 +1,14 @@
 import { create } from '@bufbuild/protobuf';
 import { TestBed } from '@angular/core/testing';
 
-import { CombatantSchema } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  CombatantSchema,
+  ManeuverDieOptionSchema,
+} from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
   ActionEconomy,
   ActionOptionSchema,
+  AttackKind,
   AttackOptionSchema,
   BonusAttackRule,
   DisabledReasonCode,
@@ -618,5 +622,81 @@ describe('ActionGroups: Fúria of a Berserker asks about the frenzy', () => {
     expect(question()).toBeNull();
     expect(plain).toEqual(['feature:rage']);
     expect(rages).toEqual([]);
+  });
+});
+
+describe('ActionGroups: the table die line above the weapon rows', () => {
+  const die = (name: string, usesLeft: number, resourceNamePt = 'Reserva de Golpes') =>
+    create(ManeuverDieOptionSchema, {
+      die: { key: name, namePt: name, applies: 'attack', sides: 8 },
+      resourceNamePt,
+      usesLeft,
+    });
+  const weapon = (kind = AttackKind.WEAPON) =>
+    create(AttackOptionSchema, {
+      attack: { key: 'attack:sword', name: 'Sword', namePt: 'Espada longa', kind },
+      enabled: true,
+    });
+
+  function setup(attacks: ReturnType<typeof weapon>[], dice: ReturnType<typeof die>[]) {
+    const fixture = TestBed.createComponent(ActionGroups);
+    fixture.componentRef.setInput('options', create(TurnOptionsSchema, { attacks }));
+    fixture.componentRef.setInput(
+      'own',
+      create(CombatantSchema, { movementLeftFt: 25, speedFt: 25 }),
+    );
+    fixture.componentRef.setInput('maneuverDice', dice);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+  const note = (el: HTMLElement) =>
+    (el.querySelector('[data-testid="maneuver-note"]')?.textContent ?? '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  it('shows one line with the die and the uses left', () => {
+    const el = setup([weapon()], [die('Golpe Certeiro', 2)]);
+    expect(el.querySelectorAll('[data-testid="maneuver-note"]').length).toBe(1);
+    expect(note(el)).toContain(
+      'Golpe Certeiro (d8) pode entrar num ataque com arma: você marca ao rolar. Reserva de Golpes: restam 2.',
+    );
+    expect(
+      el.querySelector('[data-testid="maneuver-note"] mat-icon')?.getAttribute('aria-hidden'),
+    ).toBe('true');
+    expect(el.querySelector('[data-testid="maneuver-note"] button')).toBeNull();
+  });
+
+  it('names two dice in the plural', () => {
+    const el = setup([weapon()], [die('Golpe Certeiro', 2), die('Ataque Firme', 2)]);
+    expect(note(el)).toContain(
+      'Golpe Certeiro (d8) e Ataque Firme (d8) podem entrar num ataque com arma',
+    );
+  });
+
+  it('says "resta 1" in the singular for one use', () => {
+    expect(note(setup([weapon()], [die('Golpe Certeiro', 1)]))).toContain(
+      'Reserva de Golpes: resta 1.',
+    );
+  });
+
+  it('leaves out the pool prefix when the pool has no name', () => {
+    const text = note(setup([weapon()], [die('Golpe Certeiro', 2, '')]));
+    expect(text).toContain('você marca ao rolar. Restam 2.');
+    expect(text).not.toContain(': Restam');
+  });
+
+  it('says "sem usos" at zero and claims no recharge', () => {
+    const el = setup([weapon()], [die('Golpe Certeiro', 0)]);
+    expect(note(el)).toContain('Reserva de Golpes: sem usos.');
+    expect(note(el)).not.toMatch(/descanso/);
+  });
+
+  it('is absent without dice (the master, an NPC)', () => {
+    expect(note(setup([weapon()], []))).toBe('');
+  });
+
+  it('is absent when no weapon attack row exists (a spell-only list)', () => {
+    expect(note(setup([weapon(AttackKind.SPELL)], [die('Golpe Certeiro', 2)]))).toBe('');
+    expect(note(setup([], [die('Golpe Certeiro', 2)]))).toBe('');
   });
 });

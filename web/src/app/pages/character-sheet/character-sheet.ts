@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import {
   Component,
   DestroyRef,
@@ -45,6 +46,8 @@ import {
   IssueVm,
 } from './character-sheet.types';
 import { CombatColumn } from './combat-column/combat-column';
+import { EquipmentPanel } from './equipment-panel/equipment-panel';
+import { SheetEquip } from './character-sheet-equip';
 import { CreaturesPanel } from './creatures-panel/creatures-panel';
 import { FeaturesPanel } from './features-panel/features-panel';
 import { MasterNotes } from './master-notes/master-notes';
@@ -109,6 +112,7 @@ type PageState =
     BasicSheet,
     ChangedContentNotice,
     CombatColumn,
+    EquipmentPanel,
     CreaturesPanel,
     FeaturesPanel,
     LevelUpBanner,
@@ -218,6 +222,7 @@ export class CharacterSheetPage {
   }
 
   constructor() {
+    this.destroyRef.onDestroy(this.gear.refreshWhenShown(inject(DOCUMENT)));
     // The tab's title carries the character's name once the sheet is loaded.
     setPageSubject(() => {
       const s = this.state();
@@ -336,11 +341,23 @@ export class CharacterSheetPage {
     this.vitals.update((current) => (current && current.revision > v.revision ? current : v));
   }
 
-  /** Reads the character again without the loading state, so the page does not blink. */
-  private async reloadQuietly(): Promise<void> {
+  /** "Equipar" / "Guardar" on the sheet (`SheetEquip`). */
+  protected readonly gear = new SheetEquip({
+    source: this.source,
+    campaignId: () => this.campaignId(),
+    characterId: () => (this.destroyed ? '' : this.characterId),
+    reload: () => this.reloadQuietly(),
+    sheet: () => {
+      const st = this.state();
+      return st.status === 'ready' && st.vm.sheet.kind === 'full' ? st.vm.sheet : null;
+    },
+  });
+
+  /** Reads the character again without the loading state, so the page does not blink; `true` when the new sheet is on screen. */
+  private async reloadQuietly(): Promise<boolean> {
     const campaignId = this.campaignId();
     if (!campaignId || !this.characterId) {
-      return;
+      return false;
     }
     const seq = ++this.sheetSeq;
     try {
@@ -348,9 +365,12 @@ export class CharacterSheetPage {
       if (seq === this.sheetSeq && this.state().status === 'ready') {
         this.state.set({ status: 'ready', vm });
         this.refreshPendingChoices(campaignId, vm, seq);
+        return true;
       }
+      return false;
     } catch {
       // Keep what is on screen: the next change reads again.
+      return false;
     }
   }
 

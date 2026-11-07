@@ -1,0 +1,34 @@
+@let f = flow();
+@if (f.gear().length || f.readFailed()) {
+  <app-fold appearance="row" [muted]="true" title="Sacar ou guardar" icon="back_hand" [level]="3" [open]="true">
+    <span foldNote [attr.aria-label]="acLabel()">{{ acNote() }}</span>
+    <p class="gear-fold__rule"><mat-icon aria-hidden="true">bolt</mat-icon>{{ rule }}</p>
+    @for (w of warnings(); track w) {
+      <p class="gear-fold__warn"><mat-icon aria-hidden="true">warning</mat-icon>{{ w }}</p>
+    }
+    @if (f.gear().length) {
+      <app-gear-list
+        [combat]="true"
+        [gear]="pieces()"
+        [armorClass]="f.armorClass()"
+        [shieldIdle]="f.shieldIdle()"
+        [warned]="warnedKeys()"
+        [busyKey]="f.busyKey()"
+        [cost]="costOf()"
+        [blocked]="blockedOf()"
+        [canChange]="!locked()"
+        (toggled)="f.toggle($event.key, $event.equipped)"
+      />
+    }
+    <p class="gear-fold__note" role="status">{{ f.notice() }}</p>
+    @if (f.readFailed()) {
+      <p class="gear-fold__why" role="alert">
+        <mat-icon aria-hidden="true">block</mat-icon>Não deu para ler o equipamento.
+        <button matButton="outlined" type="button" (click)="f.retry()">Tentar de novo</button>
+      </p>
+    }
+    @if (f.error()) {
+      <p class="gear-fold__why" role="alert"><mat-icon aria-hidden="true">block</mat-icon>{{ f.error() }}</p>
+    }
+  </app-fold>
+}

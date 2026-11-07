@@ -145,6 +145,15 @@ func (b *overlayBuilder) replaceInRows(o *TableClassFeature, path string, row fu
 	return ovErr(o.Key, "%s", reason).at(path+".replaces_feature_key", ReasonReference)
 }
 
+// ClassFeatureSource is the class key and the level of the table class feature with the key; false for any other key.
+func (c *Content) ClassFeatureSource(key string) (class string, level int, ok bool) {
+	cf, ok := c.c.classFeatureOf[key]
+	if !ok {
+		return "", 0, false
+	}
+	return cf.Class, cf.Level, true
+}
+
 // ClassFeatureEntry is a table class feature as the content lists it.
 type ClassFeatureEntry struct {
 	Key, NamePT, Class string

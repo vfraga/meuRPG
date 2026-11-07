@@ -93,8 +93,14 @@ export function subtitleOf(i: SubtitleInput): string {
     );
   }
   if (s.grantedBy) {
+    // "Druida 3 · 1 ação · gasta 1 uso (resta 1)": where the summon comes from, how long it takes and what it spends.
     return tight(
-      `Habilidade · ${s.castingTimePt}${i.inCombat && s.concentration ? ' · concentração' : ''}`,
+      joinDotsOf([
+        s.grantedByLabelPt || 'Habilidade',
+        s.castingTimePt,
+        i.inCombat && s.concentration ? 'concentração' : '',
+        `gasta 1 uso (${s.usesLeft === 1 ? 'resta' : 'restam'} ${s.usesLeft})`,
+      ]),
     );
   }
   return tight(
@@ -153,6 +159,8 @@ export interface RowsInput {
   readonly beasts: readonly CreatureSummary[] | null;
   readonly beastBlocks: ReadonlyMap<string, Creature>;
   readonly forms: readonly Creature[] | null;
+  /** The list is the creatures a table's feature or spell brings: a row says what a beast's row does (ND, CA, PV, speed, attacks), the table's first. */
+  readonly bring?: boolean;
 }
 
 /** The list of the sheet: the beasts the search found, or the forms the option offers, by name. */
@@ -176,17 +184,31 @@ export function rowsOf(i: RowsInput): readonly ChoiceRow[] {
     });
   }
   const blocks = new Map((i.forms ?? []).map((c) => [c.summary?.key ?? '', c]));
-  return o.forms
-    .map((f) => {
-      const block = blocks.get(f.monsterKey);
+  const rows = o.forms.map((f): ChoiceRow => {
+    const block = blocks.get(f.monsterKey);
+    const table = isTableCreature(f.monsterKey);
+    if (!i.bring || !block?.summary) {
       return {
         key: f.monsterKey,
         title: f.namePt,
         subtitle: block ? formSubtitle(block) : '',
-        table: isTableCreature(f.monsterKey),
+        table,
       };
-    })
-    .sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+    }
+    return {
+      key: f.monsterKey,
+      title: f.namePt,
+      subtitle: beastLine(block.summary, block),
+      // A table creature's numbers are the owner's (the row says so): the base's attacks would contradict that note.
+      attacks: table ? undefined : beastAttacks(block),
+      table,
+    };
+  });
+  // The table's creatures first (in a list to bring), then the book's, each by name.
+  return rows.sort(
+    (a, b) =>
+      (i.bring ? Number(b.table) - Number(a.table) : 0) || a.title.localeCompare(b.title, 'pt-BR'),
+  );
 }
 
 export function listLabelOf(
@@ -259,8 +281,8 @@ export function costLineOf(
     return tight(`Conjurar como ritual · ${s.castingTimePt} · sem gastar espaço`);
   }
   if (s.grantedBy) {
-    const made = count > 1 ? `${creaturesText(count)} · ` : '';
-    return tight(`${made}${s.castingTimePt} · gasta um uso · restam ${s.usesLeft}`);
+    // The subtitle says the time and the use; the line is left for what it adds, how many come.
+    return count > 1 ? tight(creaturesText(count)) : '';
   }
   const spend = slot
     ? `gasta um espaço de ${circleLabel(slot.level)}${slot.pact ? ' (pacto)' : ''}`

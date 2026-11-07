@@ -22,6 +22,11 @@
         [(typing)]="s.typing"
         (answer)="questions.held.answer($event)"
       />
+    } @else if (follow.vanish.notice(); as notice) {
+      <div class="mr-notice mr-notice--neutral" data-testid="sheet-held-vanished">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <p role="status">{{ notice }}</p>
+      </div>
     } @else if (!s.done()) {
       @if (ch.grant; as g) {
         <p class="grant" role="note">{{ grantLine(g) }}</p>

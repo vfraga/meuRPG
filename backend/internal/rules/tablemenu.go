@@ -464,7 +464,7 @@ var (
 	economyNms  = map[string]string{"action": "Ação", "bonus_action": "Ação bônus", "reaction": "Reação", "free": "Livre", "movement": "Movimento"}
 	choiceNames = map[string]string{
 		"skill": "Perícias", "expertise": "Especialização", "cantrip": "Truques", "spell": "Magias",
-		"language": "Idiomas", "tool": "Ferramentas", "feature": "Uma opção de uma lista do SRD",
+		"language": "Idiomas", "tool": "Ferramentas", "feature": "Uma opção de uma lista",
 		"feat": "Talentos", "ability": "Uma habilidade (só em talento)", "damage_type": "Um tipo de dano (só em talento)",
 	}
 	rollTargetNames = map[string]string{

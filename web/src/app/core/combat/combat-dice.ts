@@ -16,17 +16,27 @@ export function modifierText(modifier: number): string {
   return ` ${modifier < 0 ? '−' : '+'} ${Math.abs(modifier)}`;
 }
 
-/** The dice an effect added to a roll (Bênção, Perdição), written after the modifier: " + 1d4 (3)", and what they add up to. */
-export function extraDiceText(roll: Pick<DiceRoll, 'extraDice'>): { text: string; sum: number } {
+/** The dice an effect added to a roll (Bênção, Perdição), written after the modifier: " + 1d4 (3)", and what they add up to.
+ * `named` writes the source before each die (" + Golpe Certeiro 1d8 (5)", " + Bênção 1d4 (3)"): the attack sheet's result
+ * names every die, effects included. */
+export function extraDiceText(
+  roll: Pick<DiceRoll, 'extraDice'>,
+  named = false,
+): { text: string; sum: number } {
   const dice = (roll.extraDice ?? []).filter((d) => d.face > 0);
   return {
-    text: dice.map((d) => ` ${d.sign < 0 ? '−' : '+'} 1d${d.faces} (${d.face})`).join(''),
+    text: dice
+      .map(
+        (d) =>
+          ` ${d.sign < 0 ? '−' : '+'} ${named && d.sourceNamePt ? `${d.sourceNamePt} ` : ''}1d${d.faces} (${d.face})`,
+      )
+      .join(''),
     sum: dice.reduce((sum, d) => sum + d.sign * d.face, 0),
   };
 }
 
-/** A roll as the formula the table reads, the total included. */
-export function rollFormula(roll: DiceRoll): string {
+/** A roll as the formula the table reads, the total included; `named` is as in `extraDiceText`. */
+export function rollFormula(roll: DiceRoll, named = false): string {
   // A d20 a feature raised says so (Talento Confiável): what came up, what it counted as, and the feature.
   const treated = treatedFormula(roll);
   if (treated) {
@@ -36,7 +46,7 @@ export function rollFormula(roll: DiceRoll): string {
   if (roll.diceCount === 0) {
     return `${roll.total}`;
   }
-  const extra = extraDiceText(roll);
+  const extra = extraDiceText(roll, named);
   if (roll.physical || roll.faces.length === 0) {
     // The player typed what the dice showed, not each die.
     return `${roll.total - roll.modifier - extra.sum}${mod}${extra.text} = ${roll.total}`;

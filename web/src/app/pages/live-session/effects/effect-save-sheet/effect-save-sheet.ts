@@ -6,6 +6,7 @@ import {
   inject,
   signal,
   Injector,
+  untracked,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,7 +21,7 @@ import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { luckyText } from '../../../../core/combat/lucky';
 import { HeldRollController } from '../../../../core/held-rolls/held-roll-controller';
-import type { HeldAnswer } from '../../../../core/held-rolls/held-roll-offer';
+import { type HeldAnswer, heldOfferOf } from '../../../../core/held-rolls/held-roll-offer';
 import { isOpen } from '../../../../core/combat/reactions';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { type EffectSaveAnswer, EffectsClient } from '../../../../core/effects/effects-client';
@@ -35,6 +36,7 @@ import {
 import { zoneCasterLabel } from '../../../../core/effects/zone-save';
 import { dcLabel } from '../../../../core/format/save-dc';
 import { ResourceClient } from '../../../../core/resources/resources-client';
+import { HeldFollow } from '../../../../core/held-rolls/held-follow';
 import { HeldRollPrompt } from '../../../../shared/held-roll-prompt/held-roll-prompt';
 import { rerollShow } from '../../../../shared/held-roll-prompt/held-roll-shows';
 import { RollAnimator, type RollShow } from '../../../../shared/roll-overlay/roll-animator';
@@ -118,6 +120,8 @@ export class EffectSaveSheet {
     busy: this.busy,
     error: this.error,
   });
+  /** Tells the roller that the master answered the question for them: the question goes and a line takes its place. */
+  protected readonly follow = new HeldFollow(this.held);
   /** "Sortudo: 1 → 14" under the result: the d20 Lucky rolled again (the faces and the total are the new ones). */
   /** "CD 14" under the result, when the server sent the DC with it. */
   protected readonly resultDc = computed(() => dcLabel(this.result()?.dc));
@@ -195,7 +199,8 @@ export class EffectSaveSheet {
   protected readonly goneText = computed(
     () =>
       this.data.state.reactionNotice()?.text ??
-      'Este teste já foi respondido: ele não espera mais a sua rolagem.',
+      (this.follow.vanish.notice() ||
+        'Este teste já foi respondido: ele não espera mais a sua rolagem.'),
   );
   protected readonly formula = saveFormula;
 
@@ -203,6 +208,17 @@ export class EffectSaveSheet {
   private readonly keys = new ActionKey();
 
   constructor() {
+    // The master answers the question for the roller: the sheet drops it, so it never offers an answer that is no longer open.
+    effect(() => {
+      const me = this.data.state
+        .encounter()
+        ?.combatants.find((c) => c.id === this.data.window.reactorId);
+      this.held.offer();
+      this.held.refusal(); // a click the server refused as too late: the question may be gone already
+      if (me) {
+        untracked(() => this.follow.see(heldOfferOf(me)));
+      }
+    });
     // The first thing to read when the sheet opens is its title; the buttons come after it.
     effect(() => {
       if (this.stage() === 'gone' && this.data.state.reactionNotice()) {

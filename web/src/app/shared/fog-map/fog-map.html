@@ -112,27 +112,29 @@
       }
     </div>
 
-    <div class="fm__tools">
-      <div class="fm__zoom" role="group" aria-label="Zoom do mapa">
-        <button type="button" class="fm__btn" aria-label="Reduzir" [disabled]="!vision() || (view()?.scale() ?? 1) <= 1" (click)="zoomOut()">
-          <mat-icon aria-hidden="true">remove</mat-icon>
-        </button>
-        <button type="button" class="fm__btn" aria-label="Ampliar" [disabled]="!vision() || (view()?.scale() ?? 1) >= 4" (click)="zoomIn()">
-          <mat-icon aria-hidden="true">add</mat-icon>
-        </button>
-        <button type="button" class="fm__btn" aria-label="Ajustar à tela" [disabled]="!vision() || (view()?.scale() ?? 1) === 1" (click)="fit()">
-          <mat-icon aria-hidden="true">fit_screen</mat-icon>
-        </button>
-        @if (fullscreen.available) {
-          <button type="button" class="fm__btn" [attr.aria-label]="fullscreen.active() ? 'Sair da tela cheia' : 'Tela cheia'" [attr.aria-pressed]="fullscreen.active()" (click)="fullscreen.toggle()">
-            <mat-icon aria-hidden="true">{{ fullscreen.active() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+    @if (tools()) {
+      <div class="fm__tools">
+        <div class="fm__zoom" role="group" aria-label="Zoom do mapa">
+          <button type="button" class="fm__btn" aria-label="Reduzir" [disabled]="!vision() || (view()?.scale() ?? 1) <= 1" (click)="zoomOut()">
+            <mat-icon aria-hidden="true">remove</mat-icon>
           </button>
+          <button type="button" class="fm__btn" aria-label="Ampliar" [disabled]="!vision() || (view()?.scale() ?? 1) >= 4" (click)="zoomIn()">
+            <mat-icon aria-hidden="true">add</mat-icon>
+          </button>
+          <button type="button" class="fm__btn" aria-label="Ajustar à tela" [disabled]="!vision() || (view()?.scale() ?? 1) === 1" (click)="fit()">
+            <mat-icon aria-hidden="true">fit_screen</mat-icon>
+          </button>
+          @if (fullscreen.available) {
+            <button type="button" class="fm__btn" [attr.aria-label]="fullscreen.active() ? 'Sair da tela cheia' : 'Tela cheia'" [attr.aria-pressed]="fullscreen.active()" (click)="fullscreen.toggle()">
+              <mat-icon aria-hidden="true">{{ fullscreen.active() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+            </button>
+          }
+        </div>
+        @if (phone()) {
+          <p class="fm__hint">Dois dedos para ampliar</p>
         }
       </div>
-      @if (phone()) {
-        <p class="fm__hint">Dois dedos para ampliar</p>
-      }
-    </div>
+    }
   }
 
   @if (vision(); as v) {

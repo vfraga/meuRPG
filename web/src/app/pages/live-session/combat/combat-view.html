@@ -123,6 +123,7 @@
               [legendary]="legendaryLeft()"
               [theatre]="theatre()"
               [actingFor]="acting()?.label ?? ''"
+              [quiet]="offers.offering()"
               (next)="nextTurn($event)"
               (end)="endCombat()"
             />
@@ -485,6 +486,7 @@
 <ng-template #mapBlock>
   @if (encounter(); as e) {
     @if (image(); as img) {
+      <!-- The offer's rings need an NPC on turn and a target pick needs a player's turn: the two never run together. -->
       <app-combat-map-card
         [encounter]="e"
         [image]="img"
@@ -500,10 +502,10 @@
         [forced]="moves.forcedMove()"
         [forcedNote]="moves.forcedNote()"
         [overAsk]="moves.overAsk()"
-        [pick]="targeting.mode.marks()"
+        [pick]="offers.marks() ?? targeting.mode.marks()"
         [pickNote]="targeting.mode.note()"
         [actingFor]="acting()?.label ?? ''"
-        (pickTap)="targeting.mode.tap($event)"
+        (pickTap)="offers.marks() ? offers.tap($event) : targeting.mode.tap($event)"
         (move)="moves.open()"
         (doorPick)="sheets.actions.door($event)"
         (reachChange)="moves.reachOn.set($event)"
@@ -708,13 +710,14 @@
         [state]="state()"
         [framed]="theatre() || !laptop()"
         [reactionStopped]="reactionStopped()"
+        [rechargeRolls]="rechargeRolls()"
         [turnBusy]="busy()"
         [theatre]="theatre()"
-        [offering]="offers.offering()"
         [offerWhy]="offers.why()"
+        [offerOpen]="offers.offering()"
         (castArea)="sheets.masterArea($event)"
         (creatureArea)="sheets.creatureArea($event)"
-        (offer)="offers.toggle()"
+        (offer)="offers.open()"
         (endRage)="rage.end($event)"
         (settledNote)="settled()"
       >
@@ -722,8 +725,12 @@
         @if (offers.offering()) {
           <app-offer-panel
             offer-slot
-            [moverLabel]="who.label"
             [rows]="offers.rows()"
+            [grid]="!theatre()"
+            [mapBeside]="laptop()"
+            [focusAsk]="offers.focusAsk()"
+            [hints]="offers.hints()"
+            [(picked)]="offers.picked"
             [busy]="busy()"
             [error]="offers.error()"
             (offer)="offers.make($event)"
@@ -855,6 +862,7 @@
           [label]="acting() ? 'Encerrar o turno de ' + acting()!.label : 'Próximo turno'"
           [idle]="acting() ? '' : idleOnTurn()"
           [joint]="!!joint()"
+          [quiet]="offers.offering()"
           (next)="nextTurn($event)"
         />
       }
@@ -916,6 +924,7 @@
                   <div class="player__blocks">
                     <app-action-groups
                       [options]="turnOptions"
+                      [gearFlow]="gearFlow"
                       [choosing]="targeting.mode.session()?.key ?? ''"
                       [own]="me"
                       [attacksLeft]="attacksLeft()"
@@ -932,6 +941,7 @@
                       [theatre]="theatre()"
                       [contestAttacks]="contestAttacks()"
                       [contest]="contestFacts()"
+                      [maneuverDice]="opts.maneuverDice"
                       (contestAttack)="contest.openAttack($event)"
                       (escape)="contest.openEscape()"
                       [extraAction]="opts.extraAction ?? null"

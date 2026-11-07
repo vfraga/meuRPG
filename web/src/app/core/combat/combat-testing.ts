@@ -54,6 +54,7 @@ export function combatant(over: Partial<Combatant> & { id: string; label: string
     conditionNamesPt: [],
     conditionSources: [],
     states: [],
+    limitedActions: [],
     concentrationSpell: '',
     armorClassBonus: 0,
     hitPointsMaxBonus: 0,

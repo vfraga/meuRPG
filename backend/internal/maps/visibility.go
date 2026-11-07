@@ -46,6 +46,9 @@ type viewer struct {
 	// preview is the master reading as a player's character ("Ver como"): every
 	// map is then theirs to read, and everything else follows the player's rules.
 	preview bool
+	// tv is the table screen: a player with no account and no character, who reads what the group
+	// sees (tableScreenUser). It is never the master, knows no trap and owns nothing.
+	tv bool
 	// parentKnows, for a player, says whether a submap point of a parent map with
 	// the fog on is on a square they see or remember (nil: not asked, the master).
 	// "Submapa de ..." names the parent only through such a point.
@@ -61,6 +64,11 @@ type viewer struct {
 type knownTrap struct {
 	mapID  string
 	public bool
+}
+
+// newTVViewer is the table screen's viewer. It sees the maps the players see, as a player does.
+func newTVViewer(currentMap string) viewer {
+	return viewer{userID: tableScreenUser, currentMap: currentMap, tv: true}
 }
 
 func newViewer(m authz.Membership, currentMap string) viewer {

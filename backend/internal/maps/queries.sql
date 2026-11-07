@@ -239,7 +239,7 @@ RETURNING light_revision;
 -- name: GetMapTileInfo :one
 -- What the tile route needs of a map, in one read, from the map's ID alone: its
 -- campaign, whether players see it, the fog and grid, and its image's size and type.
-SELECT m.id, m.campaign_id, m.image_id, m.revealed_at, m.grid_columns, m.grid_factor, m.fog_enabled,
+SELECT m.id, m.campaign_id, m.image_id, m.revealed_at, m.grid_columns, m.grid_factor, m.fog_enabled, m.group_vision,
        g.width AS image_width, g.height AS image_height, g.content_type AS image_content_type
 FROM maps AS m
 JOIN gallery_images AS g ON g.id = m.image_id

@@ -45,6 +45,11 @@
           [busy]="busy()"
           (answer)="held.answer($event)"
         />
+      } @else if (follow.vanish.notice(); as notice) {
+        <div class="mr-notice mr-notice--neutral" data-testid="sheet-held-vanished">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          <p role="status">{{ notice }}</p>
+        </div>
       } @else if (view().handed) {
         <div class="mr-notice mr-notice--neutral" role="status">
           <mat-icon aria-hidden="true">hourglass_top</mat-icon>
@@ -145,7 +150,7 @@
           <button matButton="filled" type="button" class="btn" data-initial-focus [disabled]="busy()" (click)="answer({ kind: 'app' })">
             Continuar
           </button>
-        } @else if (held.offer()) {
+        } @else if (held.offer() || follow.vanish.notice()) {
           <button matButton="outlined" type="button" class="btn" data-initial-focus [disabled]="busy()" (click)="close()">Fechar</button>
         } @else if (!view().handed) {
           <div class="stack">

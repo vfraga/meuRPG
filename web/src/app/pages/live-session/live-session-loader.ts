@@ -218,6 +218,8 @@ export class LiveSessionLoader {
       this.bumpTicks();
       if (state.isMaster()) {
         void this.reloadMaps();
+        // After the campaign is read: only then is it known the person is the master, and the bar's button needs the TV's state.
+        void parts.tableScreen.load();
       }
       state.phase.set('live');
       state.stream()?.confirmHealthy();

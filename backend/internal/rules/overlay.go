@@ -959,6 +959,10 @@ func (c *Content) ChangedSince(b Build, savedRevision int, baselines map[string]
 // IsTableKey says whether a content key is the table's ("...@mesa").
 func IsTableKey(key string) bool { return isTableKey(key) }
 
+// IsTableKeyAnywhere says whether a key carries a table key's mark anywhere, as an action of a table
+// feature does ("feature:x@mesa:disengage").
+func IsTableKeyAnywhere(key string) bool { return strings.Contains(key, tableSuffix) }
+
 // overlayBuilder is the work of one With call: the base (read only) and the
 // clone it fills.
 type overlayBuilder struct {

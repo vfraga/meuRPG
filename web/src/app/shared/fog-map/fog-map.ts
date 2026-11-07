@@ -118,6 +118,8 @@ export class FogMap {
   readonly familiar = input<string | null>(null);
   /** A label for the master's "Ver como" on a phone: "Vendo como Toren (Caio)". */
   readonly badge = input<string | null>(null);
+  /** The zoom, fit and full-screen buttons under the map; the table screen (a TV nobody touches) leaves them out. */
+  readonly tools = input(true);
   /** The notice is above the map; a screen that has its own banner leaves it. */
   readonly notices = input(true);
   /** The master's light warning: the ids of the characters who see nothing where they stand (a dashed ring each). */

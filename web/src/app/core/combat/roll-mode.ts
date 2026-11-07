@@ -165,13 +165,14 @@ export function stepLine(step: DamageStep): string {
   return `${step.labelPt}: ${step.before} → ${step.after}`;
 }
 
-/** The formula of a d20: `14 + 5 = 19` for the face that counts of a pair, the usual one for a single d20. */
-export function d20Formula(roll: DiceRoll): string {
+/** The formula of a d20: `14 + 5 = 19` for the face that counts of a pair, the usual one for a single d20; `named` writes the
+ * source of each extra die ("Golpe Certeiro 1d8 (5)"). */
+export function d20Formula(roll: DiceRoll, named = false): string {
   if (roll.diceCount > 1 && roll.faces.length > 1) {
     const kept = roll.faces[roll.countedIndex] ?? roll.faces[0];
     const mod =
       roll.modifier === 0 ? '' : ` ${roll.modifier < 0 ? '−' : '+'} ${Math.abs(roll.modifier)}`;
-    return `${kept}${mod}${extraDiceText(roll).text} = ${roll.total}`;
+    return `${kept}${mod}${extraDiceText(roll, named).text} = ${roll.total}`;
   }
-  return rollFormula(roll);
+  return rollFormula(roll, named);
 }

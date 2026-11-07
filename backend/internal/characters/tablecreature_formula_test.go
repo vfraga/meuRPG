@@ -384,3 +384,78 @@ func TestMR578_ACreatureWithoutARowFallsBackToTheStaticNumbers(t *testing.T) {
 		})
 	}
 }
+
+// The stat block of a creature of a character is the one worked out for its owner when it arrived (the page of
+// the creature reads it), not the entry's static numbers; only the master and the owner's player may ask for it.
+func TestMR578_TheStatBlockOfACharactersCreatureIsTheOneWorkedOutForItsOwner(t *testing.T) {
+	t.Parallel()
+	tb := newCreatureTable(t)
+	fighter := tb.other.create(t, tb.campaign, charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, "Toren", levelUpFighterSheet(5, 6500, ""))
+	tb.master.addEntry(t, tb.campaign, silverWolf())
+	give := func(c *charactersv1.Character) *charactersv1.CharacterCreature {
+		t.Helper()
+		got, err := tb.give(tb.master, &charactersv1.GiveCreatureRequest{CharacterId: c.GetId(), MonsterKey: silverWolfKey})
+		if err != nil {
+			t.Fatalf("GiveCreature() error = %v", err)
+		}
+		return got
+	}
+	wizardWolf, fighterWolf := give(tb.pc), give(fighter)
+	read := func(u *user, key, id string) (*rulesv1.Creature, error) {
+		res, err := u.content.GetCreature(t.Context(), connect.NewRequest(&rulesv1.GetCreatureRequest{CampaignId: tb.campaign, Key: key, CreatureId: id}))
+		if err != nil {
+			return nil, err
+		}
+		return res.Msg.GetCreature(), nil
+	}
+	claw := func(c *rulesv1.Creature) int32 {
+		for _, a := range c.GetActions() {
+			if a.GetHasAttack() && strings.Contains(a.GetName(), "Garra") {
+				return a.GetAttackBonus()
+			}
+		}
+		t.Fatalf("the stat block has no claw: %v", c.GetActions())
+		return 0
+	}
+	// Without the creature's id the entry has no owner: the static numbers (the base's armor class).
+	plain, err := read(tb.owner, silverWolfKey, "")
+	if err != nil {
+		t.Fatalf("GetCreature() by key error = %v", err)
+	}
+	if plain.GetArmorClass() == 15 {
+		t.Fatalf("the stat block by key has the owner's armor class %d; it has no owner", plain.GetArmorClass())
+	}
+	// Pensantus (proficiency +2, Dexterity +3, Strength +1): armor class 15, claw +3. Toren (+3, +1, +3): 14, +6.
+	for _, tt := range []struct {
+		name          string
+		u             *user
+		id            string
+		ac, clawBonus int32
+	}{
+		{"the owner's player", tb.owner, wizardWolf.GetId(), 15, 3},
+		{"the master, on the wizard's wolf (the positive control)", tb.master, wizardWolf.GetId(), 15, 3},
+		{"the master, on the fighter's wolf", tb.master, fighterWolf.GetId(), 14, 6},
+		{"the other player, on her own wolf", tb.other, fighterWolf.GetId(), 14, 6},
+	} {
+		got, err := read(tt.u, silverWolfKey, tt.id)
+		if err != nil {
+			t.Errorf("%s: GetCreature() error = %v", tt.name, err)
+			continue
+		}
+		if got.GetArmorClass() != tt.ac || claw(got) != tt.clawBonus {
+			t.Errorf("%s: armor class %d and claw +%d, want %d and +%d", tt.name, got.GetArmorClass(), claw(got), tt.ac, tt.clawBonus)
+		}
+	}
+	for _, tt := range []struct {
+		name, key, id string
+		u             *user
+	}{
+		{"another player asks for a creature that is not hers", silverWolfKey, wizardWolf.GetId(), tb.other},
+		{"a key that is not the creature's", "monster:wolf", wizardWolf.GetId(), tb.owner},
+		{"an id that is not one", silverWolfKey, "not-an-id", tb.owner},
+	} {
+		if _, err := read(tt.u, tt.key, tt.id); connect.CodeOf(err) != connect.CodeNotFound {
+			t.Errorf("%s: error = %v, want not_found", tt.name, err)
+		}
+	}
+}

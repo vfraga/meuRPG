@@ -1,30 +1,33 @@
 import {
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
   computed,
   inject,
+  effect,
   input,
+  model,
   output,
-  signal,
+  untracked,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import { article } from '../../../../core/combat/combat-log';
 import { combatantInitial } from '../../../../core/combat/combat-view';
 import { type ReactorRow } from '../../../../core/combat/theatre';
-import { tieNumbers, upFirst } from '../../../../core/format/text';
+import { tieNumbers } from '../../../../core/format/text';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 
 let nextId = 0;
 
 /**
- * "Oferecer ataque de oportunidade" (RN-25, E10-04 state 3): in a combat without a map the server never finds out that someone left a reach, so
- * the master says it. The mover is the one on turn; here he picks whose reach it left ("Saiu do alcance de"), and the player of that
- * character gets the question on their phone (the master answers for an NPC). The two buttons are outlined and the same size, because
- * "Próximo turno" is the one filled button of the page. The server has the last word on who can react (`NO_OPPORTUNITY`, `REACTION_USED`); the
+ * "Oferecer ataque de oportunidade" (RN-25, E10-04 state 3), in a combat without a map and on a grid: without a map the server never finds out
+ * that someone left a reach, so the master says it; on a grid the server only sees what it measures, so the master adds the rest (the
+ * distances here are the map's, only to help, and the candidates are ringed on it). The mover is the one on turn; here he picks whose reach it left ("Saiu do alcance de"), and the player of that
+ * character gets the question on their phone (the master answers for an NPC). The two buttons are the same size; "Oferecer a ..." is the
+ * filled one while the panel is open, and "Próximo turno" goes outlined. The server has the last word on who can react (`NO_OPPORTUNITY`, `REACTION_USED`); the
  * list only leaves out whoever is on the mover's side or already out.
  */
 @Component({
@@ -34,7 +37,7 @@ let nextId = 0;
     <section class="offer" [attr.aria-labelledby]="id + '-t'">
       <h3 class="offer__title" [id]="id + '-t'">Oferecer ataque de oportunidade</h3>
       <p class="offer__text">
-        {{ mover() }} saiu do alcance de alguém? Escolha quem. O jogador recebe a pergunta no celular e decide; atacar gasta a reação dele.
+        {{ line() }}
       </p>
       @if (error()) {
         <p class="offer__error" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ error() }}</p>
@@ -54,16 +57,21 @@ let nextId = 0;
             />
             <span class="row__dot" aria-hidden="true"></span>
             <app-combatant-token [initial]="initial(r.label)" [npc]="!r.player" [size]="30" />
-            <span class="row__name">{{ r.label }}</span>
-            <span class="row__sub">{{ r.spent ? 'Reação usada' : r.offered ? 'Oferta feita' : r.sub }}</span>
+            <span class="row__text">
+              <span class="row__name">{{ r.label }}</span>
+              <span class="row__sub" [title]="subOf(r)">{{ subOf(r) }}</span>
+            </span>
           </label>
         } @empty {
           <p class="offer__text">Não há ninguém do outro lado que possa reagir.</p>
         }
       </div>
+      @if (grid()) {
+        <p class="offer__note">A distância é do mapa, só para ajudar: quem decide é você.</p>
+      }
       <div class="actions">
         <button matButton="outlined" type="button" class="btn" [disabled]="busy()" (click)="cancel.emit()">Não oferecer</button>
-        <button matButton="outlined" type="button" class="btn" [disabled]="!picked() || busy()" disabledInteractive (click)="send()">
+        <button matButton="filled" type="button" class="btn btn--main" [disabled]="!picked() || busy()" disabledInteractive (click)="send()">
           {{ picked() ? 'Oferecer ' + toName() : 'Oferecer' }}
         </button>
       </div>
@@ -75,38 +83,83 @@ export class OfferPanel {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
 
-  /** The mover's label ("Goblin 1"). */
-  readonly moverLabel = input.required<string>();
   readonly rows = input.required<readonly ReactorRow[]>();
   readonly busy = input(false);
   readonly error = input('');
+  /** The combat has a map: the candidates are ringed on it and each row says how far it is now (`hints`). */
+  readonly grid = input(false);
+  /** By candidate: "agora a 3 m", from the mover's own attacks; none for a theatre or an unknown distance. */
+  readonly hints = input<ReadonlyMap<string, string>>(new Map());
+  /** The map shows beside the panel (not a phone's own "Mapa" tab): the line says the candidates are ringed on it. */
+  readonly mapBeside = input(false);
+  /** Counts the times the master chose the offer again while the panel was open: the focus goes back to the list. */
+  readonly focusAsk = input(0);
   readonly offer = output<string>();
   readonly cancel = output<void>();
 
   protected readonly id = `offer-${nextId++}`;
-  protected readonly picked = signal('');
-  protected readonly mover = computed(() =>
-    tieNumbers(`${upFirst(article(this.moverLabel()))} ${this.moverLabel()}`),
-  );
+  /** The candidate chosen: the page reads it to ring the map and writes it when a ring is tapped. */
+  readonly picked = model('');
   protected readonly toName = computed(() => {
     const r = this.rows().find((x) => x.id === this.picked());
     return r ? tieNumbers(`a ${r.label}`) : '';
   });
 
+  protected readonly line = computed(() =>
+    !this.grid()
+      ? 'O jogador decide no celular; atacar gasta a reação dele.'
+      : this.mapBeside()
+        ? 'Os candidatos têm um anel no mapa.'
+        : 'Escolha quem saiu do alcance.',
+  );
+
   constructor() {
+    // A pick that stopped being able to react (its reaction was spent, an offer was made): the first one that can takes its place.
+    effect(() => {
+      const rows = this.rows();
+      const picked = this.picked();
+      untracked(() => {
+        if (picked && !rows.some((r) => r.id === picked && !r.spent && !r.offered)) {
+          this.picked.set(rows.find((r) => !r.spent && !r.offered)?.id ?? '');
+        }
+      });
+    });
+    // The offer was chosen again while the panel is open: the focus lands on the checked radio, after the menu has given it back.
+    let asked = this.focusAsk();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    inject(DestroyRef).onDestroy(() => clearTimeout(timer));
+    effect(() => {
+      const n = this.focusAsk();
+      if (n !== asked) {
+        asked = n;
+        clearTimeout(timer);
+        timer = setTimeout(() => this.focusChecked());
+      }
+    });
     // Opens on the first one that can react, so the keyboard lands on the list.
     afterNextRender(
       () => {
         const first = this.rows().find((r) => !r.spent && !r.offered);
-        if (first) {
+        const kept = this.rows().some((r) => r.id === this.picked() && !r.spent && !r.offered);
+        if (first && !kept) {
           this.picked.set(first.id);
         }
-        queueMicrotask(() =>
-          this.host.nativeElement.querySelector<HTMLInputElement>('input:checked')?.focus(),
-        );
+        queueMicrotask(() => this.focusChecked());
       },
       { injector: this.injector },
     );
+  }
+
+  private focusChecked(): void {
+    this.host.nativeElement.querySelector<HTMLInputElement>('input:checked')?.focus();
+  }
+
+  /** The line under a name: why it cannot receive the offer, or what it is and how far it stands now. */
+  protected subOf(r: ReactorRow): string {
+    if (r.spent || r.offered) {
+      return r.spent ? 'Reação usada' : 'Oferta feita';
+    }
+    return [r.sub, this.hints().get(r.id)].filter(Boolean).join(' · ');
   }
 
   protected initial(label: string): string {

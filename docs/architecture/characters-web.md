@@ -152,8 +152,12 @@ The screens of MR-025 and RN-23 use only the server of [Table content](character
   A refusal at `table_spell.summon.*` sits under its own field (`SPELL_SUMMON_TEXTS`).
   The preview and the read view add "Invoca: Lobo do Vale, Lobo." from `summonLine`.
 - **A table creature on the player's side** is known by the `@mesa` end of its key (`isTableCreature` in `core/creatures/creature-format`), because the server sends no flag for it.
-  The summon sheet's list (`rowsOf`, `ChoiceRow.table`) tags the row "Da mesa" (`app-table-mark`) and writes "Os números vêm da sua ficha quando ele chega." in place of the line of numbers.
-  The creature's page tags it "Da mesa" beside its origin and ends with "Os números vêm da ficha de <dono> quando ele chegou" (`tableCreatureNote`), with "do dono" when the sheet has no name.
+  The summon sheet's list (`rowsOf`, `ChoiceRow.table`) puts the table's creature first and tags the row "Da mesa" (`app-table-mark`) with "Os números vêm da sua ficha quando ele chega." in place of the line of numbers.
+  A book creature in the same list has the row of a beast: size, ND, speed, CA, PV and its attack.
+  The sheet's header is the feature's name and, under it, "<classe> <nível> · 1 ação · gasta 1 uso (resta N)" (`GetSummonOptions.granted_by_label_pt`, `subtitleOf`).
+  A dialog with a short list is as tall as the list.
+  The creature's page tags it "Da mesa" beside its origin and is compact (`pages/character-sheet/creature-page`): CA, PV and speed, the actions, the traits and last "Os números vêm da ficha de <dono> quando ele chegou" (`tableCreatureNote`), with "do dono" when the sheet has no name.
+  It reads `GetCreature` with the creature's id, so the numbers, the attacks and the damage are the ones worked out for the owner when the creature arrived, not the entry's static ones.
   The list names only the creatures `GetSummonOptions` returns, which leave out the archived and the switched-off ones.
 - **The master's phone read of a creature** (`pages/content/creature-read`, `core/content/creature-phone-read`) is what `content-entry` shows instead of the editor on a phone.
   It reads the base's stat block, as the editor's side panel does, and builds the text from the same preview.

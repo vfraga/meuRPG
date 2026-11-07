@@ -247,6 +247,9 @@
     @if (offers().length) {
       <li><span class="mr-swatch mr-swatch--reactor" aria-hidden="true"></span>Quem pode atacar</li>
     }
+    @if (offerRing()) {
+      <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Pode receber a oferta</li>
+    }
   </app-map-layers-legend>
   }
   <ng-content select="[mapFoot]" />

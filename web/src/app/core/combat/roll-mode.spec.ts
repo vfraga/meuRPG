@@ -1,3 +1,7 @@
+import { create } from '@bufbuild/protobuf';
+
+import { DiceRollSchema } from '../../../gen/meurpg/play/v1/combat_pb';
+import { ExtraDieSchema } from '../../../gen/meurpg/play/v1/lasting_effects_pb';
 import {
   AdvantageSourceKind,
   DamageStepKind,
@@ -143,34 +147,59 @@ describe('requests and rolls', () => {
   });
 
   it('marks the counted d20 of a pair and none for a single one', () => {
-    const pair = { diceCount: 2, faces: [14, 7], countedIndex: 0 } as never;
+    const pair = create(DiceRollSchema, { diceCount: 2, faces: [14, 7], countedIndex: 0 });
     expect(d20Faces(pair)).toEqual([
       { face: 14, counted: true },
       { face: 7, counted: false },
     ]);
-    const one = { diceCount: 1, faces: [9], countedIndex: 0 } as never;
+    const one = create(DiceRollSchema, { diceCount: 1, faces: [9], countedIndex: 0 });
     expect(d20Faces(one)).toEqual([{ face: 9, counted: true }]);
   });
 
   it('writes the formula of the d20 that counts', () => {
-    const pair = {
+    const pair = create(DiceRollSchema, {
       diceCount: 2,
       diceSides: 20,
       faces: [14, 7],
       countedIndex: 1,
       modifier: 5,
       total: 12,
-    } as never;
+    });
     expect(d20Formula(pair)).toBe('7 + 5 = 12');
-    const one = {
+    const one = create(DiceRollSchema, {
       diceCount: 1,
       diceSides: 20,
       faces: [9],
       countedIndex: 0,
       modifier: 5,
       total: 14,
-    } as never;
+    });
     expect(d20Formula(one)).toBe('1d20 (9) + 5 = 14');
+  });
+
+  it('names the extra dice of a d20 when asked, for one die and for the pair', () => {
+    const extraDice = [
+      create(ExtraDieSchema, {
+        sourceKey: 'm',
+        sourceNamePt: 'Golpe Certeiro',
+        faces: 8,
+        sign: 1,
+        face: 5,
+      }),
+    ];
+    const one = create(DiceRollSchema, {
+      diceCount: 1,
+      diceSides: 20,
+      faces: [12],
+      countedIndex: 0,
+      modifier: 6,
+      total: 23,
+      extraDice,
+    });
+    expect(d20Formula(one)).toBe('1d20 (12) + 6 + 1d8 (5) = 23');
+    expect(d20Formula(one, true)).toBe('1d20 (12) + 6 + Golpe Certeiro 1d8 (5) = 23');
+    const pair = create(DiceRollSchema, { ...one, diceCount: 2, faces: [12, 3], countedIndex: 0 });
+    expect(d20Formula(pair, true)).toBe('12 + 6 + Golpe Certeiro 1d8 (5) = 23');
   });
 
   it('writes a resistance step', () => {

@@ -35,6 +35,13 @@ export function offeringLabel(f: OfferingFeature): string {
   return `${f.name} (${f.owner})`;
 }
 
+/** "Truques de lâmina (Guarda do Corvo, Guerreiro 3)": the feature, its owner, and the class and level it comes at. */
+export function offeringRead(f: OfferingFeature, className: (classKey: string) => string): string {
+  const at =
+    f.ownerKind === 'subclass' ? `${className(f.classKey)} ${f.level}` : `nível ${f.level}`;
+  return `${f.name} (${f.owner}, ${at})`;
+}
+
 /** "Guarda do Corvo · subclasse de Guerreiro" or "Guardião do Vale · classe da mesa". */
 export function ownerLabel(f: OfferingFeature, className: (classKey: string) => string): string {
   return f.ownerKind === 'subclass'

@@ -397,4 +397,273 @@ describe('FeatEditor (MR-025)', () => {
     expect(lack.getAttribute('aria-invalid')).toBe('true');
     expect(lack.closest('app-search-pick')!.querySelector('.chip--invalid')).not.toBeNull();
   });
+
+  describe('the option panel and the cards "De onde vêm as opções"', () => {
+    const veteran = (patch: Record<string, unknown> = {}) =>
+      entry(TableContentKind.FEAT, 'Estilo do Veterano', {
+        body: {
+          case: 'tableFeat',
+          value: create(TableFeatSchema, {
+            namePt: 'Estilo do Veterano',
+            effects: [{ type: 'choice', choice: 'feature', count: 1 }],
+            options: [
+              {
+                namePt: 'Guarda Alta',
+                effects: [{ type: 'modifier', target: 'ac', mode: 'add', value: '1' }],
+              },
+              { namePt: 'Mão Firme', descPt: ['Seu golpe cai sempre no mesmo ponto.'] },
+            ],
+            ...patch,
+          }),
+        },
+      });
+    const panel = (el: HTMLElement) => el.querySelector('app-feat-options')!;
+    const cards = (el: HTMLElement) =>
+      Array.from(el.querySelectorAll<HTMLInputElement>('app-option-source input[type="radio"]'));
+
+    it('lists the options of the feat in their panel and counts them on the first card', () => {
+      const { el } = setup(veteran());
+      expect(text(panel(el).querySelector('.count')!)).toBe('2 de 60 opções');
+      expect(Array.from(panel(el).querySelectorAll('.row__title')).map((t) => text(t))).toEqual([
+        'Opção 1 · Guarda Alta',
+        'Opção 2 · Mão Firme',
+      ]);
+      expect(text(panel(el))).toContain('no efeito 1;');
+      expect(text(el.querySelector('app-option-source .desc')!)).toBe('As 2 do painel abaixo.');
+      expect(cards(el).findIndex((c) => c.checked)).toBe(0);
+    });
+
+    it('reads the choice and the options in "Como os jogadores veem"', () => {
+      const { el } = setup(veteran());
+      const preview = el.querySelector('.preview')!;
+      const rows = Array.from(preview.querySelectorAll('.rows__row')).map((r) => text(r).trim());
+      expect(rows).toContain('Escolha1 de 2 opções');
+      const options = Array.from(preview.querySelectorAll('.items--nested li')).map((o) =>
+        text(o).trim(),
+      );
+      expect(options).toEqual(['Guarda Alta.', 'Mão Firme. Seu golpe cai sempre no mesmo ponto.']);
+    });
+
+    it('draws no cards for a feat with no choice of options, and tells the panel to ask for one', () => {
+      const { el } = setup(false);
+      expect(el.querySelector('app-option-source')).toBeNull();
+      expect(text(panel(el))).toContain('Nenhuma opção ainda.');
+    });
+
+    it('sends the options in order, the named ones only, with the choice untouched', async () => {
+      const { fixture, el } = setup(veteran());
+      save.mockResolvedValue({ entry: veteran(), affected: [] });
+      click(panel(el) as HTMLElement, 'Adicionar uma opção');
+      fixture.detectChanges();
+      el.querySelector<HTMLButtonElement>('button[aria-label="Descer Opção 1"]')!.click();
+      fixture.detectChanges();
+      click(el, 'Salvar talento');
+      await settle(fixture, 3);
+      const sent = save.mock.calls[0][2].value;
+      expect(sent.options.map((o: { namePt: string }) => o.namePt)).toEqual([
+        'Mão Firme',
+        'Guarda Alta',
+      ]);
+      expect(sent.effects).toEqual([{ type: 'choice', choice: 'feature', count: 1 }]);
+    });
+
+    it('offers a whole set: the card, the select and the empty-panel note, and sends the set with no list', async () => {
+      const { fixture, el } = setup(veteran({ options: [] }));
+      save.mockResolvedValue({ entry: veteran(), affected: [] });
+      cards(el)[1].click();
+      fixture.detectChanges();
+      expect((el.querySelector('app-option-source select') as HTMLSelectElement).value).toBe(
+        'invocation',
+      );
+      expect(text(panel(el))).toContain('Este talento oferece o conjunto Invocação mística.');
+      expect(
+        panel(el)
+          .querySelector<HTMLElement>('[data-field="table_feat.options"]')!
+          .getAttribute('aria-disabled'),
+      ).toBe('true');
+      click(el, 'Salvar talento');
+      await settle(fixture, 3);
+      expect(save.mock.calls[0][2].value.effects[0]).toMatchObject({
+        type: 'choice',
+        choice: 'feature',
+        set: 'invocation',
+      });
+      expect(save.mock.calls[0][2].value.options).toBeUndefined();
+    });
+
+    it('puts each refusal on the field it names: the list, the cards and an option', async () => {
+      const { fixture, el } = setup(veteran());
+      save.mockRejectedValue(
+        refusal(
+          ['table_feat.options', 'limit'],
+          ['table_feat.effects[0].set', 'bad_value'],
+          ['table_feat.options[1].effects[0].target', 'bad_value'],
+        ),
+      );
+      click(el, 'Salvar talento');
+      await settle(fixture, 3);
+      expect(text(panel(el).querySelector('.add')!)).toContain(
+        'O talento passou de 60 opções. Remova uma.',
+      );
+      expect(text(el.querySelector('app-option-source')!)).toContain(
+        'Este talento tem opções próprias: a escolha oferece elas ou um conjunto, não os dois.',
+      );
+      const rows = panel(el).querySelectorAll('.row');
+      expect(rows[0].classList.contains('row--open')).toBe(false);
+      expect(rows[1].classList.contains('row--open')).toBe(true);
+      expect(text(el.querySelector('[role="alert"]')!)).toContain('3 campos precisam de ajuste');
+    });
+  });
+  describe('the named choices of the feat', () => {
+    const pick = (name = 'habilidade') => ({ type: 'choice', choice: 'ability', count: 1, name });
+    const prof = (proficiency: string) => ({ type: 'proficiency', proficiency });
+    const named = (effects: object[], options: object[] = []) =>
+      entry(TableContentKind.FEAT, 'Resiliente', {
+        body: {
+          case: 'tableFeat',
+          value: create(TableFeatSchema, { namePt: 'Resiliente', effects, options }),
+        },
+      });
+    const proficiency = (el: HTMLElement, at: number) =>
+      field(el, `table_feat.effects[${at}].proficiency`) as HTMLSelectElement;
+    const bar = (el: HTMLElement) => el.querySelector('app-editor-bar')!;
+
+    it('offers the choice to the fields of the effects after it, and says how many effects use it', () => {
+      const { el } = setup(named([pick(), prof('save.@habilidade')]));
+      const select = proficiency(el, 1);
+      expect(Array.from(select.querySelectorAll('optgroup')).map((g) => g.label)).toEqual([
+        'A escolha do talento',
+        'Valores fixos',
+      ]);
+      expect(select.selectedOptions[0].label).toContain('Teste de resistência · Habilidade');
+      const side = el.querySelector('app-feat-choices')!;
+      expect(text(side)).toContain('Escolhas deste talento');
+      expect(text(side)).toContain('Habilidade · efeito 1');
+      expect(text(side)).toContain('usada em 1 efeito');
+      expect(text(side)).toContain(
+        'Você não digita nada: "Habilidade" vem antes dos valores fixos nos campos que aceitam uma habilidade.',
+      );
+    });
+
+    it('draws the side card only when the feat has a named choice', () => {
+      expect(setup(false).el.querySelector('app-feat-choices section')).toBeNull();
+      expect(
+        setup(named([prof('skill:perception')])).el.querySelector('app-feat-choices section'),
+      ).toBeNull();
+    });
+
+    it('gives the fields of an option fixed values only, and says so', () => {
+      const { el } = setup(
+        named(
+          [pick(), { type: 'choice', choice: 'feature', count: 1 }],
+          [{ namePt: 'Mão Firme', effects: [prof('skill:perception')] }],
+        ),
+      );
+      const select = field(el, 'table_feat.options[0].effects[0].proficiency') as HTMLSelectElement;
+      expect(select.querySelectorAll('optgroup')).toHaveLength(0);
+      expect(text(select)).toContain(
+        'As opções do talento não usam as escolhas dele: só valores fixos.',
+      );
+    });
+
+    it('draws the three cards once, between the fields of the choice and "Mais opções"', () => {
+      const { el } = setup(
+        entry(TableContentKind.FEAT, 'Veterano', {
+          body: {
+            case: 'tableFeat',
+            value: create(TableFeatSchema, {
+              namePt: 'Veterano',
+              effects: [{ type: 'choice', choice: 'feature', count: 1, set: 'invocation' }],
+            }),
+          },
+        }),
+      );
+      expect(el.querySelectorAll('[data-field="table_feat.effects[0].set"]')).toHaveLength(1);
+      expect(el.querySelector('app-effect-picker app-option-source')).not.toBeNull();
+      const cards = el.querySelector('app-option-source')!;
+      const more = el.querySelector('app-effect-picker button.more')!;
+      expect(cards.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(text(cards.querySelector('app-select-field')!)).toContain('Invocação mística');
+    });
+
+    it('keeps the marked options list for a choice with no set, and the refusal on the cards', async () => {
+      const { fixture, el } = setup(
+        entry(TableContentKind.FEAT, 'Veterano', {
+          body: {
+            case: 'tableFeat',
+            value: create(TableFeatSchema, {
+              namePt: 'Veterano',
+              effects: [{ type: 'choice', choice: 'feature', count: 1 }],
+            }),
+          },
+        }),
+      );
+      el.querySelector<HTMLButtonElement>('app-effect-picker button.more')!.click();
+      fixture.detectChanges();
+      expect(el.querySelector('[data-field="table_feat.effects[0].from"]')).not.toBeNull();
+      expect(el.querySelector('[data-field="table_feat.effects[0].set"]')).toBe(
+        el.querySelector('app-option-source [data-field]'),
+      );
+      save.mockRejectedValue(refusal(['table_feat.effects[0].set', 'bad_value']));
+      click(el, 'Salvar talento');
+      await settle(fixture, 3);
+      expect(el.querySelectorAll('[data-field="table_feat.effects[0].set"]')).toHaveLength(1);
+      expect(text(el.querySelector('app-option-source')!)).toContain('Este talento tem opções');
+    });
+
+    describe('a field whose choice was removed', () => {
+      const removed = () => named([prof('save.@habilidade')]);
+
+      it('shows "Escolha…" and the refusal, and keeps the text until another value is picked', () => {
+        const { el } = setup(removed());
+        const select = proficiency(el, 0);
+        expect(select.selectedOptions[0].text).toBe('Escolha…');
+        expect(select.getAttribute('aria-invalid')).toBe('true');
+        expect(text(select.closest('app-select-field')!)).toContain(
+          'A escolha “habilidade” que este campo usava foi removida. Escolha outro valor.',
+        );
+      });
+
+      it('blocks "Salvar talento" with the reason, and never sends', async () => {
+        const { fixture, el } = setup(removed());
+        const button = bar(el).querySelector<HTMLButtonElement>('button.mr-button--off')!;
+        expect(button.textContent).toContain('Salvar talento');
+        expect(text(bar(el))).toContain(
+          'Um campo usava uma escolha que foi removida ou ficou abaixo dele. Escolha outro valor.',
+        );
+        button.click();
+        await settle(fixture, 3);
+        expect(save).not.toHaveBeenCalled();
+      });
+
+      it('saves again once the field holds a value that reads', async () => {
+        const { fixture, el } = setup(removed());
+        save.mockResolvedValue({ entry: removed(), affected: [] });
+        const select = proficiency(el, 0);
+        select.value = 'skill:perception';
+        select.dispatchEvent(new Event('change'));
+        fixture.detectChanges();
+        expect(bar(el).querySelector('button.mr-button--off')).toBeNull();
+        click(el, 'Salvar talento');
+        await settle(fixture, 3);
+        expect(save.mock.calls[0][2].value.effects[0].proficiency).toBe('skill:perception');
+      });
+    });
+
+    it('says the choice is below a field that points at it, and locks the group', () => {
+      const { el } = setup(named([prof('save.@habilidade'), pick()]));
+      const select = proficiency(el, 0);
+      const group = select.querySelector('optgroup')!;
+      expect(group.label).toBe('A escolha do talento');
+      const row = group.querySelector('option')!;
+      expect(row.disabled).toBe(true);
+      expect(row.textContent).toContain(
+        '“Habilidade” está no efeito 2, abaixo deste. Suba a escolha para usá-la aqui.',
+      );
+      expect(text(select.closest('app-select-field')!)).toContain(
+        'A escolha vem depois deste efeito. Suba a escolha ou desça este efeito.',
+      );
+      expect(bar(el).querySelector('button.mr-button--off')).not.toBeNull();
+    });
+  });
 });

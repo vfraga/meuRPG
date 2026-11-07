@@ -498,6 +498,27 @@ func (c *Content) CreatureByKey(key string) (Creature, bool) {
 	return c.c.creature(m), true
 }
 
+// CreatureOfResolved is the stat block of the table creature r as it was worked out for its owner (ResolvedDerived
+// builds the combat's from the same numbers); false when r.Key is not a table creature or the block cannot be built.
+func (c *Content) CreatureOfResolved(r ResolvedCreature) (Creature, bool) {
+	s, table := c.c.creatureSpecs[r.Key]
+	if !table {
+		return Creature{}, false
+	}
+	base, ok := c.c.monsters[s.baseKey]
+	if !ok {
+		return Creature{}, false
+	}
+	m, ok := ApplyResolved(base, s.trusted(r))
+	if !ok {
+		return Creature{}, false
+	}
+	out := c.c.creature(m)
+	// The entry's summary has the static numbers; the stat block's are the owner's.
+	out.ArmorClass, out.HitPoints = m.ArmorClass, m.HitPoints
+	return out, true
+}
+
 func (c *content) creature(m *srd51.Monster) Creature {
 	var entry CreatureEntry
 	for _, e := range c.monsterEntries {

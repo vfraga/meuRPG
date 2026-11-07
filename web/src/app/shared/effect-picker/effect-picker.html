@@ -18,12 +18,14 @@
             <app-select-field
               [label]="labelOf(f)"
               [options]="choiceOptions(f)"
-              [value]="read(f.name)"
-              [placeholder]="f.required ? 'Escolha…' : ''"
+              [value]="selected(f)"
+              [placeholder]="f.required || unreadable(f) ? 'Escolha…' : ''"
               [path]="path(f.name)"
               [issues]="issues(f.name)"
-              [disabled]="modeLocked(f)"
-              [describedBy]="modeLocked(f) ? lockId(f) : ''"
+              [disabled]="locked(f)"
+              [describedBy]="locked(f) ? lockId(f) : ''"
+              [groups]="groupsOf(f)"
+              [footer]="footerOf(f)"
               (valueChange)="setChoice(f, $event)"
             />
           }
@@ -64,9 +66,11 @@
               [label]="labelOf(f)"
               [addLabel]="'Adicionar ' + labelOf(f).toLowerCase()"
               [options]="pickOptions(f)"
+              [names]="feat.chipNames(f, list(f.name))"
               [values]="list(f.name)"
               [path]="path(f.name)"
               [issues]="issues(f.name)"
+              [footer]="footerOf(f)"
               (added)="add(f.name, $event)"
               (removed)="remove(f.name, $event)"
             />
@@ -85,7 +89,9 @@
             } @else {
               <app-text-field
                 [label]="labelOf(f)"
-                [value]="read(f.name)"
+                [value]="countLocked(f) ? '1' : read(f.name)"
+                [disabled]="countLocked(f)"
+                [describedBy]="countLocked(f) ? lockId(f) : ''"
                 [suffix]="suffixOf(f.name)"
                 [inputmode]="f.min < 0 ? 'text' : 'numeric'"
                 [path]="path(f.name)"
@@ -124,6 +130,34 @@
             />
           }
         }
+        @if (feat.reading(f, read(f.name)); as reading) {
+          @if (reading.length > 0) {
+            <p class="reading">
+              Lê-se:
+              @for (p of reading; track $index) {
+                <span [class.reading__choice]="p.strong">{{ p.text }}</span>
+              }.
+            </p>
+          }
+        }
+        @if (feat.valueSlot(f); as slot) {
+          <p class="reading">Lê-se: <span class="reading__choice">{{ '{value}' }}</span> {{ slot }}</p>
+        }
+        @if (feat.insertions(f); as inserts) {
+          @if (inserts.length > 0) {
+            <div class="insert" role="group" [attr.aria-labelledby]="path(f.name) + '-insert'">
+              <p class="insert__title" [id]="path(f.name) + '-insert'">Pôr na fórmula, onde está o cursor</p>
+              <div class="insert__row">
+                @for (i of inserts; track i.text) {
+                  <button matButton="outlined" type="button" (click)="insert(f, i.text)">
+                    <mat-icon aria-hidden="true">{{ choiceIcon }}</mat-icon>{{ i.label }}
+                  </button>
+                }
+              </div>
+              <p class="insert__note">O botão escreve a escolha por você; o mestre não digita o nome dela. Só as escolhas de habilidade entram numa fórmula.</p>
+            </div>
+          }
+        }
       </div>
       <!-- The hint sits beside its field (a refusal, when there is one, is under the field). -->
       @if (lockNote(f); as lock) {
@@ -132,6 +166,15 @@
         <p class="frow__hint">{{ hint }}</p>
       }
     </div>
+  }
+  @if (afterFields(); as cards) {
+    <ng-container *ngTemplateOutlet="cards" />
+  }
+  @if (feat.own(); as own) {
+    <p class="choice-banner">
+      <mat-icon aria-hidden="true">{{ choiceIcon }}</mat-icon>
+      <span>Os outros efeitos chamam esta escolha de <strong>{{ own.label }}</strong>; o jogador {{ own.kind === 'ability' ? 'a' : 'o' }} escolhe ao pegar o talento.</span>
+    </p>
   }
   @if (hidden() > 0 || expanded()) {
     <button type="button" class="more" [attr.aria-expanded]="expanded()" (click)="expanded.set(!expanded())">

@@ -1,0 +1,167 @@
+:host {
+  display: block;
+
+  @media (min-width: 900px) {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+}
+
+:host(:empty) {
+  display: none;
+}
+
+// On a TV the card is as tall as its rolls, up to what the column gives it, and only the rolls that fit are drawn.
+.tv-rolls {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  @media (min-width: 900px) {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+}
+
+.tv-rolls__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @media (min-width: 900px) {
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  > li + li {
+    border-top: 1px solid var(--mr-rule);
+  }
+}
+
+.tv-rolls__title {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  margin: 0 0 var(--mr-space-2);
+  font-family: var(--mr-font-display);
+  font-weight: 700;
+  font-size: var(--mr-font-18);
+  color: var(--mr-ink);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-28);
+  }
+}
+
+.tv-rolls__last {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mr-space-3);
+  padding: var(--mr-space-2) var(--mr-space-3);
+  border: 2px solid var(--mr-accent);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-accent-soft);
+
+  p {
+    margin: 0;
+  }
+}
+
+.tv-rolls__text {
+  min-width: 0;
+}
+
+.tv-rolls__who {
+  font-weight: 700;
+  font-size: var(--mr-font-17);
+  color: var(--mr-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-26);
+  }
+}
+
+.tv-rolls__total {
+  font-family: var(--mr-font-display);
+  font-weight: 800;
+  flex: none;
+  font-size: var(--mr-font-48);
+  line-height: 1.1;
+  color: var(--mr-accent-text);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-48);
+  }
+}
+
+.tv-rolls__what {
+  font-size: var(--mr-font-15);
+  color: var(--mr-ink);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-24);
+  }
+}
+
+.tv-rolls__faces {
+  font-size: var(--mr-font-15);
+  color: var(--mr-ink-muted);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-20);
+  }
+}
+
+.tv-rolls__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mr-space-2);
+  padding: 6px 0;
+  color: var(--mr-ink);
+}
+
+.tv-rolls__row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tv-rolls__row-who {
+  font-weight: 700;
+  font-size: var(--mr-font-16);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-24);
+  }
+}
+
+.tv-rolls__row-what {
+  font-size: var(--mr-font-13);
+  color: var(--mr-ink-muted);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-20);
+  }
+}
+
+.tv-rolls__row-total {
+  flex: none;
+  font-family: var(--mr-font-display);
+  font-weight: 800;
+  font-size: var(--mr-font-24);
+
+  @media (min-width: 1600px) {
+    font-size: var(--mr-font-38);
+  }
+}

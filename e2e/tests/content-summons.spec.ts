@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 import { test } from './diagnostics';
 
-import { createEntryRPC, creatureBody, listEntriesJSON } from './content-support';
+import { createEntryRPC, creatureBody, expectCardsHoldTheirText, listEntriesJSON } from './content-support';
 import { tableForCaster, listCreaturesRPC } from './creatures-support';
 import { endOpenSessionRPC } from './live-session-support';
 import { newSignedInContext } from './support';
@@ -51,6 +51,7 @@ test(
       await block.getByLabel('Quantas vêm').fill('1');
       await block.getByLabel('No máximo ao mesmo tempo').fill('2');
       await block.getByLabel('Gasta 1 uso de').selectOption({ label: 'Companheiro do Vale (2)' });
+      await expectCardsHoldTheirText(m);
       await block.locator('label', { hasText: 'Em grupo' }).click();
       await block.locator('label', { hasText: 'As novas tomam o lugar' }).click();
       await m.getByRole('button', { name: 'Salvar característica' }).click();
@@ -131,6 +132,9 @@ test(
       // C6: the table creature is marked and says whose numbers it gets; the SRD wolf has its own line.
       const rows = sheet.locator('app-creature-choice-list label.row');
       await expect(rows).toHaveCount(2);
+      // The header says where the summon comes from and what it spends; the table's creature is first; the book's row has its numbers and its attack.
+      await expect(sheet.locator('.frame__sub')).toHaveText('Druida 1 · 1 ação · gasta 1 uso (restam 2)');
+      await expect(rows.first().locator('app-table-mark')).toHaveText(/Da mesa/);
       const tableRow = rows.filter({ hasText: 'Lobo do Vale' });
       await expect(tableRow.locator('app-table-mark')).toHaveText(/Da mesa/);
       await expect(tableRow).toContainText('Os números vêm da sua ficha quando ele chega.');
@@ -138,6 +142,8 @@ test(
       const bookRow = rows.filter({ hasNot: p.locator('app-table-mark') });
       await expect(bookRow).toHaveCount(1);
       await expect(bookRow.locator('.row__title')).toHaveText('Lobo');
+      await expect(bookRow).toContainText(/ND\s*1\/4.*CA\s*13.*PV\s*11/);
+      await expect(bookRow).toContainText('Mordida');
       await expect(bookRow).not.toContainText('Os números vêm da sua ficha');
       await tableRow.click();
       await sheet.getByRole('button', { name: 'Conjurar Companheiro do Vale', exact: true }).click();
@@ -150,6 +156,17 @@ test(
       await expect(p.getByRole('heading', { level: 1, name: 'Lobo do Vale' })).toBeVisible();
       await expect(p.locator('.head__origin app-table-mark')).toHaveText(/Da mesa/);
       await expect(p.locator('.table-note')).toHaveText('Os números vêm da ficha de Sálvia quando ele chegou');
+      // The page is compact (the numbers worked out for the owner, the creature's own attacks and traits), so the note that ends it is on the first screen.
+      // The wolf's formula is 13 + proficiency: the page shows the owner's number, never the base's 13.
+      expect(created[0].armorClass).toBeGreaterThan(13);
+      await expect(p.locator('.tiles')).toContainText(new RegExp(`CA\\s*${created[0].armorClass}(?!\\d)`));
+      await expect(p.locator('.attacks')).toContainText('Mordida Sombria');
+      await expect(p.locator('.block').last()).toContainText('Faro do Vale');
+      await expect(p.locator('.abilities')).toHaveCount(0);
+      // On a phone (390x844) the whole note is on the first screen.
+      await p.setViewportSize({ width: 390, height: 844 });
+      const noteBox = (await p.locator('.table-note').boundingBox())!;
+      expect(noteBox.y + noteBox.height).toBeLessThan(844);
     } finally {
       await endOpenSessionRPC(m, campaignId);
       await Promise.all([master.close(), player.close()]);

@@ -4,7 +4,7 @@ import type { Combatant } from '../../../gen/meurpg/play/v1/combat_pb';
 import { type HitBox, tappedCreature } from './pick-hit';
 import { type Place, type PickPlan, planPick } from './pick-places';
 
-/** A creature of the map while the player chooses a target (C7-04): ringed and tappable, or dimmed with the reason a tap tells. */
+/** A creature of the map while the player chooses a target (C7-04), or a candidate of the master's opportunity offer (`mode: 'offer'`): ringed and tappable, or dimmed with the reason a tap tells. */
 export interface PickMark {
   readonly id: string;
   readonly label: string;
@@ -14,8 +14,8 @@ export interface PickMark {
   readonly note: string;
   /** The marks it has: the chosen target is 1, a missile's darts are as many as it took. */
   readonly count: number;
-  /** What the marks are: the one target ("Alvo") or darts ("×2"). */
-  readonly mode: 'target' | 'darts';
+  /** What the marks are: the one target ("Alvo"), darts ("×2"), or the master's candidates for an opportunity offer (a dashed ring, the chosen one solid). */
+  readonly mode: 'target' | 'darts' | 'offer';
 }
 
 /** The chip over the map that says why a creature cannot be the target. */
@@ -27,6 +27,8 @@ export interface PickNote {
 /** The room the chips and tags take, in px (12 and 13px bold type): the check mark and "Alvo", "×2", a word of "Longe", the reason's icon and text. */
 const MARK_WIDTH = 62;
 const DART_WIDTH = 36;
+/** The check mark and "Oferta": two letters more than "Alvo". */
+const OFFER_WIDTH = 76;
 const CHAR_WIDTH = 7;
 const FAR_PADDING = 18;
 const WHY_PADDING = 44;
@@ -37,6 +39,10 @@ const PERCENT = 100;
 const TURN_LEAN = 0.08;
 /** A map this wide (px) has room for the whole "Longe: desvantagem" when it is the only one. */
 const WIDE_MAP = 600;
+
+function markWidth(mode: PickMark['mode']): number {
+  return mode === 'darts' ? DART_WIDTH : mode === 'offer' ? OFFER_WIDTH : MARK_WIDTH;
+}
 
 /** What the map reads to draw the choice of a target: the marks by creature, the dimmed ones, and where each tag and the reason chip go. */
 export class PickLayer {
@@ -59,7 +65,7 @@ export class PickLayer {
         const far = this.farWidth(m.note);
         return {
           id: m.id,
-          mark: m.count > 0 ? (m.mode === 'darts' ? DART_WIDTH : MARK_WIDTH) : 0,
+          mark: m.count > 0 ? markWidth(m.mode) : 0,
           far: whole ? far : this.farWidth(this.far(m)),
           farShort: this.farWidth(this.far(m)),
           hasFar: !!m.note && far > 0,
@@ -113,6 +119,9 @@ export class PickLayer {
   name(m: PickMark): string {
     if (m.reason) {
       return `${m.label}: ${m.reason}`;
+    }
+    if (m.mode === 'offer') {
+      return `Oferecer a ${m.label}`;
     }
     const base =
       m.mode === 'darts' && m.count > 0

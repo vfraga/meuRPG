@@ -17,6 +17,8 @@ import {
 } from '../../../core/content/content-kinds';
 import { readEntry } from '../../../core/content/content-read';
 import type { EntryRead, NameOf } from '../../../core/content/content-read-parts';
+import { optionSummary } from '../../../core/content/feat-options';
+import { featureToDraft } from '../../../core/content/feature-draft';
 import { parentViewOf } from '../../../core/content/subrace-traits';
 import type { EffectMenuVm } from '../../../core/content/effect-draft';
 import { openSheet } from '../../../shared/sheet/sheet-host';
@@ -256,6 +258,7 @@ export function readOfEntry(
   nameOf: NameOf,
   catalog: CatalogVm | null,
   entries: readonly TableEntry[],
+  menu: EffectMenuVm | null = null,
 ): EntryRead | null {
   return entry
     ? readEntry(
@@ -263,7 +266,8 @@ export function readOfEntry(
         nameOf,
         (key) => catalog?.subclassLevelOf(key) ?? 0,
         parentViewOf(entries),
-        catalog?.offeredByName,
+        catalog?.offeredByRead,
+        menu ? (o) => optionSummary(featureToDraft(o), menu, true) : undefined,
       )
     : null;
 }

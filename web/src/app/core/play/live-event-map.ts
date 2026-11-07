@@ -1,3 +1,5 @@
+import { timestampDate } from '@bufbuild/protobuf/wkt';
+
 import type { WatchGameSessionResponse } from '../../../gen/meurpg/play/v1/play_pb';
 import { toFreeRollVm } from '../free-dice/free-roll';
 import type { LiveEventVm } from './live-session.types';
@@ -97,6 +99,13 @@ const TRANSLATORS: Translators = {
     damageTypePt: v.damageTypePt,
   }),
   masterTyping: (v) => ({ kind: 'masterTyping', expiresInSeconds: v.expiresInSeconds }),
+  tableScreenChanged: (v) => ({
+    kind: 'tableScreenChanged',
+    open: v.open,
+    lostAt: v.lostAt ? timestampDate(v.lostAt) : null,
+    choiceRevision: v.choiceRevision,
+    presenceKnown: v.presenceKnown,
+  }),
 };
 
 /** The view-model event for a wire event; `null` when it carries nothing to tell. */

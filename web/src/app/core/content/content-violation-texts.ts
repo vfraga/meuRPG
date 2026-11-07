@@ -1,3 +1,4 @@
+import { FEAT_OPTION_TEXTS } from './content-violation-texts-feat';
 import { RACE_FIELD_TEXTS } from './content-violation-texts-race';
 
 /** What the server's reason at a field says in Portuguese: the table `violationText` looks a violation up in (the rest of its words are there). */
@@ -402,5 +403,6 @@ export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: strin
     text: 'Esta classe não existe mais. Tire-a da lista.',
   },
   { shape: /\.class_keys\[\]$/, text: 'Esta classe está na lista duas vezes.' },
+  ...FEAT_OPTION_TEXTS,
   ...RACE_FIELD_TEXTS,
 ];

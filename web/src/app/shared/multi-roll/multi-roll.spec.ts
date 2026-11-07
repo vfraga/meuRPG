@@ -103,4 +103,20 @@ describe('MultiRoll', () => {
     type(1, '7');
     expect(el.querySelector('.type__num')!.textContent).toBe('15');
   });
+
+  it('shows no total while an extra face is still missing', () => {
+    const { el, fixture, type } = setup({
+      canApp: false,
+      totalNote: 'Total do ataque',
+      combine: 'higher',
+      modifier: 6,
+      waiting: true,
+    });
+    type(0, '12');
+    type(1, '3');
+    expect(el.querySelector('.type__num')).toBeNull();
+    fixture.componentRef.setInput('waiting', false);
+    fixture.detectChanges();
+    expect(el.querySelector('.type__num')?.textContent?.trim()).toBe('18');
+  });
 });

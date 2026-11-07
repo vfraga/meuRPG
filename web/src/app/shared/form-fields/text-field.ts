@@ -23,7 +23,7 @@ let nextId = 0;
           [rows]="rows()"
           [attr.data-field]="path() || null"
           [attr.aria-invalid]="invalid() ? 'true' : null"
-          [attr.aria-describedby]="describedBy()"
+          [attr.aria-describedby]="described()"
           [attr.maxlength]="maxlength() || null"
           [value]="value()"
           (input)="valueChange.emit($any($event.target).value)"
@@ -35,7 +35,7 @@ let nextId = 0;
           [attr.inputmode]="inputmode() || null"
           [attr.data-field]="path() || null"
           [attr.aria-invalid]="invalid() ? 'true' : null"
-          [attr.aria-describedby]="describedBy()"
+          [attr.aria-describedby]="described()"
           [attr.maxlength]="maxlength() || null"
           [attr.placeholder]="placeholder() || null"
           [attr.aria-label]="ariaLabel() || null"
@@ -89,12 +89,16 @@ export class TextField {
   readonly placeholder = input('');
   /** The name a screen reader reads when the label shows less than it ("Fixo" in the row of "Pontos de vida"). */
   readonly ariaLabel = input('');
+  /** A locked field: it shows its one value and cannot change (a rule fixes it). */
   readonly disabled = input(false);
+  /** The id of another element that describes the field (the lock note beside a locked one), read after the note under it. */
+  readonly describedBy = input('');
   readonly valueChange = output<string>();
 
   protected readonly noteId = `fn-${nextId++}`;
   protected readonly invalid = computed(() => this.issues().length > 0);
-  protected readonly describedBy = computed(() =>
-    this.issues().length > 0 || this.hint() ? this.noteId : null,
-  );
+  protected readonly described = computed(() => {
+    const ids = [this.issues().length > 0 || this.hint() ? this.noteId : '', this.describedBy()];
+    return ids.filter((i) => i !== '').join(' ') || null;
+  });
 }

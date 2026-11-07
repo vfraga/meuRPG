@@ -181,6 +181,21 @@
   }
 }
 
+// The table screen (the TV tab): the page is the whole window, with no bar, no footer and no gutter.
+.app-content--tv {
+  max-width: none;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
+
+  // A phone scrolls: one column, nothing cut.
+  @media (max-width: 899.98px) {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+}
+
 // On paper only the page's own print layout shows (the printed map, MR-033):
 // no bar, no footer, no gutter, and no theme background.
 @media print {

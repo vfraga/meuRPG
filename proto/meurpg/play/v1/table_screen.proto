@@ -1,0 +1,354 @@
+syntax = "proto3";
+
+// The table screen: what the master sends to the TV at the table, a browser tab that
+// follows the master's choice. The calls are TableScreenService's; the messages are here.
+//
+// The TV is a player with no account and no character (RN-10). Every message of the stage
+// is a narrow copy of what such a player may read: a field of a shared message (Encounter,
+// OpenSceneInfo, Map) is never added to the TV by itself, so a field added to those later does not
+// reach the screen. Not on the TV, because no message has the field: hit point numbers, armor class,
+// initiative totals, conditions, effects, the dice of NPCs, hidden entries, the conversation, hooks,
+// clues, notes, the master's DCs, the fog's hidden cells.
+package meurpg.play.v1;
+
+import "google/protobuf/timestamp.proto";
+import "meurpg/maps/v1/maps.proto";
+
+// TableScreenService is the master's panel and the TV's one source.
+//
+// The master chooses what the TV shows: follow what the table sees ("Espelhar") or one pinned item
+// ("Fixar"). The choice is stored with the open session, so a reload of the TV tab or a second server
+// instance keeps it. The server decides what the TV shows now (`stage`); the app renders it and
+// orders nothing.
+//
+// Mirror order, first that exists: the image shown to the whole table, the combat, the scene open
+// to the whole table, the current map, the idle screen. The master's own tabs do not move the TV.
+// The Conversa (RN-36) never goes to the TV.
+//
+// Errors on all three procedures:
+//   - `not_found`: the campaign does not exist, or the caller is not a member.
+//   - `permission_denied`: the caller is a player. Only the master opens the table screen.
+//   - `failed_precondition` (GameSessionBlocked NO_OPEN_SESSION): the campaign has no open session.
+//
+// SetTableScreen also answers `invalid_argument` for a choice out of its range and `aborted` for a
+// stale `choice_revision`.
+service TableScreenService {
+  // GetTableScreen reads the choice and what the TV shows now. Only the master. The TV tab and the
+  // master's panel call it again whenever a stream tells them something changed.
+  rpc GetTableScreen(GetTableScreenRequest) returns (GetTableScreenResponse) {
+    option idempotency_level = IDEMPOTENT;
+  }
+
+  // WatchTableScreen is the stream of the TV tab: an event that carries nothing, "read
+  // GetTableScreen again". Only the master. The stream lives as long as WatchGameSession's and ends
+  // with the session. The count of open TV tabs is in memory in each server instance, like the live
+  // session's streams: with more than one instance a tab is counted by the instance that holds it.
+  rpc WatchTableScreen(WatchTableScreenRequest) returns (stream WatchTableScreenResponse);
+
+  // SetTableScreen stores the master's choice and tells the master's streams. It writes nothing else.
+  // The choice stays when its item ends: the stage falls to the idle screen with a notice and the pin
+  // comes back with a new item of the same kind. Only the master.
+  rpc SetTableScreen(SetTableScreenRequest) returns (SetTableScreenResponse);
+}
+
+// TableScreenKind is one thing the TV can show.
+enum TableScreenKind {
+  // Not chosen. Only valid as `pin` while `mirror` is on; also what a stage reads when there is no
+  // open session.
+  TABLE_SCREEN_KIND_UNSPECIFIED = 0;
+  // The idle screen: the campaign and session names and who is at the table.
+  TABLE_SCREEN_KIND_IDLE = 1;
+  // The session's current map.
+  TABLE_SCREEN_KIND_MAP = 2;
+  // The image the master shows, when it is shown to the whole table.
+  TABLE_SCREEN_KIND_IMAGE = 3;
+  // The open scene, when it is open to the whole table.
+  TABLE_SCREEN_KIND_SCENE = 4;
+  // The combat in progress.
+  TABLE_SCREEN_KIND_COMBAT = 5;
+}
+
+// TableScreenNotice is why the stage is not what the master asked for. The app writes the text.
+enum TableScreenNotice {
+  // No notice: the stage is what the choice says.
+  TABLE_SCREEN_NOTICE_UNSPECIFIED = 0;
+  // The pinned item ended (the combat is over, the scene closed, the image stopped). The pin stays
+  // stored; the stage is the idle screen until the master picks again or a new item of that kind
+  // comes.
+  TABLE_SCREEN_NOTICE_PIN_ENDED = 1;
+  // A scene is open to only some players, so it is not on the TV (RN-10). Set when the TV mirrors
+  // and when the pin is the scene.
+  TABLE_SCREEN_NOTICE_SCENE_NOT_FOR_ALL = 2;
+  // The map has the fog of war on and "Visão do grupo" off: the TV would show what no player sees
+  // together, so it does not show the map (RN-10). Set when the TV mirrors and when the pin is the map.
+  TABLE_SCREEN_NOTICE_MAP_NEEDS_GROUP_VISION = 3;
+}
+
+// TableScreenUnavailable is why the master cannot pick an item now. The app disables the choice and
+// writes the reason ("Nenhum combate agora", "Precisa da Visão do grupo").
+enum TableScreenUnavailable {
+  // The item is available.
+  TABLE_SCREEN_UNAVAILABLE_UNSPECIFIED = 0;
+  // There is no combat in progress.
+  TABLE_SCREEN_UNAVAILABLE_NO_COMBAT = 1;
+  // The session shows no image to the whole table.
+  TABLE_SCREEN_UNAVAILABLE_NO_IMAGE = 2;
+  // No scene is open.
+  TABLE_SCREEN_UNAVAILABLE_NO_SCENE = 3;
+  // The open scene is open to only some players.
+  TABLE_SCREEN_UNAVAILABLE_SCENE_NOT_FOR_ALL = 4;
+  // The session has no current map.
+  TABLE_SCREEN_UNAVAILABLE_NO_MAP = 5;
+  // The current map has the fog of war on and "Visão do grupo" off.
+  TABLE_SCREEN_UNAVAILABLE_NEEDS_GROUP_VISION = 6;
+}
+
+// TvState is how hurt a combatant is, in a word (RN-20). Never a number.
+enum TvState {
+  // Not told.
+  TV_STATE_UNSPECIFIED = 0;
+  // Not hurt.
+  TV_STATE_UNHURT = 1;
+  // Hurt.
+  TV_STATE_HURT = 2;
+  // Very hurt.
+  TV_STATE_VERY_HURT = 3;
+  // A creature at 0 hit points.
+  TV_STATE_DEFEATED = 4;
+  // A player character at 0 hit points.
+  TV_STATE_FALLEN = 5;
+}
+
+// GetTableScreenRequest names the campaign.
+message GetTableScreenRequest {
+  // The campaign (a UUID).
+  string campaign_id = 1;
+}
+
+// GetTableScreenResponse is the master's panel and the TV's whole state. Only the master reads it.
+message GetTableScreenResponse {
+  // Revision of the choice below; SetTableScreen echoes it, so a write over a choice that changed
+  // since it was read is refused. It counts only the master's choices, never what the TV shows.
+  int32 choice_revision = 1;
+  // The master's choice: follow what the table sees, or one pinned item.
+  TableScreenChoice choice = 2;
+  // What the TV shows now, already decided by the server. The app renders it and orders nothing.
+  TableScreenStage stage = 3;
+  // Why the stage is not the one the choice asks for ("O combate acabou", "Cena aberta só para
+  // alguns"), or UNSPECIFIED.
+  TableScreenNotice notice = 4;
+  // The campaign's name, for the header.
+  string campaign_name = 5;
+  // The open session's number in the campaign, counting from 1 (the app writes "Sessão N").
+  int32 session_number = 6;
+  // The names of the living player characters, for "Na mesa". Names only: no class, no numbers, and
+  // never a dead character, an NPC or a character waiting for the master's approval.
+  repeated string party = 7;
+  // Every item the master can pick, with whether it can be picked now.
+  repeated TableScreenOption options = 8;
+  // Whether a TV tab is connected, for the master's panel. Counted in memory by this server instance, like
+  // the live streams: with more than one instance it is the share this instance holds. A connection
+  // that died stays counted until the next failed heartbeat or recheck of its stream (up to about 25
+  // seconds). Only the master reads it. The panel keeps it current with WatchGameSession's table_screen_changed.
+  TableScreenPresence presence = 9;
+}
+
+// TableScreenPresence is whether the TV at the table is connected. It names nothing of the stage.
+message TableScreenPresence {
+  // True while at least one TV tab holds a stream ("Aberta").
+  bool open = 1;
+  // When the last TV tab lost its stream ("Sem conexão desde 21:14"). Set only when a TV tab was
+  // connected to the open session on this instance and none is now; unset otherwise.
+  google.protobuf.Timestamp lost_at = 2;
+}
+
+// TableScreenChoice is what the master chose. Stored with the open session.
+message TableScreenChoice {
+  // True while the TV follows what the table sees. The default of a new session.
+  bool mirror = 1;
+  // The pinned item, read only while `mirror` is off: IDLE, MAP, IMAGE, SCENE or COMBAT.
+  TableScreenKind pin = 2;
+}
+
+// TableScreenOption is one item of the master's panel.
+message TableScreenOption {
+  // The item.
+  TableScreenKind kind = 1;
+  // True when the TV can show the item now.
+  bool available = 2;
+  // Why not, when `available` is false; UNSPECIFIED otherwise.
+  TableScreenUnavailable unavailable = 3;
+}
+
+// TableScreenStage is what the TV shows.
+message TableScreenStage {
+  // The kind of screen. IDLE when nothing else can be shown.
+  TableScreenKind kind = 1;
+  // The content of the screen, set to match `kind`. Only what a player with no character may read.
+  oneof body {
+    // The idle screen has no content beyond the names the response carries.
+    TvIdle idle = 2;
+    // The map.
+    TvMap map = 3;
+    // The image shown to the whole table.
+    TvImage image = 4;
+    // The scene open to the whole table.
+    TvScene scene = 5;
+    // The combat.
+    TvCombat combat = 6;
+  }
+  // The free rolls the whole table sees, newest first, at most 3. Only with a map, a scene or a
+  // combat. A roll only one player reads ("Só eu") is absent.
+  repeated TvRoll rolls = 7;
+}
+
+// TvIdle is the idle screen. It carries nothing.
+message TvIdle {}
+
+// TvImage is the image the master shows to the whole table (MR-028).
+message TvImage {
+  // The image's name. A fog map's own background is never shown; only the copy made for showing.
+  string name = 1;
+  // Where the TV fetches the image.
+  string url = 2;
+  // The image's width in pixels.
+  int32 width = 3;
+  // The image's height in pixels.
+  int32 height = 4;
+}
+
+// TvScene is the scene open to the whole table. It has no hooks, clues, actions or DCs.
+message TvScene {
+  // The scene's name.
+  string name = 1;
+  // The scene's description as the players read it.
+  string description = 2;
+  reserved 3;
+  // The NPCs the table sees on the stage. A hidden NPC is absent (RN-10, RN-20).
+  repeated TvStageNpc stage = 4;
+}
+
+// TvStageNpc is an NPC the table sees on the stage.
+message TvStageNpc {
+  // The NPC's name as the players read it.
+  string name = 1;
+  // True when the NPC is the one speaking.
+  bool speaking = 2;
+}
+
+// TvMap is the map as a player with no character reads it.
+message TvMap {
+  // The map's name.
+  string name = 1;
+  // True when the map has the fog of war on and "Visão do grupo" off: the TV shows no map and
+  // every other field of this message is unset (RN-10).
+  bool hidden_by_fog = 2;
+  // The map, its points and its tokens as a player with no character reads them, from the same code
+  // as the player's GetMap: revealed points, visible tokens, nothing the master hides.
+  // With the fog on, the map carries no image (image_withheld): the page draws the tiles in `vision`.
+  meurpg.maps.v1.GetMapResponse map = 3;
+  // What the group sees and remembers of the map; the fog of war's cells. "Remembered" is the union of
+  // the party's memory: a square any member of the party has seen. With the fog on, the page draws the
+  // tiles of `tiles_path` and asks each with `as=tv` appended; the master's tiles of the TV are kept per
+  // campaign, apart from any player's. The map's layers_revision is 0: the TV paints no layer.
+  meurpg.maps.v1.GetMapVisionResponse vision = 4;
+  // The TV's own revision: a hash of what the TV reads of the map (the map, its points and tokens, and
+  // the vision), so it moves when that moves and not for a change only the master sees. Never a master's
+  // revision.
+  int32 revision = 5;
+}
+
+// TvCombat is the combat as the table sees it.
+message TvCombat {
+  // The round, counting from 1.
+  int32 round = 1;
+  // The combatants in initiative order. A combatant the table does not see (hidden, or an NPC no
+  // character sees on a fog map) is absent (RN-20).
+  repeated TvCombatant order = 2;
+  // True when the turn is a combatant the table does not see: the app writes "Vez do mestre".
+  bool masters_turn = 3;
+  // The lines every player reads, newest first, at most 6. A line only the master or one player
+  // reads, or that names a hidden combatant, is absent.
+  repeated string log = 4;
+  // The combat's map, when it has one, under the rules of TvMap. Unset when the players do not see the
+  // map (not the current one, or gone); that is not the fog hiding it, which is `hidden_by_fog`.
+  TvMap map = 5;
+}
+
+// TvCombatant is one combatant the table sees.
+message TvCombatant {
+  // The name as the players read it.
+  string name = 1;
+  // The first letter of the name, for the token on the map.
+  string initial = 2;
+  // How hurt, in a word (RN-20).
+  TvState state = 3;
+  // True when it is this combatant's turn.
+  bool on_turn = 4;
+  // True for a player character.
+  bool is_player = 5;
+}
+
+// TvRoll is a free roll made for the whole table (MR-052).
+message TvRoll {
+  // Who rolled, as the table reads it.
+  string who = 1;
+  // The expression rolled, such as "2d6+3".
+  string expression = 2;
+  // The total.
+  int32 total = 3;
+  // The faces that came up.
+  repeated int32 faces = 4;
+}
+
+// SetTableScreenRequest is the master's choice.
+message SetTableScreenRequest {
+  // The campaign (a UUID).
+  string campaign_id = 1;
+  // The choice_revision the master read. A different one is `aborted`: read again.
+  int32 choice_revision = 2;
+  // The new choice. A pin of an unknown kind is `invalid_argument` whatever `mirror` is. UNSPECIFIED is allowed only while `mirror` is on, and then the stored pin is kept.
+  TableScreenChoice choice = 3;
+}
+
+// SetTableScreenResponse returns the choice as stored.
+message SetTableScreenResponse {
+  // The new revision of the choice.
+  int32 choice_revision = 1;
+  // The choice as stored.
+  TableScreenChoice choice = 2;
+}
+
+// WatchTableScreenRequest names the campaign.
+message WatchTableScreenRequest {
+  // The campaign (a UUID).
+  string campaign_id = 1;
+}
+
+// WatchTableScreenResponse is one event of the TV tab's stream. No event carries content: nothing of
+// what the master's own stream hears reaches the page, so the TV shows only what GetTableScreen says.
+message WatchTableScreenResponse {
+  oneof event {
+    // Always the first event. The tab reads GetTableScreen now.
+    Ready ready = 1;
+    // Sent every 25 seconds, to show the stream is alive.
+    Heartbeat heartbeat = 2;
+    // Something that may change what the TV shows changed, at most one every 250 ms. The tab reads
+    // GetTableScreen again. It names nothing: not a revision, not a kind, not a count.
+    Changed changed = 3;
+    // The session ended. The stream ends after it.
+    SessionEnded session_ended = 4;
+  }
+
+  // Ready is the stream's first event.
+  message Ready {}
+
+  // Heartbeat carries nothing.
+  message Heartbeat {}
+
+  // Changed carries nothing.
+  message Changed {}
+
+  // SessionEnded carries nothing; the tab shows the idle screen.
+  message SessionEnded {}
+}
