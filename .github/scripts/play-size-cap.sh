@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The Go code of backend/internal/play may not grow past the number committed in .github/play-size-cap:
-# the package is four times the next one, and the count only goes down.
+# the package is the backend's largest, and the count only goes down.
 #
 #   play-size-cap.sh           check the count against the cap (CI runs this)
 #   play-size-cap.sh --lower   write the cap down to the current count, when it is lower
