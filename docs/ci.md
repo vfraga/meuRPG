@@ -51,7 +51,7 @@ A pull request that touches no file of a workflow still starts it, and its jobs 
 | Job | Checks |
 | --- | --- |
 | `proto` | `buf lint`, `buf format`, `buf breaking` against `main`, and that `buf generate` and `make sqlc` leave the committed generated code unchanged |
-| `go (lint)` | `golangci-lint` as a ratchet, the [complexity limits](#complexity-limits) and the [`//nolint` cap](#the-nolint-cap). It runs no `go test`: `go-db` runs every package |
+| `go (lint)` | `golangci-lint` as a ratchet, the [complexity limits](#complexity-limits) and the [`//nolint` cap](#the-nolint-cap) and the [play size cap](#the-play-size-cap). It runs no `go test`: `go-db` runs every package |
 | `govulncheck (called vulnerabilities)` | `govulncheck ./...` (version pinned): fails on a known vulnerability in a module or in the Go standard library that the code actually calls. See [Vulnerability scans](#vulnerability-scans) |
 | `go-db <group>` | `go test -race -covermode=atomic -coverpkg=./...` for one group of packages against its own in-memory database, with `MEURPG_REQUIRE_DB=1`: [PostgreSQL or CockroachDB, by the event](#which-database-the-tests-run-on). Each package has a 25-minute `-timeout` inside the job's 30 |
 | `go-db groups` | Checks once per run that the groups hold every package and every test of the split packages (`play`, `leaktest`) exactly once, and that the tests read from the source are the ones `go test -list` prints. The groups do not wait for it |
@@ -128,6 +128,23 @@ It needs only `grep`, and runs in a second.
 - A lower count always passes. The step then prints a notice; `.github/scripts/nolint-cap.sh --lower` writes the cap down to the count (it never raises it), so the number follows the work that removes suppressions.
 - To go up, edit `.github/nolint-cap` in the same PR and say in the description why the suppression cannot be avoided: the reviewer sees the number change. Fixing the finding is the default.
 - The count is the whole backend's, so lower the number in the PR that removes suppressions: otherwise the room they leave could be used by a new one.
+
+### The play size cap
+
+`backend/internal/play` is four times the next package, any change in it invalidates the test cache of all of it, and CI already splits its tests in three groups.
+`.github/scripts/play-size-cap.sh` counts its code lines, and the `go` job fails when the count passes the number in `.github/play-size-cap`.
+It needs only `awk`, and runs in a second.
+
+- A code line is a line of a non-test `.go` file directly in `backend/internal/play` that is not blank and not only a comment.
+  The subdirectories (`link`, `live`, `playdb`, `voice`) are not counted.
+- Every non-test `.go` file of the directory counts, whatever its name, build tags or header, so moving code to another file of the package does not lower the count.
+  Comments and blank lines are not counted, so documenting a function costs nothing and deleting its comment gains nothing.
+- A lower count always passes. The step then prints a notice; `.github/scripts/play-size-cap.sh --lower` writes the cap down to the count (it never raises it), in the PR that moves code out.
+- To go up, edit `.github/play-size-cap` in the same PR and say in the description why the growth cannot be avoided: the reviewer sees the number change.
+
+**Pure logic leaves when you touch it.**
+When a change touches a function that has no database, no `connect` request and no `Service` in it (advantage, the kinds of undo, the text of the log, the contests), move that logic to a subpackage of `play` in the same PR, and lower the cap.
+Never split the package in one move: each PR moves what it touches, with its tests.
 
 ### Coverage floors
 
