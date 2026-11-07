@@ -1,0 +1,20 @@
+# #578 creature editor (C1), damage rows, phone read (C4)
+
+Captured from the local stack at device scale factor 2. The editor shows at 768 px and up; the master's phone read exists below 768 px (the 767 px file is its widest case).
+
+- `c1-editor-damage-1280-dark.png` (2560x4006 px, device scale 2)
+- `c1-editor-damage-1280-light.png` (2560x4006 px, device scale 2)
+- `c1-editor-new-1280-dark.png` (2560x1600 px, device scale 2)
+- `c1-editor-new-1280-light.png` (2560x1600 px, device scale 2)
+- `c1-editor-refusal-1280-dark.png` (2560x4260 px, device scale 2)
+- `c1-editor-refusal-1280-light.png` (2560x4260 px, device scale 2)
+- `c1-editor-saved-1280-dark.png` (2560x3812 px, device scale 2)
+- `c1-editor-saved-1280-light.png` (2560x3812 px, device scale 2)
+- `c1-editor-saved-768-dark.png` (1536x5038 px, device scale 2)
+- `c1-editor-saved-768-light.png` (1536x5038 px, device scale 2)
+- `c4-phone-read-390-dark.png` (780x2036 px, device scale 2)
+- `c4-phone-read-390-light.png` (780x2036 px, device scale 2)
+- `c4-phone-read-767-dark.png` (1534x2048 px, device scale 2)
+- `c4-phone-read-767-light.png` (1534x2048 px, device scale 2)
+- `c4-phone-read-wolf-390-dark.png` (780x1918 px, device scale 2)
+- `c4-phone-read-wolf-390-light.png` (780x1918 px, device scale 2)
