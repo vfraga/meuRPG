@@ -32,7 +32,7 @@ A replay refused because the pool changed is dropped, and only the master reads 
 A natural 1 still misses, and a critical hit does not double the die.
 The die counts as an extra die for Stroke of Luck: the question comes blind, before the die is known.
 An opportunity attack and an attack as a reaction take the die like any other.
-`GetTurnOptionsResponse.maneuver_dice` lists those dice for a player's character, each with the name of its resource pool and the uses left.
+`GetTurnOptionsResponse.maneuver_dice` lists those dice for a player's character, each with the name of its resource pool and the uses left. `GetTurnOptions` reads the character's sheet and vitals once (`turnReads`, `combat_turn_reads.go`) for Metamagic, the table's cast options and these dice, and the dice read neither when none fits. The web tells two pools apart by `RollDie.resource`, never by name.
 A die with no use left stays listed with `uses_left` 0.
 An NPC gets none.
 

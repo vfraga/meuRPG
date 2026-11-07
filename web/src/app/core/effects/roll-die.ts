@@ -90,6 +90,8 @@ export function rollDieCost(die: RollDie): string {
 
 /** The uses of the pool a table die spends from, as the turn options list them (`ManeuverDieOption`). */
 export interface DieUses {
+  /** The pool's key (`RollDie.resource`): two pools may share a name, never a key. */
+  readonly resource: string;
   readonly left: number;
   readonly resourceNamePt: string;
 }
@@ -127,17 +129,18 @@ export function maneuverLine(dice: readonly ListedDie[], where: 'list' | 'attack
     names.length === 1
       ? `${names[0]} pode`
       : `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]} podem`;
-  const pools = new Map<string, number>();
+  // The pools by their key: two of the same name (or none) are still two.
+  const pools = new Map<string, { name: string; left: number }>();
   for (const d of listed) {
-    pools.set(d.resourceNamePt, d.usesLeft);
+    pools.set(d.die?.resource || d.die?.key || '', { name: d.resourceNamePt, left: d.usesLeft });
   }
   const lead = `${who} entrar ${where === 'list' ? 'num ataque com arma' : 'neste ataque'}: você marca ao rolar.`;
   if (where === 'attack' && pools.size === 1) {
-    const left = [...pools.values()][0];
+    const { left } = [...pools.values()][0];
     return `${lead} ${cap(usesWord(left))}.`;
   }
-  const tail = [...pools]
-    .map(([pool, left]) => (pool ? `${pool}: ${usesWord(left)}.` : `${cap(usesWord(left))}.`))
+  const tail = [...pools.values()]
+    .map(({ name, left }) => (name ? `${name}: ${usesWord(left)}.` : `${cap(usesWord(left))}.`))
     .join(' ');
   return `${lead} ${tail}`;
 }

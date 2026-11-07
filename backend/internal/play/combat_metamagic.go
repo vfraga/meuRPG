@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/jackc/pgx/v5"
-
 	"connectrpc.com/connect"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
@@ -269,11 +267,11 @@ func (s *Service) checkMetaTargets(meta *castMeta, v combatViewer, terrain grid.
 // metamagicOptionsOf lists, for each spell of the turn options, the Metamagic options
 // the caster knows and whether the spell takes them, at the spell's own level. Only a
 // player's character has them.
-func (s *Service) attachMetamagic(ctx context.Context, tx pgx.Tx, campaignID string, who playdb.Combatant, opts *rulesv1.TurnOptions) error {
+func (s *Service) attachMetamagic(ctx context.Context, reads *turnReads, who playdb.Combatant, opts *rulesv1.TurnOptions) error {
 	if who.Kind != kindPlayer || len(opts.GetSpells()) == 0 {
 		return nil
 	}
-	sheet, err := s.sheetOf(ctx, tx, campaignID, who)
+	sheet, err := reads.sheetOf(ctx)
 	if err != nil {
 		return err
 	}
@@ -283,7 +281,7 @@ func (s *Service) attachMetamagic(ctx context.Context, tx pgx.Tx, campaignID str
 	if len(sheet.Metamagic) == 0 {
 		return nil
 	}
-	content, err := s.roster.RulesContent(ctx, tx, campaignID)
+	content, err := s.roster.RulesContent(ctx, nil, reads.campaignID)
 	if err != nil {
 		return err
 	}
