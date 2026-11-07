@@ -322,3 +322,31 @@ describe('what a player reads of a feat (MR-025)', () => {
     expect(readEntry(e, nameOf).rows).toEqual([{ label: 'Pré-requisito', value: 'Nenhum' }]);
   });
 });
+
+describe('what the master reads of a feature that summons (#578)', () => {
+  const summoning = create(TableBackgroundSchema, {
+    namePt: 'Guardião',
+    feature: {
+      namePt: 'Companheiro do Vale',
+      descPt: ['Um lobo do vale luta ao seu lado.'],
+      summon: {
+        creatureKeys: ['creature:lobo@mesa', 'monster:unheard-of'],
+        count: '1',
+        resourceKey: 'x',
+      },
+    },
+  });
+
+  it('adds "Invoca: ..." to the feature, naming each creature', () => {
+    const names = (k: string) => (k === 'creature:lobo@mesa' ? 'Lobo do Vale' : k);
+    const read = readEntry(
+      entry(TableContentKind.BACKGROUND, 'Guardião', {
+        body: { case: 'tableBackground', value: summoning },
+      }),
+      names,
+    );
+    expect(read.sections[0].items[0].text).toBe(
+      'Um lobo do vale luta ao seu lado. Invoca: Lobo do Vale, Unheard of.',
+    );
+  });
+});

@@ -2,6 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
+import type { TableEntry } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import {
   type LevelFeature,
   newLevelFeatureId,
@@ -57,6 +58,9 @@ import { SelectField, type SelectOption } from '../../../shared/form-fields/sele
                 [flat]="true"
                 [withLead]="true"
                 [allowOptions]="true"
+                [allowSummon]="true"
+                [campaignId]="campaignId()"
+                [entries]="entries()"
                 [feature]="f.feature"
                 [menu]="menu()"
                 [basePath]="baseOf()(i)"
@@ -205,6 +209,9 @@ export class ClassFeatures {
   /** What was refused about the list as a whole (the limit). */
   readonly issues = input<readonly string[]>([]);
   readonly spellOptions = input<readonly SelectOption[]>([]);
+  /** The campaign and its entries: the open feature's "Invoca criaturas" searches the bestiary and names the table's creatures. */
+  readonly campaignId = input('');
+  readonly entries = input<readonly TableEntry[]>([]);
   readonly openId = input('');
   readonly headingId = input('features-t');
   /** The path of the panel head: where "the class has too many features" lands. */

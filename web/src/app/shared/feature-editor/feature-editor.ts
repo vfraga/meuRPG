@@ -2,13 +2,16 @@ import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
+import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import type { EffectDraft, EffectMenuVm } from '../../core/content/effect-draft';
 import { emptyEffect } from '../../core/content/effect-draft';
 import { emptyFeature, type FeatureDraft } from '../../core/content/feature-draft';
+import { followResource, resourcesOf, type SummonDraft } from '../../core/content/summon-draft';
 import { EffectPicker } from '../effect-picker/effect-picker';
 import { FieldNote } from '../form-fields/field-note';
 import { TextField } from '../form-fields/text-field';
 import type { SelectOption } from '../form-fields/select-field';
+import { SummonBlock } from '../summon-block/summon-block';
 
 /**
  * One feature of a race, a subrace, a background (and, in 10.12, a class or a subclass): a name, a text and effects from the
@@ -18,7 +21,15 @@ import type { SelectOption } from '../form-fields/select-field';
  */
 @Component({
   selector: 'app-feature-editor',
-  imports: [EffectPicker, FieldNote, FeatureEditor, MatButtonModule, MatIconModule, TextField],
+  imports: [
+    EffectPicker,
+    FieldNote,
+    FeatureEditor,
+    MatButtonModule,
+    MatIconModule,
+    SummonBlock,
+    TextField,
+  ],
   templateUrl: './feature-editor.html',
   styleUrl: './feature-editor.scss',
 })
@@ -49,6 +60,13 @@ export class FeatureEditor {
    * lista do SRD" choice, whose empty list offers them.
    */
   readonly allowOptions = input(false);
+  /**
+   * "Invoca criaturas": a class, subclass, race or background feature (and a class-feature entry) may bring creatures to its
+   * holder; an option and a feat do not. Needs the campaign (the bestiary's search) and, to name the table's creatures, its entries.
+   */
+  readonly allowSummon = input(false);
+  readonly campaignId = input('');
+  readonly entries = input<readonly TableEntry[]>([]);
   /** The feature is one of a list of options: an option with no name is not sent. */
   readonly isOption = input(false);
   /** An option that has content but no name: the save leaves it out, and the screen says so. */
@@ -87,8 +105,15 @@ export class FeatureEditor {
     return `${this.basePath()}.${field}`;
   }
 
+  /** The resources the feature defines: what its summon can spend. */
+  protected readonly resources = computed(() => resourcesOf(this.feature()));
+
   protected patch(p: Partial<FeatureDraft>): void {
-    this.featureChange.emit({ ...this.feature(), ...p });
+    this.featureChange.emit(followResource(this.feature(), { ...this.feature(), ...p }));
+  }
+
+  protected setSummon(summon: SummonDraft | null): void {
+    this.patch({ summon });
   }
 
   protected setEffect(i: number, e: EffectDraft): void {

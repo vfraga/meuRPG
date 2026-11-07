@@ -145,7 +145,7 @@ func (s *Service) spellClassUnknown(ctx context.Context, content *rules.Content,
 	if class == "" || !content.Hidden(class) {
 		return false, nil
 	}
-	uses, err := s.callerUses(ctx, m, class)
+	uses, err := s.callerUses(ctx, m, content, class)
 	if err != nil {
 		return false, s.dbError(ctx, "read the caller's sheets", err)
 	}

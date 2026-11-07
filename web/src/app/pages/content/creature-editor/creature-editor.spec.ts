@@ -434,6 +434,14 @@ describe('CreatureEditor (#578)', () => {
         ),
       ).toContain('block');
       expect(selectOf(fire, 'qualifier').getAttribute('aria-describedby')).toBe('cr-mods-info');
+      // The off field is narrow on a laptop with the side panel open: its value would be cut under the icon, so only the icon shows and
+      // the words stay for a screen reader (the reason is what the select is described by).
+      const offValue = selectOf(fire, 'qualifier').querySelector('mat-select-trigger span')!;
+      expect(offValue.classList.contains('mr-visually-hidden')).toBe(true);
+      expect(text(offValue)).toBe('Todo dano desses tipos');
+      expect(
+        selectOf(slashing, 'qualifier').querySelector('mat-select-trigger .mr-visually-hidden'),
+      ).toBeNull();
       expect(selectOf(slashing, 'qualifier').getAttribute('aria-disabled')).toBe('false');
       expect(slashing.querySelector('mat-form-field.off')).toBeNull();
       // A vulnerability has none: choosing it clears the one that was chosen.

@@ -21,6 +21,7 @@ import {
   names,
 } from './content-read-parts';
 import { bonusText } from './feature-draft';
+import { summonLine } from './summon-names';
 import { spellToDraft } from './spell-draft';
 import { previewRows } from './spell-preview';
 import { prerequisiteParts } from './feat-text';
@@ -123,7 +124,8 @@ function readClassFeature(f: TableClassFeature, nameOf: NameOf): EntryRead {
       value: f.replacesFeatureKey === '' ? 'Nada' : featureKeyName(f.replacesFeatureKey, nameOf),
     },
   ];
-  return { rows, sections: [], text: f.descPt };
+  const summon = summonLine(f.summon, nameOf);
+  return { rows, sections: [], text: summon ? [...f.descPt, summon] : f.descPt };
 }
 
 function readSpell(s: TableSpell, nameOf: NameOf): EntryRead {

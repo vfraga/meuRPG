@@ -249,8 +249,8 @@ func timestampOf(t time.Time) *timestamppb.Timestamp {
 // callerKeys are the content keys (the SRD's and the table's) the caller's own
 // characters in the campaign use, read with q (a transaction's, or the pool's
 // outside one): what lets a player keep reading about an option the master archived
-// or switched off after their sheet took it.
-func callerKeys(ctx context.Context, q *charactersdb.Queries, m authz.Membership) (map[string]bool, error) {
+// or switched off after their sheet took it. The content says which table class features the sheets have.
+func callerKeys(ctx context.Context, q *charactersdb.Queries, m authz.Membership, content *rules.Content) (map[string]bool, error) {
 	sheets, err := q.ListCampaignSheets(ctx, m.CampaignID)
 	if err != nil {
 		return nil, err
@@ -265,7 +265,12 @@ func callerKeys(ctx context.Context, q *charactersdb.Queries, m authz.Membership
 			return nil, err
 		}
 		if full := sheet.GetFull(); full != nil {
-			for _, kf := range rules.BuildKeys(buildOf(full)) {
+			b := buildOf(full)
+			for _, kf := range rules.BuildKeys(b) {
+				out[kf.Key] = true
+			}
+			// A table class feature is no key of the build: the sheet has it through its class and level.
+			for _, kf := range content.ClassFeatureKeys(b) {
 				out[kf.Key] = true
 			}
 		}
@@ -274,7 +279,7 @@ func callerKeys(ctx context.Context, q *charactersdb.Queries, m authz.Membership
 }
 
 // callerUses says whether one of the caller's own characters uses the key.
-func (s *Service) callerUses(ctx context.Context, m authz.Membership, key string) (bool, error) {
-	keys, err := callerKeys(ctx, s.queries, m)
+func (s *Service) callerUses(ctx context.Context, m authz.Membership, content *rules.Content, key string) (bool, error) {
+	keys, err := callerKeys(ctx, s.queries, m, content)
 	return keys[key], err
 }

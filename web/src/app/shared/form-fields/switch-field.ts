@@ -19,6 +19,9 @@ let nextId = 0;
         [class.switch--on]="checked()"
         [attr.aria-checked]="checked()"
         [attr.aria-labelledby]="labelId"
+        [attr.aria-describedby]="describedBy() || null"
+        [attr.aria-invalid]="invalid() ? 'true' : null"
+        [disabled]="disabled()"
         [attr.data-field]="path() || null"
         (click)="toggled.emit(!checked())"
       >
@@ -91,6 +94,11 @@ let nextId = 0;
         outline: 2px solid var(--mr-focus);
         outline-offset: 2px;
       }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     }
 
     .switch__handle {
@@ -136,6 +144,10 @@ export class SwitchField {
   /** The words beside the label: "Ligado"/"Desligado", or "Ligada"/"Desligada" where the noun is feminine. */
   readonly onWord = input('Ligado');
   readonly offWord = input('Desligado');
+  /** The switch cannot be turned (the line that says why is `describedBy`'s). */
+  readonly disabled = input(false);
+  readonly describedBy = input('');
+  readonly invalid = input(false);
   readonly toggled = output<boolean>();
   protected readonly labelId = `sw-${nextId++}`;
 }

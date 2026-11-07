@@ -2,6 +2,7 @@ import { create } from '@bufbuild/protobuf';
 
 import {
   TableBackgroundSchema,
+  TableFeatureSchema,
   TableRaceSchema,
   TableSubraceSchema,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
@@ -12,6 +13,7 @@ import {
   bonusText,
   choiceAmounts,
   draftToBackground,
+  featureOwnPaths,
   draftToRace,
   draftToSubrace,
   emptyBackground,
@@ -269,5 +271,57 @@ describe('unreadableFeaturePaths', () => {
   it('does not block on an option without a name: the save does not send it', () => {
     const f = { ...emptyFeature(), options: [{ ...emptyFeature(), name: '  ', effects: [bad] }] };
     expect(unreadableFeaturePaths('t', f, menu())).toEqual([]);
+  });
+
+  describe('the summon of a feature (#578)', () => {
+    const stored = () =>
+      create(TableFeatureSchema, {
+        key: 'feature:guardiao--companheiro@mesa',
+        namePt: 'Companheiro do Vale',
+        descPt: ['Um lobo.'],
+        effects: [{ type: 'resource', resource: 'companheiro', max: '1', recharge: 'long_rest' }],
+        summon: {
+          creatureKeys: ['monster:wolf'],
+          count: '1',
+          role: 1,
+          countPerSlotLevel: 0,
+          resourceKey: 'companheiro',
+          resourceCost: 1,
+          maxLive: 1,
+        },
+      });
+
+    it('keeps an API-written summon through a load and a save', () => {
+      const draft = featureToDraft(stored());
+      expect(draft.summon?.creatureKeys).toEqual(['monster:wolf']);
+      const init = draftToFeature(draft, menu());
+      expect(init.summon).toEqual(stored().summon);
+    });
+
+    it('sends no summon for a feature without one, and none from an option', () => {
+      const bare = create(TableFeatureSchema, { namePt: 'A', options: [{ namePt: 'B' }] });
+      const draft = featureToDraft(bare);
+      expect(draft.summon).toBeNull();
+      expect(draftToFeature(draft, menu())).not.toHaveProperty('summon');
+      expect(draftToFeature({ ...draft, summon: null }, menu()).options?.[0]).not.toHaveProperty(
+        'summon',
+      );
+    });
+
+    it('draws the summon inputs only while it is on, and blocks the save with no resource to spend', () => {
+      const draft = featureToDraft(stored());
+      expect(featureOwnPaths('t', draft, menu())).toContain('t.summon.count');
+      expect(featureOwnPaths('t', { ...draft, summon: null }, menu())).not.toContain(
+        't.summon.count',
+      );
+      expect(unreadableFeaturePaths('t', draft, menu())).toEqual([]);
+      expect(
+        unreadableFeaturePaths(
+          't',
+          { ...draft, summon: { ...draft.summon!, resourceKey: '' } },
+          menu(),
+        ),
+      ).toEqual(['t.summon.resource_key']);
+    });
   });
 });

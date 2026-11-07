@@ -12,6 +12,7 @@ import {
 } from './effect-draft';
 import { type FeatureDraft, emptyFeature } from './feature-draft';
 import { paragraphs } from './spell-draft';
+import { draftToSummon, summonBlockedPaths, summonPaths, summonToDraft } from './summon-draft';
 
 /**
  * The table class feature form (MR-025): a feature the master adds to a class at a class level, which may take the place of one
@@ -42,6 +43,7 @@ export function classFeatureToDraft(f: TableClassFeature): ClassFeatureDraft {
       name: f.namePt,
       text: f.descPt.join('\n\n'),
       effects: f.effects.map(effectToDraft),
+      summon: f.summon ? summonToDraft(f.summon) : null,
     },
     classKey: f.classKey,
     level: f.level > 0 ? String(f.level) : '',
@@ -58,6 +60,7 @@ export function draftToClassFeature(d: ClassFeatureDraft, menu: EffectMenuVm): C
     level: level === '' ? 0 : Number(level),
     replacesFeatureKey: d.replaces.trim(),
     effects: d.feature.effects.map((e) => draftToEffect(e, menu)),
+    ...(d.feature.summon ? { summon: draftToSummon(d.feature.summon) } : {}),
   };
 }
 
@@ -79,10 +82,16 @@ export function classFeaturePaths(d: ClassFeatureDraft, menu: EffectMenuVm): str
       out.push(`${at}.${field.name}`);
     }
   });
+  if (d.feature.summon) {
+    out.push(...summonPaths(p));
+  }
   return out;
 }
 
 /** The paths of the class feature's number fields whose text is no whole number. */
 export function unreadableClassFeaturePaths(d: ClassFeatureDraft, menu: EffectMenuVm): string[] {
-  return unreadableNumberPaths('table_class_feature.effects', d.feature.effects, menu);
+  return [
+    ...unreadableNumberPaths('table_class_feature.effects', d.feature.effects, menu),
+    ...summonBlockedPaths('table_class_feature', d.feature),
+  ];
 }

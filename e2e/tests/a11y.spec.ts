@@ -63,7 +63,7 @@ import { createInkBladeRPC, tableForSpells } from './spells-support';
 import { beginTheatreRPC, secondPlayer } from './theatre-support';
 import { combatWithTwoDown, reviveRPC, tableWithDead } from './revivify-support';
 import { brisa, brisaAidSheet, brisaSheet, dalila, dalilaSheet, ragna, ragnaSheet } from './combat-support';
-import { archiveEntryRPC, costsRaceBody, createEntryRPC, entryRoute, raceBody, spellBody, updateEntryRPC } from './content-support';
+import { archiveEntryRPC, costsRaceBody, createEntryRPC, creatureBody, damageCreatureBody, entryRoute, raceBody, spellBody, updateEntryRPC } from './content-support';
 import { generateSceneRPC, mapRoute, tableForImages } from './images-support';
 import { treasureRoute } from './treasure-support';
 import { classBody, createClassRPC, createSubclassRPC, halfCasterBody } from './classes-support';
@@ -5979,6 +5979,31 @@ async function scanTableContent(browser: Browser, colorScheme: 'light' | 'dark',
       await m.getByRole('button', { name: 'Salvar magia' }).click();
       await expect(m.getByRole('alert').filter({ hasText: 'Esta entrada mudou enquanto você editava.' })).toBeVisible();
       await expectScreenPasses(m, `Editor de magia, a entrada mudou enquanto se editava ${where}`);
+      // A creature of the table (#578): the base to pick first, the numbers with their formulas, a trait and an attack open, the damage lines
+      // (a resistance, a vulnerability with "Vale contra" off, an immunity) and the refusal of a line with no damage type.
+      await open(m, `/campaigns/${campaignId}/content/new/creature`);
+      await expect(m.getByLabel('Criatura do SRD que serve de base')).toBeVisible();
+      await expectScreenPasses(m, `Editor de criatura, a base a escolher ${where}`);
+      const wolf = await createEntryRPC(m, campaignId, 'tableCreature', creatureBody('Lobo do Vale', { hitPoints: 30, armorClass: 14, damageBonus: 2 }));
+      await open(m, entryRoute(campaignId, wolf));
+      await expect(m.getByLabel('Nome', { exact: true })).toHaveValue('Lobo do Vale');
+      await expect(m.getByLabel('Pontos de vida, valor fixo')).toHaveValue('30');
+      await expectScreenPasses(m, `Editor de criatura, os números, o traço e o ataque ${where}`);
+      await m.getByRole('button', { name: /^Faro do Vale/ }).click();
+      await m.getByRole('button', { name: /^Mordida Sombria/ }).click();
+      await expect(m.getByLabel('Texto do traço')).toBeVisible();
+      await expect(m.getByLabel('Nome do ataque')).toBeVisible();
+      await expectScreenPasses(m, `Editor de criatura, o traço e o ataque abertos ${where}`);
+      const undead = await createEntryRPC(m, campaignId, 'tableCreature', damageCreatureBody());
+      await open(m, entryRoute(campaignId, undead));
+      await expect(m.getByLabel('Nome', { exact: true })).toHaveValue('Defunto do Vale');
+      await expect(m.getByRole('combobox', { name: 'Vale contra da linha 2', exact: true })).toHaveAttribute('aria-disabled', 'true');
+      await expectScreenPasses(m, `Editor de criatura, as linhas de dano ${where}`);
+      await m.getByRole('button', { name: 'Adicionar linha' }).click();
+      await m.getByRole('button', { name: 'Salvar criatura' }).click();
+      await expect(m.getByRole('combobox', { name: 'Tipos de dano da linha 4', exact: true })).toHaveAttribute('aria-invalid', 'true');
+      await expect(m.getByText('Escolha ao menos um tipo de dano.')).toBeVisible();
+      await expectScreenPasses(m, `Editor de criatura, a recusa numa linha de dano ${where}`);
     } else {
       await m.getByRole('button', { name: 'Arquivar Lâmina de Nanquim' }).click();
       await expect(m.getByRole('heading', { name: 'Arquivar Lâmina de Nanquim?' })).toBeVisible();
@@ -5986,6 +6011,12 @@ async function scanTableContent(browser: Browser, colorScheme: 'light' | 'dark',
       await m.getByRole('button', { name: 'Voltar', exact: true }).click();
       await open(m, entryRoute(campaignId, race));
       await expectScreenPasses(m, `Raça lida pelo mestre no celular ${where}`);
+      // The creature on a phone: the board with its damage lines, and the card of traits and attacks.
+      const undead = await createEntryRPC(m, campaignId, 'tableCreature', damageCreatureBody());
+      await open(m, entryRoute(campaignId, undead));
+      await expect(m.getByText('Só você muda estas linhas. Quem tem a criatura as lê na ficha dela.')).toBeVisible();
+      await expect(m.getByText('Cheiro de cripta')).toBeVisible();
+      await expectScreenPasses(m, `Criatura lida pelo mestre no celular ${where}`);
     }
 
     await open(p, `/campaigns/${campaignId}/content`);

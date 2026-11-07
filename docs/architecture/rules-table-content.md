@@ -501,7 +501,8 @@ Combat uses `Spellcasting.SpellList`, the list the caster reads: the class's or,
 ## Switches and hidden keys
 
 The master switches classes, subclasses, races, subraces, backgrounds, spells, feats, options, class features and creatures on or off per campaign, SRD and table alike; everything is on by default.
-The options screen has no creature group, so creatures are switched through the API only.
+The master switches creatures on the options screen, in its "Criaturas" group.
+The creature editor has the same switch.
 `Overlay.Off` carries the switched-off keys to `With`, which stores them on a copy and ignores a key that is not switchable (`Content.Switchable`).
 
 - `Content.Off(key)` is the key's own switch.
@@ -642,7 +643,7 @@ Tests: `TestATableSpellSummonsThroughTheSRDChecks`, `TestATableSummonIsRefusedAt
 
 ## Table feature summons
 
-A `TableFeature` of a class, a subclass, a race trait or a background, and a `TableClassFeature` entry, may carry a `summon` (`TableFeature.Summon`, a `TableSummon`).
+A `TableFeature` of a class, a subclass, a race trait or a background, and a `TableClassFeature` entry, may carry a `summon` (`TableFeature.Summon` or `TableClassFeature.summon`, a `TableSummon`).
 It has the same creatures, count and limits as a spell's summon.
 It is spent with a use of a resource instead of a slot.
 An option carries none (`value` at `.summon`).

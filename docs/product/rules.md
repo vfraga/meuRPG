@@ -593,8 +593,8 @@ Members read the campaign's content, except creatures (below); only the master w
 - **Table content never runs code.** Effects come from a closed menu (modifier, proficiency, resource, sense, roll mode, action, extra attack, ranged attack, Wild Shape, spell slots, choice, note, granted spell, maneuver die, reroll). A feature with only text always holds. The server returns every violation of an entry at once, each pointing at the editor field it belongs to, and a refused save changes nothing.
 - **What players see.** Every enabled playable option, whole (numbers and effects). They look up every enabled spell under "Magias" ([MR-045](stories.md#mr-045-look-up-spells)) and pick on the sheet only from their class's list (each class's list by the level in it, with multiclass).
 - **The switches.** On "Opções para os jogadores" the master turns each class, subclass, race, subrace, background, spell, feat, option and class feature on or off, SRD and table alike (one switch per option, how many sheets use it, "Ligar todas" and "Desligar todas" per kind, saved at once). Everything is on by default. What is off never reaches a player in any read; sheets that already use it keep working; a switched-off class hides its subclasses, features and options, and a switched-off race its subraces and traits, except on a sheet that already has the parent (a sheet keeps what its own race, class or subclass gives). A player's new choice of a switched-off option is refused (on create, edit and level up), an unrelated edit never is, and the master is never refused. A player's sheet keeps, when edited or leveled up, what the master archived or switched off afterwards.
-  The master switches creatures on and off through the API only.
-  The screen has no creature group.
+  The master switches creatures on and off in the "Criaturas" group of this screen.
+  The creature editor has the same switch.
 - **A table spell can summon creatures.** They are the table's or the SRD's, and they follow the rules of the SRD's summoning spells: the slot, concentration, replacement, dismissal and undo. The number of creatures may depend on the caster and on the slot used. Players read the creatures as for any summon. The caster is offered the names of the creatures (no numbers) when choosing which to bring.
 - **A table feature can summon creatures.** A class, subclass, race trait or background feature, or a feature the master adds to a class as its own entry, may bring creatures of the table or of the SRD. They follow the same rules as a summoning spell: concentration, replacement, dismissal and undo. The feature says how many creatures come, which resource it spends (one use per casting), how the uses come back on a rest, and how long and how fast it casts. It spends no slot, so a higher slot changes nothing. The undo gives the use back. A player reads the creatures as for any summon, and a player who holds none does not read the creatures of the feature.
 - **Open screens follow.** When the master changes content or a switch, the players' open screens read the lists again, each with the role of its reader.
@@ -705,7 +705,9 @@ Members read the campaign's content, except creatures (below); only the master w
   The master makes and edits table creatures in the web app, in the creature editor of "Conteúdo da mesa" on a laptop; a content pack carries them too.
   The same editor has up to 12 lines of resistance, immunity or vulnerability.
   They add to the base's and never take one away.
-  Each has its damage types and a "Vale contra": all damage, or, for bludgeoning, piercing and slashing, only nonmagical attacks (not silvered, or not adamantine).
+  Each has its damage types and a "Vale contra".
+  It is all damage, or, for bludgeoning, piercing and slashing, only nonmagical attacks.
+  A nonmagical attack may also be one that is not silvered, or one that is not adamantine.
   Only the master edits them; whoever holds the creature reads them on its sheet.
 - **Limits:** 1,000 entries per campaign, 64 KiB per entry, 60 features per class, 60 traits per race and subrace, 10 traits per creature, 6,000 effects and 500 distinct formulas (100 KiB of text) in all, each formula of at most 1,024 bytes.
 

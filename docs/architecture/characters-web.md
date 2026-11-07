@@ -95,7 +95,7 @@ The "Criar NPC" idempotency key is born once per opened dialog; the dialog's arm
 
 The screens of MR-025 and RN-23 use only the server of [Table content](characters-table-content.md): the browser writes no list and does no rule arithmetic, and what the server refuses comes back on the field.
 
-- **Routes** (`pages/content/content.routes.ts`, `loadChildren`, so the editors and the client stay out of the initial bundle): `''` is the list (`content-list`), `options` is "Opções para os jogadores", `import` the pack import, and `new/:kind` and `entries/:key` are the same entry page (`content-entry`), which picks the editor (spell, race, subrace, background, feat, class, subclass) when the caller is the master on a notebook and the read view (`entry-read`) otherwise: the player, and the master on the phone.
+- **Routes** (`pages/content/content.routes.ts`, `loadChildren`, so the editors and the client stay out of the initial bundle): `''` is the list (`content-list`), `options` is "Opções para os jogadores", `import` the pack import, and `new/:kind` and `entries/:key` are the same entry page (`content-entry`), which picks the editor (spell, race, subrace, background, feat, class, subclass, option, class feature, creature) when the caller is the master on a notebook and the read view (`entry-read`) otherwise: the player, and the master on the phone.
   The entry's key (`race:corujeiro@mesa`) is a single encoded segment.
   On the phone the master gets a "⋮" menu at the right of the title, for every kind, with "Arquivar" or "Desarquivar".
   The menu stays enabled while a call runs, so the focus stays on it.
@@ -113,22 +113,37 @@ The screens of MR-025 and RN-23 use only the server of [Table content](character
   A row is removed from its menu, and the focus then goes to the add button.
   The draft keeps every number as typed and sends an empty one as 0.
   It sends only a melee attack's reach, or a ranged attack's range and long range.
-  Distances are metres in the form and feet in the entry, and the dice go from d4 to d100.
+  Distances are metres in the form and feet in the entry, and the dice are d4, d6, d8, d10, d12, d20 and d100.
   The side column writes "Como fica na mesa" from the draft and the base's stat block.
   It lists who brings the creature (`carriersOf`, read from the entries the editor already has).
   `damage_mods` are rows of their own (`creature-damage-mods`, `damage-mods.ts`).
   Each row is one table line of three Material selects: the kind, the damage types (multiple, over the SRD's) and the qualifier.
   The qualifier is off (dashed, with a block icon) for a vulnerability and for a non-physical type, and one info line under the rows says why.
-  A refusal sits under its select; a repeated damage type is named by the client (`duplicateText`).
+  A refusal sits under its select.
+  The client names a repeated damage type (`duplicateText`).
   A value this build does not know stays as an extra option, "valor desconhecido: x".
   Changing a kind or a type that takes the qualifier away clears it, so the save is not refused for it.
-  The preview line also carries CA, PV and speed, and it adds "Resistências e imunidades" with the table's lines and the base's, and the read view lists the rows.
+  The preview line also carries CA, PV and speed.
+  It adds "Resistências e imunidades" with the table's lines and the base's.
+  The read view lists the rows.
+- **The summon block** (`shared/summon-block`, `core/content/summon-draft`, `summon-options`, `summon-names`) is "Invoca criaturas" on a feature's card.
+  `app-feature-editor` draws it behind `allowSummon`, which is on for a class, subclass, race, subrace, background and class-feature entry, and off for an option and a feat.
+  The draft keeps the formula and the most at a time as typed and the stored message in `base`, so the role, the cost, the count per slot level and a field this build does not know go back as loaded.
+  The creatures are chips with a search (`app-creature-pick`): "Da mesa" for a table creature and "· SRD" for the SRD's.
+  The cost is one of the feature's own `resource` effects, and with none the block says so and `summonBlockedPaths` stops the save only while no resource key is chosen (a key the feature does not define is the class's, shown as "(da classe)" and left to the server).
+  Time and duration are selects of presets, and a stored value they do not list is one more option.
+  Concentration is off until the duration is by time.
+  Turning the switch off sends no summon.
+  A refusal at `<feature>.summon.*` sits under its own field (`content-violation-texts-summon.ts`), and one at `count_per_slot_level` or `role` lands on the switch.
+  The preview and the read view add "Invoca: Lobo." from `summonLine`, with SRD names remembered from the bestiary (`summon-names.ts`).
 - **The master's phone read of a creature** (`pages/content/creature-read`, `core/content/creature-phone-read`) is what `content-entry` shows instead of the editor on a phone.
   It reads the base's stat block, as the editor's side panel does, and builds the text from the same preview.
   The rows are the base (`typeAndSizeInWords`), PV, CA, the damage bonus, the attack bonus and the damage lines, each marked "da mesa" or "da base".
   One note says that only the master changes the damage lines and that whoever holds the creature reads them on its sheet.
   One card holds the traits and the attacks, the base's first, and ends with who brings the creature (`carriersOf`).
-  A player gets the generic `entry-read` instead, with no damage lines and no carriers.
+  A player reads the creature with `readCreature` (`core/content/content-read-creature.ts`) in the generic `entry-read`.
+  It shows the numbers, the formulas and the section "Resistências, imunidades e vulnerabilidades", and no carriers.
+  A holder reads the whole body of the entry; a non-holder gets not_found.
 - **The damage warning** (`core/content/spell-warnings.ts`, `unappliedDamage`): the spell editor shows "O app não sabe aplicar este dano" under the combat mechanics when a saved spell has damage and no attack, no saving throw, no area and a target other than the caster alone.
   It is a client-side note beside the form, with no code from the server; it never blocks "Salvar magia", and it goes away when the master picks an attack or a saving throw, or an area target.
   Dice typed under "Só texto" are not sent, so only a saved body raises it.

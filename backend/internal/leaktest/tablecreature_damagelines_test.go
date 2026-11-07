@@ -29,12 +29,12 @@ const (
 	damageLineVulnerable = "damage-type:radiant"
 )
 
-// damageLinesOf counts what a reply says of the table creatures' damage lines: the damage_mods of an entry body, and the
-// immunities and vulnerabilities of a stat block of one of the keys that name the entry's two types.
 func fieldOf(m protoreflect.Message, name string) protoreflect.Value {
 	return m.Get(m.Descriptor().Fields().ByName(protoreflect.Name(name)))
 }
 
+// damageLinesOf counts what a reply says of the table creatures' damage lines: the damage_mods of an entry body, and the
+// immunities and vulnerabilities of a stat block of one of the keys that name the entry's two types.
 func damageLinesOf(r reply, keys ...string) (mods, statBlocks int) {
 	if r.msg == nil {
 		return 0, 0
@@ -159,11 +159,12 @@ func TestTheDamageLinesOfATableCreatureAreItsHolderAndTheMastersAlone(t *testing
 			got.keep(p, r)
 			return r
 		}
+		// The master reads the two damage_mods of every entry, whatever the state (the positive control).
+		if mods, _ := damageLinesOf(read(m, rulesv1connect.TableContentServiceListTableEntriesProcedure, &rulesv1.ListTableEntriesRequest{CampaignId: w.campaign}), keys...); mods != 2*len(keys) {
+			t.Errorf("%s: the master reads %d damage_mods in ListTableEntries, want %d", state, mods, 2*len(keys))
+		}
 		for _, key := range keys {
-			// The master: the lines in the body of the entry and in the stat block, whatever the state.
-			if mods, _ := damageLinesOf(read(m, rulesv1connect.TableContentServiceListTableEntriesProcedure, &rulesv1.ListTableEntriesRequest{CampaignId: w.campaign}), key); mods < 2*len(keys) {
-				t.Errorf("%s: the master reads %d damage_mods in ListTableEntries, want %d (the positive control)", state, mods, 2*len(keys))
-			}
+			// The master: the lines in the stat block, whatever the state.
 			if _, blocks := damageLinesOf(read(m, rulesv1connect.ContentServiceGetCreatureProcedure, &rulesv1.GetCreatureRequest{CampaignId: w.campaign, Key: key}), key); blocks != 2 {
 				t.Errorf("%s: the master's GetCreature of %s shows %d of the two lines, want 2", state, key, blocks)
 			}

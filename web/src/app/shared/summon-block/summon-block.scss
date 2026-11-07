@@ -1,0 +1,113 @@
+:host {
+  display: block;
+}
+
+// A dashed rule sets the block apart from the feature's own fields, as the board's.
+.summon {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  padding-top: var(--mr-space-3);
+  border-top: 1px dashed var(--mr-line);
+
+  &__line {
+    margin: 0;
+    font-size: var(--mr-font-14);
+    line-height: 20px;
+    color: var(--mr-ink-muted);
+  }
+}
+
+// Three fields to a row from a tablet up; one below.
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mr-space-3) var(--mr-space-4);
+  align-items: start;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    &--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+.why {
+  &__text {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 0;
+    padding: 0 4px;
+    font-size: var(--mr-font-14);
+    line-height: 18px;
+    color: var(--mr-danger-ink);
+  }
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+    margin-top: 1px;
+  }
+}
+
+.conc {
+  min-width: 0;
+
+  &__why {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0 4px;
+    font-size: var(--mr-font-14);
+    line-height: 18px;
+    color: var(--mr-ink-muted);
+  }
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}
+
+.fixed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 4px;
+  font-size: var(--mr-font-14);
+  line-height: 18px;
+  color: var(--mr-danger-ink);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+
+  &__btn {
+    min-height: 44px;
+    padding: 0 8px;
+    border: 0;
+    background: transparent;
+    color: var(--mr-accent-text);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--mr-focus);
+      outline-offset: 2px;
+    }
+  }
+}

@@ -749,6 +749,7 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
   O mestre cria e edita criaturas da mesa no app web, no editor de criaturas do "Conteúdo da mesa" no notebook; um pacote de conteúdo também as traz.
 - **Dado** que edito uma criatura da mesa no editor de criaturas, **quando** adiciono uma linha de resistência, imunidade ou vulnerabilidade com os tipos de dano e um "Vale contra", **então** ela se soma às listas da base e nunca tira nenhuma.
   São até 12 linhas.
+  O "Vale contra" é todo dano, só ataque não mágico, só ataque não mágico nem prateado, ou só ataque não mágico nem adamantino.
   O "Vale contra" fica desligado para uma vulnerabilidade e para um tipo de dano que não é concussão, perfurante nem cortante, e a linha sob as linhas diz por quê.
   Quem tem a criatura lê as linhas na ficha dela; só eu as edito.
 - **Dado** que salvo uma criatura com uma base que o SRD não tem, pontos de vida fora de 1 a 9.999, classe de armadura fora de 1 a 40, bônus de dano fora de -10 a 30, ou mais de 10 traços, **então** o servidor recusa cada um no próprio campo, e um traço com o nome de um traço ou de uma ação da base, ou "Magic Weapons", "Spellcasting" ou "Innate Spellcasting", é recusado.
@@ -777,6 +778,13 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
   As criaturas de uma magia ou de uma habilidade que lutam num combate mostram a todo jogador o nome e a chave, e só a quem as convocou e a mim os números, a ficha e a entrada; um NPC escondido ao lado de quem convocou continua sem nome.
   As entradas de quem convocou listam uma criatura só enquanto um personagem dela a tem viva, então uma dispensa, uma substituição ou um desfazer a tiram de novo.
   A invocação só é conjurada pela habilidade: uma Contramágica não a responde e ela não é uma das magias conhecidas do personagem.
+- **Dado** que edito uma classe, subclasse, raça, antecedente ou característica de classe no notebook, **quando** ligo "Invoca criaturas" numa característica, **então** escolho de 1 a 8 criaturas (as da mesa e as do SRD), o número como fórmula, o máximo ao mesmo tempo, o recurso que cada uso gasta, o turno, o que uma nova conjuração faz com as criaturas antigas, o tempo e a duração.
+  O recurso é um dos efeitos `resource` da própria característica; sem nenhum, o bloco diz isso e o "Salvar" espera.
+  A concentração fica desligada enquanto a duração não for por tempo.
+  Desligar o interruptor não envia invocação, e ele volta ligado quando abro uma entrada que tem uma.
+  Uma opção e um talento não têm esse interruptor.
+  O servidor recusa cada campo errado no próprio campo, e "Como os jogadores veem" acrescenta "Invoca: Lobo.".
+  Salvar uma característica no editor mantém uma invocação escrita pela API.
 - **Dado** uma criatura dada com fórmulas, **quando** edito a entrada para não ter fórmula alguma, **então** a classe de armadura dela na lista e no combate continua a com que foi dada.
 - **Dado** uma criatura com fórmulas que ponho no combate com "Pôr no combate" ou da qual faço um NPC, **então** ela tem os números fixos da entrada, porque não tem dono.
 - **Dado** uma entrada de criatura, **então** um jogador a acha na lista de criaturas e lê a ficha dela só enquanto um personagem dele a tem.
@@ -792,7 +800,7 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
   A ficha de estatísticas, os pontos de vida e a classe de armadura ficam escondidos de quem não é o dono.
   Isso vale mesmo com a entrada arquivada ou desligada.
 - **Dado** uma entrada de criatura arquivada, **quando** a dou a um personagem, **então** ela é dada.
-- **Dado** uma entrada de criatura, **quando** a ligo ou desligo, **então** faço isso pela API, porque a tela "Opções para os jogadores" não tem grupo de criaturas.
+- **Dado** uma entrada de criatura, **quando** a ligo ou desligo, **então** faço isso no grupo "Criaturas" da tela "Opções para os jogadores", ou no interruptor do editor de criatura.
 - **Dado** as magias de invocação, a Forma Selvagem e as ferramentas de encontro (gerador, avaliador e trocas), **então** elas oferecem só criaturas do SRD, porque uma criatura da mesa não mantém o nível de desafio da base.
 
 **Trocar uma escolha.**

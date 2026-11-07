@@ -127,9 +127,9 @@ func TestATableFeatureThatSummonsKeepsItsCreatureAndCountFromThoseWhoHoldNone(t 
 
 // The spell a feature's summon lowers to belongs to the feature's entry: GetSpellDetails answers it to the master and to
 // a player whose character has the entry, whether the entry is live or archived, and as an unknown spell to every other
-// member. The canary is the feature's name, which the spell carries. The entry is a class or a race.
+// member. The canary is the feature's name, which the spell carries. The entry is a class, a race or a class feature of an SRD class.
 func TestTheHiddenSpellOfAFeatureSummonIsReadOnlyByTheMasterAndTheHolderOfItsEntry(t *testing.T) {
-	for _, owner := range []string{"class", "race"} {
+	for _, owner := range []string{"class", "race", "classfeature"} {
 		t.Run(owner, func(t *testing.T) { hiddenSpellOfAFeatureSummon(t, owner) })
 	}
 }
@@ -149,12 +149,21 @@ func hiddenSpellOfAFeatureSummon(t *testing.T, owner string) {
 	summon := &rulesv1.TableSummon{CreatureKeys: []string{"monster:wolf"}, Count: "2", MaxLive: 4, ResourceKey: "chamados"}
 	var entry *rulesv1.TableEntry
 	sheet := &charactersv1.FullSheet{BaseScores: &rulesv1.AbilityScores{Strength: 10, Dexterity: 14, Constitution: 12, Intelligence: 16, Wisdom: 10, Charisma: 8}}
-	if owner == "class" {
+	switch owner {
+	case "classfeature":
+		entry = must(m.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
+			CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableClassFeature{TableClassFeature: &rulesv1.TableClassFeature{
+				NamePt: featureName, DescPt: []string{"O texto da habilidade."}, ClassKey: "class:fighter", Level: 1, Summon: summon,
+				Effects: []*rulesv1.TableEffect{{Type: "resource", Resource: "chamados", Max: "2", Recharge: "long_rest"}},
+			}},
+		}))).GetEntry()
+		sheet.RaceKey, sheet.Classes = "race:gnome", []*charactersv1.ClassLevel{{ClassKey: "class:fighter", Level: 1}}
+	case "class":
 		entry = must(m.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
 			CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableClass{TableClass: summonerClass("Guardiã da Matilha", featureName, "O texto da habilidade.", summon)},
 		}))).GetEntry()
 		sheet.RaceKey, sheet.Classes = "race:gnome", []*charactersv1.ClassLevel{{ClassKey: entry.GetKey(), Level: 1}}
-	} else {
+	default:
 		entry = must(m.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
 			CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableRace{TableRace: &rulesv1.TableRace{
 				NamePt: "Povo da Matilha", Size: "Medium", SpeedFt: 30, Languages: []string{"language:common"},
@@ -189,6 +198,9 @@ func hiddenSpellOfAFeatureSummon(t *testing.T, owner string) {
 	check("live " + owner)
 	must(m.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: entry.GetKey()})))
 	check("archived " + owner)
+	must(m.table.UnarchiveTableEntry(ctx, rq(&rulesv1.UnarchiveTableEntryRequest{CampaignId: w.campaign, Key: entry.GetKey()})))
+	must(m.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: entry.GetKey(), Off: true}}})))
+	check("off " + owner)
 }
 
 // summonerClass is a table class whose level 1 feature summons: two uses of "chamados" back on a long rest.

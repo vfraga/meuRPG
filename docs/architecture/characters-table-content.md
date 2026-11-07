@@ -94,7 +94,8 @@ This is what the server stores and shows:
 ## Player options and the live hint
 
 The master switches on and off, per campaign, each class, subclass, race, subrace, background, spell, feat, option, class feature and creature, from the SRD and the table (`campaign_content_off`, one row per switched-off option; no row means on).
-The options screen has no creature group, so creatures are switched through the API only.
+The master switches creatures on the options screen, in its "Criaturas" group.
+The creature editor has the same switch (`app-players-switch`).
 What is switched off never reaches a player, in any read; the master sees everything with the `off` mark.
 The engine side is [Switches and hidden keys](rules-table-content.md#switches-and-hidden-keys).
 
@@ -203,6 +204,8 @@ The choice engine reads it with the SRD options: `GetLevelUpOptions`, `PreviewCh
 It goes through the same writes, archive mark, switch (`SetOptionSwitches`, `ListOptionSwitches`), pack and player view as the other kinds, and a sheet that has the class gets the notice "A classe mudou" when it changes.
 The engine side is [Table class features](rules-table-content.md#table-class-features).
 A player's copy drops a hidden class, a hidden replaced feature and the effects' hidden references.
+The body may carry a `summon`.
+A player's copy keeps only its `creature_keys`: the table creatures the player holds, and the SRD's.
 
 ## Table creatures
 

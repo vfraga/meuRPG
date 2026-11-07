@@ -6,6 +6,7 @@ import {
   classFeatureToDraft,
   draftToClassFeature,
   emptyClassFeature,
+  unreadableClassFeaturePaths,
 } from './class-feature-draft';
 import { menu } from './content-testing-menu';
 
@@ -47,5 +48,40 @@ describe('the class feature form (MR-025)', () => {
     expect(paths).toContain('table_class_feature.level');
     expect(paths).toContain('table_class_feature.replaces_feature_key');
     expect(paths).toContain('table_class_feature.effects[0].text_pt');
+  });
+
+  it('keeps the summon of a class feature through a load and a save, and draws its inputs', () => {
+    const withSummon = create(TableClassFeatureSchema, {
+      namePt: 'Companheiro do Vale',
+      classKey: 'class:ranger',
+      level: 3,
+      effects: [{ type: 'resource', resource: 'companheiro', max: '1' }],
+      summon: {
+        creatureKeys: ['creature:lobo@mesa', 'monster:wolf'],
+        count: 'prof()',
+        resourceKey: 'companheiro',
+        resourceCost: 1,
+        maxLive: 2,
+        turnMode: 2,
+      },
+    });
+    const draft = classFeatureToDraft(withSummon);
+    expect(draft.feature.summon?.count).toBe('prof()');
+    expect(draftToClassFeature(draft, menu()).summon).toEqual(withSummon.summon);
+    expect(classFeaturePaths(draft, menu())).toContain('table_class_feature.summon.creature_keys');
+    expect(unreadableClassFeaturePaths(draft, menu())).toEqual([]);
+    expect(
+      unreadableClassFeaturePaths(
+        {
+          ...draft,
+          feature: { ...draft.feature, summon: { ...draft.feature.summon!, resourceKey: '' } },
+        },
+        menu(),
+      ),
+    ).toEqual(['table_class_feature.summon.resource_key']);
+  });
+
+  it('sends no summon when the class feature has none', () => {
+    expect(draftToClassFeature(classFeatureToDraft(stored()), menu())).not.toHaveProperty('summon');
   });
 });

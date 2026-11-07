@@ -3,6 +3,11 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { emptyEffect } from '../../core/content/effect-draft';
 import { emptyFeature, type FeatureDraft } from '../../core/content/feature-draft';
 import { menu } from '../../core/content/content-testing-menu';
+import { costsMenu } from '../../core/content/content-testing-menu-costs';
+import { TableSummonSchema } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import { CreaturesClient } from '../../core/creatures/creatures-client';
+import { summonToDraft } from '../../core/content/summon-draft';
+import { create } from '@bufbuild/protobuf';
 import { FeatureEditor } from './feature-editor';
 
 describe('FeatureEditor (a trait, a feature)', () => {
@@ -26,25 +31,40 @@ describe('FeatureEditor (a trait, a feature)', () => {
   function setup(
     feature: FeatureDraft,
     over: {
+      costs?: boolean;
       issues?: Record<string, string[]>;
       removeLabel?: string;
       index?: number;
       count?: number;
       isOption?: boolean;
+      allowSummon?: boolean;
     } = {},
   ) {
     emitted.length = 0;
     removed.mockReset();
     TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: CreaturesClient,
+          useValue: {
+            search: vi.fn(),
+            statBlock: vi.fn().mockResolvedValue({ summary: { namePt: 'Lobo' } }),
+          },
+        },
+      ],
+    });
     fixture = TestBed.createComponent(FeatureEditor);
     fixture.componentRef.setInput('feature', feature);
-    fixture.componentRef.setInput('menu', menu());
+    fixture.componentRef.setInput('menu', over.costs ? costsMenu() : menu());
     fixture.componentRef.setInput('basePath', 'table_race.traits[1]');
     fixture.componentRef.setInput('issuesOf', (path: string) => over.issues?.[path] ?? []);
     fixture.componentRef.setInput('removeLabel', over.removeLabel ?? 'Remover traço');
     fixture.componentRef.setInput('index', over.index ?? 1);
     fixture.componentRef.setInput('count', over.count ?? 3);
     fixture.componentRef.setInput('isOption', over.isOption ?? false);
+    fixture.componentRef.setInput('allowSummon', over.allowSummon ?? false);
+    fixture.componentRef.setInput('campaignId', 'camp-1');
     fixture.componentInstance.featureChange.subscribe((f) => emitted.push(f));
     fixture.componentInstance.removed.subscribe(removed);
     fixture.detectChanges();
@@ -160,5 +180,69 @@ describe('FeatureEditor (a trait, a feature)', () => {
         b.getAttribute('aria-label')?.startsWith('Subir'),
       ),
     ).toBe(false);
+  });
+
+  describe('"Invoca criaturas" (allowSummon)', () => {
+    const resourceFeature = (): FeatureDraft => ({
+      ...emptyFeature(),
+      name: 'Companheiro do Vale',
+      effects: [{ ...emptyEffect('resource'), resource: 'companheiro', max: '1' }],
+    });
+
+    it('is drawn for a class, subclass, race or background feature and not for an option or a feat', () => {
+      setup(resourceFeature(), { allowSummon: true });
+      expect(el.querySelector('app-summon-block')).not.toBeNull();
+      setup(resourceFeature());
+      expect(el.querySelector('app-summon-block')).toBeNull();
+    });
+
+    it('turning it on sends the feature with a summon that spends its resource; off sends none', () => {
+      setup(resourceFeature(), { allowSummon: true });
+      el.querySelector<HTMLButtonElement>('app-summon-block button[role="switch"]')!.click();
+      expect(emitted[0].summon).toMatchObject({ resourceKey: 'companheiro' });
+      setup({ ...resourceFeature(), summon: emitted[0].summon }, { allowSummon: true });
+      el.querySelector<HTMLButtonElement>('app-summon-block button[role="switch"]')!.click();
+      expect(emitted[0].summon).toBeNull();
+    });
+
+    it('loads the toggle from the feature and follows the name of its one resource', () => {
+      const stored = create(TableSummonSchema, {
+        creatureKeys: ['monster:wolf'],
+        count: '1',
+        resourceKey: 'companheiro',
+      });
+      setup(
+        { ...resourceFeature(), summon: summonToDraft(stored) },
+        { allowSummon: true, costs: true },
+      );
+      expect(
+        el.querySelector('app-summon-block button[role="switch"]')!.getAttribute('aria-checked'),
+      ).toBe('true');
+      const name = el.querySelector<HTMLInputElement>(
+        '[data-field="table_race.traits[1].effects[0].resource"]',
+      );
+      expect(name).not.toBeNull();
+      name!.value = 'vale';
+      name!.dispatchEvent(new Event('input'));
+      expect(emitted[0].summon?.resourceKey).toBe('vale');
+    });
+
+    it("does not rewrite a stored resource the feature never defined (the class's)", () => {
+      const stored = create(TableSummonSchema, {
+        creatureKeys: ['monster:wolf'],
+        count: '1',
+        resourceKey: 'da_classe',
+      });
+      setup(
+        { ...resourceFeature(), summon: summonToDraft(stored) },
+        { allowSummon: true, costs: true },
+      );
+      const name = el.querySelector<HTMLInputElement>(
+        '[data-field="table_race.traits[1].effects[0].resource"]',
+      )!;
+      name.value = 'vale';
+      name.dispatchEvent(new Event('input'));
+      expect(emitted[0].summon?.resourceKey).toBe('da_classe');
+    });
   });
 });

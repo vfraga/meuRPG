@@ -205,6 +205,11 @@ export function violationText(
   );
 }
 
+/** The server checks a feature's summon as the hidden spell it is cast as, so the feature's own text is echoed at `.summon.desc_pt[0]`: it is the feature's text field that holds it. */
+export function summonEcho(field: string): string {
+  return field.replace(/\.summon\.desc_pt(\[\d+\])?$/, '.desc_pt');
+}
+
 /** Puts every violation on its input: `isKnown` says which paths the editor draws an input for right now. */
 export function placeViolations(
   violations: readonly TableContentViolation[],
@@ -223,7 +228,8 @@ export function placeViolations(
       top.push({ field: '', reason: v.reason, text: who ? `Sobre ${who}: ${text}` : text });
       continue;
     }
-    const at = field === '' ? '' : inputFor(ctx.redirect?.(field, v.reason) ?? field, isKnown);
+    const at =
+      field === '' ? '' : inputFor(ctx.redirect?.(field, v.reason) ?? summonEcho(field), isKnown);
     const placed: PlacedViolation = { field: at, reason: v.reason, text };
     if (at === '') {
       top.push(placed);

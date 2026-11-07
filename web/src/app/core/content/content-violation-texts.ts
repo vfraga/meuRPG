@@ -1,6 +1,7 @@
 /** What the server's reason at a field says in Portuguese: the table `violationText` looks a violation up in (the rest of its words are there). */
 
 import { CREATURE_FIELD_TEXTS } from './content-violation-texts-creature';
+import { SUMMON_FIELD_TEXTS } from './content-violation-texts-summon';
 
 const DICE_TEXT = 'Escreva o dado assim: 2d8 (de 1 a 20 dados).';
 export const FORMULA_TEXT =
@@ -281,6 +282,7 @@ export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: strin
     text: 'Esta característica tem efeitos demais. Tire alguns.',
   },
   ...CREATURE_FIELD_TEXTS,
+  ...SUMMON_FIELD_TEXTS,
   { shape: /\.level$/, text: 'Escolha um nível de magia de 0 (truque) a 9.' },
   { shape: /\.school_key$/, text: 'Escolha a escola da magia.' },
   {

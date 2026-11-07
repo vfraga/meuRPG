@@ -63,10 +63,15 @@ export class CreatureRead {
     );
   });
 
+  /** The base's key: a computed, so an edit of anything else (archiving) does not read the stat block again. */
+  private readonly baseKey = computed(() => {
+    const body = this.entry().body;
+    return body.case === 'tableCreature' ? body.value.baseKey : '';
+  });
+
   constructor() {
     effect(() => {
-      const body = this.entry().body;
-      const key = body.case === 'tableCreature' ? body.value.baseKey : '';
+      const key = this.baseKey();
       untracked(() => void this.readBase(key));
     });
   }

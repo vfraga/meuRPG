@@ -22,6 +22,13 @@ import {
   unreadableNumberPaths,
 } from './effect-draft';
 import { paragraphs } from './spell-draft';
+import {
+  type SummonDraft,
+  draftToSummon,
+  summonBlockedPaths,
+  summonPaths,
+  summonToDraft,
+} from './summon-draft';
 
 /**
  * The race, subrace and background forms (MR-025, RN-23, E10-01 states 6 and 7), and the feature they share with the class
@@ -49,10 +56,12 @@ export interface FeatureDraft {
    * every save, so a pick keeps its option.
    */
   options: FeatureDraft[];
+  /** "Invoca criaturas": the creatures the feature brings to its holder, or `null` (off). Only a class, subclass, race or background feature has it. */
+  summon: SummonDraft | null;
 }
 
 export function emptyFeature(): FeatureDraft {
-  return { id: newRowId(), key: '', name: '', text: '', effects: [], options: [] };
+  return { id: newRowId(), key: '', name: '', text: '', effects: [], options: [], summon: null };
 }
 
 export function featureToDraft(f: TableFeature): FeatureDraft {
@@ -72,6 +81,7 @@ export function featureToDraft(f: TableFeature): FeatureDraft {
     text: f.descPt.join('\n\n'),
     effects,
     options: f.options.map(featureToDraft),
+    summon: f.summon ? summonToDraft(f.summon) : null,
   };
 }
 
@@ -84,6 +94,7 @@ export function draftToFeature(f: FeatureDraft, menu: EffectMenuVm): FeatureInit
     descPt: text,
     // An unnamed option is not sent, like an unnamed feature; a feature with no options sends none.
     ...optionsOf(f, menu),
+    ...(f.summon ? { summon: draftToSummon(f.summon) } : {}),
     effects: f.effects.map((e) => {
       const effect = draftToEffect(e, menu);
       // A note's own text is the reminder the sheet shows, and it says what the trait says: left empty (folded under
@@ -304,6 +315,9 @@ export function draftToBackground(d: BackgroundDraft, menu: EffectMenuVm): Backg
 export function featureOwnPaths(base: string, f: FeatureDraft, menu: EffectMenuVm): string[] {
   const out: string[] = [base, `${base}.name_pt`, `${base}.desc_pt`];
   f.options.forEach((o, k) => out.push(...featureOwnPaths(`${base}.options[${k}]`, o, menu)));
+  if (f.summon) {
+    out.push(...summonPaths(base));
+  }
   f.effects.forEach((e, k) => {
     const at = `${base}.effects[${k}]`;
     out.push(at, `${at}.type`);
@@ -322,6 +336,7 @@ export function unreadableFeaturePaths(
 ): string[] {
   return [
     ...unreadableNumberPaths(`${base}.effects`, f.effects, menu),
+    ...summonBlockedPaths(base, f),
     ...f.options.flatMap((o, k) =>
       o.name.trim() === '' ? [] : unreadableFeaturePaths(`${base}.options[${k}]`, o, menu),
     ),

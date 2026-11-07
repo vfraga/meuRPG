@@ -1,0 +1,76 @@
+<section class="summon" [attr.data-summon]="summon() ? 'on' : 'off'">
+  <app-switch-field
+    label="Invoca criaturas"
+    [checked]="summon() !== null"
+    [path]="at()"
+    [invalid]="issuesOf()(at()).length > 0"
+    [describedBy]="issuesOf()(at()).length > 0 ? id + '-note' : ''"
+    (toggled)="toggle($event)"
+  />
+  <app-field-note [id]="id + '-note'" [issues]="issuesOf()(at())" />
+  @if (fixedOff()) {
+    <p class="fixed" role="note"><mat-icon aria-hidden="true">warning</mat-icon>{{ fixedOffText }}<button type="button" class="fixed__btn" (click)="resetDefaults()">Usar o padrão</button></p>
+  }
+  @if (summon(); as s) {
+    <p class="summon__line">Quem tem a característica a usa como uma magia de invocação, com um uso do recurso no lugar do espaço de magia.</p>
+    <app-summon-creatures
+      [keys]="s.creatureKeys"
+      [campaignId]="campaignId()"
+      [entries]="entries()"
+      [path]="path('creature_keys')"
+      [issues]="issues('creature_keys')"
+      (keysChange)="patch({ creatureKeys: $event })"
+    />
+    <div class="row">
+      <app-text-field label="Quantas vêm" hint="Fórmula do dono; de 1 a 20." [value]="s.count" [path]="path('count')" [issues]="issues('count')" (valueChange)="patch({ count: $event })" />
+      <app-text-field label="No máximo ao mesmo tempo" hint="0: sem limite. Até {{ maxLive }}." inputmode="numeric" [value]="s.maxLive" [path]="path('max_live')" [issues]="issues('max_live')" (valueChange)="patch({ maxLive: $event })" />
+      @if (hasResource()) {
+        <app-select-field
+          label="Gasta 1 uso de"
+          [options]="resourceOptions()"
+          [value]="s.resourceKey"
+          [placeholder]="s.resourceKey.trim() === '' ? 'Escolha…' : ''"
+          [path]="path('resource_key')"
+          [issues]="issues('resource_key')"
+          (valueChange)="patch({ resourceKey: $event })"
+        />
+      } @else {
+        <div class="why" [attr.data-field]="path('resource_key')" tabindex="-1" role="note">
+          <p class="why__text"><mat-icon aria-hidden="true">warning</mat-icon>{{ noResource }}</p>
+          <app-field-note [issues]="issues('resource_key')" />
+        </div>
+      }
+    </div>
+    <div class="row row--2">
+      <app-radio-cards label="Turno" [options]="turnCards" [value]="'' + (s.turnMode || 1)" [path]="path('turn_mode')" [issues]="issues('turn_mode')" (valueChange)="patch({ turnMode: +$event })" />
+      <app-radio-cards label="Ao usar de novo" [options]="repliesCards" [value]="'' + (s.replaces || 1)" [path]="path('replaces')" [issues]="issues('replaces')" (valueChange)="patch({ replaces: +$event })" />
+    </div>
+    <div class="row">
+      <app-select-field label="Tempo" [options]="timeOptions()" [value]="timeValue(s.time)" [path]="path('casting_time')" [issues]="issues('casting_time')" (valueChange)="setTime($event)" />
+      <app-select-field
+        label="Duração"
+        [options]="durationOptions()"
+        [value]="durationValue(s.duration)"
+        [hint]="instant() ? 'Fica até cair ou ser dispensada.' : ''"
+        [path]="path('duration')"
+        [issues]="issues('duration')"
+        (valueChange)="setDuration($event)"
+      />
+      <div class="conc">
+        <app-switch-field
+          label="Concentração"
+          [checked]="s.concentration"
+          [disabled]="!timed() && !s.concentration"
+          [invalid]="issues('concentration').length > 0"
+          [describedBy]="issues('concentration').length > 0 ? id + '-conc' : timed() ? '' : id + '-conc-why'"
+          [path]="path('concentration')"
+          (toggled)="patch({ concentration: $event })"
+        />
+        @if (!timed()) {
+          <p class="conc__why" [id]="id + '-conc-why'"><mat-icon aria-hidden="true">lock</mat-icon>Pede uma duração por tempo.</p>
+        }
+        <app-field-note [id]="id + '-conc'" [issues]="issues('concentration')" />
+      </div>
+    </div>
+  }
+</section>

@@ -179,7 +179,7 @@ func (s *Service) readTableListing(ctx context.Context, tx pgx.Tx, m authz.Membe
 		l.hidden = l.content.Hidden
 	}
 	if !l.master {
-		if l.mine, err = callerKeys(ctx, q, m); err != nil {
+		if l.mine, err = callerKeys(ctx, q, m, l.content); err != nil {
 			return nil, wrap("read the caller's sheets", err)
 		}
 		if l.held, err = callerHeldCreatures(ctx, q, m); err != nil {

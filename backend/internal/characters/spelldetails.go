@@ -55,10 +55,10 @@ func (s *Service) spellVisible(ctx context.Context, m authz.Membership, content 
 		return true, nil
 	}
 	if owner, ok := content.FeatureSummonOwner(key); ok {
-		return s.callerUses(ctx, m, owner)
+		return s.callerUses(ctx, m, content, owner)
 	}
 	if content.Hidden(key) {
-		return s.callerUses(ctx, m, key)
+		return s.callerUses(ctx, m, content, key)
 	}
 	return true, nil
 }

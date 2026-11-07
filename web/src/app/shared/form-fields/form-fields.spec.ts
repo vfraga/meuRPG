@@ -211,4 +211,20 @@ describe('TextField: what an empty field means', () => {
     expect(input.hasAttribute('placeholder')).toBe(false);
     expect(input.hasAttribute('aria-label')).toBe(false);
   });
+
+  it('switch: disabled, it does not toggle and points at the line that says why', () => {
+    const f = TestBed.createComponent(SwitchField);
+    f.componentRef.setInput('label', 'Concentração');
+    f.componentRef.setInput('checked', false);
+    f.componentRef.setInput('disabled', true);
+    f.componentRef.setInput('describedBy', 'why');
+    const toggled = vi.fn();
+    f.componentInstance.toggled.subscribe(toggled);
+    f.detectChanges();
+    const sw = (f.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button')!;
+    expect(sw.disabled).toBe(true);
+    expect(sw.getAttribute('aria-describedby')).toBe('why');
+    sw.click();
+    expect(toggled).not.toHaveBeenCalled();
+  });
 });

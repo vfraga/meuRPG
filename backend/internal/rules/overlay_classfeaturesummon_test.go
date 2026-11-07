@@ -92,3 +92,57 @@ func TestATableClassFeatureSummonIsRefusedAtTheFieldThatIsWrong(t *testing.T) {
 		})
 	}
 }
+
+func grantsClassFeatureSummon(c *Content, class string, level int) bool {
+	b := Build{
+		BaseScores: standard("class:x", 1).BaseScores, Race: "race:human", Background: "background:acolyte", Languages: testLanguages,
+		Classes: []ClassLevel{{Class: class, Level: level}},
+	}
+	spell := FeatureSummonSpellKey(summonerFeatureKey)
+	return slices.ContainsFunc(Derive(b, c).GrantedSpells, func(g GrantedSpell) bool { return g.Spell.Key == spell })
+}
+
+func TestAClassFeatureSummonFollowsTheSwitchesOfItsEntry(t *testing.T) {
+	t.Parallel()
+	o := classFeatureSummonOverlay(nil)
+	if !grantsClassFeatureSummon(withOverlayOn(t, loadForTest(t), o), "class:druid", 2) {
+		t.Fatal("the live entry grants nothing (the control)")
+	}
+	// Archived is not off: the sheets that have the class keep the summon.
+	o.ClassFeatures[0].Archived = true
+	if !grantsClassFeatureSummon(withOverlayOn(t, loadForTest(t), o), "class:druid", 2) {
+		t.Error("an archived class feature stopped granting its summon")
+	}
+	// Off: the class reads as it did without the entry.
+	o.Off = []string{summonerFeatureKey}
+	if grantsClassFeatureSummon(withOverlayOn(t, loadForTest(t), o), "class:druid", 2) {
+		t.Error("a switched-off class feature still grants its summon")
+	}
+}
+
+func TestATableClassCanHostAClassFeatureSummon(t *testing.T) {
+	t.Parallel()
+	tc := classFromDefaults(DefaultTable{Kind: CastingNone, Rows: loadDefaultRows()}, "cavaleiro")
+	o := classFeatureSummonOverlay(func(f *TableClassFeature) { f.Class = tc.Key })
+	o.Classes = []TableClass{tc}
+	c := withOverlayOn(t, loadForTest(t), o)
+	if !grantsClassFeatureSummon(c, tc.Key, 2) {
+		t.Error("a table class does not grant the class feature's summon")
+	}
+	if grantsClassFeatureSummon(c, tc.Key, 1) {
+		t.Error("a level 1 character is granted the level 2 summon")
+	}
+}
+
+func TestAReplacedClassFeatureSummonGrantsNothing(t *testing.T) {
+	t.Parallel()
+	o := classFeatureSummonOverlay(nil)
+	o.ClassFeatures = append(o.ClassFeatures, TableClassFeature{
+		TableEntry: TableEntry{Key: "classfeature:matilha-maior" + tableSuffix, NamePT: "Matilha Maior"},
+		Class:      "class:druid", Level: 2, Replaces: summonerFeatureKey,
+	})
+	c := withOverlayOn(t, loadForTest(t), o)
+	if grantsClassFeatureSummon(c, "class:druid", 2) {
+		t.Error("the replaced class feature still grants its summon")
+	}
+}

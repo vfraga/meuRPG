@@ -83,6 +83,17 @@
       <button type="button" class="link link--ink" (click)="removeEffect(e.index)">Remover o efeito {{ e.index + 1 }}</button>
     </div>
   }
+  @if (allowSummon()) {
+    <app-summon-block
+      [summon]="feature().summon"
+      [resources]="resources()"
+      [basePath]="basePath()"
+      [issuesOf]="issuesOf()"
+      [campaignId]="campaignId()"
+      [entries]="entries()"
+      (summonChange)="setSummon($event)"
+    />
+  }
   @if (allowOptions()) {
     <section class="options" [attr.aria-label]="'Opções para escolher de ' + (feature().name || 'esta característica')">
       <h4 class="options__title">Opções para escolher</h4>

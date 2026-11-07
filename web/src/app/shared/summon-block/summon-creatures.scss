@@ -1,0 +1,84 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  min-width: 0;
+}
+
+// The search on the left, what the list means on the right (board C2); stacked below a tablet.
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--mr-space-2) var(--mr-space-4);
+  align-items: start;
+
+  @media (min-width: 768px) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  &__hint {
+    margin: 0;
+    padding-top: 26px;
+    font-size: var(--mr-font-14);
+    line-height: 18px;
+    color: var(--mr-ink-muted);
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--mr-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  min-height: 46px;
+  box-sizing: border-box;
+  padding: 0 0 0 14px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-pill);
+  background: var(--mr-surface);
+  color: var(--mr-ink);
+  font-size: var(--mr-font-16);
+
+  &__srd {
+    color: var(--mr-ink-muted);
+    font-size: var(--mr-font-15);
+  }
+
+  // The 44 px target of design.md, flush with the chip's edge.
+  &__x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--mr-ink-muted);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--mr-accent-text);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--mr-focus);
+      outline-offset: -2px;
+    }
+
+    .mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: var(--mr-font-18);
+    }
+  }
+}

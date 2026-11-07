@@ -65,7 +65,41 @@ export function costsRaceBody(namePt = 'Brasa de Teste'): Record<string, unknown
   };
 }
 
-export async function createEntryRPC(master: Page, campaignId: string, kind: 'tableSpell' | 'tableRace' | 'tableBackground' | 'tableOption' | 'tableClassFeature' | 'tableFeat', body: Record<string, unknown>): Promise<string> {
+/** The wolf of the valley (#578): the SRD wolf with its own name, hit points and armor class from the owner's sheet, a damage bonus and an
+ * attack bonus from it, one trait and one attack. The fixed `hitPoints` is 0 (the base's) and the formulas win with an owner. */
+export function creatureBody(namePt = 'Lobo do Vale', over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    namePt,
+    baseKey: 'monster:wolf',
+    hitPoints: 0,
+    hitPointsFormula: '4 + 4 * level()',
+    armorClassFormula: '13 + prof()',
+    damageBonusFormula: 'prof()',
+    attackBonusFormula: 'mod("wis") + prof()',
+    traits: [{ namePt: 'Faro do Vale', textPt: 'Segue o cheiro de quem cruzou o vale, mesmo na chuva.' }],
+    attacks: [{ namePt: 'Mordida Sombria', melee: true, reachFt: 5, diceCount: 2, diceSides: 6, damageType: 'damage-type:necrotic', toHit: '', damageBonus: '' }],
+    ...over,
+  };
+}
+
+/** A zombie of the table with damage lines: it resists bludgeoning, piercing and slashing from nonmagical weapons that are not silvered,
+ * is vulnerable to radiant and immune to necrotic (the SRD zombie is immune to poison). */
+export function damageCreatureBody(namePt = 'Defunto do Vale', over: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    namePt,
+    baseKey: 'monster:zombie',
+    hitPoints: 0,
+    traits: [{ namePt: 'Cheiro de cripta', textPt: 'Quem está a menos de 3 m sente o cheiro de terra molhada.' }],
+    damageMods: [
+      { kind: 'resist', damageTypes: ['damage-type:bludgeoning', 'damage-type:piercing', 'damage-type:slashing'], qualifier: 'nonmagical_unless_silvered' },
+      { kind: 'vulnerable', damageTypes: ['damage-type:radiant'] },
+      { kind: 'immune', damageTypes: ['damage-type:necrotic'] },
+    ],
+    ...over,
+  };
+}
+
+export async function createEntryRPC(master: Page, campaignId: string, kind: 'tableSpell' | 'tableRace' | 'tableBackground' | 'tableOption' | 'tableClassFeature' | 'tableFeat' | 'tableCreature', body: Record<string, unknown>): Promise<string> {
   const res = await callRPC(master, `${service}/CreateTableEntry`, { campaignId, [kind]: body });
   expect(res.ok(), await res.text()).toBeTruthy();
   return (await res.json()).entry.key as string;
@@ -89,7 +123,7 @@ export function entryRoute(campaignId: string, key: string): string {
 }
 
 /** `UpdateTableEntry` at the entry's current revision, as the other master's tab would. */
-export async function updateEntryRPC(master: Page, campaignId: string, key: string, kind: 'tableSpell' | 'tableRace' | 'tableBackground' | 'tableOption' | 'tableClassFeature', body: Record<string, unknown>): Promise<void> {
+export async function updateEntryRPC(master: Page, campaignId: string, key: string, kind: 'tableSpell' | 'tableRace' | 'tableBackground' | 'tableOption' | 'tableClassFeature' | 'tableCreature', body: Record<string, unknown>): Promise<void> {
   const current = (await listEntriesJSON(master, campaignId)).entries!.find((e) => e.key === key)!;
   const res = await callRPC(master, `${service}/UpdateTableEntry`, { campaignId, key, expectedRevision: current.revision, [kind]: body });
   expect(res.ok(), await res.text()).toBeTruthy();

@@ -39,7 +39,7 @@
           <div class="cell">
             <mat-form-field appearance="outline" subscriptSizing="dynamic" [class.invalid]="invalid(at + '.qualifier')" [class.off]="off">
               <mat-select [aria-label]="'Vale contra da linha ' + (i + 1)" [attr.data-field]="at + '.qualifier'" [aria-describedby]="off ? 'cr-mods-info' : describedBy(m.id, 'qn', at + '.qualifier')" [disabled]="off" [value]="m.qualifier" (selectionChange)="setQualifier(m, $event.value)">
-                <mat-select-trigger>{{ qual.label }}</mat-select-trigger>
+                <mat-select-trigger><span [class.mr-visually-hidden]="off">{{ qual.label }}</span></mat-select-trigger>
                 @for (q of qualifierOptions(m); track q.value) {
                   <mat-option [value]="q.value" [disabled]="q.disabled">{{ q.label }}</mat-option>
                 }
