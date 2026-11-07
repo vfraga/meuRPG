@@ -686,7 +686,9 @@ A subclass of a class left out fails the next pass with `dangling_reference` and
 A violation with no entry key, or one that names an entry that is not live, fails the read.
 The read never returns a part.
 A campaign with no refused entry costs one build.
-`Content.Refused()` lists what was left out, and is cached with the content for its revision.
+`Content.Refused()` lists what was left out that the master still has to fix, and is cached with the content for its revision.
+An archived entry is still left out of the content, but it is not listed, nor is what is out only because its class or race is archived.
+Archiving ("Remover" in the app) clears an entry from the list; fixing it in place does too.
 `ListTableEntriesResponse.left_out` gives it to the master of the campaign and to nobody else.
 A sheet that uses a left-out entry gets `unknown_key`, as for an entry that does not exist.
 A write of the master that repairs a left-out entry is accepted, as are archiving, unarchiving and the option switches; a write is refused for its own violations and for the healthy entries it breaks.

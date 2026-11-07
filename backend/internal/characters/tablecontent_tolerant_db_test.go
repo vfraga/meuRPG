@@ -382,3 +382,51 @@ func entryTexts(e *rulesv1.TableEntry) []string {
 		return len(s) < 6 || strings.Contains(s, ":") || strings.Contains(s, "@mesa")
 	})
 }
+
+// TestListTableEntriesLeftOutClearsWhenTheMasterRetiresTheEntry: "Remover" archives a refused entry, which
+// clears it from left_out together with what is out only because of it; bringing it back lists it again.
+func TestListTableEntriesLeftOutClearsWhenTheMasterRetiresTheEntry(t *testing.T) {
+	t.Parallel()
+	f := newTolerantTable(t)
+	f.h.refuseStored(f.campaign, f.class.GetKey(), f.sp.GetKey())
+	keys := func() []string {
+		res, err := listTable(t, f.master, f.campaign)
+		if err != nil {
+			t.Fatalf("ListTableEntries() error = %v", err)
+		}
+		var out []string
+		for _, v := range res.GetLeftOut() {
+			out = append(out, v.GetKey())
+		}
+		slices.Sort(out)
+		return out
+	}
+	if got, want := keys(), slices.Sorted(slices.Values([]string{f.class.GetKey(), f.sub.GetKey(), f.sp.GetKey()})); !slices.Equal(got, want) {
+		t.Fatalf("left_out = %v, want %v", got, want)
+	}
+	if _, _, err := f.h.svc.setArchived(t.Context(), f.membership(), f.class.GetKey(), true); err != nil {
+		t.Fatalf("archive the class: %v", err)
+	}
+	if got := keys(); !slices.Equal(got, []string{f.sp.GetKey()}) {
+		t.Errorf("after archiving the class left_out = %v, want only the spell", got)
+	}
+	if _, ok := f.master.entries(t, f.campaign)[f.class.GetKey()]; !ok {
+		t.Errorf("the master lost the archived class")
+	}
+	if c, err := f.h.svc.content.ContentFor(t.Context(), nil, f.campaign); err != nil || c.NamePT(f.class.GetKey()) != "" {
+		t.Errorf("the archived refused class is in the content: %v", err)
+	}
+	// Bringing it back while it is still refused is refused; fixing it in place (it stays archived) brings the subclass back.
+	if _, _, err := f.h.svc.setArchived(t.Context(), f.membership(), f.class.GetKey(), false); connect.CodeOf(err) != connect.CodeInvalidArgument {
+		t.Errorf("bring back a refused class: %v, want invalid_argument", err)
+	}
+	if err := f.update(f.class.GetKey(), testClass("Guardião")); err != nil {
+		t.Fatalf("fix the archived class: %v", err)
+	}
+	if got := keys(); !slices.Equal(got, []string{f.sp.GetKey()}) {
+		t.Errorf("after fixing the class left_out = %v, want only the spell", got)
+	}
+	if c, err := f.h.svc.content.ContentFor(t.Context(), nil, f.campaign); err != nil || c.NamePT(f.sub.GetKey()) == "" {
+		t.Errorf("the subclass did not come back with its fixed class: %v", err)
+	}
+}

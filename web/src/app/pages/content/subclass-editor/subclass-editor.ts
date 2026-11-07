@@ -14,6 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type {
+  TableContentViolation,
   GetClassTableDefaultsResponse,
   TableEntry,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
@@ -103,6 +104,8 @@ export class SubclassEditor {
   readonly defaults = input.required<GetClassTableDefaultsResponse>();
   readonly entries = input<readonly TableEntry[]>([]);
   readonly saveBlocked = input('');
+  /** The rules refuse this entry on read (it is left out of the campaign): the violation, to put on its field. */
+  readonly leftOut = input<TableContentViolation | null>(null);
 
   readonly saved = output<EditorSaved>();
   /** The entry's switch "Disponível para os jogadores" was turned (it saves at once, apart from the form). */
@@ -208,6 +211,15 @@ export class SubclassEditor {
     this.openFeature.set('');
     this.question.set(null);
     this.saver.clear();
+    this.seedLeftOut();
+  }
+
+  /** The rules refuse a field of this entry, so the campaign is built without it: the field says why, opened and focused. */
+  private seedLeftOut(): void {
+    const first = this.saver.seedLeftOut(this.leftOut(), this.known);
+    if (first) {
+      this.reveal(first);
+    }
   }
 
   protected patch(p: Partial<SubclassDraft>): void {

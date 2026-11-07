@@ -4,17 +4,27 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 
 import {
   TableContentKind,
+  type TableContentViolation,
   type TableEntry,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { formatDateTime } from '../../../core/characters/character-labels';
 import type { CatalogVm } from '../../../core/content/catalog';
 import { contentErrorText } from '../../../core/content/content-client';
+import type { ContentContext } from '../../../core/content/content-context';
 import {
   type ContentNavKind,
   KIND_NOUNS,
   KIND_WORDS,
   usageSentence,
 } from '../../../core/content/content-kinds';
+import {
+  type LeftOutModel,
+  type LeftOutNote,
+  NO_LEFT_OUT,
+  buildLeftOut,
+  leftOutNote,
+  violationOfEntry,
+} from '../../../core/content/left-out';
 import { readEntry } from '../../../core/content/content-read';
 import type { EntryRead, NameOf } from '../../../core/content/content-read-parts';
 import { parentViewOf } from '../../../core/content/subrace-traits';
@@ -266,4 +276,27 @@ export function readOfEntry(
         catalog?.offeredByName,
       )
     : null;
+}
+
+/** What the page says of the entries the rules refuse (the master's only): the model, the violation to put on the editor's field
+ * when this entry is out for a field of its own, and "Esta classe está fora da campanha." with what to do. */
+export function leftOutView(
+  ctx: ContentContext | null,
+  key: string,
+  editing: boolean,
+): {
+  readonly model: LeftOutModel;
+  readonly violation: TableContentViolation | null;
+  readonly note: LeftOutNote | null;
+} {
+  const model = ctx?.isMaster ? buildLeftOut(ctx.entries, ctx.leftOut) : NO_LEFT_OUT;
+  const entry = ctx?.entries.find((e) => e.key === key);
+  return {
+    model,
+    violation:
+      ctx && model.rows.some((r) => r.entry.key === key)
+        ? (violationOfEntry(ctx.leftOut, key) ?? null)
+        : null,
+    note: entry ? leftOutNote(entry, model, editing) : null,
+  };
 }

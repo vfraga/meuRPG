@@ -17,6 +17,7 @@ import { RouterLink } from '@angular/router';
 import { Ability } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { PlayersSwitch } from '../players-switch/players-switch';
 import type {
+  TableContentViolation,
   GetClassTableDefaultsResponse,
   TableEntry,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
@@ -137,6 +138,8 @@ export class ClassEditor {
   readonly defaults = input.required<GetClassTableDefaultsResponse>();
   readonly entries = input<readonly TableEntry[]>([]);
   readonly saveBlocked = input('');
+  /** The rules refuse this entry on read (it is left out of the campaign): the violation, to put on its field. */
+  readonly leftOut = input<TableContentViolation | null>(null);
 
   readonly saved = output<EditorSaved>();
   /** The entry's switch "Disponível para os jogadores" was turned (it saves at once, apart from the form). */
@@ -228,6 +231,8 @@ export class ClassEditor {
     this.openFeature.set('');
     this.question.set(null);
     this.saver.clear();
+    // The rules refuse a field of this entry, so the campaign is built without it: the field says why, opened and focused.
+    this.saver.seedLeftOut(this.leftOut(), this.known, (path) => this.reveal(path));
   }
 
   private groupOptions(keys: readonly string[]): SelectOption[] {
@@ -470,14 +475,9 @@ export class ClassEditor {
 
   /** Opens the feature that holds the path, so its input exists, and focuses the input. */
   private reveal(path: string): void {
-    const feature = featureIdOfPath(
-      this.draft().features,
-      (k) => classFeatureBase(this.draft().features, k),
-      path,
+    this.openFeature.update(
+      (open) => featureIdOfPath(this.draft().features, this.featureBase, path) || open,
     );
-    if (feature) {
-      this.openFeature.set(feature);
-    }
     focusAfterRender(this.host.nativeElement, this.injector, path);
   }
 }

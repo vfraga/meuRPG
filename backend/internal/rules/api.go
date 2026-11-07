@@ -256,7 +256,8 @@ func (c *Content) WithRefused(refused []Refused) *Content {
 	return &Content{c: c.c, refused: refused}
 }
 
-// Refused lists the stored entries the content was built without, in key order.
+// Refused lists the stored entries the content was built without that the master still has to fix, in key order.
+// An entry the master archived is not listed, nor is what it took with it.
 // It is empty for a content built from every entry.
 func (c *Content) Refused() []Refused { return slices.Clone(c.refused) }
 

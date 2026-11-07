@@ -87,3 +87,35 @@ export function refusalTexts(
   const own = EFFECT_REFUSAL_TEXTS[`${type}.${field}`];
   return own ? texts.map((t) => (GENERIC_EFFECT_TEXTS.has(t) ? own : t)) : texts;
 }
+
+/** The value an entry holds for a closed list that the menu no longer lists (an engine that dropped it), or `''`. Only the menu's
+ * own lists say it: the spells come from the table's catalog, which may not be loaded yet, and an empty list says nothing. */
+export function leftTheMenuValue(
+  field: { name: string; kind: string },
+  value: string,
+  list: readonly { value: string }[],
+): string {
+  const own = field.kind === 'choice' && field.name !== 'spell' && field.name !== 'spells';
+  return own && value !== '' && list.length > 0 && !list.some((o) => o.value === value)
+    ? value
+    : '';
+}
+
+/** A choice with a placeholder when it is required, and a real "Padrão" (the field left empty) when it is not. A value the menu no
+ * longer has stays on the select, said in words, so the field does not show another one in its place. */
+export function choiceList(
+  list: SelectOption[],
+  kept: string,
+  field: { name: string; required: boolean },
+  type: string,
+): SelectOption[] {
+  const label = field.name === 'target' ? 'Um alvo que saiu do menu' : 'Um valor que saiu do menu';
+  const all = kept ? [{ value: kept, label }, ...list] : list;
+  const empty = type === 'roll_minimum' ? 'Qualquer tipo' : 'Padrão';
+  return field.required ? all : [{ value: '', label: empty }, ...all];
+}
+
+/** The hint of a closed list: the picked option's, or what to do about the stored code the menu no longer has. */
+export function choiceHint(picked: string | undefined, kept: string, own: string): string {
+  return picked || (kept ? `O valor guardado (${kept}) não existe nas regras novas.` : own);
+}

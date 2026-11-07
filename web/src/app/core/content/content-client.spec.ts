@@ -5,6 +5,7 @@ import { Code, ConnectError, createRouterTransport } from '@connectrpc/connect';
 import {
   ExportTableContentResponseSchema,
   ImportTableContentResponseSchema,
+  ListTableEntriesResponseSchema,
   TableContentService,
   TableImportMode,
   TableContentBlockedReason,
@@ -185,5 +186,49 @@ describe('the content pack calls (MR-025)', () => {
       { mode: TableImportMode.PREVIEW, key: '', json: '{}' },
       { mode: TableImportMode.APPLY, key: 'key-1', json: '{}' },
     ]);
+  });
+});
+
+describe('the table content list', () => {
+  it('keeps the entries the rules left out and the content version, as the server sent them', async () => {
+    const transport = createRouterTransport(({ service }) => {
+      service(TableContentService, {
+        listTableEntries: () =>
+          create(ListTableEntriesResponseSchema, {
+            tableRevision: 7,
+            contentVersion: 'srd51@0123456789ab+fx.12+mesa.7',
+            leftOut: [
+              {
+                key: 'class:guardiao@mesa',
+                field: 'table_class.levels[0].features[0].effects[0].target',
+                reason: 'bad_value',
+              },
+            ],
+          }),
+      });
+    });
+    TestBed.configureTestingModule({
+      providers: [{ provide: CONNECT_TRANSPORT, useValue: transport }],
+    });
+    const list = await TestBed.inject(TableContentClient).list('camp-1');
+    expect(list.tableRevision).toBe(7);
+    expect(list.contentVersion).toBe('srd51@0123456789ab+fx.12+mesa.7');
+    expect(list.leftOut.map((v) => [v.key, v.reason])).toEqual([
+      ['class:guardiao@mesa', 'bad_value'],
+    ]);
+  });
+
+  it('has nothing left out for a player', async () => {
+    const transport = createRouterTransport(({ service }) => {
+      service(TableContentService, {
+        listTableEntries: () => create(ListTableEntriesResponseSchema),
+      });
+    });
+    TestBed.configureTestingModule({
+      providers: [{ provide: CONNECT_TRANSPORT, useValue: transport }],
+    });
+    const list = await TestBed.inject(TableContentClient).list('camp-1');
+    expect(list.leftOut).toEqual([]);
+    expect(list.contentVersion).toBe('');
   });
 });

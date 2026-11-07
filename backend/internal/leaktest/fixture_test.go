@@ -46,6 +46,8 @@ type world struct {
 	// The people. pending waits for the master's approval; stranger is no member.
 	master, ana, caio, pending, stranger *person
 	campaign                             string
+	// The stored spells the rules refuse (buildTableContent): the live one and the one the master retired, with their names.
+	leftOutKey, retiredLeftOutKey, retiredLeftOutName string
 	session                              string
 
 	// The characters.

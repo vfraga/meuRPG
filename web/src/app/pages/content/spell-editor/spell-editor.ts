@@ -14,6 +14,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type {
+  TableContentViolation,
   AffectedCharacter,
   TableEntry,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
@@ -111,6 +112,8 @@ export class SpellEditor {
   readonly entries = input<readonly TableEntry[]>([]);
   /** Why "Salvar" is off while the archive question is open ("" when it is not). */
   readonly saveBlocked = input('');
+  /** The rules refuse this entry on read (it is left out of the campaign): the violation, to put on its field. */
+  readonly leftOut = input<TableContentViolation | null>(null);
 
   readonly saved = output<EditorSaved>();
   /** The entry's switch "Disponível para os jogadores" was turned (it saves at once, apart from the form). */
@@ -200,8 +203,16 @@ export class SpellEditor {
         this.morePerCircle.set(false);
         this.dirty.set(false);
         this.saver.clear();
+        this.seedLeftOut();
       });
     });
+  }
+
+  /** The rules refuse a field of this entry, so the campaign is built without it: the field says why, and the focus goes to it. */
+  private seedLeftOut(): void {
+    if (this.saver.seedLeftOut(this.leftOut(), this.known)) {
+      this.saver.focusRefusal(this.host.nativeElement, this.injector);
+    }
   }
 
   protected patch(p: Partial<SpellDraft>): void {

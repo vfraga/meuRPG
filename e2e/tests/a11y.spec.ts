@@ -61,6 +61,7 @@ import {
 } from './puzzles-support';
 import { createInkBladeRPC, tableForSpells } from './spells-support';
 import { beginLegendaryFight, legendaryScreens, shotScale } from './legendary-support';
+import { LEFT_OUT_VIEWPORTS, leftOutShotScale, refuseEntries, shootLeftOut, targetLeftTheMenu } from './left-out-support';
 import { beginTheatreRPC, secondPlayer } from './theatre-support';
 import { combatWithTwoDown, reviveRPC, tableWithDead } from './revivify-support';
 import { brisa, brisaAidSheet, brisaSheet, dalila, dalilaSheet, ragna, ragnaSheet } from './combat-support';
@@ -6057,6 +6058,98 @@ test('o conteúdo da mesa passa no axe e nas conferências de layout no tema esc
 
 test('o conteúdo da mesa passa no axe e nas conferências de layout no tema claro, no celular de 320', { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
   await scanTableContent(browser, 'light', 320);
+});
+
+/**
+ * The entries the rules refuse (#736): the master's list with the left-out panel, the "⋮" menu and the question to remove, the
+ * editor of an entry with the marked field and the target that left the menu, the notice on the campaign's "Regras" tab, and
+ * the player's list that says nothing of it. Each screen is judged at 390, 768 and 1280 px; E2E_SHOTS_DIR, when set, also
+ * saves the screenshots (left-out-support.ts).
+ */
+async function scanLeftOut(browser: Browser, colorScheme: 'light' | 'dark'): Promise<void> {
+  const viewport = { width: 1280, height: 800 };
+  const mContext = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport, ...leftOutShotScale });
+  const pContext = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport, ...leftOutShotScale });
+  let doneRefusing = async (): Promise<void> => undefined;
+  try {
+    const m = await mContext.newPage();
+    const p = await pContext.newPage();
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const campaignId = await campaignWithEmptyPlayer(m, p, `Acessibilidade fora ${Date.now()}`);
+    const spell = await createEntryRPC(m, campaignId, 'tableSpell', spellBody('Lâmina de Nanquim'));
+    const race = await createEntryRPC(m, campaignId, 'tableRace', {
+      ...raceBody('Corujeiro'),
+      traits: [{ namePt: 'Olhos de caçador', descPt: ['Enxergam longe.'], effects: [{ type: 'modifier', target: 'critical_range', mode: 'set', value: '19', applies: 'both' }] }],
+    });
+    doneRefusing = await refuseEntries(
+      m,
+      [
+        { key: spell, field: 'table_spell.damage[0].dice', reason: 'bad_formula' },
+        { key: race, field: 'table_race.traits[0].effects[0].target', reason: 'bad_value' },
+      ],
+      { [race]: (e) => targetLeftTheMenu(e) },
+    );
+    for (const width of Object.keys(LEFT_OUT_VIEWPORTS).map(Number)) {
+      const where = `(${colorScheme}, ${width}px)`;
+      for (const page of [m, p]) {
+        await page.setViewportSize({ width, height: LEFT_OUT_VIEWPORTS[width] });
+      }
+      await open(m, `/campaigns/${campaignId}/content`);
+      const panel = m.getByRole('region', { name: '2 entradas fora da campanha' });
+      await expect(panel).toBeVisible();
+      await expectScreenPasses(m, `Conteúdo da mesa, fora da campanha ${where}`);
+      await shootLeftOut(m, 'lista', width, colorScheme);
+
+      await m.getByRole('button', { name: 'Mais ações de Lâmina de Nanquim' }).click();
+      await expect(m.getByRole('menuitem', { name: 'Remover' })).toBeVisible();
+      await expectScreenPasses(m, `Conteúdo da mesa, fora da campanha, o menu ${where}`);
+      await shootLeftOut(m, 'menu', width, colorScheme);
+      await m.getByRole('menuitem', { name: 'Remover' }).click();
+      await expect(m.getByRole('dialog')).toBeVisible();
+      await expectScreenPasses(m, `Conteúdo da mesa, fora da campanha, a pergunta para remover ${where}`);
+      await shootLeftOut(m, 'remover', width, colorScheme);
+      await m.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
+      await expect(m.getByRole('dialog')).toHaveCount(0);
+
+      await open(m, entryRoute(campaignId, race));
+      // The phone reads and archives only (K3): the note says why and sends to the computer; the field is on the wider screens.
+      await expect(m.getByText('Esta raça está fora da campanha.')).toBeVisible();
+      await shootLeftOut(m, 'editor-nota', width, colorScheme);
+      if (width >= 768) {
+        const target = m.getByLabel('O que muda');
+        await expect(target).toHaveValue('alvo_antigo');
+        await expectScreenPasses(m, `Conteúdo da mesa, a raça fora da campanha ${where}`);
+        await shootLeftOut(m, 'editor', width, colorScheme, target);
+      } else {
+        await expectScreenPasses(m, `Conteúdo da mesa, a raça fora da campanha ${where}`);
+        await shootLeftOut(m, 'editor', width, colorScheme);
+      }
+
+      await open(m, `/campaigns/${campaignId}/setup`);
+      const content = m.getByRole('region', { name: 'Conteúdo da mesa' });
+      await expect(content).toContainText('estão fora da campanha');
+      await expectScreenPasses(m, `A campanha, o aviso do conteúdo fora ${where}`);
+      await shootLeftOut(m, 'campanha', width, colorScheme, content);
+
+      await open(p, `/campaigns/${campaignId}/content`);
+      await expect(p.getByRole('heading', { level: 1, name: 'Conteúdo da mesa' })).toBeVisible();
+      await expectScreenPasses(p, `Conteúdo da mesa, o jogador não vê o que ficou fora ${where}`);
+      await shootLeftOut(p, 'jogador', width, colorScheme);
+    }
+  } finally {
+    await doneRefusing(); // a read the page started is answered before the page closes
+    await Promise.all([mContext.close(), pContext.close()]);
+  }
+}
+
+test('as entradas fora da campanha passam no axe e nas conferências de layout no tema claro, em 390, 768 e 1280', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanLeftOut(browser, 'light');
+});
+
+test('as entradas fora da campanha passam no axe e nas conferências de layout no tema escuro, em 390, 768 e 1280', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanLeftOut(browser, 'dark');
 });
 
 /**

@@ -164,7 +164,10 @@ describe('CampaignDetail', () => {
         },
         {
           provide: TableContentClient,
-          useValue: { list: () => Promise.resolve({ entries: [], tableRevision: 0 }) },
+          useValue: {
+            list: () =>
+              Promise.resolve({ entries: [], tableRevision: 0, contentVersion: '', leftOut: [] }),
+          },
         },
       ],
     });

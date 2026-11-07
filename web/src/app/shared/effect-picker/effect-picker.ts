@@ -37,8 +37,11 @@ import { SelectField, type SelectOption } from '../form-fields/select-field';
 import { TextField } from '../form-fields/text-field';
 import {
   afterTarget,
+  choiceHint,
+  choiceList,
   fixedMode,
   isCriticalRange,
+  leftTheMenuValue,
   refusalTexts,
   resourcePick,
 } from './effect-picker-parts';
@@ -262,7 +265,7 @@ export class EffectPicker {
     if (f.kind === 'choice') {
       const list = this.optionsOf(f);
       const picked = list.find((o) => o.value === this.read(f.name));
-      return picked?.hint || own;
+      return choiceHint(picked?.hint, this.leftTheMenu(f), own);
     }
     return own;
   }
@@ -314,11 +317,12 @@ export class EffectPicker {
     }));
   }
 
-  /** A choice with a placeholder when it is required, and a real "Padrão" (the field left empty) when it is not. */
   protected choiceOptions(f: EffectMenuField): SelectOption[] {
-    const list = this.optionsOf(f);
-    const empty = this.effect().type === 'roll_minimum' ? 'Qualquer tipo' : 'Padrão';
-    return f.required ? list : [{ value: '', label: empty }, ...list];
+    return choiceList(this.optionsOf(f), this.leftTheMenu(f), f, this.effect().type);
+  }
+
+  private leftTheMenu(f: EffectMenuField): string {
+    return leftTheMenuValue(f, this.read(f.name), this.optionsOf(f));
   }
 
   /** The cards of a short closed list (a resistance's kind), with the menu's line under each. */

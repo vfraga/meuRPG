@@ -24,6 +24,12 @@ export const LONG_TEXT = 'Este texto é longo demais. Encurte o parágrafo.';
  * reason answers any reason. The rows are ordered: the first that matches wins. The paths and reasons are the server's
  * (rules.TestEntryViolationPaths pins them). */
 export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: string }[] = [
+  // The target of a modifier is a closed list of the menu; one that left it (or never was in it) is refused here.
+  {
+    shape: /\.effects\[\]\.target$/,
+    reason: 'bad_value',
+    text: 'Este alvo não está mais no menu de efeitos. Escolha outro.',
+  },
   // A race or subrace trait with options, and a subrace's replaced traits: backend/internal/rules/overlay_features.go.
   {
     shape: /^table_(race|subrace)\.traits\[\]\.effects\[\]\.choice$/,

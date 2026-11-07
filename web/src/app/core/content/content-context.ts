@@ -1,7 +1,10 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 
 import { Role } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
-import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import type {
+  TableContentViolation,
+  TableEntry,
+} from '../../../gen/meurpg/rules/v1/table_content_pb';
 import type { CampaignsService } from '../campaigns/campaigns.service';
 import type { TableContentClient } from './content-client';
 
@@ -12,6 +15,9 @@ export interface ContentContext {
   readonly isMaster: boolean;
   readonly entries: readonly TableEntry[];
   readonly tableRevision: number;
+  readonly contentVersion: string;
+  /** The entries the rules refuse (the master's only): left out of the campaign's content until fixed or archived. */
+  readonly leftOut: readonly TableContentViolation[];
 }
 
 export type ContextResult =
@@ -38,6 +44,8 @@ export async function loadContext(
         isMaster: campaign.myRole === Role.MASTER,
         entries: list.entries,
         tableRevision: list.tableRevision,
+        contentVersion: list.contentVersion,
+        leftOut: list.leftOut,
       },
     };
   } catch (err) {

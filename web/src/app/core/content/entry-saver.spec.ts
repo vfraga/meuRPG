@@ -116,3 +116,46 @@ describe('EntrySaver.focusRefusal', () => {
     );
   });
 });
+
+describe('EntrySaver.seedLeftOut', () => {
+  const left = (field: string, reason = 'bad_value') =>
+    create(TableContentViolationSchema, { key: 'class:guardiao@mesa', field, reason });
+
+  it('puts the violation of a left-out entry on its field, with the entry key cleared, and says no summary', () => {
+    const saver = new EntrySaver({ aOne: 'uma classe' }, 'a classe');
+    const at = 'table_class.levels[0].features[0].effects[0].target';
+    expect(saver.seedLeftOut(left(at), (p) => p === at)).toBe(at);
+    expect(saver.issues(at)).toEqual([
+      'Este alvo não está mais no menu de efeitos. Escolha outro.',
+    ]);
+    expect(saver.summary()).toBe('');
+    expect(saver.placement().top).toEqual([]);
+  });
+
+  it('marks the nearest input the editor draws when the field itself has none', () => {
+    const saver = new EntrySaver({ aOne: 'uma classe' }, 'a classe');
+    const feature = 'table_class.levels[0].features[0]';
+    expect(saver.seedLeftOut(left(`${feature}.effects[0].target`), (p) => p === feature)).toBe(
+      feature,
+    );
+  });
+
+  it('keeps a violation with no field for the page to say, and marks no input', () => {
+    const saver = new EntrySaver({ aOne: 'uma classe' }, 'a classe');
+    expect(saver.seedLeftOut(left('', 'overlay'), () => true)).toBe('');
+    expect(saver.placement().fields).toEqual([]);
+    expect(saver.placement().top).toHaveLength(1);
+  });
+
+  it('does nothing for an entry that is not left out, and a save clears it', async () => {
+    const saver = new EntrySaver({ aOne: 'uma classe' }, 'a classe');
+    expect(saver.seedLeftOut(null, () => true)).toBe('');
+    expect(saver.placement().count).toBe(0);
+    saver.seedLeftOut(left('table_class.hit_die'), () => true);
+    await saver.run(
+      () => Promise.resolve(1),
+      () => true,
+    );
+    expect(saver.issues('table_class.hit_die')).toEqual([]);
+  });
+});

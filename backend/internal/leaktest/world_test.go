@@ -745,8 +745,15 @@ func (w *world) buildTableContent() {
 	// A spell the rules refuse after it was stored (a level above 9): it is left out of the content,
 	// and only the master reads that in left_out. The players still list the stored entry, as the table's.
 	leftOut := create("spell-left-out", spell(w.ana, w.caio), w.ana, w.caio)
-	if _, err := w.pool.Exec(ctx, `UPDATE campaign_content SET data = jsonb_set(data, '{level}', '12') WHERE campaign_id = $1 AND content_key = $2`, w.campaign, leftOut.GetKey()); err != nil {
-		w.t.Fatalf("refuse the stored spell: %v", err)
+	// A second one, which the master retired ("Remover"): it is left out too, and nobody reads its name but the master,
+	// not as an entry and not in left_out, where it no longer is.
+	retiredLeftOut := create("spell-left-out-retired", spell())
+	must(m.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: retiredLeftOut.GetKey()})))
+	w.leftOutKey, w.retiredLeftOutKey, w.retiredLeftOutName = leftOut.GetKey(), retiredLeftOut.GetKey(), retiredLeftOut.GetNamePt()
+	for _, key := range []string{leftOut.GetKey(), retiredLeftOut.GetKey()} {
+		if _, err := w.pool.Exec(ctx, `UPDATE campaign_content SET data = jsonb_set(data, '{level}', '12') WHERE campaign_id = $1 AND content_key = $2`, w.campaign, key); err != nil {
+			w.t.Fatalf("refuse the stored spell: %v", err)
+		}
 	}
 	if _, err := w.pool.Exec(ctx, `UPDATE campaign_content_state SET revision = revision + 1 WHERE campaign_id = $1`, w.campaign); err != nil {
 		w.t.Fatalf("bump the content revision: %v", err)

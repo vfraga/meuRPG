@@ -37,6 +37,10 @@ export type EntryBody = NonNullable<MessageInitShape<typeof CreateTableEntryRequ
 export interface EntryList {
   readonly entries: readonly TableEntry[];
   readonly tableRevision: number;
+  /** The content version the revision makes (`srd51@0123456789ab+fx.12+mesa.7`). */
+  readonly contentVersion: string;
+  /** The entries the rules refuse, left out of the campaign's content: the first violation of each, for the master only. */
+  readonly leftOut: readonly TableContentViolation[];
 }
 
 /**
@@ -53,7 +57,12 @@ export class TableContentClient {
   /** Every entry the caller may see: the master gets the archived ones and the counts, a player neither. */
   async list(campaignId: string): Promise<EntryList> {
     const res = await this.client.listTableEntries({ campaignId });
-    return { entries: res.entries, tableRevision: res.tableRevision };
+    return {
+      entries: res.entries,
+      tableRevision: res.tableRevision,
+      contentVersion: res.contentVersion,
+      leftOut: res.leftOut,
+    };
   }
 
   /** `idempotencyKey`: one per new entry, sent again on a retry (see `ActionKey`). */

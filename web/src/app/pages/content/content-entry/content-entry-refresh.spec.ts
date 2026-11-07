@@ -16,7 +16,12 @@ describe('ContentEntry refresh after a content change', () => {
   const KEY = 'race:corujeiro@mesa';
 
   it('a player who has the entry open reads the new name after content_changed bumps its revision', async () => {
-    const list = vi.fn().mockResolvedValue({ entries: mirathel(), tableRevision: 7 });
+    const list = vi.fn().mockResolvedValue({
+      entries: mirathel(),
+      tableRevision: 7,
+      contentVersion: '',
+      leftOut: [],
+    });
     const watcher = fakeContentWatcher();
     TestBed.resetTestingModule();
     TestBed.overrideComponent(ContentEntry, { set: { providers: [watcher.provider] } });
@@ -72,6 +77,8 @@ describe('ContentEntry refresh after a content change', () => {
         e.key === KEY ? ({ ...e, namePt: 'Corujeiro Renomeado', revision: 9 } as typeof e) : e,
       ),
       tableRevision: 9,
+      contentVersion: '',
+      leftOut: [],
     });
     watcher.hint();
     await settle();

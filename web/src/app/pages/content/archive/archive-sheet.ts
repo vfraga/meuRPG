@@ -10,6 +10,8 @@ export interface ArchiveSheetData {
   readonly name: string;
   /** How many characters of the campaign use the entry. */
   readonly using: number;
+  /** "Remover" on an entry the rules refuse (it is archived, nothing is deleted); "Arquivar" when it is absent. */
+  readonly verb?: 'Arquivar' | 'Remover';
 }
 
 /**
@@ -21,14 +23,20 @@ export interface ArchiveSheetData {
   selector: 'app-archive-sheet',
   imports: [MatIconModule, PairFoot, SheetFrame],
   template: `
-    <app-sheet-frame [title]="'Arquivar ' + sheet.data.name + '?'" titleId="archive-t" [phone]="sheet.inSheet" (closed)="sheet.close(false)">
+    <app-sheet-frame [title]="verb + ' ' + sheet.data.name + '?'" titleId="archive-t" [phone]="sheet.inSheet" (closed)="sheet.close(false)">
       <div class="mr-notice mr-notice--warning">
         <mat-icon aria-hidden="true">warning</mat-icon>
-        <p>As fichas que usam {{ sheet.data.name }} continuam funcionando. A entrada só deixa de aparecer para fichas novas.</p>
+        <p>
+          @if (verb === 'Remover') {
+            A entrada é arquivada, não apagada. As fichas que usam {{ sheet.data.name }} continuam funcionando.
+          } @else {
+            As fichas que usam {{ sheet.data.name }} continuam funcionando. A entrada só deixa de aparecer para fichas novas.
+          }
+        </p>
       </div>
       <p class="using">{{ using }}</p>
       <div foot>
-        <app-pair-foot cancelLabel="Voltar" confirmLabel="Arquivar" confirmIcon="archive" (cancel)="sheet.close(false)" (confirm)="sheet.close(true)" />
+        <app-pair-foot cancelLabel="Voltar" [confirmLabel]="verb" confirmIcon="archive" (cancel)="sheet.close(false)" (confirm)="sheet.close(true)" />
       </div>
     </app-sheet-frame>
   `,
@@ -41,5 +49,6 @@ export interface ArchiveSheetData {
 })
 export class ArchiveSheet {
   protected readonly sheet = injectSheet<ArchiveSheetData, boolean>();
+  protected readonly verb = this.sheet.data.verb ?? 'Arquivar';
   protected readonly using = usageSentence(this.sheet.data.name, this.sheet.data.using);
 }

@@ -13,7 +13,10 @@ import {
 } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
-import type { TableEntry } from '../../../../gen/meurpg/rules/v1/table_content_pb';
+import type {
+  TableContentViolation,
+  TableEntry,
+} from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { type CatalogVm } from '../../../core/content/catalog';
 import { type EntryBody, TableContentClient } from '../../../core/content/content-client';
 import { EntrySaver, focusAfterRender } from '../../../core/content/entry-saver';
@@ -95,6 +98,8 @@ export class FeatEditor {
   readonly catalog = input.required<CatalogVm>();
   readonly entries = input<readonly TableEntry[]>([]);
   readonly saveBlocked = input('');
+  /** The rules refuse this entry on read (it is left out of the campaign): the violation, to put on its field. */
+  readonly leftOut = input<TableContentViolation | null>(null);
 
   readonly saved = output<EditorSaved>();
   /** The entry's switch "Disponível para os jogadores" was turned (it saves at once, apart from the form). */
@@ -189,8 +194,16 @@ export class FeatEditor {
         const e = this.entry();
         this.draft.set(e?.body.case === 'tableFeat' ? featToDraft(e.body.value) : emptyFeat());
         this.saver.clear();
+        this.seedLeftOut();
       });
     });
+  }
+
+  /** The rules refuse a field of this entry, so the campaign is built without it: the field says why, and the focus goes to it. */
+  private seedLeftOut(): void {
+    if (this.saver.seedLeftOut(this.leftOut(), this.known)) {
+      this.saver.focusRefusal(this.host.nativeElement, this.injector);
+    }
   }
 
   protected patch(p: Partial<FeatDraft>): void {

@@ -161,6 +161,12 @@ flowchart LR
   After a write that changes an entry in use, the response carries `affected_characters` and the page lists "Fichas com aviso".
 - **The player** reads entries through `ListTableEntries` and `core/content/content-read.ts` writes them in rows and sections.
   The effect menu is only read by the master, so the player sees the feature's text and, of the effects, only what a sentence says without the menu.
+- **Left-out entries** (`core/content/left-out.ts`, `buildLeftOut`): `TableContentClient.list` keeps `leftOut` and `contentVersion`, and the master's list draws the panel "entradas fora da campanha" from them (one row per entry, the dependents under it, `Corrigir` and a "⋮" menu with `Remover`, which archives).
+  `placeOfPath` maps each violation path to a readable place (level, feature, effect) and the editor field, with the sentence of `content-violation-texts.ts`.
+  The entry page shows the note and the tag "Fora da campanha", and each editor takes the violation as `leftOut` and marks its field (`EntrySaver.seedLeftOut`).
+  A modifier target that left the menu has no client name, so the select says "Um alvo que saiu do menu".
+  The campaign page's content summary counts `leftOut` for the master; a player's list never has any.
+  The phone reads and removes, and the fix is on the notebook.
 - **Shared pieces.** `shared/segmented`, `shared/sheet` (`sheet-host.ts` and `sheet-frame/`: the bottom sheet on the phone, the dialog elsewhere; a sheet that sends a create or a write calls `lock(true)` while the request runs, so Esc and the backdrop do not close it and the answer is not lost to a second try under a new idempotency key), `shared/form-fields`, `shared/effect-picker`, `shared/feature-editor` and `shared/level-grid`.
 - **The "Disponível para os jogadores" switch** of each editor and the "Opções para os jogadores" screen use `ListOptionSwitches` and `SetOptionSwitches`; the switch belongs to the entry (`TableEntry.off`), never to the class body.
 
