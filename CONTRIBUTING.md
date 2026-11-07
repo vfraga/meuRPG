@@ -40,7 +40,7 @@ The pinned versions and where each one lives are in [docs/development.md](docs/d
 | `.github/scripts/go-complexity.sh` | The complexity limits, as CI checks them: no Go function over cyclomatic 15, cognitive 15 or maintainability 20 |
 | `cd backend && govulncheck ./...` | The known vulnerabilities the Go code calls, as the `govulncheck` job runs them (`brew install govulncheck`; CI pins its own version) |
 | `osv-scanner scan source --config osv-scanner.toml -L backend/go.mod -L web/package-lock.json -L e2e/package-lock.json -L e2e/lint/package-lock.json` | The lockfile scan of the `osv-scan` workflow (`brew install osv-scanner`) |
-| `.github/scripts/play-size-cap.sh` | The play size cap: no more code lines in `backend/internal/play` than the number in `.github/play-size-cap` (`--lower` writes the cap down after you move code out) |
+| `.github/scripts/play-size-cap.sh` | The play size cap: no more code lines in `backend/internal/play` than the number in `.github/play-size-cap` (CI runs it, the pre-push hook does not: run it before you push a change in `play`; `--lower` writes the cap down after you move code out) |
 | `.github/scripts/nolint-cap.sh` | The `//nolint` cap: no more directives in `backend/` than the number in `.github/nolint-cap` (`--lower` writes the cap down after you remove some) |
 
 The Go and web linters are ratchets: they judge what your change adds, and the backlog may only shrink.

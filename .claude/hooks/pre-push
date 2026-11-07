@@ -3,7 +3,7 @@
 # main only (the train build drops .claude/), and cloud-session-start.sh installs it in .git/hooks.
 #
 # When a push carries a `ready:` commit, it runs the linters CI runs, on what the branch changed since
-# origin/main: `make lint`, the complexity limits and the //nolint cap and the play size cap for backend/ and proto/, the web
+# origin/main: `make lint`, the complexity limits and the //nolint cap for backend/ and proto/, the web
 # lint, format check and dependency rules (depcruise) for web/, the e2e lint for e2e/. A preflight starts only at `ready:`, so it
 # then never fails on lint or format alone. Before a branch's first `ready:`, every other push
 # (progress commits, work in between) passes untouched, so a session's signs of life never wait on
@@ -80,7 +80,6 @@ fi
 if grep -q '^backend/' <<<"$changed"; then
   check "complexity limits" bash -c 'cd backend && ../.github/scripts/go-complexity.sh'
   check "nolint cap" bash -c 'cd backend && ../.github/scripts/nolint-cap.sh'
-  check "play size cap" bash -c 'cd backend && ../.github/scripts/play-size-cap.sh'
 fi
 if grep -qE '^(web|proto)/' <<<"$changed" && needs_modules web; then
   check "web lint" bash -c 'cd web && npm run -s lint'
