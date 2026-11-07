@@ -94,6 +94,22 @@ describe('the label and the detail line of a zone', () => {
   });
 });
 
+describe("the master's calls", () => {
+  const call = (key: string, viewer: ZoneViewer) =>
+    zoneView(spellZone({ id: 'z', notes: [key] }), viewer).reminder;
+
+  it('gives the master one line for Darkness, Fog Cloud and Stinking Cloud', () => {
+    expect(call('master_light', master)).toContain('a luz de uma magia de nível 2 ou menor');
+    expect(call('master_wind', master)).toContain('vento forte');
+    expect(call('master_breath', master)).toContain('não precisa respirar');
+  });
+
+  it('gives a player none, and none for a note it does not know', () => {
+    expect(call('master_light', player)).toBe('');
+    expect(call('unknown', master)).toBe('');
+  });
+});
+
 describe('the rounds left and the concentration', () => {
   const rounds = (n: number) => zoneView(spellZone({ id: 'z', roundsLeft: n }), master).roundsLeft;
 

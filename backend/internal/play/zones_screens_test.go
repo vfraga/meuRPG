@@ -380,3 +380,23 @@ func (c *cave) passRaw(t *testing.T, label string) {
 	}
 	t.Fatalf("%s never came on turn", label)
 }
+
+// The master's calls ride the zone's notes (the web shows them on the master's card alone, RN-37).
+func TestZoneDefsNameTheMastersCalls(t *testing.T) {
+	t.Parallel()
+	for key, want := range map[string]string{"spell:darkness": "master_light", "spell:fog-cloud": "master_wind", "spell:stinking-cloud": "master_breath"} {
+		if !slices.Contains(zoneDefs[key].notes(true), want) {
+			t.Errorf("%s notes = %v, want %s", key, zoneDefs[key].notes(true), want)
+		}
+	}
+	for key := range map[string]bool{"spell:darkness": true, "spell:fog-cloud": true, "spell:stinking-cloud": true} {
+		for _, n := range zoneDefs[key].notes(false) {
+			if strings.HasPrefix(n, "master_") {
+				t.Errorf("%s notes for a player = %v, want no master call", key, zoneDefs[key].notes(false))
+			}
+		}
+	}
+	if slices.Contains(zoneDefs["spell:silence"].notes(true), "master_wind") || len(zoneDefs["spell:silence"].notes(true)) != 0 {
+		t.Errorf("silence notes = %v, want none", zoneDefs["spell:silence"].notes(true))
+	}
+}

@@ -26,7 +26,7 @@ func (d *encounterData) zonesView(v combatViewer, names func(string) string) []*
 		}
 		view := z.view(owner, d.enc.Round, names)
 		if v.master || v.owns(owner) {
-			z.addDetails(view, names)
+			z.addDetails(view, names, v.master)
 		} else {
 			view.DetailsHidden, view.RoundsLeft = true, 0
 		}
@@ -71,7 +71,7 @@ func (z *zone) view(owner playdb.Combatant, round int32, names func(string) stri
 }
 
 // addDetails adds the numbers of the spell: the master's, and the caster's own player's.
-func (z *zone) addDetails(out *playv1.SpellZone, names func(string) string) {
+func (z *zone) addDetails(out *playv1.SpellZone, names func(string) string, master bool) {
 	out.SaveAbility, out.DamageDice, out.DamageTypeKey = z.row.SaveAbility, z.row.DamageDice, z.row.DamageType
 	if z.row.SaveAbility != "" {
 		out.SaveDc = new(z.row.SaveDc)
@@ -80,7 +80,7 @@ func (z *zone) addDetails(out *playv1.SpellZone, names func(string) string) {
 	if z.def.movement == playv1.SpellZoneMovement_SPELL_ZONE_MOVEMENT_DRIFTS {
 		out.MovesPerTurnFt = driftFt
 	}
-	out.Notes = z.def.notes()
+	out.Notes = z.def.notes(master)
 	if names != nil {
 		if z.row.SaveAbility != "" {
 			out.SaveAbilityNamePt = names("ability:" + z.row.SaveAbility)
