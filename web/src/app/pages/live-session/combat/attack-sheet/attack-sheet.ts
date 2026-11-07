@@ -28,6 +28,7 @@ import { isTheatre } from '../../../../core/combat/theatre';
 import { initialPicks } from '../../../../core/combat/damage-parts';
 import { HeldRollController } from '../../../../core/held-rolls/held-roll-controller';
 import { heldOfferOf } from '../../../../core/held-rolls/held-roll-offer';
+import { HeldVanishWatch } from '../../../../core/held-rolls/held-vanish';
 import { ResourceClient } from '../../../../core/resources/resources-client';
 import { metersText } from '../../../../core/units';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
@@ -49,6 +50,7 @@ import {
   heldWait,
   outcomeOf,
   signedBonus,
+  legendarySpentText,
   spentText,
   withAllies,
 } from './attack-sheet-view';
@@ -110,6 +112,8 @@ export class AttackSheet {
     busy: this.s.busy,
     error: this.s.error,
   });
+  /** Tells the roller that the master answered the question for them: the question goes and this line takes its place. */
+  protected readonly vanish = new HeldVanishWatch();
   /** The mode the player asks the master for (`ModeRequests`): the pick, why, and the request as the combat shows it. */
   protected readonly modes: ModeRequests = new ModeRequests({
     api: this.api,
@@ -203,25 +207,29 @@ export class AttackSheet {
   /** What the attack spent: the reaction, one of Extra Attack's attacks (the
    * action stays open for the rest) or the action. */
   protected readonly spent = computed(() =>
-    spentText({
-      byMaster: !!this.data.opportunity?.byMaster,
-      asReaction: !!this.data.asReaction,
-      bonusRule: this.data.bonusRule,
-      bonusAttacksLeft: this.data.bonusAttacksLeft,
-      cantrip: this.cantrip,
-      name: this.name,
-      beamsLeft: this.data.beamsLeft,
-      attacksLeft: this.data.attacksLeft,
-      attacksPerAction: this.data.attacksPerAction,
-    }),
+    this.data.legendary
+      ? legendarySpentText(this.data.legendary)
+      : spentText({
+          byMaster: !!this.data.opportunity?.byMaster,
+          asReaction: !!this.data.asReaction,
+          bonusRule: this.data.bonusRule,
+          bonusAttacksLeft: this.data.bonusAttacksLeft,
+          cantrip: this.cantrip,
+          name: this.name,
+          beamsLeft: this.data.beamsLeft,
+          attacksLeft: this.data.attacksLeft,
+          attacksPerAction: this.data.attacksPerAction,
+        }),
   );
   protected readonly title = computed(() =>
-    this.s.typing() ? 'Digite o resultado do dado' : `Atacar com ${this.name}`,
+    this.s.typing()
+      ? 'Digite o resultado do dado'
+      : (this.data.legendary?.title ?? `Atacar com ${this.name}`),
   );
   protected readonly subtitle = computed(() =>
     this.s.typing()
       ? `${this.name} contra ${this.targetLabel()} · Rodada ${this.data.round}`
-      : this.detail,
+      : (this.data.legendary?.subtitle ?? this.detail),
   );
   protected readonly rollLabel = computed(
     () => `Role 1d20 para ${this.name} (${signedBonus(this.attack.attackBonus)})`,
@@ -232,6 +240,20 @@ export class AttackSheet {
   constructor() {
     const { s } = this;
     this.question.ask(this.data.held?.offer);
+    // The master answers the question for the roller: the sheet drops it (or shows the next one), so it never offers an answer that is no longer open.
+    effect(() => {
+      const me = this.data.state.encounter()?.combatants.find((c) => c.id === this.data.attackerId);
+      if (!me) {
+        return;
+      }
+      const offer = heldOfferOf(me);
+      untracked(() => {
+        this.vanish.observe(offer);
+        if (this.vanish.notice()) {
+          this.question.ask(offer);
+        }
+      });
+    });
     // After a result the focus goes to the one next action, as soon as it is drawn.
     effect(() => this.back()?.nativeElement.focus());
     // The extras that come marked are the starting choice of each damage.

@@ -3,13 +3,16 @@ import { type Signal, type WritableSignal, computed, signal } from '@angular/cor
 import type { HeldRollOffer } from '../../../gen/meurpg/play/v1/combat_pb';
 import { HeldRollController, type HeldRollHost } from './held-roll-controller';
 import { HELD_ROLL_ANSWERED_TEXT } from './held-roll-errors';
-import type { HeldAnswer } from './held-roll-offer';
+import { type HeldAnswer, asksReroll } from './held-roll-offer';
 import { answeredText } from './held-roll-result';
 import { askingText } from './held-text';
 
 /** How long a question that closed (answered by the roller, by the master, or by someone else first) stays on screen, so it
  * is read and announced once, in milliseconds. */
 export const NOTE_LINGER_MS = 6000;
+/** What the master reads when a reroll rule's question is gone: his screen cannot tell the roller's answer from an undo or a
+ * stale question, so the line says only that it no longer applies. */
+export const REROLL_GONE_TEXT = 'Essa pergunta não vale mais.';
 const TICK_MS = 1000;
 const MS_PER_SECOND = 1000;
 /** When the server refuses the master as too early although the local clock says it is time (the clocks differ), the
@@ -157,7 +160,8 @@ export class MasterQuestion {
   /** The server stopped listing the question while it waited: the roller answered first. */
   gone(): void {
     if (!this.ended() && !this.controller.busy()) {
-      this.end('closed', `${this.roller} respondeu.`);
+      const offer = this.controller.offer();
+      this.end('closed', asksReroll(offer) ? REROLL_GONE_TEXT : `${this.roller} respondeu.`);
     }
   }
 

@@ -431,6 +431,10 @@ type CreatureDamageMod struct {
 // SRD's text, in English. Usage is the SRD's limit ("3/day", "Recharge 5-6").
 type CreatureAbility struct {
 	Name, Text, Usage string
+	// NamePT is the Portuguese name of a legendary action, without its "(Costs N Actions)"
+	// suffix (names_pt.json "legendary:<slug>"); empty for a trait or a reaction, and for a
+	// legendary action of homebrew content that has none.
+	NamePT string
 }
 
 // CreatureAction is an action of a stat block.
@@ -518,6 +522,9 @@ func (c *content) creature(m *srd51.Monster) Creature {
 	}
 	out.Senses = c.monsterSenses(m)
 	out.Traits, out.Reactions, out.LegendaryActions = creatureAbilities(m.SpecialAbilities), creatureAbilities(m.Reactions), creatureAbilities(m.LegendaryActions)
+	for i := range out.LegendaryActions {
+		out.LegendaryActions[i].NamePT = c.namesPT[legendaryNameKey(out.LegendaryActions[i].Name)]
+	}
 	for _, a := range m.Actions {
 		act := c.creatureAction(a)
 		c.attachPlan(m, &act)

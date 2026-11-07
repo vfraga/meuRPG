@@ -191,6 +191,24 @@ func hiddenSpellOfAFeatureSummon(t *testing.T, owner string) {
 				t.Errorf("%s: %s does not read the hidden spell of the feature (the positive control): %d %s", when, p.name, r.status, shorten(r.body))
 			}
 		}
+		// The catalog (ListContent) lists neither the feature's hidden spell nor a table class feature, to anyone, the master and the holder
+		// reading it for their own sheet included: its six lists are the races, sub-races, classes, subclasses, backgrounds and spells of
+		// the table and the SRD, so the keys of a sheet's build are all `ownSheetKeys` needs to keep an archived one (a class feature is
+		// no key of the build, and no entry of the catalog).
+		for _, who := range []struct {
+			p         *person
+			character string
+		}{{m, ""}, {w.ana, ""}, {w.ana, w.pens.GetId()}, {w.caio, ""}, {w.caio, w.toren.GetId()}} {
+			r := who.p.call(rulesv1connect.ContentServiceListContentProcedure, &rulesv1.ListContentRequest{CampaignId: w.campaign, CharacterId: who.character})
+			if who.p == m || who.p == w.ana {
+				if !r.ok() {
+					t.Fatalf("%s: %s cannot read the catalog (the positive control): %d %s", when, who.p.name, r.status, shorten(r.body))
+				}
+			}
+			if strings.Contains(string(r.body), spell) || (owner == "classfeature" && strings.Contains(string(r.body), entry.GetKey())) {
+				t.Errorf("%s: the catalog %s reads (character %q) names the feature's hidden spell or class feature", when, who.p.name, who.character)
+			}
+		}
 		if r := details(w.caio); r.ok() || strings.Contains(string(r.body), featureName) {
 			t.Errorf("%s: Caio, whose character has not the entry, reads the feature's hidden spell: %d %s", when, r.status, shorten(r.body))
 		}

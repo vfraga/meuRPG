@@ -1,0 +1,5 @@
+# :many queries whose outermost statement has no ORDER BY.
+# One entry per line, sorted.
+# An entry is module/QueryName, as in the "-- name:" line of a query file that sqlc.yaml lists.
+# The list can only shrink.
+# Add an ORDER BY with a stable key instead of a new entry.

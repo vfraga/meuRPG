@@ -19,6 +19,19 @@ function clientWith(calls: Record<string, ReturnType<typeof vi.fn>>): EffectsCli
 }
 
 describe('EffectsClient', () => {
+  it("sends the master's Legendary Resistance choice with the roll, and false otherwise", async () => {
+    const rollEffectSave = vi.fn().mockResolvedValue({ encounter: { id: 'e' } });
+    const client = clientWith({ rollEffectSave });
+    await client.rollEffectSave('c', 'e', 'w', { kind: 'app', useLegendaryResistance: true }, 'k1');
+    await client.rollEffectSave('c', 'e', 'w', { kind: 'typed', face: 4, extra: [] }, 'k2');
+    await client.rollEffectSave('c', 'e', 'w', { kind: 'skip' }, 'k3');
+    expect(rollEffectSave.mock.calls.map((c) => c[0].useLegendaryResistance)).toEqual([
+      true,
+      false,
+      undefined,
+    ]);
+  });
+
   it('adds an effect with the key and the choices the master made', async () => {
     const addLastingEffect = vi.fn().mockResolvedValue({ encounter: { id: 'e' }, effects: [] });
     const client = clientWith({ addLastingEffect });

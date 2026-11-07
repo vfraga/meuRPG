@@ -245,6 +245,9 @@ message Reroll {
   // Luck, and the key of the table feature (the reroll rule's source) for a die of damage or a d20 rolled again by a
   // reroll rule. Empty for Great Weapon Fighting, which only rerolls damage dice.
   string source_key = 4;
+  // The name of the feature in `source_key`, for the roller's player and the master only. Empty for anyone else, for an
+  // entry the master retired or switched off (RN-23) and for a source with no name in the content.
+  string source_name = 5;
 }
 
 // CountedDie is a die of damage that counted as another number than it showed, because a table feature's roll_minimum
@@ -260,6 +263,8 @@ message CountedDie {
   int32 counted_as = 3;
   // The table feature that did it, as a content key.
   string source_key = 4;
+  // The name of that feature (see `Reroll.source_name`).
+  string source_name = 5;
 }
 
 // DamagePartRoll is what one part of a damage rolled.

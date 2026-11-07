@@ -85,13 +85,26 @@ describe('EndTurn', () => {
 
   it('while a reaction is awaited it stays reachable, dashed, with the reason read with it', () => {
     const { fixture, el, ended, end } = setup({ actionUsed: true, bonusActionUsed: true });
-    fixture.componentRef.setInput('waiting', 'Esperando o mestre');
+    fixture.componentRef.setInput('waiting', 'Esperando a reação de Brisa');
     fixture.detectChanges();
     expect(end().getAttribute('aria-disabled')).toBe('true');
     expect(end().classList).toContain('end--off');
     expect(end().tabIndex).toBeGreaterThanOrEqual(0);
     const why = el.querySelector(`#${end().getAttribute('aria-describedby')}`);
-    expect(why?.textContent).toBe('Esperando o mestre: a vez continua quando responderem.');
+    expect(why?.textContent).toBe(
+      'Esperando a reação de Brisa: a vez continua quando responderem.',
+    );
+    end().click();
+    expect(ended).toEqual([]);
+  });
+
+  it("while the master's wait holds the turn it says nothing itself: the button points to the card that says it once", () => {
+    const { fixture, el, ended, end } = setup({ actionUsed: true, bonusActionUsed: true });
+    fixture.componentRef.setInput('waiting', 'Esperando o mestre');
+    fixture.detectChanges();
+    expect(end().getAttribute('aria-disabled')).toBe('true');
+    expect(end().getAttribute('aria-describedby')).toBe('master-wait-note');
+    expect(el.textContent).not.toContain('Esperando o mestre');
     end().click();
     expect(ended).toEqual([]);
   });

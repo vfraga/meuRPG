@@ -336,7 +336,7 @@ var reads = []read{
 		req: func(w *world) proto.Message { return &rulesv1.ExportTableContentRequest{CampaignId: w.campaign} },
 	},
 	{
-		procedure: rulesv1connect.TableContentServiceGetEffectMenuProcedure, allow: masterOnlyRead,
+		procedure: rulesv1connect.TableContentServiceGetEffectMenuProcedure, allow: masterOnlyRead, why: "the menu holds the lackable_features list for the feat editor and the race_traits list for the subrace editor: a player is refused and gets nothing of it, the master is the control",
 		req: func(w *world) proto.Message { return &rulesv1.GetEffectMenuRequest{CampaignId: w.campaign} },
 	},
 	{

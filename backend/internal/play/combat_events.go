@@ -565,6 +565,11 @@ type actionEvent struct {
 	// ProtectedBy are the shield-bearers whose Protection gave an attack roll disadvantage:
 	// the undo of the attack gives their reaction back.
 	ProtectedBy []string `json:"protected_by,omitempty"`
+	// Parried is the Parry the server used on its own to turn the attack's hit into a miss (combat_parry_auto.go): its
+	// line is written before the attack's own event, and the undo of the attack gives the reaction back.
+	Parried *parryUsed `json:"parried,omitempty"`
+	// ParryAsk is the mode the master set on a monster (monster_reaction_mode_set): true asks the master for its Parry.
+	ParryAsk bool `json:"parry_ask,omitempty"`
 	// Mode is how the master changed an NPC's hit points ("damage", "heal",
 	// "set"), and Delta the change.
 	Mode  string `json:"mode,omitempty"`
@@ -831,7 +836,11 @@ type effectRef struct {
 // back with the action (UndoneAlso), so that no log keeps them and they do not stop the
 // undo chain.
 func (ev actionEvent) linesBefore() []string {
-	return slices.Concat(ev.EndedLines, ev.FollowUpLines, ev.RevealLines, ev.StateLines)
+	lines := slices.Concat(ev.EndedLines, ev.FollowUpLines, ev.RevealLines, ev.StateLines)
+	if ev.Parried != nil {
+		lines = append(lines, ev.Parried.Event) // the Parry's line goes with the attack it turned into a miss
+	}
+	return lines
 }
 
 // revealedIDs are the hidden creatures the event made appear: its list, and the targets of

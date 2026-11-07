@@ -634,7 +634,6 @@ test(
         // The master reads it above the stage; the roller answers first, so the button waits for the master's time.
         await openSessionPage(master, campaignId);
         const panel = master.getByRole('region', { name: 'Perguntas pendentes' });
-        await expect(panel.getByText('O jogador responde primeiro; depois de 10 s você também pode responder por ele.')).toBeVisible();
         const question = panel.getByRole('region', { name: /· Tirou 1: rolar de novo\?$/ });
         const keep = question.getByRole('button', { name: 'Ficar com o 1' });
         await expect(keep).toBeEnabled({ timeout: 30_000 });

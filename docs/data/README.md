@@ -11,19 +11,20 @@ See also [Privacy](../privacy.md#the-legacy-app-database).
 
 Each table belongs to one module, which is the only code that writes it.
 A module reads another module's data through that module's interface, never by joining its tables (see [Architecture](../architecture/README.md)).
-The `play` module's tables are split over three pages because there are 35 of them.
+The `play` module's tables are split over three pages because there are many of them.
+`TestQueriesTouchOnlyOwnTables` reads the table map of this section, so a new table must be added to its module's row.
 
 | Module | Page | Tables |
 | --- | --- | --- |
 | `identity` | [identity.md](identity.md) | `users`, `user_identities`, `auth_sessions`, `oidc_login_states` |
 | `campaigns` | [campaigns.md](campaigns.md) | `campaigns`, `campaign_members`, `campaign_invites`, `campaign_documents`, `campaign_table_rules` |
-| `characters` | [characters.md](characters.md) | `characters`, `character_master_notes`, `character_reviews`, `claim_links`, `claim_sign_ins`, `character_vitals`, `character_wild_shapes`, `character_level_ups`, `character_level_up_rolls`, `character_ability_rolls`, `character_creatures`, `npc_spell_use`, `campaign_content`, `campaign_content_state`, `campaign_content_off`, `campaign_content_imports` |
+| `characters` | [characters.md](characters.md) | `characters`, `character_master_notes`, `character_reviews`, `claim_links`, `claim_sign_ins`, `character_vitals`, `character_wild_shapes`, `character_level_ups`, `character_level_up_rolls`, `character_ability_rolls`, `character_creatures`, `campaign_content`, `campaign_content_state`, `campaign_content_off`, `campaign_content_imports` |
 | `play` | [play.md](play.md) | `game_sessions`, `game_session_scene_players`, `game_session_image_viewers`, `session_events`, `session_event_kinds`, `session_messages`, `session_message_readers`, `stage_npcs`, `spell_casts`, `revivify_requests`, `battle_encounters`, `group_checks`, `group_check_members`, `character_effects`, `character_inspiration`, `inspiration_holds`, `trap_damages` |
-| `play` (combat) | [combat.md](combat.md) | `encounters`, `combatants`, `pending_damages`, `roll_holds`, `reaction_holds`, `reaction_windows`, `opportunity_offers`, `hidden_reveals`, `roll_mode_requests`, `combat_reasons`, `combatant_states`, `hit_riders`, `spell_zones`, `combat_contests`, `combat_holds`, `combat_hide_attempts`, `combat_hiding`, `combat_helps`, `combat_surprised` |
+| `play` (combat) | [combat.md](combat.md) | `encounters`, `combatants`, `pending_damages`, `roll_holds`, `reaction_holds`, `reaction_windows`, `opportunity_offers`, `hidden_reveals`, `roll_mode_requests`, `combat_reasons`, `combatant_states`, `hit_riders`, `npc_spell_use`, `spell_zones`, `combat_contests`, `combat_holds`, `combat_hide_attempts`, `combat_hiding`, `combat_helps`, `combat_surprised` |
 | `play` (puzzles) | [puzzles.md](puzzles.md) | `puzzles`, `puzzle_runs`, `puzzle_moves`, `puzzle_hint_tries` |
 | `maps` | [gallery.md](gallery.md) | `gallery_images`, `image_requests`, `campaign_left_images`, `campaign_left_image_viewers` |
 | `maps` | [maps.md](maps.md) | `maps`, `map_layers`, `map_vision_memory`, `generated_dungeons`, `map_points`, `map_point_reveals`, `map_treasure_finders`, `map_tokens`, `map_creature_tokens`, `map_point_images`, `scene_actions`, `scene_clues`, `scene_clue_reveals`, `scene_discoveries`, `scene_player_discoveries` |
-| `progression` | [progression.md](progression.md) | `xp_awards`, `xp_award_shares`, `xp_award_treasures`, `planned_milestones` |
+| `progression` | [progression.md](progression.md) | `xp_awards`, `xp_award_shares`, `xp_award_treasures`, `planned_milestones`, `planned_milestone_moves` |
 | `notes` | [notes.md](notes.md) | `player_notes` |
 | `campaignpackage` | [package.md](package.md) | `campaign_exports`, `campaign_imports`, `campaign_import_parts` |
 
@@ -54,6 +55,10 @@ A module page repeats one only where its table breaks or sharpens it.
 - **Text with `CHECK`, not `ENUM`.** A closed set of values (`role`, `status`, `kind`, `mode`...) is a `TEXT` column with a `CHECK`, so adding a value is a small migration.
   Where the set grows often (`session_events.kind`) it is a reference table instead (see [Reference tables](#reference-tables)).
   A few `kind` columns have no `CHECK` on purpose, because the code is the list (`puzzles.kind`).
+- **Every `:many` query has an outermost `ORDER BY` with a stable key**: the primary key, or `created_at` then the key.
+  An `UPDATE`/`DELETE ... RETURNING` that is `:many` wraps in `WITH changed AS (...) SELECT ... FROM changed ORDER BY ...`.
+  The tests run on PostgreSQL, whose insertion order hides what CockroachDB's order exposes.
+  `TestManyQueriesHaveOrderBy` enforces it.
 - **Sizes are checked twice.** The API limit (in characters) is enforced by the server, and a looser `CHECK` (in bytes) is the last defence.
 - **Ids are UUIDs.** Most primary keys are `UUID DEFAULT gen_random_uuid()`.
   `gallery_images.id` has no default, because the API needs the id before it writes the files.
@@ -162,6 +167,7 @@ Migrations are numbered `NNNNN_description.sql` files in `backend/migrations/`, 
 It is the lease lock of `migrate up` and `migrate down`: one row (`id = 1`, `CHECK`) with `holder` and `expires_at`, created by the lock's own code (`backend/migrations/lock.go`) before goose runs, because goose has no lock for CockroachDB.
 Whoever runs first writes the row with a validity of 60 s and renews it every 20 s.
 A second `migrate` waits (up to 10 minutes, polling every second) and then exits with a clear message.
+If two runs take the lock at the same instant, the database may abort one with `40001`; that run treats it as "the other one won" and retries after the poll.
 A run that cannot renew cancels itself before the lease can end, so goose stops between statements; a statement already sent keeps going as a CockroachDB schema-change job, which no lock holds back.
 A run that crashed leaves the row, and the next run takes it once `expires_at` has passed.
 All times are the database clock's `now()`, never the runner's.

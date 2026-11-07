@@ -71,6 +71,20 @@ func TestATableTraitWithOptionsAsksForOneOfThem(t *testing.T) {
 	}
 }
 
+// TestTheOptionsOfATableTraitCarryTheirTextAsTheSummary: the card of an option shows the rule the master wrote.
+func TestTheOptionsOfATableTraitCarryTheirTextAsTheSummary(t *testing.T) {
+	t.Parallel()
+	o, traitKey, opts := traitOptionsOverlay()
+	c := withOverlay(t, o)
+	s := c.Choices(choiceBuild(o.Races[0].Key, "", ClassLevel{Class: "class:fighter", Level: 1}))
+	ch := choiceOf(t, s, traitKey)
+	for _, opt := range ch.Options {
+		if opt.Key == opts[0] && opt.SummaryPT != "A." {
+			t.Errorf("summary of %s = %q, want %q", opt.Key, opt.SummaryPT, "A.")
+		}
+	}
+}
+
 // TestASubraceTraitWithOptionsIsRegisteredWithTheSubraceAsOwner: the options of a subrace trait are traits of the subrace.
 func TestASubraceTraitWithOptionsIsRegisteredWithTheSubraceAsOwner(t *testing.T) {
 	t.Parallel()

@@ -8,11 +8,20 @@ import {
 import { ActionKey } from '../../../core/connect/idempotency';
 import { ResourceClient } from '../../../core/resources/resources-client';
 import { HeldRollKind } from '../../../../gen/meurpg/play/v1/combat_pb';
-import { asksLucky, heldOfferOf, weaponHold } from '../../../core/held-rolls/held-roll-offer';
+import {
+  asksLucky,
+  asksReroll,
+  asksStroke,
+  dieOf,
+  heldOfferOf,
+  rerollFace,
+  weaponHold,
+} from '../../../core/held-rolls/held-roll-offer';
 import { combatErrorMessage } from '../../../core/combat/combat-errors';
 import { wildActionLine } from '../../../core/combat/combat-notices';
 import { coverTargets, everyoneStanding } from '../../../core/combat/theatre';
 import { offersHolding, waitingText } from '../../../core/combat/opportunity';
+import { masterQueue } from '../../../core/combat/reaction-queue';
 import type { OfferMark } from '../../../shared/combat-map/combat-map';
 import { openDamages, pendingNote } from '../../../core/combat/attack-flow';
 import { isDead, isDown, isPlayer } from '../../../core/combat/combat-view';
@@ -31,6 +40,7 @@ import {
   unactedPlayerOnTurn,
 } from '../../../core/combat/combat-derived';
 import { reactionWait } from '../../../core/combat/reactions';
+import { legendaryLeftLine } from '../../../core/combat/legendary-left';
 import type { CombatantInfo } from './combat-info';
 import { heldWait, revealWhy } from '../../../core/combat/hidden-reveal';
 import { CombatDeaths } from './combat-deaths';
@@ -243,6 +253,11 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
       reactionWait(e) ?? waitingText(e, offersHolding(e, own.id)) ?? heldWait(e, this.myTurn())
     );
   });
+  /** "Restam 2 ações lendárias: ...": under "Próximo turno" while a legendary creature has points to spend now. */
+  protected readonly legendaryLeft = computed(() => {
+    const e = this.encounter();
+    return e && this.isMaster() ? legendaryLeftLine(e) : '';
+  });
   /** Why "Próximo turno" waits while questions about hidden creatures are open ("Responda ao pedido abaixo para seguir."). */
   protected readonly waitWhy = computed(() => {
     const e = this.encounter();
@@ -352,6 +367,11 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   );
   /** The player's hit whose damage is still to roll (the sheet was closed). */
   protected readonly ownPendingRoll = computed(() => pendingRollOf(this.options(), this.own()?.id));
+  /** A window waits for the master: the queue stands above the turn card, so its answer is on the first screen. */
+  protected readonly queueFirst = computed(() => {
+    const e = this.encounter();
+    return this.isMaster() && !!e && masterQueue(e).count > 0;
+  });
   /** The newest attack of the one on turn was stopped by the target's Escudo (from the log). */
   protected readonly reactionStopped = computed(() =>
     stoppedByReaction(this.log.rounds(), this.subject()?.id),
@@ -373,5 +393,10 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
     return own ? weaponHold(heldOfferOf(own)) : null;
   });
   protected readonly ownLucky = computed(() => asksLucky(this.ownHeld()));
-  protected readonly ownDieAsked = computed(() => this.ownHeld() !== null && !this.ownLucky());
+  /** The weapon attack waits for a table feature's reroll ("Tirou 2: rolar de novo?"). */
+  protected readonly ownReroll = computed(() => asksReroll(this.ownHeld()));
+  protected readonly ownRerollFace = computed(() => rerollFace(this.ownHeld()));
+  protected readonly ownStroke = computed(() => asksStroke(this.ownHeld()));
+  /** The Bardic Inspiration die's question, and only it. */
+  protected readonly ownDieAsked = computed(() => dieOf(this.ownHeld()) !== undefined);
 }

@@ -526,8 +526,9 @@ describe('SpellEditor', () => {
       click(el, 'Salvar magia');
       await settle(fixture, 3);
       expect(text(el.querySelector('[role="alert"]')!)).toContain('7 campos precisam de ajuste');
-      expect(field(el, 'table_spell.summon.creature_keys').getAttribute('aria-invalid')).toBe(
-        'true',
+      const group = field(el, 'table_spell.summon.creature_keys');
+      expect(el.querySelector(`#${group.getAttribute('aria-describedby')}`)?.textContent).toContain(
+        'Esta criatura não existe mais.',
       );
       for (const f of ['count', 'count_per_slot_level', 'max_live']) {
         expect(field(el, `table_spell.summon.${f}`).getAttribute('aria-invalid')).toBe('true');

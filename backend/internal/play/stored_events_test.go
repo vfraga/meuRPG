@@ -60,7 +60,7 @@ var actionEventKinds = []string{
 	"concentration_save_rolled", "character_revived", "lasting_effect_added", "lasting_effect_changed", "lasting_effect_ended",
 	"lasting_effect_visibility_changed", "lasting_effect_saved", "lasting_effect_triggered", "spell_zone_triggered", "spell_zone_moved", "exhaustion_changed",
 	"contest_started", "contest_resolved", "contest_deferred", "contest_closed", "shove_resolved", "grapple_released",
-	"hide_attempted", "hide_resolved", "hide_ended", "help_given", "help_cleared", "surprise_set", "hit_rider", "legendary_action_spent", "recharge_rolled",
+	"hide_attempted", "hide_resolved", "hide_ended", "help_given", "help_cleared", "surprise_set", "hit_rider", "legendary_action_spent", "recharge_rolled", "monster_reaction_mode_set",
 }
 
 // otherWriters are the kinds a play writer marshals as something else than an actionEvent, and the second

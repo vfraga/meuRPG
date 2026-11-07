@@ -15,6 +15,9 @@ import {
   KIND_WORDS,
   usageSentence,
 } from '../../../core/content/content-kinds';
+import { readEntry } from '../../../core/content/content-read';
+import type { EntryRead, NameOf } from '../../../core/content/content-read-parts';
+import { parentViewOf } from '../../../core/content/subrace-traits';
 import type { EffectMenuVm } from '../../../core/content/effect-draft';
 import { openSheet } from '../../../shared/sheet/sheet-host';
 import { ArchiveSheet } from '../archive/archive-sheet';
@@ -245,4 +248,22 @@ export function kindTagOf(kind: TableContentKind | null): string {
 /** "Em uso por 2 fichas", or nothing without an entry. */
 export function usageOf(entry: TableEntry | null): string {
   return entry ? usageSentence(entry.namePt, entry.charactersUsing) : '';
+}
+
+/** What a player (or the master, where the app has no editor yet) reads of the entry, with the traits of the race a subrace comes from. */
+export function readOfEntry(
+  entry: TableEntry | null,
+  nameOf: NameOf,
+  catalog: CatalogVm | null,
+  entries: readonly TableEntry[],
+): EntryRead | null {
+  return entry
+    ? readEntry(
+        entry,
+        nameOf,
+        (key) => catalog?.subclassLevelOf(key) ?? 0,
+        parentViewOf(entries),
+        catalog?.offeredByName,
+      )
+    : null;
 }

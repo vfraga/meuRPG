@@ -131,7 +131,9 @@ Every attack has one (`TestAttackNamesPT`) and so does every action of every cre
 The test names the creature and the action that lacks one.
 A new action takes its name by adding its `attack:` key to `names_pt.json`, which raises `effects/revision.json`.
 The names follow the style of the attacks: the first word capitalised, the plural kept ("Garras"), a variant in parentheses translated whole ("Garra (Mordida na forma de fera)").
-**Backlog:** the names of traits, reactions and legendary actions still show the SRD's English name: the browser shows them only on the stat block, in English by design. A reaction or legendary action that only a low-rating creature has (Parry, Shriek, Split, Heal Self, Shimmering Shield) is in that group.
+The Portuguese name of a legendary action is `legendary:<SRD name without its cost, in lower case, with hyphens>` ("Ataque de cauda").
+The content refuses to load when an SRD legendary action has none, because the master's offers show it in Portuguese only (`LegendaryOption.name_pt`).
+**Backlog:** the names of traits and reactions still show the SRD's English name: the browser shows them only on the stat block, in English by design. A reaction that only a low-rating creature has (Parry, Shriek, Split) is in that group.
 The browser shows a usage text ("Recharge 5-6") in Portuguese through `usageText` (`web/src/app/core/combat/creature-action.ts`): "Recarga 5–6", "3/dia", "Recarrega após um descanso curto ou longo".
 
 **Texts** are in `spells_pt.json`, `magic_items_pt.json`, `features_pt.json`, `traits_pt.json`, `backgrounds_pt.json` and `feats_pt.json`, keyed `spell:<index>`, `item:<index>`, `feature:<index>`, `trait:<index>`, `background-feature:<index>` and `feat:<index>`.

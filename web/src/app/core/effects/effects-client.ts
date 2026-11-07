@@ -25,7 +25,12 @@ import { heldOfferOf } from '../held-rolls/held-roll-offer';
 
 /** How a player answers the saving throw an effect asks: the d20 in the app, the faces of physical dice, or the master. */
 export type EffectSaveAnswer =
-  | { readonly kind: 'app'; readonly maneuverKey?: string }
+  | {
+      readonly kind: 'app';
+      readonly maneuverKey?: string;
+      /** The master's choice: if the save fails, Legendary Resistance turns it into a success. */
+      readonly useLegendaryResistance?: boolean;
+    }
   | {
       readonly kind: 'typed';
       readonly face: number;
@@ -33,6 +38,7 @@ export type EffectSaveAnswer =
       readonly extra: readonly number[];
       /** A table die added to the roll: its face is the last of `extra`. */
       readonly maneuverKey?: string;
+      readonly useLegendaryResistance?: boolean;
     }
   | { readonly kind: 'hand' }
   /** The master skips the save (a table option). */
@@ -121,6 +127,9 @@ export class EffectsClient {
               : { case: 'delegateToMaster', value: true },
       extraDieFaces: typed ? [...typed.extra] : [],
       ...(how.kind === 'app' || how.kind === 'typed' ? { maneuverKey: how.maneuverKey ?? '' } : {}),
+      ...(how.kind === 'app' || how.kind === 'typed'
+        ? { useLegendaryResistance: how.useLegendaryResistance ?? false }
+        : {}),
       ...(typed?.second !== undefined ? { secondD20Face: typed.second } : {}),
     });
     if (!res.encounter) {

@@ -144,6 +144,53 @@ func TestAFeatLacksConditionOnAFeatureTheSheetHasIsNotBlanked(t *testing.T) {
 	if other.GetPrerequisite().GetLacksFeatureKey() != "" || other.GetLacksFeatureNamePt() != "" || other.GetUnmet()[0].GetKey() != "" || other.GetUnmet()[0].GetNamePt() != "" {
 		t.Errorf("the wizard's feat condition names the hidden feature: %v", other)
 	}
+	if own.GetLacksFeatureHidden() || own.GetUnmet()[0].GetHidden() {
+		t.Errorf("the ranger's feat condition is marked hidden: %v", own)
+	}
+	if !other.GetLacksFeatureHidden() || !other.GetUnmet()[0].GetHidden() {
+		t.Errorf("the wizard's feat condition is not marked hidden: %v", other)
+	}
+}
+
+// The marker says a condition names something the player may not read: set where the key and the name are
+// blanked, never where the sheet keeps them or some race is still shown (the master's view skips the blanking).
+func TestAFeatConditionOnAHiddenEntryIsMarkedHidden(t *testing.T) {
+	t.Parallel()
+	c := ownersContent(t, "race:elf", "race:dwarf")
+	const lacks = rulesv1.FeatUnmetKind_FEAT_UNMET_KIND_LACKS_FEATURE
+	const race = rulesv1.FeatUnmetKind_FEAT_UNMET_KIND_RACE
+	for _, tc := range []struct {
+		name       string
+		unmet      *rulesv1.FeatUnmet
+		build      rules.Build
+		wantKey    string
+		wantKeys   []string
+		wantHidden bool
+	}{
+		{"one hidden race", &rulesv1.FeatUnmet{Kind: race, Key: "race:elf"}, rules.Build{}, "", nil, true},
+		{"the sheet's own hidden race", &rulesv1.FeatUnmet{Kind: race, Key: "race:elf"}, rules.Build{Race: "race:elf"}, "race:elf", nil, false},
+		{"every race of several hidden", &rulesv1.FeatUnmet{Kind: race, Keys: []string{"race:elf", "race:dwarf"}}, rules.Build{}, "", nil, true},
+		{"one of several races shown", &rulesv1.FeatUnmet{Kind: race, Keys: []string{"race:elf", "race:human"}}, rules.Build{}, "", []string{"race:human"}, false},
+		{"a race that is shown", &rulesv1.FeatUnmet{Kind: race, Key: "race:human"}, rules.Build{}, "race:human", nil, false},
+		{"a hidden feature", &rulesv1.FeatUnmet{Kind: lacks, Key: rangerFeature, NamePt: "Olhar de teste"}, rules.Build{}, "", nil, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			content := c
+			if tc.unmet.GetKind() == lacks {
+				content = ownersContent(t, "class:ranger")
+			}
+			f := &rulesv1.FeatOption{Unmet: []*rulesv1.FeatUnmet{tc.unmet}}
+			hideFeatRace(f, levelUpTarget{content: content, build: tc.build})
+			u := f.GetUnmet()[0]
+			if u.GetKey() != tc.wantKey || !slices.Equal(u.GetKeys(), tc.wantKeys) || u.GetHidden() != tc.wantHidden {
+				t.Errorf("unmet = key %q keys %q hidden %v, want key %q keys %q hidden %v", u.GetKey(), u.GetKeys(), u.GetHidden(), tc.wantKey, tc.wantKeys, tc.wantHidden)
+			}
+			if tc.wantHidden && u.GetNamePt() != "" {
+				t.Errorf("the hidden condition keeps its name %q", u.GetNamePt())
+			}
+		})
+	}
 }
 
 // The switches' list says a shared option is not hidden while a class that offers it is on.

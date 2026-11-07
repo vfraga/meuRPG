@@ -239,6 +239,9 @@ func (u *undoer) attackRolled(ctx context.Context, ev actionEvent) error {
 	if err := u.protectionBack(ctx, ev); err != nil {
 		return err
 	}
+	if err := u.parryBack(ctx, ev); err != nil {
+		return err
+	}
 	if who, ok := u.find(ev.Actor); ok {
 		if err := u.attackerBack(ctx, who, ev); err != nil {
 			return err

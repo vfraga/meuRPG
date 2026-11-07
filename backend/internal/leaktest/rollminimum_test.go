@@ -45,6 +45,9 @@ const (
 	kindInitiativeSrc = "minimum-initiative-source"
 	kindSaveD20       = "minimum-save-counted"
 	kindSaveSrc       = "minimum-save-source"
+
+	// The names of the five feats, which the rolls name to the roller's player and the master (the *_name fields).
+	nameAttackFeat, nameShotFeat, nameContestFeat, nameInitiativeFeat, nameSaveFeat = "Piso da Mesa", "Piso do Arco", "Piso da Disputa", "Piso da Iniciativa", "Piso da Salvacao"
 )
 
 // gift gives a character a table feat with one minimum for one kind of roll and returns the feat's key.
@@ -69,7 +72,7 @@ func (rt *rollsTable) minimumFeat() string {
 	ctx := rt.t.Context()
 	entry := must(rt.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
 		CampaignId: rt.campaign, Body: &rulesv1.CreateTableEntryRequest_TableFeat{TableFeat: &rulesv1.TableFeat{
-			NamePt: "Piso da Mesa", DescPt: []string{"Um talento da mesa."},
+			NamePt: nameAttackFeat, DescPt: []string{"Um talento da mesa."},
 			Effects: []*rulesv1.TableEffect{
 				{Type: "roll_minimum", Rolls: []string{"attack"}, Value: "12"},
 				{Type: "roll_minimum", Rolls: []string{"damage"}, Value: "7"},
@@ -89,7 +92,7 @@ func (rt *rollsTable) shotFeat() string {
 	ctx := rt.t.Context()
 	entry := must(rt.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
 		CampaignId: rt.campaign, Body: &rulesv1.CreateTableEntryRequest_TableFeat{TableFeat: &rulesv1.TableFeat{
-			NamePt: "Piso do Arco", DescPt: []string{"Um talento da mesa."},
+			NamePt: nameShotFeat, DescPt: []string{"Um talento da mesa."},
 			Effects: []*rulesv1.TableEffect{{Type: "roll_minimum", Rolls: []string{"damage"}, Value: "6"}},
 		}},
 	}))).GetEntry()
@@ -105,9 +108,9 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 	var feat, shotFeat, contestFeat, initiativeFeat, saveFeat string
 	rt := newRollsTableOf(t, true, true, func(rt *rollsTable) {
 		feat, shotFeat = rt.minimumFeat(), rt.shotFeat()
-		contestFeat = rt.gift(&rt.toren, "Piso da Disputa", "check", "16")
-		initiativeFeat = rt.gift(&rt.pens, "Piso da Iniciativa", "check", "18")
-		saveFeat = rt.gift(&rt.pens, "Piso da Salvacao", "save", "15")
+		contestFeat = rt.gift(&rt.toren, nameContestFeat, "check", "16")
+		initiativeFeat = rt.gift(&rt.pens, nameInitiativeFeat, "check", "18")
+		saveFeat = rt.gift(&rt.pens, nameSaveFeat, "save", "15")
 	})
 	w, m, caio, ana := rt.world, rt.master, rt.caio, rt.ana
 	rt.buildRows()
@@ -117,6 +120,12 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 		}
 	}()
 	w.secrets.add(&canary{needle: feat, kind: kindMinimumSrc, readers: names([]*person{caio})})
+	for _, n := range []struct {
+		needle string
+		reader *person
+	}{{nameAttackFeat, caio}, {nameShotFeat, ana}, {nameContestFeat, caio}, {nameInitiativeFeat, ana}, {nameSaveFeat, ana}} {
+		w.secrets.add(&canary{needle: n.needle, kind: "minimum-name-" + n.needle, readers: names([]*person{n.reader})})
+	}
 	w.secrets.add(&canary{needle: "12", kind: kindMinimumD20, numeric: true, value: minimumAttack, fields: []string{"treated_as"}, readers: names([]*person{caio})})
 	w.secrets.add(&canary{needle: "7", kind: kindMinimumDamage, numeric: true, value: minimumDamage, fields: []string{"counted_as"}, readers: names([]*person{caio})})
 	w.secrets.add(&canary{needle: shotFeat, kind: kindMinimumShotSrc, readers: names([]*person{ana})})
@@ -143,29 +152,29 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 	// 0. Pensantus's initiative d20 shows a 10 and counts as 18: the master's and his player's; Caio reads none of it.
 	for who, p := range map[string]*person{"the master": m, "Ana": ana} {
 		c := rt.combatantOf(p, labelPens)
-		if c.GetInitiativeTreatedAs() != minimumInitiative || c.GetInitiativeTreatedAsSource() != initiativeFeat {
+		if c.GetInitiativeTreatedAs() != minimumInitiative || c.GetInitiativeTreatedAsSource() != initiativeFeat || c.GetInitiativeTreatedAsSourceName() != nameInitiativeFeat {
 			t.Errorf("%s reads Pensantus's initiative counted as %d by %q, want %d by the feat (the positive control)", who, c.GetInitiativeTreatedAs(), c.GetInitiativeTreatedAsSource(), minimumInitiative)
 		}
 	}
-	if c := rt.combatantOf(caio, labelPens); c.InitiativeTreatedAs != nil || c.GetInitiativeTreatedAsSource() != "" {
+	if c := rt.combatantOf(caio, labelPens); c.InitiativeTreatedAs != nil || c.GetInitiativeTreatedAsSource() != "" || c.GetInitiativeTreatedAsSourceName() != "" {
 		t.Errorf("Caio reads Pensantus's initiative counted as %d by %q, want nothing of another player's roll", c.GetInitiativeTreatedAs(), c.GetInitiativeTreatedAsSource())
 	}
 
 	// 1. Toren's attack shows a 2, which counts as 12 and hits the skeleton: the d20 counted is the roller's and the master's.
 	hit := rt.mustAttack(caio, labelToren, dagger, "Esqueleto", []int32{2}, nil)
 	roll := hit.GetRoll().GetD20()
-	if hit.GetPendingDamage() == nil || roll.GetTreatedAs() != minimumAttack || roll.GetTreatedAsSource() != feat {
+	if hit.GetPendingDamage() == nil || roll.GetTreatedAs() != minimumAttack || roll.GetTreatedAsSource() != feat || roll.GetTreatedAsSourceName() != nameAttackFeat {
 		t.Fatalf("Toren's attack = %v, want the 2 counted as %d by the feat, and a hit", hit.GetRoll(), minimumAttack)
 	}
 	rt.ask(t, "the attack counted the minimum")
 	for who, p := range map[string]*person{"the master": m, "Caio": caio} {
 		lines := rt.attackLines(p, "Esqueleto")
-		if len(lines) != 1 || lines[0].GetAttackRoll().GetTreatedAs() != minimumAttack || lines[0].GetAttackRoll().GetTreatedAsSource() != feat {
+		if len(lines) != 1 || lines[0].GetAttackRoll().GetTreatedAs() != minimumAttack || lines[0].GetAttackRoll().GetTreatedAsSource() != feat || lines[0].GetAttackRoll().GetTreatedAsSourceName() != nameAttackFeat {
 			t.Errorf("%s reads %v, want the d20 counted as %d by the feat in the log (the positive control)", who, lines, minimumAttack)
 		}
 	}
 	for _, en := range rt.attackLines(ana, "Esqueleto") {
-		if en.GetAttackRoll() != nil && (en.GetAttackRoll().TreatedAs != nil || en.GetAttackRoll().GetTreatedAsSource() != "") {
+		if en.GetAttackRoll() != nil && (en.GetAttackRoll().TreatedAs != nil || en.GetAttackRoll().GetTreatedAsSource() != "" || en.GetAttackRoll().GetTreatedAsSourceName() != "") {
 			t.Errorf("Ana reads the d20 counted as %v by %q, want nothing of another player's roll", en.GetAttackRoll().GetTreatedAs(), en.GetAttackRoll().GetTreatedAsSource())
 		}
 	}
@@ -190,7 +199,7 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 				}
 			}
 		}
-		if smite == nil || len(smite.GetCountedDice()) != 2 || smite.GetCountedDice()[0].GetCountedAs() != minimumDamage || smite.GetCountedDice()[0].GetSourceKey() != feat {
+		if smite == nil || len(smite.GetCountedDice()) != 2 || smite.GetCountedDice()[0].GetCountedAs() != minimumDamage || smite.GetCountedDice()[0].GetSourceKey() != feat || smite.GetCountedDice()[0].GetSourceName() != nameAttackFeat {
 			t.Errorf("%s reads the smite %v, want its dice counted as %d by the feat in the log (the positive control)", who, smite, minimumDamage)
 		}
 	}
@@ -211,7 +220,7 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 	w.dice.ScriptFor(t, 6, 1)
 	dealt := rt.damage(ana, shot.GetPendingDamage().GetId(), func(r *playv1.RollDamageRequest) { r.Roll = &playv1.RollDamageRequest_RollInApp{RollInApp: true} }).GetPendingDamage()
 	counted := dealt.GetRoll().GetCountedDice()
-	if len(counted) != 1 || counted[0].GetCountedAs() != minimumShot || counted[0].GetSourceKey() != shotFeat {
+	if len(counted) != 1 || counted[0].GetCountedAs() != minimumShot || counted[0].GetSourceKey() != shotFeat || counted[0].GetSourceName() != nameShotFeat {
 		t.Fatalf("Ana's damage = %v, want the 1 counted as %d by her feat", dealt.GetRoll(), minimumShot)
 	}
 	rt.ask(t, "the shot counted the minimum")
@@ -223,7 +232,7 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 				roll = en.GetDamage().GetRoll()
 			}
 		}
-		if roll == nil || len(roll.GetCountedDice()) != 1 || roll.GetCountedDice()[0].GetSourceKey() != shotFeat {
+		if roll == nil || len(roll.GetCountedDice()) != 1 || roll.GetCountedDice()[0].GetSourceKey() != shotFeat || roll.GetCountedDice()[0].GetSourceName() != nameShotFeat {
 			t.Errorf("%s reads the shot's roll %v, want the counted die with its source in the log (the positive control)", who, roll)
 		}
 	}
@@ -255,7 +264,7 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 		return save
 	}
 	for who, p := range map[string]*person{"the master": m, "Ana": ana} {
-		if roll := trapSave(p).GetRoll(); roll.GetTreatedAs() != minimumSave || roll.GetTreatedAsSource() != saveFeat {
+		if roll := trapSave(p).GetRoll(); roll.GetTreatedAs() != minimumSave || roll.GetTreatedAsSource() != saveFeat || roll.GetTreatedAsSourceName() != nameSaveFeat {
 			t.Errorf("%s reads the save %v, want the 2 counted as %d by the feat (the positive control)", who, trapSave(p), minimumSave)
 		}
 	}
@@ -276,7 +285,7 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 		CampaignId: w.campaign, EncounterId: rt.encounter.GetId(), IdempotencyKey: newKey(), InitiatorId: rt.ids[labelToren], TargetId: rt.ids[labelPens],
 		Purpose: playv1.ContestPurpose_CONTEST_PURPOSE_GRAPPLE, Roll: faces(2),
 	}))).GetContest()
-	if roll := started.GetInitiatorRoll(); roll.GetTreatedAs() != minimumContest || roll.GetTreatedAsSource() != contestFeat {
+	if roll := started.GetInitiatorRoll(); roll.GetTreatedAs() != minimumContest || roll.GetTreatedAsSource() != contestFeat || roll.GetTreatedAsSourceName() != nameContestFeat {
 		t.Fatalf("Toren's grapple = %v, want the 2 counted as %d by the feat", started.GetInitiatorRoll(), minimumContest)
 	}
 	rt.ask(t, "the contest waits for the defender")
@@ -289,7 +298,7 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 		return nil
 	}
 	for who, p := range map[string]*person{"the master": m, "Caio": caio} {
-		if roll := contestOf(p).GetInitiatorRoll(); roll.GetTreatedAs() != minimumContest || roll.GetTreatedAsSource() != contestFeat {
+		if roll := contestOf(p).GetInitiatorRoll(); roll.GetTreatedAs() != minimumContest || roll.GetTreatedAsSource() != contestFeat || roll.GetTreatedAsSourceName() != nameContestFeat {
 			t.Errorf("%s reads the contest %v, want the grappler's 2 counted as %d by the feat (the positive control)", who, contestOf(p), minimumContest)
 		}
 	}
@@ -302,12 +311,27 @@ func TestRollMinimumReachesOnlyWhoMayReadIt(t *testing.T) {
 	})))
 	rt.ask(t, "the contest is settled")
 	for who, p := range map[string]*person{"the master": m, "Ana": ana} {
-		if roll := contestOf(p).GetDefenderRoll(); roll.GetTreatedAs() != minimumInitiative || roll.GetTreatedAsSource() != initiativeFeat {
+		if roll := contestOf(p).GetDefenderRoll(); roll.GetTreatedAs() != minimumInitiative || roll.GetTreatedAsSource() != initiativeFeat || roll.GetTreatedAsSourceName() != nameInitiativeFeat {
 			t.Errorf("%s reads the contest %v, want the defender's 1 counted as %d by the feat (the positive control)", who, contestOf(p), minimumInitiative)
 		}
 	}
 	if v := contestOf(caio); v == nil || v.GetDefenderRoll() != nil {
 		t.Errorf("Caio reads the contest %v, want the outcome and not the defender's roll", v)
+	}
+
+	// 6. The master retires the attack's feat and the grapple's: the rolls keep their keys and name nothing, to the roller and
+	// to the master alike (RN-23).
+	must(m.table.ArchiveTableEntry(t.Context(), rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: feat})))
+	must(m.table.ArchiveTableEntry(t.Context(), rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: contestFeat})))
+	rt.ask(t, "the feats were retired")
+	for who, p := range map[string]*person{"the master": m, "Caio": caio} {
+		lines := rt.attackLines(p, "Esqueleto")
+		if len(lines) != 1 || lines[0].GetAttackRoll().GetTreatedAsSource() != feat || lines[0].GetAttackRoll().GetTreatedAsSourceName() != "" {
+			t.Errorf("%s reads %v after the feat was retired, want the key kept and no name", who, lines)
+		}
+		if roll := contestOf(p).GetInitiatorRoll(); roll.GetTreatedAsSource() != contestFeat || roll.GetTreatedAsSourceName() != "" {
+			t.Errorf("%s reads the grapple %v after the feat was retired, want the key kept and no name", who, roll)
+		}
 	}
 
 	// The end: the stream told the master and the roller of the steps, and carried none of the minimum to Ana.

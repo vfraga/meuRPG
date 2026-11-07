@@ -2,8 +2,15 @@
   @if (state(); as s) {
     <header>
       <h1 class="mr-page-title">{{ views.pageTitle() }}</h1>
-      @if (views.lead()) {
-        <p class="mr-page-lead">{{ views.lead() }}</p>
+      @if (views.leadParts(); as lead) {
+        @if (lead.first !== '') {
+          <p class="mr-page-lead">
+            {{ lead.first }}
+            @if (lead.more !== '') {
+              <span class="mr-wide-only"> {{ lead.more }}</span>
+            }
+          </p>
+        }
       }
     </header>
 
@@ -533,8 +540,10 @@
               @if (server.choicesStep()) {
                 <cdk-step [label]="stepLabels.escolhas">
                   <p class="step-lead">
-                    O que a raça e a classe deixam você escolher, como estilo de luta, ancestral
-                    dracônico ou invocações. Cada escolha mostra o que ela dá.
+                    O que a raça e a classe deixam você escolher.
+                    <span class="mr-wide-only">
+                      Por exemplo estilo de luta, ancestral dracônico ou invocações. Cada escolha mostra o que ela dá.
+                    </span>
                   </p>
                   <app-choice-groups
                     [groups]="server.choiceGroups()"
@@ -856,7 +865,10 @@
               {{ server.missingText() }}
             </p>
           }
-          <p class="editor__note">{{ views.actionsNote() }}</p>
+          <p class="editor__note">
+            <span class="mr-wide-only">{{ views.actionsNote() }}</span>
+            <span class="editor__note-phone">{{ views.phoneNote() }}</span>
+          </p>
         </div>
       }
     }

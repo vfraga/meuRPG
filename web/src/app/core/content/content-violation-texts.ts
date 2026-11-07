@@ -1,3 +1,5 @@
+import { RACE_FIELD_TEXTS } from './content-violation-texts-race';
+
 /** What the server's reason at a field says in Portuguese: the table `violationText` looks a violation up in (the rest of its words are there). */
 
 import { CREATURE_FIELD_TEXTS } from './content-violation-texts-creature';
@@ -6,12 +8,53 @@ import { SPELL_SUMMON_TEXTS, SUMMON_FIELD_TEXTS } from './content-violation-text
 const DICE_TEXT = 'Escreva o dado assim: 2d8 (de 1 a 20 dados).';
 export const FORMULA_TEXT =
   'Esta fórmula não funciona. Use só as funções da lista e confira os parênteses.';
+/** What a refusal of an effect's field says when nothing more specific is known: the picker puts the words of the effect's type in
+ * their place (`EFFECT_REFUSAL_TEXTS`). */
+export const BAD_EFFECT_VALUE = 'Este valor não serve para este efeito.';
+export const DANGLING_TEXT = 'Isto aponta para algo que não existe mais. Escolha de novo.';
+export const FEAT_VALUE_TEXT =
+  'Este valor não serve para este efeito (um aumento de habilidade soma +1 ou +2 a cada habilidade).';
+export const GENERIC_EFFECT_TEXTS: ReadonlySet<string> = new Set([
+  BAD_EFFECT_VALUE,
+  DANGLING_TEXT,
+  FEAT_VALUE_TEXT,
+]);
 export const LONG_TEXT = 'Este texto é longo demais. Encurte o parágrafo.';
 
 /** What the server's reason at a field says in Portuguese, from the shape of the path (the indexes are `[]`). A row with no
  * reason answers any reason. The rows are ordered: the first that matches wins. The paths and reasons are the server's
  * (rules.TestEntryViolationPaths pins them). */
 export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: string }[] = [
+  // A race or subrace trait with options, and a subrace's replaced traits: backend/internal/rules/overlay_features.go.
+  {
+    shape: /^table_(race|subrace)\.traits\[\]\.effects\[\]\.choice$/,
+    reason: 'bad_value',
+    text: 'Um traço com opções já é a escolha: troque este efeito por “Só texto” ou outro.',
+  },
+  {
+    shape: /^table_(race|subrace)\.traits\[\]\.options\[\]\.name_pt$/,
+    reason: 'bad_name',
+    text: 'Duas opções deste traço têm o mesmo nome. Mude uma delas.',
+  },
+  {
+    shape: /\.options\[\]\.name_pt$/,
+    reason: 'bad_name',
+    text: 'Duas opções desta característica têm o mesmo nome. Mude uma delas.',
+  },
+  {
+    shape: /^table_subrace\.replaces_trait_keys$/,
+    reason: 'limit',
+    text: 'Uma sub-raça substitui até 60 traços.',
+  },
+  {
+    shape: /^table_subrace\.replaces_trait_keys\[\]$/,
+    reason: 'dangling_reference',
+    text: 'Este traço não é da raça da sub-raça. Desmarque para salvar.',
+  },
+  {
+    shape: /^table_subrace\.replaces_trait_keys\[\]$/,
+    text: 'Este traço está marcado duas vezes. Desmarque um.',
+  },
   // A class and a subclass (E10-02): the paths and reasons of backend/internal/rules/overlay_class.go.
   { shape: /^table_class\.hit_die$/, text: 'O dado de vida é d6, d8, d10 ou d12.' },
   {
@@ -229,12 +272,24 @@ export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: strin
   {
     shape: /^table_feat\.effects\[\]\.value$/,
     reason: 'bad_value',
-    text: 'Este valor não serve para este efeito (um aumento de habilidade soma +1 ou +2 a cada habilidade).',
+    text: FEAT_VALUE_TEXT,
   },
+  // reroll and roll_minimum (rolleffects.go): their own fields.
+  { shape: /\.effects\[\]\.rolls$/, text: 'Marque ao menos uma jogada.' },
+  { shape: /\.effects\[\]\.at_most$/, text: 'A face vai de 1 a 20.' },
   // A table option for an SRD option set (MR-025): the paths and reasons of backend/internal/rules/overlay_option.go.
   {
     shape: /^table_option\.set$/,
     text: 'Escolha um conjunto da lista. O conjunto de uma opção salva não muda.',
+  },
+  {
+    shape: /^table_option\.offered_by$/,
+    reason: 'bad_value',
+    text: 'Só o conjunto "Opção de característica da mesa" tem característica que oferece. Tire esta.',
+  },
+  {
+    shape: /^table_option\.offered_by$/,
+    text: 'Esta característica não existe mais ou não tem lista de opções. Escolha outra.',
   },
   {
     shape: /^table_option\.prerequisite\.class_level$/,
@@ -347,40 +402,5 @@ export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: strin
     text: 'Esta classe não existe mais. Tire-a da lista.',
   },
   { shape: /\.class_keys\[\]$/, text: 'Esta classe está na lista duas vezes.' },
-  { shape: /\.size$/, text: 'Escolha o tamanho.' },
-  { shape: /\.speed_ft$/, text: 'O deslocamento vai de 1,5 m a 36 m, em passos de 1,5 m.' },
-  {
-    shape: /\.darkvision_ft$/,
-    text: 'A visão no escuro é 0 ou vai de 1,5 m a 36 m, em passos de 1,5 m.',
-  },
-  { shape: /\.ability_bonuses\.[a-z]+$/, text: 'O bônus vai de −4 a +4.' },
-  { shape: /\.choice_bonuses$/, text: 'No máximo 6 bônus à escolha.' },
-  { shape: /\.choice_bonuses\[\]$/, text: 'Cada bônus à escolha vai de +1 a +4.' },
-  {
-    shape: /\.choice_bonus_sets$/,
-    text: 'No máximo 4 grupos de bônus, e a raça usa grupos ou uma lista só, nunca os dois.',
-  },
-  {
-    shape: /\.choice_bonus_sets\[\]\.bonuses$/,
-    text: 'Cada grupo tem de 1 a 6 bônus, e dois grupos não podem ser iguais.',
-  },
-  { shape: /\.choice_bonus_sets\[\]\.bonuses\[\]$/, text: 'Cada bônus de um grupo é +1 ou +2.' },
-  { shape: /\.sizes$/, text: 'O tamanho da raça precisa estar entre os que o jogador escolhe.' },
-  { shape: /\.sizes\[\]$/, text: 'Escolha Pequeno ou Médio, cada um uma vez.' },
-  { shape: /\.language_choices$/, text: 'Idiomas à escolha: de 0 a 4.' },
-  { shape: /\.languages\[\]$/, text: 'Este idioma não existe. Escolha da lista.' },
-  {
-    shape: /\.race_key$/,
-    text: 'A raça desta sub-raça não existe mais. Crie a sub-raça numa raça que exista.',
-  },
-  { shape: /\.skills$/, text: 'Escolha duas perícias diferentes.' },
-  {
-    shape: /\.skills\[\]$/,
-    reason: 'dangling_reference',
-    text: 'Esta perícia não existe. Escolha da lista.',
-  },
-  { shape: /\.skills\[\]$/, text: 'Escolha duas perícias diferentes.' },
-  { shape: /\.tools$/, text: 'No máximo 4 ferramentas.' },
-  { shape: /\.tools\[\]$/, text: 'Esta não é uma ferramenta do SRD. Escolha da lista.' },
-  { shape: /\.equipment_pt$/, text: 'O equipamento é longo demais. Encurte o texto.' },
+  ...RACE_FIELD_TEXTS,
 ];

@@ -101,7 +101,11 @@ export class AttackRolls {
           data.opportunity?.offerId ?? '',
           mode,
           data.catchWindowId ?? '',
-          { extraDieFaces: extra, useExtraAction: data.useExtraAction ?? false },
+          {
+            extraDieFaces: extra,
+            useExtraAction: data.useExtraAction ?? false,
+            legendaryOption: data.legendary?.option ?? '',
+          },
         );
         data.state.apply(res.encounter);
         this.settle(res);

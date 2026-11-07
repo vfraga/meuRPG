@@ -1,4 +1,49 @@
-@if (lucky()) {
+@if (reroll()) {
+  <div class="offer">
+    @if (look() === 'sheet') {
+      <p class="held">{{ heldLine() }}</p>
+    } @else if (look() === 'card') {
+      <p class="d20">
+        <span class="d20__face">{{ rerollFace() }}</span>
+        <span class="d20__text">Seu d20{{ bonusText() }}. O resultado só aparece depois da sua escolha.</span>
+      </p>
+    }
+    <section class="ask ask--reroll" [attr.aria-labelledby]="titleId" [attr.aria-busy]="busy() ? 'true' : null">
+      <h3 class="ask__title" [id]="titleId"><mat-icon aria-hidden="true">schedule</mat-icon>{{ rerollTitle() }}</h3>
+      <p class="ask__what">
+        <b>{{ rerollWhat().lead }}</b> {{ rerollWhat().text }}
+      </p>
+      <div class="mr-live" role="status">
+        @if (busy() && choice()) {
+          <p class="ask__busy">
+            <mat-spinner diameter="20" aria-hidden="true" />
+            {{ rerollBusy() }}
+          </p>
+        }
+      </div>
+      <button
+        matButton="filled"
+        type="button"
+        [disabled]="busy()"
+        disabledInteractive
+        (click)="pick(true)"
+      >
+        <mat-icon aria-hidden="true">casino</mat-icon>Rolar de novo
+      </button>
+      <button
+        matButton="outlined"
+        type="button"
+        class="ask__keep"
+        [disabled]="busy()"
+        disabledInteractive
+        (click)="pick(false)"
+      >
+        Ficar com o {{ rerollFace() }}
+      </button>
+      <p class="ask__foot">{{ rerollFooter() }}</p>
+    </section>
+  </div>
+} @else if (lucky()) {
   <div class="offer">
     @if (look() === 'sheet') {
       <p class="held">{{ heldLine() }}</p>

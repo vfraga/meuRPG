@@ -7,14 +7,14 @@ import { MAX_SUMMON_LIVE, type SummonDraft } from '../../../core/content/summon-
 import { FieldNote } from '../../../shared/form-fields/field-note';
 import { RadioCards } from '../../../shared/form-fields/radio-cards';
 import { TextField } from '../../../shared/form-fields/text-field';
-import { REPLACES_CARDS, TURN_CARDS } from '../../../shared/summon-block/summon-cards';
+import { replacesCardsFor, turnCardsFor } from '../../../shared/summon-block/summon-cards';
 import { SummonCreatures } from '../../../shared/summon-block/summon-creatures';
 
 /** The spell's own path of the summon: a refusal of the server lands under `table_spell.summon.*`. */
 const AT = 'table_spell.summon';
 
 /**
- * The "Invocar" mechanic of the spell editor (#578, board C3): the creatures (chips and a search), how many come (a formula that may use
+ * The "Invocar" mechanic of the spell editor (#578): the creatures (chips and a search), how many come (a formula that may use
  * the circle of the slot), how many more for each circle above the spell's own, the most at a time, and the two questions a feature asks
  * too (the turn, and what a new casting does to the old creatures). The cost, the time, the duration and the concentration are the
  * spell's own, so this block has no control for them. The lock line says what the engine asks of the spell; `lockIssues` is what it
@@ -40,8 +40,8 @@ const AT = 'table_spell.summon';
       <app-text-field label="No máximo ao mesmo tempo" [hint]="'0: sem limite. Até ' + maxLive + '.'" inputmode="numeric" [value]="summon().maxLive" [path]="path('max_live')" [issues]="issues('max_live')" (valueChange)="patch({ maxLive: $event })" />
     </div>
     <div class="row row--2">
-      <app-radio-cards label="Turno" [options]="turnCards" [value]="'' + (summon().turnMode || 1)" [path]="path('turn_mode')" [issues]="issues('turn_mode')" (valueChange)="patch({ turnMode: +$event })" />
-      <app-radio-cards label="Ao usar de novo" [options]="repliesCards" [value]="'' + (summon().replaces || 1)" [path]="path('replaces')" [issues]="issues('replaces')" (valueChange)="patch({ replaces: +$event })" />
+      <app-radio-cards label="Turno" [options]="turnCardsFor(summon().turnMode)" [value]="'' + (summon().turnMode || 1)" [path]="path('turn_mode')" [issues]="issues('turn_mode')" (valueChange)="patch({ turnMode: +$event })" />
+      <app-radio-cards label="Ao usar de novo" [options]="replacesCardsFor(summon().replaces)" [value]="'' + (summon().replaces || 1)" [path]="path('replaces')" [issues]="issues('replaces')" (valueChange)="patch({ replaces: +$event })" />
     </div>
     <p class="line">{{ turnLine }}</p>
     <p class="line lock" role="note" [attr.data-field]="at" tabindex="-1" [attr.aria-describedby]="lockIssues().length > 0 ? 'spell-summon-note' : null"><mat-icon aria-hidden="true">lock</mat-icon>{{ lockLine }}</p>
@@ -61,8 +61,8 @@ export class SpellSummon {
 
   protected readonly at = AT;
   protected readonly maxLive = MAX_SUMMON_LIVE;
-  protected readonly turnCards = TURN_CARDS;
-  protected readonly repliesCards = REPLACES_CARDS;
+  protected readonly turnCardsFor = turnCardsFor;
+  protected readonly replacesCardsFor = replacesCardsFor;
   protected readonly turnLine = SUMMON_TURN_LINE_PT;
   protected readonly lockLine = SUMMON_LOCK_PT;
 

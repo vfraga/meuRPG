@@ -3,19 +3,21 @@ import {
   Component,
   ElementRef,
   Injector,
-  afterEveryRender,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   output,
   signal,
+  viewChildren,
 } from '@angular/core';
+import { ErrorStateMatcher } from '@angular/material/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatSelectModule } from '@angular/material/select';
+import { MatSelect, MatSelectModule } from '@angular/material/select';
 
 import {
   type DamageModDraft,
@@ -66,18 +68,29 @@ export class CreatureDamageMods {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly injector = inject(Injector);
 
+  private readonly selects = viewChildren(MatSelect);
+
   constructor() {
-    // A select with no form control never marks itself invalid: the refusals of its path do, after Material's own binding.
-    afterEveryRender(() => {
-      this.host.nativeElement
-        .querySelectorAll<HTMLElement>('mat-select[data-field]')
-        .forEach((el) => {
-          const invalid = String(this.invalid(el.dataset['field'] ?? ''));
-          if (el.getAttribute('aria-invalid') !== invalid) {
-            el.setAttribute('aria-invalid', invalid);
-          }
-        });
+    // A select with no form control never reads its matcher by itself (Material does it only for a control): it is asked to, before
+    // the template is checked, whenever the rows or the refusals change. Material then sets its `aria-invalid`.
+    effect(() => {
+      this.mods();
+      this.issues();
+      this.selects().forEach((s) => s.updateErrorState());
     });
+  }
+
+  /** One matcher per path, kept so a select is handed the same object at every render. */
+  private readonly matchers = new Map<string, ErrorStateMatcher>();
+
+  /** A select with no form control is invalid when its path holds a refusal: Material then sets its `aria-invalid`. */
+  protected matcher(path: string): ErrorStateMatcher {
+    let m = this.matchers.get(path);
+    if (!m) {
+      m = { isErrorState: () => this.invalid(path) };
+      this.matchers.set(path, m);
+    }
+    return m;
   }
 
   readonly mods = input.required<readonly DamageModDraft[]>();

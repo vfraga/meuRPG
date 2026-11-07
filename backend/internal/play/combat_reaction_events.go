@@ -56,7 +56,9 @@ type reactionEvent struct {
 	Stopped      bool   `json:"stopped,omitempty"`
 	// Bonus is what a Parry added to the armor class (AC is the armor class it was added to, Before the total).
 	Bonus int32 `json:"bonus,omitempty"`
-	Magic bool  `json:"magic,omitempty"`
+	// Auto says the server parried on its own, with no window (combat_parry_auto.go).
+	Auto  bool `json:"auto,omitempty"`
+	Magic bool `json:"magic,omitempty"`
 	// Hellish Rebuke: the aggressor's save and the fire.
 	SaveD20   int32 `json:"save_d20,omitempty"`
 	SaveBonus int32 `json:"save_bonus,omitempty"`

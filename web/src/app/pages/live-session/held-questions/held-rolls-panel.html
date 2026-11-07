@@ -3,7 +3,6 @@
   <section class="mr-panel panel" aria-labelledby="held-panel-t">
     <div class="panel__head">
       <h2 class="panel__title" id="held-panel-t">Perguntas pendentes</h2>
-      <span class="panel__sub">O jogador responde primeiro; depois de 10 s você também pode responder por ele.</span>
     </div>
     @if (phone()) {
       @for (q of ended(); track q.holdId) {
@@ -14,7 +13,7 @@
       }
       @for (q of rows(); track q.holdId) {
         <button type="button" class="fold" aria-expanded="false" (click)="choose(q)">
-          <mat-icon class="fold__icon" aria-hidden="true">{{ q.phase() === 'ready' ? 'warning' : 'schedule' }}</mat-icon>
+          <mat-icon class="fold__icon" aria-hidden="true">{{ foldIcon(q) }}</mat-icon>
           <span class="fold__title">{{ rowTitle(q) }}</span>
           <span class="fold__status">{{ q.countdown() || q.lead() }}</span>
           <mat-icon class="fold__icon" aria-hidden="true">expand_more</mat-icon>

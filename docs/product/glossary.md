@@ -235,6 +235,7 @@ Where a spell level could be confused with the character's level, the text says 
 | Iniciativa | Initiative | The roll that sets turn order. Each combatant rolls its own, even identical NPCs. A tie is decided by the master (RN-19). |
 | Levantar-se | Stand up | The action of a prone combatant: costs half the turn's speed (RN-34). |
 | Derrubado | Prone | The SRD condition of lying on the ground. Not "Caído". |
+| Ações lendárias | Legendary actions | What a legendary creature does at the end of another creature's turn, up to its points (3 in the SRD), each option with its cost; the points come back at the start of its own turn. Only the master sees the offer; the players see what happens (RN-20, RN-29). |
 | Ajudar | Help | Gives an ally advantage on the next check or attack until used or the helper's next turn (RN-34). |
 | Letargia | Lethargy | The turn in which a creature that ended Velocidade can neither move nor act. |
 | Exaustão | Exhaustion | The six levels of the SRD condition; a long rest lowers one (RN-22). |
@@ -242,6 +243,7 @@ Where a spell level could be confused with the character's level, the text says 
 | Tempo de jogo | Game time | Time in the fiction; a round is 6 seconds. It moves outside combat only when the master moves it. |
 | Janela de reação | Reaction window | The question "you may react?" that holds the triggering action until answered. A player reads only their own; for an NPC's, "Esperando o mestre". |
 | Reação | Reaction | An action once per round, returning at the start of the combatant's turn: Escudo Arcano, Esquiva Sobrenatural, Defletir Projéteis, Repreensão Infernal, Contramágica, Palavras de Interrupção, Queda Suave, Queda Lenta and the opportunity attack. |
+| Resistência Lendária | Legendary Resistance | A use a day that turns a failed saving throw into a success. The master chooses, one row for each creature that failed; the players see only the result. |
 | Registro do combate | Combat log | What happened, last round first. A player gets only what they see; the master gets everything, with "Só o mestre vê" (RN-20). |
 | Destaques do combate | Combat highlights | The end-of-combat screen: who dealt the most damage, healed the most, took the most, landed the most killing blows and critical hits. Ties name everyone (MR-032). |
 | Surpresa | Surprise | A creature that cannot move, act or react until its first turn ends (RN-34). |

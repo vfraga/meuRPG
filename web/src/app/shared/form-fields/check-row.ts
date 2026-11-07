@@ -10,10 +10,15 @@ import { MatIconModule } from '@angular/material/icon';
   selector: 'app-check-row',
   imports: [MatIconModule],
   template: `
-    <label class="row">
-      <input type="checkbox" class="mr-visually-hidden" [checked]="checked()" [disabled]="disabled()" [attr.data-field]="path() || null" (change)="toggled.emit(!checked())" />
+    <label class="row" [class.row--invalid]="invalid()">
+      <input type="checkbox" class="mr-visually-hidden" [checked]="checked()" [disabled]="disabled()" [attr.aria-invalid]="ariaInvalid() || null" [attr.aria-describedby]="describedby() || null" [attr.data-field]="path() || null" (change)="toggled.emit(!checked())" />
       <span class="box" aria-hidden="true"><mat-icon>check</mat-icon></span>
-      <span class="label">{{ label() }}</span>
+      <span class="text">
+        <span class="label" [class.label--strong]="sub() !== ''">{{ label() }}</span>
+        @if (sub() !== '') {
+          <span class="sub">{{ sub() }}</span>
+        }
+      </span>
       <ng-content />
     </label>
   `,
@@ -61,8 +66,40 @@ import { MatIconModule } from '@angular/material/icon';
       outline-offset: 2px;
     }
 
+    .text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding: var(--mr-space-1) 0;
+    }
+
     .label {
       font-size: var(--mr-font-17);
+
+      &--strong {
+        font-weight: 700;
+      }
+    }
+
+    .sub {
+      font-size: var(--mr-font-14);
+      color: var(--mr-ink-muted);
+    }
+
+    // An invalid row has its words and box in the danger colour.
+    .row--invalid {
+      .label {
+        color: var(--mr-danger-ink);
+      }
+
+      .box,
+      input:checked + .box {
+        border-color: var(--mr-danger-ink);
+      }
+
+      input:checked + .box {
+        background: var(--mr-danger-ink);
+      }
     }
   `,
 })
@@ -70,6 +107,14 @@ export class CheckRow {
   readonly label = input.required<string>();
   readonly checked = input.required<boolean>();
   readonly disabled = input(false);
+  /** One muted line under the words (a trait's effect in a line); the words then turn bold. */
+  readonly sub = input('');
+  /** The row is in error: its words and box take the danger colour. */
+  readonly invalid = input(false);
+  /** Tells assistive technology the checkbox is in error. */
+  readonly ariaInvalid = input(false);
+  /** The id of the element that explains the row. */
+  readonly describedby = input('');
   readonly path = input('');
   readonly toggled = output<boolean>();
 }

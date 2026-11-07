@@ -99,7 +99,39 @@ export function damageCreatureBody(namePt = 'Defunto do Vale', over: Record<stri
   };
 }
 
-export async function createEntryRPC(master: Page, campaignId: string, kind: 'tableSpell' | 'tableRace' | 'tableBackground' | 'tableOption' | 'tableClassFeature' | 'tableFeat' | 'tableCreature', body: Record<string, unknown>): Promise<string> {
+/** A feat with a reroll that spends the pool the same feat defines: the attack and the save, a 2 or lower, one use. Invented name. */
+export function rerollFeatBody(namePt = 'Sorte Teimosa'): Record<string, unknown> {
+  return {
+    namePt,
+    descPt: ['Quando o dado cai baixo, você insiste: rola de novo e fica com o que vier, três vezes por descanso longo.'],
+    effects: [
+      { type: 'reroll', rolls: ['attack', 'save'], atMost: 2, resource: 'sorte_teimosa', cost: '1' },
+      { type: 'resource', resource: 'sorte_teimosa', max: '3', recharge: 'long_rest' },
+    ],
+  };
+}
+
+/** A feat with a minimum of 2 on the fire dice of damage. Invented name. */
+export function minimumFeatBody(namePt = 'Chama Insistente'): Record<string, unknown> {
+  return {
+    namePt,
+    descPt: ['O seu fogo não falha: num dado de dano de fogo, um 1 conta como 2.'],
+    effects: [{ type: 'roll_minimum', rolls: ['damage'], value: '2', damageType: 'damage-type:fire' }],
+  };
+}
+
+/** A fighter feature that widens the critical range to 19 for weapons and spells. Invented name. */
+export function criticalFeatureBody(namePt = 'Olho Treinado'): Record<string, unknown> {
+  return {
+    namePt,
+    descPt: ['Você aprende a ver a brecha: os seus ataques com arma e com magia são críticos com 19 ou 20 no d20.'],
+    classKey: 'class:fighter',
+    level: 3,
+    effects: [{ type: 'modifier', target: 'critical_range', mode: 'set', value: '19', applies: 'both' }],
+  };
+}
+
+export async function createEntryRPC(master: Page, campaignId: string, kind: 'tableSpell' | 'tableRace' | 'tableSubrace' | 'tableBackground' | 'tableOption' | 'tableClassFeature' | 'tableFeat' | 'tableCreature', body: Record<string, unknown>): Promise<string> {
   const res = await callRPC(master, `${service}/CreateTableEntry`, { campaignId, [kind]: body });
   expect(res.ok(), await res.text()).toBeTruthy();
   return (await res.json()).entry.key as string;

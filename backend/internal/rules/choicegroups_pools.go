@@ -199,6 +199,11 @@ func (cb *choiceBuilder) optionOf(e *optionEntry, key string) ChoiceOption {
 		}
 		return o
 	}
+	if t := c.traits[key]; t != nil && isTableKey(key) && t.Parent != "" {
+		// An option of a table trait: its text is the rule the player reads.
+		o.SummaryPT = strings.Join(t.Desc, " ")
+		return o
+	}
 	if c.choices == nil {
 		return o
 	}

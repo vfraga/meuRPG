@@ -11,9 +11,9 @@ import {
   conditionMenu,
   menu,
   menuResponse,
-  rangedAttackMenu,
   resistanceMenu,
 } from '../../core/content/content-testing-menu';
+import { rangedAttackMenu } from '../../core/content/content-testing-menu-ranged';
 import { extraDamageMenu, spellModifierMenu } from '../../core/content/content-testing-menu-damage';
 import { costsMenu, grantedSpellMenu } from '../../core/content/content-testing-menu-costs';
 import { stateMenu } from '../../core/content/content-testing-states';

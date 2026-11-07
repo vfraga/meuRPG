@@ -38,9 +38,9 @@
   &__text {
     display: flex;
     align-items: flex-start;
-    gap: 6px;
+    gap: var(--mr-space-2);
     margin: 0;
-    padding: 0 4px;
+    padding: 0 var(--mr-space-1);
     font-size: var(--mr-font-14);
     line-height: 18px;
     color: var(--mr-danger-ink);
@@ -48,10 +48,10 @@
 
   .mat-icon {
     flex: none;
-    width: 16px;
-    height: 16px;
+    width: var(--mr-font-16);
+    height: var(--mr-font-16);
     font-size: var(--mr-font-16);
-    margin-top: 1px;
+    margin-top: calc(var(--mr-space-1) / 4);
   }
 }
 
@@ -61,9 +61,9 @@
   &__why {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--mr-space-2);
     margin: 0;
-    padding: 0 4px;
+    padding: 0 var(--mr-space-1);
     font-size: var(--mr-font-14);
     line-height: 18px;
     color: var(--mr-ink-muted);
@@ -71,8 +71,8 @@
 
   .mat-icon {
     flex: none;
-    width: 16px;
-    height: 16px;
+    width: var(--mr-font-16);
+    height: var(--mr-font-16);
     font-size: var(--mr-font-16);
   }
 }
@@ -81,23 +81,23 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: var(--mr-space-2);
   margin: 0;
-  padding: 0 4px;
+  padding: 0 var(--mr-space-1);
   font-size: var(--mr-font-14);
   line-height: 18px;
-  color: var(--mr-danger-ink);
+  color: var(--mr-ink);
 
   .mat-icon {
     flex: none;
-    width: 16px;
-    height: 16px;
+    width: var(--mr-font-16);
+    height: var(--mr-font-16);
     font-size: var(--mr-font-16);
   }
 
   &__btn {
     min-height: 44px;
-    padding: 0 8px;
+    padding: 0 var(--mr-space-2);
     border: 0;
     background: transparent;
     color: var(--mr-accent-text);

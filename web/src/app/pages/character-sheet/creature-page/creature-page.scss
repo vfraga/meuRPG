@@ -68,6 +68,17 @@
   color: var(--mr-ink-muted);
 }
 
+.table-note {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  font-style: italic;
+  color: var(--mr-ink-muted);
+}
+
+.head__origin app-table-mark {
+  margin-left: var(--mr-space-2);
+}
+
 .acts {
   display: flex;
   flex-wrap: wrap;

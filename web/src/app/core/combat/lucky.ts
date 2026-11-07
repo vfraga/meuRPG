@@ -38,6 +38,7 @@ export const STROKE_FEATURE = 'feature:stroke-of-luck';
 
 function rerollText(r: {
   readonly sourceKey: string;
+  readonly sourceName: string;
   readonly from: number;
   readonly to: number;
 }): string {
@@ -46,7 +47,25 @@ function rerollText(r: {
       ? 'Golpe de Sorte: o erro virou acerto'
       : `Golpe de Sorte: ${r.from} → ${r.to}`;
   }
-  return `${r.sourceKey === LUCKY_TRAIT ? 'Sortudo' : 'Indomitável'}: ${r.from} → ${r.to}`;
+  return `${rerollName(r)}: ${r.from} → ${r.to}`;
+}
+
+/** Who rolled the d20 again: Lucky, Indomitable, or a table feature by the name the server sent (`source_name`, only to the
+ * roller and the master; empty reads "uma característica"). */
+function rerollName(r: { readonly sourceKey: string; readonly sourceName: string }): string {
+  if (r.sourceKey === LUCKY_TRAIT) {
+    return 'Sortudo';
+  }
+  return r.sourceKey === INDOMITABLE_FEATURE ? 'Indomitável' : r.sourceName || 'uma característica';
+}
+
+/** Whether a d20 was rolled again by a table feature's reroll rule (not Lucky, Indomitable or Stroke of Luck). */
+export function hasRuleReroll(roll: WithRerolls | undefined): boolean {
+  return (roll?.rerolled ?? []).some((r) => isRuleKey(r.sourceKey));
+}
+
+function isRuleKey(key: string): boolean {
+  return key !== '' && key !== LUCKY_TRAIT && key !== INDOMITABLE_FEATURE && key !== STROKE_FEATURE;
 }
 
 /** "Sortudo: 1 → 14", "Indomitável: 4 → 15" or "Golpe de Sorte: 6 → 20", beside the d20 the feature changed; `''` when it
@@ -57,7 +76,8 @@ export function luckyText(roll: WithRerolls | undefined): string {
       (r) =>
         r.sourceKey === LUCKY_TRAIT ||
         r.sourceKey === INDOMITABLE_FEATURE ||
-        r.sourceKey === STROKE_FEATURE,
+        r.sourceKey === STROKE_FEATURE ||
+        isRuleKey(r.sourceKey),
     )
     .map(rerollText)
     .join(', ');

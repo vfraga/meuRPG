@@ -187,26 +187,50 @@ export function actionsNoteOf(s: PageState): string {
     : 'Cancelar volta para a ficha sem salvar.';
 }
 
-/** The line under the title: what this form is for, and that the sheet's numbers come from the server. */
-export function leadOf(s: PageState): string {
+/** What the buttons do on a phone, in one line.
+ * The sheet's numbers come from the server, so the note says when they are calculated. */
+export function phoneNoteOf(s: PageState): string {
+  if (s.status !== 'ready' || !isFullSheetKind(s.kind)) {
+    return actionsNoteOf(s);
+  }
+  return s.mode === 'create'
+    ? 'CA, PV e modificadores são calculados ao criar.'
+    : 'Salva todos os passos; CA e PV são recalculados.';
+}
+
+/** The line under the title: what this form is for, and that the sheet's numbers come from the server.
+ * The first part is all a phone shows. The second a wide screen adds. */
+export function leadPartsOf(s: PageState): { first: string; more: string } {
   if (s.status !== 'ready') {
-    return '';
+    return { first: '', more: '' };
   }
   const kind = characterKindLabel(s.kind);
   if (s.mode === 'edit') {
     return isFullSheetKind(s.kind)
-      ? 'As mudanças valem quando você salvar. Modificadores, Classe de Armadura e pontos de vida são recalculados na hora.'
-      : `Ficha curta de ${kind.toLowerCase()}.`;
+      ? {
+          first: 'As mudanças valem quando você salvar.',
+          more: 'Modificadores, Classe de Armadura e pontos de vida são recalculados na hora.',
+        }
+      : { first: `Ficha curta de ${kind.toLowerCase()}.`, more: '' };
   }
   if (s.reserved) {
-    return 'Preencha os passos na ordem que quiser. O personagem fica reservado e nenhum jogador o vê até um deles assumir pelo link que você gerar. Modificadores, Classe de Armadura e pontos de vida são calculados quando você salvar.';
+    return {
+      first: 'Preencha os passos na ordem que quiser.',
+      more: 'O personagem fica reservado e nenhum jogador o vê até um deles assumir pelo link que você gerar. Modificadores, Classe de Armadura e pontos de vida são calculados quando você salvar.',
+    };
   }
   if (s.kind === 'player') {
-    return 'Preencha os passos na ordem que quiser. Modificadores, Classe de Armadura e pontos de vida são calculados quando você criar.';
+    return {
+      first: 'Preencha os passos na ordem que quiser.',
+      more: 'Modificadores, Classe de Armadura e pontos de vida são calculados quando você criar.',
+    };
   }
-  return isFullSheetKind(s.kind)
-    ? `${kind} com ficha completa, como a de um jogador. Só você vê os NPCs da campanha.`
-    : `${kind}: ficha curta, só com o que se usa na mesa. Só você vê os NPCs da campanha.`;
+  return {
+    first: isFullSheetKind(s.kind)
+      ? `${kind} com ficha completa, como a de um jogador. Só você vê os NPCs da campanha.`
+      : `${kind}: ficha curta, só com o que se usa na mesa. Só você vê os NPCs da campanha.`,
+    more: '',
+  };
 }
 
 /** The hit points method the table leaves a new sheet, when it leaves only one: both ways stay open for the player

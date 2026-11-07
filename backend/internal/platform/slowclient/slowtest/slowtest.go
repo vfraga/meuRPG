@@ -9,6 +9,8 @@ import (
 	"net"
 	"testing"
 	"time"
+
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 )
 
 // interval is the time between the bytes of the trickle.
@@ -34,7 +36,7 @@ func AnswerWhileTrickling(t *testing.T, addr, head, first string, wait time.Dura
 	}
 	ctx, stop := context.WithCancel(t.Context())
 	t.Cleanup(stop)
-	go func() {
+	safego.Go(nil, "slow answer", func() {
 		tick := time.NewTicker(interval)
 		defer tick.Stop()
 		for {
@@ -47,7 +49,7 @@ func AnswerWhileTrickling(t *testing.T, addr, head, first string, wait time.Dura
 				}
 			}
 		}
-	}()
+	})
 	_ = conn.SetReadDeadline(time.Now().Add(wait))
 	line, err := bufio.NewReader(conn).ReadString('\n')
 	if err != nil {

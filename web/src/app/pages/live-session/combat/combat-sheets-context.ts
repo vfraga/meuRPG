@@ -19,6 +19,7 @@ import type { MapLayers } from '../../../core/maps/layers';
 import type { VitalsVm } from '../../../core/play/live-session.types';
 import type { SearchSkills } from '../../../core/traps/trap-search';
 import { type ThrownAttack } from './attack-sheet/attack-sheet-data';
+import type { AttackSheetData } from './attack-sheet/attack-sheet-types';
 import { type CastMapData } from './cast-sheet/cast-sheet';
 import type { TargetFlow } from './target-mode/target-flow';
 
@@ -35,6 +36,8 @@ export interface AttackOpen {
   readonly catchWindowId?: string;
   readonly useExtraAction?: boolean;
   readonly thrown?: ThrownAttack;
+  /** The master's legendary attack of a creature off its turn: see `AttackSheetData.legendary`. */
+  readonly legendary?: AttackSheetData['legendary'];
 }
 
 /** What `CombatSheets` reads from the screen it serves. */

@@ -1,0 +1,101 @@
+@if (folded()) {
+  <section class="offer offer--fold" [attr.aria-label]="'Ações lendárias: ' + card().title" data-testid="legendary-folded">
+    <span class="offer__over"><mat-icon aria-hidden="true">crown</mat-icon>{{ foldedText() }}</span>
+    <button matButton="outlined" type="button" class="fold__btn" data-initial [attr.aria-label]="'Abrir as ações lendárias de ' + card().title" (click)="toggleFold(false)">
+      <mat-icon aria-hidden="true">keyboard_arrow_down</mat-icon>Abrir
+    </button>
+  </section>
+} @else {
+  <section
+    class="offer lcard"
+    [class.offer--later]="card().badge === 'Depois'"
+    [attr.aria-label]="'Ações lendárias: ' + card().title"
+    data-testid="legendary-card"
+  >
+    <header class="offer__head">
+      <span class="offer__over"><mat-icon aria-hidden="true">crown</mat-icon>Ações lendárias</span>
+      <span class="lcard__tools">
+        <span class="offer__pill" data-testid="legendary-badge">{{ card().badge }}</span>
+        <button
+          matIconButton
+          type="button"
+          class="lcard__fold"
+          data-initial
+          [attr.aria-label]="'Agora não: dobrar as ações lendárias de ' + card().title + ' até o próximo turno'"
+          (click)="toggleFold(true)"
+        >
+          <mat-icon aria-hidden="true">keyboard_arrow_up</mat-icon>
+        </button>
+      </span>
+    </header>
+    <h3 class="offer__title">{{ card().title }}</h3>
+    <p class="lcard__count">
+      <app-count-pips [left]="card().left" [total]="card().total" />
+      <b data-testid="legendary-counts">{{ card().counts }}</b>
+      <span class="lcard__recovery">· {{ card().recovery }}</span>
+    </p>
+    <p class="lcard__hint">{{ card().hint }}</p>
+    @if (spentLine()) {
+      <p class="lcard__spent" role="status" data-testid="legendary-spent">
+        <mat-icon aria-hidden="true">check</mat-icon>
+        <span><b>{{ spentParts()[0] }}</b>{{ spentParts()[1] }}</span>
+      </p>
+    }
+    @if (card().waiting) {
+      <p class="offer__wait" data-testid="legendary-waiting"><mat-icon aria-hidden="true">block</mat-icon>{{ card().waiting }}</p>
+    } @else if (card().unusable) {
+      <p class="offer__wait" data-testid="legendary-unusable"><mat-icon aria-hidden="true">block</mat-icon>{{ card().unusable }}</p>
+    } @else {
+      <ul class="lrows">
+        @for (row of card().rows; track row.key) {
+          <li class="lrow" [attr.data-testid]="'legendary-row'">
+            <div class="lrow__text">
+              <p class="lrow__name">
+                <b>{{ row.name }}</b>
+                <span class="lrow__cost">{{ row.costText }}</span>
+              </p>
+              @if (reasonOf(row)) {
+                <p class="lrow__detail" [id]="'why-' + card().combatantId + '-' + row.key">{{ reasonOf(row) }}</p>
+              } @else if (row.detail) {
+                <p class="lrow__detail">{{ row.detail }}</p>
+              }
+            </div>
+            <button
+              matButton="outlined"
+              type="button"
+              class="btn lrow__btn"
+              [class.btn--off]="offOf(row) || busy()"
+              [disabled]="offOf(row) || busy()"
+              disabledInteractive
+              [attr.aria-describedby]="reasonOf(row) ? 'why-' + card().combatantId + '-' + row.key : null"
+              [attr.aria-label]="labelOf(row) + ': ' + row.name"
+              (click)="!offOf(row) && !busy() && use.emit(row)"
+            >
+              <mat-icon aria-hidden="true">{{ iconOf(row) }}</mat-icon>{{ labelOf(row) }}
+            </button>
+          </li>
+        }
+      </ul>
+    }
+    @if (armed() && !card().waiting && !card().unusable) {
+      <p class="lcard__armed" role="status" data-testid="legendary-armed">
+        <mat-icon aria-hidden="true">swipe</mat-icon>
+        <span>
+          @if (mapElsewhere()) {Abra a aba Mapa e arraste a ficha de {{ card().title }} para andar.} @else {Arraste a ficha de {{ card().title }} no mapa para andar.}
+        </span>
+        <button matButton type="button" (click)="cancelMove.emit()">Cancelar</button>
+      </p>
+    }
+    @if (failure(); as f) {
+      <div class="mr-notice mr-notice--danger" role="alert" data-testid="legendary-error">
+        <mat-icon aria-hidden="true">{{ f.connection ? 'cloud_off' : 'error' }}</mat-icon>
+        <p>{{ f.text }}</p>
+      </div>
+      @if (f.connection) {
+        <button matButton="outlined" type="button" class="btn" (click)="retry.emit()">
+          <mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo
+        </button>
+      }
+    }
+  </section>
+}

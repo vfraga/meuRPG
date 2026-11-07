@@ -1744,8 +1744,11 @@ type EffectSaveResult struct {
 	// the feature, as a content key; empty when `treated_as` is unset.
 	TreatedAs       *int32 `protobuf:"varint,18,opt,name=treated_as,json=treatedAs,proto3,oneof" json:"treated_as,omitempty"`
 	TreatedAsSource string `protobuf:"bytes,19,opt,name=treated_as_source,json=treatedAsSource,proto3" json:"treated_as_source,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+	// an entry the master retired or switched off (RN-23).
+	TreatedAsSourceName string `protobuf:"bytes,20,opt,name=treated_as_source_name,json=treatedAsSourceName,proto3" json:"treated_as_source_name,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *EffectSaveResult) Reset() {
@@ -1907,6 +1910,13 @@ func (x *EffectSaveResult) GetTreatedAs() int32 {
 func (x *EffectSaveResult) GetTreatedAsSource() string {
 	if x != nil {
 		return x.TreatedAsSource
+	}
+	return ""
+}
+
+func (x *EffectSaveResult) GetTreatedAsSourceName() string {
+	if x != nil {
+		return x.TreatedAsSourceName
 	}
 	return ""
 }
@@ -2379,7 +2389,7 @@ const file_meurpg_play_v1_lasting_effects_proto_rawDesc = "" +
 	"\x0esource_name_pt\x18\x02 \x01(\tR\fsourceNamePt\x12\x14\n" +
 	"\x05faces\x18\x03 \x01(\x05R\x05faces\x12\x12\n" +
 	"\x04sign\x18\x04 \x01(\x05R\x04sign\x12\x12\n" +
-	"\x04face\x18\x05 \x01(\x05R\x04face\"\x99\x05\n" +
+	"\x04face\x18\x05 \x01(\x05R\x04face\"\xce\x05\n" +
 	"\x10EffectSaveResult\x12\x10\n" +
 	"\x03d20\x18\x01 \x01(\x05R\x03d20\x12\x1a\n" +
 	"\bmodifier\x18\x02 \x01(\x05R\bmodifier\x12\x14\n" +
@@ -2402,7 +2412,8 @@ const file_meurpg_play_v1_lasting_effects_proto_rawDesc = "" +
 	"\rresisted_left\x18\x11 \x01(\x05R\fresistedLeft\x12\"\n" +
 	"\n" +
 	"treated_as\x18\x12 \x01(\x05H\x01R\ttreatedAs\x88\x01\x01\x12*\n" +
-	"\x11treated_as_source\x18\x13 \x01(\tR\x0ftreatedAsSourceB\x05\n" +
+	"\x11treated_as_source\x18\x13 \x01(\tR\x0ftreatedAsSource\x123\n" +
+	"\x16treated_as_source_name\x18\x14 \x01(\tR\x13treatedAsSourceNameB\x05\n" +
 	"\x03_dcB\r\n" +
 	"\v_treated_as\"K\n" +
 	"\n" +

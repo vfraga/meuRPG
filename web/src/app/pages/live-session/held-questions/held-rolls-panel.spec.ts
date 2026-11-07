@@ -70,15 +70,12 @@ describe('HeldRollsPanel', () => {
     vi.unstubAllGlobals();
   });
 
-  it('lists the questions the server lists, with its subtitle, above the stage', async () => {
+  it('lists the questions the server lists, above the stage', async () => {
     const { el, flush } = mount();
     await flush();
     expect(list).toHaveBeenCalledWith('c1');
     const section = el.querySelector('section[aria-labelledby="held-panel-t"]');
     expect(section?.querySelector('h2')?.textContent?.trim()).toBe('Perguntas pendentes');
-    expect(section?.textContent).toContain(
-      'O jogador responde primeiro; depois de 10 s você também pode responder por ele.',
-    );
     const headings = Array.from(el.querySelectorAll('h3')).map((h) => h.textContent?.trim());
     expect(headings).toEqual([
       'Brisa · Tirou 1: rolar de novo?',

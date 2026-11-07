@@ -28,7 +28,7 @@
 run	cmd/api	^TestRunConfigurations$	cd backend && go test ./cmd/api -run '^{test}$' -update	-
 run	cmd/api	^(TestEveryProcedureRefusesAnonymousCalls|TestConnectGETOnlyForRequestsWithoutData)$	no generator: give the new RPC its session gate, or add it to publicProcedures with the reason (cmd/api/anonymous_test.go)	-
 run	cmd/srdimport	^TestSrdImport(MagicItems|Subclasses|Traits|Classes|Monsters|Features|Equipment)$	cd backend && go test ./cmd/srdimport -run '^{test}$' -update	-
-run	internal/archtest	^Test	no generator: fix the code, proto/error-reasons.json (docs/architecture/api.md#error-reasons) or backend/internal/archtest/before_ready.txt as the failure says	backend,proto/error-reasons.json
+run	internal/archtest	^Test	no generator: fix the code, proto/error-reasons.json (docs/architecture/api.md#error-reasons) or backend/internal/archtest/before_ready.txt as the failure says	backend,proto/error-reasons.json,docs/data/README.md
 run	internal/authz	^TestPendingMayCallIsTheAgreedList$	no generator: edit the agreed list in internal/authz/pending.go and its test together	-
 run	internal/campaigns	^(TestAuthorizationMatrix|TestEveryMethodNeedsASession|TestReadsWithIDsArePostOnly|TestCampaignDocumentAuthorizationMatrix|TestEveryDocumentMethodNeedsASession|TestGetCampaignDocumentIsPostOnly)$	no generator: give the new RPC its row in the authorization matrix and its signed-out call in the test the failure names	-
 run	internal/characters	^(TestAuthorizationMatrix|TestEveryMethodNeedsASession|TestReadsWithIDsArePostOnly)$	no generator: give the new RPC its row in the authorization matrix (internal/characters/authz_test.go) and its session check (unit_test.go)	-

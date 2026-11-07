@@ -20,6 +20,9 @@
         }
       </span>
     </div>
+    @if (waitLine()) {
+      <p class="q__what" aria-hidden="true">{{ waitLine() }}</p>
+    }
     <p class="q__what">
       {{ what() }}
       @if (rule().lead) {
@@ -86,15 +89,18 @@
         <button matButton="outlined" type="button" class="q__btn q__btn--primary" [disabled]="waiting()" (click)="rollAgain()">
           {{ rerolls() ? 'Rolar de novo' : useText() }}
         </button>
-        @if (canType()) {
+        @if (canType() && !ruleReroll()) {
           <button matButton type="button" class="q__btn" [disabled]="waiting()" (click)="typing.set(true)">
             Digitar o resultado
           </button>
         }
         <button matButton="outlined" type="button" class="q__btn q__btn--primary" [disabled]="waiting()" (click)="keep()">
-          {{ lucky() ? 'Ficar com o 1' : indomitable() ? 'Manter' : 'Guardar o dado' }}
+          {{ keepText() }}
         </button>
       </div>
+      @if (ruleReroll()) {
+        <p class="q__foot">{{ rerollFooter() }}</p>
+      }
     }
   </section>
 }

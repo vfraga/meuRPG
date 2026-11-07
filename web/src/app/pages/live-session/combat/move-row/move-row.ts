@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { MASTER_WAIT_NOTE_ID, isMasterWait } from '../../../../core/combat/reactions';
 import { moveLine } from '../../../../core/combat/move-line';
 
 /**
@@ -25,7 +26,7 @@ import { moveLine } from '../../../../core/combat/move-line';
       @if (!drag()) {
         <span class="row__bar" aria-hidden="true"><span class="row__fill" [style.width.%]="line().percent"></span></span>
       }
-      @if (locked()) {
+      @if (locked() && !masterWait()) {
         <span class="row__why" [id]="whyId"><mat-icon aria-hidden="true">block</mat-icon>{{ locked() }}</span>
       }
     </div>
@@ -38,7 +39,7 @@ import { moveLine } from '../../../../core/combat/move-line';
         [class.mr-button--off]="!!locked()"
         [disabled]="!!locked() || busy()"
         disabledInteractive
-        [attr.aria-describedby]="locked() ? whyId : null"
+        [attr.aria-describedby]="locked() ? (masterWait() ? waitNoteId : whyId) : null"
         (click)="!locked() && move.emit()"
       >
         <mat-icon aria-hidden="true">open_with</mat-icon>Mover
@@ -62,4 +63,7 @@ export class MoveRow {
 
   protected readonly line = computed(() => moveLine(this.own(), this.grappled()));
   protected readonly whyId = 'move-why';
+  protected readonly waitNoteId = MASTER_WAIT_NOTE_ID;
+  /** The wait is the master's: the turn card says it once, and the button points to it. */
+  protected readonly masterWait = computed(() => isMasterWait(this.locked()));
 }

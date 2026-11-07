@@ -253,6 +253,9 @@ func load(fsys fs.FS) (*content, error) {
 		return nil, err
 	}
 	c.buildMagicItems()
+	if err := c.checkLegendaryNames(); err != nil {
+		return nil, err
+	}
 	if err := c.loadTreasure(fsys); err != nil {
 		return nil, err
 	}
@@ -1468,6 +1471,9 @@ func (c *content) checkImmunityKeys(keys []string, prefix string) error {
 // isActionName reports whether key is "attack:<slug>" for the name of an action
 // of some SRD creature, attack or not (the Portuguese names of creature actions).
 func (c *content) isActionName(key string) bool {
+	if slug, ok := strings.CutPrefix(key, "legendary:"); ok {
+		return c.isLegendaryName(slug)
+	}
 	slug, ok := strings.CutPrefix(key, "attack:")
 	if !ok {
 		return false
@@ -1486,4 +1492,29 @@ func (c *content) isActionName(key string) bool {
 func (c *Content) SpellZone(key string) (SpellZoneRule, bool) {
 	z, ok := c.c.spellZones[key]
 	return z, ok
+}
+
+// isLegendaryName reports whether slug is the slug of a legendary action of some SRD creature.
+func (c *content) isLegendaryName(slug string) bool {
+	for _, m := range c.monsters {
+		for _, a := range m.LegendaryActions {
+			if legendaryNameKey(a.Name) == "legendary:"+slug {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// checkLegendaryNames refuses an SRD legendary action with no Portuguese name: the option's
+// name reaches the master's screen in Portuguese only.
+func (c *content) checkLegendaryNames() error {
+	for _, m := range c.monsters {
+		for _, a := range m.LegendaryActions {
+			if k := legendaryNameKey(a.Name); strings.TrimSpace(c.namesPT[k]) == "" {
+				return fmt.Errorf("effects/names_pt.json: no Portuguese name %q for the legendary action of %s", k, m.Name)
+			}
+		}
+	}
+	return nil
 }

@@ -291,7 +291,7 @@ const EXPECTED: Record<string, unknown> = {
   },
   'subrace with a race': {
     rows: [
-      { label: 'Sub-raça de', value: 'Humano' },
+      { label: 'Raça', value: 'Humano' },
       { label: 'Habilidades', value: 'Força +1' },
     ],
     sections: [{ title: 'Traços', items: [{ title: 'A', text: 'Texto.' }] }],

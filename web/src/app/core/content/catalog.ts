@@ -1,6 +1,8 @@
 import { Ability, type Content } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import type { SelectOption } from '../../shared/form-fields/select-field';
+import { featureKeyName } from './class-feature-text';
+import { offeringFeatures, offeringLabel } from './offering-features';
 import { circleLabel } from './spell-options';
 
 /**
@@ -45,6 +47,8 @@ export interface CatalogVm {
   readonly srdSpells: readonly SelectOption[];
   /** The Portuguese name of any key of the catalog and of the table's entries (the key itself when unknown). */
   nameOf(key: string): string;
+  /** "Truques de lâmina (Guarda do Corvo)" for the key of a feature with an option list, archived owners included; else the key's last word. */
+  offeredByName(key: string): string;
 }
 
 /** A table key ends with "@mesa". */
@@ -98,6 +102,7 @@ export function catalogVm(content: Content, entries: readonly TableEntry[] = [])
     names.set(`ability:${a.field}`, a.name);
     names.set(`ability:${a.ability}`, a.name);
   }
+  const offerers = new Map(offeringFeatures(entries, true).map((f) => [f.key, offeringLabel(f)]));
   const subclassLevels = new Map(content.classes.map((c) => [c.key, c.subclassLevel]));
 
   const schools = schoolNames(content.spells);
@@ -145,5 +150,6 @@ export function catalogVm(content: Content, entries: readonly TableEntry[] = [])
       }))
       .sort(byName),
     nameOf: (key) => names.get(key) ?? key,
+    offeredByName: (key) => offerers.get(key) ?? featureKeyName(key, (k) => k),
   };
 }

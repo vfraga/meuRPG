@@ -47,7 +47,7 @@ export interface RadioCard {
         }
       </div>
     </div>
-    <app-field-note [id]="noteId" [issues]="issues()" />
+    <app-field-note [id]="noteId" [issues]="issues()" [hint]="hint()" />
   `,
   styles: `
     :host {
@@ -153,6 +153,8 @@ export class RadioCards {
   readonly value = input.required<string>();
   readonly path = input('');
   readonly issues = input<readonly string[]>([]);
+  /** The line under the cards, while nothing is refused. */
+  readonly hint = input('');
   readonly valueChange = output<string>();
 
   /** The group's name for the native radios, and the id the group's description points at. */

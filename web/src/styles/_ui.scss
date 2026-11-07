@@ -29,6 +29,13 @@
   color: var(--mr-ink-muted);
 }
 
+// Words only a wide screen has room for: a phone keeps the short line before them.
+.mr-wide-only {
+  @media (max-width: 767.98px) {
+    display: none;
+  }
+}
+
 // A panel: one section of a page, with a title in `title` style.
 .mr-panel {
   box-sizing: border-box;

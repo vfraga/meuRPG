@@ -406,4 +406,63 @@ describe('RaceEditor', () => {
     expect(el.querySelectorAll('app-feature-editor')[1].textContent).toContain('Menos opções');
     expect(el.querySelectorAll('app-feature-editor')[0].textContent).not.toContain('Menos opções');
   });
+
+  it('lets a trait of the race carry options, saved with the trait and shown under it in the preview', async () => {
+    const { fixture, el } = setup();
+    const trait = el.querySelectorAll('app-feature-editor')[0];
+    expect(text(trait)).toContain('Nenhuma opção. Adicione duas ou mais');
+    (
+      Array.from(trait.querySelectorAll('button')).find((b) =>
+        text(b).includes('Adicionar uma opção'),
+      ) as HTMLButtonElement
+    ).click();
+    fixture.detectChanges();
+    const name = field(el, 'table_race.traits[0].options[0].name_pt') as HTMLInputElement;
+    name.value = 'Olhos de coruja';
+    name.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(text(el.querySelector('.preview')!)).toContain('Olhos de coruja.');
+    save.mockResolvedValue({ entry: corujeiro(), affected: [] });
+    click(el, 'Salvar raça');
+    await settle(fixture, 3);
+    expect(
+      save.mock.calls[0][2].value.traits[0].options.map((o: { namePt: string }) => o.namePt),
+    ).toEqual(['Olhos de coruja']);
+  });
+
+  it('puts the refusal of two options with one name on the second option', async () => {
+    const { fixture, el } = setup();
+    save.mockRejectedValue(
+      new ConnectError('refused', Code.InvalidArgument, undefined, [
+        {
+          desc: TableContentRefusalSchema,
+          value: create(TableContentRefusalSchema, {
+            violations: [
+              create(TableContentViolationSchema, {
+                field: 'table_race.traits[0].options[1].name_pt',
+                reason: 'bad_name',
+              }),
+            ],
+          }),
+        },
+      ]),
+    );
+    const trait = el.querySelectorAll('app-feature-editor')[0];
+    const add = () =>
+      (
+        Array.from(trait.querySelectorAll('button')).find((b) =>
+          text(b).includes('Adicionar uma opção'),
+        ) as HTMLButtonElement
+      ).click();
+    add();
+    fixture.detectChanges();
+    add();
+    fixture.detectChanges();
+    click(el, 'Salvar raça');
+    await settle(fixture, 3);
+    const second = field(el, 'table_race.traits[0].options[1].name_pt');
+    expect(text(second.closest('app-text-field')!)).toContain(
+      'Duas opções deste traço têm o mesmo nome. Mude uma delas.',
+    );
+  });
 });

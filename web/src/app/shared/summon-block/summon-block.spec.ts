@@ -10,11 +10,12 @@ import {
   TableSummonTurnMode,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { type SummonDraft, draftToSummon, emptySummon } from '../../core/content/summon-draft';
+import { forgetCreatureNames } from '../../core/content/summon-names';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { SummonBlock } from './summon-block';
 
-describe('SummonBlock ("Invoca criaturas", board C2)', () => {
-  const resources = [{ key: 'companheiro', label: 'Companheiro do Vale (1)' }];
+describe('SummonBlock ("Invoca criaturas")', () => {
+  const resources = [{ id: 'e1', key: 'companheiro', label: 'Companheiro do Vale (1)' }];
   const entries = [
     create(TableEntrySchema, {
       key: 'creature:lobo-do-vale@mesa',
@@ -43,6 +44,7 @@ describe('SummonBlock ("Invoca criaturas", board C2)', () => {
     over: { resources?: typeof resources; issues?: Record<string, string[]> } = {},
   ) {
     emitted.length = 0;
+    forgetCreatureNames();
     statBlock.mockReset().mockResolvedValue({ summary: { namePt: 'Lobo' } });
     search.mockReset().mockResolvedValue({ creatures: [], total: 0 });
     TestBed.resetTestingModule();
@@ -119,6 +121,49 @@ describe('SummonBlock ("Invoca criaturas", board C2)', () => {
       count: '2',
       creatureKeys: ['creature:lobo-do-vale@mesa', 'monster:wolf'],
     });
+  });
+
+  it('a switch turned off and on again follows a resource renamed or removed meanwhile', () => {
+    setup(on());
+    sw('Invoca criaturas').click();
+    fixture.componentRef.setInput('summon', null);
+    fixture.componentRef.setInput('resources', [{ id: 'e1', key: 'amigo', label: 'Amigo (1)' }]);
+    fixture.detectChanges();
+    sw('Invoca criaturas').click();
+    expect(emitted[1]).toMatchObject({ resourceKey: 'amigo', resourceEffect: 'e1' });
+    sw('Invoca criaturas').click();
+    fixture.componentRef.setInput('summon', null);
+    fixture.componentRef.setInput('resources', []);
+    fixture.detectChanges();
+    sw('Invoca criaturas').click();
+    expect(emitted[3]).toMatchObject({ resourceKey: '' });
+  });
+
+  it('never shows the raw key of a table creature the catalog does not list', () => {
+    setup(on({ creatureKeys: ['creature:ausente@mesa'] }));
+    const chip = el.querySelector('.chip')!;
+    expect(text(chip)).toContain('Criatura da mesa');
+    expect(text(chip)).not.toContain('creature:');
+    expect(chip.querySelector('button')!.getAttribute('aria-label')).toBe('Tirar Criatura da mesa');
+  });
+
+  it('asks the bestiary for the name of an SRD creature once, not at every change of the list', async () => {
+    setup(on());
+    await fixture.whenStable();
+    fixture.componentRef.setInput('summon', on({ creatureKeys: ['monster:wolf', 'monster:bat'] }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentRef.setInput('summon', on({ creatureKeys: ['monster:wolf'] }));
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(statBlock.mock.calls.map((c) => c[1])).toEqual(['monster:wolf', 'monster:bat']);
+  });
+
+  it('a stored turn mode no card names is one more card, checked, so the control is not empty', () => {
+    setup(on({ turnMode: TableSummonTurnMode.AFTER_OWNER }));
+    const radios = Array.from(el.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
+    expect(radios.filter((r) => r.checked).map((r) => r.value)).toContain('3');
+    expect(text(el)).toContain('Logo depois do dono');
   });
 
   it('the chips: "Da mesa" on the table creature, "· SRD" on the SRD one, and each can be taken off', () => {
@@ -284,8 +329,14 @@ describe('SummonBlock ("Invoca criaturas", board C2)', () => {
       expect(t).toContain(m);
     }
     expect(field(at('count'))!.getAttribute('aria-invalid')).toBe('true');
-    expect(field(at('max_live'))!.getAttribute('aria-describedby')).toBeTruthy();
-    expect(field(at('creature_keys'))!.getAttribute('aria-invalid')).toBe('true');
+    expect(
+      el.querySelector(`#${field(at('max_live'))!.getAttribute('aria-describedby')}`)?.textContent,
+    ).toContain('De 0 a 40.');
+    const group = field(at('creature_keys'))!;
+    expect(group.getAttribute('role')).toBe('group');
+    expect(el.querySelector(`#${group.getAttribute('aria-describedby')}`)?.textContent).toContain(
+      'Escolha de 1 a 8 criaturas.',
+    );
     expect(field(at(''))).not.toBeNull();
   });
 
@@ -297,7 +348,7 @@ describe('SummonBlock ("Invoca criaturas", board C2)', () => {
     expect(emitted[0]).toMatchObject({ concentration: false });
   });
 
-  it('the switches point at their refusals and are marked invalid', () => {
+  it('the switches point at their refusals', () => {
     setup(on());
     const issues: Record<string, string[]> = {
       [at('')]: ['Confira.'],
@@ -306,12 +357,10 @@ describe('SummonBlock ("Invoca criaturas", board C2)', () => {
     fixture.componentRef.setInput('issuesOf', (path: string) => issues[path] ?? []);
     fixture.detectChanges();
     const main = sw('Invoca criaturas');
-    expect(main.getAttribute('aria-invalid')).toBe('true');
     expect(el.querySelector(`#${main.getAttribute('aria-describedby')}`)?.textContent).toContain(
       'Confira.',
     );
     const conc = sw('Concentração');
-    expect(conc.getAttribute('aria-invalid')).toBe('true');
     expect(el.querySelector(`#${conc.getAttribute('aria-describedby')}`)?.textContent).toContain(
       'duração por tempo',
     );

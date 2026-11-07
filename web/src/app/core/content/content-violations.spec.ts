@@ -4,6 +4,7 @@ import { TableContentViolationSchema } from '../../../gen/meurpg/rules/v1/table_
 import {
   inputFor,
   parentOf,
+  pathAfterRowRemoved,
   placeViolations,
   refusalSummary,
   shapeOf,
@@ -524,6 +525,66 @@ describe("the refusals of a feat, on the feat editor's fields", () => {
     );
     expect(violationText(v('table_feat.name_pt', 'duplicate_name'), feat)).toBe(
       'Já existe um talento da mesa com este nome. Escolha outro.',
+    );
+  });
+});
+
+describe('pathAfterRowRemoved (#578)', () => {
+  it('drops a path inside the removed row, moves the rows below up and leaves the rest', () => {
+    const at = (path: string) => pathAfterRowRemoved(path, 'a.rows', 1);
+    expect(at('a.rows[1]')).toBeNull();
+    expect(at('a.rows[1].name')).toBeNull();
+    expect(at('a.rows[2].name')).toBe('a.rows[1].name');
+    expect(at('a.rows[12].x[3]')).toBe('a.rows[11].x[3]');
+    expect(at('a.rows[0].name')).toBe('a.rows[0].name');
+    expect(at('a.rows')).toBe('a.rows');
+    expect(at('a.other[2]')).toBe('a.other[2]');
+  });
+});
+
+describe('the refusals of a trait with options and of the traits a subrace replaces', () => {
+  const race = { aOne: 'uma raça' };
+
+  it('says a trait with options is already the choice, under the effect select', () => {
+    const field = 'table_race.traits[2].effects[0].choice';
+    const text = violationText(v(field, 'bad_value'), race);
+    expect(text).toBe(
+      'Um traço com opções já é a escolha: troque este efeito por “Só texto” ou outro.',
+    );
+    const placed = placeViolations(
+      [v(field, 'bad_value')],
+      (p) => p === 'table_race.traits[2].effects[0].type',
+      {
+        ...race,
+        redirect: (f) => f.replace(/\.choice$/, '.type'),
+      },
+    );
+    expect(placed.fields).toEqual(['table_race.traits[2].effects[0].type']);
+  });
+
+  it('says two options of one trait have the same name, not that the name is too long', () => {
+    expect(violationText(v('table_subrace.traits[0].options[1].name_pt', 'bad_name'), race)).toBe(
+      'Duas opções deste traço têm o mesmo nome. Mude uma delas.',
+    );
+    expect(
+      violationText(v('table_class.levels[2].features[0].options[1].name_pt', 'bad_name'), {
+        aOne: 'uma classe',
+      }),
+    ).toBe('Duas opções desta característica têm o mesmo nome. Mude uma delas.');
+    expect(violationText(v('table_race.traits[0].name_pt', 'bad_name'), race)).toBe(
+      'O nome tem de 1 a 60 letras.',
+    );
+  });
+
+  it("says a replaced trait is not the race's, or is marked twice, and the limit", () => {
+    expect(
+      violationText(v('table_subrace.replaces_trait_keys[0]', 'dangling_reference'), race),
+    ).toBe('Este traço não é da raça da sub-raça. Desmarque para salvar.');
+    expect(violationText(v('table_subrace.replaces_trait_keys[1]', 'bad_value'), race)).toBe(
+      'Este traço está marcado duas vezes. Desmarque um.',
+    );
+    expect(violationText(v('table_subrace.replaces_trait_keys', 'limit'), race)).toBe(
+      'Uma sub-raça substitui até 60 traços.',
     );
   });
 });

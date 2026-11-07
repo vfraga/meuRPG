@@ -40,7 +40,7 @@
           <h3 class="group__name" id="g-move">Movimento</h3>
         </header>
         <p class="group__why group__why--plain" id="spend-why">
-          {{ locked() || (movement().left > 0 ? 'Sem mapa, você diz quanto andou. O mestre decide se o caminho está livre.' : 'Você já gastou todo o movimento deste turno.') }}
+          {{ (!masterWait() && locked()) || (movement().left > 0 ? 'Sem mapa, você diz quanto andou. O mestre decide se o caminho está livre.' : 'Você já gastou todo o movimento deste turno.') }}
         </p>
         <button
           matButton="outlined"
@@ -49,7 +49,7 @@
           [class.mr-button--off]="movement().left <= 0 || !!locked()"
           [disabled]="movement().left <= 0 || !!locked() || busy()"
           disabledInteractive
-          [attr.aria-describedby]="movement().left <= 0 || locked() ? 'spend-why' : null"
+          [attr.aria-describedby]="masterWait() ? waitNoteId : movement().left <= 0 || locked() ? 'spend-why' : null"
           (click)="movement().left > 0 && !locked() && move.emit()"
         >
           <mat-icon aria-hidden="true">directions_run</mat-icon>Gastar movimento
@@ -345,8 +345,8 @@
       (press)="familiarEyes.emit()"
     />
   }
-  @if (locked() || standardWhy()) {
-    <p class="group__why" id="std-why"><mat-icon aria-hidden="true">block</mat-icon>{{ locked() || standardWhy() }}</p>
+  @if (standardReason()) {
+    <p class="group__why" id="std-why"><mat-icon aria-hidden="true">block</mat-icon>{{ standardReason() }}</p>
   }
   <div class="std" role="group" aria-label="Ações padrão">
     @for (a of standard(); track a.action?.key) {
@@ -358,7 +358,7 @@
         [class.mr-button--off]="!a.enabled || !!locked()"
         [disabled]="!a.enabled || !!locked() || busy()"
         disabledInteractive
-        [attr.aria-describedby]="!a.enabled || locked() ? 'std-why' : null"
+        [attr.aria-describedby]="masterWait() ? waitNoteId : !a.enabled || locked() ? 'std-why' : null"
         (click)="a.enabled && !locked() && action.emit(a.action?.key ?? '')"
       >
         {{ a.action?.namePt }}

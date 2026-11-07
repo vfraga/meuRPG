@@ -28,6 +28,11 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
+  // The rolls and the scope cards take the whole width, their note under them.
+  &--wide {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   &__field {
     min-width: 0;
   }
@@ -38,6 +43,20 @@
     font-size: var(--mr-font-14);
     line-height: 18px;
     color: var(--mr-ink-muted);
+
+    &--lock {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+
+      .mat-icon {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        margin-top: 1px;
+        font-size: var(--mr-font-16);
+      }
+    }
   }
 }
 

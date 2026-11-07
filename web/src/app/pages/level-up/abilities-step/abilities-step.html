@@ -1,7 +1,6 @@
 <section class="mr-panel" id="pick-abilities" [attr.data-missing]="missing() ? '' : null" aria-labelledby="asi-title">
   <h2 class="mr-panel__title" id="asi-title">{{ hasFeats() ? 'Incremento ou talento' : 'Incremento no Valor de Habilidade' }}</h2>
   @if (hasFeats()) {
-    <p class="lead">Neste nível você aumenta habilidades ou pega um talento da mesa, não os dois.</p>
     <div class="mode" role="radiogroup" aria-label="O que pegar neste nível">
       <label class="mode__opt" [class.mode__opt--on]="!taking()">
         <input type="radio" name="asi-take" class="mode__input" [checked]="!taking()" (change)="s().draft.setAsiMode('increase')" />

@@ -336,6 +336,11 @@
                   <button mat-menu-item type="button" (click)="theatre() ? coverEdit.emit(c.id) : marking.set(c.id)">
                     <mat-icon aria-hidden="true">shield</mat-icon>Marcar cobertura
                   </button>
+                  @if (c.parryAsk !== undefined) {
+                    <button mat-menu-item type="button" role="menuitemcheckbox" [attr.aria-checked]="c.parryAsk" (click)="parryAsk.emit({ id: c.id, ask: !c.parryAsk })">
+                      <mat-icon aria-hidden="true">{{ c.parryAsk ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>Aparar: perguntar a cada golpe
+                    </button>
+                  }
                   @if (npc(c)) {
                     <button mat-menu-item type="button" (click)="side.emit({ id: c.id, side: c.side === Party ? Enemy : Party })">
                       <mat-icon aria-hidden="true">{{ c.side === Party ? 'undo' : 'handshake' }}</mat-icon>{{ c.side === Party ? 'Voltar a ser inimigo' : 'Marcar como aliado' }}

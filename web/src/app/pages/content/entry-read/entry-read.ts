@@ -35,7 +35,20 @@ import type { EntryRead as Read } from '../../../core/content/content-read-parts
         }
         <ul class="items">
           @for (i of s.items; track $index) {
-            <li><strong>{{ i.title }}.</strong> {{ i.text }}</li>
+            <li>
+              <strong>{{ i.title }}.</strong>
+              @if (i.tag) {
+                <span class="tag"> {{ i.tag }}.</span>
+              }
+              {{ i.text }}
+              @if (i.options) {
+                <ul class="items items--nested">
+                  @for (o of i.options; track $index) {
+                    <li><strong>{{ o.title }}.</strong> {{ o.text }}</li>
+                  }
+                </ul>
+              }
+            </li>
           }
         </ul>
         @if (s.note) {
@@ -43,10 +56,13 @@ import type { EntryRead as Read } from '../../../core/content/content-read-parts
         }
       </section>
     }
-    @if (read().text.length > 0) {
+    @if (read().text.length > 0 || (read().effects?.length ?? 0) > 0) {
       <section [class.mr-panel]="!plain()" [class.sec]="plain()" aria-label="Texto">
         @for (p of read().text; track $index) {
           <p class="text">{{ p }}</p>
+        }
+        @for (i of read().effects ?? []; track $index) {
+          <p class="text"><strong>{{ i.title }}:</strong> {{ i.text }}</p>
         }
       </section>
     }
@@ -128,6 +144,20 @@ import type { EntryRead as Read } from '../../../core/content/content-read-parts
         display: block;
         margin-top: var(--mr-space-3);
       }
+    }
+
+    // "(de Corujeiro)": where a trait of the race comes from, smaller and muted.
+    .tag {
+      font-size: var(--mr-font-14);
+      color: var(--mr-ink-muted);
+    }
+
+    // The options of a trait that is a choice of one: a rule on the left and no bullets.
+    .items--nested {
+      gap: var(--mr-space-2);
+      margin-top: var(--mr-space-2);
+      padding-left: var(--mr-space-3);
+      border-left: 2px solid var(--mr-rule);
     }
 
     .text {

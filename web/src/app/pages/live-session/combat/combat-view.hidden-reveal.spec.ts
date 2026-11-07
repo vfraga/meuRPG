@@ -174,7 +174,9 @@ describe('CombatView: a turn held by a question about hidden creatures', () => {
   it('tells the caster only "Esperando o mestre", and offers no end of turn', async () => {
     const { fixture, el } = setup({ master: false, me: 'p', held: true });
     await settle(fixture);
-    const notice = plain(el.querySelector('app-turn-panel [role="status"].mr-notice')?.textContent);
+    const notice = plain(
+      el.querySelector('app-turn-panel app-master-wait[role="status"]')?.textContent,
+    );
     expect(notice).toContain('Esperando o mestre. A sua vez continua quando ele responder.');
     expect(plain(el.textContent)).not.toMatch(/escondid|Goblin 3|pergunta/i);
     const end = [...el.querySelectorAll<HTMLButtonElement>('app-end-turn button')].find((b) =>

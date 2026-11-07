@@ -13,6 +13,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { DamageStepKind } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { extraDiceOf, physicalSplitFormula, splitFormula } from './combat-dice';
+import { countedOf, countedSources, partLine, rolledLine } from './combat-log-dice';
 import { modeWord } from './roll-mode';
 import { listNames } from './conditions';
 import { circleLabel } from './combat-options';
@@ -259,19 +260,12 @@ export function modeNote(m: CombatLogModeChange | undefined): string {
   return `${modeWord(m.mode)} (sugerido: ${modeWord(m.suggestedMode)})${reason}`;
 }
 
-/** The dice of each part of a damage, "Espada curta 1d6 (4) + 2 = 6", and the steps resistance took. */
+/** The dice of each part of a damage, "Espada curta 1d6 (4) + 2 = 6", the steps resistance took, and the dice a floor raised
+ * ("2d10 (1 → 2, 7) = 9", "Chama Insistente: o 1 contou como 2."). */
 export function damageNotes(d: CombatLogDamage | undefined): string[] {
   if (!d) {
     return [];
   }
-  const parts = d.parts.map((p) => {
-    const dice = p.diceCount > 0 ? `${p.diceCount}d${p.diceSides}` : '';
-    const faces = p.faces.length > 0 ? ` (${p.faces.join(', ')})` : '';
-    const flat = p.flat !== 0 ? ` ${p.flat > 0 ? '+' : '−'} ${Math.abs(p.flat)}` : '';
-    const total = p.sum + p.flat;
-    const out = p.counted ? '' : ' — não conta';
-    return `${p.labelPt} ${dice}${faces}${dice ? flat : flat.trim()} = ${total}${out}`.trim();
-  });
   const steps = d.steps.map((st) => {
     const word =
       st.kind === DamageStepKind.IMMUNITY
@@ -282,5 +276,5 @@ export function damageNotes(d: CombatLogDamage | undefined): string[] {
     const base = `${st.labelPt || word}: ${st.before} → ${st.after}`;
     return st.ignored ? `${base} (o mestre deixou de fora)` : base;
   });
-  return [...parts, ...steps];
+  return [...d.parts.map(partLine), ...rolledLine(d), ...steps, ...countedSources(countedOf(d))];
 }

@@ -73,6 +73,12 @@ export class MoveFlow {
   private overDrag: { readonly combatantId: string; readonly drop: Square } | null = null;
   /** The "Saltar" page's "Distância" is on: the options are the long jump's (and its warning), not the walk's. */
   readonly jump = signal<{ readonly runningStart: boolean } | null>(null);
+  /** A legendary move the master armed: the next drag of this creature's token on the map walks it with that option, at
+   * its cost in legendary actions. It goes off once the move worked, or with "Cancelar". */
+  readonly legendaryMove = signal<{
+    readonly combatantId: string;
+    readonly optionKey: string;
+  } | null>(null);
   /** The master's "Mostrar o alcance": the reach of whoever is on turn, drawn on the map. */
   readonly reachOn = signal(false);
   /** Where the combatant of the move page can go (`GetMoveOptions`): the player's own, or whoever the master's reach is on for. */
@@ -217,8 +223,17 @@ export class MoveFlow {
     this.overAsk.set(null);
     this.overDrag = null;
     // The box is for this drag only; a refusal gives it back. "Mover mesmo assim" forces this one drag too.
-    const forced = forceNow || this.forcedMove();
-    this.forcedMove.set(false);
+    // A legendary move is a walk, never a forced one: the armed option is taken now (a second drop before the answer finds
+    // nothing armed and cannot charge it twice) and given back if the server refuses; the "Movimento forçado" box waits.
+    const armed = this.legendaryMove();
+    const legendary = !forceNow && armed?.combatantId === c.id ? armed.optionKey : '';
+    if (legendary) {
+      this.legendaryMove.set(null);
+    }
+    const forced = !legendary && (forceNow || this.forcedMove());
+    if (!legendary) {
+      this.forcedMove.set(false);
+    }
     this.forcedNote.set('');
     this.ctx
       .state()
@@ -241,6 +256,7 @@ export class MoveFlow {
             undefined,
             undefined,
             forced,
+            legendary,
           );
           this.ctx.state().apply(res.encounter);
           if (forced) {
@@ -251,6 +267,9 @@ export class MoveFlow {
           this.sayStopped(res);
         },
         failed: (saved, err) => {
+          if (legendary) {
+            this.legendaryMove.set({ combatantId: c.id, optionKey: legendary });
+          }
           if (forced && !forceNow) {
             this.forcedMove.set(true);
           }
@@ -260,7 +279,7 @@ export class MoveFlow {
             col: saved.xBp,
             row: saved.yBp,
           });
-          if (!forced && this.askAboutDistance(c, drop, err)) {
+          if (!forced && !legendary && this.askAboutDistance(c, drop, err)) {
             return;
           }
           calls.error.set(combatErrorMessage(err, 'mover o token'));

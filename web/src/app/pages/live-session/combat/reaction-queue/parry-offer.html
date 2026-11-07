@@ -1,0 +1,59 @@
+<section
+  class="offer"
+  [class.offer--later]="badge() === 'Depois'"
+  [attr.aria-labelledby]="'parry-' + card().id"
+  data-testid="parry-offer"
+>
+  <header class="offer__head">
+    <span class="offer__over"><mat-icon aria-hidden="true">stop</mat-icon>{{ card().overline }}</span>
+    @if (badge(); as b) {
+      <span class="offer__pill" data-testid="queue-badge">{{ b }}</span>
+    }
+  </header>
+  <p class="offer__who">{{ card().reactor }}</p>
+  <h3 class="offer__title" [id]="'parry-' + card().id">{{ card().title }}</h3>
+  <p class="offer__text">{{ card().text }}</p>
+  @if (badge() === 'Agora') {
+    @if (failure(); as f) {
+      <div class="mr-notice mr-notice--danger" role="alert">
+        <mat-icon aria-hidden="true">{{ f.connection ? 'cloud_off' : 'error' }}</mat-icon>
+        <p>{{ f.text }}</p>
+      </div>
+    }
+    @if (failure()?.connection) {
+      <button matButton="outlined" type="button" class="btn" data-initial (click)="retry()">
+        <mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo
+      </button>
+    } @else {
+      <div class="offer__btns">
+        <button
+          matButton="outlined"
+          type="button"
+          class="btn"
+          [class.btn--off]="sending()"
+          data-initial
+          [disabled]="!!sending()"
+          disabledInteractive
+          (click)="answer(false)"
+        >
+          {{ sending() === 'pass' ? 'Deixando passar…' : card().passLabel }}
+        </button>
+        <button
+          matButton="filled"
+          type="button"
+          class="btn"
+          [class.btn--off]="sending()"
+          [disabled]="!!sending()"
+          disabledInteractive
+          (click)="answer(true)"
+        >
+          {{ sending() === 'use' ? 'Aparando…' : card().useLabel }}
+        </button>
+      </div>
+    }
+  } @else if (badge() === 'Depois' && waiting()) {
+    <p class="offer__wait">
+      <mat-icon aria-hidden="true">block</mat-icon>{{ waiting() }}
+    </p>
+  }
+</section>

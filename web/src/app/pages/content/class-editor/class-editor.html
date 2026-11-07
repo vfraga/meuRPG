@@ -13,7 +13,7 @@
     <section class="mr-panel block" id="sec-basics" tabindex="-1" aria-labelledby="basics-t">
       <h2 class="mr-panel__title" id="basics-t">Básico</h2>
       <div class="grid grid--4">
-        <app-text-field label="Nome" [value]="d.name" [maxlength]="60" path="table_class.name_pt" [issues]="issuesOf('table_class.name_pt')" (valueChange)="patch({ name: $event })" />
+        <app-text-field label="Nome" [value]="d.name" [maxlength]="nameMax" path="table_class.name_pt" [issues]="issuesOf('table_class.name_pt')" (valueChange)="patch({ name: $event })" />
         <app-select-field label="Dado de vida" [options]="hitDice" [value]="d.hitDie" path="table_class.hit_die" [issues]="issuesOf('table_class.hit_die')" (valueChange)="patch({ hitDie: $event })" />
         <app-select-field label="Teste de resistência 1" [options]="abilityOptions()" [value]="d.saves[0] === 0 ? '' : d.saves[0]" placeholder="Escolha…" path="table_class.saving_throws[0]" [issues]="issuesOf('table_class.saving_throws[0]')" (valueChange)="setSave(0, $event)" />
         <app-select-field label="Teste de resistência 2" [options]="abilityOptions()" [value]="d.saves[1] === 0 ? '' : d.saves[1]" placeholder="Escolha…" path="table_class.saving_throws[1]" [issues]="issuesOf('table_class.saving_throws[1]')" (valueChange)="setSave(1, $event)" />

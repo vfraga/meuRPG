@@ -31,8 +31,7 @@ import (
 // character has, are the trap search, the puzzle hint, Hide, the contests, the Counterspell check, the death save and
 // the initiative; Lucky reaches more of them; a reroll rule does not.
 //
-// Nothing is asked unless Service.d20Rerolls is on (Config.D20Rerolls): the web client has no screen for the question,
-// so with the switch off the roll settles as if the player declined, with nothing held, spent or written. A question
+// Nothing is asked unless Service.d20Rerolls is on (Config.D20Rerolls, which cmd/api turns on): with the switch off the roll settles as if the player declined, with nothing held, spent or written. A question
 // written with the switch on that is still waiting when it goes off is forgotten by the next roll that asks, like a
 // stale hold, and never blocks the roller.
 //
@@ -301,6 +300,6 @@ func (s *Service) gateRerollAnswer(ctx context.Context, ae answering, h heldRoll
 func (o heldOffer) rerollOffer() *playv1.RerollQuestion {
 	h := o.Hold
 	return &playv1.RerollQuestion{
-		RerollIndex: derefInt32(h.RerollIndex), AtMost: derefInt32(h.RerollAtMost), Resource: h.RerollResource, Cost: h.RerollCost, SourceKey: h.RerollSource,
+		RerollIndex: derefInt32(h.RerollIndex), AtMost: derefInt32(h.RerollAtMost), Resource: h.RerollResource, Cost: h.RerollCost, SourceKey: h.RerollSource, Sides: d20Sides,
 	}
 }

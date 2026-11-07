@@ -68,7 +68,7 @@ describe('the feat form (MR-025)', () => {
     });
   });
 
-  it('keeps the races, the size and the feature to lack that the form has no input for', () => {
+  it('keeps the races, the size and the feature to lack when only the name changes', () => {
     const body = create(TableFeatSchema, {
       namePt: 'Sangue antigo',
       prerequisite: {
@@ -77,7 +77,11 @@ describe('the feat form (MR-025)', () => {
         lacksFeatureKey: 'feat:grappler',
       },
     });
-    expect(draftToFeat(featToDraft(body), menu()).prerequisite).toEqual({
+    const draft = featToDraft(body);
+    const renamed = { ...draft, feature: { ...draft.feature, name: 'Sangue novo' } };
+    const sent = draftToFeat(renamed, menu());
+    expect(sent.namePt).toBe('Sangue novo');
+    expect(sent.prerequisite).toEqual({
       proficiencyKey: '',
       spellcasting: false,
       raceKey: '',
@@ -122,6 +126,9 @@ describe('the feat form (MR-025)', () => {
         'table_feat.name_pt',
         'table_feat.prerequisite.minimums.strength',
         'table_feat.prerequisite.level',
+        'table_feat.prerequisite.races',
+        'table_feat.prerequisite.size',
+        'table_feat.prerequisite.lacks_feature_key',
         'table_feat.effects[0].type',
         'table_feat.effects[0].from',
         'table_feat.effects[0].value',

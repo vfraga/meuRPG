@@ -13,6 +13,7 @@ import { MatIconModule } from '@angular/material/icon';
 
 import { DiceMode } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { HeldQuestions, type MasterQuestion } from '../../../core/held-rolls/held-questions';
+import { asksReroll } from '../../../core/held-rolls/held-roll-offer';
 import { pendingCountText, questionTitle } from '../../../core/held-rolls/held-text';
 import { ResourceClient } from '../../../core/resources/resources-client';
 import { PHONE_QUERY, mediaQuery } from '../../../shared/map-view/media-query';
@@ -82,6 +83,11 @@ export class HeldRollsPanel {
   protected rowTitle(q: MasterQuestion): string {
     const offer = q.controller.offer();
     return `${q.roller} · ${offer ? questionTitle(offer) : ''}`;
+  }
+
+  /** A reroll rule's question is a wait (R7's clock), the others warn once the master may answer. */
+  protected foldIcon(q: MasterQuestion): string {
+    return q.phase() === 'ready' && !asksReroll(q.controller.offer()) ? 'warning' : 'schedule';
   }
 
   protected choose(q: MasterQuestion): void {

@@ -19,6 +19,7 @@ import {
   emptyBackground,
   emptyFeature,
   emptyRace,
+  emptySubrace,
   featurePaths,
   featureToDraft,
   draftToFeature,
@@ -130,6 +131,45 @@ describe('the race, subrace and background forms (E10-01 states 6 and 7)', () =>
       abilityBonuses: { constitution: 1 },
       traits: [],
     });
+  });
+
+  it('sends the traits a subrace replaces and its switch of the race bonuses untouched', () => {
+    const stored = create(TableSubraceSchema, {
+      namePt: 'Corujeiro das Neves',
+      raceKey: 'race:corujeiro@mesa',
+      replacesTraitKeys: ['trait:olhos@mesa', 'trait:antigo@mesa'],
+      replacesAbilityBonuses: true,
+    });
+    const draft = subraceToDraft(stored);
+    expect(draft.replacesTraitKeys).toEqual(['trait:olhos@mesa', 'trait:antigo@mesa']);
+    expect(draft.replacesBonuses).toBe(true);
+    expect(draftToSubrace(draft, m)).toMatchObject({
+      replacesTraitKeys: ['trait:olhos@mesa', 'trait:antigo@mesa'],
+      replacesAbilityBonuses: true,
+    });
+    expect(draftToSubrace(emptySubrace('race:human'), m)).toMatchObject({
+      raceKey: 'race:human',
+      replacesTraitKeys: [],
+      replacesAbilityBonuses: false,
+    });
+  });
+
+  it('sends the options of a trait, the unnamed ones left out', () => {
+    const stored = create(TableFeatureSchema, {
+      key: 'trait:sentidos@mesa',
+      namePt: 'Sentidos da noite',
+      options: [
+        { key: 'trait:sentidos--coruja@mesa', namePt: 'Olhos de coruja' },
+        { namePt: 'Passo de pena' },
+      ],
+    });
+    const draft = featureToDraft(stored);
+    expect(draft.options.map((o) => o.name)).toEqual(['Olhos de coruja', 'Passo de pena']);
+    draft.options.push({ ...emptyFeature(), text: 'sem nome' });
+    expect(draftToFeature(draft, m).options?.map((o) => o.namePt)).toEqual([
+      'Olhos de coruja',
+      'Passo de pena',
+    ]);
   });
 
   it('sends a background: two skills, tools, the equipment and the one feature', () => {

@@ -200,6 +200,7 @@ var notReads = map[string]classified{
 	playv1connect.CombatServiceSetCombatantConditionsProcedure:                  {masterWrite, masterOnlyWhy},
 	playv1connect.CombatServiceSetCombatantCoverProcedure:                       {masterWrite, masterOnlyWhy},
 	playv1connect.CombatServiceSetCombatantHiddenProcedure:                      {masterWrite, masterOnlyWhy},
+	playv1connect.CombatServiceSetMonsterReactionModeProcedure:                  {masterWrite, masterOnlyWhy},
 	playv1connect.CombatServiceSetCombatantSideProcedure:                        {masterWrite, masterOnlyWhy},
 	playv1connect.CombatServiceSetInitiativeOrderProcedure:                      {masterWrite, masterOnlyWhy},
 	playv1connect.CombatServiceSkipOpportunityProcedure:                         {masterWrite, masterOnlyWhy},

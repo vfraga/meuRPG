@@ -177,7 +177,11 @@ The class's Ability Score Improvement points remain.
 
 The catalog says what a subrace replaces (`replaces_trait_keys`, `replaces_ability_bonuses`, and `replaced_skill_keys` for the race's skills that go with the traits), and the editor's preview follows it.
 A player's copy of a subrace drops the replaced keys that are hidden (an archived or switched-off entry).
-The table editor has no inputs for `replaces_trait_keys`, `replaces_ability_bonuses` or the options of a trait; they are written through a pack or the API.
+The table editor has the inputs for them: a trait's "Opções para escolher", and on a subrace the "Substituiu os bônus de <raça>" switch and a checklist of the race's traits.
+The checklist reads a table race's saved traits, or an SRD race's from the menu's `race_traits`.
+A marked key that is no trait of the race shows as a red row until it is unmarked; the server refuses it at `table_subrace.replaces_trait_keys[i]`.
+The "Só você vê" card beside the preview is the master's editor note, never sent to a player.
+A player reads the "Substitui" line of the catalog only for the traits they can see: a player who cannot see the race reads none.
 
 ## Feat options and picks
 
@@ -195,6 +199,7 @@ The editor menu offers the `score.<ability>` targets (mode `add`, with `cap`), t
 The key names the set and the set never changes (`table_option.set`, `immutable`); the slug is unique within the set, and the key may have up to 100 characters (migration 00281 widens `campaign_content_key_valid` and `campaign_content_off_key_valid`).
 `TableOption` is a feature (name, text, effects) plus `set` and an `OptionPrerequisite`; the engine side is in [Table content](rules-table-content.md#table-options).
 It goes through the same writes, archive mark, switch (`SetOptionSwitches`, `ListOptionSwitches` lists it with the kind), pack, "A classe mudou" notice ("A opção mudou") and player view as the other kinds; a player's copy drops a hidden class, option, pact or spell from the prerequisite and from the effects.
+A player's copy of an option leaves `offered_by` blank when the offering feature is hidden to the player, (archived or switched off), so its key never reaches a player.
 The choice engine reads it with the SRD options: `GetLevelUpOptions`, `PreviewChoices`, `CompleteCharacterChoices` and the sheet's own save list it in the choice of its set, blocked with its reason when the character lacks a prerequisite, and refuse a pick that does not qualify (`PREREQUISITE_UNMET`) or that the master switched off for the players (`SWITCHED_OFF_CONTENT`).
 
 ## Table class features

@@ -11,6 +11,7 @@ import {
   TableContentKind,
   TableContentRefusalSchema,
   TableCreatureSchema,
+  TableRaceSchema,
   TableSpellSchema,
   TableSubraceSchema,
   TableContentViolationSchema,
@@ -22,6 +23,7 @@ import {
   classDefaults,
   entry,
   fakeContentWatcher,
+  feature,
   mirathel,
 } from '../../../core/content/content-testing';
 import { menuResponse } from '../../../core/content/content-testing-menu';
@@ -278,7 +280,62 @@ describe('ContentEntry', () => {
     expect(el.querySelector('app-class-editor')).toBeNull();
     expect(classDefaultsCall).not.toHaveBeenCalled();
     expect(text(el)).toContain('Testes de resistência');
+    // On a phone "Arquivar" is behind the "⋮" (R5), not a button of the header.
+    expect(
+      Array.from(el.querySelectorAll('button')).some((b) => text(b).includes('Arquivar')),
+    ).toBe(false);
     expect(el.querySelector('button[aria-label^="Mais ações"]')).not.toBeNull();
+  });
+
+  it("on a phone the master reads a subrace: what it replaces, the race's traits tagged, no editor (T7)", async () => {
+    const RACE = 'race:corujeiro@mesa';
+    const olhos = feature('Olhos de caçador', [
+      { type: 'proficiency', proficiency: 'skill:perception' },
+    ]);
+    const parent = entry(TableContentKind.RACE, 'Corujeiro', {
+      key: RACE,
+      body: {
+        case: 'tableRace',
+        value: create(TableRaceSchema, {
+          namePt: 'Corujeiro',
+          traits: [
+            olhos,
+            feature('Planar'),
+            { ...feature('Sentidos da noite'), options: [feature('Olhos de coruja')] },
+          ],
+        }),
+      },
+    });
+    const sub = entry(TableContentKind.SUBRACE, 'Corujeiro das Neves', {
+      body: {
+        case: 'tableSubrace',
+        value: create(TableSubraceSchema, {
+          namePt: 'Corujeiro das Neves',
+          raceKey: RACE,
+          abilityBonuses: { constitution: 2 },
+          traits: [feature('Pele de geada')],
+          replacesTraitKeys: [olhos.key, 'trait:escondido@mesa'],
+          replacesAbilityBonuses: true,
+        }),
+      },
+    });
+    const { el } = await setup(Role.MASTER, sub.key, [parent, sub], { phone: true });
+    expect(el.querySelector('app-race-editor')).toBeNull();
+    expect(text(el)).toContain('Para criar ou editar, abra o conteúdo da mesa no notebook');
+    const rows = Array.from(el.querySelectorAll('.rows__row')).map((r) => [
+      text(r.querySelector('dt')!),
+      text(r.querySelector('dd')!),
+    ]);
+    expect(rows.map((r) => r[0])).toEqual(['Raça', 'Habilidades', 'Substitui']);
+    expect(rows[0][1]).toBe('Corujeiro');
+    expect(rows[1][1]).toMatch(/\+2, no lugar da raça$/);
+    expect(rows[2][1]).toBe('Olhos de caçador');
+    const items = Array.from(el.querySelectorAll('.items > li')).map((li) => text(li));
+    expect(items[0]).toMatch(/^Pele de geada\./);
+    expect(items[1]).toMatch(/^Planar\. \(de Corujeiro\)\./);
+    expect(items[2]).toContain('Sentidos da noite. (de Corujeiro).');
+    expect(items[2]).toContain('Olhos de coruja.');
+    expect(text(el)).not.toContain('Olhos de caçador.');
   });
 
   it('says when the defaults of the class table did not come, with "Tentar de novo"', async () => {
@@ -548,7 +605,7 @@ describe('ContentEntry', () => {
 
     it('shows the name of a race that became visible, not its key', async () => {
       const { fixture, el } = await setup(Role.PLAYER, sub().key, [sub()]);
-      expect(text(el)).toContain('Sub-raça de');
+      expect(text(el)).toContain('Raça');
       expect(text(el)).toContain(RACE);
       list.mockResolvedValue({ entries: [sub(), race('Corujeiro')], tableRevision: 8 });
       watcher.hint();

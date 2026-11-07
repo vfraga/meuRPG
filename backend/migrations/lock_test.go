@@ -5,11 +5,13 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/testenv"
 )
 
@@ -241,5 +243,22 @@ func TestRunStopsBeforeTheLeaseEndsWhenTheDatabaseStopsAnswering(t *testing.T) {
 		}
 	case <-time.After(3 * ttl):
 		t.Fatal("the run was not canceled although the database stopped answering")
+	}
+}
+
+// TestHeartbeatPanicCancelsTheRun: a heartbeat that panics (here: no database)
+// must end the run, or the lease would expire under a migration still going.
+func TestHeartbeatPanicCancelsTheRun(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancelCause(context.Background())
+	defer cancel(nil)
+	stopped := make(chan struct{})
+	opt := LockOptions{TTL: 30 * time.Millisecond}
+	safego.Go(nil, "keep the migration lock", func() { heartbeat(ctx, cancel, nil, "holder", opt, time.Now(), stopped) },
+		func() { cancel(errors.New("the migration lock heartbeat panicked")) })
+	<-ctx.Done()
+	<-stopped
+	if cause := context.Cause(ctx); cause == nil || !strings.Contains(cause.Error(), "panicked") {
+		t.Errorf("cause = %v, want the panic", cause)
 	}
 }

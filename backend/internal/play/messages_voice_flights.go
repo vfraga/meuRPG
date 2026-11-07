@@ -2,8 +2,11 @@ package play
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
+
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 )
 
 // voiceTailTimeout is the longest the detached making of a voice may run: the call to the model
@@ -27,6 +30,9 @@ type voiceFlight struct {
 	err     error
 }
 
+// errVoicePanicked is what the readers of a flight get when its work panics.
+var errVoicePanicked = errors.New("play: making the voice failed")
+
 // wait joins the flight of id, starting it with work (which runs on its own context, detached from
 // ctx and bounded by timeout) when there is none, and returns what the flight returned, or ctx's
 // error when ctx ends first. The last reader to leave cancels the flight.
@@ -40,7 +46,7 @@ func (v *voiceFlights) wait(ctx context.Context, id string, timeout time.Duratio
 		runCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), timeout)
 		f = &voiceFlight{cancel: cancel, done: make(chan struct{})}
 		v.m[id] = f
-		go v.run(runCtx, id, f, work)
+		safego.Go(nil, "make a voice", func() { v.run(runCtx, id, f, work) })
 	}
 	f.waiters++
 	v.mu.Unlock()
@@ -55,14 +61,18 @@ func (v *voiceFlights) wait(ctx context.Context, id string, timeout time.Duratio
 
 func (v *voiceFlights) run(ctx context.Context, id string, f *voiceFlight, work func(context.Context) error) {
 	defer f.cancel()
-	err := work(ctx)
-	v.mu.Lock()
-	f.err = err
-	if v.m[id] == f {
-		delete(v.m, id)
-	}
-	v.mu.Unlock()
-	close(f.done)
+	err := errVoicePanicked
+	// The flight ends even when work panics: the readers get an error, not a hang.
+	defer func() {
+		v.mu.Lock()
+		f.err = err
+		if v.m[id] == f {
+			delete(v.m, id)
+		}
+		v.mu.Unlock()
+		close(f.done)
+	}()
+	err = work(ctx)
 }
 
 // leave takes one reader off the flight; the last one cancels it and forgets it, so a reader who

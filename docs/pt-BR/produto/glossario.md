@@ -235,6 +235,7 @@ Onde um nível da magia puder ser confundido com o nível do personagem, o texto
 | Iniciativa | Initiative | A rolagem que define a ordem dos turnos. Cada combatente rola a própria, até NPCs iguais. O mestre decide um empate (RN-19). |
 | Levantar-se | Stand up | A ação de um combatente derrubado: custa metade do deslocamento do turno (RN-34). |
 | Derrubado | Prone | A condição do SRD de estar deitado no chão. Não é "Caído". |
+| Ações lendárias | Legendary actions | O que uma criatura lendária faz no fim da vez de outra criatura, até o total de pontos (3 no SRD), cada opção com o seu custo; os pontos voltam no começo da vez dela. Só o mestre vê a oferta; os jogadores veem o que acontece (RN-20, RN-29). |
 | Ajudar | Help | Dá a um aliado vantagem no próximo teste ou ataque, até ser usada ou até o próximo turno de quem ajuda (RN-34). |
 | Letargia | Lethargy | O turno em que uma criatura que terminou Velocidade não pode se mover nem agir. |
 | Exaustão | Exhaustion | Os seis níveis da condição do SRD; um descanso longo baixa um (RN-22). |
@@ -242,6 +243,7 @@ Onde um nível da magia puder ser confundido com o nível do personagem, o texto
 | Tempo de jogo | Game time | O tempo na ficção; uma rodada tem 6 segundos. Fora do combate, só anda quando o mestre o anda. |
 | Janela de reação | Reaction window | A pergunta "você pode reagir?" que segura a ação que a abriu até ser respondida. O jogador lê só a própria; na de um NPC, "Esperando o mestre". |
 | Reação | Reaction | Uma ação uma vez por rodada, que volta no começo da vez do combatente: Escudo Arcano, Esquiva Sobrenatural, Defletir Projéteis, Repreensão Infernal, Contramágica, Palavras de Interrupção, Queda Suave, Queda Lenta e o ataque de oportunidade. |
+| Resistência Lendária | Legendary Resistance | Um uso por dia que transforma um teste de resistência falho em sucesso. O mestre escolhe, uma linha para cada criatura que falhou; os jogadores veem só o resultado. |
 | Registro do combate | Combat log | O que aconteceu, da última rodada para a primeira. O jogador recebe só o que vê; o mestre recebe tudo, com "Só o mestre vê" (RN-20). |
 | Destaques do combate | Combat highlights | A tela do fim do combate: quem causou mais dano, curou mais, levou mais, deu mais golpes finais e acertou mais críticos. Empates nomeiam todos (MR-032). |
 | Surpresa | Surprise | Uma criatura que não pode se mover, agir nem reagir até o fim do primeiro turno dela (RN-34). |

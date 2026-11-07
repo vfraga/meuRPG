@@ -219,12 +219,25 @@
   gap: var(--mr-space-2) var(--mr-space-3);
   margin-top: var(--mr-space-5);
 
-  // On a phone, the primary and "Cancelar" take the whole width.
-  @media (max-width: 599px) {
-    .editor__primary,
-    .editor__cancel {
-      flex: 1 1 100%;
+  // On a phone, the primary takes the row and "Cancelar" sits beside it; the note goes under, in one line.
+  @media (max-width: 599.98px) {
+    .editor__primary {
+      flex: 1 1 0;
     }
+
+    .editor__cancel {
+      flex: none;
+    }
+
+    .editor__note {
+      flex-basis: 100%;
+    }
+  }
+}
+
+.editor__note-phone {
+  @media (min-width: 768px) {
+    display: none;
   }
 }
 

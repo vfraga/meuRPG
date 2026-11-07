@@ -133,6 +133,8 @@ The screens of MR-025 and RN-23 use only the server of [Table content](character
   The cost is one of the feature's own `resource` effects, and with none the block says so and `summonBlockedPaths` stops the save only while no resource key is chosen (a key the feature does not define is the class's, shown as "(da classe)" and left to the server).
   Time and duration are selects of presets, and a stored value they do not list is one more option.
   Concentration is off until the duration is by time.
+  The summon follows the feature's resource by the row id of its effect (`followResource`), so a rename, a name cleared and typed again, or a second resource does not lose it.
+  Switching the block off and on again re-reads the resources (`restoredSummon`).
   Turning the switch off sends no summon.
   A refusal at `<feature>.summon.*` sits under its own field (`content-violation-texts-summon.ts`), and one at `count_per_slot_level` or `role` lands on the switch.
   The preview and the read view add "Invoca: Lobo." from `summonLine`, with SRD names remembered from the bestiary (`summon-names.ts`).
@@ -149,6 +151,10 @@ The screens of MR-025 and RN-23 use only the server of [Table content](character
   "Salvar magia" stops and lands on the first of them.
   A refusal at `table_spell.summon.*` sits under its own field (`SPELL_SUMMON_TEXTS`).
   The preview and the read view add "Invoca: Lobo do Vale, Lobo." from `summonLine`.
+- **A table creature on the player's side** is known by the `@mesa` end of its key (`isTableCreature` in `core/creatures/creature-format`), because the server sends no flag for it.
+  The summon sheet's list (`rowsOf`, `ChoiceRow.table`) tags the row "Da mesa" (`app-table-mark`) and writes "Os números vêm da sua ficha quando ele chega." in place of the line of numbers.
+  The creature's page tags it "Da mesa" beside its origin and ends with "Os números vêm da ficha de <dono> quando ele chegou" (`tableCreatureNote`), with "do dono" when the sheet has no name.
+  The list names only the creatures `GetSummonOptions` returns, which leave out the archived and the switched-off ones.
 - **The master's phone read of a creature** (`pages/content/creature-read`, `core/content/creature-phone-read`) is what `content-entry` shows instead of the editor on a phone.
   It reads the base's stat block, as the editor's side panel does, and builds the text from the same preview.
   The rows are the base (`typeAndSizeInWords`), PV, CA, the damage bonus, the attack bonus and the damage lines, each marked "da mesa" or "da base".

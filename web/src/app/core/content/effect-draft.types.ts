@@ -98,6 +98,9 @@ export interface EffectDraft {
   adamantine: boolean;
   attackName: string;
   damageDice: string;
+  /** reroll and roll_minimum: the rolls it covers ("attack", "check", "save", "damage"). reroll: the highest d20 face it rolls again. */
+  rolls: string[];
+  atMost: number;
   /** choice (in a feat): the name later effects refer to as @name, the option set it offers, and for a score modifier the highest score it may lift. */
   name: string;
   set: string;

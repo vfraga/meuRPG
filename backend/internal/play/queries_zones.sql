@@ -37,7 +37,11 @@ DELETE FROM spell_zones WHERE id = $1;
 DELETE FROM spell_zones WHERE encounter_id = $1 AND cast_id = $2;
 
 -- name: DeleteConcentrationZonesOf :many
--- The zones a caster's concentration holds end with it; the rows that went.
-DELETE FROM spell_zones
-WHERE owner_id = $1 AND concentration
-RETURNING *;
+-- The zones a caster's concentration holds end with it; the rows that went, oldest first.
+WITH changed AS (
+    DELETE FROM spell_zones
+    WHERE owner_id = $1 AND concentration
+    RETURNING *
+)
+SELECT * FROM changed
+ORDER BY created_at, id;

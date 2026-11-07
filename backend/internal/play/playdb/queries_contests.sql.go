@@ -688,6 +688,7 @@ func (q *Queries) ListHideAttempts(ctx context.Context, encounterID string) ([]C
 const listHiding = `-- name: ListHiding :many
 SELECT hider_id, observer_id, encounter_id, noticed, total, passive, created_at FROM combat_hiding
 WHERE encounter_id = $1
+ORDER BY created_at, hider_id, observer_id
 `
 
 func (q *Queries) ListHiding(ctx context.Context, encounterID string) ([]CombatHiding, error) {
@@ -721,6 +722,7 @@ func (q *Queries) ListHiding(ctx context.Context, encounterID string) ([]CombatH
 const listHolds = `-- name: ListHolds :many
 SELECT grappled_id, encounter_id, grappler_id, escape_dc, created_at FROM combat_holds
 WHERE encounter_id = $1
+ORDER BY created_at, grappled_id
 `
 
 func (q *Queries) ListHolds(ctx context.Context, encounterID string) ([]CombatHold, error) {
@@ -796,6 +798,7 @@ func (q *Queries) ListLiveHelps(ctx context.Context, gameSessionID string) ([]Co
 const listSurprised = `-- name: ListSurprised :many
 SELECT combatant_id, encounter_id, created_at FROM combat_surprised
 WHERE encounter_id = $1
+ORDER BY created_at, combatant_id
 `
 
 func (q *Queries) ListSurprised(ctx context.Context, encounterID string) ([]CombatSurprised, error) {
@@ -822,6 +825,7 @@ const listUnansweredContestsOf = `-- name: ListUnansweredContestsOf :many
 SELECT id, encounter_id, kind, purpose, initiator_id, defender_id, status, escape_dc, initiator_roll, defender_roll, winner, shove_outcome, round, created_at, resolved_at FROM combat_contests
 WHERE encounter_id = $1 AND status IN ('awaiting_defender', 'awaiting_outcome')
   AND (initiator_id = $2 OR defender_id = $2)
+ORDER BY created_at, id
 `
 
 type ListUnansweredContestsOfParams struct {

@@ -14,9 +14,10 @@
         @let qual = qualifierOption(m);
         @let off = qualifierOff(m);
         <li class="grid mod">
-          <div class="cell">
+          <div class="cell cell--kind">
+            <span class="cell__label" aria-hidden="true">Tipo</span>
             <mat-form-field appearance="outline" subscriptSizing="dynamic" [class.invalid]="invalid(at + '.kind')">
-              <mat-select [aria-label]="'Tipo da linha ' + (i + 1)" [attr.data-field]="at + '.kind'" [aria-describedby]="describedBy(m.id, 'kn', at + '.kind')" [value]="m.kind" (selectionChange)="setKind(m, $event.value)">
+              <mat-select [aria-label]="'Tipo da linha ' + (i + 1)" [attr.data-field]="at + '.kind'" [errorStateMatcher]="matcher(at + '.kind')" [aria-describedby]="describedBy(m.id, 'kn', at + '.kind')" [value]="m.kind" (selectionChange)="setKind(m, $event.value)">
                 <mat-select-trigger><span class="opt"><mat-icon aria-hidden="true">{{ kind.icon }}</mat-icon>{{ kind.label }}</span></mat-select-trigger>
                 @for (k of kindOptions(m); track k.value) {
                   <mat-option [value]="k.value"><span class="opt"><mat-icon aria-hidden="true">{{ k.icon }}</mat-icon>{{ k.label }}</span></mat-option>
@@ -25,9 +26,10 @@
             </mat-form-field>
             <app-field-note [id]="'cr-kn-' + m.id" [issues]="issues()(at + '.kind')" />
           </div>
-          <div class="cell">
+          <div class="cell cell--types">
+            <span class="cell__label" aria-hidden="true">Tipos de dano</span>
             <mat-form-field appearance="outline" subscriptSizing="dynamic" [class.invalid]="invalid(at + '.damage_types')">
-              <mat-select multiple placeholder="Escolha os tipos" [aria-label]="'Tipos de dano da linha ' + (i + 1)" [attr.data-field]="at + '.damage_types'" [aria-describedby]="describedBy(m.id, 'tn', at + '.damage_types')" [value]="m.types" (selectionChange)="setTypes(m, $event.value)">
+              <mat-select multiple placeholder="Escolha os tipos" [aria-label]="'Tipos de dano da linha ' + (i + 1)" [attr.data-field]="at + '.damage_types'" [errorStateMatcher]="matcher(at + '.damage_types')" [aria-describedby]="describedBy(m.id, 'tn', at + '.damage_types')" [value]="m.types" (selectionChange)="setTypes(m, $event.value)">
                 <mat-select-trigger>{{ typesText(m) }}</mat-select-trigger>
                 @for (o of typeOptions(m); track o.value) {
                   <mat-option [value]="o.value">{{ o.label }}</mat-option>
@@ -36,10 +38,11 @@
             </mat-form-field>
             <app-field-note [id]="'cr-tn-' + m.id" [issues]="typeIssues(m, at)" />
           </div>
-          <div class="cell">
+          <div class="cell cell--qualifier">
+            <span class="cell__label" aria-hidden="true">Vale contra</span>
             <mat-form-field appearance="outline" subscriptSizing="dynamic" [class.invalid]="invalid(at + '.qualifier')" [class.off]="off">
-              <mat-select [aria-label]="'Vale contra da linha ' + (i + 1)" [attr.data-field]="at + '.qualifier'" [aria-describedby]="off ? 'cr-mods-info' : describedBy(m.id, 'qn', at + '.qualifier')" [disabled]="off" [value]="m.qualifier" (selectionChange)="setQualifier(m, $event.value)">
-                <mat-select-trigger><span [class.mr-visually-hidden]="off">{{ qual.label }}</span></mat-select-trigger>
+              <mat-select [aria-label]="'Vale contra da linha ' + (i + 1)" [attr.data-field]="at + '.qualifier'" [errorStateMatcher]="matcher(at + '.qualifier')" [aria-describedby]="off ? 'cr-mods-info' : describedBy(m.id, 'qn', at + '.qualifier')" [disabled]="off" [value]="m.qualifier" (selectionChange)="setQualifier(m, $event.value)">
+                <mat-select-trigger>{{ qual.label }}</mat-select-trigger>
                 @for (q of qualifierOptions(m); track q.value) {
                   <mat-option [value]="q.value" [disabled]="q.disabled">{{ q.label }}</mat-option>
                 }

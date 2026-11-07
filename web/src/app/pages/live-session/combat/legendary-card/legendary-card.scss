@@ -1,0 +1,156 @@
+// The master's card of a legendary creature's actions: the shell is `offer.scss`'s (shared with the Parry and
+// Legendary Resistance cards); this adds the creature's count, the option rows and the folded line.
+:host {
+  display: block;
+}
+
+// Optional, nothing holds the table: the quiet frame (the accent one is for "Agora").
+.offer {
+  border-color: var(--mr-line);
+}
+
+.offer--later {
+  border: 1px dashed var(--mr-control-line);
+}
+
+.offer--fold {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 10px 16px;
+}
+
+.fold__btn {
+  --mat-button-outlined-container-height: 44px;
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+  --mat-button-outlined-outline-color: var(--mr-control-line);
+  flex: none;
+}
+
+.lcard__tools {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+}
+
+.lcard__fold {
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+  color: var(--mr-ink);
+}
+
+.lcard__count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--mr-space-2);
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+}
+
+.lcard__recovery {
+  color: var(--mr-ink-muted);
+}
+
+.lcard__hint {
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+}
+
+// What the master just spent: one line with a check, the log has the undo.
+.lcard__spent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-ground);
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+
+  > .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+
+  > span {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}
+
+.lcard__armed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mr-space-2);
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+
+  .mat-icon {
+    flex: none;
+  }
+
+  span {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.lrows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mr-space-3);
+  padding: 12px 0;
+  border-top: 1px solid var(--mr-line);
+
+  p {
+    margin: 0;
+  }
+}
+
+.lrow__text {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.lrow__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--mr-space-2);
+  font-size: var(--mr-font-17);
+  line-height: 22px;
+}
+
+.lrow__cost {
+  font-size: var(--mr-font-13);
+  color: var(--mr-ink-muted);
+}
+
+.lrow__detail {
+  font-size: var(--mr-font-14);
+  line-height: 19px;
+  color: var(--mr-ink-muted);
+}
+
+.lrow__btn {
+  flex: none;
+  width: auto;
+  min-width: 112px;
+}

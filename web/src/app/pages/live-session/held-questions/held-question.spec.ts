@@ -10,6 +10,7 @@ import {
   heldIndomitable,
   heldStroke,
   heldLucky,
+  heldReroll,
 } from '../../../core/held-rolls/held-roll-testing';
 import { HeldQuestion } from './held-question';
 
@@ -25,7 +26,8 @@ describe('HeldQuestion', () => {
     offer:
       | ReturnType<typeof heldLucky>
       | ReturnType<typeof heldIndomitable>
-      | ReturnType<typeof heldStroke>,
+      | ReturnType<typeof heldStroke>
+      | ReturnType<typeof heldReroll>,
     over: { layout?: 'row' | 'card'; canType?: boolean; target?: string } = {},
   ) {
     questions = new HeldQuestions({
@@ -251,5 +253,65 @@ describe('HeldQuestion', () => {
     expect(alert?.querySelector('[aria-hidden="true"]:not(mat-icon)')?.textContent).toContain(
       'Você pode responder em 7 s.',
     );
+  });
+
+  describe('a reroll rule’s question (R7, R9)', () => {
+    const reroll = (seconds: number) =>
+      heldReroll(2, 5, { combatantId: 'c1', ...askedAt(T0 - seconds * SECOND) });
+
+    it('says who answers first and waits, with the roller named', () => {
+      const { el, button } = mount(reroll(3), { target: 'Zumbi' });
+      expect(el.querySelector('h3')?.textContent?.trim()).toBe('Brisa · Tirou 2: rolar de novo?');
+      expect((el.textContent ?? '').replace(/\s+/g, ' ')).toContain(
+        'Brisa responde primeiro. Você pode responder por Brisa em 7 s.',
+      );
+      expect(button('Rolar de novo')?.disabled).toBe(true);
+      expect(button('Ficar com o 2')?.disabled).toBe(true);
+    });
+
+    it('offers no typing, with the footer that says the app rolls', () => {
+      const { el, button } = mount(reroll(11), { target: 'Zumbi' });
+      expect((el.textContent ?? '').replace(/\s+/g, ' ')).toContain(
+        'Brisa não respondeu. Ataque com arma contra Zumbi. Sorte Teimosa gasta 1 uso.',
+      );
+      expect(button('Digitar')).toBeUndefined();
+      expect(el.textContent).toContain('O app rola o novo d20; não há resultado para digitar.');
+    });
+
+    it('draws the clock, not the warning, while it waits and once the master may answer', () => {
+      const waiting = mount(reroll(3));
+      expect(waiting.el.querySelector('.q__icon')?.textContent?.trim()).toBe('schedule');
+      const ready = mount(reroll(11));
+      expect(ready.el.querySelector('.q__icon')?.textContent?.trim()).toBe('schedule');
+    });
+
+    it('answers for the roller with the server rolling', async () => {
+      const { button, flush } = mount(reroll(11));
+      button('Rolar de novo')!.click();
+      await flush();
+      button('Ficar com o 2')?.click();
+      expect(sent[0]).toEqual({ kind: 'reroll', reroll: true, roll: null });
+    });
+
+    it('keeps the roll', async () => {
+      const { button, flush } = mount(reroll(11));
+      button('Ficar com o 2')!.click();
+      await flush();
+      expect(sent).toEqual([{ kind: 'reroll', reroll: false, roll: null }]);
+    });
+
+    it('shows the title alone in a row of the order', () => {
+      const { el } = mount(reroll(3), { layout: 'row' });
+      expect(el.querySelector('h3')?.textContent?.trim()).toBe('Tirou 2: rolar de novo?');
+    });
+
+    it('closes with a neutral line when the question is gone, since the master did not answer it', () => {
+      const { fixture, el } = mount(reroll(3));
+      questions.sync([]);
+      fixture.detectChanges();
+      expect(el.querySelector('[data-testid="held-note"]')?.textContent).toContain(
+        'Essa pergunta não vale mais.',
+      );
+    });
   });
 });

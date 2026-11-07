@@ -184,6 +184,7 @@ const listDisplayNames = `-- name: ListDisplayNames :many
 SELECT id, display_name::TEXT AS display_name
 FROM users
 WHERE id = ANY($1::UUID[]) AND display_name IS NOT NULL
+ORDER BY id
 `
 
 type ListDisplayNamesRow struct {
@@ -216,6 +217,7 @@ const listVerifiedEmails = `-- name: ListVerifiedEmails :many
 SELECT email::TEXT AS email
 FROM user_identities
 WHERE user_id = $1 AND email IS NOT NULL
+ORDER BY issuer
 `
 
 // The e-mails the provider vouched for (an unverified one is never stored).

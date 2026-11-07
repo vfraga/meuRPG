@@ -1,3 +1,5 @@
+import type { LegendaryNames } from './legendary-card';
+
 /** One line of the log, ready to draw: an icon, the actor in bold, and the
  * rest of the sentence. */
 export interface LogLine {
@@ -66,6 +68,8 @@ export interface LogContext {
   readonly players: ReadonlySet<string>;
   /** The combat is played without a map (RN-25): a move is "gastou 6,0 m de movimento", and the start says so. */
   readonly theatre?: boolean;
+  /** The legendary options' names per creature (`legendaryNames`), to write a spend in Portuguese. */
+  readonly legendaryNames?: LegendaryNames;
 }
 
 export const NO_CONTEXT: LogContext = { master: false, players: new Set() };

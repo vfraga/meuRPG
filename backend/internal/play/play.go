@@ -310,6 +310,9 @@ type CombatRoster interface {
 	// content key ("spell:shield" is "Escudo Arcano"), or "" for an unknown key. The
 	// content is read once, when it is asked for, not on every name.
 	ContentNames(ctx context.Context, tx pgx.Tx, campaignID string) (func(key string) string, error)
+	// SourceNames is ContentNames for the feature a roll names (RN-23): "" also for an entry the master retired or
+	// switched off, which is never named to anyone, the roller included.
+	SourceNames(ctx context.Context, tx pgx.Tx, campaignID string) (func(key string) string, error)
 
 	// The character's creatures (MR-037). The ones that write take the
 	// change's transaction.
@@ -523,10 +526,9 @@ type Config struct {
 	Logger *slog.Logger
 	// Now returns the current time. Nil means time.Now.
 	Now func() time.Time
-	// D20Rerolls lets a d20 be held for "rolar de novo?" when a reroll rule covers it (held_reroll.go). False by default
-	// and not set by cmd/api: the web client has no screen for the question (an unknown case of the offer renders the
-	// die's prompt with zero sides, held-roll-prompt.ts and held-text.ts), so the server must not hold a roll for it.
-	// With it off the roll settles as if the player declined: nothing is held, nothing is spent.
+	// D20Rerolls lets a d20 be held for "rolar de novo?" when a reroll rule covers it (held_reroll.go). cmd/api turns it
+	// on: the web answers the question (held-roll-prompt, held-question). False in a Config that does not set it, so a
+	// test can turn it off: the roll then settles as if the player declined, with nothing held or spent.
 	D20Rerolls bool
 }
 
@@ -707,6 +709,7 @@ func (s *Service) Mount(handle func(pattern string, handler http.Handler), sessi
 		sessions.Interceptor(),                         // who is calling
 		authz.Interceptor(sessions, members, s.logger), // what they may do, memoized per request
 		heldHintInterceptor(s),                         // a roll that asks tells the master and its roller
+		sourceNameInterceptor(s),                       // a roll that names its feature, where it already carries the key
 	))
 	handle(playv1connect.NewPlayServiceHandler(s, opts...))
 	handle(playv1connect.NewCombatServiceHandler(s, opts...))

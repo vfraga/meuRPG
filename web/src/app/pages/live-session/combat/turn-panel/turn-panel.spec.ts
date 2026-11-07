@@ -207,13 +207,16 @@ describe('TurnPanel, the wait line (PM-04)', () => {
     const el = panel({ currentCombatantId: 'cap' });
     const line = el.querySelector('[data-testid="reaction-wait"]');
     expect(line?.getAttribute('role')).toBe('status');
-    expect(textOf(line!)).toContain('Esperando o mestre. O turno continua quando ele responder.');
+    expect(line?.textContent?.replace(/\s+/g, ' ')).toContain(
+      'Esperando o mestre. O turno continua quando ele responder.',
+    );
+    expect(line?.tagName.toLowerCase()).toBe('app-master-wait');
     expect(el.querySelector('h2')?.textContent).toBe('Vez do Capitão Goblin');
   });
 
   it('says it once in the turn of someone else', () => {
     const waits = (el: HTMLElement) =>
-      Array.from(el.querySelectorAll('.mr-notice')).filter((n) =>
+      Array.from(el.querySelectorAll('.mr-notice, app-master-wait')).filter((n) =>
         n.textContent?.includes('Esperando o mestre.'),
       ).length;
     expect(waits(panel({ currentCombatantId: 'cap' }))).toBe(1);

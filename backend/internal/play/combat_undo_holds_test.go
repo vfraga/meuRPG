@@ -172,6 +172,22 @@ func TestUndoOfAnEventWithoutHoldsIsNotChecked(t *testing.T) {
 	}
 }
 
+// withoutUUIDs drops every UUID from text before a numeric canary is searched: a random id holds any four digits
+// (run 42337730750 matched "4217" in one), and an id is not a hit point number.
+func withoutUUIDs(text string) string { return uuidText.ReplaceAllString(text, "<id>") }
+
+// TestWithoutUUIDsKeepsTheNumberAndDropsTheID: an id holding the canary is not a leak, the bare number still is.
+func TestWithoutUUIDsKeepsTheNumberAndDropsTheID(t *testing.T) {
+	t.Parallel()
+	id := "0b1c2d3e-4217-4a5b-8c9d-1e2f3a4b5c6d"
+	if got := withoutUUIDs("combatant " + id + " changed"); strings.Contains(got, "4217") {
+		t.Errorf("withoutUUIDs() = %q, want the id gone", got)
+	}
+	if got := withoutUUIDs("combatant " + id + " has 4217 hit points"); !strings.Contains(got, "4217") {
+		t.Errorf("withoutUUIDs() = %q, want the bare number kept", got)
+	}
+}
+
 // TestUndoRefusalNamesWhoChangedAndNoNumbers: the refusal carries the combatant, never a hit point number, and a
 // player cannot ask for the undo at all (RN-10, RN-20): the master is the positive control.
 func TestUndoRefusalNamesWhoChangedAndNoNumbers(t *testing.T) {
@@ -189,7 +205,7 @@ func TestUndoRefusalNamesWhoChangedAndNoNumbers(t *testing.T) {
 	// A player is refused before anything is read.
 	err := a.undo(t, a.caio, e, last)
 	wantCode(t, "UndoLastAction by a player", err, connect.CodePermissionDenied)
-	if strings.Contains(err.Error(), "4217") {
+	if strings.Contains(withoutUUIDs(err.Error()), "4217") {
 		t.Errorf("the player's refusal leaks the hit points: %v", err)
 	}
 	// The master's refusal names who and says no number.
@@ -199,7 +215,7 @@ func TestUndoRefusalNamesWhoChangedAndNoNumbers(t *testing.T) {
 	if len(b.GetCombatantIds()) != 1 {
 		t.Errorf("combatant_ids = %v, want the goblin", b.GetCombatantIds())
 	}
-	if raw := b.String() + err.Error(); strings.Contains(raw, "4217") {
+	if raw := b.String() + err.Error(); strings.Contains(withoutUUIDs(raw), "4217") {
 		t.Errorf("the master's refusal carries the hit points: %s", raw)
 	}
 }

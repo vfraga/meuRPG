@@ -10,7 +10,7 @@ import (
 )
 
 // Parry (SRD 5.1, the Reactions of the Bandit Captain, Erinyes, Gladiator, Knight, Marilith and Noble; RN-31,
-// RN-20, RN-29): a melee weapon attack that hits a creature with the reaction waits for the master, who answers
+// RN-20, RN-29): a melee weapon attack that hits a creature with the reaction (switched to "Perguntar") waits for the master, who answers
 // for the creature. These tests need the database (MEURPG_TEST_DATABASE_URL). Toren attacks with +6 to hit.
 
 const (
@@ -23,10 +23,35 @@ const (
 
 var parryKind = playv1.ReactionKind_REACTION_KIND_PARRY
 
-// parryFight is Toren (a battleaxe, a dagger and a shortbow) on turn beside the Knight, one square away.
+// parryFight is Toren (a battleaxe, a dagger and a shortbow) on turn beside the Knight, one square away, with the
+// master having asked to answer the creature's Parry (the window of these tests). autoParryFight leaves the mode
+// as it is by default: the server decides.
 func parryFight(t *testing.T, key, label string) (*armed, *playv1.Encounter) {
 	t.Helper()
+	a, e := autoParryFight(t, key, label)
+	a.setParryAsk(t, e, label, true)
+	return a, e
+}
+
+// autoParryFight is parryFight with the creature's Parry in its default mode.
+func autoParryFight(t *testing.T, key, label string) (*armed, *playv1.Encounter) {
+	t.Helper()
 	return monsterFightOn(t, newCastersGear(t, 3, "", []string{battleaxe, daggerKey, shortbowKey}), key, label)
+}
+
+// setParryAsk is the master's SetMonsterReactionMode on the creature.
+func (a *armed) setParryAsk(t *testing.T, e *playv1.Encounter, label string, ask bool) {
+	t.Helper()
+	if _, err := a.parryMode(t, a.master, e, label, ask); err != nil {
+		t.Fatalf("SetMonsterReactionMode(%s, ask %v) error = %v", label, ask, err)
+	}
+}
+
+func (a *armed) parryMode(t *testing.T, u *user, e *playv1.Encounter, label string, ask bool) (*connect.Response[playv1.SetMonsterReactionModeResponse], error) {
+	t.Helper()
+	return u.combat.SetMonsterReactionMode(t.Context(), connect.NewRequest(&playv1.SetMonsterReactionModeRequest{
+		CampaignId: a.campaignID, EncounterId: e.GetId(), CombatantId: a.id(t, label), IdempotencyKey: newKey(), Ask: ask,
+	}))
 }
 
 func (a *armed) pendingStatus(t *testing.T, id string) string {
@@ -241,7 +266,7 @@ func TestParry_AThrownWeaponBeyondReachOpensNoWindow(t *testing.T) {
 // A creature whose stat block has no Parry opens no window.
 func TestParry_ACreatureWithoutTheReactionHasNone(t *testing.T) {
 	t.Parallel()
-	a, e := parryFight(t, "monster:bandit", "Bandido")
+	a, e := autoParryFight(t, "monster:bandit", "Bandido")                    // no Parry: the mode cannot be set either
 	hit := a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Bandido", d20(14)) // 20 against the Bandit's armor class 12
 	if w := a.windowOf(t, a.master, parryKind); w != nil || hit.GetPendingDamage().GetStatus() != playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_AWAITING_ROLL {
 		t.Errorf("a hit on a Bandit = window %v, damage %v; want no window", w, hit.GetPendingDamage().GetStatus())

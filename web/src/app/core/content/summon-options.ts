@@ -8,7 +8,7 @@ import { DURATION_OPTIONS } from './spell-options';
 import type { SummonDuration, SummonTime } from './summon-draft';
 
 /**
- * The words of the summon block's selects (E10-01, board C2): a closed list of the times a feature's summon takes and lasts,
+ * The words of the summon block's selects (E10-01): a closed list of the times a feature's summon takes and lasts,
  * each one a value `unit:amount` (`kind:amount:unit` for the duration). A stored value the lists do not have (written by
  * the API) is shown as one more option, so the select never claims it is something else.
  */
@@ -71,9 +71,19 @@ function timed(amount: number, unit: SpellDurationUnit): SummonDuration {
 
 /** An empty time is 1 action, an empty duration is instantaneous (the server's own reading); any other stored value keeps its own. */
 export function timeValue(t: SummonTime): string {
-  return t.unit === CastingTimeUnit.UNSPECIFIED && t.amount === 0
-    ? `${CastingTimeUnit.ACTION}:1`
-    : `${t.unit}:${t.amount}`;
+  if (t.unit === CastingTimeUnit.UNSPECIFIED && t.amount === 0) {
+    return `${CastingTimeUnit.ACTION}:1`;
+  }
+  return `${t.unit}:${oneShot(t.unit) && t.amount === 0 ? 1 : t.amount}`;
+}
+
+/** An action, a bonus action and a reaction are one: a stored amount of 0 reads as 1 (as an unset one does). */
+function oneShot(unit: CastingTimeUnit): boolean {
+  return (
+    unit === CastingTimeUnit.ACTION ||
+    unit === CastingTimeUnit.BONUS_ACTION ||
+    unit === CastingTimeUnit.REACTION
+  );
 }
 
 export function durationValue(d: SummonDuration): string {
@@ -92,7 +102,8 @@ export function durationValue(d: SummonDuration): string {
 
 function timeLabel(t: SummonTime): string {
   const [one, many] = TIME_UNITS[t.unit] ?? ['tempo', 'tempos'];
-  return `${t.amount} ${t.amount === 1 ? one : many}`;
+  const amount = oneShot(t.unit) && t.amount === 0 ? 1 : t.amount;
+  return `${amount} ${amount === 1 ? one : many}`;
 }
 
 function durationLabel(d: SummonDuration): string {

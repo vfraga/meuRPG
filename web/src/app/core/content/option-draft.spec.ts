@@ -2,7 +2,13 @@ import { create } from '@bufbuild/protobuf';
 
 import { TableOptionSchema } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import { menu } from './content-testing-menu';
-import { draftToOption, emptyOption, optionPaths, optionToDraft } from './option-draft';
+import {
+  draftToOption,
+  emptyOption,
+  missingOffering,
+  optionPaths,
+  optionToDraft,
+} from './option-draft';
 
 const stored = () =>
   create(TableOptionSchema, {
@@ -78,5 +84,26 @@ describe('the option form (MR-025)', () => {
     expect(paths).toContain('table_option.prerequisite.requires_option_keys');
     expect(paths).toContain('table_option.effects[0].type');
     expect(paths).toContain('table_option.effects[0].text_pt');
+  });
+
+  it('keeps the offering feature of a table feature option and drops it for any other set', () => {
+    const own = create(TableOptionSchema, {
+      namePt: 'Golpe',
+      set: 'table_feature',
+      offeredBy: 'feature:x@mesa',
+    });
+    const draft = optionToDraft(own);
+    expect(draft.offeredBy).toBe('feature:x@mesa');
+    expect(draftToOption(draft, menu()).offeredBy).toBe('feature:x@mesa');
+    expect(draftToOption({ ...draft, set: 'invocation' }, menu()).offeredBy).toBe('');
+  });
+
+  it('draws the offering feature input and asks for it only for the table feature set', () => {
+    const own = { ...emptyOption('table_feature') };
+    expect(optionPaths(own, menu())).toContain('table_option.offered_by');
+    expect(optionPaths(emptyOption('invocation'), menu())).not.toContain('table_option.offered_by');
+    expect(missingOffering(own)).toBe(true);
+    expect(missingOffering({ ...own, offeredBy: 'feature:x@mesa' })).toBe(false);
+    expect(missingOffering(emptyOption('invocation'))).toBe(false);
   });
 });

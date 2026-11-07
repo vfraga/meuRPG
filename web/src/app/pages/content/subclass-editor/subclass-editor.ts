@@ -44,6 +44,7 @@ import {
   subclassToDraft,
   unreadableSubclassPaths,
 } from '../../../core/content/subclass-draft';
+import { NAME_MAX } from '../../../core/content/feature-draft';
 import { type EntryBody, TableContentClient } from '../../../core/content/content-client';
 import type { EffectMenuVm } from '../../../core/content/effect-draft';
 import { EntrySaver, focusAfterRender } from '../../../core/content/entry-saver';
@@ -109,6 +110,7 @@ export class SubclassEditor {
   readonly reload = output<void>();
   readonly cancelled = output<void>();
 
+  protected readonly nameMax = NAME_MAX;
   protected readonly draft = signal<SubclassDraft>(emptySubclass(''));
   protected readonly openFeature = signal('');
   protected readonly question = signal<CastingDraft | null>(null);

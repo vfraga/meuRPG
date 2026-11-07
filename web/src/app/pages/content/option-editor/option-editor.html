@@ -5,12 +5,28 @@
     <section class="mr-panel block" aria-labelledby="option-data-t">
       <h2 class="mr-panel__title" id="option-data-t">Dados da opção</h2>
       @if (isNew()) {
-        <app-select-field label="Conjunto" [options]="setOptions()" [value]="d.set" placeholder="Escolha…" path="table_option.set" [issues]="issuesOf('table_option.set')" [hint]="setHint()" (valueChange)="patch({ set: $event })" />
+        <app-select-field label="Conjunto" [options]="setOptions()" [value]="d.set" placeholder="Escolha…" path="table_option.set" [issues]="issuesOf('table_option.set')" [hint]="setHint()" (valueChange)="chooseSet($event)" />
       } @else {
         <p class="hint" data-field="table_option.set"><strong>Conjunto:</strong> {{ setName() }}. O conjunto não muda depois de salvar: ele faz parte do código da opção.</p>
         @for (m of issuesOf('table_option.set'); track m) {
           <p class="inline-issue" role="note">{{ m }}</p>
         }
+      }
+      @if (isTableFeature()) {
+        <div class="grid grid--2">
+          <app-select-field label="Característica que oferece" [options]="offeredOptions()" [value]="d.offeredBy" [placeholder]="noOfferer() ? 'Nenhuma disponível' : 'Escolha…'" [disabled]="noOfferer()" path="table_option.offered_by" [issues]="issuesOf('table_option.offered_by')" [hint]="offeringHint()" (valueChange)="chooseOffering($event)" />
+          <div class="offer">
+            @if (noOfferer()) {
+              <p class="hint offer__lock"><mat-icon aria-hidden="true">lock</mat-icon>Nenhuma classe ou subclasse da mesa tem uma característica com "Opções para escolher". Crie a lista lá e volte aqui.</p>
+              <a class="offer__link" data-field="table_option.offered_by.help" [routerLink]="subclassesLink()" [queryParams]="{ kind: 'subclasses' }">Ver as subclasses da mesa<mat-icon aria-hidden="true">chevron_right</mat-icon></a>
+            } @else if (offering(); as f) {
+              <p class="hint">{{ offeringList() }}</p>
+              <a class="offer__link" [routerLink]="offeringLink()">Abrir {{ f.owner }}<mat-icon aria-hidden="true">chevron_right</mat-icon></a>
+            } @else {
+              <p class="hint">A opção entra na lista desta característica, ao lado das que ela já tem.</p>
+            }
+          </div>
+        </div>
       }
       <app-feature-editor
         [feature]="d.feature"

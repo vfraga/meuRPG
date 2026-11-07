@@ -4,12 +4,16 @@ import { MatIconModule } from '@angular/material/icon';
 
 import type { MasterQuestion } from '../../../core/held-rolls/held-questions';
 import {
+  type HeldAnswer,
+  type HeldRolled,
   asksIndomitable,
   asksLucky,
+  asksReroll,
   asksStroke,
   dieOf,
 } from '../../../core/held-rolls/held-roll-offer';
 import {
+  rerollMasterFooter,
   d20Chip,
   d20Line,
   questionRule,
@@ -79,8 +83,16 @@ export class HeldQuestion {
   protected readonly indomitable = computed(() => asksIndomitable(this.offer()));
   /** The rogue's Stroke of Luck: use it or keep the roll; nothing is rolled, so there is no typed face. */
   protected readonly stroke = computed(() => asksStroke(this.offer()));
-  /** The question rolls a d20 again (Lucky's or Indomitable's), not the Bardic Inspiration die. */
-  protected readonly rerolls = computed(() => this.lucky() || this.indomitable());
+  /** A table feature's reroll: the server rolls the new d20, so the master has nothing to type. */
+  protected readonly ruleReroll = computed(() => asksReroll(this.offer()));
+  protected readonly rerollFooter = computed(() => {
+    const offer = this.offer();
+    return offer ? rerollMasterFooter(offer) : '';
+  });
+  /** The question rolls a d20 again (Lucky's, Indomitable's or a reroll rule's), not the Bardic Inspiration die. */
+  protected readonly rerolls = computed(
+    () => this.lucky() || this.indomitable() || this.ruleReroll(),
+  );
   /** With advantage or disadvantage Indomitable's new roll takes both dice, and a typed one is both faces. */
   protected readonly pair = computed(
     () => this.indomitable() && (this.offer()?.d20?.faces.length ?? 1) > 1,
@@ -101,9 +113,31 @@ export class HeldQuestion {
     const f = this.face();
     return Number.isInteger(f) && f >= 1 && f <= this.sides();
   });
+  /** "Ficar com o 1", "Ficar com o 2" (a reroll rule's), "Manter" or "Guardar o dado". */
+  protected readonly keepText = computed(() => {
+    if (this.ruleReroll()) {
+      return `Ficar com o ${this.chip()}`;
+    }
+    return this.lucky() ? 'Ficar com o 1' : this.indomitable() ? 'Manter' : 'Guardar o dado';
+  });
+  /** "Tor responde primeiro. Você pode responder por Tor em 7 s." / "Tor não respondeu.": a reroll's card says it in its body
+   * (a screen reader has the status line); `''` for the other questions, whose card keeps it in the status line. */
+  protected readonly waitLine = computed(() => {
+    const q = this.question();
+    if (!this.ruleReroll() || this.layout() !== 'card' || !q.lead()) {
+      return '';
+    }
+    const who = this.offer()?.rollerLabel ? `por ${q.roller}` : 'pelo jogador';
+    return q.countdown()
+      ? `${q.lead()}. Você pode responder ${who} em ${q.seconds()} s.`
+      : `${q.lead()}.`;
+  });
   protected readonly waiting = computed(() => this.phase() !== 'ready');
+  /** The clock while the roller may still answer, and for a reroll rule's question at any time (it waits, it does not warn). */
   protected readonly icon = computed(() =>
-    this.phase() === 'waiting' || this.phase() === 'too-early' ? 'schedule' : 'warning',
+    this.phase() === 'waiting' || this.phase() === 'too-early' || this.ruleReroll()
+      ? 'schedule'
+      : 'warning',
   );
   protected readonly noteIcon = computed(() => (this.phase() === 'done' ? 'check' : 'info'));
   protected readonly failure = computed(() => {
@@ -116,41 +150,36 @@ export class HeldQuestion {
   }
 
   protected rollAgain(): void {
-    const roll = { inApp: true } as const;
-    void this.question().answer(
-      this.lucky()
-        ? { kind: 'lucky', reroll: true, roll }
-        : this.indomitable()
-          ? { kind: 'indomitable', reroll: true, roll }
-          : { kind: 'die', use: true, roll },
-    );
+    void this.question().answer(this.answerOf(true, { inApp: true }));
   }
 
   protected keep(): void {
-    void this.question().answer(
-      this.stroke()
-        ? { kind: 'stroke', use: false }
-        : this.lucky()
-          ? { kind: 'lucky', reroll: false, roll: null }
-          : this.indomitable()
-            ? { kind: 'indomitable', reroll: false, roll: null }
-            : { kind: 'die', use: false, roll: null },
-    );
+    void this.question().answer(this.answerOf(false, null));
   }
 
   protected sendTyped(): void {
     if (!this.faceOk()) {
       return;
     }
-    const roll = { face: this.face() };
-    void this.question().answer(
-      this.lucky()
-        ? { kind: 'lucky', reroll: true, roll }
-        : this.indomitable()
-          ? { kind: 'indomitable', reroll: true, roll }
-          : { kind: 'die', use: true, roll },
-    );
+    void this.question().answer(this.answerOf(true, { face: this.face() }));
     this.typing.set(false);
+  }
+
+  /** The answer to the question on screen: roll again / use the die (`again`), or keep. A reroll rule's d20 is rolled by the
+   * server, so it carries no roll. */
+  private answerOf(again: boolean, roll: HeldRolled | null): HeldAnswer {
+    if (this.stroke()) {
+      return { kind: 'stroke', use: again };
+    }
+    if (this.ruleReroll()) {
+      return { kind: 'reroll', reroll: again, roll: null };
+    }
+    if (this.lucky()) {
+      return { kind: 'lucky', reroll: again, roll };
+    }
+    return this.indomitable()
+      ? { kind: 'indomitable', reroll: again, roll }
+      : { kind: 'die', use: again, roll };
   }
 
   protected sendPair(faces: number[]): void {

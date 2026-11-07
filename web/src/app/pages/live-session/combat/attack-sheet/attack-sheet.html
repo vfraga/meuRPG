@@ -172,6 +172,11 @@
           [(typing)]="s.typing"
           (answer)="question.answer($event)"
         />
+      } @else if (s.asking() && vanish.notice(); as notice) {
+        <div class="mr-notice mr-notice--neutral" data-testid="sheet-held-vanished">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          <p role="status">{{ notice }}</p>
+        </div>
       }
 
       @if (s.stage() === 'damage' && dmg.dice(); as d) {

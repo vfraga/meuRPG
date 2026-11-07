@@ -138,7 +138,7 @@ func (s *Service) endCharacterEffectsOfCast(ctx context.Context, c *combatTx, ca
 	for _, r := range gone {
 		touched = append(touched, r.CharacterID)
 	}
-	if err := s.afterCharacterEffectsGone(ctx, c, gone); err != nil {
+	if err := s.afterCharacterEffectsGone(ctx, c, characterEffects(gone)); err != nil {
 		return err
 	}
 	// The cast ended while a fight ran: what it left in the combat goes too.
@@ -183,7 +183,7 @@ func (s *Service) advanceGameTime(ctx context.Context, c *combatTx, seconds int3
 			return fmt.Errorf("end an effect whose time ran out: %w", err)
 		}
 		touched = append(touched, r.CharacterID)
-		ended = append(ended, r)
+		ended = append(ended, playdb.CharacterEffect(r))
 	}
 	if err := s.afterCharacterEffectsGone(ctx, c, ended); err != nil {
 		return err
@@ -202,7 +202,7 @@ func (s *Service) endLongRestEffects(ctx context.Context, c *combatTx) error {
 	for _, r := range gone {
 		touched = append(touched, r.CharacterID)
 	}
-	if err := s.afterCharacterEffectsGone(ctx, c, gone); err != nil {
+	if err := s.afterCharacterEffectsGone(ctx, c, characterEffects(gone)); err != nil {
 		return err
 	}
 	if enc, err := c.q.GetOpenEncounter(ctx, c.session.ID); err == nil {

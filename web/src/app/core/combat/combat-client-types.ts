@@ -240,6 +240,11 @@ export interface ReactionAnswer {
   readonly maneuverKey?: string;
 }
 
+/** The answer to a Legendary Resistance window: the creatures whose failed save becomes a success (none: leave them as rolled). */
+export interface LegendaryResistanceAnswer {
+  readonly creatureIds: readonly string[];
+}
+
 /** What `AnswerReaction` answers: the combat and what the answer did. */
 export interface AnswerResult {
   readonly encounter: Encounter;
@@ -253,12 +258,19 @@ export interface AnswerResult {
 export interface AttackEffects {
   readonly extraDieFaces?: readonly number[];
   readonly useExtraAction?: boolean;
+  /** The master only: the key of the legendary option of kind "attack" the attack is made with (`LegendaryOption.key`). */
+  readonly legendaryOption?: string;
 }
 
 /** How a concentration window is settled: the d20 in the app, a typed face, "Deixar o mestre rolar por mim", or the
  * master keeping the concentration. */
 export type ConcentrationAnswer =
-  | { readonly kind: 'app'; readonly maneuverKey?: string }
+  | {
+      readonly kind: 'app';
+      readonly maneuverKey?: string;
+      /** The master's choice: if the save fails, Legendary Resistance turns it into a success. */
+      readonly useLegendaryResistance?: boolean;
+    }
   | {
       readonly kind: 'typed';
       readonly face: number;
@@ -267,6 +279,7 @@ export type ConcentrationAnswer =
       readonly extra?: readonly number[];
       /** A table die added to the roll: its face is the last of `extra`. */
       readonly maneuverKey?: string;
+      readonly useLegendaryResistance?: boolean;
     }
   | { readonly kind: 'hand' }
   | { readonly kind: 'keep' };

@@ -9,6 +9,7 @@ import {
   type InspirationOffer,
   type LuckyOffer,
   type OutsideInspirationOffer,
+  type RerollQuestion,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { Reroll } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { rollText } from '../combat/combat-dice';
@@ -43,7 +44,10 @@ export type HeldAnswer =
   | { readonly kind: 'indomitable'; readonly reroll: boolean; readonly roll: HeldRolled | null }
   /** The rogue's Stroke of Luck: use it (the miss is a hit, the d20 of the check counts as 20) or keep the roll. Nothing is
    * rolled. */
-  | { readonly kind: 'stroke'; readonly use: boolean };
+  | { readonly kind: 'stroke'; readonly use: boolean }
+  /** A table feature's reroll ("rolar de novo?"): roll the d20 again and keep the new one, or keep the roll. The server
+   * rolls the new d20 itself, whatever the table's dice mode, so there is nothing to type (`roll` is always `null`). */
+  | { readonly kind: 'reroll'; readonly reroll: boolean; readonly roll: null };
 
 /** The ways a response carries a question: the new offer, or the two older ones. */
 export interface HeldOfferSource {
@@ -143,6 +147,31 @@ export function strokeFailed(offer: HeldRollOffer | null | undefined): boolean {
   return offer?.question.case === 'strokeOfLuck' && offer.question.value.failed;
 }
 
+/** Whether the question is a table feature's reroll ("Tirou 2: rolar de novo?"). */
+export function asksReroll(offer: HeldRollOffer | null | undefined): boolean {
+  return offer?.question.case === 'reroll';
+}
+
+/** The reroll the question offers, or `undefined` when it is another question. */
+export function rerollOf(offer: HeldRollOffer | null | undefined): RerollQuestion | undefined {
+  return offer?.question.case === 'reroll' ? offer.question.value : undefined;
+}
+
+/** The face the reroll question asks about (the die at `reroll_index`); `0` for another question. */
+export function rerollFace(offer: HeldRollOffer | null | undefined): number {
+  const q = rerollOf(offer);
+  const faces = offer?.d20?.faces ?? [];
+  return q ? (faces[q.rerollIndex] ?? faces[0] ?? 0) : 0;
+}
+
+const D20 = 20;
+
+/** The faces of the die the reroll rolls again: the question's `sides`, a d20 when the server sent none (never 0). */
+export function rerollSides(offer: HeldRollOffer | null | undefined): number {
+  const sides = rerollOf(offer)?.sides ?? 0;
+  return sides > 0 ? sides : D20;
+}
+
 /** The size and giver of the die the question offers, or `undefined` when it is Lucky's, Indomitable's or Stroke of Luck's. */
 export function dieOf(
   offer: HeldRollOffer | null | undefined,
@@ -167,6 +196,12 @@ export function indomitableReroll(roll: WithRerolls | undefined): Reroll | undef
 /** What Stroke of Luck did to a roll; `undefined` when it did nothing. */
 export function strokeReroll(roll: WithRerolls | undefined): Reroll | undefined {
   return roll?.rerolled.find((r) => r.sourceKey === STROKE_FEATURE);
+}
+
+/** The d20 a table feature's reroll rule rolled again on a roll (`key` is the question's `source_key`); `undefined` when
+ * it rolled nothing. */
+export function ruleReroll(roll: WithRerolls | undefined, key: string): Reroll | undefined {
+  return roll?.rerolled.find((r) => r.sourceKey === key);
 }
 
 /** The d20 Lucky rolled again on a roll (the faces already hold the new one), for the die that tumbles after an answer

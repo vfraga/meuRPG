@@ -205,5 +205,15 @@ describe('the list of the table content (E10-01 states 1, 2 and 10)', () => {
     });
     expect(entrySupportRaw(entry(TableContentKind.FEAT, 'Lutador'), (k) => k)).toBe('Força 13');
     expect(entrySupportRaw(none, (k) => k)).toBe('Sem pré-requisito');
+    const hidden = entry(TableContentKind.FEAT, 'Sem a pele', {
+      body: {
+        case: 'tableFeat',
+        value: create(TableFeatSchema, {
+          namePt: 'Sem a pele',
+          prerequisite: { lacksHidden: true },
+        }),
+      },
+    });
+    expect(entrySupportRaw(hidden, (k) => k)).toBe('uma condição que a mesa não mostra');
   });
 });

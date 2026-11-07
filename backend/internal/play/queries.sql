@@ -652,13 +652,15 @@ ORDER BY seq DESC;
 SELECT character_id, COALESCE(payload->>'action_id', '')::TEXT AS action_id, count(*)::INT8 AS rolls
 FROM session_events
 WHERE game_session_id = $1 AND kind = 'scene_check_rolled' AND seq > $2
-GROUP BY character_id, 2;
+GROUP BY character_id, 2
+ORDER BY character_id, action_id;
 
 -- name: ListSceneAttemptGrantEvents :many
 -- The attempts the master granted since the opening (seq): which character, at
--- which action (the payload's action_id).
+-- which action (the payload's action_id), in the order they were granted.
 SELECT character_id, payload FROM session_events
-WHERE game_session_id = $1 AND kind = 'scene_attempt_granted' AND seq > $2;
+WHERE game_session_id = $1 AND kind = 'scene_attempt_granted' AND seq > $2
+ORDER BY seq;
 
 -- name: GetOpenScenePoint :one
 -- The map point of the scene open in the campaign's open session (NULL when
@@ -764,7 +766,8 @@ WHERE game_session_id = sqlc.arg(game_session_id) AND kind = 'scene_check_rolled
   AND character_id IS NOT NULL
   AND payload->>'dc_shown' = 'true' AND payload ? 'passed'
   AND (sqlc.arg(master)::BOOL OR NOT (payload ? 'audience') OR (payload->'audience') ? sqlc.arg(user_id)::TEXT)
-GROUP BY character_id;
+GROUP BY character_id
+ORDER BY character_id;
 
 -- Progression (MR-016): what the XP awards read from the combats and the log.
 
@@ -783,7 +786,8 @@ GROUP BY e.id, e.name, e.status;
 -- The names of the given combats of the campaign.
 SELECT e.id, e.name FROM encounters AS e
 JOIN game_sessions AS gs ON gs.id = e.game_session_id
-WHERE gs.campaign_id = sqlc.arg(campaign_id)::UUID AND e.id = ANY(sqlc.arg(ids)::UUID[]);
+WHERE gs.campaign_id = sqlc.arg(campaign_id)::UUID AND e.id = ANY(sqlc.arg(ids)::UUID[])
+ORDER BY e.id;
 
 -- The character's creatures in a combat (MR-037). A creature is a
 -- combatant of kind 'creature': character_id is its owner's.
@@ -841,23 +845,30 @@ ORDER BY cb.order_index, cb.created_at, cb.id;
 
 -- name: SetCreatureCombatantsDismissed :many
 -- Hides (or brings back) the combatants of the creatures in the combat. A
--- dismissed one is out of the turn.
-UPDATE combatants
-SET dismissed = sqlc.arg(dismissed), turn_state = 'idle'
-WHERE encounter_id = sqlc.arg(encounter_id) AND creature_id = ANY(sqlc.arg(creature_ids)::UUID[])
-RETURNING id;
+-- dismissed one is out of the turn. Returns their IDs.
+WITH changed AS (
+    UPDATE combatants
+    SET dismissed = sqlc.arg(dismissed), turn_state = 'idle'
+    WHERE encounter_id = sqlc.arg(encounter_id) AND creature_id = ANY(sqlc.arg(creature_ids)::UUID[])
+    RETURNING id
+)
+SELECT id FROM changed ORDER BY id;
 
 -- name: SetCreatureCombatantLabel :many
 -- A creature's new name on its combatant, in the combat that is not ended.
-UPDATE combatants
-SET label = sqlc.arg(label)
-WHERE creature_id = sqlc.arg(creature_id)::UUID
-  AND encounter_id IN (
-      SELECT e.id FROM encounters AS e
-      JOIN game_sessions AS gs ON gs.id = e.game_session_id
-      WHERE gs.campaign_id = sqlc.arg(campaign_id)::UUID AND e.status <> 'ended'
-  )
-RETURNING encounter_id;
+-- Returns the combats, by ID.
+WITH changed AS (
+    UPDATE combatants
+    SET label = sqlc.arg(label)
+    WHERE creature_id = sqlc.arg(creature_id)::UUID
+      AND encounter_id IN (
+          SELECT e.id FROM encounters AS e
+          JOIN game_sessions AS gs ON gs.id = e.game_session_id
+          WHERE gs.campaign_id = sqlc.arg(campaign_id)::UUID AND e.status <> 'ended'
+      )
+    RETURNING encounter_id
+)
+SELECT encounter_id FROM changed ORDER BY encounter_id;
 
 -- Trap damage (MR-035, D5): the server rolls it when the trap fires.
 
@@ -1002,7 +1013,8 @@ ORDER BY o.created_at, o.id;
 -- name: ListTrapDamageStatuses :many
 -- Where trap damages are now (applied by the master since the firing), by ID.
 SELECT id, status, applied_amount FROM trap_damages
-WHERE id = ANY($1::uuid[]);
+WHERE id = ANY($1::uuid[])
+ORDER BY id;
 
 -- Puzzles (MR-038, RN-27): what the master makes (puzzles), what a
 -- session plays (puzzle_runs) and every move (puzzle_moves). The service is in
@@ -1057,7 +1069,8 @@ RETURNING *;
 -- The campaign's puzzles that were shown in any session: they can no longer be edited.
 SELECT DISTINCT r.puzzle_id FROM puzzle_runs AS r
 JOIN puzzles AS p ON p.id = r.puzzle_id
-WHERE p.campaign_id = $1 AND r.shown_at IS NOT NULL;
+WHERE p.campaign_id = $1 AND r.shown_at IS NOT NULL
+ORDER BY r.puzzle_id;
 
 -- name: InsertPuzzleRun :one
 -- A run starts with its state at its start. $5 is when it was shown (NULL for a run
@@ -1080,7 +1093,8 @@ FOR UPDATE;
 
 -- name: ListPuzzleRuns :many
 SELECT * FROM puzzle_runs
-WHERE game_session_id = $1;
+WHERE game_session_id = $1
+ORDER BY id;
 
 -- name: ListShownPuzzleRuns :many
 -- What a session shows now: shown and not closed, in the order they were shown.
@@ -1116,7 +1130,8 @@ RETURNING *;
 -- seq the round began at. A player whose account was deleted has no user and no row.
 SELECT user_id, count(*)::int4 AS wrong FROM puzzle_moves
 WHERE run_id = $1 AND seq > $2 AND wrong AND user_id IS NOT NULL
-GROUP BY user_id;
+GROUP BY user_id
+ORDER BY user_id;
 
 -- name: InsertPuzzleHintTry :one
 -- lucky_index is the d20 the halfling's Lucky rolled again (NULL when none was); bonus_sides and
@@ -1253,11 +1268,14 @@ WHERE id = $1 AND status <> 'closed';
 
 -- name: CloseRollModeRequestsOf :many
 -- A new request, a used one, the end of the turn or of the combat: the open requests
--- of the combatant are closed. The IDs come back for the event.
-UPDATE roll_mode_requests
-SET status = 'closed', answered_at = COALESCE(answered_at, $2)
-WHERE combatant_id = $1 AND status IN ('pending', 'answered')
-RETURNING id;
+-- of the combatant are closed. The IDs come back for the event, in ID order.
+WITH changed AS (
+    UPDATE roll_mode_requests
+    SET status = 'closed', answered_at = COALESCE(answered_at, $2)
+    WHERE combatant_id = $1 AND status IN ('pending', 'answered')
+    RETURNING id
+)
+SELECT id FROM changed ORDER BY id;
 
 -- name: InsertCombatReason :one
 INSERT INTO combat_reasons (encounter_id, kind, reason, created_at)
@@ -1267,7 +1285,8 @@ RETURNING *;
 -- name: ListCombatReasons :many
 -- The reasons the log reads, by ID.
 SELECT * FROM combat_reasons
-WHERE encounter_id = $1 AND id = ANY($2::UUID[]);
+WHERE encounter_id = $1 AND id = ANY($2::UUID[])
+ORDER BY id;
 
 -- name: InsertCombatantState :one
 INSERT INTO combatant_states (
@@ -1285,17 +1304,24 @@ DELETE FROM combatant_states
 WHERE id = $1;
 
 -- name: DeleteCombatantStatesOfKind :many
--- The states of a kind a combatant has (a rage, a dodge), the IDs back for the event.
-DELETE FROM combatant_states
-WHERE combatant_id = $1 AND kind = $2
-RETURNING id;
+-- The states of a kind a combatant has (a rage, a dodge), the IDs back for the event, in ID order.
+WITH changed AS (
+    DELETE FROM combatant_states
+    WHERE combatant_id = $1 AND kind = $2
+    RETURNING id
+)
+SELECT id FROM changed ORDER BY id;
 
 -- name: DeleteCombatantStatesBySource :many
 -- The states a source gave (the marks of a ranger who stopped concentrating), with what
 -- the undo of a cast that moved a mark needs to put it back (RestoreHuntersMark).
-DELETE FROM combatant_states
-WHERE source_id = $1 AND kind = $2
-RETURNING id, combatant_id, started_round, created_at;
+-- Oldest first.
+WITH changed AS (
+    DELETE FROM combatant_states
+    WHERE source_id = $1 AND kind = $2
+    RETURNING id, combatant_id, started_round, created_at
+)
+SELECT id, combatant_id, started_round, created_at FROM changed ORDER BY created_at, id;
 
 -- name: RestoreHuntersMark :exec
 -- The undo of a cast that moved a Hunter's Mark: the mark it took off comes back with
@@ -1361,26 +1387,36 @@ WHERE id = $1;
 
 -- name: DeleteExpiredCombatantStates :many
 -- The states that end at the start of a turn of one of these combatants, a dodge or a
--- reckless attack of their own, and the rages whose minute is over.
-DELETE FROM combatant_states
-WHERE encounter_id = $1
-  AND (
-    (combatant_id = ANY($2::UUID[]) AND kind IN ('dodging', 'reckless'))
-    OR (ends_combatant_id = ANY($2::UUID[]) AND ends_phase = 'start_of_turn' AND kind <> 'effect')
-    OR (kind = 'rage' AND ends_round IS NOT NULL AND ends_round <= $3)
-  )
-RETURNING *;
+-- reckless attack of their own, and the rages whose minute is over. Oldest first.
+WITH changed AS (
+    DELETE FROM combatant_states
+    WHERE encounter_id = $1
+      AND (
+        (combatant_id = ANY($2::UUID[]) AND kind IN ('dodging', 'reckless'))
+        OR (ends_combatant_id = ANY($2::UUID[]) AND ends_phase = 'start_of_turn' AND kind <> 'effect')
+        OR (kind = 'rage' AND ends_round IS NOT NULL AND ends_round <= $3)
+      )
+    RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
 
 -- name: DeleteEndedCombatantStates :many
--- The states that end at the end of this combatant's turn.
-DELETE FROM combatant_states
-WHERE encounter_id = $1 AND ends_combatant_id = $2 AND ends_phase = 'end_of_turn' AND kind <> 'effect'
-RETURNING *;
+-- The states that end at the end of this combatant's turn, oldest first.
+WITH changed AS (
+    DELETE FROM combatant_states
+    WHERE encounter_id = $1 AND ends_combatant_id = $2 AND ends_phase = 'end_of_turn' AND kind <> 'effect'
+    RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
 
 -- name: DeleteStatesOfCombatant :many
-DELETE FROM combatant_states
-WHERE combatant_id = $1 AND kind = $2
-RETURNING *;
+-- The states of a kind a combatant has, oldest first.
+WITH changed AS (
+    DELETE FROM combatant_states
+    WHERE combatant_id = $1 AND kind = $2
+    RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
 
 -- name: ListEncounterRollModeRequests :many
 -- Every request of the combat, whatever its status, for the log.
@@ -1464,7 +1500,7 @@ SELECT * FROM reaction_holds WHERE encounter_id = $1 AND group_id = $2;
 UPDATE reaction_holds SET state = $2 WHERE id = $1;
 
 -- name: ListHeldReactionHolds :many
-SELECT * FROM reaction_holds WHERE encounter_id = $1 AND state = 'held';
+SELECT * FROM reaction_holds WHERE encounter_id = $1 AND state = 'held' ORDER BY created_at, id;
 
 -- name: InsertReactionWindow :one
 -- A question to a reactor. The windows of one trigger share group_id; seq (the
@@ -1749,18 +1785,24 @@ SELECT * FROM character_effects WHERE id = $1 AND campaign_id = $2;
 DELETE FROM character_effects WHERE id = $1;
 
 -- name: DeleteCharacterEffectsOfGroup :many
--- The effects of a casting end together.
-DELETE FROM character_effects WHERE campaign_id = $1 AND group_id = $2 RETURNING *;
+-- The effects of a casting end together. Oldest first.
+WITH changed AS (
+    DELETE FROM character_effects WHERE campaign_id = $1 AND group_id = $2 RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
 
 -- name: SetCharacterEffectSeconds :exec
 UPDATE character_effects SET seconds_left = $2 WHERE id = $1;
 
 -- name: AdvanceCharacterEffects :many
 -- The master moves game time on: what has a clock loses the seconds, and what has none left
--- is returned to be ended.
-UPDATE character_effects SET seconds_left = GREATEST(seconds_left - $2::INT4, 0)
-WHERE campaign_id = $1 AND seconds_left IS NOT NULL
-RETURNING *;
+-- is returned to be ended. Oldest first.
+WITH changed AS (
+    UPDATE character_effects SET seconds_left = GREATEST(seconds_left - $2::INT4, 0)
+    WHERE campaign_id = $1 AND seconds_left IS NOT NULL
+    RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
 
 -- name: DeleteCharacterEffectsOfCharacter :exec
 -- A character that died keeps no old effect when it lives again.
@@ -1774,7 +1816,11 @@ UPDATE combatant_states SET modifiers = $2 WHERE id = $1 AND kind = 'effect';
 
 -- name: DeleteLongRestEffectsOfCampaign :many
 -- A long rest ends what lasts until one (SRD 5.1, "Resting"): every character of the table rests.
-DELETE FROM character_effects WHERE campaign_id = $1 AND duration_kind = 'long_rest' RETURNING *;
+-- Oldest first.
+WITH changed AS (
+    DELETE FROM character_effects WHERE campaign_id = $1 AND duration_kind = 'long_rest' RETURNING *
+)
+SELECT * FROM changed ORDER BY created_at, id;
 
 -- name: ListCombatEffectsOfCharacter :many
 -- The effects on a character's combatants in the combats that are not ended.
@@ -1796,7 +1842,11 @@ ORDER BY cs.created_at, cs.id;
 -- name: DeleteCharacterEffectsOfSpell :many
 -- The same spell cast again on a character replaces the first (SRD 5.1, Combining Magical
 -- Effects): the effects of the other castings go.
-DELETE FROM character_effects WHERE character_id = $1 AND source_key = $2 AND group_id <> $3 RETURNING id;
+-- Returns their IDs.
+WITH changed AS (
+    DELETE FROM character_effects WHERE character_id = $1 AND source_key = $2 AND group_id <> $3 RETURNING id
+)
+SELECT id FROM changed ORDER BY id;
 
 -- name: GetLatestRestKindInSession :one
 -- The kind ('short' or 'long') of the latest rest the master took in the session. No row:
@@ -1821,7 +1871,7 @@ SELECT EXISTS (
 SELECT * FROM character_inspiration WHERE character_id = $1 AND campaign_id = $2;
 
 -- name: ListCharacterInspirationOfCampaign :many
-SELECT * FROM character_inspiration WHERE campaign_id = $1;
+SELECT * FROM character_inspiration WHERE campaign_id = $1 ORDER BY character_id;
 
 -- name: InsertCharacterInspiration :exec
 INSERT INTO character_inspiration (character_id, campaign_id, source_character_id, sides, seconds_left, created_at)
@@ -1878,7 +1928,7 @@ SELECT * FROM inspiration_holds WHERE encounter_id = $1 AND answer_key IS NULL O
 -- name: ListOpenAttackHolds :many
 -- The weapon attacks of the combat that wait for an answer and are kept in inspiration_holds, for
 -- the combatants' views. The rolls of the other kinds held in a combat are not part of the view.
-SELECT * FROM inspiration_holds WHERE encounter_id = $1 AND kind = 'weapon_attack' AND answer_key IS NULL;
+SELECT * FROM inspiration_holds WHERE encounter_id = $1 AND kind = 'weapon_attack' AND answer_key IS NULL ORDER BY created_at, id;
 
 -- name: DeleteInspirationHold :exec
 DELETE FROM inspiration_holds WHERE id = $1;

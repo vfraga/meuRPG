@@ -24,11 +24,6 @@
   color: var(--mr-ink);
 }
 
-.panel__sub {
-  font-size: var(--mr-font-14);
-  color: var(--mr-ink-muted);
-}
-
 .panel__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

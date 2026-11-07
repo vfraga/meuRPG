@@ -1,13 +1,18 @@
 import { type HeldRollOffer, HeldRollKind } from '../../../gen/meurpg/play/v1/combat_pb';
 import { LUCKY_TITLE } from '../combat/lucky';
+import { MASTER_WAIT_SECONDS } from './held-roll-controller';
 import { inspirationDieName, promptTitle } from '../resources/bardic-inspiration';
 import {
   type HeldAnswer,
   asksIndomitable,
   asksLucky,
+  asksReroll,
   asksStroke,
   dieOf,
   indomitableFailed,
+  rerollFace,
+  rerollOf,
+  rerollSides,
   strokeFailed,
 } from './held-roll-offer';
 
@@ -42,8 +47,49 @@ export function strokeTitle(offer: HeldRollOffer | null | undefined): string {
 export const STROKE_WHAT =
   'Golpe de Sorte: um ataque que erra vira um acerto, ou um teste de habilidade conta o d20 como 20. Gasta o uso, que volta depois de um descanso curto ou longo.';
 
+/** Who gives the reroll: the feature's name as the server sent it (the roller and the master only), else "uma
+ * característica". */
+export function rerollSourceName(offer: HeldRollOffer | null | undefined): string {
+  return rerollOf(offer)?.sourceName || 'uma característica';
+}
+
+const usesText = (n: number) => (n === 1 ? '1 uso' : `${n} usos`);
+
+/** "Gasta 1 uso de Sorte Teimosa.": the offer names the resource only by its content key, so the feature's name stands for
+ * it. A free rule says it spends nothing. */
+export function rerollCost(offer: HeldRollOffer | null | undefined): string {
+  const q = rerollOf(offer);
+  if (!q || q.cost <= 0) {
+    return 'Não gasta nenhum uso.';
+  }
+  return `Gasta ${usesText(q.cost)} de ${rerollSourceName(offer)}.`;
+}
+
+/** The line under the reroll question, its lead in bold: "Sorte Teimosa: você rola este d20 de novo e fica com o novo
+ * resultado, mesmo se for pior. Gasta 1 uso de Sorte Teimosa." */
+export function rerollWhat(offer: HeldRollOffer): { readonly lead: string; readonly text: string } {
+  const pair = (offer.d20?.faces.length ?? 0) > 1;
+  const what = pair
+    ? `você rola de novo o dado que deu ${rerollFace(offer)} e fica com o novo resultado, mesmo se for pior.`
+    : `você rola este d${rerollSides(offer)} de novo e fica com o novo resultado, mesmo se for pior.`;
+  return { lead: `${rerollSourceName(offer)}:`, text: `${what} ${rerollCost(offer)}` };
+}
+
+/** The footer of the reroll question the roller reads. The app rolls the new die on every table, so nothing is typed. */
+export function rerollRollerFooter(offer: HeldRollOffer): string {
+  return `O app rola o novo d${rerollSides(offer)}, também numa mesa de dados físicos. Se você não responder, o mestre pode responder por você depois de ${MASTER_WAIT_SECONDS} s.`;
+}
+
+/** The footer of the reroll question the master reads. */
+export function rerollMasterFooter(offer: HeldRollOffer): string {
+  return `O app rola o novo d${rerollSides(offer)}; não há resultado para digitar.`;
+}
+
 /** The title the roller reads: "Tirou 1: rolar de novo?", "Usar a Inspiração de Bardo (d8)?" or Indomitable's. */
 export function questionTitle(offer: HeldRollOffer): string {
+  if (asksReroll(offer)) {
+    return `Tirou ${rerollFace(offer)}: rolar de novo?`;
+  }
   if (asksStroke(offer)) {
     return strokeTitle(offer);
   }
@@ -79,12 +125,25 @@ export function questionWhat(offer: HeldRollOffer, targetLabel: string): string 
   return attack && targetLabel ? `${kind} contra ${targetLabel}.` : `${kind}.`;
 }
 
+/** The master's rule of the reroll question: "Sorte Teimosa gasta 1 uso." */
+function rerollRule(offer: HeldRollOffer): { readonly lead: string; readonly text: string } {
+  const uses = rerollOf(offer)?.cost ?? 0;
+  const name = rerollSourceName(offer);
+  return {
+    lead: '',
+    text: uses > 0 ? `${name} gasta ${usesText(uses)}.` : `${name} não gasta nenhum uso.`,
+  };
+}
+
 /** The rule of the question, its lead in bold: "Sortudo: Brisa pode rolar esse d20 de novo e ficar com o novo resultado."
  * With a pair of dice only the one that showed the 1 is rolled again (SRD 5.1). */
 export function questionRule(offer: HeldRollOffer): {
   readonly lead: string;
   readonly text: string;
 } {
+  if (asksReroll(offer)) {
+    return rerollRule(offer);
+  }
   if (asksStroke(offer)) {
     return {
       lead: 'Golpe de Sorte:',
@@ -122,6 +181,9 @@ export function d20Chip(offer: HeldRollOffer): string {
   if (!roll) {
     return '';
   }
+  if (asksReroll(offer)) {
+    return String(rerollFace(offer));
+  }
   return asksLucky(offer)
     ? roll.faces.join(' e ')
     : String(roll.faces[roll.countedIndex] ?? roll.faces[0] ?? '');
@@ -151,6 +213,11 @@ export function pendingCountText(count: number): string {
 
 /** What the master's answer is doing while it is on the way: "Rolando o d20 de novo…". */
 export function askingText(answer: HeldAnswer, offer: HeldRollOffer): string {
+  if (answer.kind === 'reroll') {
+    return answer.reroll
+      ? `Rolando o d${rerollSides(offer)} de novo…`
+      : 'Ficando com o resultado do d20…';
+  }
   return answer.kind === 'stroke' ? strokeAskingText(answer.use) : rollAskingText(answer, offer);
 }
 
@@ -159,7 +226,7 @@ function strokeAskingText(use: boolean): string {
 }
 
 function rollAskingText(
-  answer: Exclude<HeldAnswer, { readonly kind: 'stroke' }>,
+  answer: Exclude<HeldAnswer, { readonly kind: 'stroke' | 'reroll' }>,
   offer: HeldRollOffer,
 ): string {
   if (answer.kind === 'indomitable') {

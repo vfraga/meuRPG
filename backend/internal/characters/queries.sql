@@ -234,7 +234,7 @@ WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND player_user_id = sqlc.arg(pl
 -- name: ListCharacterReviewStatuses :many
 -- The status of each open review of the campaign, for the master's list ("Ajustes pedidos")
 -- and the owner's own pending character. No reason leaves the table here.
-SELECT character_id, status FROM character_reviews WHERE campaign_id = sqlc.arg(campaign_id)::UUID;
+SELECT character_id, status FROM character_reviews WHERE campaign_id = sqlc.arg(campaign_id)::UUID ORDER BY character_id;
 
 -- name: ApprovePendingCharacterOfPlayer :execrows
 -- An ordinary invite promotes a pending member (RN-15): that counts as
@@ -418,7 +418,8 @@ FROM characters
 WHERE campaign_id = sqlc.arg(campaign_id)::UUID
   AND id = ANY(sqlc.arg(ids)::UUID[])
   AND kind <> 'player'
-  AND status = 'active';
+  AND status = 'active'
+ORDER BY id;
 
 -- name: ListCombatParty :many
 -- The campaign's living, active player characters, oldest first: the party
@@ -465,7 +466,8 @@ ORDER BY c.created_at, c.id;
 -- since: a player's reads leave it out (RN-10).
 SELECT id, kind, name, player_user_id, reserved FROM characters
 WHERE campaign_id = sqlc.arg(campaign_id)::UUID
-  AND id = ANY(sqlc.arg(ids)::UUID[]);
+  AND id = ANY(sqlc.arg(ids)::UUID[])
+ORDER BY id;
 
 -- name: ListCharacterNames :many
 -- The names of the given characters of the campaign, whatever their kind or
@@ -473,7 +475,8 @@ WHERE campaign_id = sqlc.arg(campaign_id)::UUID
 -- died since).
 SELECT id, name FROM characters
 WHERE campaign_id = sqlc.arg(campaign_id)::UUID
-  AND id = ANY(sqlc.arg(ids)::UUID[]);
+  AND id = ANY(sqlc.arg(ids)::UUID[])
+ORDER BY id;
 
 -- name: GetLevelUpRoll :one
 -- The hit die the server rolled for the character's next level (MR-040): one
@@ -624,25 +627,31 @@ WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND character_id = sqlc.arg(char
 -- name: DismissCreatures :many
 -- Sends the live ones of these creatures away, with the reason; a creature
 -- dismissed because it was defeated is at 0 hit points. Returns the ones it
--- dismissed.
-UPDATE character_creatures
-SET dismissed_at = sqlc.arg(at)::TIMESTAMPTZ, dismissed_reason = sqlc.arg(reason)::TEXT,
-    hp_current = CASE WHEN sqlc.arg(reason)::TEXT = 'defeated' THEN 0 ELSE hp_current END
-WHERE campaign_id = sqlc.arg(campaign_id)::UUID
-  AND id = ANY(sqlc.arg(ids)::UUID[])
-  AND dismissed_at IS NULL
-RETURNING id;
+-- dismissed, by ID.
+WITH changed AS (
+    UPDATE character_creatures
+    SET dismissed_at = sqlc.arg(at)::TIMESTAMPTZ, dismissed_reason = sqlc.arg(reason)::TEXT,
+        hp_current = CASE WHEN sqlc.arg(reason)::TEXT = 'defeated' THEN 0 ELSE hp_current END
+    WHERE campaign_id = sqlc.arg(campaign_id)::UUID
+      AND id = ANY(sqlc.arg(ids)::UUID[])
+      AND dismissed_at IS NULL
+    RETURNING id
+)
+SELECT id FROM changed ORDER BY id;
 
 -- name: ReviveCreatures :many
 -- Brings back the creatures dismissed for this reason (an undo): the ones
 -- defeated that an undo healed, the ones a master's undo of a casting or of the
--- end of a concentration gives back. Returns the ones it revived.
-UPDATE character_creatures
-SET dismissed_at = NULL, dismissed_reason = NULL
-WHERE campaign_id = sqlc.arg(campaign_id)::UUID
-  AND id = ANY(sqlc.arg(ids)::UUID[])
-  AND dismissed_reason = sqlc.arg(reason)::TEXT
-RETURNING id;
+-- end of a concentration gives back. Returns the ones it revived, by ID.
+WITH changed AS (
+    UPDATE character_creatures
+    SET dismissed_at = NULL, dismissed_reason = NULL
+    WHERE campaign_id = sqlc.arg(campaign_id)::UUID
+      AND id = ANY(sqlc.arg(ids)::UUID[])
+      AND dismissed_reason = sqlc.arg(reason)::TEXT
+    RETURNING id
+)
+SELECT id FROM changed ORDER BY id;
 
 -- name: DeleteCreatures :exec
 -- Takes the creatures a casting made away for good (the master's undo of it).
@@ -904,7 +913,8 @@ ORDER BY created_at, id;
 
 -- name: ListMasterNotesOfCampaign :many
 SELECT character_id, notes FROM character_master_notes
-WHERE campaign_id = sqlc.arg(campaign_id)::UUID;
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID
+ORDER BY character_id;
 
 -- name: InsertImportedNpc :exec
 -- An NPC made from a package: the id is chosen before, and the master owns it.

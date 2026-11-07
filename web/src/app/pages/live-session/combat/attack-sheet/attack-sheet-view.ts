@@ -181,6 +181,11 @@ export function heldWait(
     : null;
 }
 
+/** What the master's legendary attack spent: legendary actions, and nothing of the creature's own turn. */
+export function legendarySpentText(l: { readonly cost: number; readonly label: string }): string {
+  return `Custou ${l.cost} ${l.cost === 1 ? 'ação lendária' : 'ações lendárias'}; a vez de ${l.label} não foi gasta.`;
+}
+
 /** What the attack spent: the reaction, one of Extra Attack's attacks (the action stays open for the rest) or the action. */
 export function spentText(i: {
   readonly byMaster: boolean;

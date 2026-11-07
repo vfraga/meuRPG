@@ -985,11 +985,6 @@
       "count": 1
     }
   },
-  "src/app/pages/live-session/combat/action-groups/economy-tiles.ts": {
-    "@angular-eslint/prefer-on-push-component-change-detection": {
-      "count": 1
-    }
-  },
   "src/app/pages/live-session/combat/action-groups/group-state.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1

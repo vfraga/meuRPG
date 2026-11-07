@@ -3132,8 +3132,17 @@ type FeatPrerequisite struct {
 	// The guided level-up judges it before the feat's grants. The sheet judges it on what
 	// the character owns.
 	LacksFeatureKey string `protobuf:"bytes,9,opt,name=lacks_feature_key,json=lacksFeatureKey,proto3" json:"lacks_feature_key,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// True when the condition names a feature the player may not read; the key is then empty.
+	// Set by the server on a player's read. Ignored on write.
+	LacksHidden bool `protobuf:"varint,10,opt,name=lacks_hidden,json=lacksHidden,proto3" json:"lacks_hidden,omitempty"`
+	// The Portuguese name of lacks_feature_key, filled by the server on read. Empty when the key
+	// is empty or hidden. Ignored on write.
+	LacksFeatureNamePt string `protobuf:"bytes,11,opt,name=lacks_feature_name_pt,json=lacksFeatureNamePt,proto3" json:"lacks_feature_name_pt,omitempty"`
+	// True when the feat asks for races and none is left visible after the player's filter. Set by
+	// the server on a player's read; never for the master. Ignored on write.
+	RacesHidden   bool `protobuf:"varint,12,opt,name=races_hidden,json=racesHidden,proto3" json:"races_hidden,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *FeatPrerequisite) Reset() {
@@ -3227,6 +3236,27 @@ func (x *FeatPrerequisite) GetLacksFeatureKey() string {
 		return x.LacksFeatureKey
 	}
 	return ""
+}
+
+func (x *FeatPrerequisite) GetLacksHidden() bool {
+	if x != nil {
+		return x.LacksHidden
+	}
+	return false
+}
+
+func (x *FeatPrerequisite) GetLacksFeatureNamePt() string {
+	if x != nil {
+		return x.LacksFeatureNamePt
+	}
+	return ""
+}
+
+func (x *FeatPrerequisite) GetRacesHidden() bool {
+	if x != nil {
+		return x.RacesHidden
+	}
+	return false
 }
 
 // FeatIncrease is the ability increase a feat gives (its ability_increase effect):
@@ -3363,7 +3393,10 @@ type FeatUnmet struct {
 	Keys []string `protobuf:"bytes,5,rep,name=keys,proto3" json:"keys,omitempty"`
 	// The Portuguese name of `key` for a kind LACKS_FEATURE (the app's catalog has no
 	// features); empty when the players cannot see that feature, and then `key` is empty too.
-	NamePt        string `protobuf:"bytes,6,opt,name=name_pt,json=namePt,proto3" json:"name_pt,omitempty"`
+	NamePt string `protobuf:"bytes,6,opt,name=name_pt,json=namePt,proto3" json:"name_pt,omitempty"`
+	// True for kind LACKS_FEATURE (or RACE with every race hidden) when the condition names something the
+	// player may not read; `key` and `name_pt` are then empty. The master's view is never hidden.
+	Hidden        bool `protobuf:"varint,7,opt,name=hidden,proto3" json:"hidden,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3440,6 +3473,13 @@ func (x *FeatUnmet) GetNamePt() string {
 	return ""
 }
 
+func (x *FeatUnmet) GetHidden() bool {
+	if x != nil {
+		return x.Hidden
+	}
+	return false
+}
+
 // FeatOption is a feat a character may take, for the feat picker (the guided
 // level-up now; the creation of a character above level 1 next): the feat, whether
 // this character qualifies, and what it lacks when it does not. The server does
@@ -3481,6 +3521,9 @@ type FeatOption struct {
 	// The Portuguese name of `prerequisite.lacks_feature_key`; empty when it is not set or
 	// the players cannot see that feature.
 	LacksFeatureNamePt string `protobuf:"bytes,14,opt,name=lacks_feature_name_pt,json=lacksFeatureNamePt,proto3" json:"lacks_feature_name_pt,omitempty"`
+	// True when `prerequisite.lacks_feature_key` names a feature the player may not read: the key and
+	// the name are then empty. The master's view is never hidden.
+	LacksFeatureHidden bool `protobuf:"varint,15,opt,name=lacks_feature_hidden,json=lacksFeatureHidden,proto3" json:"lacks_feature_hidden,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3611,6 +3654,13 @@ func (x *FeatOption) GetLacksFeatureNamePt() string {
 		return x.LacksFeatureNamePt
 	}
 	return ""
+}
+
+func (x *FeatOption) GetLacksFeatureHidden() bool {
+	if x != nil {
+		return x.LacksFeatureHidden
+	}
+	return false
 }
 
 // DerivedSheet is everything the server computes from a character's full
@@ -12681,7 +12731,7 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\fconstitution\x18\x03 \x01(\x05R\fconstitution\x12\"\n" +
 	"\fintelligence\x18\x04 \x01(\x05R\fintelligence\x12\x16\n" +
 	"\x06wisdom\x18\x05 \x01(\x05R\x06wisdom\x12\x1a\n" +
-	"\bcharisma\x18\x06 \x01(\x05R\bcharisma\"\xd9\x02\n" +
+	"\bcharisma\x18\x06 \x01(\x05R\bcharisma\"\xd2\x03\n" +
 	"\x10FeatPrerequisite\x12:\n" +
 	"\bminimums\x18\x01 \x01(\v2\x1e.meurpg.rules.v1.AbilityScoresR\bminimums\x125\n" +
 	"\x06any_of\x18\x02 \x01(\v2\x1e.meurpg.rules.v1.AbilityScoresR\x05anyOf\x12'\n" +
@@ -12691,21 +12741,26 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x05level\x18\x06 \x01(\x05R\x05level\x12\x14\n" +
 	"\x05races\x18\a \x03(\tR\x05races\x12\x12\n" +
 	"\x04size\x18\b \x01(\tR\x04size\x12*\n" +
-	"\x11lacks_feature_key\x18\t \x01(\tR\x0flacksFeatureKey\"h\n" +
+	"\x11lacks_feature_key\x18\t \x01(\tR\x0flacksFeatureKey\x12!\n" +
+	"\flacks_hidden\x18\n" +
+	" \x01(\bR\vlacksHidden\x121\n" +
+	"\x15lacks_feature_name_pt\x18\v \x01(\tR\x12lacksFeatureNamePt\x12!\n" +
+	"\fraces_hidden\x18\f \x01(\bR\vracesHidden\"h\n" +
 	"\fFeatIncrease\x12\x14\n" +
 	"\x05count\x18\x01 \x01(\x05R\x05count\x12,\n" +
 	"\x04from\x18\x02 \x03(\x0e2\x18.meurpg.rules.v1.AbilityR\x04from\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\x05R\x05value\"^\n" +
 	"\x0eAbilityMinimum\x122\n" +
 	"\aability\x18\x01 \x01(\x0e2\x18.meurpg.rules.v1.AbilityR\aability\x12\x18\n" +
-	"\aminimum\x18\x02 \x01(\x05R\aminimum\"\xd3\x01\n" +
+	"\aminimum\x18\x02 \x01(\x05R\aminimum\"\xeb\x01\n" +
 	"\tFeatUnmet\x122\n" +
 	"\x04kind\x18\x01 \x01(\x0e2\x1e.meurpg.rules.v1.FeatUnmetKindR\x04kind\x12=\n" +
 	"\tabilities\x18\x02 \x03(\v2\x1f.meurpg.rules.v1.AbilityMinimumR\tabilities\x12\x10\n" +
 	"\x03key\x18\x03 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x04 \x01(\x05R\x05value\x12\x12\n" +
 	"\x04keys\x18\x05 \x03(\tR\x04keys\x12\x17\n" +
-	"\aname_pt\x18\x06 \x01(\tR\x06namePt\"\xa2\x04\n" +
+	"\aname_pt\x18\x06 \x01(\tR\x06namePt\x12\x16\n" +
+	"\x06hidden\x18\a \x01(\bR\x06hidden\"\xd4\x04\n" +
 	"\n" +
 	"FeatOption\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
@@ -12723,7 +12778,8 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x0fdesc_pt_missing\x18\f \x01(\bR\rdescPtMissing\x12 \n" +
 	"\fdesc_pt_only\x18\r \x01(\bR\n" +
 	"descPtOnly\x121\n" +
-	"\x15lacks_feature_name_pt\x18\x0e \x01(\tR\x12lacksFeatureNamePt\"\xcd\x13\n" +
+	"\x15lacks_feature_name_pt\x18\x0e \x01(\tR\x12lacksFeatureNamePt\x120\n" +
+	"\x14lacks_feature_hidden\x18\x0f \x01(\bR\x12lacksFeatureHidden\"\xcd\x13\n" +
 	"\fDerivedSheet\x12'\n" +
 	"\x0fcontent_version\x18\x01 \x01(\tR\x0econtentVersion\x12 \n" +
 	"\frace_name_pt\x18\x02 \x01(\tR\n" +

@@ -5,7 +5,7 @@ import type { KeyName } from './feat-text';
  * for the master's list and the read page. The server decides what the class has.
  */
 
-/** The name of a feature key: the table's by `nameOf`, an SRD one (no name in the catalog) from the last word of its key. */
+/** The name of a feature key: the table's by `nameOf`, else the last word of its key (after `--` for a table feature's). */
 export function featureKeyName(key: string, nameOf: KeyName): string {
   const named = nameOf(key);
   if (named !== key) {
@@ -13,7 +13,9 @@ export function featureKeyName(key: string, nameOf: KeyName): string {
   }
   const last =
     key
-      .split(':')
+      .split('--')
+      .pop()
+      ?.split(':')
       .pop()
       ?.replace(/@mesa$/, '') ?? key;
   const words = last.replace(/-/g, ' ');

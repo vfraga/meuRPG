@@ -14,6 +14,7 @@ import {
   type AttackEffects,
   type ConcentrationAnswer,
   type ConcentrationOutcome,
+  type LegendaryResistanceAnswer,
 } from './combat-client-types';
 import { attackResult, need } from './combat-client-wire';
 import { type CombatClientBase } from './combat-client-base';
@@ -66,6 +67,7 @@ export class CombatAttackCalls {
       // the extra action an effect gives (Velocidade).
       extraDieFaces: [...(effects.extraDieFaces ?? [])],
       useExtraAction: effects.useExtraAction ?? false,
+      legendaryOption: effects.legendaryOption ?? '',
     });
     return attackResult(res);
   }
@@ -278,6 +280,36 @@ export class CombatAttackCalls {
     };
   }
 
+  /** The master's answer to a Legendary Resistance window: the ticked creatures win their save; none leaves every save as rolled. */
+  answerLegendaryResistance(
+    campaignId: string,
+    encounterId: string,
+    windowId: string,
+    answer: LegendaryResistanceAnswer,
+    key: string,
+  ): Promise<AnswerResult> {
+    return this.answerReaction(
+      campaignId,
+      encounterId,
+      windowId,
+      answer.creatureIds.length > 0
+        ? { use: true, creatureIds: answer.creatureIds }
+        : { use: false },
+      key,
+    );
+  }
+
+  /** The master's answer to a Parry window: "Aparar" (`true`) or "Deixar passar" (`false`). */
+  answerParry(
+    campaignId: string,
+    encounterId: string,
+    windowId: string,
+    parry: boolean,
+    key: string,
+  ): Promise<AnswerResult> {
+    return this.answerReaction(campaignId, encounterId, windowId, { use: parry }, key);
+  }
+
   /**
    * `MarkReactionRolling`: the player says they are using an optional reaction and rolling now, so the master's
    * clock waits longer before it passes the window. Idempotent, so it needs no key.
@@ -314,6 +346,9 @@ export class CombatAttackCalls {
       extraDieFaces: how.kind === 'typed' ? [...(how.extra ?? [])] : [],
       ...(how.kind === 'typed' && how.second !== undefined ? { secondD20Face: how.second } : {}),
       ...(how.kind === 'app' || how.kind === 'typed' ? { maneuverKey: how.maneuverKey ?? '' } : {}),
+      ...(how.kind === 'app' || how.kind === 'typed'
+        ? { useLegendaryResistance: how.useLegendaryResistance ?? false }
+        : {}),
       idempotencyKey: key,
     });
     return {

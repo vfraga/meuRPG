@@ -57,6 +57,16 @@ describe('MoveRow', () => {
     expect(moves).toEqual([]);
   });
 
+  it("does not repeat the master's wait: the button points to the card that says it once", () => {
+    const { el, moves, button } = setup({ locked: 'Esperando o mestre' });
+    expect(el.querySelector('.row__why')).toBeNull();
+    expect(text(el)).not.toContain('Esperando o mestre');
+    expect(button()!.getAttribute('aria-disabled') === 'true' || button()!.disabled).toBe(true);
+    expect(button()!.getAttribute('aria-describedby')).toBe('master-wait-note');
+    button()!.click();
+    expect(moves).toEqual([]);
+  });
+
   it('has no button when there is nothing to move, or when the token is dragged on the map', () => {
     expect(setup({ left: 0 }).button()).toBeNull();
     expect(setup({ grappled: true }).button()).toBeNull();

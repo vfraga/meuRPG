@@ -9,6 +9,7 @@ import { EffectsClient } from '../../../../core/effects/effects-client';
 import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { settle } from '../../../../../test-settle';
 import { ReactionQueue } from './reaction-queue';
+import { heldReroll } from '../../../../core/held-rolls/held-roll-testing';
 import { fakeCombatClient } from '../../../../core/combat/combat-client-testing';
 
 const plain = (text: string | null | undefined) =>
@@ -441,6 +442,57 @@ describe('ReactionQueue, the answers and what each card says', () => {
       button(el, 'Rolar no app').click();
       await settle(fixture);
       expect(animator.play).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('a roll the master made that waits for a reroll question', () => {
+    const asked = () => heldReroll(2, 5, { rollerLabel: 'Brisa' } as never);
+    const note = (el: HTMLElement) => plain(el.querySelector('.mr-notice--warning p')?.textContent);
+
+    it('says where the question of an effect save is and when the master may answer', async () => {
+      const { fixture, el } = setup([effectSaveWindow({ mode: 'advantage' })]);
+      effectsApi.rollEffectSave.mockResolvedValue({
+        encounter: encounter({ revision: 9 } as never),
+        result: undefined,
+        held: asked(),
+      });
+      button(el, 'Rolar no app').click();
+      await settle(fixture);
+      expect(note(el)).toBe(
+        'A jogada de Brisa espera a resposta à pergunta "Tirou 2: rolar de novo?". Ela está na linha de Brisa; você pode responder depois de 10 s.',
+      );
+      expect(status(el)).not.toContain('resolvido');
+      expect(animator.play).not.toHaveBeenCalled();
+    });
+
+    it('drops the note when the roller answered and the window is no longer open', async () => {
+      const { fixture, el } = setup([effectSaveWindow({ mode: 'advantage' })]);
+      effectsApi.rollEffectSave.mockResolvedValue({
+        encounter: encounter({ revision: 9 } as never),
+        result: undefined,
+        held: asked(),
+      });
+      button(el, 'Rolar no app').click();
+      await settle(fixture);
+      expect(note(el)).toContain('espera a resposta');
+      fixture.componentRef.setInput(
+        'encounter',
+        encounter({ combatants, reactionWindows: [] } as never),
+      );
+      await settle(fixture);
+      expect(note(el)).toBe('');
+    });
+
+    it('says the same for a concentration save', async () => {
+      const { fixture, el } = setup([concentrationWindow('c', {}, {})]);
+      api.resolveConcentrationSave.mockResolvedValueOnce({
+        encounter: encounter({ revision: 9 } as never),
+        result: undefined,
+        held: asked(),
+      });
+      button(el, 'Rolar o teste').click();
+      await settle(fixture);
+      expect(note(el)).toContain('espera a resposta à pergunta "Tirou 2: rolar de novo?"');
     });
   });
 });

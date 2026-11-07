@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/slowclient"
 )
 
@@ -189,9 +190,9 @@ func (s *Server) Run(ctx context.Context) error {
 // It returns nil after a clean shutdown.
 func (s *Server) Serve(ctx context.Context, ln net.Listener) error {
 	serveErr := make(chan error, 1)
-	go func() {
+	safego.Go(s.logger, "serve http", func() {
 		serveErr <- s.httpServer.Serve(ln)
-	}()
+	}, func() { serveErr <- errors.New("httpserver: the server panicked") })
 	s.logger.InfoContext(ctx, "http server started", "addr", ln.Addr().String())
 
 	select {

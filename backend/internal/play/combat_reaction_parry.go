@@ -19,14 +19,15 @@ import (
 // Parry (SRD 5.1, the Reactions of the Bandit Captain, Erinyes, Gladiator, Knight, Marilith and Noble): the
 // creature adds a number to its armor class against one melee attack that would hit it, if it sees the
 // attacker and wields a melee weapon. The SRD says "melee attack"; the app offers melee weapon attacks only
-// (its own rule: a melee spell attack is not offered). A melee weapon attack that hits an NPC with the reaction waits
-// (AWAITING_REACTION) in a window of its own kind, answered by the master for the creature, as the Shield of an
-// NPC is. The d20 is kept: the answer compares the stored total with the armor class plus the bonus.
+// (its own rule: a melee spell attack is not offered). By default the server decides the Parry on its own, with no
+// window (combat_parry_auto.go). When the master switched the creature to "Perguntar" (SetMonsterReactionMode), a melee
+// weapon attack that hits it waits (AWAITING_REACTION) in a window of its own kind, answered by the master for the
+// creature, as the Shield of an NPC is. The d20 is kept: the answer compares the stored total with the armor class
+// plus the bonus.
 //
-// The app decides what the SRD leaves out, and says so: it cannot tell what a creature wields, so the master
-// answers for the weapon; and the window opens for every hit that is not a critical one, also when the bonus
-// would not change the outcome, so that a pause says nothing about how far the roll was from the armor class
-// (RN-10). The bonus is not kept on the creature: it holds for that one attack.
+// The app decides what the SRD leaves out, and says so: it cannot tell what a creature wields, so the server takes it
+// that it wields a melee weapon. In "Perguntar" the window opens for every hit that is not a critical one, also when
+// the bonus would not change the outcome. The bonus is not kept on the creature: it holds for that one attack.
 
 // parryOf is the Parry of a stat block, when it has one that adds a number to the armor class.
 func parryOf(st link.ReactionStats) (link.MonsterReaction, bool) {
@@ -37,12 +38,12 @@ func parryOf(st link.ReactionStats) (link.MonsterReaction, bool) {
 	return st.MonsterReactions[i], true
 }
 
-// parryWindows lists the window a hit opens for the Parry of its target: the target is an NPC that can react,
-// has the reaction in its stat block, sees the attacker, and the attack is a melee weapon attack. The kit is
-// the target's, already known to be able to react.
+// parryWindows lists the window a hit opens for the Parry of its target: the target is an NPC the master asked to
+// be asked for (the others parry on their own, autoParry) that can react, has the reaction in its stat block, sees
+// the attacker, and the attack is a melee weapon attack. The kit is the target's, already known to be able to react.
 func (s *Service) parryWindows(ctx context.Context, c *combatTx, k kit, attacker playdb.Combatant, trigger windowTrigger) ([]windowSpec, error) {
 	p, ok := parryOf(k.st)
-	if !ok || k.who.Kind != kindNPC {
+	if !ok || k.who.Kind != kindNPC || !parryAsks(k.who) {
 		return nil, nil
 	}
 	melee, err := s.meleeWeaponUse(ctx, c, attacker, k.who, trigger.Key)
@@ -191,11 +192,18 @@ func (wv *windowView) parryPrompt(w playdb.ReactionWindow, out *playv1.ReactionW
 	out.Prompt = &playv1.ReactionWindow_Parry{Parry: p}
 }
 
-// parry is the master's line of a Parry used. The players read no line of it: a Parry that stopped the hit is a
-// miss in the attack's own line, and one that did not changes nothing they see.
+// parry is the line of a Parry used. The master reads the numbers. A player reads a line only for a Parry the server
+// used on its own that turned a hit into a miss ("X aparou o ataque."), from a reactor they see and an attacker they
+// see; a Parry answered in a window, and one that changed nothing, are the master's alone.
 func (f *reactionFacts) parry() (string, bool) {
 	re := f.re
-	if !re.Used || !f.v.master {
+	if !re.Used {
+		return "", false
+	}
+	if !f.v.master {
+		if re.Auto && re.Stopped && f.seesReactor && !f.e.ev.AttackerHidden {
+			return f.who + " aparou o ataque.", true
+		}
 		return "", false
 	}
 	verdict := "o ataque ainda acertou"

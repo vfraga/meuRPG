@@ -79,6 +79,9 @@ func TestLegendaryProfileOfEverySRDStatBlock(t *testing.T) {
 		var got []string
 		for _, o := range p.Options {
 			got = append(got, optionLine(o))
+			if o.NamePT == "" || o.NamePT == o.Name {
+				t.Errorf("%s: option %q has no Portuguese name", e.Key, o.Name)
+			}
 		}
 		if !slices.Equal(got, want.options) {
 			t.Errorf("%s options = %v, want %v", e.Key, got, want.options)
@@ -176,5 +179,21 @@ func TestLegendaryMoveSpeedPercent(t *testing.T) {
 		if got != want {
 			t.Errorf("%s: the move walks %d%% of the speed, want %d%%", key, got, want)
 		}
+	}
+}
+
+// The option's Portuguese name is the content's; with none (homebrew content) it is the option's Name,
+// without the cost suffix.
+func TestLegendaryOptionNamePT(t *testing.T) {
+	t.Parallel()
+	p := ReadLegendaryProfile(Creature{LegendaryActions: []CreatureAbility{
+		{Name: "Tail Attack", NamePT: "Ataque de cauda"},
+		{Name: "Wing Attack (Costs 2 Actions)"},
+	}})
+	if got := p.Options[0].NamePT; got != "Ataque de cauda" {
+		t.Errorf("NamePT = %q, want the content's name", got)
+	}
+	if got := p.Options[1].NamePT; got != "Wing Attack" {
+		t.Errorf("NamePT = %q, want the name without the cost when the content has none", got)
 	}
 }

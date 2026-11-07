@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--mr-space-2) var(--mr-space-4);
-  align-items: start;
+  align-items: end;
 
   @media (min-width: 768px) {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -18,10 +18,18 @@
 
   &__hint {
     margin: 0;
-    padding-top: 26px;
     font-size: var(--mr-font-14);
     line-height: 18px;
     color: var(--mr-ink-muted);
+  }
+}
+
+.group {
+  min-width: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-focus);
+    outline-offset: 2px;
   }
 }
 
@@ -38,9 +46,9 @@
   display: inline-flex;
   align-items: center;
   gap: var(--mr-space-2);
-  min-height: 46px;
+  min-height: 44px;
   box-sizing: border-box;
-  padding: 0 0 0 14px;
+  padding: 0 0 0 var(--mr-space-3);
   border: 1px solid var(--mr-control-line);
   border-radius: var(--mr-radius-pill);
   background: var(--mr-surface);
@@ -76,8 +84,8 @@
     }
 
     .mat-icon {
-      width: 18px;
-      height: 18px;
+      width: var(--mr-font-18);
+      height: var(--mr-font-18);
       font-size: var(--mr-font-18);
     }
   }

@@ -2,27 +2,41 @@ import { TestBed } from '@angular/core/testing';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import { OutsideInspirationOfferSchema } from '../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  type HeldRollOffer,
+  HeldRollKind,
+  OutsideInspirationOfferSchema,
+} from '../../../../gen/meurpg/play/v1/combat_pb';
 import { GetOutsideInspirationResponseSchema } from '../../../../gen/meurpg/play/v1/resources_pb';
 import { RollSceneCheckResponseSchema } from '../../../../gen/meurpg/play/v1/scene_pb';
 import { LUCKY_TRAIT } from '../../../core/combat/lucky';
-import { heldAnswer, heldDie } from '../../../core/held-rolls/held-roll-testing';
+import {
+  heldAnswer,
+  heldDie,
+  heldIndomitable,
+  heldReroll,
+} from '../../../core/held-rolls/held-roll-testing';
 import { luckyOffer, sceneRoll } from '../../../core/play/scene-testing';
 import { ResourceClient } from '../../../core/resources/resources-client';
 import { BardicBlock, luckyAnswerText, minutesText } from './bardic-block';
 
 describe('BardicBlock', () => {
-  function setup(state: Parameters<typeof create<typeof GetOutsideInspirationResponseSchema>>[1]) {
+  function setup(
+    state: Parameters<typeof create<typeof GetOutsideInspirationResponseSchema>>[1],
+    listed: HeldRollOffer[] | null = null,
+  ) {
     const api = {
       outsideInspiration: vi
         .fn()
         .mockResolvedValue(create(GetOutsideInspirationResponseSchema, state)),
       giveBardicInspirationOutside: vi.fn().mockResolvedValue({}),
       answerHeldRoll: vi.fn(),
+      listHeldRolls: vi.fn().mockResolvedValue({ offers: listed ?? [] }),
     };
     TestBed.configureTestingModule({ providers: [{ provide: ResourceClient, useValue: api }] });
     const fixture = TestBed.createComponent(BardicBlock);
     fixture.componentRef.setInput('campaignId', 'c1');
+    fixture.componentRef.setInput('strokeQuestions', listed !== null);
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const settle = async () => {
@@ -146,6 +160,77 @@ describe('BardicBlock', () => {
     expect(el.textContent).toContain('Tirou 1: rolar de novo?');
     expect(el.textContent).not.toContain('Inspiração de Bardo');
     expect(button('Ficar com o 1')).toBeTruthy();
+  });
+
+  it('asks a reroll rule question again after a reload, for a roll outside the attack sheet, in its own section', async () => {
+    const scene = heldReroll(2, 5, { kind: HeldRollKind.SCENE_CHECK, attackKey: '' });
+    const { el, button, settle } = setup({}, [scene]);
+    await settle();
+    const headings = Array.from(el.querySelectorAll('h2'), (h) => h.textContent?.trim());
+    expect(headings).toEqual(['casinoRolar de novo']);
+    expect(el.textContent).toContain('Tirou 2: rolar de novo?');
+    expect(el.textContent).toContain('Sorte Teimosa: você rola este d20 de novo');
+    expect(el.textContent).not.toContain('Inspiração de Bardo');
+    expect(button('Ficar com o 2')).toBeTruthy();
+  });
+
+  it('leaves a weapon attack’s reroll question to the attack sheet', async () => {
+    const { el, settle } = setup({}, [
+      heldReroll(2, 5, { kind: HeldRollKind.WEAPON_ATTACK, attackKey: 'a' }),
+    ]);
+    await settle();
+    expect(el.textContent?.trim()).toBe('');
+  });
+
+  it('keeps an Indomitable question out of the die section, since it has no die', async () => {
+    const { el, settle } = setup({}, [
+      heldIndomitable(5, 0, true, { kind: HeldRollKind.SCENE_CHECK }),
+    ]);
+    await settle();
+    expect(el.textContent).not.toContain('Inspiração de Bardo');
+    expect(el.querySelector('h2')).toBeNull();
+  });
+
+  it('answers the reroll question with the server rolling, and says what it came to', async () => {
+    const scene = heldReroll(2, 5, { kind: HeldRollKind.SCENE_CHECK, attackKey: '' });
+    const { api, el, button, settle } = setup({}, [scene]);
+    api.answerHeldRoll.mockResolvedValue(
+      heldAnswer({
+        result: {
+          case: 'sceneCheck',
+          value: create(RollSceneCheckResponseSchema, {
+            roll: sceneRoll('r1', 'a1', 'Pipo', 19, {
+              roll: {
+                diceCount: 1,
+                diceSides: 20,
+                faces: [14],
+                modifier: 5,
+                total: 19,
+                rerolled: [
+                  {
+                    index: 0,
+                    from: 2,
+                    to: 14,
+                    sourceKey: 'feature:stubborn-luck',
+                    sourceName: 'Sorte Teimosa',
+                  },
+                ],
+              },
+            }),
+          }),
+        },
+      }),
+    );
+    await settle();
+    button('Rolar de novo')!.click();
+    await settle();
+    expect(api.answerHeldRoll).toHaveBeenCalledWith(
+      'c1',
+      'h1',
+      { kind: 'reroll', reroll: true, roll: null },
+      expect.any(String),
+    );
+    expect(el.textContent).toContain('Sorte Teimosa: 2 → 14. Seu total: 19.');
   });
 
   it('answers the Lucky question once per answer and reads the state again', async () => {

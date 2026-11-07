@@ -116,7 +116,7 @@ func (s *Service) endZonesOf(ctx context.Context, c *combatTx, owner playdb.Comb
 	if err != nil {
 		return fmt.Errorf("end the spell zones: %w", err)
 	}
-	for _, z := range zonesOfRows(rows) {
+	for _, z := range zonesOfRows(spellZones(rows)) {
 		c.zoneChanged(z)
 		if err := s.closeZoneWindows(ctx, c, z.row.ID, endConcentration); err != nil {
 			return err

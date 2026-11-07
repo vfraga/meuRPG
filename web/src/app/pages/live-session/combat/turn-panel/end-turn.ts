@@ -1,3 +1,4 @@
+import { MASTER_WAIT_NOTE_ID, isMasterWait } from '../../../../core/combat/reactions';
 import {
   Component,
   ElementRef,
@@ -55,12 +56,12 @@ let nextId = 0;
         [disabled]="busy() || !!waiting() || queued()"
         disabledInteractive
         [attr.aria-busy]="queued() || null"
-        [attr.aria-describedby]="waiting() ? id + '-why' : null"
+        [attr.aria-describedby]="waiting() ? (masterWait() ? waitNoteId : id + '-why') : null"
         (click)="press()"
       >
         <mat-icon aria-hidden="true">flag</mat-icon>{{ label() }}
       </button>
-      @if (waiting()) {
+      @if (waiting() && !masterWait()) {
         <!-- The reason the turn cannot end, read with the button (it stays reachable by Tab). -->
         <span class="mr-visually-hidden" [id]="id + '-why'">{{ waiting() }}: a vez continua quando responderem.</span>
       }
@@ -141,6 +142,9 @@ export class EndTurn {
   readonly block = input(false);
   /** An opportunity attack waits for an answer ("Esperando a reação do mestre"): the turn cannot end. */
   readonly waiting = input('');
+  /** The wait is the master's: the turn card says it once, and the button points to it. */
+  protected readonly masterWait = computed(() => isMasterWait(this.waiting()));
+  protected readonly waitNoteId = MASTER_WAIT_NOTE_ID;
   /** The character is surprised (W7-X): the turn only passes ("Passar o turno"), with nothing to ask, as nothing is available. */
   readonly surprised = input(false);
   /**

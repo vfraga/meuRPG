@@ -406,6 +406,7 @@ Se não deixa, todos usam o tipo que o mestre define.
 - Com um dado físico o jogador digita a soma dos dados sem o modificador (a face do d20, de 1 a 20), e o app soma o modificador. A soma precisa caber entre o mínimo e o máximo dos dados.
 - A regra cobre a iniciativa, as rolagens de ataque e de dano, os ataques de magia, o dano e a cura de magias, o Retomar o Fôlego, os testes contra a morte, o d20 de uma ação de cena de RP, a busca por armadilhas, as dicas de quebra-cabeça, o teste em grupo, os dois lados de uma disputa, o Esconder-se, o teste de habilidade da Contramágica e os valores de habilidade em 4d6 de uma ficha nova. Um modo que o mestre forçou recusa o outro jeito com "A campanha mudou a forma de rolar os dados. Recarregue a página.".
 - O teste de resistência de um alvo de magia é sempre rolado pelo app com o bônus da ficha.
+- O "rolar de novo?" de uma característica da mesa (RN-23) é rolado pelo app mesmo quando o mestre força os dados físicos: é o único d20 que o jogador não pode digitar.
 - Os PV rolados quando um personagem é criado não fazem parte desta regra.
 - Telas: o painel "Dados" do mestre, o "Como você rola os dados" do jogador, e as folhas de rolagem, que mostram "Rolar no app" e "Digitar o resultado" na ordem da preferência, ou só o jeito que um modo forçado permite.
 
@@ -595,8 +596,21 @@ Os membros leem o conteúdo da campanha, menos as criaturas; só o mestre escrev
 - **Os interruptores.** Em "Opções para os jogadores", o mestre liga ou desliga cada classe, subclasse, raça, sub-raça, antecedente, magia, talento, opção e característica de classe, do SRD e da mesa por igual (um interruptor por opção, quantas fichas a usam, "Ligar todas" e "Desligar todas" por tipo, salvo na hora). Tudo vem ligado por padrão. O que está desligado nunca chega a um jogador em nenhuma leitura; as fichas que já o usam continuam funcionando; uma classe desligada esconde suas subclasses, características e opções, e uma raça desligada suas sub-raças e traços, exceto numa ficha que já tem a original (a ficha mantém o que sua própria raça, classe ou subclasse dá). Uma nova escolha de um jogador por uma opção desligada é recusada (na criação, na edição e na subida de nível), uma edição sem relação nunca é, e o mestre nunca é recusado. A ficha de um jogador mantém, ao ser editada ou subir de nível, o que o mestre arquivou ou desligou depois.
   O mestre liga e desliga criaturas no grupo "Criaturas" desta tela.
   O editor de criatura tem o mesmo interruptor.
-- **Uma magia da mesa pode invocar criaturas.** Elas são da mesa ou do SRD e seguem as regras das magias de invocação do SRD: o espaço de magia, a concentração, a substituição, a dispensa e o desfazer. O número de criaturas pode depender de quem conjura e do espaço usado. Os jogadores leem as criaturas como em qualquer invocação. Quem conjura recebe os nomes das criaturas (sem números) ao escolher quais trazer.
-- **Uma habilidade da mesa pode invocar criaturas.** Uma habilidade de classe, subclasse, traço de raça ou antecedente, ou uma habilidade que o mestre adiciona a uma classe como entrada própria, pode trazer criaturas da mesa ou do SRD. Elas seguem as mesmas regras de uma magia de invocação: concentração, substituição, dispensa e desfazer. A habilidade diz quantas criaturas vêm, qual recurso gasta (um uso por conjuração), como os usos voltam num descanso e quanto tempo leva e dura. Ela não gasta espaço de magia, então um espaço maior não muda nada. O desfazer devolve o uso. O jogador lê as criaturas como em qualquer invocação, e o jogador que não tem nenhuma não lê as criaturas da habilidade.
+- **Uma magia da mesa pode invocar criaturas.** Elas são da mesa ou do SRD.
+  Seguem as regras das magias de invocação do SRD: o espaço de magia, a concentração, a substituição, a dispensa e o desfazer.
+  O número de criaturas pode depender de quem conjura e do espaço usado.
+  Os jogadores leem as criaturas como em qualquer invocação.
+  Quem conjura recebe os nomes das criaturas (sem números) ao escolher quais trazer.
+- **Uma habilidade da mesa pode invocar criaturas.** Uma habilidade de classe, subclasse, traço de raça ou antecedente, ou uma habilidade que o mestre adiciona a uma classe como entrada própria, pode trazer criaturas da mesa ou do SRD.
+  Elas seguem as mesmas regras de uma magia de invocação: concentração, substituição, dispensa e desfazer.
+  A habilidade diz quantas criaturas vêm, quantas ao mesmo tempo, o turno e o que uma nova conjuração faz com as antigas.
+  Cada conjuração gasta um uso de um recurso da habilidade (ou da classe).
+  Os usos voltam pela recarga do próprio recurso.
+  A habilidade não gasta espaço de magia, então um espaço maior não muda nada e `slot()` vale 0 na contagem.
+  O desfazer devolve o uso.
+  O jogador lê as criaturas como em qualquer invocação.
+  O jogador que não tem nenhuma não lê as criaturas da habilidade na lista da mesa nem na página de uma criatura.
+  Quem tem a habilidade lê os nomes das criaturas (sem números) ao escolher quais trazer.
 - **As telas abertas acompanham.** Quando o mestre muda o conteúdo ou um interruptor, as telas abertas dos jogadores leem as listas de novo, cada uma com o papel de quem a lê.
 - **Uma ficha que usa conteúdo da mesa não passa para outra campanha.** Essa verificação espera por copiar personagem e reutilizar NPCs ([MR-021](historias.md#mr-021-copiar-personagem), [MR-022](historias.md#mr-022-reutilizar-npcs)). Copiar conteúdo para outra campanha é [MR-026](historias.md#mr-026-propor-uma-raça-ou-classe-nova), depois do MVP.
 - **O alvo de uma magia.** Uma criatura, várias (uma a mais por nível acima, se o mestre quiser), uma área (cone, cubo, cilindro, linha ou esfera, em passos de 1,5 m) ou só quem conjura.
@@ -616,8 +630,8 @@ Os membros leem o conteúdo da campanha, menos as criaturas; só o mestre escrev
   Um efeito de quem os jogadores não veem não nomeia ninguém.
   O efeito duradouro de uma classe ou característica é um estado do dono.
 - **Classes.** Uma classe da mesa traz a tabela de 20 níveis (bônus de proficiência, características, truques e magias conhecidos, espaços ou espaços de pacto), dado de vida, testes de resistência, perícias, proficiências, os níveis de aumento de habilidade (4, 8, 12, 16 e 19 por padrão) e conjuração (nenhuma, completa, metade ou pacto). O conjurador de um terço é uma subclasse que conjura. O editor de classe começa dos números do servidor. A multiclasse na criação e na subida de nível funciona com classes da mesa, com os pré-requisitos do SRD como aviso na ficha.
-- **Raças e sub-raças.** Uma sub-raça da mesa soma os bônus de habilidade e os traços dela aos da raça. Ela pode, em vez disso, substituir alguns traços da raça, ou todos os bônus de habilidade da raça, inclusive os que o jogador distribui. O personagem dessa sub-raça não tem um traço substituído, e o catálogo e a prévia do editor mostram o que ela substitui. Um traço pode oferecer uma escolha única de "um entre", pedida em "Escolhas" (RN-33). O editor não tem campos para isso; um pacote de conteúdo os traz.
-- **Talentos.** Um talento da mesa pode pedir valores de habilidade, uma proficiência, conjuração, um nível, uma entre várias raças (uma sub-raça conta como a raça dela), um tamanho ou uma característica que o personagem não pode ter. O jogador que não cumpre é recusado na subida de nível e numa escolha de talento, e uma raça, um talento a não ter ou uma característica que o mestre escondeu nunca é nomeado a um jogador, na cópia do talento, nas opções da subida de nível nem nos cartões de talento, exceto o que a própria ficha dele tem (a raça, ou um talento ou característica que ela possui). Um talento que pede só raças escondidas não é oferecido a eles. O editor não tem campos para as raças, o tamanho nem a característica ausente; um pacote de conteúdo os traz.
+- **Raças e sub-raças.** Uma sub-raça da mesa soma os bônus de habilidade e os traços dela aos da raça. Ela pode, em vez disso, substituir alguns traços da raça, ou todos os bônus de habilidade da raça, inclusive os que o jogador distribui. O personagem dessa sub-raça não tem um traço substituído, e o catálogo e a prévia do editor mostram o que ela substitui. Um traço pode oferecer uma escolha única de "um entre", pedida em "Escolhas" (RN-33). O editor de sub-raça lista os traços da raça numa lista para marcar os que ela substitui, e o editor de traço tem as opções de uma escolha "um entre". Um pacote traz os mesmos campos.
+- **Talentos.** Um talento da mesa pode pedir valores de habilidade, uma proficiência, conjuração, um nível, uma entre várias raças (uma sub-raça conta como a raça dela), um tamanho ou uma característica que o personagem não pode ter. O jogador que não cumpre é recusado na subida de nível e numa escolha de talento, e uma raça, um talento a não ter ou uma característica que o mestre escondeu nunca é nomeado a um jogador, na cópia do talento, nas opções da subida de nível nem nos cartões de talento, exceto o que a própria ficha dele tem (a raça, ou um talento ou característica que ela possui). Um talento que pede só raças escondidas não é oferecido a eles. O editor de talento tem campos para as raças, o tamanho e a característica ausente, e um pacote também os traz.
 - **Opções e escolhas de um talento.** Um talento da mesa pode ter uma lista de até 60 opções para o jogador escolher, ou oferecer um conjunto inteiro de opções do SRD (os estilos de luta, por exemplo). Pode também pedir ao jogador uma habilidade ou um tipo de dano, dar um nome a ela e usá-la nos outros efeitos do talento: a proficiência no teste de resistência daquela habilidade, a resistência àquele tipo de dano, a CD calculada com aquela habilidade. Enquanto a escolha não é feita, os efeitos que a usam não valem e a ficha a pede. Um modificador do valor de uma habilidade leva um limite de 20 a 30, e um valor que já passa dele fica como está.
   As opções próprias de um talento se escondem só com o talento.
   Só as opções de um conjunto de opções se escondem uma a uma.
@@ -626,8 +640,8 @@ Os membros leem o conteúdo da campanha, menos as criaturas; só o mestre escrev
   Uma manobra sem dado é uma ação em "Habilidades" que gasta um uso dos mesmos dados e a ação que ela declara.
 - **Forma Selvagem.** Uma subclasse ou característica da mesa muda a Forma Selvagem do druida (MR-037): o maior nível de desafio das feras (um fixo, ou tirado do nível, como o nível dividido por 3), quantos usos da Forma Selvagem cada mudança de forma gasta (nenhum, para uma mudança grátis) e se os ataques da fera contam como mágicos. O personagem vale-se do mais permissivo do que tem: o maior nível de desafio, o menor custo e ataques mágicos se alguma característica der. A lista de formas e a escolha concordam.
 - **A margem de acerto crítico.**
-  Um modificador da mesa "Margem de acerto crítico (o menor d20 que é crítico)" define o menor d20 natural que é acerto crítico, de 15 a 20.
-  Só o modo "Definir" é aceito, o servidor recusa os outros, e uma fórmula fica entre 15 e 20.
+  Um modificador da mesa "Margem de acerto crítico" define o menor d20 natural que é acerto crítico, de 15 a 20.
+  Só o modo "Definir" é aceito: o editor o trava e o servidor recusa os outros, e uma fórmula fica entre 15 e 20.
   O campo "Vale para" diz quais ataques: os ataques com arma (o padrão, como o Crítico Aprimorado), as jogadas de ataque de magia, ou os dois.
   Uma jogada de ataque de magia é crítica num 20, a menos que um modificador do escopo de magia o baixe; o Crítico Aprimorado e o Crítico Superior nunca o baixam.
   Para ataques com arma, vale o menor entre o valor da mesa e a margem das características de classe (Crítico Aprimorado, Crítico Superior).
@@ -659,7 +673,8 @@ Os membros leem o conteúdo da campanha, menos as criaturas; só o mestre escrev
     Responder sim gasta os usos e rola um novo d20 que vale, mesmo se for outra face baixa; responder não não gasta nada.
     Vale para jogadas de ataque com arma e com magia, para o teste de cena, o teste em grupo, o teste de resistência de um efeito e o teste de concentração.
     Nunca vale para uma disputa (agarrar, empurrar, escapar), Esconder-se, o teste do Contramágica, um teste contra a morte, a iniciativa, uma busca por armadilha ou uma dica de enigma.
-    O app não tem tela para a pergunta, então ele não pergunta: toda jogada vale como foi rolada e nada fica retido nem é gasto.
+    O app pergunta nessas jogadas, e a jogada espera a resposta.
+    O jogador lê "Tirou 2: rolar de novo?" com o nome da característica, "Rolar de novo" e "Ficar com o 2"; o mestre a lê na linha de quem rolou e pode responder por essa pessoa depois de dez segundos.
     A pergunta é do jogador da rolagem e do mestre, como a do Sortudo (RN-35).
   - **Sortudo.** Uma jogada que faz a pergunta do Sortudo do halfling não recebe a de rolar de novo, então as duas nunca se encontram numa jogada.
   - **Dano.** O app rola os dados de dano de novo sozinho e nunca pergunta.
@@ -669,8 +684,8 @@ Os membros leem o conteúdo da campanha, menos as criaturas; só o mestre escrev
     No dano com partes (um golpe de arma e os extras dele) a parte lista os dados rolados de novo com a característica que deu o efeito; os outros danos mostram só os dados novos.
     O uso é gasto junto com o dano, e desfazer o dano o devolve.
   - **Dados físicos.** O app rola o novo d20 e os novos dados de dano sozinho, mesmo numa mesa de dados físicos, então esse dado não é digitado pelo jogador (a RN-18 não vale para ele).
-  - **Não coberto.** O editor do mestre lista "Rolar de novo" e "Valor mínimo no dado", mas não consegue salvá-los: escreva-os pela API.
-    A margem de crítico se escolhe no editor como um modificador, e o servidor recusa qualquer modo que não seja "Definir".
+  - **O nome da característica.** O jogador que rola e o mestre leem, junto da jogada, o nome da entrada que a mudou (um "Rolar de novo" ou um mínimo).
+    Outro jogador nunca o lê, e ninguém lê o nome de uma entrada que o mestre aposentou ou desligou.
 - **Espaços de magia.** Uma característica da mesa pode transformar usos do seu recurso num espaço de magia livre de um nível, até o próximo descanso longo; gastar um espaço de magia do nível que o jogador escolhe para curar mais dados a cada nível; ou, depois de um descanso curto, recuperar espaços gastos até um nível e um nível combinado, uma vez por uso do seu recurso (o formato da Recuperação Arcana). Cada gasto passa pelos números do personagem como qualquer outro, aparece no registro do combate com o nível do espaço, e o desfazer do mestre o devolve; a recuperação, como a Recuperação Arcana, não se desfaz, o mestre ajusta os espaços à mão.
 - **O antecedente "Outro"** segue a regra do SRD 5.1 "Customizing a Background".
 - **Criaturas.**
@@ -906,7 +921,10 @@ O jogador lê a espera e depois um teste que passou ou falhou, nunca a rolagem, 
 Uma criatura sem a característica ou sem uso sobrando é rolada na hora.
 A característica não é oferecida em nenhum outro teste de resistência: o de uma armadilha, Expulsar Mortos-Vivos, Repreensão Infernal ou uma manobra de provocação.
 Um monstro com a reação Aparar (Capitão Bandido, Erínia, Gladiador, Cavaleiro, Marilith, Nobre) pode somar 2 a 5 à sua classe de armadura contra um ataque corpo a corpo com arma que o acertaria (RN-31).
-O mestre lê a oferta e responde pela criatura; o jogador lê só a espera, depois um acerto ou erro comum, nunca a reação, o bônus nem a classe de armadura (RN-20).
+O servidor decide o Aparar sozinho, sem janela, para que uma espera nunca diga aos jogadores quais NPCs têm a reação (RN-10).
+Quando o bônus transforma um acerto em erro, é um erro, e os jogadores leem um erro mais a linha "<nome> aparou o ataque.", sem número, quando o mestre não escondeu deles nem a criatura nem o atacante.
+Quando não transformaria, nada muda e nada espera.
+O mestre lê os números no registro e pode pôr uma criatura em "Perguntar" para responder por ela numa janela; o jogador nunca lê o modo, o bônus nem a classe de armadura (RN-20).
 As outras reações dele (Dividir, Grito, Pegar Pedra, Máscara Inquietante...) são texto na ficha da criatura que o app não resolve.
 Uma criatura com ações lendárias (SRD 5.1) tem 3 por rodada, como o SRD dá a toda criatura lendária.
 Elas são só do mestre e voltam no começo do turno da própria criatura.
@@ -980,12 +998,13 @@ Não existe "Pular": toda janela é respondida com "Usar" ou "Deixar passar", ou
 | Queda Lenta (monge 4) | O monge em queda tira 5 vezes o nível dele do próprio dano de queda. |
 | Ataque de oportunidade | Veja a RN-21. |
 | Teste de concentração | O dano a uma criatura concentrada pede Constituição contra CD 10 ou metade do dano; 0 PV encerra a concentração sem teste (RN-22). |
-| Aparar (monstro) | Um ataque corpo a corpo com arma acerta uma criatura cuja ficha tem a reação: +2 a +5 de CA contra esse ataque, respondida pelo mestre pela criatura. |
+| Aparar (monstro) | Um ataque corpo a corpo com arma acerta uma criatura cuja ficha tem a reação: +2 a +5 de CA contra esse ataque, decidido pelo servidor sem janela (uma janela só para o mestre em "Perguntar"). |
 | Resistência Lendária | A magia de um jogador com teste de resistência, ou um efeito de acerto que rola um teste, alcança uma criatura com a característica e um uso sobrando, quer o teste de resistência dela tenha passado, quer tenha falhado: o lançamento ou a resposta ao efeito espera só o mestre (RN-29). A área de uma magia que pega essa criatura pede o teste dela só ao mestre. |
 
-O Aparar de um monstro é um por rodada, e a rolagem guardada é comparada com a nova classe de armadura.
+O Aparar de um monstro é um por rodada, e a rolagem é comparada com a nova classe de armadura.
 Um acerto que não a alcança mais vira erro.
-Não abre janela quando a criatura não pode reagir, não vê o atacante ou já reagiu na rodada, nem para um ataque à distância ou de magia ou um acerto crítico.
+O servidor só apara quando isso muda o resultado; não faz nada quando a criatura não pode reagir, não vê o atacante ou já reagiu na rodada, nem para um ataque à distância ou de magia ou um acerto crítico.
+Em "Perguntar" abre uma janela para o mestre a cada acerto corpo a corpo que não é crítico, também quando o bônus não muda nada.
 O reator rola no app, digita um dado físico ou deixa a jogada para o mestre.
 A ação em espera aguarda até a janela ser respondida, e é descartada se não puder mais acontecer; só o mestre lê isso.
 O turno espera pelas janelas abertas.

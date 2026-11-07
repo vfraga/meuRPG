@@ -92,13 +92,12 @@ func (p *InProcess) Enqueue(_ context.Context, job Job) error {
 	}
 	p.mu.Unlock()
 	p.wg.Add(1)
-	go p.run(job.Kind, reg, payload, job.At)
+	safego.Go(p.logger, "task "+string(job.Kind), func() { p.run(job.Kind, reg, payload, job.At) })
 	return nil
 }
 
 func (p *InProcess) run(kind Kind, reg registered, payload json.RawMessage, at time.Time) {
 	defer p.wg.Done()
-	defer safego.Recover(p.logger, "task "+string(kind))
 	if wait := time.Until(at); !at.IsZero() && wait > 0 {
 		select {
 		case <-time.After(wait):
@@ -141,13 +140,12 @@ func (p *InProcess) Start(ctx context.Context) {
 	p.mu.Unlock()
 	for _, s := range every {
 		p.wg.Add(1)
-		go p.tick(ctx, s)
+		safego.Go(p.logger, "schedule "+string(s.kind), func() { p.tick(ctx, s) })
 	}
 }
 
 func (p *InProcess) tick(ctx context.Context, s scheduled) {
 	defer p.wg.Done()
-	defer safego.Recover(p.logger, "schedule "+string(s.kind))
 	p.mu.Lock()
 	reg := p.handlers[s.kind]
 	p.mu.Unlock()
@@ -173,7 +171,7 @@ func (p *InProcess) tick(ctx context.Context, s scheduled) {
 // Wait waits for the running handlers and tickers, up to ctx.
 func (p *InProcess) Wait(ctx context.Context) {
 	done := make(chan struct{})
-	go func() { p.wg.Wait(); close(done) }()
+	safego.Go(p.logger, "wait for the tasks", func() { defer close(done); p.wg.Wait() })
 	select {
 	case <-done:
 	case <-ctx.Done():

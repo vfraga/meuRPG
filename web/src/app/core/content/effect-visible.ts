@@ -8,6 +8,30 @@ interface Shape {
   readonly proficiency: string;
   readonly applies: string;
   readonly spellChange: string;
+  readonly target?: string;
+  readonly rolls?: readonly string[];
+  readonly resource?: string;
+  readonly cost?: string;
+  readonly damageType?: string;
+}
+
+/** The modifier target whose scope ("Vale para") is asked: the critical range, the only target that reads `applies`. */
+export const CRITICAL_RANGE_TARGET = 'critical_range';
+
+/** The fields of a reroll, a roll minimum or a modifier that apply now. A field that holds a value stays, so a refusal of it has
+ * somewhere to land: the damage type of a minimum on rolls other than damage alone, the cost of a reroll with no resource. */
+function rollFieldsHidden(d: Shape): readonly string[] {
+  if (d.type === 'roll_minimum') {
+    const only = d.rolls?.length === 1 && d.rolls[0] === 'damage';
+    return only || (d.damageType ?? '') !== '' ? [] : ['damage_type'];
+  }
+  if (d.type === 'reroll') {
+    return (d.resource ?? '') !== '' || (d.cost ?? '') !== '' ? [] : ['cost'];
+  }
+  if (d.type === 'modifier') {
+    return d.target === CRITICAL_RANGE_TARGET ? [] : ['applies'];
+  }
+  return [];
 }
 
 /** What a spell_modifier's change reads besides the fields every change has: the swap lists the types it swaps among, the bonus
@@ -39,8 +63,23 @@ export function visibleFields(
     return fields.filter((f) => !hidden.includes(f.name));
   }
   if (d.type !== 'spell_modifier') {
-    return fields.filter((f) => f.name !== 'only_proficient' || onlyProficientApplies(d));
+    const hidden = rollFieldsHidden(d);
+    return fields.filter(
+      (f) => !hidden.includes(f.name) && (f.name !== 'only_proficient' || onlyProficientApplies(d)),
+    );
   }
   const own = SPELL_CHANGE_FIELDS[d.spellChange] ?? [];
   return fields.filter((f) => !SPELL_CHANGE_ONLY.has(f.name) || own.includes(f.name));
+}
+
+/** The optional fields the editor never folds under "Mais opções": what a reroll spends and costs, the damage type of a minimum, the
+ * scope of the critical range. Each is in `visibleFields` only when it applies, so showing it is showing what the effect reads. */
+const NEVER_FOLDED: Readonly<Record<string, readonly string[]>> = {
+  reroll: ['resource', 'cost'],
+  roll_minimum: ['damage_type'],
+  modifier: ['applies'],
+};
+
+export function neverFolded(type: string, name: string): boolean {
+  return NEVER_FOLDED[type]?.includes(name) ?? false;
 }

@@ -7981,8 +7981,10 @@ type EffectMenuValue struct {
 	// added); empty means every mode.
 	OnlyModes []string `protobuf:"bytes,4,rep,name=only_modes,json=onlyModes,proto3" json:"only_modes,omitempty"`
 	// For the same, the bounds of a literal value; both zero when unbounded.
-	Min           int32 `protobuf:"varint,5,opt,name=min,proto3" json:"min,omitempty"`
-	Max           int32 `protobuf:"varint,6,opt,name=max,proto3" json:"max,omitempty"`
+	Min int32 `protobuf:"varint,5,opt,name=min,proto3" json:"min,omitempty"`
+	Max int32 `protobuf:"varint,6,opt,name=max,proto3" json:"max,omitempty"`
+	// The key that groups the value: for "race_traits", the race that has the trait; empty elsewhere.
+	Group         string `protobuf:"bytes,7,opt,name=group,proto3" json:"group,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8059,6 +8061,13 @@ func (x *EffectMenuValue) GetMax() int32 {
 	return 0
 }
 
+func (x *EffectMenuValue) GetGroup() string {
+	if x != nil {
+		return x.Group
+	}
+	return ""
+}
+
 // EffectMenuList is a closed list a field takes.
 type EffectMenuList struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -8068,7 +8077,11 @@ type EffectMenuList struct {
 	// "abilities" (the six abilities, for an ability_increase's `from`),
 	// "ability_increase_amounts" (its `value`: "1" or "2"), "state_ends" (a state's
 	// `ends_on`), "state_economies" (its `economy`), "weapon_filters" (a weapon_rule's
-	// `weapon`) or "weapon_kinds" (a pseudo_weapon's).
+	// `weapon`), "weapon_kinds" (a pseudo_weapon's), "lackable_features" (the SRD
+	// features, traits, background features and feats a feat's `prerequisite.lacks_feature_key` may
+	// name; `hint_pt` is where each comes from, and the table's own entries are not in it) or "race_traits" (the traits of
+	// the SRD races a subrace's `replaces_trait_keys` may name; `group` is the race, `hint_pt` a
+	// one-line summary of the trait or empty, and the table's own races and traits are not in it).
 	Name          string             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Values        []*EffectMenuValue `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -8857,7 +8870,7 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\x04list\x18\x04 \x01(\tR\x04list\x12\x10\n" +
 	"\x03min\x18\x05 \x01(\x05R\x03min\x12\x10\n" +
 	"\x03max\x18\x06 \x01(\x05R\x03max\x12!\n" +
-	"\falways_shown\x18\a \x01(\bR\valwaysShown\"\x98\x01\n" +
+	"\falways_shown\x18\a \x01(\bR\valwaysShown\"\xae\x01\n" +
 	"\x0fEffectMenuValue\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x17\n" +
@@ -8865,7 +8878,8 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\n" +
 	"only_modes\x18\x04 \x03(\tR\tonlyModes\x12\x10\n" +
 	"\x03min\x18\x05 \x01(\x05R\x03min\x12\x10\n" +
-	"\x03max\x18\x06 \x01(\x05R\x03max\"^\n" +
+	"\x03max\x18\x06 \x01(\x05R\x03max\x12\x14\n" +
+	"\x05group\x18\a \x01(\tR\x05group\"^\n" +
 	"\x0eEffectMenuList\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x128\n" +
 	"\x06values\x18\x02 \x03(\v2 .meurpg.rules.v1.EffectMenuValueR\x06values\"\x90\x01\n" +

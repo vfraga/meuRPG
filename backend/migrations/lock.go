@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 )
 
 // A lease lock for `migrate up` and `migrate down` (audit D-08).
@@ -112,7 +114,8 @@ func AcquireLock(ctx context.Context, db *sql.DB, opt LockOptions) (context.Cont
 
 	runCtx, cancel := context.WithCancelCause(ctx)
 	stopped := make(chan struct{})
-	go heartbeat(runCtx, cancel, db, holder, opt, leaseFrom, stopped)
+	safego.Go(opt.Logger, "keep the migration lock", func() { heartbeat(runCtx, cancel, db, holder, opt, leaseFrom, stopped) },
+		func() { cancel(errors.New("the migration lock heartbeat panicked")) })
 
 	var released bool
 	release := func() {
@@ -184,6 +187,10 @@ func tryAcquire(ctx context.Context, db *sql.DB, holder string, ttl time.Duratio
 		RETURNING holder`, holder, intervalOf(ttl)).Scan(&won)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil // someone else holds a live lease
+	}
+	if lostTheRace(err) {
+		// 40001: another run sent the same statement at once and won, so the lock is held.
+		return false, nil
 	}
 	if err != nil {
 		return false, fmt.Errorf("take the migration lock: %w", err)

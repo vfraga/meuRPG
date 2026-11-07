@@ -290,6 +290,67 @@ describe('AttackSheet: the halfling’s Lucky question, "Tirou 1: rolar de novo?
     expect(button('Ficar com o 1')).toBeTruthy();
   });
 
+  // A hold of its own: the page remembers which questions this browser answered, across specs.
+  const masterHold = create(HeldRollOfferSchema, { ...lucky, holdId: 'hold-master' });
+
+  it('drops the question and says the master answered when the combat no longer carries it', async () => {
+    const { fixture, el, state, settle, button } = open({
+      held: { offer: masterHold, targetLabel: 'Goblin' },
+    });
+    // The combat the sheet reads carries the question on the attacker, as the server sends it.
+    state.apply(
+      encounter({
+        currentCombatantId: 'p',
+        combatants: [{ ...pipo, heldRollOffer: masterHold }, goblin],
+      }),
+    );
+    await settle();
+    expect(button('Ficar com o 1')).toBeTruthy();
+    // The master answered: the next read of the combat has no question on the attacker.
+    state.apply(encounter({ currentCombatantId: 'p', combatants: [pipo, goblin] }));
+    fixture.detectChanges();
+    await settle();
+    expect(flat(el.querySelector('[data-testid="sheet-held-vanished"]'))).toContain(
+      'O mestre respondeu por você.',
+    );
+    expect(button('Rolar de novo')).toBeUndefined();
+    expect(button('Ficar com o 1')).toBeUndefined();
+  });
+
+  it('keeps the question when the combat it reads no longer lists the attacker at all', async () => {
+    const hold = create(HeldRollOfferSchema, { ...lucky, holdId: 'hold-absent' });
+    const { el, state, settle, button } = open({ held: { offer: hold, targetLabel: 'Goblin' } });
+    state.apply(
+      encounter({
+        currentCombatantId: 'p',
+        combatants: [{ ...pipo, heldRollOffer: hold }, goblin],
+      }),
+    );
+    await settle();
+    state.apply(encounter({ currentCombatantId: 'g', combatants: [goblin] }));
+    await settle();
+    expect(el.querySelector('[data-testid="sheet-held-vanished"]')).toBeNull();
+    expect(button('Ficar com o 1')).toBeTruthy();
+  });
+
+  it('does not say the master answered when the player answered here', async () => {
+    const { el, state, settle, button } = open({
+      held: { offer: masterHold, targetLabel: 'Goblin' },
+    });
+    state.apply(
+      encounter({
+        currentCombatantId: 'p',
+        combatants: [{ ...pipo, heldRollOffer: masterHold }, goblin],
+      }),
+    );
+    await settle();
+    answerHeldRoll.mockImplementation(() => Promise.resolve(heldAttackAnswer(resolved(state, 14))));
+    button('Ficar com o 1')!.click();
+    state.apply(encounter({ currentCombatantId: 'p', combatants: [pipo, goblin] }));
+    await settle();
+    expect(el.querySelector('[data-testid="sheet-held-vanished"]')).toBeNull();
+  });
+
   it('keeps the key of an answer that failed, so a retry never rolls the d20 twice', async () => {
     const { el, settle, button } = open({ held: { offer: lucky, targetLabel: 'Goblin' } });
     answerHeldRoll.mockRejectedValue(new ConnectError('down', Code.Unavailable));

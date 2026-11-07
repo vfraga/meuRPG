@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 
+import { CreatureSource } from '../../../../gen/meurpg/characters/v1/characters_pb';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import {
   FakeCreaturesClient,
@@ -65,5 +66,60 @@ describe('CreaturePage', () => {
     await nextTurn();
     fixture.detectChanges();
     expect(flat(el.querySelector('h1'))).toBe('Beta');
+  });
+
+  describe('a table creature', () => {
+    async function open(monsterKey: string, ownerName: string): Promise<HTMLElement> {
+      const api = new FakeCreaturesClient();
+      api.blocks.set(monsterKey, raven());
+      api.list = vi.fn(async () => [
+        creature('cr-A', 'Lobo do Vale', { monsterKey, source: CreatureSource.TABLE }),
+      ]) as never;
+      TestBed.configureTestingModule({
+        providers: [
+          provideRouter([]),
+          { provide: CreaturesClient, useValue: api },
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              paramMap: new BehaviorSubject(
+                convertToParamMap({ id: 'camp-1', characterId: 'char-1', creatureId: 'cr-A' }),
+              ),
+            },
+          },
+          {
+            provide: CharacterSheetSource,
+            useValue: { getCharacterSheet: async () => ({ name: ownerName, isMaster: false }) },
+          },
+        ],
+      });
+      const fixture = TestBed.createComponent(CreaturePage);
+      fixture.detectChanges();
+      await nextTurn();
+      await nextTurn();
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('says "Da mesa" and whose sheet the numbers come from', async () => {
+      const el = await open('creature:lobo-do-vale@mesa', 'Tor');
+      expect(flat(el.querySelector('.head__origin'))).toContain('Da mesa');
+      expect(flat(el.querySelector('.table-note'))).toBe(
+        'Os números vêm da ficha de Tor quando ele chegou',
+      );
+    });
+
+    it('falls back to "do dono" when the owner has no name', async () => {
+      const el = await open('creature:lobo-do-vale@mesa', '  ');
+      expect(flat(el.querySelector('.table-note'))).toBe(
+        'Os números vêm da ficha do dono quando ele chegou',
+      );
+    });
+
+    it('says nothing of the kind for a book creature', async () => {
+      const el = await open('monster:raven', 'Tor');
+      expect(el.querySelector('.table-note')).toBeNull();
+      expect(flat(el.querySelector('.head__origin'))).not.toContain('Da mesa');
+    });
   });
 });

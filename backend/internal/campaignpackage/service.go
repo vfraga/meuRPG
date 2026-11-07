@@ -22,6 +22,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/nostore"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/ratelimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/rpcerr"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/tasks"
 )
 
@@ -204,7 +205,7 @@ func (s *Service) Wait(ctx context.Context) {
 		s.ownTasks.Wait(ctx)
 	}
 	done := make(chan struct{})
-	go func() { s.wg.Wait(); close(done) }()
+	safego.Go(s.logger, "wait for the export goroutines", func() { defer close(done); s.wg.Wait() })
 	select {
 	case <-done:
 	case <-ctx.Done():

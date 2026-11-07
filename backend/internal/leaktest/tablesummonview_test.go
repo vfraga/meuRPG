@@ -498,3 +498,81 @@ func canaryByKind(w *world, kind string) *canary {
 	w.t.Fatalf("no canary of the kind %q is registered", kind)
 	return nil
 }
+
+// An archived creature and a switched-off one that a spell lists are not offered to the player as a new choice: GetSummonOptions
+// names neither their key nor their name, while the live creature and the SRD's wolf stay (the holder's positive control) and the
+// master, who sees everything, still reads both in the table's entries (the master's positive control).
+func TestAnArchivedOrSwitchedOffCreatureOfASpellIsNotOfferedToThePlayer(t *testing.T) {
+	v := newSummonView(t)
+	w := v.w
+	ctx := t.Context()
+	m := w.master
+	creature := func(kind string) (key, name string) {
+		name = w.secrets.marker(kind + "-name")
+		e := must(m.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
+			CampaignId: w.campaign, Body: &rulesv1.CreateTableEntryRequest_TableCreature{TableCreature: &rulesv1.TableCreature{
+				NamePt: name, BaseKey: "monster:giant-crab", HitPoints: 20, ArmorClass: 12,
+			}},
+		}))).GetEntry()
+		return e.GetKey(), name
+	}
+	live, liveName := creature("offer-live")
+	archived, archivedName := creature("offer-archived")
+	off, offName := creature("offer-off")
+	// The summoner's own spell lists the three creatures and the SRD's wolf from now on.
+	var listing *rulesv1.TableEntry
+	for _, e := range must(m.table.ListTableEntries(ctx, rq(&rulesv1.ListTableEntriesRequest{CampaignId: w.campaign}))).GetEntries() {
+		if e.GetKey() == v.spell {
+			listing = e
+		}
+	}
+	body := proto.Clone(listing.GetTableSpell()).(*rulesv1.TableSpell)
+	body.Summon.CreatureKeys = []string{live, archived, off, "monster:wolf"}
+	must(m.table.UpdateTableEntry(ctx, rq(&rulesv1.UpdateTableEntryRequest{
+		CampaignId: w.campaign, Key: v.spell, ExpectedRevision: listing.GetRevision(),
+		Body: &rulesv1.UpdateTableEntryRequest_TableSpell{TableSpell: body},
+	})))
+	mage := w.pens
+	options := func(p *person) string {
+		return string(p.call(charactersv1connect.CharacterServiceGetSummonOptionsProcedure, &charactersv1.GetSummonOptionsRequest{CampaignId: w.campaign, CharacterId: mage.GetId()}).body)
+	}
+	namesAll := func(body string, keys, names []string) bool {
+		for _, s := range append(slices.Clone(keys), names...) {
+			if !strings.Contains(body, s) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// Live: she is offered all of them, which proves the read can name the creatures at all.
+	if all := options(w.ana); !namesAll(all, []string{live, archived, off}, []string{liveName, archivedName, offName}) {
+		t.Fatalf("Ana's options do not offer the live creatures (the positive control): %s", shorten([]byte(all)))
+	}
+
+	must(m.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: archived})))
+	must(m.table.SetOptionSwitches(ctx, rq(&rulesv1.SetOptionSwitchesRequest{CampaignId: w.campaign, Switches: []*rulesv1.OptionSwitch{{Key: off, Off: true}}})))
+
+	got := options(w.ana)
+	for _, hidden := range []string{archived, archivedName, off, offName} {
+		if strings.Contains(got, hidden) {
+			t.Errorf("Ana's options still name %q, a creature the master archived or switched off: %s", hidden, shorten([]byte(got)))
+		}
+	}
+	if !namesAll(got, []string{live, "monster:wolf"}, []string{liveName}) {
+		t.Errorf("Ana's options lost the live creature or the SRD's wolf (the holder's positive control): %s", shorten([]byte(got)))
+	}
+	// The master reads both creatures in the table's entries, archived or off.
+	entries := v.entries(m)
+	for _, key := range []string{archived, off} {
+		if !strings.Contains(entries, key) {
+			t.Errorf("the master's entries lost %s (the positive control)", key)
+		}
+	}
+	// Nobody else reads them in the entries either: Ana holds none of the three.
+	for _, key := range []string{archived, off} {
+		if strings.Contains(v.entries(w.ana), key) || strings.Contains(v.entries(w.caio), key) {
+			t.Errorf("a player reads %s in the table's entries, a creature nobody of theirs holds", key)
+		}
+	}
+}

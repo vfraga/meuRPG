@@ -5,8 +5,6 @@ import { createEntryRPC, creatureBody, damageCreatureBody, entryRoute, listEntri
 import { campaignWithEmptyPlayer } from './table-rules-support';
 import { callRPC, newSignedInContext } from './support';
 
-test.describe.configure({ timeout: 120_000 });
-
 // MR-025 (RN-23, RN-10; #578): the table's creatures. The master makes one from an SRD creature in the editor (the base, the name, four numbers
 // each with a fixed value and a formula of the owner's sheet, a trait and an attack), edits its damage lines (resistances, immunities,
 // vulnerabilities), archives it; on a phone he reads it and archives it from the menu; a player who holds none never receives it.

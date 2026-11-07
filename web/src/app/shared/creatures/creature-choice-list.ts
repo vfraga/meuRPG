@@ -12,6 +12,8 @@ import {
 import { MatIconModule } from '@angular/material/icon';
 
 import type { AttackLine } from '../../core/creatures/creature-format';
+import { TABLE_CREATURE_PICK_NOTE } from '../../core/creatures/creature-format';
+import { TableMark } from '../table-mark/table-mark';
 import { CreatureArt } from './creature-art';
 
 /** One creature of a choice list. */
@@ -27,6 +29,8 @@ export interface ChoiceRow {
   readonly art?: boolean;
   /** The creature's attacks (from its stat block): the name and numbers under the subtitle, and the book's text under them. */
   readonly attacks?: readonly AttackLine[];
+  /** A creature of the table's own (key ends with "@mesa"): "Da mesa" beside the name, and the note in place of numbers it does not have yet. */
+  readonly table?: boolean;
 }
 
 let nextId = 0;
@@ -41,7 +45,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-creature-choice-list',
-  imports: [CreatureArt, MatIconModule],
+  imports: [CreatureArt, MatIconModule, TableMark],
   template: `
     @if (searchable()) {
       <label class="search">
@@ -96,8 +100,12 @@ let nextId = 0;
             <app-creature-art [monsterKey]="r.key" />
           }
           <span class="row__text">
-            <span class="row__title">{{ r.title }}@if (r.alias) { <span class="row__alias" lang="en">({{ r.alias }})</span> }</span>
-            <span class="row__sub">{{ r.subtitle }}</span>
+            <span class="row__title">{{ r.title }}@if (r.alias) { <span class="row__alias" lang="en">({{ r.alias }})</span> }@if (r.table) { <app-table-mark [fromTable]="true" /> }</span>
+            @if (r.table) {
+              <span class="row__sub">{{ tableNote }}</span>
+            } @else {
+              <span class="row__sub">{{ r.subtitle }}</span>
+            }
             @if (r.attacks?.length && (attacksAlways() || (multi() ? n > 0 : r.key === chosen()))) {
               <span class="row__attacks">
                 @for (a of r.attacks; track a.name) {
@@ -138,6 +146,7 @@ export class CreatureChoiceList {
   readonly pick = output<string>();
   readonly step = output<{ key: string; delta: number }>();
 
+  protected readonly tableNote = TABLE_CREATURE_PICK_NOTE;
   protected readonly id = `creature-choice-${nextId++}`;
   protected readonly filter = signal('');
   protected readonly shown = computed(() => {

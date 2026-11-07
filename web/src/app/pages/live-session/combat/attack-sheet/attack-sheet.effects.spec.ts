@@ -146,7 +146,7 @@ describe('AttackSheet: the dice an effect adds (RN-22)', () => {
     await fixture.whenStable();
     const args = api.rollAttack.mock.calls[0];
     expect(args[5]).toEqual({ face: 14 });
-    expect(args[11]).toEqual({ extraDieFaces: [3], useExtraAction: true });
+    expect(args[11]).toEqual({ extraDieFaces: [3], useExtraAction: true, legendaryOption: '' });
   });
 
   it('draws no d4 field without an effect that adds one, nor with the app rolling the dice', () => {

@@ -289,6 +289,7 @@ func (q *Queries) InsertSpellCast(ctx context.Context, arg InsertSpellCastParams
 const listCarriedSpellCasts = `-- name: ListCarriedSpellCasts :many
 SELECT id, campaign_id, game_session_id, caster_id, spell_key, ritual, slot_level, slot_pact, status, end_reason, concentrating, casting_minutes, lasts, duration_seconds, rest_ends, secret, targets, dice_count, dice_sides, roll_faces, roll_total, physical, creature_ids, carried_encounter_id, started_at, cast_at, ended_at FROM spell_casts
 WHERE carried_encounter_id = $1 AND status IN ('casting', 'active')
+ORDER BY started_at, id
 `
 
 // The casts whose concentration a combat's combatants hold now.

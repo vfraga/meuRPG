@@ -83,10 +83,12 @@ UPDATE users SET display_name = $2 WHERE id = $1;
 -- campaigns reads them for the allow-list of who may create campaigns (RN-30).
 SELECT email::TEXT AS email
 FROM user_identities
-WHERE user_id = $1 AND email IS NOT NULL;
+WHERE user_id = $1 AND email IS NOT NULL
+ORDER BY issuer;
 
 -- name: ListDisplayNames :many
 -- Users without a display name are left out.
 SELECT id, display_name::TEXT AS display_name
 FROM users
-WHERE id = ANY(sqlc.arg(ids)::UUID[]) AND display_name IS NOT NULL;
+WHERE id = ANY(sqlc.arg(ids)::UUID[]) AND display_name IS NOT NULL
+ORDER BY id;

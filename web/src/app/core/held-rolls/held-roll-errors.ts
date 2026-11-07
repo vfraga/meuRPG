@@ -56,7 +56,9 @@ export function heldRollErrorMessage(
             ? 'responder ao Indomitável'
             : answer.kind === 'stroke'
               ? 'responder ao Golpe de Sorte'
-              : 'responder sobre a Inspiração de Bardo',
+              : answer.kind === 'reroll'
+                ? 'responder se rola de novo'
+                : 'responder sobre a Inspiração de Bardo',
       );
   }
 }

@@ -304,6 +304,39 @@ describe('CombatView: the class resource dialogs', () => {
     expect(el.querySelector('[data-testid=inspiration-pending]')).toBeNull();
   });
 
+  it('says a reloaded reroll rule question is a reroll, never the Bardic Inspiration die', async () => {
+    const reroll = create(HeldRollOfferSchema, {
+      holdId: 'hold-3',
+      kind: HeldRollKind.WEAPON_ATTACK,
+      attackKey: 'attack:longsword',
+      targetId: 'g',
+      question: {
+        case: 'reroll',
+        value: {
+          rerollIndex: 0,
+          atMost: 5,
+          sourceKey: 'feature:x',
+          sourceName: 'Sorte Teimosa',
+          sides: 20,
+        },
+      },
+      d20: create(DiceRollSchema, {
+        diceCount: 1,
+        diceSides: 20,
+        faces: [2],
+        modifier: 5,
+        total: 7,
+      }),
+    });
+    const { el } = await render({ heldRollOffer: reroll });
+    expect(open.mock.calls.filter((c) => c[0] === AttackSheet)).toHaveLength(1);
+    expect(el.querySelector('[data-testid=reroll-pending]')?.textContent).toContain(
+      'tirou 2, rolar de novo?',
+    );
+    expect(el.querySelector('[data-testid=inspiration-pending]')).toBeNull();
+    expect(el.querySelector('[data-testid=lucky-pending]')).toBeNull();
+  });
+
   it('does not open a question for a character with no held roll', async () => {
     await render();
     expect(open.mock.calls.filter((c) => c[0] === AttackSheet)).toHaveLength(0);

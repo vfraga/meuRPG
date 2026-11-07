@@ -45,6 +45,18 @@ describe('a contest waits in a window of kind CONTEST (W7-X)', () => {
     expect(sheetWindow(e)).toBeUndefined();
   });
 
+  it("never offers the master's Parry and Legendary Resistance windows as a reaction sheet", () => {
+    const parry = win('parry', { acBonus: 2 }, { id: 'parry' });
+    const lr = win('legendaryResistance', { offers: [] }, { id: 'lr' });
+    const shield = win('shield', { slots: [] }, { id: 'shield' });
+    const only = encounter({ reactionWindows: [parry, lr] } as never);
+    expect(sheetWindow(only)).toBeUndefined();
+    expect(windowForPlayer(only)).toBeUndefined();
+    const both = encounter({ reactionWindows: [parry, lr, shield] } as never);
+    expect(sheetWindow(both)?.id).toBe('shield');
+    expect(windowForPlayer(both)?.id).toBe('shield');
+  });
+
   it('keeps the other windows in their order beside it', () => {
     const shield = win('shield', { slots: [] }, { id: 'shield' });
     const e = encounter({ reactionWindows: [contest, shield] } as never);

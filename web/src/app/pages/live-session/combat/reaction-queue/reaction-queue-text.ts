@@ -18,6 +18,9 @@ import { abilityName } from '../../../../core/effects/ability-choice';
 import type { EffectSaveAnswer } from '../../../../core/effects/effects-client';
 import { zoneReasonText, zoneSaveTitle } from '../../../../core/effects/zone-save';
 import { dcLabel } from '../../../../core/format/save-dc';
+import type { HeldRollOffer } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { MASTER_WAIT_SECONDS } from '../../../../core/held-rolls/held-roll-controller';
+import { questionTitle } from '../../../../core/held-rolls/held-text';
 
 // What the master's cards say about a window and about the answer just given. Pure: the component only picks the window.
 
@@ -230,4 +233,11 @@ export function sayAnswer(
       : 'Escudo Arcano usado: o ataque ainda acerta.';
   }
   return 'Reação usada.';
+}
+
+/** What the master reads when the roll he made for a player waits for the roller's question:
+ * the question is in the roller's row, and he may answer after ten seconds. */
+export function heldWaitText(offer: HeldRollOffer): string {
+  const roller = offer.rollerLabel || 'Quem rolou';
+  return `A jogada de ${roller} espera a resposta à pergunta "${questionTitle(offer)}". Ela está na linha de ${roller}; você pode responder depois de ${MASTER_WAIT_SECONDS} s.`;
 }

@@ -168,7 +168,7 @@ The master answers for a roller who has not (RN-35 asks the roller first). `Held
 - **Where the questions come from.** In a combat, from `Combatant.held_roll_offer` of the combat the master already reads (the combat view feeds `sync` from its encounter, and the question is drawn in the roller's row). Outside a combat, from `ListHeldRolls` (`app-held-rolls-panel`), read on open, after a reconnection (the page bumps `heldRollsTick` with its other ticks) and on each `held_rolls_changed` hint (`onHeldRollsChanged`); a read that comes back after a newer one is dropped. `sync` keeps the questions it knows, adds new ones, replaces a question by the next one of the same roll, and closes the ones the server stopped listing ("Brisa respondeu.").
 - **The wait.** `MASTER_WAIT_SECONDS` (10) counts from the offer's `created_at`, on an injectable clock; `HeldQuestions.now` moves once a second only while a question waits for its time or a closed one is still on screen (`NOTE_LINGER_MS`), and the interval is cleared otherwise. The server refuses an early answer with `MASTER_TOO_EARLY_REASON`: the question reads it as "wait" (`too-early`), shows the countdown again and keeps the buttons off for at least two more seconds when the clocks differ, then lets the master try again. A plain `failed_precondition` is the lost race: the question ends with "Essa pergunta já foi respondida."
 - **What the answer says.** A master's answer that ends the roll is worded from the path's result (`answeredText`, `settledRoll`): "Você respondeu por Brisa: rolou de novo e tirou 14 (19 com o bônus)."; a result with no d20 says only what was chosen.
-- **The roller.** `HeldRollController` records the answers sent from this browser (`markAnsweredHere`, from the moment the answer goes). A place that shows the roller their question (`HeldVanishWatch`: the combat view, the Bardic block) tells "O mestre respondeu por você." when the question is gone, or moved on to the next, without an answer from this browser. The roller's view carries no result of the master's answer, so that is the whole text.
+- **The roller.** `HeldRollController` records the answers sent from this browser (`markAnsweredHere`, from the moment the answer goes). A place that shows the roller their question (`HeldVanishWatch`: the combat view, the Bardic block, the attack sheet) tells "O mestre respondeu por você." when the question is gone, or moved on to the next, without an answer from this browser. The roller's view carries no result of the master's answer, so that is the whole text.
 
 A group check that holds only a Bardic die, with no 1, closes its sheet and leaves the question to the session panel.
 
@@ -334,7 +334,9 @@ The damage dice are not a held roll: the app rolls them again by itself ([Attack
   The sheet and the vitals are read only for a roll of a player's character that may ask and has a kind that a reroll covers.
 - **Lucky.** The two never meet in one roll.
   A roll that asks Lucky's question (a 1 on a halfling's d20) is not offered the reroll, before or after Lucky is answered.
-- **The switch.** Nothing is asked unless `Config.D20Rerolls` is on, and `cmd/api` leaves it off because the web has no screen for the question.
+- **The switch.** Nothing is asked unless `Config.D20Rerolls` is on.
+  `cmd/api` turns it on, and the field stays so a test can turn it off.
+  With it on, these rolls wait for the question whenever a rule covers them and the character can pay: the weapon attack and the spell attack, the scene check, the group check, the effect's saving throw and the concentration save.
   With it off the roll settles as if the player declined: nothing is held, spent or written.
   A question written while it was on and still waiting when it goes off is stale: the next roll that runs the gate forgets it, it never refuses a roll, and answering it fails.
 - **Kinds that ask** (`heldKindDef.rerollApplies`):
@@ -358,4 +360,17 @@ The damage dice are not a held roll: the app rolls them again by itself ([Attack
 - **Columns** of `inspiration_holds` ([Play data](../../data/play.md)): `reroll_ask`, `reroll_index`, `reroll_at_most`, `reroll_resource`, `reroll_cost`, `reroll_source`, `reroll_answer_key`, `reroll_from`, `reroll_to`.
   The cleanup of orphan holds keeps a hold with `reroll_ask` set, since a question outside a combat has no die.
 - **Wire.** `RerollQuestion` in `HeldRollOffer.question`, `RerollAnswer` (`reroll`, a boolean) in `AnswerHeldRollRequest`.
-- **Web.** No screen answers the question; an offer of this kind renders the die's prompt with zero sides.
+- **Web.** `HeldRollPrompt` asks the roller and `HeldQuestion` asks the master.
+  The title is "Tirou N: rolar de novo?", with N the face at `reroll_index`.
+  The line names the feature by `source_name`, and "uma característica" when it is empty.
+  It also says the cost: "Gasta 1 uso de Sorte Teimosa."
+  The answer is `RerollAnswer`, and nothing is typed, because the server rolls the new d20.
+  After a reload the weapon attack's question reopens its sheet.
+  The other rolls come back from `ListHeldRolls` in the session panel's block.
+  When the master rolls a player's save from the reaction queue, a notice says the roll waits for the player.
+  The log writes a rule's reroll as "Sorte Teimosa: 2 → 14 · 1d20 (14) + 5 = 19".
+  It writes the dice a floor raised as "2d10 (1 → 2, 7) = 9", with "Chama Insistente: o 1 contou como 2.".
+  It writes a d20 a feature raised as "d20: 3 → 8 (Vontade de Ferro) + 2 = 10".
+  Each line appears only where the server sent the faces and the `*_source_name`.
+  The live stream (`WatchGameSession`) carries none of the messages that get `*_source_name`.
+  Its events are hints, so the web reads the names from the unary responses only.

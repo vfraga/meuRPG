@@ -54,20 +54,65 @@ function listWith(items: readonly string[], word: 'e' | 'ou'): string {
     : `${items.slice(0, -1).join(', ')} ${word} ${items[items.length - 1]}`;
 }
 
-const SIZE_NAMES: Readonly<Record<string, string>> = {
-  Tiny: 'miúdo',
-  Small: 'pequeno',
-  Medium: 'médio',
-  Large: 'grande',
+/** The sizes the server writes in English, in Portuguese ("Médio"). */
+export const SIZE_WORDS: Readonly<Record<string, string>> = {
+  Tiny: 'Miúdo',
+  Small: 'Pequeno',
+  Medium: 'Médio',
+  Large: 'Grande',
 };
 
 /** "médio", for a size the server writes in English ("Medium"); an unknown size is shown as it came. */
 function sizeName(size: string): string {
-  return SIZE_NAMES[size] ?? size;
+  return SIZE_WORDS[size]?.toLowerCase() ?? size;
 }
 
-/** The conditions of a prerequisite, one phrase each ("Força 13 e Destreza 13", "proficiência em Armadura média"); none when it asks nothing. */
-export function prerequisiteParts(p: FeatPrerequisite | undefined, nameOf: KeyName): string[] {
+/** The races (and sub-races) a feat asks for, as the draft has them: the single `raceKey` first, then the list. */
+export function askedRaces(raceKey: string, races: readonly string[]): string[] {
+  return [...(raceKey ? [raceKey] : []), ...races.filter((r) => r !== raceKey)];
+}
+
+/** What the server says for a condition the player may not read; the same words in the "Pede:" line and in the unmet line. */
+const HIDDEN_ASK = 'uma condição que a mesa não mostra';
+const HIDDEN_UNMET = `Pede ${HIDDEN_ASK}.`;
+
+/** The feature a feat asks not to have, as the player's view gives it: its name, or that it is hidden (then no name). */
+export interface LacksView {
+  readonly name: string;
+  readonly hidden: boolean;
+}
+
+/** What the feat asks of who the character is: the races, the size and the feature to lack. */
+function whoParts(p: FeatPrerequisite, nameOf: KeyName, lacks?: LacksView): string[] {
+  const parts: string[] = [];
+  const races = askedRaces(p.raceKey, p.races);
+  if (races.length > 0) {
+    parts.push(`ser ${listWith(races.map(nameOf), 'ou')}`);
+  } else if (p.racesHidden) {
+    parts.push(HIDDEN_ASK);
+  }
+  if (p.size) {
+    parts.push(`ter tamanho ${sizeName(p.size)}`);
+  }
+  if ((lacks?.hidden || p.lacksHidden) && !parts.includes(HIDDEN_ASK)) {
+    parts.push(HIDDEN_ASK);
+  } else if (p.lacksFeatureKey && !lacks?.hidden && !p.lacksHidden) {
+    parts.push(`não ter ${lacks?.name || p.lacksFeatureNamePt || nameOf(p.lacksFeatureKey)}`);
+  }
+  return parts;
+}
+
+/**
+ * The conditions of a prerequisite, one phrase each, such as "Força 13 e Destreza 13".
+ * Nothing comes back when the prerequisite asks nothing.
+ * A player's `lacks` names the feature to lack, or says it is hidden.
+ * Without `lacks`, `nameOf` names the key.
+ */
+export function prerequisiteParts(
+  p: FeatPrerequisite | undefined,
+  nameOf: KeyName,
+  lacks?: LacksView,
+): string[] {
   if (!p) {
     return [];
   }
@@ -86,53 +131,50 @@ export function prerequisiteParts(p: FeatPrerequisite | undefined, nameOf: KeyNa
   if (p.spellcasting) {
     parts.push('poder conjurar ao menos uma magia');
   }
-  const races = [...(p.raceKey ? [p.raceKey] : []), ...p.races.filter((r) => r !== p.raceKey)];
-  if (races.length > 0) {
-    parts.push(`ser ${listWith(races.map(nameOf), 'ou')}`);
-  }
-  if (p.size) {
-    parts.push(`ter tamanho ${sizeName(p.size)}`);
-  }
-  if (p.lacksFeatureKey) {
-    parts.push(`não ter ${nameOf(p.lacksFeatureKey)}`);
-  }
+  parts.push(...whoParts(p, nameOf, lacks));
   if (p.level > 0) {
     parts.push(`nível ${p.level} ou mais`);
   }
   return parts;
 }
 
-/** "Força 13, nível 4 ou mais"; empty when the feat asks nothing. */
-export function prerequisiteSupport(p: FeatPrerequisite | undefined, nameOf: KeyName): string {
-  return prerequisiteParts(p, nameOf).join(', ');
+/** "Força 13, ser Gnomo ou Halfling e nível 4 ou mais"; empty when the feat asks nothing. */
+export function prerequisiteSupport(
+  p: FeatPrerequisite | undefined,
+  nameOf: KeyName,
+  lacks?: LacksView,
+): string {
+  return listWith(prerequisiteParts(p, nameOf, lacks), 'e');
 }
 
-/** What a character lacks for a feat: "Precisa de Força 13.", from the server's `unmet`. */
+/** What a character lacks for a feat: "Precisa de Força 13.", in the words of the server's cards, from its `unmet`. */
 export function unmetText(u: FeatUnmet, nameOf: KeyName): string {
   const needs = u.abilities.map((a) => `${abilityName(a.ability)} ${a.minimum}`);
   switch (u.kind) {
     case FeatUnmetKind.ABILITY_MINIMUM:
       return `Precisa de ${listWith(needs, 'e')}.`;
     case FeatUnmetKind.ABILITY_ANY_OF:
-      return `Precisa de ${listWith(needs, 'ou')} (basta uma).`;
+      return `Precisa de ${listWith(needs, 'ou')}.`;
     case FeatUnmetKind.PROFICIENCY:
       return `Precisa de proficiência em ${nameOf(u.key)}.`;
     case FeatUnmetKind.SPELLCASTING:
-      return 'Precisa poder conjurar ao menos uma magia.';
+      return 'Precisa conseguir conjurar magias.';
     case FeatUnmetKind.RACE: {
-      // A race the players cannot see is not named: with none left there is nothing to say.
       const races = (u.key ? [u.key] : u.keys).map(nameOf);
-      return races.length > 0
-        ? `Precisa ser ${listWith(races, 'ou')}.`
-        : 'Não atende ao pré-requisito.';
+      return races.length > 0 ? `Só para ${listWith(races, 'ou')}.` : hiddenOr(u);
     }
     case FeatUnmetKind.SIZE:
-      return `Precisa ter tamanho ${sizeName(u.key)}.`;
+      return `Só para tamanho ${sizeName(u.key)}.`;
     case FeatUnmetKind.LACKS_FEATURE:
-      return u.key ? `Não pode ter ${u.namePt || nameOf(u.key)}.` : 'Não atende ao pré-requisito.';
+      return u.key ? `Não pode ter ${u.namePt || nameOf(u.key)}.` : hiddenOr(u);
     case FeatUnmetKind.LEVEL:
-      return `Precisa do nível ${u.value} ou mais.`;
+      return `Precisa de nível ${u.value} ou mais.`;
     default:
-      return 'Não atende ao pré-requisito.';
+      return hiddenOr(u);
   }
+}
+
+/** A condition with nothing to name says it is hidden when the server marked it so; never a key. */
+function hiddenOr(u: FeatUnmet): string {
+  return u.hidden ? HIDDEN_UNMET : 'Não atende ao pré-requisito.';
 }

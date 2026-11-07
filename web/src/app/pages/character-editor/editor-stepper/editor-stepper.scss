@@ -136,8 +136,24 @@
   }
 }
 
+// On a phone the step's count shares the line of its title, at the right.
 .stepper__heading {
   margin-bottom: var(--mr-space-3);
+
+  @media (max-width: 719.98px) {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--mr-space-3);
+
+    .stepper__count {
+      order: 2;
+    }
+
+    .stepper__title {
+      margin-top: 0;
+    }
+  }
 }
 
 .stepper__count {

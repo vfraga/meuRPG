@@ -197,6 +197,10 @@
   width: 100%;
   white-space: normal;
   line-height: 18px;
+  // The label may wrap to a second or third line, and the button grows with it: the token is the least height.
+  height: auto;
+  min-height: var(--mat-button-filled-container-height);
+  padding-block: var(--mr-space-2, 8px);
 
   @media (min-width: 768px) {
     --mat-button-outlined-container-height: 44px;
@@ -252,4 +256,49 @@
     flex: 1 1 12ch;
     min-width: 0;
   }
+}
+
+// "Esperando você (n)": the title, the count and "uma de cada vez", over the master's cards.
+.qhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mr-space-2);
+
+  > .mat-icon {
+    flex: none;
+  }
+}
+
+.qhead__title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-size: var(--mr-font-22);
+  font-weight: 700;
+  line-height: 27px;
+}
+
+.qhead__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border: 1px solid var(--mr-warning-line);
+  border-radius: var(--mr-radius-pill);
+  background: var(--mr-warning-surface);
+  color: var(--mr-warning-ink);
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+}
+
+.qhead__hint {
+  margin-left: auto;
+  font-size: var(--mr-font-13);
+  color: var(--mr-ink-muted);
 }

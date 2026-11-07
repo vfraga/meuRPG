@@ -23,10 +23,15 @@ import type { Creature } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { CharacterSheetSource } from '../character-sheet.types';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { creatureErrorMessage, creaturesHidden } from '../../../core/creatures/creature-errors';
-import { sourcePhrase } from '../../../core/creatures/creature-format';
+import {
+  isTableCreature,
+  sourcePhrase,
+  tableCreatureNote,
+} from '../../../core/creatures/creature-format';
 import { joinDots } from '../../../core/format/text';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { CreatureArt } from '../../../shared/creatures/creature-art';
+import { TableMark } from '../../../shared/table-mark/table-mark';
 import { StatBlock } from '../../../shared/creatures/stat-block';
 import { CreatureEdit, type EditMode } from '../../../shared/creatures/creature-edit';
 
@@ -67,6 +72,7 @@ type PageState =
     MatProgressSpinnerModule,
     RouterLink,
     StatBlock,
+    TableMark,
   ],
   templateUrl: './creature-page.html',
   styleUrl: './creature-page.scss',
@@ -109,6 +115,13 @@ export class CreaturePage {
   protected readonly origin = computed(() => {
     const s = this.state();
     return s.status === 'ready' ? sourcePhrase(s.creature.source, s.ownerName) : '';
+  });
+  /** What a table creature's numbers come from; empty for any other creature. */
+  protected readonly tableNote = computed(() => {
+    const s = this.state();
+    return s.status === 'ready' && isTableCreature(s.creature.monsterKey)
+      ? tableCreatureNote(s.ownerName)
+      : '';
   });
   /** Why there is no "Atacar": what the server decided for this creature. */
   protected readonly attackNote = computed(() => {

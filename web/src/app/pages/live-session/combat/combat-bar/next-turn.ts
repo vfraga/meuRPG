@@ -60,6 +60,9 @@ let nextWhy = 0;
       @if (off() && reason()) {
         <p class="why" [id]="whyId"><mat-icon aria-hidden="true">lock</mat-icon>{{ reason() }}</p>
       }
+      @if (legendary()) {
+        <p class="why" data-testid="legendary-left"><mat-icon aria-hidden="true">crown</mat-icon>{{ legendary() }}</p>
+      }
     }
   `,
   styles: `
@@ -72,7 +75,7 @@ let nextWhy = 0;
       width: 100%;
     }
 
-    // Why the turn cannot pass ("Responda ao pedido abaixo para seguir."), under the button, at its right edge.
+    // Why the turn cannot pass ("Responda ao pedido abaixo para seguir.") and what legendary actions are left, under the button, at its right edge.
     .why {
       display: flex;
       align-items: center;
@@ -173,6 +176,8 @@ export class NextTurn {
   readonly waiting = input(false);
   /** Why it cannot pass, written under the button and linked to it ("Responda ao pedido abaixo para seguir."), or `''`. */
   readonly why = input('');
+  /** "Restam 2 ações lendárias: Dragão vermelho adulto.": what a legendary creature still has to spend, under the button, or `''`. */
+  readonly legendary = input('');
   /** A joint turn: each member ends its part from the Turno panel, so the button stays in its place, off, and says so. */
   readonly joint = input(false);
   protected readonly off = computed(() => this.waiting() || this.joint());

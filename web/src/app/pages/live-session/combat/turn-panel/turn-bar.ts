@@ -1,3 +1,4 @@
+import { isMasterWait } from '../../../../core/combat/reactions';
 import { Component, ElementRef, computed, inject, input, output, signal } from '@angular/core';
 import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { moveLine } from '../../../../core/combat/move-line';
@@ -32,7 +33,7 @@ import { EndTurn } from './end-turn';
         <app-end-part [left]="partLeft()" [busy]="busy()" (endPart)="endTurn.emit()" (asked)="asking.set($event)" />
       } @else {
         <div class="row">
-          @if (waiting()) {
+          @if (waiting() && !masterWait()) {
             <p class="what">{{ waiting() }}: a vez continua quando responderem.</p>
           } @else {
             <div class="left">
@@ -149,6 +150,8 @@ export class TurnBar {
   readonly optionsSettling = input(false);
   /** An opportunity attack waits for an answer: the list of what is left and the end button say so instead. */
   readonly waiting = input('');
+  /** The wait is the master's: the turn card says it once, so the bar does not. */
+  protected readonly masterWait = computed(() => isMasterWait(this.waiting()));
   /** The character is surprised (W7-X): the button only passes the turn. */
   readonly surprised = input(false);
   /** No map (RN-25): the movement is a number of meters, said as "Movimento 9,0 m". */

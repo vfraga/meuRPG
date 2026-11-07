@@ -387,13 +387,16 @@ func (q *Queries) DeletePendingCharacter(ctx context.Context, arg DeletePendingC
 }
 
 const dismissCreatures = `-- name: DismissCreatures :many
-UPDATE character_creatures
-SET dismissed_at = $1::TIMESTAMPTZ, dismissed_reason = $2::TEXT,
-    hp_current = CASE WHEN $2::TEXT = 'defeated' THEN 0 ELSE hp_current END
-WHERE campaign_id = $3::UUID
-  AND id = ANY($4::UUID[])
-  AND dismissed_at IS NULL
-RETURNING id
+WITH changed AS (
+    UPDATE character_creatures
+    SET dismissed_at = $1::TIMESTAMPTZ, dismissed_reason = $2::TEXT,
+        hp_current = CASE WHEN $2::TEXT = 'defeated' THEN 0 ELSE hp_current END
+    WHERE campaign_id = $3::UUID
+      AND id = ANY($4::UUID[])
+      AND dismissed_at IS NULL
+    RETURNING id
+)
+SELECT id FROM changed ORDER BY id
 `
 
 type DismissCreaturesParams struct {
@@ -405,7 +408,7 @@ type DismissCreaturesParams struct {
 
 // Sends the live ones of these creatures away, with the reason; a creature
 // dismissed because it was defeated is at 0 hit points. Returns the ones it
-// dismissed.
+// dismissed, by ID.
 func (q *Queries) DismissCreatures(ctx context.Context, arg DismissCreaturesParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, dismissCreatures,
 		arg.At,
@@ -1768,6 +1771,7 @@ const listCharacterNames = `-- name: ListCharacterNames :many
 SELECT id, name FROM characters
 WHERE campaign_id = $1::UUID
   AND id = ANY($2::UUID[])
+ORDER BY id
 `
 
 type ListCharacterNamesParams struct {
@@ -1804,7 +1808,7 @@ func (q *Queries) ListCharacterNames(ctx context.Context, arg ListCharacterNames
 }
 
 const listCharacterReviewStatuses = `-- name: ListCharacterReviewStatuses :many
-SELECT character_id, status FROM character_reviews WHERE campaign_id = $1::UUID
+SELECT character_id, status FROM character_reviews WHERE campaign_id = $1::UUID ORDER BY character_id
 `
 
 type ListCharacterReviewStatusesRow struct {
@@ -2672,6 +2676,7 @@ func (q *Queries) ListMapCreatures(ctx context.Context, arg ListMapCreaturesPara
 const listMasterNotesOfCampaign = `-- name: ListMasterNotesOfCampaign :many
 SELECT character_id, notes FROM character_master_notes
 WHERE campaign_id = $1::UUID
+ORDER BY character_id
 `
 
 type ListMasterNotesOfCampaignRow struct {
@@ -2706,6 +2711,7 @@ WHERE campaign_id = $1::UUID
   AND id = ANY($2::UUID[])
   AND kind <> 'player'
   AND status = 'active'
+ORDER BY id
 `
 
 type ListNpcPortraitsParams struct {
@@ -2804,6 +2810,7 @@ const listSessionCharacters = `-- name: ListSessionCharacters :many
 SELECT id, kind, name, player_user_id, reserved FROM characters
 WHERE campaign_id = $1::UUID
   AND id = ANY($2::UUID[])
+ORDER BY id
 `
 
 type ListSessionCharactersParams struct {
@@ -3155,12 +3162,15 @@ func (q *Queries) ReviveCharacter(ctx context.Context, arg ReviveCharacterParams
 }
 
 const reviveCreatures = `-- name: ReviveCreatures :many
-UPDATE character_creatures
-SET dismissed_at = NULL, dismissed_reason = NULL
-WHERE campaign_id = $1::UUID
-  AND id = ANY($2::UUID[])
-  AND dismissed_reason = $3::TEXT
-RETURNING id
+WITH changed AS (
+    UPDATE character_creatures
+    SET dismissed_at = NULL, dismissed_reason = NULL
+    WHERE campaign_id = $1::UUID
+      AND id = ANY($2::UUID[])
+      AND dismissed_reason = $3::TEXT
+    RETURNING id
+)
+SELECT id FROM changed ORDER BY id
 `
 
 type ReviveCreaturesParams struct {
@@ -3171,7 +3181,7 @@ type ReviveCreaturesParams struct {
 
 // Brings back the creatures dismissed for this reason (an undo): the ones
 // defeated that an undo healed, the ones a master's undo of a casting or of the
-// end of a concentration gives back. Returns the ones it revived.
+// end of a concentration gives back. Returns the ones it revived, by ID.
 func (q *Queries) ReviveCreatures(ctx context.Context, arg ReviveCreaturesParams) ([]string, error) {
 	rows, err := q.db.Query(ctx, reviveCreatures, arg.CampaignID, arg.Ids, arg.Reason)
 	if err != nil {

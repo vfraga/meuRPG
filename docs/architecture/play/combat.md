@@ -71,6 +71,7 @@ The mode (`grid` or `theatre`) is chosen at the start and never changes (see [Th
 | `RemoveCombatant` | Master | Takes someone out; if it was their turn, the turn passes. Refused (`PENDING_DAMAGE`) while a damage the combatant attacked with or took is still to roll or apply. A character's effects go back to game time when it leaves in setup (`effectRowsToCharacters`; its inspiration die is not given back). A creature leaving because its owner or the master dismissed it cannot be refused: the damage waiting on it is written as dropped (`damage_discarded`, before the `combatant_removed`) |
 | `SetCombatantSide` | Master | "Aliado" or enemy for an NPC (`side_set`); passes over opportunity offers now between allies |
 | `SetCombatantHidden` | Master | Hides or shows an NPC |
+| `SetMonsterReactionMode` | Master | Chooses how an NPC's Parry is decided: the server on its own (default) or "Perguntar", a window for the master ([Reactions](reactions.md#parry)) |
 | `SetCombatantCover` | Master | Cover by hand (none, half, three-quarters, total); cleared when the combatant moves |
 | `SetCombatantConditions` | Master; the player only to end their own concentration | See [Attacks and damage](attacks-and-damage.md#conditions-and-concentration) |
 
@@ -124,6 +125,8 @@ Three paths share one rule (`combat_legendary_spend.go`):
 
 An option of kind `attack` is `LEGENDARY_WRONG_KIND` in `SpendLegendaryAction`, and so is one of kind `move` while the creature stands on a square.
 The `ActionKey` of an attack option must be the stat block action of the `attack_key` (`LEGENDARY_WRONG_KIND` otherwise).
+The master's `LegendaryOption.attack_detail_pt` is the numbers of that action in Portuguese ("Cauda: +14 · 2d8 + 8 de concussão · alcance 4,5 m": name, attack bonus, damage, reach in meters); it is empty for `text` and `move` options and is part of `Combatant.legendary`, so no player reads it.
+`LegendaryOption.attack_key` carries that key to the master's screen, and `name_pt` the option's name in Portuguese; the screen shows no other name (`name_pt` is the English name when the content has no Portuguese one).
 
 The rule is checked before anything is rolled, and again with the spend inside the transaction of the action, so a refused action spends nothing.
 It refuses with these reasons:

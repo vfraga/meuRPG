@@ -1532,6 +1532,21 @@ describe('CharacterEditor', () => {
       expect(primary?.textContent).toContain('Criar NPC');
     });
 
+    it('puts the longer lead and the full note in wide-only spans, with a phone note beside it', async () => {
+      configure({ id: 'camp-1' });
+      const { el } = await render();
+
+      expect(el.querySelector('.mr-page-lead .mr-wide-only')?.textContent).toContain(
+        'calculados quando você criar',
+      );
+      expect(el.querySelector('.editor__note .mr-wide-only')?.textContent).toContain(
+        'Cria com o que estiver preenchido',
+      );
+      expect(el.querySelector('.editor__note-phone')?.textContent).toContain(
+        'CA, PV e modificadores',
+      );
+    });
+
     it('lists what to fix on the short NPC form too', async () => {
       configure({ id: 'camp-1', kind: 'minion' });
       const { fixture, el } = await render();

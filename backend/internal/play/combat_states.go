@@ -152,7 +152,7 @@ func (s *Service) endRage(ctx context.Context, c *combatTx, who playdb.Combatant
 	if err := s.stateEvent(ctx, c, who, stateRage, false, reason); err != nil {
 		return err
 	}
-	return s.afterFrenzyEnded(ctx, c, who, rows)
+	return s.afterFrenzyEnded(ctx, c, who, combatantStates(rows))
 }
 
 // markHuntersMark puts the caster's Hunter's Mark on the target: one mark at a time (SRD
@@ -215,7 +215,7 @@ func (s *Service) endStatesAtStart(ctx context.Context, c *combatTx, ids []strin
 	if err != nil {
 		return fmt.Errorf("end the states: %w", err)
 	}
-	return s.afterStatesEnded(ctx, c, rows, "duration")
+	return s.afterStatesEnded(ctx, c, combatantStates(rows), "duration")
 }
 
 // afterStatesEnded writes the line of each rage among the states that ended, takes the
@@ -291,7 +291,7 @@ func (s *Service) afterTurnPart(ctx context.Context, c *combatTx, current playdb
 	if err != nil {
 		return fmt.Errorf("end the states: %w", err)
 	}
-	if err := s.afterStatesEnded(ctx, c, rows, "duration"); err != nil {
+	if err := s.afterStatesEnded(ctx, c, combatantStates(rows), "duration"); err != nil {
 		return err
 	}
 	if err := s.dropConditionSourcesEndingNow(ctx, c, current); err != nil {

@@ -3,8 +3,7 @@
     label="Invoca criaturas"
     [checked]="summon() !== null"
     [path]="at()"
-    [invalid]="issuesOf()(at()).length > 0"
-    [describedBy]="issuesOf()(at()).length > 0 ? id + '-note' : ''"
+    [describedby]="issuesOf()(at()).length > 0 ? id + '-note' : ''"
     (toggled)="toggle($event)"
   />
   <app-field-note [id]="id + '-note'" [issues]="issuesOf()(at())" />
@@ -22,7 +21,7 @@
       (keysChange)="patch({ creatureKeys: $event })"
     />
     <div class="row">
-      <app-text-field label="Quantas vêm" hint="Fórmula do dono; de 1 a 20." [value]="s.count" [path]="path('count')" [issues]="issues('count')" (valueChange)="patch({ count: $event })" />
+      <app-text-field label="Quantas vêm" hint="Fórmula do dono; de 1 a 20. Aqui slot() vale 0." [value]="s.count" [path]="path('count')" [issues]="issues('count')" (valueChange)="patch({ count: $event })" />
       <app-text-field label="No máximo ao mesmo tempo" hint="0: sem limite. Até {{ maxLive }}." inputmode="numeric" [value]="s.maxLive" [path]="path('max_live')" [issues]="issues('max_live')" (valueChange)="patch({ maxLive: $event })" />
       @if (hasResource()) {
         <app-select-field
@@ -42,8 +41,8 @@
       }
     </div>
     <div class="row row--2">
-      <app-radio-cards label="Turno" [options]="turnCards" [value]="'' + (s.turnMode || 1)" [path]="path('turn_mode')" [issues]="issues('turn_mode')" (valueChange)="patch({ turnMode: +$event })" />
-      <app-radio-cards label="Ao usar de novo" [options]="repliesCards" [value]="'' + (s.replaces || 1)" [path]="path('replaces')" [issues]="issues('replaces')" (valueChange)="patch({ replaces: +$event })" />
+      <app-radio-cards label="Turno" [options]="turnCardsFor(s.turnMode)" [value]="'' + (s.turnMode || 1)" [path]="path('turn_mode')" [issues]="issues('turn_mode')" (valueChange)="patch({ turnMode: +$event })" />
+      <app-radio-cards label="Ao usar de novo" [options]="replacesCardsFor(s.replaces)" [value]="'' + (s.replaces || 1)" [path]="path('replaces')" [issues]="issues('replaces')" (valueChange)="patch({ replaces: +$event })" />
     </div>
     <div class="row">
       <app-select-field label="Tempo" [options]="timeOptions()" [value]="timeValue(s.time)" [path]="path('casting_time')" [issues]="issues('casting_time')" (valueChange)="setTime($event)" />
@@ -61,8 +60,7 @@
           label="Concentração"
           [checked]="s.concentration"
           [disabled]="!timed() && !s.concentration"
-          [invalid]="issues('concentration').length > 0"
-          [describedBy]="issues('concentration').length > 0 ? id + '-conc' : timed() ? '' : id + '-conc-why'"
+          [describedby]="issues('concentration').length > 0 ? id + '-conc' : timed() ? '' : id + '-conc-why'"
           [path]="path('concentration')"
           (toggled)="patch({ concentration: $event })"
         />

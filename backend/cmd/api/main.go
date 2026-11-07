@@ -638,15 +638,16 @@ func wireModules(
 	// session shows and publishes on play's live stream. play gets the
 	// SessionMaps made above first, and maps then gets play.
 	playService, err = play.New(play.Config{
-		Pool:      pool,
-		Sheets:    charactersService,           // starting a session locks the sheets (RN-01)
-		Vitals:    charactersService,           // the characters' hit points, slots and hit dice (RN-02)
-		Campaigns: campaignsService,            // the caller's campaigns, for the session notice (RN-06)
-		Maps:      sessionMaps,                 // the current map (RN-10), the shown image (MR-028), the grid and tokens (MR-013)
-		Roster:    charactersService,           // who can fight, with which numbers (MR-013)
-		Dice:      diceModes{campaignsService}, // where a player rolls (RN-18)
-		Roller:    dice.Crypto{},               // production rolls with the operating system's random source
-		Defaults:  campaignsService,            // the mode of a combat started without one (RN-24, RN-25)
+		Pool:       pool,
+		Sheets:     charactersService,           // starting a session locks the sheets (RN-01)
+		Vitals:     charactersService,           // the characters' hit points, slots and hit dice (RN-02)
+		Campaigns:  campaignsService,            // the caller's campaigns, for the session notice (RN-06)
+		Maps:       sessionMaps,                 // the current map (RN-10), the shown image (MR-028), the grid and tokens (MR-013)
+		Roster:     charactersService,           // who can fight, with which numbers (MR-013)
+		Dice:       diceModes{campaignsService}, // where a player rolls (RN-18)
+		Roller:     dice.Crypto{},               // production rolls with the operating system's random source
+		D20Rerolls: true,                        // a d20 a table feature's reroll covers waits for "rolar de novo?"
+		Defaults:   campaignsService,            // the mode of a combat started without one (RN-24, RN-25)
 		Messages: play.MessagesConfig{
 			Profiles:        users, // the name shown on an out-of-character line
 			Voice:           opts.Voice,

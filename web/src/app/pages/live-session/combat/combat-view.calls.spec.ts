@@ -1373,7 +1373,17 @@ describe("CombatView calls: moving a token (the master's drag and a player's dro
     const dropping = view.moves.drop({ id: 'g', col: 5, row: 5 });
     expect(spot(view, 'g')).toEqual([5, 5]);
     expect(view.error()).toBe('');
-    expect(callsOf('move')[0].args).toEqual(['c', 'enc', 'g', 5, 5, undefined, undefined, false]);
+    expect(callsOf('move')[0].args).toEqual([
+      'c',
+      'enc',
+      'g',
+      5,
+      5,
+      undefined,
+      undefined,
+      false,
+      '',
+    ]);
     finish?.();
     await dropping;
     expect(spot(view, 'g')).toEqual([5, 5]);

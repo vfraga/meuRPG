@@ -1,5 +1,12 @@
 import type { TableContentViolation } from '../../../gen/meurpg/rules/v1/table_content_pb';
-import { FIELD_TEXTS, FORMULA_TEXT, LONG_TEXT } from './content-violation-texts';
+import { NAME_MAX } from './feature-draft';
+import {
+  BAD_EFFECT_VALUE,
+  DANGLING_TEXT,
+  FIELD_TEXTS,
+  FORMULA_TEXT,
+  LONG_TEXT,
+} from './content-violation-texts';
 
 /**
  * What the server refused in a write, put back on the fields (MR-025, E10-01 state 5). A violation has the path of
@@ -35,6 +42,34 @@ export function withoutFields(placement: Placement, paths: readonly string[]): P
   const gone = new Set(paths);
   const byField = new Map([...placement.byField].filter(([path]) => !gone.has(path)));
   const fields = placement.fields.filter((path) => !gone.has(path));
+  return { byField, top: placement.top, fields, count: fields.length + placement.top.length };
+}
+
+/** Where a path goes after row `index` of `list` is removed: `null` for a path inside that row, the next index down for the rows after it. */
+export function pathAfterRowRemoved(path: string, list: string, index: number): string | null {
+  const head = `${list}[`;
+  if (!path.startsWith(head)) {
+    return path;
+  }
+  const close = path.indexOf(']', head.length);
+  const at = Number(path.slice(head.length, close));
+  if (close < 0 || Number.isNaN(at) || at < index) {
+    return path;
+  }
+  return at === index ? null : `${head}${at - 1}${path.slice(close)}`;
+}
+
+/** The placement after row `index` of `list` is removed: its messages go, the rows below keep theirs at their new place, the rest stays. */
+export function withoutRow(placement: Placement, list: string, index: number): Placement {
+  const move = (path: string) => pathAfterRowRemoved(path, list, index);
+  const byField = new Map<string, readonly PlacedViolation[]>();
+  for (const [path, found] of placement.byField) {
+    const to = move(path);
+    if (to !== null) {
+      byField.set(to, found);
+    }
+  }
+  const fields = placement.fields.flatMap((path) => move(path) ?? []);
   return { byField, top: placement.top, fields, count: fields.length + placement.top.length };
 }
 
@@ -106,7 +141,7 @@ function nameText(r: string, ctx: ViolationContext, shape: string): string | und
     // a table creature's name allows 80 letters, like its traits and attacks
     return shape.startsWith('table_creature.')
       ? 'O nome tem de 1 a 80 letras.'
-      : 'O nome tem de 1 a 60 letras.';
+      : `O nome tem de 1 a ${NAME_MAX} letras.`;
   }
   if (r === 'bad_key' || r === 'reserved_key' || r === 'duplicate_key') {
     return 'Este nome não pode ser usado. Escolha outro.';
@@ -156,12 +191,10 @@ function rowText(shape: string, r: string, ctx: ViolationContext): string | unde
 /** What is said when nothing above matched the field: by the reason alone. */
 function fallbackText(shape: string, r: string): string {
   if (r === 'dangling_reference') {
-    return 'Isto aponta para algo que não existe mais. Escolha de novo.';
+    return DANGLING_TEXT;
   }
   if (shape.includes('.effects[].')) {
-    return r === 'bad_value'
-      ? 'Este valor não serve para este efeito.'
-      : 'Confira este campo do efeito.';
+    return r === 'bad_value' ? BAD_EFFECT_VALUE : 'Confira este campo do efeito.';
   }
   switch (r) {
     case 'bad_text':
@@ -197,7 +230,12 @@ export function violationText(
     leaf === 'name_pt' && !/^table_creature\.(traits|attacks)\[\]\./.test(shape)
       ? nameText(v.reason, ctx, shape)
       : undefined;
+  // Two options of one feature with one name is about the options, not the name's length.
+  const optionName = shape.endsWith('.options[].name_pt')
+    ? rowText(shape, v.reason, ctx)
+    : undefined;
   return (
+    optionName ??
     named ??
     reasonText(shape, leaf, v.reason) ??
     rowText(shape, v.reason, ctx) ??

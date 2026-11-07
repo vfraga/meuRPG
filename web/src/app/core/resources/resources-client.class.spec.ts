@@ -115,6 +115,17 @@ describe('ResourceClient: the class resource calls', () => {
     ]);
   });
 
+  it('answers a reroll rule’s question with the boolean alone: the server rolls the new d20', async () => {
+    const sent: unknown[] = [];
+    const client = clientWith(sent);
+    await client.answerHeldRoll('c', 'h', { kind: 'reroll', reroll: true, roll: null }, 'k1');
+    await client.answerHeldRoll('c', 'h', { kind: 'reroll', reroll: false, roll: null }, 'k2');
+    expect(sent).toEqual([
+      expect.objectContaining({ answer: { case: 'reroll', value: { reroll: true } } }),
+      expect.objectContaining({ answer: { case: 'reroll', value: { reroll: false } } }),
+    ]);
+  });
+
   it('lists the questions that wait for the campaign', async () => {
     const sent: unknown[] = [];
     await clientWith(sent).listHeldRolls('c');

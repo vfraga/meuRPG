@@ -441,7 +441,10 @@ func (r combatantReader) read(c playdb.Combatant) *playv1.Combatant {
 	p := combatantToProto(c, v, r.ties[c.ID], vit, r.armorClass[sheetKey(c)], r.npcs[sheetKey(c)].portrait, actsNow(e, c), r.names)
 	if v.master { // the creature of a monster: the master's alone (RN-20)
 		p.BestiaryCreatureKey, p.ChallengeRating = r.npcs[sheetKey(c)].monsterKey, r.npcs[sheetKey(c)].challengeRating
-		p.Legendary = legendaryView(r.npcs[sheetKey(c)].legendary, c, e)
+		p.Legendary = legendaryView(r.npcs[sheetKey(c)].legendary, r.npcs[sheetKey(c)].legendaryDetail, c, e)
+		if c.Kind == kindNPC && r.npcs[sheetKey(c)].parry {
+			p.ParryAsk = new(parryAsks(c))
+		}
 	}
 	if v.master || v.owns(c) { // the limits of a creature: the master's and the player's who controls it (RN-29)
 		p.LimitedActions = limitedActionsView(r.npcs[sheetKey(c)].limited, c)
@@ -763,8 +766,12 @@ type masterNPC struct {
 	// legendary is what its stat block says about legendary actions and Legendary
 	// Resistance; the zero value for an NPC without them.
 	legendary rules.LegendaryProfile
+	// legendaryDetail is the numbers of each attack option, by option key (LegendaryOption.attack_detail_pt).
+	legendaryDetail map[string]string
 	// limited are the actions of its stat block that Recharge, have uses a day or wait for a rest.
 	limited []rules.ActionPlan
+	// parry says its stat block has a Parry that adds to the armor class (the master reads its mode).
+	parry bool
 }
 
 // npcDetails reads the portrait URL of each NPC in the combat and, for a monster, its

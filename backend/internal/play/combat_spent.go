@@ -21,6 +21,8 @@ import (
 //   - "use:<action key>": uses spent of an action with uses a day.
 //   - "rest:<action key>": 1 once an action that recharges after a short or long rest was used.
 //   - "recharge:<action key>": 1 while a Recharge action is spent.
+//   - "parry_ask": 1 when the master asked to be asked for the creature's Parry (SetMonsterReactionMode); absent,
+//     the server decides the Parry on its own. It is no spending, and ends with the combat.
 //
 // Every key this file does not know is kept as it is.
 //
@@ -37,6 +39,8 @@ const (
 	spentUsePrefix      = "use:"
 	spentRestPrefix     = "rest:"
 	spentRechargePrefix = "recharge:"
+	// spentParryAsk is the master's switch to answer the creature's Parry in a window.
+	spentParryAsk = "parry_ask"
 )
 
 // creatureSpentLimit is the most bytes the column's text has (the table's CHECK).

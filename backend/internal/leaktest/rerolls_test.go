@@ -37,6 +37,9 @@ const (
 	kindRerollRes  = "reroll-resource"
 	kindRerollMax  = "reroll-at-most"
 	kindRerollDie  = "reroll-held-d20"
+	kindRerollName = "reroll-source-name"
+	// rerollFeatName is the feat's name, which the rolls name to the roller and the master (source_name).
+	rerollFeatName = "Dado Sortudo da Mesa"
 )
 
 // rerollFeat gives Toren the table feat of the rule and returns the feat's key.
@@ -44,7 +47,7 @@ func (rt *rollsTable) rerollFeat() string {
 	ctx := rt.t.Context()
 	entry := must(rt.master.table.CreateTableEntry(ctx, rq(&rulesv1.CreateTableEntryRequest{
 		CampaignId: rt.campaign, Body: &rulesv1.CreateTableEntryRequest_TableFeat{TableFeat: &rulesv1.TableFeat{
-			NamePt: "Dado Sortudo da Mesa", DescPt: []string{"Um talento da mesa."},
+			NamePt: rerollFeatName, DescPt: []string{"Um talento da mesa."},
 			Effects: []*rulesv1.TableEffect{
 				{Type: "resource", Resource: rerollPool, Max: "6", Recharge: "short_rest"},
 				{Type: "reroll", Rolls: []string{"attack", "check", "save"}, AtMost: rerollAtMost, Resource: rerollPool, Cost: "1"},
@@ -114,6 +117,7 @@ func TestRerollQuestionsReachOnlyWhoMayReadThem(t *testing.T) {
 	// What the rule holds: the feature, the pool it spends, its limit and the face the attack shows are Caio's and the
 	// master's while the roll waits.
 	w.secrets.add(&canary{needle: feat, kind: kindRerollSrc, readers: names([]*person{caio})})
+	w.secrets.add(&canary{needle: rerollFeatName, kind: kindRerollName, readers: names([]*person{caio})})
 	w.secrets.add(&canary{needle: rerollPool, kind: kindRerollRes, readers: names([]*person{caio})})
 	w.secrets.add(&canary{needle: "17", kind: kindRerollMax, numeric: true, value: rerollAtMost, fields: []string{"at_most"}, readers: names([]*person{caio})})
 	w.secrets.add(&canary{needle: "5", kind: kindRerollDie, numeric: true, value: rerollHeldFace, fields: []string{"faces"}, readers: names([]*person{caio})})
@@ -133,7 +137,7 @@ func TestRerollQuestionsReachOnlyWhoMayReadThem(t *testing.T) {
 	hold := w.secrets.id("reroll-hold", offer.GetHoldId(), caio)
 	rt.ask(t, "the attack waits for the reroll")
 	for who, p := range map[string]*person{"the master": m, "Caio": caio} {
-		if got := rt.combatantOf(p, labelToren).GetHeldRollOffer(); got.GetHoldId() != hold || got.GetReroll().GetSourceKey() != feat || got.GetReroll().GetResource() != rerollPool || got.GetReroll().GetAtMost() != rerollAtMost {
+		if got := rt.combatantOf(p, labelToren).GetHeldRollOffer(); got.GetHoldId() != hold || got.GetReroll().GetSourceKey() != feat || got.GetReroll().GetResource() != rerollPool || got.GetReroll().GetAtMost() != rerollAtMost || got.GetReroll().GetSourceName() != rerollFeatName || got.GetReroll().GetSides() != 20 {
 			t.Errorf("%s reads %v on Toren, want the reroll question with its rule (the positive control)", who, got)
 		}
 		if got := rt.listHeld(p); len(got) != 1 || got[0].GetHoldId() != hold {
@@ -167,7 +171,7 @@ func TestRerollQuestionsReachOnlyWhoMayReadThem(t *testing.T) {
 	rt.ask(t, "the attack was rolled again")
 	for who, p := range map[string]*person{"the master": m, "Caio": caio} {
 		lines := rt.attackLines(p, "Esqueleto")
-		if len(lines) != 1 || len(lines[0].GetAttackRoll().GetRerolled()) != 1 || lines[0].GetAttackRoll().GetRerolled()[0].GetSourceKey() != feat {
+		if len(lines) != 1 || len(lines[0].GetAttackRoll().GetRerolled()) != 1 || lines[0].GetAttackRoll().GetRerolled()[0].GetSourceKey() != feat || lines[0].GetAttackRoll().GetRerolled()[0].GetSourceName() != rerollFeatName {
 			t.Errorf("%s reads %v, want the d20 rolled again with its source in the log (the positive control)", who, lines)
 		}
 	}
@@ -256,6 +260,41 @@ func TestRerollQuestionsReachOnlyWhoMayReadThem(t *testing.T) {
 	if got := rt.listHeld(caio); len(got) != 0 {
 		t.Errorf("Caio lists %v after the answer, want nothing", got)
 	}
+
+	// 5. The master retires the feat: the roller's sheet keeps it, the roll still lists its key, and nobody is told its name
+	// any more (RN-23), not the roller and not the master.
+	must(m.table.ArchiveTableEntry(t.Context(), rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: feat})))
+	rt.ask(t, "the feat was retired")
+	for who, p := range map[string]*person{"the master": m, "Caio": caio} {
+		lines := rt.attackLines(p, "Esqueleto")
+		if len(lines) != 1 || len(lines[0].GetAttackRoll().GetRerolled()) != 1 || lines[0].GetAttackRoll().GetRerolled()[0].GetSourceKey() != feat || lines[0].GetAttackRoll().GetRerolled()[0].GetSourceName() != "" {
+			t.Errorf("%s reads %v after the feat was retired, want the key kept and no name", who, lines)
+		}
+	}
+
+	// 6. The retired feat still serves the sheet that has it: a new low attack asks the question with the key and no name, to
+	// the roller and to the master, and not at all to Ana.
+	rt.toTurn(labelToren)
+	again := rt.mustAttack(caio, labelToren, dagger, "Lobo", []int32{rerollHeldFace}, nil).GetHeldRollOffer()
+	rt.ask(t, "the retired feat asks its question")
+	for who, p := range map[string]*person{"the master": m, "Caio": caio} {
+		got := rt.combatantOf(p, labelToren).GetHeldRollOffer().GetReroll()
+		if again == nil || got.GetSourceKey() != feat || got.GetSourceName() != "" || got.GetSides() != 20 {
+			t.Errorf("%s reads the question %v of the retired feat, want its key, no name and a d20", who, got)
+		}
+		for _, o := range rt.listHeld(p) {
+			if o.GetReroll().GetSourceName() != "" {
+				t.Errorf("%s lists the retired feat as %q, want no name", who, o.GetReroll().GetSourceName())
+			}
+		}
+	}
+	if got := rt.combatantOf(ana, labelToren).GetHeldRollOffer(); got != nil {
+		t.Errorf("Ana reads %v on Toren, want nothing", got)
+	}
+	must(caio.resources.AnswerHeldRoll(t.Context(), rq(&playv1.AnswerHeldRollRequest{
+		CampaignId: w.campaign, HoldId: again.GetHoldId(), IdempotencyKey: newKey(),
+		Answer: &playv1.AnswerHeldRollRequest_Reroll{Reroll: &playv1.RerollAnswer{Reroll: false}},
+	})))
 
 	// The end: the stream told the master and the roller of the steps, and carried no question to Ana.
 	must(m.combat.EndEncounter(t.Context(), rq(&playv1.EndEncounterRequest{CampaignId: w.campaign, EncounterId: rt.encounter.GetId(), IdempotencyKey: newKey()})))

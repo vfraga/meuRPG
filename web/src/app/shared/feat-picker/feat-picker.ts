@@ -80,7 +80,7 @@ interface FeatCard {
                     }
                   </ul>
                 }
-                @if (c.feat.desc.length > 0) {
+                @if (c.feat.desc.length > 0 && c.feat.qualifies) {
                   <details class="card__text">
                     <summary>Ler o talento</summary>
                     <app-rule-text [text]="textOf(c.feat)" />
@@ -154,7 +154,10 @@ export class FeatPicker {
       return {
         feat,
         picked,
-        asks: prerequisiteSupport(feat.prerequisite, this.nameOf()),
+        asks: prerequisiteSupport(feat.prerequisite, this.nameOf(), {
+          name: feat.lacksFeatureNamePt,
+          hidden: feat.lacksFeatureHidden,
+        }),
         why: feat.qualifies ? [] : feat.unmet.map((u) => unmetText(u, this.nameOf())),
         increase: inc ? increaseText(inc.count, inc.from, inc.value) : '',
         capNote:

@@ -20,6 +20,7 @@ import {
   hasFixedOff,
   resetFixed,
   resourcesOf,
+  restoredSummon,
   summonBlockedPaths,
   summonPaths,
   summonToDraft,
@@ -133,7 +134,9 @@ describe('the resources a summon spends', () => {
       name: 'Companheiro do Vale',
       effects: [resource('companheiro', '1')],
     };
-    expect(resourcesOf(one)).toEqual([{ key: 'companheiro', label: 'Companheiro do Vale (1)' }]);
+    expect(resourcesOf(one)).toEqual([
+      { id: one.effects[0].id, key: 'companheiro', label: 'Companheiro do Vale (1)' },
+    ]);
     const two = {
       ...one,
       effects: [resource('a', '2'), resource('b', 'prof()'), emptyEffect('note')],
@@ -157,13 +160,68 @@ describe('the resources a summon spends', () => {
       effects: [resource('companheiro', '1')],
       summon: emptySummon('companheiro'),
     };
-    const renamed = { ...own, effects: [resource('companheiro2', '1')] };
+    const renamed = { ...own, effects: [{ ...own.effects[0], resource: 'companheiro2' }] };
     expect(followResource(own, renamed).summon?.resourceKey).toBe('companheiro2');
     const api = { ...own, summon: emptySummon('da_classe') };
     const edited = { ...api, effects: [resource('outro', '1')] };
     expect(followResource(api, edited)).toBe(edited);
     const two = { ...own, effects: [resource('a', '1'), resource('b', '1')] };
-    expect(followResource(own, two)).toBe(two);
+    // its resource is gone: the key stays (the server says it is dangling), and nothing is renamed
+    expect(followResource(own, two).summon?.resourceKey).toBe('companheiro');
+  });
+
+  it('follows a name cleared to nothing and typed again, keeping the last key meanwhile', () => {
+    const own = {
+      ...emptyFeature(),
+      effects: [resource('companheiro', '1')],
+      summon: emptySummon('companheiro'),
+    };
+    const cleared = followResource(own, {
+      ...own,
+      effects: [{ ...own.effects[0], resource: '' }],
+    });
+    expect(cleared.summon?.resourceKey).toBe('companheiro');
+    expect(summonBlockedPaths('t', cleared)).toEqual([]);
+    const typed = followResource(cleared, {
+      ...cleared,
+      effects: [{ ...cleared.effects[0], resource: 'amigo' }],
+    });
+    expect(typed.summon?.resourceKey).toBe('amigo');
+    const more = followResource(typed, {
+      ...typed,
+      effects: [{ ...typed.effects[0], resource: 'amigos' }],
+    });
+    expect(more.summon?.resourceKey).toBe('amigos');
+  });
+
+  it('with two resources, follows only the one it spends when that one is renamed', () => {
+    const a = resource('a', '1');
+    const b = resource('b', '1');
+    const f = { ...emptyFeature(), effects: [a, b], summon: emptySummon('b') };
+    const renamedB = followResource(f, { ...f, effects: [a, { ...b, resource: 'b2' }] });
+    expect(renamedB.summon?.resourceKey).toBe('b2');
+    const renamedA = followResource(renamedB, {
+      ...renamedB,
+      effects: [{ ...a, resource: 'a2' }, renamedB.effects[1]],
+    });
+    expect(renamedA.summon?.resourceKey).toBe('b2');
+    // pointing the summon at the other resource follows that one from then on
+    const pick = { ...renamedA, summon: { ...renamedA.summon!, resourceKey: 'a2' } };
+    const picked = followResource(renamedA, pick);
+    const again = followResource(picked, {
+      ...picked,
+      effects: [{ ...picked.effects[0], resource: 'a3' }, picked.effects[1]],
+    });
+    expect(again.summon?.resourceKey).toBe('a3');
+  });
+
+  it('a summon switched off and on again follows the renamed resource, or the first left when its own is gone', () => {
+    const own = { id: 'e1', key: 'a', label: 'a' };
+    const bound = { ...emptySummon('a'), resourceEffect: 'e1' };
+    expect(restoredSummon(bound, [{ ...own, key: 'a2' }]).resourceKey).toBe('a2');
+    expect(restoredSummon(bound, [{ id: 'e9', key: 'z', label: 'z' }]).resourceKey).toBe('z');
+    expect(restoredSummon(bound, []).resourceKey).toBe('');
+    expect(restoredSummon(emptySummon('da_classe'), []).resourceKey).toBe('da_classe');
   });
 
   it('an API-written summon that spends a class resource goes back unchanged through edits of the feature', () => {
@@ -237,8 +295,18 @@ describe('the time and duration lists', () => {
     expect(durationOptions(upTo).some((o) => o.label === 'Até 1 hora')).toBe(true);
     const odd = { kind: SpellDurationKind.INSTANTANEOUS, amount: 5, unit: 0 as const, upTo: false };
     expect(durationValue(odd)).not.toBe(String(SpellDurationKind.INSTANTANEOUS));
-    expect(timeValue({ unit: CastingTimeUnit.ACTION, amount: 0, triggerPt: '' })).not.toBe(
-      timeValue({ unit: CastingTimeUnit.ACTION, amount: 1, triggerPt: '' }),
+    // an action, a bonus action and a reaction of amount 0 are one; a stored 0 minutes is its own value
+    for (const unit of [
+      CastingTimeUnit.ACTION,
+      CastingTimeUnit.BONUS_ACTION,
+      CastingTimeUnit.REACTION,
+    ]) {
+      expect(timeValue({ unit, amount: 0, triggerPt: '' })).toBe(
+        timeValue({ unit, amount: 1, triggerPt: '' }),
+      );
+    }
+    expect(timeValue({ unit: CastingTimeUnit.MINUTE, amount: 0, triggerPt: '' })).not.toBe(
+      timeValue({ unit: CastingTimeUnit.MINUTE, amount: 1, triggerPt: '' }),
     );
     expect(durationOptions(instantDuration())[7].label).toBe('Até ser dissipada');
   });
@@ -276,7 +344,7 @@ describe('the names of the creatures a summon lists', () => {
 
   it("remembers only the SRD's names: a table creature's name is its entry's and never crosses a campaign", () => {
     rememberCreatureName('creature:outra-mesa@mesa', 'Nome de outra mesa');
-    expect(creatureNameOf('creature:outra-mesa@mesa', (k) => k)).toBe('Creature:outra mesa@mesa');
+    expect(creatureNameOf('creature:outra-mesa@mesa', (k) => k)).toBe('Criatura da mesa');
   });
 
   it('says "Invoca: Lobo do Vale, Unheard of." and nothing for a feature with no summon', () => {

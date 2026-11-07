@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 
 import { creatureSlug } from '../creatures/bestiary-format';
+import { isTableCreature } from '../creatures/creature-format';
 
 /**
  * The names of the creatures a feature's summon lists. A table creature is named by the catalog (its entry), an SRD one only by
@@ -17,10 +18,26 @@ export function rememberCreatureName(key: string, namePt: string): void {
   }
 }
 
+/** Forgets every remembered name (a spec starts from the bestiary's silence). */
+export function forgetCreatureNames(): void {
+  known.set(new Map());
+}
+
+/** Whether the bestiary already said this SRD creature's name. */
+export function creatureNameKnown(key: string): boolean {
+  return known().has(key);
+}
+
+/** What stands for a table creature the catalog does not list (never its raw key). */
+export const UNNAMED_TABLE_CREATURE = 'Criatura da mesa';
+
 export function creatureNameOf(key: string, nameOf: (key: string) => string): string {
   const named = nameOf(key);
   if (named !== key) {
     return named;
+  }
+  if (isTableCreature(key)) {
+    return UNNAMED_TABLE_CREATURE;
   }
   const remembered = known().get(key);
   if (remembered) {

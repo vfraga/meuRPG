@@ -37,7 +37,8 @@ import {
   emptyTrait,
   unreadableCreaturePaths,
 } from '../../../core/content/creature-draft';
-import { baseModsText } from '../../../core/content/creature-damage-mods';
+import { pathAfterRowRemoved } from '../../../core/content/content-violations';
+import { type DamageModDraft, baseModsText } from '../../../core/content/creature-damage-mods';
 import { carrierIcon, carriersOf, type Carrier } from '../../../core/content/creature-carriers';
 import { creaturePreview } from '../../../core/content/creature-preview';
 import { RANGES, attackSummary, formulaEcho, traitLine } from '../../../core/content/creature-text';
@@ -244,10 +245,37 @@ export class CreatureEditor {
   }
 
   protected patch(p: Partial<CreatureDraft>): void {
+    const next = { ...this.draft(), ...p };
+    this.draft.set(next);
+    // The client's own messages stay on the fields it still cannot read: the one that was just fixed loses its message, no other.
     if (this.unreadable().size > 0) {
-      this.unreadable.set(new Map());
+      const still = new Set(unreadableCreaturePaths(next));
+      this.unreadable.update((m) => new Map([...m].filter(([path]) => still.has(path))));
     }
-    this.draft.update((d) => ({ ...d, ...p }));
+  }
+
+  /** The damage rows changed: when one went, its refusals go with it and the rows below keep theirs. */
+  protected setMods(mods: DamageModDraft[]): void {
+    const was = this.draft().damageMods;
+    const gone = was.findIndex((m) => !mods.some((n) => n.id === m.id));
+    if (gone >= 0 && mods.length < was.length) {
+      this.saver.rowRemoved(`${P}.damage_mods`, gone);
+    }
+    this.patch({ damageMods: mods });
+  }
+
+  /** The refusals and the unreadable messages name rows by their place: a row that goes takes its own, the rows below move up. */
+  private rowRemoved(list: string, index: number): void {
+    this.saver.rowRemoved(list, index);
+    this.unreadable.update(
+      (m) =>
+        new Map(
+          [...m].flatMap(([path, text]) => {
+            const to = pathAfterRowRemoved(path, list, index);
+            return to === null ? [] : [[to, text] as const];
+          }),
+        ),
+    );
   }
 
   protected setNumber(key: NumberRow['fixed'] | NumberRow['formula'], value: string): void {
@@ -337,9 +365,9 @@ export class CreatureEditor {
   }
 
   protected removeTrait(id: string): void {
+    const at = this.draft().traits.findIndex((t) => t.id === id);
+    this.rowRemoved(`${P}.traits`, at);
     this.patch({ traits: this.draft().traits.filter((t) => t.id !== id) });
-    // The refusals name rows by their place: after a row goes, they would sit on the wrong one.
-    this.saver.clear();
     this.say('Traço removido.');
     this.focusAdd('traits');
   }
@@ -361,8 +389,9 @@ export class CreatureEditor {
   }
 
   protected removeAttack(id: string): void {
+    const at = this.draft().attacks.findIndex((a) => a.id === id);
+    this.rowRemoved(`${P}.attacks`, at);
     this.patch({ attacks: this.draft().attacks.filter((a) => a.id !== id) });
-    this.saver.clear();
     this.say('Ataque removido.');
     this.focusAdd('attacks');
   }

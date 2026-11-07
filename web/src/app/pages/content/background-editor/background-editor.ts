@@ -30,6 +30,7 @@ import {
   draftToBackground,
   emptyBackground,
   featurePaths,
+  NAME_MAX,
   unreadableFeaturePaths,
 } from '../../../core/content/feature-draft';
 import { FeatureEditor } from '../../../shared/feature-editor/feature-editor';
@@ -81,6 +82,7 @@ export class BackgroundEditor {
   readonly reload = output<void>();
   readonly cancelled = output<void>();
 
+  protected readonly nameMax = NAME_MAX;
   protected readonly draft = signal<BackgroundDraft>(emptyBackground());
   protected readonly saver = new EntrySaver(
     {

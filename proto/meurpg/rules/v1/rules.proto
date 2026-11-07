@@ -465,6 +465,15 @@ message FeatPrerequisite {
   // The guided level-up judges it before the feat's grants. The sheet judges it on what
   // the character owns.
   string lacks_feature_key = 9;
+  // True when the condition names a feature the player may not read; the key is then empty.
+  // Set by the server on a player's read. Ignored on write.
+  bool lacks_hidden = 10;
+  // The Portuguese name of lacks_feature_key, filled by the server on read. Empty when the key
+  // is empty or hidden. Ignored on write.
+  string lacks_feature_name_pt = 11;
+  // True when the feat asks for races and none is left visible after the player's filter. Set by
+  // the server on a player's read; never for the master. Ignored on write.
+  bool races_hidden = 12;
 }
 
 // FeatIncrease is the ability increase a feat gives (its ability_increase effect):
@@ -523,6 +532,9 @@ message FeatUnmet {
   // The Portuguese name of `key` for a kind LACKS_FEATURE (the app's catalog has no
   // features); empty when the players cannot see that feature, and then `key` is empty too.
   string name_pt = 6;
+  // True for kind LACKS_FEATURE (or RACE with every race hidden) when the condition names something the
+  // player may not read; `key` and `name_pt` are then empty. The master's view is never hidden.
+  bool hidden = 7;
 }
 
 // FeatOption is a feat a character may take, for the feat picker (the guided
@@ -565,6 +577,9 @@ message FeatOption {
   // The Portuguese name of `prerequisite.lacks_feature_key`; empty when it is not set or
   // the players cannot see that feature.
   string lacks_feature_name_pt = 14;
+  // True when `prerequisite.lacks_feature_key` names a feature the player may not read: the key and
+  // the name are then empty. The master's view is never hidden.
+  bool lacks_feature_hidden = 15;
 }
 
 // ProficiencyLevel is how much of the proficiency bonus a check adds.

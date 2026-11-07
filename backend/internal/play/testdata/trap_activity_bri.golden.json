@@ -25,7 +25,8 @@
           "physical": true,
           "total": 11,
           "treatedAs": 10,
-          "treatedAsSource": "feature:reliable-talent"
+          "treatedAsSource": "feature:reliable-talent",
+          "treatedAsSourceName": "Talento Confiável"
         },
         "secondRoll": {
           "diceCount": 1,
@@ -39,6 +40,7 @@
             {
               "from": 1,
               "sourceKey": "trait:lucky",
+              "sourceName": "Sortudo",
               "to": 12
             }
           ],

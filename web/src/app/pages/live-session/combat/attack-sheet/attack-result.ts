@@ -8,6 +8,8 @@ import { luckyText } from '../../../../core/combat/lucky';
 import { DamageBreakdown } from '../damage-parts/damage-breakdown';
 import { D20Faces } from '../roll-mode/d20-faces';
 import { upFirst } from '../../../../core/format/text';
+import { isMasterWait } from '../../../../core/combat/reactions';
+import { MasterWait } from '../../../../shared/master-wait/master-wait';
 
 /**
  * What the attack sheet has shown so far, as a list of done steps (E6-07,
@@ -17,7 +19,7 @@ import { upFirst } from '../../../../core/format/text';
  */
 @Component({
   selector: 'app-attack-result',
-  imports: [D20Faces, DamageBreakdown, MatIconModule],
+  imports: [D20Faces, DamageBreakdown, MasterWait, MatIconModule],
   template: `
     <div class="result" role="status" aria-live="polite">
       <div class="part">
@@ -55,13 +57,21 @@ import { upFirst } from '../../../../core/format/text';
               <span class="part__line">{{ bonusLine() }}</span>
             }
             @if (held(); as h) {
-              <span class="part__line"><b>{{ h.title }}.</b> {{ h.detail }}</span>
+              @if (!isMasterWait(h)) {
+                <span class="part__line"><b>{{ h.title }}.</b> {{ h.detail }}</span>
+              }
             }
             @if (coverLine()) {
               <span class="part__line">{{ coverLine() }}</span>
             }
           </div>
         </div>
+        @if (held(); as h) {
+          @if (isMasterWait(h)) {
+            <!-- The master's own window holds the result (an NPC's reaction, a check, Parry, Legendary Resistance): the same neutral card for all (RN-10). -->
+            <app-master-wait [title]="h.title" [detail]="h.detail" />
+          }
+        }
       }
       @if (showDamage() && !held() && !asking()) {
         <div class="part">
@@ -94,6 +104,7 @@ import { upFirst } from '../../../../core/format/text';
   styleUrl: './attack-result.scss',
 })
 export class AttackResult {
+  protected readonly isMasterWait = (w: { title: string }): boolean => isMasterWait(w.title);
   readonly targetLabel = input.required<string>();
   readonly roll = input<AttackRoll | null>(null);
   readonly d20Formula = input('');

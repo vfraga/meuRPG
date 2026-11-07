@@ -23,8 +23,12 @@ import { HeldRollController } from '../../../core/held-rolls/held-roll-controlle
 import {
   type HeldAnswer,
   asksLucky,
+  asksReroll,
   asksStroke,
+  dieOf,
   heldOfferOf,
+  rerollFace,
+  weaponHold,
 } from '../../../core/held-rolls/held-roll-offer';
 import { HeldVanishWatch } from '../../../core/held-rolls/held-vanish';
 import { settledRoll } from '../../../core/held-rolls/held-roll-result';
@@ -52,6 +56,21 @@ export function luckyAnswerText(res: AnswerHeldRollResponse, reroll: boolean): s
   return total === undefined
     ? `${again}. O mestre vê o resultado.`
     : `${again}. Seu total: ${total}.`;
+}
+
+/** What the player reads once a reroll rule's question is answered: "Sorte Teimosa: 2 → 14. Seu total: 19." or "Você ficou com o 2.". */
+export function rerollAnswerText(
+  res: AnswerHeldRollResponse,
+  reroll: boolean,
+  asked: HeldRollOffer,
+): string {
+  const said = reroll
+    ? luckyText(settledRoll(res)) || 'Rolado de novo'
+    : `Você ficou com o ${rerollFace(asked)}`;
+  const total = res.result.case === 'sceneCheck' ? res.result.value.roll?.roll?.total : undefined;
+  return total === undefined
+    ? `${said}. O mestre vê o resultado.`
+    : `${said}. Seu total: ${total}.`;
 }
 
 /** What the rogue reads once Stroke of Luck is answered: that it was used (with the total of a check) or kept. */
@@ -199,23 +218,24 @@ export class BardicBlock {
   /** The question that waits for the character, Lucky's or the die's: a character has one at a time. */
   protected readonly held = new HeldRollController({
     send: (holdId, answer, key) => this.api.answerHeldRoll(this.campaignId(), holdId, answer, key),
-    settle: (res, done) => this.say(res, done.answer),
+    settle: (res, done) => this.say(res, done.answer, done.asked),
     busy: this.busy,
   });
   /** Tells the player their question was answered by the master when it is gone and they did not answer it here. */
   protected readonly vanish = new HeldVanishWatch();
   protected readonly lucky = computed(() => {
     const asked = this.held.offer();
-    return asksLucky(asked) || asksStroke(asked) ? asked : null;
+    return asksLucky(asked) || asksStroke(asked) || asksReroll(asked) ? asked : null;
   });
   protected readonly die = computed(() => {
     const asked = this.held.offer();
-    return asked && !asksLucky(asked) && !asksStroke(asked) ? asked : null;
+    return asked && dieOf(asked) !== undefined ? asked : null;
   });
   /** The heading of the section: Lucky's, or the rogue's Stroke of Luck. */
-  protected readonly luckyHeading = computed(() =>
-    asksStroke(this.held.offer()) ? 'Golpe de Sorte' : 'Sortudo',
-  );
+  protected readonly luckyHeading = computed(() => {
+    const asked = this.held.offer();
+    return asksStroke(asked) ? 'Golpe de Sorte' : asksReroll(asked) ? 'Rolar de novo' : 'Sortudo';
+  });
   /** The die section's error: the give's, or the answer's when the question is the die's. */
   protected readonly dieError = computed(() => (this.die() ? this.held.error() : ''));
   protected readonly minutes = minutesText;
@@ -246,14 +266,15 @@ export class BardicBlock {
     });
   }
 
-  /** The first Stroke of Luck question that waits for the caller, from the list of held rolls; `undefined` for none. */
+  /** The first Stroke of Luck or reroll rule question that waits for the caller, from the list of held rolls; `undefined`
+   * for none. A weapon attack's question is the attack sheet's, which reopens at it. */
   private async strokeOffer(): Promise<HeldRollOffer | undefined> {
     if (!this.strokeQuestions()) {
       return undefined;
     }
     try {
       const res = await this.api.listHeldRolls(this.campaignId());
-      return res.offers.find((o) => asksStroke(o));
+      return res.offers.find((o) => asksStroke(o) || (asksReroll(o) && weaponHold(o) === null));
     } catch {
       return undefined;
     }
@@ -308,9 +329,13 @@ export class BardicBlock {
   }
 
   /** What the block says once an answer got through. */
-  private say(res: AnswerHeldRollResponse, answer: HeldAnswer): void {
+  private say(res: AnswerHeldRollResponse, answer: HeldAnswer, asked: HeldRollOffer): void {
     if (answer.kind === 'stroke') {
       this.luckyAnswered.set(strokeAnswerText(res, answer.use));
+      return;
+    }
+    if (answer.kind === 'reroll') {
+      this.luckyAnswered.set(rerollAnswerText(res, answer.reroll, asked));
       return;
     }
     if (answer.kind !== 'die') {

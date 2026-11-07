@@ -19,12 +19,14 @@
 
 .head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
 }
 
 .title {
-  flex: 1;
+  flex: 1 1 auto;
+  white-space: nowrap;
   margin: 0;
   font-family: var(--mr-font-display);
   font-weight: 700;
@@ -73,6 +75,8 @@
 }
 
 .undo {
+  flex: none;
+  white-space: nowrap;
   --mat-button-outlined-container-height: 44px;
   --mat-button-outlined-label-text-color: var(--mr-ink);
 }

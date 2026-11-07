@@ -56,6 +56,13 @@ describe('TurnBar', () => {
     expect(el.querySelector<HTMLButtonElement>('.end')?.getAttribute('aria-disabled')).toBe('true');
   });
 
+  it("leaves the master's wait to the turn card: the bar shows what is left, and the button stays off", () => {
+    const el = setup({}, { waiting: 'Esperando o mestre' });
+    expect(text(el)).not.toContain('Esperando o mestre');
+    expect(text(el.querySelector('.row'))).toContain('Ainda tem');
+    expect(el.querySelector<HTMLButtonElement>('.end')?.getAttribute('aria-disabled')).toBe('true');
+  });
+
   it('says "Passar o turno" for a surprised character (W7-X)', () => {
     const el = setup({}, { surprised: true });
     expect(text(el.querySelector('.row'))).toContain('Passar o turno');

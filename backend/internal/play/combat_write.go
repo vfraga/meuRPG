@@ -69,6 +69,8 @@ const (
 	eventLegendarySpent = "legendary_action_spent"
 	// The server rolled a d6 for a Recharge action at the start of its creature's turn (combat_recharge.go).
 	eventRechargeRolled = "recharge_rolled"
+	// The master chose how a monster's Parry is decided (combat_parry_auto.go); a line of no log.
+	eventMonsterReactionSet = "monster_reaction_mode_set"
 )
 
 // The kinds of the XP awards (package progression writes them

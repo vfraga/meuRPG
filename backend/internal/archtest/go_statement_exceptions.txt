@@ -1,0 +1,9 @@
+# Functions that start a bare goroutine (a go statement) outside internal/platform/safego.
+# One entry per line, sorted.
+# An entry is the path relative to backend/, a colon, and the enclosing function.
+# The function is "(*T).Method" for a method, and the variable name or "init" for a package-level function literal.
+# The list can only shrink.
+# Use safego.Go instead of a new entry.
+# maps/dungeons.go and maps/images/gen/gemini.go recover inline and return an error.
+internal/maps/dungeons.go:(*Service).generateDungeon
+internal/maps/images/gen/gemini.go:bodyReader

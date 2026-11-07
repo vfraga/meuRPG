@@ -17,6 +17,7 @@
             {
               "from": 1,
               "sourceKey": "trait:lucky",
+              "sourceName": "Sortudo",
               "to": 4
             }
           ],

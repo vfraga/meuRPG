@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { CheckRow } from './check-row';
@@ -98,6 +98,34 @@ describe('form fields', () => {
     select.selectedIndex = 2;
     select.dispatchEvent(new Event('change'));
     expect(host().school()).toBe('c');
+  });
+
+  it('select field: draws the options of a group in an optgroup and still gives back the option by its place', () => {
+    TestBed.resetTestingModule();
+    const f = TestBed.createComponent(SelectField);
+    f.componentRef.setInput('label', 'Característica');
+    f.componentRef.setInput('value', '');
+    f.componentRef.setInput('placeholder', 'Escolha…');
+    f.componentRef.setInput('options', [
+      { value: 'a', label: 'Alfa', group: 'Um' },
+      { value: 'b', label: 'Beta', group: 'Um' },
+      { value: 'c', label: 'Gama', group: 'Dois' },
+    ]);
+    f.detectChanges();
+    const select = (f.nativeElement as HTMLElement).querySelector('select')!;
+    expect(Array.from(select.querySelectorAll('optgroup')).map((g) => g.label)).toEqual([
+      'Um',
+      'Dois',
+    ]);
+    expect(select.querySelectorAll('optgroup')[0].querySelectorAll('option')).toHaveLength(2);
+    let got = '';
+    f.componentInstance.valueChange.subscribe((v) => (got = String(v)));
+    select.selectedIndex = 3;
+    select.dispatchEvent(new Event('change'));
+    expect(got).toBe('c');
+    f.componentRef.setInput('disabled', true);
+    f.detectChanges();
+    expect(select.disabled).toBe(true);
   });
 
   it('pick list: chips with a 44 px remove button, and a select for the values still free', () => {
@@ -217,7 +245,7 @@ describe('TextField: what an empty field means', () => {
     f.componentRef.setInput('label', 'Concentração');
     f.componentRef.setInput('checked', false);
     f.componentRef.setInput('disabled', true);
-    f.componentRef.setInput('describedBy', 'why');
+    f.componentRef.setInput('describedby', 'why');
     const toggled = vi.fn();
     f.componentInstance.toggled.subscribe(toggled);
     f.detectChanges();
@@ -226,5 +254,53 @@ describe('TextField: what an empty field means', () => {
     expect(sw.getAttribute('aria-describedby')).toBe('why');
     sw.click();
     expect(toggled).not.toHaveBeenCalled();
+  });
+});
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CheckRow, SwitchField],
+  template: `
+    <app-check-row label="Olhos de caçador" sub="Proficiência em Percepção" [checked]="true" [invalid]="bad()" [ariaInvalid]="bad()" [describedby]="bad() ? 'why' : ''" />
+    <app-check-row label="Planar" [checked]="false" />
+    <app-switch-field label="Substitui" [checked]="false" [disabled]="true" (toggled)="toggled.set(true)" />
+  `,
+})
+class Host2 {
+  readonly bad = signal(false);
+  readonly toggled = signal(false);
+}
+
+describe('form fields: a line under a check row, a row in error, a switch that cannot be turned', () => {
+  it('draws the line only when there is one, bold words with it, and the danger colour when the row is invalid', () => {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(Host2);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const rows = Array.from(el.querySelectorAll('app-check-row'));
+    expect(rows[0].querySelector('.sub')?.textContent).toBe('Proficiência em Percepção');
+    expect(rows[0].querySelector('.label--strong')).not.toBeNull();
+    expect(rows[1].querySelector('.sub')).toBeNull();
+    expect(rows[1].querySelector('.label--strong')).toBeNull();
+    expect(rows[0].querySelector('.row--invalid')).toBeNull();
+    fixture.componentInstance.bad.set(true);
+    fixture.detectChanges();
+    expect(rows[0].querySelector('.row--invalid')).not.toBeNull();
+    const box = rows[0].querySelector('input')!;
+    expect(box.getAttribute('aria-invalid')).toBe('true');
+    expect(box.getAttribute('aria-describedby')).toBe('why');
+    expect(rows[1].querySelector('input')!.hasAttribute('aria-invalid')).toBe(false);
+  });
+
+  it('keeps a disabled switch off its toggle and dims it', () => {
+    TestBed.resetTestingModule();
+    const fixture = TestBed.createComponent(Host2);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const sw = el.querySelector<HTMLButtonElement>('button[role="switch"]')!;
+    expect(sw.disabled).toBe(true);
+    sw.click();
+    expect(fixture.componentInstance.toggled()).toBe(false);
+    expect(el.querySelector('.row--off')).not.toBeNull();
   });
 });

@@ -299,18 +299,17 @@ func (c *CloudTasks) enqueueNext(ctx context.Context, kind Kind) error {
 // Wait waits for the handlers running in this process, up to ctx.
 func (c *CloudTasks) Wait(ctx context.Context) {
 	done := make(chan struct{})
-	go func() {
+	safego.Go(c.logger, "wait for the task handlers", func() {
+		defer close(done)
 		c.wg.Wait()
 		for c.running.Load() > 0 {
 			select {
 			case <-ctx.Done():
-				close(done)
 				return
 			case <-time.After(10 * time.Millisecond):
 			}
 		}
-		close(done)
-	}()
+	})
 	select {
 	case <-done:
 	case <-ctx.Done():

@@ -305,6 +305,7 @@ func (p *packagePart) stageEntry(in *campaignpackage.Import, te *rulesv1.TableEn
 	}
 	seen[te.GetKey()] = true
 	body = proto.Clone(body).(tableBody) //nolint:forcetypeassert // Clone returns the same type
+	clearReadMarks(body)
 	if v := firstViolation(checkShape(body), checkFeatureCount(kind, body)); v != nil {
 		return bad(contentReason(v.GetReason()))
 	}

@@ -47,6 +47,22 @@ describe('ActionRow', () => {
     expect(pressed).toEqual([]);
   });
 
+  it("does not repeat the master's wait: the button points to the card that says it once", () => {
+    const { el, pressed } = setup({
+      name: 'Agarrar',
+      button: 'Agarrar',
+      off: true,
+      reason: 'Esperando o mestre',
+    });
+    const button = el.querySelector('button')!;
+    expect(el.querySelector('.row__why')).toBeNull();
+    expect(el.textContent).not.toContain('Esperando o mestre');
+    expect(button.getAttribute('aria-disabled')).toBe('true');
+    expect(button.getAttribute('aria-describedby')).toBe('master-wait-note');
+    button.click();
+    expect(pressed).toEqual([]);
+  });
+
   it('puts the tags on a line of their own and the "?" between the text and the button', () => {
     const { el } = setup({
       name: 'Escudo Arcano',

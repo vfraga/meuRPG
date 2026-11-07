@@ -34,6 +34,56 @@ export class CombatCombatantCalls {
     };
   }
 
+  /** The master spends the legendary actions of an option of kind "text" (`SpendLegendaryAction`). */
+  async spendLegendaryAction(
+    campaignId: string,
+    encounterId: string,
+    combatantId: string,
+    optionKey: string,
+    key?: string,
+  ): Promise<Encounter> {
+    const res = await this.base.keyed(
+      ['spendLegendaryAction', campaignId, encounterId, combatantId, optionKey],
+      (sent) =>
+        this.base.client.spendLegendaryAction({
+          campaignId,
+          encounterId,
+          combatantId,
+          optionKey,
+          idempotencyKey: sent,
+        }),
+      key,
+    );
+    return need(res.encounter, 'SpendLegendaryAction');
+  }
+
+  /**
+   * The master's "Aparar: perguntar a cada golpe" (`SetMonsterReactionMode`): `ask` true makes each melee hit on an NPC
+   * with a Parry a window the master answers; false lets the server decide it. `key` is the caller's, kept across the
+   * retries of one tap (a lost answer must not flip the switch twice).
+   */
+  async setMonsterReactionMode(
+    campaignId: string,
+    encounterId: string,
+    combatantId: string,
+    ask: boolean,
+    key?: string,
+  ): Promise<Encounter> {
+    const res = await this.base.keyed(
+      ['setMonsterReactionMode', campaignId, encounterId, combatantId, ask],
+      (sent) =>
+        this.base.client.setMonsterReactionMode({
+          campaignId,
+          encounterId,
+          combatantId,
+          ask,
+          idempotencyKey: sent,
+        }),
+      key,
+    );
+    return need(res.encounter, 'SetMonsterReactionMode');
+  }
+
   /** The master confirms a death (three failed death saves). It cannot be undone. */
   async confirmDeath(
     campaignId: string,

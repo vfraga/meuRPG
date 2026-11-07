@@ -2,17 +2,20 @@ import {
   type Encounter,
   ReactionKind,
   type ReactionWindow,
-  CombatantKind,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { SlotChoice } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { joinDots } from '../format/text';
 import { metersText } from '../units';
 import { circleLabel, freeLabel, slotTitle } from './combat-grid';
-import { article } from './combat-log';
-import { listNames } from './joint-turn';
+import { article } from '../format/article';
 import { ofThe } from './move-plan';
+import { combatantIsPlayer, ofReactor } from './reaction-bar';
+import { type ParryCard, parryCard } from './parry-card';
+import { type LegendaryResistanceCard, legendaryResistanceCard } from './legendary-resistance-card';
 import { reactionKindName } from './reaction-record';
 import { REACTION_NAMES, openWindows } from './reactions';
+
+export { heldReason, windowsBarText } from './reaction-bar';
 
 /**
  * The master's side of the reaction windows (PM-04): every open window, grouped by the action that provoked it, in
@@ -90,19 +93,24 @@ export type ReactionCard =
       readonly window: ReactionWindow;
       readonly player: boolean;
     }
-  | { readonly type: 'effectSave'; readonly id: string; readonly window: ReactionWindow };
+  | { readonly type: 'effectSave'; readonly id: string; readonly window: ReactionWindow }
+  /** A melee hit on a creature with Parry: the master answers for it (#557). */
+  | {
+      readonly type: 'parry';
+      readonly id: string;
+      readonly window: ReactionWindow;
+      readonly card: ParryCard;
+    }
+  /** The failed saves of a held cast or rider that Legendary Resistance may turn into successes (#557). */
+  | {
+      readonly type: 'legendaryResistance';
+      readonly id: string;
+      readonly window: ReactionWindow;
+      readonly card: LegendaryResistanceCard;
+    };
 
 function theName(label: string): string {
   return `${article(label)} ${label}`;
-}
-
-/** "do Mago 1" for an NPC, "de Pensantus" for a player's character: a player's name takes no article. */
-function ofReactor(w: ReactionWindow, player: boolean): string {
-  return player ? `de ${w.reactorLabel}` : ofThe([w.reactorLabel]);
-}
-
-function combatantIsPlayer(e: Encounter, id: string): boolean {
-  return e.combatants.some((c) => c.id === id && c.kind === CombatantKind.PLAYER);
 }
 
 type Trigger = NonNullable<ReactionWindow['trigger']>;
@@ -303,6 +311,8 @@ function inQueue(w: ReactionWindow): boolean {
     w.kind !== ReactionKind.MASTER_CHECK &&
     w.kind !== ReactionKind.CONCENTRATION_SAVE &&
     w.kind !== ReactionKind.EFFECT_SAVE &&
+    w.kind !== ReactionKind.PARRY &&
+    w.kind !== ReactionKind.LEGENDARY_RESISTANCE &&
     !w.secondStep
   );
 }
@@ -312,6 +322,22 @@ function effectSaveCard(e: Encounter, w: ReactionWindow): ReactionCard | null {
   const handed = w.prompt.case === 'effectSave' && w.prompt.value.handedToMaster;
   const player = w.reactorIsPlayer || combatantIsPlayer(e, w.reactorId);
   return !player || handed ? { type: 'effectSave', id: w.id, window: w } : null;
+}
+
+/** The cards of the master's own offers: Parry and Legendary Resistance (#557). */
+function offerCard(e: Encounter, w: ReactionWindow): ReactionCard | null {
+  if (w.kind === ReactionKind.PARRY) {
+    const card = parryCard(w, w.trigger ? combatantIsPlayer(e, w.trigger.actorId) : false);
+    return card ? { type: 'parry', id: w.id, window: w, card } : null;
+  }
+  if (w.kind === ReactionKind.LEGENDARY_RESISTANCE) {
+    const card = legendaryResistanceCard(
+      w,
+      w.trigger ? combatantIsPlayer(e, w.trigger.actorId) : false,
+    );
+    return card ? { type: 'legendaryResistance', id: w.id, window: w, card } : null;
+  }
+  return null;
 }
 
 /** The card of a window that is a card of its own, or `null` for one that belongs to a queue. */
@@ -336,6 +362,10 @@ function ownCard(e: Encounter, w: ReactionWindow): ReactionCard | null {
   }
   if (w.kind === ReactionKind.EFFECT_SAVE) {
     return effectSaveCard(e, w);
+  }
+  const offer = offerCard(e, w);
+  if (offer) {
+    return offer;
   }
   return w.secondStep && w.prompt.case === 'hellishRebukeSave'
     ? { type: 'rebukeSave', id: w.id, window: w }
@@ -388,56 +418,4 @@ export function reactionCards(e: Encounter): readonly ReactionCard[] {
     }
   }
   return cards;
-}
-
-/** Why a held action of the master is off while a window is open: "Espere a reação do Mago 1." or "Responda ao pedido acima.". */
-export function heldReason(e: Encounter): string {
-  const open = openWindows(e);
-  const of = (w: ReactionWindow): string =>
-    ofReactor(w, w.reactorIsPlayer || combatantIsPlayer(e, w.reactorId));
-  if (open.length === 0) {
-    return '';
-  }
-  const first = open.find((w) => w.answerNow) ?? open[0];
-  if (first.kind === ReactionKind.MASTER_CHECK) {
-    return 'Responda ao pedido acima.';
-  }
-  if (first.kind === ReactionKind.CONCENTRATION_SAVE) {
-    return `Espere o teste de concentração ${of(first)}.`;
-  }
-  return first.reactorLabel ? `Espere a reação ${of(first)}.` : 'Responda ao pedido acima.';
-}
-
-/** The master's bar while a window is open: "Esperando a sua reação: Mago 1" or who the master waits on. */
-export function windowsBarText(e: Encounter): string {
-  const open = openWindows(e);
-  if (open.length === 0) {
-    return '';
-  }
-  // A player's reaction that came to the master after 10 s without an answer (C8-04).
-  const late = open.filter((w) => w.unanswered);
-  if (late.length > 0) {
-    // Repreensão Infernal's second step is the master's roll of the aggressor's save: the player has answered already.
-    const rolls = late.filter((w) => w.secondStep && w.prompt.case === 'hellishRebukeSave');
-    const due = late.filter((w) => !rolls.includes(w));
-    const aggressors = rolls.flatMap((w) =>
-      w.prompt.case === 'hellishRebukeSave' ? [w.prompt.value.aggressorLabel] : [],
-    );
-    const parts = [
-      due.length > 0
-        ? `responder por ${listNames([...new Set(due.map((w) => w.reactorLabel))])}`
-        : '',
-      rolls.length > 0 ? `o teste ${ofThe([...new Set(aggressors)])}` : '',
-    ];
-    return `Falta ${parts.filter(Boolean).join(' e ')}`;
-  }
-  const mine = open.filter(
-    (w) => !w.reactorIsPlayer && !combatantIsPlayer(e, w.reactorId) && w.reactorLabel,
-  );
-  if (mine.length > 0 || open.some((w) => w.kind === ReactionKind.MASTER_CHECK)) {
-    return mine.length > 0
-      ? `Esperando a sua reação: ${listNames([...new Set(mine.map((w) => w.reactorLabel))])}`
-      : 'Esperando a sua resposta';
-  }
-  return `Esperando a reação de ${listNames([...new Set(open.map((w) => w.reactorLabel))])}`;
 }

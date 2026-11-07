@@ -1,7 +1,8 @@
-import { Component, input, output } from '@angular/core';
+import { Component, computed, input, output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
+import { MASTER_WAIT_NOTE_ID, isMasterWait } from '../../../../core/combat/reactions';
 import { EconomyMark } from '../../../../shared/economy-shapes/economy-shapes';
 import { SpellHelp } from '../../../../shared/spell-details/spell-help';
 
@@ -59,7 +60,7 @@ let nextId = 0;
       @if (rider()) {
         <span class="row__rider" lang="en">{{ rider() }}</span>
       }
-      @if (off() && reason()) {
+      @if (off() && reason() && !masterWait()) {
         <span class="row__why" [id]="whyId"><mat-icon aria-hidden="true">block</mat-icon>{{ reason() }}</span>
       }
     </div>
@@ -80,7 +81,7 @@ let nextId = 0;
         [disabled]="off() || busy()"
         disabledInteractive
         [attr.aria-label]="buttonLabel()"
-        [attr.aria-describedby]="off() && reason() ? whyId : null"
+        [attr.aria-describedby]="describedBy()"
         (click)="pressed()"
       >
         @if (icon()) {
@@ -127,6 +128,14 @@ export class ActionRow {
   readonly help = output<void>();
 
   protected readonly whyId = `row-why-${nextId++}`;
+  /** The wait is the master's: the turn card says it once, and the row points to it instead of repeating it. */
+  protected readonly masterWait = computed(() => this.off() && isMasterWait(this.reason()));
+  protected readonly describedBy = computed(() => {
+    if (!this.off() || !this.reason()) {
+      return null;
+    }
+    return this.masterWait() ? MASTER_WAIT_NOTE_ID : this.whyId;
+  });
 
   protected word(e: RowEconomy): string {
     return ECONOMY_WORD[e];

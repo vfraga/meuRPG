@@ -9,6 +9,8 @@ import { creatureActionText } from './combat-log-creature';
 import { trapLogText } from '../traps/trap-log';
 import { article } from '../format/article';
 import { luckyText } from './lucky';
+import { castCountedNotes, castTreatedNotes, rerollNote } from './combat-log-dice';
+import { legendaryOptionName } from './legendary-card';
 import {
   actionText,
   channelNotes,
@@ -70,7 +72,7 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
         icon: e.key.startsWith('spell:') ? 'auto_awesome' : 'swords',
         text: attackText(e),
         roll: pairOf(e.attackRoll, 'd20 do ataque'),
-        notes: [modeNote(e.modeChange), luckyText(e.attackRoll), ...damageNotes(e.damage)].filter(
+        notes: [modeNote(e.modeChange), rerollNote(e.attackRoll), ...damageNotes(e.damage)].filter(
           Boolean,
         ),
       };
@@ -145,9 +147,12 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
       // "Sortudo: 1 → 14": a spell attack's d20 the halfling's Lucky rolled again, or a halfling player's save the app
       // rolled again by itself (the server sends the roll to whoever may read it), kept by the event so a reload still
       // finds it.
-      const lucky = (e.spell?.targets ?? [])
-        .flatMap((t) => [luckyText(t.attackRoll), luckyText(t.save?.roll)])
-        .filter(Boolean);
+      const targets = e.spell?.targets ?? [];
+      const lucky = [
+        ...targets.flatMap((t) => [rerollNote(t.attackRoll), luckyText(t.save?.roll)]),
+        ...castTreatedNotes(targets),
+        ...castCountedNotes(targets),
+      ].filter(Boolean);
       return {
         ...base,
         icon: 'auto_awesome',
@@ -299,7 +304,7 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
   // his alone, with the creature, the option as the stat block names it (SRD, English) and the cost.
   [
     CombatLogKind.LEGENDARY_SPENT,
-    ({ e, base }) => {
+    ({ e, base, ctx }) => {
       const spent = e.legendarySpent;
       if (!spent) {
         return null;
@@ -309,7 +314,7 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
         ...base,
         hidden: true,
         icon: 'bolt',
-        text: `gastou ${spent.cost} ${actions}: ${spent.optionName}`,
+        text: `gastou ${spent.cost} ${actions}: ${legendaryOptionName(ctx.legendaryNames, e.actorId, spent.optionName) ?? spent.optionName}`,
       };
     },
   ],

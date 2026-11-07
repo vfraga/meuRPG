@@ -552,6 +552,19 @@ service CombatService {
   //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
   rpc SetCombatantHidden(SetCombatantHiddenRequest) returns (SetCombatantHiddenResponse);
 
+  // SetMonsterReactionMode chooses how an NPC's Parry is decided (RN-10, RN-31): `ask` false (the default)
+  // lets the server parry on its own, with no window, when the Parry's bonus turns a melee weapon hit into a
+  // miss; `ask` true makes the master answer for the creature in a reaction window, as for a Shield, for the
+  // rest of the combat. The mode is kept on the combatant and ends with the combat. Only the master may call
+  // it. It answers the combat with `Combatant.parry_ask` set for the master.
+  //
+  // Errors:
+  //   - `not_found`: the combatant is not in this combat.
+  //   - `permission_denied`: the caller is a player.
+  //   - `invalid_argument`: the combatant is a player's, or a creature whose stat block has no Parry.
+  //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
+  rpc SetMonsterReactionMode(SetMonsterReactionModeRequest) returns (SetMonsterReactionModeResponse);
+
   // AddCombatants brings reinforcements into the combat: copies of NPCs, as
   // in StartEncounter. Only the master may call it, while the combat is in
   // SETUP or ACTIVE. Each new NPC rolls its initiative at once and takes its
@@ -2498,6 +2511,9 @@ message CombatLogHitRider {
   // one), and the feature that did it as a content key. Set where the d20 is.
   optional int32 treated_as = 21;
   string treated_as_source = 22;
+  // The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+  // an entry the master retired or switched off (RN-23).
+  string treated_as_source_name = 23;
 }
 
 // HiddenRevealQuestion is one question the master has to answer: the area spell
@@ -2883,6 +2899,15 @@ message Combatant {
   // counted as it came up. Same audience as `initiative_face`.
   optional int32 initiative_treated_as = 109;
   string initiative_treated_as_source = 110;
+  // The name of the feature in `initiative_treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+  // an entry the master retired or switched off (RN-23).
+  string initiative_treated_as_source_name = 111;
+
+  // How the creature's Parry is decided (SetMonsterReactionMode): true when the master asked to be asked
+  // (a reaction window opens for each melee hit), false when the server
+  // decides it on its own (the default). Only the master gets it, and only for an NPC whose stat block has a
+  // Parry; a player's copy never has the field, not even empty (RN-10, RN-20, RN-31).
+  optional bool parry_ask = 112;
 }
 
 // LimitedAction is an action of a stat block with a limit and what the creature has left of it.
@@ -2941,6 +2966,17 @@ message LegendaryOption {
   string text = 5;
   // Whether `cost` fits in the actions left now.
   bool affordable = 6;
+  // The option's name in Portuguese, the only one the app shows ("Ataque de cauda"). It is
+  // `name` when the content has no Portuguese name (homebrew content).
+  string name_pt = 7;
+  // For kind "attack": the key of the stat block action the option makes, the
+  // `RollAttack.attack_key` of the attack with `legendary_option`. Empty for the other kinds.
+  string attack_key = 8;
+  // Master-only like the rest of LegendaryState. Set only for kind "attack", in Portuguese,
+  // from the stat block action the option makes: "Cauda: +14 · 2d8 + 8 de concussão · alcance
+  // 4,5 m" (the action's name, attack bonus, damage and reach, in meters). Empty for "text"
+  // and "move".
+  string attack_detail_pt = 9;
 }
 
 // Participant is who joins a combat: a character of the campaign.
@@ -3376,6 +3412,21 @@ message SetCombatantHiddenResponse {
   Encounter encounter = 1;
 }
 
+// SetMonsterReactionModeRequest chooses how an NPC's Parry is decided.
+message SetMonsterReactionModeRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string combatant_id = 3;
+  string idempotency_key = 4;
+  // True asks the master for each Parry (a reaction window); false lets the server decide it.
+  bool ask = 5;
+}
+
+// SetMonsterReactionModeResponse returns the combat after the change.
+message SetMonsterReactionModeResponse {
+  Encounter encounter = 1;
+}
+
 // AddCombatantsRequest brings reinforcements.
 message AddCombatantsRequest {
   string campaign_id = 1;
@@ -3480,6 +3531,9 @@ message DiceRoll {
   // The feature that did it, as a content key ("feature:reliable-talent"); its
   // Portuguese name is in the content's names. Empty when `treated_as` is unset.
   string treated_as_source = 8;
+  // The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+  // an entry the master retired or switched off (RN-23).
+  string treated_as_source_name = 101;
   // A d20 rolled with advantage or disadvantage has two faces: the index of the one
   // that counts (the higher with advantage, the lower with disadvantage). 0 for any
   // other roll.
@@ -4121,6 +4175,11 @@ message RerollQuestion {
   int32 cost = 4;
   // The feature that gives the reroll, as a content key: the `source_key` of the Reroll the result lists.
   string source_key = 5;
+  // The name of that feature (see `Reroll.source_name`): the roller's player and the master read it, nobody else reads the
+  // question.
+  string source_name = 6;
+  // The faces of the die being asked about (20): the prompt draws a d20 from it.
+  int32 sides = 7;
 }
 
 // HeldRollOffer is the question a roll that waits asks, whichever roll it is: the d20 was rolled and
@@ -4402,6 +4461,9 @@ message ChannelDivinityTurn {
   // one), and the feature that did it as a content key. Unset, and empty, when the d20 counted as it came up.
   optional int32 treated_as = 7;
   string treated_as_source = 8;
+  // The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+  // an entry the master retired or switched off (RN-23).
+  string treated_as_source_name = 9;
 }
 
 // AdjustCombatantHitPointsRequest is the master's correction of an NPC.
@@ -5681,6 +5743,9 @@ message CombatLogEffect {
   // (`d20` is what came up, `total` uses this one), and the feature that did it as a content key.
   optional int32 treated_as = 18;
   string treated_as_source = 19;
+  // The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+  // an entry the master retired or switched off (RN-23).
+  string treated_as_source_name = 20;
 }
 
 // CombatLogEffectChange is what an effect did.
@@ -6419,6 +6484,9 @@ message LegendaryResistanceOffer {
   // one), and the feature that did it as a content key.
   optional int32 treated_as = 8;
   string treated_as_source = 9;
+  // The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+  // an entry the master retired or switched off (RN-23).
+  string treated_as_source_name = 10;
 }
 
 message ManeuverReduceOption {

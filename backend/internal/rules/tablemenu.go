@@ -53,6 +53,8 @@ type MenuField struct {
 // in Portuguese. Hint is a short explanation where the name alone does not say.
 type MenuValue struct {
 	Key, NamePT, HintPT string
+	// Group is the key that groups the value: for race_traits, the race that has the trait.
+	Group string
 	// OnlyModes, for a target of a modifier, are the only modifier modes it takes (the critical range is
 	// set, never added); empty means every mode. Min and Max, for the same, bound a literal value of the
 	// modifier (both zero: unbounded). The editor offers nothing else for that target.
@@ -159,6 +161,12 @@ const (
 	ListStateEconomies = "state_economies"
 	ListWeaponFilters  = "weapon_filters"
 	ListWeaponKinds    = "weapon_kinds"
+	// ListLackableFeatures are the SRD features, traits, background features and feats a feat's
+	// `prerequisite.lacks_feature_key` may name besides the table's own, which the editor already holds.
+	ListLackableFeatures = "lackable_features"
+	// ListRaceTraits are the traits of the SRD races: what a subrace's `replaces_trait_keys` may name
+	// for an SRD parent, each with its race as Group.
+	ListRaceTraits = "race_traits"
 )
 
 // menuTypes is the menu's types, in the picker's order, with the copy in
@@ -362,7 +370,7 @@ var menuTypes = []MenuType{
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "reroll", NamePT: "Rolar de novo", HintPT: "Deixa o jogador rolar de novo um dado que mostrou um valor baixo (até o valor escolhido) numa jogada de ataque, num teste de habilidade, num teste de resistência ou num dado de dano; a nova rolagem vale, mesmo se for pior. Nos dados de dano o jogador não é perguntado: o app rola de novo, de uma vez, todos os dados da jogada de dano que mostraram o valor escolhido ou menos, e um uso cobre a jogada de dano inteira. Pode gastar usos de um recurso que a entrada define a cada vez (sem recurso, vale sempre).", Fields: []MenuField{
+	{Type: "reroll", NamePT: "Rolar de novo", HintPT: "Rola de novo um dado que caiu baixo. A nova rolagem vale, mesmo se for pior.", Fields: []MenuField{
 		{Name: "rolls", Required: true, Kind: "choices", List: ListRollApplies},
 		{Name: "at_most", Required: true, Kind: "number", Min: MinRerollAtMost, Max: MaxRerollAtMost},
 		{Name: "resource", Kind: "resource_ref"},
@@ -370,7 +378,7 @@ var menuTypes = []MenuType{
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "roll_minimum", NamePT: "Valor mínimo no dado", HintPT: "Um dado que mostrar menos que o valor escolhido (de 2 a 20) conta como esse valor, numa jogada de ataque, num teste de habilidade, num teste de resistência ou num dado de dano; o dado de dano menor que o valor conta como o seu maior valor. O tipo de dano é opcional e só vale quando a jogada é só dano: o mínimo vale então apenas para os dados desse tipo. Vale o maior mínimo entre os efeitos que o personagem tem.", Fields: []MenuField{
+	{Type: "roll_minimum", NamePT: "Valor mínimo no dado", HintPT: "Um dado que mostrar menos que o valor escolhido conta como esse valor. Vale o maior mínimo que o personagem tiver.", Fields: []MenuField{
 		{Name: "rolls", Required: true, Kind: "choices", List: ListRollApplies},
 		{Name: "value", Required: true, Kind: "text"},
 		{Name: "damage_type", Kind: "choice", List: ListDamageTypes},
@@ -409,7 +417,7 @@ var (
 		"speed.climb": "Deslocamento de escalada", "speed.burrow": "Deslocamento de escavação", "initiative": "Iniciativa",
 		"attack.weapon.melee": "Ataque com arma corpo a corpo", "attack.weapon.ranged": "Ataque com arma à distância",
 		"damage.weapon.melee": "Dano de arma corpo a corpo", "damage.weapon.ranged": "Dano de arma à distância",
-		CriticalRangeTarget: "Margem de acerto crítico (o menor d20 que é crítico)",
+		CriticalRangeTarget: "Margem de acerto crítico",
 	}
 	modeNames   = map[string][2]string{"add": {"Somar", "Soma o valor ao número."}, "max": {"Pelo menos", "O número não fica abaixo do valor."}, "set": {"Definir", "O número passa a ser o valor."}}
 	levelNames  = map[string]string{"half": "Metade", "full": "Completa", "expertise": "Especialização"}
@@ -573,7 +581,7 @@ func (c *content) menuModifierTargets() []MenuValue {
 	for _, k := range modifierTargets {
 		v := MenuValue{Key: k, NamePT: modifierTargetNames[k]}
 		if k == CriticalRangeTarget {
-			v.HintPT = "O menor resultado natural do d20 que é acerto crítico (de 15 a 20; o normal é 20). Só o modo Definir vale; vale o menor entre os efeitos do personagem."
+			v.HintPT = "O menor d20 natural que é acerto crítico."
 			v.OnlyModes, v.Min, v.Max = []string{"set"}, MinCriticalRange, MaxCriticalRange
 		}
 		targets = append(targets, v)
@@ -702,7 +710,98 @@ func (c *content) menuLists() []MenuList {
 		{Name: ListStateEconomies, Values: namedMenu(stateEconomies, func(k string) string { return economyNms[k] })},
 		{Name: ListWeaponFilters, Values: namedMenuHint(weaponFilters, weaponFilterNms)},
 		{Name: ListWeaponKinds, Values: namedMenuHint(weaponKinds, weaponFilterNms)},
+		{Name: ListLackableFeatures, Values: c.menuLackableFeatures()},
+		{Name: ListRaceTraits, Values: c.menuRaceTraits()},
 	}
+}
+
+// menuLackableFeatures are the SRD keys a feat's lacks_feature may name that the editor offers: the class and
+// subclass features, the racial traits, the background features and the feats, by Portuguese name. Each
+// passes isFeatureKey; the keys that check also accepts for options are not listed. The
+// table's entries (keys ending in "@mesa") are left out, and each value's hint says where it comes from.
+func (c *content) menuLackableFeatures() []MenuValue {
+	var out []MenuValue
+	add := func(key, hint string) {
+		out = append(out, MenuValue{Key: key, NamePT: c.namePT(key), HintPT: hint})
+	}
+	for _, k := range sortedKeys(c.features) {
+		if isTableKey(k) {
+			continue
+		}
+		hint := c.namePT(c.features[k].Class)
+		if n := c.features[k].Level; n > 0 {
+			hint += fmt.Sprintf(", nível %d", n)
+		}
+		add(k, hint)
+	}
+	for _, k := range sortedKeys(c.traits) {
+		if !isTableKey(k) {
+			add(k, "traço do SRD")
+		}
+	}
+	for _, k := range sortedKeys(c.backgrounds) {
+		if f := c.backgrounds[k].Feature.Key; f != "" && !isTableKey(f) {
+			add(f, "antecedente do SRD")
+		}
+	}
+	for _, k := range sortedKeys(c.feats) {
+		if !isTableKey(k) {
+			add(k, "talento do SRD")
+		}
+	}
+	sortMenuByName(out)
+	return out
+}
+
+// menuRaceTraits are the traits of the SRD races, the keys checkReplacedTraits accepts in a
+// subrace's replaces_trait_keys, by race (sorted by the race's Portuguese name, then in the race's
+// own order). The hint is the first sentence of the trait's Portuguese text, when it has one. The
+// table's races and traits are left out: the editor already holds them.
+func (c *content) menuRaceTraits() []MenuValue {
+	raceKeys := make([]string, 0, len(c.races))
+	for _, k := range sortedKeys(c.races) {
+		if !isTableKey(k) {
+			raceKeys = append(raceKeys, k)
+		}
+	}
+	slices.SortStableFunc(raceKeys, func(a, b string) int {
+		return strings.Compare(strings.ToLower(c.namePT(a)), strings.ToLower(c.namePT(b)))
+	})
+	var out []MenuValue
+	for _, rk := range raceKeys {
+		for _, k := range c.races[rk].Traits {
+			if isTableKey(k) || c.traits[k] == nil {
+				continue
+			}
+			hint := ""
+			if text, ok := c.ruleTextPT(k); ok && len(text) > 0 {
+				hint = firstSentence(text[0], maxTraitHint)
+			}
+			out = append(out, MenuValue{Key: k, NamePT: c.namePT(k), HintPT: hint, Group: rk})
+		}
+	}
+	return out
+}
+
+// maxTraitHint is the longest one-line summary of a race trait, in characters.
+const maxTraitHint = 160
+
+// firstSentence is the first sentence of a paragraph, cut at a word with an ellipsis past limit
+// characters.
+func firstSentence(text string, limit int) string {
+	text = strings.Join(strings.Fields(text), " ")
+	if i := strings.Index(text, ". "); i >= 0 {
+		text = text[:i+1]
+	}
+	r := []rune(text)
+	if len(r) <= limit {
+		return text
+	}
+	cut := string(r[:limit])
+	if i := strings.LastIndex(cut, " "); i > 0 {
+		cut = cut[:i]
+	}
+	return strings.TrimRight(cut, " ,;:") + "…"
 }
 
 // menuGrantAbilities are the casting abilities of a granted spell, and the pick the player makes.

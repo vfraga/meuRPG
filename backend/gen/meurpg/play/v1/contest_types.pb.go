@@ -1141,8 +1141,11 @@ type CheckRoll struct {
 	// as it came up. `treated_as_source` names the feature ("feature:reliable-talent").
 	TreatedAs       *int32 `protobuf:"varint,18,opt,name=treated_as,json=treatedAs,proto3,oneof" json:"treated_as,omitempty"`
 	TreatedAsSource string `protobuf:"bytes,19,opt,name=treated_as_source,json=treatedAsSource,proto3" json:"treated_as_source,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+	// an entry the master retired or switched off (RN-23).
+	TreatedAsSourceName string `protobuf:"bytes,20,opt,name=treated_as_source_name,json=treatedAsSourceName,proto3" json:"treated_as_source_name,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CheckRoll) Reset() {
@@ -1304,6 +1307,13 @@ func (x *CheckRoll) GetTreatedAs() int32 {
 func (x *CheckRoll) GetTreatedAsSource() string {
 	if x != nil {
 		return x.TreatedAsSource
+	}
+	return ""
+}
+
+func (x *CheckRoll) GetTreatedAsSourceName() string {
+	if x != nil {
+		return x.TreatedAsSourceName
 	}
 	return ""
 }
@@ -3195,7 +3205,7 @@ const file_meurpg_play_v1_contest_types_proto_rawDesc = "" +
 	"\bRollNote\x12\x12\n" +
 	"\x04kind\x18\x01 \x01(\tR\x04kind\x12\x19\n" +
 	"\blabel_pt\x18\x02 \x01(\tR\alabelPt\x12\x1c\n" +
-	"\tadvantage\x18\x03 \x01(\bR\tadvantage\"\xf5\x05\n" +
+	"\tadvantage\x18\x03 \x01(\bR\tadvantage\"\xaa\x06\n" +
 	"\tCheckRoll\x122\n" +
 	"\x05skill\x18\x01 \x01(\x0e2\x1c.meurpg.play.v1.ContestSkillR\x05skill\x12\x1b\n" +
 	"\tskill_key\x18\x02 \x01(\tR\bskillKey\x12\x14\n" +
@@ -3218,7 +3228,8 @@ const file_meurpg_play_v1_contest_types_proto_rawDesc = "" +
 	"\brerolled\x18\x11 \x03(\v2\x16.meurpg.play.v1.RerollR\brerolled\x12\"\n" +
 	"\n" +
 	"treated_as\x18\x12 \x01(\x05H\x00R\ttreatedAs\x88\x01\x01\x12*\n" +
-	"\x11treated_as_source\x18\x13 \x01(\tR\x0ftreatedAsSourceB\r\n" +
+	"\x11treated_as_source\x18\x13 \x01(\tR\x0ftreatedAsSource\x123\n" +
+	"\x16treated_as_source_name\x18\x14 \x01(\tR\x13treatedAsSourceNameB\r\n" +
 	"\v_treated_as\"\xa1\x01\n" +
 	"\vCheckOption\x12\x1a\n" +
 	"\bmodifier\x18\x01 \x01(\x05R\bmodifier\x12\x14\n" +

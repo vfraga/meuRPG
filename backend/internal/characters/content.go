@@ -53,7 +53,9 @@ func (s *Service) ListContent(
 
 // ownSheetKeys are the content keys the caller's own full sheet uses; any other
 // character (another player's, an NPC, a basic sheet, one that does not exist) is
-// `not_found`, so the answer never says which exist.
+// `not_found`, so the answer never says which exist. The keys of the build are enough here: the catalog lists races, sub-races,
+// classes, subclasses, backgrounds and spells, and a table class feature (which callerKeys adds through the class and level) is
+// none of them; the hidden spell of a feature's summon is no entry of the catalog either (a leak test holds both).
 func (s *Service) ownSheetKeys(ctx context.Context, m authz.Membership, characterID string) (map[string]bool, error) {
 	sheets, err := s.queries.ListCampaignSheets(ctx, m.CampaignID)
 	if err != nil {

@@ -222,8 +222,8 @@ For a `creature`, `character_id` and `user_id` are the **owner's**, and `creatur
 | Conditions | `conditions` (SRD keys, at most 20) and `condition_sources` (JSON), `concentration_spell`, `exhaustion_level` (0 to 6). |
 | What lasting effects leave | `effect_conditions`, `effect_ac_bonus`, `effect_speed_pct` (0 to 400), `effect_speed_add_ft`, `effect_no_action`, `effect_no_move`, `effect_no_reaction` (the Open Hand technique), `hp_max_base`: worked out again after every change to the effects. |
 | Bardic Inspiration | `inspiration_sides`, `inspiration_from`, `inspiration_expires_round`: all `NULL` together or a valid die (6, 8, 10, 12; round at least 1). Ends with the combat. |
-| Spent resources of an NPC | `slots_used` (JSON: slots, pact slots and resource uses an NPC spent in this combat; a persistent NPC joins with the count of `npc_spell_use`, see [Characters](characters.md#npc_spell_use)). |
-| Spent by a stat block | `creature_spent`: JSON `{"<key>": N}`, at most 4096 bytes, only what was spent, absent is 0. Keys: `legendary_actions` (taken since the creature's last turn, cleared by `ResetCombatantTurn`) and `legendary_resistance` (uses spent in this combat, or kept by a persistent NPC until the table's long rest). `use:<action key>` (uses of an action with N/day, kept the same way), `rest:<action key>` (1 once an action that recharges after a short or long rest was used, kept by a persistent NPC until the next short or long rest) and `recharge:<action key>` (1 while a Recharge action is spent) are the limited actions' keys; a Recharge roll that recharges the action at the turn start clears the second (event `recharge_rolled`, [Play](play.md)). A reaction stays in `reaction_used`. A persistent NPC joins with the `use:`, `rest:` and `legendary_resistance` keys of `npc_spell_use.creature_spent` ([Characters](characters.md#npc_spell_use)). |
+| Spent resources of an NPC | `slots_used` (JSON: slots, pact slots and resource uses an NPC spent in this combat; a persistent NPC joins with the count of `npc_spell_use`, see [below](#npc_spell_use)). |
+| Spent by a stat block | `creature_spent`: JSON `{"<key>": N}`, at most 4096 bytes, only what was spent, absent is 0. Keys: `legendary_actions` (taken since the creature's last turn, cleared by `ResetCombatantTurn`) and `legendary_resistance` (uses spent in this combat, or kept by a persistent NPC until the table's long rest). `use:<action key>` (uses of an action with N/day, kept the same way), `rest:<action key>` (1 once an action that recharges after a short or long rest was used, kept by a persistent NPC until the next short or long rest) and `recharge:<action key>` (1 while a Recharge action is spent) are the limited actions' keys; a Recharge roll that recharges the action at the turn start clears the second (event `recharge_rolled`, [Play](play.md)). A reaction stays in `reaction_used`. A persistent NPC joins with the `use:`, `rest:` and `legendary_resistance` keys of `npc_spell_use.creature_spent` ([below](#npc_spell_use)). |
 | Death | `defeated`, `death_successes`, `death_failures` (0 to 3 each), `death_round`, `death_order_index`, `revivify_blocked` (see below). |
 
 **Only the NPC and the creature have HP here** (`hp_current`, `hp_max`, `hp_temp`, checked by `CHECK` according to `kind`).
@@ -305,6 +305,16 @@ Columns: `source_id` (a Berserker's frenzy has its own combatant as source), `en
 `combatant_states_effect_valid` requires the effect columns on an `effect`.
 
 `hit_riders` are the offers a hit makes: the monk's (RN-35) and the master's, for an NPC attack with a rider (RN-40). Columns: the attacker, the target, `kind` (`open_hand`, `stunning_strike`, `creature`; `hit_riders_kind_valid`), the `round` of the hit, and `used` with `choice` once answered. A `creature` offer also has `action_key`, the stat block action it comes from ("monster:ghoul#claws"), and `pending_id`, the damage whose landing opened it, so that undoing that damage takes the offer back and an attack offers once for each damage.
+
+## `npc_spell_use`
+
+What a persistent NPC spent, kept from one combat to the next: its spell slots and per-day uses, its uses a day, its actions that recharge after a rest and its Legendary Resistance.
+Primary key `character_id`, which cascades with the character; `slots_used` is JSON with the keys of `combatants.slots_used` (`"1"` to `"9"`, `"pact"`, `"res:<resource>"`); `creature_spent` (migration 00305) is JSON `{"<key>": N}` with the keys `use:<action key>`, `rest:<action key>` and `legendary_resistance` of `combatants.creature_spent`, an object of at most 4096 bytes of text, only what was spent, absent is 0; `updated_at`.
+The Recharge state (`recharge:<action key>`) and the legendary actions of a round are never kept.
+A monster's `combat_only` NPC never has a row: each fight of it starts with an empty count.
+Several copies of one NPC share the row, and it keeps the highest count any copy of the combat holds, never the sum: `SyncNPCSpellUse` sets `slots_used` and `SyncNPCCreatureSpent` sets `creature_spent` after each change of the combatant's column (an undo too), so an undo lowers it only when no other copy holds more.
+`SeedCombatantSlotsUsed` copies the row into each combatant when the NPC joins a combat, the table's long rest deletes the rows of the campaign, and a short rest removes the `rest:` keys from them and deletes a row left with nothing spent.
+The master alone reads what the row holds, as it reads the combatant's (RN-20, RN-29); no player call reads the table.
 
 ## `spell_zones`
 

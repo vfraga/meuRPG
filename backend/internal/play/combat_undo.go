@@ -124,6 +124,7 @@ var chainRules = []func(c chainEvent) chainVerdict{
 	chainHeld,
 	chainProtection,
 	chainResistance,
+	chainReactionMode,
 	chainHeldFall,
 	chainRevive,
 	chainHideDecision,
@@ -260,6 +261,15 @@ func chainHeld(c chainEvent) chainVerdict {
 // never closes the chain: the undo acts on the attack and gives the reaction back (ProtectedBy).
 func chainProtection(c chainEvent) chainVerdict {
 	if ev, ok := c.payload(); ok && ev.Reaction != nil && ev.Reaction.Kind == string(reaction.ProtectionKind) && ev.Reaction.Used {
+		return chainSkip
+	}
+	return chainGoOn
+}
+
+// chainReactionMode: the master's choice of how a monster's Parry is decided changes nothing an undo could put
+// back, so it never closes the chain: the undo goes on to the action before it.
+func chainReactionMode(c chainEvent) chainVerdict {
+	if c.row.Kind == eventMonsterReactionSet {
 		return chainSkip
 	}
 	return chainGoOn

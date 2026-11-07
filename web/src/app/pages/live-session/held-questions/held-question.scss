@@ -43,6 +43,7 @@
 }
 
 .q__what,
+.q__foot,
 .q__busy {
   margin: 0;
 }
@@ -141,4 +142,9 @@
   border: 0;
   background: var(--mr-success-surface);
   color: var(--mr-success-ink);
+}
+
+.q__foot {
+  color: var(--mr-warning-ink);
+  font-size: var(--mr-font-13);
 }

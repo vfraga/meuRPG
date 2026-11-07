@@ -58,7 +58,13 @@ export function contestIdOf(w: ReactionWindow): string {
 
 /** The window a player answers now: the first one that is theirs to answer. */
 export function windowForPlayer(e: Encounter): ReactionWindow | undefined {
-  return openWindows(e).find((w) => w.forYou);
+  return openWindows(e).find((w) => w.forYou && !masterOffer(w));
+}
+
+/** Parry and Legendary Resistance are the master's own offers (the server marks them `for_you` for the master, who reads
+ * them as cards): never a player's sheet, nor the generic reaction sheet. */
+function masterOffer(w: ReactionWindow): boolean {
+  return w.prompt.case === 'parry' || w.prompt.case === 'legendaryResistance';
 }
 
 /** The window whose sheet opens by itself for a player: the first they answer that has a prompt of its own (the
@@ -67,6 +73,7 @@ export function sheetWindow(e: Encounter): ReactionWindow | undefined {
   return openWindows(e).find(
     (w) =>
       w.forYou &&
+      !masterOffer(w) &&
       w.prompt.case !== undefined &&
       w.prompt.case !== 'masterCheck' &&
       w.prompt.case !== 'hellishRebukeSave',
@@ -77,4 +84,16 @@ export function sheetWindow(e: Encounter): ReactionWindow | undefined {
 export function reactionWait(e: Encounter): { title: string; detail: string } | null {
   const wait = e.reactionWait;
   return wait && wait.titlePt ? { title: wait.titlePt, detail: wait.detailPt } : null;
+}
+
+/** What a player reads while a window that is the master's holds the table (an NPC's reaction, the master's check, an
+ * ask-mode Parry, Legendary Resistance): the server writes the same words for all of them (`Encounter.reaction_wait`). */
+export const MASTER_WAIT_TITLE = 'Esperando o mestre';
+
+/** The id of the card that says the wait once, on the turn card: what a row held by the master's wait points to (`aria-describedby`) instead of saying it again. */
+export const MASTER_WAIT_NOTE_ID = 'master-wait-note';
+
+/** Whether a wait is the master's: the neutral card is for it, while a player's own reaction is named as the server says. */
+export function isMasterWait(title: string): boolean {
+  return title.startsWith(MASTER_WAIT_TITLE);
 }

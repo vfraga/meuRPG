@@ -43,7 +43,8 @@ LIMIT $2;
 -- name: ListCarriedSpellCasts :many
 -- The casts whose concentration a combat's combatants hold now.
 SELECT * FROM spell_casts
-WHERE carried_encounter_id = $1 AND status IN ('casting', 'active');
+WHERE carried_encounter_id = $1 AND status IN ('casting', 'active')
+ORDER BY started_at, id;
 
 -- name: FinishSpellCast :one
 -- The casting is done and the spell took effect: it lasts (active) or it is over

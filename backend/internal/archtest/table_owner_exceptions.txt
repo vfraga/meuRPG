@@ -1,0 +1,21 @@
+# Queries that read or write a table another module owns.
+# The owner is the module in docs/data/README.md, "Modules and tables".
+# One entry per line, sorted.
+# An entry is module/QueryName, as in the "-- name:" line of a query file that sqlc.yaml lists.
+# The list can only shrink.
+# Read another module's data through its link interface (docs/architecture/overview.md) instead of a new entry.
+# campaignpackage: the orphan sweep reads campaigns and users.
+campaignpackage/ListExpiredCampaignExports
+campaignpackage/ListExpiredCampaignImports
+# play: the battle lists read map_points; the NPC and setup sweeps read characters.
+play/ClearSetupCombatantsRestUses
+play/ClearSetupCombatantsSpellUse
+play/DeleteEmptyNPCSpellUseOfCampaign
+play/ListBattleEncounters
+play/ListBattleEncountersOfCampaign
+play/ResetNPCRestUsesOfCampaign
+play/ResetNPCSpellUseOfCampaign
+play/SyncNPCCreatureSpent
+play/SyncNPCSpellUse
+# progression: the shares of an award read characters.
+progression/ListXPSharesOfAwards

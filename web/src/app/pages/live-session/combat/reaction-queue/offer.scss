@@ -1,0 +1,159 @@
+// The master's own offers: Parry and Legendary Resistance. One card each; the first is "Agora", the others "Depois".
+:host {
+  display: block;
+}
+
+.offer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  box-sizing: border-box;
+  padding: 16px;
+  border: 2px solid var(--mr-accent);
+  border-radius: var(--mr-radius-lg);
+  background: var(--mr-surface);
+
+  p,
+  h3 {
+    margin: 0;
+  }
+
+  // Waiting for its turn: a dashed frame and nothing to press; only the overline, the pill and the wait line go grey.
+  &--later {
+    border: 1px dashed var(--mr-control-line);
+  }
+}
+
+.offer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mr-space-2);
+}
+
+.offer__over {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+  color: var(--mr-ink-muted);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}
+
+.offer__pill {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  min-height: 26px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border: 1px solid var(--mr-accent-text);
+  border-radius: var(--mr-radius-pill);
+  color: var(--mr-accent-text);
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+
+  .offer--later & {
+    border: 1px dashed var(--mr-control-line);
+    color: var(--mr-ink-muted);
+  }
+}
+
+.offer__who {
+  font-size: var(--mr-font-18);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.offer__title {
+  font-family: var(--mr-font-display);
+  font-size: var(--mr-font-18);
+  font-weight: 700;
+  line-height: 24px;
+  overflow-wrap: anywhere;
+}
+
+.offer__text {
+  font-size: var(--mr-font-16);
+  line-height: 22px;
+}
+
+.offer__sub {
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.offer__wait {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+}
+
+// Decline first, then the primary: side by side when each column fits "Usar Resistência Lendária" on one line, else one
+// under the other (the 1280 px side panel is about 298 px wide inside its card). A label that still wraps
+// grows its button, which is at least 48 px high (44 px from 768 px).
+.offer__btns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12.5rem), 1fr));
+  gap: 10px;
+}
+
+.btn {
+  --mat-button-outlined-container-height: 48px;
+  --mat-button-filled-container-height: 48px;
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+  --mat-button-outlined-outline-color: var(--mr-control-line);
+  width: 100%;
+  white-space: normal;
+  line-height: 18px;
+  // The label may wrap to a second or third line, and the button grows with it: the token is the least height.
+  height: auto;
+  min-height: var(--mat-button-filled-container-height);
+  padding-block: var(--mr-space-2, 8px);
+
+  @media (min-width: 768px) {
+    --mat-button-outlined-container-height: 44px;
+    --mat-button-filled-container-height: 44px;
+  }
+
+  // Sending, or nothing ticked: grey and dashed, still reachable by Tab.
+  &--off,
+  &[aria-disabled='true'] {
+    --mat-button-outlined-disabled-label-text-color: var(--mr-ink-muted);
+    --mat-button-outlined-disabled-outline-color: var(--mr-control-line);
+    --mat-button-filled-disabled-container-color: transparent;
+    --mat-button-filled-disabled-label-text-color: var(--mr-ink-muted);
+    border: 1px dashed var(--mr-control-line);
+  }
+}
+
+.offer__foot {
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.lr-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+}

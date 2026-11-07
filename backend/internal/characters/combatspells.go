@@ -293,6 +293,21 @@ func (s *Service) ContentNames(ctx context.Context, tx pgx.Tx, campaignID string
 	return content.NamePT, nil
 }
 
+// SourceNames implements play.CombatRoster: ContentNames, except that an entry the master retired or switched off has no
+// name (RN-23), so a roll names the feature that changed it only while the players may read it.
+func (s *Service) SourceNames(ctx context.Context, tx pgx.Tx, campaignID string) (func(key string) string, error) {
+	content, err := s.contentFor(ctx, tx, campaignID)
+	if err != nil {
+		return nil, wrap("read rules content", err)
+	}
+	return func(key string) string {
+		if content.Hidden(key) {
+			return ""
+		}
+		return content.NamePT(key)
+	}, nil
+}
+
 // isFeatureSummon says the spell is the hidden spell of a table feature's summon: the feature casts it, not the character.
 func isFeatureSummon(content *rules.Content, spellKey string) bool {
 	_, ok := content.FeatureSummonOwner(spellKey)

@@ -87,3 +87,30 @@
   --mat-button-outlined-label-text-color: var(--mr-ink);
   width: 100%;
 }
+
+.ask--reroll {
+  background: var(--mr-warning-surface);
+  border-color: var(--mr-warning-line);
+}
+
+.ask--reroll .ask__title {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  color: var(--mr-warning-ink);
+}
+
+.ask__busy {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  margin: 0;
+  font-size: var(--mr-font-15);
+}
+
+.ask__foot {
+  margin: 0;
+  color: var(--mr-warning-ink);
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+}

@@ -332,10 +332,11 @@ WHERE map_id = $1 AND id = $2
 RETURNING *;
 
 -- name: ListMapTokens :many
--- The map's tokens. The handler orders them by character and filters them
--- for a player.
+-- The map's tokens, by character.
+-- The handler filters them for a player.
 SELECT * FROM map_tokens
-WHERE map_id = $1;
+WHERE map_id = $1
+ORDER BY character_id;
 
 -- name: GetMapTokenForUpdate :one
 SELECT * FROM map_tokens
@@ -376,7 +377,8 @@ RETURNING *;
 -- The creatures' tokens on the map (MR-037). The handler lists only the live
 -- creatures of living characters.
 SELECT * FROM map_creature_tokens
-WHERE map_id = $1;
+WHERE map_id = $1
+ORDER BY creature_id;
 
 -- name: UpsertMapCreatureToken :one
 -- Places a creature's token, or moves it if it is on the map already.
@@ -414,7 +416,8 @@ SELECT r.point_id, p.map_id, r.character_id,
 FROM map_point_reveals AS r
 JOIN map_points AS p ON p.id = r.point_id
 JOIN maps AS m ON m.id = p.map_id
-WHERE m.campaign_id = $1;
+WHERE m.campaign_id = $1
+ORDER BY r.point_id, r.character_id;
 
 -- name: InsertPointReveal :execrows
 -- Tells a character about a trap, once: a second reveal inserts nothing.
@@ -452,7 +455,8 @@ WHERE point_id = $1;
 -- Who found each treasure of a map.
 SELECT f.* FROM map_treasure_finders AS f
 JOIN map_points AS p ON p.id = f.point_id
-WHERE p.map_id = $1;
+WHERE p.map_id = $1
+ORDER BY f.point_id, f.character_id;
 
 -- name: ImageIsOnAVisibleMap :one
 -- Whether the image is the background of a map the players see now: a
@@ -501,7 +505,7 @@ ORDER BY l.left_at, g.id;
 
 -- name: ListLeftImageAudiences :many
 -- For the master's list: who each left image was left with.
-SELECT image_id, audience_everyone FROM campaign_left_images WHERE campaign_id = $1;
+SELECT image_id, audience_everyone FROM campaign_left_images WHERE campaign_id = $1 ORDER BY image_id;
 
 -- name: ListLeftImageViewers :many
 SELECT image_id, user_id FROM campaign_left_image_viewers
@@ -738,7 +742,8 @@ WHERE point_id = $1;
 -- name: ListPointRevealsOfPoint :many
 -- Who knows one trap: the players to tell when it changes or goes away.
 SELECT * FROM map_point_reveals
-WHERE point_id = $1;
+WHERE point_id = $1
+ORDER BY character_id;
 
 -- name: GetMapTreasureLocks :one
 -- Whether the map holds a treasure that was found or converted: such a map
@@ -761,7 +766,8 @@ WHERE map_id = $1 AND user_id = $2;
 -- name: ListMapVisionMemory :many
 -- Every player's memory of a map (a stream's hint needs each player's view).
 SELECT user_id, seen, epoch FROM map_vision_memory
-WHERE map_id = $1;
+WHERE map_id = $1
+ORDER BY user_id;
 
 -- name: UpsertMapVisionMemory :execrows
 -- The caller already merged the new squares into the old bytes, so the memory
@@ -852,7 +858,8 @@ RETURNING *;
 -- trap and character.
 SELECT r.point_id, r.character_id FROM map_point_reveals AS r
 JOIN map_points AS p ON p.id = r.point_id
-WHERE p.map_id = $1;
+WHERE p.map_id = $1
+ORDER BY r.point_id, r.character_id;
 
 -- name: GetMapPoint :one
 -- One point of a map, without locking it.
@@ -884,7 +891,8 @@ RETURNING *;
 -- public, so its name may be told (MR-035). A deleted point is simply absent.
 SELECT p.id, p.name FROM map_points AS p
 JOIN maps AS m ON m.id = p.map_id
-WHERE m.campaign_id = $1 AND p.kind = 'trap' AND p.id = ANY($2::uuid[]);
+WHERE m.campaign_id = $1 AND p.kind = 'trap' AND p.id = ANY($2::uuid[])
+ORDER BY p.id;
 
 -- Generated images (MR-039, RN-28, ADR-0019). image_requests holds each
 -- request and, by its rows of a month that were not refunded, the campaign's

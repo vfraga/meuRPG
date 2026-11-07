@@ -47,6 +47,8 @@ export interface AttackSheetRequest {
   readonly resume?: PendingDamage;
   readonly held?: HeldRollOffer;
   readonly thrown?: ThrownAttack;
+  /** The master's legendary attack: see `AttackSheetData.legendary`. */
+  readonly legendary?: AttackSheetData['legendary'];
   /** A roll of the sheet was held for a question: the page learns the hold. */
   readonly onHeld: (holdId: string) => void;
 }
@@ -112,6 +114,7 @@ export function attackSheetData(req: AttackSheetRequest): AttackSheetData | null
     master: req.master,
     ...(req.catchWindowId ? { catchWindowId: req.catchWindowId } : {}),
     ...(req.useExtraAction ? { useExtraAction: req.useExtraAction } : {}),
+    ...(req.legendary ? { legendary: req.legendary } : {}),
     ...economyOf(req.options, found.option, found.attack),
     resume: req.resume
       ? { pending: req.resume, targetLabel: labelOf(e, req.resume.targetId) }

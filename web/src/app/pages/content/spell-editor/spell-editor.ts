@@ -30,6 +30,7 @@ import {
   withMechanic,
   withTarget,
 } from '../../../core/content/spell-draft';
+import { NAME_MAX } from '../../../core/content/feature-draft';
 import {
   ATTACK_OPTIONS,
   DURATION_OPTIONS,
@@ -121,6 +122,7 @@ export class SpellEditor {
   readonly reload = output<void>();
   readonly cancelled = output<void>();
 
+  protected readonly nameMax = NAME_MAX;
   protected readonly draft = signal<SpellDraft>(emptySpell());
   protected readonly saver = new EntrySaver(
     {

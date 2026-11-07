@@ -188,6 +188,21 @@ describe("AttackSheet: a roll a reaction holds, and the monk's throw back (PM-04
     expect(m.el.querySelector('.pill')).toBeNull();
   });
 
+  it('draws the wait as the neutral card of the master, with the hourglass and no outcome (RN-10)', async () => {
+    const m = mount({}, { outcome: AttackOutcome.UNSPECIFIED, heldForReaction: true, d20 });
+    await rollIt(m);
+    const card = m.el.querySelector('app-master-wait')!;
+    expect(card).not.toBeNull();
+    expect(card.querySelector('mat-icon')?.textContent?.trim()).toBe('hourglass_top');
+    expect(plain(card.textContent)).toContain(
+      'Esperando o mestre. O resultado do seu ataque sai quando ele responder.',
+    );
+    // Nothing names the reaction, the creature that has it or a number from it.
+    expect(plain(card.textContent).replace('hourglass_top', '')).not.toMatch(
+      /Aparar|Escudo|Goblin|\d/,
+    );
+  });
+
   it('still shows the outcome of a roll nothing holds', async () => {
     const m = mount({}, { outcome: AttackOutcome.HIT, heldForReaction: false, d20 });
     await rollIt(m);

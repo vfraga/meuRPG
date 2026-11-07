@@ -86,9 +86,9 @@ func TestGetLevelUpOptionsFrozenSwitchedOffContent(t *testing.T) {
 	wantHiddenFromPlayer(t, tb, "toren", toren, tb.other, labels,
 		`-classChoices[class:rogue] -classChoices[class:wizard] -subclasses[<ink-blade>].spellListClassKey -subclasses[subclass:champion]`)
 	wantHiddenFromPlayer(t, tb, "lia", lia, liaPlayer, labels,
-		`-classChoices[class:rogue] -classChoices[class:wizard] -feats[<dwarf-feat>] -feats[<off-feat>] -feats[<picky-feat>].lacksFeatureNamePt -feats[<picky-feat>].prerequisite.lacksFeatureKey -feats[<picky-feat>].prerequisite.races[1] -feats[<picky-feat>].unmet[0].keys[1] -spellListClassKey feats[<picky-feat>].prerequisite.races[0]="race:elf" feats[<picky-feat>].unmet[0].keys[0]="race:elf"`)
+		`-classChoices[class:rogue] -classChoices[class:wizard] -feats[<dwarf-feat>] -feats[<off-feat>] -feats[<picky-feat>].lacksFeatureNamePt -feats[<picky-feat>].prerequisite.lacksFeatureKey -feats[<picky-feat>].prerequisite.races[1] -feats[<picky-feat>].unmet[0].keys[1] -spellListClassKey feats[<picky-feat>].lacksFeatureHidden=true feats[<picky-feat>].prerequisite.races[0]="race:elf" feats[<picky-feat>].unmet[0].keys[0]="race:elf"`)
 	wantHiddenFromPlayer(t, tb, "pensantus", tb.pc, tb.owner, labels,
-		`-classChoices[class:rogue] -feats[<dwarf-feat>] -feats[<off-feat>] -feats[<picky-feat>].lacksFeatureNamePt -feats[<picky-feat>].prerequisite.lacksFeatureKey -feats[<picky-feat>].prerequisite.races[1] -feats[<picky-feat>].unmet[0].keys[1] feats[<picky-feat>].prerequisite.races[0]="race:elf" feats[<picky-feat>].unmet[0].keys[0]="race:elf"`)
+		`-classChoices[class:rogue] -feats[<dwarf-feat>] -feats[<off-feat>] -feats[<picky-feat>].lacksFeatureNamePt -feats[<picky-feat>].prerequisite.lacksFeatureKey -feats[<picky-feat>].prerequisite.races[1] -feats[<picky-feat>].unmet[0].keys[1] feats[<picky-feat>].lacksFeatureHidden=true feats[<picky-feat>].prerequisite.races[0]="race:elf" feats[<picky-feat>].unmet[0].keys[0]="race:elf"`)
 
 	// A new class the table closed: retired for everyone, switched off for a player only.
 	id := tb.pc.GetId()

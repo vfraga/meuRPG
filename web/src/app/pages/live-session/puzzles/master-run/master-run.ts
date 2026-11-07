@@ -284,7 +284,7 @@ export class MasterRun {
         const raised = t.roll?.treatedAs;
         const how =
           raised !== undefined && face !== undefined
-            ? `${total} (d20: ${face} → ${raised}, ${treatedSourceName(t.roll?.treatedAsSource ?? '')})`
+            ? `${total} (d20: ${face} → ${raised}, ${treatedSourceName(t.roll?.treatedAsSource ?? '', t.roll?.treatedAsSourceName)})`
             : face !== undefined && face !== total
               ? `${total} (d20: ${face})`
               : `${total}`;

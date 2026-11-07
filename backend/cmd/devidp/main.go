@@ -45,6 +45,7 @@ import (
 
 	"github.com/PuraFome/meuRPG/backend/internal/identity/oidctest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/config"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 )
 
 const banner = `
@@ -166,7 +167,7 @@ func run(ctx context.Context, s settings, logger *slog.Logger) error {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	serveErr := make(chan error, 1)
-	go func() { serveErr <- srv.ListenAndServe() }()
+	safego.Go(logger, "serve the development provider", func() { serveErr <- srv.ListenAndServe() }, func() { serveErr <- errors.New("devidp: the server panicked") })
 	logger.WarnContext(ctx, "devidp is running: a development-only OpenID Connect provider; never deploy it",
 		"issuer", s.issuer, "listen", s.listen, "client_id", s.clientID, "redirect_uris", s.redirectURIs)
 

@@ -85,6 +85,7 @@ export class CombatSheets {
       resume: req.resume,
       held: req.held,
       thrown: req.thrown,
+      legendary: req.legendary,
       onHeld: (holdId) => this.inspirationHandled.add(holdId),
     });
     if (!data) {

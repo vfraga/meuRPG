@@ -17,7 +17,7 @@
   },
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.55"
+      "contentVersion": "srd51@a8abc93b235c+fx.56"
     },
     "case": "a query of 100 accented characters",
     "logs": null
@@ -248,7 +248,7 @@
   },
   {
     "answer": {
-      "contentVersion": "srd51@a8abc93b235c+fx.55",
+      "contentVersion": "srd51@a8abc93b235c+fx.56",
       "total": 1
     },
     "case": "a token at the end of the list",

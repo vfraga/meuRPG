@@ -142,6 +142,9 @@ message CheckRoll {
   // as it came up. `treated_as_source` names the feature ("feature:reliable-talent").
   optional int32 treated_as = 18;
   string treated_as_source = 19;
+  // The name of the feature in `treated_as_source`, for the roller's player and the master only; empty for anyone else and for
+  // an entry the master retired or switched off (RN-23).
+  string treated_as_source_name = 20;
 }
 
 // CheckOption is what a d20 check would roll for the caller: the modifier and the

@@ -5,7 +5,7 @@
     <section class="mr-panel block" aria-labelledby="data-t">
       <h2 class="mr-panel__title" id="data-t">Dados da magia</h2>
       <div class="grid grid--3">
-        <app-text-field class="span-2" label="Nome" [value]="d.name" [maxlength]="60" path="table_spell.name_pt" [issues]="saver.issues('table_spell.name_pt')" (valueChange)="patch({ name: $event })" />
+        <app-text-field class="span-2" label="Nome" [value]="d.name" [maxlength]="nameMax" path="table_spell.name_pt" [issues]="saver.issues('table_spell.name_pt')" (valueChange)="patch({ name: $event })" />
         <app-select-field label="Nível da magia" [options]="levels()" [value]="d.level" path="table_spell.level" [issues]="fieldIssues('table_spell.level')" (valueChange)="patch({ level: $event })" />
       </div>
       <div class="grid grid--3">

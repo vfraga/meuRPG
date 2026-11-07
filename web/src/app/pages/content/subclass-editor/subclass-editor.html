@@ -11,7 +11,7 @@
       </p>
     }
     <div class="grid grid--2">
-      <app-text-field label="Nome" [value]="d.name" [maxlength]="60" path="table_subclass.name_pt" [issues]="issuesOf('table_subclass.name_pt')" (valueChange)="patch({ name: $event })" />
+      <app-text-field label="Nome" [value]="d.name" [maxlength]="nameMax" path="table_subclass.name_pt" [issues]="issuesOf('table_subclass.name_pt')" (valueChange)="patch({ name: $event })" />
       @if (isNew()) {
         <app-select-field label="É subclasse de" [options]="classOptions()" [value]="d.classKey" placeholder="Escolha…" path="table_subclass.class_key" [issues]="issuesOf('table_subclass.class_key')" hint="Do SRD ou da mesa. Não muda depois de criada." (valueChange)="patch({ classKey: $event })" />
       }

@@ -137,3 +137,24 @@ func waitFor(t *testing.T, what string, ok func() bool) {
 		time.Sleep(5 * time.Millisecond)
 	}
 }
+
+func TestVoiceFlightsAPanickingWorkReturnsAnErrorToTheWaiter(t *testing.T) {
+	t.Parallel()
+	var v voiceFlights
+	got := make(chan error, 1)
+	go func() {
+		got <- v.wait(context.Background(), "line-1", time.Minute, func(context.Context) error { panic("bad voice") })
+	}()
+	select {
+	case err := <-got:
+		if !errors.Is(err, errVoicePanicked) {
+			t.Errorf("err = %v, want errVoicePanicked", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the waiter hangs after the work panicked")
+	}
+	// The flight is forgotten: a new reader starts a new one.
+	if err := v.wait(context.Background(), "line-1", time.Minute, func(context.Context) error { return nil }); err != nil {
+		t.Errorf("next flight err = %v, want nil", err)
+	}
+}

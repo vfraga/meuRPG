@@ -1,0 +1,13 @@
+<label class="box" data-testid="resistance-box">
+  <input
+    type="checkbox"
+    class="mr-check-input"
+    [checked]="checked()"
+    [disabled]="disabled()"
+    (change)="checked.set($any($event.target).checked)"
+  />
+  <span class="box__text">
+    <span class="box__name">{{ box().label }}</span>
+    <span class="box__line">{{ box().line }}. Se passar, nada é gasto.</span>
+  </span>
+</label>

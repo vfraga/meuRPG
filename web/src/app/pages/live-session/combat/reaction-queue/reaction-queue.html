@@ -1,5 +1,39 @@
-    @for (card of cards(); track card.id) {
+    @if (showHeader()) {
+      <header class="qhead" data-testid="queue-header">
+        <mat-icon aria-hidden="true">hourglass_top</mat-icon>
+        <h2 class="qhead__title">
+          {{ queue().title }}
+          <span class="qhead__count" aria-hidden="true">{{ count() }}</span>
+          <span class="mr-visually-hidden">{{ ' (' + count() + (count() === 1 ? ' janela' : ' janelas') + ')' }}</span>
+        </h2>
+        <span class="qhead__hint">{{ hint() }}</span>
+      </header>
+    }
+    @for (item of items(); track item.card.id) {
+      @let card = item.card;
       @switch (card.type) {
+        @case ('parry') {
+          <app-parry-offer
+            [card]="card.card"
+            [encounter]="encounter()"
+            [campaignId]="campaignId()"
+            [state]="state()"
+            (announce)="said.set($event)"
+            [badge]="item.badge"
+            [waiting]="item.waiting"
+          />
+        }
+        @case ('legendaryResistance') {
+          <app-resistance-offer
+            [card]="card.card"
+            [encounter]="encounter()"
+            [campaignId]="campaignId()"
+            [state]="state()"
+            (announce)="said.set($event)"
+            [badge]="item.badge"
+            [waiting]="item.waiting"
+          />
+        }
         @case ('queue') {
           <section class="card" [attr.aria-labelledby]="uid + card.id">
             <h2 class="card__title" [id]="uid + card.id">{{ card.title }}</h2>
@@ -155,6 +189,9 @@
                   <strong>O teste é seu.</strong> Rolar no app usa d20 {{ bonusWord(card.window) }}; você pode decidir o resultado à mão.
                 </p>
               </div>
+              @if (lrBox(card.window); as box) {
+                <app-resistance-box [box]="box" [checked]="lrTicked().has(card.window.id)" (checkedChange)="setLr(card.window.id, $event)" [disabled]="busy()" />
+              }
               @if (extraWindow() === card.window.id && extra.fields().length > 0) {
                 <app-extra-dice [fields]="extra.fields()" [(faces)]="extra.faces" />
               }
@@ -212,6 +249,9 @@
                 {{ effectSaveWho(card.window) }} Rolar no app usa o d20; você pode decidir o resultado à mão.
               </p>
             </div>
+            @if (lrBox(card.window); as box) {
+              <app-resistance-box [box]="box" [checked]="lrTicked().has(card.window.id)" (checkedChange)="setLr(card.window.id, $event)" [disabled]="busy()" />
+            }
             @if (extraWindow() === card.window.id && extra.fields().length > 0) {
               <app-extra-dice [fields]="extra.fields()" [(faces)]="extra.faces" />
             }
@@ -282,7 +322,16 @@
         }
       }
     }
+    <ng-content />
     <span class="mr-visually-hidden" role="status" aria-live="polite">{{ said() }}</span>
+    <div class="mr-live" role="status">
+      @if (heldNote()) {
+        <div class="mr-notice mr-notice--warning">
+          <mat-icon aria-hidden="true">schedule</mat-icon>
+          <p>{{ heldNote() }}</p>
+        </div>
+      }
+    </div>
     @if (error()) {
       <div class="mr-notice mr-notice--danger" role="alert">
         <mat-icon aria-hidden="true">error</mat-icon>

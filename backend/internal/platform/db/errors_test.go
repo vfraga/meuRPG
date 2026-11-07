@@ -32,3 +32,27 @@ func TestIsUniqueViolation(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSerializationFailure(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"40001", &pgconn.PgError{Code: "40001"}, true},
+		{"wrapped", fmt.Errorf("take: %w", &pgconn.PgError{Code: "40001"}), true},
+		{"deadlock is not it", &pgconn.PgError{Code: "40P01"}, false},
+		{"other code", &pgconn.PgError{Code: "23505"}, false},
+		{"not a database error", errors.New("boom"), false},
+		{"nil", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := IsSerializationFailure(tt.err); got != tt.want {
+				t.Errorf("IsSerializationFailure() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

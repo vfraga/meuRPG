@@ -280,9 +280,9 @@ Where each roll counts it is in [Held rolls](play/held-rolls.md#a-d20-that-count
 
 ### Critical range
 
-`modifier` with the target `critical_range` (menu name "Margem de acerto crítico (o menor d20 que é crítico)") sets the lowest natural d20 that is a critical hit.
+`modifier` with the target `critical_range` (menu name "Margem de acerto crítico") sets the lowest natural d20 that is a critical hit.
 The mode is `set` (an empty mode is read as `set`; any other is refused at `.mode`), and a literal `value` is 15 to 20 (`.value`); a formula is clamped to 15..20 when it is worked out.
-The menu entry carries `only_modes`, `min` and `max`; the editor does not read them, and the server refuses a mode or a value outside them.
+The menu entry carries `only_modes`, `min` and `max`; the editor reads `only_modes` and locks the mode to "Definir", and the server refuses a mode or a value outside them.
 `applies` is the scope: `weapon` (the default, as the SRD's Improved Critical), `spell` or `both`.
 The list `critical_scopes` carries the three words; any other word is refused at `.applies`, and `applies` on any other target is refused at `.applies`.
 `Derive` lowers `Derived.CriticalRange` (the weapon attacks) to the lowest of the range the SRD features give and the value of each `weapon` or `both` modifier whose `when` holds.
@@ -476,6 +476,9 @@ A player never reads the name of a hidden race, feat or feature, in a key or in 
 That holds for the player's copy of a feat, the level-up options and the texts of the feat-choice cards.
 A feat that asks only for hidden races is not offered to a player and is not in their copy, because without the races its prerequisite would read as none.
 A feat that asks for some visible races and some hidden ones names the visible ones only.
+A condition on something the player may not read comes with `hidden` (`FeatUnmet.hidden`, `FeatOption.lacks_feature_hidden`) set and the key and name empty, so the app shows a neutral condition, never a name.
+The `race` kind is hidden only when every asked race is.
+The master's view is never hidden.
 What a sheet has is named to it: the race, subrace, feat or feature it holds, and the traits, features and options of the entries it keeps.
 That holds in the level-up options, the cards and the player's copies of the entries.
 A condition on a hidden feature the sheet does not have reads as a text that names nothing, never as no condition.
@@ -547,7 +550,11 @@ Two reads give the class editor everything it needs, so the browser computes not
   Each row is a `TableClassLevel` ready to be the class's `levels` (features empty): bonus, cantrips known, spells known and the nine slot counts.
   The numbers are read from the SRD itself, never from the campaign's content: full and third use the Wizard/Cleric's, half the Paladin's (starts at level 2), pact the Warlock's, "knows" the cantrips and spells known of the Sorcerer (full), the Ranger (half) and the Warlock; "prepares" has no spells known.
   The third caster, which SRD 5.1 lacks, is our default: the full table at a third of the level, rounded up, 2 cantrips (3 from level 10) and, for one that knows spells, 3 at levels 3 and 4 and one more every two levels; the master changes whatever they want.
-- **`EffectMenu`** returns the effect types of the menu with their Portuguese names and sentences, each one's fields (required or not, the field's kind and list, a number's limits, `always_shown` for an optional field the editor never folds away), and every closed list with Portuguese names: modifier targets, modes, proficiency targets, levels, advantage modes and targets, senses, recharges, `events`, action economies, choice kinds, `ranged_attack_applies`, `damage_types`, `resistance_damage_types`, `resistance_kinds`, `resistance_conditions`, `conditions`, `granted_spell_abilities`, `state_ends`, `state_economies`, `weapon_filters`, `weapon_kinds`, skills, languages, tools and tag prefixes.
+- **`EffectMenu`** returns the effect types of the menu with their Portuguese names and sentences, each one's fields (required or not, the field's kind and list, a number's limits, `always_shown` for an optional field the editor never folds away), and every closed list with Portuguese names: modifier targets, modes, proficiency targets, levels, advantage modes and targets, senses, recharges, `events`, action economies, choice kinds, `ranged_attack_applies`, `damage_types`, `resistance_damage_types`, `resistance_kinds`, `resistance_conditions`, `conditions`, `granted_spell_abilities`, `state_ends`, `state_economies`, `weapon_filters`, `weapon_kinds`, `lackable_features`, `race_traits`, skills, languages, tools and tag prefixes.
+  `lackable_features` is the SRD features, traits, background features and feats a feat's `lacks_feature_key` may name (each passes the same key check the server uses; the keys of options are not listed), with where it comes from in `hint_pt` ("Monge, nível 5", "traço do SRD", "talento do SRD"); the table's own entries are not in it, because the editor already holds them.
+  `race_traits` is every trait of every SRD race, the keys a subrace of an SRD parent may name in `replaces_trait_keys`, with the Portuguese name, the race in `group` and the first sentence of the trait's Portuguese text in `hint_pt` (empty when it has none).
+  The table's own races and traits are not in it, because the editor already holds them.
+  Only the master reads the menu.
   It also carries the SRD option lists a "one option from a list" choice can offer, the formula functions with a sentence each, the class indexes `classLevel` accepts (SRD and table) and the limits.
   A test puts each value of each list in an effect and checks that `With` accepts it, so the menu never offers what the server refuses; it offers a subset of what the engine understands.
 
@@ -666,7 +673,6 @@ If another entry already has that key, the feature is refused at `.key`, and the
 How the uses come back is the resource's `recharge` (short rest, long rest, dawn and the others the `resource` effect accepts).
 A `role` of `mount` and a `turn_mode` of `after_owner` are refused as in a spell.
 Tests: `TestATableFeatureSummonsThroughTheSpellChecks`, `TestTheSpellOfAFeatureSummonIsHidden`, `TestTheSpellOfAFeatureSummonIsNoChoiceOfASheet`, `TestAFeatureWithALongKeyKeepsASpellKeyWithinTheLimitAndATakenOneIsRefused`, `TestATableFeatureSummonIsRefusedAtTheFieldThatIsWrong`, `TestASpellSummonStillTakesNothingOfAFeatureSummon`.
-Tests for a class feature entry: `TestATableClassFeatureSummonsThroughTheSpellChecks` and `TestATableClassFeatureSummonIsRefusedAtTheFieldThatIsWrong`.
 
 ## Entries the rules refuse on reading
 

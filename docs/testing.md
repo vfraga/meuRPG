@@ -9,7 +9,7 @@ This page says what each layer proves, how to run it and what CI runs; the CI jo
 | Unit                      | `go test`, case tables                                 | The `rules` maths and each business rule alone, with no database   |
 | Characterization (golden) | `go test`, golden files under `testdata/`              | What a function answers, refuses and writes stays as reviewed      |
 | Integration               | `go test` with `MEURPG_TEST_DATABASE_URL`              | Queries, migrations, the retry on error `40001`, who may do what   |
-| Architecture              | `go test`, `backend/internal/archtest`                 | Module boundaries and no production import of the test dice (it reads the source with `go/parser`) |
+| Architecture              | `go test`, `backend/internal/archtest`                 | Module boundaries, no production import of the test dice, and the other conventions (it reads the source and the SQL files, no database) |
 | Leak (RN-10)              | `go test` with a database, `backend/internal/leaktest` | What the master hid never reaches a player                         |
 | Web unit                  | Vitest through `ng test`                               | Components and services                                            |
 | End to end                | Playwright in `e2e/`, against the local stack          | Acceptance criteria through the screen                             |
@@ -170,6 +170,7 @@ Every test that looks for something absent needs a positive control that shows t
 
 `backend/internal/archtest` asserts the module boundaries: from another module only its `link` package or a shared root may be imported, nothing imports `cmd/`, and every module-level dependency is in a table (a new dependency fails until it is added on purpose).
 It also holds the import rule of [Dice in tests](#dice-in-tests).
+It also holds the conventions listed in [Conventions are tests too](architecture/overview.md#conventions-are-tests-too).
 See [Architecture](architecture/overview.md#module-boundaries-are-a-test).
 
 ## Before ready

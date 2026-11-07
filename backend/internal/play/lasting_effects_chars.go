@@ -244,7 +244,7 @@ func (s *Service) endCharacterCasting(ctx context.Context, c *combatTx, row play
 		return 0, fmt.Errorf("end the casting: %w", err)
 	}
 	ended := int32(len(gone)) //nolint:gosec // a handful of effects
-	if err := s.afterCharacterEffectsGone(ctx, c, gone); err != nil {
+	if err := s.afterCharacterEffectsGone(ctx, c, characterEffects(gone)); err != nil {
 		return 0, err
 	}
 	var touched []string

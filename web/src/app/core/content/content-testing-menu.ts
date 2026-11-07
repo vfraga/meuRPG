@@ -198,6 +198,11 @@ export function menuResponse(): GetEffectMenuResponse {
             hintPt: 'Uma opção da Invocação mística do bruxo.',
           },
           { key: 'fighting_style', namePt: 'Estilo de luta' },
+          {
+            key: 'table_feature',
+            namePt: 'Opção de característica da mesa',
+            hintPt: 'As opções de uma característica de classe ou subclasse da mesa.',
+          },
         ],
       },
       {
@@ -209,6 +214,32 @@ export function menuResponse(): GetEffectMenuResponse {
         values: [
           { key: 'against:', namePt: 'Contra…' },
           { key: 'about:', namePt: 'Sobre…' },
+        ],
+      },
+      {
+        name: 'lackable_features',
+        values: [
+          { key: 'feat:grappler', namePt: 'Agarrador', hintPt: 'talento do SRD' },
+          { key: 'feature:monk-grip', namePt: 'Agarrar com firmeza', hintPt: 'Monge, nível 6' },
+          { key: 'trait:darkvision', namePt: 'Visão no Escuro', hintPt: 'traço do SRD' },
+        ],
+      },
+      {
+        name: 'race_traits',
+        values: [
+          {
+            key: 'trait:keen-senses',
+            namePt: 'Sentidos Aguçados',
+            hintPt: 'Você tem proficiência na perícia Percepção.',
+            group: 'race:elf',
+          },
+          {
+            key: 'trait:trance',
+            namePt: 'Transe',
+            hintPt: 'Elfos não precisam dormir.',
+            group: 'race:elf',
+          },
+          { key: 'trait:lucky', namePt: 'Sortudo', hintPt: '', group: 'race:halfling' },
         ],
       },
     ],
@@ -241,36 +272,6 @@ export function menuResponse(): GetEffectMenuResponse {
 
 export function menu(): EffectMenuVm {
   return new EffectMenuVm(menuResponse());
-}
-
-/** The menu with the real one's ranged_attack (a table feat's switches and a spell range multiplier), for its own specs. */
-export function rangedAttackMenu(): EffectMenuVm {
-  const res = menuResponse();
-  res.types.push(
-    create(EffectMenuTypeSchema, {
-      type: 'ranged_attack',
-      namePt: 'Ataque à distância',
-      hintPt: 'Muda os ataques de longe do personagem.',
-      fields: [
-        { name: 'applies', kind: 'choice', required: true, list: 'ranged_attack_applies' },
-        { name: 'ignore_cover', kind: 'yes_no', alwaysShown: true },
-        { name: 'range_multiplier', kind: 'number', min: 2, max: 3, alwaysShown: true },
-        { name: 'no_long_range_disadvantage', kind: 'yes_no', alwaysShown: true },
-        { name: 'when', kind: 'condition' },
-        { name: 'text_pt', kind: 'text' },
-      ],
-    }),
-  );
-  res.lists.push(
-    create(EffectMenuListSchema, {
-      name: 'ranged_attack_applies',
-      values: [
-        { key: 'spell', namePt: 'Magias com jogada de ataque' },
-        { key: 'weapon', namePt: 'Ataques com arma à distância' },
-      ],
-    }),
-  );
-  return new EffectMenuVm(res);
 }
 
 /** The menu with the real one's resistance effect (damage types or every type but one, its kind as cards), for its own specs. */

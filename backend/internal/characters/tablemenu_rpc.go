@@ -99,7 +99,7 @@ func menuValues(vs []rules.MenuValue) []*rulesv1.EffectMenuValue {
 	out := make([]*rulesv1.EffectMenuValue, len(vs))
 	for i, v := range vs {
 		out[i] = &rulesv1.EffectMenuValue{
-			Key: v.Key, NamePt: v.NamePT, HintPt: v.HintPT, OnlyModes: v.OnlyModes, Min: i32(v.Min), Max: i32(v.Max),
+			Key: v.Key, NamePt: v.NamePT, HintPt: v.HintPT, OnlyModes: v.OnlyModes, Min: i32(v.Min), Max: i32(v.Max), Group: v.Group,
 		}
 	}
 	return out

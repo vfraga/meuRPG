@@ -27,7 +27,14 @@ import {
   unlisted,
 } from './class-blocks';
 import type { EditorCore } from './editor-core';
-import { actionsNoteOf, cancelLinkOf, createLabelOf, leadOf, pageTitleOf } from './editor-state';
+import {
+  actionsNoteOf,
+  cancelLinkOf,
+  createLabelOf,
+  leadPartsOf,
+  pageTitleOf,
+  phoneNoteOf,
+} from './editor-state';
 import { countLabel } from './editor-labels';
 import { formatXp } from '../../core/format/text';
 import {
@@ -283,8 +290,8 @@ export class EditorCatalog {
     );
   });
 
-  /** The line under the title: what this form is for, and that the sheet's numbers come from the server. */
-  readonly lead = computed(() => leadOf(this.host.state()));
+  /** The line under the title in two parts: a phone shows the first only. */
+  readonly leadParts = computed(() => leadPartsOf(this.host.state()));
   readonly pageTitle = computed(() => pageTitleOf(this.host.state()));
   /** The label of the create button: "Salvar como reservado" for a character made for a player to claim. */
   readonly createLabel = computed(() => createLabelOf(this.host.state()));
@@ -297,6 +304,8 @@ export class EditorCatalog {
   readonly cancelLink = computed(() => cancelLinkOf(this.host.state()));
   /** What the buttons do, in one line next to them. */
   readonly actionsNote = computed(() => actionsNoteOf(this.host.state()));
+  /** The same note cut to one line for a phone. */
+  readonly phoneNote = computed(() => phoneNoteOf(this.host.state()));
   readonly backgroundSkillsCount = computed(() =>
     countLabel(
       this.host.picks.customBackgroundSkills().size,

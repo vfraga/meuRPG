@@ -9,7 +9,7 @@ import type { SpellDraft } from './spell-types';
 import { type SummonDraft, wholeOf } from './summon-draft';
 
 /**
- * The "Invocar" mechanic of the spell editor (#578, board C3): the spell's `TableSpell.summon`. It is the same message a feature
+ * The "Invocar" mechanic of the spell editor (#578): the spell's `TableSpell.summon`. It is the same message a feature
  * has, but the spell pays with its slot and has its own time, duration and concentration, so the server refuses a resource, a cost,
  * a time, a duration or a concentration on it (`checkSpellSummonOnly`) and the editor never sends them.
  */

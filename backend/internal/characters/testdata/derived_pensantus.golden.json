@@ -131,7 +131,7 @@
       "subclassNamePt": "Escola de Evocação"
     }
   ],
-  "contentVersion": "srd51@a8abc93b235c+fx.55",
+  "contentVersion": "srd51@a8abc93b235c+fx.56",
   "features": [
     {
       "key": "trait:darkvision",

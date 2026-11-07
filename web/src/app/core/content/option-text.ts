@@ -1,4 +1,5 @@
 import type { OptionPrerequisite } from '../../../gen/meurpg/rules/v1/table_content_pb';
+import { featureKeyName } from './class-feature-text';
 import type { KeyName } from './feat-text';
 
 /**
@@ -25,19 +26,21 @@ export function optionSetName(set: string): string {
   return OPTION_SET_WORDS[set] ?? set;
 }
 
-/** The name of an option key: the table's by `nameOf`, an SRD one (no name in the catalog) from the last word of its key. */
+/** The name of an option key: the table's by `nameOf`, else the last word of its key. */
 export function optionKeyName(key: string, nameOf: KeyName): string {
-  const named = nameOf(key);
-  if (named !== key) {
-    return named;
-  }
-  const last =
-    key
-      .split(':')
-      .pop()
-      ?.replace(/@mesa$/, '') ?? key;
-  const words = last.replace(/-/g, ' ');
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return featureKeyName(key, nameOf);
+}
+
+/** Names the feature that offers an option (`offered_by`), with its owner. */
+export type OfferedByName = (key: string) => string;
+
+/** The set of a list row: "Opção de Truques de lâmina (Guarda do Corvo)" when the server sent the offering feature, else the set's name. */
+export function optionSetLine(
+  set: string,
+  offeredBy: string,
+  offeredByName: OfferedByName,
+): string {
+  return offeredBy === '' ? optionSetName(set) : `Opção de ${offeredByName(offeredBy)}`;
 }
 
 /** The conditions of an option's prerequisite, one phrase each; none when it asks nothing. */
@@ -64,12 +67,17 @@ export function optionPrerequisiteParts(
   return out;
 }
 
-/** The one line of a list row: the set, then what the option asks. */
+/** The one line of a list row: the set, then what the option asks (nothing more when it asks nothing). */
 export function optionSupport(
   set: string,
   p: OptionPrerequisite | undefined,
   nameOf: KeyName,
+  offeredBy = '',
+  offeredByName: OfferedByName = (key) => featureKeyName(key, nameOf),
 ): string[] {
   const asks = optionPrerequisiteParts(p, nameOf);
-  return [optionSetName(set), asks.length > 0 ? `Exige ${asks.join(', ')}` : 'Sem pré-requisito'];
+  return [
+    optionSetLine(set, offeredBy, offeredByName),
+    ...(asks.length > 0 ? [`Exige ${asks.join(', ')}`] : []),
+  ];
 }

@@ -61,7 +61,7 @@ func (s *Service) WaitForGenerations(ctx context.Context) {
 		s.ownTasks.Wait(ctx)
 	}
 	done := make(chan struct{})
-	go func() { s.generations.Wait(); close(done) }()
+	safego.Go(s.logger, "wait for the image generations", func() { defer close(done); s.generations.Wait() })
 	select {
 	case <-done:
 	case <-ctx.Done():

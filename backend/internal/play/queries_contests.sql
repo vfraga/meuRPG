@@ -28,7 +28,8 @@ LIMIT $2;
 -- combatant is in.
 SELECT * FROM combat_contests
 WHERE encounter_id = $1 AND status IN ('awaiting_defender', 'awaiting_outcome')
-  AND (initiator_id = $2 OR defender_id = $2);
+  AND (initiator_id = $2 OR defender_id = $2)
+ORDER BY created_at, id;
 
 -- name: SetContestAnswered :one
 -- The defender's roll and what it decided.
@@ -47,7 +48,8 @@ RETURNING *;
 
 -- name: ListHolds :many
 SELECT * FROM combat_holds
-WHERE encounter_id = $1;
+WHERE encounter_id = $1
+ORDER BY created_at, grappled_id;
 
 -- name: GetHold :one
 SELECT * FROM combat_holds
@@ -86,7 +88,8 @@ RETURNING *;
 
 -- name: ListHiding :many
 SELECT * FROM combat_hiding
-WHERE encounter_id = $1;
+WHERE encounter_id = $1
+ORDER BY created_at, hider_id, observer_id;
 
 -- name: UpsertHiding :exec
 INSERT INTO combat_hiding (hider_id, observer_id, encounter_id, noticed, total, passive, created_at)
@@ -131,7 +134,8 @@ WHERE id = $1;
 
 -- name: ListSurprised :many
 SELECT * FROM combat_surprised
-WHERE encounter_id = $1;
+WHERE encounter_id = $1
+ORDER BY created_at, combatant_id;
 
 -- name: UpsertSurprised :exec
 INSERT INTO combat_surprised (combatant_id, encounter_id, created_at)

@@ -85,7 +85,8 @@ FROM xp_award_shares AS s
 JOIN xp_awards AS a ON a.id = s.award_id
 WHERE a.campaign_id = sqlc.arg(campaign_id)::UUID AND a.mode = 'milestone' AND a.undone_at IS NULL
   AND s.level_at_mark IS NOT NULL
-GROUP BY s.character_id;
+GROUP BY s.character_id
+ORDER BY s.character_id;
 
 -- name: GetMilestoneMark :one
 -- ListMilestoneMarks for one character; no row means it is not marked.
@@ -173,13 +174,15 @@ ORDER BY created_at, id;
 SELECT s.character_id
 FROM xp_award_shares AS s
 JOIN xp_awards AS a ON a.id = s.award_id
-WHERE a.campaign_id = sqlc.arg(campaign_id)::UUID AND a.milestone_id = sqlc.arg(milestone_id)::UUID AND a.undone_at IS NULL;
+WHERE a.campaign_id = sqlc.arg(campaign_id)::UUID AND a.milestone_id = sqlc.arg(milestone_id)::UUID AND a.undone_at IS NULL
+ORDER BY s.character_id;
 
 -- name: ListMilestoneIDsWithAwards :many
 -- The planned milestones any award names, undone ones included: HasMilestoneAwards
 -- for the whole list, so the list can say which ones RemoveMilestone refuses.
 SELECT DISTINCT milestone_id::UUID AS milestone_id FROM xp_awards
-WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND milestone_id IS NOT NULL;
+WHERE campaign_id = sqlc.arg(campaign_id)::UUID AND milestone_id IS NOT NULL
+ORDER BY milestone_id;
 
 -- name: HasMilestoneAwards :one
 -- Whether any award, undone ones included, names the milestone: a milestone

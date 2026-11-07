@@ -1,3 +1,4 @@
+import { MASTER_WAIT_NOTE_ID, isMasterWait } from '../../../../core/combat/reactions';
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -121,6 +122,13 @@ export class ActionGroups {
   /** Why nothing can be done now ("Esperando a reação do mestre"): every row is off with this
    * reason instead of failing on click (an opportunity attack waits for its answer); `''` when free. */
   readonly locked = input('');
+  /** The lock is the master's wait: the turn card says it once, and what is off points to that card. */
+  protected readonly masterWait = computed(() => isMasterWait(this.locked()));
+  protected readonly waitNoteId = MASTER_WAIT_NOTE_ID;
+  /** The line under "Ações padrão": the lock, unless it is the master's wait (the turn card says that once), else why one of them is off. */
+  protected readonly standardReason = computed(() =>
+    this.masterWait() ? this.standardWhy() : this.locked() || this.standardWhy(),
+  );
   /** The player's familiar ('Nanquim'): "Ver pelos olhos do Nanquim" is an action (MR-036, E9-04). `null`: none, or already looking. */
   readonly familiar = input<string | null>(null);
   /** The character's slots, for the rows above the spells ("1º nível ○ ✕ ✕ ✕ 1 livre de 4"). */

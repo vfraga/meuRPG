@@ -434,11 +434,10 @@ describe('CreatureEditor (#578)', () => {
         ),
       ).toContain('block');
       expect(selectOf(fire, 'qualifier').getAttribute('aria-describedby')).toBe('cr-mods-info');
-      // The off field is narrow on a laptop with the side panel open: its value would be cut under the icon, so only the icon shows and
-      // the words stay for a screen reader (the reason is what the select is described by).
-      const offValue = selectOf(fire, 'qualifier').querySelector('mat-select-trigger span')!;
-      expect(offValue.classList.contains('mr-visually-hidden')).toBe(true);
+      // The off field shows its words (the dashed cell says what it is); the stylesheet cuts a long one with an ellipsis.
+      const offValue = selectOf(fire, 'qualifier').querySelector('mat-select-trigger')!;
       expect(text(offValue)).toBe('Todo dano desses tipos');
+      expect(offValue.querySelector('.mr-visually-hidden')).toBeNull();
       expect(
         selectOf(slashing, 'qualifier').querySelector('mat-select-trigger .mr-visually-hidden'),
       ).toBeNull();
@@ -744,6 +743,109 @@ describe('CreatureEditor (#578)', () => {
     expect(text(el)).not.toContain('No máximo 8 ataques');
     // The menu that had the focus is gone: it goes to the button that adds the next row.
     expect(document.activeElement).toBe(button(el, 'Adicionar ataque'));
+  });
+
+  describe('what a change takes off the screen', () => {
+    const removeFrom = async (
+      fixture: ReturnType<typeof setup>['fixture'],
+      el: HTMLElement,
+      list: string,
+      n: number,
+      label: string,
+    ) => {
+      el.querySelectorAll<HTMLButtonElement>(`${list} .row__more`)[n].click();
+      await settle(fixture, 2);
+      Array.from(document.querySelectorAll<HTMLButtonElement>('[mat-menu-item]'))
+        .find((b) => text(b).includes(label))!
+        .click();
+      await settle(fixture, 3);
+    };
+    const two = () =>
+      stored({
+        traits: [
+          { namePt: 'Traço 0', textPt: 'x' },
+          { namePt: 'Traço 1', textPt: 'x' },
+        ],
+        attacks: [attack(0), attack(1)],
+        damageMods: [
+          create(TableCreatureDamageModSchema, {
+            kind: 'resist',
+            damageTypes: ['damage-type:fire'],
+          }),
+        ],
+      });
+    const underText = (el: HTMLElement, path: string) =>
+      text(field(el, path).closest('app-text-field, app-select-field')!);
+
+    it('removing a trait keeps the refusals of the numbers and of the damage rows, and the rows below keep theirs', async () => {
+      const { fixture, el } = setup(two());
+      await settle(fixture, 3);
+      save.mockRejectedValue(
+        refusal(
+          ['table_creature.hit_points', 'bad_value'],
+          ['table_creature.damage_mods[0].qualifier', 'bad_value'],
+          ['table_creature.traits[0].name_pt', 'bad_name'],
+          ['table_creature.traits[1].name_pt', 'bad_name'],
+        ),
+      );
+      button(el, 'Salvar criatura').click();
+      await settle(fixture, 3);
+      expect(text(el.querySelector('[role="alert"]')!)).toContain('4 campos precisam de ajuste');
+      await removeFrom(fixture, el, '[data-field="table_creature.traits"]', 0, 'Remover traço');
+      expect(underText(el, 'table_creature.hit_points')).toContain(
+        'Os pontos de vida vão de 1 a 9.999',
+      );
+      expect(
+        text(
+          el
+            .querySelector('mat-select[data-field="table_creature.damage_mods[0].qualifier"]')!
+            .closest('.cell')!,
+        ),
+      ).toContain('Só resistência');
+      // The refused row went; the one below is the first now and keeps its own refusal.
+      expect(underText(el, 'table_creature.traits[0].name_pt')).toContain('Use de 1 a 80 letras');
+      expect(field(el, 'table_creature.traits[1].name_pt')).toBeNull();
+      expect(text(el.querySelector('[role="alert"]')!)).toContain('3 campos precisam de ajuste');
+    });
+
+    it('removing an attack keeps the message of a number outside the row', async () => {
+      const { fixture, el } = setup(two());
+      await settle(fixture, 3);
+      type(el, 'table_creature.hit_points', '12x');
+      button(el, 'Salvar criatura').click();
+      await settle(fixture, 3);
+      expect(underText(el, 'table_creature.hit_points')).toContain('Escreva um número inteiro');
+      await removeFrom(fixture, el, '[data-field="table_creature.attacks"]', 0, 'Remover ataque');
+      expect(underText(el, 'table_creature.hit_points')).toContain('Escreva um número inteiro');
+    });
+
+    it('fixing one number takes off its own message and no other', async () => {
+      const { fixture, el } = setup();
+      await settle(fixture, 3);
+      type(el, 'table_creature.hit_points', '12x');
+      type(el, 'table_creature.armor_class', '9y');
+      button(el, 'Salvar criatura').click();
+      await settle(fixture, 3);
+      expect(underText(el, 'table_creature.hit_points')).toContain('Escreva um número inteiro');
+      expect(underText(el, 'table_creature.armor_class')).toContain('Escreva um número inteiro');
+      type(el, 'table_creature.hit_points', '12');
+      await settle(fixture, 3);
+      expect(underText(el, 'table_creature.hit_points')).not.toContain('Escreva um número inteiro');
+      expect(underText(el, 'table_creature.armor_class')).toContain('Escreva um número inteiro');
+    });
+
+    it('a server refusal of one field survives an edit of another', async () => {
+      const { fixture, el } = setup();
+      await settle(fixture, 3);
+      save.mockRejectedValue(refusal(['table_creature.hit_points', 'bad_value']));
+      button(el, 'Salvar criatura').click();
+      await settle(fixture, 3);
+      type(el, 'table_creature.armor_class', '12');
+      await settle(fixture, 3);
+      expect(underText(el, 'table_creature.hit_points')).toContain(
+        'Os pontos de vida vão de 1 a 9.999',
+      );
+    });
   });
 
   it('a row opens when it is added, with the focus on its name', async () => {

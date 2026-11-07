@@ -47,6 +47,7 @@ import {
   ABILITY_FIELDS,
   type AbilityField,
   emptyFeature,
+  NAME_MAX,
 } from '../../../core/content/feature-draft';
 import { CheckRow } from '../../../shared/form-fields/check-row';
 import { FieldNote } from '../../../shared/form-fields/field-note';
@@ -143,6 +144,7 @@ export class ClassEditor {
   readonly reload = output<void>();
   readonly cancelled = output<void>();
 
+  protected readonly nameMax = NAME_MAX;
   protected readonly draft = signal<ClassDraft>(emptyClass(emptyDefaults()));
   protected readonly openFeature = signal('');
   protected readonly question = signal<TableAsk | null>(null);

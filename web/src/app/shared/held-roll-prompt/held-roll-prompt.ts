@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import type { HeldRollOffer } from '../../../gen/meurpg/play/v1/combat_pb';
 import { LUCKY_TITLE, luckyText, luckyWhat } from '../../core/combat/lucky';
@@ -19,14 +20,20 @@ import {
   asksIndomitable,
   asksStroke,
   asksLucky,
+  asksReroll,
   dieOf,
   luckyHeldLine,
+  rerollFace,
   strokeFailed,
 } from '../../core/held-rolls/held-roll-offer';
 import {
   INDOMITABLE_WHAT,
   STROKE_WHAT,
+  askingText,
   indomitableTitle,
+  questionTitle,
+  rerollRollerFooter,
+  rerollWhat,
   strokeTitle,
 } from '../../core/held-rolls/held-text';
 import { inspirationDieName, promptTitle, useLabel } from '../../core/resources/bardic-inspiration';
@@ -57,7 +64,7 @@ export type HeldRollLook = 'attack' | 'sheet' | 'card';
 @Component({
   selector: 'app-held-roll-prompt',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatIconModule, MultiRoll, RollPicker],
+  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, MultiRoll, RollPicker],
   templateUrl: './held-roll-prompt.html',
   styleUrl: './held-roll-prompt.scss',
 })
@@ -94,9 +101,21 @@ export class HeldRollPrompt {
     { key: 'd20-1', label: 'Primeiro d20', min: 1, max: 20 },
     { key: 'd20-2', label: 'Segundo d20', min: 1, max: 20 },
   ];
+  /** A table feature's reroll, "Tirou 2: rolar de novo?": the d20 is rolled again by the server and nothing is typed. */
+  protected readonly reroll = computed(() => asksReroll(this.offer()));
+  protected readonly rerollTitle = computed(() => questionTitle(this.offer()));
+  protected readonly rerollWhat = computed(() => rerollWhat(this.offer()));
+  protected readonly rerollFace = computed(() => rerollFace(this.offer()));
+  protected readonly rerollFooter = computed(() => rerollRollerFooter(this.offer()));
+  protected readonly rerollBusy = computed(() =>
+    askingText({ kind: 'reroll', reroll: this.choice() === 'again', roll: null }, this.offer()),
+  );
+  /** Which button of the reroll question is on its way, so the spinner says what it is doing. */
+  protected readonly choice = signal<'again' | 'keep' | null>(null);
   /** Which question of which roll: it changes when Lucky's answer brings the die's. */
   private readonly question = computed(
-    () => `${this.offer().holdId}:${this.lucky()}:${this.indomitable()}:${this.stroke()}`,
+    () =>
+      `${this.offer().holdId}:${this.lucky()}:${this.indomitable()}:${this.stroke()}:${this.reroll()}`,
   );
   protected readonly die = computed(() => dieOf(this.offer()) ?? { sides: 0, fromName: '' });
   protected readonly dieName = computed(() => inspirationDieName(this.die().sides));
@@ -131,8 +150,14 @@ export class HeldRollPrompt {
       untracked(() => {
         this.typing.set(false);
         this.face.set(Number.NaN);
+        this.choice.set(null);
       });
     });
+  }
+
+  protected pick(again: boolean): void {
+    this.choice.set(again ? 'again' : 'keep');
+    this.answer.emit({ kind: 'reroll', reroll: again, roll: null });
   }
 
   protected onFace(event: Event): void {

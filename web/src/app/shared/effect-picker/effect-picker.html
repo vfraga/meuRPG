@@ -11,9 +11,9 @@
 </div>
 <div class="fields">
   @for (f of fields(); track f.name) {
-    <div class="frow">
+    <div class="frow" [class.frow--wide]="wide(f)">
       <div class="frow__field">
-        @switch (f.kind) {
+        @switch (viewOf(f)) {
           @case ('choice') {
             <app-select-field
               [label]="labelOf(f)"
@@ -22,7 +22,30 @@
               [placeholder]="f.required ? 'Escolha…' : ''"
               [path]="path(f.name)"
               [issues]="issues(f.name)"
+              [disabled]="modeLocked(f)"
+              [describedBy]="modeLocked(f) ? lockId(f) : ''"
               (valueChange)="setChoice(f, $event)"
+            />
+          }
+          @case ('rolls') {
+            <app-check-group
+              [label]="labelOf(f)"
+              [options]="rollOptions(f)"
+              [values]="list(f.name)"
+              [path]="path(f.name)"
+              [issues]="issues(f.name)"
+              [hint]="rollsNote()"
+              (valuesChange)="setRolls($event)"
+            />
+          }
+          @case ('uses') {
+            <app-select-field
+              [label]="labelOf(f)"
+              [options]="resource().options"
+              [value]="read(f.name)"
+              [path]="path(f.name)"
+              [issues]="issuesShown(f.name)"
+              (valueChange)="setResource($event)"
             />
           }
           @case ('cards') {
@@ -30,6 +53,7 @@
               [label]="labelOf(f)"
               [options]="cardsOf(f)"
               [value]="cardValue(f)"
+              [hint]="cardsNote(f)"
               [path]="path(f.name)"
               [issues]="issues(f.name)"
               (valueChange)="setChoice(f, $event)"
@@ -62,6 +86,7 @@
               <app-text-field
                 [label]="labelOf(f)"
                 [value]="read(f.name)"
+                [suffix]="suffixOf(f.name)"
                 [inputmode]="f.min < 0 ? 'text' : 'numeric'"
                 [path]="path(f.name)"
                 [issues]="issuesShown(f.name)"
@@ -83,6 +108,7 @@
               [label]="labelOf(f)"
               [value]="read(f.name)"
               [rows]="f.name === 'text_pt' ? 2 : 0"
+              [inputmode]="f.name === 'value' ? 'numeric' : ''"
               [path]="path(f.name)"
               [issues]="issues(f.name)"
               (valueChange)="setText(f.name, $event)"
@@ -100,7 +126,9 @@
         }
       </div>
       <!-- The hint sits beside its field (a refusal, when there is one, is under the field). -->
-      @if (issuesShown(f.name).length === 0 && beside(f); as hint) {
+      @if (lockNote(f); as lock) {
+        <p class="frow__hint frow__hint--lock" [id]="lockId(f)"><mat-icon aria-hidden="true">lock</mat-icon>{{ lock }}</p>
+      } @else if (issuesShown(f.name).length === 0 && beside(f); as hint) {
         <p class="frow__hint">{{ hint }}</p>
       }
     </div>

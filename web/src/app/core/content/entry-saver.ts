@@ -7,6 +7,7 @@ import {
   placeViolations,
   refusalSummary,
   withoutFields,
+  withoutRow,
 } from './content-violations';
 import { ActionKey } from '../connect/idempotency';
 import { contentErrorText, isStale, refusalOf } from './content-client';
@@ -68,6 +69,13 @@ export class EntrySaver {
       },
       { injector },
     );
+  }
+
+  /** A row of a list went: its refusals go with it and the rows after it keep theirs (they are named by place). */
+  rowRemoved(list: string, index: number): void {
+    const kept = withoutRow(this.placement(), list, index);
+    this.placement.set(kept);
+    this.summary.set(kept.count > 0 ? refusalSummary(this.what, kept.count) : '');
   }
 
   clear(): void {

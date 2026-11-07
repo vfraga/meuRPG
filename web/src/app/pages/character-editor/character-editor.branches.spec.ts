@@ -410,7 +410,7 @@ describe('CharacterEditor, before the catalog arrives', () => {
     expect(cmp.views.pageTitle()).toBe('Criar personagem');
     expect(cmp.views.createLabel()).toBe('Criar personagem');
     expect(cmp.views.reserved()).toBe(false);
-    expect(cmp.views.lead()).toBe('');
+    expect(cmp.views.leadParts()).toEqual({ first: '', more: '' });
     expect(cmp.views.actionsNote()).toBe('');
     expect(cmp.views.cancelLink()).toEqual(['/']);
     expect(cmp.draft.invalidSummary()).toBe('');

@@ -38,7 +38,7 @@
       <div class="head__text">
         <h1 class="head__name">{{ s.creature.name }}</h1>
         <p class="head__sub">{{ subtitle() }}</p>
-        <p class="head__origin">{{ origin() }}</p>
+        <p class="head__origin">{{ origin() }}@if (tableNote()) { <app-table-mark [fromTable]="true" /> }</p>
       </div>
     </header>
 
@@ -77,5 +77,8 @@
         </div>
       }
     </app-stat-block>
+    @if (tableNote(); as note) {
+      <p class="table-note">{{ note }}</p>
+    }
   }
 }

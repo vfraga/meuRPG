@@ -38,6 +38,17 @@ export interface AttackSheetData {
   readonly bonusAttacksLeft?: number;
   /** A cantrip with several beams (Eldritch Blast): how many were still to fire before this one. */
   readonly beamsLeft?: number;
+  /** The master's legendary attack: the option it is made with (`RollAttack.legendary_option`) and the words the
+   * sheet wears: "Cauda · ação lendária" over "Dragão vermelho adulto · custa 1 de 2 restantes". The attack spends the
+   * option's cost in legendary actions and nothing of the creature's own turn. */
+  readonly legendary?: {
+    readonly option: string;
+    readonly title: string;
+    readonly subtitle: string;
+    /** What the option costs, in legendary actions, and who it is spent for: the done note says it. */
+    readonly cost: number;
+    readonly label: string;
+  };
   /** The creature the player tapped on the map (C7-04): the sheet opens at the roll, with it named and "Trocar" to go back to the list. */
   readonly target?: string;
   /** The answer to an opportunity offer (E9-13): the target is the mover (so the

@@ -14,6 +14,8 @@ import { RageQuestion } from './rage-end/rage-question';
 import { InspirationCard } from './inspiration-card/inspiration-card';
 import { ContestMaster } from './contest-master/contest-master';
 import { ReactionQueue } from './reaction-queue/reaction-queue';
+import { LegendaryOffers } from './legendary-card/legendary-offers';
+import { LegendaryNote } from './legendary-card/legendary-note';
 import { SurpriseCard } from './surprise-card/surprise-card';
 import { CombatLogPanel } from './combat-log/combat-log-panel';
 import { CombatBar } from './combat-bar/combat-bar';
@@ -113,6 +115,8 @@ export const COMBAT_VIEW_IMPORTS = [
   RollModeQueue,
   TheatreReaction,
   ReactionQueue,
+  LegendaryOffers,
+  LegendaryNote,
   ContestMaster,
   SurpriseCard,
   TurnBar,

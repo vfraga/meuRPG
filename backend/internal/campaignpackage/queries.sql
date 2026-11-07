@@ -79,7 +79,7 @@ WHERE e.expires_at <= $1
 ORDER BY e.expires_at LIMIT $2;
 
 -- name: ListCampaignExportsOfCampaign :many
-SELECT * FROM campaign_exports WHERE campaign_id = $1;
+SELECT * FROM campaign_exports WHERE campaign_id = $1 ORDER BY id;
 
 -- name: DeleteCampaignExport :exec
 DELETE FROM campaign_exports WHERE id = $1;
@@ -91,7 +91,7 @@ DELETE FROM campaign_exports WHERE campaign_id = $1;
 DELETE FROM campaign_exports WHERE requested_by = $1;
 
 -- name: ListCampaignExportsOfUser :many
-SELECT * FROM campaign_exports WHERE requested_by = $1;
+SELECT * FROM campaign_exports WHERE requested_by = $1 ORDER BY id;
 
 -- name: GetCampaignImportOfUser :one
 SELECT * FROM campaign_imports WHERE user_id = $1;
@@ -129,4 +129,4 @@ WHERE i.expires_at <= $1
 ORDER BY i.expires_at LIMIT $2;
 
 -- name: ListCampaignImportsOfUser :many
-SELECT * FROM campaign_imports WHERE user_id = $1;
+SELECT * FROM campaign_imports WHERE user_id = $1 ORDER BY id;

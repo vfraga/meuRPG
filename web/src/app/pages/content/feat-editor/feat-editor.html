@@ -41,18 +41,18 @@
       }
       <div class="grid grid--2">
         <app-select-field label="Proficiência" [options]="proficiencyOptions()" [value]="d.proficiencyKey" path="table_feat.prerequisite.proficiency_key" [issues]="issuesOf('table_feat.prerequisite.proficiency_key')" (valueChange)="patch({ proficiencyKey: $event })" />
-        <app-select-field label="Raça ou sub-raça" [options]="raceOptions()" [value]="d.raceKey" path="table_feat.prerequisite.race_key" [issues]="issuesOf('table_feat.prerequisite.race_key')" (valueChange)="patch({ raceKey: $event })" />
+        <app-text-field label="Nível mínimo do personagem" [value]="d.level" inputmode="numeric" path="table_feat.prerequisite.level" [issues]="issuesOf('table_feat.prerequisite.level')" hint="Vazio: qualquer nível." (valueChange)="patch({ level: $event })" />
       </div>
       <div class="grid grid--2">
-        <app-text-field label="Nível mínimo do personagem" [value]="d.level" inputmode="numeric" path="table_feat.prerequisite.level" [issues]="issuesOf('table_feat.prerequisite.level')" (valueChange)="patch({ level: $event })" />
+        <app-search-pick label="Raças (basta uma)" placeholder="Procurar raça ou sub-raça" emptyText="Nenhuma raça com esse nome." hint="Uma sub-raça conta como a raça dela. Vazio: qualquer raça." [options]="raceSearch()" [chips]="raceChipList()" path="table_feat.prerequisite.races" [issues]="raceIssues()" (added)="addRace($event)" (removed)="removeRace($event)" />
+        <app-select-field label="Tamanho" [options]="sizes" [value]="d.size" path="table_feat.prerequisite.size" [issues]="issuesOf('table_feat.prerequisite.size')" hint="O tamanho que a ficha conta. Qualquer: não pede." (valueChange)="patch({ size: $event })" />
       </div>
+      <app-search-pick label="Não pode ter" placeholder="Procurar traço, característica ou talento" [options]="lackSearch()" [groups]="lackGroups" [chips]="lackChipList()" path="table_feat.prerequisite.lacks_feature_key" [issues]="issuesOf('table_feat.prerequisite.lacks_feature_key')" hint="Quem já tem isto não pode pegar o talento; quem ganhar depois fica com um aviso na ficha." (added)="patch({ lacksFeatureKey: $event })" (removed)="patch({ lacksFeatureKey: '' })" />
       <app-check-row label="Pode conjurar ao menos uma magia" [checked]="d.spellcasting" path="table_feat.prerequisite.spellcasting" (toggled)="patch({ spellcasting: $event })" />
       @for (m of issuesOf('table_feat.prerequisite'); track m) {
         <p class="inline-issue" role="note">{{ m }}</p>
       }
     </section>
-
-    <app-editor-bar saveLabel="Salvar talento" [saving]="saver.saving()" [blocked]="saveBlocked()" (save)="save()" (cancel)="cancelled.emit()" />
   </div>
 
   <aside class="editor__side" aria-label="Como os jogadores veem">
@@ -69,3 +69,4 @@
     }
   </aside>
 </div>
+<app-editor-bar [sticky]="true" saveLabel="Salvar talento" [saving]="saver.saving()" [blocked]="saveBlocked()" (save)="save()" (cancel)="cancelled.emit()" />

@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"cmp"
 	"regexp"
 	"strconv"
 	"strings"
@@ -41,6 +42,8 @@ type LegendaryOption struct {
 	Key string
 	// Name is the SRD's name without the "(Costs N Actions)" suffix.
 	Name string
+	// NamePT is its Portuguese name; the option's Name when the content has none.
+	NamePT string
 	// Cost is how many of the creature's legendary actions it takes, 1 to 3.
 	Cost int
 	// Text is the SRD's text of the option, in English.
@@ -141,6 +144,7 @@ func perDay(usage string) int {
 func legendaryOption(a CreatureAbility, actions []CreatureAction) LegendaryOption {
 	opt := LegendaryOption{Cost: 1, Text: a.Text, Kind: LegendaryKindText}
 	opt.Name = strings.TrimSpace(costRe.ReplaceAllString(a.Name, ""))
+	opt.NamePT = cmp.Or(a.NamePT, opt.Name)
 	if m := costRe.FindStringSubmatch(a.Name); m != nil {
 		opt.Cost, _ = strconv.Atoi(m[1])
 	}
@@ -191,4 +195,10 @@ func monsterReaction(r CreatureAbility) MonsterReaction {
 		out.ACBonus, _ = strconv.Atoi(m[1])
 	}
 	return out
+}
+
+// legendaryNameKey is the names_pt.json key of a legendary action: "legendary:" and the slug of
+// its name without the "(Costs N Actions)" suffix.
+func legendaryNameKey(name string) string {
+	return "legendary:" + slugOf(costRe.ReplaceAllString(name, ""))
 }

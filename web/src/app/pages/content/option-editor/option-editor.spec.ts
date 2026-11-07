@@ -1,15 +1,18 @@
 import { TestBed } from '@angular/core/testing';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
+import { provideRouter } from '@angular/router';
 
 import {
+  TableClassSchema,
   TableContentKind,
   TableContentRefusalSchema,
   TableContentViolationSchema,
   TableOptionSchema,
+  TableSubclassSchema,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { TableContentClient } from '../../../core/content/content-client';
-import { catalog, entry } from '../../../core/content/content-testing';
+import { catalog, entry, feature } from '../../../core/content/content-testing';
 import { menu } from '../../../core/content/content-testing-menu';
 import { OptionEditor } from './option-editor';
 import { settle } from '../../../../test-settle';
@@ -46,17 +49,60 @@ describe('OptionEditor (MR-025)', () => {
       },
     });
 
-  function setup(existing = true) {
+  /** A subclass of the table whose level 3 feature lists three options, and a class whose level 2 feature lists two. */
+  const owners = () => {
+    const withOptions = (name: string, n: number) => ({
+      ...feature(name),
+      options: Array.from({ length: n }, (_, i) => feature(`${name} ${i + 1}`)),
+    });
+    return [
+      entry(TableContentKind.SUBCLASS, 'Guarda do Corvo', {
+        body: {
+          case: 'tableSubclass',
+          value: create(TableSubclassSchema, {
+            namePt: 'Guarda do Corvo',
+            classKey: 'class:paladin',
+            levels: [
+              { level: 3, features: [withOptions('Truques de lâmina', 3), feature('Sem lista')] },
+            ],
+          }),
+        },
+      }),
+      entry(TableContentKind.CLASS, 'Guardião do Vale', {
+        body: {
+          case: 'tableClass',
+          value: create(TableClassSchema, {
+            namePt: 'Guardião do Vale',
+            levels: [{ features: [] }, { features: [withOptions('Votos do Vale', 2)] }],
+          }),
+        },
+      }),
+      entry(TableContentKind.SUBCLASS, 'Arquivada', {
+        archived: true,
+        body: {
+          case: 'tableSubclass',
+          value: create(TableSubclassSchema, {
+            namePt: 'Arquivada',
+            levels: [{ level: 3, features: [withOptions('Perdida', 2)] }],
+          }),
+        },
+      }),
+    ];
+  };
+  const crow = 'feature:Truques de lâmina';
+
+  function setup(existing = true, entries = owners(), saved = stored()) {
     save.mockReset();
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: TableContentClient, useValue: { save } }],
+      providers: [provideRouter([]), { provide: TableContentClient, useValue: { save } }],
     });
     const fixture = TestBed.createComponent(OptionEditor);
     fixture.componentRef.setInput('campaignId', 'camp-1');
-    fixture.componentRef.setInput('catalog', catalog());
+    fixture.componentRef.setInput('catalog', catalog(entries));
     fixture.componentRef.setInput('menu', menu());
-    if (existing) fixture.componentRef.setInput('entry', stored());
+    fixture.componentRef.setInput('entries', entries);
+    if (existing) fixture.componentRef.setInput('entry', saved);
     fixture.detectChanges();
     return { fixture, el: fixture.nativeElement as HTMLElement };
   }
@@ -137,5 +183,155 @@ describe('OptionEditor (MR-025)', () => {
     const { el } = setup(false);
     expect((field(el, 'table_option.name_pt') as HTMLInputElement).value).toBe('');
     expect(text(el.querySelector('.preview')!)).toContain('Nova opção');
+  });
+
+  describe('the feature that offers the option', () => {
+    const offered = (offeredBy = '') =>
+      entry(TableContentKind.OPTION, 'Golpe do Corvo', {
+        body: {
+          case: 'tableOption',
+          value: create(TableOptionSchema, {
+            namePt: 'Golpe do Corvo',
+            set: 'table_feature',
+            offeredBy,
+          }),
+        },
+      });
+    const pickSet = (el: HTMLElement, set: string) => {
+      const select = field(el, 'table_option.set') as HTMLSelectElement;
+      select.value = set;
+      select.dispatchEvent(new Event('change'));
+    };
+    const offerer = (el: HTMLElement) =>
+      field(el, 'table_option.offered_by') as HTMLSelectElement | null;
+
+    it('asks for the feature only for the set of a table feature', () => {
+      const { fixture, el } = setup(false);
+      expect(offerer(el)).toBeNull();
+      pickSet(el, 'table_feature');
+      fixture.detectChanges();
+      expect(offerer(el)).not.toBeNull();
+      pickSet(el, 'invocation');
+      fixture.detectChanges();
+      expect(offerer(el)).toBeNull();
+    });
+
+    it('lists the table features with options of their own, by owner, and no archived owner', () => {
+      const { fixture, el } = setup(false);
+      pickSet(el, 'table_feature');
+      fixture.detectChanges();
+      const groups = Array.from(offerer(el)!.querySelectorAll('optgroup')).map((g) => g.label);
+      expect(groups).toEqual([
+        'Guarda do Corvo · subclasse de Paladino',
+        'Guardião do Vale · classe da mesa',
+      ]);
+      const rows = Array.from(offerer(el)!.options).map((o) => o.text);
+      expect(rows).toContain('Truques de lâmina · nível 3 · 3 opções');
+      expect(rows).toContain('Votos do Vale · nível 2 · 2 opções');
+      expect(rows.join()).not.toContain('Sem lista');
+      expect(rows.join()).not.toContain('Perdida');
+      expect(
+        text(el.querySelector('app-select-field:has([data-field="table_option.offered_by"])')!),
+      ).toContain('Só as características com lista de opções própria');
+    });
+
+    it('does not save without the feature: it says so at the field and takes the focus there', async () => {
+      const { fixture, el } = setup(false);
+      pickSet(el, 'table_feature');
+      fixture.detectChanges();
+      click(el, 'Salvar opção');
+      await settle(fixture, 3);
+      expect(save).not.toHaveBeenCalled();
+      expect(text(offerer(el)!.closest('app-select-field')!)).toContain(
+        'Escolha a característica que oferece a opção.',
+      );
+      expect(document.activeElement).toBe(offerer(el));
+    });
+
+    it('sends the chosen feature, and clears it when the set changes', async () => {
+      const { fixture, el } = setup(false);
+      pickSet(el, 'table_feature');
+      fixture.detectChanges();
+      offerer(el)!.value = crow;
+      offerer(el)!.dispatchEvent(new Event('change'));
+      const name = field(el, 'table_option.name_pt') as HTMLInputElement;
+      name.value = 'Golpe do Corvo';
+      name.dispatchEvent(new Event('input'));
+      save.mockResolvedValue({ entry: offered(crow), affected: [] });
+      click(el, 'Salvar opção');
+      await settle(fixture, 3);
+      expect(save.mock.calls[0][2].value.offeredBy).toBe(crow);
+
+      pickSet(el, 'invocation');
+      fixture.detectChanges();
+      click(el, 'Salvar opção');
+      await settle(fixture, 3);
+      expect(save.mock.calls[1][2].value.offeredBy).toBe('');
+    });
+
+    it('shows the saved feature with its owner, the options it lists and a link to the owner', () => {
+      const { el } = setup(true, owners(), offered(crow));
+      expect(offerer(el)!.selectedOptions[0].text).toContain('Truques de lâmina');
+      const note = text(
+        el.querySelector('app-select-field:has([data-field="table_option.offered_by"])')!,
+      );
+      expect(note).toContain('Guarda do Corvo · subclasse de Paladino · nível 3');
+      expect(text(el)).toContain(
+        'Entra na lista com Truques de lâmina 1, Truques de lâmina 2, Truques de lâmina 3',
+      );
+      const link = Array.from(el.querySelectorAll('a')).find((a) =>
+        text(a).includes('Abrir Guarda do Corvo'),
+      )!;
+      expect(link.getAttribute('href')).toContain('/campaigns/camp-1/content/entries/');
+      expect(text(el.querySelector('.preview')!)).toContain(
+        'Oferecida porTruques de lâmina (Guarda do Corvo)',
+      );
+    });
+
+    it('is disabled with the reason and a link to the subclasses when nothing is offered', () => {
+      const { fixture, el } = setup(false, []);
+      pickSet(el, 'table_feature');
+      fixture.detectChanges();
+      expect(offerer(el)!.disabled).toBe(true);
+      expect(offerer(el)!.options[0].text).toBe('Nenhuma disponível');
+      expect(text(el)).toContain('Crie a lista lá e volte aqui.');
+      const link = Array.from(el.querySelectorAll('a')).find((a) =>
+        text(a).includes('Ver as subclasses da mesa'),
+      )!;
+      expect(link.getAttribute('href')).toContain('kind=subclasses');
+    });
+
+    it('takes the focus to the link when a save is tried with nothing to choose from', async () => {
+      const { fixture, el } = setup(false, []);
+      pickSet(el, 'table_feature');
+      fixture.detectChanges();
+      click(el, 'Salvar opção');
+      await settle(fixture, 3);
+      expect(save).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(field(el, 'table_option.offered_by.help'));
+      expect(text(offerer(el)!.closest('app-select-field')!)).toContain(
+        'Escolha a característica que oferece a opção.',
+      );
+    });
+
+    it('names the feature of a saved option whose owner was archived, not its key', () => {
+      const archivedOwners = owners().map((e) => ({ ...e, archived: true }));
+      const { el } = setup(true, archivedOwners as ReturnType<typeof owners>, offered(crow));
+      expect(offerer(el)!.selectedOptions[0].text).toBe('Truques de lâmina (Guarda do Corvo)');
+    });
+
+    it('keeps a saved feature that is gone on screen and puts the refusal at the field', async () => {
+      const gone = 'feature:class-guardiao-3f9a1c--votos-antigos@mesa';
+      const { fixture, el } = setup(true, owners(), offered(gone));
+      expect(offerer(el)!.selectedOptions[0].text).toBe('Votos antigos');
+      save.mockRejectedValue(refusal(['table_option.offered_by', 'dangling_reference']));
+      click(el, 'Salvar opção');
+      await settle(fixture, 3);
+      expect(text(offerer(el)!.closest('app-select-field')!)).toContain(
+        'Esta característica não existe mais ou não tem lista de opções. Escolha outra.',
+      );
+      expect(offerer(el)!.getAttribute('aria-invalid')).toBe('true');
+      expect(document.activeElement).toBe(offerer(el));
+    });
   });
 });

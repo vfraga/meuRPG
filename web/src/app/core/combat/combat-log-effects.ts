@@ -8,6 +8,7 @@ import { listNames } from './conditions';
 import { article } from '../format/article';
 import { dcLabel } from '../format/save-dc';
 import { naturalMark } from './natural-mark';
+import { effectTreatedNote } from './combat-log-dice';
 import { luckyText } from './lucky';
 import { LogContext, LogLine } from './combat-log-types';
 import { ofSubject, subject } from './combat-log-words';
@@ -143,13 +144,13 @@ export function effectLine(
   fx: CombatLogEffect,
   ctx: LogContext,
 ): LogLine {
-  const lucky = luckyText(fx);
+  const notes = [luckyText(fx), effectTreatedNote(fx)].filter(Boolean);
   return {
     ...base,
     icon: 'auto_awesome',
     actor: '',
     text: effectLogText(fx, ctx),
-    ...(lucky ? { notes: [lucky] } : {}),
+    ...(notes.length > 0 ? { notes } : {}),
   };
 }
 

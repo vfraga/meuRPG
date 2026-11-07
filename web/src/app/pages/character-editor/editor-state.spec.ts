@@ -10,9 +10,10 @@ import {
   createLabelOf,
   editBlocked,
   editFailed,
-  leadOf,
+  leadPartsOf,
   loadingState,
   pageTitleOf,
+  phoneNoteOf,
   previewInputOf,
   readyForCreate,
   readyForEdit,
@@ -165,14 +166,46 @@ describe('the texts of the page', () => {
     );
   });
 
+  const leadText = (s: PageState) => {
+    const { first, more } = leadPartsOf(s);
+    return more === '' ? first : `${first} ${more}`;
+  };
+
   it('says in the lead what the form is for', () => {
-    expect(leadOf(loading)).toBe('');
-    expect(leadOf(ready({ mode: 'edit' }))).toContain('recalculados na hora');
-    expect(leadOf(ready({ mode: 'edit', kind: 'minion' }))).toBe('Ficha curta de minion.');
-    expect(leadOf(ready({ reserved: true }))).toContain('O personagem fica reservado');
-    expect(leadOf(ready())).toContain('calculados quando você criar');
-    expect(leadOf(ready({ kind: 'boss' }))).toContain('com ficha completa');
-    expect(leadOf(ready({ kind: 'minion' }))).toContain('ficha curta, só com o que se usa na mesa');
+    expect(leadText(loading)).toBe('');
+    expect(leadText(ready({ mode: 'edit' }))).toContain('recalculados na hora');
+    expect(leadText(ready({ mode: 'edit', kind: 'minion' }))).toBe('Ficha curta de minion.');
+    expect(leadText(ready({ reserved: true }))).toContain('O personagem fica reservado');
+    expect(leadText(ready())).toContain('calculados quando você criar');
+    expect(leadText(ready({ kind: 'boss' }))).toContain('com ficha completa');
+    expect(leadText(ready({ kind: 'minion' }))).toContain(
+      'ficha curta, só com o que se usa na mesa',
+    );
+  });
+});
+
+describe('the lead and the note on a phone', () => {
+  const loading: PageState = { status: 'loading', title: 'Ficha' };
+
+  it('cuts the lead of a full sheet to its first sentence and keeps the rest for a wide screen', () => {
+    expect(leadPartsOf(loading)).toEqual({ first: '', more: '' });
+    expect(leadPartsOf(ready())).toEqual({
+      first: 'Preencha os passos na ordem que quiser.',
+      more: 'Modificadores, Classe de Armadura e pontos de vida são calculados quando você criar.',
+    });
+    expect(leadPartsOf(ready({ mode: 'edit' })).first).toBe(
+      'As mudanças valem quando você salvar.',
+    );
+    expect(leadPartsOf(ready({ kind: 'minion' })).more).toBe('');
+  });
+
+  it('keeps the numbers the server calculates in the one-line note of a full sheet', () => {
+    expect(phoneNoteOf(loading)).toBe('');
+    expect(phoneNoteOf(ready())).toBe('CA, PV e modificadores são calculados ao criar.');
+    expect(phoneNoteOf(ready({ mode: 'edit' }))).toBe(
+      'Salva todos os passos; CA e PV são recalculados.',
+    );
+    expect(phoneNoteOf(ready({ kind: 'minion' }))).toBe(actionsNoteOf(ready({ kind: 'minion' })));
   });
 });
 

@@ -2,7 +2,15 @@ import type { AnswerHeldRollResponse } from '../../../gen/meurpg/play/v1/resourc
 import type { HeldRollOffer } from '../../../gen/meurpg/play/v1/combat_pb';
 import type { WithRerolls } from '../combat/lucky';
 import { inspirationDieName } from '../resources/bardic-inspiration';
-import { type HeldAnswer, dieOf, indomitableReroll, luckyReroll } from './held-roll-offer';
+import {
+  type HeldAnswer,
+  dieOf,
+  indomitableReroll,
+  luckyReroll,
+  rerollFace,
+  rerollOf,
+  ruleReroll,
+} from './held-roll-offer';
 
 /** A d20 an answer settled, with what is known of its total where the path's roll carries it. */
 export type SettledRoll = WithRerolls & { readonly modifier?: number; readonly total?: number };
@@ -67,6 +75,18 @@ function whatAnswered(
   if (answer.kind === 'stroke') {
     return answer.use ? 'usou o Golpe de Sorte' : 'manteve o resultado';
   }
+  if (answer.kind === 'reroll') {
+    return answer.reroll ? rolledAgain(asked, res) : `ficou com o ${rerollFace(asked)}`;
+  }
+  return luckyOrIndomitable(answer, asked, res);
+}
+
+/** What the answer to Lucky's or Indomitable's question did. */
+function luckyOrIndomitable(
+  answer: Extract<HeldAnswer, { readonly kind: 'lucky' | 'indomitable' }>,
+  asked: HeldRollOffer,
+  res: AnswerHeldRollResponse,
+): string {
   if (!answer.reroll) {
     return answer.kind === 'indomitable'
       ? `manteve a salvaguarda (${countedFace(asked)})`
@@ -74,6 +94,19 @@ function whatAnswered(
   }
   const roll = settledRoll(res);
   const again = answer.kind === 'indomitable' ? indomitableReroll(roll) : luckyReroll(roll);
+  if (!again) {
+    return 'rolou de novo';
+  }
+  const withBonus =
+    roll?.modifier && roll.total !== undefined ? ` (${roll.total} com o bônus)` : '';
+  return `rolou de novo e tirou ${again.to}${withBonus}`;
+}
+
+/** "rolou de novo e tirou 14 (19 com o bônus)" for a table feature's reroll; "rolou de novo" where the result carries no
+ * d20. */
+function rolledAgain(asked: HeldRollOffer, res: AnswerHeldRollResponse): string {
+  const roll = settledRoll(res);
+  const again = ruleReroll(roll, rerollOf(asked)?.sourceKey ?? '');
   if (!again) {
     return 'rolou de novo';
   }

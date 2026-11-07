@@ -19,6 +19,8 @@ export class CombatMoveCalls {
    * is "something you did not see stopped you"; `provoked` that an opportunity
    * offer now waits. The master's drags are plain moves: only `forced` (the
    * "Movimento forçado" box: a teleport, a push or a pull) skips the offers.
+   * `legendaryOption` (the master only) is the key of a legendary option of kind "move":
+   * the walk spends its cost in legendary actions.
    * `key` is the caller's, kept across the retries of one jump (a lost answer
    * must not charge it twice). */
   async move(
@@ -30,9 +32,20 @@ export class CombatMoveCalls {
     jump?: { readonly kind: 'long' } | { readonly kind: 'high'; readonly heightDft: number },
     key?: string,
     forced = false,
+    legendaryOption = '',
   ): Promise<MoveResult> {
     const res = await this.base.keyed(
-      ['moveCombatant', campaignId, encounterId, combatantId, col, row, jump, forced],
+      [
+        'moveCombatant',
+        campaignId,
+        encounterId,
+        combatantId,
+        col,
+        row,
+        jump,
+        forced,
+        legendaryOption,
+      ],
       (sent) =>
         this.base.client.moveCombatant({
           campaignId,
@@ -48,6 +61,7 @@ export class CombatMoveCalls {
             : JumpKind.UNSPECIFIED,
           jumpHeightDft: jump?.kind === 'high' ? jump.heightDft : 0,
           forced,
+          legendaryOption,
         }),
       key,
     );

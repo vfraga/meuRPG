@@ -24,12 +24,9 @@ import {
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { ofThe } from '../../../../core/combat/move-plan';
-import {
-  type QueueRow,
-  type ReactionCard,
-  type SlotOption,
-  reactionCards,
-} from '../../../../core/combat/reaction-master';
+import { type QueueItem, masterQueue } from '../../../../core/combat/reaction-queue';
+import { type QueueRow, type SlotOption } from '../../../../core/combat/reaction-master';
+import { resistanceBox } from '../../../../core/combat/legendary-resistance-card';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import { autoPassText, rollingText } from '../../../../core/combat/reaction-autopass';
 import {
@@ -71,8 +68,12 @@ import {
   rebukeModifier,
   rebukeText,
   rebukeTitle,
+  heldWaitText,
   sayAnswer,
 } from './reaction-queue-text';
+import { ParryOffer } from './parry-offer';
+import { ResistanceBox } from './resistance-box';
+import { ResistanceOffer } from './resistance-offer';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 
 let nextId = 0;
@@ -90,7 +91,17 @@ let nextId = 0;
 @Component({
   selector: 'app-reaction-queue',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ExtraDice, MatButtonModule, MatIconModule, MultiRoll, NgTemplateOutlet, RollPicker],
+  imports: [
+    ExtraDice,
+    MatButtonModule,
+    MatIconModule,
+    MultiRoll,
+    NgTemplateOutlet,
+    ParryOffer,
+    ResistanceBox,
+    ResistanceOffer,
+    RollPicker,
+  ],
   templateUrl: './reaction-queue.html',
   styleUrl: './reaction-queue.scss',
 })
@@ -117,6 +128,17 @@ export class ReactionQueue {
   protected readonly skipAsked = signal('');
   /** What the last answer did, for the live region. */
   protected readonly said = signal('');
+  /** The roll the master made for a player waits for the roller's question (a reroll rule): where it is and when he may answer. */
+  private readonly heldAsked = signal<{ readonly window: string; readonly text: string } | null>(
+    null,
+  );
+  /** The note stays while the window the roll was made for is still open: the roller's answer resolves it and the note goes. */
+  protected readonly heldNote = computed(() => {
+    const asked = this.heldAsked();
+    return asked !== null && this.encounter().reactionWindows.some((w) => w.id === asked.window)
+      ? asked.text
+      : '';
+  });
   protected readonly ofTheLabel = (label: string): string => ofThe([label]);
   /** The slot the master picked for an NPC's Counterspell, by window. */
   private readonly picks = signal<Readonly<Record<string, SlotOption>>>({});
@@ -125,12 +147,60 @@ export class ReactionQueue {
   /** `late`: only the questions that came to the master after 10 s (they lead the "Turno"); `rest`: all the others. */
   readonly part = input<'all' | 'late' | 'rest'>('all');
 
-  protected readonly cards = computed<readonly ReactionCard[]>(() => {
+  /** The master's queue: the windows he answers, "Agora" first, the others "Depois" (core/combat/reaction-queue). */
+  protected readonly queue = computed(() => masterQueue(this.encounter()));
+  protected readonly hint = computed(() => this.queue().hint);
+  protected readonly count = computed(() => this.queue().count);
+
+  protected readonly items = computed<readonly QueueItem[]>(() => {
     const part = this.part();
-    return reactionCards(this.encounter()).filter(
-      (c) => part === 'all' || (part === 'late') === (c.type === 'unanswered'),
+    return this.queue().items.filter(
+      (i) => part === 'all' || (part === 'late') === (i.card.type === 'unanswered'),
     );
   });
+
+  /**
+   * The header stands over the first part of the queue that has a card, so it is drawn once: over "late" when the
+   * Turno leads with a question that came to the master, otherwise over "rest" (or "all").
+   */
+  protected readonly showHeader = computed(() => {
+    const part = this.part();
+    if (this.count() === 0 || this.items().length === 0) {
+      return false;
+    }
+    return part !== 'rest' || !this.queue().items.some((i) => i.card.type === 'unanswered');
+  });
+
+  protected readonly cards = computed(() => this.items().map((i) => i.card));
+
+  /** The windows whose save the master asked to turn into a success if it fails ("Se falhar, usar Resistência Lendária"). */
+  protected readonly lrTicked = signal<ReadonlySet<string>>(new Set());
+
+  /** The box of an NPC's save, or `null` unless it has the trait and a use left. */
+  protected lrBox(w: ReactionWindow) {
+    return resistanceBox(this.encounter().combatants.find((c) => c.id === w.reactorId)?.legendary);
+  }
+
+  protected setLr(windowId: string, on: boolean): void {
+    this.lrTicked.update((t) => {
+      const next = new Set(t);
+      if (on) {
+        next.add(windowId);
+      } else {
+        next.delete(windowId);
+      }
+      return next;
+    });
+  }
+
+  /** The answer with the master's choice added, only for a roll (a kept or skipped save has nothing to turn). */
+  private withLr<T extends { readonly kind: string }>(w: ReactionWindow, how: T): T {
+    return this.lrBox(w) !== null &&
+      this.lrTicked().has(w.id) &&
+      (how.kind === 'app' || how.kind === 'typed')
+      ? ({ ...how, useLegendaryResistance: true } as T)
+      : how;
+  }
 
   constructor() {
     // The focus opens on the first button of the first window to answer, when it is a new one.
@@ -240,10 +310,13 @@ export class ReactionQueue {
       this.error.set(this.extra.missingText());
       return;
     }
-    const sent: ConcentrationAnswer =
-      how.kind === 'typed' && extra.length > 0 ? { ...how, extra } : how;
+    const sent: ConcentrationAnswer = this.withLr(
+      w,
+      how.kind === 'typed' && extra.length > 0 ? { ...how, extra } : how,
+    );
     this.busy.set(true);
     this.error.set('');
+    this.heldAsked.set(null);
     try {
       const res = await this.api.attacks.resolveConcentrationSave(
         this.campaignId(),
@@ -253,6 +326,11 @@ export class ReactionQueue {
         this.keys.keyFor({ window: w.id, how: sent }),
       );
       this.state().apply(res.encounter);
+      if (res.held) {
+        // The roller's reroll question waits: nothing was written, and the question is in the roller's row.
+        this.heldAsked.set({ window: w.id, text: heldWaitText(res.held) });
+        return;
+      }
       const r = res.result;
       this.play(() => showOfConcentration(r));
       this.said.set(concentrationSaid(w, how, r));
@@ -277,9 +355,10 @@ export class ReactionQueue {
       this.error.set(this.extra.missingText());
       return;
     }
-    const sent: EffectSaveAnswer = how.kind === 'typed' ? { ...how, extra } : how;
+    const sent: EffectSaveAnswer = this.withLr(w, how.kind === 'typed' ? { ...how, extra } : how);
     this.busy.set(true);
     this.error.set('');
+    this.heldAsked.set(null);
     try {
       const res = await this.effects.rollEffectSave(
         this.campaignId(),
@@ -289,6 +368,10 @@ export class ReactionQueue {
         this.keys.keyFor({ window: w.id, how: sent }),
       );
       this.state().apply(res.encounter);
+      if (res.held) {
+        this.heldAsked.set({ window: w.id, text: heldWaitText(res.held) });
+        return;
+      }
       this.play(() =>
         showOfEffectSave(`Teste de resistência de ${effectSaveAbility(w)}`, res.result),
       );

@@ -121,6 +121,35 @@ export function heldStroke(
   });
 }
 
+/** A table feature's reroll question for specs ("Tirou 2: rolar de novo?"): a d20 of `face` with the roll's bonus, asked
+ * by `Sorte Teimosa` (a name only the roller and the master get; pass `''` for a source with no name). */
+export function heldReroll(
+  face = 2,
+  modifier = 5,
+  over: HeldOfferOver = {},
+  sourceName = 'Sorte Teimosa',
+): HeldRollOffer {
+  return create(HeldRollOfferSchema, {
+    holdId: 'h1',
+    rollerLabel: 'Brisa',
+    kind: HeldRollKind.WEAPON_ATTACK,
+    d20: held20([face], modifier),
+    question: {
+      case: 'reroll',
+      value: {
+        rerollIndex: 0,
+        atMost: 5,
+        resource: 'resource:stubborn-luck',
+        cost: 1,
+        sourceKey: 'feature:stubborn-luck',
+        sourceName,
+        sides: 20,
+      },
+    },
+    ...over,
+  });
+}
+
 /** When a question was asked, for the master's wait. */
 export function askedAt(ms: number): { createdAt: ReturnType<typeof timestampFromMs> } {
   return { createdAt: timestampFromMs(ms) };

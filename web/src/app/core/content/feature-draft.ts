@@ -51,9 +51,9 @@ export interface FeatureDraft {
   text: string;
   effects: EffectDraft[];
   /**
-   * The feature's option list ("Opções para escolher"): options the player picks, each with a name, a text and effects. Only a
-   * class or subclass feature has them; an option has none of its own. Their keys are made by the server and sent back on
-   * every save, so a pick keeps its option.
+   * The feature's option list ("Opções para escolher"): options the player picks, each with a name, a text and effects. A class
+   * or subclass feature has them, and so does a race or subrace trait (a one-time "one of"); an option has none of its own.
+   * Their keys are made by the server and sent back on every save, so a pick keeps its option.
    */
   options: FeatureDraft[];
   /** "Invoca criaturas": the creatures the feature brings to its holder, or `null` (off). Only a class, subclass, race or background feature has it. */
@@ -133,6 +133,9 @@ export function bonusText(b: Bonuses, abilities: readonly CatalogAbility[]): str
 }
 
 /** What a bonus can be: the server's limit (`rules.maxRaceBonus`, 4 in either direction). */
+/** The longest name of an entry, a trait or an option. */
+export const NAME_MAX = 60;
+
 export const BONUS_MIN = -4;
 export const BONUS_MAX = 4;
 
@@ -246,6 +249,21 @@ export interface SubraceDraft {
   raceKey: string;
   bonuses: Bonuses;
   traits: FeatureDraft[];
+  /** The keys of the parent race's traits this subrace replaces, in stored order. */
+  replacesTraitKeys: string[];
+  /** "Substituiu os bônus da raça": the subrace's bonuses stand alone instead of adding to the race's. */
+  replacesBonuses: boolean;
+}
+
+export function emptySubrace(raceKey = ''): SubraceDraft {
+  return {
+    name: '',
+    raceKey,
+    bonuses: noBonuses(),
+    traits: [],
+    replacesTraitKeys: [],
+    replacesBonuses: false,
+  };
 }
 
 export function subraceToDraft(s: TableSubrace): SubraceDraft {
@@ -254,6 +272,8 @@ export function subraceToDraft(s: TableSubrace): SubraceDraft {
     raceKey: s.raceKey,
     bonuses: bonusesOf(s.abilityBonuses),
     traits: s.traits.map(featureToDraft),
+    replacesTraitKeys: [...s.replacesTraitKeys],
+    replacesBonuses: s.replacesAbilityBonuses,
   };
 }
 
@@ -263,6 +283,8 @@ export function draftToSubrace(d: SubraceDraft, menu: EffectMenuVm): SubraceInit
     raceKey: d.raceKey,
     abilityBonuses: { ...d.bonuses },
     traits: d.traits.map((t) => draftToFeature(t, menu)),
+    replacesTraitKeys: [...d.replacesTraitKeys],
+    replacesAbilityBonuses: d.replacesBonuses,
   };
 }
 

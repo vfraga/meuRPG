@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
 .block {
   gap: var(--mr-space-3);
 }
@@ -25,6 +30,15 @@
   align-items: start;
 }
 
+// The labels of a stacked row (the head says them when the columns are side by side).
+.cell__label {
+  display: none;
+  margin-bottom: var(--mr-space-1);
+  font-size: var(--mr-font-14);
+  font-weight: 700;
+  color: var(--mr-ink-muted);
+}
+
 .head {
   padding-bottom: var(--mr-space-1);
   font-size: var(--mr-font-14);
@@ -48,6 +62,28 @@
     width: 100%;
     --mat-form-field-container-height: 44px;
     --mat-form-field-container-vertical-padding: 10px;
+    // The compact size of the board: 14px values, so the table's longest ones fit one line at 1024 and at 1280.
+    --mat-select-trigger-text-size: var(--mr-font-14);
+    --mat-form-field-container-text-size: var(--mr-font-14);
+  }
+
+  // The value shows its whole text; one that still does not fit ends in an ellipsis, never over the arrow.
+  ::ng-deep .mat-mdc-select-value {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  ::ng-deep .mat-mdc-select-min-line {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  ::ng-deep .mat-mdc-select-arrow-wrapper {
+    flex: none;
+    margin-left: var(--mr-space-2);
   }
 }
 
@@ -70,16 +106,33 @@
   --mat-form-field-outlined-focus-outline-color: var(--mr-danger-ink);
 }
 
-// "Vale contra" cannot apply: dashed, with the block icon where the arrow was.
+// "Vale contra" cannot apply: a dashed box, with the block icon where the arrow was. The outline's own segments are
+// hidden: a dashed border on them draws a thick bar at the leading edge.
 .off {
   color: var(--mr-ink-muted);
 
+  ::ng-deep .mdc-notched-outline {
+    border: 1px dashed var(--mr-line);
+    border-radius: var(--mr-radius-sm);
+  }
+
   ::ng-deep .mdc-notched-outline > * {
-    border-style: dashed;
+    border-color: transparent;
   }
 
   ::ng-deep .mat-mdc-select-arrow-wrapper {
     display: none;
+  }
+
+  ::ng-deep .mat-mdc-select-min-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  ::ng-deep .mat-mdc-select-value {
+    // Room for the block icon at the right.
+    padding-right: 24px;
   }
 
   .mat-icon {
@@ -111,4 +164,40 @@
 .add__count {
   font-size: var(--mr-font-14);
   color: var(--mr-ink-muted);
+}
+
+// A section narrower than the three columns need (the preview takes a third of a laptop): the row stacks, the kind with its
+// menu on the first line, the types and "Vale contra" each on a line of their own, so no value is cut.
+@container (max-width: 780px) {
+  .head {
+    display: none;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: var(--mr-space-2) var(--mr-space-3);
+  }
+
+  .cell--kind {
+    grid-column: 1;
+  }
+
+  .mod__more {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+  }
+
+  .cell--types,
+  .cell--qualifier {
+    grid-column: 1 / -1;
+  }
+
+  .cell__label {
+    display: block;
+  }
+
+  .mod {
+    padding: var(--mr-space-3) 0;
+  }
 }

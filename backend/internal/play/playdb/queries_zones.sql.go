@@ -11,21 +11,51 @@ import (
 )
 
 const deleteConcentrationZonesOf = `-- name: DeleteConcentrationZonesOf :many
-DELETE FROM spell_zones
-WHERE owner_id = $1 AND concentration
-RETURNING id, encounter_id, owner_id, spell_key, cast_id, slot_level, origin_col, origin_row, squares, save_ability, save_dc, damage_dice, damage_type, concentration, started_round, ends_round, hit_marks, created_at, def, wall_side, wall_dx, wall_dy, wall_length_ft
+WITH changed AS (
+    DELETE FROM spell_zones
+    WHERE owner_id = $1 AND concentration
+    RETURNING id, encounter_id, owner_id, spell_key, cast_id, slot_level, origin_col, origin_row, squares, save_ability, save_dc, damage_dice, damage_type, concentration, started_round, ends_round, hit_marks, created_at, def, wall_side, wall_dx, wall_dy, wall_length_ft
+)
+SELECT id, encounter_id, owner_id, spell_key, cast_id, slot_level, origin_col, origin_row, squares, save_ability, save_dc, damage_dice, damage_type, concentration, started_round, ends_round, hit_marks, created_at, def, wall_side, wall_dx, wall_dy, wall_length_ft FROM changed
+ORDER BY created_at, id
 `
 
-// The zones a caster's concentration holds end with it; the rows that went.
-func (q *Queries) DeleteConcentrationZonesOf(ctx context.Context, ownerID string) ([]SpellZone, error) {
+type DeleteConcentrationZonesOfRow struct {
+	ID            string
+	EncounterID   string
+	OwnerID       string
+	SpellKey      string
+	CastID        string
+	SlotLevel     int32
+	OriginCol     int32
+	OriginRow     int32
+	Squares       []byte
+	SaveAbility   string
+	SaveDc        int32
+	DamageDice    string
+	DamageType    string
+	Concentration bool
+	StartedRound  int32
+	EndsRound     *int32
+	HitMarks      []byte
+	CreatedAt     time.Time
+	Def           []byte
+	WallSide      string
+	WallDx        int16
+	WallDy        int16
+	WallLengthFt  int32
+}
+
+// The zones a caster's concentration holds end with it; the rows that went, oldest first.
+func (q *Queries) DeleteConcentrationZonesOf(ctx context.Context, ownerID string) ([]DeleteConcentrationZonesOfRow, error) {
 	rows, err := q.db.Query(ctx, deleteConcentrationZonesOf, ownerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []SpellZone
+	var items []DeleteConcentrationZonesOfRow
 	for rows.Next() {
-		var i SpellZone
+		var i DeleteConcentrationZonesOfRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.EncounterID,

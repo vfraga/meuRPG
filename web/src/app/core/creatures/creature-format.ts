@@ -24,6 +24,20 @@ export function sourcePhrase(source: CreatureSource, ownerName: string): string 
   }
 }
 
+/** A table creature's key ends with "@mesa" (the entry's own); the server sends no flag for it. */
+export function isTableCreature(monsterKey: string): boolean {
+  return monsterKey.endsWith('@mesa');
+}
+
+/** The creature's page says whose numbers a table creature has: the owner's sheet, read when it arrived; "do dono" while the name is not known. */
+export function tableCreatureNote(ownerName: string): string {
+  const owner = ownerName.trim();
+  return `Os números vêm da ficha ${owner ? `de ${owner}` : 'do dono'} quando ele chegou`;
+}
+
+/** The same note in the choice list of the one who summons: the numbers are their own. */
+export const TABLE_CREATURE_PICK_NOTE = 'Os números vêm da sua ficha quando ele chega.';
+
 /** The short origin of the master's list: "familiar", "dado pelo mestre". */
 export function sourceShort(source: CreatureSource): string {
   switch (source) {

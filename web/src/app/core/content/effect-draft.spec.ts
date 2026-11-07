@@ -1,7 +1,8 @@
 import { create } from '@bufbuild/protobuf';
 
 import { TableEffectSchema } from '../../../gen/meurpg/rules/v1/table_content_pb';
-import { conditionMenu, menu, rangedAttackMenu, resistanceMenu } from './content-testing-menu';
+import { conditionMenu, menu, resistanceMenu } from './content-testing-menu';
+import { rangedAttackMenu } from './content-testing-menu-ranged';
 import { extraDamageMenu, spellModifierMenu } from './content-testing-menu-damage';
 import { grantedSpellMenu } from './content-testing-menu-costs';
 import {

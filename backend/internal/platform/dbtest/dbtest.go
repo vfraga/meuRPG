@@ -54,6 +54,7 @@ import (
 	"github.com/pressly/goose/v3"
 
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/safego"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/testenv"
 	"github.com/PuraFome/meuRPG/backend/migrations"
 )
@@ -181,10 +182,10 @@ type Barrier struct {
 func NewBarrier(n int) *Barrier {
 	b := &Barrier{open: make(chan struct{})}
 	b.arrived.Add(n)
-	go func() {
+	safego.Go(nil, "dbtest barrier", func() {
 		b.arrived.Wait()
 		close(b.open)
-	}()
+	})
 	return b
 }
 

@@ -13,18 +13,17 @@
     [attr.data-pending]="isDone(section) ? null : ''"
     [attr.data-advisory]="section.choices[0].advisory ? '' : null"
     [attr.aria-labelledby]="titleId(section.choices[0])"
+    [attr.aria-describedby]="titleId(section.choices[0]) + '-status'"
   >
     <header class="choice__head">
-      <h3 class="choice__title" [id]="titleId(section.choices[0])" tabindex="-1">
-        {{ sectionTitle(section) }}
+      <div class="choice__bar">
+        <h3 class="choice__title" [id]="titleId(section.choices[0])" tabindex="-1">{{ sectionTitle(section) }}</h3>
         @if (isDone(section)) {
-          <mat-icon aria-hidden="true">check_circle</mat-icon>
-          <span class="visually-hidden">Escolha feita</span>
+          <span class="mr-tag mr-tag--success" [id]="titleId(section.choices[0]) + '-status'"><mat-icon aria-hidden="true">check</mat-icon>Feito</span>
         } @else {
-          <span class="choice__mark" aria-hidden="true">!</span>
-          <span class="visually-hidden">Escolha pendente</span>
+          <span class="mr-tag mr-tag--pending" [id]="titleId(section.choices[0]) + '-status'">Falta escolher</span>
         }
-      </h3>
+      </div>
       <p class="choice__origin">
         {{ origin(section) }}
         @if (progress(section) !== '') {

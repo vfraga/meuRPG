@@ -66,7 +66,7 @@
           </div>
         </div>
         @if (isMaster() && entry() && phone()) {
-          <button matButton="outlined" type="button" class="head__more" [attr.aria-label]="'Mais ações de ' + heading()" [matMenuTriggerFor]="more"><mat-icon aria-hidden="true">more_vert</mat-icon></button>
+          <button type="button" class="head__more" [attr.aria-label]="'Mais ações de ' + heading()" [matMenuTriggerFor]="more"><mat-icon aria-hidden="true">more_vert</mat-icon></button>
           <mat-menu #more="matMenu">
             @if (entry()!.archived) {
               <button mat-menu-item type="button" (click)="unarchive()"><mat-icon aria-hidden="true">unarchive</mat-icon>Desarquivar</button>

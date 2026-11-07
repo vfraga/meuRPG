@@ -9,6 +9,7 @@ import { feetToMeters, formatMeters } from '../units';
 import type { CatalogAbility } from './catalog';
 import { ABILITY_FIELDS, type Bonuses, noBonuses } from './feature-draft';
 import { summonLine } from './summon-names';
+import { rollEffectItem } from './content-read-rolls';
 
 /**
  * What a player reads of an entry (MR-025, question 83: "every option that is on, in full, with the numbers and the
@@ -25,6 +26,10 @@ export interface ReadRow {
 export interface ReadItem {
   readonly title: string;
   readonly text: string;
+  /** Where the item comes from, after the title: "(de Corujeiro)". */
+  readonly tag?: string;
+  /** The options of a trait that is a choice of one, each an item of its own. */
+  readonly options?: readonly ReadItem[];
 }
 
 export interface ReadSection {
@@ -43,6 +48,8 @@ export interface EntryRead {
   readonly sections: readonly ReadSection[];
   /** Text of the entry itself (a spell's description, a subclass's). */
   readonly text: readonly string[];
+  /** The effects that change a roll, a lead and a sentence each, under the text. */
+  readonly effects?: readonly ReadItem[];
 }
 
 const RECHARGE_WORDS: Readonly<Record<string, string>> = {
@@ -63,6 +70,14 @@ const SENSE_WORDS: Readonly<Record<string, string>> = {
   'devils-sight': 'Visão do diabo',
 };
 
+/** What a subrace's reader knows of its race. */
+export interface ParentView {
+  /** The race's traits the reader can see; none when the reader has no trait list. */
+  readonly traits: readonly TableFeature[];
+  /** The editor's preview: two parts, and no "Substitui" row. */
+  readonly split?: boolean;
+}
+
 export type NameOf = (key: string) => string;
 
 /** A sentence ends with a stop: "Enxergam longe" becomes "Enxergam longe." (a text that already ends with one is left). */
@@ -73,6 +88,10 @@ export function ensureStop(text: string): string {
 
 /** One effect in a line, for the ones the player can read without the master's menu; '' for the others (their text carries them). */
 export function effectLine(e: TableEffect, nameOf: NameOf): string {
+  const roll = rollEffectItem(e, nameOf);
+  if (roll) {
+    return `${roll.title}: ${roll.text}`;
+  }
   switch (e.type) {
     case 'proficiency': {
       const what =
@@ -111,7 +130,10 @@ export function featureItem(f: TableFeature, nameOf: NameOf, prefix = ''): ReadI
     .filter((l) => l !== '')
     .map(ensureStop)
     .join(' ');
-  return { title: `${prefix}${f.namePt}`, text };
+  const item = { title: `${prefix}${f.namePt}`, text };
+  return f.options.length > 0
+    ? { ...item, options: f.options.map((o) => featureItem(o, nameOf)) }
+    : item;
 }
 
 export function bonusesOf(b: TableRace['abilityBonuses']): Bonuses {

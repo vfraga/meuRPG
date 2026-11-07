@@ -17,7 +17,7 @@ import {
 import type { EffectDraft } from './effect-draft.types';
 
 /**
- * What a feature's "Invoca criaturas" says (#578, board C2): the creatures a holder brings with a use of the feature's resource.
+ * What a feature's "Invoca criaturas" says (#578): the creatures a holder brings with a use of the feature's resource.
  * The draft keeps what the block edits as typed (the count formula, the most at a time); everything the block has no control for
  * (the role, the creatures per slot level, the cost, fields a newer server adds) goes back as it was loaded (`base`). A feature
  * with no summon has `null`: switching it off sends none.
@@ -52,6 +52,8 @@ export interface SummonDraft {
   time: SummonTime;
   duration: SummonDuration;
   concentration: boolean;
+  /** The `resource` effect of the feature whose name `resourceKey` follows (the editor's row id, never sent); unset for a key the feature does not define. */
+  resourceEffect?: string;
   /** The stored message: its other fields (role, cost, count per slot level, unknown ones) go back untouched. */
   base?: TableSummon;
 }
@@ -154,6 +156,8 @@ export function summonPaths(base: string): string[] {
 
 /** A resource the feature defines with a `resource` effect: the name a summon spends from, and how the select says it. */
 export interface SummonResource {
+  /** The id of the effect that defines it. */
+  readonly id: string;
   readonly key: string;
   readonly label: string;
 }
@@ -167,7 +171,7 @@ export function resourcesOf(f: {
   return own.map((e) => {
     const name = own.length === 1 && f.name.trim() !== '' ? f.name.trim() : e.resource.trim();
     const uses = e.max.trim();
-    return { key: e.resource.trim(), label: uses === '' ? name : `${name} (${uses})` };
+    return { id: e.id, key: e.resource.trim(), label: uses === '' ? name : `${name} (${uses})` };
   });
 }
 
@@ -185,9 +189,30 @@ export const NO_RESOURCE_TEXT =
 export const FIXED_OFF_TEXT =
   'Esta invocação tem um papel, um custo ou criaturas por nível de espaço que o editor não muda, e o servidor não aceita.';
 
+/** The `resource` effect of `f` that defines `key`, if one does. */
+function effectOfKey(
+  f: { readonly effects: readonly EffectDraft[] },
+  key: string,
+): EffectDraft | undefined {
+  return f.effects.find((e) => e.type === 'resource' && e.resource.trim() === key);
+}
+
 /**
- * The feature after its effects changed: a summon that spent the feature's one resource follows that resource's new name.
- * A key the feature never defined (the class's resource, written through the API) is never rewritten.
+ * The summon bound to the feature's resource that defines `key` (or to none, for a key the feature does not define: the class's,
+ * written through the API), so a later rename of that effect is followed.
+ */
+export function bindResource<F extends { readonly effects: readonly EffectDraft[] }>(
+  f: F,
+  s: SummonDraft,
+): SummonDraft {
+  const own = s.resourceKey.trim() === '' ? undefined : effectOfKey(f, s.resourceKey.trim());
+  return own?.id === s.resourceEffect ? s : { ...s, resourceEffect: own?.id };
+}
+
+/**
+ * The feature after its effects changed: a summon that spends one of the feature's resources follows that effect's new name, by the
+ * effect (so a feature with two resources, or a name cleared and typed again, still follows). A name cleared to nothing leaves the
+ * last key in place. A key the feature never defined (the class's resource, written through the API) is never rewritten.
  */
 export function followResource<
   F extends {
@@ -197,14 +222,30 @@ export function followResource<
   },
 >(before: F, after: F): F {
   const s = after.summon;
-  const was = resourcesOf(before);
-  const now = resourcesOf(after);
-  if (!s || was.length !== 1 || now.length !== 1 || was[0].key !== s.resourceKey) {
+  if (!s) {
     return after;
   }
-  return now[0].key === s.resourceKey
-    ? after
-    : { ...after, summon: { ...s, resourceKey: now[0].key } };
+  // A summon the person just pointed at another resource (or set up) is bound again; otherwise it follows the effect it was bound to.
+  const bound =
+    before.summon?.resourceKey === s.resourceKey && s.resourceEffect !== undefined
+      ? s
+      : bindResource(before.summon?.resourceKey === s.resourceKey ? before : after, s);
+  const own = after.effects.find((e) => e.id === bound.resourceEffect && e.type === 'resource');
+  const key = own?.resource.trim() ?? '';
+  const next = key !== '' && key !== bound.resourceKey ? { ...bound, resourceKey: key } : bound;
+  return next === s ? after : { ...after, summon: next };
+}
+
+/**
+ * A summon switched off and on again, against the feature's resources as they are now: one bound to a resource that was renamed
+ * follows it, and one whose resource is gone takes the first one left (or none). A key the feature never defined stays.
+ */
+export function restoredSummon(s: SummonDraft, resources: readonly SummonResource[]): SummonDraft {
+  if (s.resourceEffect === undefined) {
+    return s;
+  }
+  const own = resources.find((r) => r.id === s.resourceEffect) ?? resources[0];
+  return { ...s, resourceKey: own?.key ?? '', resourceEffect: own?.id };
 }
 
 /** The role, the cost and the creatures per slot level the block cannot change: whether the stored summon has something else than the defaults. */

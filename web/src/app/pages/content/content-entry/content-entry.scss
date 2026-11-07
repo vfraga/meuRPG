@@ -57,6 +57,21 @@
     min-height: 44px;
   }
 
+  &__more {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--mr-line);
+    border-radius: var(--mr-radius-md);
+    background: var(--mr-surface);
+    color: var(--mr-ink);
+    cursor: pointer;
+  }
+
   .mr-page-title {
     margin-bottom: var(--mr-space-2);
 
@@ -93,11 +108,35 @@
   min-height: 44px;
 }
 
-// The phone's "⋮" (Arquivar / Desarquivar): a 44px square at the right of the title.
+// The phone's "⋮" (Arquivar / Desarquivar): a 44px outlined square at the right of the title, a solid 24px icon in the text colour.
 .head__more {
+  display: inline-flex;
   flex: none;
-  min-width: 44px;
+  align-items: center;
+  justify-content: center;
   width: 44px;
-  min-height: 44px;
+  height: 44px;
   padding: 0;
+  border: 1px solid var(--mr-line);
+  border-radius: var(--mr-radius-sm);
+  background: none;
+  color: var(--mr-ink);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-focus);
+    outline-offset: 2px;
+  }
+
+  .mat-icon {
+    width: 24px;
+    height: 24px;
+    font-size: var(--mr-font-24);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .head {
+    flex-direction: row;
+  }
 }

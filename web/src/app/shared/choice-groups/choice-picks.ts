@@ -66,6 +66,9 @@ export function originLine(group: ChoiceGroup, choice: Choice): string {
   const count = choice.picks === 1 ? '1 escolha' : `${choice.picks} escolhas`;
   switch (group.origin) {
     case ChoiceOrigin.RACE:
+      if (isTraitChoice(group, choice)) {
+        return `Traço de ${group.sourceNamePt} · ${choice.picks === 1 ? 'escolha uma vez' : count}`;
+      }
       return `Raça · ${group.sourceNamePt} · ${count}`;
     case ChoiceOrigin.BACKGROUND:
       return `Antecedente · ${group.sourceNamePt} · ${count}`;
@@ -76,6 +79,17 @@ export function originLine(group: ChoiceGroup, choice: Choice): string {
     default:
       return `${group.sourceNamePt} · nível ${group.level} · ${count}`;
   }
+}
+
+/** A race's or subrace's trait that offers options (a table's "one of", the dragonborn's ancestry): its card reads "Traço de Corujeiro". */
+export function isTraitChoice(group: ChoiceGroup, choice: Choice): boolean {
+  return (
+    group.origin === ChoiceOrigin.RACE &&
+    choice.kind === ChoiceKind.OPTIONS &&
+    choice.featureKey.startsWith('trait:') &&
+    // The choice of the trait's own options; a part of a choice is "<trait>#<part>".
+    choice.key === choice.featureKey
+  );
 }
 
 /** One card of the step: a choice, or the choices a feature asks together (a favored enemy's type and language). */

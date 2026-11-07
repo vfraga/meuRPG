@@ -24,7 +24,8 @@ type NumberKey =
   | 'diceSides'
   | 'rangeMultiplier'
   | 'attackBonus'
-  | 'damageBonus';
+  | 'damageBonus'
+  | 'atMost';
 
 /** A whole number that is sent when above 0. */
 const positiveNumber =
@@ -103,7 +104,9 @@ const pickedText =
 
 /** A list that is sent (as a copy) when it has something in it. */
 const pickedList =
-  (key: 'targets' | 'from' | 'spells' | 'damageTypes' | 'conditions' | 'endsOn'): EffectWriter =>
+  (
+    key: 'targets' | 'from' | 'spells' | 'damageTypes' | 'conditions' | 'endsOn' | 'rolls',
+  ): EffectWriter =>
   (d) =>
     d[key].length > 0 ? ({ [key]: [...d[key]] } as EffectInit) : {};
 
@@ -183,6 +186,8 @@ export const EFFECT_WRITERS: ReadonlyMap<string, EffectWriter> = new Map<string,
   ['adamantine', (d) => (d.adamantine ? { adamantine: true } : {})],
   ['attack_name', trimmedText('attackName')],
   ['damage_dice', trimmedText('damageDice')],
+  ['rolls', pickedList('rolls')],
+  ['at_most', positiveNumber('atMost')],
   ['ignore_cover', (d) => (d.ignoreCover ? { ignoreCover: true } : {})],
   [
     'only_proficient',

@@ -8,7 +8,7 @@
       <app-combatant-token [initial]="initial()" [npc]="isNpc()" [creature]="isCreatureSubject()" [current]="true" [size]="framed() ? 48 : 32" />
     }
     <div class="card__ident">
-      <h2 class="card__title" [class.mr-visually-hidden]="!framed()" id="npc-title">
+      <h2 class="card__title" [class.mr-visually-hidden]="!framed() && full()" id="npc-title">
         {{ full() ? (framed() ? 'Vez ' : 'Ações ') + ofLabel() : 'Dano de ' + subject().label }}
       </h2>
       @if (identity(); as line) {
@@ -57,6 +57,8 @@
         Movimento <span class="chip__word">{{ stats().movement }}</span>
       </li>
     </ul>
+    <!-- On a legendary creature's own turn the card tells what came back and that its legendary actions wait for another's turn. -->
+    <ng-content select="[legendary-slot]" />
 
     @if (standRow(); as su) {
       <button

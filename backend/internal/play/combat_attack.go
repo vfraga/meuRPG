@@ -193,7 +193,9 @@ type attackFlow struct {
 	targetAC    int
 	acRead      bool
 	result      combat.AttackResult
-	extra       []effectDie
+	// parried is the Parry the server used to turn the hit into a miss (autoParry).
+	parried *parryUsed
+	extra   []effectDie
 	// maneuver is the table die the request names (checked in prepare); maneuverSpent are the resources its roll spent.
 	maneuver      *link.Maneuver
 	maneuverSpent []string
@@ -251,7 +253,7 @@ func (f *attackFlow) prepare(ctx context.Context) error {
 // writeAttack is what the settled d20 does: the event, the economy, the damage it opens and the offer it answers.
 func (f *attackFlow) writeAttack(ctx context.Context) error {
 	for _, phase := range []func(context.Context) error{
-		f.resolve, f.record, f.spendEconomy, f.spendLimit, f.closeThrow, f.openHitDamage, f.answerOffer, f.settle,
+		f.resolve, f.autoParry, f.record, f.spendEconomy, f.spendLimit, f.closeThrow, f.openHitDamage, f.answerOffer, f.settle,
 	} {
 		if err := phase(ctx); err != nil {
 			return err
@@ -719,6 +721,7 @@ func (f *attackFlow) attackEvent(run int32) actionEvent {
 	made.Lucky = f.rolled.Lucky   // the d20 Lucky rolled again: the log says "Sortudo: 1 → 14"
 	made.Stroke = f.rolled.Stroke // the use of Stroke of Luck: the log says the miss became a hit, the undo gives it back
 	made.ProtectedBy = f.protectedBy()
+	made.Parried = f.parried
 	return made
 }
 

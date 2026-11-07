@@ -1,6 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { Ability, type FeatOption } from '../../../gen/meurpg/rules/v1/rules_pb';
+import { create } from '@bufbuild/protobuf';
+
+import {
+  Ability,
+  type FeatOption,
+  FeatOptionSchema,
+  FeatUnmetKind,
+} from '../../../gen/meurpg/rules/v1/rules_pb';
 import { featOptions } from '../../core/levelup/levelup-testing';
 import { FeatPicker } from './feat-picker';
 
@@ -44,7 +51,7 @@ describe('FeatPicker', () => {
     expect(card.classList).toContain('card--off');
     expect(card.querySelector<HTMLInputElement>('input')!.disabled).toBe(true);
     expect(text(card)).toContain('Precisa de Força 15.');
-    expect(text(card)).toContain('Precisa do nível 8 ou mais.');
+    expect(text(card)).toContain('Precisa de nível 8 ou mais.');
   });
 
   it('shows the Portuguese text first, with "Ver em inglês" for the SRD English, and the table\'s own text as it is', () => {
@@ -173,5 +180,53 @@ describe('FeatPicker', () => {
     const fixed = setup({ feats });
     expect(text(cards(fixed)[1])).toContain('O aumento para em 20 em Força.');
     expect(fixed.querySelector('.ability')).toBeNull();
+  });
+
+  it("writes the server's wording for race, size and lack, and never prints a key for a hidden condition", () => {
+    const base = { desc: ['Texto.'], descPt: ['Texto.'], descPtOnly: true };
+    const hidden = create(FeatOptionSchema, {
+      ...base,
+      key: 'feat:quiet',
+      namePt: 'Passo Silencioso',
+      prerequisite: { minimums: { dexterity: 13 } },
+      lacksFeatureHidden: true,
+      qualifies: false,
+      unmet: [{ kind: FeatUnmetKind.LACKS_FEATURE, hidden: true }],
+    });
+    const open = create(FeatOptionSchema, {
+      ...base,
+      key: 'feat:small',
+      namePt: 'Pequeno',
+      prerequisite: {
+        minimums: { dexterity: 13 },
+        races: ['race:gnome', 'race:halfling'],
+        size: 'Small',
+        lacksFeatureKey: 'feat:grappler',
+      },
+      lacksFeatureNamePt: 'Agarrador',
+      qualifies: false,
+      unmet: [
+        { kind: FeatUnmetKind.RACE, keys: ['race:gnome', 'race:halfling'] },
+        { kind: FeatUnmetKind.SIZE, key: 'Small' },
+        { kind: FeatUnmetKind.LACKS_FEATURE, key: 'feat:grappler', namePt: 'Agarrador' },
+      ],
+    });
+    const names: Record<string, string> = { 'race:gnome': 'Gnomo', 'race:halfling': 'Halfling' };
+    const el = setup({ feats: [hidden, open] });
+    fixture.componentRef.setInput('nameOf', (k: string) => names[k] ?? k);
+    fixture.detectChanges();
+    const [h, o] = cards(el).map(text);
+    expect(h).toContain('Pede: Destreza 13 e uma condição que a mesa não mostra.');
+    expect(h).toContain('Pede uma condição que a mesa não mostra.');
+    expect(h).not.toMatch(/feat:|race:/);
+    expect(o).toContain(
+      'Pede: Destreza 13, ser Gnomo ou Halfling, ter tamanho pequeno e não ter Agarrador.',
+    );
+    expect(o).toContain('Só para Gnomo ou Halfling.');
+    expect(o).toContain('Só para tamanho pequeno.');
+    expect(o).toContain('Não pode ter Agarrador.');
+    expect(cards(el)[1].querySelectorAll('.card__why li')).toHaveLength(3);
+    // A feat the character cannot take yet is dimmed and carries its reasons, not the text to read.
+    expect(cards(el)[1].querySelector('details')).toBeNull();
   });
 });

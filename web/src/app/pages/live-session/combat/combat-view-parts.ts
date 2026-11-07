@@ -14,6 +14,7 @@ import { TargetFlow } from './target-mode/target-flow';
 import { TargetMode } from './target-mode/target-mode';
 import { CombatOffers } from './combat-offers';
 import { MoveFlow } from './move-flow';
+import { LegendaryFlow } from './legendary-card/legendary-flow';
 import { ContestHost } from './contest-host';
 import { ZoneFlow } from './zone-flow';
 import { ContestClient } from '../../../core/combat/contest-client';
@@ -98,6 +99,15 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     creatureOptions: () => this.creatureOptions.data(),
     takeAction: (id, key) => this.takeActionFor(id, key),
     openSpend: (id) => this.sheets.actions.spend(id),
+  });
+  /** The legendary cards' side of the page: the options' names for the log, the legendary attack and the armed move (`LegendaryFlow`). */
+  protected readonly legendary = new LegendaryFlow({
+    api: this.api,
+    campaignId: () => this.campaignId(),
+    encounter: () => this.encounter(),
+    attack: (req) => this.sheets.attack(req),
+    error: this.error,
+    armed: this.moves.legendaryMove,
   });
   /** The spell zones: the list the map and the panel read, the master's end and the zone he asked to move (`ZoneFlow`). */
   protected readonly zoneFlow = new ZoneFlow({
@@ -316,6 +326,13 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     }
     this.sheets.attack({ key, held });
     return true;
+  }
+
+  /** The master's "Aparar: perguntar a cada golpe" of an NPC with a Parry: each hit asks him (a window), or the server decides. */
+  protected setParryAsk(change: { id: string; ask: boolean }): Promise<boolean> {
+    return this.calls.run((e) =>
+      this.api.combatants.setMonsterReactionMode(this.campaignId(), e.id, change.id, change.ask),
+    );
   }
 
   /** "Atacar": the attack sheet (Alvo, Rolar, Dano). `asReaction` is the

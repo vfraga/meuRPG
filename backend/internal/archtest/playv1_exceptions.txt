@@ -1,0 +1,26 @@
+# Non-test files outside the play module and the API wiring that import the generated play API (playv1).
+# The wiring is cmd/ and internal/platform/wiring.
+# One path per line, relative to backend/, sorted.
+# The list can only shrink.
+# Pass plain types through internal/play/link and let the API layer map to playv1 instead of a new entry.
+internal/characters/castingoutside.go
+internal/characters/combatturn.go
+internal/characters/rests.go
+internal/characters/revive.go
+internal/characters/states.go
+internal/characters/summonoptions.go
+internal/characters/vitals.go
+internal/characters/vitals_change.go
+internal/characters/vitals_hitdice.go
+internal/characters/wildshape.go
+internal/maps/clues.go
+internal/maps/dungeons.go
+internal/maps/fogreads.go
+internal/maps/gallery.go
+internal/maps/maps.go
+internal/maps/puzzleseam.go
+internal/maps/scenes.go
+internal/maps/sessionmaps.go
+internal/maps/traps.go
+internal/maps/traps_play.go
+internal/maps/visibility.go

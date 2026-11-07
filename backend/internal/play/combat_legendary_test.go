@@ -214,6 +214,12 @@ func TestRN20_LegendaryStateIsTheMastersAlone(t *testing.T) {
 	if l == nil || l.GetActionsPerRound() != 3 || l.GetActionsLeft() != 3 || l.GetResistancePerDay() != 3 || l.GetResistanceLeft() != 3 {
 		t.Fatalf("the master reads %v, want 3/3 legendary actions and 3/3 Legendary Resistance", l)
 	}
+	if o := l.GetOptions(); len(o) != 3 || o[0].GetNamePt() != "Detectar" || o[1].GetNamePt() != "Ataque de cauda" || o[1].GetAttackKey() == "" || o[0].GetAttackKey() != "" || o[2].GetNamePt() != "Ataque de asas" {
+		t.Errorf("the options' Portuguese names and attack keys = %v", o)
+	}
+	if o := l.GetOptions(); o[1].GetAttackDetailPt() != "Cauda: +14 · 2d8 + 8 de concussão · alcance 4,5 m" || o[0].GetAttackDetailPt() != "" || o[2].GetAttackDetailPt() != "" {
+		t.Errorf("the options' attack detail = %q, %q, %q, want the tail's line alone", o[0].GetAttackDetailPt(), o[1].GetAttackDetailPt(), o[2].GetAttackDetailPt())
+	}
 	if len(l.GetOptions()) != 3 || l.GetOptions()[1].GetKey() != "tail-attack" || l.GetOptions()[1].GetKind() != "attack" || l.GetOptions()[2].GetCost() != 2 || !l.GetOptions()[2].GetAffordable() {
 		t.Errorf("the master's options = %v, want Detect, Tail Attack (attack) and Wing Attack (cost 2)", l.GetOptions())
 	}

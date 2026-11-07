@@ -22,6 +22,7 @@
   <div class="grid" [class.grid--lead]="withLead()">
     <app-text-field
       [label]="nameLabel()"
+      [maxlength]="isOption() ? nameMax : 0"
       [value]="feature().name"
       [path]="path('name_pt')"
       [issues]="issuesOf()(path('name_pt'))"
@@ -40,6 +41,7 @@
         [allowTextOnly]="true"
         [featEditor]="featEditor()"
         [spellOptions]="spellOptions()"
+        [siblings]="feature().effects"
         (effectChange)="patch({ effects: [$event] })"
       />
     } @else {
@@ -51,10 +53,14 @@
         [allowTextOnly]="true"
         [featEditor]="featEditor()"
         [spellOptions]="spellOptions()"
+        [siblings]="feature().effects"
         (effectChange)="setEffect(0, $event)"
       />
     }
     <app-field-note class="grid__wide" [id]="path('effects[0]') + '-note'" [issues]="issuesOf()(path('effects[0]'))" />
+    @if (oneOf() && feature().options.length > 0 && issuesOf()(path('effects[0].type')).length === 0) {
+      <p class="options__hint grid__wide">Os efeitos ficam nas opções; o traço diz que há uma escolha.</p>
+    }
     <app-text-field
       class="grid__wide"
       [label]="textLabel()"
@@ -74,6 +80,7 @@
           [basePath]="path('effects[' + e.index + ']')"
           [issuesOf]="issuesOf()"
           [spellOptions]="spellOptions()"
+          [siblings]="feature().effects"
           label="Outro efeito"
           [featEditor]="featEditor()"
           (effectChange)="setEffect(e.index, $event)"
@@ -97,9 +104,19 @@
   @if (allowOptions()) {
     <section class="options" [attr.aria-label]="'Opções para escolher de ' + (feature().name || 'esta característica')">
       <h4 class="options__title">Opções para escolher</h4>
-      <p class="options__hint">
-        Uma lista que o jogador escolhe, uma opção por vez (como manobras). Ponha na característica um efeito "Escolha" de "Uma opção de uma lista do SRD" com a quantidade, sem lista: ele oferece estas opções.
-      </p>
+      @if (oneOf()) {
+        <p class="options__hint">
+          @if (feature().options.length === 0) {
+            Nenhuma opção. Adicione duas ou mais: o jogador escolhe uma, uma vez, ao criar o personagem.
+          } @else {
+            O jogador escolhe uma destas opções, uma vez, ao criar o personagem (no passo Escolhas). Cada opção é um traço com nome, texto e efeitos.
+          }
+        </p>
+      } @else {
+        <p class="options__hint">
+          Uma lista que o jogador escolhe, uma opção por vez (como manobras). Ponha na característica um efeito "Escolha" de "Uma opção de uma lista do SRD" com a quantidade, sem lista: ele oferece estas opções.
+        </p>
+      }
       @for (o of feature().options; track o.id; let k = $index) {
         <app-feature-editor
           [feature]="o"

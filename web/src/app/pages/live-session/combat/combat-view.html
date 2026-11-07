@@ -120,6 +120,7 @@
               [pendingNote]="owed()"
               [waitNote]="waitNote()"
               [waitWhy]="waitWhy()"
+              [legendary]="legendaryLeft()"
               [theatre]="theatre()"
               [actingFor]="acting()?.label ?? ''"
               (next)="nextTurn($event)"
@@ -302,6 +303,20 @@
                   <div class="mr-notice mr-notice--warning notice" data-testid="lucky-pending">
                     <mat-icon aria-hidden="true">casino</mat-icon>
                     <p>A sua rolagem espera a sua resposta: tirou 1, rolar de novo?</p>
+                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">Responder</button>
+                  </div>
+                }
+                @if (ownReroll()) {
+                  <div class="mr-notice mr-notice--warning notice" data-testid="reroll-pending">
+                    <mat-icon aria-hidden="true">casino</mat-icon>
+                    <p>A sua rolagem espera a sua resposta: tirou {{ ownRerollFace() }}, rolar de novo?</p>
+                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">Responder</button>
+                  </div>
+                }
+                @if (ownStroke()) {
+                  <div class="mr-notice mr-notice--warning notice" data-testid="stroke-pending">
+                    <mat-icon aria-hidden="true">casino</mat-icon>
+                    <p>A sua rolagem espera a sua resposta: usar o Golpe de Sorte?</p>
                     <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">Responder</button>
                   </div>
                 }
@@ -549,6 +564,7 @@
                   [state]="state()"
                   [master]="true"
                   [inTab]="true"
+                  [legendaryNames]="legendary.names()"
                   (conditions)="sheets.actions.conditions($event)"
                 />
               }
@@ -580,6 +596,10 @@
 <ng-template #turnBlock>
   @if (encounter(); as e) {
     <ng-container *ngTemplateOutlet="masterWaiting" />
+    @if (queueFirst()) {
+      <!-- A window that blocks the table is answered from the first screen: it stands above the card. -->
+      <ng-container *ngTemplateOutlet="masterAfter" />
+    }
     @if (acting(); as who) {
       <ng-container *ngTemplateOutlet="actingBody; context: { who: who }" />
     } @else {
@@ -595,7 +615,9 @@
         <ng-container *ngTemplateOutlet="npcCardTpl" />
       }
     }
-    <ng-container *ngTemplateOutlet="masterAfter" />
+    @if (!queueFirst()) {
+      <ng-container *ngTemplateOutlet="masterAfter" />
+    }
     <app-zones-panel
       [zones]="zoneFlow.views()"
       [master]="true"
@@ -696,6 +718,7 @@
         (endRage)="rage.end($event)"
         (settledNote)="settled()"
       >
+        <app-legendary-note legendary-slot [encounter]="e" [subject]="who" />
         @if (offers.offering()) {
           <app-offer-panel
             offer-slot
@@ -715,7 +738,23 @@
 <ng-template #masterAfter>
   @if (encounter(); as e) {
     <!-- The reaction windows the master answers (PM-04): below the card, in the order the server answers them. -->
-    <app-reaction-queue [encounter]="e" [campaignId]="campaignId()" [state]="state()" [autoLeft]="autoLeft()" part="rest" />
+    <app-reaction-queue [encounter]="e" [campaignId]="campaignId()" [state]="state()" [autoLeft]="autoLeft()" part="rest">
+      <!-- The legendary creatures' cards: after the windows the master answers; "Opcional" when nothing holds the table. -->
+      <app-legendary-offers
+        [encounter]="e"
+        [campaignId]="campaignId()"
+        [state]="state()"
+        [log]="log"
+        [names]="legendary.names()"
+        [theatre]="theatre()"
+        [armed]="moves.legendaryMove()"
+        [opening]="legendary.opening()"
+        [mapElsewhere]="!laptop() && layout.shownPhoneTab() !== 'map'"
+        (attack)="legendary.attack($event)"
+        (move)="legendary.move($event)"
+        (cancelMove)="moves.legendaryMove.set(null)"
+      />
+    </app-reaction-queue>
     <!-- The contests that wait for the master (W7-X): CONTEST windows, Hide, grapples; never answered with AnswerReaction. -->
     <app-contest-master
       [encounter]="e"
@@ -758,6 +797,7 @@
       [turnSide]="turnSide()"
       (side)="setSide($event)"
       (cover)="setCover($event)"
+      (parryAsk)="setParryAsk($event)"
     />
   }
 </ng-template>
@@ -811,6 +851,7 @@
           [busy]="busy()"
           [waiting]="!!waitNote()"
           [why]="waitWhy()"
+          [legendary]="legendaryLeft()"
           [label]="acting() ? 'Encerrar o turno de ' + acting()!.label : 'Próximo turno'"
           [idle]="acting() ? '' : idleOnTurn()"
           [joint]="!!joint()"

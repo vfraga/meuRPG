@@ -156,4 +156,17 @@ describe('NextTurn', () => {
     button.click();
     expect(sent).toEqual([]);
   });
+
+  it('says what legendary actions are left under the button, and nothing when none is', () => {
+    const fixture = TestBed.createComponent(NextTurn);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-testid="legendary-left"]')).toBeNull();
+    fixture.componentRef.setInput('legendary', 'Restam 2 ações lendárias: Dragão vermelho adulto.');
+    fixture.detectChanges();
+    const line = el.querySelector('[data-testid="legendary-left"]');
+    expect(line?.textContent).toContain('Restam 2 ações lendárias: Dragão vermelho adulto.');
+    // Under the button, and the button still passes the turn.
+    expect(line?.previousElementSibling?.classList.contains('next')).toBe(true);
+  });
 });

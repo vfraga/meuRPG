@@ -9,7 +9,7 @@ import type { DiceRoll } from '../../../gen/meurpg/play/v1/combat_pb';
  */
 
 /** " + 6", " − 1" or nothing for 0. */
-function modifierText(modifier: number): string {
+export function modifierText(modifier: number): string {
   if (modifier === 0) {
     return '';
   }
@@ -54,9 +54,10 @@ const TREATED_SOURCE_NAMES: Readonly<Record<string, string>> = {
   'feature:reliable-talent': 'Talento Confiável',
 };
 
-/** The name a roll's `treated_as_source` goes by on the screens. */
-export function treatedSourceName(source: string): string {
-  return TREATED_SOURCE_NAMES[source] ?? 'uma característica';
+/** The name a roll's `treated_as_source` goes by on the screens: the server's `treated_as_source_name` (sent only to the
+ * roller and the master), else the SRD feature the app knows by its key (Talento Confiável), else "uma característica". */
+export function treatedSourceName(source: string, name = ''): string {
+  return name || (TREATED_SOURCE_NAMES[source] ?? 'uma característica');
 }
 
 /** The d20 that came up and counted as another number: the roll's one face, or the face of the die that counted when two
@@ -84,7 +85,7 @@ export function treatedFormula(roll: DiceRoll, bonusNote = ''): string | null {
   }
   // "+ 9 (Acrobacia)": a page that names what the bonus is for says it after the number.
   const note = bonusNote && roll.modifier !== 0 ? ` (${bonusNote})` : '';
-  return `d20: ${face} → ${roll.treatedAs} (${treatedSourceName(roll.treatedAsSource)})${modifierText(roll.modifier)}${note} = ${roll.total}`;
+  return `d20: ${face} → ${roll.treatedAs} (${treatedSourceName(roll.treatedAsSource, roll.treatedAsSourceName)})${modifierText(roll.modifier)}${note} = ${roll.total}`;
 }
 
 /** "O d20 de 6 contou como 10: perícia com proficiência.": the sentence under the result, or `null` when nothing changed. */
@@ -105,7 +106,7 @@ export function treatedSpeech(roll: DiceRoll): string | null {
     roll.modifier === 0
       ? ''
       : `, ${roll.modifier < 0 ? 'menos' : 'mais'} ${Math.abs(roll.modifier)}`;
-  return `d20: ${face}, contou ${roll.treatedAs} por ${treatedSourceName(roll.treatedAsSource)}${mod}, total ${roll.total}`;
+  return `d20: ${face}, contou ${roll.treatedAs} por ${treatedSourceName(roll.treatedAsSource, roll.treatedAsSourceName)}${mod}, total ${roll.total}`;
 }
 
 /** The typed d20's live total before it is sent, when the character's Talento Confiável will raise it: "6 → 10 (Talento
@@ -114,6 +115,7 @@ export function treatedPreview(
   face: number,
   bonus: number,
   source: string,
+  name = '',
 ): { readonly text: string; readonly total: number } | null {
   const to = TREATED_FLOOR;
   if (face >= to) {
@@ -121,7 +123,7 @@ export function treatedPreview(
   }
   const total = to + bonus;
   return {
-    text: `${face} → ${to} (${treatedSourceName(source)})${modifierText(bonus)} = ${total}`,
+    text: `${face} → ${to} (${treatedSourceName(source, name)})${modifierText(bonus)} = ${total}`,
     total,
   };
 }

@@ -8,6 +8,7 @@ import { TableSummonSchema } from '../../../gen/meurpg/rules/v1/table_content_pb
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { summonToDraft } from '../../core/content/summon-draft';
 import { create } from '@bufbuild/protobuf';
+import { rollsMenu } from '../../core/content/content-testing-menu-rolls';
 import { FeatureEditor } from './feature-editor';
 
 describe('FeatureEditor (a trait, a feature)', () => {
@@ -38,6 +39,8 @@ describe('FeatureEditor (a trait, a feature)', () => {
       count?: number;
       isOption?: boolean;
       allowSummon?: boolean;
+      menu?: ReturnType<typeof menu>;
+      oneOf?: boolean;
     } = {},
   ) {
     emitted.length = 0;
@@ -56,7 +59,7 @@ describe('FeatureEditor (a trait, a feature)', () => {
     });
     fixture = TestBed.createComponent(FeatureEditor);
     fixture.componentRef.setInput('feature', feature);
-    fixture.componentRef.setInput('menu', over.costs ? costsMenu() : menu());
+    fixture.componentRef.setInput('menu', over.menu ?? (over.costs ? costsMenu() : menu()));
     fixture.componentRef.setInput('basePath', 'table_race.traits[1]');
     fixture.componentRef.setInput('issuesOf', (path: string) => over.issues?.[path] ?? []);
     fixture.componentRef.setInput('removeLabel', over.removeLabel ?? 'Remover traço');
@@ -65,6 +68,8 @@ describe('FeatureEditor (a trait, a feature)', () => {
     fixture.componentRef.setInput('isOption', over.isOption ?? false);
     fixture.componentRef.setInput('allowSummon', over.allowSummon ?? false);
     fixture.componentRef.setInput('campaignId', 'camp-1');
+    fixture.componentRef.setInput('allowOptions', over.oneOf ?? false);
+    fixture.componentRef.setInput('oneOf', over.oneOf ?? false);
     fixture.componentInstance.featureChange.subscribe((f) => emitted.push(f));
     fixture.componentInstance.removed.subscribe(removed);
     fixture.detectChanges();
@@ -243,6 +248,98 @@ describe('FeatureEditor (a trait, a feature)', () => {
       name.value = 'vale';
       name.dispatchEvent(new Event('input'));
       expect(emitted[0].summon?.resourceKey).toBe('da_classe');
+    });
+  });
+
+  it('offers a reroll the resources of its own entry, wherever the resource effect sits in the list', () => {
+    setup(
+      {
+        ...emptyFeature(),
+        name: 'Sorte Teimosa',
+        effects: [
+          { ...emptyEffect('reroll'), rolls: ['attack'], atMost: 2 },
+          {
+            ...emptyEffect('resource'),
+            resource: 'sorte_teimosa',
+            max: '3',
+            recharge: 'long_rest',
+          },
+        ],
+      },
+      { menu: rollsMenu() },
+    );
+    const select = field('effects[0].resource') as HTMLSelectElement;
+    expect(Array.from(select.options).map((o) => text(o))).toEqual([
+      'Nenhum: vale sempre',
+      'Sorte Teimosa (3 por descanso longo)',
+    ]);
+    expect(select.disabled).toBe(false);
+  });
+
+  describe('a trait that is a choice of one (T1, T6)', () => {
+    const night = (): FeatureDraft => ({
+      ...emptyFeature(),
+      name: 'Sentidos da noite',
+      options: [
+        { ...emptyFeature(), name: 'Olhos de coruja' },
+        { ...emptyFeature(), name: 'Passo de pena' },
+      ],
+    });
+
+    it('says there is no option yet and offers to add one', () => {
+      setup(emptyFeature(), { oneOf: true });
+      expect(text(el.querySelector('.options')!)).toContain(
+        'Nenhuma opção. Adicione duas ou mais: o jogador escolhe uma, uma vez, ao criar o personagem.',
+      );
+      button('Adicionar uma opção').click();
+      expect(emitted.at(-1)?.options).toHaveLength(1);
+      expect(el.textContent).not.toContain('Os efeitos ficam nas opções');
+    });
+
+    it('explains the one-time choice and says under the effect that the effects live in the options', () => {
+      setup(night(), { oneOf: true });
+      const t = text(el.querySelector('.options')!);
+      expect(t).toContain('O jogador escolhe uma destas opções, uma vez, ao criar o personagem');
+      expect(t).not.toContain('Ponha na característica um efeito');
+      expect(text(el)).toContain('Os efeitos ficam nas opções; o traço diz que há uma escolha.');
+      expect(el.querySelectorAll('.options app-feature-editor')).toHaveLength(2);
+    });
+
+    it('puts the refusal of an effect "Escolha" under the select, in place of the hint', () => {
+      setup(night(), {
+        oneOf: true,
+        issues: {
+          'table_race.traits[1].effects[0].type': [
+            'Um traço com opções já é a escolha: troque este efeito por “Só texto” ou outro.',
+          ],
+        },
+      });
+      expect(text(el)).toContain('Um traço com opções já é a escolha');
+      expect(text(el)).not.toContain('Os efeitos ficam nas opções');
+    });
+
+    it('marks the option whose name repeats another, and limits an option name to 60 letters', () => {
+      setup(night(), {
+        oneOf: true,
+        issues: {
+          'table_race.traits[1].options[1].name_pt': [
+            'Duas opções deste traço têm o mesmo nome. Mude uma delas.',
+          ],
+        },
+      });
+      const second = el.querySelector<HTMLInputElement>(
+        '[data-field="table_race.traits[1].options[1].name_pt"]',
+      )!;
+      expect(second.getAttribute('maxlength')).toBe('60');
+      expect(text(second.closest('app-text-field')!)).toContain('Duas opções deste traço');
+    });
+
+    it('keeps the class feature wording where the trait is not a choice of one', () => {
+      setup(night());
+      expect(el.querySelector('.options')).toBeNull();
+      fixture.componentRef.setInput('allowOptions', true);
+      fixture.detectChanges();
+      expect(text(el.querySelector('.options')!)).toContain('Ponha na característica um efeito');
     });
   });
 });

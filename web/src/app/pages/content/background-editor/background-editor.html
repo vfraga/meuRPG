@@ -5,7 +5,7 @@
     <section class="mr-panel block" aria-labelledby="data-t">
       <h2 class="mr-panel__title" id="data-t">Dados do antecedente</h2>
       <div class="grid grid--2">
-        <app-text-field label="Nome" [value]="d.name" [maxlength]="60" path="table_background.name_pt" [issues]="issuesOf('table_background.name_pt')" (valueChange)="patch({ name: $event })" />
+        <app-text-field label="Nome" [value]="d.name" [maxlength]="nameMax" path="table_background.name_pt" [issues]="issuesOf('table_background.name_pt')" (valueChange)="patch({ name: $event })" />
       </div>
       <div class="grid grid--2">
         <app-select-field label="Primeira perícia" [options]="skillOptions()" [value]="d.skills[0]" placeholder="Escolha…" path="table_background.skills[0]" [issues]="issuesOf('table_background.skills[0]')" (valueChange)="setSkill(0, $event)" />

@@ -347,7 +347,7 @@ The roll is not undoable, and it closes the chain like the turn change it belong
 A persistent NPC with a stat block is a character of kind NPC that is not `combat_only`, made from a creature.
 It keeps its `use:<action key>` and `legendary_resistance` counts from one combat to the next, until the table's long rest.
 It keeps its `rest:<action key>` counts until the next short or long rest.
-The counts are in `npc_spell_use.creature_spent` ([Data](../../data/characters.md#npc_spell_use)), beside the slots of its spells.
+The counts are in `npc_spell_use.creature_spent` ([Data](../../data/combat.md#npc_spell_use)), beside the slots of its spells.
 `bumpCreatureSpent` writes them back with `SyncNPCCreatureSpent` after each change of those keys (an undo too): the row keeps the highest count any copy holds in the combat, never the sum, and a key that falls to 0 leaves it.
 `SeedCombatantSlotsUsed` gives each copy the row when it joins a combat, and the table's long rest deletes the row; a short rest removes its `rest:` keys ([Rests](rests-and-resources.md)).
 `recharge:<action key>` and `legendary_actions` are not kept: a new combat starts with every Recharge action available.
@@ -362,17 +362,17 @@ A trait with a number a day (Legendary Resistance has its own path above) and a 
 A stat block's reactions come from its `reactions` (`rules.LegendaryProfile.Reactions`, read by `characters.creatureReactionStats` into `ReactionStats.MonsterReactions`).
 Parry is the one the engine resolves: the Bandit Captain, Erinyes, Gladiator, Knight, Marilith and Noble add 2 to 5 to their armor class against one melee weapon attack that would hit them.
 Every other reaction (Split, Shriek, Rock Catching, Unnerving Mask, the Shield Guardian's Shield...) is text the engine cannot resolve: it opens no window, and the master reads it on the creature's sheet.
-Parry goes through the reaction window ([Reactions](reactions.md#parry)), one per round, answered by the master for the creature.
+The server decides Parry on its own, one per round, with no window ([Reactions](reactions.md#parry)); the master can switch a creature to "Perguntar" and answer for it in a window.
 It is the NPC's alone: a player's character made from a stat block gets no Parry window.
 The reaction is the creature's `reaction_used` column, the same as a player's: spent by the answer, back at the start of the creature's own turn.
-Nothing is kept in `creature_spent`.
+The only thing the Parry keeps in `creature_spent` is the master's mode, the key `parry_ask` (1 for "Perguntar").
 
 **Who sees what (RN-20, RN-29).**
-Only the master reads the window, the bonus, the armor class with it and that the creature has the reaction.
-A player reads the neutral wait ("Esperando o mestre") while it is open, as for any NPC that may react.
-The wait itself is visible, so it tells a player that the creature may have a reaction; the app does not hide that timing.
-After the answer a player reads an ordinary attack line: a miss when Parry turned the hit, a hit when it did not, with no armor class and no word of a reaction.
-The master's line says "<name> aparou (+N CA)" with the total and the armor class.
+Only the master reads the mode (`Combatant.parry_ask`), the window of "Perguntar", the bonus, the armor class with it and that the creature has the reaction.
+A hit the Parry does not turn reads to a player exactly as a hit on a creature with no Parry: no wait, no window, no status.
+When the Parry turns a hit a player reads a miss with no armor class, plus the line "<name> aparou o ataque.", with no number.
+In "Perguntar" a player reads the neutral wait ("Esperando o mestre") while the window is open, as for any NPC that may react, then an ordinary hit or miss.
+The master's line says "<name> aparou (+N CA): T contra CA A, o ataque errou." with the total and the armor class.
 
 ## On screen
 

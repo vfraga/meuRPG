@@ -64,6 +64,8 @@ export class CombatBar {
   readonly waitNote = input('');
   /** Why "Próximo turno" waits, written under it ("Responda ao pedido abaixo para seguir."), or `''`. */
   readonly waitWhy = input('');
+  /** "Restam 2 ações lendárias: ...": under "Próximo turno". */
+  readonly legendary = input('');
   /** The name of the character the master acts for (C8-01): the bar says "Você age por …" and its one filled button ends that turn. */
   readonly actingFor = input('');
   protected readonly nextLabel = computed(() =>

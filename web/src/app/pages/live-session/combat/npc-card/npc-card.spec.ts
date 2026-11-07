@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 
-import { AreaPlacement, CombatantSide } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  AreaPlacement,
+  CombatantKind,
+  CombatantSide,
+} from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { AdvantageSourceKind, RollMode } from '../../../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { CombatUndone } from '../../../../core/combat/combat-undone';
 import { CombatClient } from '../../../../core/combat/combat-client';
@@ -445,6 +449,28 @@ describe('NpcCard: compact in the rail (C7-02)', () => {
 
   it('draws the big heading in a frame (the phone, the middle column of a combat without a map)', () => {
     expect(card(true).querySelector('h2')!.classList).not.toContain('mr-visually-hidden');
+  });
+
+  it("draws the heading of the card that only holds a player character's damage, in the rail too: it has no other line to say whose turn it is", () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [{ provide: CombatClient, useValue: {} }] });
+    const fixture = TestBed.createComponent(NpcCard);
+    const mage = combatant({
+      id: 'pc',
+      label: 'Pensantus',
+      kind: CombatantKind.PLAYER,
+      hitPointsCurrent: 18,
+      hitPointsMax: 23,
+    });
+    fixture.componentRef.setInput('campaignId', 'c');
+    fixture.componentRef.setInput('encounter', encounter({ combatants: [mage] }));
+    fixture.componentRef.setInput('subject', mage);
+    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('framed', false);
+    fixture.detectChanges();
+    const title = (fixture.nativeElement as HTMLElement).querySelector('h2')!;
+    expect(title.textContent).toContain('Dano de Pensantus');
+    expect(title.classList).not.toContain('mr-visually-hidden');
   });
 });
 

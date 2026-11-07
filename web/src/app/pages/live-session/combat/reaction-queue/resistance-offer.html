@@ -1,0 +1,90 @@
+<section
+  class="offer"
+  [class.offer--later]="badge() === 'Depois'"
+  [attr.aria-labelledby]="uid + 'title'"
+  data-testid="resistance-offer"
+>
+  <header class="offer__head">
+    <span class="offer__over"><mat-icon aria-hidden="true">shield</mat-icon>{{ card().overline }}</span>
+    @if (badge(); as b) {
+      <span class="offer__pill" data-testid="queue-badge">{{ b }}</span>
+    }
+  </header>
+  <h3 class="offer__title" [id]="uid + 'title'">{{ card().title }}</h3>
+  <p class="offer__text">{{ card().source }}</p>
+  @if (badge() === 'Agora') {
+    <div role="group" [attr.aria-labelledby]="uid + 'title'" class="lr-list">
+      @for (row of card().rows; track row.combatantId) {
+        <div class="lr" data-testid="resistance-row">
+          <p class="lr__failed" [id]="uid + row.combatantId + '-failed'">{{ row.failed }}</p>
+          @if (card().mode === 'many') {
+            <label class="lr__check">
+              <input
+                type="checkbox"
+                class="mr-check-input"
+                [checked]="ticked().has(row.combatantId)"
+                [disabled]="locked()"
+                [attr.aria-labelledby]="uid + row.combatantId + '-name'"
+                [attr.aria-describedby]="uid + row.combatantId + '-failed'"
+                (change)="toggle(row.combatantId, $any($event.target).checked)"
+              />
+              <span class="lr__text">
+                <span class="lr__name" aria-hidden="true">{{ row.checkboxLabel }}</span>
+                <span class="mr-visually-hidden" [id]="uid + row.combatantId + '-name'">{{ row.checkboxLabel }} em {{ row.label }}</span>
+                <span class="lr__line">{{ row.line }}</span>
+              </span>
+            </label>
+          } @else {
+            <p class="lr__line">{{ row.line }}</p>
+          }
+        </div>
+      }
+    </div>
+    @if (failure(); as f) {
+      <div class="mr-notice mr-notice--danger" role="alert">
+        <mat-icon aria-hidden="true">{{ f.connection ? 'cloud_off' : 'error' }}</mat-icon>
+        <p>{{ f.text }}</p>
+      </div>
+    }
+    @if (failure()?.connection) {
+      <button matButton="outlined" type="button" class="btn" data-initial (click)="retry()">
+        <mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo
+      </button>
+    } @else {
+      <div class="offer__btns">
+        <button
+          matButton="outlined"
+          type="button"
+          class="btn"
+          [class.btn--off]="sending()"
+          data-initial
+          [disabled]="!!sending()"
+          disabledInteractive
+          (click)="decline()"
+        >
+          {{ sending() === 'pass' ? 'Deixando como rolou…' : card().declineLabel }}
+        </button>
+        <button
+          matButton="filled"
+          type="button"
+          class="btn"
+          [class.btn--off]="sending() || !canConfirm()"
+          [disabled]="!!sending() || !canConfirm()"
+          disabledInteractive
+          [attr.aria-describedby]="canConfirm() ? null : uid + 'none'"
+          (click)="confirm()"
+        >
+          {{ sending() === 'use' ? 'Usando…' : card().confirmLabel }}
+        </button>
+      </div>
+      @if (!canConfirm()) {
+        <span class="mr-visually-hidden" [id]="uid + 'none'">Marque ao menos uma criatura para usar.</span>
+      }
+    }
+    <p class="offer__foot">{{ card().footer }}</p>
+  } @else if (badge() === 'Depois' && waiting()) {
+    <p class="offer__wait">
+      <mat-icon aria-hidden="true">block</mat-icon>{{ waiting() }}
+    </p>
+  }
+</section>

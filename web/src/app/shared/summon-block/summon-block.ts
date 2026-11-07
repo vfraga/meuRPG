@@ -12,6 +12,7 @@ import {
   type SummonDraft,
   type SummonResource,
   emptySummon,
+  restoredSummon,
 } from '../../core/content/summon-draft';
 import {
   durationOf,
@@ -26,13 +27,13 @@ import { RadioCards } from '../form-fields/radio-cards';
 import { SelectField, type SelectOption } from '../form-fields/select-field';
 import { SwitchField } from '../form-fields/switch-field';
 import { TextField } from '../form-fields/text-field';
-import { REPLACES_CARDS, TURN_CARDS } from './summon-cards';
+import { replacesCardsFor, turnCardsFor } from './summon-cards';
 import { SummonCreatures } from './summon-creatures';
 
 let nextId = 0;
 
 /**
- * "Invoca criaturas" on a feature's card (#578, board C2): a switch, and, when it is on, the creatures the holder may bring, how
+ * "Invoca criaturas" on a feature's card (#578): a switch, and, when it is on, the creatures the holder may bring, how
  * many, how many at a time, the resource a use is spent from, the turn, what a new casting does to the old creatures, the time
  * and the duration. The holder casts it like a summoning spell with a use of the resource in the place of a slot. Off sends
  * no summon. Each refusal of the server sits under its own field (`basePath.summon.*`); the feature's own resources
@@ -65,8 +66,8 @@ export class SummonBlock {
   readonly entries = input<readonly TableEntry[]>([]);
   readonly summonChange = output<SummonDraft | null>();
 
-  protected readonly turnCards = TURN_CARDS;
-  protected readonly repliesCards = REPLACES_CARDS;
+  protected readonly turnCardsFor = turnCardsFor;
+  protected readonly replacesCardsFor = replacesCardsFor;
   protected readonly maxLive = MAX_SUMMON_LIVE;
   protected readonly noResource = NO_RESOURCE_TEXT;
   /** What was switched off, kept while the card stays open, so a switch turned by mistake gives the creatures back. */
@@ -107,11 +108,21 @@ export class SummonBlock {
   protected toggle(on: boolean): void {
     const s = this.summon();
     if (!on) {
-      this.stash.set(s);
+      // Bound now to the resource it spends, so a rename or a removal while it is off is followed when it comes back.
+      const own = this.resources().find((r) => r.key === s?.resourceKey.trim());
+      this.stash.set(
+        s && s.resourceEffect === undefined && own ? { ...s, resourceEffect: own.id } : s,
+      );
       this.summonChange.emit(null);
       return;
     }
-    this.summonChange.emit(this.stash() ?? emptySummon(this.resources()[0]?.key ?? ''));
+    const first = this.resources()[0];
+    const stashed = this.stash();
+    this.summonChange.emit(
+      stashed
+        ? restoredSummon(stashed, this.resources())
+        : { ...emptySummon(first?.key ?? ''), resourceEffect: first?.id },
+    );
   }
 
   protected patch(p: Partial<SummonDraft>): void {

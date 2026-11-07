@@ -557,6 +557,7 @@ func (q *Queries) ListLiveMilestoneAwardsOf(ctx context.Context, arg ListLiveMil
 const listMilestoneIDsWithAwards = `-- name: ListMilestoneIDsWithAwards :many
 SELECT DISTINCT milestone_id::UUID AS milestone_id FROM xp_awards
 WHERE campaign_id = $1::UUID AND milestone_id IS NOT NULL
+ORDER BY milestone_id
 `
 
 // The planned milestones any award names, undone ones included: HasMilestoneAwards
@@ -586,6 +587,7 @@ SELECT s.character_id
 FROM xp_award_shares AS s
 JOIN xp_awards AS a ON a.id = s.award_id
 WHERE a.campaign_id = $1::UUID AND a.milestone_id = $2::UUID AND a.undone_at IS NULL
+ORDER BY s.character_id
 `
 
 type ListMilestoneMarkedCharactersParams struct {
@@ -621,6 +623,7 @@ JOIN xp_awards AS a ON a.id = s.award_id
 WHERE a.campaign_id = $1::UUID AND a.mode = 'milestone' AND a.undone_at IS NULL
   AND s.level_at_mark IS NOT NULL
 GROUP BY s.character_id
+ORDER BY s.character_id
 `
 
 type ListMilestoneMarksRow struct {

@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import type { TableEntry } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import type { EffectDraft, EffectMenuVm } from '../../core/content/effect-draft';
 import { emptyEffect } from '../../core/content/effect-draft';
-import { emptyFeature, type FeatureDraft } from '../../core/content/feature-draft';
+import { emptyFeature, type FeatureDraft, NAME_MAX } from '../../core/content/feature-draft';
 import { followResource, resourcesOf, type SummonDraft } from '../../core/content/summon-draft';
 import { EffectPicker } from '../effect-picker/effect-picker';
 import { FieldNote } from '../form-fields/field-note';
@@ -67,9 +67,13 @@ export class FeatureEditor {
   readonly allowSummon = input(false);
   readonly campaignId = input('');
   readonly entries = input<readonly TableEntry[]>([]);
+
+  /** The options are a race or subrace trait's one-time choice of one, picked at creation; no "Escolha" effect offers them. */
+  readonly oneOf = input(false);
   /** The feature is one of a list of options: an option with no name is not sent. */
   readonly isOption = input(false);
   /** An option that has content but no name: the save leaves it out, and the screen says so. */
+  protected readonly nameMax = NAME_MAX;
   protected readonly unsaved = computed(() => {
     const f = this.feature();
     return (

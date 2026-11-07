@@ -12,7 +12,7 @@
 .cards {
   display: flex;
   flex-direction: column;
-  gap: var(--mr-space-3);
+  gap: var(--mr-space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -21,8 +21,8 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: var(--mr-space-2);
-  padding: var(--mr-space-3) var(--mr-space-4);
+  gap: var(--mr-space-1);
+  padding: var(--mr-space-2) var(--mr-space-4);
   border: 1px solid var(--mr-line);
   border-radius: var(--mr-radius-md);
   background: var(--mr-surface);
@@ -40,13 +40,17 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--mr-space-3);
+    gap: var(--mr-space-2) var(--mr-space-3);
     min-height: 44px;
     cursor: pointer;
   }
 
   &--off &__head {
     cursor: default;
+  }
+
+  &--off &__name {
+    color: var(--mr-ink-muted);
   }
 
   &__input {
@@ -95,7 +99,7 @@
     flex-direction: column;
     gap: 4px;
     margin: 0;
-    padding: var(--mr-space-2) var(--mr-space-3);
+    padding: var(--mr-space-1) var(--mr-space-3);
     list-style: none;
     border-radius: var(--mr-radius-sm);
     background: var(--mr-warning-surface);
@@ -193,7 +197,7 @@
 }
 
 .group {
-  margin: var(--mr-space-4) 0 var(--mr-space-2);
+  margin: var(--mr-space-2) 0 0;
   font-size: var(--mr-font-15);
   font-weight: 600;
   color: var(--mr-ink-muted);

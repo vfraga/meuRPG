@@ -1932,6 +1932,8 @@ message EffectMenuValue {
   // For the same, the bounds of a literal value; both zero when unbounded.
   int32 min = 5;
   int32 max = 6;
+  // The key that groups the value: for "race_traits", the race that has the trait; empty elsewhere.
+  string group = 7;
 }
 
 // EffectMenuList is a closed list a field takes.
@@ -1942,7 +1944,11 @@ message EffectMenuList {
   // "abilities" (the six abilities, for an ability_increase's `from`),
   // "ability_increase_amounts" (its `value`: "1" or "2"), "state_ends" (a state's
   // `ends_on`), "state_economies" (its `economy`), "weapon_filters" (a weapon_rule's
-  // `weapon`) or "weapon_kinds" (a pseudo_weapon's).
+  // `weapon`), "weapon_kinds" (a pseudo_weapon's), "lackable_features" (the SRD
+  // features, traits, background features and feats a feat's `prerequisite.lacks_feature_key` may
+  // name; `hint_pt` is where each comes from, and the table's own entries are not in it) or "race_traits" (the traits of
+  // the SRD races a subrace's `replaces_trait_keys` may name; `group` is the race, `hint_pt` a
+  // one-line summary of the trait or empty, and the table's own races and traits are not in it).
   string name = 1;
   repeated EffectMenuValue values = 2;
 }

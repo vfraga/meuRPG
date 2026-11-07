@@ -387,4 +387,84 @@ describe('ChoiceGroups', () => {
       );
     });
   });
+
+  describe('a trait of the race that is a choice of one (T4)', () => {
+    function traitGroup(picked: string[] = []) {
+      return create(ChoiceGroupSchema, {
+        origin: ChoiceOrigin.RACE,
+        sourceKey: 'race:corujeiro@mesa',
+        sourceNamePt: 'Corujeiro',
+        choices: [
+          create(ChoiceSchema, {
+            key: 'trait:sentidos@mesa',
+            featureKey: 'trait:sentidos@mesa',
+            kind: ChoiceKind.OPTIONS,
+            titlePt: 'Sentidos da noite',
+            labelPt: 'Sentidos da noite (Corujeiro)',
+            picks: 1,
+            picked,
+            missing: 1 - picked.length,
+            options: [
+              create(ChoiceOptionSchema, {
+                key: 'trait:sentidos--coruja@mesa',
+                storedKey: 'trait:sentidos--coruja@mesa',
+                namePt: 'Olhos de coruja',
+                summaryPt: 'Visão no escuro 36 m.',
+              }),
+              create(ChoiceOptionSchema, {
+                key: 'trait:sentidos--pena@mesa',
+                storedKey: 'trait:sentidos--pena@mesa',
+                namePt: 'Passo de pena',
+                summaryPt: 'Proficiência em Furtividade.',
+              }),
+            ],
+          }),
+        ],
+      });
+    }
+    const head = (el: HTMLElement) => ({
+      title: el.querySelector('.choice__title')?.textContent?.trim(),
+      origin: el.querySelector('.choice__origin')?.textContent?.replace(/\s+/g, ' ').trim(),
+      tag: el.querySelector('.choice__bar .mr-tag')?.textContent?.trim(),
+    });
+
+    it('titles the card with the trait, says whose it is and that it is made once, and tags what is missing', () => {
+      const { el, cards } = setup(traitGroup());
+      expect(head(el)).toEqual({
+        title: 'Sentidos da noite',
+        origin: 'Traço de Corujeiro · escolha uma vez · 0 de 1',
+        tag: 'Falta escolher',
+      });
+      expect(cards().map((c) => c.querySelector('.card__name')?.textContent)).toEqual([
+        'Olhos de coruja',
+        'Passo de pena',
+      ]);
+      expect(cards()[0].textContent).toContain('Visão no escuro 36 m.');
+    });
+
+    it('names the status as the description of the card', () => {
+      const { el, fixture, cards } = setup(traitGroup());
+      const section = el.querySelector('section.choice')!;
+      const status = () => el.querySelector(`#${section.getAttribute('aria-describedby')}`);
+      expect(status()?.textContent).toContain('Falta escolher');
+      cards()[0].click();
+      fixture.detectChanges();
+      expect(status()?.textContent).toContain('Feito');
+    });
+
+    it('turns the tag into "Feito" once an option is picked', () => {
+      const { el, fixture, cards } = setup(traitGroup());
+      cards()[1].click();
+      fixture.detectChanges();
+      expect(head(el).tag).toContain('Feito');
+      expect(head(el).origin).toBe('Traço de Corujeiro · escolha uma vez · 1 de 1');
+    });
+
+    it('keeps "Raça · …" for the choices of a race that are not its trait\'s options', () => {
+      const g = traitGroup();
+      g.choices[0].key = 'trait:sentidos@mesa#feat';
+      const { el } = setup(g);
+      expect(head(el).origin).toBe('Raça · Corujeiro · 1 escolha');
+    });
+  });
 });

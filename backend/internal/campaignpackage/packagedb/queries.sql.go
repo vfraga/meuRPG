@@ -534,7 +534,7 @@ func (q *Queries) InsertCampaignImport(ctx context.Context, arg InsertCampaignIm
 }
 
 const listCampaignExportsOfCampaign = `-- name: ListCampaignExportsOfCampaign :many
-SELECT id, campaign_id, requested_by, state, percent, failure, file_name, blob_key, byte_size, entry_count, create_key, create_hash, created_at, updated_at, finished_at, expires_at FROM campaign_exports WHERE campaign_id = $1
+SELECT id, campaign_id, requested_by, state, percent, failure, file_name, blob_key, byte_size, entry_count, create_key, create_hash, created_at, updated_at, finished_at, expires_at FROM campaign_exports WHERE campaign_id = $1 ORDER BY id
 `
 
 func (q *Queries) ListCampaignExportsOfCampaign(ctx context.Context, campaignID string) ([]CampaignExport, error) {
@@ -575,7 +575,7 @@ func (q *Queries) ListCampaignExportsOfCampaign(ctx context.Context, campaignID 
 }
 
 const listCampaignExportsOfUser = `-- name: ListCampaignExportsOfUser :many
-SELECT id, campaign_id, requested_by, state, percent, failure, file_name, blob_key, byte_size, entry_count, create_key, create_hash, created_at, updated_at, finished_at, expires_at FROM campaign_exports WHERE requested_by = $1
+SELECT id, campaign_id, requested_by, state, percent, failure, file_name, blob_key, byte_size, entry_count, create_key, create_hash, created_at, updated_at, finished_at, expires_at FROM campaign_exports WHERE requested_by = $1 ORDER BY id
 `
 
 func (q *Queries) ListCampaignExportsOfUser(ctx context.Context, requestedBy string) ([]CampaignExport, error) {
@@ -645,7 +645,7 @@ func (q *Queries) ListCampaignImportParts(ctx context.Context, importID string) 
 }
 
 const listCampaignImportsOfUser = `-- name: ListCampaignImportsOfUser :many
-SELECT id, user_id, file_name, fingerprint, total_bytes, part_size, part_count, created_at, updated_at, expires_at FROM campaign_imports WHERE user_id = $1
+SELECT id, user_id, file_name, fingerprint, total_bytes, part_size, part_count, created_at, updated_at, expires_at FROM campaign_imports WHERE user_id = $1 ORDER BY id
 `
 
 func (q *Queries) ListCampaignImportsOfUser(ctx context.Context, userID string) ([]CampaignImport, error) {

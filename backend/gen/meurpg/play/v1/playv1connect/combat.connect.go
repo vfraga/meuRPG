@@ -87,6 +87,9 @@ const (
 	// CombatServiceSetCombatantHiddenProcedure is the fully-qualified name of the CombatService's
 	// SetCombatantHidden RPC.
 	CombatServiceSetCombatantHiddenProcedure = "/meurpg.play.v1.CombatService/SetCombatantHidden"
+	// CombatServiceSetMonsterReactionModeProcedure is the fully-qualified name of the CombatService's
+	// SetMonsterReactionMode RPC.
+	CombatServiceSetMonsterReactionModeProcedure = "/meurpg.play.v1.CombatService/SetMonsterReactionMode"
 	// CombatServiceAddCombatantsProcedure is the fully-qualified name of the CombatService's
 	// AddCombatants RPC.
 	CombatServiceAddCombatantsProcedure = "/meurpg.play.v1.CombatService/AddCombatants"
@@ -637,6 +640,18 @@ type CombatServiceClient interface {
 	//   - `invalid_argument`: the combatant is a player's.
 	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
 	SetCombatantHidden(context.Context, *connect.Request[v1.SetCombatantHiddenRequest]) (*connect.Response[v1.SetCombatantHiddenResponse], error)
+	// SetMonsterReactionMode chooses how an NPC's Parry is decided (RN-10, RN-31): `ask` false (the default)
+	// lets the server parry on its own, with no window, when the Parry's bonus turns a melee weapon hit into a
+	// miss; `ask` true makes the master answer for the creature in a reaction window, as for a Shield, for the
+	// rest of the combat. The mode is kept on the combatant and ends with the combat. Only the master may call
+	// it. It answers the combat with `Combatant.parry_ask` set for the master.
+	//
+	// Errors:
+	//   - `not_found`: the combatant is not in this combat.
+	//   - `permission_denied`: the caller is a player.
+	//   - `invalid_argument`: the combatant is a player's, or a creature whose stat block has no Parry.
+	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
+	SetMonsterReactionMode(context.Context, *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error)
 	// AddCombatants brings reinforcements into the combat: copies of NPCs, as
 	// in StartEncounter. Only the master may call it, while the combat is in
 	// SETUP or ACTIVE. Each new NPC rolls its initiative at once and takes its
@@ -1658,6 +1673,12 @@ func NewCombatServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(combatServiceMethods.ByName("SetCombatantHidden")),
 			connect.WithClientOptions(opts...),
 		),
+		setMonsterReactionMode: connect.NewClient[v1.SetMonsterReactionModeRequest, v1.SetMonsterReactionModeResponse](
+			httpClient,
+			baseURL+CombatServiceSetMonsterReactionModeProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("SetMonsterReactionMode")),
+			connect.WithClientOptions(opts...),
+		),
 		addCombatants: connect.NewClient[v1.AddCombatantsRequest, v1.AddCombatantsResponse](
 			httpClient,
 			baseURL+CombatServiceAddCombatantsProcedure,
@@ -1922,6 +1943,7 @@ type combatServiceClient struct {
 	setCombatantSide         *connect.Client[v1.SetCombatantSideRequest, v1.SetCombatantSideResponse]
 	setCombatantCover        *connect.Client[v1.SetCombatantCoverRequest, v1.SetCombatantCoverResponse]
 	setCombatantHidden       *connect.Client[v1.SetCombatantHiddenRequest, v1.SetCombatantHiddenResponse]
+	setMonsterReactionMode   *connect.Client[v1.SetMonsterReactionModeRequest, v1.SetMonsterReactionModeResponse]
 	addCombatants            *connect.Client[v1.AddCombatantsRequest, v1.AddCombatantsResponse]
 	addMonsters              *connect.Client[v1.AddMonstersRequest, v1.AddMonstersResponse]
 	removeCombatant          *connect.Client[v1.RemoveCombatantRequest, v1.RemoveCombatantResponse]
@@ -2042,6 +2064,11 @@ func (c *combatServiceClient) SetCombatantCover(ctx context.Context, req *connec
 // SetCombatantHidden calls meurpg.play.v1.CombatService.SetCombatantHidden.
 func (c *combatServiceClient) SetCombatantHidden(ctx context.Context, req *connect.Request[v1.SetCombatantHiddenRequest]) (*connect.Response[v1.SetCombatantHiddenResponse], error) {
 	return c.setCombatantHidden.CallUnary(ctx, req)
+}
+
+// SetMonsterReactionMode calls meurpg.play.v1.CombatService.SetMonsterReactionMode.
+func (c *combatServiceClient) SetMonsterReactionMode(ctx context.Context, req *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error) {
+	return c.setMonsterReactionMode.CallUnary(ctx, req)
 }
 
 // AddCombatants calls meurpg.play.v1.CombatService.AddCombatants.
@@ -2674,6 +2701,18 @@ type CombatServiceHandler interface {
 	//   - `invalid_argument`: the combatant is a player's.
 	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
 	SetCombatantHidden(context.Context, *connect.Request[v1.SetCombatantHiddenRequest]) (*connect.Response[v1.SetCombatantHiddenResponse], error)
+	// SetMonsterReactionMode chooses how an NPC's Parry is decided (RN-10, RN-31): `ask` false (the default)
+	// lets the server parry on its own, with no window, when the Parry's bonus turns a melee weapon hit into a
+	// miss; `ask` true makes the master answer for the creature in a reaction window, as for a Shield, for the
+	// rest of the combat. The mode is kept on the combatant and ends with the combat. Only the master may call
+	// it. It answers the combat with `Combatant.parry_ask` set for the master.
+	//
+	// Errors:
+	//   - `not_found`: the combatant is not in this combat.
+	//   - `permission_denied`: the caller is a player.
+	//   - `invalid_argument`: the combatant is a player's, or a creature whose stat block has no Parry.
+	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
+	SetMonsterReactionMode(context.Context, *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error)
 	// AddCombatants brings reinforcements into the combat: copies of NPCs, as
 	// in StartEncounter. Only the master may call it, while the combat is in
 	// SETUP or ACTIVE. Each new NPC rolls its initiative at once and takes its
@@ -3691,6 +3730,12 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(combatServiceMethods.ByName("SetCombatantHidden")),
 		connect.WithHandlerOptions(opts...),
 	)
+	combatServiceSetMonsterReactionModeHandler := connect.NewUnaryHandler(
+		CombatServiceSetMonsterReactionModeProcedure,
+		svc.SetMonsterReactionMode,
+		connect.WithSchema(combatServiceMethods.ByName("SetMonsterReactionMode")),
+		connect.WithHandlerOptions(opts...),
+	)
 	combatServiceAddCombatantsHandler := connect.NewUnaryHandler(
 		CombatServiceAddCombatantsProcedure,
 		svc.AddCombatants,
@@ -3968,6 +4013,8 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 			combatServiceSetCombatantCoverHandler.ServeHTTP(w, r)
 		case CombatServiceSetCombatantHiddenProcedure:
 			combatServiceSetCombatantHiddenHandler.ServeHTTP(w, r)
+		case CombatServiceSetMonsterReactionModeProcedure:
+			combatServiceSetMonsterReactionModeHandler.ServeHTTP(w, r)
 		case CombatServiceAddCombatantsProcedure:
 			combatServiceAddCombatantsHandler.ServeHTTP(w, r)
 		case CombatServiceAddMonstersProcedure:
@@ -4119,6 +4166,10 @@ func (UnimplementedCombatServiceHandler) SetCombatantCover(context.Context, *con
 
 func (UnimplementedCombatServiceHandler) SetCombatantHidden(context.Context, *connect.Request[v1.SetCombatantHiddenRequest]) (*connect.Response[v1.SetCombatantHiddenResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.SetCombatantHidden is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) SetMonsterReactionMode(context.Context, *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.SetMonsterReactionMode is not implemented"))
 }
 
 func (UnimplementedCombatServiceHandler) AddCombatants(context.Context, *connect.Request[v1.AddCombatantsRequest]) (*connect.Response[v1.AddCombatantsResponse], error) {

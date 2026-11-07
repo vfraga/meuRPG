@@ -188,13 +188,16 @@ func (s *Service) writeExport(ctx context.Context, exportID, campaignID string) 
 	pr, pw := io.Pipe()
 	var written *Writer
 	werr := make(chan error, 1)
-	go func() {
-		defer safego.Recover(s.logger, "write an export's zip", func() { _ = pw.CloseWithError(errors.New("campaignpackage: the zip writer panicked")) })
+	safego.Go(s.logger, "write an export's zip", func() {
 		w, err := s.writeZip(ctx, pw, exportID, snap)
 		written = w
 		_ = pw.CloseWithError(err)
 		werr <- err
-	}()
+	}, func() {
+		err := errors.New("campaignpackage: the zip writer panicked")
+		_ = pw.CloseWithError(err)
+		werr <- err
+	})
 	putErr := s.blobs.Put(ctx, exportKey(campaignID, exportID), "application/zip", pr)
 	_ = pr.CloseWithError(putErr) // lets the writer stop when the store gave up
 	zipErr := <-werr

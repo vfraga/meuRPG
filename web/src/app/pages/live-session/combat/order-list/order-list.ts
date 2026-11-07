@@ -148,6 +148,8 @@ export class OrderList {
   readonly cover = output<{ id: string; cover: CoverDegree }>();
   /** In a combat without a map the menu's "Marcar cobertura…" opens the theatre cover editor (the fallback for a joint or master turn). */
   readonly coverEdit = output<string>();
+  /** The master's "Aparar: perguntar a cada golpe" switch of an NPC with a Parry: `ask` is the mode it is switched to. */
+  readonly parryAsk = output<{ id: string; ask: boolean }>();
   /** The characters whose "Confirmar a morte" question the master put away. */
   readonly deathDismissed = input<ReadonlySet<string>>(new Set());
   /** "Confirmar a morte": the question again. */
