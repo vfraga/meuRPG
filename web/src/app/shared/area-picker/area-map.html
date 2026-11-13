@@ -24,6 +24,9 @@
   [showTurn]="false"
 >
   <div class="am">
+    @if (wallZones().length) {
+      <app-zone-layer [columns]="columns()" [rows]="rows()" [zones]="wallZones()" [badges]="false" />
+    }
     <svg class="am__cells" aria-hidden="true" preserveAspectRatio="none" [attr.viewBox]="'0 0 ' + columns() + ' ' + rows()">
       @if (dimPath()) {
         <path class="am__dim" [attr.d]="dimPath()" />
@@ -44,7 +47,11 @@
       }
     </svg>
     @if (origin(); as o) {
-      <span class="am__diamond" aria-hidden="true" [style.left.%]="pct(o.col + 0.5, columns())" [style.top.%]="pct(o.row + 0.5, rows())"></span>
+      @if (wall()) {
+        <span class="am__start" aria-hidden="true" [style.left.%]="pct(o.col + 0.5, columns())" [style.top.%]="pct(o.row + 0.5, rows())" [style.width.%]="pct(1, columns())" [style.height.%]="pct(1, rows())"></span>
+      } @else {
+        <span class="am__diamond" aria-hidden="true" [style.left.%]="pct(o.col + 0.5, columns())" [style.top.%]="pct(o.row + 0.5, rows())"></span>
+      }
     }
     @if (edgeMark(); as m) {
       <span class="am__diamond" aria-hidden="true" [style.left.%]="m.x" [style.top.%]="m.y"></span>
@@ -67,9 +74,9 @@
       tabindex="0"
       [attr.aria-label]="mapLabel()"
       [attr.aria-describedby]="readOnly() ? null : id + '-hint'"
-      (pointerdown)="onPointerDown($event)"
-      (pointermove)="onPointerMove($event)"
-      (pointerup)="onPointerUp($event)"
+      (pointerdown)="gesture().down($event)"
+      (pointermove)="gesture().move($event)"
+      (pointerup)="gesture().up($event)"
       (pointerleave)="onPointerLeave($event)"
       (pointercancel)="onPointerCancel()"
       (keydown)="onKeydown($event)"
@@ -90,8 +97,14 @@
 </div>
 
 <ng-template #own>
-  <li><span class="mr-swatch sw-area" aria-hidden="true"></span>Área da magia</li>
-  <li><span class="sw-diamond" aria-hidden="true"></span>Ponto de origem</li>
+  @if (wall(); as w) {
+    <li><app-zone-swatch [pattern]="wallPattern" />Muralha</li>
+    <li><app-zone-swatch [pattern]="burningPattern" />Lado que queima</li>
+    <li><span class="sw-start" aria-hidden="true"></span>{{ w.ring ? 'Centro' : 'Começo' }}</li>
+  } @else {
+    <li><span class="mr-swatch sw-area" aria-hidden="true"></span>Área da magia</li>
+    <li><span class="sw-diamond" aria-hidden="true"></span>Ponto de origem</li>
+  }
   @if (hasHidden()) {
     <li><span class="mr-swatch sw-hidden" aria-hidden="true"></span>Escondido (só você vê)</li>
   }
@@ -130,14 +143,14 @@
       type="button"
       class="center__btn"
       aria-haspopup="listbox"
-      [attr.aria-expanded]="listOpen()"
-      [attr.aria-controls]="listOpen() ? id + '-list' : null"
-      (click)="toggleList()"
+      [attr.aria-expanded]="list.open()"
+      [attr.aria-controls]="list.open() ? id + '-list' : null"
+      (click)="list.toggle()"
     >
       <span>{{ centerText() }}</span>
-      <mat-icon aria-hidden="true">{{ listOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+      <mat-icon aria-hidden="true">{{ list.open() ? 'expand_less' : 'expand_more' }}</mat-icon>
     </button>
-    @if (listOpen()) {
+    @if (list.open()) {
       <ul
         #listbox
         class="center__list"
@@ -145,17 +158,17 @@
         tabindex="0"
         [id]="id + '-list'"
         [attr.aria-label]="centerText()"
-        [attr.aria-activedescendant]="id + '-o' + active()"
-        (keydown)="onListKeydown($event)"
-        (click)="onListClick($event)"
+        [attr.aria-activedescendant]="id + '-o' + list.active()"
+        (keydown)="list.keydown($event)"
+        (click)="list.click($event)"
       >
         @for (o of options(); track o.id; let i = $index) {
           <li
             class="center__opt"
             role="option"
             [id]="id + '-o' + i"
-            [class.center__opt--active]="i === active()"
-            [attr.aria-selected]="i === active()"
+            [class.center__opt--active]="i === list.active()"
+            [attr.aria-selected]="i === list.active()"
             [attr.data-i]="i"
           >
             @if (o.square) {

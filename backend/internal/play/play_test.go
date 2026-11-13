@@ -719,6 +719,10 @@ func (noRoster) SetRevivifyBlocked(context.Context, pgx.Tx, string, string, bool
 
 func (noRoster) Conditions() []link.Named { return nil }
 
+func (noRoster) RestoreEquipped(context.Context, pgx.Tx, string, string, string, bool) (func(context.Context), error) {
+	return nil, errors.New("not in this test")
+}
+
 func (noRoster) ContentNames(context.Context, pgx.Tx, string) (func(string) string, error) {
 	return func(string) string { return "" }, nil
 }
@@ -945,6 +949,7 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 	_, combat["SetCombatantSide"] = cc.SetCombatantSide(ctx, connect.NewRequest(&playv1.SetCombatantSideRequest{CampaignId: id}))
 	_, combat["SetCombatantCover"] = cc.SetCombatantCover(ctx, connect.NewRequest(&playv1.SetCombatantCoverRequest{CampaignId: id}))
 	_, combat["SetMonsterReactionMode"] = cc.SetMonsterReactionMode(ctx, connect.NewRequest(&playv1.SetMonsterReactionModeRequest{CampaignId: id}))
+	_, combat["SetSunlight"] = cc.SetSunlight(ctx, connect.NewRequest(&playv1.SetSunlightRequest{CampaignId: id}))
 	_, combat["SetCombatantHidden"] = cc.SetCombatantHidden(ctx, connect.NewRequest(&playv1.SetCombatantHiddenRequest{CampaignId: id}))
 	_, combat["AddCombatants"] = cc.AddCombatants(ctx, connect.NewRequest(&playv1.AddCombatantsRequest{CampaignId: id}))
 	_, combat["AddMonsters"] = cc.AddMonsters(ctx, connect.NewRequest(&playv1.AddMonstersRequest{CampaignId: id}))

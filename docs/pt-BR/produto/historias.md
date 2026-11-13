@@ -69,6 +69,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 | [MR-054](#mr-054-usar-a-ação-de-uma-criatura-no-turno-dela) | Combate | MVP |
 | [MR-055](#mr-055-responder-ao-efeito-extra-de-uma-criatura) | Combate | MVP |
 | [MR-056](#mr-056-mostrar-a-mesa-em-uma-tela) | Sessão | MVP |
+| [MR-057](#mr-057-ligar-o-sol-num-combate) | Combate | MVP |
 | [MR-002](#mr-002-gerar-convite) | Campanha | MVP (pré-requisito) |
 | [MR-005](#mr-005-criar-npcs) | Personagem | MVP (pré-requisito) |
 | [MR-007](#mr-007-importar-ficha-em-pdf) | Personagem | Depois |
@@ -138,6 +139,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 - **Dado** um personagem completo, **quando** o jogador abre a ficha no celular, **então** vê as seções da ficha oficial (habilidades, perícias, combate, magias, equipamento) **e** os valores calculados, como modificadores, classe de armadura, pontos de vida, CD de resistência das magias e ataque mágico, vêm prontos do servidor.
 - **Dado** o "Equipamento" da ficha, **quando** o jogador o lê, **então** ele lista a armadura, o escudo, as armas e os itens, depois o equipamento do antecedente como texto ("Do antecedente: …", o de um antecedente da mesa ou o que o jogador escreveu para um antecedente "Outro" personalizado), depois as moedas. Uma arma versátil mostra o dano com duas mãos abaixo do dano normal ("Com duas mãos: 1d8+1").
 - **Dado** uma armadura, um escudo ou uma arma que a ficha lista, **quando** o dono a equipa ou a guarda depois da trava (RN-01), **então** o servidor devolve a classe de armadura, os ataques e a checagem de Armadura Arcana calculados só com o equipamento em uso; o que o personagem apenas carrega fica na lista e não conta para nada. O "Equipamento" da ficha as lista em dois grupos, "Equipado" e "Carregado", cada peça com "Equipar" ou "Guardar" (o dono e o mestre, a qualquer hora em que o personagem vive; a ficha de um personagem morto não tem o botão); os nomes, os grupos e a classe de armadura que a troca daria vêm do servidor (`DerivedSheet.gear`), e depois da troca a ficha diz o que mudou e a nova classe de armadura e leva o foco ao botão da peça que mudou.
+- **Dado** uma arma com marca (prateada, adamantina, mágica), **quando** a ficha, os ataques ou o equipamento do combate a mostram, **então** as etiquetas dizem as marcas em palavras ("Prateada", "Adamantina", "Mágica") e uma arma comum não tem nenhuma; **quando** o dono (enquanto a ficha é editável) ou o mestre abre o menu "⋮" da arma, **então** "Marcas da <arma>" tem uma linha para cada marca, e "Salvar marcas" as grava sobre a ficha inteira com a sua revisão (uma ficha desatualizada é recusada com o texto de conflito de sempre); outro jogador nunca vê a grade, os botões nem as marcas de um personagem que não é dele.
 - **Dado** o passo "Perícias", **quando** a raça, a sub-raça ou o antecedente já dão uma perícia, **então** ela aparece marcada e travada com a origem ("da raça", "do antecedente") e não conta como escolha. O jogador escolhe outra perícia em vez de repetir uma proficiência, como o SRD permite.
 - **Dado** um personagem novo feito acima do nível 1 numa campanha que sobe de nível por XP de inimigos derrotados, **quando** o editor abre, **então** o campo de experiência começa no XP do nível dele (6.500 no nível 5) e acompanha o nível até o jogador digitar nele. Uma campanha por marcos mantém 0.
 - **Dado** o campo de subclasse, **quando** o jogador edita a classe, **então** ele oferece "Nenhuma", diz em que nível a classe escolhe a subclasse ("O Bárbaro escolhe a subclasse no nível 3.") e troca a subclasse quando a classe muda.
@@ -339,6 +341,7 @@ Quando um comportamento veio de uma resposta do produto, o [arquivo](../../archi
 - **Dado** habilidades de classe, **quando** o jogador toca em "Usar" (Retomar o Fôlego, Surto de Ação), **então** o uso é gasto; sem usos o app diz "Sem usos: volta num descanso curto". Ataque Extra mostra "1 ataque restante".
 - **Dado** que a ação ou a ação bônus está livre, **quando** o jogador olha "Encerrar turno", **então** ele fica contornado e, com a ação livre, pergunta ali mesmo; vira o botão preenchido quando as duas estão gastas.
 - **Dado** um combate em andamento e um jogador na própria vez, **quando** ele saca ou guarda uma arma, **então** a primeira do turno é grátis e a segunda, ou o escudo, gasta a ação (uma ação extra de Velocidade paga no lugar); a armadura é recusada ("Vestir ou tirar armadura leva minutos: não dá em pleno combate"). Na vez de outro jogador nada muda. A aba "Ataques" do jogador tem, sob os ataques, a dobra "Sacar ou guardar" com a CA no cabeçalho, uma linha da regra (1ª arma grátis, depois a ação; escudo: ação; armadura: só fora do combate), cada botão dizendo o custo ("Guardar · grátis", "Sacar · ação"), um aviso antes de sacar uma arma de duas mãos que deixaria o escudo parado e o botão desativado, com o motivo, quando não sobra nem a interação gratuita nem a ação; a recusa vem em palavras (`ARMOR_IN_COMBAT`, `NOT_YOUR_TURN`, `ACTION_USED`, `COMBATANT_DOWN`). O mestre troca o equipamento na ficha, sem custo. Se a interação gratuita do turno já foi gasta está no combatente (`Combatant.object_interaction_used`), só para o dono e o mestre.
+- **Dado** uma troca de equipamento num combate, **quando** o mestre desfaz a última ação, **então** a troca é desfeita primeiro: a interação gratuita, a ação ou a ação extra que ela gastou voltam e a peça volta para onde estava na ficha (a classe de armadura e os ataques acompanham), e só depois a ação que está sob ela; uma ação anterior não pode ser desfeita enquanto a troca estiver lá. **E** o registro do combate mostra a troca ("Reator guardou Adaga (ação)", "(grátis)", "(ação extra)"; "(pelo mestre)" quando foi o mestre) só ao mestre e ao dono do personagem, e a linha some quando ela é desfeita. Se a ficha já não lista a peça, o desfazer diz isso e não muda nada.
 
 **Vantagem e desvantagem**
 - **Dado** um ataque, um ataque mágico ou teste de resistência, uma armadilha, uma dica de quebra-cabeça, um teste de cena ou uma busca por armadilhas, **quando** o servidor encontra uma circunstância que dá vantagem ou desvantagem (uma condição de qualquer das criaturas, uma criatura que não se vê, alcance longo ou um hostil a 5 ft num ataque à distância, Ataque Descuidado, Sentido de Perigo, Tática de Matilha, Esquiva, uma vantagem racial num teste de resistência contra o tipo de fonte do teste: Bravura contra medo, Ancestral Feérico contra encanto, Esperteza Gnômica em testes de Inteligência, Sabedoria e Carisma contra magia, Resiliência Anã contra veneno), **então** a rolagem usa dois d20, o mais alto ou o mais baixo vale (eles se anulam quando as duas valem), a tela lista os motivos que o jogador pode ver **e** mostra os dois dados, o que vale marcado "vale" e o outro "descartado"; com dados reais o jogador digita os dois. Um acerto a 5 ft de um alvo paralisado ou inconsciente é um acerto crítico (SRD 5.1, "Advantage and Disadvantage", Conditions).
@@ -633,7 +636,7 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - **Dado** que cadastro uma magia de área (um cone de 4,5 m, uma esfera de 6 m de raio), **quando** salvo, **então** a área aparece na descrição dela, **e** no combate quem conjura escolhe as criaturas atingidas, como numa magia de área do SRD.
   Uma magia com alcance "Pessoal" ou "Toque" é válida; "Pessoal" com "uma criatura" ou "várias" é recusada.
 - **Dado** um conteúdo cadastrado em "Mirathel", **quando** abro outra campanha minha, **então** ele não aparece lá: o conteúdo é por campanha.
-- **Dado** uma característica que o mestre cadastra, **quando** ele escolhe o efeito dela, **então** escolhe num menu fechado (modificador, proficiência, recurso, sentido, modo de rolagem, ação, ataque extra, ataque à distância, resistência, imunidade a condição, estado, regra de arma, arma da característica, gatilho num evento, escolha, dado de manobra, nota, magia concedida).
+- **Dado** uma característica que o mestre cadastra, **quando** ele escolhe o efeito dela, **então** escolhe num menu fechado (modificador, proficiência, recurso, sentido, modo de rolagem, ação, ataque extra, ataque à distância, resistência, imunidade a condição, estado, regra de arma, arma da característica, gatilho num evento, escolha, dado de manobra, nota, magia concedida, sinalizador, ataque natural).
   Uma ação pode gastar um recurso que a entrada define (a de um talento, um que os efeitos do próprio talento definem: um talento da mesa com 3 usos por descanso longo), e uma característica de classe ou de subclasse pode ter uma **lista de opções** que o jogador escolhe (as manobras de uma mesa, cada uma com os seus efeitos; "Opções para escolher" no editor da característica).
   O conteúdo da mesa nunca executa código.
 - **Dado** uma classe da mesa que conjura de uma lista própria, **quando** dou nome a magias do SRD nessa lista no editor da classe ("Magias do SRD na lista da classe"), **então** elas se juntam às magias da mesa que citam a classe: o personagem as prepara e aprende, o avanço de nível as oferece e a página "Magias" as lista para a classe.
@@ -665,6 +668,12 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 - **Dado** uma característica com o efeito "Valor mínimo no dado" em jogadas de ataque com o valor 12, **quando** o d20 do dono mostra 2, **então** a jogada guarda a face 2, diz que ela conta como 12 e nomeia a característica, e o total usa 12.
   Um valor fora de 2 a 20 é recusado no próprio campo, e um tipo de dano num mínimo que cobre mais que dano é recusado no próprio campo.
   De dois mínimos vale o maior, e um empate com o Talento Confiável fica com o Talento Confiável.
+- **Dado** uma característica com o efeito "Valor mínimo no dado" em testes de habilidade com o valor 12, **quando** o dono rola um teste de cena ou uma dica de quebra-cabeça e o d20 mostra 3, **então** a linha sob o resultado diz "O d20 de 3 contou como 12: <nome da característica>."
+  A iniciativa diz "d20: 3 → 12 (<nome da característica>) + 4 = 16" para o mestre, nunca "1d20 (3) + 4 = 16".
+  Enquanto o jogador digita o d20 de um teste de cena ou de uma busca por armadilhas, o total mostrado antes de enviar já conta o maior mínimo que cobre testes; um empate com o Talento Confiável fica com o Talento Confiável.
+  Um teste de resistência numa cena não é um teste de habilidade: o mínimo não é mostrado antes ali.
+  Quem decide a jogada é o servidor.
+- **Dado** uma característica com o efeito "Valor mínimo no dado" em testes de resistência, **quando** o d20 do teste de uma técnica de criatura (um teste extra de um ataque) mostra menos que o valor, **então** a linha do registro diz "d20: 2 → 8 (<nome da característica>) + 2 = 10", com o número que o total conta.
 - **Dado** uma característica com o efeito "Valor mínimo no dado" em dano com o valor 6, **quando** o dono rola o dano de uma arma e um d4 mostra 1, **então** o dado conta como 4 (o seu maior valor) e a linha de dano mostra o 1 e como ele conta; **e** um d8 que mostra 3 conta como 6 sob o mesmo mínimo.
   Outro jogador não lê nem a face nem o número.
 - **Dado** uma característica com o efeito "Rolar de novo" em jogadas de ataque, no máximo 2, gastando 1 uso de um recurso da característica, **quando** o d20 do dono mostra 2 ou menos e sobra um uso, **então** o jogador recebe "rolar de novo?" antes de a jogada ser dita bem-sucedida ou falha; "sim" gasta o uso e o novo d20 vale, "não" não gasta nada.
@@ -711,15 +720,16 @@ As regras de dados, os limites e o lado do servidor estão em [Conteúdo da mesa
 
 - **Dado** uma característica, um traço ou um talento da mesa com um modificador do deslocamento de voo, de natação, de escalada ou de escavação ("Deslocamento de voo", "de natação", "de escalada", "de escavação"; "somar", "pelo menos" ou "definir"), **quando** um personagem o tem, **então** a ficha lista esse deslocamento sob o deslocamento de caminhada, em metros e pés, **e** ele segue a condição do efeito (`when`).
   A fórmula pode ler `speedwalk()`, o deslocamento de caminhada já com os modificadores: uma raça que nada tão rápido quanto anda escreve "definir `speedwalk()`", e um talento que soma 3 m (10 pés) ao deslocamento de caminhada leva junto o de natação.
-  No combate a criatura se move no deslocamento de voo quando ele é o melhor dos dois; nadar e escalar ficam só na ficha, porque a grade não tem custo para eles.
+  No combate o combatente leva os quatro deslocamentos (`Combatant.speed_fly_ft`, `speed_swim_ft`, `speed_climb_ft`, `speed_burrow_ft`) para o mestre e o jogador do personagem, como leva o deslocamento de caminhada; uma forma de Forma Selvagem e uma criatura trazem os seus.
+  A criatura se move no deslocamento de voo quando ele é o melhor dos dois; a grade não gasta o deslocamento de natação, escalada ou escavação, então um movimento custa o que custaria a pé.
 - **Dado** um efeito "Respira na água", **quando** um personagem o tem, **então** a ficha diz "Respira na água" na caixa do deslocamento; o app não conta fôlego nem afogamento.
-- **Dado** um talento, um traço ou uma característica com o efeito "Magia concedida" (uma magia do SRD ou da mesa, o nível em que começa, a habilidade de conjuração — Inteligência, Sabedoria, Carisma ou "o jogador escolhe" —, o recurso que cada conjuração gasta, uma chave para conjurar também com espaço, uma chave para só ritual e uma chave para listá-la entre as conhecidas), **quando** um personagem o tem, **então** a ficha lista a magia em "Magias concedidas" com a origem, como se conjura e a CD e o bônus de ataque da concessão, **e** os números de magias conhecidas, truques e preparadas do personagem continuam como estavam.
-  Uma magia de círculo é conjurada no próprio círculo, um truque cresce com o nível do personagem e os componentes materiais não são dispensados.
+- **Dado** um talento, um traço ou uma característica com o efeito "Magia concedida" (uma magia do SRD ou da mesa, o nível em que começa, a habilidade de conjuração — Inteligência, Sabedoria, Carisma ou "o jogador escolhe" —, o recurso que cada conjuração gasta, uma chave para conjurar também com espaço, uma chave para só ritual, uma chave para listá-la entre as conhecidas, uma chave para dispensar o material e, numa concessão limitada, quantos usos cada conjuração gasta), **quando** um personagem o tem, **então** a ficha lista a magia em "Magias concedidas" com a origem, como se conjura e a CD e o bônus de ataque da concessão, **e** os números de magias conhecidas, truques e preparadas do personagem continuam como estavam.
+  Uma magia de círculo é conjurada no próprio círculo, um truque cresce com o nível do personagem e os componentes materiais só são dispensados se a concessão disser; então a ficha e a folha de conjuração tiram o "M" da linha de componentes (nada mais muda: o servidor nunca confere componentes).
   Quando a habilidade é "o jogador escolhe", o jogador escolhe uma vez, nas escolhas da ficha, e até lá a concessão não tem números.
 - **Dado** uma magia concedida, **quando** o jogador a conjura, em combate ou fora dele, **então** a ficha de conjuração a oferece como um jeito próprio, sem espaço de magia (espaço só quando a concessão permite), usando a habilidade da concessão para a jogada de ataque e a CD do teste de resistência.
-  Uma concessão limitada gasta um uso do recurso: a segunda conjuração sem uso é recusada ("A concessão não tem mais usos."), o desfazer da primeira devolve o uso, e uma concessão à vontade nunca acaba.
+  Uma concessão limitada gasta os usos que o custo diz (um, se nada for dito): uma conjuração que os usos restantes não cobrem é recusada ("A concessão não tem mais usos."), o desfazer da primeira devolve o uso, e uma concessão à vontade nunca acaba.
   Uma concessão só de ritual conjura como ritual.
-- **Dado** o editor de efeitos, **quando** cadastro uma magia concedida, **então** o servidor recusa uma magia que não existe, uma concessão só de ritual numa magia sem a etiqueta de ritual, um recurso que a entrada não define e uma habilidade que não é uma das quatro, cada um no seu campo.
+- **Dado** o editor de efeitos, **quando** cadastro uma magia concedida, **então** o servidor recusa uma magia que não existe, uma concessão só de ritual numa magia sem a etiqueta de ritual, um recurso que a entrada não define, um custo sem recurso e uma habilidade que não é uma das quatro, cada um no seu campo.
 
 **Opções para os conjuntos de opções do SRD.**
 
@@ -1756,6 +1766,29 @@ Ver [Arquitetura](../../architecture/campaign-package.md).
 
 #### Relacionadas
 - [MR-012](#mr-012-acompanhar-a-sessão), [MR-028](#mr-028-mostrar-uma-imagem-aos-jogadores), [MR-036](#mr-036-névoa-de-guerra-pela-visão), [RN-10](regras.md#rn-10-mapa-sem-spoiler).
+
+### MR-057: Ligar o sol num combate
+
+**Como** mestre, **quero** ligar a luz do sol num combate, no mapa todo ou nos quadrados que eu pintar, **para que** as criaturas que temem o sol (um drow, um espectro, uma sombra) rolem como as regras mandam sem eu me lembrar disso.
+
+- Prioridade: MVP
+- Regras: RN-20, RN-29
+- Módulos: play, rules
+
+#### Critérios de aceitação
+- **Dado** que sou o mestre de um combate, **quando** aperto o botão do sol na barra do combate ("Luz do sol"), **então** o sol fica ligado no mapa todo; **dado** que escolho "Onde eu pintar" e pinto quadrados, **então** só esses quadrados ficam no sol, e "Pronto" encerra a pintura.
+- **Dado** que o sol está ligado e um drow está nele, **quando** rolo o ataque, **então** o modo da rolagem sugere "Desvantagem. Luz do sol (Sensibilidade à Luz do Sol)"; uma criatura sem esse traço rola como antes.
+- **Dado** um espectro no sol, **quando** faz um teste de Percepção, **então** o teste tem desvantagem "nos testes que dependem da visão"; **dado** uma sombra (Fraqueza à Luz do Sol) no sol, **então** os ataques, os testes e as salvaguardas dela a têm.
+- **Dado** que uma criatura está numa zona de Escuridão, **então** ela não está no sol.
+- **Dado** que desligo o sol, **então** o alcance e os quadrados pintados ficam para a próxima vez; **dado** que desfaço, **então** a mudança do sol não fecha o desfazer.
+- **Dado** que sou jogador, **então** nunca leio que o sol está ligado, onde ele alcança, quem está nele nem qual traço uma criatura tem, num mapa que vejo em parte ou não vejo; uma rolagem que o sol mudou nomeia a fonte como "Outra fonte" (RN-20).
+
+#### No app
+- O botão do sol fica na barra do combate (só o mestre); o alcance e "Pintar" ficam no cartão do mapa, só com o sol ligado. Ver [Design](../../design/combat.md).
+
+#### Relacionadas
+- [MR-042](#mr-042-bestiário), [RN-29](regras.md#rn-29-monstros-no-combate).
+
 
 ## Prioridade: MVP (pré-requisito)
 

@@ -23,7 +23,7 @@ describe('CastSheet: a spell cast through a grant (MR-025)', () => {
     saveDc: 14,
   };
 
-  async function open(over: { alsoWithSlot?: boolean } = {}) {
+  async function open(over: { alsoWithSlot?: boolean; usesCost?: number } = {}) {
     TestBed.resetTestingModule();
     const castSpell = vi.fn().mockRejectedValue(new Error('stop'));
     const details = { spell: { level: 1 }, damage: [], healBySlotLevel: {}, higherLevel: [] };
@@ -39,7 +39,12 @@ describe('CastSheet: a spell cast through a grant (MR-025)', () => {
       concentration: true,
       cantripDice: '',
       economy: ActionEconomy.ACTION,
-      grant: { ...grant, alsoWithSlot },
+      grant: {
+        ...grant,
+        alsoWithSlot,
+        usesLeft: over.usesCost ? 3 : 1,
+        usesCost: over.usesCost ?? 0,
+      },
       slots: alsoWithSlot ? [{ level: 1, free: 2, pact: false }] : [],
       usage: [{ level: 1, total: 2, used: 0 }],
       pact: null,
@@ -82,6 +87,11 @@ describe('CastSheet: a spell cast through a grant (MR-025)', () => {
     const call = castSpell.mock.calls[0];
     expect(call[4]).toBeNull();
     expect(call[12]).toMatchObject({ grantedBy: 'feat:graca@mesa' });
+  });
+
+  it('says what a cast costs when it spends more than one use', async () => {
+    const { el } = await open({ usesCost: 2 });
+    expect(el.querySelector('.grant')?.textContent).toContain('Graça de teste · gasta 2 · 3 usos');
   });
 
   it('offers a slot only when the grant allows one, and sends the slot without a use of the grant', async () => {

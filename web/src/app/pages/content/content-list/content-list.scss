@@ -56,9 +56,11 @@
     outline: none;
   }
 
+  // The master's four actions as a 2x2 grid of equal buttons (K1); one column on a phone.
   &__actions {
-    display: inline-flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 232px));
+    flex-shrink: 0;
     gap: var(--mr-space-2);
   }
 
@@ -160,9 +162,11 @@
     }
   }
 
+  // The master's four actions as a 2x2 grid of equal buttons (K1); one column on a phone.
   &__actions {
-    display: inline-flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 232px));
+    flex-shrink: 0;
     gap: var(--mr-space-2);
   }
 }
@@ -320,6 +324,11 @@
 @media (max-width: 767.98px) {
   .head {
     flex-direction: column;
+
+    &__actions {
+      grid-template-columns: minmax(0, 1fr);
+      align-self: stretch;
+    }
   }
 
   .filters {
@@ -329,4 +338,176 @@
 
 .head__action {
   min-height: 44px;
+}
+
+// The entries the rules refuse (K1, K3): a panel above the list, one row each, the master fixes or removes them.
+.out {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  padding: var(--mr-space-3) var(--mr-space-4);
+  border-color: var(--mr-danger-ink);
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: var(--mr-space-2);
+    margin: 0;
+    font-family: var(--mr-font-display);
+    font-size: var(--mr-font-21);
+    font-weight: 700;
+    line-height: 26px;
+    color: var(--mr-danger-ink);
+
+    .mat-icon {
+      flex: none;
+    }
+  }
+
+  &__lead {
+    margin: 0;
+    font-size: var(--mr-font-14);
+    color: var(--mr-ink-muted);
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item + &__item {
+    border-top: 1px solid var(--mr-rule);
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: minmax(180px, 280px) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--mr-space-4);
+    padding: var(--mr-space-2) 0;
+  }
+
+  &__who {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--mr-space-1);
+    min-width: 0;
+  }
+
+  &__name {
+    font-family: var(--mr-font-display);
+    font-size: var(--mr-font-18);
+    font-weight: 700;
+    line-height: 22px;
+    color: var(--mr-ink);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+
+    &:hover {
+      color: var(--mr-accent-text);
+    }
+
+    &--dep {
+      font-size: var(--mr-font-16);
+    }
+  }
+
+  &__what {
+    min-width: 0;
+  }
+
+  &__why,
+  &__sub {
+    margin: 0;
+  }
+
+  &__why {
+    font-size: var(--mr-font-15);
+    color: var(--mr-ink);
+  }
+
+  &__sub {
+    font-size: var(--mr-font-14);
+    color: var(--mr-ink-muted);
+  }
+
+  &__act {
+    display: flex;
+    align-items: center;
+    gap: var(--mr-space-2);
+  }
+
+  &__fix {
+    min-height: 44px;
+  }
+
+  // What is out only because its class or race is: under the row, with a rule on the left.
+  &__dep {
+    display: grid;
+    grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--mr-space-4);
+    margin: 0 0 var(--mr-space-2) var(--mr-space-4);
+    padding: var(--mr-space-2) 0 var(--mr-space-2) var(--mr-space-3);
+    border-left: 2px solid var(--mr-rule);
+  }
+
+  &__why--dep {
+    color: var(--mr-ink-muted);
+    font-size: var(--mr-font-14);
+  }
+}
+
+// The "⋮" of a row: 44 px, the same as "Corrigir" beside it.
+.more {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-sm);
+  background: var(--mr-surface);
+  color: var(--mr-ink);
+  cursor: pointer;
+
+  .mat-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+    color: var(--mr-ink);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .out {
+    &__row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas:
+        'who act'
+        'what act';
+      gap: 2px var(--mr-space-3);
+    }
+
+    &__who {
+      grid-area: who;
+    }
+
+    &__what {
+      grid-area: what;
+    }
+
+    &__act {
+      grid-area: act;
+      align-self: start;
+    }
+  }
 }

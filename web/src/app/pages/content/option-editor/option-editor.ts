@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { RouterLink } from '@angular/router';
 
 import {
+  type TableContentViolation,
   type TableEntry,
   TableContentKind,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
@@ -90,6 +91,8 @@ export class OptionEditor {
   readonly catalog = input.required<CatalogVm>();
   readonly entries = input<readonly TableEntry[]>([]);
   readonly saveBlocked = input('');
+  /** The rules refuse this entry on read (it is left out of the campaign): the violation, to put on its field. */
+  readonly leftOut = input<TableContentViolation | null>(null);
 
   readonly saved = output<EditorSaved>();
   /** The entry's switch "Disponível para os jogadores" was turned (it saves at once, apart from the form). */
@@ -229,6 +232,7 @@ export class OptionEditor {
           e?.body.case === 'tableOption' ? optionToDraft(e.body.value) : emptyOption(),
         );
         this.saver.clear();
+        this.seedLeftOut();
         this.missingShown.set(false);
       });
     });
@@ -252,6 +256,13 @@ export class OptionEditor {
     }
     const srd = this.srdOptions(Object.values(OFFERERS).flat()).find((o) => o.key === key);
     return srd?.namePt ?? key;
+  }
+
+  /** The rules refuse a field of this entry, so the campaign is built without it: the field says why, and the focus goes to it. */
+  private seedLeftOut(): void {
+    if (this.saver.seedLeftOut(this.leftOut(), this.known)) {
+      this.saver.focusRefusal(this.host.nativeElement, this.injector);
+    }
   }
 
   protected patch(p: Partial<OptionDraft>): void {

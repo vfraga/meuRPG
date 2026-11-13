@@ -14,13 +14,17 @@ import { RelayEvents } from '../../../shared/relay-events/relay-events';
   imports: [RelayEvents, MatIconModule, PairFoot],
   template: `
     <section class="ask" aria-labelledby="ask-t" appRelayEvents (relayKeydown)="$event.key === 'Escape' && cancel.emit()">
-      <h2 class="ask__title" id="ask-t" tabindex="-1" #title>Arquivar {{ name() }}?</h2>
+      <h2 class="ask__title" id="ask-t" tabindex="-1" #title>{{ verb() }} {{ name() }}?</h2>
       <div class="mr-notice mr-notice--warning">
         <mat-icon aria-hidden="true">warning</mat-icon>
-        <p>As fichas que usam {{ name() }} continuam funcionando. A entrada só deixa de aparecer para fichas novas.</p>
+        @if (verb() === 'Remover') {
+          <p>A entrada é arquivada, não apagada. As fichas que usam {{ name() }} continuam funcionando.</p>
+        } @else {
+          <p>As fichas que usam {{ name() }} continuam funcionando. A entrada só deixa de aparecer para fichas novas.</p>
+        }
       </div>
       <p class="ask__using">{{ using() }}</p>
-      <app-pair-foot cancelLabel="Voltar" [confirmLabel]="'Arquivar ' + name()" confirmIcon="archive" [busy]="busy()" (cancel)="cancel.emit()" (confirm)="confirm.emit()" />
+      <app-pair-foot cancelLabel="Voltar" [confirmLabel]="verb() + ' ' + name()" confirmIcon="archive" [busy]="busy()" (cancel)="cancel.emit()" (confirm)="confirm.emit()" />
     </section>
   `,
   styles: `
@@ -62,6 +66,8 @@ import { RelayEvents } from '../../../shared/relay-events/relay-events';
 export class ArchiveQuestion {
   readonly name = input.required<string>();
   readonly using = input.required<string>();
+  /** "Remover" on an entry the rules refuse (it is archived, nothing is deleted). */
+  readonly verb = input<'Arquivar' | 'Remover'>('Arquivar');
   readonly busy = input(false);
   readonly cancel = output<void>();
   readonly confirm = output<void>();

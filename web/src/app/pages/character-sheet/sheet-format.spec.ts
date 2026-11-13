@@ -2,6 +2,7 @@ import {
   coinEntries,
   formatDate,
   formatWhen,
+  grantedSpellTags,
   issueTitle,
   keepUnitsTogether,
   spellLimitsText,
@@ -14,6 +15,33 @@ import {
 } from './sheet-format';
 
 describe('sheet-format', () => {
+  it('words how a granted spell is cast: its cost and the waived material', () => {
+    const g = {
+      key: 'spell:bless',
+      namePt: 'Bênção',
+      level: 1,
+      sourcePt: 'Graça de teste',
+      atWill: false,
+      resource: 'usos_da_graca',
+      resourceNamePt: 'Usos da graça',
+      alsoWithSlot: false,
+      ritualOnly: false,
+      countsAsKnown: false,
+      noMaterialComponents: false,
+      usesCost: 0,
+      ability: null,
+      abilityPending: false,
+      saveDc: 0,
+      attackBonus: 0,
+    } as const;
+    expect(grantedSpellTags(g)).toEqual(['Gasta um uso de Usos da graça']);
+    expect(grantedSpellTags({ ...g, usesCost: 2, noMaterialComponents: true })).toEqual([
+      'Gasta 2 usos de Usos da graça',
+      'Sem material',
+    ]);
+    expect(grantedSpellTags({ ...g, atWill: true, resource: '' })).toEqual(['À vontade']);
+  });
+
   it('keeps a number beside its unit, and only a unit', () => {
     expect(keepUnitsTogether('Uma luneta, um rolo de corda e 10 PO.')).toBe(
       'Uma luneta, um rolo de corda e 10\u00a0PO.',
@@ -21,6 +49,7 @@ describe('sheet-format', () => {
     expect(keepUnitsTogether('Corda de 15 m e 2 kg de ração, 3 pés de fio')).toBe(
       'Corda de 15\u00a0m e 2\u00a0kg de ração, 3\u00a0pés de fio',
     );
+    expect(keepUnitsTogether('Carga de 90 kg (180 lb)')).toBe('Carga de 90\u00a0kg (180\u00a0lb)');
     // A word that only starts like a unit stays as it is.
     expect(keepUnitsTogether('5 mapas e 2 pontas, 10 POTES')).toBe('5 mapas e 2 pontas, 10 POTES');
   });

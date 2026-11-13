@@ -38,9 +38,7 @@ func (w *world) monsterOnTurn(key, name string, hidden bool) *playv1.Combatant {
 	ctx := w.t.Context()
 	m := w.master
 	e, mon := w.addMonsterWithATotalOfItsOwn(key, name, hidden)
-	for id, sq := range map[string][2]int32{w.combatant(w.toren).GetId(): {12, 14}, mon.GetId(): {13, 14}} {
-		must(m.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: id, IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true})))
-	}
+	w.placeForced(m, e.GetId(), placement{w.combatant(w.toren).GetId(), 12, 14}, placement{mon.GetId(), 13, 14})
 	for range 40 {
 		cur := must(m.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
 		if cur.GetCurrentCombatantId() == mon.GetId() {

@@ -2,6 +2,7 @@ package play
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
 
@@ -52,12 +54,35 @@ func stillSurprised(enc playdb.Encounter, current int, c playdb.Combatant) bool 
 	return combat.SurprisedUntilTurnEnds(enc.Status == statusActive, int(enc.Round), current, int(c.OrderIndex))
 }
 
-// surprisedIDs are the combatants that are surprised now.
-func (s *Service) surprisedIDs(_ context.Context, enc playdb.Encounter, cs []playdb.Combatant, rows []playdb.CombatSurprised) ([]string, error) {
+// neverSurprised says a table feature's never_surprised flag holds for the combatant: it cannot be surprised, so a
+// mark the master made before the flag came counts for nothing. A character that left the sheet's active state (it
+// died, and the combat was not told) has no sheet to read and is not immune. tx is the open transaction, or nil for a read.
+func (s *Service) neverSurprised(ctx context.Context, tx pgx.Tx, campaignID string, c playdb.Combatant) (bool, error) {
+	sheet, err := s.sheetOf(ctx, tx, campaignID, c)
+	if connect.CodeOf(err) == connect.CodeNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return sheet.Traits.HasFlag(rules.FlagNeverSurprised), nil
+}
+
+// surprisedIDs are the combatants that are surprised now: the marked ones whose first turn has not ended and
+// that no never_surprised flag protects. tx is the open transaction, or nil for a read.
+func (s *Service) surprisedIDs(ctx context.Context, tx pgx.Tx, campaignID string, enc playdb.Encounter, cs []playdb.Combatant, rows []playdb.CombatSurprised) ([]string, error) {
 	current := currentOrder(enc, cs)
 	var out []string
 	for _, r := range rows {
-		if c, ok := combatantByID(cs, r.CombatantID); ok && stillSurprised(enc, current, c) {
+		c, ok := combatantByID(cs, r.CombatantID)
+		if !ok || !stillSurprised(enc, current, c) {
+			continue
+		}
+		immune, err := s.neverSurprised(ctx, tx, campaignID, c)
+		if err != nil {
+			return nil, err
+		}
+		if !immune {
 			out = append(out, c.ID)
 		}
 	}
@@ -65,17 +90,17 @@ func (s *Service) surprisedIDs(_ context.Context, enc playdb.Encounter, cs []pla
 }
 
 // surprisedFacts reads who is surprised now, for the attack modes.
-func (s *Service) surprisedFacts(ctx context.Context, q *playdb.Queries, enc playdb.Encounter, cs []playdb.Combatant) ([]string, error) {
+func (s *Service) surprisedFacts(ctx context.Context, tx pgx.Tx, campaignID string, q *playdb.Queries, enc playdb.Encounter, cs []playdb.Combatant) ([]string, error) {
 	rows, err := q.ListSurprised(ctx, enc.ID)
 	if err != nil {
 		return nil, fmt.Errorf("list the surprised: %w", err)
 	}
-	return s.surprisedIDs(ctx, enc, cs, rows)
+	return s.surprisedIDs(ctx, tx, campaignID, enc, cs, rows)
 }
 
 // surprisedNow says whether one combatant is surprised now. tx is the open transaction, or
 // nil for a read.
-func (s *Service) surprisedNow(ctx context.Context, tx pgx.Tx, enc playdb.Encounter, c playdb.Combatant) (bool, error) {
+func (s *Service) surprisedNow(ctx context.Context, tx pgx.Tx, campaignID string, enc playdb.Encounter, c playdb.Combatant) (bool, error) {
 	q := s.queriesIn(tx)
 	marked, err := q.IsCombatantSurprised(ctx, c.ID)
 	if err != nil {
@@ -90,12 +115,16 @@ func (s *Service) surprisedNow(ctx context.Context, tx pgx.Tx, enc playdb.Encoun
 			current = int(current32)
 		}
 	}
-	return stillSurprised(enc, current, c), nil
+	if !stillSurprised(enc, current, c) {
+		return false, nil
+	}
+	immune, err := s.neverSurprised(ctx, tx, campaignID, c)
+	return !immune, err
 }
 
 // mustNotBeSurprised refuses a combatant that is surprised: it does not act, move or react.
 func (s *Service) mustNotBeSurprised(ctx context.Context, c *combatTx, who playdb.Combatant) error {
-	surprised, err := s.surprisedNow(ctx, c.tx, c.enc, who)
+	surprised, err := s.surprisedNow(ctx, c.tx, c.session.CampaignID, c.enc, who)
 	if err != nil {
 		return err
 	}
@@ -161,6 +190,15 @@ func (s *Service) surprisedWrite(ctx context.Context, c *combatTx, combatantID s
 	// Surprise is the start of the encounter: until the creature's first turn ends.
 	if !stillSurprised(c.enc, currentOrder(c.enc, cs), playdb.Combatant{OrderIndex: who.OrderIndex}) {
 		return nil, errContest(playv1.ContestBlockedReason_CONTEST_BLOCKED_REASON_COMBAT_BEGUN, "the combatant's first turn has ended")
+	}
+	if surprised {
+		immune, err := s.neverSurprised(ctx, c.tx, c.session.CampaignID, who)
+		if err != nil {
+			return nil, err
+		}
+		if immune {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("este personagem nunca é surpreendido: o mestre não pode marcá-lo como surpreso"))
+		}
 	}
 	if err := markSurprise(ctx, c, who, surprised); err != nil {
 		return nil, err
@@ -271,7 +309,7 @@ func (s *Service) GetSurpriseSuggestion(
 	if err != nil {
 		return nil, s.dbError(ctx, "read the Stealth totals", err)
 	}
-	marked, err := s.surprisedIDs(ctx, d.enc, d.cs, d.surprised)
+	marked, err := s.surprisedIDs(ctx, nil, m.CampaignID, d.enc, d.cs, d.surprised)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the surprise", err)
 	}
@@ -314,6 +352,14 @@ func (s *Service) suggestionFor(ctx context.Context, campaignID string, d *conte
 		sg.Suggested, sg.Reason = true, playv1.SurpriseSuggestionReason_SURPRISE_SUGGESTION_REASON_HIDERS_BEAT
 	default:
 		sg.Reason = playv1.SurpriseSuggestionReason_SURPRISE_SUGGESTION_REASON_NOTICES
+	}
+	if sg.Suggested {
+		// A character that is never surprised is not suggested; the reason stays the one the numbers gave.
+		immune, err := s.neverSurprised(ctx, nil, campaignID, c)
+		if err != nil {
+			return nil, err
+		}
+		sg.Suggested = !immune
 	}
 	return sg, nil
 }
@@ -362,7 +408,7 @@ func dbReadTx(ctx context.Context, s *Service, fn func(q *playdb.Queries) error)
 // surprisedReactor says whether a combatant that could react is surprised: the mark is read
 // first, and the combat only when there is one (the reactors of a move are many, the surprised
 // few).
-func (s *Service) surprisedReactor(ctx context.Context, tx pgx.Tx, r playdb.Combatant) (bool, error) {
+func (s *Service) surprisedReactor(ctx context.Context, tx pgx.Tx, campaignID string, r playdb.Combatant) (bool, error) {
 	q := s.queriesIn(tx)
 	marked, err := q.IsCombatantSurprised(ctx, r.ID)
 	if err != nil {
@@ -375,5 +421,5 @@ func (s *Service) surprisedReactor(ctx context.Context, tx pgx.Tx, r playdb.Comb
 	if err != nil {
 		return false, fmt.Errorf("find the encounter: %w", err)
 	}
-	return s.surprisedNow(ctx, tx, enc, r)
+	return s.surprisedNow(ctx, tx, campaignID, enc, r)
 }

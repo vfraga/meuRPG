@@ -66,6 +66,7 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 	out.States = mapToProto(d.States, stateToProto)
 	out.StandardActions = mapToProto(d.StandardActions, actionToProto)
 	out.Features = mapToProto(d.Features, featureToProto)
+	out.RollMinimums = rollMinimumsToProto(d.RollMinimums, d.Features)
 	out.BreathWeapon = breathWeaponToProto(d.BreathWeapon)
 	out.Resistances = mapToProto(d.Resistances, resistanceToProto)
 	out.Languages = mapToProto(d.Languages, func(l rules.NamedKey) string { return l.NamePT })
@@ -75,6 +76,23 @@ func derivedToProto(d rules.Derived) *rulesv1.DerivedSheet {
 	out.Issues = mapToProto(d.Issues, func(is rules.Issue) *rulesv1.Issue {
 		return &rulesv1.Issue{Code: is.Code, Field: is.Field, Message: is.Message}
 	})
+	return out
+}
+
+// rollMinimumsToProto lists the roll minimums whose source is in the feature list that
+// goes out with the sheet, named by that feature. A minimum of another source is left out,
+// so it never shows more than the feature list does.
+func rollMinimumsToProto(mins []rules.RollMinimum, features []rules.Feature) []*rulesv1.RollMinimum {
+	var out []*rulesv1.RollMinimum
+	for _, m := range mins {
+		i := slices.IndexFunc(features, func(f rules.Feature) bool { return f.Key == m.Source })
+		if i < 0 {
+			continue
+		}
+		out = append(out, &rulesv1.RollMinimum{
+			Applies: slices.Clone(m.Applies), Value: i32(m.Value), FeatureKey: m.Source, FeatureName: features[i].NamePT,
+		})
+	}
 	return out
 }
 
@@ -93,10 +111,12 @@ func derivedNumbersToProto(d rules.Derived) *rulesv1.DerivedSheet {
 		PassiveInvestigation:  i32(d.PassiveInvestigation),
 		PassiveInsight:        i32(d.PassiveInsight),
 		Initiative:            i32(d.Initiative),
+		CarryCapacityLb:       i32(d.CarryCapacityLb),
 		NextLevelXp:           i32(d.NextLevelXP),
 		ArmorClass:            i32(d.ArmorClass),
 		ArmorClassDescription: d.ArmorClassDescription,
 		ShieldIdle:            d.ShieldIdle,
+		ItemModifiers:         itemModifiersOf(d.ItemModifiers),
 		Size:                  d.Size,
 		HitPointsMax:          i32(max(d.HitPointsMax, 1)),
 		HitPointsFromEffects:  i32(d.HitPointsFromEffects),
@@ -284,6 +304,9 @@ func attackToProto(a rules.Attack) *rulesv1.Attack {
 		DamageNotePt:        a.DamageNotePT,
 		SpellDice:           a.SpellDice,
 		ReachFt:             i32(a.ReachFt),
+		Silvered:            a.Silvered,
+		Adamantine:          a.Adamantine,
+		Magical:             a.Magical,
 	}
 }
 
@@ -546,7 +569,18 @@ func rollDiceToProto(ms []rules.Maneuver) []*rulesv1.RollDie {
 func grantedSpellToProto(g rules.GrantedSpell) *rulesv1.GrantedSpell {
 	return &rulesv1.GrantedSpell{
 		Spell: spellToProto(g.Spell), SourceKey: g.Source, SourceNamePt: g.SourcePT,
-		AtWill: g.AtWill, Resource: g.Resource, AlsoWithSlot: g.AlsoWithSlot, RitualOnly: g.RitualOnly, CountsAsKnown: g.CountsAsKnown,
+		AtWill: g.AtWill, Resource: g.Resource, AlsoWithSlot: g.AlsoWithSlot, RitualOnly: g.RitualOnly, CountsAsKnown: g.CountsAsKnown, NoMaterialComponents: g.NoMaterialComponents, UsesCost: i32(g.Cost),
 		Ability: string(g.Ability), AbilityPending: g.AbilityPending, AttackBonus: i32(g.AttackBonus), SaveDc: i32(g.SaveDC), FromLevel: i32(g.FromLevel),
 	}
+}
+
+// itemModifiersOf is the wire form of Derived.ItemModifiers.
+func itemModifiersOf(in []rules.ItemModifier) []*rulesv1.ItemModifier {
+	out := make([]*rulesv1.ItemModifier, 0, len(in))
+	for _, m := range in {
+		out = append(out, &rulesv1.ItemModifier{
+			Target: m.Target, Value: i32(m.Value), SourceKey: m.SourceKey, SourceNamePt: m.SourceNamePT, Counts: m.Counts, ReasonPt: m.ReasonPT,
+		})
+	}
+	return out
 }

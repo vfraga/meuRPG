@@ -1,0 +1,47 @@
+<app-sheet-frame [title]="'Marcas da ' + data.weaponName" titleId="sheet-t" [phone]="inSheet" (closed)="cancel()">
+  <p class="marks__intro">{{ data.isMaster ? data.characterName + ' · a arma é:' : 'A arma é:' }}</p>
+  <ul class="marks">
+    @for (o of options; track o.name) {
+      <li>
+        <label class="marks__row">
+          <input
+            type="checkbox"
+            class="marks__box"
+            [checked]="draft()[o.name]"
+            [disabled]="busy()"
+            (change)="set(o.name, $any($event.target).checked)"
+          />
+          <mat-icon class="marks__icon" aria-hidden="true">{{ o.icon }}</mat-icon>
+          <span class="marks__text">
+            <span class="marks__word">{{ o.word }}</span>
+            <span class="marks__beats">{{ o.beats }}</span>
+          </span>
+        </label>
+      </li>
+    }
+  </ul>
+  @if (error()) {
+    <p class="mr-notice mr-notice--danger" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <span>{{ error() }}</span>
+    </p>
+  }
+  <div foot class="foot">
+    <div class="pair" [class.pair--one]="inSheet">
+      <button matButton="filled" type="button" class="pair__btn" [disabled]="busy()" disabledInteractive (click)="save()">
+        <mat-icon aria-hidden="true">save</mat-icon>Salvar marcas
+      </button>
+      @if (!inSheet) {
+        <button matButton="outlined" type="button" class="pair__btn" [disabled]="busy()" (click)="cancel()">Cancelar</button>
+      }
+    </div>
+    <p class="marks__lock">
+      <mat-icon aria-hidden="true">lock</mat-icon>
+      @if (data.isMaster) {
+        <span>Muda a ficha de {{ data.characterName }}: depois da trava, só você muda as marcas. {{ data.characterName }} as lê na ficha e nos ataques.</span>
+      } @else {
+        <span>O dono só marca enquanto a ficha não trava. Depois, só o mestre.</span>
+      }
+    </p>
+  </div>
+</app-sheet-frame>

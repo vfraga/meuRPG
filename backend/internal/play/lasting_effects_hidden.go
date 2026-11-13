@@ -58,6 +58,9 @@ func (f modeFacts) hiddenFrom(v combatViewer, a, b playdb.Combatant) func(combat
 		anyHidden = anyHidden || hasUnreadEffect(f.states, c, v)
 	}
 	return func(src combat.Source) bool {
+		if isSunlight(src) {
+			return true // the sun and its trait are the master's (RN-20, RN-29)
+		}
 		switch src.Kind {
 		case combat.SourceOutlinedTarget, combat.SourceEffectSave, combat.SourceEffectCheck, combat.SourceEffectAttack:
 			return anyHidden

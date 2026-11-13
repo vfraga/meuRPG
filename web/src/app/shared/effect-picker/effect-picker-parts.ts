@@ -110,6 +110,64 @@ export function refusalTexts(
   return own ? texts.map((t) => (GENERIC_EFFECT_TEXTS.has(t) ? own : t)) : texts;
 }
 
+/** The closed list's value that the menu no longer lists (an engine that dropped it), as the option that keeps it on the select, or
+ * `null`. Only the menu's own lists say it: the spells come from the table's catalog, which may not be loaded yet, and an empty
+ * list says nothing. */
+export function leftTheMenuChoice(
+  field: { name: string; kind: string },
+  value: string,
+  list: readonly { value: string }[],
+): SelectOption | null {
+  const own = field.kind === 'choice' && field.name !== 'spell' && field.name !== 'spells';
+  if (!own || value === '' || list.length === 0 || list.some((o) => o.value === value)) {
+    return null;
+  }
+  return {
+    value,
+    label: field.name === 'target' ? 'Um alvo que saiu do menu' : 'Um valor que saiu do menu',
+  };
+}
+
+/** A choice with a placeholder when it is required, and a real "Padrão" (the field left empty) when it is not. A value the menu no
+ * longer has stays on the select, said in words, so the field does not show another one in its place. */
+export function choiceList(
+  list: SelectOption[],
+  kept: SelectOption | null,
+  required: boolean,
+  type: string,
+): SelectOption[] {
+  const all = kept ? [kept, ...list] : list;
+  return required
+    ? all
+    : [{ value: '', label: type === 'roll_minimum' ? 'Qualquer tipo' : 'Padrão' }, ...all];
+}
+
+/** The hint of a closed list: the picked option's, the entry's own, or what to do about the stored code the menu no longer has. */
+export function choiceHint(
+  list: readonly (SelectOption & { hint: string })[],
+  field: { name: string; kind: string },
+  value: string,
+  featHint: string,
+  own: string,
+): string {
+  const picked = list.find((o) => o.value === value)?.hint;
+  const kept = leftTheMenuChoice(field, value, list) ? value : '';
+  return (
+    picked || featHint || (kept ? `O valor guardado (${kept}) não existe nas regras novas.` : own)
+  );
+}
+
+/** Whether a draft value holds something: a non-empty list, a number but zero, text but blanks, or `true`. */
+export function holdsSomething(v: unknown): boolean {
+  if (Array.isArray(v)) {
+    return v.length > 0;
+  }
+  if (typeof v === 'number') {
+    return v !== 0;
+  }
+  return typeof v === 'string' ? v.trim() !== '' : v === true;
+}
+
 const OWN_HINT_REFS: ReadonlySet<string> = new Set(['restore', 'uses']);
 
 const STATE_RESOURCE_HINT =

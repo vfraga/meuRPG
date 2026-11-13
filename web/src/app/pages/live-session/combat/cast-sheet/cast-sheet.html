@@ -62,7 +62,10 @@
       @if (ar.flow; as f) {
         <!-- An area placed on the map (PM-02a, PM-02b): step 1 places it, step 2 says who is inside. -->
         @if (f.step() === 'place' && ar.placement !== Placement.CASTER) {
-          <app-area-step [n]="1" [title]="ar.stepOne" />
+          <app-area-step [n]="1" [title]="ar.stepOne" [all]="ar.steps" />
+          @if (f.wall(); as w) {
+            <app-wall-controls part="shape" [wall]="w" [loading]="f.loading()" [stops]="f.stops()" (changed)="f.setWall($event)" />
+          }
           @if (data.map; as m) {
             <app-area-map
               [image]="m.image"
@@ -80,11 +83,23 @@
               [placed]="f.placed()"
               [preview]="f.preview()"
               [seen]="data.targets?.targets ?? []"
+              [wall]="f.wall()"
               [autofocus]="true"
               (place)="f.place($event)"
+              (aimed)="f.placeWall($event.square, $event.direction)"
               (confirm)="confirmArea()"
               (dismiss)="close()"
             />
+          }
+          @if (f.wall(); as w) {
+            <app-wall-controls part="size" [wall]="w" [dice]="ar.dice()" (changed)="f.setWall($event)" />
+          }
+          @if (ar.summary(); as sum) {
+            <!-- The ring as the server laid it (board 640-04): its squares and who it names in them. -->
+            <div class="wall-summary">
+              <strong>{{ sum.title }}</strong>
+              <p>{{ sum.who }}</p>
+            </div>
           }
           @if (f.preview()?.moved) {
             <div class="mr-notice mr-notice--neutral" role="status">
@@ -93,7 +108,7 @@
             </div>
           }
         } @else if (f.step() === 'list') {
-          <app-area-step #listTitle [n]="2" title="Quem está na área" />
+          <app-area-step #listTitle [n]="2" [title]="ar.stepTwo" [all]="ar.steps" />
           @if (data.map; as m) {
             <app-area-map
               [image]="m.image"
@@ -110,6 +125,7 @@
               [rangeFt]="0"
               [placed]="f.placed()"
               [preview]="f.preview()"
+              [wall]="f.wall()"
               [readOnly]="true"
             />
           }
@@ -327,9 +343,10 @@
         @if (ch.missing()) {
           <p class="missing" role="status"><mat-icon aria-hidden="true">block</mat-icon>{{ ch.missing() }}</p>
         } @else if (!f.ready()) {
-          <p class="missing" role="status"><mat-icon aria-hidden="true">block</mat-icon>{{ ar.notPlaced }}</p>
+          <p class="missing" role="status"><mat-icon aria-hidden="true">block</mat-icon>{{ ar.notReady() }}</p>
         }
-        <div class="actions actions--stack">
+        <!-- The wall's board has "Cancelar" and "Próximo" side by side; the other areas' buttons stack. -->
+        <div class="actions" [class.actions--stack]="!f.wall()" [class.actions--pair]="!!f.wall()">
           <button
             matButton="filled"
             type="button"
@@ -341,7 +358,11 @@
           >
             {{ ar.confirmText }}
           </button>
-          <button matButton type="button" class="quiet" [disabled]="f.busy()" (click)="close()">Cancelar</button>
+          @if (f.wall()) {
+            <button matButton="outlined" type="button" class="cancel" [disabled]="f.busy()" (click)="close()">Cancelar</button>
+          } @else {
+            <button matButton type="button" class="quiet" [disabled]="f.busy()" (click)="close()">Cancelar</button>
+          }
         </div>
       } @else {
         @if (tx.endsConcentration(); as ends) {

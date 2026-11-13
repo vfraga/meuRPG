@@ -188,16 +188,21 @@ func filterVitals(m authz.Membership, vitals []*playv1.CharacterVitals) []*playv
 // publishCastsChanged tells the streams the casts changed: the master always, the players
 // unless the cast is one only the master reads.
 func (s *Service) publishCastsChanged(campaignID string, secret bool) {
+	s.send(campaignID, castsChangedEvent(secret))
+}
+
+// castsChangedEvent is the hint that the casts changed, for the master and, unless secret, the players.
+func castsChangedEvent(secret bool) live.Event {
 	aud := live.Audience{Everyone: true}
 	if secret {
 		aud = live.Audience{Master: true}
 	}
-	s.hub.Publish(campaignID, live.Event{
+	return live.Event{
 		Audience: aud,
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SpellCastsChanged_{
 			SpellCastsChanged: &playv1.WatchGameSessionResponse_SpellCastsChanged{},
 		}},
-	})
+	}
 }
 
 // afterCastChange tells the streams what a cast change did (after the commit) and reads

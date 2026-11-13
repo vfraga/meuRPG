@@ -479,7 +479,11 @@ func (s *Service) rollRiderSave(ctx context.Context, c *combatTx, m authz.Member
 	if err != nil {
 		return false, err
 	}
-	creature := creatureFacts(target, states, sheet.Traits)
+	sun, err := s.sunlightOf(ctx, c.q, c.enc)
+	if err != nil {
+		return false, err
+	}
+	creature := sun.facts(creatureFacts(target, states, sheet.Traits), target)
 	if combat.AutoFailsSave(creature, ability) {
 		re.save = &saveRoll{DC: dc, Auto: true}
 		return s.resistRiderSave(ctx, c, target, re, false)

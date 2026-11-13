@@ -188,9 +188,16 @@ export function pairOf(
   });
 }
 
-/** The circumstances behind the mode, one sentence each: "Vantagem: Ajuda de Orla", "Desvantagem: Envenenado". */
+/**
+ * The circumstances behind the mode, one sentence each: "Vantagem: Ajuda de Orla", "Desvantagem: Envenenado". A bonus an
+ * effect adds (`effect_bonus`, "Marca de Nanquim +3") says nothing of the mode: its label alone.
+ */
 export function noteLines(roll: Pick<CheckRoll, 'notes'>): readonly string[] {
-  return roll.notes.map((n) => `${n.advantage ? 'Vantagem' : 'Desvantagem'}: ${n.labelPt}`);
+  return roll.notes.map((n) =>
+    n.kind === 'effect_bonus'
+      ? n.labelPt
+      : `${n.advantage ? 'Vantagem' : 'Desvantagem'}: ${n.labelPt}`,
+  );
 }
 
 /** "Vantagem" or "Desvantagem", or '' for a normal roll. */

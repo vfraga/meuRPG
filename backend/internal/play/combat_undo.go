@@ -33,13 +33,13 @@ var undoableKinds = []string{
 	eventSpellCast, eventReactionUsed, eventReactionDeclined, eventDeathSaveRolled, eventConditionsSet,
 	eventCombatantMoved, eventTrapTriggered, eventWildShapeStarted, eventWildShapeEnded, eventFamiliarSight,
 	eventHideResolved, // only the master's reveal of a hider (undoableHideResolved)
-	eventLegendarySpent,
+	eventLegendarySpent, eventGearSwapped,
 }
 
 // leavesHPAlone are the undoable kinds whose undo never writes hit points: they keep no holds.
 var leavesHPAlone = []string{
 	eventAttackRolled, eventDamageDiscarded, eventReactionDeclined, eventConditionsSet,
-	eventCombatantMoved, eventFamiliarSight, eventHideResolved, eventLegendarySpent,
+	eventCombatantMoved, eventFamiliarSight, eventHideResolved, eventLegendarySpent, eventGearSwapped,
 }
 
 // recentEvents is how many of the session's latest events the search for the
@@ -125,6 +125,7 @@ var chainRules = []func(c chainEvent) chainVerdict{
 	chainProtection,
 	chainResistance,
 	chainReactionMode,
+	chainSunlight,
 	chainHeldFall,
 	chainRevive,
 	chainHideDecision,
@@ -275,6 +276,15 @@ func chainReactionMode(c chainEvent) chainVerdict {
 	return chainGoOn
 }
 
+// chainSunlight: the master's switch of the sunlight changes nothing an undo could put back, so it never closes
+// the chain either.
+func chainSunlight(c chainEvent) chainVerdict {
+	if c.row.Kind == eventSunlightSet {
+		return chainSkip
+	}
+	return chainGoOn
+}
+
 // chainResistance: the master's answer to a Legendary Resistance window is written beside the cast it released
 // and never closes the chain: the undo acts on the cast and gives the uses back (resistedBack).
 func chainResistance(c chainEvent) chainVerdict {
@@ -388,6 +398,8 @@ type undoRun struct {
 	unpushed   []*forcedMove             // the creatures a cast pushed that the undo put back
 	rearmed    *trapFireEvent            // the trap an undone firing armed again
 	alsoUndone []string                  // the older parts of a firing that went with it
+	afterGear  func(context.Context)     // what the sheet's gear told after the commit (an undone swap)
+	gearOwner  string                    // the owner of the character whose swap was undone: his log changed
 }
 
 // UndoLastAction implements playv1connect.CombatServiceHandler.
@@ -451,7 +463,11 @@ func (s *Service) undoInTx(ctx context.Context, c *combatTx, expected string, ru
 			return nil, err
 		}
 	}
-	if run.vitals, err = s.takeBack(ctx, c, last.Kind, ev); err != nil {
+	if last.Kind == eventGearSwapped { // the swap is the characters module's too: the sheet goes back with the economy
+		if err := s.takeBackGearSwap(ctx, c, run, last.Payload); err != nil {
+			return nil, err
+		}
+	} else if run.vitals, err = s.takeBack(ctx, c, last.Kind, ev); err != nil {
 		return nil, err
 	}
 	// What the action ended or revealed is as it was (takeBack): the lines it wrote
@@ -579,7 +595,14 @@ func (s *Service) takeBackOlder(ctx context.Context, c *combatTx, run *undoRun, 
 // fog around the combatants that went back, the vitals put back and the trap armed again.
 func (s *Service) publishUndoRun(ctx context.Context, campaignID string, d *encounterData, ev actionEvent, run *undoRun) {
 	s.publishUndone(ctx, campaignID, d, ev)
-	s.publishLogChanged(ctx, campaignID, d.enc.ID, !ev.Secret)
+	// The undo rewrote the log: full.
+	s.publishLogChange(ctx, campaignID, d.enc.ID, !ev.Secret, true)
+	if run.afterGear != nil {
+		run.afterGear(ctx)
+	}
+	if run.gearOwner != "" { // the swap's line was the owner's too
+		s.publishGearLog(ctx, campaignID, d.enc.ID, run.gearOwner)
+	}
 	if run.undoneMove != nil { // the combatant is back where it was: the fog follows it
 		s.followToSquare(ctx, campaignID, d, run.undoneMove.Actor, &grid.Square{Col: int(run.undoneMove.Col), Row: int(run.undoneMove.Row)})
 	}
@@ -622,7 +645,7 @@ func (s *Service) publishUndone(ctx context.Context, campaignID string, d *encou
 		s.publishEncounterChanged(ctx, campaignID, d.enc)
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
 	told := slices.Clone(ev.SeenBy)
 	if !ev.Secret {
 		for _, id := range ev.combatantIDs() {
@@ -634,7 +657,7 @@ func (s *Service) publishUndone(ctx context.Context, campaignID string, d *encou
 	slices.Sort(told)
 	blind := encounterChangedMessage(playdb.Encounter{ID: d.enc.ID, Mode: d.enc.Mode})
 	for _, u := range slices.Compact(told) {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: blind})
+		s.send(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: blind})
 	}
 }
 

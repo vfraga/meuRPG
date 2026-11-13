@@ -112,6 +112,7 @@ function minimalDerivedSheet(): DerivedSheet {
     passivePerception: 10,
     passiveInvestigation: 10,
     passiveInsight: 10,
+    carryCapacityLb: 150,
     initiative: 0,
     armorClass: 10,
     armorClassDescription: '',
@@ -144,10 +145,12 @@ function minimalDerivedSheet(): DerivedSheet {
     resistances: [],
     shieldIdle: false,
     gear: [],
+    itemModifiers: [],
     size: '',
     breathesWater: false,
     grantedSpells: [],
     rollDice: [],
+    rollMinimums: [],
   };
 }
 
@@ -168,6 +171,7 @@ function minimalFullSheet(overrides: Partial<FullSheet> = {}): FullSheet {
     weaponKeys: [],
     carriedKeys: [],
     weaponMarks: [],
+    itemBonuses: [],
     cantripKeys: [],
     knownSpellKeys: [],
     preparedSpellKeys: [],

@@ -413,7 +413,7 @@ func (s *Service) publishSceneChangedToMasterIf(ctx context.Context, campaignID,
 		return
 	}
 	if open != "" && open == pointID {
-		s.live.Publish(campaignID, false, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneChanged_{
+		s.publish(campaignID, false, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneChanged_{
 			SceneChanged: &playv1.WatchGameSessionResponse_SceneChanged{},
 		}})
 	}

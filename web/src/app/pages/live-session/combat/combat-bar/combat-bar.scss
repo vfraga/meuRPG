@@ -46,6 +46,25 @@
   margin: 0;
 }
 
+// On a phone the setup's switch sits at the right of the head, across the kicker and "Iniciativa".
+.bar__head:has(.bar__sun) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--mr-space-3);
+  align-items: start;
+
+  > :not(.bar__sun) {
+    grid-column: 1;
+  }
+}
+
+.bar__sun {
+  display: flex;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
 .bar__kicker--wide {
   display: none;
 
@@ -270,7 +289,14 @@
 }
 
 .end--block {
+  flex: 1 1 auto;
   width: 100%;
+}
+
+.end-only__row {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
 }
 
 // "Você age por Pensantus" (C8-01): the garnet tag beside whose turn comes next.

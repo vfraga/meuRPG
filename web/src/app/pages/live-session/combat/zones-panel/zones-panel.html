@@ -5,7 +5,10 @@
     <ul class="zp__list">
       @for (z of zones(); track z.id) {
         <li class="zp__card" [attr.data-zone]="z.id">
-          <app-zone-swatch class="zp__swatch" [pattern]="pattern(z.spellKey)" [dashed]="z.dashed" />
+          <span class="zp__mark">
+            <app-zone-letter class="zp__letter" [letter]="z.letter" />
+            <app-zone-swatch class="zp__swatch" [pattern]="pattern(z.spellKey)" [dashed]="z.dashed" />
+          </span>
           <div class="zp__body">
             <h3 class="zp__name">
               {{ z.label }}
@@ -32,16 +35,17 @@
             }
             @if (z.canMove || z.canEnd) {
               <div class="zp__actions">
-                @if (z.canMove) {
-                  <button matButton="outlined" type="button" class="zp__btn" [disabled]="busy()" (click)="move.emit(z.id)">
-                    <mat-icon aria-hidden="true">open_with</mat-icon>Mover
-                  </button>
-                }
-                @if (z.canEnd) {
-                  <button matButton="outlined" type="button" class="zp__btn zp__end" [disabled]="busy()" (click)="ask(z.id)">
-                    <mat-icon aria-hidden="true">close</mat-icon>Encerrar zona
-                  </button>
-                }
+                <button
+                  matButton="outlined"
+                  type="button"
+                  class="zp__btn zp__more"
+                  [attr.aria-label]="'Mais ações de ' + z.label"
+                  [disabled]="busy()"
+                  [matMenuTriggerFor]="menu"
+                  [matMenuTriggerData]="{ id: z.id, canMove: z.canMove, canEnd: z.canEnd }"
+                >
+                  <mat-icon aria-hidden="true">more_vert</mat-icon>Mais ações
+                </button>
               </div>
             }
             @if (confirming() === z.id) {
@@ -77,3 +81,17 @@
     </p>
   </section>
 }
+<mat-menu #menu="matMenu" xPosition="before">
+  <ng-template matMenuContent let-id="id" let-canMove="canMove" let-canEnd="canEnd">
+    @if (canMove) {
+      <button mat-menu-item type="button" (click)="move.emit(id)">
+        <mat-icon aria-hidden="true">open_with</mat-icon>Mover
+      </button>
+    }
+    @if (canEnd) {
+      <button mat-menu-item type="button" (click)="ask(id)">
+        <mat-icon aria-hidden="true">close</mat-icon>Encerrar zona
+      </button>
+    }
+  </ng-template>
+</mat-menu>

@@ -15,7 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import type { Combatant, Encounter } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
   combatantInitial,
-  initiativeFormula,
+  initiativeFormulaParts,
   isPlayer,
   moveInGroup,
   pendingFormula,
@@ -135,7 +135,12 @@ export class InitiativeSetup {
   }
 
   protected formula(c: Combatant): string {
-    return initiativeFormula(c) ?? pendingFormula(c);
+    return initiativeFormulaParts(c)?.line ?? pendingFormula(c);
+  }
+
+  /** "d20: 3 → 12 (Pé de Vento)" under the total, when a table minimum raised the d20: the feature's name never pushes the total out of the row. */
+  protected raisedNote(c: Combatant): string | null {
+    return initiativeFormulaParts(c)?.note ?? null;
   }
 
   /** "20 natural" / "1 natural" beside the formula: information only, initiative has no automatic result. */

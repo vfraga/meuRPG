@@ -398,7 +398,9 @@ type actionEvent struct {
 	// back; an NPC's cast without it spent nothing and gives nothing back.
 	SlotCounted bool `json:"slot_counted,omitempty"`
 	// GrantUse is the resource a cast through a limited granted_spell effect spent a use of, for the undo.
-	GrantUse   string      `json:"grant_use,omitempty"`
+	GrantUse string `json:"grant_use,omitempty"`
+	// GrantCost is the uses the cast spent when more than one (an absent cost is one).
+	GrantCost  int32       `json:"grant_cost,omitempty"`
 	Resource   string      `json:"resource,omitempty"`
 	Hits       []castHit   `json:"hits,omitempty"`
 	CoverUsers []string    `json:"cover_users,omitempty"` // the players the hits' CoverSeenMask counts, bit by bit
@@ -570,6 +572,11 @@ type actionEvent struct {
 	Parried *parryUsed `json:"parried,omitempty"`
 	// ParryAsk is the mode the master set on a monster (monster_reaction_mode_set): true asks the master for its Parry.
 	ParryAsk bool `json:"parry_ask,omitempty"`
+	// SunlightOn, SunlightScope and SunlightSquares are the sunlight the master set (sunlight_set): on or off, where
+	// it reaches and how many squares are sunlit.
+	SunlightOn      bool   `json:"sunlight_on,omitempty"`
+	SunlightScope   string `json:"sunlight_scope,omitempty"`
+	SunlightSquares int    `json:"sunlight_squares,omitempty"`
 	// Mode is how the master changed an NPC's hit points ("damage", "heal",
 	// "set"), and Delta the change.
 	Mode  string `json:"mode,omitempty"`
@@ -927,22 +934,33 @@ func linesSeenBy(lines []actionEvent) (seers []string, scoped bool) {
 // only to those players (actionEvent.SeenBy), so a player does not even hear that
 // something happened out of their sight.
 func (s *Service) publishLogChanged(ctx context.Context, campaignID, encounterID string, players bool) {
-	msg := &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CombatLogChanged_{
-		CombatLogChanged: &playv1.WatchGameSessionResponse_CombatLogChanged{EncounterId: encounterID},
-	}}
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
+	s.publishLogChange(ctx, campaignID, encounterID, players, false)
+}
+
+// publishLogChange is publishLogChanged with full: the write rewrote the log (an undo), so the master's app reads all of it again.
+// The players' copy never carries full: the master's undo of an action a player could not see (secret, or out of their sight) must
+// not tell that player anything that an ordinary change does not. A player's own read (ListCombatLog with since_seq) answers with the
+// whole log when an undo they may see happened.
+func (s *Service) publishLogChange(ctx context.Context, campaignID, encounterID string, players, full bool) {
+	logChangedMessage := func(full bool) *playv1.WatchGameSessionResponse {
+		return &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CombatLogChanged_{
+			CombatLogChanged: &playv1.WatchGameSessionResponse_CombatLogChanged{EncounterId: encounterID, Full: full},
+		}}
+	}
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: logChangedMessage(full)})
+	msg := logChangedMessage(false)
 	if !players {
 		return
 	}
 	if memo := fogMemoOf(ctx); memo != nil {
 		if seers, scoped := linesSeenBy(memo.lines); scoped {
 			for _, u := range seers {
-				s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: msg})
+				s.send(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: msg})
 			}
 			return
 		}
 	}
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: msg})
+	s.send(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: msg})
 }
 
 // stoppedHit is a pending damage that a later Escudo stopped: its id and the
@@ -980,4 +998,12 @@ func (ev actionEvent) floor() rollFloor {
 		return rollFloor{Value: rules.ReliableTalentFloor, Source: reliableTalentSource}
 	}
 	return rollFloor{Value: int(ev.Floor), Source: ev.FloorBy}
+}
+
+// grantCostOf is the GrantCost an event keeps for a cast that spent uses: 0 (absent) for the usual one.
+func grantCostOf(uses int32) int32 {
+	if uses > 1 {
+		return uses
+	}
+	return 0
 }

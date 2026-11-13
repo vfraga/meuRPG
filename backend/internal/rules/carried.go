@@ -46,6 +46,7 @@ func (b Build) ShieldCounts(d Derived) bool { return b.ShieldOn() && !d.ShieldId
 // resolved, so an unknown one raises no issue until it is equipped. A carried weapon stays
 // listed, to keep its index in the issues, and is skipped where weapons count.
 func (x *deriver) equip() {
+	x.sheetArmor = x.b.Armor
 	x.b.Armor = x.b.ArmorOn()
 	x.b.Shield = x.b.ShieldOn()
 }

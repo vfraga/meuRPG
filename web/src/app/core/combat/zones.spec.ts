@@ -1,5 +1,9 @@
 import { SpellAreaShape } from '../../../gen/meurpg/rules/v1/rules_pb';
-import { SpellZoneMovement, SpellZoneVisibility } from '../../../gen/meurpg/play/v1/combat_pb';
+import {
+  SpellZoneMovement,
+  SpellZoneVisibility,
+  WallSide,
+} from '../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter, spellZone } from './combat-testing';
 import {
   zoneView as rawView,
@@ -189,6 +193,41 @@ describe('visibility and hidden details', () => {
     const v = zoneView(spellZone({ id: 'z', squares: [{ col: 1, row: 2 }] } as never), player);
     expect(v.origin).toEqual({ col: 8, row: 6 });
     expect(v.squares).toEqual([{ col: 1, row: 2 }]);
+  });
+});
+
+describe('the letter and the wall of a zone', () => {
+  it('letters the zones A, B, C in the order of the list, then A2 after Z', () => {
+    const zones = Array.from({ length: 28 }, (_, i) => spellZone({ id: `z${i}` }));
+    const letters = zoneViews(encounter({ combatants: [], zones }), true).map((v) => v.letter);
+    expect(letters.slice(0, 3)).toEqual(['A', 'B', 'C']);
+    expect(letters[25]).toBe('Z');
+    expect(letters[26]).toBe('A2');
+    expect(letters[27]).toBe('B2');
+  });
+
+  it('carries the burning side and the wall side, empty for a zone that is no wall', () => {
+    const plainZone = zoneView(spellZone({ id: 'z' }), master);
+    expect(plainZone.burningSquares).toEqual([]);
+    expect(plainZone.wallSide).toBe(WallSide.UNSPECIFIED);
+    const wall = zoneView(
+      spellZone({
+        id: 'w',
+        spellKey: 'spell:wall-of-fire',
+        squares: [{ col: 2, row: 2 }],
+        burningSquares: [
+          { col: 2, row: 1 },
+          { col: 3, row: 1 },
+        ],
+        wallSide: WallSide.LEFT,
+      }),
+      player,
+    );
+    expect(wall.burningSquares).toEqual([
+      { col: 2, row: 1 },
+      { col: 3, row: 1 },
+    ]);
+    expect(wall.wallSide).toBe(WallSide.LEFT);
   });
 });
 

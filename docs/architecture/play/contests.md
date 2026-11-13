@@ -33,7 +33,7 @@ The service is `play/combat_contests*.go` (start, answer, shove choice, close, r
 - **Dragging.** `GetMoveOptions` halves the movement (`dragging_halved`, the path costs twice) and `MoveCombatant` carries the grappled creature to the penultimate square of the path (`NO_ROOM_TO_DRAG` when a creature the caller sees is on that square; for a player, a creature they do not see there gets the walk's generic `MOVE_BLOCKED` refusal, so the drag does not reveal it, RN-10).
   The dragged creature is not a reactor against its grappler (`opportunityReactors` skips it), while the other enemies the pair leaves still get their opportunity attacks.
   `pruneHolds` ends a grapple whose grappler is incapacitated or out of the fight, or whose target left the reach.
-- **Surprise.** A surprised creature's turn options are all disabled with `SURPRISED`, and an opportunity attack skips it.
+- **Surprise.** A surprised creature's turn options are all disabled with `SURPRISED`, and an opportunity attack skips it. A character whose sheet has the `never_surprised` flag is never surprised: `surprisedIDs` and `surprisedNow` ignore a mark made before the flag came, `SetSurprised` refuses to mark it (`FAILED_PRECONDITION`) and `GetSurpriseSuggestion` does not suggest it. A character with no readable sheet is not immune.
 - **Privacy.** The escape DC, who noticed a hider, an NPC's roll and another player's total never reach a player: the views build the player's copy apart, and the leak tests cover each read and write.
   Contest events are not undoable and close the undo chain.
 
@@ -49,6 +49,12 @@ The group check is also how the master asks one, some or all living player chara
 - A player who was not asked gets no view (`GetGroupCheck` answers none) and cannot roll (`NOT_IN_GROUP_CHECK`).
   The `group_check_changed` hint stays content-free for everyone (RN-10, RN-20).
 - The master's `RollForPlayer` waits for no one.
+
+## The bonuses of a check
+
+Both sides of a contest, and a Hide, add the flat bonuses of their lasting effects that apply to ability checks (`roll_bonus` of checks, `check_bonus` of the skill): `prepareCheck` and the answer options go through `withCheckBonus`, which reads them with `checkBonusesOf`, the reader the other checks use.
+A bonus to saves or to attacks never enters a contest.
+Each bonus is a note of the roll (`effect_bonus`, "Marca de Nanquim +3"; it says nothing of advantage, `notesMode` skips it); an effect the master hides reads "Outra fonte +3" to the player and by name to the master alone (RN-10), decided when the roll is read (`rollNote.proto(master)`), not when it is kept.
 
 ## The floor of a check
 

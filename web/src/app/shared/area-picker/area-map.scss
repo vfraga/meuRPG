@@ -143,6 +143,7 @@
 
 // The point of origin: a diamond in the map's garnet with a light rim.
 .am__diamond,
+.am__start,
 .am__tapped,
 .am__length {
   position: absolute;
@@ -162,6 +163,22 @@
 
 .am__diamond {
   transform: translate(-50%, -50%) rotate(45deg);
+}
+
+// The first square of a straight wall (the center of a ring): its own square outlined in the accent, with a light ring.
+.am__start,
+.sw-start {
+  box-sizing: border-box;
+  border: 3px solid var(--mr-map-accent);
+  box-shadow:
+    0 0 0 1.5px var(--mr-map-token-surface),
+    inset 0 0 0 1.5px var(--mr-map-token-surface);
+}
+
+.sw-start {
+  flex: none;
+  width: 22px;
+  height: 22px;
 }
 
 // Where the caster tapped when a wall moved the point: an ✕ in a light ring.

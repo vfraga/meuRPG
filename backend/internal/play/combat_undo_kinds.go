@@ -834,10 +834,10 @@ func (u *undoer) castSpentBack(ctx context.Context, who playdb.Combatant, ev act
 	}
 	if ev.GrantUse != "" {
 		if who.Kind == kindPlayer {
-			if err := u.spendResourceBack(ctx, who, ev.GrantUse); err != nil {
+			if err := u.spendResourcesBack(ctx, who, ev.GrantUse, max(ev.GrantCost, 1)); err != nil {
 				return err
 			}
-		} else if err := u.s.bumpUsed(ctx, u.c, who, usedResource+ev.GrantUse, -1); err != nil { // an NPC's use is counted on the combatant
+		} else if err := u.s.bumpUsed(ctx, u.c, who, usedResource+ev.GrantUse, -max(ev.GrantCost, 1)); err != nil { // an NPC's use is counted on the combatant
 			return err
 		}
 	}

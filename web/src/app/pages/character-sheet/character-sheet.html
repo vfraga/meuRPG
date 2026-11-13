@@ -321,6 +321,9 @@
             [equipError]="gear.error()"
             [equipRetry]="gear.readFailed()"
             (equipRetried)="gear.retry()"
+            [canMark]="vm.canEdit && vm.state !== 'dead'"
+            [marksNotice]="gear.marksNotice()"
+            (marksOpened)="gear.openMarks($event)"
             (gearToggled)="gear.toggle($event)"
           />
           <div class="sheet__traits">

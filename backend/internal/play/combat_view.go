@@ -378,12 +378,14 @@ func (d *encounterData) view(v combatViewer, vitals map[string]*playv1.Character
 	out.NpcOnlyGroups = d.npcOnlyGroups(v)
 	out.HitRiders = d.hitRidersView(v, vitals)
 	out.Zones = d.zonesView(v, names)
+	d.sunlightView(v, out)
 	rd := combatantReader{
 		d: d, v: v, turn: turn, vitals: vitals, armorClass: armorClass, npcs: npcs, names: names,
 		ties:        unresolvedTies(d.cs),
 		byCombatant: statesOf(d.states),
 		// Players in the same joint turn read each other's economy: they act
 		// together and say what each still has. A player outside the group does not.
+		sun:    sunlightFrom(d.enc, d.zones),
 		shared: !v.master && slices.ContainsFunc(d.cs, func(c playdb.Combatant) bool { return v.owns(c) && inTurn(d.enc, c) }),
 	}
 	for _, c := range d.cs {
@@ -432,6 +434,8 @@ type combatantReader struct {
 	ties        map[string]bool
 	byCombatant map[string][]playdb.CombatantState
 	shared      bool
+	// sun is the combat's sunlight, as the rolls read it: the master's copy says who stands in it.
+	sun sunlight
 }
 
 // read builds the copy of a combatant the viewer sees.
@@ -472,6 +476,7 @@ func (r combatantReader) masterView(p *playv1.Combatant, c playdb.Combatant) {
 	if c.Kind == kindNPC && npc.parry {
 		p.ParryAsk = new(parryAsks(c))
 	}
+	p.InSunlight, p.SunlightTrait = r.sun.lit(c), npc.sunTrait // the master's alone (RN-20, RN-29)
 }
 
 // deathSaveGoal is how many death save successes make a character stable, and how many
@@ -638,6 +643,7 @@ func shareEconomy(out *playv1.Combatant, c playdb.Combatant) {
 	// down, for the web that is already shipped (RN-21).
 	out.SpeedFt = c.SpeedFt
 	out.SpeedFlyFt = c.SpeedFlyFt
+	out.SpeedSwimFt, out.SpeedClimbFt, out.SpeedBurrowFt = c.SpeedSwimFt, c.SpeedClimbFt, c.SpeedBurrowFt
 	out.SpeedDft = clamp32(speedDFt(c), 0, math.MaxInt32)
 	out.MovementUsedFt = c.MovementUsedDft / 10
 	out.MovementUsedDft = c.MovementUsedDft
@@ -785,6 +791,8 @@ type masterNPC struct {
 	persistent bool
 	// parry says its stat block has a Parry that adds to the armor class (the master reads its mode).
 	parry bool
+	// sunTrait is the sunlight trait its stat block has (the master's copy of the combatant marks it).
+	sunTrait playv1.SunlightTrait
 }
 
 // npcDetails reads the portrait URL of each NPC in the combat and, for a monster, its
@@ -878,12 +886,12 @@ func (s *Service) publishEncounterChanged(ctx context.Context, campaignID string
 	msg := encounterChangedMessage(e)
 	f, err := s.fogSightOf(ctx, campaignID, e)
 	if err != nil || f != nil {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
+		s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
 		blind := playdb.Encounter{ID: e.ID, Mode: e.Mode}
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: encounterChangedMessage(blind)})
+		s.send(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: encounterChangedMessage(blind)})
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: msg})
+	s.send(campaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: msg})
 }
 
 // publishEncounterChangedFor is publishEncounterChanged for a change made only to the
@@ -892,7 +900,7 @@ func (s *Service) publishEncounterChanged(ctx context.Context, campaignID string
 // do not see.
 func (s *Service) publishEncounterChangedFor(ctx context.Context, campaignID string, d *encounterData, ids ...string) {
 	if allHidden(d.cs, ids) {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
+		s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
 		return
 	}
 	s.publishEncounterChanged(ctx, campaignID, d.enc)
@@ -901,7 +909,7 @@ func (s *Service) publishEncounterChangedFor(ctx context.Context, campaignID str
 // publishEncounterChangedToMaster is publishEncounterChanged for a change the players cannot see at all:
 // the hint goes to the master alone, so the players cannot count it.
 func (s *Service) publishEncounterChangedToMaster(campaignID string, enc playdb.Encounter) {
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
 }
 
 // allHidden says whether every id is a combatant of cs that is hidden now.
@@ -924,7 +932,7 @@ func (s *Service) changedFor(campaignID string, ids ...string) func(ctx context.
 // the players what they may see (a hidden one's turn is "the master's"; on a
 // map with the fog of war, so is the turn of an NPC the player does not see).
 func (s *Service) publishTurnChanged(ctx context.Context, campaignID string, d *encounterData) {
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: turnChangedMessage(d.enc, d.turnFor(combatViewer{master: true}), d.enc.Revision)})
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: turnChangedMessage(d.enc, d.turnFor(combatViewer{master: true}), d.enc.Revision)})
 	s.publishTurnChangedToPlayers(ctx, campaignID, d)
 }
 
@@ -935,7 +943,7 @@ func (s *Service) publishCombatantMoved(ctx context.Context, campaignID string, 
 	if !placed(c) {
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: combatantMovedMessage(e, c)})
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: combatantMovedMessage(e, c)})
 	if !c.Hidden {
 		s.publishMovedToPlayers(ctx, campaignID, e, c, from)
 	}

@@ -242,6 +242,7 @@ func creatureRow(c *combatTx, cr link.Creature, n int, taken map[string]bool, gr
 		// jump limits, as a character's are copied when it joins.
 		Size: sizeKey(cr.Size), SpeedFlyFt: clamp32(cr.SpeedFlyFt, 0, 600),
 		JumpLongDft: clamp32(cr.JumpLongDFt, 0, 6000), JumpHighDft: clamp32(cr.JumpHighDFt, 0, 6000),
+		SpeedSwimFt: clamp32(cr.SpeedSwimFt, 0, 600), SpeedClimbFt: clamp32(cr.SpeedClimbFt, 0, 600), SpeedBurrowFt: clamp32(cr.SpeedBurrowFt, 0, 600),
 	}
 	if cr.OwnerUserID != "" {
 		row.UserID = &cr.OwnerUserID

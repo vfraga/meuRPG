@@ -318,6 +318,29 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
       };
     },
   ],
+  // A swap of gear in the combat: the master's and the character's owner's line. The cost is what it spent.
+  [
+    CombatLogKind.GEAR_SWAPPED,
+    ({ e, base }) => {
+      const gear = e.gearSwapped;
+      if (!gear) {
+        return null;
+      }
+      const cost =
+        gear.cost === 'free'
+          ? ' (grátis)'
+          : gear.cost === 'action'
+            ? ' (ação)'
+            : gear.cost === 'extra_action'
+              ? ' (ação extra)'
+              : '';
+      return {
+        ...base,
+        icon: 'swap_horiz',
+        text: ` ${gear.equipped ? 'equipou' : 'guardou'} ${gear.namePt}${cost}`,
+      };
+    },
+  ],
   // The server rolled a Recharge action's d6 at the start of its creature's turn: the line is the master's and the creature's controller's.
   [
     CombatLogKind.RECHARGE_ROLLED,

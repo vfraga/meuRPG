@@ -5,6 +5,7 @@ import {
   combatantInitial,
   ownCombatant,
   initiativeFormula,
+  initiativeFormulaParts,
   isDown,
   playerWord,
   moveInGroup,
@@ -96,6 +97,16 @@ describe('combat view helpers', () => {
     expect(initiativeFormula(low)).toBe('1d20 (15) − 1 = 14');
     const waiting = combatant({ id: 'c', label: 'Toren', initiativeBonus: 2 });
     expect(initiativeFormula(waiting)).toBeNull();
+    const raised = {
+      ...c,
+      initiativeFace: 3,
+      initiativeTreatedAs: 12,
+      initiativeTreatedAsSource: 'content:feat-keen',
+      initiativeTreatedAsSourceName: 'Olho Aguçado',
+      initiativeBonus: 4,
+      initiative: 16,
+    } as typeof c;
+    expect(initiativeFormula(raised)).toBe('d20: 3 → 12 (Olho Aguçado) + 4 = 16');
     const inspired = combatant({
       id: 'd',
       label: 'Toren',
@@ -105,6 +116,35 @@ describe('combat view helpers', () => {
     });
     expect(initiativeFormula(inspired)).toBe('1d20 (7) + 2 + 4 (dado) = 13');
     expect(pendingFormula(waiting)).toBe('1d20 + 2 = —');
+  });
+
+  it('splits the initiative into the total line and the note of the d20 a minimum raised', () => {
+    const plain = combatant({
+      id: 'a',
+      label: 'Brisa',
+      initiative: 19,
+      initiativeFace: 15,
+      initiativeBonus: 4,
+    });
+    // Nothing raised it: the line is the formula as it always was, with no note.
+    expect(initiativeFormulaParts(plain)).toEqual({ line: '1d20 (15) + 4 = 19', note: null });
+    expect(initiativeFormulaParts(combatant({ id: 'c', label: 'Toren' }))).toBeNull();
+    const raised = {
+      ...plain,
+      initiativeFace: 3,
+      initiativeTreatedAs: 12,
+      initiativeTreatedAsSource: 'content:feat-keen',
+      initiativeTreatedAsSourceName: 'Pé de Vento Muito Mais Que Longo',
+      initiativeBonus: -1,
+      initiative: 11,
+    } as typeof plain;
+    // The total keeps its place; the feature's name goes to the note.
+    expect(initiativeFormulaParts(raised)).toEqual({
+      line: '1d20 (12) − 1 = 11',
+      note: 'd20: 3 → 12 (Pé de Vento Muito Mais Que Longo)',
+    });
+    const inspired = { ...raised, initiativeBonus: 3, initiative: 19 } as typeof plain;
+    expect(initiativeFormulaParts(inspired)?.line).toBe('1d20 (12) + 3 + 4 (dado) = 19');
   });
 
   describe('ties', () => {

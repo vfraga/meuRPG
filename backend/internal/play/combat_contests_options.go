@@ -56,7 +56,7 @@ func characterGone(err error) bool { return connect.CodeOf(err) == connect.CodeN
 // checkOptionOf is what a check would roll, as an option reads it: the master reads whether
 // the number is known, a player always reads it.
 func checkOptionOf(n checkNumbers, notes []rollNote, master bool) *playv1.CheckOption {
-	return &playv1.CheckOption{Modifier: conv.Int32(n.Bonus), Known: n.Known || !master, Mode: checkModeProto(notesMode(notes)), Notes: notesProto(notes)}
+	return &playv1.CheckOption{Modifier: conv.Int32(n.Bonus), Known: n.Known || !master, Mode: checkModeProto(notesMode(notes)), Notes: notesProto(notes, master)}
 }
 
 // escapeAvailability says whether the grappled combatant can escape now, and if not why: the
@@ -85,7 +85,7 @@ func (s *Service) fillGrappled(ctx context.Context, d *encounterData, v combatVi
 		}
 		state.EscapeOptions = append(state.EscapeOptions, &playv1.ContestSkillOption{
 			Skill: skillEnum(sk), Modifier: conv.Int32(n.Bonus), Known: n.Known || !v.master,
-			Mode: checkModeProto(notesMode(notes)), Notes: notesProto(notes),
+			Mode: checkModeProto(notesMode(notes)), Notes: notesProto(notes, v.master),
 		})
 	}
 	return nil
@@ -129,7 +129,7 @@ func (s *Service) contestTurnState(ctx context.Context, m authz.Membership, d *e
 		}
 	}
 	state.HoldingId = holdingOf(cd, d.cs, v, who)
-	surprised, err := s.surprisedNow(ctx, nil, d.enc, who)
+	surprised, err := s.surprisedNow(ctx, nil, m.CampaignID, d.enc, who)
 	if err != nil {
 		return nil, err
 	}

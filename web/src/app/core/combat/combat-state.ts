@@ -184,9 +184,19 @@ export class CombatState {
     return ticket.patched !== this.patched || ticket.applied !== this.applied;
   }
 
-  /** `combat_log_changed`, or a `ready`: read the log again. */
-  touchLog(): void {
+  private logFull = false;
+
+  /** `combat_log_changed`, or a `ready`: read the log again, only what is new unless `full` (the log was rewritten, or who sees what changed). */
+  touchLog(full = false): void {
+    this.logFull ||= full;
     this.logTick.update((n) => n + 1);
+  }
+
+  /** Whether the next read of the log must be the whole log; asking clears it. */
+  takeLogFull(): boolean {
+    const full = this.logFull;
+    this.logFull = false;
+    return full;
   }
 
   /** The windows the stream announced (`reaction_window_opened`) in this page's life: one that was not announced came

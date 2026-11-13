@@ -63,6 +63,7 @@
       </li>
     </ul>
     <app-recharge-notice [rolls]="rechargeRolls()" [limited]="subject().limitedActions" />
+    <app-sunlight-notice [creature]="subject()" [sunlightOn]="encounter().sunlightOn" />
     <!-- On a legendary creature's own turn the card tells what came back and that its legendary actions wait for another's turn. -->
     <ng-content select="[legendary-slot]" />
 

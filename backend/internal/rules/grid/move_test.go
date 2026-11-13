@@ -519,3 +519,35 @@ func TestStandableIsFloorWithoutAShutDoor(t *testing.T) {
 		t.Error("a map with no layers is floor")
 	}
 }
+
+func TestAMoverThatIgnoresMapDifficultTerrainStillPaysForASpellsArea(t *testing.T) {
+	t.Parallel()
+	g := grid.Grid{Columns: 12, Rows: 3}
+	tr := grid.Terrain{Grid: g, Difficult: grid.NewLayer(g), ZoneDifficult: grid.NewLayer(g)}
+	tr.Difficult.Set(2, 1, true)     // painted on the map
+	tr.ZoneDifficult.Set(5, 1, true) // made by a spell
+	tr.ZoneDifficult.Set(8, 1, true)
+	tr.Difficult.Set(8, 1, true) // both on one square: still one extra, and the spell's holds
+	cost := func(m grid.Mover, to int) int { return tr.Move(sq(to-1, 1), sq(to, 1), nil, m).CostDFt }
+	walker, ignorer, flier := grid.Mover{Size: grid.SizeMedium}, grid.Mover{Size: grid.SizeMedium, IgnoresMapDifficult: true}, grid.Mover{Size: grid.SizeMedium, Flier: true}
+	for _, tc := range []struct {
+		name         string
+		to           int
+		walk, ignore int
+	}{
+		{"a square painted on the map", 2, 100, 50},
+		{"a square of a spell's area", 5, 100, 100},
+		{"a square that is both", 8, 100, 100},
+		{"plain floor", 3, 50, 50},
+	} {
+		if got, got2 := cost(walker, tc.to), cost(ignorer, tc.to); got != tc.walk || got2 != tc.ignore {
+			t.Errorf("%s: a walker pays %d and one that ignores the map's pays %d, want %d and %d", tc.name, got, got2, tc.walk, tc.ignore)
+		}
+		if got := cost(flier, tc.to); got != 50 {
+			t.Errorf("%s: a flier pays %d, want 50", tc.name, got)
+		}
+	}
+	if bad := (grid.Terrain{Grid: g, ZoneDifficult: grid.NewLayer(grid.Grid{Columns: 3, Rows: 3})}); bad.Validate() == nil {
+		t.Error("Validate() of a spell layer sized for another grid = nil, want an error")
+	}
+}

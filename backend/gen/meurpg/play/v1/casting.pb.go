@@ -747,9 +747,14 @@ type CastingGrant struct {
 	// Whether a cast works now: it is at will, or a use is left.
 	Ready bool `protobuf:"varint,8,opt,name=ready,proto3" json:"ready,omitempty"`
 	// The casting ability of the grant and the numbers it gives.
-	Ability       string `protobuf:"bytes,9,opt,name=ability,proto3" json:"ability,omitempty"`
-	AttackBonus   int32  `protobuf:"varint,10,opt,name=attack_bonus,json=attackBonus,proto3" json:"attack_bonus,omitempty"`
-	SaveDc        int32  `protobuf:"varint,11,opt,name=save_dc,json=saveDc,proto3" json:"save_dc,omitempty"`
+	Ability     string `protobuf:"bytes,9,opt,name=ability,proto3" json:"ability,omitempty"`
+	AttackBonus int32  `protobuf:"varint,10,opt,name=attack_bonus,json=attackBonus,proto3" json:"attack_bonus,omitempty"`
+	SaveDc      int32  `protobuf:"varint,11,opt,name=save_dc,json=saveDc,proto3" json:"save_dc,omitempty"`
+	// The material components are waived: the spell's component line drops "M".
+	NoMaterialComponents bool `protobuf:"varint,12,opt,name=no_material_components,json=noMaterialComponents,proto3" json:"no_material_components,omitempty"`
+	// The uses a cast spends of `resource` (1 or more; 0 for an at-will grant). A cast works
+	// only while `uses_left` covers it.
+	UsesCost      int32 `protobuf:"varint,13,opt,name=uses_cost,json=usesCost,proto3" json:"uses_cost,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -857,6 +862,20 @@ func (x *CastingGrant) GetAttackBonus() int32 {
 func (x *CastingGrant) GetSaveDc() int32 {
 	if x != nil {
 		return x.SaveDc
+	}
+	return 0
+}
+
+func (x *CastingGrant) GetNoMaterialComponents() bool {
+	if x != nil {
+		return x.NoMaterialComponents
+	}
+	return false
+}
+
+func (x *CastingGrant) GetUsesCost() int32 {
+	if x != nil {
+		return x.UsesCost
 	}
 	return 0
 }
@@ -2401,7 +2420,7 @@ const file_meurpg_play_v1_casting_proto_rawDesc = "" +
 	"\brange_ft\x18\x14 \x01(\x05R\arangeFt\x122\n" +
 	"\x05reach\x18\x15 \x03(\v2\x1c.meurpg.play.v1.CastingReachR\x05reach\x12\x18\n" +
 	"\asummons\x18\x12 \x01(\bR\asummons\x124\n" +
-	"\x06grants\x18\x16 \x03(\v2\x1c.meurpg.play.v1.CastingGrantR\x06grants\"\xd8\x02\n" +
+	"\x06grants\x18\x16 \x03(\v2\x1c.meurpg.play.v1.CastingGrantR\x06grants\"\xab\x03\n" +
 	"\fCastingGrant\x12\x1d\n" +
 	"\n" +
 	"source_key\x18\x01 \x01(\tR\tsourceKey\x12$\n" +
@@ -2416,7 +2435,9 @@ const file_meurpg_play_v1_casting_proto_rawDesc = "" +
 	"\aability\x18\t \x01(\tR\aability\x12!\n" +
 	"\fattack_bonus\x18\n" +
 	" \x01(\x05R\vattackBonus\x12\x17\n" +
-	"\asave_dc\x18\v \x01(\x05R\x06saveDc\"i\n" +
+	"\asave_dc\x18\v \x01(\x05R\x06saveDc\x124\n" +
+	"\x16no_material_components\x18\f \x01(\bR\x14noMaterialComponents\x12\x1b\n" +
+	"\tuses_cost\x18\r \x01(\x05R\busesCost\"i\n" +
 	"\fCastingReach\x12!\n" +
 	"\fcharacter_id\x18\x01 \x01(\tR\vcharacterId\x12\x19\n" +
 	"\bin_range\x18\x02 \x01(\bR\ainRange\x12\x1b\n" +

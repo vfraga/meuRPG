@@ -54,15 +54,15 @@ A pull request that touches no file of a workflow still starts it, and its jobs 
 | `go (lint)` | `golangci-lint` as a ratchet, the [complexity limits](#complexity-limits) and the [`//nolint` cap](#the-nolint-cap). It runs no `go test`: `go-db` runs every package |
 | `govulncheck (called vulnerabilities)` | `govulncheck ./...` (version pinned): fails on a known vulnerability in a module or in the Go standard library that the code actually calls. See [Vulnerability scans](#vulnerability-scans) |
 | `go-db <group>` | `go test -race -covermode=atomic -coverpkg=./...` for one group of packages against its own in-memory database, with `MEURPG_REQUIRE_DB=1`: [PostgreSQL or CockroachDB, by the event](#which-database-the-tests-run-on). Each package has a 25-minute `-timeout` inside the job's 30 |
-| `go-db groups` | Checks once per run that the groups hold every package and every test of the split packages (`play`, `leaktest`) exactly once, and that the tests read from the source are the ones `go test -list` prints. The groups do not wait for it |
+| `go-db groups` | Checks once per run that the groups hold every package and every test of the split packages (`play`, `leaktest`, `rules`) exactly once, and that the tests read from the source are the ones `go test -list` prints. The groups do not wait for it |
 | `go-db cockroach-only list` | Checks the [list of the tests that need CockroachDB](#which-database-the-tests-run-on): every listed test exists and, on PostgreSQL, fails |
 | `go (integration tests against CockroachDB)` | Waits for every group, the group check and the list check; the stable check for a branch protection rule. The name is stable for a branch protection rule; a preflight runs it on PostgreSQL |
 | `go (coverage)` | Merges the groups' profiles and enforces the [coverage floor](#coverage-floors) |
 
-**The groups** are defined in `.github/scripts/go-db-shard.sh`: `play-1` to `play-4`, `maps`, `characters`, `rules`, `dungeon` (with `rules/puzzle`), `leak-1` and `leak-2`, and `rest`.
+**The groups** are defined in `.github/scripts/go-db-shard.sh`: `play-1` to `play-6`, `maps`, `characters`, `rules-1` to `rules-3`, `dungeon` (with `rules/puzzle`), `leak-1` and `leak-2`, and `rest`.
 The heavy packages are named by hand and `rest` holds everything else, so a new package lands in `rest` and is never skipped.
-The `play` and `leaktest` packages are split by test: each part runs the tests whose name hashes (`cksum`) to it, so a new test lands in a part by itself and adding one never moves the others.
-The tests of a split package are independent (each builds its own world), so any split of them is sound.
+The `play`, `leaktest` and `rules` packages are split by test: each part runs the tests whose name hashes (`cksum`) to it, so a new test lands in a part by itself and adding one never moves the others.
+The tests of a split package are independent (each builds its own world, or reads nothing but its own input), so any split of them is sound.
 A group reads those tests from the `func` lines of the package's `_test.go` files, so it needs no compile to get its `-run`.
 `go-db-shard.sh --check` fails unless the groups together are exactly `go list ./...` and the parts of each split package together are exactly the tests read from the source.
 `go-db-shard.sh --verify-scan` fails unless that reading finds exactly the tests `go test -list` prints.

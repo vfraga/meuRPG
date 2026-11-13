@@ -272,7 +272,9 @@ export function damageNotes(d: CombatLogDamage | undefined): string[] {
         ? 'imunidade'
         : st.kind === DamageStepKind.VULNERABILITY
           ? 'vulnerabilidade'
-          : 'resistência';
+          : st.kind === DamageStepKind.REDUCTION
+            ? 'redução de dano'
+            : 'resistência';
     const base = `${st.labelPt || word}: ${st.before} → ${st.after}`;
     return st.ignored ? `${base} (o mestre deixou de fora)` : base;
   });

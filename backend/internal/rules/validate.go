@@ -207,7 +207,10 @@ func validateGear(b *Build, c *content) error {
 	if err := validateCarried(b); err != nil {
 		return err
 	}
-	return checkWeaponMarks(b)
+	if err := checkWeaponMarks(b); err != nil {
+		return err
+	}
+	return checkItemBonuses(b)
 }
 
 // validateCarried checks that each carried key names the armor, the shield (when the

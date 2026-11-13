@@ -23,6 +23,8 @@ import {
   type SpellZone,
   SpellZoneMovement,
   SpellZoneVisibility,
+  SunlightScope,
+  SunlightTrait,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 
 /** A combatant for specs: an NPC unless `kind` says otherwise. */
@@ -65,6 +67,8 @@ export function combatant(over: Partial<Combatant> & { id: string; label: string
     disengaged: false,
     bestiaryCreatureKey: '',
     challengeRating: '',
+    inSunlight: false,
+    sunlightTrait: SunlightTrait.UNSPECIFIED,
     ...over,
   } as unknown as Combatant;
 }
@@ -90,6 +94,9 @@ export function encounter(over: Partial<Encounter> = {}): Encounter {
     deaths: [],
     zones: [],
     rollModeRequests: [],
+    sunlightOn: false,
+    sunlightScope: SunlightScope.UNSPECIFIED,
+    sunlightSquares: [],
     revision: 1,
     ...over,
   } as unknown as Encounter;
@@ -115,9 +122,10 @@ export function reactionWindow(over: Partial<ReactionWindow> & { id: string }): 
 
 /** A spell zone for specs: Moonbeam as its caster's player (or the master) reads it, a 5 ft cylinder moved by an action; `over` changes any field. */
 export function spellZone(
-  over: Partial<Omit<SpellZone, 'squares' | 'origin'>> & {
+  over: Partial<Omit<SpellZone, 'squares' | 'origin' | 'burningSquares'>> & {
     id: string;
     squares?: { col: number; row: number }[];
+    burningSquares?: { col: number; row: number }[];
     origin?: { col: number; row: number };
   },
 ): SpellZone {
@@ -130,6 +138,8 @@ export function spellZone(
     sizeFt: 5,
     origin: { col: 8, row: 6 },
     squares: [],
+    burningSquares: [],
+    wallSide: 0,
     concentration: true,
     roundsLeft: 9,
     movement: SpellZoneMovement.ACTION,

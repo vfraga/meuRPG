@@ -271,8 +271,11 @@ message TableEffect {
   // lets the character cast it with a spell slot too, `ritual_only` limits it to the
   // ritual way (a spell with the ritual tag; not with also_with_slot) and
   // `counts_as_known` lists it among the known spells without using any of the
-  // class's picks. A leveled spell cast through the grant is cast at its own level;
-  // the material components are not waived. Required: `spell` and `ability`.
+  // class's picks. A leveled spell cast through the grant is cast at its own level.
+  // The material components are waived only when `no_material_components` is set, and
+  // only on the sheet and the cast sheet (the server never enforces components).
+  // `uses_cost` is how many uses of the resource each cast spends (0 and 1 are one);
+  // it needs a resource in `uses`. Required: `spell` and `ability`.
   string spell = 30;
   string from_level = 31;
   string uses = 32;
@@ -424,6 +427,12 @@ message TableEffect {
   bool silvered = 83;
   // weapon_rule only: the weapon lines the filter chooses (the unarmed strike too) count as adamantine.
   bool adamantine = 84;
+  // flag only: one word of the closed list the menu gives under "effect_flags" ("never_surprised", ...).
+  string flag = 85 [(meurpg.options.v1.max_len) = 64];
+  // granted_spell: the grant's material components are not needed (display only), and the
+  // uses each cast spends.
+  bool no_material_components = 86;
+  int32 uses_cost = 87;
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a

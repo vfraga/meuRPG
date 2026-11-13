@@ -84,6 +84,7 @@ export class CastCaller {
           ? this.area.key.keyFor([
               slot,
               area,
+              flow.wall(),
               roll,
               this.choices.damageType(),
               sculpted,
@@ -114,7 +115,7 @@ export class CastCaller {
             : undefined,
           metamagicChoices(this.s.chosenMeta(), this.s.picks()),
           {
-            ...(flow ? { area } : {}),
+            ...this.area.extras(),
             ...(this.choices.asksAbility ? { abilityKey: this.s.ability() } : {}),
             ...(sculpted.length ? { sculptedIds: sculpted } : {}),
             ...(this.s.tablePicks().length ? { spellOptions: this.s.tablePicks() } : {}),

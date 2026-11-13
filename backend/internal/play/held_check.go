@@ -54,6 +54,10 @@ func (s *Service) prepareCheck(ctx context.Context, c *combatTx, who playdb.Comb
 	if err != nil {
 		return preparedCheck{}, err
 	}
+	n, notes, err = s.withCheckBonus(ctx, c.tx, c.session.CampaignID, c.q, c.enc, who, skill, n, notes)
+	if err != nil {
+		return preparedCheck{}, err
+	}
 	floor, err := s.floorOfCombatant(ctx, c.tx, c.session.CampaignID, who, rules.RollAppliesCheck, n.Reliable)
 	if err != nil {
 		return preparedCheck{}, err

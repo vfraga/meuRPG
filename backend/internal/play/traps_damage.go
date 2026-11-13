@@ -450,7 +450,7 @@ func (s *Service) afterTrapSettled(ctx context.Context, st *trapSettle) {
 	pctx, stop := afterCommit(ctx) // the change is committed: a caller that hangs up must not leave the streams and the fog unheard
 	defer stop()
 	s.publishVitals(campaignID, st.after)
-	s.Publish(campaignID, false, mapChangedHint("")) // the trap card has one damage less
+	s.tellMembers(campaignID, false, mapChangedHint("")) // the trap card has one damage less
 	if st.touched != nil {
 		s.publishEncounterChanged(pctx, campaignID, *st.touched)
 	}

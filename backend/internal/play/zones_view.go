@@ -2,6 +2,7 @@ package play
 
 import (
 	"math"
+	"slices"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
@@ -29,11 +30,58 @@ func (d *encounterData) zonesView(v combatViewer, names func(string) string) []*
 			z.addDetails(view, names, v.master)
 		} else {
 			view.DetailsHidden, view.RoundsLeft = true, 0
+			if !z.onlySeen(view, v) {
+				continue
+			}
 		}
 		view.OccupantIds = z.occupantsFor(d.cs, v)
 		out = append(out, view)
 	}
 	return out
+}
+
+// onlySeen cuts the squares of a zone the viewer reads to the ones they see now, never the ones they remember
+// (RN-10): on a map with the fog of war a player does not read where a cloud or a wall lies in the dark. It says
+// whether anything is left to send. The master, the caster's own player and a map without the fog read it whole.
+func (z *zone) onlySeen(view *playv1.SpellZone, v combatViewer) bool {
+	if v.sight == nil {
+		return true
+	}
+	seen := func(sq grid.Square) bool { return v.sight.sight.Sees(v.userID, sq) }
+	own := func(sq grid.Square) bool { return seen(sq) || z.faces(sq, seen) }
+	kept := slices.DeleteFunc(slices.Clone(z.squares), func(sq grid.Square) bool { return !own(sq) })
+	if len(kept) == 0 {
+		return false
+	}
+	view.Squares = squaresProto(kept)
+	if !own(z.origin()) {
+		view.Origin = originProto(kept[0]) // a square the viewer reads, so the answer holds nothing of the unseen ones
+	}
+	view.BurningSquares = squaresProto(slices.DeleteFunc(z.burning(), func(sq grid.Square) bool { return !seen(sq) }))
+	if z.wall != nil && len(view.BurningSquares) == 0 {
+		view.WallSide = playv1.WallSide_WALL_SIDE_UNSPECIFIED // no side is told before a burning square is in sight
+	}
+	if z.wall != nil && !z.wall.Ring && len(kept) < len(z.squares) {
+		view.SizeFt = clamp32(grid.RangeFt(kept[0], kept[len(kept)-1])+grid.FeetPerSquare, 0, math.MaxInt32) // the length read, not the wall's
+	}
+	return true
+}
+
+// faces says whether the square of a zone that blocks sight faces the viewer: it touches a square they see now. The
+// fog never counts such a square as seen, since nothing past the edge of the cloud or the wall shows, but the edge
+// itself does. The squares behind it are not read.
+func (z *zone) faces(sq grid.Square, seen func(grid.Square) bool) bool {
+	if z.def.sight == sightNone || !z.has(sq) {
+		return false
+	}
+	for dr := -1; dr <= 1; dr++ {
+		for dc := -1; dc <= 1; dc++ {
+			if near := (grid.Square{Col: sq.Col + dc, Row: sq.Row + dr}); near != sq && !z.has(near) && seen(near) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // occupantsFor are the creatures standing in the area now that the viewer sees.
@@ -60,6 +108,9 @@ func (z *zone) view(owner playdb.Combatant, round int32, names func(string) stri
 		Origin: originProto(z.origin()), Squares: squaresProto(z.squares),
 		Concentration: z.row.Concentration, RoundsLeft: z.roundsLeft(round), Movement: z.def.movement,
 		Visibility: playv1.SpellZoneVisibility_SPELL_ZONE_VISIBILITY_EVERYONE,
+	}
+	if z.wall != nil {
+		out.WallSide, out.BurningSquares = z.wall.Side, squaresProto(z.burning())
 	}
 	if names != nil {
 		out.SpellNamePt = names(z.row.SpellKey)

@@ -42,9 +42,7 @@ func (w *world) greaseFight() (pens, dragon *playv1.Combatant) {
 		}
 	}
 	pens = w.combatant(w.pens)
-	for id, sq := range map[string][2]int32{pens.GetId(): {12, 13}, dragon.GetId(): {13, 13}} {
-		must(m.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: id, IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true})))
-	}
+	w.placeForced(m, w.encounter.GetId(), placement{pens.GetId(), 12, 13}, placement{dragon.GetId(), 13, 13})
 	for range 40 {
 		cur := must(m.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
 		if cur.GetCurrentCombatantId() == pens.GetId() {

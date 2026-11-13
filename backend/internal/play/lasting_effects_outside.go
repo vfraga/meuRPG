@@ -103,12 +103,13 @@ func addAbilityEffects(c *combat.Creature, mods []rules.EffectModifier) {
 	}
 }
 
-// hideFor says which sources come from an effect the master hides.
+// hideFor says which sources the roller may not read the origin of: those that come from an effect the master hides,
+// and the sun's.
 func hideFor(conds []string, anyHidden bool) func(combat.Source) bool {
-	if len(conds) == 0 && !anyHidden {
-		return nil
-	}
 	return func(src combat.Source) bool {
+		if isSunlight(src) {
+			return true // the sun and its trait are the master's (RN-20, RN-29): the roller reads "Outra fonte"
+		}
 		switch src.Kind {
 		case combat.SourceOutlinedTarget, combat.SourceEffectSave, combat.SourceEffectCheck:
 			return anyHidden

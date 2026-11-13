@@ -19,7 +19,7 @@ import {
   DerivedSheet as GenDerivedSheet,
   ProficiencyLevel as GenProficiencyLevel,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
-import { toGearVm } from '../../core/characters/gear';
+import { marksOf, sheetGear, weaponMarksOf } from './character-sheet-marks';
 import { speedExtrasOf } from './character-sheet-speeds';
 import { KIND_FROM_GEN } from '../../core/characters/character-kind-gen';
 import { ABILITY_FROM_GEN } from '../../core/characters/ability-gen';
@@ -120,6 +120,7 @@ function toAttackVm(attack: GenAttack): AttackVm {
     saveDc: attack.saveDc,
     saveAbility: attack.saveDc > 0 ? ABILITY_FROM_GEN[attack.saveAbility] : null,
     beams: attack.beams,
+    marks: attack.kind === GenAttackKind.SPELL ? undefined : marksOf(attack),
   };
 }
 
@@ -226,6 +227,8 @@ function grantedSpellVm(g: GenDerivedSheet['grantedSpells'][number], derived: Ge
     alsoWithSlot: g.alsoWithSlot,
     ritualOnly: g.ritualOnly,
     countsAsKnown: g.countsAsKnown,
+    noMaterialComponents: g.noMaterialComponents,
+    usesCost: g.usesCost,
     ability: g.abilityPending || g.ability === '' ? null : (g.ability as AbilityKey),
     abilityPending: g.abilityPending,
     saveDc: g.saveDc,
@@ -268,13 +271,15 @@ function toFullSheetVm(full: GenFullSheet, derived: GenDerivedSheet): FullSheetV
     passivePerception: derived.passivePerception,
     passiveInvestigation: derived.passiveInvestigation,
     passiveInsight: derived.passiveInsight,
+    carryCapacityLb: derived.carryCapacityLb,
     initiative: derived.initiative,
     armorClass: derived.armorClass,
     armorClassDescription: derived.armorClassDescription,
     wearsArmor: full.armorKey !== '',
     hasShield: full.shield,
     shieldIdle: derived.shieldIdle,
-    gear: derived.gear.map(toGearVm),
+    gear: sheetGear(derived, full),
+    weaponMarks: weaponMarksOf(full),
     hitPointsMax: derived.hitPointsMax,
     hitDice: hitDiceWords(derived.hitDice),
     speedWalkFt: derived.speedWalkFt,
@@ -447,6 +452,7 @@ export function toCharacterSheetVm(character: Character): CharacterSheetVm {
     diedAt: dateOf(character.diedAt),
     revivedAt: dateOf(character.revivedAt),
     revision: character.revision,
+    fullSheet: character.sheet?.content.case === 'full' ? character.sheet.content.value : undefined,
     sheet: sheetVmOf(character),
     story: toStoryVm(character.story),
     canEditStory: character.canEditStory,

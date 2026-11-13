@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { clone, create } from '@bufbuild/protobuf';
 import { createClient } from '@connectrpc/connect';
 
 import { CampaignService, XpMode } from '../../../gen/meurpg/campaigns/v1/campaigns_pb';
@@ -6,6 +7,9 @@ import {
   CharacterKind as GenCharacterKind,
   CharacterService,
   CharacterState as GenCharacterState,
+  type FullSheet,
+  FullSheetSchema,
+  WeaponMarkSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { ContentService } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { SpellDetailsVm } from '../../shared/spell-details/spell-details.types';
@@ -16,6 +20,7 @@ import {
   CharacterSheetSource,
   CharacterSheetVm,
   CharacterStoryVm,
+  type WeaponMarkVm,
 } from './character-sheet.types';
 import { toCharacterSheetVm, toCharacterStoryInit } from './character-sheet-map';
 
@@ -99,6 +104,26 @@ export class CharacterSheetSourceLive implements CharacterSheetSource {
     equipped: boolean,
   ): Promise<void> {
     await this.client.setEquipped({ campaignId, characterId, key, equipped });
+  }
+
+  async setWeaponMarks(
+    campaignId: string,
+    characterId: string,
+    revision: number,
+    name: string,
+    sheet: FullSheet,
+    marks: readonly WeaponMarkVm[],
+  ): Promise<CharacterSheetVm> {
+    const next = clone(FullSheetSchema, sheet);
+    next.weaponMarks = marks.map((m) => create(WeaponMarkSchema, m));
+    const res = await this.client.updateCharacter({
+      campaignId,
+      characterId,
+      revision,
+      name,
+      sheet: { content: { case: 'full', value: next } },
+    });
+    return toCharacterSheetVm(res.character!);
   }
 
   async approveCharacter(campaignId: string, characterId: string): Promise<CharacterSheetVm> {

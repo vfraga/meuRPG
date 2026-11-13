@@ -1077,6 +1077,46 @@ describe("the Recharge rolls of the creatures: a line for the master and the cre
   });
 });
 
+describe("the swaps of gear in the combat: the master's and the owner's line, with what the swap cost", () => {
+  const swap = (equipped: boolean, cost: string, byMaster = false) =>
+    logLine(
+      entry({
+        kind: CombatLogKind.GEAR_SWAPPED,
+        actorLabel: 'Reator',
+        byMaster,
+        gearSwapped: { namePt: 'Adaga', kind: 'weapon', equipped, cost },
+      } as never),
+    );
+
+  it('says whether the piece was drawn or stowed and what it spent', () => {
+    expect(swap(true, 'free')?.text).toBe(' equipou Adaga (grátis)');
+    expect(swap(false, 'action')?.text).toBe(' guardou Adaga (ação)');
+    expect(swap(false, 'extra_action')?.text).toBe(' guardou Adaga (ação extra)');
+  });
+
+  it('says nothing of a cost when the master made the swap, and ends with "(pelo mestre)"', () => {
+    const line = swap(false, '', true);
+    expect(line?.text).toBe(' guardou Adaga');
+    const [grouped] = logGroups(
+      [
+        create(CombatLogRoundSchema, {
+          round: 1,
+          entries: [
+            entry({
+              kind: CombatLogKind.GEAR_SWAPPED,
+              actorLabel: 'Reator',
+              byMaster: true,
+              gearSwapped: { namePt: 'Adaga', kind: 'weapon', equipped: false, cost: '' },
+            } as never),
+          ],
+        }),
+      ],
+      1,
+    )[0].lines;
+    expect(grouped.text).toBe(' guardou Adaga (pelo mestre)');
+  });
+});
+
 describe('the monsters the master put in (MR-042, RN-29): a line for the master alone, with the hit points and the dice', () => {
   it("writes the rolled hit points with their dice, and flags the line as the master's alone", () => {
     const line = logLine(

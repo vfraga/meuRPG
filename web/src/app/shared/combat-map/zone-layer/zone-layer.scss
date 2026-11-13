@@ -1,5 +1,11 @@
-// The zones sit among the map's marks: the footprint under the tokens (z 2, as the area overlay), the labels over them (z 4).
-// It never takes a pointer; the map's own layer does.
+// The zones sit among the map's marks: the footprint under the tokens (z 2, as the area overlay), the badges over them (z 4).
+// It never takes a pointer; the map's own layer does. The map's tokens do not follow the theme, so the looks read the same in both.
+// Outline widths and dash, in px, whatever the map's zoom (the strokes do not scale).
+$edge-width: 2.5;
+$halo-width: 5;
+$dash: 6 4;
+
+// The badge's size and the inset of its diamond are set on the host from the TS constants (`--zl-badge`, `--zl-badge-inset`, `--zl-badge-border`).
 :host {
   position: absolute;
   inset: 0;
@@ -15,15 +21,29 @@
   height: 100%;
 }
 
-.zl__fill {
-  fill: color-mix(in srgb, var(--mr-map-token-surface) 38%, transparent);
+// The veil under the pattern: its colour here, its strength in `fill-opacity`.
+.zl__veil--surface {
+  fill: var(--mr-map-token-surface);
+}
+
+.zl__veil--ink {
+  fill: var(--mr-map-token-ink);
+}
+
+.zl__veil--accent {
+  fill: var(--mr-map-accent);
 }
 
 .zl__ink,
-.zl__accent {
+.zl__accent,
+.zl__light {
   fill: none;
   stroke-linecap: round;
-  stroke-width: 0.045;
+  stroke-linejoin: round;
+}
+
+.zl__light {
+  stroke: var(--mr-map-token-surface);
 }
 
 .zl__ink {
@@ -42,47 +62,52 @@
 
 .zl__halo {
   stroke: var(--mr-map-token-surface);
-  stroke-width: 5;
+  stroke-width: $halo-width;
 }
 
 .zl__edge {
-  stroke-width: 2.5;
+  stroke-width: $edge-width;
 }
 
+.zl__edge--dashed,
 .zl__zone--dashed .zl__edge {
-  stroke-dasharray: 6 4;
+  stroke-dasharray: $dash;
 }
 
-.zl__label {
+// The corner badge: a white diamond (never a square: a square reads as an NPC token) holding the zone's letter.
+.zl__badge {
   position: absolute;
   z-index: 4;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   box-sizing: border-box;
-  height: 22px;
-  padding: 0 9px;
-  border: 1.5px solid var(--mr-map-token-ink);
-  border-radius: var(--mr-radius-pill);
-  background: var(--mr-map-token-surface);
-  color: var(--mr-map-token-ink);
-  font-size: var(--mr-font-13);
+  width: var(--zl-badge);
+  height: var(--zl-badge);
+  font-size: var(--mr-font-12);
   font-weight: 700;
-  line-height: 19px;
-  white-space: nowrap;
-  transform: translate(-50%, calc(-100% - 4px));
+  line-height: 1;
+  transform: translate(-50%, -50%);
 }
 
-.zl__label--below {
-  transform: translate(-50%, 4px);
+// The diamond below is a positioned pseudo-element, which paints over in-flow text: the letter is its own positioned element
+// above it, in the ink on the diamond's white (about 16:1 in both themes, the tokens do not change with the theme).
+.zl__letter {
+  position: relative;
+  z-index: 1;
+  color: var(--mr-map-token-ink);
 }
 
-.zl__label--hidden {
+.zl__badge::before {
+  content: '';
+  position: absolute;
+  inset: var(--zl-badge-inset);
+  box-sizing: border-box;
+  border: var(--zl-badge-border) solid var(--mr-map-token-ink);
+  background: var(--mr-map-token-surface);
+  transform: rotate(45deg);
+}
+
+.zl__badge--dashed::before {
   border-style: dashed;
-}
-
-.zl__label .mat-icon {
-  width: 16px;
-  height: 16px;
-  font-size: var(--mr-font-16);
 }

@@ -152,7 +152,11 @@ The creature resolves wherever an SRD one does, so `GiveCreature`, the list, the
 - **Traits that change rolls.** Pack Tactics and Magic Resistance are read from the stat block's traits and become advantage sources (`combat.SourcePackTactics`, `combat.SourceMagicResistance`).
   Magic Resistance gives advantage on a saving throw against a spell or another magical effect; a creature's own non-spell action is not magic.
   Only the master and the owner of the creature read the mode of its save; any other player reads the outcome.
-  Sunlight Sensitivity and Sunlight Weakness are not read: the engine has no sunlight, so they stay a trait the master reads on the creature's sheet.
+  Sunlight Sensitivity and Sunlight Weakness are read too: the master turns the sun on for the combat (`SetSunlight`: the whole map, or the squares he paints), and a creature in it rolls with disadvantage (`combat.SourceSunlightAttack`, `SourceSunlightSave`, `SourceSunlightPerception`).
+  Sensitivity gives it on attack rolls and on Perception checks that rely on sight; Weakness gives it on attack rolls, ability checks and saving throws.
+  `sunlightFrom` decides whether a combatant stands in the sun, and Darkness beats it: a creature in a Darkness zone is not in the sun.
+  The sun, its scope and its squares are the master's (`Encounter.sunlight_*`, `Combatant.in_sunlight` and `sunlight_trait`); a player reads a roll's sunlight source as "Outra fonte", and nothing else of it (RN-20, RN-29).
+  The change is a `sunlight_set` event: it is not a closing event, so undo steps over it.
 - **Spells of a stat block** (an NPC, not a summoned creature: a creature has no "Cast a spell", see the next bullet). An NPC made from a creature with a Spellcasting or Innate Spellcasting trait casts through `CastSpell`, like an NPC with a full sheet.
   A creature whose Innate Spellcasting text lists no spells by frequency stays a reminder: the four mephits ("The mephit can innately cast sleep"), which lists no frequency in the data.
   They keep only the description note, and the master casts for them.
@@ -172,7 +176,7 @@ The creature resolves wherever an SRD one does, so `GiveCreature`, the list, the
   The master reads the slots and uses left in the options; a player never does.
 - **Turn and economy.** The creature has its own turn and economy, computed from `MonsterDerived`: attacks (each action with an attack bonus, the first damage part), Dash and the standard actions, without "Cast a spell".
   The familiar does not attack (no attacks nor the Attack action, even for the master: `CREATURE_CANNOT_ATTACK`); the Pact of the Chain's has its attacks disabled as an action (`REACTION_ONLY`) and only attacks with `as_reaction`; those of Animate Dead and Conjure Animals attack like any creature.
-  On entering combat the creature copies, like the character, the side (`party`), the size, the flying speed (`size`, `speed_fly_ft`) and the jump (`combat.JumpLimits` from its Strength).
+  On entering combat the creature copies, like the character, the side (`party`), the size, the flying, swimming, climbing and burrowing speeds (`size`, `speed_fly_ft`, `speed_swim_ft`, `speed_climb_ft`, `speed_burrow_ft`) and the jump (`combat.JumpLimits` from its Strength).
   Movement uses the better of walking and flying; whoever moves on the fly speed ignores difficult terrain; swimming and climbing are never the speed on the map.
   The owning player moves it on its turn and the master always; another player gets `permission_denied`.
   A dismissed combatant occupies no square and gives no cover.
@@ -409,7 +413,7 @@ The table's `wild_shape` effects (`Derived.WildShape`: the highest challenge rat
   Healing a druid in the form (`healCombatant`: a spell, Second Wind) heals the beast, up to its maximum.
   `wild_shape_ended` with `reason: damage` and `carried_damage` is written before the damage event and does not close the undo chain.
   The beast does not take temporary HP.
-- **In combat.** On assuming or leaving the form the combatant swaps `speed_ft`, `speed_fly_ft`, `size` and the jumps (`SetCombatantBody`), so movement uses the beast's size and speed; a combat that starts with a druid already in the form puts them in with the beast's numbers.
+- **In combat.** On assuming or leaving the form the combatant swaps `speed_ft`, the four other speeds, `size` and the jumps (`SetCombatantBody`), so movement uses the beast's size and speed; a combat that starts with a druid already in the form puts them in with the beast's numbers.
   The turn options come from the beast's sheet: its attacks (`monster:wolf#bite`), the standard actions, no spell.
   `CastSpell` and `CastSummon` are refused with `WILD_SHAPE_NO_SPELLS` before spending anything, except for a druid of level 18 or more (Beast Spells: `link.Character.CastsInBeastForm`).
   `Combatant` carries `wild_shape_beast_key` and its Portuguese name for everyone who sees it, and the beast's HP (`wild_shape_hit_points_*`) only for the master and the owning player (RN-20).

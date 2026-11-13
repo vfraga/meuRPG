@@ -255,6 +255,7 @@ func (s *Service) joinRow(c *combatTx, j *joining, p planned, i int, label strin
 		Side: sideOfKind(kindNPC), Size: sizeKey(p.char.Size), SpeedFlyFt: clamp32(p.char.SpeedFlyFt, 0, 600),
 		JumpLongDft: clamp32(p.char.JumpLongDFt, 0, 6000), JumpHighDft: clamp32(p.char.JumpHighDFt, 0, 6000),
 		JumpLongBonusDft: clamp32(p.char.JumpLongBonusDFt, 0, 6000),
+		SpeedSwimFt:      clamp32(p.char.SpeedSwimFt, 0, 600), SpeedClimbFt: clamp32(p.char.SpeedClimbFt, 0, 600), SpeedBurrowFt: clamp32(p.char.SpeedBurrowFt, 0, 600),
 	}
 	if p.char.Player {
 		playerRow(&row, p.char)

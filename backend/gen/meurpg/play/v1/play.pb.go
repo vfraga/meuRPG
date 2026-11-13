@@ -2519,7 +2519,20 @@ type WatchGameSessionResponse struct {
 	//	*WatchGameSessionResponse_FreeRollRolled_
 	//	*WatchGameSessionResponse_AttackHit_
 	//	*WatchGameSessionResponse_TableScreenChanged_
-	Event         isWatchGameSessionResponse_Event `protobuf_oneof:"event"`
+	Event isWatchGameSessionResponse_Event `protobuf_oneof:"event"`
+	// The session's hint number (game_sessions.hint_seq): it grows by one for every write that told the streams something,
+	// however many events it told. A stream that sees a number ahead of the ones it has applied (on a heartbeat, above all)
+	// knows it missed a hint and reads the session again. It is a counter and says nothing of what changed.
+	// Ready and Heartbeat carry the number as the database holds it; a Heartbeat that could not read it carries 0.
+	// An event carries the number its write left, and 0 when it did not come from a counted write (typing, presence, and the
+	// writes outside the combat write path): 0 means "no number", never compare it.
+	// Only a member who may watch the stream reads it.
+	// The numbers on events are not ordered: two writes can commit in one order and send in the other, so an app must not
+	// drop an event for an old number, nor look for gaps in them. Only the numbers of Ready and Heartbeat are the session's
+	// own: an app that sees a heartbeat ahead of the highest number it applied reads the session again.
+	// It is unrelated to the event numbers of the combat log (ListCombatLogResponse.last_seq, CombatLogEntry.seq): two counters,
+	// never compared with each other.
+	SessionSeq    int64 `protobuf:"varint,48,opt,name=session_seq,json=sessionSeq,proto3" json:"session_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2910,6 +2923,13 @@ func (x *WatchGameSessionResponse) GetTableScreenChanged() *WatchGameSessionResp
 		}
 	}
 	return nil
+}
+
+func (x *WatchGameSessionResponse) GetSessionSeq() int64 {
+	if x != nil {
+		return x.SessionSeq
+	}
+	return 0
 }
 
 type isWatchGameSessionResponse_Event interface {
@@ -5403,7 +5423,9 @@ func (x *WatchGameSessionResponse_SceneCheckRolled) GetActionId() string {
 type WatchGameSessionResponse_Ready struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The session being watched.
-	GameSession   *GameSession `protobuf:"bytes,1,opt,name=game_session,json=gameSession,proto3" json:"game_session,omitempty"`
+	GameSession *GameSession `protobuf:"bytes,1,opt,name=game_session,json=gameSession,proto3" json:"game_session,omitempty"`
+	// The session's hint number now (see WatchGameSessionResponse.session_seq): events at or below it are in the snapshot.
+	SessionSeq    int64 `protobuf:"varint,2,opt,name=session_seq,json=sessionSeq,proto3" json:"session_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5445,9 +5467,20 @@ func (x *WatchGameSessionResponse_Ready) GetGameSession() *GameSession {
 	return nil
 }
 
-// Heartbeat carries nothing.
+func (x *WatchGameSessionResponse_Ready) GetSessionSeq() int64 {
+	if x != nil {
+		return x.SessionSeq
+	}
+	return 0
+}
+
+// Heartbeat shows the stream is alive and carries the session's hint number.
 type WatchGameSessionResponse_Heartbeat struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The session's hint number when the heartbeat was sent, read from the database (see
+	// WatchGameSessionResponse.session_seq); 0 when the server could not read it. A number ahead of the last one the app
+	// applied means it missed a hint.
+	SessionSeq    int64 `protobuf:"varint,1,opt,name=session_seq,json=sessionSeq,proto3" json:"session_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5480,6 +5513,13 @@ func (x *WatchGameSessionResponse_Heartbeat) ProtoReflect() protoreflect.Message
 // Deprecated: Use WatchGameSessionResponse_Heartbeat.ProtoReflect.Descriptor instead.
 func (*WatchGameSessionResponse_Heartbeat) Descriptor() ([]byte, []int) {
 	return file_meurpg_play_v1_play_proto_rawDescGZIP(), []int{33, 26}
+}
+
+func (x *WatchGameSessionResponse_Heartbeat) GetSessionSeq() int64 {
+	if x != nil {
+		return x.SessionSeq
+	}
+	return 0
 }
 
 // VitalsChanged carries a character's new vitals. Only the master and the
@@ -6018,7 +6058,12 @@ func (x *WatchGameSessionResponse_CombatantMoved) GetRow() int32 {
 type WatchGameSessionResponse_CombatLogChanged struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The combat (a UUID).
-	EncounterId   string `protobuf:"bytes,1,opt,name=encounter_id,json=encounterId,proto3" json:"encounter_id,omitempty"`
+	EncounterId string `protobuf:"bytes,1,opt,name=encounter_id,json=encounterId,proto3" json:"encounter_id,omitempty"`
+	// The log was rewritten, not just added to (the master undid an action): the app drops what it holds and reads the
+	// whole log again (ListCombatLog with since_seq 0). Only the master's copy carries it: a player's hint is the same
+	// whatever was undone, so it never tells a player of an undo they cannot see. It is an optimisation only: an app reads
+	// the log with since_seq on every combat_log_changed, and the answer is `full` when the log was rewritten for that reader.
+	Full          bool `protobuf:"varint,2,opt,name=full,proto3" json:"full,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6058,6 +6103,13 @@ func (x *WatchGameSessionResponse_CombatLogChanged) GetEncounterId() string {
 		return x.EncounterId
 	}
 	return ""
+}
+
+func (x *WatchGameSessionResponse_CombatLogChanged) GetFull() bool {
+	if x != nil {
+		return x.Full
+	}
+	return false
 }
 
 // XpChanged says the campaign's XP or levels changed: an award was given, the
@@ -6359,7 +6411,7 @@ const file_meurpg_play_v1_play_proto_rawDesc = "" +
 	"\x04used\x18\x03 \x01(\x05R\x04used\":\n" +
 	"\x17WatchGameSessionRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
-	"campaignId\"\x9f2\n" +
+	"campaignId\"\x963\n" +
 	"\x18WatchGameSessionResponse\x12F\n" +
 	"\x05ready\x18\x01 \x01(\v2..meurpg.play.v1.WatchGameSessionResponse.ReadyH\x00R\x05ready\x12R\n" +
 	"\theartbeat\x18\x02 \x01(\v22.meurpg.play.v1.WatchGameSessionResponse.HeartbeatH\x00R\theartbeat\x12_\n" +
@@ -6405,7 +6457,9 @@ const file_meurpg_play_v1_play_proto_rawDesc = "" +
 	"\x10free_roll_rolled\x18- \x01(\v27.meurpg.play.v1.WatchGameSessionResponse.FreeRollRolledH\x00R\x0efreeRollRolled\x12S\n" +
 	"\n" +
 	"attack_hit\x18. \x01(\v22.meurpg.play.v1.WatchGameSessionResponse.AttackHitH\x00R\tattackHit\x12o\n" +
-	"\x14table_screen_changed\x18/ \x01(\v2;.meurpg.play.v1.WatchGameSessionResponse.TableScreenChangedH\x00R\x12tableScreenChanged\x1a\xad\x01\n" +
+	"\x14table_screen_changed\x18/ \x01(\v2;.meurpg.play.v1.WatchGameSessionResponse.TableScreenChangedH\x00R\x12tableScreenChanged\x12\x1f\n" +
+	"\vsession_seq\x180 \x01(\x03R\n" +
+	"sessionSeq\x1a\xad\x01\n" +
 	"\x12TableScreenChanged\x12\x12\n" +
 	"\x04open\x18\x01 \x01(\bR\x04open\x123\n" +
 	"\alost_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x06lostAt\x12'\n" +
@@ -6459,10 +6513,14 @@ const file_meurpg_play_v1_play_proto_rawDesc = "" +
 	"\fNotesChanged\x1a\x0e\n" +
 	"\fSceneChanged\x1a/\n" +
 	"\x10SceneCheckRolled\x12\x1b\n" +
-	"\taction_id\x18\x01 \x01(\tR\bactionId\x1aG\n" +
+	"\taction_id\x18\x01 \x01(\tR\bactionId\x1ah\n" +
 	"\x05Ready\x12>\n" +
-	"\fgame_session\x18\x01 \x01(\v2\x1b.meurpg.play.v1.GameSessionR\vgameSession\x1a\v\n" +
-	"\tHeartbeat\x1aH\n" +
+	"\fgame_session\x18\x01 \x01(\v2\x1b.meurpg.play.v1.GameSessionR\vgameSession\x12\x1f\n" +
+	"\vsession_seq\x18\x02 \x01(\x03R\n" +
+	"sessionSeq\x1a,\n" +
+	"\tHeartbeat\x12\x1f\n" +
+	"\vsession_seq\x18\x01 \x01(\x03R\n" +
+	"sessionSeq\x1aH\n" +
 	"\rVitalsChanged\x127\n" +
 	"\x06vitals\x18\x01 \x01(\v2\x1f.meurpg.play.v1.CharacterVitalsR\x06vitals\x1aN\n" +
 	"\fSessionEnded\x12>\n" +
@@ -6490,9 +6548,10 @@ const file_meurpg_play_v1_play_proto_rawDesc = "" +
 	"\fencounter_id\x18\x01 \x01(\tR\vencounterId\x12!\n" +
 	"\fcombatant_id\x18\x02 \x01(\tR\vcombatantId\x12\x10\n" +
 	"\x03col\x18\x03 \x01(\x05R\x03col\x12\x10\n" +
-	"\x03row\x18\x04 \x01(\x05R\x03row\x1a5\n" +
+	"\x03row\x18\x04 \x01(\x05R\x03row\x1aI\n" +
 	"\x10CombatLogChanged\x12!\n" +
-	"\fencounter_id\x18\x01 \x01(\tR\vencounterId\x1a\v\n" +
+	"\fencounter_id\x18\x01 \x01(\tR\vencounterId\x12\x12\n" +
+	"\x04full\x18\x02 \x01(\bR\x04full\x1a\v\n" +
 	"\tXpChanged\x1al\n" +
 	"\n" +
 	"TokenMoved\x12\x15\n" +

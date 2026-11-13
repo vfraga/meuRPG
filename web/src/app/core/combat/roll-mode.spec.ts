@@ -18,6 +18,7 @@ import {
   modeWord,
   reasonValid,
   requestLine,
+  sourceLine,
   sourceWord,
   stepLine,
 } from './roll-mode';
@@ -70,6 +71,21 @@ describe('roll mode words and rules', () => {
       ({ kind: AdvantageSourceKind.PRONE_TARGET, effect, textPt: 'x' }) as never;
     expect(sourceWord(src(RollMode.ADVANTAGE))).toBe('Vantagem');
     expect(sourceWord(src(RollMode.DISADVANTAGE))).toBe('Desvantagem');
+  });
+
+  it('writes the sunlight sources with the server sentence, as any other source', () => {
+    for (const kind of [
+      AdvantageSourceKind.SUNLIGHT_ATTACK,
+      AdvantageSourceKind.SUNLIGHT_PERCEPTION,
+      AdvantageSourceKind.SUNLIGHT_SAVE,
+    ]) {
+      const source = {
+        kind,
+        effect: RollMode.DISADVANTAGE,
+        textPt: 'Luz do sol (Sensibilidade à Luz do Sol)',
+      } as never;
+      expect(sourceLine(source)).toBe('Desvantagem: Luz do sol (Sensibilidade à Luz do Sol)');
+    }
   });
 });
 

@@ -11,7 +11,9 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
 
@@ -407,6 +409,12 @@ func TestAPreviewOfTheWallShowsTheSquaresTheCastLays(t *testing.T) {
 			t.Errorf("the preview has %v, which the zone does not", s)
 		}
 	}
+	if got, want := squaresOf(res.Msg.GetBurningSquares()), squaresOf(z.GetBurningSquares()); len(want) == 0 || !slices.Equal(got, want) {
+		t.Errorf("preview burning squares = %v, want the zone's %v", got, want)
+	}
+	if res.Msg.GetLengthFt() != wallLineFt || z.GetWallSide() != playv1.WallSide_WALL_SIDE_LEFT {
+		t.Errorf("length_ft = %d, wall_side = %v, want the full %d and LEFT", res.Msg.GetLengthFt(), z.GetWallSide(), wallLineFt)
+	}
 	_, err = c.ana.combat.PreviewSpellArea(t.Context(), connect.NewRequest(&playv1.PreviewSpellAreaRequest{
 		CampaignId: c.campaignID, EncounterId: c.get(t, c.master).GetId(), CasterId: c.id(t, "Pensantus"), SpellKey: wallOfFireKey,
 		Slot: slotOfLevel(4), Area: &playv1.PreviewSpellAreaRequest_Origin{Origin: at(7, 8)},
@@ -509,14 +517,14 @@ func TestWallSideIsStoredAndReadBack(t *testing.T) {
 	}
 }
 
-func TestWallOfFireIsUnavailableInTheTurnOptions(t *testing.T) {
+func TestWallOfFireIsAvailableInTheTurnOptions(t *testing.T) {
 	t.Parallel()
 	c := wallCave(t)
 	e := c.zoneFight(t)
 	e = c.passTo(t, e, "Pensantus")
 	opt := spellOption(c.mustOptions(t, c.ana, e, "Pensantus"), wallOfFireKey)
-	if opt == nil || opt.GetEnabled() || opt.GetReason().GetCode() != rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_WALL_PLACEMENT_REQUIRED {
-		t.Fatalf("Wall of Fire option = %v, want disabled with WALL_PLACEMENT_REQUIRED", opt)
+	if opt == nil || !opt.GetEnabled() {
+		t.Fatalf("Wall of Fire option = %v, want enabled: the cast sheet sends the wall", opt)
 	}
 	if o := spellOption(c.mustOptions(t, c.ana, e, "Pensantus"), cloudkillKey); o == nil || !o.GetEnabled() {
 		t.Errorf("Cloudkill option = %v, want enabled", o)
@@ -913,4 +921,23 @@ func TestTheMasterCannotMoveAWall(t *testing.T) {
 		t.Errorf("the wall has %d squares after the refused move, want its %d", len(now.GetSquares()), len(z.GetSquares()))
 	}
 	wantCloudsOf(t, c, z)
+}
+
+// A spell that lays a wall is placed on a point, whatever the shape and the range the spell's own data give it: the
+// turn options say so, so the cast sheet asks "Onde fica" before the cast (the cast itself sets ZoneLaid).
+func TestAWallSpellIsPlacedOnAPointInTheTurnOptions(t *testing.T) {
+	t.Parallel()
+	sp := link.Spell{Key: wallOfFireKey, AreaShape: string(grid.ShapeLine), AreaSizeFt: wallLineFt, RangeKind: rules.RangeRanged}
+	if got := placementFor(sp, false); got != playv1.AreaPlacement_AREA_PLACEMENT_POINT {
+		t.Errorf("placementFor(Wall of Fire) = %v, want POINT", got)
+	}
+	if got, want := areaShapeProto(sp, false), rulesv1.SpellAreaShape_SPELL_AREA_SHAPE_LINE; got != want {
+		t.Errorf("areaShapeProto = %v, want %v", got, want)
+	}
+	if got := areaSizeFor(sp, false); got != wallLineFt {
+		t.Errorf("areaSizeFor = %d, want %d", got, wallLineFt)
+	}
+	if got := placementFor(sp, true); got != playv1.AreaPlacement_AREA_PLACEMENT_UNSPECIFIED {
+		t.Errorf("placementFor(Wall of Fire) in a combat with no map = %v, want UNSPECIFIED", got)
+	}
 }

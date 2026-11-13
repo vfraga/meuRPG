@@ -45,8 +45,9 @@ export function screenResponse(
 }
 
 /** One event of `WatchTableScreen`. */
-export function tvWire(event: 'ready' | 'heartbeat' | 'changed' | 'sessionEnded') {
-  return create(WatchTableScreenResponseSchema, { event: { case: event, value: {} } } as never);
+export function tvWire(event: 'ready' | 'heartbeat' | 'changed' | 'sessionEnded', sessionSeq = 0n) {
+  const value = event === 'ready' || event === 'heartbeat' ? { sessionSeq } : {};
+  return create(WatchTableScreenResponseSchema, { event: { case: event, value } } as never);
 }
 
 /** The TV's clock, moved by hand: timers fire when `advance` passes them. */
@@ -101,8 +102,8 @@ export class FakeWatchCall {
     });
   }
 
-  push(event: Parameters<typeof tvWire>[0]): void {
-    this.queue.push({ value: tvWire(event), done: false });
+  push(event: Parameters<typeof tvWire>[0], sessionSeq = 0n): void {
+    this.queue.push({ value: tvWire(event, sessionSeq), done: false });
     this.wake?.();
   }
 

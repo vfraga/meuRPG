@@ -1,0 +1,3 @@
+# Functions in internal/play (non-test) that call send or tellMembers inside the closure of Service.tx or db.InTx.
+# One entry per line, sorted. An entry is the path relative to backend/, a colon, and the enclosing function ("(*T).Method" for a method).
+# The list can only shrink. Collect with h.tell in Service.tx, or send after db.InTx returns.

@@ -1,6 +1,6 @@
 import type { AreaPick } from '../../core/combat/area-flow';
-import { type Square, squareAt, squareCenter } from '../../core/combat/combat-grid';
-import { rangeFt, rotate } from '../../core/combat/spell-area';
+import { type Square, arrowStep, squareAt, squareCenter } from '../../core/combat/combat-grid';
+import { type AreaShape, areaSquares, rangeFt, rotate } from '../../core/combat/spell-area';
 import { metersFixed } from '../../core/units';
 
 /** Half a square: from a square's corner to its center, or to its side. */
@@ -135,4 +135,48 @@ export function listMove(
     default:
       return null;
   }
+}
+
+/** The browser's outline of an area at a pick (before the server answers): a point's sphere or cylinder, or what a direction
+ * cuts out from the caster. Nothing without a pick, or a direction without the caster on the map. */
+export function outlineOf(
+  pick: AreaPick | null,
+  caster: Square | null,
+  area: AreaShape,
+  columns: number,
+  rows: number,
+): Square[] {
+  if (!pick) {
+    return [];
+  }
+  if (pick.kind === 'point') {
+    return areaSquares(area, { origin: pick.square }, columns, rows);
+  }
+  return caster ? areaSquares(area, { caster, direction: pick.direction }, columns, rows) : [];
+}
+
+/** Shift and an arrow move five squares. */
+const SHIFT_STEP = 5;
+
+/** The pick an arrow key makes: a point moves a square (Shift: five), a direction turns 45°; `null` for any other key. */
+export function arrowPick(
+  event: Pick<KeyboardEvent, 'key' | 'shiftKey'>,
+  from: AreaPick | null,
+  caster: Square | null,
+  isPoint: boolean,
+  columns: number,
+  rows: number,
+): AreaPick | null {
+  const step = arrowStep(event.key);
+  if (!step) {
+    return null;
+  }
+  return isPoint
+    ? movedPoint(from, caster, step, event.shiftKey ? SHIFT_STEP : 1, columns, rows)
+    : turnedDirection(from, step.dc + step.dr);
+}
+
+/** A point farther from the caster than the spell's range (0: no range). */
+export function beyondReach(pick: AreaPick, caster: Square, range: number): boolean {
+  return pick.kind === 'point' && range > 0 && rangeFt(caster, pick.square) > range;
 }

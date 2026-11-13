@@ -13,6 +13,15 @@
       </div>
     }
     @case ('ready') {
+      @if (s.leftOut > 0) {
+        <div class="mr-notice mr-notice--danger">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <p>
+            <strong>{{ leftOut() }}</strong>{{ ' ' }}
+            <a class="content__link" [routerLink]="['/campaigns', campaignId(), 'content']">Ver o conteúdo da mesa</a>
+          </p>
+        </div>
+      }
       <p class="content__text">
         {{ counts() || 'Nada criado ainda.' }} O SRD continua valendo.
       </p>

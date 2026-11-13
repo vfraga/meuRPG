@@ -100,6 +100,12 @@ enum AdvantageSourceKind {
   ADVANTAGE_SOURCE_KIND_PROTECTION = 110;
   // A creature's Magic Resistance: advantage on a saving throw against a spell or another magical effect.
   ADVANTAGE_SOURCE_KIND_MAGIC_RESISTANCE = 112;
+  // A creature in sunlight with Sunlight Sensitivity or Sunlight Weakness: disadvantage on its attack rolls, on the checks
+  // the sun spoils (Perception that relies on sight; every ability check for the Weakness) and, for the Weakness, on
+  // its saving throws. Only the master reads these kinds: a player reads "Outra fonte" (RN-20, RN-29).
+  ADVANTAGE_SOURCE_KIND_SUNLIGHT_ATTACK = 113;
+  ADVANTAGE_SOURCE_KIND_SUNLIGHT_PERCEPTION = 114;
+  ADVANTAGE_SOURCE_KIND_SUNLIGHT_SAVE = 115;
 }
 
 // AdvantageSource is one circumstance of a roll, as the caller may read it. A
@@ -155,6 +161,8 @@ enum DamageStepKind {
   DAMAGE_STEP_KIND_RESISTANCE = 1;
   DAMAGE_STEP_KIND_VULNERABILITY = 2;
   DAMAGE_STEP_KIND_IMMUNITY = 3;
+  // A flat amount taken off a weapon attack's damage, before resistance and vulnerability.
+  DAMAGE_STEP_KIND_REDUCTION = 4;
 }
 
 // DamageStep is one change that resistance, vulnerability or immunity makes to

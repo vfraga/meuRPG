@@ -13,14 +13,12 @@ type Translators = {
   [E in WireEvent as E['case']]: (value: E['value']) => LiveEventVm | null;
 };
 
-const signal =
-  (kind: 'ready' | 'heartbeat' | 'ended' | 'leftImages' | 'combatLogChanged' | 'xpChanged') =>
-  (): LiveEventVm => ({ kind });
+const signal = (kind: 'ended' | 'leftImages' | 'xpChanged') => (): LiveEventVm => ({ kind });
 
 const TRANSLATORS: Translators = {
-  ready: signal('ready'),
-  heartbeat: signal('heartbeat'),
-  hiddenHitPending: signal('heartbeat'),
+  ready: (v) => ({ kind: 'ready', sessionSeq: Number(v.sessionSeq) }),
+  heartbeat: (v) => ({ kind: 'heartbeat', sessionSeq: Number(v.sessionSeq) }),
+  hiddenHitPending: () => ({ kind: 'heartbeat' }),
   vitalsChanged: (v) => (v.vitals ? { kind: 'vitals', vitals: toVitalsVm(v.vitals) } : null),
   sessionEnded: signal('ended'),
   currentMapChanged: (v) => ({ kind: 'currentMap', mapId: v.mapId || null }),
@@ -69,7 +67,7 @@ const TRANSLATORS: Translators = {
     col: v.col,
     row: v.row,
   }),
-  combatLogChanged: signal('combatLogChanged'),
+  combatLogChanged: (v) => ({ kind: 'combatLogChanged', full: v.full }),
   xpChanged: signal('xpChanged'),
   sceneChanged: () => ({ kind: 'sceneChanged' }),
   sceneCheckRolled: () => ({ kind: 'sceneCheckRolled' }),

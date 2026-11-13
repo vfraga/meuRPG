@@ -140,7 +140,7 @@ export async function startEncounterRPC(
 }
 
 /** `StartEncounter` for the whole party, the Capitão, two Goblins and SRD creatures (`monsters`, one each), all in plain sight. */
-async function startEncounterWithMonstersRPC(page: Page, table: CombatTable, monsters: string[]): Promise<Encounter> {
+export async function startEncounterWithMonstersRPC(page: Page, table: CombatTable, monsters: string[]): Promise<Encounter> {
   const res = await callRPC(page, 'meurpg.play.v1.CombatService/StartEncounter', {
     campaignId: table.campaignId,
     idempotencyKey: crypto.randomUUID(),

@@ -157,6 +157,7 @@ func combatCharacter(content *rules.Content, id, kind, name string, playerUserID
 	case sheet.GetFull() != nil:
 		d := derive(content, sheet.GetFull(), beast, active)
 		c.InitiativeBonus, c.SpeedFt, c.HitPointsMax = d.Initiative, d.SpeedWalkFt, max(d.HitPointsMax, 0)
+		c.SpeedSwimFt, c.SpeedClimbFt, c.SpeedBurrowFt = d.SpeedSwimFt, d.SpeedClimbFt, d.SpeedBurrowFt
 		c.SpeedFlyFt, c.Size = d.SpeedFlyFt, raceSizeOf(content, d, sheet.GetFull().GetRaceKey())
 		if beast != nil && *beast != "" {
 			c.Size = beastSize(content, *beast)

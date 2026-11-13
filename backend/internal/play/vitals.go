@@ -228,7 +228,7 @@ func (s *Service) leaveBeastForm(ctx context.Context, tx pgx.Tx, q *playdb.Queri
 
 // publishAdjusted tells the streams and the fog what the committed correction changed.
 func (s *Service) publishAdjusted(ctx context.Context, campaignID string, run adjustRun) {
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: vitalsAudience(run.after),
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_VitalsChanged_{
 			VitalsChanged: &playv1.WatchGameSessionResponse_VitalsChanged{Vitals: run.after},
@@ -413,7 +413,7 @@ func (s *Service) PublishVitalsChanged(ctx context.Context, campaignID, characte
 	if err != nil {
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: vitalsAudience(v),
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_VitalsChanged_{
 			VitalsChanged: &playv1.WatchGameSessionResponse_VitalsChanged{Vitals: v},

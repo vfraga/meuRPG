@@ -1,5 +1,11 @@
 import type { DiceRoll } from '../../../../../gen/meurpg/play/v1/combat_pb';
-import { treatedFormula, treatedPreview, typedTotal } from '../../../../core/combat/combat-dice';
+import {
+  checkFloorOf,
+  type CheckFloor,
+  treatedFormula,
+  treatedPreview,
+  typedTotal,
+} from '../../../../core/combat/combat-dice';
 import { MapPointKind, type MapPoint } from '../../../../../gen/meurpg/maps/v1/maps_pb';
 import type { SearchForTrapsResponse } from '../../../../../gen/meurpg/play/v1/traps_pb';
 import { showOfDice } from '../../../../shared/roll-overlay/roll-animator';
@@ -33,17 +39,16 @@ export function rollFormula(roll: DiceRoll, skill: string): string {
   return `1d20 (${roll.faces.join(', ')}) ${mod} (${skill}) = ${roll.total}`;
 }
 
-/** The typed d20's live total. Talento Confiável: the server owns the rule; the sheet knows the feature and the skill, so it shows the account (6 → 10). */
+/** The typed d20's live total. A floor (Talento Confiável or a table's minimum): the server owns the rule; the sheet knows the feature and the skill, so it shows the account (6 → 10). */
 export function typedLineOf(
   face: number,
   bonus: number,
   skillKey: string | null,
   reliableTalent: readonly string[] | undefined,
+  tableFloor?: CheckFloor | null,
 ): string {
-  const raised =
-    skillKey && reliableTalent?.includes(skillKey)
-      ? treatedPreview(face, bonus, 'feature:reliable-talent')
-      : null;
+  const floor = checkFloorOf(skillKey, reliableTalent, tableFloor);
+  const raised = floor ? treatedPreview(face, bonus, floor) : null;
   return raised?.text ?? typedTotal(face, bonus);
 }
 

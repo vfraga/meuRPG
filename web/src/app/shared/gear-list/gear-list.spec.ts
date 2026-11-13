@@ -44,6 +44,35 @@ describe('GearList', () => {
     expect(el.querySelector('button')!.getAttribute('aria-label')).toContain('2 iguais');
   });
 
+  it('gives each weapon a "⋮" for its marks when asked, never armor or shield, and says which weapon', () => {
+    const armor: GearVm = {
+      ...sword,
+      key: 'equipment:mail',
+      namePt: 'Cota de malha',
+      kind: 'armor',
+    };
+    const fixture = setup([sword, armor]);
+    fixture.componentRef.setInput('canMark', true);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const buttons = Array.from(el.querySelectorAll('.gear-row__more'));
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual(['Marcas da Espada longa']);
+    const asked: GearVm[] = [];
+    fixture.componentInstance.marksOpened.subscribe((g) => asked.push(g));
+    (buttons[0] as HTMLButtonElement).click();
+    expect(asked).toEqual([sword]);
+  });
+
+  it('has no "⋮" unless asked, and keeps it when the gear has no equip button (a locked sheet)', () => {
+    const fixture = setup([sword]);
+    expect(fixture.nativeElement.querySelector('.gear-row__more')).toBeNull();
+    fixture.componentRef.setInput('canMark', true);
+    fixture.componentRef.setInput('canChange', false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.gear-row__more')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.gear-row__button')).toBeNull();
+  });
+
   it('shows the armor class a two-handed weapon would give, on its button and in its label', () => {
     const bow: GearVm = {
       ...sword,

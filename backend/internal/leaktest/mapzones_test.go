@@ -847,3 +847,68 @@ func TestTheMastersCallsOfAZoneReachNoPlayer(t *testing.T) {
 		})
 	}
 }
+
+// eastWall is the wall from its point to the south that burns the east side, the side behind the wall for the players.
+func eastWall(r *playv1.CastSpellRequest) {
+	r.Wall = &playv1.SpellWall{Direction: &playv1.SpellDirection{Dy: 1}, Side: playv1.WallSide_WALL_SIDE_LEFT}
+}
+
+// A revealed caster's Wall of Fire is read by a player where they see now (RN-10): the face of the wall that is turned to
+// them and the burning squares in their sight, never the burning side behind the wall, which the fog hides. The master reads
+// the whole wall and the burning side behind it: the positive control.
+func TestAPlayerReadsOnlyTheSeenSquaresOfARevealedCastersWall(t *testing.T) {
+	z := newZoneTableOf(t, wallCaster)
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("%v", r)
+		}
+	}()
+	ctx := t.Context()
+	z.untilTurn(z.casterC)
+	z.cast(z.master, z.casterC, "spell:wall-of-fire", 4, wallCol, wallRow, eastWall)
+	must(z.master.combat.SetCombatantHidden(ctx, rq(&playv1.SetCombatantHiddenRequest{
+		CampaignId: z.campaign, EncounterId: z.enc.GetId(), CombatantId: z.casterC, IdempotencyKey: newKey(), Hidden: false,
+	})))
+	z.forceMove(z.casterC, wizardCol+1, wizardRow+2) // on the players' side of the wall, in their sight
+
+	masterZones := z.zonesOf(z.master)
+	if len(masterZones) != 1 || len(masterZones[0].GetBurningSquares()) == 0 {
+		t.Fatalf("the master reads %v, want the wall with its burning squares", masterZones)
+	}
+	behind := func(sqs []*playv1.SpellOrigin) []*playv1.SpellOrigin {
+		var out []*playv1.SpellOrigin
+		for _, sq := range sqs {
+			if sq.GetCol() > wallCol {
+				out = append(out, sq)
+			}
+		}
+		return out
+	}
+	if len(behind(masterZones[0].GetBurningSquares())) == 0 || masterZones[0].GetWallSide() != playv1.WallSide_WALL_SIDE_LEFT {
+		t.Fatalf("the master's burning squares %v hold none behind the wall: the row proves nothing", masterZones[0].GetBurningSquares())
+	}
+	for _, p := range []*person{z.ana, z.caio} {
+		view := z.vision(p, z.fogMap)
+		for _, zn := range z.zonesOf(p) {
+			if got := behind(zn.GetBurningSquares()); len(got) != 0 {
+				t.Errorf("%s reads the burning squares %v behind the wall", p.name, got)
+			}
+			for _, sq := range append(zn.GetSquares(), zn.GetBurningSquares()...) {
+				if sq.GetCol() > wallCol {
+					t.Errorf("%s reads the square %v behind the wall\n%s", p.name, sq, strings.Join(picture(view), "\n"))
+				}
+			}
+			// The answer holds nothing of the squares in the dark: its origin is one of the squares it reads.
+			if !slices.ContainsFunc(zn.GetSquares(), func(sq *playv1.SpellOrigin) bool {
+				return sq.GetCol() == zn.GetOrigin().GetCol() && sq.GetRow() == zn.GetOrigin().GetRow()
+			}) {
+				t.Errorf("%s reads the origin %v, which is none of the squares %v it reads", p.name, zn.GetOrigin(), zn.GetSquares())
+			}
+			for _, sq := range zn.GetBurningSquares() {
+				if !seenNow(view, int(sq.GetCol()), int(sq.GetRow())) {
+					t.Errorf("%s reads the burning square %v that they do not see now", p.name, sq)
+				}
+			}
+		}
+	}
+}

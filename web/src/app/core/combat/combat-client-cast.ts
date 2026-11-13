@@ -19,6 +19,7 @@ import {
 } from './combat-client-types';
 import { castExtrasBody, castRollOneof, areaOneof, need } from './combat-client-wire';
 import type { Square } from './combat-grid';
+import { wallBody, type WallChoice } from './spell-wall';
 import { HeldRollAsked, heldOfferOf } from '../held-rolls/held-roll-offer';
 
 /** The calls of spells: casting, previewing an area, the hidden creatures an area reached, and the zones a spell keeps. */
@@ -122,7 +123,8 @@ export class CombatCastCalls {
   }
 
   /** `PreviewSpellArea`: who an area spell placed here reaches and each one's cover, spending nothing. `area` is `null` for a
-   * sphere centered on the caster, which has nothing to choose. */
+   * sphere centered on the caster, which has nothing to choose. `wall` is the shape of a wall (Wall of Fire), which `area`'s
+   * origin places. */
   async previewSpellArea(
     campaignId: string,
     encounterId: string,
@@ -131,6 +133,7 @@ export class CombatCastCalls {
     slot: SlotRef | null,
     area: AreaChoice | null,
     grantedBy = '',
+    wall: WallChoice | null = null,
   ): Promise<PreviewSpellAreaResponse> {
     return this.base.client.previewSpellArea({
       campaignId,
@@ -140,6 +143,7 @@ export class CombatCastCalls {
       slot: slot ?? undefined,
       area: areaOneof(area),
       ...(grantedBy ? { grantedBy } : {}),
+      ...(wall ? { wall: wallBody(wall) } : {}),
     });
   }
 

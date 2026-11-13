@@ -66,7 +66,7 @@ The undo of a move, of a push or of a shove puts the creature back and re-evalua
 5. One event, `spell_zone_triggered`, with a `lastingEvent` (change `saved` or `failed`, reason `zone_enter`, `zone_start`, `zone_cast`, `zone_end` or `zone_move`, the roll, the DC and the damage).
 
 The events a zone leaves (`spell_zone_triggered`, `spell_zone_moved`, and the `lasting_effect_ended` of a zone that timed out) are held on the change (`combatTx.zoneOut`) and written by `record` right after the change's own event, so the log reads the move and then what it brought.
-They are registered as effect lines in `logHandlers` and `effectLogKinds`; `COMBAT_LOG_EFFECT_CHANGE_ZONE_MOVED` is the one new change.
+They are registered as effect lines in `logHandlers` and `effectLogKinds`; `COMBAT_LOG_EFFECT_CHANGE_ZONE_MOVED` is the change of a zone that moved.
 None of the three is undoable (`undoableKinds`), so a move that caught someone cannot be undone as a move: the damage is a pending damage, discarded and undone as one.
 
 ## Moving a zone
@@ -163,9 +163,43 @@ The caster says the wall in `CastSpellRequest.wall` and `PreviewSpellAreaRequest
   A defeated creature is not hit.
 - **Sight and movement.** The wall is a cloud (`sightCloud`): its squares block sight as Fog Cloud's do (see above).
   It does not block movement.
-- **The turn options.** The casting panel sends no `wall`, so `GetTurnOptions` lists the spell unavailable with `DISABLED_REASON_CODE_WALL_PLACEMENT_REQUIRED` (`refuseWallSpells`).
-- **Privacy.** A hidden caster's wall follows the rule of the clouds: the zone and the caster are the master's, and the players read only the squares their view hides.
+- **The turn options.** The spell is listed like any other: the cast sheet's "Onde fica" step sends `wall`.
+  The server never sends `DISABLED_REASON_CODE_WALL_PLACEMENT_REQUIRED`; the value stays on the wire.
+- **The burning side.** `SpellZone.wall_side` and `burning_squares` tell it: the squares the damage reaches that are not the wall's own (`burning`).
+  The master reads all of them and a player the ones they see now.
+  `PreviewSpellAreaResponse.burning_squares` and `length_ft` tell the caster the same for the wall they are laying.
+- **Privacy.** A hidden caster's wall is the master's alone: no player reads its squares.
   The pending damage of a hit names the caster only to the master and the caster's own player.
+
+### The web: "Onde fica"
+
+The web knows a spell lays a wall by its catalog key, `spell:wall-of-fire`, named once in `WALL_SPELL_KEY` (`core/combat/spell-wall.ts`); the turn options give it only `AreaPlacement.POINT`, as for Moonbeam.
+`AreaFlow` takes that flag and keeps the wall as a signal (`wall`, a `WallChoice`: shape, direction, length in feet, side), a line to the east at 60 feet with no side picked (`WallSide.UNSPECIFIED`).
+The server refuses a wall without a side, so until one is picked the preview is asked with a provisional side (`askable`: LEFT or INNER), whose burning squares the map does not draw, and the step is not `ready`: the cast is never sent without a side.
+Turning the wall (`reorient`, a drag or the pad) takes the picked side back, because LEFT and RIGHT would swap their sense on the screen.
+`AreaFlow.stops` compares the squares of the answer with the open-floor count of a straight wall (`stopsText`, the map's distance as the server counts it, 9 squares for 60 feet along a diagonal); a ring is not compared.
+Every change of the wall, and every placed start, asks `PreviewSpellArea` again with the wall; only the answer of the latest ask counts.
+The cast sends the same wall in `CastExtras.wall`, and the cast's key follows it.
+The cast sheet and the master's dialog show the step "Onde fica" (`app-wall-controls`, `shared/area-picker/wall-controls.ts`):
+- The shape is a group of two radios, "Linha reta" and "Anel", above the map.
+- A line has a direction pad of eight labelled buttons ("Para o nordeste") in a group named with the current way ("Direção da muralha: leste"), beside the drag on the map; a ring has no direction.
+- The length of a line is a stepper of 1,5 m (one square, 5 feet) from 1,5 m to 18 m.
+- A ring has two sizes, 3 m and 6 m across (10 and 20 feet), because the server rounds the radius up to 5 feet, so 5 and 10 feet are one ring and 15 and 20 feet another.
+- The side is a group of two radios named by where the side lies on the screen (`sideChoices`): for a wall that runs (dx, dy) the left side lies toward (dy, -dx), so an east wall has "Acima" and "Abaixo"; a ring has "Dentro" and "Fora".
+- "Calculando onde a muralha fica…" (hourglass) shows while the preview is on its way, and the stop warning shows in the same live region.
+- The note of the side names the dice of the slot (`damageDice`).
+
+The map (`app-area-map` with `wall`) draws only what the server answered: `squares` as bricks and `burningSquares` as arrows with a dashed edge, through the same zone layer and looks as a laid zone.
+The first square of a line, or the centre of a ring, is a square outlined in the accent colour, named "Começo" or "Centro" in the legend.
+A press on a square and a release on another sets the start and the direction (`WallDrag`), and the reader of the screen hears the direction; a tap only sets the start.
+The start stays on the placed square when the mouse passes over another, and the last wall stays drawn until the next answer arrives.
+The map takes the focus when the sheet opens with `preventScroll`, so the steps and the slot row above it stay in view.
+The map keeps `touch-action: none`, so a finger on the map does not scroll the sheet; the hint says "Ou use as setas abaixo" for the direction pad.
+The cast sheet's footer is pinned under the scrolling body with "Cancelar" and "Próximo: quem está nela" side by side, and the list step, "2 Quem está nela", follows as for any area.
+`app-area-step` takes `all` (`WALL_STEPS`) to show both steps in a row, the current one being the heading that takes the focus.
+A ring has a card under its controls (`wallSummary`, `core/combat/wall-summary.ts`): "Anel de 6 m · 16 quadrados" from `squares` and `length_ft` of the preview, and "Na muralha agora: Kobold 2 (teste de Destreza)." from its `targets`, so it names only the creatures the caller sees.
+The card is not drawn while a newer preview is on its way, and a straight wall has none (its note counts the squares).
+The master's dialog has the same button text and no card; it lists who is inside in its second column.
 
 ## What a zone does not change in an attack
 
@@ -187,7 +221,7 @@ Whether an NPC attacks a player it cannot see with disadvantage is not ruled, no
   A zone's save counts the spell as magic: advantages against magic apply, as for any save against a spell.
 - **No save.** A zone whose row has no save ability inserts a pending damage awaiting its roll with the caster as attacker (`catchWithoutSave`), rolled and applied by the paths of any damage.
 - **Ending.** `endZonesOf` writes an `ended` line for each zone (reason `concentration` or `concentration_replaced`), the clock writes `duration`, `EndSpellZone` (master only) writes `ended_by_master`. They are written at once, not held, because a concentration also ends outside the changes that flush the zone lines.
-- **Speed and terrain.** A zone with `slows` adds `effect:spirit-guardians-slowed` (speed 50%, until the end of the creature's turn) when it catches a creature. A zone with `difficult` is added to the Difficult layer of `terrainOf` (`withZoneTerrain`, a copy, so the map's own layer is untouched).
+- **Speed and terrain.** A zone with `slows` adds `effect:spirit-guardians-slowed` (speed 50%, until the end of the creature's turn) when it catches a creature. A zone with `difficult` is added to the `ZoneDifficult` layer of `terrainOf` (`withZoneTerrain`, a layer of its own, so the map's `Difficult` layer is untouched). `Terrain.DifficultFor` reads both: a mover with `Mover.IgnoresMapDifficult` (the `ignore_difficult_terrain` flag, set by `moverWith`) skips the map's layer and still pays for a zone's.
 
 ## The view and the privacy
 
@@ -196,12 +230,16 @@ A player gets the zones of casters they `sees` (not hidden, not in the dark of a
 `rounds_left` is the round the zone ends at, minus the current round, 0 for a zone with no round count.
 The hint of a zone that moved goes to the master alone when the caster is hidden (`publishZoneMoved`).
 The event of a catch is `Secret` for a hidden caster or a hidden creature, and its actor is the caster and its target the creature, so the log's own rule hides it from a player who does not see either (RN-10); the DC is the master's, and the target's player's with `show_save_dc` on (`effectLogRoll`).
-A player gets the numbers (`save_*`, damage, `notes`, `moves_per_turn_ft`, `rounds_left`) only for a zone of their own character; for another they get `details_hidden` and the name, shape, squares, concentration and the occupants they see. The squares of a visible caster's zone reach every player, also on a fog map where they have not explored them: the shape of a spell is not a secret the fog keeps.
+A player gets the numbers (`save_*`, damage, `notes`, `moves_per_turn_ft`, `rounds_left`) only for a zone of their own character; for another they get `details_hidden` and the name, shape, squares, concentration and the occupants they see. On a fog map a player reads the squares of a zone only where they see now (`onlySeen`, `zones_view.go`), never the squares they remember: a zone with none left is not sent, and the origin is one of the squares they read.
+A zone that blocks sight has no square the fog counts as seen, so its face counts: a square of it that touches a square the player sees now (`faces`).
+The answer of a zone half in sight is the same as a zone whose squares are all the ones they see: no flag and no count says there is more.
+A straight wall seen by its end tells the length of the squares read, and no side until a burning square is in sight.
+The caster's own player and the master read the whole zone, and a map without the fog sends it whole.
 
 ## Tests
 
-`zones_silence_test.go` (Silence: the gate, the immunity, the deafened state, the overlap and the hidden caster), `zones_grease_test.go` (Grease: the shape, the cast, entering, the end of the turn, the end of the zone and the undo; Entangle: the shape, the cast only, the end with the concentration and the undo) and `zones_test.go` (Spirit Guardians, Moonbeam, Cloudkill, Web, the push, the forced move, the undo, the player's character, the permissions and the retry) and `zones_hidden_test.go` (the viewer matrix for a hidden caster, a revealed one and a hidden creature, and the stream hint), `zones_spikes_test.go` (Spike Growth: the area, the damage for every square, what counts as movement) and `zones_wall_test.go` (Wall of Fire: the geometry, the request, the cast, the later hits, the fog and the refusal); `internal/leaktest` classifies `MoveSpellZone`.
-`internal/leaktest` reads the map as a player (`mapzones_test.go`): a Darkness takes a creature off a darkvision player's map while a Devil's Sight player and the master keep it, a hidden caster's Fog Cloud or Wall of Fire reaches no player but the unseen squares, the damage a hidden caster's wall leaves names no caster to a player, a hidden caster's Silence deafens in the view of the master and the creature's own player alone, and a cloud that ends leaves nothing new in the streams.
+`zones_silence_test.go` (Silence: the gate, the immunity, the deafened state, the overlap and the hidden caster), `zones_grease_test.go` (Grease: the shape, the cast, entering, the end of the turn, the end of the zone and the undo; Entangle: the shape, the cast only, the end with the concentration and the undo) and `zones_test.go` (Spirit Guardians, Moonbeam, Cloudkill, Web, the push, the forced move, the undo, the player's character, the permissions and the retry) and `zones_hidden_test.go` (the viewer matrix for a hidden caster, a revealed one and a hidden creature, and the stream hint), `zones_spikes_test.go` (Spike Growth: the area, the damage for every square, what counts as movement) and `zones_wall_test.go` (Wall of Fire: the geometry, the request, the cast, the later hits, the fog, the placement in the turn options and the refusal of a cast without a wall); `internal/leaktest` classifies `MoveSpellZone`.
+`internal/leaktest` reads the map as a player (`mapzones_test.go`): a Darkness takes a creature off a darkvision player's map while a Devil's Sight player and the master keep it, a hidden caster's Fog Cloud or Wall of Fire reaches no player but the unseen squares, a revealed caster's wall reaches a player only where they see (the master reads the burning side behind it), the damage a hidden caster's wall leaves names no caster to a player, a hidden caster's Silence deafens in the view of the master and the creature's own player alone, and a cloud that ends leaves nothing new in the streams.
 The grid cube is in `rules/grid/area_test.go`.
 
 ## The web
@@ -214,14 +252,38 @@ The log lines for `ZONE_MOVED`, the `zone_enter`, `zone_start`, `zone_cast`, `zo
 
 ### The map, the panel and the end
 
-- **Map layer.** `shared/combat-map/zone-layer` (`app-zone-layer`) is projected into `app-combat-map` by `app-combat-map-card`, the way the area overlay is, so it follows the map's zoom and crop and sits under the tokens. It draws each `ZoneView.squares` with `cellsPath` and `outlinePath`; `core/combat/zone-pattern.ts` gives each `spell_key` a pattern: the first six catalog spells a fixed one, every other spell a hash of the key.
-  Fog Cloud lands on the pattern of Spirit Guardians, Darkness on Cloudkill's, Spike Growth on Moonbeam's and Wall of Fire on Entangle's.
-  Web, Stinking Cloud and Silence share one pattern, the dots.
+- **Map layer.** `shared/combat-map/zone-layer` (`app-zone-layer`) is projected into `app-combat-map` by `app-combat-map-card`, the way the area overlay is, so it follows the map's zoom and crop and sits under the tokens.
+  It draws each `ZoneView.squares` with `cellsPath` and `outlinePath`.
+  A wall's `ZoneView.burningSquares` (the server's `burning_squares`, already limited to what the viewer may read) is a layer of its own.
+  `core/combat/zone-pattern.ts` gives every catalog spell a look of its own.
+  A look is a drawing class (vertical, horizontal and diagonal lines, dots, waves, triangles, rings, asterisks, squares, crosses, light dots, bricks, arrows), a tint of the map's tokens and a veil.
+  The veil says what the zone does to sight: 38% white for the first six and for Silence and Spike Growth, 72% white for Fog Cloud and Stinking Cloud, 80% ink for Darkness, 72% garnet for the wall.
+  The burning side is its own layer: garnet arrows, dashed outline.
+  `arrowTurn` turns the arrows from the server's `wall_side`.
+  A straight wall runs from its origin to its farthest square, and the arrows point to its left or right, snapped to eight directions.
+  A ring has one fixed axis for the whole pattern: its arrows point right for the outer side and left for the inner side, so they are not radial.
+  On a ring the dashed edge and the legend's "Lado que queima" carry the side.
+  A wall whose way is unknown (one visible square, or only the origin) gets the dashed edge and no arrows.
+  Only a spell the table defined, or one the app does not know, takes a hash of its key.
+  The hash lands only on the looks flagged `hashable`, so it never gives a spell a veil that hides sight.
+  The map's tokens do not follow the theme, so a look reads the same in both.
+  Where zones lie over each other, each shared square is cut on its diagonal (`zone-overlap.ts`).
+  The older zone's pattern fills the upper left triangle, the newer one's the lower right, and both outlines stay.
+  A zone's own fill leaves those shared squares out, so only the triangles paint them.
+  A square that three zones cover shows its two newest.
+  No name floats on the map: each zone carries its letter in a white corner diamond (`ZoneView.letter`).
+  The letters follow the viewer's list in the server's order, oldest first, so when a zone ends the later ones move up.
+  The master's list also holds the zones of hidden casters, so a zone's letter can differ between the master and a player.
+  The live region says which zones took another letter.
+  The burning side takes the wall's letter and has no badge of its own.
+  `zone-badge.ts` places each badge in a corner of its zone's box (inside the corner square only when a square is at least as wide as the badge), then along the edges when the corners are taken, and keeps every badge inside the map, and apart where there is room.
+  The badge's size, inset and border come from constants in `zone-badge.ts` that the layer and the legend's diamond both read as CSS variables.
+  The legend (`zoneLegend`) and the list show the same letter in a diamond (`app-zone-letter`, read as "Zona A") beside the name, the caster and the concentration.
+  A burning side that is a master-only wall's is master-only in the legend too.
   The master's calls (Darkness against a light spell, Fog Cloud's wind, Stinking Cloud's breathing) are a `call` key on the zone def, sent as a note (`master_light`, `master_wind`, `master_breath`); `addDetails` sends the key to the master alone (the caster's player gets the other notes and no call; a leak row in `internal/leaktest` reads the raw body), `zoneView` turns it into the one-line `reminder`, and the app rules none of them.
-  `zoneLegend` gives the entries the card lists.
-  The layer and its labels are `aria-hidden`; the panel is the accessible version.
+  The layer and its badges are `aria-hidden`; the panel is the accessible version.
   The move page's map does not draw zones.
 - **Panel.** `pages/live-session/combat/zones-panel` (`app-zones-panel`) lists the zones: the master's column and the player's side column. Its live region (`zoneNotice`) compares the ids of the list with the last one it read. `details_hidden` cards render the name, the area and the caster only.
 - **End.** The panel asks in place and emits `end`; `ZoneFlow` (`zone-flow.ts`, built in `combat-view-parts.ts`) calls `endSpellZone` under the screen's one-call-at-a-time rule (`calls.busy`) and words a refusal with `zoneEndError`.
-- **Move.** "Mover" emits `move`; `ZoneFlow.move` (only for a zone whose view says `canMove`) sets `moving` and asks `CombatSheets.moveZone` to open `ZoneMoveSheet` (`pages/live-session/combat/zone-move`), a bottom sheet on a phone and a dialog from a tablet up (`openSheet`); a scene without a battle map opens nothing and says so in the panel. The sheet holds the picked square and wraps `app-zone-move-map` (`shared/area-picker`): `app-combat-map` in `pickSquares` mode (click, arrows from the zone's origin, Enter) with two `app-area-overlay` layers, the current footprint dimmed and the new one from `zoneMovePreview`. Past `ZONE_MOVE_RANGE_FT` a player's square is drawn refused with the `TARGET_OUT_OF_REACH` wording (`zoneOutOfReach`); the master has none. "Mover a zona" calls `moveSpellZone` once (the client's keyed helper), applies the encounter the server answers, closes on success and says `zoneMoveError` in place on a refusal; `moving` returns to `null` when the sheet closes.
+- **Move.** "Mover" in the zone's "Mais ações" menu emits `move`; `ZoneFlow.move` (only for a zone whose view says `canMove`) sets `moving` and asks `CombatSheets.moveZone` to open `ZoneMoveSheet` (`pages/live-session/combat/zone-move`), a bottom sheet on a phone and a dialog from a tablet up (`openSheet`); a scene without a battle map opens nothing and says so in the panel. The sheet holds the picked square and wraps `app-zone-move-map` (`shared/area-picker`): `app-combat-map` in `pickSquares` mode (click, arrows from the zone's origin, Enter) with two `app-area-overlay` layers, the current footprint dimmed and the new one from `zoneMovePreview`. Past `ZONE_MOVE_RANGE_FT` a player's square is drawn refused with the `TARGET_OUT_OF_REACH` wording (`zoneOutOfReach`); the master has none. "Mover a zona" calls `moveSpellZone` once (the client's keyed helper), applies the encounter the server answers, closes on success and says `zoneMoveError` in place on a refusal; `moving` returns to `null` when the sheet closes.
 - **Save prompt.** An `EFFECT_SAVE` window whose prompt has `zone_id` is the player's `EffectSaveSheet` (the same `RollEffectSave` path, dice modes and held-roll question as any effect save). `core/effects/zone-save.ts` words it: the title is the zone and its caster (found in `encounter.zones` by `zone_id`), the subtitle "Magia que ficou no mapa" and the reason (`zone_enter` "Você entrou na zona.", `zone_start` "A zona atingiu você no começo do seu turno."), then the ability, the failure from `damage_type_name_pt` and `half_on_save`, the bonus and the spell. The DC is written (", CD 14", and "contra CD 14" after the roll) only when the server sent `dc`; without it there is no number and no placeholder. A zone that restrains adds the static "Soltar-se gasta uma ação." The master's queue words the same window with the reason of the creature. The damage a zone with no save owes is a `PendingDamage` with no zone fields, so its card says "Zona de magia: <spell>" when the caster has a zone of that spell (`zoneLabel`).

@@ -205,6 +205,20 @@
   line-height: 92px;
 }
 
+.done__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.done__raised {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--mr-font-14);
+  line-height: 19px;
+  color: var(--mr-ink-muted);
+}
+
 .done__formula {
   font-family: var(--mr-font-display);
   font-weight: 700;

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"reflect"
 	"slices"
@@ -132,6 +133,10 @@ type stepGroup struct {
 	// From says where the damage came from: the steps are worked out with it again when
 	// the master leaves a source out (a modifier can hold for a nonmagical attack only).
 	From combat.Origin `json:"origin,omitzero"`
+	// Allot is set on the group of the flat damage reductions, which are taken once from the whole
+	// attack: the damage of each type before them (Before is the total, DamageType is empty, Mods are
+	// the reductions). The groups of the types then start from what the reduction left.
+	Allot map[string]int `json:"allot,omitempty"`
 }
 
 func readParts(raw []byte) []partRecord {
@@ -514,6 +519,19 @@ func partRollProto(r partRoll, damageTypePT func(string) string) *playv1.DamageP
 	return pr
 }
 
+// groupSteps works out the steps of one stored group: the single reduction step of an Allot group,
+// the adjustment steps of a damage type otherwise.
+func groupSteps(g stepGroup, ignored []string) []combat.Step {
+	if g.Allot == nil {
+		_, steps := combat.Adjust(int(g.Before), g.DamageType, g.Mods, ignored, g.From)
+		return steps
+	}
+	if st, _, ok := combat.Reduce(g.Allot, g.Mods, ignored, g.From); ok {
+		return []combat.Step{st}
+	}
+	return nil
+}
+
 // stepsProto writes the steps the modifiers take the damage through, in Portuguese.
 func stepsProto(groups []stepGroup, ignored []string, names func(string) string, damageTypePT func(string) string, master bool) []*playv1.DamageStep {
 	var out []*playv1.DamageStep
@@ -522,8 +540,7 @@ func stepsProto(groups []stepGroup, ignored []string, names func(string) string,
 		if !master { // an effect the master hides is "Outra fonte" to a player (RN-10)
 			gnames = hidingNames(names, g.Mods)
 		}
-		_, steps := combat.Adjust(int(g.Before), g.DamageType, g.Mods, ignored, g.From)
-		for _, st := range steps {
+		for _, st := range groupSteps(g, ignored) {
 			out = append(out, &playv1.DamageStep{
 				Kind: stepKindProto(st.Kind), SourceKeys: shownSourceKeys(st.Sources, g.Mods, master), LabelPt: stepLabel(st, gnames, damageTypePT),
 				Before: clamp32(st.Before, 0, math.MaxInt32), After: clamp32(st.After, 0, math.MaxInt32), DamageTypeKey: st.DamageType,
@@ -586,6 +603,8 @@ func stepKindProto(kind string) playv1.DamageStepKind {
 		return playv1.DamageStepKind_DAMAGE_STEP_KIND_VULNERABILITY
 	case combat.StepImmunity:
 		return playv1.DamageStepKind_DAMAGE_STEP_KIND_IMMUNITY
+	case combat.StepReduction:
+		return playv1.DamageStepKind_DAMAGE_STEP_KIND_REDUCTION
 	}
 	return playv1.DamageStepKind_DAMAGE_STEP_KIND_UNSPECIFIED
 }
@@ -601,10 +620,22 @@ func stepLabel(st combat.Step, names func(string) string, damageTypePT func(stri
 		head = "Vulnerabilidade a "
 	case combat.StepImmunity:
 		head = "Imunidade a "
+	case combat.StepReduction:
+		head = "Redução de dano de arma"
 	}
 	var sources []string
 	for _, s := range st.Sources {
 		sources = append(sources, sourceNamePT(s, names))
+	}
+	if st.Kind == combat.StepReduction { // it covers every damage type of the attack
+		out := head
+		if st.Qualifier == combat.QualifierNonmagical {
+			out += " não mágica"
+		}
+		if len(sources) > 0 {
+			out += " (" + joinPT(sources) + ")"
+		}
+		return out
 	}
 	out := head + damageTypePT(st.DamageType)
 	switch st.Qualifier {
@@ -1178,6 +1209,13 @@ func (s *Service) ownModifiersOf(ctx context.Context, c *combatTx, campaignID st
 		}
 		out = append(out, traitModifier(r))
 	}
+	for _, r := range sheet.Traits.DamageReductions {
+		m := combat.Modifier{Kind: combat.StepReduction, Source: r.Source, Amount: r.Amount}
+		if r.Nonmagical {
+			m.Qualifier = combat.QualifierNonmagical
+		}
+		out = append(out, m)
+	}
 	return out, nil
 }
 
@@ -1240,39 +1278,78 @@ type landing struct {
 	changed bool
 }
 
-// settleSteps takes the damage of each type through the target's modifiers. byType is
-// the damage by type (one entry for a damage of one type).
+// settleSteps takes the damage through the target's modifiers. byType is the damage by type
+// (one entry for a damage of one type). The flat reductions are taken once from the whole attack
+// first; then each type goes through immunity, resistance and vulnerability.
 func settleSteps(byType map[string]int, mods []combat.Modifier, ignored []string, from combat.Origin) landing {
 	var out landing
-	types := make([]string, 0, len(byType))
-	for t := range byType {
-		types = append(types, t)
+	amounts := byType
+	if _, after, ok := combat.Reduce(byType, mods, ignored, from); ok {
+		out.groups, out.changed, amounts = append(out.groups, reductionGroup(byType, mods, from)), true, after
 	}
-	slices.Sort(types)
-	for _, t := range types {
-		final, steps := combat.Adjust(byType[t], t, mods, ignored, from)
-		if len(steps) > 0 {
-			group := stepGroup{DamageType: t, Before: clamp32(byType[t], 0, math.MaxInt32), From: from}
-			for _, m := range mods {
+	others := slices.DeleteFunc(slices.Clone(mods), func(m combat.Modifier) bool { return m.Kind == combat.StepReduction })
+	for _, t := range slices.Sorted(maps.Keys(amounts)) {
+		final, steps := combat.Adjust(amounts[t], t, others, ignored, from)
+		if len(steps) > 0 || out.changed {
+			group := stepGroup{DamageType: t, Before: clamp32(amounts[t], 0, math.MaxInt32), From: from}
+			for _, m := range others {
 				if m.Covers(t, from) {
 					group.Mods = append(group.Mods, combat.Modifier{Kind: m.Kind, Source: m.Source, DamageTypes: []string{t}, Qualifier: m.Qualifier, Hidden: m.Hidden})
 				}
 			}
 			out.groups = append(out.groups, group)
-			out.changed = true
+			out.changed = out.changed || len(steps) > 0
 		}
 		out.amount += clamp32(final, 0, math.MaxInt32)
 	}
 	return out
 }
 
+// reductionGroup is the stored group of the flat reductions taken once from the whole attack.
+func reductionGroup(byType map[string]int, mods []combat.Modifier, from combat.Origin) stepGroup {
+	group := stepGroup{Before: clamp32(sumOf(byType), 0, math.MaxInt32), From: from, Allot: maps.Clone(byType)}
+	for _, m := range mods {
+		if m.Kind == combat.StepReduction && m.Covers("", from) {
+			group.Mods = append(group.Mods, m)
+		}
+	}
+	return group
+}
+
+func sumOf(byType map[string]int) int {
+	n := 0
+	for _, v := range byType {
+		n += max(v, 0)
+	}
+	return n
+}
+
 // reapply works the landing out again from the stored groups, leaving out the sources
 // the master told the app to ignore. total is the damage before any modifier.
 func reapply(total int32, groups []stepGroup, ignored []string) int32 {
 	out := total
+	var allotted map[string]int
 	for _, g := range groups {
-		after, _ := combat.Adjust(int(g.Before), g.DamageType, g.Mods, ignored, g.From)
-		out += clamp32(after, 0, math.MaxInt32) - g.Before
+		if g.Allot == nil {
+			continue
+		}
+		if st, after, ok := combat.Reduce(g.Allot, g.Mods, ignored, g.From); ok {
+			allotted = after
+			out += clamp32(st.After, 0, math.MaxInt32) - g.Before
+		} else {
+			allotted = g.Allot
+		}
+	}
+	for _, g := range groups {
+		if g.Allot != nil {
+			continue
+		}
+		before := int(g.Before)
+		if allotted != nil {
+			before = allotted[g.DamageType]
+		}
+		after, _ := combat.Adjust(before, g.DamageType, g.Mods, ignored, g.From)
+		out += clamp32(after, 0, math.MaxInt32) - clamp32(before, 0, math.MaxInt32)
 	}
 	return max(out, 0)
 }

@@ -1,0 +1,87 @@
+// The sun sits among the map's marks: under the tokens (z 2) like the spell zones, and while the master paints the pad takes the
+// pointer over everything (z 6). Never colour alone: a dotted pattern and a dotted edge.
+:host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sl__svg {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+// A light dotted pattern over the squares (a warm white veil with dots) and a dotted white edge with a dark halo of bigger dots under
+// it, so it reads on the light parchment and on the dark map, in both themes (the map's picture is not themed).
+.sl__fill {
+  fill: color-mix(in srgb, #fff6dc 22%, transparent);
+}
+
+.sl__dot {
+  fill: #fffdf4;
+}
+
+.sl__dot-halo {
+  fill: color-mix(in srgb, var(--mr-map-token-ink) 55%, transparent);
+}
+
+.sl__halo,
+.sl__edge,
+.sl__frame,
+.sl__frame-halo {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.sl__halo,
+.sl__frame-halo {
+  stroke: color-mix(in srgb, var(--mr-map-token-ink) 60%, transparent);
+  stroke-width: 4;
+  stroke-dasharray: 0 4.5;
+}
+
+.sl__edge,
+.sl__frame {
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-dasharray: 0 4.5;
+}
+
+// The stroke under the pointer, before the server answers: the accent, solid, never the sun's own white dots.
+.sl__preview {
+  fill: color-mix(in srgb, var(--mr-map-accent) 28%, transparent);
+  stroke: var(--mr-map-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.sl__pad {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: auto;
+  cursor: crosshair;
+  // One finger paints (the browser never scrolls under it), a pinch is still the browser's; two fingers scroll by script (see the class).
+  touch-action: pinch-zoom;
+
+  &:focus-visible {
+    outline: 3px solid var(--mr-map-accent);
+    outline-offset: -3px;
+  }
+}
+
+.sl__cursor {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--mr-map-accent);
+  box-shadow:
+    0 0 0 1px var(--mr-map-token-surface),
+    inset 0 0 0 1px var(--mr-map-token-surface);
+  pointer-events: none;
+}

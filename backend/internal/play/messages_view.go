@@ -185,7 +185,7 @@ func (s *Service) publishMessage(ctx context.Context, row playdb.SessionMessage,
 		}}
 	}
 	if row.ForEveryone {
-		s.hub.Publish(row.CampaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: event(forPlayers)})
+		s.send(row.CampaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: event(forPlayers)})
 		return
 	}
 	forMaster, err := s.messageView(ctx, row, viewer{master: true}, nil)
@@ -193,7 +193,7 @@ func (s *Service) publishMessage(ctx context.Context, row playdb.SessionMessage,
 		s.logger.WarnContext(ctx, "play: cannot shape a message to publish it", "error", err)
 		return
 	}
-	s.hub.Publish(row.CampaignID, live.Event{Audience: live.Audience{Master: true}, Message: event(forMaster)})
+	s.send(row.CampaignID, live.Event{Audience: live.Audience{Master: true}, Message: event(forMaster)})
 	chosen := forPlayers // the readers get the line without the list of readers
 	targets := slices.Clone(readers)
 	playerLine := row.SpeakerKind == speakerCharacter || row.SpeakerKind == speakerOutOfCharacter // the master's lines reach the master above
@@ -201,7 +201,7 @@ func (s *Service) publishMessage(ctx context.Context, row playdb.SessionMessage,
 		targets = append(targets, *row.AuthorUserID)
 	}
 	for _, id := range targets {
-		s.hub.Publish(row.CampaignID, live.Event{Audience: live.Audience{UserID: id}, Message: event(chosen)})
+		s.send(row.CampaignID, live.Event{Audience: live.Audience{UserID: id}, Message: event(chosen)})
 	}
 }
 

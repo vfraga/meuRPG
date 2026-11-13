@@ -155,7 +155,7 @@ func (s *Service) publishFreeRoll(campaignID string, ev freeRollEvent, roll *pla
 	if !ok {
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: aud,
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_FreeRollRolled_{
 			FreeRollRolled: &playv1.WatchGameSessionResponse_FreeRollRolled{Roll: roll},

@@ -8,7 +8,7 @@ import {
   GameSessionBlockedSchema,
 } from '../../../gen/meurpg/play/v1/play_pb';
 import { FreeRollDieSchema, FreeRollSchema } from '../../../gen/meurpg/play/v1/free_dice_pb';
-import { Recharge } from '../../../gen/meurpg/rules/v1/rules_pb';
+import { Recharge, type DerivedSheet } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { TestBed } from '@angular/core/testing';
 import { GetCharacterResponseSchema } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { ProficiencyLevel } from '../../../gen/meurpg/rules/v1/rules_pb';
@@ -21,6 +21,7 @@ import {
 import { CONNECT_TRANSPORT } from '../connect/transport';
 import {
   LiveSessionSourceLive,
+  checkFloorOfSheet,
   classifyLiveError,
   toShownImageVm,
   toVitalsVm,
@@ -329,7 +330,10 @@ describe('LiveSessionSourceLive.watch', () => {
     )) {
       out.push(e);
     }
-    expect(out).toEqual([{ kind: 'ready' }, { kind: 'puzzleChanged', puzzleId: 'p-1' }]);
+    expect(out).toEqual([
+      { kind: 'ready', sessionSeq: 0 },
+      { kind: 'puzzleChanged', puzzleId: 'p-1' },
+    ]);
   });
 
   it('maps `reaction_window_opened` and `reaction_window_closed` to their own events (PM-04)', async () => {
@@ -358,7 +362,7 @@ describe('LiveSessionSourceLive.watch', () => {
       out.push(e);
     }
     expect(out).toEqual([
-      { kind: 'ready' },
+      { kind: 'ready', sessionSeq: 0 },
       { kind: 'reactionWindowOpened', encounterId: 'e1', windowId: 'w1' },
       {
         kind: 'reactionWindowClosed',
@@ -481,7 +485,7 @@ describe('LiveSessionSourceLive.watch', () => {
         { case: 'trapNoticed', value: { mapId: 'm2', pointId: 'p1' } },
       ),
     ).toEqual([
-      { kind: 'heartbeat' },
+      { kind: 'heartbeat', sessionSeq: 0 },
       { kind: 'ended' },
       { kind: 'currentMap', mapId: 'm1' },
       { kind: 'currentMap', mapId: null },
@@ -533,11 +537,25 @@ describe('LiveSessionSourceLive.watch', () => {
         revision: 5,
       },
       { kind: 'combatantMoved', encounterId: 'e1', combatantId: 'k1', col: 2, row: 7 },
-      { kind: 'combatLogChanged' },
+      { kind: 'combatLogChanged', full: false },
       { kind: 'sceneChanged' },
       { kind: 'sceneCheckRolled' },
       { kind: 'notesChanged' },
       { kind: 'stageChanged' },
+    ]);
+  });
+
+  it('carries the hint number of `ready` and of a heartbeat, and `full` of a changed log', async () => {
+    expect(
+      await eventsOf(
+        { case: 'ready', value: { sessionSeq: 12n } },
+        { case: 'heartbeat', value: { sessionSeq: 15n } },
+        { case: 'combatLogChanged', value: { encounterId: 'e1', full: true } },
+      ),
+    ).toEqual([
+      { kind: 'ready', sessionSeq: 12 },
+      { kind: 'heartbeat', sessionSeq: 15 },
+      { kind: 'combatLogChanged', full: true },
     ]);
   });
 
@@ -559,6 +577,7 @@ describe('LiveSessionSourceLive.getPlayerSheet', () => {
             skills: [],
             senses: [],
             features: [],
+            rollMinimums: [],
             spells: spells.map((s) => ({ spell: { key: s.key }, prepared: s.prepared })),
           },
         },
@@ -658,5 +677,35 @@ describe('LiveSessionSourceLive.getPlayerSheet (the skills a search and a check 
       'skill:arcana',
       'skill:stealth',
     ]);
+  });
+});
+
+describe('checkFloorOfSheet', () => {
+  const min = (applies: string[], value: number, featureKey: string, featureName: string) =>
+    ({ applies, value, featureKey, featureName }) as DerivedSheet['rollMinimums'][number];
+
+  it('takes the highest minimum that covers checks, with the feature that gives it', () => {
+    const derived = {
+      rollMinimums: [
+        min(['attack'], 20, 'content:a', 'Ataque'),
+        min(['check', 'save'], 12, 'content:b', 'Olho Aguçado'),
+        min(['check'], 14, 'content:c', 'Mente Afiada'),
+        min(['check'], 14, 'content:d', 'Outro'),
+      ],
+    } as DerivedSheet;
+    expect(checkFloorOfSheet(derived)).toEqual({
+      value: 14,
+      source: 'content:c',
+      name: 'Mente Afiada',
+    });
+  });
+
+  it('is null when no minimum covers checks', () => {
+    expect(checkFloorOfSheet({ rollMinimums: [] } as unknown as DerivedSheet)).toBeNull();
+    expect(
+      checkFloorOfSheet({
+        rollMinimums: [min(['damage'], 6, 'content:a', 'Dano')],
+      } as DerivedSheet),
+    ).toBeNull();
   });
 });

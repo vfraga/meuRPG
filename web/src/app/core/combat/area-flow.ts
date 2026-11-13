@@ -8,6 +8,7 @@ import type { AreaChoice } from './combat-client-types';
 import { combatErrorMessage, encounterBlocked } from './combat-errors';
 import type { Square } from './combat-grid';
 import { type Direction, sameSquare } from './spell-area';
+import { type WallChoice, askable, newWall, reorient, sidePicked, stopsText } from './spell-wall';
 
 /** Where the caster put the area: a point (a sphere, a cylinder) or a direction (a cone, a line, a cube). */
 export type AreaPick =
@@ -61,6 +62,9 @@ export class AreaFlow {
   /** "Confirmar local" waits for the preview. */
   readonly busy = signal(false);
   readonly error = signal('');
+  /** The wall being laid (Wall of Fire: shape, direction, length, side), sent with every preview and with the cast; `null`
+   * for any other area. It changes only while the map step is open. */
+  readonly wall = signal<WallChoice | null>(null);
   /** "Conjurar mesmo assim" was chosen for an area with nobody the caster sees (a spell that still rolls a pool asks it first). */
   readonly nobodyAccepted = signal(false);
 
@@ -74,9 +78,21 @@ export class AreaFlow {
   });
 
   /** Whether "Confirmar local" can be pressed. */
-  readonly ready = computed(
-    () => this.placement === AreaPlacement.CASTER || this.placed() !== null,
-  );
+  readonly ready = computed(() => {
+    const wall = this.wall();
+    if (wall) {
+      return this.placed() !== null && sidePicked(wall);
+    }
+    return this.placement === AreaPlacement.CASTER || this.placed() !== null;
+  });
+
+  /** "A muralha para na parede: ficou com 9 m (6 quadrados) em vez de 12 m.", when the answer for this wall is shorter than the
+   * open floor; `null` otherwise. */
+  readonly stops = computed(() => {
+    const wall = this.wall();
+    const p = this.preview();
+    return wall && p && this.placed() ? stopsText(wall, p.squares.length) : null;
+  });
 
   /** The area to send with the cast: the server's effective point when the preview moved it (a wall), so the cast is what the
    * caster saw; the direction as placed. `null` for a sphere on the caster. */
@@ -91,8 +107,16 @@ export class AreaFlow {
 
   constructor(
     readonly placement: AreaPlacement,
-    private readonly ask: (area: AreaChoice | null) => Promise<PreviewSpellAreaResponse>,
-  ) {}
+    private readonly ask: (
+      area: AreaChoice | null,
+      wall: WallChoice | null,
+    ) => Promise<PreviewSpellAreaResponse>,
+    laysWall = false,
+  ) {
+    if (laysWall) {
+      this.wall.set(newWall(false));
+    }
+  }
 
   /** A sphere around the caster: nothing to place, the list at once. */
   async start(): Promise<void> {
@@ -117,10 +141,38 @@ export class AreaFlow {
     }
   }
 
+  /** The wall changed (shape, direction, length or side): the answer is asked again when a point is placed. */
+  setWall(wall: WallChoice): void {
+    if (this.step() !== 'place' || !this.wall()) {
+      return;
+    }
+    this.wall.set(wall);
+    this.preview.set(null);
+    this.error.set('');
+    if (this.placed()) {
+      void this.load();
+    }
+  }
+
+  /** A drag on the map: the start square and the way it runs, with one question to the server. */
+  placeWall(square: Square, direction: Direction): void {
+    const wall = this.wall();
+    if (!wall || wall.ring || this.step() !== 'place') {
+      return;
+    }
+    this.wall.set(reorient(wall, direction));
+    this.place({ kind: 'point', square });
+  }
+
+  private wallAsked(): WallChoice | null {
+    const wall = this.wall();
+    return wall ? askable(wall) : null;
+  }
+
   private load(): Promise<PreviewSpellAreaResponse | null> {
     const seq = ++this.seq;
     this.loading.set(true);
-    const run = this.ask(choiceOf(this.placed())).then(
+    const run = this.ask(choiceOf(this.placed()), this.wallAsked()).then(
       (res) => {
         if (seq === this.seq) {
           this.preview.set(res);

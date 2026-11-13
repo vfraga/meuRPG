@@ -14,6 +14,8 @@ interface Shape {
   readonly cost?: string;
   readonly damageType?: string;
   readonly cap?: number;
+  readonly uses?: string;
+  readonly usesCost?: number;
 }
 
 /** The modifier target whose scope ("Vale para") is asked: the critical range, the only target that reads `applies`. */
@@ -34,7 +36,18 @@ function rollFieldsHidden(d: Shape): readonly string[] {
   if (d.type === 'reroll') {
     return (d.resource ?? '') !== '' || (d.cost ?? '') !== '' ? [] : ['cost'];
   }
+  if (d.type === 'granted_spell') {
+    return grantFieldsHidden(d);
+  }
   return d.type === 'modifier' ? modifierFieldsHidden(d) : [];
+}
+
+/** A granted spell asks the uses each cast spends only when it spends a resource (or already holds a cost, so a refusal has somewhere to land). */
+function grantFieldsHidden(d: Shape): readonly string[] {
+  const resource = (d.uses ?? '').trim();
+  return (resource !== '' && resource !== 'at_will') || (d.usesCost ?? 0) !== 0
+    ? []
+    : ['uses_cost'];
 }
 
 /** A modifier asks the scope only for the critical range and the limit only for a score (or where one is already typed). */
@@ -89,6 +102,7 @@ const NEVER_FOLDED: Readonly<Record<string, readonly string[]>> = {
   reroll: ['resource', 'cost'],
   roll_minimum: ['damage_type'],
   modifier: ['applies'],
+  granted_spell: ['uses_cost'],
 };
 
 export function neverFolded(type: string, name: string): boolean {

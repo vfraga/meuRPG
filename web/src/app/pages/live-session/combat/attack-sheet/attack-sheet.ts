@@ -20,7 +20,12 @@ import {
   type DamageDie,
   type PairDie,
 } from '../../../../core/combat/combat-client-types';
-import { attackDetail, attackName, isCantrip } from '../../../../core/combat/combat-options';
+import {
+  attackDetail,
+  attackMarksOf,
+  attackName,
+  isCantrip,
+} from '../../../../core/combat/combat-options';
 import { combatantInitial, isPlayer } from '../../../../core/combat/combat-view';
 import { isCreature } from '../../../../core/combat/creature-names';
 import { d20Formula } from '../../../../core/combat/roll-mode';
@@ -43,6 +48,7 @@ import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-r
 import { RollModePicker } from '../roll-mode/roll-mode-picker';
 import { AttackDamage } from './attack-damage';
 import { AttackMode } from './attack-mode';
+import { WeaponTags } from '../../../../shared/weapon-tags/weapon-tags';
 import { AttackResult } from './attack-result';
 import { AttackRolls } from './attack-rolls';
 import type { AttackSheetData } from './attack-sheet-types';
@@ -80,6 +86,7 @@ export type { AttackSheetData } from './attack-sheet-types';
   selector: 'app-attack-sheet',
   imports: [
     AttackResult,
+    WeaponTags,
     AttackSteps,
     CombatantToken,
     DamageParts,
@@ -288,6 +295,12 @@ export class AttackSheet {
     }
     return this.data.legendary?.subtitle ?? this.detail;
   });
+  /** The weapon's marks, a chip after the numbers in the header (not on an opportunity attack or a typed roll: their subtitle says who and why). */
+  protected readonly marks = computed(() =>
+    this.s.typing() || this.data.opportunity || this.data.legendary
+      ? null
+      : attackMarksOf(this.attack),
+  );
   protected readonly rollLabel = computed(
     () => `Role 1d20 para ${this.name} (${signedBonus(this.attack.attackBonus)})`,
   );

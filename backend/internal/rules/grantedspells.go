@@ -25,6 +25,9 @@ const (
 // GrantedAbilities are the casting abilities a grant names.
 var GrantedAbilities = []Ability{INT, WIS, CHA}
 
+// MaxGrantUsesCost is the most uses one cast of a granted spell can cost on the menu.
+const MaxGrantUsesCost = 20
+
 // GrantedAbilityChoiceKey is the key of the choice of the casting ability of the
 // grants an entry (a trait, a feature or a feat) makes, shared by all of them.
 func GrantedAbilityChoiceKey(owner string) string { return owner + grantedAbilityChoiceSuffix }
@@ -40,6 +43,10 @@ type GrantedSpell struct {
 	Resource string
 	// AlsoWithSlot, RitualOnly and CountsAsKnown are the effect's switches.
 	AlsoWithSlot, RitualOnly, CountsAsKnown bool
+	// NoMaterialComponents says the grant waives the material components (display only), and
+	// Cost the uses of Resource every cast spends (1 or more; 0 for an at-will grant).
+	NoMaterialComponents bool
+	Cost                 int
 	// Ability is the casting ability; empty while a grant with a choice has none picked
 	// (AbilityPending), and then AttackBonus and SaveDC are 0.
 	Ability        Ability
@@ -72,9 +79,25 @@ func (x effectCompiler) grantedSpell() error {
 	if e.RitualOnly && e.AlsoWithSlot {
 		return x.fail("ritual_only and also_with_slot exclude each other")
 	}
+	if err := x.grantedCost(e); err != nil {
+		return err
+	}
 	var err error
 	e.fromLevel, err = x.compile(e.FromLevel, formula.Int)
 	return err
+}
+
+// grantedCost checks the uses a cast of the grant spends: 1 to MaxGrantUsesCost, and only with a resource.
+func (x *effectCompiler) grantedCost(e *Effect) error {
+	switch {
+	case e.UsesCost < 0:
+		return x.fail("uses_cost: at least 1 use")
+	case e.UsesCost > MaxGrantUsesCost:
+		return x.fail("uses_cost: at most %d uses", MaxGrantUsesCost)
+	case e.UsesCost != 0 && (e.Uses == "" || e.Uses == GrantedAtWill):
+		return x.fail("uses_cost: a resource in uses is needed")
+	}
+	return nil
 }
 
 func grantedAbilityKeys() []string {
@@ -127,8 +150,9 @@ func (x *deriver) grantedSpellOf(a activeEffect) (GrantedSpell, bool) {
 		Spell: entry, Source: a.owner, SourcePT: x.c.namePT(a.owner), AtWill: e.Uses == "" || e.Uses == GrantedAtWill,
 		AlsoWithSlot: e.AlsoWithSlot, RitualOnly: e.RitualOnly, CountsAsKnown: e.CountsAsKnown, FromLevel: from,
 	}
+	g.NoMaterialComponents = e.NoMaterialComponents
 	if !g.AtWill {
-		g.Resource = e.Uses
+		g.Resource, g.Cost = e.Uses, max(e.UsesCost, 1)
 	}
 	_, g.FeatureSummon = x.c.featureSummons[e.Spell]
 	x.grantAbility(&g, e)

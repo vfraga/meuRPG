@@ -778,6 +778,48 @@ message DerivedSheet {
   // sheet's gear list reads them (the derived attacks skip a carried weapon, and the armor class description ignores a
   // carried armor).
   repeated GearEntry gear = 52;
+  // The roll minimums the character's features give (a table's `roll_minimum`
+  // effect), in the order of the effects, each with the feature that gives it.
+  // Only a minimum whose feature is in `features` is listed. The web previews the
+  // counted total of a typed d20 with them.
+  repeated RollMinimum roll_minimums = 53;
+  // The load the character can carry, in pounds: 15 times the Strength score (SRD 5.1, "Carrying Capacity"), then the
+  // `carry.capacity` modifiers of the table's features. Never below 0.
+  int32 carry_capacity_lb = 54;
+  // The magic bonuses of the gear (FullSheet.item_bonuses) and where each comes from, in the order of the bonuses.
+  // It lists the ones that count and the ones that add nothing now.
+  // armor_class and the attacks already include the counting ones.
+  repeated ItemModifier item_modifiers = 55;
+}
+
+// RollMinimum is a roll minimum a feature gives: a die of the covered rolls that
+// shows less than `value` counts as `value`.
+message RollMinimum {
+  // The rolls it covers: "attack", "check", "save" or "damage".
+  repeated string applies = 1;
+  // The lowest a die counts as.
+  int32 value = 2;
+  // The key of the feature that gives it, one of `DerivedSheet.features`. The sheet names it from its own feature list,
+  // not from the name filling of the play answers, so these are not a source_key/source_name pair.
+  string feature_key = 3;
+  // The Portuguese name of that feature.
+  string feature_name = 4;
+}
+
+// ItemModifier is one magic bonus of the gear on one number of the sheet.
+message ItemModifier {
+  // "ac", "attack:<weapon key>" or "damage:<weapon key>".
+  string target = 1;
+  // The bonus, 1 to 3.
+  int32 value = 2;
+  // Content key of the piece it comes from.
+  string source_key = 3;
+  // The piece's name in Portuguese.
+  string source_name_pt = 4;
+  // The bonus is in the numbers of the sheet.
+  bool counts = 5;
+  // Why it adds nothing now, in Portuguese; empty when it counts.
+  string reason_pt = 6;
 }
 
 // DerivedState is a temporary state a feature defines: a stance, a form.
@@ -1207,6 +1249,10 @@ message GrantedSpell {
   int32 save_dc = 12;
   // The level the grant starts at (the class level for a class or subclass feature).
   int32 from_level = 13;
+  // The material components are waived (the cast sheet drops "M"), and the uses a cast spends
+  // (1 or more; 0 for an at-will grant).
+  bool no_material_components = 14;
+  int32 uses_cost = 15;
 }
 
 // Attack is an attack with a weapon on the sheet.
@@ -1273,6 +1319,14 @@ message Attack {
   // keeps its reach in `range_ft`, with no long range. `range_ft` is at least this for a
   // melee attack.
   int32 reach_ft = 21;
+  // The weapon is silvered: the sheet's mark or a table weapon_rule gave it (the same value the engine
+  // uses against resistances and immunities to nonmagical attacks that exempt silvered weapons).
+  bool silvered = 22;
+  // The weapon is adamantine, from the same two sources.
+  bool adamantine = 23;
+  // The attack counts as magical for those resistances: a spell, the mark, a weapon_rule or a creature's
+  // Magic Weapons. Display only: the engine decides from the derived value, never from this field.
+  bool magical = 24;
 }
 
 // AttackKind says whether an attack is a weapon or a spell.
@@ -2234,8 +2288,8 @@ enum DisabledReasonCode {
   // A spell, or a cantrip that makes an attack roll: the character wears armor or a shield
   // it is not proficient with, and cannot cast spells (SRD 5.1, "Armor").
   DISABLED_REASON_CODE_ARMOR_NOT_PROFICIENT = 112;
-  // A spell that lays a wall (Wall of Fire) on a map with a grid: the cast needs the wall's shape,
-  // size and damaging side (CastSpellRequest.wall), which the screen does not send.
+  // Reserved: the server does not send it. The cast sheet sends the wall (CastSpellRequest.wall) that a spell like
+  // Wall of Fire needs, so the spell is listed as available.
   DISABLED_REASON_CODE_WALL_PLACEMENT_REQUIRED = 113;
 }
 
@@ -2334,6 +2388,10 @@ message SpellGrantOption {
   string ability = 7;
   int32 attack_bonus = 8;
   int32 save_dc = 9;
+  // The material components are waived, and the uses a cast spends of `resource` (1 or more;
+  // 0 for an at-will grant). A cast works only while `uses_left` covers it.
+  bool no_material_components = 10;
+  int32 uses_cost = 11;
 }
 
 // SpellTableOption is a cast option a table feature offers for a spell (a spell_modifier).

@@ -289,7 +289,7 @@ func (s *Service) Notice(ctx context.Context, campaignID, mapID string, who []li
 	s.tellUsers(ctx, campaignID, mapID, ts.row, told)
 	s.tellNoticers(ctx, campaignID, mapID, ts.row, noticed)
 	// The master's trap card and log have news: a hint with no content.
-	s.live.Publish(campaignID, false, mapChangedEvent(mapID))
+	s.publish(campaignID, false, mapChangedEvent(mapID))
 	return nil
 }
 

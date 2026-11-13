@@ -98,7 +98,7 @@ func (s *Service) awakeToReact(ctx context.Context, tx pgx.Tx, campaignID string
 	if err != nil || down {
 		return false, err
 	}
-	surprised, err := s.surprisedReactor(ctx, tx, r)
+	surprised, err := s.surprisedReactor(ctx, tx, campaignID, r)
 	if err != nil {
 		return false, err
 	}

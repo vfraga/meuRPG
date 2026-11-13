@@ -94,6 +94,41 @@
   }
 }
 
+// The wall's step (board 640-03): "Cancelar" and "Próximo: quem está nela" side by side at every width, one size. The label may
+// take two lines at 390 px, so the buttons grow instead of cutting it.
+.actions--pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  .cancel {
+    order: -1;
+  }
+
+  .cast,
+  .cancel {
+    --mat-button-filled-container-height: auto;
+    --mat-button-outlined-container-height: auto;
+    min-height: 48px;
+    padding-block: 6px;
+    padding-inline: 10px;
+    line-height: 1.2;
+    white-space: normal;
+  }
+}
+
+// The ring's card (board 640-04): the squares the server laid and who it names in the wall.
+.wall-summary {
+  padding: var(--mr-space-3);
+  border: 1px solid var(--mr-rule);
+  border-radius: var(--mr-radius-md);
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+
+  p {
+    margin: var(--mr-space-1) 0 0;
+    color: var(--mr-ink-muted);
+  }
+}
+
 // "Cancelar" under "Confirmar local": a text button in the accent.
 .quiet {
   --mat-button-text-container-height: 48px;

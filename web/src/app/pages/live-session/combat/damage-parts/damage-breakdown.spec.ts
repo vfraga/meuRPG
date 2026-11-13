@@ -152,6 +152,23 @@ describe('DamageBreakdown for the master', () => {
     expect(fixture.componentInstance.ignored()).toEqual([]);
   });
 
+  it('shows a damage reduction step with its own "Ignorar a redução" toggle', () => {
+    const cut = {
+      kind: DamageStepKind.REDUCTION,
+      sourceKeys: ['feat:couro-grosso@mesa'],
+      labelPt: 'Redução de dano de arma (Couro grosso)',
+      before: 8,
+      after: 5,
+      ignored: false,
+    };
+    const { fixture, el, plain } = setup({ master: true, amount: 5, steps: [cut] });
+    expect(plain()).toContain('Redução de dano de arma (Couro grosso): 8 → 5');
+    expect(el.querySelector('.step__toggle')!.textContent).toContain('Ignorar a redução');
+    el.querySelector<HTMLInputElement>('.step__toggle input')!.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.ignored()).toEqual(['feat:couro-grosso@mesa']);
+  });
+
   it('shows a step already ignored in words, with no toggle', () => {
     const { el, plain } = setup({ master: true, amount: 10, steps: [{ ...fire, ignored: true }] });
     expect(plain()).toContain('(ignorada pelo mestre)');

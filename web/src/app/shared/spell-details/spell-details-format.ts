@@ -100,13 +100,14 @@ export function formatComponents(
   english = false,
 ): SpellFieldValue {
   const letters = [c.verbal && 'V', c.somatic && 'S', c.material && 'M'].filter(Boolean);
+  const why = c.materialWaivedBy ? ` · sem material (${c.materialWaivedBy})` : '';
   if (letters.length === 0) {
-    return { text: 'Nenhum' };
+    return { text: `Nenhum${why}` };
   }
   const pt = english ? '' : (c.materialTextPt ?? '').trim();
   const material = c.material && (pt || c.materialText.trim());
   if (!material) {
-    return { text: letters.join(', ') };
+    return { text: letters.join(', ') + why };
   }
   return pt
     ? { text: letters.join(', '), english: `(${material})`, inPortuguese: true }

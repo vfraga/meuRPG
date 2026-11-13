@@ -158,7 +158,7 @@ func (s *Service) EndGameSession(
 			s.maps.VisionChanged(pctx, m.CampaignID, out.visionMap)
 		}
 		// Every stream of the session ends (WatchGameSession).
-		s.hub.Publish(m.CampaignID, live.Event{
+		s.send(m.CampaignID, live.Event{
 			Audience: live.Audience{Everyone: true},
 			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SessionEnded_{
 				SessionEnded: &playv1.WatchGameSessionResponse_SessionEnded{GameSession: res},

@@ -15,9 +15,13 @@ import {
   TableSpellSchema,
   TableSubraceSchema,
   TableContentViolationSchema,
+  type TableContentViolation,
+  TableClassLevelSchema,
+  TableSubclassSchema,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { TableContentClient } from '../../../core/content/content-client';
+import { savedSentence } from '../../../core/content/content-kinds';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import {
   classDefaults,
@@ -56,9 +60,15 @@ describe('ContentEntry', () => {
       failMenu?: boolean;
       failDefaults?: boolean;
       phone?: boolean;
+      leftOut?: TableContentViolation[];
     } = {},
   ) {
-    list.mockReset().mockResolvedValue({ entries, tableRevision: 7 });
+    list.mockReset().mockResolvedValue({
+      entries,
+      tableRevision: 7,
+      contentVersion: '',
+      leftOut: opts.leftOut ?? [],
+    });
     catalog.mockReset().mockResolvedValue(create(ContentSchema, {}));
     effectMenu.mockReset().mockResolvedValue(menuResponse());
     classDefaultsCall.mockReset().mockResolvedValue(classDefaults());
@@ -563,6 +573,8 @@ describe('ContentEntry', () => {
         e.key === 'race:corujeiro@mesa' ? ({ ...e, off: true } as typeof e) : e,
       ),
       tableRevision: 8,
+      contentVersion: '',
+      leftOut: [],
     });
     watcher.hint();
     await settle(fixture, 4);
@@ -583,6 +595,8 @@ describe('ContentEntry', () => {
         e.key === 'race:corujeiro@mesa' ? ({ ...e, revision: 9, off: true } as typeof e) : e,
       ),
       tableRevision: 9,
+      contentVersion: '',
+      leftOut: [],
     });
     watcher.hint();
     await settle(fixture, 4);
@@ -607,7 +621,12 @@ describe('ContentEntry', () => {
       const { fixture, el } = await setup(Role.PLAYER, sub().key, [sub()]);
       expect(text(el)).toContain('Raça');
       expect(text(el)).toContain(RACE);
-      list.mockResolvedValue({ entries: [sub(), race('Corujeiro')], tableRevision: 8 });
+      list.mockResolvedValue({
+        entries: [sub(), race('Corujeiro')],
+        tableRevision: 8,
+        contentVersion: '',
+        leftOut: [],
+      });
       watcher.hint();
       await settle(fixture, 4);
       expect(text(el)).not.toContain(RACE);
@@ -627,9 +646,19 @@ describe('ContentEntry', () => {
       watcher.hint();
       watcher.hint();
       await settle(fixture, 4);
-      newer.resolve({ entries: [sub(), race('Corujeiro Novo')], tableRevision: 9 });
+      newer.resolve({
+        entries: [sub(), race('Corujeiro Novo')],
+        tableRevision: 9,
+        contentVersion: '',
+        leftOut: [],
+      });
       await settle(fixture, 4);
-      older.resolve({ entries: [sub(), race('Corujeiro Velho')], tableRevision: 8 });
+      older.resolve({
+        entries: [sub(), race('Corujeiro Velho')],
+        tableRevision: 8,
+        contentVersion: '',
+        leftOut: [],
+      });
       await settle(fixture, 4);
       expect(text(el)).toContain('Corujeiro Novo');
       expect(text(el)).not.toContain('Corujeiro Velho');
@@ -729,6 +758,199 @@ describe('ContentEntry', () => {
       expect(archive).toHaveBeenCalledWith('camp-1', 'class:guardi-o-do-vale@mesa');
       await fromMenu(fixture, el, 'Desarquivar');
       expect(unarchive).toHaveBeenCalledWith('camp-1', 'class:guardi-o-do-vale@mesa');
+    });
+  });
+
+  describe('an entry the rules left out (K2)', () => {
+    const TARGET = 'table_class.levels[0].features[0].effects[0].target';
+    const violation = (key: string, field: string, reason: string) =>
+      create(TableContentViolationSchema, { key, field, reason });
+    const classe = () => {
+      const e = entry(TableContentKind.CLASS, 'Guardião do Vale', { charactersUsing: 1 });
+      (e.body.value as { levels: unknown[] }).levels = [
+        create(TableClassLevelSchema, {
+          features: [
+            feature('Vigília', [{ type: 'modifier', target: 'gone', mode: 'add', value: '2' }]),
+          ],
+        }),
+      ];
+      return e;
+    };
+    const sub = (parent: string) =>
+      entry(TableContentKind.SUBCLASS, 'Juramento da Névoa', {
+        body: {
+          case: 'tableSubclass',
+          value: create(TableSubclassSchema, { namePt: 'Juramento da Névoa', classKey: parent }),
+        },
+      });
+    const out = () => {
+      const c = classe();
+      const s = sub(c.key);
+      return {
+        c,
+        s,
+        entries: [c, s, ...mirathel().slice(1)],
+        leftOut: [
+          violation(c.key, TARGET, 'bad_value'),
+          violation(s.key, '', 'dangling_reference'),
+        ],
+      };
+    };
+
+    it('calls the archive of an entry that is out "Remover", in place, and archives it', async () => {
+      const { c, entries, leftOut } = out();
+      const { fixture, el } = await setup(Role.MASTER, c.key, entries, { leftOut });
+      const buttons = () => Array.from(el.querySelectorAll('button')).map((b) => text(b));
+      expect(buttons().some((b) => b.includes('Arquivar'))).toBe(false);
+      click(el, 'Remover');
+      await settle(fixture, 4);
+      const ask = el.querySelector('app-archive-question')!;
+      expect(text(ask)).toContain(`Remover ${c.namePt}?`);
+      expect(text(ask)).toContain('A entrada é arquivada, não apagada.');
+      click(ask as HTMLElement, `Remover ${c.namePt}`);
+      await settle(fixture, 4);
+      expect(archive).toHaveBeenCalledWith('camp-1', c.key);
+    });
+
+    it('says the entry is out, the field that is wrong in its editor with its words, and what comes back with it', async () => {
+      const { c, entries, leftOut } = out();
+      const { el } = await setup(Role.MASTER, c.key, entries, { leftOut });
+      expect(text(el.querySelector('.tags')!)).toContain('Fora da campanha');
+      const note = text(el.querySelector('.mr-notice--danger')!);
+      expect(note).toContain('Esta classe está fora da campanha.');
+      expect(note).toContain('As regras não aceitam mais um campo dela, marcado abaixo.');
+      expect(note).toContain('Corrija e salve: ela volta, e Juramento da Névoa volta junto.');
+      expect(note).toContain('1 ficha usa esta classe e está com aviso lá.');
+      const target = el.querySelector<HTMLSelectElement>(`[data-field="${TARGET}"]`)!;
+      expect(target.options[target.selectedIndex].text.trim()).toBe('Um alvo que saiu do menu');
+      expect(text(el.querySelector('app-class-editor')!)).toContain(
+        'Este alvo não está mais no menu de efeitos. Escolha outro.',
+      );
+      // No summary of a refused save: nothing was saved.
+      expect(text(el)).not.toContain('Não foi possível salvar');
+    });
+
+    it('says that a fix saved brought the entry and what depended on it back', async () => {
+      const { c, entries, leftOut } = out();
+      const { fixture, el } = await setup(Role.MASTER, c.key, entries, { leftOut });
+      list.mockResolvedValue({ entries, tableRevision: 8, contentVersion: '', leftOut: [] });
+      const page = fixture.componentInstance as unknown as {
+        onSaved(r: { entry: unknown; affected: unknown[] }): Promise<void>;
+      };
+      const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+      try {
+        await page.onSaved({ entry: { ...c, revision: 9 }, affected: [] });
+        await settle(fixture, 4);
+      } finally {
+        scroll.mockRestore();
+      }
+      expect(text(el)).toContain(
+        'Guardião do Vale voltou para a campanha. Juramento da Névoa voltou junto, e a ficha que usa esta classe não tem mais o aviso.',
+      );
+      expect(text(el.querySelector('.tags')!)).not.toContain('Fora da campanha');
+      expect(el.querySelector('.mr-notice--danger')).toBeNull();
+    });
+
+    it('keeps the note when the save leaves the entry out, and says nothing came back', async () => {
+      const { c, entries, leftOut } = out();
+      const { fixture, el } = await setup(Role.MASTER, c.key, entries, { leftOut });
+      const page = fixture.componentInstance as unknown as {
+        onSaved(r: { entry: unknown; affected: unknown[] }): Promise<void>;
+      };
+      list.mockResolvedValue({ entries, tableRevision: 8, contentVersion: '', leftOut });
+      const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+      try {
+        await page.onSaved({ entry: { ...c, revision: 9 }, affected: [] });
+        await settle(fixture, 4);
+      } finally {
+        scroll.mockRestore();
+      }
+      expect(text(el)).not.toContain('voltou para a campanha');
+      expect(text(el)).toContain(savedSentence(c.kind, c.namePt));
+      expect(text(el.querySelector('.tags')!)).toContain('Fora da campanha');
+    });
+
+    it('drops the tag and the note at once when the master archives the entry that is out', async () => {
+      const { c, entries, leftOut } = out();
+      const { fixture, el } = await setup(Role.MASTER, c.key, entries, { leftOut });
+      expect(text(el.querySelector('.tags')!)).toContain('Fora da campanha');
+      await (fixture.componentInstance as unknown as { archive(): Promise<void> }).archive();
+      await settle(fixture, 4);
+      expect(archive).toHaveBeenCalledWith('camp-1', c.key);
+      expect(text(el.querySelector('.tags')!)).not.toContain('Fora da campanha');
+      expect(el.querySelector('.mr-notice--danger')).toBeNull();
+    });
+
+    it('says the entry was saved when another entry stays out', async () => {
+      const { entries, leftOut } = out();
+      const race = entries.find((e) => e.kind === TableContentKind.RACE)!;
+      const { fixture, el } = await setup(Role.MASTER, race.key, entries, { leftOut });
+      const page = fixture.componentInstance as unknown as {
+        onSaved(r: { entry: unknown; affected: unknown[] }): Promise<void>;
+      };
+      list.mockResolvedValue({ entries, tableRevision: 8, contentVersion: '', leftOut });
+      const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+      try {
+        await page.onSaved({ entry: { ...race, revision: 9 }, affected: [] });
+        await settle(fixture, 4);
+      } finally {
+        scroll.mockRestore();
+      }
+      expect(text(el)).toContain(savedSentence(race.kind, race.namePt));
+      expect(text(el)).not.toContain('voltou para a campanha');
+    });
+
+    it('says a subclass is out because its class is, and links to the class', async () => {
+      const { s, c, entries, leftOut } = out();
+      const { el } = await setup(Role.MASTER, s.key, entries, { leftOut });
+      const note = text(el.querySelector('.mr-notice--danger')!);
+      expect(note).toContain('Esta subclasse está fora da campanha.');
+      expect(note).toContain(
+        'Saiu porque a classe dela, Guardião do Vale, está fora. Corrija a classe: ela volta sozinha.',
+      );
+      const link = Array.from(el.querySelectorAll('.mr-notice--danger a')).find((a) =>
+        text(a).includes('Abrir Guardião do Vale'),
+      )!;
+      expect(link.getAttribute('href')).toContain(`/entries/${c.key}`);
+    });
+
+    it('says the whole entry when the violation names no field', async () => {
+      const { c, entries } = out();
+      const { el } = await setup(Role.MASTER, c.key, entries, {
+        leftOut: [violation(c.key, '', 'overlay')],
+      });
+      expect(text(el.querySelector('.mr-notice--danger')!)).toContain(
+        'As regras não aceitam mais esta classe: o conteúdo da mesa não fecha com esta entrada.',
+      );
+    });
+
+    it('puts the field of a spell on its input, in a kind that has no sections to open', async () => {
+      const spell = entry(TableContentKind.SPELL, 'Lâmina de Nanquim', { charactersUsing: 0 });
+      const { el } = await setup(Role.MASTER, spell.key, [spell], {
+        leftOut: [violation(spell.key, 'table_spell.level', 'bad_value')],
+      });
+      expect(text(el.querySelector('.mr-notice--danger')!)).toContain(
+        'Esta magia está fora da campanha.',
+      );
+      expect(el.querySelector('app-spell-editor [data-field="table_spell.level"]')).not.toBeNull();
+    });
+
+    it('tells the master on a phone to fix it on the laptop, and a player nothing', async () => {
+      const { c, entries, leftOut } = out();
+      const phone = await setup(Role.MASTER, c.key, entries, { leftOut, phone: true });
+      const note = text(phone.el.querySelector('.mr-notice--danger')!);
+      expect(note).toContain('Para corrigir, abra a entrada no computador.');
+      expect(note).not.toContain('marcado abaixo');
+      const player = await setup(Role.PLAYER, c.key, entries, { leftOut });
+      expect(text(player.el)).not.toContain('fora da campanha');
+      expect(player.el.querySelector('.tags .mr-tag--danger')).toBeNull();
+    });
+
+    it('is not out for an entry the list does not name', async () => {
+      const { entries, leftOut } = out();
+      const { el } = await setup(Role.MASTER, 'race:corujeiro@mesa', entries, { leftOut });
+      expect(el.querySelector('.tags .mr-tag--danger')).toBeNull();
+      expect(text(el)).not.toContain('fora da campanha');
     });
   });
 });

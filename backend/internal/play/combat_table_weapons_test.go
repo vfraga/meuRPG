@@ -91,3 +91,33 @@ func TestAPseudoWeaponIsNeverInTheInventory(t *testing.T) {
 		t.Errorf("attacks = %v, want the sword, the ray and the unarmed strike", d.GetAttacks())
 	}
 }
+
+const biteName = "Mordida de Teste"
+
+// A natural attack: the better of Strength (+0) and Dexterity (+2) for the attack and the damage, the
+// proficiency bonus of level 5 is +3, and a melee rule adds +1 to hit and +2 damage to it like to any melee line.
+func TestANaturalAttackIsRolledAsTheSheetShowsIt(t *testing.T) {
+	t.Parallel()
+	r := newStanceRigOf(t, []*rulesv1.TableEffect{
+		{Type: "natural_attack", AttackName: biteName, DamageDice: "1d6", DamageType: "damage-type:piercing", Ability: "best"},
+		{Type: "weapon_rule", Weapon: "melee", AttackBonus: 1, DamageBonus: 2},
+	}, abilities(10, 13, 14, 10, 16))
+	line := attackLine(t, r.derived(t), biteName)
+	if line.GetAttackBonus() != 6 || line.GetDamage() != "1d6+4" || line.GetDamageTypeKey() != "damage-type:piercing" || !line.GetMelee() || line.GetRangeFt() != 5 {
+		t.Fatalf("sheet line = %v, want +6 (2 + 3 + 1), 1d6+4 piercing, melee, 5 ft", line)
+	}
+
+	e := r.a.get(t, r.a.master)
+	res := r.a.mustAttack(t, r.a.caio, e, "Toren", line.GetKey(), "Goblin", d20(9))
+	if roll := res.GetRoll(); roll.GetD20().GetModifier() != 6 || roll.GetD20().GetTotal() != 15 || roll.GetOutcome() != playv1.AttackOutcome_ATTACK_OUTCOME_HIT {
+		t.Fatalf("the attack roll = %v, want a hit with the sheet's +6", roll)
+	}
+	p := res.GetPendingDamage()
+	if p.GetDiceCount() != 1 || p.GetDiceSides() != 6 || p.GetBonus() != 4 || p.GetDamageTypeKey() != "damage-type:piercing" {
+		t.Fatalf("the damage to roll = %v, want 1d6 + 4 piercing as the sheet says", p)
+	}
+	r.a.h.roller.queue(4)
+	if d := r.a.mustDamage(t, r.a.caio, e, p.GetId(), inAppDamage).GetPendingDamage(); d.GetAmount() != 8 {
+		t.Errorf("the damage = %v, want 4 + 4 = 8", d)
+	}
+}

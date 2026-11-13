@@ -13,7 +13,7 @@
   />
   @if (s.shieldIdle) {
     <p class="mr-muted shield-note" role="note">
-      O escudo não soma na CA: a ficha tem uma arma de duas mãos. Tire uma das duas da ficha para usar o escudo.
+      O escudo não soma na CA: há uma arma de duas mãos equipada. Guarde uma das duas para usar o escudo.
     </p>
   }
 </section>
@@ -39,6 +39,9 @@
           <tr>
             <td>
               {{ atk.namePt }}
+              @if (atk.marks) {
+                <app-weapon-tags [marks]="atk.marks" />
+              }
               @if (atk.saveDc > 0 && atk.saveAbility) {
                 <span class="attacks__save"
                   >Teste de resistência de {{ abilityLabel(atk.saveAbility) }}</span

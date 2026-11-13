@@ -132,7 +132,10 @@ func (r *contestReader) optionOf(ctx context.Context, who playdb.Combatant, skil
 		return n, nil, err
 	}
 	notes, err := r.s.checkSourcesRead(ctx, r.m.CampaignID, r.d.enc, who, skill, r.d.cs)
-	return n, notes, err
+	if err != nil {
+		return n, notes, err
+	}
+	return r.s.withCheckBonus(ctx, nil, r.m.CampaignID, r.s.queries, r.d.enc, who, skill, n, notes)
 }
 
 // baseContestView is a contest as every reader sees it: its facts, with a creature the
@@ -163,7 +166,7 @@ func (r *contestReader) baseContestView(row playdb.CombatContest, initiator, def
 // master's (RN-20): a player never reads the other side's total.
 func (r *contestReader) fillContestRolls(out *playv1.ContestView, row playdb.CombatContest, iRoll, dRoll *contestRoll, initiator, defender playdb.Combatant) {
 	if iRoll != nil && (r.v.master || r.v.owns(initiator)) {
-		out.InitiatorRoll = iRoll.proto()
+		out.InitiatorRoll = iRoll.proto(r.v.master)
 		if r.v.master {
 			out.InitiatorBonusKnown = !iRoll.Unknown
 		}
@@ -171,7 +174,7 @@ func (r *contestReader) fillContestRolls(out *playv1.ContestView, row playdb.Com
 	if dRoll != nil && dRoll.Deferred {
 		out.Deferred, out.DeferredSkill = true, skillEnum(dRoll.Skill)
 	} else if dRoll != nil && (r.v.master || r.v.owns(defender)) {
-		out.DefenderRoll = dRoll.proto()
+		out.DefenderRoll = dRoll.proto(r.v.master)
 	}
 	if r.v.master && row.EscapeDc != nil {
 		out.EscapeDc = *row.EscapeDc
@@ -260,7 +263,7 @@ func (r *contestReader) answerOptions(ctx context.Context, row playdb.CombatCont
 			return nil, err
 		}
 		opt := &playv1.ContestSkillOption{
-			Skill: sk, Modifier: conv.Int32(n.Bonus), Mode: checkModeProto(notesMode(notes)), Notes: notesProto(notes),
+			Skill: sk, Modifier: conv.Int32(n.Bonus), Mode: checkModeProto(notesMode(notes)), Notes: notesProto(notes, r.v.master),
 			Known: n.Known || !r.v.master,
 		}
 		out = append(out, opt)
@@ -298,7 +301,7 @@ func (r *contestReader) hideAttemptView(ctx context.Context, a playdb.CombatHide
 	if err != nil || roll == nil {
 		return nil, fmt.Errorf("read the roll of hide attempt %s: %w", a.ID, err)
 	}
-	out := &playv1.HideAttemptView{Id: a.ID, HiderId: a.HiderID, Status: hideStatusProto(a.Status), Roll: roll.proto(), Round: a.Round}
+	out := &playv1.HideAttemptView{Id: a.ID, HiderId: a.HiderID, Status: hideStatusProto(a.Status), Roll: roll.proto(r.v.master), Round: a.Round}
 	if a.Status == hideRefused {
 		out.Refusal = defaultHideRefus
 		if a.Refusal != nil {
@@ -432,7 +435,7 @@ func isHidden(hiding []playdb.CombatHiding, id string) bool {
 // surpriseView is who is surprised: the master every combatant, a player their own.
 func (r *contestReader) surpriseView(ctx context.Context) (*playv1.SurpriseView, error) {
 	out := &playv1.SurpriseView{}
-	ids, err := r.s.surprisedIDs(ctx, r.d.enc, r.d.cs, r.d.surprised)
+	ids, err := r.s.surprisedIDs(ctx, nil, r.m.CampaignID, r.d.enc, r.d.cs, r.d.surprised)
 	if err != nil {
 		return nil, err
 	}

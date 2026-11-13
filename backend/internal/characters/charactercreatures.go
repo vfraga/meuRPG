@@ -145,6 +145,7 @@ func creatureOf(content *rules.Content, v creatureView) link.Creature {
 		// It walks, or flies when it can (the movement uses the better of the two);
 		// swimming and climbing speeds are never the speed on the map.
 		out.SpeedFt, out.SpeedFlyFt = d.SpeedWalkFt, d.SpeedFlyFt
+		out.SpeedSwimFt, out.SpeedClimbFt, out.SpeedBurrowFt = d.SpeedSwimFt, d.SpeedClimbFt, d.SpeedBurrowFt
 		jumps := combat.JumpLimits(d)
 		out.JumpLongDFt, out.JumpHighDFt = jumps.LongRunning, jumps.HighRunning
 	}

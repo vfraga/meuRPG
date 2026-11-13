@@ -530,6 +530,137 @@ describe('LiveStream (ADR-0005 client rules)', () => {
     await vi.advanceTimersByTimeAsync(DEAD_STREAM_MS * 3);
     expect(calls.length).toBe(1);
   });
+
+  describe('a lost hint (the heartbeat is ahead of the stream)', () => {
+    let behind: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      behind = vi.fn(() => Promise.resolve(true));
+      handlers.onBehind = behind;
+    });
+
+    async function connect(seq: number): Promise<void> {
+      stream.start();
+      last().push({ kind: 'ready', sessionSeq: seq });
+      await flush();
+    }
+
+    it('reads again once, within that heartbeat, after a dropped event', async () => {
+      await connect(7);
+      // The hint with number 8 never arrived; the next one (a vitals) did, with a number the stream ignores.
+      last().push({ kind: 'vitals', vitals: vitals(2) });
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(1);
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(1);
+    });
+
+    it('reads nothing on a heartbeat equal to or behind the number from `ready`', async () => {
+      await connect(7);
+      last().push({ kind: 'heartbeat', sessionSeq: 7 });
+      last().push({ kind: 'heartbeat', sessionSeq: 3 });
+      await flush();
+      expect(behind).not.toHaveBeenCalled();
+    });
+
+    it('keeps the number when the read fails, and asks again at the next heartbeat', async () => {
+      await connect(7);
+      behind.mockResolvedValueOnce(false);
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(1);
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(2);
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(2);
+    });
+
+    it('treats a read that throws like a failed one', async () => {
+      await connect(7);
+      behind.mockRejectedValueOnce(new Error('offline'));
+      last().push({ kind: 'heartbeat', sessionSeq: 8 });
+      await flush();
+      last().push({ kind: 'heartbeat', sessionSeq: 8 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(2);
+    });
+
+    it('reads nothing on a heartbeat with no number (an event this app does not know)', async () => {
+      await connect(7);
+      last().push({ kind: 'heartbeat' });
+      await flush();
+      expect(behind).not.toHaveBeenCalled();
+    });
+
+    it('does not start a second read while one is out', async () => {
+      await connect(7);
+      let finish = (_ok: boolean): void => undefined;
+      behind.mockReturnValueOnce(new Promise<boolean>((resolve) => (finish = resolve)));
+      last().push({ kind: 'heartbeat', sessionSeq: 8 });
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(1);
+      finish(true);
+      await flush();
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      // 9 was not covered by the read that began at 8's heartbeat: it is read once more.
+      expect(behind).toHaveBeenCalledTimes(2);
+    });
+
+    it('ignores a read of an old connection that ends after the new one is ready', async () => {
+      await connect(7);
+      let finish = (_ok: boolean): void => undefined;
+      behind.mockReturnValueOnce(new Promise<boolean>((resolve) => (finish = resolve)));
+      last().push({ kind: 'heartbeat', sessionSeq: 15 });
+      await flush();
+      last().end();
+      await vi.advanceTimersByTimeAsync(backoffDelay(0, () => 0.5));
+      last().push({ kind: 'ready', sessionSeq: 12 });
+      await flush();
+      finish(true);
+      await flush();
+      last().push({ kind: 'heartbeat', sessionSeq: 12 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(1);
+      // The old read did not move the new connection's number to 15.
+      last().push({ kind: 'heartbeat', sessionSeq: 14 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(2);
+    });
+
+    it('can re-read on the new connection while a read of the old one is still out', async () => {
+      await connect(7);
+      behind.mockReturnValueOnce(new Promise<boolean>(() => undefined));
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      last().end();
+      await vi.advanceTimersByTimeAsync(backoffDelay(0, () => 0.5));
+      last().push({ kind: 'ready', sessionSeq: 12 });
+      await flush();
+      last().push({ kind: 'heartbeat', sessionSeq: 14 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(2);
+    });
+
+    it('takes the number again from each `ready`', async () => {
+      await connect(7);
+      last().end();
+      await vi.advanceTimersByTimeAsync(backoffDelay(0, () => 0.5));
+      last().push({ kind: 'ready', sessionSeq: 12 });
+      await flush();
+      last().push({ kind: 'heartbeat', sessionSeq: 12 });
+      await flush();
+      expect(behind).not.toHaveBeenCalled();
+      last().push({ kind: 'heartbeat', sessionSeq: 13 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(1);
+    });
+  });
 });
 
 describe('backoffDelay', () => {

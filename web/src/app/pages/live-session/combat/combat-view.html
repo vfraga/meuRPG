@@ -29,55 +29,67 @@
   </div>
 
   @if (isMaster()) {
-    <p class="mr-visually-hidden" role="status" aria-live="polite" data-testid="held-count">{{ heldCount() }}</p>
+    <p class="mr-visually-hidden" role="status" aria-live="polite" data-testid="held-count">
+      {{ heldCount() }}
+    </p>
     @switch (e.status) {
       @case (Status.SETUP) {
         <div class="stack">
-          <app-combat-bar [encounter]="e" [busy]="busy()" (begin)="begin()" (cancelCombat)="endCombat()" />
-          <div class="setup-wrap"><div class="setup">
-            <app-initiative-setup
-              class="setup__list"
-              [encounter]="e"
-              [info]="info()"
-              [busy]="busy()"
-              [heldQuestions]="held"
-              [heldCanType]="heldCanType()"
-              [canRoll]="heldCanRoll()"
-              (rollFor)="initiative.rollInApp($event)"
-              (submit)="initiative.submitFace($event.id, $event.face)"
-              (order)="initiative.setOrder($event)"
-            />
-            <div class="setup__side">
-              <app-surprise-card [encounter]="e" [campaignId]="campaignId()" [state]="state()" />
-              <app-initiative-side [encounter]="e" [info]="info()" />
-              @if (image(); as img) {
-                <app-combat-map-card
-                  [encounter]="e"
-                  [image]="img"
-                  [mapName]="mapName()"
-                  [isMaster]="true"
-                  title="Posições iniciais"
-                  [layers]="layers()"
-                  [legend]="false"
-                  note="Cada token está no quadrado marcado no mapa. Você pode mover qualquer um durante o combate."
-                  (tokenDrop)="moves.drop($event)"
-                />
-              }
-              @if (unplaced().length > 0) {
-                <div class="mr-notice mr-notice--warning">
-                  <mat-icon aria-hidden="true">warning</mat-icon>
-                  <div class="unplaced">
-                    <p><strong>Sem quadrado no mapa.</strong> Coloque cada um onde ele começa.</p>
-                    @for (c of unplaced(); track c.id) {
-                      <button matButton="outlined" type="button" (click)="place(c.id)">
-                        Colocar {{ c.label }}
-                      </button>
-                    }
+          <app-combat-bar
+            [encounter]="e"
+            [busy]="busy()"
+            (begin)="begin()"
+            (cancelCombat)="endCombat()"
+            (sunlight)="setSunlight($event)"
+          />
+          <div class="setup-wrap">
+            <div class="setup">
+              <app-initiative-setup
+                class="setup__list"
+                [encounter]="e"
+                [info]="info()"
+                [busy]="busy()"
+                [heldQuestions]="held"
+                [heldCanType]="heldCanType()"
+                [canRoll]="heldCanRoll()"
+                (rollFor)="initiative.rollInApp($event)"
+                (submit)="initiative.submitFace($event.id, $event.face)"
+                (order)="initiative.setOrder($event)"
+              />
+              <div class="setup__side">
+                <app-surprise-card [encounter]="e" [campaignId]="campaignId()" [state]="state()" />
+                <app-initiative-side [encounter]="e" [info]="info()" />
+                @if (image(); as img) {
+                  <app-combat-map-card
+                    [encounter]="e"
+                    [image]="img"
+                    [mapName]="mapName()"
+                    [isMaster]="true"
+                    title="Posições iniciais"
+                    [layers]="layers()"
+                    [legend]="false"
+                    note="Cada token está no quadrado marcado no mapa. Você pode mover qualquer um durante o combate."
+                    [(painting)]="sunPainting"
+                    (sunlightChange)="sunFlow.ask($event)"
+                    (tokenDrop)="moves.drop($event)"
+                  />
+                }
+                @if (unplaced().length > 0) {
+                  <div class="mr-notice mr-notice--warning">
+                    <mat-icon aria-hidden="true">warning</mat-icon>
+                    <div class="unplaced">
+                      <p><strong>Sem quadrado no mapa.</strong> Coloque cada um onde ele começa.</p>
+                      @for (c of unplaced(); track c.id) {
+                        <button matButton="outlined" type="button" (click)="place(c.id)">
+                          Colocar {{ c.label }}
+                        </button>
+                      }
+                    </div>
                   </div>
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div></div>
+          </div>
         </div>
       }
       @case (Status.ACTIVE) {
@@ -107,43 +119,44 @@
             (back)="moves.closeFullPage()"
           />
         } @else {
-        <div class="stack">
-          @if (refreshed()) {
-            <!-- The page was reloaded while the turn waits (PM-02c 9c): a line says the screen was rebuilt from the combat as it stands. -->
-            <p class="refreshed" role="status">{{ refreshed() }}</p>
-          }
-          @if (laptop()) {
-            <app-combat-bar
-              [encounter]="e"
-              [pending]="held.count()"
-              [busy]="busy()"
-              [pendingNote]="owed()"
-              [waitNote]="waitNote()"
-              [waitWhy]="waitWhy()"
-              [legendary]="legendaryLeft()"
-              [theatre]="theatre()"
-              [actingFor]="acting()?.label ?? ''"
-              [quiet]="offers.offering()"
-              (next)="nextTurn($event)"
-              (end)="endCombat()"
-            />
-          }
-          @if (traps(); as board) {
-            <!-- A trap that fired in the combat: its damage waits for the master here (E9-08 4). -->
-            <app-trap-damages
-              [damages]="board.damages()"
-              [campaignId]="campaignId()"
-              [vitals]="vitals()"
-              [combat]="state()"
-              (settled)="board.settled($event)"
-            />
-          }
-          @if (laptop()) {
-            <ng-container *ngTemplateOutlet="columns" />
-          } @else {
-            <ng-container *ngTemplateOutlet="tabbed" />
-          }
-        </div>
+          <div class="stack">
+            @if (refreshed()) {
+              <!-- The page was reloaded while the turn waits (PM-02c 9c): a line says the screen was rebuilt from the combat as it stands. -->
+              <p class="refreshed" role="status">{{ refreshed() }}</p>
+            }
+            @if (laptop()) {
+              <app-combat-bar
+                [encounter]="e"
+                [pending]="held.count()"
+                [busy]="busy()"
+                [pendingNote]="owed()"
+                [waitNote]="waitNote()"
+                [waitWhy]="waitWhy()"
+                [legendary]="legendaryLeft()"
+                [theatre]="theatre()"
+                [actingFor]="acting()?.label ?? ''"
+                [quiet]="offers.offering()"
+                (next)="nextTurn($event)"
+                (end)="endCombat()"
+                (sunlight)="setSunlight($event)"
+              />
+            }
+            @if (traps(); as board) {
+              <!-- A trap that fired in the combat: its damage waits for the master here (E9-08 4). -->
+              <app-trap-damages
+                [damages]="board.damages()"
+                [campaignId]="campaignId()"
+                [vitals]="vitals()"
+                [combat]="state()"
+                (settled)="board.settled($event)"
+              />
+            }
+            @if (laptop()) {
+              <ng-container *ngTemplateOutlet="columns" />
+            } @else {
+              <ng-container *ngTemplateOutlet="tabbed" />
+            }
+          </div>
         }
       }
       @case (Status.ENDED) {
@@ -215,14 +228,28 @@
                 <div class="mr-notice mr-notice--warning notice" data-testid="form-ended">
                   <mat-icon aria-hidden="true">pets</mat-icon>
                   <p>{{ text }}</p>
-                  <button matButton type="button" class="notice__ok" (click)="notices.formEnded.set(null)">Entendi</button>
+                  <button
+                    matButton
+                    type="button"
+                    class="notice__ok"
+                    (click)="notices.formEnded.set(null)"
+                  >
+                    Entendi
+                  </button>
                 </div>
               }
               @if (notices.lostNotice(); as text) {
                 <div class="mr-notice mr-notice--warning notice" data-testid="concentration-lost">
                   <mat-icon aria-hidden="true">hourglass_empty</mat-icon>
                   <p>{{ text }}</p>
-                  <button matButton type="button" class="notice__ok" (click)="notices.lostConcentration.set(null)">Entendi</button>
+                  <button
+                    matButton
+                    type="button"
+                    class="notice__ok"
+                    (click)="notices.lostConcentration.set(null)"
+                  >
+                    Entendi
+                  </button>
                 </div>
               }
             </div>
@@ -239,49 +266,59 @@
               [busy]="busy()"
               (answer)="answerRider($event)"
             />
-          <!-- The turn bar (the card on a phone, the sticky bar of 1280): first in the DOM, so the keyboard reads the card, the actions, the map, the bar; the map comes first on a phone by `order`. -->
-            <div class="player__turn" [class.player__turn--sticky]="stickyTurn()" [class.mr-nudge]="turnAlert.shaking()" [class.mr-nudge--still]="turnAlert.highlighted()">
-            @if (laptop() && showTabs()) {
-              <app-mine-tabs [tabs]="tabs()" [selected]="tab()?.id ?? ''" [inert]="partAsking()" (select)="tabId.set($event)" />
-            }
-            @if (creatureTab(); as ct) {
-              <app-creature-hero
-                [encounter]="e"
-                [tab]="ct"
-                [busy]="busy()"
-                [waiting]="creatureLocked()"
-                [note]="moves.moveNote()"
-                (asked)="partAsking.set($event)"
-                (endPart)="endTab(ct)"
-              />
-            } @else {
-              <app-turn-panel
-                [encounter]="e"
-                [busy]="busy()"
-                [attacksLeft]="attacksLeft()"
-                [optionsSettling]="turn.settling()"
-                [attacksPerAction]="attacksPerAction()"
-                [hitPointsMax]="ownMaxHp()"
-                [opportunities]="theatre() ? [] : opportunities()"
-                [waiting]="waiting()"
-                [moveNote]="moves.moveNote()"
-                [trapNote]="trapNote()"
-                [concentration]="ownConcentration()"
-                [theatre]="theatre()"
-                [orderBelow]="orderBelow()"
-                [contest]="contestFacts()"
-                [armorClass]="armorClass()"
-                [slots]="ownSlots()"
-                [hitPoints]="ownHitPoints()"
-                [effectNotes]="options()?.effectNotes ?? []"
-                (endTurn)="nextTurn()"
-                (move)="moves.open()"
-                (endRage)="rage.end($event)"
-                (opportunity)="openAttack($event, true)"
-                (endConcentration)="notices.endOwnConcentration()"
-              />
-            }
-          </div>
+            <!-- The turn bar (the card on a phone, the sticky bar of 1280): first in the DOM, so the keyboard reads the card, the actions, the map, the bar; the map comes first on a phone by `order`. -->
+            <div
+              class="player__turn"
+              [class.player__turn--sticky]="stickyTurn()"
+              [class.mr-nudge]="turnAlert.shaking()"
+              [class.mr-nudge--still]="turnAlert.highlighted()"
+            >
+              @if (laptop() && showTabs()) {
+                <app-mine-tabs
+                  [tabs]="tabs()"
+                  [selected]="tab()?.id ?? ''"
+                  [inert]="partAsking()"
+                  (select)="tabId.set($event)"
+                />
+              }
+              @if (creatureTab(); as ct) {
+                <app-creature-hero
+                  [encounter]="e"
+                  [tab]="ct"
+                  [busy]="busy()"
+                  [waiting]="creatureLocked()"
+                  [note]="moves.moveNote()"
+                  (asked)="partAsking.set($event)"
+                  (endPart)="endTab(ct)"
+                />
+              } @else {
+                <app-turn-panel
+                  [encounter]="e"
+                  [busy]="busy()"
+                  [attacksLeft]="attacksLeft()"
+                  [optionsSettling]="turn.settling()"
+                  [attacksPerAction]="attacksPerAction()"
+                  [hitPointsMax]="ownMaxHp()"
+                  [opportunities]="theatre() ? [] : opportunities()"
+                  [waiting]="waiting()"
+                  [moveNote]="moves.moveNote()"
+                  [trapNote]="trapNote()"
+                  [concentration]="ownConcentration()"
+                  [theatre]="theatre()"
+                  [orderBelow]="orderBelow()"
+                  [contest]="contestFacts()"
+                  [armorClass]="armorClass()"
+                  [slots]="ownSlots()"
+                  [hitPoints]="ownHitPoints()"
+                  [effectNotes]="options()?.effectNotes ?? []"
+                  (endTurn)="nextTurn()"
+                  (move)="moves.open()"
+                  (endRage)="rage.end($event)"
+                  (opportunity)="openAttack($event, true)"
+                  (endConcentration)="notices.endOwnConcentration()"
+                />
+              }
+            </div>
             <div class="player__notes">
               <!-- The wrapper is on the page before a notice arrives, so a screen reader announces it. -->
               <div class="mr-live" role="status">
@@ -290,42 +327,73 @@
                   <div class="mr-notice mr-notice--warning notice" data-testid="contest-pending">
                     <mat-icon aria-hidden="true">pan_tool</mat-icon>
                     <p>Uma disputa espera a sua resposta.</p>
-                    <button matButton type="button" class="notice__ok" (click)="contest.answerPending()">Responder</button>
+                    <button
+                      matButton
+                      type="button"
+                      class="notice__ok"
+                      (click)="contest.answerPending()"
+                    >
+                      Responder
+                    </button>
                   </div>
                 }
                 @if (ownEffectSave(); as pending) {
-                  <div class="mr-notice mr-notice--warning notice" data-testid="effect-save-pending">
+                  <div
+                    class="mr-notice mr-notice--warning notice"
+                    data-testid="effect-save-pending"
+                  >
                     <mat-icon aria-hidden="true">casino</mat-icon>
                     <p>O teste de resistência do fim do turno espera a sua rolagem.</p>
-                    <button matButton type="button" class="notice__ok" (click)="sheets.reactions.effectSave(pending)">Rolar o teste</button>
+                    <button
+                      matButton
+                      type="button"
+                      class="notice__ok"
+                      (click)="sheets.reactions.effectSave(pending)"
+                    >
+                      Rolar o teste
+                    </button>
                   </div>
                 }
                 @if (ownLucky()) {
                   <div class="mr-notice mr-notice--warning notice" data-testid="lucky-pending">
                     <mat-icon aria-hidden="true">casino</mat-icon>
                     <p>A sua rolagem espera a sua resposta: tirou 1, rolar de novo?</p>
-                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">Responder</button>
+                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">
+                      Responder
+                    </button>
                   </div>
                 }
                 @if (ownReroll()) {
                   <div class="mr-notice mr-notice--warning notice" data-testid="reroll-pending">
                     <mat-icon aria-hidden="true">casino</mat-icon>
-                    <p>A sua rolagem espera a sua resposta: tirou {{ ownRerollFace() }}, rolar de novo?</p>
-                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">Responder</button>
+                    <p>
+                      A sua rolagem espera a sua resposta: tirou {{ ownRerollFace() }}, rolar de
+                      novo?
+                    </p>
+                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">
+                      Responder
+                    </button>
                   </div>
                 }
                 @if (ownStroke()) {
                   <div class="mr-notice mr-notice--warning notice" data-testid="stroke-pending">
                     <mat-icon aria-hidden="true">casino</mat-icon>
                     <p>A sua rolagem espera a sua resposta: usar o Golpe de Sorte?</p>
-                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">Responder</button>
+                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">
+                      Responder
+                    </button>
                   </div>
                 }
                 @if (ownDieAsked()) {
-                  <div class="mr-notice mr-notice--warning notice" data-testid="inspiration-pending">
+                  <div
+                    class="mr-notice mr-notice--warning notice"
+                    data-testid="inspiration-pending"
+                  >
                     <mat-icon aria-hidden="true">music_note</mat-icon>
                     <p>A sua rolagem espera a sua resposta: usar a Inspiração de Bardo?</p>
-                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">Responder</button>
+                    <button matButton type="button" class="notice__ok" (click)="openHeldRoll()">
+                      Responder
+                    </button>
                   </div>
                 }
               </div>
@@ -333,103 +401,126 @@
                 <app-inspiration-card class="player__die" [die]="die" [round]="e.round" />
               }
             </div>
-          <div class="player" [class.player--mine]="railOn()">
-            @if (wideLayout()) {
-              <app-order-column class="player__order" [encounter]="e" [hitPoints]="ownHitPoints()" />
-            }
-            @if (railOn()) {
-              <!-- The actions column (from 1024px a sticky rail): "Ações", and in a player's combat "Conversa" beside it (C6-07). -->
-              <app-session-rail class="player__actions" label="Ações" [tabs]="railTabItems()" [showSingle]="laptop() || !!offRail()" [(selected)]="railTab">
-                <div appRailPanel="actions">
-                  <ng-container *ngTemplateOutlet="actionsBody" />
-                </div>
-                @if (chat(); as chatTemplate) {
-                  <div appRailPanel="chat"><ng-container *ngTemplateOutlet="chatTemplate" /></div>
-                }
-              </app-session-rail>
-            }
-            @if (orderBelow()) {
-              <app-order-strip class="player__strip" [encounter]="e" />
-            }
-            @if (theatre()) {
-              <app-no-map-panel class="player__map" />
-            } @else if (image(); as img) {
-              <app-combat-map-card
-                class="player__map"
+            <div class="player" [class.player--mine]="railOn()">
+              @if (wideLayout()) {
+                <app-order-column
+                  class="player__order"
+                  [encounter]="e"
+                  [hitPoints]="ownHitPoints()"
+                />
+              }
+              @if (railOn()) {
+                <!-- The actions column (from 1024px a sticky rail): "Ações", and in a player's combat "Conversa" beside it (C6-07). -->
+                <app-session-rail
+                  class="player__actions"
+                  label="Ações"
+                  [tabs]="railTabItems()"
+                  [showSingle]="laptop() || !!offRail()"
+                  [(selected)]="railTab"
+                >
+                  <div appRailPanel="actions">
+                    <ng-container *ngTemplateOutlet="actionsBody" />
+                  </div>
+                  @if (chat(); as chatTemplate) {
+                    <div appRailPanel="chat"><ng-container *ngTemplateOutlet="chatTemplate" /></div>
+                  }
+                </app-session-rail>
+              }
+              @if (orderBelow()) {
+                <app-order-strip class="player__strip" [encounter]="e" />
+              }
+              @if (theatre()) {
+                <app-no-map-panel class="player__map" />
+              } @else if (image(); as img) {
+                <app-combat-map-card
+                  class="player__map"
+                  [encounter]="e"
+                  [image]="img"
+                  [mapName]="mapName()"
+                  [title]="mapName()"
+                  [fog]="fogVision()"
+                  [layers]="layers()"
+                  [offers]="offerMarks()"
+                  [compact]="true"
+                  [legend]="false"
+                  [pick]="targeting.mode.marks()"
+                  [pickNote]="targeting.mode.note()"
+                  (pickTap)="targeting.mode.tap($event)"
+                  [ownMovable]="myTurn() && !!own()?.placed && !phone()"
+                  (tokenDrop)="moves.drop($event)"
+                  (openMap)="state().mapOpen.set(true)"
+                >
+                  @if (moveRowOn(); as me) {
+                    <app-move-row
+                      mapFoot
+                      [own]="me"
+                      [grappled]="contestFacts()?.grappled === true"
+                      [locked]="waiting()?.title ?? ''"
+                      [busy]="busy()"
+                      [button]="!laptop()"
+                      [drag]="laptop() && !!me.placed"
+                      (move)="moves.open()"
+                    />
+                  }
+                </app-combat-map-card>
+              } @else {
+                <p class="mr-muted player__map" role="status">Carregando o mapa...</p>
+              }
+              <app-combat-log-panel
+                class="player__log"
+                [log]="log"
                 [encounter]="e"
-                [image]="img"
-                [mapName]="mapName()"
-                [title]="mapName()"
-                [fog]="fogVision()"
-                [layers]="layers()"
-                [offers]="offerMarks()"
-                [compact]="true"
-                [legend]="false"
-                [pick]="targeting.mode.marks()"
-                [pickNote]="targeting.mode.note()"
-                (pickTap)="targeting.mode.tap($event)"
-                [ownMovable]="myTurn() && !!own()?.placed && !phone()"
-                (tokenDrop)="moves.drop($event)"
-                (openMap)="state().mapOpen.set(true)"
-              >
-                @if (moveRowOn(); as me) {
-                  <app-move-row
-                    mapFoot
-                    [own]="me"
-                    [grappled]="contestFacts()?.grappled === true"
-                    [locked]="waiting()?.title ?? ''"
-                    [busy]="busy()"
-                    [button]="!laptop()"
-                    [drag]="laptop() && !!me.placed"
-                    (move)="moves.open()"
-                  />
+                [campaignId]="campaignId()"
+                [state]="state()"
+                [deathNote]="deathNote()"
+                [fold]="true"
+              />
+              <div class="player__side">
+                <ng-content />
+                <!-- The per-device switch of the turn alert: sound and vibration only; the shake and the title stay. -->
+                <app-check-row
+                  class="turn-alert-switch"
+                  label="Avisar na minha vez (som e vibração)"
+                  [checked]="turnAlert.enabled()"
+                  (toggled)="turnAlert.setEnabled($event)"
+                />
+                <app-zones-panel [zones]="zoneFlow.views()" />
+                @if (theatre() && own() && !ownDown(); as me) {
+                  <app-theatre-reaction [used]="own()!.reactionUsed" />
                 }
-              </app-combat-map-card>
-            } @else {
-              <p class="mr-muted player__map" role="status">Carregando o mapa...</p>
-            }
-            <app-combat-log-panel
-              class="player__log"
-              [log]="log"
-              [encounter]="e"
-              [campaignId]="campaignId()"
-              [state]="state()"
-              [deathNote]="deathNote()"
-              [fold]="true"
-            />
-            <div class="player__side">
-              <ng-content />
-              <!-- The per-device switch of the turn alert: sound and vibration only; the shake and the title stay. -->
-              <app-check-row class="turn-alert-switch" label="Avisar na minha vez (som e vibração)" [checked]="turnAlert.enabled()" (toggled)="turnAlert.setEnabled($event)" />
-              <app-zones-panel [zones]="zoneFlow.views()" />
-              @if (theatre() && own() && !ownDown(); as me) {
-                <app-theatre-reaction [used]="own()!.reactionUsed" />
+              </div>
+              @if (targeting.mode.active() && !laptop()) {
+                <!-- Choosing a target on the map (C7-04): the bar takes the place of the turn's bar until the choice is made or cancelled. -->
+                <app-target-bar class="player__bar" variant="bar" [mode]="targeting.mode" />
+              } @else if (creatureTab(); as ct) {
+                <app-creature-bar
+                  class="player__bar"
+                  [tabs]="tabs()"
+                  [tab]="ct"
+                  [busy]="busy()"
+                  [waiting]="creatureLocked()"
+                  (select)="tabId.set($event)"
+                  (endPart)="endTab(ct)"
+                />
+              } @else if (showTabs() || (myTurn() && own() && !ownDown())) {
+                <app-turn-bar
+                  class="player__bar"
+                  [own]="myTurn() && !ownDown() ? own() : null"
+                  [tabs]="tabs()"
+                  [selected]="tab()?.id ?? ''"
+                  [attacksLeft]="attacksLeft()"
+                  [attacksPerAction]="attacksPerAction()"
+                  [optionsSettling]="turn.settling()"
+                  [busy]="busy()"
+                  [waiting]="waiting()?.title ?? ''"
+                  [surprised]="contestFacts()?.surprised === true"
+                  [theatre]="theatre()"
+                  [joint]="jointOthers()"
+                  (endTurn)="nextTurn()"
+                  (select)="tabId.set($event)"
+                />
               }
             </div>
-            @if (targeting.mode.active() && !laptop()) {
-              <!-- Choosing a target on the map (C7-04): the bar takes the place of the turn's bar until the choice is made or cancelled. -->
-              <app-target-bar class="player__bar" variant="bar" [mode]="targeting.mode" />
-            } @else if (creatureTab(); as ct) {
-              <app-creature-bar class="player__bar" [tabs]="tabs()" [tab]="ct" [busy]="busy()" [waiting]="creatureLocked()" (select)="tabId.set($event)" (endPart)="endTab(ct)" />
-            } @else if (showTabs() || (myTurn() && own() && !ownDown())) {
-              <app-turn-bar
-                class="player__bar"
-                [own]="myTurn() && !ownDown() ? own() : null"
-                [tabs]="tabs()"
-                [selected]="tab()?.id ?? ''"
-                [attacksLeft]="attacksLeft()"
-                [attacksPerAction]="attacksPerAction()"
-                [optionsSettling]="turn.settling()"
-                [busy]="busy()"
-                [waiting]="waiting()?.title ?? ''"
-                [surprised]="contestFacts()?.surprised === true"
-                [theatre]="theatre()"
-                [joint]="jointOthers()"
-                (endTurn)="nextTurn()"
-                (select)="tabId.set($event)"
-              />
-            }
-          </div>
           </div>
         }
       }
@@ -450,7 +541,11 @@
      middle, and the rail on the right with "Turno" (the answers that wait, the card of whoever is on turn, the deaths, then "Mais do combate") and "Conversa".
      From 1024 px the rail is there and the order is in its "Turno" until 1280 px; below it the screen is the tabs "Turno · Ordem · Mapa". -->
 <ng-template #columns>
-  <div class="tri" [class.tri--wide]="wideLayout()" [class.tri--folded]="wideLayout() && layout.orderFolded()">
+  <div
+    class="tri"
+    [class.tri--wide]="wideLayout()"
+    [class.tri--folded]="wideLayout() && layout.orderFolded()"
+  >
     @if (wideLayout()) {
       <div class="tri__order"><ng-container *ngTemplateOutlet="orderBlock" /></div>
     }
@@ -468,7 +563,9 @@
         <ng-container *ngTemplateOutlet="morePanels; context: { heading: true }" />
       </div>
       @if (chat(); as chatTemplate) {
-        <div appRailPanel="chat" class="tri__chat"><ng-container *ngTemplateOutlet="chatTemplate" /></div>
+        <div appRailPanel="chat" class="tri__chat">
+          <ng-container *ngTemplateOutlet="chatTemplate" />
+        </div>
       }
     </app-session-rail>
   </div>
@@ -477,7 +574,13 @@
 <ng-template #mainColumn>
   @if (theatre()) {
     <ng-container *ngTemplateOutlet="npcCardTpl" />
-    <app-cover-panel [targets]="coverTargets()" [everyone]="everyone()" [request]="coverRequest()" [busy]="busy()" (cover)="setCover($event)" />
+    <app-cover-panel
+      [targets]="coverTargets()"
+      [everyone]="everyone()"
+      [request]="coverRequest()"
+      [busy]="busy()"
+      (cover)="setCover($event)"
+    />
   } @else {
     <ng-container *ngTemplateOutlet="mapBlock" />
   }
@@ -512,6 +615,8 @@
         (forcedChange)="moves.forcedMove.set($event)"
         (overAskConfirm)="moves.moveAnyway()"
         (overAskCancel)="moves.dropOverAsk()"
+        [(painting)]="sunPainting"
+        (sunlightChange)="sunFlow.ask($event)"
         (tokenDrop)="moves.drop($event)"
         (openMap)="state().mapOpen.set(true)"
       />
@@ -540,7 +645,9 @@
   @if (encounter(); as e) {
     <section class="more" aria-label="Mais do combate">
       @if (heading) {
-        <h3 class="more__title"><mat-icon aria-hidden="true">more_horiz</mat-icon>Mais do combate</h3>
+        <h3 class="more__title">
+          <mat-icon aria-hidden="true">more_horiz</mat-icon>Mais do combate
+        </h3>
       }
       @for (p of layout.panels(); track p.id) {
         <app-fold
@@ -572,7 +679,12 @@
               }
               @case ('effects') {
                 <!-- The effects that last and the clock of the turns (W7-E board 4): the master only. -->
-                <app-effects-panel [campaignId]="campaignId()" [state]="state()" [compact]="true" (counted)="effectsCount.set($event)" />
+                <app-effects-panel
+                  [campaignId]="campaignId()"
+                  [state]="state()"
+                  [compact]="true"
+                  (counted)="effectsCount.set($event)"
+                />
               }
               @case ('fog') {
                 <ng-content select="[appMapTab=fog]" />
@@ -607,10 +719,22 @@
     } @else {
       @if (actCard(); as who) {
         <!-- A player character's turn (C8-01): its card with "Agir por", on every one, with no "absent" mode to switch on first. -->
-        <app-act-as-card [who]="who" [title]="actCardTitle()" [classLine]="info().get(who.characterId)?.classSummary ?? ''" [hitPoints]="actCardHitPoints()" [busy]="busy()" (act)="actFor.set(who.id)" />
+        <app-act-as-card
+          [who]="who"
+          [title]="actCardTitle()"
+          [classLine]="info().get(who.characterId)?.classSummary ?? ''"
+          [hitPoints]="actCardHitPoints()"
+          [busy]="busy()"
+          (act)="actFor.set(who.id)"
+        />
         @if (theatre()) {
           <!-- No map: the movement is a number the master spends for the character, as the NPC's card has it (RN-25). -->
-          <app-master-spend [campaignId]="campaignId()" [encounterId]="e.id" [subject]="who" [state]="state()" />
+          <app-master-spend
+            [campaignId]="campaignId()"
+            [encounterId]="e.id"
+            [subject]="who"
+            [state]="state()"
+          />
         }
       }
       @if (!theatre() || !laptop()) {
@@ -638,9 +762,20 @@
 <ng-template #masterWaiting>
   @if (encounter(); as e) {
     <!-- A player's reaction nobody answered in 10 s (C8-04): the question comes to the master, at the top. -->
-    <app-reaction-queue [encounter]="e" [campaignId]="campaignId()" [state]="state()" [autoLeft]="autoLeft()" part="late" />
+    <app-reaction-queue
+      [encounter]="e"
+      [campaignId]="campaignId()"
+      [state]="state()"
+      [autoLeft]="autoLeft()"
+      part="late"
+    />
     @for (q of held.entries(); track q.holdId) {
-      <app-held-question layout="card" [question]="q" [canType]="heldCanType()" [target]="layout.heldTarget(q)" />
+      <app-held-question
+        layout="card"
+        [question]="q"
+        [canType]="heldCanType()"
+        [target]="layout.heldTarget(q)"
+      />
     }
     <app-roll-mode-queue [encounter]="e" [campaignId]="campaignId()" [state]="state()" />
     <app-hidden-reveal-card
@@ -745,7 +880,13 @@
 <ng-template #masterAfter>
   @if (encounter(); as e) {
     <!-- The reaction windows the master answers (PM-04): below the card, in the order the server answers them. -->
-    <app-reaction-queue [encounter]="e" [campaignId]="campaignId()" [state]="state()" [autoLeft]="autoLeft()" part="rest">
+    <app-reaction-queue
+      [encounter]="e"
+      [campaignId]="campaignId()"
+      [state]="state()"
+      [autoLeft]="autoLeft()"
+      part="rest"
+    >
       <!-- The legendary creatures' cards: after the windows the master answers; "Opcional" when nothing holds the table. -->
       <app-legendary-offers
         [encounter]="e"
@@ -815,25 +956,81 @@
     <div class="phone">
       <p class="phone__line">
         <mat-icon aria-hidden="true">swords</mat-icon>
-        <span><b>{{ layout.roundText() }}</b>@if (acting(); as who) { · você age por {{ who.label }}} @else { · {{ e.name }}@if (layout.nextName(); as next) { · em seguida: {{ next }}} }</span>
+        <span
+          ><b>{{ layout.roundText() }}</b>
+          @if (acting(); as who) {
+            · você age por {{ who.label }}
+          } @else {
+            · {{ e.name }}
+            @if (layout.nextName(); as next) {
+              · em seguida: {{ next }}
+            }
+          }
+        </span>
+        @if (phone()) {
+          <!-- The master's sun switch, in the header on a phone (a tablet and up have it in the bar). -->
+          <app-sun-switch
+            class="phone__sun"
+            [encounter]="e"
+            [busy]="busy()"
+            (flip)="setSunlight($event)"
+          />
+        }
       </p>
-      <app-tab-list label="Combate" idPrefix="ptab" [tabs]="layout.phoneTabs()" [selected]="layout.phoneTab()" (selectedChange)="layout.phoneTab.set($event)" />
-      <div class="phone__panel" role="tabpanel" id="ptab-panel-turn" aria-labelledby="ptab-tab-turn" [hidden]="layout.shownPhoneTab() !== 'turn'">
+      <app-tab-list
+        label="Combate"
+        idPrefix="ptab"
+        [tabs]="layout.phoneTabs()"
+        [selected]="layout.phoneTab()"
+        (selectedChange)="layout.phoneTab.set($event)"
+      />
+      <div
+        class="phone__panel"
+        role="tabpanel"
+        id="ptab-panel-turn"
+        aria-labelledby="ptab-tab-turn"
+        [hidden]="layout.shownPhoneTab() !== 'turn'"
+      >
         <ng-container *ngTemplateOutlet="turnBlock" />
         @if (theatre()) {
-          <app-cover-panel [targets]="coverTargets()" [everyone]="everyone()" [request]="coverRequest()" [busy]="busy()" (cover)="setCover($event)" />
+          <app-cover-panel
+            [targets]="coverTargets()"
+            [everyone]="everyone()"
+            [request]="coverRequest()"
+            [busy]="busy()"
+            (cover)="setCover($event)"
+          />
         }
         <app-fold title="Mais" appearance="row" icon="more_horiz">
           <span foldNote class="phone__more">{{ layout.panels().length }} painéis</span>
           <ng-container *ngTemplateOutlet="morePanels; context: { heading: false }" />
         </app-fold>
-        <app-combat-bar [encounter]="e" [endOnly]="true" [theatre]="theatre()" (end)="endCombat()" />
+        <app-combat-bar
+          [encounter]="e"
+          [endOnly]="true"
+          [theatre]="theatre()"
+          [busy]="busy()"
+          (end)="endCombat()"
+          (sunlight)="setSunlight($event)"
+        />
       </div>
-      <div class="phone__panel" role="tabpanel" id="ptab-panel-order" aria-labelledby="ptab-tab-order" [hidden]="layout.shownPhoneTab() !== 'order'">
+      <div
+        class="phone__panel"
+        role="tabpanel"
+        id="ptab-panel-order"
+        aria-labelledby="ptab-tab-order"
+        [hidden]="layout.shownPhoneTab() !== 'order'"
+      >
         <ng-container *ngTemplateOutlet="orderBlock" />
       </div>
       @if (!theatre()) {
-        <div class="phone__panel" role="tabpanel" id="ptab-panel-map" aria-labelledby="ptab-tab-map" [hidden]="layout.shownPhoneTab() !== 'map'">
+        <div
+          class="phone__panel"
+          role="tabpanel"
+          id="ptab-panel-map"
+          aria-labelledby="ptab-tab-map"
+          [hidden]="layout.shownPhoneTab() !== 'map'"
+        >
           <ng-container *ngTemplateOutlet="mapBlock" />
         </div>
       }
@@ -842,14 +1039,25 @@
     <div class="phone__bar">
       @if (targeting.mode.active() && acting()) {
         <!-- Choosing a target on the map for the character (C7-04): the bar takes the place of the turn's bar. -->
-        <app-target-bar class="phone__target" variant="bar" [mode]="targeting.mode" [by]="acting()?.label ?? ''" />
+        <app-target-bar
+          class="phone__target"
+          variant="bar"
+          [mode]="targeting.mode"
+          [by]="acting()?.label ?? ''"
+        />
       } @else {
         @if (owed(); as note) {
-          <span class="mr-tag mr-tag--pending"><mat-icon aria-hidden="true">warning</mat-icon>{{ note }}</span>
+          <span class="mr-tag mr-tag--pending"
+            ><mat-icon aria-hidden="true">warning</mat-icon>{{ note }}</span
+          >
         } @else if (waitNote(); as wait) {
-          <span class="mr-tag mr-tag--pending"><mat-icon aria-hidden="true">hourglass_top</mat-icon>{{ wait }}</span>
+          <span class="mr-tag mr-tag--pending"
+            ><mat-icon aria-hidden="true">hourglass_top</mat-icon>{{ wait }}</span
+          >
         } @else if (actCard(); as who) {
-          <span class="mr-tag mr-tag--pending"><mat-icon aria-hidden="true">hourglass_top</mat-icon>Esperando {{ who.label }}</span>
+          <span class="mr-tag mr-tag--pending"
+            ><mat-icon aria-hidden="true">hourglass_top</mat-icon>Esperando {{ who.label }}</span
+          >
         }
         <app-next-turn
           class="phone__next"
@@ -874,113 +1082,123 @@
 <ng-template #actingBody let-who="who">
   <app-acting-band [name]="who.label" (back)="actFor.set(null)" />
   <app-economy-shapes [shapes]="actingShapes()" />
-  <app-own-numbers class="acting__numbers" [own]="who" [armorClass]="who.armorClass ?? null" [slots]="ownSlots()" [hitPoints]="ownHitPoints()" />
+  <app-own-numbers
+    class="acting__numbers"
+    [own]="who"
+    [armorClass]="who.armorClass ?? null"
+    [slots]="ownSlots()"
+    [hitPoints]="ownHitPoints()"
+  />
   <ng-container *ngTemplateOutlet="actionsBody" />
 </ng-template>
 
 <!-- What the actions rail holds: a creature's blocks, the death saves, the action tabs, or off turn the reaction. -->
 <ng-template #actionsBody>
   @if (encounter(); as e) {
-            @if (creatureTab(); as ct) {
-              <div class="player__blocks">
-                @for (m of ct.members; track m.id) {
-                  <app-creature-block
-                    [campaignId]="campaignId()"
-                    [creature]="m"
-                    [options]="creatureOptions.data().get(m.id) ?? null"
-                    [acting]="ct.acting.includes(m)"
-                    [joint]="ct.members.length > 1"
-                    [busy]="busy()"
-                    [locked]="creatureLocked()"
-                    [pending]="creaturePending(m.id)"
-                    [trapNote]="creatureTrapNotes().get(m.id) ?? null"
-                    (rollDamage)="rollCreatureDamage(m.id)"
-                    (attack)="openCreatureAttack(m.id, $event)"
-                    (reactionAttack)="openCreatureAttack(m.id, $event, true)"
-                    (action)="creatureAction(m.id, $event)"
-                    (move)="moves.openCreature(m.id)"
-                    (standUp)="standUp(m.id)"
-                  />
-                }
-              </div>
-            } @else if (myTurn() && own(); as me) {
-              @if (ownDown()) {
-                <div>
-                  <app-death-saves
-                    [ownerOnly]="deathsHidden()"
-                    [own]="me"
-                    [busy]="busy()"
-                    [diceMode]="diceMode()"
-                    [dicePreference]="dicePreference()"
-                    [result]="deaths.result()"
-                    [held]="deaths.held.offer()"
-                    (roll)="deaths.roll($event)"
-                    (answer)="deaths.held.answer($event)"
-                    (endTurn)="nextTurn()"
-                  />
-                </div>
-              } @else if (options(); as opts) {
-                @if (opts.options; as turnOptions) {
-                  <div class="player__blocks">
-                    <app-action-groups
-                      [options]="turnOptions"
-                      [gearFlow]="gearFlow"
-                      [choosing]="targeting.mode.session()?.key ?? ''"
-                      [own]="me"
-                      [attacksLeft]="attacksLeft()"
-                      [attacksPerAction]="attacksPerAction()"
-                      [slots]="ownSlots()"
-                      [details]="spellDetails()"
-                      [note]="actionNote()"
-                      [pendingRoll]="ownPendingRoll()"
-                      [locked]="waiting()?.title ?? ''"
-                      [busy]="busy()"
-                      [familiar]="theatre() ? null : familiar()"
-                      [wild]="wild()"
-                      [beast]="me.wildShapeBeastNamePt"
-                      [theatre]="theatre()"
-                      [contestAttacks]="contestAttacks()"
-                      [contest]="contestFacts()"
-                      [maneuverDice]="opts.maneuverDice"
-                      (contestAttack)="contest.openAttack($event)"
-                      (escape)="contest.openEscape()"
-                      [extraAction]="opts.extraAction ?? null"
-                      (extraAttack)="openAttack($event, false, true)"
-                      (extraStandard)="takeExtra($event)"
-                      (familiarEyes)="askFamiliarEyes()"
-                      (attack)="openAttack($event)"
-                      (cast)="sheets.cast($event)"
-                      (describe)="sheets.actions.describeSpell($event.key, $event.name)"
-                      (feature)="useFeature($event)"
-                      (rage)="useFeature($event.key, $event.frenzy)"
-                      (action)="standardAction($event)"
-                      (move)="moves.open()"
-                      (standUp)="standUp()"
-                      (rollDamage)="rollPendingDamage()"
-                      (transform)="sheets.actions.wildShape()"
-                      (leaveForm)="leaveForm()"
-                    >
-                      @if (targeting.mode.active() && laptop()) {
-                        <app-target-bar pending variant="card" [mode]="targeting.mode" />
-                      }
-                    </app-action-groups>
-                    @if (beastBlock(); as block) {
-                      <app-beast-traits [creature]="block" [beast]="me.wildShapeBeastNamePt" />
-                    }
-                  </div>
-                }
+    @if (creatureTab(); as ct) {
+      <div class="player__blocks">
+        @for (m of ct.members; track m.id) {
+          <app-creature-block
+            [campaignId]="campaignId()"
+            [creature]="m"
+            [options]="creatureOptions.data().get(m.id) ?? null"
+            [acting]="ct.acting.includes(m)"
+            [joint]="ct.members.length > 1"
+            [busy]="busy()"
+            [locked]="creatureLocked()"
+            [pending]="creaturePending(m.id)"
+            [trapNote]="creatureTrapNotes().get(m.id) ?? null"
+            (rollDamage)="rollCreatureDamage(m.id)"
+            (attack)="openCreatureAttack(m.id, $event)"
+            (reactionAttack)="openCreatureAttack(m.id, $event, true)"
+            (action)="creatureAction(m.id, $event)"
+            (move)="moves.openCreature(m.id)"
+            (standUp)="standUp(m.id)"
+          />
+        }
+      </div>
+    } @else if (myTurn() && own(); as me) {
+      @if (ownDown()) {
+        <div>
+          <app-death-saves
+            [ownerOnly]="deathsHidden()"
+            [own]="me"
+            [busy]="busy()"
+            [diceMode]="diceMode()"
+            [dicePreference]="dicePreference()"
+            [result]="deaths.result()"
+            [held]="deaths.held.offer()"
+            (roll)="deaths.roll($event)"
+            (answer)="deaths.held.answer($event)"
+            (endTurn)="nextTurn()"
+          />
+        </div>
+      } @else if (options(); as opts) {
+        @if (opts.options; as turnOptions) {
+          <div class="player__blocks">
+            <app-action-groups
+              [options]="turnOptions"
+              [gearFlow]="gearFlow"
+              [choosing]="targeting.mode.session()?.key ?? ''"
+              [own]="me"
+              [attacksLeft]="attacksLeft()"
+              [attacksPerAction]="attacksPerAction()"
+              [slots]="ownSlots()"
+              [details]="spellDetails()"
+              [note]="actionNote()"
+              [pendingRoll]="ownPendingRoll()"
+              [locked]="waiting()?.title ?? ''"
+              [busy]="busy()"
+              [familiar]="theatre() ? null : familiar()"
+              [wild]="wild()"
+              [beast]="me.wildShapeBeastNamePt"
+              [theatre]="theatre()"
+              [contestAttacks]="contestAttacks()"
+              [contest]="contestFacts()"
+              [maneuverDice]="opts.maneuverDice"
+              (contestAttack)="contest.openAttack($event)"
+              (escape)="contest.openEscape()"
+              [extraAction]="opts.extraAction ?? null"
+              (extraAttack)="openAttack($event, false, true)"
+              (extraStandard)="takeExtra($event)"
+              (familiarEyes)="askFamiliarEyes()"
+              (attack)="openAttack($event)"
+              (cast)="sheets.cast($event)"
+              (describe)="sheets.actions.describeSpell($event.key, $event.name)"
+              (feature)="useFeature($event)"
+              (rage)="useFeature($event.key, $event.frenzy)"
+              (action)="standardAction($event)"
+              (move)="moves.open()"
+              (standUp)="standUp()"
+              (rollDamage)="rollPendingDamage()"
+              (transform)="sheets.actions.wildShape()"
+              (leaveForm)="leaveForm()"
+            >
+              @if (targeting.mode.active() && laptop()) {
+                <app-target-bar pending variant="card" [mode]="targeting.mode" />
               }
-            } @else if (offRail(); as me) {
-              <!-- Off turn, from 1024px: the rail says what the player still has (C6-07). -->
-              <div class="player__blocks">
-                  <p class="offturn">
-                    <app-economy-mark kind="reaction" [spent]="me.reactionUsed" />
-                    Reação · {{ me.reactionUsed ? 'Usada' : 'Disponível' }}
-                  </p>
-                  <p class="offturn__note">
-                    {{ me.reactionUsed ? 'Volta no começo da sua próxima vez.' : 'Se algo acontecer, você escolhe se reage.' }}
-                  </p>
-              </div>
+            </app-action-groups>
+            @if (beastBlock(); as block) {
+              <app-beast-traits [creature]="block" [beast]="me.wildShapeBeastNamePt" />
             }
+          </div>
+        }
+      }
+    } @else if (offRail(); as me) {
+      <!-- Off turn, from 1024px: the rail says what the player still has (C6-07). -->
+      <div class="player__blocks">
+        <p class="offturn">
+          <app-economy-mark kind="reaction" [spent]="me.reactionUsed" />
+          Reação · {{ me.reactionUsed ? 'Usada' : 'Disponível' }}
+        </p>
+        <p class="offturn__note">
+          {{
+            me.reactionUsed
+              ? 'Volta no começo da sua próxima vez.'
+              : 'Se algo acontecer, você escolhe se reage.'
+          }}
+        </p>
+      </div>
+    }
   }
 </ng-template>

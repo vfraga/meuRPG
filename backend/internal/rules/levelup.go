@@ -336,6 +336,7 @@ func (b Build) clone() Build {
 	b.Weapons = slices.Clone(b.Weapons)
 	b.Carried = slices.Clone(b.Carried)
 	b.WeaponMarks = slices.Clone(b.WeaponMarks)
+	b.ItemBonuses = slices.Clone(b.ItemBonuses)
 	b.Cantrips = slices.Clone(b.Cantrips)
 	b.SpellsKnown = slices.Clone(b.SpellsKnown)
 	b.SpellsPrepared = slices.Clone(b.SpellsPrepared)
@@ -1443,6 +1444,8 @@ func checkLocked(before, after Build) *LevelUpError {
 		return locked("full.carried_keys")
 	case !slices.Equal(before.WeaponMarks, after.WeaponMarks):
 		return locked("full.weapon_marks")
+	case !slices.Equal(before.ItemBonuses, after.ItemBonuses):
+		return locked("full.item_bonuses")
 	case !slices.Equal(before.ToolProficiencies, after.ToolProficiencies):
 		return locked("full.tool_proficiencies")
 	}

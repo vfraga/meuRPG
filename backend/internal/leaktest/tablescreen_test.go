@@ -273,63 +273,65 @@ func checkTableScreenAfterTheScript(t *testing.T, w *world, got *answers) {
 // leak test searches there: the canaries the field must never hold, and the control. TestEveryTableScreenFieldHasALeakRow
 // fails for a field that is not here, so a field added to the TV is a decision made here, with its row.
 var tvFieldRows = map[protoreflect.FullName]string{
-	"meurpg.play.v1.GetTableScreenResponse.choice_revision": "the master's own number of his choice; a counter, no canary",
-	"meurpg.play.v1.GetTableScreenResponse.choice":          "the master's choice: an enum and a bool",
-	"meurpg.play.v1.GetTableScreenResponse.stage":           "the TV's screen: the fields of TableScreenStage",
-	"meurpg.play.v1.GetTableScreenResponse.notice":          "an enum: it names no hidden thing",
-	"meurpg.play.v1.GetTableScreenResponse.campaign_name":   "the campaign's name, which every member reads",
-	"meurpg.play.v1.GetTableScreenResponse.session_number":  "the number of the open session; the numbers of the fixture are never a session's",
-	"meurpg.play.v1.GetTableScreenResponse.party":           "living player characters: not a reserved character, an NPC nor a character waiting for approval (reserved-name, review-reason, NPC names); control: the master's GetLiveSession",
-	"meurpg.play.v1.GetTableScreenResponse.options":         "the master's panel: an enum and a bool for each item; the contract says the master's panel is its only reader",
-	"meurpg.play.v1.GetTableScreenResponse.presence":        "whether a TV tab is connected: a bool and a time",
-	"meurpg.play.v1.TableScreenPresence.open":               "a bool",
-	"meurpg.play.v1.TableScreenPresence.lost_at":            "a time",
-	"meurpg.play.v1.TableScreenChoice.mirror":               "a bool",
-	"meurpg.play.v1.TableScreenChoice.pin":                  "an enum",
-	"meurpg.play.v1.TableScreenOption.kind":                 "an enum",
-	"meurpg.play.v1.TableScreenOption.available":            "a bool",
-	"meurpg.play.v1.TableScreenOption.unavailable":          "an enum: the reason an item cannot be picked names no item",
-	"meurpg.play.v1.TableScreenStage.kind":                  "an enum",
-	"meurpg.play.v1.TableScreenStage.idle":                  "nothing",
-	"meurpg.play.v1.TableScreenStage.map":                   "TvMap",
-	"meurpg.play.v1.TableScreenStage.image":                 "TvImage",
-	"meurpg.play.v1.TableScreenStage.scene":                 "TvScene",
-	"meurpg.play.v1.TableScreenStage.combat":                "TvCombat",
-	"meurpg.play.v1.TableScreenStage.rolls":                 "TvRoll",
-	"meurpg.play.v1.TvImage.name":                           "only the image shown to the whole table: not an image for chosen players, one left with the players, the fog map's picture (left-image-gallery-name, scene-image-a-gallery-name); control: shown-image-gallery-name (tvMustCarry)",
-	"meurpg.play.v1.TvImage.url":                            "the route of the shown image (the image route answers 404 to who may not read it: images_test.go)",
-	"meurpg.play.v1.TvImage.width":                          "a size in pixels",
-	"meurpg.play.v1.TvImage.height":                         "a size in pixels",
-	"meurpg.play.v1.TvScene.name":                           "only a scene open to the whole table, not one for chosen players (partial-scene-name); control: scene-open-name (tvMustCarry)",
-	"meurpg.play.v1.TvScene.description":                    "same as the name; control: scene-open-description (tvMustCarry)",
-	"meurpg.play.v1.TvScene.stage":                          "TvStageNpc",
-	"meurpg.play.v1.TvStageNpc.name":                        "the NPCs the table sees on the stage, not a hidden one (hidden-stage-name); control: merchant-name (tvMustCarry)",
-	"meurpg.play.v1.TvStageNpc.speaking":                    "a bool",
-	"meurpg.play.v1.TvMap.name":                             "the current map's name, only when the map is the TV's (mapOnTV); control: fog-map-name (TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees)",
-	"meurpg.play.v1.TvMap.hidden_by_fog":                    "true when the fog is on and \"Visão do grupo\" off, and then nothing else is set (checkTableScreen, the combat's map)",
-	"meurpg.play.v1.TvMap.map":                              "the player form of the map from the maps module: the masterOnly rules of maps (hidden point, trap, treasure, light, hidden token) and the canaries of the fog map; control: the master's GetMap",
-	"meurpg.play.v1.TvMap.vision":                           "the squares the group sees or remembers; a fogged cell has no tile (images_test.go and TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees); control: the same test, with group vision on, reads the map and fetches a tile",
-	"meurpg.play.v1.TvMap.revision":                         "a hash of what the TV reads, never the map's revision; a number no canary has",
-	"meurpg.play.v1.TvCombat.round":                         "the round, a small number",
-	"meurpg.play.v1.TvCombat.order":                         "TvCombatant",
-	"meurpg.play.v1.TvCombat.masters_turn":                  "a bool: the hidden combatant's name is not told on its turn",
-	"meurpg.play.v1.TvCombat.log":                           "the lines every player reads: no master-only line, no hidden combatant, no NPC dice, no table content the master hid (RN-23: proved in package play, and by the rows asTV of the worlds with a combat); control: the TV reads the combat in the worlds of table creatures and summons",
-	"meurpg.play.v1.TvCombat.map":                           "TvMap",
-	"meurpg.play.v1.TvCombatant.name":                       "only the combatants the table sees: not a hidden NPC, not one unseen on a fog map (mon-group, dragon-name, bandit-name); control: checkTableScreen (Pensantus FALLEN, Toren) and the creature world (fight-creature-name in the order)",
-	"meurpg.play.v1.TvCombatant.initial":                    "the first letter of the name above",
-	"meurpg.play.v1.TvCombatant.state":                      "an enum, the RN-20 word: never the hit points, the armor class or the initiative (4,321 hit points; secret numbers are searched in every numeric field)",
-	"meurpg.play.v1.TvCombatant.on_turn":                    "a bool",
-	"meurpg.play.v1.TvCombatant.is_player":                  "a bool",
-	"meurpg.play.v1.TvRoll.who":                             "the roller of a roll for the whole table (Ana's), never the master's \"Só eu\" roll (checkTableScreen: noMasterRoll, free-roll-secret)",
-	"meurpg.play.v1.TvRoll.expression":                      "the formula of a roll for the whole table",
-	"meurpg.play.v1.TvRoll.total":                           "the total of a roll for the whole table",
-	"meurpg.play.v1.TvRoll.faces":                           "the faces of a roll for the whole table",
-	"meurpg.play.v1.SetTableScreenResponse.choice_revision": "the master's own number of his choice",
-	"meurpg.play.v1.SetTableScreenResponse.choice":          "the master's choice",
-	"meurpg.play.v1.WatchTableScreenResponse.ready":         "the stream's events carry nothing: checkTVEvents (stream_test.go)",
-	"meurpg.play.v1.WatchTableScreenResponse.heartbeat":     "same",
-	"meurpg.play.v1.WatchTableScreenResponse.changed":       "same: not a revision, not a part, not a count",
-	"meurpg.play.v1.WatchTableScreenResponse.session_ended": "same",
+	"meurpg.play.v1.GetTableScreenResponse.choice_revision":         "the master's own number of his choice; a counter, no canary",
+	"meurpg.play.v1.GetTableScreenResponse.choice":                  "the master's choice: an enum and a bool",
+	"meurpg.play.v1.GetTableScreenResponse.stage":                   "the TV's screen: the fields of TableScreenStage",
+	"meurpg.play.v1.GetTableScreenResponse.notice":                  "an enum: it names no hidden thing",
+	"meurpg.play.v1.GetTableScreenResponse.campaign_name":           "the campaign's name, which every member reads",
+	"meurpg.play.v1.GetTableScreenResponse.session_number":          "the number of the open session; the numbers of the fixture are never a session's",
+	"meurpg.play.v1.GetTableScreenResponse.party":                   "living player characters: not a reserved character, an NPC nor a character waiting for approval (reserved-name, review-reason, NPC names); control: the master's GetLiveSession",
+	"meurpg.play.v1.GetTableScreenResponse.options":                 "the master's panel: an enum and a bool for each item; the contract says the master's panel is its only reader",
+	"meurpg.play.v1.GetTableScreenResponse.presence":                "whether a TV tab is connected: a bool and a time",
+	"meurpg.play.v1.TableScreenPresence.open":                       "a bool",
+	"meurpg.play.v1.TableScreenPresence.lost_at":                    "a time",
+	"meurpg.play.v1.TableScreenChoice.mirror":                       "a bool",
+	"meurpg.play.v1.TableScreenChoice.pin":                          "an enum",
+	"meurpg.play.v1.TableScreenOption.kind":                         "an enum",
+	"meurpg.play.v1.TableScreenOption.available":                    "a bool",
+	"meurpg.play.v1.TableScreenOption.unavailable":                  "an enum: the reason an item cannot be picked names no item",
+	"meurpg.play.v1.TableScreenStage.kind":                          "an enum",
+	"meurpg.play.v1.TableScreenStage.idle":                          "nothing",
+	"meurpg.play.v1.TableScreenStage.map":                           "TvMap",
+	"meurpg.play.v1.TableScreenStage.image":                         "TvImage",
+	"meurpg.play.v1.TableScreenStage.scene":                         "TvScene",
+	"meurpg.play.v1.TableScreenStage.combat":                        "TvCombat",
+	"meurpg.play.v1.TableScreenStage.rolls":                         "TvRoll",
+	"meurpg.play.v1.TvImage.name":                                   "only the image shown to the whole table: not an image for chosen players, one left with the players, the fog map's picture (left-image-gallery-name, scene-image-a-gallery-name); control: shown-image-gallery-name (tvMustCarry)",
+	"meurpg.play.v1.TvImage.url":                                    "the route of the shown image (the image route answers 404 to who may not read it: images_test.go)",
+	"meurpg.play.v1.TvImage.width":                                  "a size in pixels",
+	"meurpg.play.v1.TvImage.height":                                 "a size in pixels",
+	"meurpg.play.v1.TvScene.name":                                   "only a scene open to the whole table, not one for chosen players (partial-scene-name); control: scene-open-name (tvMustCarry)",
+	"meurpg.play.v1.TvScene.description":                            "same as the name; control: scene-open-description (tvMustCarry)",
+	"meurpg.play.v1.TvScene.stage":                                  "TvStageNpc",
+	"meurpg.play.v1.TvStageNpc.name":                                "the NPCs the table sees on the stage, not a hidden one (hidden-stage-name); control: merchant-name (tvMustCarry)",
+	"meurpg.play.v1.TvStageNpc.speaking":                            "a bool",
+	"meurpg.play.v1.TvMap.name":                                     "the current map's name, only when the map is the TV's (mapOnTV); control: fog-map-name (TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees)",
+	"meurpg.play.v1.TvMap.hidden_by_fog":                            "true when the fog is on and \"Visão do grupo\" off, and then nothing else is set (checkTableScreen, the combat's map)",
+	"meurpg.play.v1.TvMap.map":                                      "the player form of the map from the maps module: the masterOnly rules of maps (hidden point, trap, treasure, light, hidden token) and the canaries of the fog map; control: the master's GetMap",
+	"meurpg.play.v1.TvMap.vision":                                   "the squares the group sees or remembers; a fogged cell has no tile (images_test.go and TestRN10_TheTVOfAFogMapReadsOnlyWhatTheGroupSees); control: the same test, with group vision on, reads the map and fetches a tile",
+	"meurpg.play.v1.TvMap.revision":                                 "a hash of what the TV reads, never the map's revision; a number no canary has",
+	"meurpg.play.v1.TvCombat.round":                                 "the round, a small number",
+	"meurpg.play.v1.TvCombat.order":                                 "TvCombatant",
+	"meurpg.play.v1.TvCombat.masters_turn":                          "a bool: the hidden combatant's name is not told on its turn",
+	"meurpg.play.v1.TvCombat.log":                                   "the lines every player reads: no master-only line, no hidden combatant, no NPC dice, no table content the master hid (RN-23: proved in package play, and by the rows asTV of the worlds with a combat); control: the TV reads the combat in the worlds of table creatures and summons",
+	"meurpg.play.v1.TvCombat.map":                                   "TvMap",
+	"meurpg.play.v1.TvCombatant.name":                               "only the combatants the table sees: not a hidden NPC, not one unseen on a fog map (mon-group, dragon-name, bandit-name); control: checkTableScreen (Pensantus FALLEN, Toren) and the creature world (fight-creature-name in the order)",
+	"meurpg.play.v1.TvCombatant.initial":                            "the first letter of the name above",
+	"meurpg.play.v1.TvCombatant.state":                              "an enum, the RN-20 word: never the hit points, the armor class or the initiative (4,321 hit points; secret numbers are searched in every numeric field)",
+	"meurpg.play.v1.TvCombatant.on_turn":                            "a bool",
+	"meurpg.play.v1.TvCombatant.is_player":                          "a bool",
+	"meurpg.play.v1.TvRoll.who":                                     "the roller of a roll for the whole table (Ana's), never the master's \"Só eu\" roll (checkTableScreen: noMasterRoll, free-roll-secret)",
+	"meurpg.play.v1.TvRoll.expression":                              "the formula of a roll for the whole table",
+	"meurpg.play.v1.TvRoll.total":                                   "the total of a roll for the whole table",
+	"meurpg.play.v1.TvRoll.faces":                                   "the faces of a roll for the whole table",
+	"meurpg.play.v1.SetTableScreenResponse.choice_revision":         "the master's own number of his choice",
+	"meurpg.play.v1.SetTableScreenResponse.choice":                  "the master's choice",
+	"meurpg.play.v1.WatchTableScreenResponse.ready":                 "the stream's events carry nothing: checkTVEvents (stream_test.go)",
+	"meurpg.play.v1.WatchTableScreenResponse.heartbeat":             "same",
+	"meurpg.play.v1.WatchTableScreenResponse.changed":               "same: not a revision, not a part, not a count",
+	"meurpg.play.v1.WatchTableScreenResponse.session_ended":         "same",
+	"meurpg.play.v1.WatchTableScreenResponse.Ready.session_seq":     "the session's hint number: a counter the master's tab reads to know it is behind; never derived from content, so a hidden write moves it like any other; no canary",
+	"meurpg.play.v1.WatchTableScreenResponse.Heartbeat.session_seq": "same",
 }
 
 // tvMessages are the messages whose fields tvFieldRows lists, by name.
@@ -485,7 +487,8 @@ func checkTVStreamIsRefused(t *testing.T, w *world) {
 	}
 }
 
-// checkTVEvents: every event of the TV's stream is ready, heartbeat, changed or session_ended, with no field set.
+// checkTVEvents: every event of the TV's stream is ready, heartbeat, changed or session_ended, with no field set (the ready
+// and the heartbeat carry the session's number, a counter).
 // A change the script made, the hidden NPC's moves included, produced only `changed`.
 func checkTVEvents(t *testing.T, w *world, tw *tvWatcher, got *answers) {
 	t.Helper()
@@ -504,12 +507,14 @@ func checkTVEvents(t *testing.T, w *world, tw *tvWatcher, got *answers) {
 			continue
 		}
 		fields := 0
-		ev.ProtoReflect().Get(ev.ProtoReflect().Descriptor().Oneofs().ByName("event").Fields().ByName(protoreflect.Name(kind))).Message().Range(func(protoreflect.FieldDescriptor, protoreflect.Value) bool {
-			fields++
+		ev.ProtoReflect().Get(ev.ProtoReflect().Descriptor().Oneofs().ByName("event").Fields().ByName(protoreflect.Name(kind))).Message().Range(func(fd protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+			if fd.Name() != "session_seq" { // the session's hint number on ready and heartbeat: a counter (tvFieldRows)
+				fields++
+			}
 			return true
 		})
 		if fields != 0 {
-			t.Errorf("the TV's %s event has %d fields set, want none: %v", kind, fields, ev)
+			t.Errorf("the TV's %s event has %d fields set besides session_seq, want none: %v", kind, fields, ev)
 		}
 		body, err := protojson.Marshal(ev)
 		if err != nil {

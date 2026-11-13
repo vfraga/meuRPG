@@ -34,6 +34,7 @@ import {
   navOfKind,
   savedSentence,
 } from '../../../core/content/content-kinds';
+import { backInSentence } from '../../../core/content/left-out';
 import { ContentWatcher } from '../../../core/content/content-watcher';
 import { EffectMenuVm } from '../../../core/content/effect-draft';
 import { LiveSessionSourceLive } from '../../../core/play/live-session-source.live';
@@ -64,6 +65,7 @@ import {
   archivedWordOf,
   confirmArchiveInSheet,
   headingOf,
+  leftOutView,
   mergeRefreshed,
   nameResolver,
   nounPhraseOf,
@@ -205,6 +207,8 @@ export class ContentEntry {
     const e = this.entry();
     return e ? entryState(e, this.isMaster()) : null;
   });
+  /** The entries the rules refuse (the master's only): the violation on the editor's field, the note above it, and "Remover" for "Arquivar". */
+  protected readonly leftOut = computed(() => leftOutView(this.ctx(), this.key(), this.editing()));
   protected readonly updated = computed(() => updatedLine(this.entry()));
   protected readonly archivedOn = computed(() => archivedDay(this.entry()));
   protected readonly using = computed(() => usageOf(this.entry()));
@@ -278,18 +282,14 @@ export class ContentEntry {
           this.editing(),
         );
         this.state.set({ status: 'ready', ctx: { ...res.ctx, entries } });
-        await this.refreshCatalog(entries, mine);
+        // The names are built from the catalog and the entries together, so they follow a change of either.
+        const c = await this.client.catalog(this.campaignId());
+        if (mine === this.reads) {
+          this.catalog.set(catalogVm(c, entries));
+        }
       }
     } catch {
       // Keep what is on screen: the next change reads again.
-    }
-  }
-
-  /** The names are built from the catalog and the entries together, so they follow a change of either. */
-  private async refreshCatalog(entries: readonly TableEntry[], read: number): Promise<void> {
-    const c = await this.client.catalog(this.campaignId());
-    if (read === this.reads) {
-      this.catalog.set(catalogVm(c, entries));
     }
   }
 
@@ -326,17 +326,15 @@ export class ContentEntry {
     this.catalogError.set('');
     this.menuError.set('');
     this.defaultsError.set('');
-    const catalog = this.client
-      .catalog(ctx.campaignId)
-      .then((c) => this.catalog.set(catalogVm(c, ctx.entries)));
-    const defaults =
+    void Promise.allSettled([
+      this.client.catalog(ctx.campaignId).then((c) => this.catalog.set(catalogVm(c, ctx.entries))),
+      ctx.isMaster
+        ? this.client.effectMenu(ctx.campaignId).then((m) => this.menu.set(new EffectMenuVm(m)))
+        : undefined,
       ctx.isMaster && this.needsDefaults()
         ? this.client.classDefaults(ctx.campaignId).then((d) => this.defaults.set(d))
-        : Promise.resolve();
-    const menu = ctx.isMaster
-      ? this.client.effectMenu(ctx.campaignId).then((m) => this.menu.set(new EffectMenuVm(m)))
-      : Promise.resolve();
-    void Promise.allSettled([catalog, menu, defaults]).then((results) => {
+        : undefined,
+    ]).then((results) => {
       wireMenu(this.menu(), this.catalog(), ctx.entries);
       const errors = extrasErrors(results);
       this.defaultsError.set(errors.defaults);
@@ -359,6 +357,7 @@ export class ContentEntry {
       return;
     }
     const entries = entriesAfterSave(s.ctx.entries, res.entry);
+    const before = this.leftOut().model;
     this.state.set({
       status: 'ready',
       ctx: { ...s.ctx, entries, tableRevision: res.entry.revision },
@@ -366,6 +365,11 @@ export class ContentEntry {
     this.affected.set(res.affected);
     const saved = savedSentence(res.entry.kind, res.entry.namePt);
     this.savedLine.set(saved);
+    if (before.count > 0) {
+      // The server says again which entries are out, and a fix says the entry came back.
+      await this.refresh();
+      this.savedLine.set(backInSentence(before, this.leftOut().model, res.entry, entries) || saved);
+    }
     if (!this.key()) {
       // A new entry has its key now: its page is the entry's own.
       await this.router.navigate([...this.backLink(), 'entries', res.entry.key], {
@@ -380,15 +384,10 @@ export class ContentEntry {
   protected async askArchive(): Promise<void> {
     this.actionError.set('');
     const e = this.entry();
-    if (!e) {
-      return;
-    }
-    if (!this.phone()) {
+    const { verb } = this.leftOut();
+    if (e && !this.phone()) {
       this.asking.set(true);
-      return;
-    }
-    const confirmed = await confirmArchiveInSheet(this.dialog, this.bottomSheet, e);
-    if (confirmed) {
+    } else if (e && (await confirmArchiveInSheet(this.dialog, this.bottomSheet, e, verb))) {
       await this.archive();
     }
   }

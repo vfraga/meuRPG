@@ -294,7 +294,11 @@ func (f *takeActionFlow) creatureSave(ctx context.Context, target playdb.Combata
 	if err != nil {
 		return nil, err
 	}
-	creature := creatureFacts(target, states, sheet.Traits)
+	sun, err := f.s.sunlightOf(ctx, f.c.q, f.c.enc)
+	if err != nil {
+		return nil, err
+	}
+	creature := sun.facts(creatureFacts(target, states, sheet.Traits), target)
 	mode := combat.Resolve(combat.SaveMode(combat.SaveScene{Creature: creature, Ability: "wis", EffectVisible: true}))
 	d20, err := f.s.d20With(rollInput{inApp: true}, save.Bonus, mode)
 	if err != nil {

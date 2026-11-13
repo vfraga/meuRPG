@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 
 	"connectrpc.com/connect"
@@ -395,7 +396,7 @@ func (s *Service) spendGrantUse(ctx context.Context, c *combatTx, plan castPlan)
 	if g == nil || g.AtWill || !plan.g.caster.Player {
 		return nil, nil
 	}
-	v, err := s.spendResource(ctx, c, plan.g.caster.ID, g.Resource, 1)
+	v, err := s.spendResource(ctx, c, plan.g.caster.ID, g.Resource, int32(min(max(g.Cost, 1), math.MaxInt32)))
 	if err != nil {
 		return nil, grantUseError(err)
 	}

@@ -1570,6 +1570,28 @@ message FullSheet {
   // removes a weapon from weapon_keys must remove its mark in the same request, or the
   // save is refused.
   repeated WeaponMark weapon_marks = 42;
+  // Magic bonuses (+1 to +3) of the armor, the shield and the weapons.
+  // At most 22, each `key` the sheet's armor, its shield (the shield key) or one of weapon_keys.
+  // No key twice, each `bonus` from 1 to 3.
+  // A bonus counts only while the piece is equipped and, when it asks for attunement, attuned.
+  // The bonus of a weapon key applies to every copy of that key.
+  // A client that removes a piece from the sheet must remove its bonus in the same request, or the save is refused.
+  repeated ItemBonus item_bonuses = 43;
+}
+
+// ItemBonus is the magic bonus of one piece of the sheet's gear. Rule: `key` is the
+// sheet's armor, its shield or one of its weapons, and `bonus` is 1 to 3.
+message ItemBonus {
+  // Content key of the piece: FullSheet.armor_key, the shield key or one of weapon_keys.
+  string key = 1;
+  // The bonus: 1 to 3. On armor and shield it adds to the armor class; on a weapon, to
+  // its attack and damage rolls, and the weapon's attacks count as magical.
+  int32 bonus = 2;
+  // The piece asks for attunement, so it adds nothing until `attuned`.
+  // Plain +N weapons and armor of the SRD do not ask.
+  bool requires_attunement = 3;
+  // The character is attuned to the piece.
+  bool attuned = 4;
 }
 
 // WeaponMark says what a carried weapon is made of or enchanted with. Rule: set at

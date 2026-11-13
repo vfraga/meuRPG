@@ -537,7 +537,13 @@ func (s *Service) addWrite(ctx context.Context, c *combatTx, parts []planned) (a
 	if err := touch(ctx, c); err != nil {
 		return nil, err
 	}
-	return map[string]any{"added": len(added)}, nil
+	hidden := 0 // how many came in hidden: a player's log asks for nothing new when all did (addedAllHidden)
+	for _, a := range added {
+		if a.Hidden {
+			hidden++
+		}
+	}
+	return map[string]any{"added": len(added), "hidden_added": hidden}, nil
 }
 
 // mayJoin checks that the participants fit in the combat: a player's character joins only

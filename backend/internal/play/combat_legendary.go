@@ -37,6 +37,7 @@ func (s *Service) addStatBlockProfiles(ctx context.Context, campaignID string, n
 			}
 			n.parry = slices.ContainsFunc(p.Reactions, func(r rules.MonsterReaction) bool { return r.Kind == rules.ReactionKindParry && r.ACBonus > 0 })
 		}
+		n.sunTrait = sunTraitOf(content, n.monsterKey)
 		if plan, ok := content.MonsterPlan(n.monsterKey); ok {
 			n.limited = limitedActionsOf(plan)
 			n.legendaryDetail = legendaryAttackDetails(n.legendary, plan)
@@ -151,8 +152,15 @@ func (s *Service) creatureLimits(ctx context.Context, campaignID string, d *enco
 	}
 	out := make(map[string]masterNPC, len(mine))
 	for _, c := range mine {
+		n := masterNPC{}
+		if v.master {
+			n.sunTrait = sunTraitOf(content, conv.OrZero(c.MonsterKey))
+		}
 		if plan, ok := content.MonsterPlan(conv.OrZero(c.MonsterKey)); ok {
-			out[sheetKey(c)] = masterNPC{limited: limitedActionsOf(plan)}
+			n.limited = limitedActionsOf(plan)
+		}
+		if n.sunTrait != playv1.SunlightTrait_SUNLIGHT_TRAIT_UNSPECIFIED || n.limited != nil {
+			out[sheetKey(c)] = n
 		}
 	}
 	return out

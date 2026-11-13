@@ -6,6 +6,7 @@ import {
   FullSheet as GenFullSheet,
   HitPointsMethod as GenHitPointsMethod,
   Item,
+  ItemBonus,
   WeaponMark,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { damageTypeFromGen, damageTypeToGen } from '../../core/characters/damage-type-gen';
@@ -19,6 +20,9 @@ import {
 
 /** An ability score a sheet leaves out reads as the default 10. */
 const DEFAULT_SCORE = 10;
+
+/** The content key of the shield on a sheet (the key of its carried state and of its magic bonus). */
+const SHIELD_KEY = 'equipment:shield';
 
 /** "Só em ataques" is the default the server reads from an unset field, so the form sends the field unset for it:
  * a sheet that never had the setting is not given one. */
@@ -182,6 +186,7 @@ export function toFullSheetInit(v: CharacterFormValue) {
     // The form has no UI for the marks (silvered, adamantine, magical): a new sheet has none, and a save of a loaded
     // one keeps the marks of the weapons still carried (`mergeFullSheetInit`).
     weaponMarks: [] as WeaponMark[],
+    itemBonuses: [] as ItemBonus[],
     cantripKeys: v.cantrips,
     knownSpellKeys: v.spellsKnown,
     preparedSpellKeys: v.spellsPrepared,
@@ -239,7 +244,13 @@ export function mergeFullSheetInit(original: GenFullSheet | undefined, v: Charac
   }
   // The server refuses a mark whose weapon is not in weapon_keys, so a weapon the player removed takes its mark along.
   const weaponMarks = original.weaponMarks.filter((m) => init.weaponKeys.includes(m.weaponKey));
-  return { ...rest, ...init, weaponMarks };
+  // The same for a magic bonus: the form has no UI for it, and a piece the player removed takes its bonus along.
+  const onSheet = (key: string) =>
+    key === init.armorKey ||
+    (key === SHIELD_KEY && init.shield === true) ||
+    init.weaponKeys.includes(key);
+  const itemBonuses = original.itemBonuses.filter((b) => onSheet(b.key));
+  return { ...rest, ...init, weaponMarks, itemBonuses };
 }
 
 /** Exported for `character-editor-source.live.spec.ts`. */

@@ -45,7 +45,7 @@ import (
 // with a range of sight or Touch) stays on the caster's list: the SRD gives the
 // shape a point of origin the table does not lay out here.
 func placementOf(sp link.Spell) playv1.AreaPlacement {
-	if z, ok := zoneDefOfSpell(sp); ok && sp.ZoneLaid { // a cast that lays its area on the map as a zone: laid out as the zone says
+	if z, ok := zoneDefOfSpell(sp); ok && laidAsZone(sp, z) { // a cast that lays its area on the map as a zone: laid out as the zone says
 		return z.placement
 	}
 	shape := grid.Shape(sp.AreaShape)
@@ -65,9 +65,13 @@ func placementOf(sp link.Spell) playv1.AreaPlacement {
 	return playv1.AreaPlacement_AREA_PLACEMENT_UNSPECIFIED
 }
 
+// laidAsZone says whether the spell's area is the zone's: a cast that lays it on the map, and always a spell that lays a
+// wall, whose line is not the one the spell's own data give (the turn options must say it is placed on a point).
+func laidAsZone(sp link.Spell, z zoneDef) bool { return sp.ZoneLaid || z.kind == zoneWall }
+
 // areaOf is the grid shape of a spell's area.
 func areaOf(sp link.Spell) grid.Area {
-	if z, ok := zoneDefOfSpell(sp); ok && sp.ZoneLaid {
+	if z, ok := zoneDefOfSpell(sp); ok && laidAsZone(sp, z) {
 		a := z.area()
 		if sp.ZoneSizeFt > 0 {
 			a.SizeFt = sp.ZoneSizeFt
@@ -437,6 +441,9 @@ func previewResponse(plan areaPlan, sp link.Spell, caster playdb.Combatant, v co
 	out := &playv1.PreviewSpellAreaResponse{
 		Origin: originProto(plan.origin), Squares: squaresProto(plan.squares), CoverCounts: counts,
 		RangeFt: placedRangeFt(sp), Moved: plan.origin != plan.asked,
+	}
+	if w := plan.wall; w != nil {
+		out.BurningSquares, out.LengthFt = squaresProto(w.burning(plan.origin, plan.squares)), clamp32(w.LengthFt, 0, math.MaxInt32)
 	}
 	for _, t := range plan.targets {
 		if v.sees(t.who) { // a hidden creature, or one in the dark, is not named or counted

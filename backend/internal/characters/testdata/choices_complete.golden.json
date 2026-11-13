@@ -324,6 +324,7 @@
           }
         ],
         "backgroundNamePt": "Acólito",
+        "carryCapacityLb": 225,
         "classes": [
           {
             "classKey": "class:fighter",
@@ -787,6 +788,7 @@
           }
         ],
         "backgroundNamePt": "Acólito",
+        "carryCapacityLb": 225,
         "classes": [
           {
             "classKey": "class:fighter",
@@ -1256,6 +1258,7 @@
           }
         ],
         "backgroundNamePt": "Acólito",
+        "carryCapacityLb": 240,
         "classes": [
           {
             "classKey": "class:fighter",
@@ -1724,6 +1727,7 @@
             "rangeFt": 5
           }
         ],
+        "carryCapacityLb": 255,
         "classes": [
           {
             "classKey": "class:fighter",

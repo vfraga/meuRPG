@@ -45,6 +45,36 @@ var criticalScopes = []string{CriticalScopeWeapon, CriticalScopeSpell, CriticalS
 // is a critical hit. Only the mode set is meaningful, and only the deriver reads it (Derived.CriticalRange).
 const CriticalRangeTarget = "critical_range"
 
+// The modifier targets of the sheet's passives, the creature's melee reach and the hit points a hit die gives at least.
+const (
+	PassivePerceptionTarget    = "passive.perception"
+	PassiveInvestigationTarget = "passive.investigation"
+	PassiveInsightTarget       = "passive.insight"
+	// ReachMeleeTarget is the creature's melee reach in feet, 5 without a rule; MaxWeaponReachFt bounds it.
+	ReachMeleeTarget = "reach.melee"
+	// HitDieMinimumTarget is the least a hit die heals on a short rest, 0 to MaxHitDieMinimum.
+	HitDieMinimumTarget = "hitdie.minimum"
+	MaxHitDieMinimum    = 40
+	// CarryCapacityTarget is the carrying capacity in pounds, 15 times the Strength score without a rule;
+	// MaxCarryCapacityLb bounds it.
+	CarryCapacityTarget = "carry.capacity"
+	MaxCarryCapacityLb  = 10000
+	// DamageReductionWeaponTarget is the flat amount taken off the damage of each weapon attack that hits
+	// the character, and DamageReductionNonmagicalWeaponTarget the same for the attacks that are not magical.
+	// MaxDamageReduction bounds each source.
+	DamageReductionWeaponTarget           = "damage.reduction.weapon"
+	DamageReductionNonmagicalWeaponTarget = "damage.reduction.nonmagical_weapon"
+	MaxDamageReduction                    = 100
+)
+
+// DamageReduction is the flat damage reduction one feature gives: its key, the amount, and whether it
+// covers only the attacks that are not magical.
+type DamageReduction struct {
+	Source     string
+	Amount     int
+	Nonmagical bool
+}
+
 // RerollRule is a reroll effect the character has: a die of the covered rolls that shows AtMost or lower may
 // be rolled again, and the new roll must be used (the halfling's Lucky trait). Each reroll spends Cost uses of Resource
 // when it names one.

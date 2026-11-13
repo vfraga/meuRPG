@@ -67,7 +67,7 @@ export function sceneRollMark(roll: SceneRoll): NaturalMark {
   return diceNaturalMark(roll.roll);
 }
 
-/** "O d20 de 6 contou como 10: perícia com proficiência.", only when a feature changed the roll. */
+/** "O d20 de 6 contou como 10: Talento Confiável (perícia com proficiência).", only when a feature changed the roll. */
 export function sceneRollNote(roll: SceneRoll): string {
   return roll.roll ? (treatedSentence(roll.roll) ?? '') : '';
 }

@@ -254,6 +254,12 @@ func (x *deriver) tuneWeapon(ability Ability, f weaponFacts) weaponTuning {
 			t.reachFt = max(t.reachFt, e.ReachFt)
 		}
 	}
+	// The creature's own melee reach (the modifier target): a weapon with a longer reach keeps it.
+	if f.melee {
+		if reach := min(max(x.modifiers(ReachMeleeTarget, unarmedReachFt), unarmedReachFt), MaxWeaponReachFt); reach > unarmedReachFt {
+			t.reachFt = max(t.reachFt, reach)
+		}
+	}
 	return t
 }
 

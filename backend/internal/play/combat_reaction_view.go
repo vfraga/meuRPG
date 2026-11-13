@@ -487,30 +487,49 @@ func (wv *windowView) concentrationPrompt(w playdb.ReactionWindow, reactor *play
 	if wv.v.master || (reactor != nil && wv.v.saveDCFor(*reactor)) { // the DC is the master's, and the reading member's when the table shows it
 		p.Dc = clamp32(reaction.ConcentrationDC(int(t.Taken)), 0, math.MaxInt32)
 	}
-	if a, ok := wv.byID[t.Actor]; ok && wv.v.sees(a) && t.Key != "" {
-		if name := wv.names(t.Key); name != "" {
-			p.SourceLabel = name + " de " + a.Label
-		} else if n := wv.attackName(t); n != "" {
-			p.SourceLabel = n + " de " + a.Label
-		}
-	}
+	wv.concentrationSource(t, p)
 	if reactor != nil {
-		save, err := wv.s.saveOf(wv.ctx, nil, wv.m.CampaignID, *reactor, "con")
-		if err != nil {
-			return wv.s.dbError(wv.ctx, "read a saving throw", err)
-		}
-		save = withRollBonus(save, statesOf(wv.d.states), reactor.ID, rules.RollAppliesSave)
-		p.SaveBonus, p.BonusKnown = conv.Int32(save.Bonus), save.Known
-		sheet, err := wv.s.sheetOf(wv.ctx, nil, wv.m.CampaignID, *reactor)
-		if err != nil {
-			return wv.s.dbError(wv.ctx, "read a sheet", err)
-		}
-		sources := concentrationSources(creatureFacts(*reactor, statesOf(wv.d.states), sheet.Traits))
-		p.Mode = modeKey(combat.Resolve(sources))
-		for _, src := range shownSources(sources, wv.names) {
-			p.ModeSourcesPt = append(p.ModeSourcesPt, src.GetTextPt())
+		if err := wv.concentrationMode(reactor, p); err != nil {
+			return err
 		}
 	}
 	out.Prompt = &playv1.ReactionWindow_ConcentrationSave{ConcentrationSave: p}
+	return nil
+}
+
+// concentrationSource names what damaged the concentrating creature, when the viewer sees who did.
+func (wv *windowView) concentrationSource(t windowTrigger, p *playv1.ConcentrationSavePrompt) {
+	a, ok := wv.byID[t.Actor]
+	if !ok || !wv.v.sees(a) || t.Key == "" {
+		return
+	}
+	if name := wv.names(t.Key); name != "" {
+		p.SourceLabel = name + " de " + a.Label
+	} else if n := wv.attackName(t); n != "" {
+		p.SourceLabel = n + " de " + a.Label
+	}
+}
+
+// concentrationMode is the reactor's save bonus and the mode of its Constitution save, with the sources the viewer may read.
+func (wv *windowView) concentrationMode(reactor *playdb.Combatant, p *playv1.ConcentrationSavePrompt) error {
+	save, err := wv.s.saveOf(wv.ctx, nil, wv.m.CampaignID, *reactor, "con")
+	if err != nil {
+		return wv.s.dbError(wv.ctx, "read a saving throw", err)
+	}
+	save = withRollBonus(save, statesOf(wv.d.states), reactor.ID, rules.RollAppliesSave)
+	p.SaveBonus, p.BonusKnown = conv.Int32(save.Bonus), save.Known
+	sheet, err := wv.s.sheetOf(wv.ctx, nil, wv.m.CampaignID, *reactor)
+	if err != nil {
+		return wv.s.dbError(wv.ctx, "read a sheet", err)
+	}
+	sun, err := wv.s.sunlightOf(wv.ctx, wv.s.queries, wv.d.enc)
+	if err != nil {
+		return wv.s.dbError(wv.ctx, "read the sunlight", err)
+	}
+	sources := concentrationSources(sun.facts(creatureFacts(*reactor, statesOf(wv.d.states), sheet.Traits), *reactor))
+	p.Mode = modeKey(combat.Resolve(sources))
+	for _, src := range shownSources(sources, wv.names, wv.v.master) {
+		p.ModeSourcesPt = append(p.ModeSourcesPt, src.GetTextPt())
+	}
 	return nil
 }

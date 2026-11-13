@@ -4,6 +4,7 @@ import {
   type SpellZone,
   SpellZoneMovement,
   SpellZoneVisibility,
+  WallSide,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { joinDots, upFirst } from '../format/text';
 import { abilityName } from '../effects/ability-choice';
@@ -23,8 +24,18 @@ export interface ZoneViewer {
   readonly combatants: readonly Combatant[];
 }
 
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/** The letter of the zone at `index` of the list: A to Z, then A2, B2 and so on. */
+export function zoneLetter(index: number): string {
+  const letter = LETTERS[index % LETTERS.length];
+  return index < LETTERS.length ? letter : `${letter}${Math.floor(index / LETTERS.length) + 1}`;
+}
+
 export interface ZoneView {
   readonly id: string;
+  /** The zone's letter: on the map's corner badge, in the legend and in the list. The burning side of a wall takes the wall's. */
+  readonly letter: string;
   readonly spellKey: string;
   /** "Raio Lunar": the spell alone, for the map's legend. */
   readonly spellName: string;
@@ -51,6 +62,10 @@ export interface ZoneView {
   readonly canEnd: boolean;
   readonly origin: Square | null;
   readonly squares: readonly Square[];
+  /** The squares of a wall's burning side the viewer may read; empty for a zone that is no wall. */
+  readonly burningSquares: readonly Square[];
+  /** The side of the wall that burns; UNSPECIFIED for a zone that is no wall. */
+  readonly wallSide: WallSide;
 }
 
 /** The master's calls the spells leave to the table: one line each, for the master's card only. */
@@ -128,11 +143,12 @@ function occupantsText(zone: SpellZone, viewer: ZoneViewer): string {
 }
 
 /** The view of a zone for `viewer`. */
-export function zoneView(zone: SpellZone, viewer: ZoneViewer): ZoneView {
+export function zoneView(zone: SpellZone, viewer: ZoneViewer, index = 0): ZoneView {
   const parts = pieces(zone);
   const masterOnly = zone.visibility === SpellZoneVisibility.MASTER_ONLY;
   return {
     id: zone.id,
+    letter: zoneLetter(index),
     spellKey: zone.spellKey,
     spellName: zone.spellNamePt,
     label: joinDots([zone.spellNamePt, zone.ownerLabel]),
@@ -154,6 +170,8 @@ export function zoneView(zone: SpellZone, viewer: ZoneViewer): ZoneView {
     canEnd: viewer.master,
     origin: zone.origin ? { col: zone.origin.col, row: zone.origin.row } : null,
     squares: zone.squares.map((s) => ({ col: s.col, row: s.row })),
+    burningSquares: zone.burningSquares.map((s) => ({ col: s.col, row: s.row })),
+    wallSide: zone.wallSide,
   };
 }
 
@@ -163,5 +181,5 @@ export function zoneViews(encounter: Encounter | null, master: boolean): ZoneVie
     return [];
   }
   const viewer: ZoneViewer = { master, combatants: encounter.combatants };
-  return encounter.zones.map((z) => zoneView(z, viewer));
+  return encounter.zones.map((z, i) => zoneView(z, viewer, i));
 }

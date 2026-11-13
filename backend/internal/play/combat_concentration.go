@@ -417,7 +417,11 @@ func (s *Service) rollConcentration(
 	if err != nil {
 		return false, err
 	}
-	mode := combat.Resolve(concentrationSources(creatureFacts(reactor, states, sheet.Traits)))
+	sun, err := s.sunlightOf(ctx, c.q, c.enc)
+	if err != nil {
+		return false, err
+	}
+	mode := combat.Resolve(concentrationSources(sun.facts(creatureFacts(reactor, states, sheet.Traits), reactor)))
 	save = withRollBonus(save, states, reactor.ID, rules.RollAppliesSave)
 	// A player's character that holds a Bardic Inspiration die has the d20 kept until the player
 	// answers (nothing has been written yet); the answer brings it back with the die added. So

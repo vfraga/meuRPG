@@ -412,10 +412,10 @@ func (s *Service) publishHeldRollsChanged(campaignID string, userIDs ...string) 
 	msg := &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_HeldRollsChanged_{
 		HeldRollsChanged: &playv1.WatchGameSessionResponse_HeldRollsChanged{},
 	}}
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
 	for _, id := range slices.Compact(slices.Sorted(slices.Values(userIDs))) {
 		if id != "" {
-			s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: id}, Message: msg})
+			s.send(campaignID, live.Event{Audience: live.Audience{UserID: id}, Message: msg})
 		}
 	}
 }

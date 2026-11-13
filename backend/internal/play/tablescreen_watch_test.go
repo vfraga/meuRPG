@@ -78,8 +78,16 @@ func (w *tvWatcher) next(t *testing.T) *playv1.WatchTableScreenResponse {
 		if ev.GetReady() == nil && ev.GetHeartbeat() == nil && ev.GetChanged() == nil && ev.GetSessionEnded() == nil {
 			t.Fatalf("event %v is none of ready, heartbeat, changed and session_ended", ev)
 		}
-		if proto.Size(ev) != 2 { // the oneof's tag and an empty message's length
-			t.Fatalf("event %v carries something: %d bytes, want the bare tag and an empty message", ev, proto.Size(ev))
+		// The ready and the heartbeat carry the session's number and nothing else (a counter, never content).
+		bare := proto.Clone(ev).(*playv1.WatchTableScreenResponse)
+		if r := bare.GetReady(); r != nil {
+			r.SessionSeq = 0
+		}
+		if hb := bare.GetHeartbeat(); hb != nil {
+			hb.SessionSeq = 0
+		}
+		if proto.Size(bare) != 2 { // the oneof's tag and an empty message's length
+			t.Fatalf("event %v carries something: %d bytes, want the bare tag and an empty message", ev, proto.Size(bare))
 		}
 		return ev
 	case <-time.After(waitLimit):
@@ -390,5 +398,41 @@ func (w *tvWatcher) wasUncounted(t *testing.T) {
 	case <-w.left:
 	case <-time.After(waitLimit):
 		t.Fatal("no TV stream was uncounted")
+	}
+}
+
+// The TV stream's ready carries the session's stored number and its heartbeat the current one, so a tab that missed a
+// "changed" knows it is behind and reads GetTableScreen again.
+func TestWatchTableScreenStampsReadyAndHeartbeatWithTheHintNumber(t *testing.T) {
+	t.Parallel()
+	a := newArmed(t)
+	sess, err := a.h.svc.queries.GetOpenGameSession(t.Context(), a.campaignID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	setSeq := func(n int) {
+		t.Helper()
+		if _, err := a.h.pool.Exec(t.Context(), `UPDATE game_sessions SET hint_seq = $2 WHERE id = $1`, sess.ID, n); err != nil {
+			t.Fatal(err)
+		}
+	}
+	setSeq(7)
+	a.h.svc.live.Heartbeat = 20 * time.Millisecond
+	w := a.watchScreen(t, a.master)
+	if ev := w.next(t); ev.GetReady().GetSessionSeq() != 7 {
+		t.Fatalf("first event = %v, want ready with the number 7", ev)
+	}
+	setSeq(9)
+	for {
+		hb := w.next(t).GetHeartbeat()
+		if hb == nil {
+			t.Fatal("event is not a heartbeat")
+		}
+		if hb.GetSessionSeq() == 9 {
+			return
+		}
+		if hb.GetSessionSeq() != 7 {
+			t.Fatalf("heartbeat number = %d, want 7 or 9", hb.GetSessionSeq())
+		}
 	}
 }

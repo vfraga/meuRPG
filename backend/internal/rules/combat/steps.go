@@ -2,6 +2,7 @@ package combat
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -22,6 +23,9 @@ const (
 	StepResistance    = "resistance"
 	StepVulnerability = "vulnerability"
 	StepImmunity      = "immunity"
+	// StepReduction is a flat amount taken once off a weapon attack's damage, before resistance and
+	// vulnerability (those two apply last, after every other adjustment).
+	StepReduction = "reduction"
 )
 
 // QualifierNonmagical limits a Modifier to the damage of attacks that are not magical.
@@ -50,6 +54,9 @@ type Modifier struct {
 	Qualifier string `json:",omitempty"`
 	// Hidden says the source is an effect the master keeps from the players: a player reads no name for it.
 	Hidden bool `json:"hidden,omitempty"`
+	// Amount is what a StepReduction takes off the damage; it covers every damage type of a weapon
+	// attack (and, with QualifierNonmagical, only a weapon attack that is not magical).
+	Amount int `json:",omitempty"`
 }
 
 // Origin says where a damage comes from, for the modifiers that depend on it. The zero
@@ -59,6 +66,9 @@ type Origin struct {
 	// Attack says the damage is that of an attack (a weapon, a spell attack, the damage
 	// of a spell).
 	Attack bool `json:"attack,omitempty"`
+	// Weapon says the attack is made with a weapon (or an unarmed strike), not with a spell: the
+	// damage reductions cover only these.
+	Weapon bool `json:"weapon,omitempty"`
 	// Magical says the attack is magical: a spell, a magic weapon, a creature's attack
 	// with the trait "Magic Weapons", an attack the sheet marks.
 	Magical bool `json:"magical,omitempty"`
@@ -69,6 +79,9 @@ type Origin struct {
 
 // Covers says the modifier applies to a damage of this type from this origin.
 func (m Modifier) Covers(damageType string, from Origin) bool {
+	if m.Kind == StepReduction {
+		return m.coversReduction(from)
+	}
 	if !slices.Contains(m.DamageTypes, damageType) && !slices.Contains(m.DamageTypes, rules.DamageTypeAll) {
 		return false
 	}
@@ -83,6 +96,15 @@ func (m Modifier) Covers(damageType string, from Origin) bool {
 		return from.Attack && !from.Magical && !from.Adamantine
 	}
 	return false
+}
+
+// coversReduction says a StepReduction applies to this origin: it covers every damage type of a
+// weapon attack (only one that is not magical, with QualifierNonmagical).
+func (m Modifier) coversReduction(from Origin) bool {
+	if !from.Attack || !from.Weapon {
+		return false
+	}
+	return m.Qualifier == "" || (m.Qualifier == QualifierNonmagical && !from.Magical)
 }
 
 // Step is one change to a damage: what it was before, and after, and where it came from.
@@ -125,9 +147,12 @@ func Adjust(amount int, damageType string, mods []Modifier, ignored []string, fr
 		}
 		return sources, qualifier
 	}
-	var steps []Step
+	amount, steps, spent := reduceFirst(amount, damageType, mods, ignored, from)
+	if spent {
+		return 0, steps
+	}
 	if src, q := covering(StepImmunity); len(src) > 0 {
-		return 0, []Step{{Kind: StepImmunity, Sources: src, DamageType: damageType, Before: amount, After: 0, Qualifier: q}}
+		return 0, append(steps, Step{Kind: StepImmunity, Sources: src, DamageType: damageType, Before: amount, After: 0, Qualifier: q})
 	}
 	if src, q := covering(StepResistance); len(src) > 0 {
 		after := amount / 2 // rounded down (Player's Handbook, "Rounding Down")
@@ -140,4 +165,70 @@ func Adjust(amount int, damageType string, mods []Modifier, ignored []string, fr
 		amount = after
 	}
 	return amount, steps
+}
+
+// reduceFirst takes the flat reductions off the damage before every other adjustment. It returns
+// the damage left, the step (none when nothing is taken) and whether the damage is spent (0).
+func reduceFirst(amount int, damageType string, mods []Modifier, ignored []string, from Origin) (int, []Step, bool) {
+	step, ok := reduction(amount, damageType, mods, ignored, from)
+	if !ok {
+		return amount, nil, false
+	}
+	return step.After, []Step{step}, step.After == 0
+}
+
+// reduction is the step of the flat reductions on the damage of one type.
+func reduction(amount int, damageType string, mods []Modifier, ignored []string, from Origin) (Step, bool) {
+	step, after, ok := Reduce(map[string]int{damageType: amount}, mods, ignored, from)
+	if !ok {
+		return Step{}, false
+	}
+	step.DamageType, step.After = damageType, after[damageType]
+	return step, true
+}
+
+// Reduce takes the flat reductions that cover the attack off its damage once: every covering
+// amount adds (two entries of one source add too), each source is named once, and the total is
+// taken from the types largest first (ties by the type key) until it is spent or the damage is
+// 0. The step is of the whole attack, so it has no damage type. It reports false when nothing is
+// taken.
+func Reduce(byType map[string]int, mods []Modifier, ignored []string, from Origin) (Step, map[string]int, bool) {
+	step := Step{Kind: StepReduction}
+	reduce, plain := 0, false
+	for _, m := range mods {
+		if m.Kind != StepReduction || m.Amount <= 0 || !m.Covers("", from) || slices.Contains(ignored, m.Source) {
+			continue
+		}
+		reduce += m.Amount
+		if !slices.Contains(step.Sources, m.Source) {
+			step.Sources = append(step.Sources, m.Source)
+		}
+		plain = plain || m.Qualifier == ""
+		step.Qualifier = m.Qualifier
+	}
+	if plain {
+		step.Qualifier = ""
+	}
+	types := make([]string, 0, len(byType))
+	for t, n := range byType {
+		step.Before += max(n, 0)
+		types = append(types, t)
+	}
+	if reduce == 0 || step.Before == 0 {
+		return Step{}, nil, false
+	}
+	slices.SortFunc(types, func(a, b string) int {
+		if byType[a] != byType[b] {
+			return byType[b] - byType[a]
+		}
+		return strings.Compare(a, b)
+	})
+	after := make(map[string]int, len(byType))
+	for _, t := range types {
+		taken := min(reduce, max(byType[t], 0))
+		after[t] = max(byType[t], 0) - taken
+		reduce -= taken
+		step.After += after[t]
+	}
+	return step, after, true
 }

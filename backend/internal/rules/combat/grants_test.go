@@ -175,3 +175,26 @@ func TestAFeatureSummonIsOutsideTheTurnsSpellLimit(t *testing.T) {
 		t.Errorf("a bonus action spell after a spell (the control) = %+v, want BONUS_ACTION_SPELL_LIMIT", s)
 	}
 }
+
+// A grant that costs more than one use needs that many left, in a fight and outside one.
+func TestAGrantedSpellNeedsItsWholeCost(t *testing.T) {
+	t.Parallel()
+	costly := func(g *rules.GrantedSpell) { limited(g); g.Cost, g.NoMaterialComponents = 2, true }
+	d := rules.Derived{
+		GrantedSpells: []rules.GrantedSpell{grantedSpell("spell:misty-step", 2, costly)},
+		Resources:     []rules.Resource{{Key: "usos_da_graca", Max: 3, Recharge: rules.RechargeLongRest}},
+	}
+	for _, c := range []struct {
+		used    int
+		enabled bool
+	}{{0, true}, {1, true}, {2, false}, {3, false}} {
+		u := Usage{ResourcesUsed: map[string]int{"usos_da_graca": c.used}}
+		step := spellOptionFor(t, Options(d, TurnState{}, u), "spell:misty-step")
+		if step.Enabled != c.enabled || step.Grant.Cost != 2 || !step.Grant.NoMaterialComponents {
+			t.Errorf("%d used: option = %+v, want enabled %v, cost 2, no material", c.used, step, c.enabled)
+		}
+		if out := OutsideSpells(d, u); out[0].Enabled() != c.enabled || out[0].Grants[0].Ready() != c.enabled {
+			t.Errorf("%d used: outside = %+v, want enabled %v", c.used, out[0], c.enabled)
+		}
+	}
+}

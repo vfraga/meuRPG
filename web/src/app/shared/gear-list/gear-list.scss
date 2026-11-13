@@ -109,3 +109,33 @@
   font-size: var(--mr-font-14);
   font-weight: 600;
 }
+
+.gear-row__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+}
+
+// The weapon's marks menu: a quiet 44 px target beside "Equipar" / "Guardar".
+.gear-row__more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--mr-radius-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mr-accent-soft, transparent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-accent);
+    outline-offset: 2px;
+  }
+}

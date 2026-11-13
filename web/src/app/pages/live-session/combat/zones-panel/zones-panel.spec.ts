@@ -47,7 +47,50 @@ const click = (el: Element | null, f: { detectChanges: () => void }) => {
 const button = (el: HTMLElement, text: string) =>
   [...el.querySelectorAll('button')].find((b) => plain(b.textContent).includes(text)) ?? null;
 
+const more = (el: HTMLElement, i: number) =>
+  el.querySelectorAll<HTMLButtonElement>('.zp__card .zp__more')[i];
+const words = (i: Element) => {
+  const copy = i.cloneNode(true) as HTMLElement;
+  copy.querySelectorAll('mat-icon').forEach((m) => m.remove());
+  return plain(copy.textContent);
+};
+const items = () => [...document.querySelectorAll('[role="menuitem"]')].map(words);
+const menuText = (i: Element) => plain(i.textContent);
+async function open(
+  f: { detectChanges: () => void; whenStable: () => Promise<unknown> },
+  el: HTMLElement,
+  i: number,
+) {
+  more(el, i).click();
+  f.detectChanges();
+  await f.whenStable();
+  f.detectChanges();
+}
+async function choose(
+  f: { detectChanges: () => void; whenStable: () => Promise<unknown> },
+  text: string,
+) {
+  [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+    .find((i) => menuText(i).includes(text))!
+    .click();
+  f.detectChanges();
+  await f.whenStable();
+  f.detectChanges();
+  await f.whenStable();
+}
+
 describe('ZonesPanel', () => {
+  it('gives each card its letter, in the diamond and for a screen reader', () => {
+    const { el } = mount([spellZone({ id: 'a' }), spellZone({ id: 'b', spellNamePt: 'Teia' })]);
+    const cards = el.querySelectorAll('.zp__card');
+    const names = [...cards].map((c) =>
+      c.querySelector('.zp__letter [role="img"]')?.getAttribute('aria-label'),
+    );
+    expect(names).toEqual(['Zona A', 'Zona B']);
+    const named = cards[1].querySelector('.zp__letter [role="img"]');
+    expect(named?.getAttribute('aria-label')).toBe('Zona B');
+  });
+
   it('draws nothing for an empty list', () => {
     const { el } = mount([]);
     expect(el.querySelector('section')).toBeNull();
@@ -111,8 +154,10 @@ describe('ZonesPanel', () => {
       ],
       { master: false },
     );
-    const card = plain(el.querySelector('li')!.textContent);
-    expect(card).toBe('Raio Lunar · Bartolo Cilindro de 1,5 m de raio');
+    const card = el.querySelector('li')!;
+    expect(card.querySelector('[role="img"]')?.getAttribute('aria-label')).toBe('Zona A');
+    expect(plain(card.querySelector('.zp__name')?.textContent)).toBe('Raio Lunar · Bartolo');
+    expect(plain(card.querySelector('.zp__detail')?.textContent)).toBe('Cilindro de 1,5 m de raio');
     expect(el.querySelector('button')).toBeNull();
   });
 
@@ -121,68 +166,78 @@ describe('ZonesPanel', () => {
     expect(plain(el.querySelector('li')!.textContent)).toContain('Só você vê');
   });
 
-  it('offers "Mover" only for a zone that moves by an action, and says which zone to the page', () => {
-    const { fixture, el } = mount([
-      spellZone({ id: 'a' }),
-      spellZone({ id: 'b', spellNamePt: 'Teia', movement: SpellZoneMovement.FIXED }),
-    ]);
-    const moves = [...el.querySelectorAll('button')].filter((b) =>
-      plain(b.textContent).endsWith('Mover'),
-    );
-    expect(moves.length).toBe(1);
+  it('has one "Mais ações" button per card, named for the zone, and no other action button in the card', () => {
+    const { el } = mount([spellZone({ id: 'a' }), spellZone({ id: 'b', spellNamePt: 'Teia' })]);
+    const buttons = [...el.querySelectorAll('.zp__card button')];
+    expect(buttons).toHaveLength(2);
+    const label = el.querySelector('.zp__name')!.firstChild!.textContent!.trim();
+    expect(buttons[0].getAttribute('aria-label')).toBe(`Mais ações de ${label}`);
+    expect(plain(buttons[0].textContent)).toContain('Mais ações');
+    expect(buttons[0].getAttribute('aria-haspopup')).toBe('menu');
+  });
+
+  it('offers "Mover" in the menu for a zone that moves by an action, and says which zone to the page', async () => {
+    const { fixture, el } = mount([spellZone({ id: 'a' })]);
     const seen: string[] = [];
     fixture.componentInstance.move.subscribe((id: string) => seen.push(id));
-    click(moves[0], fixture);
+    await open(fixture, el, 0);
+    expect(items()).toEqual(['Mover', 'Encerrar zona']);
+    await choose(fixture, 'Mover');
     expect(seen).toEqual(['a']);
   });
 
-  it("keeps the buttons of the master out of a player's panel", () => {
-    const { el } = mount([spellZone({ id: 'a' })], { master: false });
-    expect(button(el, 'Encerrar')).toBeNull();
-    expect(button(el, 'Mover')).toBeNull();
+  it('offers only "Encerrar zona" for a zone that does not move', async () => {
+    const { fixture, el } = mount([
+      spellZone({ id: 'b', spellNamePt: 'Teia', movement: SpellZoneMovement.FIXED }),
+    ]);
+    await open(fixture, el, 0);
+    expect(items()).toEqual(['Encerrar zona']);
   });
 
-  it('asks before ending a zone, and "Não" closes the question without a call', () => {
+  it("shows no button at all in a player's panel", () => {
+    const { el } = mount([spellZone({ id: 'a' })], { master: false });
+    expect(el.querySelector('.zp__card button')).toBeNull();
+  });
+
+  it('asks before ending a zone, and "Não" closes the question without a call and gives the focus back to "Mais ações"', async () => {
     const { fixture, el } = mount([spellZone({ id: 'a' })]);
+    document.body.appendChild(el);
     const ended: string[] = [];
     fixture.componentInstance.end.subscribe((id: string) => ended.push(id));
-    click(button(el, 'Encerrar zona'), fixture);
+    await open(fixture, el, 0);
+    await choose(fixture, 'Encerrar zona');
     expect(plain(el.textContent)).toContain('Encerrar a zona?');
+    expect(document.activeElement).toBe(button(el, 'Não'));
     click(button(el, 'Não'), fixture);
+    await fixture.whenStable();
     expect(plain(el.textContent)).not.toContain('Encerrar a zona?');
     expect(ended).toEqual([]);
+    expect(document.activeElement).toBe(more(el, 0));
+    el.remove();
   });
 
-  it('ends the zone only on "Sim, encerrar"', () => {
+  it('ends the zone only on "Sim, encerrar", and says a refusal in place', async () => {
     const { fixture, el } = mount([
       spellZone({ id: 'a' }),
       spellZone({ id: 'b', spellNamePt: 'Teia' }),
     ]);
     const ended: string[] = [];
     fixture.componentInstance.end.subscribe((id: string) => ended.push(id));
-    click(el.querySelectorAll('li')[1].querySelector('button.zp__end'), fixture);
+    await open(fixture, el, 1);
+    await choose(fixture, 'Encerrar zona');
     expect(el.querySelectorAll('.zp__confirm').length).toBe(1);
+    fixture.componentRef.setInput('error', 'Só o mestre encerra uma zona.');
+    fixture.detectChanges();
+    expect(el.querySelector('[role="alert"]')?.textContent).toContain('Só o mestre encerra');
     click(button(el, 'Sim, encerrar'), fixture);
     expect(ended).toEqual(['b']);
   });
 
-  it('puts the focus on "Não" when the question opens, and says a refusal in place', async () => {
-    const { fixture, el } = mount([spellZone({ id: 'a' })]);
-    document.body.appendChild(el);
-    click(button(el, 'Encerrar zona'), fixture);
-    await fixture.whenStable();
-    expect(document.activeElement).toBe(button(el, 'Não'));
-    fixture.componentRef.setInput('error', 'Só o mestre encerra uma zona.');
-    fixture.detectChanges();
-    expect(el.querySelector('[role="alert"]')?.textContent).toContain('Só o mestre encerra');
-    el.remove();
-  });
-
-  it('holds the buttons while a call is in the air', () => {
+  it('holds the button while a call is in the air', () => {
     const { fixture, el } = mount([spellZone({ id: 'a' })]);
     fixture.componentRef.setInput('busy', true);
     fixture.detectChanges();
-    expect((button(el, 'Encerrar zona') as HTMLButtonElement).disabled).toBe(true);
+    expect((more(el, 0) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('keeps every button at least 44 px tall', () => {
@@ -200,7 +255,7 @@ describe('ZonesPanel', () => {
     setZones([spellZone({ id: 'a' }), spellZone({ id: 'b', spellNamePt: 'Teia' })]);
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(plain(live.textContent)).toBe('Zona criada: Teia · Bartolo.');
+    expect(plain(live.textContent)).toBe('Zona criada: B, Teia · Bartolo.');
     setZones([]);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -213,6 +268,6 @@ describe('ZonesPanel', () => {
     setZones([spellZone({ id: 'a' })]);
     await fixture.whenStable();
     fixture.detectChanges();
-    expect(plain(live.textContent)).toBe('Zona criada: Raio Lunar · Bartolo.');
+    expect(plain(live.textContent)).toBe('Zona criada: A, Raio Lunar · Bartolo.');
   });
 });

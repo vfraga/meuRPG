@@ -58,3 +58,18 @@
   padding: 0;
   list-style: none;
 }
+
+.gear__lock {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  margin: var(--mr-space-2) 0 0;
+  font-size: var(--mr-font-14);
+
+  .mat-icon {
+    flex: none;
+    width: var(--mr-font-18);
+    height: var(--mr-font-18);
+    font-size: var(--mr-font-18);
+  }
+}

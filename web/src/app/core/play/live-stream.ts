@@ -67,6 +67,9 @@ export class LiveStream {
   private controller: AbortController | null = null;
   private attempt = 0;
   private restarts = 0;
+  /** The session's hint number the page is up to date with: from `ready`, and after each re-read a heartbeat asked for. */
+  private seenSeq = 0;
+  private catchingUp = false;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private deadTimer: ReturnType<typeof setTimeout> | null = null;
   private hiddenTimer: ReturnType<typeof setTimeout> | null = null;
@@ -125,6 +128,8 @@ export class LiveStream {
     }
     const controller = new AbortController();
     this.controller = controller;
+    // A re-read that began on the connection before this one no longer holds the new one back.
+    this.catchingUp = false;
     this.armDeadTimer();
     try {
       for await (const event of this.options.open(controller.signal)) {
@@ -158,7 +163,10 @@ export class LiveStream {
     if (event.kind === 'ready') {
       this.attempt = 0;
       this.status.set('live');
+      this.seenSeq = event.sessionSeq ?? 0;
       this.options.handlers.onReady();
+    } else if (event.kind === 'heartbeat') {
+      this.heartbeat(event.sessionSeq);
     } else if (event.kind === 'ended') {
       this.stop();
       this.options.handlers.onEnded();
@@ -167,6 +175,32 @@ export class LiveStream {
       routeEvent(this.options.handlers, event);
     }
     return 'more';
+  }
+
+  /** A heartbeat with a number ahead of `seenSeq` means a hint was lost (the per-event numbers are not compared: they are not in order):
+   * the page reads again, once, and only a read that worked moves `seenSeq`. One that is equal or behind, or has no number, does nothing. */
+  private heartbeat(sessionSeq: number | undefined): void {
+    const behind = this.options.handlers.onBehind;
+    if (sessionSeq === undefined || sessionSeq <= this.seenSeq || this.catchingUp || !behind) {
+      return;
+    }
+    const controller = this.controller;
+    this.catchingUp = true;
+    void behind()
+      .then(
+        (ok) => ok,
+        () => false,
+      )
+      .then((ok) => {
+        // A newer connection set its own number from its own `ready`, and its own re-read state.
+        if (controller !== this.controller) {
+          return;
+        }
+        this.catchingUp = false;
+        if (ok) {
+          this.seenSeq = Math.max(this.seenSeq, sessionSeq);
+        }
+      });
   }
 
   /** The connection failed on its own: a fatal error ends the stream, the session being over too, and any other

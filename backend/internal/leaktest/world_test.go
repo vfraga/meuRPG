@@ -745,8 +745,15 @@ func (w *world) buildTableContent() {
 	// A spell the rules refuse after it was stored (a level above 9): it is left out of the content,
 	// and only the master reads that in left_out. The players still list the stored entry, as the table's.
 	leftOut := create("spell-left-out", spell(w.ana, w.caio), w.ana, w.caio)
-	if _, err := w.pool.Exec(ctx, `UPDATE campaign_content SET data = jsonb_set(data, '{level}', '12') WHERE campaign_id = $1 AND content_key = $2`, w.campaign, leftOut.GetKey()); err != nil {
-		w.t.Fatalf("refuse the stored spell: %v", err)
+	// A second one, which the master retired ("Remover"): it is left out too, and nobody reads its name but the master,
+	// not as an entry and not in left_out, where it no longer is.
+	retiredLeftOut := create("spell-left-out-retired", spell())
+	must(m.table.ArchiveTableEntry(ctx, rq(&rulesv1.ArchiveTableEntryRequest{CampaignId: w.campaign, Key: retiredLeftOut.GetKey()})))
+	w.leftOutKey, w.retiredLeftOutKey, w.retiredLeftOutName = leftOut.GetKey(), retiredLeftOut.GetKey(), retiredLeftOut.GetNamePt()
+	for _, key := range []string{leftOut.GetKey(), retiredLeftOut.GetKey()} {
+		if _, err := w.pool.Exec(ctx, `UPDATE campaign_content SET data = jsonb_set(data, '{level}', '12') WHERE campaign_id = $1 AND content_key = $2`, w.campaign, key); err != nil {
+			w.t.Fatalf("refuse the stored spell: %v", err)
+		}
 	}
 	if _, err := w.pool.Exec(ctx, `UPDATE campaign_content_state SET revision = revision + 1 WHERE campaign_id = $1`, w.campaign); err != nil {
 		w.t.Fatalf("bump the content revision: %v", err)
@@ -927,3 +934,19 @@ func initiativeOrder(e *playv1.Encounter) string {
 // dragonKey is the legendary creature of the combat: an SRD adult red dragon (3 legendary
 // actions, Legendary Resistance 3/day).
 const dragonKey = "monster:adult-red-dragon"
+
+// placement is where a combatant is put.
+type placement struct {
+	id       string
+	col, row int32
+}
+
+// placeForced moves the combatants to their squares, one after the other in the order given: each move is an event of the
+// combat with a number of its own, so an order that changes from one world to the next (a range over a map) would change the
+// numbers of the lines the moves make and the tests that compare two worlds by them.
+func (w *world) placeForced(by *person, encounterID string, moves ...placement) {
+	w.t.Helper()
+	for _, mv := range moves {
+		must(by.combat.MoveCombatant(w.t.Context(), rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: encounterID, CombatantId: mv.id, IdempotencyKey: newKey(), Col: mv.col, Row: mv.row, Forced: true})))
+	}
+}

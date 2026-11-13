@@ -21,6 +21,7 @@ type NumberKey =
   | 'count'
   | 'cap'
   | 'healPercentMax'
+  | 'usesCost'
   | 'diceSides'
   | 'rangeMultiplier'
   | 'attackBonus'
@@ -160,6 +161,8 @@ export const EFFECT_WRITERS: ReadonlyMap<string, EffectWriter> = new Map<string,
   ['also_with_slot', (d) => (d.alsoWithSlot ? { alsoWithSlot: true } : {})],
   ['ritual_only', (d) => (d.ritualOnly ? { ritualOnly: true } : {})],
   ['counts_as_known', (d) => (d.countsAsKnown ? { countsAsKnown: true } : {})],
+  ['no_material_components', (d) => (d.noMaterialComponents ? { noMaterialComponents: true } : {})],
+  ['uses_cost', positiveNumber('usesCost')],
   ['kind', pickedText('kind')],
   ['damage_types', pickedList('damageTypes')],
   ['conditions', pickedList('conditions')],

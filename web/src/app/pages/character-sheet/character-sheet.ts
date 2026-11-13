@@ -48,6 +48,7 @@ import {
 import { CombatColumn } from './combat-column/combat-column';
 import { EquipmentPanel } from './equipment-panel/equipment-panel';
 import { SheetEquip } from './character-sheet-equip';
+import { openWeaponMarks } from './weapon-marks/weapon-marks-sheet';
 import { CreaturesPanel } from './creatures-panel/creatures-panel';
 import { FeaturesPanel } from './features-panel/features-panel';
 import { MasterNotes } from './master-notes/master-notes';
@@ -351,6 +352,12 @@ export class CharacterSheetPage {
       const st = this.state();
       return st.status === 'ready' && st.vm.sheet.kind === 'full' ? st.vm.sheet : null;
     },
+    vm: () => {
+      const st = this.state();
+      return st.status === 'ready' ? st.vm : null;
+    },
+    apply: (characterId, vm) => this.applyWrite(characterId, vm),
+    openMarksSheet: (data) => openWeaponMarks(this.dialog, this.bottomSheet, data),
   });
 
   /** Reads the character again without the loading state, so the page does not blink; `true` when the new sheet is on screen. */

@@ -159,6 +159,26 @@ describe('ActionGroups: "Sacar ou guardar" (#562)', () => {
     expect(el.querySelector('.gear-row__button')).toBeNull();
   });
 
+  it('shows the marks of a weapon as tags on its row, in words, and none on a plain weapon or the shield', async () => {
+    const { el } = await setup({
+      gear: [
+        { ...sword, marks: { silvered: true, adamantine: false, magical: true } },
+        { ...mace, marks: { silvered: false, adamantine: false, magical: false } },
+        shield,
+      ],
+    });
+    const tags = (name: string) =>
+      Array.from(el.querySelectorAll('.gear-row'))
+        .find((r) => r.querySelector('.gear-row__name')!.textContent!.trim() === name)!
+        .querySelectorAll('.weapon-tags li');
+    expect(Array.from(tags('Espada longa')).map((li) => li.textContent)).toEqual([
+      expect.stringContaining('Prateada'),
+      expect.stringContaining('Mágica'),
+    ]);
+    expect(tags('Maça')).toHaveLength(0);
+    expect(tags('Escudo')).toHaveLength(0);
+  });
+
   it('shows no fold without gear', async () => {
     const { el } = await setup({ gear: [] });
     expect(el.textContent).not.toContain('Sacar ou guardar');

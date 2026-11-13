@@ -1,0 +1,84 @@
+@if (part() === 'shape') {
+  <div class="seg" role="radiogroup" aria-label="Forma da muralha">
+    <label class="seg__opt">
+      <input type="radio" class="mr-visually-hidden" [name]="id + '-shape'" [checked]="!wall().ring" [disabled]="disabled()" (change)="shape(false)" />
+      <mat-icon aria-hidden="true">{{ wall().ring ? 'horizontal_rule' : 'check' }}</mat-icon>Linha reta
+    </label>
+    <label class="seg__opt">
+      <input type="radio" class="mr-visually-hidden" [name]="id + '-shape'" [checked]="wall().ring" [disabled]="disabled()" (change)="shape(true)" />
+      <mat-icon aria-hidden="true">{{ wall().ring ? 'check' : 'radio_button_unchecked' }}</mat-icon>Anel
+    </label>
+  </div>
+  <div class="status" role="status">
+    @if (loading()) {
+      <p class="status__line"><mat-icon aria-hidden="true">hourglass_empty</mat-icon>Calculando onde a muralha fica…</p>
+    }
+    @if (stops(); as why) {
+      <p class="status__warn"><mat-icon aria-hidden="true">warning</mat-icon>{{ why }}</p>
+    }
+  </div>
+} @else {
+  @if (!wall().ring) {
+    <div class="block">
+      <span class="cap" [id]="id + '-dir'">Direção da muralha</span>
+      <div class="pad" role="group" [attr.aria-label]="padLabel()">
+        @for (c of pad; track $index) {
+          @if (c; as cell) {
+            <button
+              type="button"
+              class="pad__btn"
+              [attr.aria-label]="'Para o ' + cell.word"
+              [attr.aria-pressed]="chosen(cell.direction)"
+              [disabled]="disabled()"
+              (click)="turn(cell.direction)"
+            >
+              <mat-icon aria-hidden="true">{{ cell.icon }}</mat-icon>
+            </button>
+          } @else {
+            <span class="pad__mid" aria-hidden="true"></span>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <div class="block">
+    <span class="cap" [id]="id + '-len'">{{ wall().ring ? 'Diâmetro' : 'Comprimento' }}</span>
+    <div class="stepper" role="group" [attr.aria-labelledby]="id + '-len'">
+      <button
+        type="button"
+        class="stepper__btn"
+        [attr.aria-label]="'Diminuir o ' + noun() + ' em ' + step()"
+        [attr.aria-disabled]="atLeast() ? 'true' : null"
+        [disabled]="disabled()"
+        (click)="longer(-1)"
+      ><mat-icon aria-hidden="true">remove</mat-icon></button>
+      <output class="stepper__value" [attr.aria-label]="(wall().ring ? 'Diâmetro: ' : 'Comprimento: ') + lengthText()">{{ lengthText() }}</output>
+      <button
+        type="button"
+        class="stepper__btn"
+        [attr.aria-label]="'Aumentar o ' + noun() + ' em ' + step()"
+        [attr.aria-disabled]="atMost() ? 'true' : null"
+        [disabled]="disabled()"
+        (click)="longer(1)"
+      ><mat-icon aria-hidden="true">add</mat-icon></button>
+    </div>
+    <p class="note">{{ lengthNote() }}</p>
+  </div>
+
+  <div class="block">
+    <span class="cap">Lado que queima</span>
+    <div class="seg" role="radiogroup" aria-label="Lado que queima">
+      @for (s of sides(); track s.side) {
+        <label class="seg__opt">
+          <input type="radio" class="mr-visually-hidden" [name]="id + '-side'" [checked]="wall().side === s.side" [disabled]="disabled()" (change)="side(s.side)" />
+          <mat-icon aria-hidden="true">{{ wall().side === s.side ? 'check' : s.icon }}</mat-icon>{{ s.label }}
+        </label>
+      }
+    </div>
+    @if (!picked()) {
+      <p class="status__warn"><mat-icon aria-hidden="true">warning</mat-icon><strong>Escolha o lado</strong></p>
+    }
+    <p class="note">{{ sideNote() }}</p>
+  </div>
+}

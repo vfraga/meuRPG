@@ -416,7 +416,11 @@ func (s *Service) readEffectSaveFacts(ctx context.Context, c *combatTx, x *effec
 	if f.sheet, err = s.sheetOf(ctx, c.tx, c.session.CampaignID, x.reactor); err != nil {
 		return f, err
 	}
-	f.creature = creatureFacts(x.reactor, f.states, f.sheet.Traits)
+	sun, err := s.sunlightOf(ctx, c.q, c.enc)
+	if err != nil {
+		return f, err
+	}
+	f.creature = sun.facts(creatureFacts(x.reactor, f.states, f.sheet.Traits), x.reactor)
 	against := effectSaveAgainst(conv.OrZero(x.st.SourceKey), x.def)
 	if x.zone != nil { // a zone is a spell's: its save is against magic and what the spell imposes
 		against = effectAgainst(x.zone.z.row.SpellKey, nil)

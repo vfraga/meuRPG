@@ -341,10 +341,18 @@ message WatchTableScreenResponse {
   }
 
   // Ready is the stream's first event.
-  message Ready {}
+  message Ready {
+    // The session's hint number when the stream opened (see WatchGameSessionResponse.session_seq): the TV reads the screen
+    // after Ready, so what it reads includes every write up to this number. 0 when there is no open session.
+    int64 session_seq = 1;
+  }
 
-  // Heartbeat carries nothing.
-  message Heartbeat {}
+  // Heartbeat tells the TV the stream is alive and the session's hint number now.
+  message Heartbeat {
+    // The session's hint number now; 0 when the server could not read it. A number ahead of the last one the TV saw
+    // means a hint was lost: the TV reads the screen again once.
+    int64 session_seq = 1;
+  }
 
   // Changed carries nothing.
   message Changed {}

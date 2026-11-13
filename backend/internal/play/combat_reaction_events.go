@@ -127,35 +127,35 @@ func windowClosedMessage(encounterID, windowID string, byItself bool, text strin
 	}}
 }
 
-// publishReactions tells, after the commit, the windows a change opened and closed:
+// tellReactions tells, after the commit, the windows a change opened and closed:
 // to the reactor's player and to the master, nobody else (RN-10); the others read the
 // change of the wait in the combat. It also tells the vitals a replayed action
-// changed.
-func (s *Service) publishReactions(ctx context.Context, campaignID string, res combatResult) {
-	if res.repeated || (len(res.notes) == 0 && len(res.tellIDs) == 0) {
+// changed. It is a step of hints.after: say sends the events with the session's number.
+func (s *Service) tellReactions(ctx context.Context, say func(string, live.Event), campaignID, encounterID string, notes []reactionNote, tellIDs []string) {
+	if len(notes) == 0 && len(tellIDs) == 0 {
 		return
 	}
-	cs, err := s.queries.ListCombatants(ctx, res.encounterID)
+	cs, err := s.queries.ListCombatants(ctx, encounterID)
 	if err != nil {
 		s.logger.WarnContext(ctx, "play: cannot read the combatants to tell the reactions", "error", err)
 		return
 	}
 	byID := combatantsByID(cs)
-	for _, n := range res.notes {
-		s.publishNote(campaignID, res.encounterID, n, byID)
+	for _, n := range notes {
+		tellNote(say, campaignID, encounterID, n, byID)
 	}
-	for _, id := range res.tellIDs {
+	for _, id := range tellIDs {
 		if x, ok := byID[id]; ok && x.Kind == kindPlayer {
-			if v, err := s.vitals.GetVitals(ctx, campaignID, x.CharacterID); err == nil {
-				s.publishVitals(campaignID, v)
+			if v, err := s.vitals.GetVitals(ctx, campaignID, x.CharacterID); err == nil && v != nil {
+				say(campaignID, vitalsHint(v))
 			}
 		}
 	}
 }
 
-// publishNote tells one window that opened or closed to its reactor's player and to the
+// tellNote tells one window that opened or closed to its reactor's player and to the
 // master.
-func (s *Service) publishNote(campaignID, encounterID string, n reactionNote, byID map[string]playdb.Combatant) {
+func tellNote(say func(string, live.Event), campaignID, encounterID string, n reactionNote, byID map[string]playdb.Combatant) {
 	w := n.window
 	reactor, hasReactor := byID[conv.OrZero(w.ReactorID)]
 	audience := []live.Audience{{Master: true}}
@@ -164,14 +164,14 @@ func (s *Service) publishNote(campaignID, encounterID string, n reactionNote, by
 	}
 	for i, a := range audience {
 		if n.opened {
-			s.hub.Publish(campaignID, live.Event{Audience: a, Message: windowOpenedMessage(encounterID, w.ID)})
+			say(campaignID, live.Event{Audience: a, Message: windowOpenedMessage(encounterID, w.ID)})
 			continue
 		}
 		text := ""
 		if n.byItself {
 			text = closedText(n, reactor, hasReactor, i == 0)
 		}
-		s.hub.Publish(campaignID, live.Event{Audience: a, Message: windowClosedMessage(encounterID, w.ID, n.byItself, text)})
+		say(campaignID, live.Event{Audience: a, Message: windowClosedMessage(encounterID, w.ID, n.byItself, text)})
 	}
 }
 

@@ -156,6 +156,10 @@ type Build struct {
 	// WeaponMarks say which of the Weapons is silvered, adamantine or magical (at most
 	// MaxWeapons, one per weapon, each setting something).
 	WeaponMarks []WeaponMark
+	// ItemBonuses give a magic bonus (+1 to +3) to the armor, the shield or a weapon of the sheet.
+	// There are at most MaxCarried, one per piece.
+	// A bonus counts only while the piece is equipped and, when it asks for attunement, attuned.
+	ItemBonuses []ItemBonus `json:",omitempty"`
 	// Cantrips are level-0 spells. SpellsKnown is the list of spells the
 	// character knows (the wizard's spellbook, the sorcerer's known
 	// spells). SpellsPrepared are the prepared ones, for classes that
@@ -256,7 +260,8 @@ func (c *Content) WithRefused(refused []Refused) *Content {
 	return &Content{c: c.c, refused: refused}
 }
 
-// Refused lists the stored entries the content was built without, in key order.
+// Refused lists the stored entries the content was built without that the master still has to fix, in key order.
+// An entry the master archived is not listed, nor is what it took with it.
 // It is empty for a content built from every entry.
 func (c *Content) Refused() []Refused { return slices.Clone(c.refused) }
 
@@ -670,7 +675,15 @@ type Derived struct {
 	PassivePerception    int
 	PassiveInvestigation int
 	PassiveInsight       int
-	Initiative           int
+	// HitDieMinimum is the least hit points a hit die spent on a short rest gives back (the hitdie.minimum
+	// modifier), 0 when nothing sets one.
+	HitDieMinimum int
+	// CarryCapacityLb is the carrying capacity in pounds: 15 times the Strength score, then the
+	// carry.capacity modifiers, 0 to MaxCarryCapacityLb.
+	CarryCapacityLb int
+	// DamageReductions are the flat reductions of weapon damage the features give, one per feature and kind.
+	DamageReductions []DamageReduction `json:",omitempty"`
+	Initiative       int
 	// ArmorClass is the best AC with the worn armor and shield, and
 	// ArmorClassDescription says in Portuguese how it was computed, such as
 	// "Sem armadura" or "Armadura de couro + escudo".
@@ -679,6 +692,10 @@ type Derived struct {
 	// ShieldIdle says the build carries a shield that adds nothing to ArmorClass
 	// because a two-handed weapon is on the sheet.
 	ShieldIdle bool
+	// ItemModifiers lists the magic bonuses of the gear (Build.ItemBonuses) with their source.
+	// It keeps the order of the bonuses, the counting ones and the ones that add nothing now.
+	// ArmorClass, AttackBonus and Damage already include the counting ones.
+	ItemModifiers []ItemModifier `json:",omitempty"`
 	// Gear lists (DeriveGear fills it; Derive leaves it empty, as it is the sheet's projection alone that reads it) the armor, the shield and the weapons the sheet lists, equipped or carried, by the catalog's
 	// names, in the order armor, shield, weapons (see GearPiece).
 	Gear []GearPiece
@@ -760,6 +777,8 @@ type Derived struct {
 	Rerolls []RerollRule `json:",omitempty"`
 	// RollMinimums are the roll_minimum effects of the character, in the order of the effects (rolleffects.go).
 	RollMinimums []RollMinimum `json:",omitempty"`
+	// Flags are the flags of the flag effects that hold, sorted and without repeats (effectflags.go).
+	Flags []string `json:",omitempty"`
 	// AttacksPerAction is how many attacks the Attack action makes: 1, or
 	// the extra_attack effect's count (Extra Attack: 2 at level 5), or a
 	// creature's Multiattack count.
@@ -952,6 +971,29 @@ type PactMagic struct {
 type WeaponMark struct {
 	Weapon                        string
 	Silvered, Adamantine, Magical bool
+}
+
+// ItemBonus is the magic bonus of one piece of the sheet's gear (Build.ItemBonuses). Key
+// is the armor, ShieldKey or a weapon of Build.Weapons; Bonus is 1 to 3. A piece that
+// RequiresAttunement adds its bonus only when it is Attuned.
+type ItemBonus struct {
+	Key                string
+	Bonus              int
+	RequiresAttunement bool
+	Attuned            bool
+}
+
+// ItemModifier is one line of Derived.ItemModifiers: what a magic piece adds to one number
+// of the sheet, and where it comes from. Target is "ac", "attack:<weapon key>" or
+// "damage:<weapon key>". A piece that adds nothing now is listed with Counts false and the
+// reason in ReasonPT.
+type ItemModifier struct {
+	Target       string
+	Value        int
+	SourceKey    string
+	SourceNamePT string
+	Counts       bool
+	ReasonPT     string
 }
 
 // Attack is one line of the sheet's attacks: a weapon or an attack cantrip.

@@ -23,15 +23,21 @@ const (
 // Charisma), and Luz (Light, at will, Intelligence), both with no slot.
 func newGraceParty(t *testing.T) (a *armed, feat string) {
 	t.Helper()
+	return newGracePartyWith(t, []*rulesv1.TableEffect{
+		{Type: "resource", Resource: graceUses, Max: "1", Recharge: "long_rest"},
+		{Type: "granted_spell", Spell: blessKey, Ability: "cha", Uses: graceUses},
+		{Type: "granted_spell", Spell: lightSpell, Ability: "int"},
+	})
+}
+
+// newGracePartyWith is newGraceParty with the effects of the feat the wizard has.
+func newGracePartyWith(t *testing.T, effects []*rulesv1.TableEffect) (a *armed, feat string) {
+	t.Helper()
 	a = newArmedWith(t, func(a *armed) {
 		res, err := a.master.table.CreateTableEntry(t.Context(), connect.NewRequest(&rulesv1.CreateTableEntryRequest{
 			CampaignId: a.campaignID, Body: &rulesv1.CreateTableEntryRequest_TableFeat{TableFeat: &rulesv1.TableFeat{
 				NamePt: "Graça de teste", DescPt: []string{"Um dom de teste."},
-				Effects: []*rulesv1.TableEffect{
-					{Type: "resource", Resource: graceUses, Max: "1", Recharge: "long_rest"},
-					{Type: "granted_spell", Spell: blessKey, Ability: "cha", Uses: graceUses},
-					{Type: "granted_spell", Spell: lightSpell, Ability: "int"},
-				},
+				Effects: effects,
 			}},
 		}))
 		if err != nil {

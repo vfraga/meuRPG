@@ -171,6 +171,21 @@ describe("the line of a creature's rider", () => {
     expect(line(4, 3)).toBe(' usou Garras em Brisa: Brisa falhou no teste (1d20 (4) − 1 = 3)');
   });
 
+  it('says what a table feature raised the d20 to, because the total counts the raised number', () => {
+    expect(
+      rider({
+        choice: HitRiderChoice.APPLY,
+        result: HitRiderLogResult.FAILED,
+        numbers: true,
+        d20: 2,
+        saveTotal: 10,
+        treatedAs: 8,
+        treatedAsSource: 'content:feat-keen',
+        treatedAsSourceName: 'Olho Aguçado',
+      }),
+    ).toBe(' usou Garras em Brisa: Brisa falhou no teste (d20: 2 → 8 (Olho Aguçado) + 2 = 10)');
+  });
+
   it('tells the damage the save governs after the save, and what the player reads of it', () => {
     const base = {
       choice: HitRiderChoice.APPLY,

@@ -47,17 +47,19 @@ sequenceDiagram
 ## The stream
 
 `WatchGameSession` sends `ready` first, after registering the subscription.
+`ready` carries the session's hint number as it stands, so the snapshot read after it includes every write up to that number.
 Only then does the app read the snapshot (`GetLiveSession`), so no change falls in the gap.
 A change may arrive before the snapshot: the `revision` of `CharacterVitals` says which is newer, and for the current map and the shown image the app keeps what the stream said while the snapshot was on its way.
 A snapshot the server refuses for good (`permission_denied`, `invalid_argument`) is not asked again; the page says there is no access or offers "Tentar de novo".
 A reconnection also reads the map, the fog vision and the creatures again.
+A heartbeat whose number is ahead of the page's makes the same reads once ([In the app](#in-the-app)).
 The master's page reads the map again on `xp_changed`, because converting a treasure to XP changes its point and publishes no map event.
 
 Events, after `ready`:
 
 | Event | Meaning |
 | --- | --- |
-| `heartbeat` | Every 25 s (`DefaultHeartbeat`) |
+| `heartbeat` | Every 25 s (`DefaultHeartbeat`); carries the session's hint number ([The hint number](#the-hint-number)) |
 | `vitals_changed` | A character's HP, slots or resources changed; to the master and the owner |
 | `attack_hit` | The master applied the damage of an attack to a player's character (`ApplyPendingDamage`): the pending damage's id, the attacker's name (empty when it is hidden: the sheet says "Alguém acertou você"), the amount that landed and the type in Portuguese. To that character's player only. The sheet says it as the attack's ("A Armadura animada acertou você: 5 de dano de concussão.") and not as "O mestre ajustou", also when the attacker is hidden and its log line is the master's alone; a real adjustment keeps "O mestre ajustou". It carries no hit points: they come with `vitals_changed` |
 | `current_map_changed`, `map_changed`, `token_moved`, `vision_changed`, `trap_noticed` | The map (see [Architecture](../maps/README.md#maps-points-and-tokens)) |
@@ -131,6 +133,13 @@ With the tab hidden for 2 minutes it closes the stream itself and reopens with a
 The session page (`web/src/app/pages/live-session`) follows these rules in `core/play/live-stream.ts`.
 The session's view-models (`live-session.types.ts`) and generated-client source (`live-session-source.live.ts`) sit beside it because `core/` needs them.
 
+The stream keeps `seenSeq`, the hint number the page is up to date with: it takes `ready`'s number at connect.
+A heartbeat with a number above `seenSeq` makes the page read again, once, through the path `ready` uses (`loader.readSnapshot`, which also reads the combat, its log, the conversation and the lists).
+`seenSeq` moves to the heartbeat's number only when that read worked, so a failed read is tried again at the next heartbeat.
+A heartbeat that arrives during a read, or is equal, behind or without a number, does nothing.
+The numbers on events are never compared.
+A new connection starts from its own `ready` and drops a read that began on the old one.
+
 The map page of a player (`/campaigns/:id/maps/:mapId`) follows the table too, through `MapLive` (`pages/maps/map-page/map-live.ts`), a thin client over the same `LiveStream` that translates only the map events.
 The master's map page is the editor and reads again on its own actions and on focus, because its own strokes would echo back as `map_changed`.
 On `map_changed`, `vision_changed` or `trap_noticed` for the map on screen, on any combat event and on `current_map_changed`, it reads the map through `MapState.refresh()`, one read per burst (150 ms).
@@ -139,6 +148,97 @@ A `ready` after the first reads again.
 With no open session the stream ends by itself and opens again when the window regains focus.
 The map page counts as one of the person's streams in the campaign (the cap of 4).
 It adds no read a player could not already make (RN-10).
+
+## The hint number
+
+A hint can be lost, and the stream then shows a number ahead of what the page applied, so the page reads the session again.
+The number is `game_sessions.hint_seq` (`WatchGameSessionResponse.session_seq`), a counter of the writes that told the streams something.
+A stream carries it on `ready` and on every `heartbeat`, and nothing else about the write.
+
+### What moves it
+
+- **One bump per transaction.** A write that tells the streams (`h.tell`) or must still move the screens without an event (`h.touch`) adds 1 to `hint_seq` in its own transaction, however many events it told.
+  The number is saved with the write or not at all.
+- **A write that told nothing leaves it alone.** So does a replay (below), because nothing was written.
+- **Hidden writes move it too.** A write only the master sees bumps the number for everyone.
+  A player who was not told the event is "behind" and reads once at the next heartbeat.
+  That costs one extra read per hidden write within 25 s, and it tells the player nothing about the write.
+- **Only the combat write path counts.** `write`, `changeInTx` and `StartEncounter` run in `Service.tx` (`play/hints.go`).
+  Every other writer of the `play` package tells the streams through `send` after its own `db.InTx`: it does not bump, and its events carry no number.
+  The hints a combat handler tells itself after the write (`finish`) carry none either; the write's own bump covers them.
+  A hint lost by one of those is not detected by the number.
+
+```mermaid
+sequenceDiagram
+    participant H as Handler
+    participant T as Service.tx
+    participant DB as CockroachDB
+    participant S as send, the hub
+    H->>T: tx(session, closure)
+    T->>DB: BEGIN, lock the session row (FOR UPDATE)
+    T->>H: closure(tx, hints)
+    H-->>T: writes, h.tell, h.touch
+    T->>DB: UPDATE hint_seq = hint_seq + 1, once
+    T->>DB: COMMIT
+    T->>S: each told event, stamped with the number
+    T->>S: the after-commit steps, in order
+```
+
+The rules of `Service.tx`:
+
+- The first statement of every attempt locks the session's row, before the closure reads anything, so the writes of one session take turns in one order and cannot deadlock on the bump.
+- The collector is empty at the start of every attempt: a 40001 retry keeps nothing of the attempt the database rolled back.
+- Nothing is sent before the commit.
+  `h.after` queues a step that runs after the told events, for a read of committed state or another module's own sending (the fog of the maps module); it sends through the `say` it is given, which stamps the number.
+- An error sends nothing and leaves the number as it was.
+  An ambiguous commit (`*db.AmbiguousCommitError`, never retried) sends nothing either: the next heartbeat shows the number, if the write did commit.
+- The collector rules for a closure are in [Transactions](../transactions.md#hints-sent-after-the-commit).
+
+### The numbers on events are not ordered
+
+Two writes of a session can commit in one order and send in the other, and a write outside `Service.tx` stamps 0.
+So the number on an event is not compared, deduped or searched for gaps.
+Only `ready` and `heartbeat` carry the session's own number.
+The heartbeat reads it from the database: one read of one row by its key, per stream, per tick.
+A heartbeat that cannot read it carries 0, which the page ignores.
+
+### The funnel
+
+| Function | Use |
+| --- | --- |
+| `Service.send` | The one place in `play` that calls `hub.Publish`; it takes no context and waits for nobody |
+| `Service.tellMembers` | The master's streams always, the players' only when asked; the maps module's `Publish` seam |
+| `Service.publish` in `maps` | The one place in `maps` that calls `Publish`; it passes the event to the play module |
+
+`TestPublishOnlyThroughTheFunnel` fails for a call to `Publish` anywhere else in `internal/play` and `internal/maps`.
+Its exception list (`publish_exceptions.txt`) is empty and can only shrink.
+`TestHintsAreNotSentInsideATransaction` fails for a `send` or `tellMembers` inside a transaction's closure, and for any use of `BumpHintSeq` or the text `hint_seq` outside `Service.tx`; its limits are in [Transactions](../transactions.md#what-the-archtest-sees).
+
+### The replay rule
+
+A repeat of a combat write whose key is stored sends its hints again, with the number as it stands.
+The first call may have committed and died before it sent, and a hint only says "read again", so a second one is harmless.
+The closure calls `h.replay()` and `tellReplayed` fills the collector from what is stored: the master's cast change, the vitals of the combat's players (each to the master and its own player), the open reaction windows, the fog of the combat's map, and for a start the current map.
+The forced moves of a cast, a creature action or a rider answer are worked out from the stored event.
+
+What the stored event does not keep is not recovered:
+
+- a public cast change, because the spell level is not kept;
+- a reaction window that closed, because the combat the retry reads already shows it closed.
+
+The hints `AnswerReaction` tells from its handler after the write (`encounter_changed`, `combat_log_changed`, the answer's vitals) do not go through the collector, so they carry no number.
+A repeat of it sends the generic combat and log hints and the forced moves from the stored event (`publishRetried`), with the vitals coming from the replay's step for the combat's players.
+
+### What the number leaks
+
+The number is an accepted counter exposure: it says that something was written, never what, to whom, or whether it was hidden.
+It is never derived from content, and a kind-specific signal (a hint that says "a hidden NPC moved") is not accepted.
+`backend/internal/leaktest/seq_test.go` holds the rows:
+
+- every field that carries the number or a combat log counter has a row;
+- only a member who may watch the stream is told the number;
+- three worlds that differ only in a hidden write give a player the same number of bumps and the same stream; one of the writes is a hidden event that joins a line the player reads (the master adds a hidden NPC to a firing), which moves neither their `last_seq` nor their stream;
+- a player's `ListCombatLog` with `since_seq` ignores a write they cannot see, and the `last_seq` they read is built only from events they hear of ([Combat log](combat-log.md#reading-the-log-again)).
 
 ## The hub
 

@@ -302,8 +302,8 @@ export class CombatTurnCalls {
   }
 
   /** The combat log, latest first, as the caller may see it. */
-  log(campaignId: string, encounterId: string): Promise<ListCombatLogResponse> {
-    return this.base.client.listCombatLog({ campaignId, encounterId });
+  log(campaignId: string, encounterId: string, sinceSeq = 0n): Promise<ListCombatLogResponse> {
+    return this.base.client.listCombatLog({ campaignId, encounterId, sinceSeq });
   }
 
   /** "Destaques do combate" (MR-032): who did the most in a combat that ended.

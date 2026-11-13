@@ -570,7 +570,7 @@ func (s *Service) publishAttackHit(campaignID string, hit *attackHit) {
 	if hit == nil {
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: live.Audience{UserID: hit.playerUserID},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_AttackHit_{
 			AttackHit: &playv1.WatchGameSessionResponse_AttackHit{Id: hit.pendingID, ActorLabel: hit.actor, Amount: hit.amount, DamageTypePt: hit.typePT},

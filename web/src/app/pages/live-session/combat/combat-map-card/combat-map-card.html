@@ -1,86 +1,133 @@
-<section class="mr-panel card" [class.card--compact]="compact()" [class.card--pick]="!!pick()" aria-labelledby="map-title">
+<section
+  class="mr-panel card"
+  [class.card--compact]="compact()"
+  [class.card--pick]="!!pick()"
+  aria-labelledby="map-title"
+>
   @if (compact()) {
     <div class="bar">
       <mat-icon class="bar__icon" aria-hidden="true">map</mat-icon>
-      <h2 class="bar__chip" id="map-title"><span class="bar__word">Mapa </span><span class="bar__area">{{ title() }}</span></h2>
+      <h2 class="bar__chip" id="map-title">
+        <span class="bar__word">Mapa </span><span class="bar__area">{{ title() }}</span>
+      </h2>
       @if (pick()) {
-        <span class="bar__pick"><mat-icon aria-hidden="true">my_location</mat-icon>Toque no alvo</span>
+        <span class="bar__pick"
+          ><mat-icon aria-hidden="true">my_location</mat-icon>Toque no alvo</span
+        >
       }
-      <button type="button" class="bar__open" aria-label="Ver mapa" title="Ver mapa" (click)="openMap.emit()">
+      <button
+        type="button"
+        class="bar__open"
+        aria-label="Ver mapa"
+        title="Ver mapa"
+        (click)="openMap.emit()"
+      >
         <mat-icon aria-hidden="true">open_in_full</mat-icon>
       </button>
     </div>
   } @else {
-  <div class="card__head">
-    <h2 class="mr-panel__title" id="map-title">
-      @if (isMaster()) {
-        <mat-icon class="card__icon" aria-hidden="true">map</mat-icon>
-      }{{ title() }}
-    </h2>
-    <span class="card__size">{{ isMaster() ? mapName() + ' · ' + size() : 'Quadrados de 1,5 m' }}</span>
-    @if (isMaster() && actingFor()) {
-      @if (pick()) {
-        <span class="card__pick" role="status"><mat-icon aria-hidden="true">my_location</mat-icon>Toque no alvo · por {{ actingFor() }}</span>
-      } @else {
-        <button matButton="outlined" type="button" class="card__move" (click)="move.emit()">
-          <mat-icon aria-hidden="true">open_with</mat-icon>Mover
+    <div class="card__head">
+      <h2 class="mr-panel__title" id="map-title">
+        @if (isMaster()) {
+          <mat-icon class="card__icon" aria-hidden="true">map</mat-icon>
+        }
+        {{ title() }}
+      </h2>
+      <span class="card__size">{{
+        isMaster() ? mapName() + ' · ' + size() : 'Quadrados de 1,5 m'
+      }}</span>
+      @if (isMaster() && actingFor()) {
+        @if (pick()) {
+          <span class="card__pick" role="status"
+            ><mat-icon aria-hidden="true">my_location</mat-icon>Toque no alvo · por
+            {{ actingFor() }}</span
+          >
+        } @else {
+          <button matButton="outlined" type="button" class="card__move" (click)="move.emit()">
+            <mat-icon aria-hidden="true">open_with</mat-icon>Mover
+          </button>
+        }
+      }
+      @if (isMaster() && !preview()) {
+        <!-- C7-02: "Ver mapa" is in the header, with its icon: the browser's full screen, or the map's own screen where it has none. -->
+        <button
+          matButton="outlined"
+          type="button"
+          class="card__full"
+          [attr.aria-pressed]="fullscreen.available ? fullscreen.active() : null"
+          (click)="fullscreen.available ? fullscreen.toggle() : openMap.emit()"
+        >
+          <mat-icon aria-hidden="true">{{
+            fullscreen.active() ? 'fullscreen_exit' : 'fullscreen'
+          }}</mat-icon
+          >{{ fullscreen.active() ? 'Sair da tela cheia' : 'Ver mapa' }}
+        </button>
+      } @else if (fullscreen.available && !preview()) {
+        <button
+          matButton="outlined"
+          type="button"
+          class="card__full"
+          [attr.aria-pressed]="fullscreen.active()"
+          (click)="fullscreen.toggle()"
+        >
+          <mat-icon aria-hidden="true">{{
+            fullscreen.active() ? 'fullscreen_exit' : 'fullscreen'
+          }}</mat-icon
+          >{{ fullscreen.active() ? 'Sair da tela cheia' : 'Tela cheia' }}
         </button>
       }
-    }
-    @if (isMaster() && !preview()) {
-      <!-- C7-02: "Ver mapa" is in the header, with its icon: the browser's full screen, or the map's own screen where it has none. -->
-      <button
-        matButton="outlined"
-        type="button"
-        class="card__full"
-        [attr.aria-pressed]="fullscreen.available ? fullscreen.active() : null"
-        (click)="fullscreen.available ? fullscreen.toggle() : openMap.emit()"
-      >
-        <mat-icon aria-hidden="true">{{ fullscreen.active() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>{{
-          fullscreen.active() ? 'Sair da tela cheia' : 'Ver mapa'
-        }}
-      </button>
-    } @else if (fullscreen.available && !preview()) {
-      <button
-        matButton="outlined"
-        type="button"
-        class="card__full"
-        [attr.aria-pressed]="fullscreen.active()"
-        (click)="fullscreen.toggle()"
-      >
-        <mat-icon aria-hidden="true">{{ fullscreen.active() ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>{{
-          fullscreen.active() ? 'Sair da tela cheia' : 'Tela cheia'
-        }}
-      </button>
-    }
-    @if (reachSwitch() || (forcedSwitch() && !preview())) {
-      <div class="card__switches">
-        @if (reachSwitch(); as sw) {
-          <label class="card__check">
-            <input type="checkbox" class="mr-check-input" aria-describedby="map-reach-why" [checked]="sw.on" (change)="reachChange.emit($any($event.target).checked)" />
-            Alcance {{ sw.name }}
-          </label>
-          <span class="mr-visually-hidden" id="map-reach-why">
-            O alcance é o círculo do movimento que resta, em linha reta, como o servidor o calcula. Terreno difícil e
-            criaturas somam ao custo. Uma parede deixa sombra: ninguém passa por ela.
-          </span>
-        }
-        @if (forcedSwitch() && !preview()) {
-          <label class="card__check">
-            <input type="checkbox" class="mr-check-input" aria-describedby="map-forced-why" [checked]="forced()" (change)="forcedChange.emit($any($event.target).checked)" />
-            Movimento forçado
-            @if (forced()) {
-              <span class="card__state">Ligado para o próximo arrasto</span>
-            }
-          </label>
-          <span class="mr-visually-hidden" id="map-forced-why">
-            Para teletransporte (Passo Nebuloso), empurrão ou puxão: o token chega ao quadrado sem provocar ataque de
-            oportunidade. Vale só para o próximo arrasto.
-          </span>
-        }
-      </div>
-    }
-  </div>
+      @if (reachSwitch() || (forcedSwitch() && !preview())) {
+        <div class="card__switches">
+          @if (reachSwitch(); as sw) {
+            <label class="card__check">
+              <input
+                type="checkbox"
+                class="mr-check-input"
+                aria-describedby="map-reach-why"
+                [checked]="sw.on"
+                (change)="reachChange.emit($any($event.target).checked)"
+              />
+              Alcance {{ sw.name }}
+            </label>
+            <span class="mr-visually-hidden" id="map-reach-why">
+              O alcance é o círculo do movimento que resta, em linha reta, como o servidor o
+              calcula. Terreno difícil e criaturas somam ao custo. Uma parede deixa sombra: ninguém
+              passa por ela.
+            </span>
+          }
+          @if (forcedSwitch() && !preview()) {
+            <label class="card__check">
+              <input
+                type="checkbox"
+                class="mr-check-input"
+                aria-describedby="map-forced-why"
+                [checked]="forced()"
+                (change)="forcedChange.emit($any($event.target).checked)"
+              />
+              Movimento forçado
+              @if (forced()) {
+                <span class="card__state">Ligado para o próximo arrasto</span>
+              }
+            </label>
+            <span class="mr-visually-hidden" id="map-forced-why">
+              Para teletransporte (Passo Nebuloso), empurrão ou puxão: o token chega ao quadrado sem
+              provocar ataque de oportunidade. Vale só para o próximo arrasto.
+            </span>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (sunControls()) {
+    <app-sunlight-controls
+      class="card__sun"
+      [scope]="encounter().sunlightScope"
+      [count]="encounter().sunlightSquares.length"
+      [(painting)]="painting"
+      [(tool)]="tool"
+      (scopeChange)="sunlightChange.emit({ scope: $event })"
+    />
   }
 
   @if (preview()) {
@@ -98,10 +145,19 @@
           [offers]="offers()"
         >
           @if (zones().length) {
-            <app-zone-layer [columns]="encounter().gridColumns" [rows]="encounter().gridRows" [zones]="zones()" />
+            <app-zone-layer
+              [columns]="encounter().gridColumns"
+              [rows]="encounter().gridRows"
+              [zones]="zones()"
+            />
           }
           @if (lastArea(); as area) {
-            <app-area-overlay [columns]="encounter().gridColumns" [rows]="encounter().gridRows" [squares]="area.squares" [origin]="area.origin" />
+            <app-area-overlay
+              [columns]="encounter().gridColumns"
+              [rows]="encounter().gridRows"
+              [squares]="area.squares"
+              [origin]="area.origin"
+            />
           }
         </app-combat-map>
       </div>
@@ -110,50 +166,81 @@
       <mat-icon aria-hidden="true">open_in_full</mat-icon>Ver mapa
     </button>
   } @else {
-  @if (fogLoading()) {
-    <div class="mr-notice mr-notice--neutral" role="status">
-      <mat-icon aria-hidden="true">hourglass_empty</mat-icon>
-      <p>
-        <strong>Carregando o mapa</strong>
-        Chegando a parte {{ fogProgress().done + 1 }} de {{ fogProgress().total }}. Os personagens já aparecem; o resto vem em instantes.
-      </p>
-    </div>
-  }
-  <div class="card__crop" [class.card__crop--on]="!!crop()" [class.card__crop--pick]="!!crop() && compact()" [style.aspect-ratio]="crop()?.ratio ?? null" [style.--cm-ar]="mapAspect()">
-    <div class="card__shift" [style.width.%]="crop()?.width ?? 100" [style.transform]="crop()?.shift ?? null">
-      <app-combat-map
-        [fog]="fog()"
-        (fogSettled)="onFogSettled($event)"
-        (fogLoadingChange)="onFogLoading($event)"
-        [image]="image()"
-        [mapName]="mapName()"
-        [columns]="encounter().gridColumns"
-        [rows]="encounter().gridRows"
-        [combatants]="encounter().combatants"
-        [isMaster]="isMaster()"
-        [currentId]="encounter().currentCombatantId"
-        [reach]="reach()"
-        [layers]="layers()"
-        [offers]="offers()"
-        [masterMoves]="isMaster()"
-        [forcedDrag]="forcedSwitch() && forced()"
-        [ownMoveId]="ownMovable() ? (own()?.id ?? null) : null"
-        [doorPicks]="doorTaps() && isMaster()"
-        [pick]="pick()"
-        [pickNote]="pickNote()"
-        (pickTap)="pickTap.emit($event)"
-        (doorPick)="doorPick.emit($event)"
-        (tokenDrop)="tokenDrop.emit($event)"
+    @if (fogLoading()) {
+      <div class="mr-notice mr-notice--neutral" role="status">
+        <mat-icon aria-hidden="true">hourglass_empty</mat-icon>
+        <p>
+          <strong>Carregando o mapa</strong>
+          Chegando a parte {{ fogProgress().done + 1 }} de {{ fogProgress().total }}. Os personagens
+          já aparecem; o resto vem em instantes.
+        </p>
+      </div>
+    }
+    <div
+      class="card__crop"
+      [class.card__crop--on]="!!crop()"
+      [class.card__crop--pick]="!!crop() && compact()"
+      [style.aspect-ratio]="crop()?.ratio ?? null"
+      [style.--cm-ar]="mapAspect()"
+    >
+      <div
+        class="card__shift"
+        [style.width.%]="crop()?.width ?? 100"
+        [style.transform]="crop()?.shift ?? null"
       >
-        @if (zones().length) {
-          <app-zone-layer [columns]="encounter().gridColumns" [rows]="encounter().gridRows" [zones]="zones()" />
-        }
-        @if (lastArea(); as area) {
-          <app-area-overlay [columns]="encounter().gridColumns" [rows]="encounter().gridRows" [squares]="area.squares" [origin]="area.origin" />
-        }
-      </app-combat-map>
+        <app-combat-map
+          [fog]="fog()"
+          (fogSettled)="onFogSettled($event)"
+          (fogLoadingChange)="onFogLoading($event)"
+          [image]="image()"
+          [mapName]="mapName()"
+          [columns]="encounter().gridColumns"
+          [rows]="encounter().gridRows"
+          [combatants]="encounter().combatants"
+          [isMaster]="isMaster()"
+          [currentId]="encounter().currentCombatantId"
+          [reach]="reach()"
+          [layers]="layers()"
+          [offers]="offers()"
+          [masterMoves]="isMaster()"
+          [forcedDrag]="forcedSwitch() && forced()"
+          [ownMoveId]="ownMovable() ? (own()?.id ?? null) : null"
+          [doorPicks]="doorTaps() && isMaster()"
+          [pick]="pick()"
+          [pickNote]="pickNote()"
+          (pickTap)="pickTap.emit($event)"
+          (doorPick)="doorPick.emit($event)"
+          (tokenDrop)="tokenDrop.emit($event)"
+        >
+          @if (zones().length) {
+            <app-zone-layer
+              [columns]="encounter().gridColumns"
+              [rows]="encounter().gridRows"
+              [zones]="zones()"
+            />
+          }
+          @if (isMaster() && sunControls() && encounter().sunlightOn) {
+            <app-sunlight-layer
+              [columns]="encounter().gridColumns"
+              [rows]="encounter().gridRows"
+              [squares]="encounter().sunlightSquares"
+              [wholeMap]="sunWhole()"
+              [painting]="painting()"
+              [tool]="tool()"
+              (paint)="paint($event)"
+            />
+          }
+          @if (lastArea(); as area) {
+            <app-area-overlay
+              [columns]="encounter().gridColumns"
+              [rows]="encounter().gridRows"
+              [squares]="area.squares"
+              [origin]="area.origin"
+            />
+          }
+        </app-combat-map>
+      </div>
     </div>
-  </div>
   }
 
   @if (forcedSwitch() && !preview()) {
@@ -170,7 +257,9 @@
     </div>
     @if (overAsk()) {
       <div class="card__ask-actions">
-        <button matButton="outlined" type="button" (click)="overAskConfirm.emit()">Mover mesmo assim</button>
+        <button matButton="outlined" type="button" (click)="overAskConfirm.emit()">
+          Mover mesmo assim
+        </button>
         <button matButton type="button" (click)="overAskCancel.emit()">Cancelar</button>
       </div>
     }
@@ -194,63 +283,123 @@
   }
 
   @if (legend()) {
-  <app-map-layers-legend class="legend" [layers]="layers() ?? emptyLayers" [onMap]="!!fog()">
+    <app-map-layers-legend class="legend" [layers]="layers() ?? emptyLayers" [onMap]="!!fog()">
       @if (fogLegend()?.seen) {
         <li before><span class="mr-swatch mr-swatch--sample" aria-hidden="true"></span>Visto</li>
       }
       @if (fogLegend()?.dim) {
-        <li before><span class="mr-swatch mr-swatch--sample mr-swatch--dim" aria-hidden="true"></span>Penumbra</li>
+        <li before>
+          <span class="mr-swatch mr-swatch--sample mr-swatch--dim" aria-hidden="true"></span
+          >Penumbra
+        </li>
       }
       @if (fogLegend()?.grey) {
-        <li before><span class="mr-swatch mr-swatch--sample mr-swatch--grey" aria-hidden="true"></span>No escuro, em cinza</li>
+        <li before>
+          <span class="mr-swatch mr-swatch--sample mr-swatch--grey" aria-hidden="true"></span>No
+          escuro, em cinza
+        </li>
       }
       @if (fogLegend()?.remembered) {
-        <li before><span class="mr-swatch mr-swatch--sample mr-swatch--remembered" aria-hidden="true"></span>Já visto</li>
+        <li before>
+          <span class="mr-swatch mr-swatch--sample mr-swatch--remembered" aria-hidden="true"></span
+          >Já visto
+        </li>
       }
       @if (fogLegend()?.unseen) {
-        <li before><span class="mr-swatch mr-swatch--sample mr-swatch--unseen" aria-hidden="true"></span>Não visto</li>
+        <li before>
+          <span class="mr-swatch mr-swatch--sample mr-swatch--unseen" aria-hidden="true"></span>Não
+          visto
+        </li>
       }
-    @if (lastArea()) {
-      <li><span class="mr-swatch sw-area" aria-hidden="true"></span>Área da última magia</li>
-      <li><span class="sw-diamond" aria-hidden="true"></span>Ponto de origem</li>
-    }
-    @for (item of zoneLegend(); track item.key) {
-      <li class="legend__zone"><app-zone-swatch [pattern]="item.pattern" [dashed]="item.masterOnly" />{{ item.name }}{{ item.masterOnly ? ' só você vê' : '' }}</li>
-    }
-    @if (isMaster()) {
-      <li><app-combatant-token initial="P" [size]="22" [onMap]="true" />Personagem</li>
-      <li><app-combatant-token initial="C" [npc]="true" [size]="22" [onMap]="true" />NPC</li>
-      @if (hasCreatures()) {
-        <li><app-combatant-token initial="N" [creature]="true" [size]="22" [onMap]="true" />Criatura de um jogador</li>
+      @if (lastArea()) {
+        <li><span class="mr-swatch sw-area" aria-hidden="true"></span>Área da última magia</li>
+        <li><span class="sw-diamond" aria-hidden="true"></span>Ponto de origem</li>
       }
-      @if (hasHidden()) {
-        <li><app-combatant-token initial="G" [npc]="true" [hidden]="true" [size]="22" [onMap]="true" />Escondido (só você vê)</li>
+      @for (item of zoneLegend(); track item.key) {
+        <li class="legend__zone">@for (l of item.letters; track $index) {<app-zone-letter [letter]="l" />@if (!$last) {<span class="mr-visually-hidden">, </span>}}<span class="mr-visually-hidden">: </span><app-zone-swatch [pattern]="item.pattern" [dashed]="item.masterOnly" /><span class="legend__name">{{ item.name }}{{ item.masterOnly ? ' só você vê' : '' }}</span></li>
       }
-    } @else {
-      @if (own(); as me) {
-        <li><app-combatant-token [initial]="me.label.charAt(0)" [mine]="true" [size]="22" [onMap]="true" />{{ me.label }} (você)</li>
+      @if (sunWhole() || sunSquares()) {
+        <li class="legend__sun">
+          <span class="mr-swatch mr-swatch--sun" aria-hidden="true"></span>Luz do sol (só você vê)
+        </li>
       }
-      <li><app-combatant-token initial="B" [size]="22" [onMap]="true" />Personagens</li>
-      <li><app-combatant-token initial="C" [npc]="true" [size]="22" [onMap]="true" />Inimigos</li>
-      @if (hasCreatures()) {
-        <li><app-combatant-token initial="N" [creature]="true" [size]="22" [onMap]="true" />Criatura de um jogador</li>
+      @if (isMaster()) {
+        <li><app-combatant-token initial="P" [size]="22" [onMap]="true" />Personagem</li>
+        <li><app-combatant-token initial="C" [npc]="true" [size]="22" [onMap]="true" />NPC</li>
+        @if (hasCreatures()) {
+          <li>
+            <app-combatant-token initial="N" [creature]="true" [size]="22" [onMap]="true" />Criatura
+            de um jogador
+          </li>
+        }
+        @if (hasHidden()) {
+          <li>
+            <app-combatant-token
+              initial="G"
+              [npc]="true"
+              [hidden]="true"
+              [size]="22"
+              [onMap]="true"
+            />Escondido (só você vê)
+          </li>
+        }
+      } @else {
+        @if (own(); as me) {
+          <li>
+            <app-combatant-token
+              [initial]="me.label.charAt(0)"
+              [mine]="true"
+              [size]="22"
+              [onMap]="true"
+            />{{ me.label }} (você)
+          </li>
+        }
+        <li><app-combatant-token initial="B" [size]="22" [onMap]="true" />Personagens</li>
+        <li><app-combatant-token initial="C" [npc]="true" [size]="22" [onMap]="true" />Inimigos</li>
+        @if (hasCreatures()) {
+          <li>
+            <app-combatant-token initial="N" [creature]="true" [size]="22" [onMap]="true" />Criatura
+            de um jogador
+          </li>
+        }
       }
-    }
-    @if (hasDefeated()) {
-      <li><app-combatant-token initial="X" [defeated]="true" [npc]="true" [size]="22" [onMap]="true" />Derrotado</li>
-    }
-    <li><app-combatant-token initial="P" [current]="true" [onMap]="true" [size]="18" />{{ isMaster() ? 'Vez' : 'Vez (o anel grená e a palavra)' }}</li>
-    @if (reach()) {
-      <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>Alcance {{ reachSwitch()?.name }}</li>
-      <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de {{ reachMeters() }}</li>
-    }
-    @if (offers().length) {
-      <li><span class="mr-swatch mr-swatch--reactor" aria-hidden="true"></span>Quem pode atacar</li>
-    }
-    @if (offerRing()) {
-      <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Pode receber a oferta</li>
-    }
-  </app-map-layers-legend>
+      @if (hasDefeated()) {
+        <li>
+          <app-combatant-token
+            initial="X"
+            [defeated]="true"
+            [npc]="true"
+            [size]="22"
+            [onMap]="true"
+          />Derrotado
+        </li>
+      }
+      <li>
+        <app-combatant-token initial="P" [current]="true" [onMap]="true" [size]="18" />{{
+          isMaster() ? 'Vez' : 'Vez (o anel grená e a palavra)'
+        }}
+      </li>
+      @if (reach()) {
+        <li>
+          <span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>Alcance
+          {{ reachSwitch()?.name }}
+        </li>
+        <li>
+          <span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de
+          {{ reachMeters() }}
+        </li>
+      }
+      @if (offers().length) {
+        <li>
+          <span class="mr-swatch mr-swatch--reactor" aria-hidden="true"></span>Quem pode atacar
+        </li>
+      }
+      @if (offerRing()) {
+        <li>
+          <span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Pode receber a oferta
+        </li>
+      }
+    </app-map-layers-legend>
   }
   <ng-content select="[mapFoot]" />
 </section>

@@ -89,7 +89,7 @@ func (s *Service) kitOf(ctx context.Context, tx pgx.Tx, campaignID string, who p
 		k.down = isDownIn(k.vit)
 	}
 	// A surprised combatant takes no reaction until its first turn ends (SRD 5.1, "Surprise").
-	if k.surprised, err = s.surprisedReactor(ctx, tx, who); err != nil {
+	if k.surprised, err = s.surprisedReactor(ctx, tx, campaignID, who); err != nil {
 		return kit{}, false, err
 	}
 	if k.muted, err = s.mutedReactor(ctx, tx, who); err != nil {
@@ -246,10 +246,15 @@ func (s *Service) bumpUsed(ctx context.Context, c *combatTx, who playdb.Combatan
 // spendResourceOf spends one use of a resource (the Infernal Legacy, Bardic
 // Inspiration, ki): a player's through its vitals, an NPC's counted on the combatant.
 func (s *Service) spendResourceOf(ctx context.Context, c *combatTx, who playdb.Combatant, key string) (*playv1.CharacterVitals, error) {
+	return s.spendResourcesOf(ctx, c, who, key, 1)
+}
+
+// spendResourcesOf spends some uses of a resource of a combatant the same way.
+func (s *Service) spendResourcesOf(ctx context.Context, c *combatTx, who playdb.Combatant, key string, uses int32) (*playv1.CharacterVitals, error) {
 	if who.Kind == kindPlayer {
-		return s.spendResource(ctx, c, who.CharacterID, key, 1)
+		return s.spendResource(ctx, c, who.CharacterID, key, uses)
 	}
-	return nil, s.bumpUsed(ctx, c, who, usedResource+key, 1)
+	return nil, s.bumpUsed(ctx, c, who, usedResource+key, uses)
 }
 
 // pickSlot checks the slot an answer chose against the free ones; invalid_argument

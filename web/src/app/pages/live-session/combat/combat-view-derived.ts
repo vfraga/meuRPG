@@ -51,6 +51,9 @@ import { CombatRage } from './combat-rage';
 import { CombatViewStateDirective } from './combat-view-state';
 
 /** What the combat bar says while a downed character still owes its death save. */
+/** The master is painting the sun: the turn waits for "Pronto". */
+const SUN_PAINTING_WAIT = 'Pintando a luz do sol';
+const SUN_PAINTING_WHY = 'Toque em Pronto, na pintura da luz do sol, para seguir.';
 const DEATH_SAVE_MISSING = 'Falta o teste contra a morte';
 
 /** The most the badge writes before "99+". */
@@ -262,6 +265,9 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   /** Why "Próximo turno" waits while questions about hidden creatures are open ("Responda ao pedido abaixo para seguir."). */
   protected readonly waitWhy = computed(() => {
     const e = this.encounter();
+    if (e && this.isMaster() && this.sunPainting()) {
+      return SUN_PAINTING_WHY;
+    }
     return e && this.isMaster() ? revealWhy(e) : '';
   });
   /** The master's last action is a move: the log's undoable entry says so ("Desfazer o movimento"). */
@@ -339,6 +345,9 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
     // A downed character's turn starts with its death save (SRD 5.1): the turn does not pass without it (G-02).
     if (this.deathDue().length > 0) {
       return DEATH_SAVE_MISSING;
+    }
+    if (this.sunPainting()) {
+      return SUN_PAINTING_WAIT;
     }
     return masterWaitNote(e, this.autoLeft(), (id) => this.info().get(id)?.playerName ?? '');
   });

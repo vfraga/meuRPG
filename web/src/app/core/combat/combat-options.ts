@@ -11,6 +11,7 @@ import {
   type TurnOptions,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { ActionEconomy } from '../../../gen/meurpg/rules/v1/rules_pb';
+import { type MarksVm, markWords } from '../characters/gear';
 import { rechargeText } from './combat-errors';
 import { circleLabel } from './combat-grid';
 import { metersText } from '../units';
@@ -59,8 +60,9 @@ const REASON_TEXT: Partial<Record<DisabledReasonCode, string>> = {
   [DisabledReasonCode.SPEED_ZERO]: 'Indisponível: deslocamento 0',
   // Armor or a shield without proficiency stops every spell (SRD 5.1, "Armor").
   [DisabledReasonCode.ARMOR_NOT_PROFICIENT]: 'Armadura ou escudo sem proficiência',
-  // A wall needs its shape, size and damaging side, which the cast sheet does not send.
-  [DisabledReasonCode.WALL_PLACEMENT_REQUIRED]: 'A muralha não pode ser posicionada por aqui',
+  // A wall needs its shape, size and damaging side; the cast sheet's "Onde fica" sends them, so the server no longer lists the
+  // spell with this reason. It stays so an answer that carries it still reads.
+  [DisabledReasonCode.WALL_PLACEMENT_REQUIRED]: 'Falta dizer onde fica a muralha',
 };
 
 /** Why an option is disabled, in words, by code. `''` when there is none. */
@@ -229,9 +231,10 @@ export function isCantrip(attack: Attack): boolean {
   return attack.kind === AttackKind.SPELL;
 }
 
-/** Where a granted spell comes from and what it costs: "Graça · À vontade", "Graça · 1 uso". */
+/** Where a granted spell comes from and what it costs: "Graça · À vontade", "Graça · 1 uso", "Graça · gasta 2 · 3 usos". */
 export function grantLine(g: SpellGrantOption): string {
-  const uses = g.atWill ? 'À vontade' : g.usesLeft === 1 ? '1 uso' : `${g.usesLeft} usos`;
+  const left = g.usesLeft === 1 ? '1 uso' : `${g.usesLeft} usos`;
+  const uses = g.atWill ? 'À vontade' : g.usesCost > 1 ? `gasta ${g.usesCost} · ${left}` : left;
   return `${g.sourceNamePt} · ${uses}`;
 }
 
@@ -314,4 +317,16 @@ export function groupState(used: boolean): string {
  * shared decision 2). */
 export function endTurnIsPrimary(own: { actionUsed: boolean; bonusActionUsed: boolean }): boolean {
   return own.actionUsed && own.bonusActionUsed;
+}
+
+/** The tags under an attack's name: "Truque" for a cantrip (its economy has its own mark). */
+export function attackTagsOf(o: AttackOption): string[] {
+  return o.attack && isCantrip(o.attack) ? ['Truque'] : [];
+}
+
+/** The marks of a weapon attack, for its chip beside the name; none for a spell or a creature's attack. */
+export function attackMarksOf(a: Attack | undefined): MarksVm | null {
+  return a?.kind === AttackKind.WEAPON && markWords(a).length > 0
+    ? { silvered: a.silvered, adamantine: a.adamantine, magical: a.magical }
+    : null;
 }

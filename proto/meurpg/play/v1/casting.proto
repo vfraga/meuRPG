@@ -387,6 +387,11 @@ message CastingGrant {
   string ability = 9;
   int32 attack_bonus = 10;
   int32 save_dc = 11;
+  // The material components are waived: the spell's component line drops "M".
+  bool no_material_components = 12;
+  // The uses a cast spends of `resource` (1 or more; 0 for an at-will grant). A cast works
+  // only while `uses_left` covers it.
+  int32 uses_cost = 13;
 }
 
 // CastingEffectKind is what a spell does that the server applies, from the spell alone.

@@ -38,8 +38,11 @@ export interface LiveStreamHandlers {
   onTurnChanged?(turn: TurnChange): void;
   /** `combatant_moved`: applied in place. */
   onCombatantMoved?(move: CombatantMove): void;
-  /** `combat_log_changed`: the log has a new entry, read it again. */
-  onCombatLogChanged?(): void;
+  /** `combat_log_changed`: the log has a new entry, read it again. `full` (the master only): the log was rewritten, read all of it. */
+  onCombatLogChanged?(full: boolean): void;
+  /** A heartbeat said the session's hint number is ahead of what this stream saw: a hint was lost. Read everything a `ready` reads, once.
+   * Resolves `true` when the read worked; on `false` the stream keeps its number and the next heartbeat asks again. */
+  onBehind?(): Promise<boolean>;
   /** `xp_changed`: the campaign's XP changed, read it again. */
   onXpChanged?(): void;
   /** `scene_changed` and `scene_check_rolled`: read the open scene again. */

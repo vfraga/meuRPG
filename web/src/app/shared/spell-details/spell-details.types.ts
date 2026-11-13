@@ -45,6 +45,8 @@ export interface SpellDetailsVm {
     readonly materialText: string;
     /** Our Portuguese translation of `materialText`; empty or unset while the spell has none. */
     readonly materialTextPt?: string;
+    /** The name of the grant that waives the material, when one does: the line says why the "M" is gone. */
+    readonly materialWaivedBy?: string;
   };
   readonly duration: {
     readonly kind: DurationKindKey;

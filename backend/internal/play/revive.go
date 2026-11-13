@@ -126,5 +126,5 @@ func (s *Service) PublishCharacterEvent(ctx context.Context, campaignID, ownerUs
 	default:
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true, UserID: ownerUserID}, Message: msg})
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true, UserID: ownerUserID}, Message: msg})
 }

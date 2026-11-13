@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
-	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -75,18 +74,6 @@ func wallFor(sp link.Spell, w *playv1.SpellWall, origin *playv1.SpellOrigin) (*w
 func errWallPlacementRequired() error {
 	return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_WALL_PLACEMENT_REQUIRED,
 		"this spell lays a wall: set wall with its shape, size and damaging side")
-}
-
-// refuseWallSpells lists the spells that lay a wall as unavailable on a map.
-// The cast needs the wall's shape and side (CastSpellRequest.wall), which the casting panel does not send.
-// A spell that is off for another reason keeps that reason.
-func refuseWallSpells(o *rulesv1.TurnOptions) {
-	for _, sp := range o.GetSpells() {
-		if d, ok := zoneDefOf(sp.GetSpell().GetKey()); ok && d.kind == zoneWall && sp.GetEnabled() {
-			sp.Enabled = false
-			sp.Reason = &rulesv1.DisabledReason{Code: rulesv1.DisabledReasonCode_DISABLED_REASON_CODE_WALL_PLACEMENT_REQUIRED}
-		}
-	}
 }
 
 // readWall checks a wall the request sends and fills in its full size.
@@ -259,6 +246,35 @@ func (w wallSpec) onDamagingSide(origin, sq grid.Square) bool {
 		return cross < 0
 	}
 	return cross > 0
+}
+
+// burning is the squares of the damaging side the wall's own squares do not take, row by row from the top.
+func (z *zone) burning() []grid.Square {
+	if z.wall == nil {
+		return nil
+	}
+	return z.wall.burning(z.origin(), z.squares)
+}
+
+// burning is burning for a wall laid as these squares from the origin.
+func (w wallSpec) burning(origin grid.Square, wall []grid.Square) []grid.Square {
+	own := make(map[grid.Square]bool, len(wall))
+	for _, sq := range wall {
+		own[sq] = true
+	}
+	var out []grid.Square
+	for sq := range w.reach(origin, wall) {
+		if !own[sq] {
+			out = append(out, sq)
+		}
+	}
+	slices.SortFunc(out, func(a, b grid.Square) int {
+		if a.Row != b.Row {
+			return a.Row - b.Row
+		}
+		return a.Col - b.Col
+	})
+	return out
 }
 
 // hurtsAtEnd says whether the square is one the damaging side of the wall reaches.

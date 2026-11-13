@@ -1645,6 +1645,20 @@ message WatchGameSessionResponse {
     bool presence_known = 4;
   }
 
+  // The session's hint number (game_sessions.hint_seq): it grows by one for every write that told the streams something,
+  // however many events it told. A stream that sees a number ahead of the ones it has applied (on a heartbeat, above all)
+  // knows it missed a hint and reads the session again. It is a counter and says nothing of what changed.
+  // Ready and Heartbeat carry the number as the database holds it; a Heartbeat that could not read it carries 0.
+  // An event carries the number its write left, and 0 when it did not come from a counted write (typing, presence, and the
+  // writes outside the combat write path): 0 means "no number", never compare it.
+  // Only a member who may watch the stream reads it.
+  // The numbers on events are not ordered: two writes can commit in one order and send in the other, so an app must not
+  // drop an event for an old number, nor look for gaps in them. Only the numbers of Ready and Heartbeat are the session's
+  // own: an app that sees a heartbeat ahead of the highest number it applied reads the session again.
+  // It is unrelated to the event numbers of the combat log (ListCombatLogResponse.last_seq, CombatLogEntry.seq): two counters,
+  // never compared with each other.
+  int64 session_seq = 48;
+
   // AttackHit is the attack damage that landed on a player's character, as that player reads it: who hit (empty when the
   // attacker is hidden: the app says "Alguém"), how much and of what type. `id` is the pending damage, so a hit is said once.
   // It says nothing of the hit points: those come with VitalsChanged.
@@ -1800,10 +1814,17 @@ message WatchGameSessionResponse {
   message Ready {
     // The session being watched.
     GameSession game_session = 1;
+    // The session's hint number now (see WatchGameSessionResponse.session_seq): events at or below it are in the snapshot.
+    int64 session_seq = 2;
   }
 
-  // Heartbeat carries nothing.
-  message Heartbeat {}
+  // Heartbeat shows the stream is alive and carries the session's hint number.
+  message Heartbeat {
+    // The session's hint number when the heartbeat was sent, read from the database (see
+    // WatchGameSessionResponse.session_seq); 0 when the server could not read it. A number ahead of the last one the app
+    // applied means it missed a hint.
+    int64 session_seq = 1;
+  }
 
   // VitalsChanged carries a character's new vitals. Only the master and the
   // character's player get it. Apply it only if its revision is larger
@@ -1923,6 +1944,11 @@ message WatchGameSessionResponse {
   message CombatLogChanged {
     // The combat (a UUID).
     string encounter_id = 1;
+    // The log was rewritten, not just added to (the master undid an action): the app drops what it holds and reads the
+    // whole log again (ListCombatLog with since_seq 0). Only the master's copy carries it: a player's hint is the same
+    // whatever was undone, so it never tells a player of an undo they cannot see. It is an optimisation only: an app reads
+    // the log with since_seq on every combat_log_changed, and the answer is `full` when the log was rewritten for that reader.
+    bool full = 2;
   }
 
   // XpChanged says the campaign's XP or levels changed: an award was given, the

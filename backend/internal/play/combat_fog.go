@@ -599,11 +599,11 @@ func (s *Service) publishTurnChangedToPlayers(ctx context.Context, campaignID st
 	case err != nil:
 		s.logger.ErrorContext(ctx, "play: cannot work out what the players see in a combat", "error", err)
 	case f == nil:
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: turnChangedMessage(d.enc, d.turnFor(combatViewer{}), 0)})
+		s.send(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: turnChangedMessage(d.enc, d.turnFor(combatViewer{}), 0)})
 	default:
 		for _, u := range f.sight.Users() {
 			turn := d.turnFor(combatViewer{userID: u, unseen: f.unseenFor(u, d.cs)})
-			s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: turnChangedMessage(d.enc, turn, 0)})
+			s.send(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: turnChangedMessage(d.enc, turn, 0)})
 		}
 	}
 }
@@ -617,16 +617,16 @@ func (s *Service) publishTurnChangedToPlayers(ctx context.Context, campaignID st
 func (s *Service) publishMovedToPlayers(ctx context.Context, campaignID string, e playdb.Encounter, c playdb.Combatant, from *grid.Square) {
 	all := live.Event{Audience: live.Audience{Players: true}, Message: combatantMovedMessage(e, c)}
 	if c.Kind != kindNPC {
-		s.hub.Publish(campaignID, all)
+		s.send(campaignID, all)
 		return
 	}
 	f, err := s.fogSightOf(ctx, campaignID, e)
 	switch {
 	case err != nil:
 		s.logger.ErrorContext(ctx, "play: cannot work out what the players see in a combat", "error", err)
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: encounterChangedMessage(playdb.Encounter{ID: e.ID, Mode: e.Mode})})
+		s.send(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: encounterChangedMessage(playdb.Encounter{ID: e.ID, Mode: e.Mode})})
 	case f == nil:
-		s.hub.Publish(campaignID, all)
+		s.send(campaignID, all)
 	default:
 		var pre *fogSight
 		if memo := fogMemoOf(ctx); memo != nil {
@@ -635,9 +635,9 @@ func (s *Service) publishMovedToPlayers(ctx context.Context, campaignID string, 
 		for _, u := range f.sight.Users() {
 			switch {
 			case f.seesNPC(u, c):
-				s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: combatantMovedMessage(e, c)})
+				s.send(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: combatantMovedMessage(e, c)})
 			case pre != nil && from != nil && pre.sight.Sees(u, *from):
-				s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: encounterChangedMessage(playdb.Encounter{ID: e.ID, Mode: e.Mode})})
+				s.send(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: encounterChangedMessage(playdb.Encounter{ID: e.ID, Mode: e.Mode})})
 			}
 		}
 	}

@@ -90,6 +90,8 @@ type OutsideGrant struct {
 	AtWill           bool
 	Resource         string
 	UsesLeft         int
+	Cost             int
+	NoMaterial       bool
 	AlsoWithSlot     bool
 	RitualOnly       bool
 	Ready            bool

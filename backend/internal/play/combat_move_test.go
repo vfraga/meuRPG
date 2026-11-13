@@ -58,6 +58,14 @@ var caveRows = []string{
 type caveTerrain struct {
 	mu    sync.Mutex
 	extra []grid.Square
+	// painted are difficult squares the master painted on the map.
+	painted []grid.Square
+}
+
+func (c *caveTerrain) paintDifficult(sq ...grid.Square) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.painted = append(c.painted, sq...)
 }
 
 func (c *caveTerrain) addWalls(sq ...grid.Square) {
@@ -87,6 +95,9 @@ func (c *caveTerrain) Terrain(context.Context, pgx.Tx, string, string) (grid.Ter
 	}
 	for _, sq := range c.extra {
 		t.Walls.Set(sq.Col, sq.Row, true)
+	}
+	for _, sq := range c.painted {
+		t.Difficult.Set(sq.Col, sq.Row, true)
 	}
 	return t, nil
 }

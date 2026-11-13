@@ -177,6 +177,33 @@ describe('InitiativeSetup', () => {
     });
   });
 
+  it('keeps the total in the formula line and tells the raised d20 in a note under it', () => {
+    const fixture = TestBed.createComponent(InitiativeSetup);
+    const name = 'Pé de Vento Muito Mais Que Longo';
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        status: EncounterStatus.SETUP,
+        round: 0,
+        combatants: [
+          rolled('a', 'Ana', 15, {
+            initiativeFace: 3,
+            initiativeBonus: 3,
+            initiativeTreatedAs: 12,
+            initiativeTreatedAsSourceName: name,
+          }),
+          rolled('b', 'Beto', 19, { initiativeFace: 15, initiativeBonus: 4 }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const sums = Array.from(el.querySelectorAll('.row__sum'), (m) => m.textContent?.trim());
+    expect(sums).toEqual(['1d20 (12) + 3 = 15', '1d20 (15) + 4 = 19']);
+    const notes = el.querySelectorAll('[data-testid="raised-note"]');
+    expect(Array.from(notes, (m) => m.textContent?.trim())).toEqual([`d20: 3 → 12 (${name})`]);
+  });
+
   it('tags a natural 20 and a natural 1 beside the formula, and nothing for another face', () => {
     const fixture = TestBed.createComponent(InitiativeSetup);
     fixture.componentRef.setInput(

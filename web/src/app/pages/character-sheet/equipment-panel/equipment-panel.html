@@ -6,8 +6,10 @@
     [gear]="s.gear"
     [armorClass]="s.armorClass"
     [canChange]="canEquip()"
+    [canMark]="canMark()"
     [busyKey]="equipBusyKey()"
     (toggled)="gearToggled.emit($event)"
+    (marksOpened)="marksOpened.emit($event)"
   />
   @if (s.shieldIdle) {
     <p class="gear__note mr-muted">O escudo não vale nada com uma arma de duas mãos equipada: guarde a arma.</p>
@@ -21,6 +23,10 @@
       }
     </p>
   }
+  @if (!canMark() && hasWeapons() && canEquip()) {
+    <p class="gear__lock mr-muted"><mat-icon aria-hidden="true">lock</mat-icon>Marcas das armas: depois da trava, só o mestre muda.</p>
+  }
+  <p class="gear__notice" role="status">{{ marksNotice() }}</p>
   <ul class="gear">
     @for (item of s.equipment; track $index) {
       <li>

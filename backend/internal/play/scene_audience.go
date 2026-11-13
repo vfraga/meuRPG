@@ -84,10 +84,10 @@ func (v viewers) minus(o viewers) []live.Audience {
 // publishTo sends ev to the master (when master) and to each audience.
 func (s *Service) publishTo(campaignID string, master bool, auds []live.Audience, ev *playv1.WatchGameSessionResponse) {
 	if master {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: ev})
+		s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: ev})
 	}
 	for _, a := range auds {
-		s.hub.Publish(campaignID, live.Event{Audience: a, Message: ev})
+		s.send(campaignID, live.Event{Audience: a, Message: ev})
 	}
 }
 

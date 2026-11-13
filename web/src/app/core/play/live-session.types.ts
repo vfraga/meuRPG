@@ -125,8 +125,10 @@ export interface TableScreenChange {
 
 /** One event of `WatchGameSession`. */
 export type LiveEventVm =
-  | { readonly kind: 'ready' }
-  | { readonly kind: 'heartbeat' }
+  /** `sessionSeq`: the session's hint number at connect (0 when the server sent none). */
+  | { readonly kind: 'ready'; readonly sessionSeq?: number }
+  /** `sessionSeq`: the session's hint number now; absent on a heartbeat that is only proof of life (an event this app does not know). */
+  | { readonly kind: 'heartbeat'; readonly sessionSeq?: number }
   | { readonly kind: 'vitals'; readonly vitals: VitalsVm }
   | { readonly kind: 'ended' }
   /** `content_changed` (RN-23, RN-10): the table's content changed; no content travels, each screen reads what it shows again. */
@@ -181,7 +183,7 @@ export type LiveEventVm =
   /** `combatant_moved`. */
   | ({ readonly kind: 'combatantMoved' } & CombatantMove)
   /** `combat_log_changed`: read the combat log again. */
-  | { readonly kind: 'combatLogChanged' }
+  | { readonly kind: 'combatLogChanged'; readonly full?: boolean }
   /** `xp_changed`: an award, an undo or a milestone; read the XP again. */
   | { readonly kind: 'xpChanged' }
   /** `scene_changed`: the open scene changed, read it again. */

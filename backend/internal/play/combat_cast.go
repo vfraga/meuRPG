@@ -668,14 +668,14 @@ func (f *castFlow) spendGrantUse(ctx context.Context) error {
 	if g == nil || f.slot != nil || g.GetAtWill() {
 		return nil
 	}
-	v, err := f.s.spendResourceOf(ctx, f.c, f.caster, g.GetResource())
+	v, err := f.s.spendResourcesOf(ctx, f.c, f.caster, g.GetResource(), max(g.GetUsesCost(), 1))
 	if err != nil {
 		return err
 	}
 	if v != nil {
 		f.out.vitals = append(f.out.vitals, v)
 	}
-	f.out.made.GrantUse = g.GetResource()
+	f.out.made.GrantUse, f.out.made.GrantCost = g.GetResource(), grantCostOf(g.GetUsesCost())
 	return nil
 }
 

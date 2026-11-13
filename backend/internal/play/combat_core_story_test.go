@@ -157,7 +157,7 @@ var coreStoryWant = []string{
 	`toren in the app: initiative_submitted {"combatant_id": "Toren", "face": 12, "physical": false, "total": 14}`,
 	`pensantus typed: initiative_submitted {"combatant_id": "Pensantus", "face": 9, "physical": true, "total": 11}`,
 	`brisa by the master: initiative_submitted {"combatant_id": "Brisa", "face": 4, "physical": true, "total": 7}`,
-	`add a goblin: combatants_added {"added": 1}`,
+	`add a goblin: combatants_added {"added": 1, "hidden_added": 1}`,
 	`reveal goblin 1: combatant_hidden_set {"combatant_id": "Goblin 1", "hidden": false, "round": 0}`,
 	`hide goblin 1: combatant_hidden_set {"combatant_id": "Goblin 1", "hidden": true, "round": 0}`,
 	`surprise goblin 2: surprise_set {"combatant_id": "Goblin 2", "contest": {"surprised": true}, "secret": true}`,

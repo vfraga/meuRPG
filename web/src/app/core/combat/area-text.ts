@@ -271,3 +271,17 @@ export function coverOf(
     mark: coverMark(degree),
   };
 }
+
+/** The map's name for a reader of the screen: "Mapa: escolha o ponto da Bola de Fogo", the direction, or a wall's start or center. */
+export function mapLabelOf(
+  spell: string,
+  placement: AreaPlacement,
+  wall: { readonly ring: boolean } | null,
+): string {
+  if (wall) {
+    return `Mapa: escolha o ${wall.ring ? 'centro' : 'começo'} da ${spell}`;
+  }
+  return placement === AreaPlacement.DIRECTION
+    ? `Mapa: escolha a direção da ${spell}`
+    : `Mapa: escolha o ponto da ${spell}`;
+}

@@ -43,6 +43,7 @@ func (x *deriver) attacks() {
 		x.cantripAttack(key)
 	}
 	x.pseudoWeapons()
+	x.naturalAttacks()
 	// Last, so the weapons and cantrips stay the first lines of the sheet.
 	x.unarmedStrike(martialArts, martialDie)
 }
@@ -75,14 +76,15 @@ func (x *deriver) weaponAttack(i int, key string, martialArts bool, martialDie i
 	if proficient {
 		bonus += x.prof
 	}
-	dmg := x.modifiers("damage.weapon."+kind, x.mods[t.damageAbility]) + t.damageBonus
+	magic := x.weaponItemBonus(key)
+	dmg := x.modifiers("damage.weapon."+kind, x.mods[t.damageAbility]) + t.damageBonus + magic
 	oneHanded, note := dmg, ""
 	if kind == "melee" && !has("two-handed") {
 		oneHanded, note = x.oneHandedDamage(dmg)
 	}
 	a := Attack{
 		Key: key, Name: eq.Name, NamePT: c.namePT(key), Kind: "weapon", Ability: t.attackAbility,
-		AttackBonus: x.modifiers("attack.weapon."+kind, bonus) + t.attackBonus, Proficient: proficient,
+		AttackBonus: x.modifiers("attack.weapon."+kind, bonus) + t.attackBonus + magic, Proficient: proficient,
 		DamageType: w.DamageType, DamageTypeNamePT: c.namePT(w.DamageType),
 		Melee: kind == "melee", MartialArts: monkWeapon, AbilityMod: x.mods[t.damageAbility],
 		Light:        kind == "melee" && has("light"),
@@ -121,19 +123,19 @@ func (x *deriver) sheetMarks(key string) (magical, silvered, adamantine bool) {
 	return magical, silvered, adamantine
 }
 
-// weaponMarks is the ONE place that says whether a carried weapon's attack is magical,
-// silvered or adamantine, for the resistances and immunities to nonmagical attacks. It
-// merges the sheet's mark on the weapon with the marks of the weapon_rule effects whose
-// filter chooses the line (f). The "magic" filter reads only the sheet's own marks
-// (f.magical, from sheetMarks): not a rule's, so a rule cannot choose itself, and not
-// equipment. Equipment that makes a weapon magical (+1 weapons, #564) must set magical
-// here, and that later source must decide whether it also feeds the "magic" filter
-// (f.magical); until then it does not. Only the carried weapons come through here: a
-// pseudo_weapon line is never marked by a weapon_rule (pseudoWeapon does not call this),
-// and the unarmed strike (Ki-Empowered Strikes), a spell attack and a creature's attack
-// do not either.
+// weaponMarks is the ONE place that says whether a carried weapon's attack is magical, silvered or adamantine.
+// It merges the sheet's mark on the weapon, a counting magic bonus (+N, which makes the line magical only) and the
+// marks of the weapon_rule effects whose filter chooses the line (f).
+// The "magic" filter reads only the sheet's own marks (f.magical, from sheetMarks).
+// It does not read a rule's marks, so a rule cannot choose itself, nor a magic bonus.
+// Only the carried weapons come through here.
+// A pseudo_weapon line is never marked by a weapon_rule, and neither are the unarmed strike (Ki-Empowered Strikes),
+// a spell attack and a creature's attack.
 func (x *deriver) weaponMarks(key string, f weaponFacts) (magical, silvered, adamantine bool) {
 	magical, silvered, adamantine = x.sheetMarks(key)
+	if x.weaponItemBonus(key) > 0 {
+		magical = true // a +N weapon is magical; it does not feed the "magic" filter (f.magical)
+	}
 	for _, a := range x.active {
 		e := a.effect
 		if e.Type != "weapon_rule" || (!e.Magical && !e.Silvered && !e.Adamantine) || !e.matchesWeapon(f) || !x.applies(a) {

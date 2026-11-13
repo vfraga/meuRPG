@@ -5,7 +5,8 @@ import {
   ReviewStatus,
 } from '../../core/characters/characters.types';
 import { DamageTypeKey, SkillProficiency } from '../../core/characters/character-labels';
-import type { GearVm } from '../../core/characters/gear';
+import type { GearVm, MarksVm } from '../../core/characters/gear';
+import type { FullSheet as GenFullSheet } from '../../../gen/meurpg/characters/v1/characters_pb';
 import type { SpellDetailsVm } from '../../shared/spell-details/spell-details.types';
 
 /**
@@ -66,6 +67,8 @@ export interface AttackVm {
   /** How many attack rolls it makes in one action (Eldritch Blast: 1 to 4
    * beams); 0 for a weapon. */
   readonly beams: number;
+  /** A weapon's marks as the engine derived them (the sheet's mark or a table rule); absent for a spell. */
+  readonly marks?: MarksVm;
 }
 
 export interface SpellcastingVm {
@@ -111,6 +114,9 @@ export interface GrantedSpellVm {
   readonly alsoWithSlot: boolean;
   readonly ritualOnly: boolean;
   readonly countsAsKnown: boolean;
+  /** The grant waives the material components, and each cast spends this many uses of the resource (1 or more; 0 at will). */
+  readonly noMaterialComponents: boolean;
+  readonly usesCost: number;
   /** The casting ability; `null` while the player has not picked it (`abilityPending`). */
   readonly ability: AbilityKey | null;
   readonly abilityPending: boolean;
@@ -167,6 +173,11 @@ export interface HintVm {
   readonly text: string;
 }
 
+/** The marks of one carried weapon (`FullSheet.weapon_marks`). */
+export interface WeaponMarkVm extends MarksVm {
+  readonly weaponKey: string;
+}
+
 export interface EquipmentItemVm {
   readonly name: string;
   readonly quantity: number;
@@ -195,6 +206,8 @@ export interface FullSheetVm {
   readonly passivePerception: number;
   readonly passiveInvestigation: number;
   readonly passiveInsight: number;
+  /** The load the character can carry, in pounds (15 times Strength, then the table's modifiers). */
+  readonly carryCapacityLb: number;
   readonly initiative: number;
   readonly armorClass: number;
   /** How `armorClass` was computed, in Portuguese, e.g. "Armadura de
@@ -213,6 +226,8 @@ export interface FullSheetVm {
   readonly shieldIdle: boolean;
   /** The gear, equipped and carried (`DerivedSheet.gear`). */
   readonly gear: readonly GearVm[];
+  /** The marks the sheet itself sets on its carried weapons (`FullSheet.weapon_marks`), for the "Marcar as armas" grid. */
+  readonly weaponMarks: readonly WeaponMarkVm[];
   readonly hitPointsMax: number;
   readonly hitDice: string;
   readonly speedWalkFt: number;
@@ -340,6 +355,8 @@ export interface CharacterSheetVm {
   /** When the master last brought the character back (`Character.revived_at`, "Reviver" or Revivify); only the master and the owner get it. */
   readonly revivedAt: Date | null;
   readonly revision: number;
+  /** The stored full sheet as the server sent it, so a change of its marks is saved over the whole sheet and this `revision`. */
+  readonly fullSheet?: GenFullSheet;
   readonly sheet: FullSheetVm | BasicSheetVm;
   /**
    * `Character.story` — present for every kind, including a basic-sheet
@@ -445,6 +462,16 @@ export abstract class CharacterSheetSource {
     key: string,
     equipped: boolean,
   ): Promise<void>;
+  /** Saves the marks of the sheet's weapons over the whole stored sheet (`UpdateCharacter`, at `revision`): the owner while
+   * the sheet is editable, the master always. The server refuses a stale revision. */
+  abstract setWeaponMarks(
+    campaignId: string,
+    characterId: string,
+    revision: number,
+    name: string,
+    sheet: GenFullSheet,
+    marks: readonly WeaponMarkVm[],
+  ): Promise<CharacterSheetVm>;
   abstract getCharacterSheet(campaignId: string, characterId: string): Promise<CharacterSheetVm>;
   /** Called only when `isMaster` — never for a player (RN-11). */
   abstract getMasterNotes(campaignId: string, characterId: string): Promise<string>;

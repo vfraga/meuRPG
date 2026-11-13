@@ -57,5 +57,8 @@ describe('the line of a granted spell', () => {
       'Dom · À vontade',
     );
     expect(spellLine(granted)).toBe('Graça de teste · 2 usos');
+    expect(
+      grantLine(create(SpellGrantOptionSchema, { sourceNamePt: 'Dom', usesLeft: 3, usesCost: 2 })),
+    ).toBe('Dom · gasta 2 · 3 usos');
   });
 });

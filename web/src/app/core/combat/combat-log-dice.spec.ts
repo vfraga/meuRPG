@@ -247,8 +247,8 @@ describe('the name of the feature that raised a d20 (treated_as_source_name)', (
     expect(treatedSourceName('feature:reliable-talent', 'Talento Confiável da Mesa')).toBe(
       'Talento Confiável da Mesa',
     );
-    expect(treatedPreview(6, 9, 'feature:reliable-talent')?.text).toBe(
-      '6 → 10 (Talento Confiável) + 9 = 19',
-    );
+    expect(
+      treatedPreview(6, 9, { value: 10, source: 'feature:reliable-talent', name: '' })?.text,
+    ).toBe('6 → 10 (Talento Confiável) + 9 = 19');
   });
 });

@@ -33,10 +33,10 @@ export const ABILITY_ABBREVIATIONS: Record<AbilityKey, string> = {
 
 /** "29/09/2026", local time: the header's lock and death lines show the day
  * only. */
-/** Joins a number and the unit after it ("10 PO", "15 m", "2 kg") with a no-break space, so a line never
+/** Joins a number and the unit after it ("10 PO", "15 m", "2 kg", "180 lb") with a no-break space, so a line never
  * ends between them. Display only: the stored text is untouched. */
 export function keepUnitsTogether(text: string): string {
-  return text.replace(/(\d)\s+(PO|PP|PE|PL|PC|m|kg|pés)(?![\p{L}])/gu, '$1\u00a0$2');
+  return text.replace(/(\d)\s+(PO|PP|PE|PL|PC|m|kg|lb|pés)(?![\p{L}])/gu, '$1\u00a0$2');
 }
 
 export function formatDate(date: Date): string {
@@ -295,7 +295,8 @@ export function spellStateSummary(groups: readonly SpellGroup[]): string {
 
 /** How a granted spell is cast, in tags: "À vontade" or the resource it spends, then the switches of the grant. */
 export function grantedSpellTags(g: GrantedSpellVm): string[] {
-  const tags = [g.atWill ? 'À vontade' : `Gasta um uso de ${g.resourceNamePt}`];
+  const spent = g.usesCost > 1 ? `Gasta ${g.usesCost} usos de` : 'Gasta um uso de';
+  const tags = [g.atWill ? 'À vontade' : `${spent} ${g.resourceNamePt}`];
   if (g.alsoWithSlot) {
     tags.push('Também com espaço');
   }
@@ -304,6 +305,9 @@ export function grantedSpellTags(g: GrantedSpellVm): string[] {
   }
   if (g.countsAsKnown) {
     tags.push('Conhecida');
+  }
+  if (g.noMaterialComponents) {
+    tags.push('Sem material');
   }
   return tags;
 }

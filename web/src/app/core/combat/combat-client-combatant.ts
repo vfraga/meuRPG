@@ -1,4 +1,8 @@
-import { type CombatEffect, type Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
+import {
+  type CombatEffect,
+  type Encounter,
+  SunlightScope,
+} from '../../../gen/meurpg/play/v1/combat_pb';
 import { type CombatClientBase } from './combat-client-base';
 import {
   type AttackDie,
@@ -82,6 +86,39 @@ export class CombatCombatantCalls {
       key,
     );
     return need(res.encounter, 'SetMonsterReactionMode');
+  }
+
+  /**
+   * The master's sunlight switch (`SetSunlight`): `on` puts the combat in the sun or takes it out. `scope` unspecified keeps the
+   * current one; `addSquares` and `removeSquares` change the sunlit squares. `key` is the caller's, kept across the retries of one
+   * tap (a lost answer must not flip the switch twice).
+   */
+  async setSunlight(
+    campaignId: string,
+    encounterId: string,
+    change: {
+      on: boolean;
+      scope?: SunlightScope;
+      addSquares?: readonly { col: number; row: number }[];
+      removeSquares?: readonly { col: number; row: number }[];
+    },
+    key?: string,
+  ): Promise<Encounter> {
+    const res = await this.base.keyed(
+      ['setSunlight', campaignId, encounterId, change],
+      (sent) =>
+        this.base.client.setSunlight({
+          campaignId,
+          encounterId,
+          on: change.on,
+          scope: change.scope ?? SunlightScope.UNSPECIFIED,
+          addSquares: [...(change.addSquares ?? [])],
+          removeSquares: [...(change.removeSquares ?? [])],
+          idempotencyKey: sent,
+        }),
+      key,
+    );
+    return need(res.encounter, 'SetSunlight');
   }
 
   /** The master confirms a death (three failed death saves). It cannot be undone. */

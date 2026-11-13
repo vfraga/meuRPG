@@ -17,6 +17,7 @@ erDiagram
         bool tv_mirror
         smallint tv_pin
         int tv_choice_revision
+        bigint hint_seq
     }
     game_session_scene_players {
         uuid game_session_id PK,FK
@@ -194,6 +195,7 @@ What the session shows is on the row, all optional and independent, none set in 
 | `tv_mirror` | True (the default) while the TV at the table follows what the table sees; false when the master pinned one item. |
 | `tv_pin` | The pinned item, read only while `tv_mirror` is false, always 1 to 5 (`game_sessions_tv_pin_valid`): 1 idle (the default), 2 map, 3 image, 4 scene, 5 combat. It stays when the item ends; the TV then shows the idle screen. |
 | `tv_choice_revision` | How many times the master wrote the choice. A write over another revision is refused. Nothing else reads or bumps it. |
+| `hint_seq` | How many transactions of the session told the live streams something, or only touched the session to move the screens (`Service.tx`), at 1 per transaction whatever it told. It is saved in the same transaction as the write and never moves on a replay. `Ready` and `Heartbeat` carry it as `session_seq`; it holds no content ([Live session](../architecture/play/live-session.md#the-hint-number)). Only the combat write path counts. |
 
 `play` keeps only the ids; the `maps` module owns the targets and `play` reads them through the `MapKeeper` interface (see [Architecture](../architecture/play/live-session.md#what-the-session-shows)).
 There is no index on these columns: only deleting a map or image searches for them, and the table is small.
@@ -370,6 +372,9 @@ Cascades with the session or the character; the index is by session.
 - A `recharge_rolled` event (the d6 the server rolls for a creature's Recharge action at its turn start) is always `secret` and fogged for everybody, and its row names no user and no character.
   It holds the creature's combatant id, the round, the action's key and name, `recharge_face` and `recharged`.
   Its log line is the master's and the creature's controller's; every other player reads nothing of it in the log, the stream or any count.
+- A `gear_swapped` event (a weapon, shield or armor drawn or stowed in a combat, the armor only by the master, written in the transaction of `SetEquipped`) is always `secret`.
+  It holds the combatant id, the round, the piece's key, kind (`weapon`, `shield` or `armor`) and Portuguese name, `equipped_before`, the six economy flags from before the swap and the `cost` it paid (`free`, `action`, `extra_action`, empty for the master).
+  Its log line is the master's and the owner's; the event is its own payload type (`gearSwapEvent`), so no other event's stored shape moved.
   No player's map revision counts it.
   An attack or an action that spent a limited action keeps `limit_key` on its ordinary event, the key for the undo.
 - A `free_roll_rolled` event is read by everyone when `secret` is false; a secret one is the master's alone, on every path: the list, the stream, the summary and any count (RN-10).

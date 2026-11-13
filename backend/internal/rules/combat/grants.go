@@ -15,6 +15,10 @@ type SpellGrant struct {
 	// at-will grant).
 	Resource string
 	UsesLeft int
+	// Cost is the uses of Resource every cast spends (1 or more; 0 for an at-will grant), and
+	// NoMaterialComponents says the grant waives the material components (display only).
+	Cost                 int
+	NoMaterialComponents bool
 	// Recharge is when the resource comes back (a rules.Recharge* constant), for the refusal.
 	Recharge string
 	// AlsoWithSlot says a spell slot casts it too.
@@ -29,7 +33,7 @@ type SpellGrant struct {
 func GrantOf(d rules.Derived, u Usage, g rules.GrantedSpell) SpellGrant {
 	out := SpellGrant{
 		Source: g.Source, SourcePT: g.SourcePT, AtWill: g.AtWill, Resource: g.Resource, AlsoWithSlot: g.AlsoWithSlot,
-		Ability: g.Ability, AttackBonus: g.AttackBonus, SaveDC: g.SaveDC,
+		Cost: g.Cost, NoMaterialComponents: g.NoMaterialComponents, Ability: g.Ability, AttackBonus: g.AttackBonus, SaveDC: g.SaveDC,
 	}
 	if !g.AtWill {
 		out.UsesLeft, _ = ResourceLeft(d, u, g.Resource)
@@ -39,7 +43,7 @@ func GrantOf(d rules.Derived, u Usage, g rules.GrantedSpell) SpellGrant {
 }
 
 // castable says the grant can be cast now without a slot: it is at will, or a use is left.
-func (g SpellGrant) castable() bool { return g.AtWill || g.UsesLeft > 0 }
+func (g SpellGrant) castable() bool { return g.AtWill || g.UsesLeft >= max(g.Cost, 1) }
 
 // grantedOptions are the spells the character's grants give, as options of the turn. A
 // grant whose casting ability is not picked yet, and a grant that is only for rituals (a

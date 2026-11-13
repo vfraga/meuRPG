@@ -29,6 +29,7 @@ import { AreaList } from '../../../../shared/area-picker/area-list';
 import { AreaNotice } from '../../../../shared/area-picker/area-notice';
 import { AreaMap } from '../../../../shared/area-picker/area-map';
 import { AreaStep } from '../../../../shared/area-picker/area-step';
+import { WallControls } from '../../../../shared/area-picker/wall-controls';
 import { TeleportMap } from '../../../../shared/area-picker/teleport-map';
 import { HeldFollow } from '../../../../core/held-rolls/held-follow';
 import { heldOfferOf } from '../../../../core/held-rolls/held-roll-offer';
@@ -39,7 +40,10 @@ import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { SlotPicker } from '../../../../shared/slot-picker/slot-picker';
 import { openSpellDetails } from '../../../../shared/spell-details/open-spell-details';
-import { spellDetailsFromGen } from '../../../../shared/spell-details/spell-details-map';
+import {
+  spellDetailsFromGen,
+  withoutMaterial,
+} from '../../../../shared/spell-details/spell-details-map';
 import { SpellHelp } from '../../../../shared/spell-details/spell-help';
 import { AbilityPicker } from '../../effects/ability-picker/ability-picker';
 import { CheckRow } from '../../../../shared/form-fields/check-row';
@@ -86,6 +90,7 @@ export type { CastMapData, CastSheetData } from './cast-sheet-types';
     AreaNotice,
     AreaMap,
     AreaStep,
+    WallControls,
     CastResult,
     CastSlots,
     CastTargets,
@@ -295,7 +300,11 @@ export class CastSheet {
           if (!details) {
             throw new Error('spell details unavailable');
           }
-          return spellDetailsFromGen(details);
+          const vm = spellDetailsFromGen(details);
+          // A grant that waives the material takes the "M" off the component line (the text goes with it).
+          return this.ch.viaGrant() && this.ch.grant?.noMaterialComponents
+            ? withoutMaterial(vm, this.ch.grant.sourceNamePt)
+            : vm;
         },
       },
       true,

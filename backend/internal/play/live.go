@@ -238,8 +238,9 @@ func (s *Service) WatchGameSession(
 	if err != nil {
 		return err
 	}
-	if err := stream.Send(&playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_Ready_{
-		Ready: &playv1.WatchGameSessionResponse_Ready{GameSession: sessionToProto(session)},
+	// The number is the one the session row holds now, read after subscribing: what the snapshot shows includes every event up to it.
+	if err := stream.Send(&playv1.WatchGameSessionResponse{SessionSeq: session.HintSeq, Event: &playv1.WatchGameSessionResponse_Ready_{
+		Ready: &playv1.WatchGameSessionResponse_Ready{GameSession: sessionToProto(session), SessionSeq: session.HintSeq},
 	}}); err != nil {
 		return nil // the app went away
 	}
@@ -267,8 +268,9 @@ func (s *Service) watchLoop(ctx context.Context, stream *connect.ServerStream[pl
 				return err
 			}
 		case <-heartbeat.C:
-			if err := stream.Send(&playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_Heartbeat_{
-				Heartbeat: &playv1.WatchGameSessionResponse_Heartbeat{},
+			seq := s.currentHintSeq(ctx, session.ID)
+			if err := stream.Send(&playv1.WatchGameSessionResponse{SessionSeq: seq, Event: &playv1.WatchGameSessionResponse_Heartbeat_{
+				Heartbeat: &playv1.WatchGameSessionResponse_Heartbeat{SessionSeq: seq},
 			}}); err != nil {
 				return nil
 			}
@@ -278,6 +280,20 @@ func (s *Service) watchLoop(ctx context.Context, stream *connect.ServerStream[pl
 			}
 		}
 	}
+}
+
+// currentHintSeq reads the session's hint number from the database: one read of one row by its key, per stream, per heartbeat.
+// When it cannot be read it is 0 ("no number"): the heartbeat still shows the stream is alive, and the next one reads again.
+func (s *Service) currentHintSeq(ctx context.Context, sessionID string) int64 {
+	seq, err := s.queries.GetHintSeq(ctx, sessionID)
+	if err != nil {
+		if ctx.Err() != nil {
+			return 0 // the stream is closing
+		}
+		s.logger.WarnContext(ctx, "read the session's hint number for a heartbeat", "error", err)
+		return 0
+	}
+	return seq
 }
 
 // recheckTick is the periodic check of the stream: an instance that no longer receives calls ends it, and

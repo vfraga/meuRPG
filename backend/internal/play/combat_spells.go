@@ -591,7 +591,7 @@ func (s *Service) spellSave(ctx context.Context, c *combatTx, m authz.Membership
 	sources := combat.SaveMode(combat.SaveScene{Creature: creature, Ability: sp.SaveAbility, EffectVisible: true, Against: against})
 	bonuses := rollBonusesOf(modes.in.states, target.ID, rules.RollAppliesSave)
 	save.Bonus += bonusTotal(bonuses)
-	modes.save[target.ID] = append(shownSources(sources, modes.names), bonusSources(bonuses, modes.names, modes.v.master, modes.v.owns(target))...)
+	modes.save[target.ID] = append(shownSourcesHiding(sources, modes.names, hideUnlessMaster(modes.v.master)), bonusSources(bonuses, modes.names, modes.v.master, modes.v.owns(target))...)
 	// Cover adds to a Dexterity save (SRD): half +2, three-quarters +5. The bonus
 	// the save shows already has it.
 	if sp.SaveAbility == "dex" && !cover.total() && !sp.IgnoresCover { // Chama Sagrada: no benefit from cover (SRD)
@@ -751,7 +751,7 @@ func (s *Service) spellSaveScene(ctx context.Context, c *combatTx, campaignID st
 		return link.Sheet{}, combat.Creature{}, nil, err
 	}
 	against, err := s.spellSaveAgainst(ctx, c, sp)
-	return targetSheet, creatureFacts(target, modes.in.states, targetSheet.Traits), against, err
+	return targetSheet, modes.in.sun.facts(creatureFacts(target, modes.in.states, targetSheet.Traits), target), against, err
 }
 
 // spellSaveAgainst is what the saving throw against a spell is against: its own kinds (spellAgainst) and the

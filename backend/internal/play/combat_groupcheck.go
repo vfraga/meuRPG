@@ -372,7 +372,7 @@ func (s *Service) RollGroupCheck(
 // publishGroupRolled tells the master and the roller that a player rolled: the other players
 // have nothing to read of it.
 func (s *Service) publishGroupRolled(m authz.Membership) {
-	s.hub.Publish(m.CampaignID, live.Event{
+	s.send(m.CampaignID, live.Event{
 		Audience: live.Audience{Master: true, UserID: m.UserID},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_GroupCheckChanged_{
 			GroupCheckChanged: &playv1.WatchGameSessionResponse_GroupCheckChanged{},
@@ -915,7 +915,7 @@ func groupMemberViewOf(check playdb.GroupCheck, mb playdb.GroupCheckMember, roll
 	if roll == nil {
 		return view
 	}
-	view.Roll = roll.proto()
+	view.Roll = roll.proto(master)
 	if !master {
 		view.Roll.BonusKnown = true
 	}

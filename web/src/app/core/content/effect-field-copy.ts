@@ -59,6 +59,8 @@ export const EFFECT_FIELD_LABELS: Readonly<Record<string, string>> = {
   also_with_slot: 'Também com espaço de magia',
   ritual_only: 'Só como ritual',
   counts_as_known: 'Conta como magia conhecida',
+  no_material_components: 'Sem componentes materiais',
+  uses_cost: 'Usos gastos por conjuração',
   only_proficient: 'Só onde já tem proficiência',
   dice: 'Dados (quantos)',
   dice_sides: 'Lados do dado',
@@ -125,6 +127,9 @@ export const EFFECT_FIELD_HINTS: Readonly<Record<string, string>> = {
   dice: 'Uma fórmula, como 1 ou prof(). Vale junto com os lados do dado.',
   dice_sides: 'De 4 a 12: d4, d6, d8, d10 ou d12.',
   no_crit_doubling: 'Por padrão os dados dobram no acerto crítico; o dano fixo nunca dobra.',
+  no_material_components:
+    'A ficha e a folha de conjuração mostram a magia sem o componente material.',
+  uses_cost: 'Um número inteiro, de 1 a 20. Vazio: 1 uso por conjuração.',
   counts_as_known:
     'A magia aparece também entre as conhecidas da ficha, sem gastar nenhuma escolha da classe.',
   at_most: 'De 1 a 20. Um dado com este valor ou menos pode ser rolado de novo, uma vez.',

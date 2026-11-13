@@ -1,0 +1,64 @@
+@if (wholeMap()) {
+  <svg
+    class="sl__svg"
+    aria-hidden="true"
+    preserveAspectRatio="none"
+    [attr.viewBox]="'0 0 ' + columns() + ' ' + rows()"
+  >
+    <rect class="sl__frame-halo" x="0" y="0" [attr.width]="columns()" [attr.height]="rows()" />
+    <rect class="sl__frame" x="0" y="0" [attr.width]="columns()" [attr.height]="rows()" />
+  </svg>
+} @else if (shown().length) {
+  <svg
+    class="sl__svg"
+    aria-hidden="true"
+    preserveAspectRatio="none"
+    [attr.viewBox]="'0 0 ' + columns() + ' ' + rows()"
+  >
+    <defs>
+      <pattern
+        [attr.id]="uid"
+        patternUnits="userSpaceOnUse"
+        [attr.width]="tile"
+        [attr.height]="tile"
+      >
+        <circle class="sl__dot-halo" [attr.cx]="tile / 2" [attr.cy]="tile / 2" [attr.r]="dotHalo" />
+        <circle class="sl__dot" [attr.cx]="tile / 2" [attr.cy]="tile / 2" [attr.r]="dot" />
+      </pattern>
+    </defs>
+    <path class="sl__fill" [attr.d]="fill()" />
+    <path [attr.d]="fill()" [attr.fill]="'url(#' + uid + ')'" />
+    <path class="sl__halo" [attr.d]="edge()" />
+    <path class="sl__edge" [attr.d]="edge()" />
+    @if (preview(); as stroke) {
+      <path class="sl__preview" [attr.d]="stroke" />
+    }
+  </svg>
+}
+@if (painting()) {
+  <div
+    class="sl__pad"
+    role="application"
+    tabindex="0"
+    aria-label="Pintar luz do sol no mapa. Setas movem o cursor e Espaço aplica a ferramenta no quadrado."
+    (pointerdown)="down($event)"
+    (pointermove)="move($event)"
+    (pointerup)="up($event)"
+    (pointercancel)="up($event)"
+    (click)="$event.stopPropagation()"
+    (keydown)="key($event)"
+    (focus)="focused()"
+  >
+    @if (cursor(); as at) {
+      <span
+        class="sl__cursor"
+        aria-hidden="true"
+        [style.left.%]="(at.col / columns()) * 100"
+        [style.top.%]="(at.row / rows()) * 100"
+        [style.width.%]="100 / columns()"
+        [style.height.%]="100 / rows()"
+      ></span>
+    }
+  </div>
+  <span class="mr-visually-hidden" role="status" aria-live="polite">{{ note() }}</span>
+}

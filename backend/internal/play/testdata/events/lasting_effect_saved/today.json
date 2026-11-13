@@ -151,6 +151,7 @@
   },
   "slot_counted": true,
   "grant_use": "x",
+  "grant_cost": 1,
   "resource": "x",
   "hits": [
     {
@@ -539,6 +540,9 @@
     "event": "x"
   },
   "parry_ask": true,
+  "sunlight_on": true,
+  "sunlight_scope": "x",
+  "sunlight_squares": 1,
   "mode": "x",
   "delta": 1,
   "col": 1,
@@ -841,14 +845,19 @@
             "x"
           ],
           "Qualifier": "x",
-          "hidden": true
+          "hidden": true,
+          "Amount": 1
         }
       ],
       "origin": {
         "attack": true,
+        "weapon": true,
         "magical": true,
         "silvered": true,
         "adamantine": true
+      },
+      "allot": {
+        "x": 1
       }
     }
   ],

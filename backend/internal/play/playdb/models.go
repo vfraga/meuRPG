@@ -223,6 +223,9 @@ type Combatant struct {
 	InitiativeCountedAs     *int32
 	InitiativeCountedBy     string
 	ObjectInteractionUsed   bool
+	SpeedSwimFt             int32
+	SpeedClimbFt            int32
+	SpeedBurrowFt           int32
 }
 
 type CombatantState struct {
@@ -275,6 +278,9 @@ type Encounter struct {
 	StartedAt          *time.Time
 	EndedAt            *time.Time
 	Mode               string
+	SunlightOn         bool
+	SunlightScope      string
+	SunlightSquares    []byte
 }
 
 type GameSession struct {
@@ -295,6 +301,7 @@ type GameSession struct {
 	TvMirror            bool
 	TvPin               int16
 	TvChoiceRevision    int32
+	HintSeq             int64
 }
 
 type GroupCheck struct {

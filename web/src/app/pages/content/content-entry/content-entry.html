@@ -53,6 +53,9 @@
             @if (isNew()) {
               <span class="mr-tag">Rascunho</span>
             }
+            @if (leftOut().note) {
+              <span class="mr-tag mr-tag--danger"><mat-icon aria-hidden="true">error_outline</mat-icon>Fora da campanha</span>
+            }
             @if (state_(); as st) {
               <span class="mr-tag">
                 @if (st.archived) {
@@ -71,11 +74,11 @@
             @if (entry()!.archived) {
               <button mat-menu-item type="button" (click)="unarchive()"><mat-icon aria-hidden="true">unarchive</mat-icon>Desarquivar</button>
             } @else {
-              <button mat-menu-item type="button" (click)="askArchive()"><mat-icon aria-hidden="true">archive</mat-icon>Arquivar</button>
+              <button mat-menu-item type="button" (click)="askArchive()"><mat-icon aria-hidden="true">archive</mat-icon>{{ leftOut().verb }}</button>
             }
           </mat-menu>
         } @else if (isMaster() && entry() && !entry()!.archived && !asking()) {
-          <button matButton="outlined" type="button" class="head__action" (click)="askArchive()"><mat-icon aria-hidden="true">archive</mat-icon>Arquivar</button>
+          <button matButton="outlined" type="button" class="head__action" (click)="askArchive()"><mat-icon aria-hidden="true">archive</mat-icon>{{ leftOut().verb }}</button>
         }
       </header>
 
@@ -91,6 +94,24 @@
         <div class="mr-notice mr-notice--neutral">
           <mat-icon aria-hidden="true">info</mat-icon>
           <p>Para criar ou editar, abra o conteúdo da mesa no notebook. Aqui você lê e arquiva.</p>
+        </div>
+      }
+
+      @if (leftOut().note; as note) {
+        <div class="mr-notice mr-notice--danger">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <div>
+            <p>
+              <strong>{{ note.lead }}</strong>
+              {{ note.text }}
+              @if (note.parent) {
+                <a [routerLink]="[...backLink(), 'entries', note.parent.key]">Abrir {{ note.parent.name }}</a>
+              }
+            </p>
+            @if (note.using) {
+              <p>{{ note.using }}</p>
+            }
+          </div>
         </div>
       }
 
@@ -148,7 +169,7 @@
       }
 
       @if (asking() && entry()) {
-        <app-archive-question [name]="entry()!.namePt" [using]="using()" [busy]="archiving()" (cancel)="cancelAsk()" (confirm)="archive()" />
+        <app-archive-question [verb]="leftOut().verb" [name]="entry()!.namePt" [using]="using()" [busy]="archiving()" (cancel)="cancelAsk()" (confirm)="archive()" />
       }
 
       @if (noEditorYet()) {
@@ -166,34 +187,34 @@
         } @else if (catalog() && (menu() || kind() === Kind.SPELL || kind() === Kind.CREATURE) && (!needsDefaults() || defaults())) {
           @switch (kind()) {
             @case (Kind.SPELL) {
-              <app-spell-editor [campaignId]="campaignId()" [entry]="entry()" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-spell-editor [campaignId]="campaignId()" [entry]="entry()" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.RACE) {
-              <app-race-editor mode="race" [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-race-editor mode="race" [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.SUBRACE) {
-              <app-race-editor mode="subrace" [campaignId]="campaignId()" [entry]="entry()" [parentKey]="subraceParent()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-race-editor mode="subrace" [campaignId]="campaignId()" [entry]="entry()" [parentKey]="subraceParent()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.CLASS) {
-              <app-class-editor (switched)="replace($event)" [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [defaults]="defaults()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-class-editor (switched)="replace($event)" [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [defaults]="defaults()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.SUBCLASS) {
-              <app-subclass-editor (switched)="replace($event)" [campaignId]="campaignId()" [entry]="entry()" [parentKey]="parentClass()" [menu]="menu()!" [catalog]="catalog()!" [defaults]="defaults()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-subclass-editor (switched)="replace($event)" [campaignId]="campaignId()" [entry]="entry()" [parentKey]="parentClass()" [menu]="menu()!" [catalog]="catalog()!" [defaults]="defaults()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.FEAT) {
-              <app-feat-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-feat-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.OPTION) {
-              <app-option-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-option-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.CLASS_FEATURE) {
-              <app-class-feature-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-class-feature-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.CREATURE) {
               <app-creature-editor [campaignId]="campaignId()" [entry]="entry()" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
             @case (Kind.BACKGROUND) {
-              <app-background-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
+              <app-background-editor [campaignId]="campaignId()" [entry]="entry()" [menu]="menu()!" [catalog]="catalog()!" [entries]="entries()" [saveBlocked]="saveBlocked()" [leftOut]="leftOut().violation" (saved)="onSaved($event)" (switched)="replace($event)" (reload)="load()" (cancelled)="goBack()" />
             }
           }
         } @else {

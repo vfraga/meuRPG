@@ -73,7 +73,7 @@ func (sm *SessionMaps) MapShown(ctx context.Context, campaignID, mapID string) {
 func (sm *SessionMaps) VisionChanged(ctx context.Context, campaignID, mapID string) {
 	if sm.svc != nil && mapID != "" {
 		sm.svc.refreshVision(ctx, campaignID, mapID)
-		sm.svc.live.Publish(campaignID, false, visionChangedEvent(mapID))
+		sm.svc.publish(campaignID, false, visionChangedEvent(mapID))
 	}
 }
 

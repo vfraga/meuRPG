@@ -1451,8 +1451,11 @@ type TableEffect struct {
 	// lets the character cast it with a spell slot too, `ritual_only` limits it to the
 	// ritual way (a spell with the ritual tag; not with also_with_slot) and
 	// `counts_as_known` lists it among the known spells without using any of the
-	// class's picks. A leveled spell cast through the grant is cast at its own level;
-	// the material components are not waived. Required: `spell` and `ability`.
+	// class's picks. A leveled spell cast through the grant is cast at its own level.
+	// The material components are waived only when `no_material_components` is set, and
+	// only on the sheet and the cast sheet (the server never enforces components).
+	// `uses_cost` is how many uses of the resource each cast spends (0 and 1 are one);
+	// it needs a resource in `uses`. Required: `spell` and `ability`.
 	Spell         string `protobuf:"bytes,30,opt,name=spell,proto3" json:"spell,omitempty"`
 	FromLevel     string `protobuf:"bytes,31,opt,name=from_level,json=fromLevel,proto3" json:"from_level,omitempty"`
 	Uses          string `protobuf:"bytes,32,opt,name=uses,proto3" json:"uses,omitempty"`
@@ -1603,9 +1606,15 @@ type TableEffect struct {
 	// weapon_rule only: the weapon lines the filter chooses (the unarmed strike too) count as silvered.
 	Silvered bool `protobuf:"varint,83,opt,name=silvered,proto3" json:"silvered,omitempty"`
 	// weapon_rule only: the weapon lines the filter chooses (the unarmed strike too) count as adamantine.
-	Adamantine    bool `protobuf:"varint,84,opt,name=adamantine,proto3" json:"adamantine,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Adamantine bool `protobuf:"varint,84,opt,name=adamantine,proto3" json:"adamantine,omitempty"`
+	// flag only: one word of the closed list the menu gives under "effect_flags" ("never_surprised", ...).
+	Flag string `protobuf:"bytes,85,opt,name=flag,proto3" json:"flag,omitempty"`
+	// granted_spell: the grant's material components are not needed (display only), and the
+	// uses each cast spends.
+	NoMaterialComponents bool  `protobuf:"varint,86,opt,name=no_material_components,json=noMaterialComponents,proto3" json:"no_material_components,omitempty"`
+	UsesCost             int32 `protobuf:"varint,87,opt,name=uses_cost,json=usesCost,proto3" json:"uses_cost,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *TableEffect) Reset() {
@@ -2224,6 +2233,27 @@ func (x *TableEffect) GetAdamantine() bool {
 		return x.Adamantine
 	}
 	return false
+}
+
+func (x *TableEffect) GetFlag() string {
+	if x != nil {
+		return x.Flag
+	}
+	return ""
+}
+
+func (x *TableEffect) GetNoMaterialComponents() bool {
+	if x != nil {
+		return x.NoMaterialComponents
+	}
+	return false
+}
+
+func (x *TableEffect) GetUsesCost() int32 {
+	if x != nil {
+		return x.UsesCost
+	}
+	return 0
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
@@ -8303,7 +8333,7 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\ftable_option\x18\x12 \x01(\v2\x1c.meurpg.rules.v1.TableOptionH\x00R\vtableOption\x12T\n" +
 	"\x13table_class_feature\x18\x13 \x01(\v2\".meurpg.rules.v1.TableClassFeatureH\x00R\x11tableClassFeature\x12G\n" +
 	"\x0etable_creature\x18\x14 \x01(\v2\x1e.meurpg.rules.v1.TableCreatureH\x00R\rtableCreatureB\x06\n" +
-	"\x04body\"\x97\x13\n" +
+	"\x04body\"\x84\x14\n" +
 	"\vTableEffect\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x12\n" +
@@ -8404,7 +8434,10 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\bsilvered\x18S \x01(\bR\bsilvered\x12\x1e\n" +
 	"\n" +
 	"adamantine\x18T \x01(\bR\n" +
-	"adamantine\"\x81\x02\n" +
+	"adamantine\x12\x18\n" +
+	"\x04flag\x18U \x01(\tB\x04\x90\xb5\x18@R\x04flag\x124\n" +
+	"\x16no_material_components\x18V \x01(\bR\x14noMaterialComponents\x12\x1b\n" +
+	"\tuses_cost\x18W \x01(\x05R\busesCost\"\x81\x02\n" +
 	"\fTableFeature\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x1f\n" +

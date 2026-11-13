@@ -10,7 +10,9 @@ import {
   reachSquares,
   squaresFree,
   squaresText,
+  poundsToKg,
   squaresToMeters,
+  weightWithPounds,
 } from './units';
 
 /** The text ties numbers to their units with no-break spaces; the tests read it with plain ones. */
@@ -82,5 +84,18 @@ describe('units: feet, meters and squares (1 quadrado = 1,5 m = 5 pés)', () => 
     expect(text).toContain('7,5 m ·');
     expect(text).toContain('5 quadrados');
     expect(text).toContain('25 pés');
+  });
+});
+
+describe('units: weight (1 lb = 0,5 kg)', () => {
+  it('turns pounds into kilograms at the books rate, with a decimal comma', () => {
+    expect(poundsToKg(180)).toBe('90 kg');
+    expect(poundsToKg(195)).toBe('97,5 kg');
+    expect(poundsToKg(0)).toBe('0 kg');
+  });
+
+  it('writes metric first with the book unit in parentheses, never breaking a number from its unit', () => {
+    expect(weightWithPounds(180)).toBe('90\u00a0kg (180\u00a0lb)');
+    expect(plain(weightWithPounds(195))).toBe('97,5 kg (195 lb)');
   });
 });

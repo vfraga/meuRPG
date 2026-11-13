@@ -2,6 +2,9 @@
   <div class="cols">
     <div class="col">
       <app-area-step [n]="1" [title]="stepOne" />
+      @if (flow.wall(); as w) {
+        <app-wall-controls part="shape" [wall]="w" [loading]="flow.loading()" [stops]="flow.stops()" [disabled]="flow.step() === 'list'" (changed)="flow.setWall($event)" />
+      }
       <app-area-map
         [image]="data.map.image"
         [mapName]="data.map.mapName"
@@ -19,11 +22,16 @@
         [preview]="flow.preview()"
         [readOnly]="flow.step() === 'list' || placement === Placement.CASTER"
         [seen]="seen()"
+        [wall]="flow.wall()"
         [autofocus]="placement !== Placement.CASTER"
         (place)="flow.place($event)"
+        (aimed)="flow.placeWall($event.square, $event.direction)"
         (confirm)="confirm()"
         (dismiss)="close()"
       />
+      @if (flow.wall(); as w) {
+        <app-wall-controls part="size" [wall]="w" [dice]="dice()" [disabled]="flow.step() === 'list'" (changed)="flow.setWall($event)" />
+      }
     </div>
     <div class="col">
       <app-area-step #listTitle [n]="2" title="Quem está na área (você vê todos)" />
@@ -78,6 +86,9 @@
         <mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ nobody() ? 'Conjurar mesmo assim' : 'Conjurar ' + data.name }}
       </button>
     } @else {
+      @if (flow.wall() && !flow.ready()) {
+        <p class="missing" role="status"><mat-icon aria-hidden="true">block</mat-icon>{{ flow.placed() ? 'Escolha o lado que queima.' : 'Toque no mapa para marcar onde a muralha fica.' }}</p>
+      }
       <button
         matButton="filled"
         type="button"

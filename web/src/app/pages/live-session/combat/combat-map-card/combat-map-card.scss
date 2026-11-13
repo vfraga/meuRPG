@@ -365,3 +365,8 @@
     min-height: 44px;
   }
 }
+
+// The master's sun controls (#704), under the head, and the legend's sample of a sunlit square is `.mr-swatch--sun` (styles/_ui.scss).
+.card__sun {
+  padding-bottom: 2px;
+}

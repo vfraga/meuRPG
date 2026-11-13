@@ -29,7 +29,7 @@ func (s *Service) SignalMasterTyping(
 	// A hint that comes too soon after the last is answered and sent to nobody: the app asks
 	// while the master types, and the players need it once every few seconds.
 	if s.msgs.typing.take(m.CampaignID, s.now()) {
-		s.hub.Publish(m.CampaignID, live.Event{
+		s.send(m.CampaignID, live.Event{
 			Audience: live.Audience{Players: true},
 			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MasterTyping_{
 				MasterTyping: &playv1.WatchGameSessionResponse_MasterTyping{ExpiresInSeconds: int32(typingTTL.Seconds())},

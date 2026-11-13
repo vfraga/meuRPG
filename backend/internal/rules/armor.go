@@ -45,6 +45,7 @@ func (x *deriver) armorClass() {
 			x.issue(IssueArmorProficiency, "full.shield", "Sem proficiência em escudos.")
 		}
 	}
+	ac += x.armorItemBonus()
 	x.d.ArmorClass = x.modifiers("ac", ac)
 	x.d.ArmorClassDescription = name
 	x.d.ArmorCategory = x.armorCategory

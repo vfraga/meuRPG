@@ -12,7 +12,7 @@ The natural roll is the d20 as it counts: a table's roll minimum can raise a 1 t
 The response carries the roll in numbers (`1d20 (13) + 6 = 19`) and the result, never the AC for the player; the master's response carries `target_armor_class`, with a Shield's +5 stored in the event so a resend finds the same.
 `TestRN20_PlayersNeverReceiveCAOrHiddenLogEntries` searches the AC in the player's JSON and checks the master's has it.
 A hit opens a `pending_damages` row (stored, so a resend or a reload finds it).
-The AC is the sheet's: a shield beside a two-handed weapon on the sheet adds nothing, in the combat and in the comparison alike.
+The AC is the sheet's: a shield beside an equipped two-handed weapon adds nothing, in the combat and in the comparison alike.
 A Protection used on the attack gives the roll disadvantage, with its own source in the mode (see [Reactions](reactions.md#protection)).
 A weapon attack held for a Lucky or Bardic Inspiration question is in [Held rolls](held-rolls.md); a hit that waits for a reaction is in [Reactions](reactions.md).
 `RollAttackRequest.maneuver_key` adds a table die of applies `attack` to a weapon attack of the player's own character.
@@ -114,6 +114,18 @@ A damage roll of typed physical dice is never floored, because the app did not r
 The damage of a zone, of a lasting effect, of a trap, and of a creature or an NPC does not count a minimum.
 Whoever reads the faces of a roll reads `counted_dice`: the roller's player and the master, never another player.
 
+### Damage reduction
+
+A flat reduction of weapon damage comes from the `damage.reduction.weapon` and `damage.reduction.nonmagical_weapon` modifiers of a table feature ([Rules: table content](../rules-table-content.md#the-closed-menu-of-effects)).
+`modifiersOf` lists each one as a `combat.Modifier` of kind `StepReduction` with its `Amount`; the nonmagical one carries `QualifierNonmagical`.
+It covers a damage only when `combat.Origin` says it is an attack made with a weapon (`Origin.Weapon`, an unarmed strike included) and, for the nonmagical kind, not a magical one; a spell, a trap, a zone and an ongoing effect are never reduced.
+The amounts of every covering source add, and the reduction is taken once from the whole weapon attack, not once for each damage type: `combat.Reduce` takes it from the types largest first (a tie by the type key) until it is spent or the damage is 0.
+It comes before immunity, resistance and vulnerability, which then work on what is left of each type.
+The step has no damage type and its label is "Redução de dano de arma" (with "não mágica" and the sources); the master leaving a source out (`ignore_modifiers`) removes its amount.
+The group of the step keeps the damage of every type (`stepGroup.Allot`), so the apply and the preview work the same.
+The master and the owner of the target read the step as `DamageStep` of kind `DAMAGE_STEP_KIND_REDUCTION`.
+The step's sources go through the same hiding as every other step (`hidingNames`): a source marked `Hidden` reads "Outra fonte" for a player.
+
 ### Resistance
 
 The damage of each type goes through the target's modifiers (`combat.Adjust`, SRD 5.1 "Damage Resistance and Vulnerability"): resistance halves rounding down, vulnerability doubles, immunity nulls, and the same resistance from two sources counts once.
@@ -134,7 +146,7 @@ The silvered qualifier also needs `Origin.Silvered` to be false, and the adamant
 An attack of the attacker's sheet or stat block is magical when `link.Attack.Magical` is, and it carries `link.Attack.Silvered` and `link.Attack.Adamantine` (from `rules.Attack`) into the origin as the weapon's material.
 A spell or cantrip attack is magical.
 A creature's attack is magical when its stat block has the trait "Magic Weapons", and it is never silvered or adamantine.
-A weapon of a character is marked by the sheet (`full.weapon_marks`) or by a `weapon_rule`; `rules.deriver.weaponMarks` is the one place that merges them.
+A weapon of a character is marked by the sheet (`full.weapon_marks`), by a `weapon_rule` or by a magic bonus that counts (`full.item_bonuses`, which makes it magical only); `rules.deriver.weaponMarks` is the one place that merges them.
 The unarmed strike has no sheet mark: `rules.unarmedStrike` calls `weaponMarks` too, so a `weapon_rule` marks it.
 Ki-Empowered Strikes (`feature:ki-empowered-strikes` in `Derived.Features`, monk 6, multiclass included, not an effect) makes it magical on its own, and the `magic` filter reads that.
 A `pseudo_weapon` line is never marked by a `weapon_rule`.
@@ -193,6 +205,7 @@ Death saves and initiative are untouched.
   `RollSceneCheck`, `SearchForTraps` and `TryPuzzleHint` take the same field.
 - **What counts as a source.** Conditions of attacker and target (Blinded, Frightened, Invisible, Paralyzed, Poisoned, Prone with the 5 ft rule, Restrained, Stunned, Unconscious, Petrified); an attacker or target the other cannot see (a fog map hides it from the player; the master's own "hidden" mark changes no roll); long range (not for a weapon attack whose attacker has a `ranged_attack` with `no_long_range_disadvantage`) and a hostile within 5 ft for ranged attacks; Reckless Attack; Danger Sense (only against an effect the character sees); Dodge; Pack Tactics; Magic Resistance (`Creature.MagicResistance`, from a stat block's trait; advantage on a save whose `Against` holds magic, never on a check; Turn Undead's and a rider's saves list no source, so it does not apply to them); Rage on Strength checks and saves; armor or a shield without proficiency (`armor_untrained`, a player's character only: `armorTrainingOf` in `characters` gives it to no NPC, creature or beast form, and `combat.ArmorSpoilsAbility` says which rolls, Strength and Dexterity checks, saves and weapon attacks, never a Constitution save such as concentration nor a spell attack; see [Casting](casting.md#casting-in-combat) for the spells it stops); Frightened and Poisoned on ability checks; the racial advantages on saves against one kind of source (`TaggedSave`: Brave, Fey Ancestry, Gnome Cunning, Dwarven Resilience, read from the sheet's `against:` hints by `taggedSavesOf`), which apply only when the save lists what it is against (`SaveScene.Against`, worked out in `combat_against.go` for a spell's save, an effect's and a trap's; a save with no known source keeps the sheet's reminder) and read "Bravura: vantagem no teste de resistência contra ficar amedrontado" on the roll card; the Help; lasting effects (see [Lasting effects](lasting-effects.md)).
   A hit within 5 ft against a Paralyzed or Unconscious target is a critical hit (`critical_on_hit`).
+  A ranged weapon attack made by a character with the `ignore_hostile_nearby` flag gets no disadvantage for a hostile creature within 5 ft (`combat_advantage.go`); a spell attack still does.
 - **What the player sees.** Only the sources they can see are listed; the mode counts all of them.
 - **The shape of an attack** (`shapeOfAttack`, `attackShape`) says whether it is melee or ranged.
   A spell attack is ranged when its range is beyond touch.

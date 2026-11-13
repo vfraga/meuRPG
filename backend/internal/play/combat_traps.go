@@ -129,12 +129,12 @@ func sourceRecs(sources []combat.Source) []sourceRec {
 }
 
 // shownRecs writes the circumstances for the viewer who may read them.
-func shownRecs(recs []sourceRec, names func(string) string) []*playv1.AdvantageSource {
+func shownRecs(recs []sourceRec, names func(string) string, master bool) []*playv1.AdvantageSource {
 	var sources []combat.Source
 	for _, r := range recs {
 		sources = append(sources, combat.Source{Kind: r.Kind, Effect: combat.RollMode(r.Effect), Condition: r.Condition})
 	}
-	return shownSources(sources, names)
+	return shownSources(sources, names, master)
 }
 
 // trapDamageEvent is one damage part rolled for a creature: the roll, and what it
@@ -174,28 +174,43 @@ func (s *Service) trapDice(e dice.Expr) (dice.Result, error) {
 func (s *Service) trapTargetsOf(ctx context.Context, tx pgx.Tx, campaignID string, trap maplink.Trap, effect *rulesv1.TrapEffect, caught []playdb.Combatant, states map[string][]playdb.CombatantState) ([]trapTarget, error) {
 	ability := trapSaveAbility(effect)
 	out := make([]trapTarget, len(caught))
-	for i, c := range caught {
-		out[i].id = c.ID
-		if err := s.trapModesOf(ctx, tx, campaignID, trap, c, states, ability, trapSaveAgainst(effect), &out[i]); err != nil {
+	var sun sunlight // the caught are all in one combat; a trap that catches nobody needs none
+	if len(caught) > 0 {
+		var err error
+		if sun, err = s.sunlightRead(ctx, s.queriesIn(tx), caught[0].EncounterID); err != nil {
 			return nil, err
 		}
-		if trapNeedsAC(effect) {
-			sheet, err := s.sheetOf(ctx, tx, campaignID, c)
-			if err != nil {
-				return nil, err
-			}
-			out[i].armorClass = sheet.ArmorClass + int(c.AcBonus) + int(c.EffectAcBonus)
-		}
-		if ability != "" {
-			save, err := s.saveOf(ctx, tx, campaignID, c, ability)
-			if err != nil {
-				return nil, err
-			}
-			save = withRollBonus(save, states, c.ID, rules.RollAppliesSave)
-			out[i].save, out[i].saveKnown = save.Bonus, save.Known
+	}
+	for i, c := range caught {
+		if err := s.trapTargetOf(ctx, tx, campaignID, trap, effect, c, sun, states, ability, &out[i]); err != nil {
+			return nil, err
 		}
 	}
 	return out, nil
+}
+
+// trapTargetOf is what the trap's roll needs of one caught combatant: its modes, its armor class and its save.
+func (s *Service) trapTargetOf(ctx context.Context, tx pgx.Tx, campaignID string, trap maplink.Trap, effect *rulesv1.TrapEffect, c playdb.Combatant, sun sunlight, states map[string][]playdb.CombatantState, ability string, out *trapTarget) error {
+	out.id = c.ID
+	if err := s.trapModesOf(ctx, tx, campaignID, trap, c, sun, states, ability, trapSaveAgainst(effect), out); err != nil {
+		return err
+	}
+	if trapNeedsAC(effect) {
+		sheet, err := s.sheetOf(ctx, tx, campaignID, c)
+		if err != nil {
+			return err
+		}
+		out.armorClass = sheet.ArmorClass + int(c.AcBonus) + int(c.EffectAcBonus)
+	}
+	if ability != "" {
+		save, err := s.saveOf(ctx, tx, campaignID, c, ability)
+		if err != nil {
+			return err
+		}
+		save = withRollBonus(save, states, c.ID, rules.RollAppliesSave)
+		out.save, out.saveKnown = save.Bonus, save.Known
+	}
+	return nil
 }
 
 // fireInCombat fires the trap on the combatants it caught, inside the change's
@@ -719,6 +734,31 @@ func markTrapOnRoute(r *playv1.ReachableSquare, ahead []maplink.Trap, from grid.
 	}
 }
 
+// hiddenFrom says the players' line of the firing leaves the creature out for the viewer, as the event kept it: the master
+// had hidden it when the trap fired, or, on a fog map, the viewer was not among the ones who saw it then. (The log also leaves
+// out a creature the master has hidden since: that one is read from the combatant, not from the event.)
+func (cc trapCaughtEvent) hiddenFrom(v combatViewer) bool {
+	return cc.Hidden || (cc.Fogged && !slices.Contains(cc.SeenBy, v.userID))
+}
+
+// addsNothingFor says the firing only adds creatures to an earlier firing (ExtendsID), and none of them is one the viewer is
+// given: the event changes nothing the viewer reads, so it must not move any number or hint of theirs. A viewer with no id (the
+// hint to the players as a whole) is given a creature only when no one is kept from it.
+func (t *trapFireEvent) addsNothingFor(v combatViewer) bool {
+	if t == nil || t.ExtendsID == "" || len(t.Caught) == 0 {
+		return false
+	}
+	return !slices.ContainsFunc(t.Caught, func(cc trapCaughtEvent) bool { return !cc.hiddenFrom(v) })
+}
+
+// addsNothingForAnyPlayer is addsNothingFor for the players as a whole: no creature the firing adds is given to any of them.
+func (t *trapFireEvent) addsNothingForAnyPlayer() bool {
+	if t == nil || t.ExtendsID == "" || len(t.Caught) == 0 {
+		return false
+	}
+	return !slices.ContainsFunc(t.Caught, func(cc trapCaughtEvent) bool { return !cc.Hidden && (!cc.Fogged || len(cc.SeenBy) > 0) })
+}
+
 // ---- what a trap's firing says, for the master and for the log ----
 
 // trapView says what a viewer of a firing gets (RN-10, RN-20): the master all of
@@ -797,7 +837,7 @@ func (v trapView) attackProto(a trapAttackEvent, mine bool) *playv1.TrapAttackRo
 	r := &playv1.TrapAttackRoll{Outcome: outcomeToProto[a.Outcome]}
 	if mine {
 		r.Roll = trapD20Roll(a.D20, a.D20B, a.Counted, a.Modifier, a.Total)
-		r.Mode, r.Sources = modeToProto[modeOfKey(a.Mode)], shownRecs(a.Sources, v.names)
+		r.Mode, r.Sources = modeToProto[modeOfKey(a.Mode)], shownRecs(a.Sources, v.names, v.master)
 	}
 	if v.master {
 		r.TargetArmorClass = a.TargetAC
@@ -818,7 +858,7 @@ func (v trapView) saveProto(sv saveRoll, sources []sourceRec, mine bool) *playv1
 			r.Roll.Rerolled = sv.Lucky.proto() // "Sortudo: 1 → 14": the d20 the app rolled again, with the dice
 			sv.mark(r.Roll)
 		}
-		r.Mode, r.AutoFailed, r.Sources = modeToProto[modeOfKey(sv.RollMode)], sv.Auto, shownRecs(sources, v.names)
+		r.Mode, r.AutoFailed, r.Sources = modeToProto[modeOfKey(sv.RollMode)], sv.Auto, shownRecs(sources, v.names, v.master)
 		r.Sources = append(r.Sources, effectDieSources(sv.Extra, v.names, v.master)...)
 	}
 	if v.master {
@@ -866,12 +906,12 @@ func (v trapView) statusOf(pendingID string) (playv1.PendingDamageStatus, bool) 
 // throw (SRD 5.1): the combatant's conditions and states count, and so does Danger
 // Sense, but only against a trap the character knew before it fired: a hidden trap
 // is no effect it sees, and the source is not even named (RN-10).
-func (s *Service) trapModesOf(ctx context.Context, tx pgx.Tx, campaignID string, trap maplink.Trap, c playdb.Combatant, states map[string][]playdb.CombatantState, ability string, against []string, out *trapTarget) error {
+func (s *Service) trapModesOf(ctx context.Context, tx pgx.Tx, campaignID string, trap maplink.Trap, c playdb.Combatant, sun sunlight, states map[string][]playdb.CombatantState, ability string, against []string, out *trapTarget) error {
 	sheet, err := s.sheetOf(ctx, tx, campaignID, c)
 	if err != nil {
 		return err
 	}
-	creature := creatureFacts(c, states, sheet.Traits)
+	creature := sun.facts(creatureFacts(c, states, sheet.Traits), c)
 	out.facts = creature
 	attack := combat.AttackMode(combat.AttackScene{Target: creature, Ranged: true})
 	out.attackSources = attack.Sources

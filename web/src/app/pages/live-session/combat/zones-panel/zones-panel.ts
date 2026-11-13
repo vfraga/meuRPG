@@ -14,9 +14,11 @@ import {
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 
 import { zonePattern } from '../../../../core/combat/zone-pattern';
 import type { ZoneView } from '../../../../core/combat/zones';
+import { ZoneLetter } from '../../../../shared/combat-map/zone-layer/zone-letter';
 import { ZoneSwatch } from '../../../../shared/combat-map/zone-layer/zone-swatch';
 import { type ZoneNote, zoneNotice } from './zones-announce';
 
@@ -29,7 +31,7 @@ import { type ZoneNote, zoneNotice } from './zones-announce';
  */
 @Component({
   selector: 'app-zones-panel',
-  imports: [MatButtonModule, MatIconModule, ZoneSwatch],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, ZoneLetter, ZoneSwatch],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './zones-panel.html',
   styleUrl: './zones-panel.scss',
@@ -61,7 +63,7 @@ export class ZonesPanel {
 
   constructor() {
     effect(() => {
-      const now = this.zones().map((z) => ({ id: z.id, label: z.label }));
+      const now = this.zones().map((z) => ({ id: z.id, label: z.label, letter: z.letter }));
       untracked(() => {
         const text = zoneNotice(this.known, now);
         this.known = now;
@@ -79,7 +81,7 @@ export class ZonesPanel {
 
   protected cancel(id: string): void {
     this.asking.set(null);
-    this.focusLater(`[data-zone="${id}"] .zp__end`);
+    this.focusLater(`[data-zone="${id}"] .zp__more`);
   }
 
   private focusLater(selector: string): void {

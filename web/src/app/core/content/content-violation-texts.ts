@@ -405,4 +405,10 @@ export const FIELD_TEXTS: readonly { shape: RegExp; reason?: string; text: strin
   { shape: /\.class_keys\[\]$/, text: 'Esta classe está na lista duas vezes.' },
   ...FEAT_OPTION_TEXTS,
   ...RACE_FIELD_TEXTS,
+  // The target of a modifier is a closed list of the menu; one that left it (or never was in it) is refused here. After the feat's own rows, whose option effects read a pick.
+  {
+    shape: /\.effects\[\]\.target$/,
+    reason: 'bad_value',
+    text: 'Este alvo não está mais no menu de efeitos. Escolha outro.',
+  },
 ];

@@ -700,3 +700,47 @@ describe('ActionGroups: the table die line above the weapon rows', () => {
     expect(note(setup([], [die('Golpe Certeiro', 2)]))).toBe('');
   });
 });
+
+describe('ActionGroups: the marks of a weapon are a chip beside its name (#585)', () => {
+  const attack = (over: { silvered?: boolean; magical?: boolean; kind?: AttackKind }) =>
+    create(AttackOptionSchema, {
+      attack: {
+        key: 'equipment:longsword',
+        name: 'Longsword',
+        namePt: 'Espada longa',
+        kind: over.kind ?? AttackKind.WEAPON,
+        silvered: over.silvered ?? false,
+        magical: over.magical ?? false,
+        attackBonus: 6,
+        damage: '1d8 + 3',
+      },
+      enabled: true,
+    });
+  function row(opt: ReturnType<typeof attack>): HTMLElement {
+    const fixture = TestBed.createComponent(ActionGroups);
+    fixture.componentRef.setInput('options', create(TurnOptionsSchema, { attacks: [opt] }));
+    fixture.componentRef.setInput(
+      'own',
+      create(CombatantSchema, { movementLeftFt: 25, speedFt: 25 }),
+    );
+    fixture.detectChanges();
+    return (fixture.nativeElement as HTMLElement).querySelector('app-action-row')!;
+  }
+
+  it('puts an icon and a word for each mark beside the name, and keeps them out of the detail line', () => {
+    const r = row(attack({ silvered: true, magical: true }));
+    const head = r.querySelector('.row__head')!;
+    expect(
+      Array.from(head.querySelectorAll('.weapon-tags li')).map((li) => li.textContent!.trim()),
+    ).toEqual(['dark_modePrateada', 'auto_awesomeMágica']);
+    expect(head.querySelector('.row__name')!.textContent).toContain('Espada longa');
+    expect(r.querySelector('.row__detail')!.textContent).not.toMatch(/Prateada|Mágica/);
+  });
+
+  it('shows no chip on a plain weapon or on a spell', () => {
+    expect(row(attack({})).querySelector('.weapon-tags')).toBeNull();
+    expect(
+      row(attack({ kind: AttackKind.SPELL, magical: true })).querySelector('.weapon-tags'),
+    ).toBeNull();
+  });
+});

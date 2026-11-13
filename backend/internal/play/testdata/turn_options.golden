@@ -272,6 +272,7 @@ options as options of Brisa to her player
 - .options.attacks[spell:sacred-flame].attack.damageTypePt
 - .options.attacks[spell:sacred-flame].attack.key
 - .options.attacks[spell:sacred-flame].attack.kind
+- .options.attacks[spell:sacred-flame].attack.magical
 - .options.attacks[spell:sacred-flame].attack.name
 - .options.attacks[spell:sacred-flame].attack.namePt
 - .options.attacks[spell:sacred-flame].attack.rangeFt
@@ -591,6 +592,7 @@ options
 .options.attacks[spell:sacred-flame].attack.damageTypePt = "radiante"
 .options.attacks[spell:sacred-flame].attack.key = "spell:sacred-flame"
 .options.attacks[spell:sacred-flame].attack.kind = "ATTACK_KIND_SPELL"
+.options.attacks[spell:sacred-flame].attack.magical = true
 .options.attacks[spell:sacred-flame].attack.name = "Sacred Flame"
 .options.attacks[spell:sacred-flame].attack.namePt = "Chama Sagrada"
 .options.attacks[spell:sacred-flame].attack.rangeFt = 60
@@ -965,6 +967,7 @@ options
 .options.attacks[spell:sacred-flame].attack.damageTypePt = "radiante"
 .options.attacks[spell:sacred-flame].attack.key = "spell:sacred-flame"
 .options.attacks[spell:sacred-flame].attack.kind = "ATTACK_KIND_SPELL"
+.options.attacks[spell:sacred-flame].attack.magical = true
 .options.attacks[spell:sacred-flame].attack.name = "Sacred Flame"
 .options.attacks[spell:sacred-flame].attack.namePt = "Chama Sagrada"
 .options.attacks[spell:sacred-flame].attack.rangeFt = 60
@@ -2246,6 +2249,7 @@ options
 .options.attacks[spell:fire-bolt].attack.damageTypePt = "fogo"
 .options.attacks[spell:fire-bolt].attack.key = "spell:fire-bolt"
 .options.attacks[spell:fire-bolt].attack.kind = "ATTACK_KIND_SPELL"
+.options.attacks[spell:fire-bolt].attack.magical = true
 .options.attacks[spell:fire-bolt].attack.name = "Fire Bolt"
 .options.attacks[spell:fire-bolt].attack.namePt = "Raio de Fogo"
 .options.attacks[spell:fire-bolt].attack.rangeFt = 120
@@ -2478,6 +2482,7 @@ options
 .options.attacks[spell:fire-bolt].attack.damageTypePt = "fogo"
 .options.attacks[spell:fire-bolt].attack.key = "spell:fire-bolt"
 .options.attacks[spell:fire-bolt].attack.kind = "ATTACK_KIND_SPELL"
+.options.attacks[spell:fire-bolt].attack.magical = true
 .options.attacks[spell:fire-bolt].attack.name = "Fire Bolt"
 .options.attacks[spell:fire-bolt].attack.namePt = "Raio de Fogo"
 .options.attacks[spell:fire-bolt].attack.rangeFt = 120
@@ -2694,6 +2699,7 @@ options
 .options.attacks[spell:fire-bolt].attack.damageTypePt = "fogo"
 .options.attacks[spell:fire-bolt].attack.key = "spell:fire-bolt"
 .options.attacks[spell:fire-bolt].attack.kind = "ATTACK_KIND_SPELL"
+.options.attacks[spell:fire-bolt].attack.magical = true
 .options.attacks[spell:fire-bolt].attack.name = "Fire Bolt"
 .options.attacks[spell:fire-bolt].attack.namePt = "Raio de Fogo"
 .options.attacks[spell:fire-bolt].attack.rangeFt = 120
@@ -3127,6 +3133,7 @@ options
 .options.attacks[spell:fire-bolt].attack.damageTypePt = "fogo"
 .options.attacks[spell:fire-bolt].attack.key = "spell:fire-bolt"
 .options.attacks[spell:fire-bolt].attack.kind = "ATTACK_KIND_SPELL"
+.options.attacks[spell:fire-bolt].attack.magical = true
 .options.attacks[spell:fire-bolt].attack.name = "Fire Bolt"
 .options.attacks[spell:fire-bolt].attack.namePt = "Raio de Fogo"
 .options.attacks[spell:fire-bolt].attack.rangeFt = 120

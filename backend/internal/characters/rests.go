@@ -564,7 +564,7 @@ func (s *Service) SongOfRest(ctx context.Context, tx pgx.Tx, campaignID string) 
 
 // SpendHitDie spends one hit die of the size on a short rest: face is the die
 // rolled, and the character regains that plus its Constitution modifier (at least 0)
-// plus extra (the face of a Song of Rest die, 0 when none applies), cut to its
+// (but at least the sheet's hitdie.minimum) plus extra (the face of a Song of Rest die, 0 when none applies), cut to its
 // maximum. It returns the vitals before and after, the Constitution
 // modifier and the hit points regained. link.ErrNoHitDiceLeft when none of the size
 // is left, link.ErrBadHitDiceChoice for a size the character has not. It implements
@@ -584,7 +584,7 @@ func (s *Service) SpendHitDie(ctx context.Context, tx pgx.Tx, campaignID, charac
 	}
 	after = proto.CloneOf(r.view)
 	setHitDiceUsed(after, spent)
-	gain := rules.HitDieHeal(face, r.m.conMod) + max(extra, 0)
+	gain := max(rules.HitDieHeal(face, r.m.conMod), r.m.hitDieMin) + max(extra, 0)
 	after.HitPointsCurrent = min(r.view.GetHitPointsCurrent()+i32(gain), r.view.GetHitPointsMax())
 	healed = int(after.GetHitPointsCurrent() - r.view.GetHitPointsCurrent())
 	if after, err = s.saveView(ctx, tx, r, after); err != nil {

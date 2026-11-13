@@ -20,8 +20,10 @@ import (
 // the final word: no turn, no economy, armor included. Outside a running combat it is free.
 
 // EquipInCombat implements characters.ReviewHost: it asks the combat that holds the
-// character, inside the transaction that writes the sheet and before it writes. It returns
-// what to call after the commit (the combat's streams are told), or nil outside a combat.
+// character, inside the transaction that writes the sheet and before it writes. It writes the
+// swap as an event of the combat (gear_swapped) with the turn's economy from before, so the master's
+// undo takes the swap back first. It returns what to call after the commit (the combat's streams
+// are told), or nil outside a combat.
 func (s *Service) EquipInCombat(ctx context.Context, tx pgx.Tx, campaignID, characterID, actorUserID string, change link.EquipChange) (func(context.Context), error) {
 	q := s.queries.WithTx(tx)
 	session, enc, found, err := openCombatOf(ctx, q, campaignID)
@@ -40,24 +42,32 @@ func (s *Service) EquipInCombat(ctx context.Context, tx pgx.Tx, campaignID, char
 	if err != nil {
 		return nil, err
 	}
+	swap := gearSwapOf(*who, change, c.enc.Round)
 	if conv.OrZero(who.UserID) == actorUserID { // the owner is bound by the turn; the master has the last word
-		if err := s.mayEquip(ctx, c, *who, change); err != nil {
+		if swap.Cost, err = s.mayEquip(ctx, c, *who, change); err != nil {
 			return nil, err
 		}
+	}
+	if err := s.writeGearSwap(ctx, c, actorUserID, characterID, swap); err != nil {
+		return nil, err
 	}
 	if err := touch(ctx, c); err != nil { // as every change of a combat: the stream carries the new revision
 		return nil, err
 	}
-	return func(ctx context.Context) { s.publishEncounterChanged(ctx, campaignID, c.enc) }, nil
+	owner := conv.OrZero(who.UserID)
+	return func(ctx context.Context) {
+		s.publishEncounterChanged(ctx, campaignID, c.enc)
+		s.publishGearLog(ctx, campaignID, c.enc.ID, owner) // the swap's line is the master's and the owner's
+	}, nil
 }
 
-// mayEquip checks a player's change against the combat and spends what it costs.
-func (s *Service) mayEquip(ctx context.Context, c *combatTx, who playdb.Combatant, change link.EquipChange) error {
+// mayEquip checks a player's change against the combat and spends what it costs; it says what it cost.
+func (s *Service) mayEquip(ctx context.Context, c *combatTx, who playdb.Combatant, change link.EquipChange) (string, error) {
 	if change.Kind == link.EquipArmor {
-		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ARMOR_IN_COMBAT, "body armor takes minutes to don or doff: not in a combat")
+		return "", errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ARMOR_IN_COMBAT, "body armor takes minutes to don or doff: not in a combat")
 	}
 	if err := s.mustActNow(ctx, c, who); err != nil {
-		return err
+		return "", err
 	}
 	return s.payEquip(ctx, c, who, change)
 }
@@ -74,36 +84,36 @@ func wearerIn(cs []playdb.Combatant, characterID string) *playdb.Combatant {
 
 // payEquip spends what the change costs: the first weapon of the turn the free object
 // interaction, every other change the action.
-func (s *Service) payEquip(ctx context.Context, c *combatTx, who playdb.Combatant, change link.EquipChange) error {
+func (s *Service) payEquip(ctx context.Context, c *combatTx, who playdb.Combatant, change link.EquipChange) (string, error) {
 	if change.Kind == link.EquipWeapon && !who.ObjectInteractionUsed {
 		if err := c.q.SetCombatantObjectInteractionUsed(ctx, playdb.SetCombatantObjectInteractionUsedParams{ID: who.ID, ObjectInteractionUsed: true}); err != nil {
-			return fmt.Errorf("spend the free object interaction: %w", err)
+			return "", fmt.Errorf("spend the free object interaction: %w", err)
 		}
-		return nil
+		return gearCostFree, nil
 	}
 	return s.payEquipWithAction(ctx, c, who)
 }
 
 // payEquipWithAction spends the action of the turn, or the extra action an effect gives for
-// using an object (Haste) when the action is used; with neither it refuses.
-func (s *Service) payEquipWithAction(ctx context.Context, c *combatTx, who playdb.Combatant) error {
+// using an object (Haste) when the action is used; with neither it refuses. It says which it spent.
+func (s *Service) payEquipWithAction(ctx context.Context, c *combatTx, who playdb.Combatant) (string, error) {
 	if !who.ActionUsed {
 		if err := c.q.SetCombatantEconomy(ctx, playdb.SetCombatantEconomyParams{
 			ID: who.ID, ActionUsed: true, BonusActionUsed: who.BonusActionUsed, ReactionUsed: who.ReactionUsed, Dashed: who.Dashed,
 		}); err != nil {
-			return fmt.Errorf("spend the action: %w", err)
+			return "", fmt.Errorf("spend the action: %w", err)
 		}
-		return nil
+		return gearCostAction, nil
 	}
 	err := s.mustHaveExtraAction(ctx, c, who, "standard:use-an-object")
 	switch {
 	case err == nil:
 		if err := c.q.SetCombatantExtraActionUsed(ctx, playdb.SetCombatantExtraActionUsedParams{ID: who.ID, ExtraActionUsed: true}); err != nil {
-			return fmt.Errorf("spend the extra action: %w", err)
+			return "", fmt.Errorf("spend the extra action: %w", err)
 		}
-		return nil
+		return gearCostExtra, nil
 	case connect.CodeOf(err) == connect.CodeFailedPrecondition:
-		return errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ACTION_USED, "the action of this turn is used")
+		return "", errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_ACTION_USED, "the action of this turn is used")
 	}
-	return err
+	return "", err
 }

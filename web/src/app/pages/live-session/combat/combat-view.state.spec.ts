@@ -1157,16 +1157,20 @@ describe('CombatView state: what the effects read from the server', () => {
     const enc = player();
     const { view, fixture, callsOf, state } = mountCombatView({
       enc,
-      api: { log: () => ({ rounds, undoableEventId: 'u' }) },
+      api: { log: () => ({ rounds, undoableEventId: 'u', lastSeq: 5n, full: true }) },
     });
     await settle(fixture);
-    expect(callsOf('log').map((c) => c.args)).toEqual([['c', 'enc']]);
+    expect(callsOf('log').map((c) => c.args)).toEqual([['c', 'enc', 0n]]);
     expect(view.log.rounds()).toHaveLength(1);
     expect(view.log.undoableId()).toBe('u');
     rounds = [];
     state.touchLog();
     await settle(fixture);
-    expect(callsOf('log')).toHaveLength(2);
+    // The second read asks only for what is after the first one's last_seq.
+    expect(callsOf('log').map((c) => c.args)).toEqual([
+      ['c', 'enc', 0n],
+      ['c', 'enc', 5n],
+    ]);
     expect(view.log.rounds()).toEqual([]);
     state.apply(next(enc, { status: EncounterStatus.SETUP }));
     await settle(fixture);

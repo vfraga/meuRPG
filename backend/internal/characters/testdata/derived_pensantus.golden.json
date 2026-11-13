@@ -83,6 +83,7 @@
       "damageTypePt": "fogo",
       "key": "spell:fire-bolt",
       "kind": "ATTACK_KIND_SPELL",
+      "magical": true,
       "name": "Fire Bolt",
       "namePt": "Raio de Fogo",
       "rangeFt": 120,
@@ -100,6 +101,7 @@
       "damageTypePt": "frio",
       "key": "spell:ray-of-frost",
       "kind": "ATTACK_KIND_SPELL",
+      "magical": true,
       "name": "Ray of Frost",
       "namePt": "Raio de Gelo",
       "rangeFt": 60,
@@ -123,6 +125,7 @@
   ],
   "backgroundEquipmentPt": "Um tinteiro, uma pena e roupas comuns.",
   "backgroundNamePt": "Sábio",
+  "carryCapacityLb": 180,
   "classes": [
     {
       "classKey": "class:wizard",

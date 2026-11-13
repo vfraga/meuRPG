@@ -1,0 +1,16 @@
+{
+  "round": 1,
+  "combatant_id": "x",
+  "secret": true,
+  "key": "x",
+  "kind": "x",
+  "name_pt": "x",
+  "equipped_before": true,
+  "action_before": true,
+  "bonus_before": true,
+  "reaction_before": true,
+  "dashed_before": true,
+  "object_interaction_before": true,
+  "extra_action_before": true,
+  "cost": "x"
+}

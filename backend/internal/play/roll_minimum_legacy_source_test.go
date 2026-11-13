@@ -32,7 +32,7 @@ func TestStoredCountedRollsWithoutASourceNameReliableTalent(t *testing.T) {
 	var save playv1.CombatLogHitRider
 	riderNumbersProto(&save, &rider, false)
 	checks := map[string]string{
-		"contest side":     contest.proto().GetTreatedAsSource(),
+		"contest side":     contest.proto(true).GetTreatedAsSource(),
 		"attack or save":   ev.mark(&playv1.DiceRoll{}).GetTreatedAsSource(),
 		"hit rider":        save.GetTreatedAsSource(),
 		"channel divinity": channelProto(&channel).GetTurns()[0].GetTreatedAsSource(),

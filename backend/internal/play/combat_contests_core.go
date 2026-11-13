@@ -93,6 +93,7 @@ const maxContestsListed = 20
 // conditions' names).
 const (
 	noteHelp         = "help"
+	noteEffectBonus  = "effect_bonus"
 	noteUnseen       = "unseen_attacker"
 	notePoisoned     = "poisoned"
 	labelUnseen      = "Atacante não visto"
@@ -108,16 +109,30 @@ type rollNote struct {
 	Kind  string `json:"kind"`
 	Label string `json:"label"`
 	Adv   bool   `json:"adv,omitempty"`
+	// Value and Hidden are for an effect_bonus: the flat bonus a lasting effect added (Label is the effect's name) and
+	// whether the master hides the effect, which only the master reads by name (RN-10).
+	Value  int  `json:"value,omitempty"`
+	Hidden bool `json:"hidden,omitempty"`
 }
 
-func (n rollNote) proto() *playv1.RollNote {
-	return &playv1.RollNote{Kind: n.Kind, LabelPt: n.Label, Advantage: n.Adv}
+// proto is the note as the reader gets it. A roll is read by the master and by its roller's own player alone, so any
+// reader but the master is the owner: a hidden effect's bonus reads "Outra fonte +2" to them, and a player's own
+// effect of the owner's audience keeps its name.
+func (n rollNote) proto(master bool) *playv1.RollNote {
+	label := n.Label
+	if n.Kind == noteEffectBonus {
+		if n.Hidden && !master {
+			label = otherSourceTx
+		}
+		label = fmt.Sprintf("%s %+d", label, n.Value)
+	}
+	return &playv1.RollNote{Kind: n.Kind, LabelPt: label, Advantage: n.Adv}
 }
 
-func notesProto(notes []rollNote) []*playv1.RollNote {
+func notesProto(notes []rollNote, master bool) []*playv1.RollNote {
 	var out []*playv1.RollNote
 	for _, n := range notes {
-		out = append(out, n.proto())
+		out = append(out, n.proto(master))
 	}
 	return out
 }
@@ -190,10 +205,10 @@ func checkModeOfKey(key string) combat.CheckMode {
 }
 
 // proto is the roll as a view reads it, with the skill's enum for a contest roll.
-func (r contestRoll) proto() *playv1.CheckRoll {
+func (r contestRoll) proto(master bool) *playv1.CheckRoll {
 	out := &playv1.CheckRoll{
 		Skill: skillEnum(r.Skill), SkillKey: r.Skill, Faces: slices.Clone(r.Faces), Modifier: r.Modifier, Total: r.Total, Physical: r.Physical,
-		Mode: checkModeProto(checkModeOfKey(r.Mode)), Notes: notesProto(r.Notes), BonusKnown: !r.Unknown, RolledByMaster: r.ByMaster,
+		Mode: checkModeProto(checkModeOfKey(r.Mode)), Notes: notesProto(r.Notes, master), BonusKnown: !r.Unknown, RolledByMaster: r.ByMaster,
 		BonusDieSides: r.BonusSides, BonusDieFace: r.BonusFace,
 		ManeuverKey: r.ManeuverKey, ManeuverNamePt: r.ManeuverName, ManeuverDieSides: r.ManeuverSides, ManeuverDieFace: r.ManeuverFace,
 		Rerolled: strokeRerolls(r.Lucky, r.Stroke),
@@ -383,6 +398,9 @@ var checkSourceNotes = map[string]rollNote{
 	combat.SourceArmorUntrained:  {Kind: "armor_untrained", Label: labelArmorUntrained},
 	combat.SourceExhaustionCheck: {Kind: "exhaustion", Label: "Exaustão"},
 	combat.SourceEffectCheck:     {Kind: "effect", Label: "Efeito ativo", Adv: true},
+	// The sun is the master's (RN-20, RN-29): the note a player could read says neither what it is nor that it is the sun.
+	combat.SourceSunlightPerception: {Kind: "other", Label: otherSourceTx},
+	combat.SourceSunlightSave:       {Kind: "other", Label: otherSourceTx},
 }
 
 // checkAbilityOf is the ability a skill's check rolls: Strength for Athletics, Wisdom for
@@ -410,9 +428,13 @@ func (s *Service) stateNotes(ctx context.Context, tx pgx.Tx, campaignID string, 
 	if err != nil {
 		return nil, fmt.Errorf("list the states: %w", err)
 	}
+	sun, err := s.sunlightOf(ctx, q, enc)
+	if err != nil {
+		return nil, err
+	}
 	scene := combat.SaveScene{
-		Creature: creatureFacts(who, statesOf(states), sheet.Traits), Ability: checkAbilityOf(skill), Check: true,
-		StealthArmor: skill == skillStealth && sheet.Traits.StealthDisadvantage,
+		Creature: sun.facts(creatureFacts(who, statesOf(states), sheet.Traits), who), Ability: checkAbilityOf(skill), Check: true,
+		StealthArmor: skill == skillStealth && sheet.Traits.StealthDisadvantage, Perception: skill == skillPercept,
 	}
 	var out []rollNote
 	for _, src := range combat.SaveMode(scene) {
@@ -455,6 +477,9 @@ func (s *Service) checkSourcesRead(ctx context.Context, campaignID string, enc p
 func notesMode(notes []rollNote) combat.CheckMode {
 	sources := make([]combat.CheckSource, 0, len(notes))
 	for _, n := range notes {
+		if n.Kind == noteEffectBonus {
+			continue // a bonus says nothing of advantage
+		}
 		sources = append(sources, combat.CheckSource{Kind: n.Kind, Advantage: n.Adv})
 	}
 	return combat.ResolveCheckMode(sources)
@@ -620,4 +645,34 @@ func contestLogEntry(entry *logEntry, ev actionEvent) bool {
 	entry.kind = playv1.CombatLogKind_COMBAT_LOG_KIND_CONTEST
 	entry.masterOnly = slices.Contains(masterOnlyLines, ev.Contest.Line)
 	return true
+}
+
+// withCheckBonus adds the flat bonuses the lasting effects on a combatant give to an ability check of the skill (a
+// roll_bonus of checks, a check_bonus of the skill: the reader the other checks use, checkBonusesOf) to what the check
+// rolls, with a note for each. A bonus to saves never counts in a check.
+func (s *Service) withCheckBonus(ctx context.Context, tx pgx.Tx, campaignID string, q *playdb.Queries, enc playdb.Encounter, who playdb.Combatant, skill string, n checkNumbers, notes []rollNote) (checkNumbers, []rollNote, error) {
+	states, err := q.ListCombatantStates(ctx, enc.ID)
+	if err != nil {
+		return n, notes, fmt.Errorf("list the states: %w", err)
+	}
+	bonuses := checkBonusesOf(statesOf(states), who.ID, skill, true)
+	if len(bonuses) == 0 {
+		return n, notes, nil
+	}
+	// A roll in its transaction reads the content there, and fails with it; a view names what it can.
+	var names func(string) string
+	if tx != nil {
+		var err error
+		if names, err = s.namerFor(ctx, tx, campaignID); err != nil {
+			return n, notes, err
+		}
+	} else {
+		names = s.namesFor(ctx, campaignID)
+	}
+	notes = slices.Clone(notes)
+	for _, b := range bonuses {
+		n.Bonus += b.Value
+		notes = append(notes, rollNote{Kind: noteEffectBonus, Label: names(b.Key), Value: b.Value, Hidden: b.Hidden})
+	}
+	return n, notes, nil
 }

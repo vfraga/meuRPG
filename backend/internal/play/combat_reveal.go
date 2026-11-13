@@ -340,7 +340,7 @@ func (s *Service) hiddenRevealsView(ctx context.Context, d *encounterData, v com
 // publishHiddenHitPending tells the master a question waits: the master's stream
 // alone, and it names nothing (he reads the question from the combat).
 func (s *Service) publishHiddenHitPending(campaignID, encounterID, questionID string) {
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: &playv1.WatchGameSessionResponse{
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: &playv1.WatchGameSessionResponse{
 		Event: &playv1.WatchGameSessionResponse_HiddenHitPending_{
 			HiddenHitPending: &playv1.WatchGameSessionResponse_HiddenHitPending{EncounterId: encounterID, PendingRevealId: questionID},
 		},

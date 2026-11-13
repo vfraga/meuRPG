@@ -233,8 +233,8 @@ func (x effectCompiler) strayStateAndWeapon() error {
 			"weapon_name, attack_ability, damage_ability, attack_bonus and damage_bonus belong to weapon_rule",
 		},
 		{[]string{"weapon_rule"}, e.Magical || e.Silvered || e.Adamantine, "magical, silvered and adamantine belong to weapon_rule"},
-		{[]string{"pseudo_weapon"}, e.AttackName != "" || e.DamageDice != "", "attack_name and damage_dice belong to pseudo_weapon"},
-		{[]string{"weapon_rule", "pseudo_weapon"}, e.ReachFt != 0, "reach_ft belongs to weapon_rule and pseudo_weapon"},
+		{[]string{"pseudo_weapon", "natural_attack"}, e.AttackName != "" || e.DamageDice != "", "attack_name and damage_dice belong to pseudo_weapon and natural_attack"},
+		{[]string{"weapon_rule", "pseudo_weapon", "natural_attack"}, e.ReachFt != 0, "reach_ft belongs to weapon_rule, pseudo_weapon and natural_attack"},
 	}
 	for _, g := range groups {
 		if g.set && !slices.Contains(g.types, e.Type) {

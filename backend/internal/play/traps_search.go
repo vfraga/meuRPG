@@ -307,7 +307,7 @@ func (s *Service) prepareSearchRoll(ctx context.Context, ts *trapSearch, r *sear
 	if r.names, err = s.namerFor(ctx, r.c.tx, ts.m.CampaignID); err != nil {
 		return false, err
 	}
-	ts.shown = shownSources(r.cm.Sources, r.names)
+	ts.shown = shownSources(r.cm.Sources, r.names, ts.m.Role == authz.RoleMaster)
 	if r.bonus, err = s.withEffectDice(ts.in, ts.in.extraFaces, &r.cm, r.opt.Bonus); err != nil {
 		return false, err
 	}
@@ -472,7 +472,7 @@ func (s *Service) tellTrapSearch(ctx context.Context, ts *trapSearch) {
 		s.publishEncounterChanged(pctx, ts.m.CampaignID, ts.place.enc)
 		s.publishLogChanged(pctx, ts.m.CampaignID, ts.place.enc.ID, false) // the master's log has the search
 	}
-	s.Publish(ts.m.CampaignID, false, mapChangedHint(ts.place.mapID)) // the master's activity read has a new line: a hint with no content
+	s.tellMembers(ts.m.CampaignID, false, mapChangedHint(ts.place.mapID)) // the master's activity read has a new line: a hint with no content
 }
 
 // trapSearchAnswer is the response for the event of the search.

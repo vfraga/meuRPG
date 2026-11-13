@@ -17,6 +17,7 @@ import { MoveFlow } from './move-flow';
 import { LegendaryFlow } from './legendary-card/legendary-flow';
 import { ContestHost } from './contest-host';
 import { ZoneFlow } from './zone-flow';
+import { SunlightFlow } from './sunlight-flow';
 import { ContestClient } from '../../../core/combat/contest-client';
 import { resourceFlow } from '../../../core/resources/resource-actions';
 import { openWindows } from '../../../core/combat/reactions';
@@ -120,6 +121,12 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     state: () => this.state(),
     isMaster: () => this.isMaster(),
     openMove: (id, onClosed) => this.sheets.moveZone(id, onClosed),
+  });
+  /** The master's sun on the map: the scope and the paint strokes the map card asks for (`SunlightFlow`). */
+  protected readonly sunFlow = new SunlightFlow({
+    api: this.api,
+    calls: this.calls,
+    campaignId: () => this.campaignId(),
   });
   /** The master's side of the opportunity attacks: the offer form, his answers and the reactors' attacks (`CombatOffers`). */
   protected readonly offers = new CombatOffers({
@@ -350,6 +357,11 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     return this.calls.run((e) =>
       this.api.combatants.setMonsterReactionMode(this.campaignId(), e.id, change.id, change.ask),
     );
+  }
+
+  /** The master's sun switch in the combat bar: `on` puts the combat in the sun or takes it out, keeping the scope. */
+  protected setSunlight(on: boolean): Promise<boolean> {
+    return this.calls.run((e) => this.api.combatants.setSunlight(this.campaignId(), e.id, { on }));
   }
 
   /** "Atacar": the attack sheet (Alvo, Rolar, Dano). `asReaction` is the

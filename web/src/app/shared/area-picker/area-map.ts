@@ -28,14 +28,17 @@ import {
   announcement,
   beforeHint,
   centerLabel,
+  mapLabelOf,
   outOfRangeText,
   placedHint,
 } from '../../core/combat/area-text';
-import { type Square, arrowStep } from '../../core/combat/combat-grid';
+import type { Square } from '../../core/combat/combat-grid';
+import { BURNING_PATTERN, zonePattern } from '../../core/combat/zone-pattern';
 import {
   type AreaShape,
-  areaSquares,
+  type Direction,
   beyondRange,
+  directionWord,
   cellsPath,
   outlinePath,
   rangeFt,
@@ -43,8 +46,11 @@ import {
 } from '../../core/combat/spell-area';
 import type { MapLayers } from '../../core/maps/layers';
 import type { Vision } from '../../core/maps/vision';
+import { type WallChoice, wallHint, wallZoneView } from '../../core/combat/spell-wall';
 import { metersText } from '../../core/units';
 import { CombatMap, type CombatMapImage } from '../combat-map/combat-map';
+import { ZoneLayer } from '../combat-map/zone-layer/zone-layer';
+import { ZoneSwatch } from '../combat-map/zone-layer/zone-swatch';
 import { CombatantToken } from '../combatant-token/combatant-token';
 import { MapLayersLegend } from '../map-layers/map-layers-legend';
 import { AreaAnnouncer } from './area-announcer';
@@ -53,17 +59,16 @@ import {
   ZOOM_CELLS,
   areaLine,
   clampSquare,
+  outlineOf,
   edgeMarkOf,
-  listMove,
-  movedPoint,
   squareUnder,
-  turnedDirection,
+  arrowPick,
+  beyondReach,
 } from './area-moves';
 import { AreaPointer } from './area-pointer';
+import { CenterList } from './center-list';
 import { type CenterOption, centerOptions } from './center-options';
-
-/** Shift and an arrow move five squares. */
-const SHIFT_STEP = 5;
+import { WallDrag } from './wall-drag';
 
 let nextId = 0;
 
@@ -88,7 +93,15 @@ let nextId = 0;
 @Component({
   selector: 'app-area-map',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CombatMap, CombatantToken, MapLayersLegend, MatIconModule, NgTemplateOutlet],
+  imports: [
+    CombatMap,
+    CombatantToken,
+    MapLayersLegend,
+    MatIconModule,
+    NgTemplateOutlet,
+    ZoneLayer,
+    ZoneSwatch,
+  ],
   templateUrl: './area-map.html',
   styleUrl: './area-map.scss',
 })
@@ -117,11 +130,16 @@ export class AreaMap {
   readonly readOnly = input(false);
   /** The creatures the caster sees, with their distances (`SpellTargets.targets`): the list of "Centrar em…". */
   readonly seen = input<readonly TargetInReach[]>([]);
+  /** A spell that lays a wall (Wall of Fire): the point is the start of a line or the center of a ring, and the server's wall and
+   * burning side are drawn instead of the area's outline. A drag on a line also says its direction (`aimed`). */
+  readonly wall = input<WallChoice | null>(null);
   /** The focus goes to the map when the step opens. */
   readonly autofocus = input(false);
 
   /** A point or a direction placed; `null` when a tap outside the range took the old one away. */
   readonly place = output<AreaPick | null>();
+  /** A drag that lays a line: its first square and the way (one of eight) it runs. */
+  readonly aimed = output<{ square: Square; direction: Direction }>();
   /** A second tap on the same place, or Enter on it. */
   readonly confirm = output<void>();
   /** Escape on the map: back to the step before. */
@@ -150,12 +168,34 @@ export class AreaMap {
     setHover: (pick, byKey) => this.setHover(pick, byKey),
     tap: (pick) => this.tap(pick),
   });
+  private readonly wallDrag = new WallDrag({
+    readOnly: () => this.readOnly(),
+    squareAt: (event) => squareUnder(event, 0, this.columns(), this.rows()),
+    hover: (pick) => this.setHover(pick, false),
+    tap: (pick) => this.tap(pick),
+    aimed: (square, direction) => this.aim(square, direction),
+  });
+  /** A straight wall is laid by a drag; every other pick keeps the pointer of the area map. */
+  protected readonly gesture = computed(() =>
+    this.wall() && !this.wall()?.ring ? this.wallDrag : this.pointer,
+  );
   /** Where the finger is, in percent of the map, while it drags: the dotted line to the template above it. */
   protected readonly finger = this.pointer.finger;
   /** "Fora do alcance." and why, after a tap outside the range. */
   protected readonly refusal = signal('');
-  protected readonly listOpen = signal(false);
-  protected readonly active = signal(0);
+  protected readonly list = new CenterList({
+    readOnly: () => this.readOnly(),
+    options: () => this.options(),
+    choose: (option) => {
+      if (option.square) {
+        this.tap(this.pickAt(option.square));
+      }
+    },
+    focusOf: (where) =>
+      (where === 'list' ? this.listbox() : where === 'button' ? this.centerButton() : this.app())
+        ?.nativeElement,
+    injector: this.injector,
+  });
   private readonly announcer = new AreaAnnouncer();
   /** What the live region says, a pause after the last move. */
   protected readonly spoken = this.announcer.spoken;
@@ -182,32 +222,37 @@ export class AreaMap {
   /** The squares drawn: the server's, for the placed point it answered for; otherwise the browser's outline. */
   protected readonly squares = computed<readonly Square[]>(() => {
     const p = this.preview();
-    if (p && this.filled()) {
-      return p.squares.map((q) => ({ col: q.col, row: q.row }));
-    }
-    const pick = this.shown();
-    const caster = this.caster();
-    if (!pick) {
+    if (this.wall()) {
       return [];
     }
-    if (pick.kind === 'point') {
-      return areaSquares(this.area(), { origin: pick.square }, this.columns(), this.rows());
-    }
-    return caster
-      ? areaSquares(this.area(), { caster, direction: pick.direction }, this.columns(), this.rows())
-      : [];
+    return p && this.filled()
+      ? p.squares.map((q) => ({ col: q.col, row: q.row }))
+      : outlineOf(this.shown(), this.caster(), this.area(), this.columns(), this.rows());
   });
+  /** The wall the server laid for the placed start, as the zone the map draws (bricks and the burning side's arrows). */
+  protected readonly wallZones = computed(() => {
+    const wall = this.wall();
+    // The last answer stays drawn while the next one is on its way, so a change does not flicker.
+    const p = this.preview() ?? this.lastWall();
+    return wall && p && this.placed() ? [wallZoneView(p, wall.side)] : [];
+  });
+  private readonly lastWall = signal<PreviewSpellAreaResponse | null>(null);
+  protected readonly wallPattern = zonePattern('spell:wall-of-fire');
+  protected readonly burningPattern = BURNING_PATTERN;
   protected readonly fillPath = computed(() => cellsPath(this.squares()));
   protected readonly edgePath = computed(() => outlinePath(this.squares()));
 
   /** The effective point of origin: the server's when it answered, else the point placed (or hovered). */
   protected readonly origin = computed<Square | null>(() => {
-    const pick = this.shown();
+    // A wall's start stays on the placed square: a hover does not move it.
+    const pick = this.wall() ? (this.placed() ?? this.shown()) : this.shown();
     if (pick?.kind !== 'point') {
       return null;
     }
     const o = this.preview()?.origin;
-    return this.filled() && o ? { col: o.col, row: o.row } : pick.square;
+    return (this.wall() ? samePick(pick, this.placed()) : this.filled()) && o
+      ? { col: o.col, row: o.row }
+      : pick.square;
   });
   /** The point tapped when a wall moved it: drawn as an ✕ beside the real origin. */
   protected readonly tapped = computed<Square | null>(() => {
@@ -237,6 +282,10 @@ export class AreaMap {
 
   protected readonly hint = computed(() => {
     const pick = (this.hoverByKey() ? this.hover() : null) ?? this.placed();
+    const wall = this.wall();
+    if (wall) {
+      return wallHint(wall, !!pick);
+    }
     if (!pick) {
       return beforeHint(this.placement(), this.area());
     }
@@ -247,9 +296,7 @@ export class AreaMap {
     );
   });
   protected readonly mapLabel = computed(() =>
-    this.isDirection()
-      ? `Mapa: escolha a direção da ${this.spell()}`
-      : `Mapa: escolha o ponto da ${this.spell()}`,
+    mapLabelOf(this.spell(), this.placement(), this.wall()),
   );
   protected readonly centerText = computed(() => centerLabel(this.placement()));
 
@@ -261,13 +308,16 @@ export class AreaMap {
   constructor() {
     afterNextRender(() => {
       if (this.autofocus()) {
-        this.app()?.nativeElement.focus();
+        this.app()?.nativeElement.focus({ preventScroll: true });
       }
     });
     inject(DestroyRef).onDestroy(() => this.announcer.clear());
     // The count of creatures is said once the server answered for the place on the map.
     effect(() => {
       const p = this.preview();
+      if (p && this.wall()) {
+        this.lastWall.set(p);
+      }
       if (p && untracked(() => this.filled())) {
         untracked(() => this.say(this.placed()));
       }
@@ -296,19 +346,8 @@ export class AreaMap {
     if (!pick || this.readOnly()) {
       return;
     }
-    const caster = this.caster();
-    if (
-      pick.kind === 'point' &&
-      !this.master() &&
-      caster &&
-      this.rangeFt() > 0 &&
-      rangeFt(caster, pick.square) > this.rangeFt()
-    ) {
-      const text = outOfRangeText(this.spell(), this.rangeFt(), rangeFt(caster, pick.square));
-      this.refusal.set(text);
-      this.hover.set(null);
+    if (this.outOfRange(pick)) {
       this.place.emit(null);
-      this.announcer.now(`Fora do alcance. ${text}`);
       return;
     }
     this.refusal.set('');
@@ -321,19 +360,40 @@ export class AreaMap {
     this.say(pick);
   }
 
+  /** A point beyond the range of a player's spell: says why and drops the old point. The master is not held to it. */
+  private outOfRange(pick: AreaPick): boolean {
+    const caster = this.caster();
+    if (!caster || this.master() || !beyondReach(pick, caster, this.rangeFt())) {
+      return false;
+    }
+    const text = outOfRangeText(
+      this.spell(),
+      this.rangeFt(),
+      rangeFt(caster, (pick as { square: Square }).square),
+    );
+    this.refusal.set(text);
+    this.hover.set(null);
+    this.announcer.now(`Fora do alcance. ${text}`);
+    return true;
+  }
+
+  /** The end of a drag on a line: the start and the way, unless the start is out of reach. */
+  private aim(square: Square, direction: Direction): void {
+    const pick: AreaPick = { kind: 'point', square };
+    if (this.outOfRange(pick)) {
+      this.place.emit(null);
+      return;
+    }
+    this.refusal.set('');
+    this.hover.set(null);
+    this.aimed.emit({ square, direction });
+    const caster = this.caster();
+    this.announcer.say(
+      `${announcement(this.placement(), caster ? rangeFt(caster, square) : 0, null, null)}, direção ${directionWord(direction)}`,
+    );
+  }
+
   // ---- pointer ----
-
-  protected onPointerDown(event: PointerEvent): void {
-    this.pointer.down(event);
-  }
-
-  protected onPointerMove(event: PointerEvent): void {
-    this.pointer.move(event);
-  }
-
-  protected onPointerUp(event: PointerEvent): void {
-    this.pointer.up(event);
-  }
 
   protected onPointerLeave(event: PointerEvent): void {
     this.pointer.leave(event);
@@ -341,6 +401,7 @@ export class AreaMap {
 
   protected onPointerCancel(): void {
     this.pointer.cancel();
+    this.wallDrag.cancel();
   }
 
   // ---- keyboard ----
@@ -363,26 +424,19 @@ export class AreaMap {
     }
     if (event.key === 'c' || event.key === 'C') {
       event.preventDefault();
-      this.openList();
+      this.list.show();
       return;
     }
-    const step = arrowStep(event.key);
-    if (!step) {
-      return;
-    }
-    event.preventDefault();
-    const from = this.hover() ?? this.placed();
-    const next = this.isPoint()
-      ? movedPoint(
-          from,
-          this.caster(),
-          step,
-          event.shiftKey ? SHIFT_STEP : 1,
-          this.columns(),
-          this.rows(),
-        )
-      : turnedDirection(from, step.dc + step.dr);
+    const next = arrowPick(
+      event,
+      this.hover() ?? this.placed(),
+      this.caster(),
+      this.isPoint(),
+      this.columns(),
+      this.rows(),
+    );
     if (next) {
+      event.preventDefault();
       this.setHover(next, true);
       this.say(next);
     }
@@ -409,66 +463,6 @@ export class AreaMap {
       this.rows(),
     );
     this.tap({ kind: 'point', square });
-  }
-
-  // ---- "Centrar em…" ----
-
-  protected openList(): void {
-    if (this.readOnly()) {
-      return;
-    }
-    this.listOpen.set(true);
-    this.active.set(0);
-    afterNextRender(() => this.listbox()?.nativeElement.focus(), { injector: this.injector });
-  }
-
-  protected toggleList(): void {
-    if (this.listOpen()) {
-      this.closeList(true);
-    } else {
-      this.openList();
-    }
-  }
-
-  private closeList(toButton: boolean): void {
-    this.listOpen.set(false);
-    afterNextRender(
-      () => (toButton ? this.centerButton()?.nativeElement : this.app()?.nativeElement)?.focus(),
-      { injector: this.injector },
-    );
-  }
-
-  protected onListKeydown(event: KeyboardEvent): void {
-    const move = listMove(event.key, this.active(), this.options().length);
-    if (move === null) {
-      return;
-    }
-    event.preventDefault();
-    if (move === 'choose') {
-      this.choose(this.options()[this.active()]);
-    } else if (move === 'close') {
-      event.stopPropagation();
-      this.closeList(true);
-    } else {
-      this.active.set(move);
-    }
-  }
-
-  /** A click on an option of the list (the listbox handles the pointer for its options, which take no focus of their own). */
-  protected onListClick(event: MouseEvent): void {
-    const i = Number((event.target as HTMLElement).closest<HTMLElement>('[data-i]')?.dataset['i']);
-    const option = Number.isInteger(i) ? this.options()[i] : undefined;
-    if (option) {
-      this.choose(option);
-    }
-  }
-
-  /** A pick in the list places exactly like a tap on that square; "Um quadrado do mapa" hands the arrows the map. */
-  protected choose(option: CenterOption): void {
-    this.closeList(false);
-    if (option.square) {
-      this.tap(this.pickAt(option.square));
-    }
   }
 
   // ---- the live region ----

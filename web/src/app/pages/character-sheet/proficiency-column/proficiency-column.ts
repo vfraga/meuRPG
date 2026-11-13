@@ -5,6 +5,7 @@ import {
   formatModifier,
   skillProficiencyLabel,
 } from '../../../core/characters/character-labels';
+import { weightWithPounds } from '../../../core/units';
 import { FullSheetVm } from '../character-sheet.types';
 import { ABILITY_ABBREVIATIONS } from '../sheet-format';
 
@@ -27,4 +28,5 @@ export class ProficiencyColumn {
   protected readonly abbreviation = ABILITY_ABBREVIATIONS;
   protected readonly formatModifier = formatModifier;
   protected readonly skillProficiencyLabel = skillProficiencyLabel;
+  protected readonly weight = weightWithPounds;
 }

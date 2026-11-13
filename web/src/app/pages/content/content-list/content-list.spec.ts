@@ -8,13 +8,22 @@ import { Role } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { ContentSchema } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import {
   TableContentKind,
+  TableContentViolationSchema,
+  type TableContentViolation,
+  TableClassLevelSchema,
+  TableSubclassSchema,
   TableCreatureSchema,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { CampaignsService } from '../../../core/campaigns/campaigns.service';
 import { TableContentClient } from '../../../core/content/content-client';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { TableContentPackSchema as PackSchema } from '../../../../gen/meurpg/rules/v1/table_content_pb';
-import { entry, fakeContentWatcher, mirathel } from '../../../core/content/content-testing';
+import {
+  entry,
+  fakeContentWatcher,
+  feature,
+  mirathel,
+} from '../../../core/content/content-testing';
 import { ContentList } from './content-list';
 import { settle } from '../../../../test-settle';
 
@@ -35,9 +44,19 @@ describe('ContentList', () => {
 
   async function setup(
     role: Role,
-    opts: { entries?: ReturnType<typeof mirathel>; phone?: boolean; kind?: string } = {},
+    opts: {
+      entries?: ReturnType<typeof mirathel>;
+      phone?: boolean;
+      kind?: string;
+      leftOut?: TableContentViolation[];
+    } = {},
   ) {
-    list.mockReset().mockResolvedValue({ entries: opts.entries ?? mirathel(), tableRevision: 7 });
+    list.mockReset().mockResolvedValue({
+      entries: opts.entries ?? mirathel(),
+      tableRevision: 7,
+      contentVersion: '',
+      leftOut: opts.leftOut ?? [],
+    });
     catalog.mockReset().mockResolvedValue(create(ContentSchema, {}));
     unarchive.mockReset().mockImplementation(async (_c: string, key: string) => ({
       ...(opts.entries ?? mirathel()).find((e) => e.key === key)!,
@@ -335,6 +354,8 @@ describe('ContentList', () => {
     list.mockResolvedValue({
       entries: [...mirathel(), entry(TableContentKind.RACE, 'Gnomo do Vale')],
       tableRevision: 8,
+      contentVersion: '',
+      leftOut: [],
     });
     watcher.hint();
     await settle();
@@ -371,6 +392,14 @@ describe('ContentList', () => {
     expect(actions).toContain('Importar pacote');
     expect(actions).toContain('Exportar');
     expect(el.querySelector('a[href$="/content/import"]')).not.toBeNull();
+    // Four actions, each with its icon, as the board's grid (K1): "Regras da mesa" is no plain link.
+    const buttons = Array.from(el.querySelectorAll('.head__actions > .head__action'));
+    expect(buttons.map((b) => b.querySelector('mat-icon')?.textContent?.trim())).toEqual([
+      'visibility',
+      'upload_file',
+      'download',
+      'list',
+    ]);
     const player = (await setup(Role.PLAYER)).el;
     expect(text(player)).not.toContain('Importar pacote');
     expect(text(player)).not.toContain('Exportar');
@@ -422,5 +451,195 @@ describe('ContentList', () => {
     await again();
     expect(text(el.querySelector('[role="alert"]')!)).toContain('Só o mestre');
     expect(button().disabled).toBe(false);
+  });
+
+  describe('the entries the rules left out (K1, K3)', () => {
+    const TARGET = 'table_class.levels[0].features[0].effects[0].target';
+    const violation = (key: string, field: string, reason: string) =>
+      create(TableContentViolationSchema, { key, field, reason });
+    function stored() {
+      const classe = entry(TableContentKind.CLASS, 'Guardião do Vale', { charactersUsing: 1 });
+      const body = classe.body.value as { levels: unknown[] };
+      body.levels = [
+        create(TableClassLevelSchema, {
+          features: [feature('Vigília', [{ type: 'modifier', target: 'gone' }])],
+        }),
+      ];
+      const sub = entry(TableContentKind.SUBCLASS, 'Juramento da Névoa', {
+        body: {
+          case: 'tableSubclass',
+          value: create(TableSubclassSchema, {
+            namePt: 'Juramento da Névoa',
+            classKey: classe.key,
+          }),
+        },
+      });
+      const feat = entry(TableContentKind.FEAT, 'Chama Insistente');
+      const entries = [classe, sub, feat, entry(TableContentKind.CLASS, 'Andarilho das Cinzas')];
+      const leftOut = [
+        violation(classe.key, TARGET, 'bad_value'),
+        violation(sub.key, '', 'dangling_reference'),
+        violation(feat.key, 'table_feat.effects[0].damage_type', 'bad_value'),
+      ];
+      return { entries, leftOut, classe, sub, feat };
+    }
+    const menuItem = (label: string) =>
+      Array.from(document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-item')).find((b) =>
+        text(b).includes(label),
+      );
+
+    it('has no panel and no tag when nothing is left out, and none for a player', async () => {
+      const { el } = await setup(Role.MASTER);
+      expect(el.querySelector('.out')).toBeNull();
+      expect(el.querySelector('.mr-tag--danger')).toBeNull();
+      const { entries, leftOut } = stored();
+      const player = await setup(Role.PLAYER, { entries, leftOut });
+      expect(player.el.querySelector('.out')).toBeNull();
+      expect(text(player.el)).not.toContain('fora da campanha');
+    });
+
+    it('says how many are out, where in the entry and why, with the dependents under their class (K1)', async () => {
+      const { entries, leftOut } = stored();
+      const { el } = await setup(Role.MASTER, { entries, leftOut });
+      expect(text(el.querySelector('.out__title')!)).toBe(
+        'error_outline3 entradas fora da campanha',
+      );
+      const rows = Array.from(el.querySelectorAll('.out__item'));
+      expect(rows).toHaveLength(2);
+      const first = text(rows[0]);
+      expect(first).toContain('Guardião do Vale');
+      expect(first).toContain('Classe');
+      expect(first).toContain(
+        'Nível 1 · Vigília · efeito 1 · O que muda: este alvo não está mais no menu de efeitos. Escolha outro.',
+      );
+      expect(first).toContain(
+        'Junto com ela: Juramento da Névoa (subclasse), que depende dela. · 1 ficha usa esta classe.',
+      );
+      expect(first).toContain(
+        'Saiu porque a classe dela, Guardião do Vale, está fora. Volta sozinha quando a classe voltar.',
+      );
+      expect(first).toContain('Corrigir');
+      expect(text(rows[1])).toContain('Chama Insistente');
+      expect(text(rows[1])).toContain('Talento');
+      const fix = rows[0].querySelector('a.out__fix')!;
+      expect(fix.getAttribute('href')).toMatch(
+        /\/content\/entries\/class(:|%3A)guardi-o-do-vale(@|%40)mesa$/,
+      );
+    });
+
+    it('marks the left-out entry in its kind list, instead of the state, and not the others', async () => {
+      const { entries, leftOut } = stored();
+      const { el } = await setup(Role.MASTER, { entries, leftOut, kind: 'classes' });
+      const rows = Array.from(el.querySelectorAll('a.row'));
+      expect(text(rows[0])).toContain('Fora da campanha');
+      expect(text(rows[0])).not.toContain('Em uso por');
+      expect(rows[0].querySelector('.mr-tag--danger')).not.toBeNull();
+      expect(text(rows[1])).not.toContain('Fora da campanha');
+    });
+
+    it('is shorter on a phone: no "Corrigir", the kind and the place in one line, "Junto:", and "⋮" for the rest (K3)', async () => {
+      const { entries, leftOut } = stored();
+      const { el } = await setup(Role.MASTER, { entries, leftOut, phone: true });
+      expect(text(el.querySelector('.out__lead')!)).toContain(
+        'Para corrigir, abra a entrada no computador.',
+      );
+      expect(el.querySelector('.out__fix')).toBeNull();
+      expect(el.querySelector('.out__dep')).toBeNull();
+      const first = text(el.querySelector('.out__item')!);
+      expect(first).toContain(
+        'Classe · Vigília, efeito 1: este alvo não está mais no menu de efeitos.',
+      );
+      expect(first).toContain('Junto: Juramento da Névoa · 1 ficha usa');
+      expect(el.querySelectorAll('.out__act .more')).toHaveLength(2);
+      expect(text(el.querySelector('.prow .mr-tag--danger')!)).toContain('Fora da campanha');
+    });
+
+    it('offers "Remover" and, on a laptop, "Exportar para corrigir num pacote" in the "⋮"', async () => {
+      const { entries, leftOut } = stored();
+      const laptop = await setup(Role.MASTER, { entries, leftOut });
+      laptop.el.querySelector<HTMLButtonElement>('.out__act .more')!.click();
+      await laptop.settle();
+      expect(menuItem('Remover')).toBeDefined();
+      expect(menuItem('Exportar para corrigir num pacote')).toBeDefined();
+    });
+
+    it('offers no export in the "⋮" of a phone', async () => {
+      const { entries, leftOut } = stored();
+      const phone = await setup(Role.MASTER, { entries, leftOut, phone: true });
+      phone.el.querySelector<HTMLButtonElement>('.out__act .more')!.click();
+      await phone.settle();
+      expect(menuItem('Remover')).toBeDefined();
+      expect(menuItem('Exportar')).toBeUndefined();
+    });
+
+    it('archives on "Remover" after the question, reads the list again and leaves the panel without it', async () => {
+      const { entries, leftOut, classe } = stored();
+      const { fixture, el, settle: again } = await setup(Role.MASTER, { entries, leftOut });
+      archive.mockResolvedValue({ ...classe, archived: true });
+      el.querySelector<HTMLButtonElement>('.out__act .more')!.click();
+      await again();
+      menuItem('Remover')!.click();
+      await again();
+      expect(archive).not.toHaveBeenCalled();
+      const ask = (label: string) =>
+        Array.from(
+          document.querySelectorAll<HTMLButtonElement>('app-archive-sheet app-pair-foot button'),
+        ).find((b) => text(b).includes(label))!;
+      const sheet = text(document.querySelector('app-archive-sheet')!);
+      expect(sheet).toContain('Remover Guardião do Vale?');
+      expect(sheet).toContain('A entrada é arquivada, não apagada.');
+      expect(sheet).not.toContain('Arquivar');
+      list.mockResolvedValue({
+        entries: entries.map((e) => (e.key === classe.key ? { ...e, archived: true } : e)),
+        tableRevision: 8,
+        contentVersion: '',
+        leftOut: leftOut.filter((v) => v.key === 'feat:chama-insistente@mesa'),
+      });
+      ask('Remover').click();
+      await again();
+      expect(archive).toHaveBeenCalledWith('camp-1', classe.key);
+      expect(text(el.querySelector('.out__title')!)).toContain('1 entrada fora da campanha');
+      expect(text(el.querySelector('.out')!)).not.toContain('Guardião do Vale');
+      expect(text(el.querySelector('[role="status"]')!)).toContain(
+        'A classe Guardião do Vale foi arquivada e saiu da lista de entradas fora da campanha.',
+      );
+      expect(fixture.nativeElement).toBe(el);
+    });
+
+    it('leaves the entry as it is on "Voltar", and says why a refused archive was refused', async () => {
+      const { entries, leftOut } = stored();
+      const { el, settle: again } = await setup(Role.MASTER, { entries, leftOut });
+      const open = async () => {
+        el.querySelector<HTMLButtonElement>('.out__act .more')!.click();
+        await again();
+        menuItem('Remover')!.click();
+        await again();
+      };
+      const ask = (label: string) =>
+        Array.from(
+          document.querySelectorAll<HTMLButtonElement>('app-archive-sheet app-pair-foot button'),
+        ).find((b) => text(b).includes(label))!;
+      await open();
+      ask('Voltar').click();
+      await again();
+      expect(archive).not.toHaveBeenCalled();
+      archive.mockRejectedValueOnce(new ConnectError('refused', Code.PermissionDenied));
+      await open();
+      ask('Remover').click();
+      await again();
+      expect(text(el.querySelector('[role="alert"]')!)).toContain('Só o mestre');
+      expect(el.querySelectorAll('.out__item')).toHaveLength(2);
+    });
+
+    it('exports the pack from the "⋮"', async () => {
+      const { entries, leftOut } = stored();
+      const { el, settle: again } = await setup(Role.MASTER, { entries, leftOut });
+      exportPack.mockRejectedValue(new ConnectError('x', Code.PermissionDenied));
+      el.querySelector<HTMLButtonElement>('.out__act .more')!.click();
+      await again();
+      menuItem('Exportar para corrigir num pacote')!.click();
+      await again();
+      expect(exportPack).toHaveBeenCalledWith('camp-1');
+    });
   });
 });

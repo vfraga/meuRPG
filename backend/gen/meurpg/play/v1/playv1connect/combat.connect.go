@@ -90,6 +90,9 @@ const (
 	// CombatServiceSetMonsterReactionModeProcedure is the fully-qualified name of the CombatService's
 	// SetMonsterReactionMode RPC.
 	CombatServiceSetMonsterReactionModeProcedure = "/meurpg.play.v1.CombatService/SetMonsterReactionMode"
+	// CombatServiceSetSunlightProcedure is the fully-qualified name of the CombatService's SetSunlight
+	// RPC.
+	CombatServiceSetSunlightProcedure = "/meurpg.play.v1.CombatService/SetSunlight"
 	// CombatServiceAddCombatantsProcedure is the fully-qualified name of the CombatService's
 	// AddCombatants RPC.
 	CombatServiceAddCombatantsProcedure = "/meurpg.play.v1.CombatService/AddCombatants"
@@ -652,6 +655,20 @@ type CombatServiceClient interface {
 	//   - `invalid_argument`: the combatant is a player's, or a creature whose stat block has no Parry.
 	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
 	SetMonsterReactionMode(context.Context, *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error)
+	// SetSunlight switches the sunlight of the combat (RN-20, RN-29): `on` says whether the combat is in
+	// sunlight, `scope` says where (the whole map, or only the listed squares), and `add_squares` and
+	// `remove_squares` change the list of sunlit squares. Turning `on` off keeps the scope and the squares, so the
+	// master can switch back. A creature with Sunlight Sensitivity or Weakness rolls at a disadvantage while it
+	// stands in sunlight; magical Darkness beats the sunlight. A combat with no map (a theatre, or a grid with no
+	// map) has no squares: its scope is always the whole map. Only the master may call it, and only the master
+	// reads the state back (Encounter.sunlight_on, sunlight_scope, sunlight_squares).
+	//
+	// Errors:
+	//   - `permission_denied`: the caller is a player.
+	//   - `invalid_argument`: a square is off the grid, squares were given for a combat with no map, the scope is
+	//     SQUARES for a combat with no map, or the list would pass 4096 squares.
+	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
+	SetSunlight(context.Context, *connect.Request[v1.SetSunlightRequest]) (*connect.Response[v1.SetSunlightResponse], error)
 	// AddCombatants brings reinforcements into the combat: copies of NPCs, as
 	// in StartEncounter. Only the master may call it, while the combat is in
 	// SETUP or ACTIVE. Each new NPC rolls its initiative at once and takes its
@@ -1679,6 +1696,12 @@ func NewCombatServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(combatServiceMethods.ByName("SetMonsterReactionMode")),
 			connect.WithClientOptions(opts...),
 		),
+		setSunlight: connect.NewClient[v1.SetSunlightRequest, v1.SetSunlightResponse](
+			httpClient,
+			baseURL+CombatServiceSetSunlightProcedure,
+			connect.WithSchema(combatServiceMethods.ByName("SetSunlight")),
+			connect.WithClientOptions(opts...),
+		),
 		addCombatants: connect.NewClient[v1.AddCombatantsRequest, v1.AddCombatantsResponse](
 			httpClient,
 			baseURL+CombatServiceAddCombatantsProcedure,
@@ -1944,6 +1967,7 @@ type combatServiceClient struct {
 	setCombatantCover        *connect.Client[v1.SetCombatantCoverRequest, v1.SetCombatantCoverResponse]
 	setCombatantHidden       *connect.Client[v1.SetCombatantHiddenRequest, v1.SetCombatantHiddenResponse]
 	setMonsterReactionMode   *connect.Client[v1.SetMonsterReactionModeRequest, v1.SetMonsterReactionModeResponse]
+	setSunlight              *connect.Client[v1.SetSunlightRequest, v1.SetSunlightResponse]
 	addCombatants            *connect.Client[v1.AddCombatantsRequest, v1.AddCombatantsResponse]
 	addMonsters              *connect.Client[v1.AddMonstersRequest, v1.AddMonstersResponse]
 	removeCombatant          *connect.Client[v1.RemoveCombatantRequest, v1.RemoveCombatantResponse]
@@ -2069,6 +2093,11 @@ func (c *combatServiceClient) SetCombatantHidden(ctx context.Context, req *conne
 // SetMonsterReactionMode calls meurpg.play.v1.CombatService.SetMonsterReactionMode.
 func (c *combatServiceClient) SetMonsterReactionMode(ctx context.Context, req *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error) {
 	return c.setMonsterReactionMode.CallUnary(ctx, req)
+}
+
+// SetSunlight calls meurpg.play.v1.CombatService.SetSunlight.
+func (c *combatServiceClient) SetSunlight(ctx context.Context, req *connect.Request[v1.SetSunlightRequest]) (*connect.Response[v1.SetSunlightResponse], error) {
+	return c.setSunlight.CallUnary(ctx, req)
 }
 
 // AddCombatants calls meurpg.play.v1.CombatService.AddCombatants.
@@ -2713,6 +2742,20 @@ type CombatServiceHandler interface {
 	//   - `invalid_argument`: the combatant is a player's, or a creature whose stat block has no Parry.
 	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
 	SetMonsterReactionMode(context.Context, *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error)
+	// SetSunlight switches the sunlight of the combat (RN-20, RN-29): `on` says whether the combat is in
+	// sunlight, `scope` says where (the whole map, or only the listed squares), and `add_squares` and
+	// `remove_squares` change the list of sunlit squares. Turning `on` off keeps the scope and the squares, so the
+	// master can switch back. A creature with Sunlight Sensitivity or Weakness rolls at a disadvantage while it
+	// stands in sunlight; magical Darkness beats the sunlight. A combat with no map (a theatre, or a grid with no
+	// map) has no squares: its scope is always the whole map. Only the master may call it, and only the master
+	// reads the state back (Encounter.sunlight_on, sunlight_scope, sunlight_squares).
+	//
+	// Errors:
+	//   - `permission_denied`: the caller is a player.
+	//   - `invalid_argument`: a square is off the grid, squares were given for a combat with no map, the scope is
+	//     SQUARES for a combat with no map, or the list would pass 4096 squares.
+	//   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
+	SetSunlight(context.Context, *connect.Request[v1.SetSunlightRequest]) (*connect.Response[v1.SetSunlightResponse], error)
 	// AddCombatants brings reinforcements into the combat: copies of NPCs, as
 	// in StartEncounter. Only the master may call it, while the combat is in
 	// SETUP or ACTIVE. Each new NPC rolls its initiative at once and takes its
@@ -3736,6 +3779,12 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(combatServiceMethods.ByName("SetMonsterReactionMode")),
 		connect.WithHandlerOptions(opts...),
 	)
+	combatServiceSetSunlightHandler := connect.NewUnaryHandler(
+		CombatServiceSetSunlightProcedure,
+		svc.SetSunlight,
+		connect.WithSchema(combatServiceMethods.ByName("SetSunlight")),
+		connect.WithHandlerOptions(opts...),
+	)
 	combatServiceAddCombatantsHandler := connect.NewUnaryHandler(
 		CombatServiceAddCombatantsProcedure,
 		svc.AddCombatants,
@@ -4015,6 +4064,8 @@ func NewCombatServiceHandler(svc CombatServiceHandler, opts ...connect.HandlerOp
 			combatServiceSetCombatantHiddenHandler.ServeHTTP(w, r)
 		case CombatServiceSetMonsterReactionModeProcedure:
 			combatServiceSetMonsterReactionModeHandler.ServeHTTP(w, r)
+		case CombatServiceSetSunlightProcedure:
+			combatServiceSetSunlightHandler.ServeHTTP(w, r)
 		case CombatServiceAddCombatantsProcedure:
 			combatServiceAddCombatantsHandler.ServeHTTP(w, r)
 		case CombatServiceAddMonstersProcedure:
@@ -4170,6 +4221,10 @@ func (UnimplementedCombatServiceHandler) SetCombatantHidden(context.Context, *co
 
 func (UnimplementedCombatServiceHandler) SetMonsterReactionMode(context.Context, *connect.Request[v1.SetMonsterReactionModeRequest]) (*connect.Response[v1.SetMonsterReactionModeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.SetMonsterReactionMode is not implemented"))
+}
+
+func (UnimplementedCombatServiceHandler) SetSunlight(context.Context, *connect.Request[v1.SetSunlightRequest]) (*connect.Response[v1.SetSunlightResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.play.v1.CombatService.SetSunlight is not implemented"))
 }
 
 func (UnimplementedCombatServiceHandler) AddCombatants(context.Context, *connect.Request[v1.AddCombatantsRequest]) (*connect.Response[v1.AddCombatantsResponse], error) {

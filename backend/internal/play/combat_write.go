@@ -19,9 +19,9 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/tablerules"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/reaction"
 )
@@ -71,6 +71,10 @@ const (
 	eventRechargeRolled = "recharge_rolled"
 	// The master chose how a monster's Parry is decided (combat_parry_auto.go); a line of no log.
 	eventMonsterReactionSet = "monster_reaction_mode_set"
+	// The master switched the sunlight of the combat (combat_sunlight.go); secret, a line of no log.
+	eventSunlightSet = "sunlight_set"
+	// A character drew or stowed a piece of gear in a running combat (equip_combat.go): the master's undo takes it back.
+	eventGearSwapped = "gear_swapped"
 )
 
 // The kinds of the XP awards (package progression writes them
@@ -168,17 +172,23 @@ type combatWrite struct {
 	// the held attack was written by its answer from the request the hold kept, with the mode and the dice the gate
 	// pinned in it, so its hash is the pinned request's. Optional.
 	sameHeld func(ctx context.Context, q *playdb.Queries, stored *string) bool
+	// replayed adds to h the hints that only this kind of change knows, when the key was found stored: payload is the stored
+	// event's. Optional (StartEncounter's current map).
+	replayed func(h *hints, session playdb.GameSession, payload []byte)
 }
 
 // combatTx is what a change works with inside its transaction: the open
 // session, locked, and the combat. characterID, when the closure sets it,
 // is the character the event is about.
 type combatTx struct {
-	tx          pgx.Tx
-	q           *playdb.Queries
-	session     playdb.GameSession
-	enc         playdb.Encounter
-	now         time.Time
+	tx      pgx.Tx
+	q       *playdb.Queries
+	session playdb.GameSession
+	enc     playdb.Encounter
+	now     time.Time
+	// hints collects what the change tells the streams once it is saved (Service.tx sends it); nil in the few places that make a
+	// combatTx outside write.
+	hints       *hints
 	characterID *string
 	// kind is the kind of the event the change writes: the one in combatWrite,
 	// unless the closure sets it to the altKind.
@@ -281,10 +291,6 @@ type combatResult struct {
 	sight   *fogSight
 	stamped *actionEvent
 	lines   []actionEvent
-	// notes are the reaction windows the change opened or closed, and tellIDs the
-	// combatants whose vitals a replayed action changed: told after the commit.
-	notes   []reactionNote
-	tellIDs []string
 	// pushed are the forced moves a replayed held action made, to tell the streams.
 	pushed []*forcedMove
 }
@@ -323,7 +329,6 @@ func (s *Service) write(ctx context.Context, w combatWrite, do func(c *combatTx)
 			// Here, after the transaction returned, so a retried transaction
 			// logs once.
 			s.logCombatEvent(ctx, res)
-			s.publishReactions(ctx, w.m.CampaignID, res)
 		}
 		return res, err
 	}
@@ -334,14 +339,24 @@ type changeRun struct {
 	res   combatResult
 	last  *actionEvent // the last event stamped with who could see it
 	ended *combatTx    // the change's transaction, for what it leaves to tell
+	// sessionID is the open session the try resolved before the transaction, whose row Service.tx locked first.
+	sessionID string
 }
 
-// writeOnce is one try of write, with the sight it was given.
+// writeOnce is one try of write, with the sight it was given. The open session is read first, with no lock, so Service.tx can
+// take its row lock as the first statement of the transaction; the transaction checks that it is still the open one.
 func (s *Service) writeOnce(ctx context.Context, w combatWrite, sight *fogSight, do func(c *combatTx) (payload any, err error)) (combatResult, error) {
+	open, err := s.queries.GetOpenGameSession(ctx, w.m.CampaignID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return combatResult{}, errNoOpenSession() // MR-013: during the session
+	}
+	if err != nil {
+		return combatResult{}, fmt.Errorf("find the open session: %w", err)
+	}
 	var run changeRun
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		run = changeRun{res: combatResult{encounterID: w.encounterID, sight: sight}}
-		return s.changeInTx(ctx, tx, w, sight, do, &run)
+	err = s.tx(ctx, open.ID, func(tx pgx.Tx, h *hints) error {
+		run = changeRun{res: combatResult{encounterID: w.encounterID, sight: sight}, sessionID: open.ID}
+		return s.changeInTx(ctx, tx, h, w, sight, do, &run)
 	})
 	if err != nil {
 		return combatResult{}, err
@@ -349,36 +364,36 @@ func (s *Service) writeOnce(ctx context.Context, w combatWrite, sight *fogSight,
 	run.res.stamped = run.last
 	if run.ended != nil {
 		run.res.lines = run.ended.lines
-		run.res.notes, run.res.tellIDs, run.res.pushed = run.ended.reactionNotes, run.ended.tellIDs, run.ended.pushed
+		run.res.pushed = run.ended.pushed
 	}
-	s.tellEnded(ctx, w.m.CampaignID, run.ended)
 	return run.res, nil
 }
 
-// changeInTx is the change inside its transaction: the session's lock, the retry of a
-// key already used, the change itself, what follows from it and its event.
-func (s *Service) changeInTx(ctx context.Context, tx pgx.Tx, w combatWrite, sight *fogSight, do func(c *combatTx) (payload any, err error), run *changeRun) error {
+// changeInTx is the change inside its transaction: the retry of a key already used, the change itself,
+// what follows from it and its event, and what it tells the streams (h, sent by Service.tx after the commit). Service.tx took
+// the session's row lock before this ran, so the session is read here without one.
+func (s *Service) changeInTx(ctx context.Context, tx pgx.Tx, h *hints, w combatWrite, sight *fogSight, do func(c *combatTx) (payload any, err error), run *changeRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, w.m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return errNoOpenSession() // MR-013: during the session
-	}
+	session, err := stillOpen(ctx, q, w.m.CampaignID, run.sessionID)
 	if err != nil {
-		return fmt.Errorf("lock the open session: %w", err)
+		return err
 	}
 	run.res.session = session
 
-	if repeated, err := s.replayOfKey(ctx, q, session, w, &run.res); err != nil || repeated {
-		return err
-	}
-	c, err := s.openChange(ctx, tx, q, session, w, sight)
+	repeated, err := s.replayOfKey(ctx, q, session, w, &run.res)
 	if err != nil {
 		return err
 	}
-	if w.encounterID != "" && slices.Contains(undoableKinds, w.kind) && !slices.Contains(leavesHPAlone, w.kind) {
-		if c.hpBefore, _, err = s.hpSnapshot(ctx, c); err != nil {
-			return err
-		}
+	if repeated {
+		s.tellReplayed(h, w, run.res)
+		return nil
+	}
+	c, err := s.openChange(ctx, tx, h, q, session, w, sight)
+	if err != nil {
+		return err
+	}
+	if err := s.snapshotHP(ctx, c, w); err != nil {
+		return err
 	}
 	payload, err := do(c)
 	if err != nil || payload == nil {
@@ -387,7 +402,124 @@ func (s *Service) changeInTx(ctx context.Context, tx pgx.Tx, w combatWrite, sigh
 	if err := s.settleChange(ctx, c); err != nil {
 		return err
 	}
-	return run.record(ctx, c, w, payload)
+	if err := run.record(ctx, c, w, payload); err != nil {
+		return err
+	}
+	s.tellChange(h, w.m.CampaignID, c)
+	return nil
+}
+
+// snapshotHP keeps the combat's hit points before an undoable change that may move them, for its undo.
+func (s *Service) snapshotHP(ctx context.Context, c *combatTx, w combatWrite) (err error) {
+	if w.encounterID != "" && slices.Contains(undoableKinds, w.kind) && !slices.Contains(leavesHPAlone, w.kind) {
+		c.hpBefore, _, err = s.hpSnapshot(ctx, c)
+	}
+	return err
+}
+
+// stillOpen reads the campaign's open session, which Service.tx locked: it must still be the one the try resolved.
+func stillOpen(ctx context.Context, q *playdb.Queries, campaignID, wantID string) (playdb.GameSession, error) {
+	session, err := q.GetOpenGameSession(ctx, campaignID)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && session.ID != wantID) {
+		return session, errNoOpenSession() // MR-013: the session ended since it was read
+	}
+	if err != nil {
+		return session, fmt.Errorf("find the open session: %w", err)
+	}
+	return session, nil
+}
+
+// tellChange collects what the committed change leaves to tell: the casts outside a combat that changed, the vitals and the
+// fog of a familiar's sight that ended, the fog of the zones that moved, and the reaction windows it opened and closed. The
+// change wrote an event, so the session's number moves whatever else it tells.
+func (s *Service) tellChange(h *hints, campaignID string, c *combatTx) {
+	h.touch()
+	if c.castsChanged != castsUnchanged {
+		h.tell(campaignID, castsChangedEvent(c.castsChanged == castsMasterOnly))
+	}
+	// A turn that started ended some familiar's sight (MR-036): the player's vitals
+	// and the fog's view change.
+	for _, v := range c.told {
+		if v != nil {
+			h.tell(campaignID, vitalsHint(v))
+		}
+	}
+	if len(c.told) > 0 || c.zonesMoved {
+		mapID := conv.OrZero(c.enc.MapID)
+		h.after(func(ctx context.Context, _ func(string, live.Event)) { s.maps.VisionChanged(ctx, campaignID, mapID) })
+	}
+	if notes, tellIDs, encID := c.reactionNotes, c.tellIDs, c.enc.ID; len(notes) > 0 || len(tellIDs) > 0 {
+		h.after(func(ctx context.Context, say func(string, live.Event)) {
+			s.tellReactions(ctx, say, campaignID, encID, notes, tellIDs)
+		})
+	}
+}
+
+// tellReplayed fills h for a change whose key was found stored, with what the first call would have told, worked out from what
+// is stored: the first call may have died between its commit and its sending. Nothing was written, so h only replays (the
+// session's number stays as it is). What the first call told is not kept, so this tells a superset, to the audiences the
+// first call's would reach at most: the master's casts (a public cast change is not recovered: the level is not kept), the
+// vitals of the combat's players (each to the master and its own player), the open reaction windows (to their reactor and
+// the master), and the fog of the combat's map. The windows that closed are not recovered: the combat the retry reads shows them closed.
+func (s *Service) tellReplayed(h *hints, w combatWrite, res combatResult) {
+	h.replay()
+	campaignID := w.m.CampaignID
+	if w.replayed != nil {
+		w.replayed(h, res.session, res.payload)
+	}
+	encID := w.encounterID
+	if encID == "" {
+		encID = storedEncounterID(res.payload)
+	}
+	if encID == "" {
+		return
+	}
+	h.tell(campaignID, castsChangedEvent(true))
+	h.after(func(ctx context.Context, say func(string, live.Event)) {
+		s.tellCombatAgain(ctx, say, campaignID, res.session.ID, encID)
+	})
+}
+
+// storedEncounterID is the combat a stored event names in its payload, empty when it names none.
+func storedEncounterID(payload []byte) string {
+	var ev struct {
+		EncounterID string `json:"encounter_id"`
+	}
+	if json.Unmarshal(payload, &ev) != nil {
+		return ""
+	}
+	return ev.EncounterID
+}
+
+// tellCombatAgain is the after-commit step of a replay: it reads the combat as it stands and tells the vitals of its players,
+// its open reaction windows and the fog of its map.
+func (s *Service) tellCombatAgain(ctx context.Context, say func(string, live.Event), campaignID, sessionID, encounterID string) {
+	enc, err := s.queries.GetEncounterInSession(ctx, playdb.GetEncounterInSessionParams{GameSessionID: sessionID, ID: encounterID})
+	if err != nil {
+		s.logger.WarnContext(ctx, "play: cannot read the combat to tell a repeated change", "error", err)
+		return
+	}
+	cs, err := s.queries.ListCombatants(ctx, enc.ID)
+	if err != nil {
+		s.logger.WarnContext(ctx, "play: cannot read the combatants to tell a repeated change", "error", err)
+		return
+	}
+	var tellIDs []string
+	for _, x := range cs {
+		if x.Kind == kindPlayer {
+			tellIDs = append(tellIDs, x.ID)
+		}
+	}
+	open, err := s.queries.ListOpenReactionWindows(ctx, enc.ID)
+	if err != nil {
+		s.logger.WarnContext(ctx, "play: cannot read the reaction windows to tell a repeated change", "error", err)
+	}
+	notes := make([]reactionNote, 0, len(open))
+	for _, w := range open {
+		notes = append(notes, reactionNote{opened: true, window: w})
+	}
+	s.tellReactions(ctx, say, campaignID, enc.ID, notes, tellIDs)
+	s.maps.VisionChanged(ctx, campaignID, conv.OrZero(enc.MapID))
 }
 
 // replayOfKey says whether the key was used for this very change already, and then
@@ -424,8 +556,8 @@ func (s *Service) replayOfKey(ctx context.Context, q *playdb.Queries, session pl
 
 // openChange builds the change's transaction state: the table's rules and the combat
 // the change is about, found in the session and checked against the sight.
-func (s *Service) openChange(ctx context.Context, tx pgx.Tx, q *playdb.Queries, session playdb.GameSession, w combatWrite, sight *fogSight) (*combatTx, error) {
-	c := &combatTx{tx: tx, q: q, session: session, now: s.now(), kind: w.kind, actorUserID: w.m.UserID, svc: s, master: w.m.Role == authz.RoleMaster, sight: sight, hash: w.hash}
+func (s *Service) openChange(ctx context.Context, tx pgx.Tx, h *hints, q *playdb.Queries, session playdb.GameSession, w combatWrite, sight *fogSight) (*combatTx, error) {
+	c := &combatTx{tx: tx, q: q, session: session, now: s.now(), kind: w.kind, actorUserID: w.m.UserID, svc: s, master: w.m.Role == authz.RoleMaster, sight: sight, hash: w.hash, hints: h}
 	var err error
 	if c.rules, err = s.tableRules(ctx, tx, w.m.CampaignID); err != nil {
 		return nil, err
@@ -500,27 +632,6 @@ func withEndedEffects(c *combatTx, payload any) any {
 	ev.Restore, ev.EndedLines, ev.FollowUps, ev.FollowUpLines = c.endedEffects, c.endedLines, c.followUps, c.followUpLines
 	ev.TempCleared = c.tempCleared
 	return ev
-}
-
-// tellEnded tells the streams what the committed change left to tell: the casts outside
-// a combat that changed, and the vitals and the fog of a familiar's sight that ended.
-func (s *Service) tellEnded(ctx context.Context, campaignID string, ended *combatTx) {
-	if ended == nil {
-		return
-	}
-	if ended.castsChanged != castsUnchanged {
-		s.publishCastsChanged(campaignID, ended.castsChanged == castsMasterOnly)
-	}
-	// A turn that started ended some familiar's sight (MR-036): the player's vitals
-	// and the fog's view change.
-	for _, v := range ended.told {
-		s.publishVitals(campaignID, v)
-	}
-	if len(ended.told) > 0 || ended.zonesMoved {
-		pctx, stop := afterCommit(ctx) // committed: a caller that hangs up must not leave the fog unheard
-		defer stop()
-		s.maps.VisionChanged(pctx, campaignID, conv.OrZero(ended.enc.MapID))
-	}
 }
 
 // combatEventNames are the names of the combat's log events, where the kind
@@ -777,11 +888,18 @@ func (s *Service) finish(ctx context.Context, m authz.Membership, res combatResu
 
 // publishRetried is what a retry of a committed change tells the streams: the
 // combat changed and its log did, to the players only when the first call's
-// event was not one a hidden combatant is in.
+// event was not one a hidden combatant is in. It tells the forced moves the stored event made again.
 func (s *Service) publishRetried(ctx context.Context, campaignID string, res combatResult, d *encounterData) {
 	ev, err := readEvent(res.payload)
 	s.publishEncounterChanged(ctx, campaignID, d.enc)
-	s.publishLogChanged(ctx, campaignID, d.enc.ID, err == nil && !ev.Secret)
+	s.publishLogChange(ctx, campaignID, d.enc.ID, err == nil && !ev.Secret, err == nil && ev.Undone != "") // a retried undo rewrote the log too
+	if err == nil {                                                                                        // the forced moves the stored event made: the first call may have died before it told them
+		moves := pushesOf(ev.Hits)
+		if ev.Rider != nil {
+			moves = append(moves, ev.Rider.Pushed)
+		}
+		s.publishPushed(ctx, campaignID, d, moves)
+	}
 }
 
 // changed is the usual publish: a hint that the combat changed.

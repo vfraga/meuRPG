@@ -17,8 +17,8 @@ import (
 // the SRD has no effect of that type (a feat from another book brings it).
 var overlayEffectTypes = []string{
 	"modifier", "proficiency", "resource", "sense", "roll_mode", "grant_action",
-	"superiority_die", "extra_attack", "extra_damage", "ambush", "wild_shape", "slot_recovery", "ranged_attack", "resistance", "state", "weapon_rule", "pseudo_weapon",
-	"condition_immunity", "breathes_water", "granted_spell", "on_event", "spell_modifier", "reroll", "roll_minimum", "choice", "ability_increase", "note",
+	"superiority_die", "extra_attack", "extra_damage", "ambush", "wild_shape", "slot_recovery", "ranged_attack", "resistance", "state", "weapon_rule", "pseudo_weapon", "natural_attack",
+	"condition_immunity", "breathes_water", "granted_spell", "on_event", "spell_modifier", "reroll", "roll_minimum", "flag", "choice", "ability_increase", "note",
 }
 
 // overlayChoiceKinds are the choices a table feature may offer. The subclass and
@@ -343,6 +343,7 @@ var effectTypeChecks = map[string]func(b *overlayBuilder, site effectSite, e *Ef
 	},
 	"weapon_rule":      (*overlayBuilder).checkWeaponEffects,
 	"pseudo_weapon":    (*overlayBuilder).checkWeaponEffects,
+	"natural_attack":   (*overlayBuilder).checkNaturalAttackEffect,
 	"choice":           (*overlayBuilder).checkChoiceEffect,
 	"ability_increase": func(_ *overlayBuilder, site effectSite, e *Effect) error { return checkOwnFields(site, e) },
 	"proficiency":      func(_ *overlayBuilder, site effectSite, e *Effect) error { return checkOwnFields(site, e) },
@@ -355,6 +356,7 @@ var effectTypeChecks = map[string]func(b *overlayBuilder, site effectSite, e *Ef
 	"ambush":           (*overlayBuilder).checkOnTarget,
 	"reroll":           (*overlayBuilder).checkReroll,
 	"roll_minimum":     (*overlayBuilder).checkRollMinimum,
+	"flag":             func(_ *overlayBuilder, site effectSite, e *Effect) error { return checkFlag(site, e) },
 	"modifier":         (*overlayBuilder).checkModifier,
 	"resource":         (*overlayBuilder).checkResourceEffect,
 	"slot_recovery":    (*overlayBuilder).checkSlotRecovery,
@@ -670,10 +672,14 @@ var ownFields = map[string][]string{
 	// A weapon rule changes the weapons its filter chooses; a pseudo-weapon is an attack line of its own.
 	"weapon_rule":   {"weapon", "weapon_name", "attack_ability", "damage_ability", "attack_bonus", "damage_bonus", "reach_ft", "magical", "silvered", "adamantine", "while"},
 	"pseudo_weapon": {"attack_name", "weapon", "damage_dice", "damage_type", "ability", "reach_ft", "range_ft", "while"},
+	// A natural attack: the name, the dice, the damage type, the ability and the reach; the when that gates it.
+	"natural_attack": {"attack_name", "damage_dice", "damage_type", "ability", "reach_ft"},
 	// breathes_water has no field of its own: only the when that gates it.
 	"breathes_water": {},
+	// A flag names the rule it switches on, and the when that gates it.
+	"flag": {"flag"},
 	// A granted_spell names the spell, from which level, what it spends, and the switches.
-	"granted_spell": {"spell", "from_level", "uses", "ability", "also_with_slot", "ritual_only", "counts_as_known"},
+	"granted_spell": {"spell", "from_level", "uses", "ability", "also_with_slot", "ritual_only", "counts_as_known", "no_material_components", "uses_cost"},
 }
 
 // effectField is a field of an Effect a type may not read: its name in the
@@ -754,6 +760,8 @@ var effectFields = []effectField{
 	{"also_with_slot", func(e *Effect) bool { return e.AlsoWithSlot }, func(e *Effect) { e.AlsoWithSlot = false }},
 	{"ritual_only", func(e *Effect) bool { return e.RitualOnly }, func(e *Effect) { e.RitualOnly = false }},
 	{"counts_as_known", func(e *Effect) bool { return e.CountsAsKnown }, func(e *Effect) { e.CountsAsKnown = false }},
+	{"no_material_components", func(e *Effect) bool { return e.NoMaterialComponents }, func(e *Effect) { e.NoMaterialComponents = false }},
+	{"uses_cost", func(e *Effect) bool { return e.UsesCost != 0 }, func(e *Effect) { e.UsesCost = 0 }},
 	{"no_fly", func(e *Effect) bool { return e.NoFly }, func(e *Effect) { e.NoFly = false }},
 	{"no_swim", func(e *Effect) bool { return e.NoSwim }, func(e *Effect) { e.NoSwim = false }},
 	{"state_name", func(e *Effect) bool { return e.StateName != "" }, func(e *Effect) { e.StateName = "" }},
@@ -772,6 +780,7 @@ var effectFields = []effectField{
 	{"damage_dice", func(e *Effect) bool { return e.DamageDice != "" }, func(e *Effect) { e.DamageDice = "" }},
 	{"rolls", func(e *Effect) bool { return len(e.Rolls) > 0 }, func(e *Effect) { e.Rolls = nil }},
 	{"at_most", func(e *Effect) bool { return e.AtMost != 0 }, func(e *Effect) { e.AtMost = 0 }},
+	{"flag", func(e *Effect) bool { return e.Flag != "" }, func(e *Effect) { e.Flag = "" }},
 }
 
 // effectFieldClear is how to clear each of effectFields, by name.
@@ -927,6 +936,7 @@ var effectErrorRules = []effectErrorRule{
 	{[]string{"recover_max_level is a spell level"}, fieldAttr(".recover_max_level"), ReasonValue},
 	{[]string{"recover_levels must be"}, fieldAttr(".recover_levels"), ReasonValue},
 	{[]string{"ability must be"}, fieldAttr(".ability"), ReasonValue},
+	{[]string{"uses_cost"}, fieldAttr(".uses_cost"), ReasonValue},
 	{[]string{"ritual_only needs"}, fieldAttr(".ritual_only"), ReasonValue},
 	{[]string{"ritual_only and also_with_slot"}, fieldAttr(".also_with_slot"), ReasonValue},
 	{[]string{"speedwalk() belongs"}, func(e *Effect, _ func(...string) bool) string {

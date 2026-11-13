@@ -135,6 +135,19 @@ describe('the words of the contests (W7-X)', () => {
       });
       expect(noteLines(roll)).toEqual(['Vantagem: Ajuda de Orla', 'Desvantagem: Envenenado']);
     });
+
+    it('says a bonus an effect adds by its label alone, never as a disadvantage', () => {
+      const roll = checkRoll({
+        notes: [
+          create(RollNoteSchema, {
+            kind: 'effect_bonus',
+            labelPt: 'Marca de Nanquim +3',
+            advantage: false,
+          }),
+        ],
+      });
+      expect(noteLines(roll)).toEqual(['Marca de Nanquim +3']);
+    });
   });
 
   describe('the wait', () => {

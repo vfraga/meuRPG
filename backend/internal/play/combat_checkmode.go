@@ -98,9 +98,13 @@ func (s *Service) baseCheckModeOf(ctx context.Context, tx pgx.Tx, campaignID, se
 	if err != nil {
 		return checkMode{}, err
 	}
+	sun, err := s.sunlightOf(ctx, q, enc)
+	if err != nil {
+		return checkMode{}, err
+	}
 	sources := combat.SaveMode(combat.SaveScene{
-		Creature: creatureFacts(who, states, sheet.Traits), Ability: ability, Check: check, EffectVisible: true,
-		StealthArmor: skillKey == skillStealth && sheet.Traits.StealthDisadvantage,
+		Creature: sun.facts(creatureFacts(who, states, sheet.Traits), who), Ability: ability, Check: check, EffectVisible: true,
+		StealthArmor: skillKey == skillStealth && sheet.Traits.StealthDisadvantage, Perception: skillKey == skillPercept,
 	})
 	// A Help with this check gives advantage on it, whatever rolls it (SRD 5.1, "Help").
 	var helpIDs []string
@@ -196,11 +200,11 @@ func (s *Service) spendCheckHelps(ctx context.Context, c *combatTx, ids []string
 func notesOfSources(sources []combat.Source, hide func(combat.Source) bool) []rollNote {
 	var out []rollNote
 	for _, src := range sources {
-		label := textContext{self: true, names: func(k string) string { return k }}.sentence(src)
+		label, kind := textContext{self: true, names: func(k string) string { return k }}.sentence(src), src.Kind
 		if hide != nil && hide(src) {
-			label = "Outra fonte" // an effect the master hides (RN-22)
+			label, kind = otherSourceTx, "other" // an effect the master hides (RN-22), or the sun (RN-20): the kind says no more than the label
 		}
-		out = append(out, rollNote{Kind: src.Kind, Label: label, Adv: src.Effect == combat.ModeAdvantage})
+		out = append(out, rollNote{Kind: kind, Label: label, Adv: src.Effect == combat.ModeAdvantage})
 	}
 	return out
 }

@@ -22,6 +22,7 @@ function emptyStory(): CharacterStoryVm {
 function fullSheet(overrides: Partial<FullSheetVm> = {}): FullSheetVm {
   return {
     kind: 'full',
+    weaponMarks: [],
     abilities: ABILITY_KEYS.map((key) => ({ key, score: 10, modifier: 0 })),
     proficiencyBonus: 2,
     savingThrows: [],
@@ -29,6 +30,7 @@ function fullSheet(overrides: Partial<FullSheetVm> = {}): FullSheetVm {
     passivePerception: 10,
     passiveInvestigation: 10,
     passiveInsight: 10,
+    carryCapacityLb: 150,
     initiative: 0,
     armorClass: 10,
     armorClassDescription: 'Sem armadura',

@@ -27,6 +27,8 @@ import { tight } from '../../../../core/format/text';
 import {
   attackDetail,
   attackName,
+  attackMarksOf,
+  attackTagsOf,
   beamsLeftLine,
   bonusAttackLine,
   circleLabel,
@@ -440,10 +442,8 @@ export class ActionGroups {
     return bonusAttackLine(o) || beamsLeftLine(o);
   }
 
-  /** The tags under an attack's name: "Truque" for a cantrip (its economy has its own mark). */
-  protected attackTags(o: AttackOption): string[] {
-    return o.attack && isCantrip(o.attack) ? ['Truque'] : [];
-  }
+  protected readonly attackTags = attackTagsOf;
+  protected readonly attackMarks = attackMarksOf;
   protected readonly attackDetail = (a: Parameters<typeof attackDetail>[0]) => attackDetail(a);
   protected readonly reasonText = reasonText;
   protected readonly castRef = castRefOf;

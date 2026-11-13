@@ -43,7 +43,7 @@ func (s *Service) gate(ctx context.Context, tx pgx.Tx, campaignID string, e play
 		return code, nil
 	}
 	// A surprised combatant does not move, act or react until its first turn ends.
-	surprised, err := s.surprisedNow(ctx, tx, e, c)
+	surprised, err := s.surprisedNow(ctx, tx, campaignID, e, c)
 	if err != nil {
 		return 0, err
 	}

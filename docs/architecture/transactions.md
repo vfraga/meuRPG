@@ -37,7 +37,44 @@ A cancelled call returns its connection to the pool after about 100 ms, the time
 | The closure starts from the same state on every run | A variable shared with the code around the closure is not overwritten with something that exists only inside one attempt; it is assigned to a local, and flags are reset at the top. |
 | Inside the transaction nobody waits for another request | A cache filled by single-flight (the compiled fog scene in `maps`) is not filled from inside a transaction: whoever holds a connection must not wait for someone who may be waiting for one. |
 | What must not change during the transaction, or does its own write, is prepared before | The fog view is read first. Files an NPC portrait needs are copied beforehand and the gallery row is inserted inside the transaction; if it fails the files are removed. |
-| No effect outside the database | Publishing to the stream, touching files, logging a game event and calling another service wait until after the commit, because the closure may run again. |
+| No effect outside the database | Publishing to the stream, touching files, logging a game event and calling another service wait until after the commit, because the closure may run again. The `play` module collects its hints in the closure and `Service.tx` sends them ([Hints sent after the commit](#hints-sent-after-the-commit)). |
+
+## Hints sent after the commit
+
+The combat write path of the `play` module (`write`, `changeInTx`, `StartEncounter`) runs in `Service.tx(ctx, sessionID, fn)`, which wraps `db.InTx` and sends after the commit.
+Other writers of the module call `db.InTx` and then `send`; they do not bump the hint number.
+`txOn` is the same on any transaction starter; a test passes one whose `COMMIT` fails.
+
+| Rule | How it is met |
+| --- | --- |
+| Lock first | The first statement of every attempt takes the session's row (`FOR UPDATE`), before the closure reads. A closure that locks it again finds it held |
+| Collect, do not send | The closure calls `h.tell(campaignID, event)` for each hint, and `h.touch()` for a write that sends none but must move the screens. Nothing goes out before the commit |
+| Bump once | If the closure told or touched, `Service.tx` adds 1 to `game_sessions.hint_seq` in the same transaction, once however many events it told. A closure that told nothing writes nothing to the session |
+| A fresh collector | `h` is empty at the start of every attempt, so a retry keeps nothing of a rolled-back one |
+| Send after the commit | Each told event is stamped with the new number and sent through `send`, in the order told; then the steps of `h.after` run, in order, with the context of `afterCommit` (the request's values, without its cancellation, bounded) |
+| An error sends nothing | The number stays as it was |
+| An ambiguous commit sends nothing | `*db.AmbiguousCommitError` is not retried and `Service.tx` returns it before it sends; if the write did commit, the next heartbeat shows the number ahead and the page reads again |
+| A repeat of a stored key replays | The closure calls `h.replay()` and tells what the first call would have; the events go out with the number as it stands, and it is not bumped |
+
+A hint that goes with no write (typing, presence, the table screen's "changed") does not go through `Service.tx`: it calls `send`.
+The effect on a session's live streams is in [Live session](play/live-session.md#the-hint-number).
+
+### What the archtest sees
+
+`TestHintsAreNotSentInsideATransaction` (`backend/internal/archtest/txhints_test.go`) fails for:
+
+- a call to `send` or `tellMembers` inside a function literal passed to `Service.tx` or `db.InTx` in a non-test file of `internal/play`, because it would tell before the commit and again on a retry;
+- a call to `BumpHintSeq` outside `Service.txOn`, and a string literal that names `hint_seq` in a non-test file, because a raw `UPDATE` would move the number outside the funnel.
+
+Its exceptions (`txhints_exceptions.txt`) can only shrink.
+Its limits:
+
+- It reads a closure given as a literal, or as an identifier assigned a literal in the same function. A method value, a parameter or a package-level function is not read.
+- A helper that the closure calls and that itself calls `send` is not seen; only the closure's own calls are.
+- It reads the files directly in `internal/play` only.
+
+The behaviour is proved by `backend/internal/play/hints_test.go`: the collector reset on a retry, an error and an ambiguous commit that send nothing, the number saved with the write, one bump per transaction, the lock taken first, and the replay that does not bump.
+`TestHintSeqContentionOnCockroachDB` runs concurrent writers of one session on CockroachDB.
 
 ## Reads that join several statements
 

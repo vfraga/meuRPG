@@ -252,6 +252,7 @@
       [name]="attackName(atk)"
       [economy]="isBonusAttack(a) ? 'bonus' : 'action'"
       [helpName]="isCantrip(atk) && !asksSave(atk) ? attackName(atk) : ''"
+      [marks]="attackMarks(atk)"
       [detail]="withTags(attackTags(a), attackDetail(atk))"
       [note]="attackNote(a)"
       [rider]="rider(atk)"

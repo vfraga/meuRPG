@@ -531,6 +531,49 @@ describe('granted_spell: a spell the entry gives, cast with no slot', () => {
   });
 });
 
+describe('granted_spell: the cost of a cast and the waived material', () => {
+  const m = grantedSpellMenu();
+  const names = (d: EffectDraft) =>
+    visibleFields(m.fieldsOf('granted_spell'), d).map((f) => f.name);
+
+  it('asks the uses of each cast only when the grant spends a resource', () => {
+    const base = { ...emptyEffect('granted_spell'), spell: 'spell:bless', ability: 'cha' };
+    expect(names(base)).not.toContain('uses_cost');
+    expect(names({ ...base, uses: 'at_will' })).not.toContain('uses_cost');
+    expect(names({ ...base, uses: 'usos_de_teste' })).toContain('uses_cost');
+    // A cost the draft already holds stays, so a refusal of it has somewhere to land.
+    expect(names({ ...base, usesCost: 2 })).toContain('uses_cost');
+  });
+
+  it('sends the cost and the switch, and reads them back unchanged', () => {
+    const stored = create(TableEffectSchema, {
+      type: 'granted_spell',
+      spell: 'spell:bless',
+      ability: 'cha',
+      uses: 'usos_de_teste',
+      usesCost: 2,
+      noMaterialComponents: true,
+    });
+    expect(draftToEffect(effectToDraft(stored), m)).toEqual({
+      type: 'granted_spell',
+      spell: 'spell:bless',
+      ability: 'cha',
+      uses: 'usos_de_teste',
+      usesCost: 2,
+      noMaterialComponents: true,
+    });
+  });
+
+  it('sends neither when they are unset', () => {
+    const d = { ...emptyEffect('granted_spell'), spell: 'spell:light', ability: 'int' };
+    expect(draftToEffect(d, m)).toEqual({
+      type: 'granted_spell',
+      spell: 'spell:light',
+      ability: 'int',
+    });
+  });
+});
+
 describe('spell_modifier: the change decides the fields', () => {
   const m = spellModifierMenu();
   const base = { ...emptyEffect('spell_modifier'), appliesTo: 'damage_spell' };

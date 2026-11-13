@@ -32,6 +32,7 @@ func (x *deriver) hitPoints() {
 	// A level never gives less than 1 hit point, whatever the modifiers say: a
 	// table's effect that takes hit points away stops there.
 	x.d.HitPointsMax = max(x.modifiers("hp.max", hp.total), x.d.TotalLevel)
+	x.d.HitDieMinimum = min(max(x.modifiers(HitDieMinimumTarget, 0), 0), MaxHitDieMinimum)
 	x.d.HitPointsFromEffects = x.d.HitPointsMax - hp.total
 
 	for die, count := range hp.dice {

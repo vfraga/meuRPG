@@ -167,6 +167,10 @@ const (
 	// ListRaceTraits are the traits of the SRD races: what a subrace's `replaces_trait_keys` may name
 	// for an SRD parent, each with its race as Group.
 	ListRaceTraits = "race_traits"
+	// ListEffectFlags are the flags a flag effect names.
+	ListEffectFlags = "effect_flags"
+	// ListNaturalAbilities are the abilities a natural attack uses: Strength, Dexterity or the better of the two.
+	ListNaturalAbilities = "natural_abilities"
 )
 
 // menuTypes is the menu's types, in the picker's order, with the copy in
@@ -326,6 +330,15 @@ var menuTypes = []MenuType{
 		{Name: "while", Kind: "state_ref"},
 		{Name: "text_pt", Kind: "text"},
 	}},
+	{Type: "natural_attack", NamePT: "Ataque natural", HintPT: "Dá à ficha um ataque desarmado com nome próprio (uma mordida, garras, chifres): dados de dano, tipo de dano, a habilidade que usa (Força, Destreza ou a melhor das duas) e o alcance, que é de 1,5 m se ficar em branco. Só corpo a corpo, sempre com proficiência. Aparece na lista de ataques e no combate, e as regras de arma também a mudam; não é o golpe desarmado, então as regras que citam esse golpe não a leem.", Fields: []MenuField{
+		{Name: "attack_name", Required: true, Kind: "text"},
+		{Name: "damage_dice", Required: true, Kind: "text"},
+		{Name: "damage_type", Required: true, Kind: "choice", List: ListDamageTypes},
+		{Name: "ability", Required: true, Kind: "choice", List: ListNaturalAbilities},
+		{Name: "reach_ft", Kind: "number", Min: feetStep, Max: MaxWeaponReachFt, AlwaysShown: true},
+		{Name: "when", Kind: "condition"},
+		{Name: "text_pt", Kind: "text"},
+	}},
 	{Type: "condition_immunity", NamePT: "Imunidade a condição", HintPT: "O personagem não fica com as condições escolhidas: nenhuma magia, armadilha ou golpe as coloca nele.", Fields: []MenuField{
 		{Name: "conditions", Required: true, Kind: "choices", List: ListConditions},
 		{Name: "text_pt", Kind: "text"},
@@ -334,14 +347,16 @@ var menuTypes = []MenuType{
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
-	{Type: "granted_spell", NamePT: "Magia concedida", HintPT: "Uma magia que a entrada dá ao personagem fora das listas das classes dele: à vontade ou gastando usos de um recurso que a entrada define, sem espaço de magia. A magia de nível acima de truque é conjurada no próprio nível. A habilidade escolhida dá o bônus de ataque e a CD de resistência (8 + proficiência + modificador); \"o jogador escolhe\" pede essa escolha uma vez, ao pegar a entrada. Magias de ritual com \"só como ritual\" não gastam espaço nem preparo. Não dispensa o material que a magia pede.", Fields: []MenuField{
+	{Type: "granted_spell", NamePT: "Magia concedida", HintPT: "Uma magia que a entrada dá ao personagem fora das listas das classes dele: à vontade ou gastando usos de um recurso que a entrada define, sem espaço de magia. A magia de nível acima de truque é conjurada no próprio nível. A habilidade escolhida dá o bônus de ataque e a CD de resistência (8 + proficiência + modificador); \"o jogador escolhe\" pede essa escolha uma vez, ao pegar a entrada. Magias de ritual com \"só como ritual\" não gastam espaço nem preparo. O gasto por conjuração é 1 uso, ou o número de \"custo em usos\" (só com um recurso). O material que a magia pede só é dispensado pela opção de dispensar o material, e só na ficha e na folha de conjuração: o servidor não confere o que a magia pede.", Fields: []MenuField{
 		{Name: "spell", Required: true, Kind: "choice"},
 		{Name: "ability", Required: true, Kind: "choice", List: ListGrantAbilities},
 		{Name: "from_level", Kind: "formula"},
 		{Name: "uses", Kind: "resource_ref"},
+		{Name: "uses_cost", Kind: "number", Min: 1, Max: MaxGrantUsesCost},
 		{Name: "also_with_slot", Kind: "yes_no", AlwaysShown: true},
 		{Name: "ritual_only", Kind: "yes_no", AlwaysShown: true},
 		{Name: "counts_as_known", Kind: "yes_no", AlwaysShown: true},
+		{Name: "no_material_components", Kind: "yes_no", AlwaysShown: true},
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
@@ -385,6 +400,11 @@ var menuTypes = []MenuType{
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
+	{Type: "flag", NamePT: "Sinalizador", HintPT: "Liga uma regra do jogo para o personagem, entre as da lista: não ser surpreendido, atirar com arma à distância sem desvantagem por inimigo perto, ou ignorar o terreno difícil do mapa (o das magias continua custando).", Fields: []MenuField{
+		{Name: "flag", Required: true, Kind: "cards", List: ListEffectFlags},
+		{Name: "when", Kind: "condition"},
+		{Name: "text_pt", Kind: "text"},
+	}},
 	{Type: "choice", NamePT: "Escolha", HintPT: "Algo que o jogador escolhe: perícias, especialização, truques, magias, idiomas, ferramentas ou uma opção de uma lista (do SRD, como um estilo de luta, ou a lista de opções da própria característica, como manobras). Num talento, também uma habilidade ou um tipo de dano: dê um nome à escolha e escreva @nome nos efeitos seguintes do talento (por exemplo, a proficiência save.@habilidade). Em vez da lista, uma escolha de opções pode oferecer um conjunto inteiro do SRD (o campo set).", Fields: []MenuField{
 		{Name: "choice", Required: true, Kind: "choice", List: ListChoiceKinds},
 		{Name: "count", Required: true, Kind: "number", Min: 1, Max: MaxChoiceCount},
@@ -417,7 +437,11 @@ var (
 		"speed.climb": "Deslocamento de escalada", "speed.burrow": "Deslocamento de escavação", "initiative": "Iniciativa",
 		"attack.weapon.melee": "Ataque com arma corpo a corpo", "attack.weapon.ranged": "Ataque com arma à distância",
 		"damage.weapon.melee": "Dano de arma corpo a corpo", "damage.weapon.ranged": "Dano de arma à distância",
-		CriticalRangeTarget: "Margem de acerto crítico",
+		CriticalRangeTarget:     "Margem de acerto crítico",
+		PassivePerceptionTarget: "Percepção passiva", PassiveInvestigationTarget: "Investigação passiva", PassiveInsightTarget: "Intuição passiva",
+		ReachMeleeTarget: "Alcance corpo a corpo", HitDieMinimumTarget: "Mínimo de PV por dado de vida",
+		CarryCapacityTarget: "Capacidade de carga", DamageReductionWeaponTarget: "Redução de dano de arma",
+		DamageReductionNonmagicalWeaponTarget: "Redução de dano de arma não mágica",
 	}
 	modeNames   = map[string][2]string{"add": {"Somar", "Soma o valor ao número."}, "max": {"Pelo menos", "O número não fica abaixo do valor."}, "set": {"Definir", "O número passa a ser o valor."}}
 	levelNames  = map[string]string{"half": "Metade", "full": "Completa", "expertise": "Especialização"}
@@ -580,9 +604,22 @@ func (c *content) menuModifierTargets() []MenuValue {
 	var targets []MenuValue
 	for _, k := range modifierTargets {
 		v := MenuValue{Key: k, NamePT: modifierTargetNames[k]}
-		if k == CriticalRangeTarget {
+		switch k {
+		case CriticalRangeTarget:
 			v.HintPT = "O menor d20 natural que é acerto crítico."
 			v.OnlyModes, v.Min, v.Max = []string{"set"}, MinCriticalRange, MaxCriticalRange
+		case PassivePerceptionTarget, PassiveInvestigationTarget, PassiveInsightTarget:
+			v.HintPT = "O valor passivo da ficha (10 mais o bônus da perícia). Soma ao valor, não ao teste."
+		case ReachMeleeTarget:
+			v.HintPT = "O alcance corpo a corpo da criatura, em pés; sem regra é 5. Uma arma com alcance maior mantém o seu."
+		case CarryCapacityTarget:
+			v.HintPT = "A capacidade de carga em libras; sem regra é 15 vezes o valor de Força."
+		case DamageReductionWeaponTarget:
+			v.HintPT = "Valor fixo tirado do dano de cada ataque com arma que acerta o personagem, antes de resistência e vulnerabilidade. Não vale para magias nem para dano que não é ataque."
+		case DamageReductionNonmagicalWeaponTarget:
+			v.HintPT = "Como a redução de dano de arma, mas só para ataques que não são mágicos."
+		case HitDieMinimumTarget:
+			v.HintPT = "O mínimo de PV que um dado de vida gasto num descanso curto devolve, já com o modificador de Constituição."
 		}
 		targets = append(targets, v)
 	}
@@ -712,6 +749,8 @@ func (c *content) menuLists() []MenuList {
 		{Name: ListWeaponKinds, Values: namedMenuHint(weaponKinds, weaponFilterNms)},
 		{Name: ListLackableFeatures, Values: c.menuLackableFeatures()},
 		{Name: ListRaceTraits, Values: c.menuRaceTraits()},
+		{Name: ListEffectFlags, Values: effectFlagValues()},
+		{Name: ListNaturalAbilities, Values: c.menuNaturalAbilities()},
 	}
 }
 
@@ -938,5 +977,14 @@ func menuHelpers() []FormulaHelper {
 		{Call: "ceil(x)", Returns: "number", HintPT: "Arredonda para cima."},
 		{Call: "min(a, b)", Returns: "number", HintPT: "O menor dos dois."},
 		{Call: "max(a, b)", Returns: "number", HintPT: "O maior dos dois."},
+	}
+}
+
+// menuNaturalAbilities are the abilities of a natural attack: Strength, Dexterity, or the better of the two.
+func (c *content) menuNaturalAbilities() []MenuValue {
+	return []MenuValue{
+		{Key: string(STR), NamePT: c.menuAbilityName(STR)},
+		{Key: string(DEX), NamePT: c.menuAbilityName(DEX)},
+		{Key: NaturalAbilityBest, NamePT: "A melhor das duas", HintPT: "Usa a Força ou a Destreza, a que tiver o modificador maior."},
 	}
 }

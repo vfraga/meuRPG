@@ -44,7 +44,7 @@ func (w *world) hiddenOnlyEvents(act func()) map[string][]string {
 			if w.endsHiddenPart(ev) {
 				break // the marker: what follows is not the hidden part
 			}
-			out[p.name] = append(out[p.name], c+" "+shorten(mustJSON(ev)))
+			out[p.name] = append(out[p.name], eventLine(c, ev))
 		}
 	}
 	return out
@@ -61,6 +61,13 @@ func (w *world) endsHiddenPart(ev *playv1.WatchGameSessionResponse) bool {
 		return ev.GetCurrentMapChanged().GetMapId() == w.map2
 	}
 	return ev.GetSessionEnded() != nil
+}
+
+// eventLine is one event of a hidden part as the tests read it: the whole event, never cut. A cut at a fixed
+// length falls at another place of the same event when a timestamp prints fewer digits (protojson drops the
+// trailing zeros of the fraction in groups of three), and two reads that are the same then differ by those bytes.
+func eventLine(kind string, ev *playv1.WatchGameSessionResponse) string {
+	return kind + " " + string(mustJSON(ev))
 }
 
 func mustJSON(ev *playv1.WatchGameSessionResponse) []byte {

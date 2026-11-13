@@ -2,7 +2,7 @@ import { expect } from '@playwright/test';
 import { test } from './diagnostics';
 
 import { openSessionPage } from './live-session-support';
-import { enterZoneRPC, firstFootprint, zoneCard, zoneLayer, zoneOf, zoneTable, zonesPanel } from './zones-support';
+import { enterZoneRPC, expectOnMap, firstFootprint, openZoneMenu, zoneAction, zoneBadges, zoneCard, zoneOf, zoneTable, zonesPanel } from './zones-support';
 
 // The areas that spells keep on the map (RN-37), on the two screens: the master's map and "Zonas ativas" panel, the player's
 // (name, area and caster only, a hidden caster's zone not there at all: RN-10), the move picker, the question that ends a
@@ -24,8 +24,9 @@ test(
       // The master: three zones, on the map ("Teia · Pensantus") and in the list with the numbers.
       await expect(title(t.m)).toHaveText('Zonas ativas (3)');
       for (const label of ['Raio Lunar · Druida', 'Raio Lunar · Sombra', 'Teia · Pensantus']) {
-        await expect(zoneLayer(t.m)).toContainText(label);
+        await expectOnMap(t.m, label);
       }
+      await expect(zoneBadges(t.m)).toHaveCount(3);
       const beam = zoneCard(t.m, 'Raio Lunar · Druida');
       await expect(beam).toContainText('Cilindro de 1,5 m de raio');
       await expect(beam).toContainText(/Constituição CD\s\d+/);
@@ -41,7 +42,7 @@ test(
 
       // The player: Teia (his own, with its numbers) has come, so the list already read everything cast before it.
       await expect(title(t.p)).toHaveText('Zonas ativas (2)');
-      await expect(zoneLayer(t.p)).toContainText('Teia · Pensantus');
+      await expectOnMap(t.p, 'Teia · Pensantus');
       await expect(zoneCard(t.p, 'Teia · Pensantus')).toContainText(/CD\s\d+/);
       // Another caster's zone: the name, the area and the caster, with no save, damage, time or buttons (`details_hidden`).
       const bare = zoneCard(t.p, 'Raio Lunar · Druida');
@@ -49,10 +50,10 @@ test(
       await expect(bare).not.toContainText(/Constituição|\bCD\b|2d10|radiante|restam|Concentração|Aqui/);
       await expect(bare.getByRole('button')).toHaveCount(0);
       await expect(zoneCard(t.p, 'Teia · Pensantus').getByRole('button')).toHaveCount(0);
-      await expect(zoneLayer(t.p)).toContainText('Raio Lunar · Druida');
-      // The hidden caster's zone is absent from the list and from the map, and nothing names it.
+      await expectOnMap(t.p, 'Raio Lunar · Druida');
+      // The hidden caster's zone is absent from the list and from the map (two badges, two cards), and nothing names it.
       await expect(zonesPanel(t.p)).not.toContainText('Sombra');
-      await expect(zoneLayer(t.p)).not.toContainText('Sombra');
+      await expect(zoneBadges(t.p)).toHaveCount(2);
       await expect(zonesPanel(t.p)).not.toContainText('Só você vê');
     } finally {
       await t.done();
@@ -73,11 +74,15 @@ test(
       await expect(title(t.p)).toHaveText('Zonas ativas (2)');
 
       // Raio Lunar moves by an action ("Mover"); Teia stays where it was put.
-      const beam = zoneCard(t.m, 'Raio Lunar · Druida');
-      await expect(zoneCard(t.m, 'Teia · Pensantus').getByRole('button', { name: 'Mover', exact: true })).toHaveCount(0);
+      // Teia has no "Mover" in its menu, only "Encerrar zona".
+      const webMenu = await openZoneMenu(t.m, 'Teia · Pensantus');
+      await expect(webMenu.getByRole('menuitem', { name: 'Encerrar zona', exact: true })).toBeVisible();
+      await expect(webMenu.getByRole('menuitem', { name: 'Mover', exact: true })).toHaveCount(0);
+      await t.m.keyboard.press('Escape');
+      await expect(webMenu).toHaveCount(0);
       const masterBefore = await firstFootprint(t.m).getAttribute('d');
       const playerBefore = await firstFootprint(t.p).getAttribute('d');
-      await beam.getByRole('button', { name: 'Mover', exact: true }).click();
+      await zoneAction(t.m, 'Raio Lunar · Druida', 'Mover');
 
       // The move sheet: the map picks a square (the arrows start from the zone's own point), "Mover a zona" waits for one.
       const sheet = t.m.getByRole('dialog', { name: 'Mover o Raio Lunar' });
@@ -100,19 +105,21 @@ test(
 
       // Teia ends after a question in place: "Não" leaves it, "Sim, encerrar" takes it off both screens.
       const web = zoneCard(t.m, 'Teia · Pensantus');
-      await web.getByRole('button', { name: 'Encerrar zona' }).click();
+      await zoneAction(t.m, 'Teia · Pensantus', 'Encerrar zona');
       const ask = web.getByRole('group', { name: 'Encerrar a zona?' });
       await expect(ask).toContainText('Teia · Pensantus some do mapa e da lista de todo mundo.');
       await ask.getByRole('button', { name: 'Não' }).click();
       await expect(ask).toHaveCount(0);
       await expect(title(t.m)).toHaveText('Zonas ativas (3)');
-      await web.getByRole('button', { name: 'Encerrar zona' }).click();
+      await zoneAction(t.m, 'Teia · Pensantus', 'Encerrar zona');
       await ask.getByRole('button', { name: 'Sim, encerrar' }).click();
       await expect(title(t.m)).toHaveText('Zonas ativas (2)');
-      await expect(zoneLayer(t.m)).not.toContainText('Teia · Pensantus');
+      await expect(zoneCard(t.m, 'Teia · Pensantus')).toHaveCount(0);
+      await expect(zoneBadges(t.m)).toHaveCount(2);
       await expect(title(t.p)).toHaveText('Zonas ativas (1)');
-      await expect(zoneLayer(t.p)).not.toContainText('Teia · Pensantus');
-      await expect(zoneLayer(t.p)).toContainText('Raio Lunar · Druida');
+      await expect(zoneCard(t.p, 'Teia · Pensantus')).toHaveCount(0);
+      await expect(zoneBadges(t.p)).toHaveCount(1);
+      await expectOnMap(t.p, 'Raio Lunar · Druida');
     } finally {
       await t.done();
     }

@@ -565,6 +565,21 @@ service CombatService {
   //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
   rpc SetMonsterReactionMode(SetMonsterReactionModeRequest) returns (SetMonsterReactionModeResponse);
 
+  // SetSunlight switches the sunlight of the combat (RN-20, RN-29): `on` says whether the combat is in
+  // sunlight, `scope` says where (the whole map, or only the listed squares), and `add_squares` and
+  // `remove_squares` change the list of sunlit squares. Turning `on` off keeps the scope and the squares, so the
+  // master can switch back. A creature with Sunlight Sensitivity or Weakness rolls at a disadvantage while it
+  // stands in sunlight; magical Darkness beats the sunlight. A combat with no map (a theatre, or a grid with no
+  // map) has no squares: its scope is always the whole map. Only the master may call it, and only the master
+  // reads the state back (Encounter.sunlight_on, sunlight_scope, sunlight_squares).
+  //
+  // Errors:
+  //   - `permission_denied`: the caller is a player.
+  //   - `invalid_argument`: a square is off the grid, squares were given for a combat with no map, the scope is
+  //     SQUARES for a combat with no map, or the list would pass 4096 squares.
+  //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
+  rpc SetSunlight(SetSunlightRequest) returns (SetSunlightResponse);
+
   // AddCombatants brings reinforcements into the combat: copies of NPCs, as
   // in StartEncounter. Only the master may call it, while the combat is in
   // SETUP or ACTIVE. Each new NPC rolls its initiative at once and takes its
@@ -2201,6 +2216,13 @@ message Encounter {
   // master all of them (the ones of a hidden caster marked MASTER_ONLY), a player only
   // the ones whose caster they see. Empty in THEATRE mode and when no spell keeps one.
   repeated SpellZone zones = 31;
+  // Whether the combat is in sunlight (SetSunlight). Master only (RN-20, RN-29): a player reads none of
+  // sunlight_on, sunlight_scope and sunlight_squares, only the roll's result.
+  bool sunlight_on = 32;
+  // Where the sunlight reaches: the whole map, or only sunlight_squares. Master only (RN-20, RN-29).
+  SunlightScope sunlight_scope = 33;
+  // The sunlit squares, sorted by row then column, read when the scope is SQUARES. Master only (RN-20, RN-29).
+  repeated SunlightSquare sunlight_squares = 34;
 }
 
 // SpellZone is a lingering area a spell keeps on the map for a while (Moonbeam, Spirit
@@ -2262,6 +2284,13 @@ message SpellZone {
   repeated string notes = 23;
   // The combatants standing in the area now that the caller sees ("Aqui: Tor, Jabuti").
   repeated string occupant_ids = 24;
+  // The squares of a wall's burning side (Wall of Fire): the ones within 10 feet of the wall on the side
+  // that deals damage, the wall's own squares not among them (those are `squares`). Empty for a zone that
+  // is no wall. The caller reads only the ones it may read: the master all of them, a player the ones it
+  // sees now, as `squares` (RN-10). These are plain grid squares: SpellOrigin is only the message's shape here.
+  repeated SpellOrigin burning_squares = 25;
+  // The side of the wall that burns; UNSPECIFIED for a zone that is no wall.
+  WallSide wall_side = 26;
 }
 
 // SpellZoneMovement says how a zone changes place while it lasts.
@@ -2912,6 +2941,29 @@ message Combatant {
   // The turn's free object interaction is spent (the first weapon drawn or stowed in the turn; SRD 5.1, "Other Activity on
   // Your Turn"): the next change of gear costs the action. The owner's and the master's; never another player's.
   bool object_interaction_used = 113;
+
+  // The other speeds in feet, 0 for none (a table's speed.swim, speed.climb and speed.burrow modifiers, a creature's
+  // stat block, a Wild Shape form). The grid does not spend them yet. Same audience as `speed_fly_ft`.
+  int32 speed_swim_ft = 114;
+  int32 speed_climb_ft = 115;
+  int32 speed_burrow_ft = 116;
+
+  // Only the master (RN-20, RN-29): the combatant stands in sunlight now. It is the fact the rolls read: the switch is on,
+  // and the combatant is in the whole map's sun or in a sunlit square, and not in magical Darkness. A player's copy has
+  // the zero value.
+  bool in_sunlight = 117;
+  // Only the master: the sunlight trait its stat block has (a creature that has the trait is marked whether or not the
+  // sun is on it now; a player's character is not read). A player's copy has the zero value.
+  SunlightTrait sunlight_trait = 118;
+}
+
+// The trait of a stat block that makes the sun count against a creature's rolls (SRD 5.1, Monsters).
+enum SunlightTrait {
+  SUNLIGHT_TRAIT_UNSPECIFIED = 0;
+  // Sunlight Sensitivity: disadvantage on attack rolls and on Wisdom (Perception) checks that rely on sight.
+  SUNLIGHT_TRAIT_SENSITIVITY = 1;
+  // Sunlight Weakness: disadvantage on attack rolls, ability checks and saving throws.
+  SUNLIGHT_TRAIT_WEAKNESS = 2;
 }
 
 // LimitedAction is an action of a stat block with a limit and what the creature has left of it.
@@ -3433,6 +3485,41 @@ message SetMonsterReactionModeRequest {
 
 // SetMonsterReactionModeResponse returns the combat after the change.
 message SetMonsterReactionModeResponse {
+  Encounter encounter = 1;
+}
+
+// SunlightScope is where the sunlight of a combat reaches.
+enum SunlightScope {
+  SUNLIGHT_SCOPE_UNSPECIFIED = 0;
+  // The whole map (or the whole combat, when it has no map).
+  SUNLIGHT_SCOPE_MAP = 1;
+  // Only the squares in Encounter.sunlight_squares.
+  SUNLIGHT_SCOPE_SQUARES = 2;
+}
+
+// SunlightSquare is one square of the grid, column and row from 0.
+message SunlightSquare {
+  int32 col = 1;
+  int32 row = 2;
+}
+
+// SetSunlightRequest switches the sunlight of a combat.
+message SetSunlightRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  string idempotency_key = 3;
+  // True puts the combat in sunlight; false takes it out, keeping the scope and the squares.
+  bool on = 4;
+  // Where the sunlight reaches. UNSPECIFIED keeps the current scope.
+  SunlightScope scope = 5;
+  // Squares that become sunlit.
+  repeated SunlightSquare add_squares = 6;
+  // Squares that stop being sunlit.
+  repeated SunlightSquare remove_squares = 7;
+}
+
+// SetSunlightResponse returns the combat after the change.
+message SetSunlightResponse {
   Encounter encounter = 1;
 }
 
@@ -4827,6 +4914,12 @@ message PreviewSpellAreaResponse {
   // True when the point of origin is not the one asked for (a wall was in the
   // way).
   bool moved = 6;
+  // The squares of a wall's burning side (Wall of Fire), as SpellZone.burning_squares; empty for any other
+  // spell.
+  repeated SpellOrigin burning_squares = 7;
+  // The length of the wall the server laid, in feet: `wall.length_ft` with 0 taken as the full size.
+  // 0 for any other spell.
+  int32 length_ft = 8;
 }
 
 // AreaTarget is a creature inside a placed area.
@@ -5356,6 +5449,11 @@ message EndCombatEffectResponse {
 message ListCombatLogRequest {
   string campaign_id = 1;
   string encounter_id = 2;
+  // The highest `last_seq` the app holds. Only the entries that changed after it come back;
+  // 0 (the default) asks for the whole log. The server answers with the whole log (`full`) whenever a write after it may have
+  // changed how an entry the app holds is seen without a new event on that entry (a combatant shown or hidden, an answer to a roll
+  // request, an undo, a kind of event it does not know to be safe), so an app that gets `full` replaces everything it holds.
+  int64 since_seq = 3;
 }
 
 // ListCombatLogResponse is the combat log.
@@ -5366,6 +5464,13 @@ message ListCombatLogResponse {
   // The event UndoLastAction would take back now (a UUID), if any. Only the
   // master gets it; the entry it belongs to has `undoable` set.
   string undoable_event_id = 2;
+  // The highest event number (session_events.seq) among the entries the caller reads (the master's: among all the combat's events):
+  // the app sends it back as since_seq. It does not move on a write the caller may not see. It is unrelated to
+  // WatchGameSessionResponse.session_seq: two counters, never compared with each other.
+  int64 last_seq = 3;
+  // True when the rounds are the whole log and replace what the app holds: since_seq was 0, or a write after it may have changed
+  // how the entries it holds are seen (an undo the caller may see; see ListCombatLogRequest.since_seq). False when the rounds hold only the entries that are new or changed, which the app puts in place by id.
+  bool full = 4;
 }
 
 // CombatLogRound is the entries of one round, the latest first.
@@ -5450,6 +5555,10 @@ enum CombatLogKind {
   // and the player who controls the creature get the line; no other player's log shows it or
   // counts it (RN-20, RN-29).
   COMBAT_LOG_KIND_RECHARGE_ROLLED = 28;
+  // A character drew or stowed a piece of gear in a running combat ("Bartolo equipou Espada longa (grátis)"): the
+  // actor and `gear_swapped`. Only the master and the character's owner get the line; no other player's log shows it or
+  // counts it (RN-10).
+  COMBAT_LOG_KIND_GEAR_SWAPPED = 102;
   // A contest or a special action (SRD 5.1, "Contests", "Hide", "Help", "Surprise"): the
   // actor, the target and `contest`, which says what happened. Never a total (RN-20).
   COMBAT_LOG_KIND_CONTEST = 50;
@@ -5677,6 +5786,14 @@ message CombatLogEntry {
   CombatLogLegendarySpent legendary_spent = 114;
   // RECHARGE_ROLLED: the action, the face and the result. The master's and the creature's controller's.
   CombatLogRecharge recharge = 115;
+  // GEAR_SWAPPED: the piece and what the change cost. The master's and the owner's.
+  CombatLogGearSwapped gear_swapped = 117;
+  // The master's alone (0 in a player's entries): the highest event number (session_events.seq) among the events the entry shows.
+  // A player's entry carries none because the numbers of the entries a player reads have gaps where an event they may not see
+  // sits. A later event that joins the entry (the damage of an attack) raises it, so the entry comes again after a since_seq and
+  // the app replaces it by id. In an answer that is not full, the master's `undoable` flag is only right on the entry of
+  // `undoable_event_id`; the app derives the flag from it.
+  int64 seq = 116;
 }
 
 // CombatLogEffectEnd is an effect that ended, in the combat log.
@@ -5805,6 +5922,19 @@ message CombatLogRecharge {
   int32 face = 2;
   // Whether the face made the action available again.
   bool recharged = 3;
+}
+
+// CombatLogGearSwapped is the line of a piece of gear drawn or stowed in a combat, for the master and the owner.
+message CombatLogGearSwapped {
+  // The piece's name, in Portuguese when the content has it, else the SRD's in English.
+  string name_pt = 1;
+  // "weapon", "shield" or "armor" (armor only when the master made the swap).
+  string kind = 2;
+  // Whether the piece is equipped after the change (drawn) or carried (stowed).
+  bool equipped = 3;
+  // What the change spent: "free" (the turn's object interaction), "action", "extra_action", or empty when the master
+  // made it (nothing is spent).
+  string cost = 4;
 }
 
 // CombatLogMonster is a monster of a MONSTERS_ADDED line, only the master's.

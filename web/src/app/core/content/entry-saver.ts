@@ -1,5 +1,6 @@
 import { type Injector, afterNextRender, signal } from '@angular/core';
 
+import type { TableContentViolation } from '../../../gen/meurpg/rules/v1/table_content_pb';
 import {
   type Placement,
   NO_PLACEMENT,
@@ -69,6 +70,27 @@ export class EntrySaver {
       },
       { injector },
     );
+  }
+
+  /** The rules refused this entry when the server read it (it is left out of the campaign): the violation sits on its field like a
+   * refused save's, and the page says the rest. Nothing is counted in the summary. Returns the path of the input it marks, or `''`
+   * when it marks none (the entry as a whole); `reveal` is told it first, for an editor that opens a section for it. */
+  seedLeftOut(
+    violation: TableContentViolation | null,
+    isKnown: (path: string) => boolean,
+    reveal?: (path: string) => void,
+  ): string {
+    if (!violation) {
+      return '';
+    }
+    // The violation's key is the entry's own here, not "another entry": it marks a field of this one.
+    const placement = placeViolations([{ ...violation, key: '' }], isKnown, this.ctx);
+    this.placement.set(placement);
+    const first = placement.fields[0] ?? '';
+    if (first) {
+      reveal?.(first);
+    }
+    return first;
   }
 
   /** A row of a list went: its refusals go with it and the rows after it keep theirs (they are named by place). */

@@ -45,7 +45,7 @@ func (s *Service) WatchTableScreen(
 	}
 	defer s.screenLeft(ctx, m.CampaignID, session.ID, session.TvChoiceRevision)
 	s.screenJoined(m.CampaignID, session.ID, session.TvChoiceRevision)
-	if stream.Send(&playv1.WatchTableScreenResponse{Event: &playv1.WatchTableScreenResponse_Ready_{Ready: &playv1.WatchTableScreenResponse_Ready{}}}) != nil {
+	if stream.Send(&playv1.WatchTableScreenResponse{Event: &playv1.WatchTableScreenResponse_Ready_{Ready: &playv1.WatchTableScreenResponse_Ready{SessionSeq: session.HintSeq}}}) != nil {
 		return nil // the tab went away
 	}
 	return s.screenLoop(ctx, stream, m.CampaignID, sub, session.ID)
@@ -82,7 +82,7 @@ func (s *Service) screenLoop(ctx context.Context, stream *connect.ServerStream[p
 				return nil
 			}
 		case <-heartbeat.C:
-			if !emit(&playv1.WatchTableScreenResponse{Event: &playv1.WatchTableScreenResponse_Heartbeat_{Heartbeat: &playv1.WatchTableScreenResponse_Heartbeat{}}}) {
+			if !emit(&playv1.WatchTableScreenResponse{Event: &playv1.WatchTableScreenResponse_Heartbeat_{Heartbeat: &playv1.WatchTableScreenResponse_Heartbeat{SessionSeq: s.currentHintSeq(ctx, sessionID)}}}) {
 				return nil
 			}
 		case <-recheck.C:
@@ -233,7 +233,7 @@ func (s *Service) screenLeft(ctx context.Context, campaignID, sessionID string, 
 // The caller holds the presence lock; Publish never waits.
 func (s *Service) publishPresence(campaignID string, revision int32, ev *playv1.WatchGameSessionResponse_TableScreenChanged) {
 	ev.PresenceKnown, ev.ChoiceRevision = true, revision
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: live.Audience{Master: true, NoScreens: true},
 		Message:  &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TableScreenChanged_{TableScreenChanged: ev}},
 	})

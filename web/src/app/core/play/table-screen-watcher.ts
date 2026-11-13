@@ -33,7 +33,10 @@ export async function* tvEvents(
   for await (const res of stream) {
     switch (res.event.case) {
       case 'ready':
-        yield { kind: 'ready' };
+        yield { kind: 'ready', sessionSeq: Number(res.event.value.sessionSeq) };
+        break;
+      case 'heartbeat':
+        yield { kind: 'heartbeat', sessionSeq: Number(res.event.value.sessionSeq) };
         break;
       case 'changed':
         yield { kind: 'contentChanged' };
@@ -65,7 +68,6 @@ export class TableScreenWatcher {
 
   private readonly stream = signal<LiveStream | null>(null);
   private campaignId = '';
-  private reading = false;
   private again = false;
   private cancelDebounce: (() => void) | null = null;
 
@@ -95,6 +97,8 @@ export class TableScreenWatcher {
           this.dropDebounce();
           void this.read();
         },
+        // A heartbeat ahead of the stream's number: a `changed` was lost, so the screen is read again, once.
+        onBehind: () => this.read(),
         onVitals: () => undefined,
         onContentChanged: () => this.hint(),
         onEnded: () => this.state.ended(),
@@ -123,31 +127,45 @@ export class TableScreenWatcher {
     });
   }
 
-  private async read(): Promise<void> {
-    if (this.reading) {
+  private inflight: Promise<boolean> | null = null;
+
+  /** Reads the screen; resolves `true` when the read worked. A call that comes during a read joins it (one more read follows
+   * it) and gets the outcome of the last read that ran. */
+  private read(): Promise<boolean> {
+    if (this.inflight) {
       this.again = true;
-      return;
+      return this.inflight;
     }
+    const run = this.readUntilQuiet().finally(() => (this.inflight = null));
+    this.inflight = run;
+    return run;
+  }
+
+  private async readUntilQuiet(): Promise<boolean> {
+    let ok = await this.readOnce();
+    while (this.again) {
+      this.again = false;
+      ok = await this.readOnce();
+    }
+    return ok;
+  }
+
+  private async readOnce(): Promise<boolean> {
     const campaignId = this.campaignId;
     if (campaignId === '') {
-      return;
+      return false;
     }
-    this.reading = true;
     try {
       const res = await this.client.get(campaignId);
       if (campaignId === this.campaignId) {
         this.state.loaded(toTvScreen(res));
       }
+      return true;
     } catch (err) {
       if (campaignId === this.campaignId) {
         this.failed(err);
       }
-    } finally {
-      this.reading = false;
-    }
-    if (this.again) {
-      this.again = false;
-      await this.read();
+      return false;
     }
   }
 

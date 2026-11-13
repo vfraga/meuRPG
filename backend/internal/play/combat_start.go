@@ -18,6 +18,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
@@ -46,11 +47,6 @@ type startPlan struct {
 	point    link.BattlePoint
 }
 
-// startOutcome is what the write of a start leaves for the publishers after the commit.
-type startOutcome struct {
-	newMap string // the map the point made current, if it changed
-}
-
 // StartEncounter implements playv1connect.CombatServiceHandler.
 func (s *Service) StartEncounter(
 	ctx context.Context,
@@ -64,11 +60,10 @@ func (s *Service) StartEncounter(
 	if err != nil {
 		return nil, err
 	}
-	var out startOutcome
 	// No request hash: the start is compared by its own digest, which reads the defaults written out as the same request.
-	res, err := s.write(ctx, combatWrite{m: call.m, key: call.key, kind: eventEncounterStarted}, func(c *combatTx) (any, error) {
-		out = startOutcome{}
-		return s.startWrite(ctx, c, plan, &out)
+	w := combatWrite{m: call.m, key: call.key, kind: eventEncounterStarted, replayed: s.tellStartAgain(call.m.CampaignID)}
+	res, err := s.write(ctx, w, func(c *combatTx) (any, error) {
+		return s.startWrite(ctx, c, plan)
 	})
 	if err = alreadyOpenOnRace(err); err != nil {
 		return nil, s.dbError(ctx, "start an encounter", err)
@@ -77,7 +72,7 @@ func (s *Service) StartEncounter(
 		// A retry answers with the first start only when it asks for the same one.
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("idempotency_key was already used for another change"))
 	}
-	enc, err := s.finishStart(ctx, call.m, res, out)
+	enc, err := s.finishStart(ctx, call.m, res)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +147,7 @@ func alreadyOpenOnRace(err error) error {
 
 // startWrite is the transaction of a start: the open check, the mode, then the combat of the
 // mode.
-func (s *Service) startWrite(ctx context.Context, c *combatTx, p startPlan, out *startOutcome) (any, error) {
+func (s *Service) startWrite(ctx context.Context, c *combatTx, p startPlan) (any, error) {
 	if err := noOpenEncounter(ctx, c); err != nil {
 		return nil, err
 	}
@@ -169,7 +164,7 @@ func (s *Service) startWrite(ctx context.Context, c *combatTx, p startPlan, out 
 	if mode == modeTheatre {
 		return s.startTheatre(ctx, c, p)
 	}
-	return s.startOnGrid(ctx, c, p, out)
+	return s.startOnGrid(ctx, c, p)
 }
 
 // noOpenEncounter refuses a start in a session that already has a combat.
@@ -207,12 +202,12 @@ func (s *Service) startTheatre(ctx context.Context, c *combatTx, p startPlan) (a
 
 // startOnGrid starts a combat on the session's current map, or on the map the battle point
 // leads to, which then becomes the current one.
-func (s *Service) startOnGrid(ctx context.Context, c *combatTx, p startPlan, out *startOutcome) (any, error) {
+func (s *Service) startOnGrid(ctx context.Context, c *combatTx, p startPlan) (any, error) {
 	mapID, grid, err := s.startMap(ctx, c, p)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.showStartMap(ctx, c, p.m.CampaignID, mapID, out); err != nil {
+	if err := s.showStartMap(ctx, c, p.m.CampaignID, mapID); err != nil {
 		return nil, err
 	}
 	enc, err := c.q.InsertEncounter(ctx, playdb.InsertEncounterParams{
@@ -253,7 +248,7 @@ func (s *Service) startMap(ctx context.Context, c *combatTx, p startPlan) (strin
 
 // showStartMap makes the fight's map the current one when it is not: as SetCurrentMap, the
 // players see the current map, so it is revealed.
-func (s *Service) showStartMap(ctx context.Context, c *combatTx, campaignID, mapID string, out *startOutcome) error {
+func (s *Service) showStartMap(ctx context.Context, c *combatTx, campaignID, mapID string) error {
 	if mapID == conv.OrZero(c.session.CurrentMapID) {
 		return nil
 	}
@@ -263,23 +258,37 @@ func (s *Service) showStartMap(ctx context.Context, c *combatTx, campaignID, map
 	if _, err := c.q.SetCurrentMap(ctx, playdb.SetCurrentMapParams{ID: c.session.ID, CurrentMapID: &mapID}); err != nil {
 		return fmt.Errorf("set the current map: %w", err)
 	}
-	out.newMap = mapID
+	s.tellCurrentMap(c.hints, campaignID, mapID)
 	return nil
 }
 
-// finishStart tells the maps and the streams of a start and reads the combat back.
-func (s *Service) finishStart(ctx context.Context, m authz.Membership, res combatResult, out startOutcome) (*playv1.Encounter, error) {
-	if out.newMap != "" {
-		s.maps.MapShown(ctx, m.CampaignID, out.newMap)
-	}
-	return s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
-		if out.newMap != "" {
-			s.Publish(m.CampaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
-				CurrentMapChanged: &playv1.WatchGameSessionResponse_CurrentMapChanged{MapId: out.newMap},
-			}})
-		}
-		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
+// tellCurrentMap collects what a start that made mapID the current map tells once it is saved: the maps module reads the vision
+// again, then the streams hear the current map changed.
+func (s *Service) tellCurrentMap(h *hints, campaignID, mapID string) {
+	h.after(func(ctx context.Context, say func(string, live.Event)) {
+		s.maps.MapShown(ctx, campaignID, mapID)
+		say(campaignID, live.Event{Audience: live.Audience{Master: true, Everyone: true}, Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
+			CurrentMapChanged: &playv1.WatchGameSessionResponse_CurrentMapChanged{MapId: mapID},
+		}}})
 	})
+}
+
+// tellStartAgain is what a repeated start adds to the hints of any repeated change: the stored start does not say whether it
+// made its map the current one, so a map that is the session's current map now is told as the first call told it.
+func (s *Service) tellStartAgain(campaignID string) func(h *hints, session playdb.GameSession, payload []byte) {
+	return func(h *hints, session playdb.GameSession, payload []byte) {
+		var ev struct {
+			MapID string `json:"map_id"`
+		}
+		if json.Unmarshal(payload, &ev) == nil && ev.MapID != "" && ev.MapID == conv.OrZero(session.CurrentMapID) {
+			s.tellCurrentMap(h, campaignID, ev.MapID)
+		}
+	}
+}
+
+// finishStart reads the combat back and tells the streams of a start; the maps and the current map were told by the write.
+func (s *Service) finishStart(ctx context.Context, m authz.Membership, res combatResult) (*playv1.Encounter, error) {
+	return s.finish(ctx, m, res, s.changed(m.CampaignID))
 }
 
 // startDigest identifies what a StartEncounter asks for (every field but the idempotency key), so a

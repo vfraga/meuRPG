@@ -1,0 +1,254 @@
+{
+  "all carried": {
+    "ArmorClass": 12,
+    "Description": "Sem armadura",
+    "Attacks": [
+      {
+        "Key": "attack:unarmed-strike",
+        "Attack": 5,
+        "Damage": "4",
+        "Versatile": "",
+        "Magical": false
+      }
+    ],
+    "ItemModifiers": [
+      {
+        "Target": "ac",
+        "Value": 1,
+        "SourceKey": "equipment:chain-mail",
+        "SourceNamePT": "Cota de malha",
+        "Counts": false,
+        "ReasonPT": "Carregado, não equipado."
+      },
+      {
+        "Target": "ac",
+        "Value": 2,
+        "SourceKey": "equipment:shield",
+        "SourceNamePT": "Escudo",
+        "Counts": false,
+        "ReasonPT": "Carregado, não equipado."
+      },
+      {
+        "Target": "attack:equipment:rapier",
+        "Value": 3,
+        "SourceKey": "equipment:rapier",
+        "SourceNamePT": "Rapieira",
+        "Counts": false,
+        "ReasonPT": "Carregado, não equipado."
+      },
+      {
+        "Target": "damage:equipment:rapier",
+        "Value": 3,
+        "SourceKey": "equipment:rapier",
+        "SourceNamePT": "Rapieira",
+        "Counts": false,
+        "ReasonPT": "Carregado, não equipado."
+      }
+    ]
+  },
+  "all equipped": {
+    "ArmorClass": 21,
+    "Description": "Cota de malha + escudo",
+    "Attacks": [
+      {
+        "Key": "equipment:rapier",
+        "Attack": 8,
+        "Damage": "1d8+6",
+        "Versatile": "",
+        "Magical": true
+      },
+      {
+        "Key": "attack:unarmed-strike",
+        "Attack": 5,
+        "Damage": "4",
+        "Versatile": "",
+        "Magical": false
+      }
+    ],
+    "ItemModifiers": [
+      {
+        "Target": "ac",
+        "Value": 1,
+        "SourceKey": "equipment:chain-mail",
+        "SourceNamePT": "Cota de malha",
+        "Counts": true,
+        "ReasonPT": ""
+      },
+      {
+        "Target": "ac",
+        "Value": 2,
+        "SourceKey": "equipment:shield",
+        "SourceNamePT": "Escudo",
+        "Counts": true,
+        "ReasonPT": ""
+      },
+      {
+        "Target": "attack:equipment:rapier",
+        "Value": 3,
+        "SourceKey": "equipment:rapier",
+        "SourceNamePT": "Rapieira",
+        "Counts": true,
+        "ReasonPT": ""
+      },
+      {
+        "Target": "damage:equipment:rapier",
+        "Value": 3,
+        "SourceKey": "equipment:rapier",
+        "SourceNamePT": "Rapieira",
+        "Counts": true,
+        "ReasonPT": ""
+      }
+    ]
+  },
+  "awaiting attunement": {
+    "ArmorClass": 16,
+    "Description": "Cota de malha",
+    "Attacks": [
+      {
+        "Key": "equipment:rapier",
+        "Attack": 6,
+        "Damage": "1d8+4",
+        "Versatile": "",
+        "Magical": true
+      },
+      {
+        "Key": "attack:unarmed-strike",
+        "Attack": 5,
+        "Damage": "4",
+        "Versatile": "",
+        "Magical": false
+      }
+    ],
+    "ItemModifiers": [
+      {
+        "Target": "ac",
+        "Value": 2,
+        "SourceKey": "equipment:chain-mail",
+        "SourceNamePT": "Cota de malha",
+        "Counts": false,
+        "ReasonPT": "Pede sintonização."
+      },
+      {
+        "Target": "attack:equipment:rapier",
+        "Value": 1,
+        "SourceKey": "equipment:rapier",
+        "SourceNamePT": "Rapieira",
+        "Counts": true,
+        "ReasonPT": ""
+      },
+      {
+        "Target": "damage:equipment:rapier",
+        "Value": 1,
+        "SourceKey": "equipment:rapier",
+        "SourceNamePT": "Rapieira",
+        "Counts": true,
+        "ReasonPT": ""
+      }
+    ]
+  },
+  "plain": {
+    "ArmorClass": 18,
+    "Description": "Cota de malha + escudo",
+    "Attacks": [
+      {
+        "Key": "equipment:rapier",
+        "Attack": 5,
+        "Damage": "1d8+3",
+        "Versatile": "",
+        "Magical": false
+      },
+      {
+        "Key": "attack:unarmed-strike",
+        "Attack": 5,
+        "Damage": "4",
+        "Versatile": "",
+        "Magical": false
+      }
+    ],
+    "ItemModifiers": null
+  },
+  "shield behind a greatsword": {
+    "ArmorClass": 12,
+    "Description": "Sem armadura",
+    "Attacks": [
+      {
+        "Key": "equipment:greatsword",
+        "Attack": 6,
+        "Damage": "2d6+4",
+        "Versatile": "",
+        "Magical": true
+      },
+      {
+        "Key": "attack:unarmed-strike",
+        "Attack": 5,
+        "Damage": "4",
+        "Versatile": "",
+        "Magical": false
+      }
+    ],
+    "ItemModifiers": [
+      {
+        "Target": "ac",
+        "Value": 2,
+        "SourceKey": "equipment:shield",
+        "SourceNamePT": "Escudo",
+        "Counts": false,
+        "ReasonPT": "Uma arma de duas mãos equipada deixa o escudo parado."
+      },
+      {
+        "Target": "attack:equipment:greatsword",
+        "Value": 1,
+        "SourceKey": "equipment:greatsword",
+        "SourceNamePT": "Espada grande",
+        "Counts": true,
+        "ReasonPT": ""
+      },
+      {
+        "Target": "damage:equipment:greatsword",
+        "Value": 1,
+        "SourceKey": "equipment:greatsword",
+        "SourceNamePT": "Espada grande",
+        "Counts": true,
+        "ReasonPT": ""
+      }
+    ]
+  },
+  "versatile longsword": {
+    "ArmorClass": 12,
+    "Description": "Sem armadura",
+    "Attacks": [
+      {
+        "Key": "equipment:longsword",
+        "Attack": 7,
+        "Damage": "1d8+5",
+        "Versatile": "1d10+5",
+        "Magical": true
+      },
+      {
+        "Key": "attack:unarmed-strike",
+        "Attack": 5,
+        "Damage": "4",
+        "Versatile": "",
+        "Magical": false
+      }
+    ],
+    "ItemModifiers": [
+      {
+        "Target": "attack:equipment:longsword",
+        "Value": 2,
+        "SourceKey": "equipment:longsword",
+        "SourceNamePT": "Espada longa",
+        "Counts": true,
+        "ReasonPT": ""
+      },
+      {
+        "Target": "damage:equipment:longsword",
+        "Value": 2,
+        "SourceKey": "equipment:longsword",
+        "SourceNamePT": "Espada longa",
+        "Counts": true,
+        "ReasonPT": ""
+      }
+    ]
+  }
+}

@@ -134,6 +134,21 @@ describe('AttackSheet: the words around the roll', () => {
     expect(subtitle(el)).toBe('Ação · −1 para acertar · 1d6 perfurante · alcance 24 m');
   });
 
+  it('ends the line with the weapon’s marks as a chip, an icon and its word', () => {
+    const { el } = open({
+      attack: { ...bow, kind: AttackKind.WEAPON, silvered: true, magical: true } as Attack,
+    });
+    expect(subtitle(el)).toBe(
+      'Ação · −1 para acertar · 1d6 perfurante · alcance 24 m· dark_modePrateada auto_awesomeMágica',
+    );
+    expect(el.querySelector('.sheet__sub .weapon-tags')).not.toBeNull();
+  });
+
+  it('has no chip for a plain weapon', () => {
+    const { el } = open({ attack: { ...bow, kind: AttackKind.WEAPON } as Attack });
+    expect(el.querySelector('.sheet__sub .weapon-tags')).toBeNull();
+  });
+
   it('says "Ação extra" when an effect gives the action', () => {
     expect(subtitle(open({ useExtraAction: true }).el)).toContain('Ação extra ·');
   });

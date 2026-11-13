@@ -69,6 +69,7 @@ func (s *Service) CastingOptions(ctx context.Context, tx pgx.Tx, campaignID, cha
 		for _, g := range o.Grants {
 			cs.Grants = append(cs.Grants, &playv1.CastingGrant{
 				SourceKey: g.Source, SourceNamePt: g.SourcePT, AtWill: g.AtWill, Resource: g.Resource, UsesLeft: i32(g.UsesLeft),
+				UsesCost: i32(g.Cost), NoMaterialComponents: g.NoMaterialComponents,
 				AlsoWithSlot: g.AlsoWithSlot, RitualOnly: g.RitualOnly, Ready: g.Ready(), Ability: string(g.Ability),
 				AttackBonus: i32(g.AttackBonus), SaveDc: i32(g.SaveDC),
 			})
@@ -165,6 +166,7 @@ func (s *Service) OutsideSpell(ctx context.Context, tx pgx.Tx, campaignID, chara
 		for _, g := range o.Grants {
 			out.Grants = append(out.Grants, link.OutsideGrant{
 				Source: g.Source, SourcePT: g.SourcePT, AtWill: g.AtWill, Resource: g.Resource, UsesLeft: g.UsesLeft,
+				Cost: g.Cost, NoMaterial: g.NoMaterialComponents,
 				AlsoWithSlot: g.AlsoWithSlot, RitualOnly: g.RitualOnly, Ready: g.Ready(),
 			})
 		}

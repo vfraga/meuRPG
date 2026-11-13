@@ -935,6 +935,10 @@ func TestMR013_CombatAuthorizationMatrix(t *testing.T) {
 			_, err := u.combat.SetMonsterReactionMode(ctx, connect.NewRequest(&playv1.SetMonsterReactionModeRequest{CampaignId: campaign, EncounterId: enc, CombatantId: gob, IdempotencyKey: newKey(), Ask: true}))
 			return err
 		},
+		"SetSunlight": func(u *user, ctx context.Context) error {
+			_, err := u.combat.SetSunlight(ctx, connect.NewRequest(&playv1.SetSunlightRequest{CampaignId: campaign, EncounterId: enc, IdempotencyKey: newKey(), On: true}))
+			return err
+		},
 		"SetCombatantHidden": func(u *user, ctx context.Context) error {
 			_, err := u.combat.SetCombatantHidden(ctx, connect.NewRequest(&playv1.SetCombatantHiddenRequest{CampaignId: campaign, EncounterId: enc, CombatantId: gob, IdempotencyKey: newKey(), Hidden: false}))
 			return err
@@ -1012,7 +1016,7 @@ func TestMR013_CombatAuthorizationMatrix(t *testing.T) {
 
 	masterOnly := map[string]bool{
 		"StartEncounter": true, "GetStartRoster": true, "SetInitiativeOrder": true, "BeginCombat": true, "SetCombatantHidden": true,
-		"AddCombatants": true, "AddMonsters": true, "RemoveCombatant": true, "EndEncounter": true, "SetCombatantSide": true, "SetCombatantCover": true, "SetMonsterReactionMode": true,
+		"AddCombatants": true, "AddMonsters": true, "RemoveCombatant": true, "EndEncounter": true, "SetCombatantSide": true, "SetCombatantCover": true, "SetMonsterReactionMode": true, "SetSunlight": true,
 		"OfferOpportunity": true, "WithdrawOpportunity": true, "EndCombatEffect": true, "EndSpellZone": true, "UseCreatureAction": true, "SpendLegendaryAction": true,
 	}
 	for name, call := range calls {
@@ -1161,7 +1165,7 @@ func TestSessionEventKindsMatchTheTable(t *testing.T) {
 		eventRestTaken, eventHitDiceSpent, eventArcaneRecovery, eventNaturalRecovery, eventInspirationGiven,
 		eventSpellCastOutside, eventSpellCastStarted, eventSpellCastFinished, eventSpellCastInterrupted, eventSpellCastEnded,
 		eventLastingAdded, eventLastingChanged, eventLastingEnded, eventLastingVisibility, eventLastingSaved, eventLastingTriggered, eventExhaustion, eventGameTimeAdvanced, eventFreeRoll,
-		eventZoneTriggered, eventZoneMoved, eventLegendarySpent, eventRechargeRolled, eventMonsterReactionSet,
+		eventZoneTriggered, eventZoneMoved, eventLegendarySpent, eventRechargeRolled, eventMonsterReactionSet, eventSunlightSet, eventGearSwapped,
 	}
 	rows, err := h.pool.Query(t.Context(), `SELECT kind FROM session_event_kinds`)
 	if err != nil {

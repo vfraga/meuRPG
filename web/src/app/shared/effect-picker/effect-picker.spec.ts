@@ -135,6 +135,48 @@ describe('EffectPicker (the closed menu of ADR-0018, from the server)', () => {
     expect(emitted.at(-1)).toMatchObject({ choice: 'feature', from: [] });
   });
 
+  it('keeps a target the menu no longer has on its select, in words, with the stored code beside it; another pick replaces it', () => {
+    setup({ ...emptyEffect('modifier'), target: 'gone.target', mode: 'add', value: '2' });
+    const select = field('target') as HTMLSelectElement;
+    expect(select.options[select.selectedIndex].text.trim()).toBe('Um alvo que saiu do menu');
+    expect(text(el)).toContain('O valor guardado (gone.target) não existe nas regras novas.');
+    change(select, 'Deslocamento');
+    expect(emitted.at(-1)?.target).toBe('speed.walk');
+    setup({ ...emptyEffect('modifier'), target: 'speed.walk', mode: 'add', value: '2' });
+    const ok = field('target') as HTMLSelectElement;
+    expect(Array.from(ok.options).map((o) => o.text.trim())).not.toContain(
+      'Um alvo que saiu do menu',
+    );
+    expect(text(el)).not.toContain('não existe nas regras novas');
+  });
+
+  it('says "Um valor que saiu do menu" for another closed list, and nothing for an empty one', () => {
+    setup({ ...emptyEffect('modifier'), target: 'speed.walk', mode: 'gone', value: '2' });
+    const mode = field('mode') as HTMLSelectElement;
+    expect(mode.options[mode.selectedIndex].text.trim()).toBe('Um valor que saiu do menu');
+    setup({ ...emptyEffect('modifier'), target: 'speed.walk', mode: '', value: '2' });
+    const empty = field('mode') as HTMLSelectElement;
+    expect(Array.from(empty.options).map((o) => o.text.trim())).not.toContain(
+      'Um valor que saiu do menu',
+    );
+  });
+
+  it('never says a spell of the catalog, or a value of a list that is not loaded, "saiu do menu"', () => {
+    setup(
+      { ...emptyEffect('granted_spell'), spell: 'spell:outra', ability: 'choice' },
+      { menu: grantedSpellMenu() },
+    );
+    fixture.componentRef.setInput('spellOptions', [{ value: 'spell:light', label: 'Luz' }]);
+    fixture.detectChanges();
+    const spell = field('spell') as HTMLSelectElement;
+    expect(Array.from(spell.options).map((o) => o.text.trim())).not.toContain(
+      'Um valor que saiu do menu',
+    );
+    expect(text(el)).not.toContain('não existe nas regras novas');
+    setup({ ...emptyEffect('granted_spell'), spell: 'spell:light' }, { menu: grantedSpellMenu() });
+    expect(text(el)).not.toContain('saiu do menu');
+  });
+
   it("asks a sense's range in metres and keeps feet underneath", () => {
     setup({ ...emptyEffect('sense'), sense: 'darkvision', rangeM: '18' });
     const range = field('range_ft') as HTMLInputElement;

@@ -52,20 +52,23 @@ export class LiveSessionEvents {
   /** The stream's own life and what the player sees of the character: ready, vitals, the casts, the end. */
   private sessionHandlers(campaignId: string, generation: number) {
     const { services, state, parts, loader } = this;
+    // What a `ready` reads, and what a heartbeat ahead of the stream's number reads again (a lost hint): the same path.
+    const readAll = (): Promise<boolean> => {
+      // A missed `xp_changed` while reconnecting leaves nothing stale.
+      services.xpChanges.bump();
+      // A `content_changed` missed while reconnecting leaves the spells the page read before out of date.
+      services.spellCatalog.forget(campaignId);
+      void parts.trapBoard.refresh();
+      // The first `ready` reads the conversation; a reconnection reads the lines that came meanwhile.
+      void parts.conversation.sync();
+      return loader.readSnapshot(campaignId, generation, () => ({
+        map: this.mapEvents,
+        image: this.imageEvents,
+      }));
+    };
     return {
-      onReady: () => {
-        // A missed `xp_changed` while reconnecting leaves nothing stale.
-        services.xpChanges.bump();
-        // A `content_changed` missed while reconnecting leaves the spells the page read before out of date.
-        services.spellCatalog.forget(campaignId);
-        void parts.trapBoard.refresh();
-        // The first `ready` reads the conversation; a reconnection reads the lines that came meanwhile.
-        void parts.conversation.sync();
-        void loader.readSnapshot(campaignId, generation, () => ({
-          map: this.mapEvents,
-          image: this.imageEvents,
-        }));
-      },
+      onReady: () => void readAll(),
+      onBehind: readAll,
       onContentChanged: () => {
         services.spellCatalog.forget(campaignId);
         // The sheet the trap skills come from may have changed with the table's content.
@@ -124,6 +127,10 @@ export class LiveSessionEvents {
         if (mapId === state.currentMapId()) {
           void parts.mapState.refresh();
           this.loader.scheduleVision();
+          // What a player sees changed: so may the log lines they read (a log is only read in an open combat).
+          if (parts.combat.encounter()) {
+            parts.combat.touchLog(true);
+          }
           // In a combat the NPCs come with the combat, not with the map: a player whose sight changed (their own move, an
           // ally's, a light, a door) may now see one the last read left out. Only the combat read carries it (RN-10).
           if (!state.isMaster() && parts.combat.encounter() && !view.inTheatre()) {
@@ -155,6 +162,10 @@ export class LiveSessionEvents {
         // Any change of the combat may change who sees whom (revision 0 is a hint with no number): read the vision too.
         if (!noMap) {
           this.loader.scheduleVision();
+        }
+        // A hint with no revision may mean a visibility change (a combatant shown or hidden): read the whole log.
+        if (change.revision === 0 && parts.combat.encounter()) {
+          parts.combat.touchLog(true);
         }
         // Read again only when the news is newer than the copy on screen. A hint with no revision
         // (0) is the server telling a player "read again" without counting: an opportunity offer
@@ -200,8 +211,8 @@ export class LiveSessionEvents {
           void loader.loadCombat(generation);
         }
       },
-      onCombatLogChanged: () => {
-        parts.combat.touchLog();
+      onCombatLogChanged: (full) => {
+        parts.combat.touchLog(full);
         if (!view.inTheatre()) {
           void parts.trapBoard.refreshDamages();
         }

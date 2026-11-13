@@ -89,6 +89,69 @@ describe('TableScreenWatcher', () => {
     expect(gets).toHaveBeenCalledTimes(2);
   });
 
+  it('reads the screen once when a heartbeat is ahead of the number from `ready` (a lost `changed`)', async () => {
+    watcher.start('c1');
+    await settleAll();
+    last().push('ready', 4n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(1);
+    last().push('heartbeat', 4n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(1);
+    last().push('heartbeat', 6n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(2);
+    last().push('heartbeat', 6n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the number when the read behind fails, and reads again at the next heartbeat', async () => {
+    watcher.start('c1');
+    await settleAll();
+    last().push('ready', 4n);
+    await settleAll();
+    gets.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable));
+    last().push('heartbeat', 5n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(2);
+    last().push('heartbeat', 5n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(3);
+    last().push('heartbeat', 5n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(3);
+  });
+
+  it('tells a heartbeat that joined a read the real outcome of that read and its retry', async () => {
+    watcher.start('c1');
+    await settleAll();
+    last().push('ready', 4n);
+    await settleAll();
+    let fail = (): void => undefined;
+    gets.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        fail = () => reject(new ConnectError('down', Code.Unavailable));
+      }),
+    );
+    last().push('changed');
+    await settleAll();
+    clock.advance(TV_DEBOUNCE_MS);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(2);
+    // The heartbeat joins the read that is out; that read and the one after it fail.
+    gets.mockRejectedValueOnce(new ConnectError('down', Code.Unavailable));
+    last().push('heartbeat', 5n);
+    await settleAll();
+    fail();
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(3);
+    // Not reported as read: the next heartbeat with the same number reads again.
+    last().push('heartbeat', 5n);
+    await settleAll();
+    expect(gets).toHaveBeenCalledTimes(4);
+  });
+
   it('makes one more read, not many, for a hint that comes during a read', async () => {
     watcher.start('c1');
     await settleAll();
@@ -263,15 +326,20 @@ describe('TableScreenWatcher', () => {
 describe('tvEvents', () => {
   it('maps the stream to the events of the live stream', async () => {
     async function* wire() {
-      yield tvWire('ready');
-      yield tvWire('heartbeat');
+      yield tvWire('ready', 3n);
+      yield tvWire('heartbeat', 5n);
       yield tvWire('changed');
       yield tvWire('sessionEnded');
     }
-    const kinds: string[] = [];
+    const events = [];
     for await (const e of tvEvents(wire())) {
-      kinds.push(e.kind);
+      events.push(e);
     }
-    expect(kinds).toEqual(['ready', 'heartbeat', 'contentChanged', 'ended']);
+    expect(events).toEqual([
+      { kind: 'ready', sessionSeq: 3 },
+      { kind: 'heartbeat', sessionSeq: 5 },
+      { kind: 'contentChanged' },
+      { kind: 'ended' },
+    ]);
   });
 });

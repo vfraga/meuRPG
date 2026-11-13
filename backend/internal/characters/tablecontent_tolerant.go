@@ -15,6 +15,10 @@ type leftOut struct {
 	Key        string
 	Kind       rulesv1.TableContentKind
 	Violations []*rulesv1.TableContentViolation
+	// Archived says the master retired the entry: it is still left out, but nobody has to fix it.
+	Archived bool
+	// Parent is the key of the class or race the entry depends on, "" for an entry that stands alone.
+	Parent string
 }
 
 // buildTolerant is srd.With the overlay of entries, built without the entries the engine refuses.
@@ -58,7 +62,7 @@ func blameLive(violations []*rulesv1.TableContentViolation, live []entryRow, str
 		}
 		j := slices.IndexFunc(out, func(l leftOut) bool { return l.Key == v.GetKey() })
 		if j < 0 {
-			out = append(out, leftOut{Key: v.GetKey(), Kind: live[i].kind})
+			out = append(out, leftOut{Key: v.GetKey(), Kind: live[i].kind, Archived: live[i].row.ArchivedAt != nil, Parent: parentOf(live[i])})
 			j = len(out) - 1
 		}
 		out[j].Violations = append(out[j].Violations, v)
@@ -72,9 +76,52 @@ func withoutKeys(entries []entryRow, out []leftOut) []entryRow {
 	})
 }
 
-// refusedOf is what the content reports of the entries left out.
+// parentOf is the key of the class or race a subclass, a class feature or a subrace depends on.
+func parentOf(e entryRow) string {
+	switch b := e.body.(type) {
+	case *rulesv1.TableSubclass:
+		return b.GetClassKey()
+	case *rulesv1.TableClassFeature:
+		return b.GetClassKey()
+	case *rulesv1.TableSubrace:
+		return b.GetRaceKey()
+	}
+	return ""
+}
+
+// unfinished is the entries of out that the master still has to fix.
+// An archived entry is retired, so it is not one, and neither is what is out only because its parent is: a child whose
+// violations are all the dangling reference to its retired parent, as deep as the chain goes.
+// A live child with any violation of its own (not the missing parent) is still the master's to fix, so it stays.
+func unfinished(out []leftOut) []leftOut {
+	retired := map[string]bool{}
+	for _, l := range out {
+		if l.Archived {
+			retired[l.Key] = true
+		}
+	}
+	for grew := true; grew; { // a dependent of a dependent, as deep as the chain goes
+		grew = false
+		for _, l := range out {
+			if !retired[l.Key] && l.Parent != "" && retired[l.Parent] && onlyTheParent(l) {
+				retired[l.Key], grew = true, true
+			}
+		}
+	}
+	return slices.DeleteFunc(slices.Clone(out), func(l leftOut) bool { return retired[l.Key] })
+}
+
+// onlyTheParent says the entry is out for the reference to its parent and nothing else: every violation it has is a dangling reference.
+func onlyTheParent(l leftOut) bool {
+	return len(l.Violations) > 0 && !slices.ContainsFunc(l.Violations, func(v *rulesv1.TableContentViolation) bool {
+		return v.GetReason() != "dangling_reference"
+	})
+}
+
+// refusedOf is what the content reports of the entries left out that the master has to fix.
 // It keeps the first violation of each.
 func refusedOf(out []leftOut) []rules.Refused {
+	out = unfinished(out)
 	if len(out) == 0 {
 		return nil
 	}
@@ -94,7 +141,7 @@ func decodeTolerant(rows []charactersdb.CampaignContent) ([]entryRow, []leftOut)
 	for _, r := range rows {
 		e, err := decodeRow(r)
 		if err != nil {
-			out = append(out, leftOut{Key: r.ContentKey, Kind: kindOfPrefix(r.Kind), Violations: []*rulesv1.TableContentViolation{{
+			out = append(out, leftOut{Key: r.ContentKey, Kind: kindOfPrefix(r.Kind), Archived: r.ArchivedAt != nil, Violations: []*rulesv1.TableContentViolation{{
 				Key: r.ContentKey, Field: "data", Reason: rules.ReasonValue, Message: "the entry could not be read",
 			}}})
 			continue

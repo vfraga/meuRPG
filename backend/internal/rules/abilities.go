@@ -157,6 +157,29 @@ func (x *deriver) abilityEffects() {
 			x.issue(IssueScoreAbove20, "full.base_scores."+protoAbility[ab.Ability], "%s passa de %d, o máximo normal de um personagem.", x.c.namePT(string(ab.Ability)), ceiling)
 		}
 	}
+	// The carrying capacity is 15 pounds times the Strength score (SRD 5.1, "Carrying Capacity").
+	x.d.CarryCapacityLb = min(max(x.modifiers(CarryCapacityTarget, 15*x.scores[STR]), 0), MaxCarryCapacityLb)
+	x.damageReductions()
+}
+
+// damageReductions lists the flat reductions of weapon damage the active effects give, one entry per
+// feature and kind, in the order of the effects.
+func (x *deriver) damageReductions() {
+	for _, kind := range []struct {
+		target     string
+		nonmagical bool
+	}{{DamageReductionWeaponTarget, false}, {DamageReductionNonmagicalWeaponTarget, true}} {
+		var seen []string
+		for _, a := range x.active {
+			if a.effect.Type != "modifier" || a.effect.Target != kind.target || slices.Contains(seen, a.owner) {
+				continue
+			}
+			seen = append(seen, a.owner)
+			if n := min(max(x.modifiersOf(a.owner, kind.target, 0), 0), MaxDamageReduction); n > 0 {
+				x.d.DamageReductions = append(x.d.DamageReductions, DamageReduction{Source: a.owner, Amount: n, Nonmagical: kind.nonmagical})
+			}
+		}
+	}
 }
 
 // ownedTraits are the race's and subrace's traits and the chosen trait
@@ -454,9 +477,9 @@ func (x *deriver) skills() {
 		})
 	}
 	slices.SortFunc(x.d.Skills, func(a, b Skill) int { return comparePT(a.NamePT, b.NamePT) })
-	x.d.PassivePerception = 10 + bonus["skill:perception"]
-	x.d.PassiveInvestigation = 10 + bonus["skill:investigation"]
-	x.d.PassiveInsight = 10 + bonus["skill:insight"]
+	x.d.PassivePerception = max(x.modifiers(PassivePerceptionTarget, 10+bonus["skill:perception"]), 0)
+	x.d.PassiveInvestigation = max(x.modifiers(PassiveInvestigationTarget, 10+bonus["skill:investigation"]), 0)
+	x.d.PassiveInsight = max(x.modifiers(PassiveInsightTarget, 10+bonus["skill:insight"]), 0)
 
 	// Initiative is a Dexterity check: Jack of All Trades adds half the
 	// proficiency bonus to it, through an "initiative" proficiency effect.

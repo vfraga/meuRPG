@@ -6,7 +6,9 @@ import { create } from '@bufbuild/protobuf';
 import {
   CombatantKind,
   CombatantSide,
+  EncounterMode,
   HiddenRevealQuestionSchema,
+  SunlightScope,
   SpellZoneVisibility,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter, spellZone } from '../../../../core/combat/combat-testing';
@@ -322,21 +324,50 @@ describe('CombatMapCard: the zones the spells keep', () => {
       zone({ id: 'c' }),
     ]);
     expect(el.querySelector('app-combat-map app-zone-layer')).not.toBeNull();
-    const names = [...el.querySelectorAll('.legend__zone')].map((n) => plain(n.textContent));
+    const names = [...el.querySelectorAll('.legend__zone .legend__name')].map((n) =>
+      plain(n.textContent),
+    );
     expect(names).toEqual(['Raio Lunar', 'Teia']);
+    const letters = [...el.querySelectorAll('.legend__zone')].map((li) =>
+      [...li.querySelectorAll('app-zone-letter [role="img"]')].map((l) =>
+        l.getAttribute('aria-label'),
+      ),
+    );
+    expect(letters).toEqual([['Zona A', 'Zona C'], ['Zona B']]);
+    // a screen reader hears "Zona A, Zona C: Raio Lunar"
+    const first = el.querySelector('.legend__zone')!;
+    const hidden = [...first.querySelectorAll('.mr-visually-hidden')].map((n) => n.textContent);
+    expect(hidden).toEqual([', ', ': ']);
+  });
+
+  it("lists the burning side of a wall in the legend under the wall's letter", () => {
+    const { el } = withZones([
+      zone({
+        id: 'w',
+        spellKey: 'spell:wall-of-fire',
+        spellNamePt: 'Muralha de Fogo',
+        burningSquares: [{ col: 1, row: 0 }],
+      }),
+    ]);
+    const names = [...el.querySelectorAll('.legend__zone .legend__name')].map((n) =>
+      plain(n.textContent),
+    );
+    expect(names).toEqual(['Muralha de Fogo', 'Lado que queima']);
   });
 
   it('says "só você vê" in the legend for a hidden caster\'s spell', () => {
     const { el } = withZones([
       zone({ id: 'a', visibility: SpellZoneVisibility.MASTER_ONLY, spellNamePt: 'Nuvem Mortal' }),
     ]);
-    expect(plain(el.querySelector('.legend__zone')?.textContent)).toBe('Nuvem Mortal só você vê');
+    expect(plain(el.querySelector('.legend__zone .legend__name')?.textContent)).toBe(
+      'Nuvem Mortal só você vê',
+    );
   });
 
   it('gives a player the zones the server sent, and no master-only wording', () => {
     const { el } = withZones([zone({ id: 'a' })], false);
     expect(el.querySelector('app-zone-layer')).not.toBeNull();
-    expect(plain(el.querySelector('.legend__zone')?.textContent)).toBe('Raio Lunar');
+    expect(plain(el.querySelector('.legend__zone .legend__name')?.textContent)).toBe('Raio Lunar');
   });
 });
 
@@ -464,5 +495,154 @@ describe("CombatMapCard: the master's offer rings on a phone", () => {
     // The window starts one square before the mover (column 3 of 20: 10%), not at the first candidate.
     expect(col(offer)).toBeCloseTo(-10);
     expect(col(target)).toBeLessThan(col(offer));
+  });
+});
+
+describe('CombatMapCard, the sun (#704)', () => {
+  const buttons = (el: HTMLElement) =>
+    Array.from(el.querySelectorAll<HTMLButtonElement>('app-sunlight-controls button'));
+  // The words of a button without its icon ligature ("check", "brush").
+  const words = (b: HTMLElement) =>
+    plain(
+      Array.from(b.childNodes)
+        .filter((n) => n.nodeType === Node.TEXT_NODE)
+        .map((n) => n.textContent)
+        .join(''),
+    );
+  const named = (el: HTMLElement, text: string) => buttons(el).find((b) => words(b) === text);
+  const lit = (extra: Record<string, unknown> = {}) =>
+    encounter({
+      currentCombatantId: 'p',
+      sunlightOn: true,
+      sunlightScope: SunlightScope.SQUARES,
+      sunlightSquares: [{ col: 1, row: 1 }],
+      combatants: [combatant({ id: 'p', label: 'Pensantus', kind: CombatantKind.PLAYER })],
+      ...extra,
+    } as never);
+
+  it('has no controls while the sun is off', () => {
+    const { el } = mount();
+    expect(el.querySelector('app-sunlight-controls')).toBeNull();
+  });
+
+  it('has none for a player, and none for a combat without a map', () => {
+    expect(
+      mount({ encounter: lit(), isMaster: false }).el.querySelector('app-sunlight-controls'),
+    ).toBeNull();
+    const theatre = mount({ encounter: lit({ mode: EncounterMode.THEATRE }) });
+    expect(theatre.el.querySelector('app-sunlight-controls')).toBeNull();
+  });
+
+  it('offers the scope and "Pintar" while the sun is on over squares', () => {
+    const { el } = mount({ encounter: lit() });
+    expect(el.querySelector('[role="radiogroup"]')).not.toBeNull();
+    expect(named(el, 'Onde eu pintar')!.getAttribute('aria-checked')).toBe('true');
+    expect(named(el, 'Todo o mapa')!.getAttribute('aria-checked')).toBe('false');
+    expect(el.querySelector('.sc__start')).not.toBeNull();
+  });
+
+  it('shows the scope as a label "Luz do sol" and one two-part segmented radio group of equal parts', () => {
+    const { el } = mount({ encounter: lit() });
+    expect(plain(el.querySelector('.sc__label')!.textContent)).toContain('Luz do sol');
+    expect(el.querySelectorAll('[role="radiogroup"]').length).toBe(1);
+    const radios = Array.from(el.querySelectorAll<HTMLElement>('[role="radio"]'));
+    expect(radios.map(words)).toEqual(['Todo o mapa', 'Onde eu pintar']);
+    expect(radios.map((r) => r.getAttribute('tabindex'))).toEqual(['-1', '0']);
+    expect(radios[1].querySelector('mat-icon')?.textContent).toContain('check');
+  });
+
+  it('moves the scope with the arrow keys, as a radio group does', () => {
+    const { fixture, el } = mount({ encounter: lit() });
+    const asked = vi.fn();
+    fixture.componentInstance.sunlightChange.subscribe(asked);
+    named(el, 'Onde eu pintar')!.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }),
+    );
+    expect(asked).toHaveBeenCalledWith({ scope: SunlightScope.MAP });
+  });
+
+  it('has no "Pintar" for the whole map, and asks for a scope', () => {
+    const { fixture, el } = mount({ encounter: lit({ sunlightScope: SunlightScope.MAP }) });
+    const asked = vi.fn();
+    fixture.componentInstance.sunlightChange.subscribe(asked);
+    expect(el.querySelector('.sc__start')).toBeNull();
+    named(el, 'Onde eu pintar')!.click();
+    expect(asked).toHaveBeenCalledWith({ scope: SunlightScope.SQUARES });
+  });
+
+  it('enters paint mode with the tool, the count and "Pronto"', () => {
+    const { fixture, el } = mount({ encounter: lit() });
+    el.querySelector<HTMLButtonElement>('.sc__start')!.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.painting()).toBe(true);
+    expect(plain(el.querySelector('.sc__status')!.textContent)).toBe(
+      'Pintando luz do sol · 1 quadrado',
+    );
+    expect(el.querySelector('.sc__card')).not.toBeNull();
+    expect(
+      Array.from(el.querySelectorAll('.sc__hints li')).map((l) => plain(l.textContent)),
+    ).toEqual(['Um dedo: arrasta e pinta', 'Dois dedos: rola o mapa']);
+    expect(el.querySelector('[role="radiogroup"]')).toBeNull();
+    const row = el.querySelector('.sc__row--paint')!;
+    expect(row.querySelector('.sc__seg--tools')).not.toBeNull();
+    expect(row.querySelector('.sc__done')).not.toBeNull();
+    expect(el.querySelector('.sl__pad')).not.toBeNull();
+    el.querySelector<HTMLButtonElement>('[aria-label^="Apagar"]')!.click();
+    fixture.detectChanges();
+    expect(el.querySelector('[aria-label^="Apagar"]')!.getAttribute('aria-pressed')).toBe('true');
+    el.querySelector<HTMLButtonElement>('.sc__done')!.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.painting()).toBe(false);
+    expect(el.querySelector('.sl__pad')).toBeNull();
+  });
+
+  it('leaves paint mode when the sun goes off', () => {
+    const { fixture } = mount({ encounter: lit() });
+    fixture.componentRef.setInput('painting', true);
+    fixture.detectChanges();
+    fixture.componentRef.setInput('encounter', lit({ sunlightOn: false }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.painting()).toBe(false);
+  });
+
+  it('names the sun in the legend for squares and for the whole map, only for the master', () => {
+    const legend = (el: HTMLElement) => plain(el.querySelector('.legend')?.textContent);
+    expect(legend(mount({ encounter: lit() }).el)).toContain('Luz do sol (só você vê)');
+    expect(legend(mount({ encounter: lit({ sunlightScope: SunlightScope.MAP }) }).el)).toContain(
+      'Luz do sol (só você vê)',
+    );
+    expect(legend(mount().el)).not.toContain('Luz do sol');
+    expect(legend(mount({ encounter: lit(), isMaster: false }).el)).not.toContain('Luz do sol');
+  });
+
+  describe('on a phone, over the cropped preview', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('keeps the controls, and "Pintar" swaps the preview for the whole map until "Pronto"', () => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: /max-width: 767/.test(query),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }));
+      TestBed.resetTestingModule();
+      const fixture = TestBed.createComponent(CombatMapCard);
+      fixture.componentRef.setInput('encounter', lit());
+      fixture.componentRef.setInput('image', { url: '', width: 2000, height: 1400 });
+      fixture.componentRef.setInput('isMaster', true);
+      fixture.componentRef.setInput('cropOnPhone', true);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('.card__preview')).not.toBeNull();
+      expect(el.querySelector('app-sunlight-layer')).toBeNull();
+      el.querySelector<HTMLButtonElement>('[aria-label="Pintar luz do sol no mapa"]')!.click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.painting()).toBe(true);
+      expect(el.querySelector('.card__preview')).toBeNull();
+      expect(el.querySelector('app-sunlight-layer')).not.toBeNull();
+      el.querySelector<HTMLButtonElement>('.sc__done')!.click();
+      fixture.detectChanges();
+      expect(el.querySelector('.card__preview')).not.toBeNull();
+    });
   });
 });

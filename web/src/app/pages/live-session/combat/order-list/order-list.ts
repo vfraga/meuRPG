@@ -26,6 +26,7 @@ import {
   CoverSource,
   type Encounter,
   EncounterStatus,
+  SunlightTrait,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import {
   SHIELD_ENDED_MS,
@@ -163,6 +164,8 @@ export class OrderList {
   readonly titled = input(true);
 
   protected readonly Stable = CombatantState.STABLE;
+  /** The sun note of a row shows only for a combatant with the sun trait that stands in the light. */
+  protected readonly NoSunTrait = SunlightTrait.UNSPECIFIED;
 
   /** The count chip of the heading shows from this many combatants (the board's eight players). */
   protected readonly crowded = 7;

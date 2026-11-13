@@ -17,6 +17,7 @@ import {
   sumRange,
   treatedFormula,
   treatedPreview,
+  checkFloorOf,
   treatedSentence,
   treatedSpeech,
   typedTotal,
@@ -34,10 +35,18 @@ function roll(over: Partial<DiceRoll>): DiceRoll {
   } as DiceRoll;
 }
 
+const RELIABLE = { value: 10, source: 'feature:reliable-talent', name: '' };
+const TABLE_12 = { value: 12, source: 'content:feat-keen', name: 'Olho Aguçado' };
+const TABLE_10 = { value: 10, source: 'content:feat-keen', name: 'Olho Aguçado' };
+
 describe('the d20 of a save that carries only its face and total', () => {
   it('writes the bonus with its sign, and none for 0', () => {
     expect(d20TotalText(2, 4)).toBe('1d20 (2) + 2 = 4');
     expect(d20TotalText(4, 3)).toBe('1d20 (4) − 1 = 3');
+    // The total counts the raised number: 2 raised to 8, plus 2.
+    expect(d20TotalText(2, 10, { as: 8, source: 'content:feat-keen', name: 'Olho Aguçado' })).toBe(
+      'd20: 2 → 8 (Olho Aguçado) + 2 = 10',
+    );
     expect(d20TotalText(14, 14)).toBe('1d20 (14) = 14');
   });
 });
@@ -203,23 +212,67 @@ describe('a d20 that Talento Confiável raised (PM-03b)', () => {
   });
 
   it('says it in a sentence and for a screen reader', () => {
-    expect(treatedSentence(raised)).toBe('O d20 de 6 contou como 10: perícia com proficiência.');
+    expect(treatedSentence(raised)).toBe(
+      'O d20 de 6 contou como 10: Talento Confiável (perícia com proficiência).',
+    );
     expect(treatedSpeech(raised)).toBe('d20: 6, contou 10 por Talento Confiável, mais 9, total 19');
+  });
+
+  it('names a table feature that raised the die, without the rule of Talento Confiável', () => {
+    const table = roll({
+      ...raised,
+      faces: [3],
+      treatedAs: 12,
+      treatedAsSource: 'content:feat-keen',
+      treatedAsSourceName: 'Olho Aguçado',
+    });
+    expect(treatedSentence(table)).toBe('O d20 de 3 contou como 12: Olho Aguçado.');
+    const unnamed = roll({ ...table, treatedAsSourceName: '' });
+    expect(treatedSentence(unnamed)).toBe('O d20 de 3 contou como 12: uma característica.');
+  });
+
+  it('says nothing for a roll no feature changed', () => {
     expect(treatedSentence(roll({ faces: [14], modifier: 9, total: 23 }))).toBeNull();
     expect(treatedSpeech(roll({ faces: [14], modifier: 9, total: 23 }))).toBeNull();
   });
 
   it('previews the typed die: 6 becomes 10, a 14 is plain', () => {
-    expect(treatedPreview(6, 9, 'feature:reliable-talent')).toEqual({
+    expect(treatedPreview(6, 9, RELIABLE)).toEqual({
       text: '6 → 10 (Talento Confiável) + 9 = 19',
       total: 19,
     });
-    expect(treatedPreview(9, 0, 'feature:reliable-talent')).toEqual({
+    expect(treatedPreview(9, 0, RELIABLE)).toEqual({
       text: '9 → 10 (Talento Confiável) = 10',
       total: 10,
     });
-    expect(treatedPreview(10, 9, 'feature:reliable-talent')).toBeNull();
-    expect(treatedPreview(14, 9, 'feature:reliable-talent')).toBeNull();
+    expect(treatedPreview(10, 9, RELIABLE)).toBeNull();
+    expect(treatedPreview(14, 9, RELIABLE)).toBeNull();
+  });
+});
+
+describe('checkFloorOf', () => {
+  const skills = ['skill:arcana'];
+
+  it('is Talento Confiável for a proficient skill and nothing for any other', () => {
+    expect(checkFloorOf('skill:arcana', skills, null)).toEqual(RELIABLE);
+    expect(checkFloorOf('skill:history', skills, null)).toBeNull();
+  });
+
+  it('takes the higher of the two, and a tie keeps Talento Confiável', () => {
+    expect(checkFloorOf('skill:arcana', skills, TABLE_12)).toEqual(TABLE_12);
+    expect(checkFloorOf('skill:arcana', skills, TABLE_10)).toEqual(RELIABLE);
+    expect(checkFloorOf('skill:arcana', skills, { ...TABLE_12, value: 8 })).toEqual(RELIABLE);
+  });
+
+  it('gives a table minimum to a skill Talento Confiável does not cover', () => {
+    expect(checkFloorOf('skill:history', skills, TABLE_12)).toEqual(TABLE_12);
+  });
+
+  it('previews the raised total with the name of the feature', () => {
+    expect(treatedPreview(3, 4, TABLE_12)).toEqual({
+      text: '3 → 12 (Olho Aguçado) + 4 = 16',
+      total: 16,
+    });
   });
 });
 

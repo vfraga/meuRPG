@@ -21,7 +21,7 @@ const ROUTES: { [K in Exclude<Kind, OwnKind>]: (h: LiveStreamHandlers, e: Event<
   reactionWindowClosed: (h, e) => h.onReactionWindowClosed?.(e),
   turnChanged: (h, e) => h.onTurnChanged?.(e),
   combatantMoved: (h, e) => h.onCombatantMoved?.(e),
-  combatLogChanged: (h) => h.onCombatLogChanged?.(),
+  combatLogChanged: (h, e) => h.onCombatLogChanged?.(e.full === true),
   xpChanged: (h) => h.onXpChanged?.(),
   // Both hints mean the same to the page: read the open scene again.
   sceneChanged: (h) => h.onSceneChanged?.(),

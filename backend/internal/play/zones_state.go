@@ -176,7 +176,7 @@ func (z *zone) roundsLeft(round int32) int32 {
 }
 
 // withZoneTerrain adds the difficult terrain the areas spells keep on the map make (Web) to the terrain of the
-// map: the layer is a copy, so the map's own is never changed.
+// map, in a layer of its own (a flag that ignores the map's difficult terrain does not ignore this one).
 func (s *Service) withZoneTerrain(ctx context.Context, tx pgx.Tx, enc playdb.Encounter, t grid.Terrain) (grid.Terrain, error) {
 	if enc.ID == "" || enc.Status != statusActive {
 		return t, nil
@@ -199,16 +199,9 @@ func (s *Service) withZoneTerrain(ctx context.Context, tx pgx.Tx, enc playdb.Enc
 		return t, nil
 	}
 	layer := grid.NewLayer(t.Grid)
-	if t.Difficult != nil {
-		for row := range t.Grid.Rows {
-			for col := range t.Grid.Columns {
-				layer.Set(col, row, t.Difficult.Get(col, row))
-			}
-		}
-	}
 	for _, sq := range squares {
 		layer.Set(sq.Col, sq.Row, true)
 	}
-	t.Difficult = layer
+	t.ZoneDifficult = layer
 	return t, nil
 }

@@ -65,6 +65,8 @@ type vitalsMax struct {
 	songSides int
 	// conMod is the Constitution modifier: what a spent hit die adds to its roll.
 	conMod int
+	// hitDieMin is the least a spent hit die gives back, the roll and the modifier together (0: no least).
+	hitDieMin int
 	// resources are the class and race resources the sheet has at its level.
 	resources []rules.Resource
 	// hooks are the character's on_event effects, for its level.
@@ -132,6 +134,7 @@ func maxima(content *rules.Content, characterID string, doc []byte, beast *strin
 			m.conMod = a.Modifier
 		}
 	}
+	m.hitDieMin = d.HitDieMinimum
 	return m, nil
 }
 

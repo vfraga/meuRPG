@@ -82,7 +82,7 @@ func (s *Service) NudgePlayer(
 		return nil, connect.NewError(connect.CodeResourceExhausted, errors.New("this character was called a moment ago"))
 	}
 	// Only that player hears it (RN-10), and it carries nothing else: the line is the app's.
-	s.hub.Publish(m.CampaignID, live.Event{
+	s.send(m.CampaignID, live.Event{
 		Audience: live.Audience{UserID: userID},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CallingYou_{
 			CallingYou: &playv1.WatchGameSessionResponse_CallingYou{},

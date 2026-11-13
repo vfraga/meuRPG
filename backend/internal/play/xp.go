@@ -99,7 +99,7 @@ func (s *Service) AppendEvent(ctx context.Context, tx pgx.Tx, campaignID, kind, 
 // carries no content: the app reads it again, where it is allowed (RN-20).
 // Call it after the commit.
 func (s *Service) PublishXPChanged(campaignID string) {
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: live.Audience{Everyone: true},
 		Message:  &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_XpChanged_{XpChanged: &playv1.WatchGameSessionResponse_XpChanged{}}},
 	})

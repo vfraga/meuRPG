@@ -64,6 +64,12 @@ func targetsPlayer(w *world, m protoreflect.Message) bool {
 	return false
 }
 
+// riderNumbers is true for a rider's line that carries the roll of the save: the master's, and the target's player's.
+func riderNumbers(_ *world, _ *person, m protoreflect.Message) bool {
+	fd := m.Descriptor().Fields().ByName("numbers")
+	return fd != nil && m.Get(fd).Bool()
+}
+
 func ownOrAnyPlayerCharacter(w *world, p *person, m protoreflect.Message) bool {
 	return own(w, p, m) || playerCharacter(w, p, m)
 }
@@ -94,7 +100,7 @@ var masterOnly = []masterOnlyField{
 	{"meurpg.characters.v1.CharacterSummary", "claimed_by_display_name", "who took a character through a link is the master's", nil},
 
 	// --- rules: the table's content
-	{"meurpg.rules.v1.ListTableEntriesResponse", "left_out", "the entries the rules refuse are left out of the content, and only the master reads which", nil},
+	{"meurpg.rules.v1.ListTableEntriesResponse", "left_out", "the entries the rules refuse are left out of the content, and only the master reads which, how many (the campaign page's notice counts them from here) and why", nil},
 
 	// --- play: the open scene and the stage
 	{"meurpg.play.v1.OpenSceneInfo", "hooks", "the master's private text (RN-20)", nil},
@@ -111,6 +117,11 @@ var masterOnly = []masterOnlyField{
 	// --- play: the combat (RN-20)
 	{"meurpg.play.v1.Encounter", "map_point_id", "the battle point the master started from", nil},
 	{"meurpg.play.v1.Encounter", "pending_hidden_reveals", "the questions an area spell left the master: they name the hidden creatures it hit", nil},
+	{"meurpg.play.v1.Encounter", "sunlight_on", "whether the combat is in sunlight is the master's: a player reads only the roll's result (RN-20, RN-29)", nil},
+	{"meurpg.play.v1.Encounter", "sunlight_scope", "where the sunlight reaches is the master's (RN-20, RN-29)", nil},
+	{"meurpg.play.v1.Encounter", "sunlight_squares", "the squares the master painted as sunlit are his alone, on a fogged map too (RN-20, RN-29)", nil},
+	{"meurpg.play.v1.Combatant", "in_sunlight", "who stands in sunlight is the master's (RN-20, RN-29)", nil},
+	{"meurpg.play.v1.Combatant", "sunlight_trait", "which creature has Sunlight Sensitivity or Weakness is the master's (RN-20, RN-29)", nil},
 	{"meurpg.play.v1.CastSpellResponse", "hidden_hits", "the hidden creatures an area hit are the master's", nil},
 	{"meurpg.play.v1.CastSpellResponse", "pending_reveal_id", "a question exists only when the spell hit a hidden creature", nil},
 	{"meurpg.play.v1.AreaTarget", "hidden", "who is hidden is the master's", nil},
@@ -138,6 +149,12 @@ var masterOnly = []masterOnlyField{
 	{"meurpg.play.v1.ConcentrationSaveResult", "resisted_left", "the uses of a creature's trait left are the master's", nil},
 	{"meurpg.play.v1.CombatLogHitRider", "resisted", "a rider's save the master made a success reads as a save that passed to a player (RN-20, RN-29)", nil},
 	{"meurpg.play.v1.CombatLogHitRider", "resisted_left", "the uses of a creature's trait left are the master's (RN-20, RN-29)", nil},
+	{"meurpg.play.v1.CombatLogHitRider", "treated_as", "what the save d20 counted as goes with the roll: only the master and the target's player (the line carries numbers)", riderNumbers},
+	{"meurpg.play.v1.CombatLogHitRider", "treated_as_source", "the feature that raised the save d20 goes with the roll: only the master and the target's player", riderNumbers},
+	{"meurpg.play.v1.CombatLogHitRider", "treated_as_source_name", "the name of that feature goes with its key: only the master and the target's player; a retired entry has none (RN-23)", riderNumbers},
+	{"meurpg.play.v1.ChannelDivinityTurn", "treated_as", "an undead's save counts by its own sheet, which holds no table feature; the line is the master's and the cleric's player's", nil},
+	{"meurpg.play.v1.ChannelDivinityTurn", "treated_as_source", "same as treated_as", nil},
+	{"meurpg.play.v1.ChannelDivinityTurn", "treated_as_source_name", "same as treated_as", nil},
 	{"meurpg.play.v1.Combatant", "character_id", "an NPC's character id is the master's", func(w *world, p *person, m protoreflect.Message) bool { return playerCharacter(w, p, m) }},
 	{"meurpg.play.v1.Combatant", "hit_points_current", "an NPC's numbers", func(w *world, p *person, m protoreflect.Message) bool { return ownOrAnyPlayerCharacter(w, p, m) }},
 	{"meurpg.play.v1.Combatant", "hit_points_max", "an NPC's numbers", func(w *world, p *person, m protoreflect.Message) bool { return ownOrAnyPlayerCharacter(w, p, m) }},

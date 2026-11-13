@@ -113,6 +113,14 @@ describe('combat errors', () => {
     );
   });
 
+  it('says a wall of fire cast without its place was refused and that nothing was spent', () => {
+    expect(
+      blockedMessage({ reason: EncounterBlockedReason.WALL_PLACEMENT_REQUIRED } as never),
+    ).toBe(
+      'Esta magia cria uma muralha: falta dizer a forma, o tamanho e o lado que causa dano. Nada foi gasto.',
+    );
+  });
+
   it('says a wall is no place to stand and that the dead cannot be healed', () => {
     expect(blockedMessage({ reason: EncounterBlockedReason.WALL_ON_SQUARE } as never)).toMatch(
       'Esse quadrado é uma parede: ninguém fica dentro dele.',

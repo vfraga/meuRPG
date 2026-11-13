@@ -156,6 +156,7 @@ func (x *deriver) resourcesAndActions() {
 	}
 	x.maneuvers()
 	x.rollEffects()
+	x.flagEffects()
 	x.extraDamages()
 	x.spellModifiers()
 	x.ambushes()

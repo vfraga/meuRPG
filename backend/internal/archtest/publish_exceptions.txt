@@ -1,0 +1,7 @@
+# Functions in internal/play and internal/maps (non-test) that call Publish outside the funnel function (a call or a method value).
+# The funnel functions are Service.send (internal/play/hints.go) and Service.publish (internal/maps/visibility.go).
+# One entry per line, sorted.
+# An entry is the path relative to backend/, a colon, and the enclosing function.
+# The function is "(*T).Method" for a method, and the variable name or "init" for a package-level function literal.
+# The list can only shrink.
+# Call s.send (play) or s.publish (maps) instead of a new entry.

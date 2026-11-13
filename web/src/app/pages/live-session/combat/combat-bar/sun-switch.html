@@ -1,0 +1,14 @@
+<button
+  type="button"
+  role="switch"
+  class="sun"
+  [class.sun--on]="on()"
+  [attr.aria-checked]="on()"
+  [attr.aria-label]="label()"
+  [title]="label()"
+  [disabled]="busy()"
+  (click)="flip.emit(!on())"
+>
+  <mat-icon aria-hidden="true">{{ on() ? 'wb_sunny' : 'wb_twilight' }}</mat-icon>
+  <span class="sun__track" aria-hidden="true"><span class="sun__thumb"></span></span>
+</button>

@@ -992,7 +992,7 @@ func (s *Service) sceneRollAnswer(ctx context.Context, m authz.Membership, out *
 			slog.String("point_id", out.ev.PointID), slog.String("action_id", out.ev.ActionID),
 			slog.String("character_id", out.who.ID), slog.Bool("physical_dice", out.ev.Physical))
 		// Only the master and the roller hear of it (RN-20).
-		s.hub.Publish(m.CampaignID, live.Event{
+		s.send(m.CampaignID, live.Event{
 			Audience: live.Audience{Master: true, UserID: m.UserID},
 			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneCheckRolled_{
 				SceneCheckRolled: &playv1.WatchGameSessionResponse_SceneCheckRolled{ActionId: out.ev.ActionID},

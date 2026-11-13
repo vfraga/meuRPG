@@ -145,6 +145,8 @@ type attackModeInputs struct {
 	surprised []string
 	// down are the player's characters at 0 hit points (unconscious for the attack rules).
 	down []string
+	// sun is the combat's sunlight.
+	sun sunlight
 }
 
 // readModeInputs reads the combat's states in the transaction.
@@ -157,7 +159,7 @@ func (s *Service) readModeInputs(ctx context.Context, c *combatTx, cs []playdb.C
 	if err != nil {
 		return attackModeInputs{}, err
 	}
-	surprised, err := s.surprisedFacts(ctx, c.q, c.enc, cs)
+	surprised, err := s.surprisedFacts(ctx, c.tx, c.session.CampaignID, c.q, c.enc, cs)
 	if err != nil {
 		return attackModeInputs{}, err
 	}
@@ -165,12 +167,16 @@ func (s *Service) readModeInputs(ctx context.Context, c *combatTx, cs []playdb.C
 	if err != nil {
 		return attackModeInputs{}, err
 	}
-	return attackModeInputs{cs: cs, states: statesOf(rows), hiding: hiding, helps: helps, surprised: surprised, down: down}, nil
+	sun, err := s.sunlightOf(ctx, c.q, c.enc)
+	if err != nil {
+		return attackModeInputs{}, err
+	}
+	return attackModeInputs{cs: cs, states: statesOf(rows), hiding: hiding, helps: helps, surprised: surprised, down: down, sun: sun}, nil
 }
 
 // facts is the combat as the advantage rules read it.
 func (in attackModeInputs) facts(enc playdb.Encounter, sight *fogSight) modeFacts {
-	return modeFacts{cs: in.cs, states: in.states, theatre: isTheatre(enc), sight: sight, hiding: in.hiding, helps: in.helps, enc: enc, surprised: in.surprised, down: in.down}
+	return modeFacts{cs: in.cs, states: in.states, theatre: isTheatre(enc), sight: sight, hiding: in.hiding, helps: in.helps, enc: enc, surprised: in.surprised, down: in.down, sun: in.sun}
 }
 
 // rollModeAsk is a RequestRollMode call once its fields are checked.

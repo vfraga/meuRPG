@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
@@ -102,5 +103,103 @@ func TestBuildTolerantLeavesOutManyRefusedEntries(t *testing.T) {
 	}
 	if content.NamePT("race:gnomo@mesa") != "Gnomo" {
 		t.Errorf("the healthy race is not in the content")
+	}
+}
+
+// TestRefusedLeavesOutWhatTheMasterRetired: an archived entry the engine refuses is still out of the
+// content, but it is not reported (Remover clears it), and neither is what is out only because of it.
+func TestRefusedLeavesOutWhatTheMasterRetired(t *testing.T) {
+	t.Parallel()
+	srd := loadRules(t)
+	archive := func(e entryRow) entryRow {
+		now := time.Now()
+		e.row.ArchivedAt = &now
+		return e
+	}
+	class := storedEntry(rulesv1.TableContentKind_TABLE_CONTENT_KIND_CLASS, "class:guardiao@mesa", "", testClass("Guardião")) // no name: refused
+	sub := storedEntry(rulesv1.TableContentKind_TABLE_CONTENT_KIND_SUBCLASS, "subclass:caminho@mesa", "Caminho", testSubclass("Caminho", "class:guardiao@mesa"))
+	spell := testSpell("Raio", "class:wizard")
+	spell.Level = 12
+	live := storedEntry(rulesv1.TableContentKind_TABLE_CONTENT_KIND_SPELL, "spell:raio@mesa", "Raio", spell)
+	race := storedEntry(rulesv1.TableContentKind_TABLE_CONTENT_KIND_RACE, "race:gnomo-teste@mesa", "Gnomo de teste", testRace("Gnomo de teste"))
+	for _, tc := range []struct {
+		name    string
+		entries []entryRow
+		want    []string
+	}{
+		{"nothing retired", []entryRow{class, sub, live, race}, []string{class.row.ContentKey, live.row.ContentKey, sub.row.ContentKey}},
+		{"the retired class and its subclass", []entryRow{archive(class), sub, live, race}, []string{live.row.ContentKey}},
+		{"a retired subclass of a class still out", []entryRow{class, archive(sub), live, race}, []string{class.row.ContentKey, live.row.ContentKey}},
+		{"a retired entry alone", []entryRow{class, sub, archive(live), race}, []string{class.row.ContentKey, sub.row.ContentKey}},
+		{"everything retired", []entryRow{archive(class), archive(sub), archive(live), race}, nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			content, out, err := buildTolerant(srd, tc.entries, 1, nil)
+			if err != nil {
+				t.Fatalf("buildTolerant() error = %v", err)
+			}
+			var got []string
+			for _, r := range content.Refused() {
+				got = append(got, r.Key)
+			}
+			if !slices.Equal(got, tc.want) {
+				t.Errorf("Refused() = %v, want %v", got, tc.want)
+			}
+			if content.NamePT(class.row.ContentKey) != "" || content.NamePT(live.row.ContentKey) != "" || content.NamePT(race.row.ContentKey) != "Gnomo de teste" {
+				t.Errorf("the content holds a refused entry or lost the healthy race")
+			}
+			if tc.name == "nothing retired" {
+				return
+			}
+			// What the build leaves out does not depend on the archive: only what is reported does.
+			if len(out) < len(tc.want) {
+				t.Errorf("left out %d, want at least the %d reported", len(out), len(tc.want))
+			}
+		})
+	}
+}
+
+// TestRefusedLeavesOutAnUnreadableRowOnlyWhileItIsLive: a row that cannot be read is reported
+// unless it is archived.
+func TestRefusedLeavesOutAnUnreadableRowOnlyWhileItIsLive(t *testing.T) {
+	t.Parallel()
+	srd := loadRules(t)
+	now := time.Now()
+	rows := []charactersdb.CampaignContent{
+		{ContentKey: "race:vivo@mesa", Kind: "race", Data: []byte("{")},
+		{ContentKey: "race:velho@mesa", Kind: "race", Data: []byte("{"), ArchivedAt: &now},
+	}
+	content, err := buildFromRows(srd, rows, 1, nil)
+	if err != nil {
+		t.Fatalf("buildFromRows() error = %v", err)
+	}
+	got := content.Refused()
+	if len(got) != 1 || got[0].Key != "race:vivo@mesa" {
+		t.Errorf("Refused() = %v, want only the live unreadable row", got)
+	}
+}
+
+// TestUnfinishedKeepsALiveChildWithAViolationOfItsOwn: a child out only because its parent is retired goes with it, and a
+// child that is also wrong in a field of its own stays, because the master still has to fix it.
+func TestUnfinishedKeepsALiveChildWithAViolationOfItsOwn(t *testing.T) {
+	t.Parallel()
+	v := func(reason string) []*rulesv1.TableContentViolation {
+		return []*rulesv1.TableContentViolation{{Reason: reason}}
+	}
+	out := []leftOut{
+		{Key: "class:a@mesa", Archived: true, Violations: v("bad_name")},
+		{Key: "subclass:only@mesa", Parent: "class:a@mesa", Violations: v("dangling_reference")},
+		{Key: "classfeature:deep@mesa", Parent: "subclass:only@mesa", Violations: v("dangling_reference")},
+		{Key: "subclass:own@mesa", Parent: "class:a@mesa", Violations: v("bad_formula")},
+		// The first violation is the missing parent, and a later pass found one of its own: the master still has to fix it.
+		{Key: "subclass:mixed@mesa", Parent: "class:a@mesa", Violations: append(v("dangling_reference"), v("bad_formula")...)},
+	}
+	var got []string
+	for _, l := range unfinished(out) {
+		got = append(got, l.Key)
+	}
+	if want := []string{"subclass:own@mesa", "subclass:mixed@mesa"}; !slices.Equal(got, want) {
+		t.Errorf("unfinished() = %v, want %v", got, want)
 	}
 }

@@ -84,7 +84,7 @@ func (s *Service) publishStageChanged(ctx context.Context, campaignID string, pl
 		s.PublishToScene(ctx, campaignID, stageChangedEvent())
 		return
 	}
-	s.Publish(campaignID, false, stageChangedEvent())
+	s.tellMembers(campaignID, false, stageChangedEvent())
 }
 
 // stageOf builds the stage as the caller sees it: the master gets the

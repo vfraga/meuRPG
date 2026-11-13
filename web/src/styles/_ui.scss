@@ -426,6 +426,25 @@ a.mr-list__row:hover .mr-list__name {
     background: none;
   }
 
+  // Luz do sol (#704): the sunlit square as the map draws it, light dots over a warm veil on a sample of the floor, inside a dotted white
+  // edge with a dark hairline under it (so it reads on pale and on dark floors).
+  &--sun {
+    border: 2px dotted #ffffff;
+    background-color: var(--mr-map-sample);
+    background-image:
+      radial-gradient(circle at center, #fffdf4 0 1.1px, transparent 1.4px),
+      linear-gradient(
+        color-mix(in srgb, #fff6dc 22%, transparent),
+        color-mix(in srgb, #fff6dc 22%, transparent)
+      );
+    background-size:
+      6px 6px,
+      auto;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--mr-map-token-ink) 60%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--mr-map-token-ink) 40%, transparent);
+  }
+
   // Parede and Terreno difícil: the same hatches the map draws.
   &--wall {
     background-image:

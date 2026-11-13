@@ -15,6 +15,7 @@ import { type FallNote, fallNote } from '../traps/trap-log';
 import type { Square } from './combat-grid';
 import { ownCreatures } from './mine';
 import { initiativeDie, isDead, isDown } from './combat-view';
+import { treatedSourceName } from './combat-dice';
 import { reachingAttacks } from './opportunity';
 
 /** What the combat screen derives from the combat, the options and the log, as pure functions: each of the screen's
@@ -217,9 +218,13 @@ export function initiativeLine(c: Combatant | undefined): { face: number; line: 
       ? ''
       : ` ${c.initiativeBonus < 0 ? '\u2212' : '+'} ${Math.abs(c.initiativeBonus)}`;
   const die = initiativeDie(c);
+  const raised = c.initiativeTreatedAs;
+  const name = treatedSourceName(c.initiativeTreatedAsSource, c.initiativeTreatedAsSourceName);
+  const d20 =
+    raised === undefined ? `${c.initiativeFace}` : `${c.initiativeFace} → ${raised} (${name})`;
   return {
     face: c.initiativeFace,
-    line: `${c.initiativeFace}${mod}${die ? ` + ${die}` : ''} = ${c.initiative}`,
+    line: `${d20}${mod}${die ? ` + ${die}` : ''} = ${c.initiative}`,
   };
 }
 

@@ -1,3 +1,4 @@
+import { withoutMaterial } from './spell-details-map';
 import { SpellDetailsVm } from './spell-details.types';
 import {
   formatCastingTime,
@@ -87,6 +88,18 @@ describe('formatRange', () => {
     });
     expect(formatRange(range('', 0, '')).fallback).toBe(true);
     expect(formatRange(range('ranged', 0, '30 feet')).english).toBe('30 feet');
+  });
+});
+
+describe('a grant that waives the material', () => {
+  it('takes the M and its text off the component line', () => {
+    const c = { verbal: true, somatic: true, material: true, materialText: 'a pinch of salt' };
+    expect(formatComponents(c)).toEqual({ text: 'V, S, M', english: '(a pinch of salt)' });
+    expect(
+      formatComponents(
+        withoutMaterial({ components: c } as SpellDetailsVm, 'Graça de teste').components,
+      ),
+    ).toEqual({ text: 'V, S · sem material (Graça de teste)' });
   });
 });
 

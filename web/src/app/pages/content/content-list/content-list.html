@@ -52,7 +52,7 @@
           @if (!phone()) {
             <a matButton="outlined" class="head__action" [routerLink]="['/campaigns', campaignId(), 'content', 'import']"><mat-icon aria-hidden="true">upload_file</mat-icon>Importar pacote</a>
             <button matButton="outlined" type="button" class="head__action" [disabled]="exporting()" (click)="exportPack()"><mat-icon aria-hidden="true">download</mat-icon>Exportar</button>
-            <a matButton="outlined" class="head__action" [routerLink]="['/campaigns', campaignId(), 'rules']">Regras da mesa</a>
+            <a matButton="outlined" class="head__action" [routerLink]="['/campaigns', campaignId(), 'rules']"><mat-icon aria-hidden="true">list</mat-icon>Regras da mesa</a>
           }
         </span>
       }
@@ -64,6 +64,86 @@
         <mat-icon aria-hidden="true">error</mat-icon>
         <p>{{ actionError() }}</p>
       </div>
+    }
+
+    @if (leftOut().count > 0) {
+      <!-- The rules refuse these entries: the campaign is built without them and the master sees which and why (K1, K3). -->
+      <section class="mr-panel out" aria-labelledby="out-t">
+        <h2 class="out__title" id="out-t"><mat-icon aria-hidden="true">error_outline</mat-icon>{{ leftOutHeading() }}</h2>
+        @if (phone()) {
+          <p class="out__lead">As regras não aceitam mais estas entradas; o resto da campanha funciona. Para corrigir, abra a entrada no computador.</p>
+        } @else {
+          <p class="out__lead">As regras não aceitam mais estas entradas e o que depende delas. O resto da campanha funciona; as fichas que as usam ficam com aviso.</p>
+        }
+        <ul class="out__list">
+          @for (row of leftOut().rows; track row.entry.key) {
+            <li class="out__item">
+              <div class="out__row">
+                <div class="out__who">
+                  <a class="out__name" [routerLink]="link(row.entry)">{{ row.entry.namePt }}</a>
+                  @if (!phone()) {
+                    <span class="mr-tag"><mat-icon aria-hidden="true">menu_book</mat-icon>{{ row.kindWord }}</span>
+                  }
+                </div>
+                <div class="out__what">
+                  @if (phone()) {
+                    <p class="out__why">{{ row.kindWord }}{{ row.shortPlace ? ' · ' + row.shortPlace : '' }}: {{ row.text }}</p>
+                  } @else {
+                    <p class="out__why">
+                      @if (row.placeLine) {
+                        {{ row.placeLine }} ·
+                      }
+                      @if (row.place.field) {
+                        <strong>{{ row.place.field }}:</strong>
+                      }
+                      {{ row.placeLine || row.place.field ? row.text : row.sentence }}
+                    </p>
+                  }
+                  @if (row.dependents.length > 0 || row.usingLine) {
+                    <p class="out__sub">
+                      @if (row.dependents.length > 0) {
+                        @let t = together(row);
+                        {{ phone() ? 'Junto:' : 'Junto com ela:' }} @for (d of t.names; track d.name; let last = $last) {<strong>{{ d.name }}</strong>{{ phone() ? '' : ' (' + d.word + ')' }}{{ last ? '' : ', ' }}}{{ phone() ? '' : ', ' + t.tail + '.' }}
+                      }
+                      @if (row.dependents.length > 0 && row.usingLine) {
+                        ·
+                      }
+                      @if (row.usingLine) {
+                        {{ phone() ? row.usingShort : row.usingLine }}
+                      }
+                    </p>
+                  }
+                </div>
+                <div class="out__act">
+                  @if (!phone()) {
+                    <a matButton="outlined" class="out__fix" [routerLink]="link(row.entry)"><mat-icon aria-hidden="true">edit</mat-icon>Corrigir</a>
+                  }
+                  <button type="button" class="more" [attr.aria-label]="'Mais ações de ' + row.entry.namePt" [matMenuTriggerFor]="rowMenu" [disabled]="busyKey() === row.entry.key">
+                    <mat-icon aria-hidden="true">more_vert</mat-icon>
+                  </button>
+                  <mat-menu #rowMenu="matMenu">
+                    <button mat-menu-item type="button" (click)="remove(row)"><mat-icon aria-hidden="true">archive</mat-icon>Remover</button>
+                    @if (!phone()) {
+                      <button mat-menu-item type="button" [disabled]="exporting()" (click)="exportPack()"><mat-icon aria-hidden="true">download</mat-icon>Exportar para corrigir num pacote</button>
+                    }
+                  </mat-menu>
+                </div>
+              </div>
+              @if (!phone()) {
+                @for (d of row.dependents; track d.entry.key) {
+                  <div class="out__dep">
+                    <div class="out__who">
+                      <a class="out__name out__name--dep" [routerLink]="link(d.entry)">{{ d.entry.namePt }}</a>
+                      <span class="mr-tag"><mat-icon aria-hidden="true">menu_book</mat-icon>{{ kindWordOf(d.entry) }}</span>
+                    </div>
+                    <p class="out__why out__why--dep">{{ d.text }}</p>
+                  </div>
+                }
+              }
+            </li>
+          }
+        </ul>
+      </section>
     }
 
     @if (!isMaster()) {
@@ -113,7 +193,9 @@
                 <a class="prow__text" [routerLink]="link(e)">
                   <span class="row__name">{{ e.namePt }}</span>
                   <span class="row__sub">{{ support(e) }}</span>
-                  @if (stateOf(e); as st) {
+                  @if (isOut(e)) {
+                    <span class="mr-tag mr-tag--danger"><mat-icon aria-hidden="true">error_outline</mat-icon>Fora da campanha</span>
+                  } @else if (stateOf(e); as st) {
                     <span class="mr-tag">
                       @if (st.archived) {
                         <mat-icon aria-hidden="true">archive</mat-icon>
@@ -203,7 +285,9 @@
                         <span class="row__name">{{ e.namePt }}</span>
                         <span class="row__sub">{{ support(e) }}</span>
                       </span>
-                      @if (stateOf(e); as st) {
+                      @if (isOut(e)) {
+                        <span class="mr-tag mr-tag--danger"><mat-icon aria-hidden="true">error_outline</mat-icon>Fora da campanha</span>
+                      } @else if (stateOf(e); as st) {
                         <span class="mr-tag">
                           @if (st.archived) {
                             <mat-icon aria-hidden="true">archive</mat-icon>

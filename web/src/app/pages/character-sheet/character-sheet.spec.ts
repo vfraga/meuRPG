@@ -13,6 +13,7 @@ import { BehaviorSubject, of } from 'rxjs';
 import {
   CharacterBlockedReason,
   CharacterBlockedSchema,
+  FullSheetSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { ABILITY_KEYS } from '../../core/characters/characters.types';
 import { MatBottomSheet } from '@angular/material/bottom-sheet';
@@ -36,8 +37,10 @@ import {
   CharacterStoryVm,
   FullSheetVm,
   ReviewVm,
+  WeaponMarkVm,
 } from './character-sheet.types';
 import type { GearVm } from '../../core/characters/gear';
+import type { WeaponMarksData } from './weapon-marks/weapon-marks-sheet';
 import { nextTurn } from '../../../test-settle';
 
 @Injectable()
@@ -51,6 +54,22 @@ class FakeCharacterSheetSource {
   updateMasterNotesFn: (campaignId: string, characterId: string, notes: string) => Promise<void> =
     () => Promise.resolve();
   setEquippedFn: (key: string, equipped: boolean) => Promise<void> = () => Promise.resolve();
+  setWeaponMarksFn: (
+    revision: number,
+    name: string,
+    sheet: unknown,
+    marks: readonly WeaponMarkVm[],
+  ) => Promise<CharacterSheetVm> = () => Promise.reject(new Error('not stubbed'));
+  setWeaponMarks(
+    _campaignId: string,
+    _characterId: string,
+    revision: number,
+    name: string,
+    sheet: unknown,
+    marks: readonly WeaponMarkVm[],
+  ): Promise<CharacterSheetVm> {
+    return this.setWeaponMarksFn(revision, name, sheet, marks);
+  }
   markCharacterDeadFn: (campaignId: string, characterId: string) => Promise<CharacterSheetVm> =
     () => Promise.reject(new Error('not stubbed'));
   updateCharacterStoryFn: (
@@ -182,6 +201,7 @@ function emptyStory(): CharacterStoryVm {
 function fullSheet(overrides: Partial<FullSheetVm> = {}): FullSheetVm {
   return {
     kind: 'full',
+    weaponMarks: [],
     abilities: ABILITY_KEYS.map((key) => ({ key, score: 10, modifier: 0 })),
     proficiencyBonus: 2,
     savingThrows: [],
@@ -189,6 +209,7 @@ function fullSheet(overrides: Partial<FullSheetVm> = {}): FullSheetVm {
     passivePerception: 10,
     passiveInvestigation: 10,
     passiveInsight: 10,
+    carryCapacityLb: 150,
     initiative: 0,
     armorClass: 10,
     armorClassDescription: 'Sem armadura',
@@ -394,6 +415,21 @@ describe('CharacterSheetPage', () => {
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   }
+
+  it('shows the carrying capacity the server sent in kilograms and pounds, on one line next to the senses', async () => {
+    configure();
+    fake.getCharacterSheetFn = () =>
+      Promise.resolve(vm({ sheet: fullSheet({ carryCapacityLb: 225 }) }));
+
+    const el = await render();
+    const lines = Array.from(el.querySelectorAll('p')).filter((p) =>
+      p.textContent?.includes('Capacidade de carga'),
+    );
+    expect(lines.length).toBe(1);
+    expect(lines[0].textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'Capacidade de carga 112,5 kg (225 lb)',
+    );
+  });
 
   it('shows exactly the server-sent numbers, even an inconsistent modifier', async () => {
     configure();
@@ -1530,6 +1566,135 @@ describe('CharacterSheetPage', () => {
 
       const el = await render();
       expect(sectionTitled(el, 'Equipamento').querySelector('.gear-row__button')).not.toBeNull();
+    });
+  });
+
+  describe('the marks of a weapon, from its "⋮" (#585)', () => {
+    const dagger = gearPiece({ key: 'equipment:dagger', namePt: 'Adaga' });
+    const body = create(FullSheetSchema, {
+      armorKey: 'equipment:chain',
+      weaponMarks: [{ weaponKey: 'equipment:mace', adamantine: true }],
+    });
+
+    function withWeapons(over: Partial<CharacterSheetVm> = {}): CharacterSheetVm {
+      return {
+        ...vm({ revision: 7, name: 'Pensantus', ...over }),
+        sheet: fullSheet({
+          gear: [dagger, { ...dagger, key: 'equipment:mace', namePt: 'Maça', equipped: false }],
+          weaponMarks: [
+            { weaponKey: 'equipment:mace', silvered: false, adamantine: true, magical: false },
+          ],
+        }),
+        fullSheet: body,
+      };
+    }
+    const more = (el: HTMLElement, name: string) =>
+      el.querySelector<HTMLButtonElement>(`button[aria-label="Marcas da ${name}"]`);
+    let opened: WeaponMarksData[] = [];
+    /** The sheet of the marks is a dialog here (no phone): record what it was opened with and close it as `result`. */
+    function configureMarks(result: boolean | undefined = undefined): void {
+      opened = [];
+      configure();
+      vi.spyOn(TestBed.inject(MatDialog), 'open').mockImplementation(((
+        _c: unknown,
+        cfg: unknown,
+      ) => {
+        opened.push((cfg as { data: WeaponMarksData }).data);
+        return { afterClosed: () => of(result) };
+      }) as never);
+    }
+
+    it('gives each weapon a "⋮" while the sheet can be edited (the owner before the lock, the master always)', async () => {
+      configure();
+      fake.getCharacterSheetFn = () => Promise.resolve(withWeapons({ canEdit: true }));
+      const el = await render();
+      expect(more(el, 'Adaga')).not.toBeNull();
+      expect(more(el, 'Maça')).not.toBeNull();
+    });
+
+    it('has no "⋮" for someone who cannot edit the sheet, and says who marks after the lock', async () => {
+      configure();
+      fake.getCharacterSheetFn = () =>
+        Promise.resolve(withWeapons({ canEdit: false, isMaster: false }));
+      const el = await render();
+      expect(more(el, 'Adaga')).toBeNull();
+      expect(el.querySelector('[data-marks-key]')).toBeNull();
+      expect(el.textContent).toContain('Marcas das armas: depois da trava, só o mestre muda.');
+    });
+
+    it('has no "⋮" on a dead character’s sheet', async () => {
+      configure();
+      fake.getCharacterSheetFn = () => Promise.resolve(withWeapons({ state: 'dead' }));
+      expect(more(await render(), 'Adaga')).toBeNull();
+    });
+
+    it('opens the sheet of that weapon with its stored marks, and saves over the whole sheet at the revision read', async () => {
+      configureMarks(true);
+      const calls: {
+        revision: number;
+        name: string;
+        sheet: unknown;
+        marks: readonly WeaponMarkVm[];
+      }[] = [];
+      fake.setWeaponMarksFn = (revision, name, sheet, marks) => {
+        calls.push({ revision, name, sheet, marks });
+        return Promise.resolve({ ...withWeapons(), revision: 8 });
+      };
+      fake.getCharacterSheetFn = () => Promise.resolve(withWeapons());
+      const el = await render();
+      more(el, 'Maça')!.click();
+      expect(opened).toHaveLength(1);
+      expect(opened[0].weaponName).toBe('Maça');
+      expect(opened[0].marks).toMatchObject({ adamantine: true });
+
+      expect(await opened[0].save({ silvered: true, adamantine: true, magical: false })).toBe('');
+      expect(calls).toHaveLength(1);
+      expect(calls[0].revision).toBe(7);
+      expect(calls[0].name).toBe('Pensantus');
+      expect(calls[0].sheet).toBe(body);
+      expect(calls[0].marks).toEqual([
+        { weaponKey: 'equipment:mace', silvered: true, adamantine: true, magical: false },
+      ]);
+    });
+
+    it('keeps the other weapons’ marks and drops the weapon’s own when none is left', async () => {
+      configureMarks();
+      let sent: readonly WeaponMarkVm[] = [];
+      fake.setWeaponMarksFn = (_r, _n, _s, marks) => {
+        sent = marks;
+        return Promise.resolve(withWeapons());
+      };
+      fake.getCharacterSheetFn = () => Promise.resolve(withWeapons());
+      const el = await render();
+      more(el, 'Adaga')!.click();
+      await opened[0].save({ silvered: false, adamantine: false, magical: false });
+      expect(sent).toEqual([
+        { weaponKey: 'equipment:mace', silvered: false, adamantine: true, magical: false },
+      ]);
+    });
+
+    it('answers a stale revision with the conflict text, so the sheet stays open', async () => {
+      configureMarks();
+      fake.setWeaponMarksFn = () => Promise.reject(new ConnectError('stale', Code.Aborted));
+      fake.getCharacterSheetFn = () => Promise.resolve(withWeapons());
+      const el = await render();
+      more(el, 'Adaga')!.click();
+      expect(await opened[0].save({ silvered: true, adamantine: false, magical: false })).toContain(
+        'A ficha mudou enquanto você editava.',
+      );
+    });
+
+    it('says "Marcas salvas." once the sheet closed saved', async () => {
+      configureMarks(true);
+      fake.getCharacterSheetFn = () => Promise.resolve(withWeapons());
+      const el = await render();
+      more(el, 'Adaga')!.click();
+      await nextTurn();
+      const statuses = () =>
+        Array.from(sectionTitled(el, 'Equipamento').querySelectorAll('[role="status"]'))
+          .map((s) => s.textContent)
+          .join(' ');
+      expect(statuses()).toContain('Marcas salvas.');
     });
   });
 

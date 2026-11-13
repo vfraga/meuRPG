@@ -94,3 +94,15 @@ export function squaresFree(feet: number): string {
 export function metersWithFeet(feet: number): string {
   return `${metersText(feet)} ${tight(`(${feet} pés)`)}`;
 }
+
+/** Kilograms for a weight in pounds, at the Portuguese books' rate (1 lb = 0,5 kg), with a decimal comma and no
+ * useless zero: 180 lb is "90 kg", 195 lb is "97,5 kg". */
+export function poundsToKg(pounds: number): string {
+  const kg = Math.round((pounds / 2) * 10) / 10;
+  return `${String(kg).replace('.', ',')} kg`;
+}
+
+/** A weight in pounds in the app's two units, metric first and the book's unit after it: "90 kg (180 lb)". */
+export function weightWithPounds(pounds: number): string {
+  return `${poundsToKg(pounds)} (${pounds} lb)`.replace(/(\d) (kg|lb)/g, '$1\u00a0$2');
+}

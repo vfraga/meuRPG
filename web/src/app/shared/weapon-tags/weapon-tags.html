@@ -1,0 +1,9 @@
+@if (tags().length) {
+  <ul class="weapon-tags" aria-label="Marcas da arma">
+    @for (t of tags(); track t.word) {
+      <li class="mr-tag weapon-tags__tag">
+        <mat-icon aria-hidden="true">{{ t.icon }}</mat-icon>{{ t.word }}
+      </li>
+    }
+  </ul>
+}

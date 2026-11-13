@@ -169,7 +169,7 @@ export class CombatView extends CombatViewPartsDirective {
         untracked(() => this.log.clear());
         return;
       }
-      untracked(() => void this.log.load(this.api, campaignId, e.id));
+      untracked(() => void this.log.load(this.api, campaignId, e.id, this.state().takeLogFull()));
     });
     // What a turn said is not carried into the next one.
     let turnOf = '';

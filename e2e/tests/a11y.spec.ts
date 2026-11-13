@@ -62,19 +62,20 @@ import {
 } from './puzzles-support';
 import { createInkBladeRPC, tableForSpells } from './spells-support';
 import { beginLegendaryFight, legendaryScreens, shotScale } from './legendary-support';
+import { LEFT_OUT_VIEWPORTS, leftOutShotScale, refuseEntries, shootLeftOut, targetLeftTheMenu } from './left-out-support';
 import { beginTheatreRPC, secondPlayer } from './theatre-support';
 import { combatWithTwoDown, reviveRPC, tableWithDead } from './revivify-support';
 import { brisa, brisaAidSheet, brisaSheet, dalila, dalilaSheet, ragna, ragnaSheet } from './combat-support';
 import { createFeatsRPC, createNightRaceRPC, createSnowSubraceRPC, tor } from './editor-races-support';
 import { createFeatOptionsRPC, expectInViewport, featShotScale, featViewport, openSelect, shootFeat, type FeatOptionsTable } from './feat-options-support';
-import { archiveEntryRPC, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, expectCardsHoldTheirText, minimumFeatBody, raceBody, rerollFeatBody, spellBody, updateEntryRPC } from './content-support';
+import { archiveEntryRPC, checkMinimumFeatBody, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, expectCardsHoldTheirText, giveFeatRPC, minimumFeatBody, raceBody, rerollFeatBody, spellBody, updateEntryRPC } from './content-support';
 import { rerollTable } from './reroll-support';
 import { generateSceneRPC, mapRoute, tableForImages } from './images-support';
 import { treasureRoute } from './treasure-support';
 import { classBody, createClassRPC, createSubclassRPC, halfCasterBody, listEntries } from './classes-support';
 import { setSwitchesRPC } from './content-options-support';
 import { effectRow, effectsTable, openPanel, setExhaustionRPC } from './effects-support';
-import { castZoneRPC, enterZoneRPC, moreZonesTable, zoneCard, zoneLayer, zoneOf, zoneTable, zonesPanel } from './zones-support';
+import { castZoneRPC, enterZoneRPC, expectOnMap, expectWallCalculated, moreZonesTable, nextStep, openWallSheet, openZoneMenu, tapWallSquare, WALL_SPELL, wallTable, zoneAction, zoneBadges, zoneCard, zoneLayer, zoneOf, zoneTable, zonesPanel } from './zones-support';
 import {
   changeGuardianSkillsRPC,
   createGuardianRPC,
@@ -90,6 +91,7 @@ import { openCombatPanel, openMap, openOrderRow, openTurn } from './combat-layou
 import { waitForEncounterRevision } from './revision-support';
 import { WIDTHS, beginVrockFight, pagesFor, shoot, useCreatureActionRPC, viewportOf } from './recharge-support';
 import { chooseRow, openTvPanel, rollForTableRPC, tvRoute } from './table-screen-support';
+import { LIT, WIDTHS as SUN_WIDTHS, sunSpot as sunBar, mapCard as sunMapCard, paintStatus as sunPaintStatus, setSunlightRPC, shoot as shootSun, sunSwitch, sunlightTable, viewportOf as sunViewport } from './sunlight-support';
 
 // docs/design/README.md#how-a-screen-is-made: every screen passes axe with no
 // serious or critical violation of WCAG 2.1 A and AA, in the light and the
@@ -6123,6 +6125,108 @@ test('o conteúdo da mesa passa no axe e nas conferências de layout no tema cla
 });
 
 /**
+ * The entries the rules refuse (#736): the master's list with the left-out panel, the "⋮" menu and the question to remove, the
+ * editor of an entry with the marked field and the target that left the menu, the notice on the campaign's "Regras" tab, and
+ * the player's list that says nothing of it. Each screen is judged at 390, 768 and 1280 px; E2E_SHOTS_DIR, when set, also
+ * saves the screenshots (left-out-support.ts).
+ */
+async function scanLeftOut(browser: Browser, colorScheme: 'light' | 'dark'): Promise<void> {
+  const viewport = { width: 1280, height: 800 };
+  const mContext = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport, ...leftOutShotScale });
+  const pContext = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport, ...leftOutShotScale });
+  let doneRefusing = async (): Promise<void> => undefined;
+  try {
+    const m = await mContext.newPage();
+    const p = await pContext.newPage();
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const campaignId = await campaignWithEmptyPlayer(m, p, `Acessibilidade fora ${Date.now()}`);
+    const spell = await createEntryRPC(m, campaignId, 'tableSpell', spellBody('Lâmina de Nanquim'));
+    const race = await createEntryRPC(m, campaignId, 'tableRace', {
+      ...raceBody('Corujeiro'),
+      traits: [{ namePt: 'Olhos de caçador', descPt: ['Enxergam longe.'], effects: [{ type: 'modifier', target: 'critical_range', mode: 'set', value: '19', applies: 'both' }] }],
+    });
+    doneRefusing = await refuseEntries(
+      m,
+      [
+        { key: spell, field: 'table_spell.damage[0].dice', reason: 'bad_formula' },
+        { key: race, field: 'table_race.traits[0].effects[0].target', reason: 'bad_value' },
+      ],
+      { [race]: (e) => targetLeftTheMenu(e) },
+    );
+    for (const width of Object.keys(LEFT_OUT_VIEWPORTS).map(Number)) {
+      const where = `(${colorScheme}, ${width}px)`;
+      for (const page of [m, p]) {
+        await page.setViewportSize({ width, height: LEFT_OUT_VIEWPORTS[width] });
+      }
+      await open(m, `/campaigns/${campaignId}/content`);
+      const panel = m.getByRole('region', { name: '2 entradas fora da campanha' });
+      await expect(panel).toBeVisible();
+      await expectScreenPasses(m, `Conteúdo da mesa, fora da campanha ${where}`);
+      await shootLeftOut(m, 'lista', width, colorScheme);
+      if (width !== 768) {
+        // K1's row of the entry itself, with its tag, in the list of its kind.
+        await open(m, `/campaigns/${campaignId}/content?kind=spells`);
+        const tag = m.locator('.mr-tag--danger', { hasText: 'Fora da campanha' }).first();
+        await expect(tag).toBeVisible();
+        await expectScreenPasses(m, `Conteúdo da mesa, a linha fora da campanha ${where}`);
+        await shootLeftOut(m, 'linha', width, colorScheme, tag);
+        await open(m, `/campaigns/${campaignId}/content`);
+        await expect(panel).toBeVisible();
+      }
+
+      await m.getByRole('button', { name: 'Mais ações de Lâmina de Nanquim' }).click();
+      await expect(m.getByRole('menuitem', { name: 'Remover' })).toBeVisible();
+      await expectScreenPasses(m, `Conteúdo da mesa, fora da campanha, o menu ${where}`);
+      await shootLeftOut(m, 'menu', width, colorScheme);
+      await m.getByRole('menuitem', { name: 'Remover' }).click();
+      await expect(m.getByRole('dialog')).toBeVisible();
+      await expectScreenPasses(m, `Conteúdo da mesa, fora da campanha, a pergunta para remover ${where}`);
+      await shootLeftOut(m, 'remover', width, colorScheme);
+      await m.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
+      await expect(m.getByRole('dialog')).toHaveCount(0);
+
+      await open(m, entryRoute(campaignId, race));
+      // The phone reads and archives only (K3): the note says why and sends to the computer; the field is on the wider screens.
+      await expect(m.getByText('Esta raça está fora da campanha.')).toBeVisible();
+      await shootLeftOut(m, 'editor-nota', width, colorScheme);
+      if (width >= 768) {
+        const target = m.getByLabel('O que muda');
+        await expect(target).toHaveValue('alvo_antigo');
+        await expectScreenPasses(m, `Conteúdo da mesa, a raça fora da campanha ${where}`);
+        await shootLeftOut(m, 'editor', width, colorScheme, m.getByRole('heading', { level: 1 }));
+      } else {
+        await expectScreenPasses(m, `Conteúdo da mesa, a raça fora da campanha ${where}`);
+        await shootLeftOut(m, 'editor', width, colorScheme);
+      }
+
+      await open(m, `/campaigns/${campaignId}/setup`);
+      const content = m.getByRole('region', { name: 'Conteúdo da mesa' });
+      await expect(content).toContainText('estão fora da campanha');
+      await expectScreenPasses(m, `A campanha, o aviso do conteúdo fora ${where}`);
+      await shootLeftOut(m, 'campanha', width, colorScheme, content);
+
+      await open(p, `/campaigns/${campaignId}/content`);
+      await expect(p.getByRole('heading', { level: 1, name: 'Conteúdo da mesa' })).toBeVisible();
+      await expectScreenPasses(p, `Conteúdo da mesa, o jogador não vê o que ficou fora ${where}`);
+      await shootLeftOut(p, 'jogador', width, colorScheme);
+    }
+  } finally {
+    await doneRefusing(); // a read the page started is answered before the page closes
+    await Promise.all([mContext.close(), pContext.close()]);
+  }
+}
+
+test('as entradas fora da campanha passam no axe e nas conferências de layout no tema claro, em 390, 768 e 1280', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanLeftOut(browser, 'light');
+});
+
+test('as entradas fora da campanha passam no axe e nas conferências de layout no tema escuro, em 390, 768 e 1280', { tag: ['@a11y', '@MR-025', '@RN-23'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanLeftOut(browser, 'dark');
+});
+
+/**
  * The master's effect editor for the rolls (MR-025, RN-23): "Rolar de novo" empty and with its resource, "Valor mínimo no
  * dado" with the damage type that goes away when another roll is checked, a refusal on the rolls, the critical range with its lock and
  * the scope cards, and what the master reads on a phone and a player reads. The entries come through the API.
@@ -6215,6 +6319,113 @@ async function scanRollEffects(browser: Browser, colorScheme: 'light' | 'dark', 
   } finally {
     await Promise.all([mContext.close(), pContext.close()]);
   }
+}
+
+/**
+ * A table feat raises a d20 of a check (#757, MR-025): the player types a 3 on a scene check and reads "3 → 12 (feat) + 6 = 18"
+ * before sending, then "O d20 de 3 contou como 12: feat." in the result. The feat is on Pensantus's sheet through the API.
+ */
+async function scanRollMinimumSceneCheck(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  test.setTimeout(240_000);
+  const viewport = { width, height: width >= 768 ? 900 : 844 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const table = await tableForScenes(m, p, `Acessibilidade mínimo cena ${Date.now()}`);
+    campaignId = table.campaignId;
+    const feat = 'Pé de Vento';
+    await giveFeatRPC(m, campaignId, table.characterId, await createEntryRPC(m, campaignId, 'tableFeat', checkMinimumFeatBody(feat)));
+    await openSceneRPC(m, campaignId, table.cartId);
+    await openSessionPage(p, campaignId);
+    await p.getByRole('region', { name: 'Cena: A carroça tombada' }).getByRole('button', { name: 'Rolar Procurar pistas na carroça' }).click();
+    const sheet = p.getByRole('dialog', { name: 'Rolar Procurar pistas na carroça' });
+    await sheet.getByRole('button', { name: 'Digitar o resultado' }).click();
+    await sheet.getByLabel(/Role 1d20 para Investigação/).fill('3');
+    await expect(sheet.getByRole('status')).toContainText(`3 → 12 (${feat}) + 6 = 18`);
+    await p.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
+    await expectScreenPasses(p, `Cena, o d20 digitado com o mínimo da mesa, antes de enviar ${where}`);
+    await sheet.getByRole('button', { name: 'Confirmar 3', exact: true }).click();
+    await expect(sheet.getByText('Seu total em Investigação')).toBeVisible();
+    await expect(sheet.getByText(`d20: 3 → 12 (${feat}) + 6 = 18`)).toBeVisible();
+    await expect(sheet.getByText(`O d20 de 3 contou como 12: ${feat}.`)).toBeVisible();
+    await expectScreenPasses(p, `Cena, o resultado com o d20 que contou como 12 ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+/**
+ * The same feat raises the initiative d20 (a Dexterity check): the master types Pensantus's 3 and reads the total
+ * "1d20 (12) + 3 = 15" on the initiative row (Dexterity 16) with "d20: 3 → 12 (feat)" under it. The feat's name is
+ * as long as a name may be in the long rows: neither line may run past its row or the screen, and the total stays visible.
+ */
+async function scanRollMinimumInitiative(browser: Browser, colorScheme: 'light' | 'dark', width: number, feat = 'Pé de Vento'): Promise<void> {
+  test.setTimeout(240_000);
+  const viewport = { width, height: 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const table = await tableForCombat(m, p, `Acessibilidade mínimo iniciativa ${Date.now()}`, false);
+    campaignId = table.campaignId;
+    await giveFeatRPC(m, campaignId, table.characterId, await createEntryRPC(m, campaignId, 'tableFeat', checkMinimumFeatBody(feat)));
+    await m.goto(`/campaigns/${campaignId}/session`);
+    await expectStartCombatOffered(m);
+    await clickStartCombat(m);
+    await expect(m.getByRole('dialog', { name: 'Iniciar combate' })).toBeVisible();
+    await m.getByRole('dialog').getByRole('button', { name: 'Iniciar combate' }).click();
+    await expect(m.getByText('Os NPCs rolaram sozinhos.')).toBeVisible();
+    await m.getByRole('button', { name: 'Digitar pelo jogador' }).click();
+    await m.getByLabel(/Resultado do d20 de Pensantus/).fill('3');
+    await m.getByRole('button', { name: 'Salvar', exact: true }).click();
+    const row = m.locator('li.row', { has: m.locator('[data-testid="raised-note"]') });
+    const total = row.getByText('1d20 (12) + 3 = 15', { exact: true });
+    const note = row.locator('[data-testid="raised-note"]');
+    await expect(total).toBeVisible();
+    await expect(total).toContainText('= 15');
+    await expect(note).toHaveText(`d20: 3 → 12 (${feat})`);
+    // Neither line runs past its row or the screen (a long feature name wraps under the total; it never cuts the total).
+    const rowBox = (await row.boundingBox())!;
+    for (const [what, line] of [['o total', total], ['a nota', note]] as const) {
+      const box = (await line.boundingBox())!;
+      expect(box.x + box.width, `${what} passa da borda direita da linha ${where}`).toBeLessThanOrEqual(rowBox.x + rowBox.width + 0.5);
+      expect(box.x + box.width, `${what} passa da borda da tela ${where}`).toBeLessThanOrEqual(width);
+      expect(box.x, `${what} sai pela esquerda ${where}`).toBeGreaterThanOrEqual(0);
+    }
+    await expectScreenPasses(m, `Iniciativa do mestre, o d20 que contou como 12 ${where}`);
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+for (const [scheme, width] of [['light', 390], ['dark', 768], ['light', 1280], ['dark', 1280], ['dark', 390], ['light', 768]] as const) {
+  const theme = scheme === 'light' ? 'claro' : 'escuro';
+  test(`o d20 de um teste que o mínimo da mesa levantou passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+    await scanRollMinimumSceneCheck(browser, scheme, width);
+  });
+  test(`a iniciativa que o mínimo da mesa levantou passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+    await scanRollMinimumInitiative(browser, scheme, width);
+  });
+  test(`a iniciativa que o mínimo da mesa levantou, com o nome da característica de 32 letras, cabe na linha no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@MR-025'] }, async ({ browser }) => {
+    await scanRollMinimumInitiative(browser, scheme, width, 'Pé de Vento Muito Mais Que Longo');
+  });
 }
 
 /**
@@ -8049,6 +8260,91 @@ test('o equipamento passa no axe e nas conferências de layout no tema escuro, n
   await scanGearScreens(browser, 'dark', 390);
 });
 
+/** The weapon marks (#585): the chips on the gear and attacks, the weapon's "⋮" menu for the owner and the master, never for another player. */
+async function scanWeaponMarksScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = { width, height: 900 };
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  let outsider: Awaited<ReturnType<typeof secondPlayer>> | undefined;
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const marked = {
+      weaponKeys: ['equipment:longsword', 'equipment:mace'],
+      armorKey: 'equipment:chain-mail',
+      shield: true,
+      carriedKeys: ['equipment:mace'],
+      weaponMarks: [{ weaponKey: 'equipment:longsword', silvered: true, magical: true }, { weaponKey: 'equipment:mace', adamantine: true }],
+    };
+    const table = await tableForCombat(m, p, `Acessibilidade marcas das armas ${Date.now()}`, true, true, { build: toren, sheet: marked });
+    campaignId = table.campaignId;
+
+    // The owner: the tags in words on both groups of the gear, and the grid.
+    await openLive(p, `/campaigns/${campaignId}/characters/${table.characterId}`);
+    const equipment = p.getByRole('region', { name: 'Equipamento' });
+    await expect(equipment.getByRole('list', { name: 'Marcas da arma' })).toHaveCount(2);
+    await expect(equipment.getByText('Prateada')).toBeVisible();
+    await expect(equipment.getByText('Adamantina')).toBeVisible();
+    await expectScreenPasses(p, `Ficha, marcas nas armas ${where}`);
+    // The table is in play, so the owner's sheet is locked: no "⋮" for the owner, and a line says who marks.
+    await expect(equipment.getByRole('button', { name: /^Marcas da / })).toHaveCount(0);
+    await expect(equipment.getByText('Marcas das armas: depois da trava, só o mestre muda.')).toBeVisible();
+
+    // The master edits at any time: the weapon's "⋮" opens its marks, then a saved mark.
+    await openLive(m, `/campaigns/${campaignId}/characters/${table.characterId}`);
+    const masterEquipment = m.getByRole('region', { name: 'Equipamento' });
+    await masterEquipment.getByRole('button', { name: 'Marcas da Espada longa' }).click();
+    const sheet = m.getByRole('dialog', { name: 'Marcas da Espada longa' });
+    await expect(sheet.getByRole('checkbox', { name: /^Prateada/ })).toBeChecked();
+    await expect(sheet.getByRole('checkbox', { name: /^Adamantina/ })).not.toBeChecked();
+    await expectScreenPasses(m, `Ficha do mestre, Marcas da arma ${where}`);
+    await sheet.getByRole('checkbox', { name: /^Adamantina/ }).check();
+    await sheet.getByRole('button', { name: 'Salvar marcas' }).click();
+    await expect(sheet).toHaveCount(0);
+    await expect(masterEquipment.getByRole('status').filter({ hasText: 'Marcas salvas.' })).toBeVisible();
+    await expect(masterEquipment.getByRole('button', { name: 'Marcas da Espada longa' })).toBeFocused();
+
+    // Another player never sees the grid, nor the marks.
+    outsider = await secondPlayer(browser, m, campaignId, toren, {}, { storageState: authStatePath('E-mail Não Verificado'), colorScheme, viewport });
+    await openLive(outsider.page, `/campaigns/${campaignId}/characters/${table.characterId}`);
+    await expect(outsider.page.getByRole('button', { name: /^Marcas da / })).toHaveCount(0);
+    await expect(outsider.page.getByRole('dialog', { name: /^Marcas da / })).toHaveCount(0);
+    await expect(outsider.page.getByText('Prateada')).toHaveCount(0);
+    await expectScreenPasses(outsider.page, `Ficha de outro jogador, sem as marcas ${where}`);
+
+    // The combat: the tags on the gear row of the fold.
+    await beginAttackCombatRPC(m, table, { Toren: 20, 'Capitão Goblin': 15, 'Goblin 1': 5, 'Goblin 2': 4 });
+    await openSessionPage(p, campaignId);
+    const tab = await openActionTab(p, 'Ataques');
+    await expect(tab.getByRole('button', { name: 'Sacar ou guardar' })).toBeVisible();
+    await expect(tab.getByRole('list', { name: 'Marcas da arma' }).first()).toBeVisible();
+    await expectScreenPasses(p, `Combate, marcas das armas ${where}`);
+  } finally {
+    if (outsider) {
+      await outsider.close();
+    }
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+test('as marcas das armas passam no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@585'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanWeaponMarksScreens(browser, 'light', 1280);
+});
+
+test('as marcas das armas passam no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@585'] }, async ({ browser }) => {
+  test.setTimeout(300_000);
+  await scanWeaponMarksScreens(browser, 'dark', 390);
+});
+
 /** The question of a table feature's reroll (R6, R7, R9): the player's "Tirou 2: rolar de novo?" and the answer on its way, and the
  * master's card while the roller answers first, when it is the master's turn to answer, and once the roller did. */
 async function scanRerollQuestionScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
@@ -9571,7 +9867,7 @@ async function scanZoneScreens(browser: Browser, colorScheme: 'light' | 'dark', 
 
     const masterTitle = zonesPanel(m).getByRole('heading', { level: 2 });
     await expect(masterTitle).toHaveText('Zonas ativas (3)');
-    await expect(zoneLayer(m)).toContainText('Teia · Pensantus');
+    await expectOnMap(m, 'Teia · Pensantus');
     await expect(zoneCard(m, 'Raio Lunar · Sombra')).toContainText('Só você vê');
     await expectScreenPasses(m, `Zonas no mapa e a lista, o mestre ${where}`);
 
@@ -9581,9 +9877,17 @@ async function scanZoneScreens(browser: Browser, colorScheme: 'light' | 'dark', 
     await expect(zoneCard(p, 'Raio Lunar · Druida')).not.toContainText('Constituição');
     await expectScreenPasses(p, `Zonas no mapa e a lista, o jogador com detalhes ocultos ${where}`);
 
+    // The "Mais ações" menu of a zone that moves, open: "Mover" and "Encerrar zona".
+    const menu = await openZoneMenu(m, 'Raio Lunar · Druida');
+    await expect(menu.getByRole('menuitem', { name: 'Mover', exact: true })).toBeVisible();
+    await expect(menu.getByRole('menuitem', { name: 'Encerrar zona', exact: true })).toBeVisible();
+    await expectScreenPasses(m, `Mais ações da zona, o menu aberto ${where}`);
+    await m.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+
     // The end: the question in place, under the zone's card.
     const web = zoneCard(m, 'Teia · Pensantus');
-    await web.getByRole('button', { name: 'Encerrar zona' }).click();
+    await zoneAction(m, 'Teia · Pensantus', 'Encerrar zona');
     const ask = web.getByRole('group', { name: 'Encerrar a zona?' });
     await expect(ask).toBeVisible();
     await expectScreenPasses(m, `Encerrar a zona, a pergunta no lugar ${where}`);
@@ -9591,7 +9895,7 @@ async function scanZoneScreens(browser: Browser, colorScheme: 'light' | 'dark', 
     await expect(ask).toHaveCount(0);
 
     // The move sheet: the map picker with a square picked and its preview.
-    await zoneCard(m, 'Raio Lunar · Druida').getByRole('button', { name: 'Mover', exact: true }).click();
+    await zoneAction(m, 'Raio Lunar · Druida', 'Mover');
     const sheet = m.getByRole('dialog', { name: 'Mover o Raio Lunar' });
     await expect(sheet).toBeVisible();
     const map = sheet.getByRole('group', { name: /Mapa de batalha/ });
@@ -9677,7 +9981,7 @@ async function scanMoreZoneScreens(browser: Browser, colorScheme: 'light' | 'dar
     await expect(zoneCard(m, 'Escuridão · Mago')).toContainText('Você decide');
     await expectScreenPasses(m, `Mais zonas no mapa e a lista, o mestre ${where}`);
     await expect(zonesPanel(p).getByRole('heading', { level: 2 })).toHaveText('Zonas ativas (4)');
-    await expect(zoneLayer(p)).toContainText('Escuridão · Mago');
+    await expectOnMap(p, 'Escuridão · Mago');
     await expect(zonesPanel(p)).not.toContainText('Você decide');
     await expectScreenPasses(p, `Mais zonas no mapa e a lista, o jogador ${where}`);
 
@@ -9721,6 +10025,120 @@ test('mais zonas de magia passam no axe e nas conferências de layout no tema cl
 test('mais zonas de magia passam no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
   test.setTimeout(500_000);
   await scanMoreZoneScreens(browser, 'dark', 390);
+});
+
+/**
+ * Wall of Fire's cast sheet (RN-37, #640), the step "Onde fica": a line before anything is placed, a line placed with its
+ * side not picked and then picked, a ring the same way, and the step that follows. Each scan waits for the state it judges: the
+ * server's preview ("Calculando onde a muralha fica…" gone) and the words of the missing side.
+ */
+async function scanWallSheetScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `(${colorScheme}, ${width}px)`;
+  const t = await wallTable(browser, `Acessibilidade muralha ${Date.now()}`, { width, colorScheme });
+  const { p } = t;
+  try {
+    await openSessionPage(p, t.campaignId);
+    const { sheet, map } = await openWallSheet(p);
+    await expect(sheet.getByText('Toque no mapa para marcar onde a muralha fica.')).toBeVisible();
+    await expectScreenPasses(p, `Onde fica, a linha, nada colocado ${where}`);
+
+    // A line from (11, 3) to the south: the side is not picked, and "Próximo" says why it waits.
+    await tapWallSquare(map, 11, 3);
+    await sheet.getByRole('button', { name: 'Para o sul' }).click();
+    await expectWallCalculated(sheet);
+    await expect(sheet.getByText('Escolha o lado que queima.')).toBeVisible();
+    await expect(nextStep(sheet)).toHaveAttribute('aria-disabled', 'true');
+    await expectScreenPasses(p, `Onde fica, a linha, sem lado ${where}`);
+    await pickRadio(sheet, 'À direita');
+    await expect(nextStep(sheet)).not.toHaveAttribute('aria-disabled', 'true');
+    await expectScreenPasses(p, `Onde fica, a linha com o lado ${where}`);
+
+    // The ring: the centre at (11, 5), a diameter, "Dentro" or "Fora".
+    await pickRadio(sheet, 'Anel');
+    await expect(sheet.getByRole('group', { name: 'Diâmetro' })).toBeVisible();
+    await tapWallSquare(map, 11, 5);
+    await expectWallCalculated(sheet);
+    await expect(sheet.getByRole('radio', { name: 'Dentro' })).not.toBeChecked();
+    await expect(nextStep(sheet)).toHaveAttribute('aria-disabled', 'true');
+    await expectScreenPasses(p, `Onde fica, o anel, sem lado ${where}`);
+    await pickRadio(sheet, 'Dentro');
+    await expect(nextStep(sheet)).not.toHaveAttribute('aria-disabled', 'true');
+    await expectScreenPasses(p, `Onde fica, o anel com o lado ${where}`);
+
+    // "Próximo": the list step, nobody in the area.
+    await nextStep(sheet).click();
+    await expect(sheet.getByRole('heading', { name: 'Quem está nela' })).toBeVisible();
+    await expect(sheet.getByText('Ninguém que você vê está na área.')).toBeVisible();
+    await expectScreenPasses(p, `Onde fica, quem está nela ${where}`);
+  } finally {
+    await t.done();
+  }
+}
+
+test('a muralha de fogo na folha de conjurar passa no axe e nas conferências de layout no tema claro, no desktop', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(400_000);
+  await scanWallSheetScreens(browser, 'light', 1280);
+});
+
+test('a muralha de fogo na folha de conjurar passa no axe e nas conferências de layout no tema escuro, no desktop', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(400_000);
+  await scanWallSheetScreens(browser, 'dark', 1280);
+});
+
+test('a muralha de fogo na folha de conjurar passa no axe e nas conferências de layout no tema claro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(400_000);
+  await scanWallSheetScreens(browser, 'light', 390);
+});
+
+test('a muralha de fogo na folha de conjurar passa no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(400_000);
+  await scanWallSheetScreens(browser, 'dark', 390);
+});
+
+/**
+ * The master's map tab on a phone with the layers of a fog map: a Fog Cloud and a Wall of Fire with its burning side, each a
+ * corner letter on the map and a name in the legend (RN-37, #640). The scan waits for the two badges and the burning layer.
+ */
+async function scanWallMapScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `(${colorScheme}, ${width}px)`;
+  const t = await moreZonesTable(
+    browser,
+    `Acessibilidade mapa muralha ${Date.now()}`,
+    [
+      { label: 'Druida', at: [3, 2], face: 20 },
+      { label: 'Mago', at: [8, 5], face: 19, wizard: [WALL_SPELL] },
+    ],
+    { width, colorScheme, fog: true },
+  );
+  const { m, campaignId } = t;
+  try {
+    await passTurnsTo(m, campaignId, 'Druida');
+    await castZoneRPC(m, t, t.id('Druida'), 'spell:fog-cloud', { col: 16, row: 10 }, 1);
+    await passTurnsTo(m, campaignId, 'Mago');
+    await castZoneRPC(m, t, t.id('Mago'), WALL_SPELL, { col: 11, row: 3 }, 4, { direction: { dx: 0, dy: 1 }, side: 'WALL_SIDE_LEFT', lengthFt: 30 });
+    await openSessionPage(m, campaignId);
+    await m.getByRole('tab', { name: /^Mapa/ }).click();
+    const panel = m.getByRole('tabpanel', { name: /^Mapa/ });
+    await expect(panel.getByRole('group', { name: /^Mapa/ })).toBeVisible();
+    await expect(zoneBadges(m)).toHaveCount(2);
+    await expect(zoneLayer(m).locator('.zl__burn')).toHaveCount(1);
+    // The map names nothing: the legend beside it ties each letter to a name.
+    await expect(panel.locator('li.legend__zone').filter({ hasText: 'Muralha de Fogo' })).toBeVisible();
+    await expect(panel.locator('li.legend__zone').filter({ hasText: 'Névoa Obscurecente' })).toBeVisible();
+    await expectScreenPasses(m, `Mapa com a névoa e a muralha de fogo, o mestre ${where}`);
+  } finally {
+    await t.done();
+  }
+}
+
+test('o mapa com a névoa e a muralha de fogo passa no axe e nas conferências de layout no tema claro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(400_000);
+  await scanWallMapScreens(browser, 'light', 390);
+});
+
+test('o mapa com a névoa e a muralha de fogo passa no axe e nas conferências de layout no tema escuro, no celular', { tag: ['@a11y', '@RN-37'] }, async ({ browser }) => {
+  test.setTimeout(400_000);
+  await scanWallMapScreens(browser, 'dark', 390);
 });
 
 /**
@@ -10826,3 +11244,110 @@ test('o menu "Mais ações" do NPC e a oferta de ataque de oportunidade passam n
   test.setTimeout(300_000);
   await scanOfferScreens(browser, 'dark', 390);
 });
+
+/** The sunlight of a combat (#704, RN-20, RN-29), as the master reads it: the switch on the setup bar, the switch on the combat bar with the
+ * sun on, the Drow's notice in the sun and out of it, the map card with "Todo o mapa | Onde eu pintar" and "Pintar", and paint mode. Each
+ * screen is judged at 390, 768 and 1280 px; E2E_SHOTS_DIR, when set, also saves the screenshots (sunlight-support.ts). */
+async function scanSunlightScreens(browser: Browser, colorScheme: 'light' | 'dark'): Promise<void> {
+  const t = await sunlightTable(browser, 'Acessibilidade luz do sol', 1280, colorScheme);
+  const { m, campaignId } = t;
+  const everyWidth = async (name: string, what: string, at: () => Locator, tab: 'Turno' | 'Ordem' | 'Mapa' | null = 'Turno', layout?: (width: number) => Promise<void>) => {
+    for (const width of SUN_WIDTHS) {
+      await m.setViewportSize(sunViewport(width));
+      // The running combat's turn and map are tabs below 1024 px (a phone, a tablet; the setup has none: `null`); a computer shows them side by side.
+      if (tab && width < 1024) {
+        await m.getByRole('tab', { name: new RegExp(`^${tab}`) }).click();
+      }
+      await expectScreenPasses(m, `${what} (${colorScheme}, ${width}px)`);
+      await layout?.(width);
+      await shootSun(m, name, width, colorScheme, at());
+    }
+  };
+  try {
+    await openSessionPage(m, campaignId);
+
+    // Setup: the switch off, then on, beside "Começar o combate".
+    await expect(sunSwitch(m, 'Luz do sol: desligada')).toHaveAttribute('aria-checked', 'false');
+    await everyWidth('preparacao-barra', 'A barra da preparação, com a luz do sol desligada', () => sunBar(m), null);
+    await sunSwitch(m).click();
+    await expect(sunSwitch(m, 'Luz do sol: todo o mapa')).toHaveAttribute('aria-checked', 'true');
+    await everyWidth('preparacao-barra-ligada', 'A barra da preparação, com a luz do sol em todo o mapa', () => sunBar(m), null);
+
+    // The combat runs: the Drow is first, in the sun of the whole map.
+    await m.getByRole('button', { name: 'Começar o combate' }).click();
+    await expect(m.getByRole('button', { name: 'Próximo turno' })).toBeVisible();
+    await expect(sunSwitch(m, 'Luz do sol: todo o mapa')).toHaveAttribute('aria-checked', 'true');
+    // One switch in the page at every width: in the combat header on a phone (aligned right), in the bar from 768 px.
+    await everyWidth('barra-ligada', 'A barra do combate, com a luz do sol ligada', () => sunBar(m), 'Turno', async (width) => {
+      await expect(sunSwitch(m)).toHaveCount(1);
+      await expect(m.locator('.phone__line').getByRole('switch')).toHaveCount(width < 768 ? 1 : 0);
+      if (width < 768) {
+        const line = (await m.locator('.phone__line').boundingBox())!;
+        const box = (await sunSwitch(m).boundingBox())!;
+        expect(box.x + box.width, 'the switch is at the right of the header').toBeGreaterThan(line.x + line.width - 4);
+        expect(box.y, 'the switch is in the first screen').toBeLessThan(300);
+      }
+    });
+    const notice = m.getByTestId('sunlight-notice');
+    await expect(notice).toContainText(`${t.drow} está na luz do sol.`);
+    await everyWidth('aviso-no-sol', 'O cartão do NPC, o aviso de uma criatura na luz do sol', () => notice);
+    // The order list says it at the end of the Drow's subline, muted, not as a chip (only a creature with the trait, in the light).
+    const orderSun = m.getByTestId('order-sun');
+    await expect(orderSun).toHaveCount(1);
+    await expect(orderSun).toContainText('Na luz do sol');
+    await everyWidth('ordem-na-luz', 'A lista da ordem, com "Na luz do sol" ao fim da linha do Drow', () => orderSun.locator('xpath=ancestor::li[1]'), 'Ordem', async () => {
+      // One line: the subline is no taller than a row's text line, and "Na luz do sol" is whole at its end.
+      const sub = (await orderSun.locator('xpath=ancestor::*[contains(@class,"row__sub")][1]').boundingBox())!;
+      const sun = (await orderSun.boundingBox())!;
+      expect(sub.height, 'the subline is one line').toBeLessThan(26);
+      expect(sun.height, '"Na luz do sol" is one line').toBeLessThan(26);
+      expect(sun.x + sun.width, '"Na luz do sol" ends inside the subline').toBeLessThanOrEqual(sub.x + sub.width + 1);
+    });
+
+    // "Onde eu pintar" with no square lit: the Drow is out of the sun, and the map card has its scope controls.
+    await openMap(m);
+    await m.getByRole('radio', { name: 'Onde eu pintar' }).click();
+    await expect(sunSwitch(m, 'Luz do sol: onde eu pintar')).toBeVisible();
+    await openTurn(m);
+    await expect(notice).toContainText(`${t.drow} está fora da luz do sol. Rola normal.`);
+    await everyWidth('aviso-fora-do-sol', 'O cartão do NPC, o aviso de uma criatura fora da luz do sol', () => notice);
+
+    // Some squares lit (the SetSunlight call): the scope controls and the "Pintar" button on the map card.
+    const lit = await setSunlightRPC(m, { campaignId, encounterId: t.enc.id }, { scope: 'SUNLIGHT_SCOPE_SQUARES', addSquares: LIT });
+    await waitForEncounterRevision(m, lit, 'the sunlit squares');
+    await expect(notice).toContainText(`${t.drow} está na luz do sol.`);
+    await openMap(m);
+    await expect(m.getByRole('radio', { name: 'Onde eu pintar' })).toHaveAttribute('aria-checked', 'true');
+    await expect(m.getByRole('button', { name: 'Pintar luz do sol no mapa' })).toBeVisible();
+    await everyWidth('mapa-escopo', 'O cartão do mapa, com o escopo e o botão Pintar', () => sunMapCard(m), 'Mapa', async (width) => {
+      // Neither label wraps, the tick sits beside the text, and from 768 px "Pintar" is on the row of the two parts.
+      for (const name of ['Todo o mapa', 'Onde eu pintar']) {
+        const part = (await m.getByRole('radio', { name }).boundingBox())!;
+        expect(part.height, `"${name}" is one line`).toBeLessThan(50);
+      }
+      const on = (await m.getByRole('radio', { name: 'Onde eu pintar' }).boundingBox())!;
+      const whole = (await m.getByRole('radio', { name: 'Todo o mapa' }).boundingBox())!;
+      expect(Math.abs(whole.width - on.width), 'the two parts of the scope are one width').toBeLessThanOrEqual(1);
+      const paint = (await m.getByRole('button', { name: 'Pintar luz do sol no mapa' }).boundingBox())!;
+      if (width >= 768) {
+        expect(Math.abs(paint.y - on.y), `"Pintar" beside the scope at ${width}: on ${JSON.stringify(on)}, paint ${JSON.stringify(paint)}`).toBeLessThan(8);
+      }
+    });
+
+    // Paint mode: the tools, "Pronto" and the count; "Próximo turno" waits.
+    await m.getByRole('button', { name: 'Pintar luz do sol no mapa' }).click();
+    await expect(sunPaintStatus(m)).toHaveText(`Pintando luz do sol · ${LIT.length} quadrados`);
+    await everyWidth('mapa-pintando', 'O cartão do mapa em modo de pintura', () => sunMapCard(m), 'Mapa');
+    await m.getByRole('button', { name: 'Pronto: sair da pintura da luz do sol' }).click();
+    await expect(m.getByRole('button', { name: 'Pintar luz do sol no mapa' })).toBeVisible();
+  } finally {
+    await t.done();
+  }
+}
+
+for (const [colorScheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
+  test(`a luz do sol no combate passa no axe e nas conferências de layout no tema ${theme}: o interruptor, o aviso do NPC, o escopo e a pintura, em 390, 768 e 1280`, { tag: ['@a11y', '@RN-20', '@RN-29'] }, async ({ browser }) => {
+    test.setTimeout(400_000);
+    await scanSunlightScreens(browser, colorScheme);
+  });
+}

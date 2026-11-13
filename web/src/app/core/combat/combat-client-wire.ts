@@ -15,11 +15,13 @@ import {
   type AreaChoice,
   type CastExtras,
 } from './combat-client-types';
+import { wallBody } from './spell-wall';
 import { heldOfferOf } from '../held-rolls/held-roll-offer';
 
 /** The optional fields of a cast request; each is left out unless it was set. */
 export function castExtrasBody(extras: CastExtras) {
   return {
+    ...(extras.wall ? { wall: wallBody(extras.wall) } : {}),
     // Left out unless the master chose: the table rule decides then.
     ...(extras.revealHidden === undefined ? {} : { revealHidden: extras.revealHidden }),
     ...(extras.abilityKey ? { abilityKey: extras.abilityKey } : {}),

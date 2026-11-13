@@ -82,7 +82,7 @@ func (s *Service) SetCurrentMap(
 	if mapID != nil {
 		s.maps.MapShown(ctx, m.CampaignID, *mapID)
 	}
-	s.Publish(m.CampaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
+	s.tellMembers(m.CampaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
 		CurrentMapChanged: &playv1.WatchGameSessionResponse_CurrentMapChanged{MapId: current},
 	}})
 	return connect.NewResponse(&playv1.SetCurrentMapResponse{CurrentMapId: current}), nil
@@ -327,7 +327,7 @@ func (s *Service) ImageShown(ctx context.Context, tx pgx.Tx, campaignID, imageID
 // does nothing. It implements maps.LiveSession; ev must not be changed
 // after the call.
 func (s *Service) Publish(campaignID string, players bool, ev *playv1.WatchGameSessionResponse) {
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true, Everyone: players}, Message: ev})
+	s.tellMembers(campaignID, players, ev)
 }
 
 // PublishToUsers sends ev to the streams of those of userIDs who watch the
@@ -336,7 +336,7 @@ func (s *Service) Publish(campaignID string, players bool, ev *playv1.WatchGameS
 // maps.LiveSession.
 func (s *Service) PublishToUsers(campaignID string, userIDs []string, ev *playv1.WatchGameSessionResponse) {
 	for _, id := range userIDs {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: id}, Message: ev})
+		s.send(campaignID, live.Event{Audience: live.Audience{UserID: id}, Message: ev})
 	}
 }
 
@@ -346,7 +346,7 @@ func (s *Service) PublishToUsers(campaignID string, userIDs []string, ev *playv1
 // maps.LiveSession.
 func (s *Service) PublishToUsersCoalesced(campaignID string, userIDs []string, key string, ev *playv1.WatchGameSessionResponse) {
 	for _, id := range userIDs {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: id}, Message: ev, Coalesce: key})
+		s.send(campaignID, live.Event{Audience: live.Audience{UserID: id}, Message: ev, Coalesce: key})
 	}
 }
 

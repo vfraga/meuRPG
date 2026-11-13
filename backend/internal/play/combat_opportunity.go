@@ -138,7 +138,7 @@ func (s *Service) offerOpportunities(ctx context.Context, c *combatTx, cs []play
 // reactor they may not see is not theirs to know about (RN-10, question 69). The
 // players' hint carries no revision ("read it again"), as on a map with the fog.
 func (s *Service) publishOffersMade(campaignID string, d *encounterData, mover playdb.Combatant, reactorIDs []string) {
-	s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
+	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
 	users := []string{}
 	if mover.UserID != nil {
 		users = append(users, *mover.UserID)
@@ -151,7 +151,7 @@ func (s *Service) publishOffersMade(campaignID string, d *encounterData, mover p
 	slices.Sort(users)
 	blind := encounterChangedMessage(playdb.Encounter{ID: d.enc.ID, Mode: d.enc.Mode})
 	for _, u := range slices.Compact(users) {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: blind})
+		s.send(campaignID, live.Event{Audience: live.Audience{UserID: u}, Message: blind})
 	}
 }
 

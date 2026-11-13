@@ -19,6 +19,7 @@ import { LegendaryNote } from './legendary-card/legendary-note';
 import { SurpriseCard } from './surprise-card/surprise-card';
 import { CombatLogPanel } from './combat-log/combat-log-panel';
 import { CombatBar } from './combat-bar/combat-bar';
+import { SunSwitch } from './combat-bar/sun-switch';
 import { NextTurn } from './combat-bar/next-turn';
 import { CombatMapCard } from './combat-map-card/combat-map-card';
 import { CombatSummary } from './combat-summary/combat-summary';
@@ -88,6 +89,7 @@ export const COMBAT_VIEW_IMPORTS = [
   HitRiderCard,
   InspirationCard,
   CombatBar,
+  SunSwitch,
   HiddenRevealCard,
   CombatLogPanel,
   CombatMapCard,

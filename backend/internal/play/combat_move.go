@@ -17,6 +17,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -135,6 +136,21 @@ func flies(c playdb.Combatant) bool { return c.SpeedFlyFt > 0 && c.SpeedFlyFt >=
 // scope.
 func moverOf(c playdb.Combatant) grid.Mover {
 	return grid.Mover{Flier: flies(c), Size: sizeToGrid[sizeKey(c.Size)]}
+}
+
+// moverWith is moverOf with what the combatant's sheet adds: a table feature's flag that lifts the cost of the map's
+// difficult terrain.
+func (s *Service) moverWith(ctx context.Context, tx pgx.Tx, campaignID string, c playdb.Combatant) (grid.Mover, error) {
+	m := moverOf(c)
+	sheet, err := s.sheetOf(ctx, tx, campaignID, c)
+	if connect.CodeOf(err) == connect.CodeNotFound {
+		return m, nil // no sheet to read (the character left the sheet's active state): no flag, and the move goes on
+	}
+	if err != nil {
+		return grid.Mover{}, err
+	}
+	m.IgnoresMapDifficult = sheet.Traits.HasFlag(rules.FlagIgnoreDifficultTerrain)
+	return m, nil
 }
 
 // noSpeed are the conditions that leave a creature with no speed (SRD 5.1):
@@ -328,6 +344,7 @@ type moveAttempt struct {
 	v       combatViewer
 	cs      []playdb.Combatant
 	target  playdb.Combatant
+	mover   grid.Mover // how the target moves (moverWith)
 	terrain grid.Terrain
 	onTurn  bool
 	// paid is an NPC's drag on its turn, which walks and spends like a player's move (paysItsWay).
@@ -464,6 +481,9 @@ func (s *Service) loadMover(ctx context.Context, a *moveAttempt) error {
 		return err
 	}
 	if a.dragged, a.dragging, err = s.draggedBy(ctx, a.c.q, cs, a.target); err != nil {
+		return err
+	}
+	if a.mover, err = s.moverWith(ctx, a.c.tx, a.req.m.CampaignID, a.target); err != nil {
 		return err
 	}
 	a.setFactor()
@@ -615,7 +635,7 @@ func (s *Service) planPlayerMove(ctx context.Context, a *moveAttempt) error {
 		terrain: planOn(a.v, a.terrain, known), // the walls and rubble the player knows; the rest is floor to them
 		seen:    occupantsFor(a.cs, a.target, a.v),
 		all:     occupantsFor(a.cs, a.target, combatViewer{master: true}),
-		mover:   moverOf(a.target),
+		mover:   a.mover,
 		origin:  squareOfCombatant(a.target),
 		leftDFt: movementLeftDFt(a.target) / a.factor, // the path that fits: a drag costs twice its length
 	}
@@ -739,7 +759,7 @@ func (a *moveAttempt) planNPCWalk() error {
 		terrain: a.terrain,
 		seen:    all,
 		all:     all,
-		mover:   moverOf(a.target),
+		mover:   a.mover,
 		origin:  squareOfCombatant(a.target),
 		leftDFt: a.movementBudgetDFt() / a.factor,
 	})
@@ -852,7 +872,7 @@ func (a *moveAttempt) describeMove() {
 		made.Jump, made.JumpRunning = jumpLong, combat.HasRunningStart(int(a.target.LastMoveDft))
 		// SRD: landing in difficult terrain asks for a DC 10 Acrobatics check or
 		// the jumper falls prone. The app rolls nothing: the master's log says it.
-		made.LandingDifficult = !moverOf(a.target).Flier && a.terrain.Difficult.Has(a.to)
+		made.LandingDifficult = a.terrain.DifficultFor(a.to, a.mover)
 	case playv1.JumpKind_JUMP_KIND_HIGH:
 		made.Jump, made.HeightDFt = jumpHigh, a.req.height
 	}
@@ -884,7 +904,7 @@ func (s *Service) publishMove(ctx context.Context, campaignID string, d *encount
 // publishCoverCleared tells who saw the combatant that its cover mark is gone.
 func (s *Service) publishCoverCleared(ctx context.Context, campaignID string, enc playdb.Encounter, moved playdb.Combatant) {
 	if moved.Hidden {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
+		s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
 		return
 	}
 	s.publishEncounterChanged(ctx, campaignID, enc)
@@ -1083,14 +1103,18 @@ func (s *Service) moveOptionsOn(ctx context.Context, m authz.Membership, d *enco
 	if err != nil {
 		return nil, s.dbError(ctx, "read the terrain the player knows", err)
 	}
+	mover, err := s.moverWith(ctx, nil, m.CampaignID, who)
+	if err != nil {
+		return nil, s.dbError(ctx, "read the sheet", err)
+	}
 	switch jump {
 	case playv1.JumpKind_JUMP_KIND_UNSPECIFIED:
 	case playv1.JumpKind_JUMP_KIND_LONG:
-		return jumpOptions(planOn(v, terrain, known), who, occupantsFor(d.cs, who, v)), nil
+		return jumpOptions(planOn(v, terrain, known), who, mover, occupantsFor(d.cs, who, v)), nil
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("jump must be unset or LONG: a high jump moves nobody"))
 	}
-	out, err := s.moveOptionsWithDrag(ctx, planOn(v, terrain, known), d.cs, who, v)
+	out, err := s.moveOptionsWithDrag(ctx, planOn(v, terrain, known), d.cs, who, mover, v)
 	if err != nil {
 		return nil, s.dbError(ctx, "work out the drag", err)
 	}
@@ -1105,8 +1129,8 @@ func (s *Service) moveOptionsOn(ctx context.Context, m authz.Membership, d *enco
 // pays for. The running start is the one the combatant really has (what it walked
 // just before), as MoveCombatant uses it: the preview never offers a square the move
 // would refuse. Its cost is the length of the line.
-func jumpOptions(t grid.Terrain, who playdb.Combatant, occ grid.OccupantMap) *playv1.GetMoveOptionsResponse {
-	left, from, mover := movementLeftDFt(who), squareOfCombatant(who), moverOf(who)
+func jumpOptions(t grid.Terrain, who playdb.Combatant, mover grid.Mover, occ grid.OccupantMap) *playv1.GetMoveOptionsResponse {
+	left, from := movementLeftDFt(who), squareOfCombatant(who)
 	out := &playv1.GetMoveOptionsResponse{MovementLeftDft: clamp32(left, 0, math.MaxInt32), Flier: mover.Flier}
 	limit := min(longJumpDFt(who, combat.HasRunningStart(int(who.LastMoveDft))), left)
 	if limit <= 0 {
@@ -1131,8 +1155,8 @@ func jumpOptions(t grid.Terrain, who playdb.Combatant, occ grid.OccupantMap) *pl
 // squares it reaches with what is left of its movement and the squares inside
 // that circle that it cannot go to, with the reason. occ is who the mover plans
 // around (with the fog of war: the ones it sees).
-func moveOptions(t grid.Terrain, who playdb.Combatant, occ grid.OccupantMap) *playv1.GetMoveOptionsResponse {
-	left, from, mover := movementLeftDFt(who), squareOfCombatant(who), moverOf(who)
+func moveOptions(t grid.Terrain, who playdb.Combatant, mover grid.Mover, occ grid.OccupantMap) *playv1.GetMoveOptionsResponse {
+	left, from := movementLeftDFt(who), squareOfCombatant(who)
 	out := &playv1.GetMoveOptionsResponse{MovementLeftDft: clamp32(left, 0, math.MaxInt32), Flier: mover.Flier}
 	reach := t.Reach(from, left, occ, mover)
 	reachable := make(map[grid.Square]bool, len(reach))

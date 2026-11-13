@@ -63,6 +63,9 @@ export interface EffectDraft {
   alsoWithSlot: boolean;
   ritualOnly: boolean;
   countsAsKnown: boolean;
+  /** granted_spell: the material components are waived (on the sheet and the cast sheet), and the uses each cast spends (0: one). */
+  noMaterialComponents: boolean;
+  usesCost: number;
   /** resistance: the damage types it covers (or "all", "nonmagical_bps") and its kind ("resist", "immune", "vulnerable"). */
   damageTypes: string[];
   kind: string;

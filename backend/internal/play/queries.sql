@@ -152,6 +152,14 @@ SET revision = revision + 1
 WHERE id = $1
 RETURNING *;
 
+-- name: SetEncounterSunlight :one
+-- The master's switch of the sunlight (SetSunlight): on, where it reaches and the sunlit squares. It raises the revision.
+UPDATE encounters
+SET sunlight_on = sqlc.arg(sunlight_on), sunlight_scope = sqlc.arg(sunlight_scope), sunlight_squares = sqlc.arg(sunlight_squares),
+    revision = revision + 1
+WHERE id = sqlc.arg(id)
+RETURNING *;
+
 -- name: ListCombatants :many
 -- The combat's combatants in turn order. A creature whose concentration ended
 -- is dismissed: it is out of the order and the map until an undo brings it back.
@@ -169,11 +177,13 @@ ORDER BY order_index, created_at, id;
 INSERT INTO combatants (
     encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face,
     order_index, grid_col, grid_row, speed_ft, hp_current, hp_max, hp_temp, created_at, xp_value,
-    side, size, speed_fly_ft, jump_long_dft, jump_high_dft, jump_long_bonus_dft
+    side, size, speed_fly_ft, jump_long_dft, jump_high_dft, jump_long_bonus_dft,
+    speed_swim_ft, speed_climb_ft, speed_burrow_ft
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, $9,
     $10, $11, $12, $13, $14, $15, $16, $17, $18,
-    $19, $20, $21, $22, $23, $24
+    $19, $20, $21, $22, $23, $24,
+    $25, $26, $27
 )
 RETURNING *;
 
@@ -281,7 +291,8 @@ WHERE id = $1;
 -- the beast's speed, fly speed, size and jumps while it lasts, the character's own
 -- again when it ends.
 UPDATE combatants
-SET speed_ft = $2, speed_fly_ft = $3, size = $4, jump_long_dft = $5, jump_high_dft = $6, jump_long_bonus_dft = $7
+SET speed_ft = $2, speed_fly_ft = $3, size = $4, jump_long_dft = $5, jump_high_dft = $6, jump_long_bonus_dft = $7,
+    speed_swim_ft = $8, speed_climb_ft = $9, speed_burrow_ft = $10
 WHERE id = $1;
 
 -- name: SetCombatantBodyOfCharacter :exec
@@ -291,7 +302,8 @@ WHERE id = $1;
 UPDATE combatants
 SET speed_ft = sqlc.arg(speed_ft), speed_fly_ft = sqlc.arg(speed_fly_ft), size = sqlc.arg(size),
     jump_long_dft = sqlc.arg(jump_long_dft), jump_high_dft = sqlc.arg(jump_high_dft),
-    jump_long_bonus_dft = sqlc.arg(jump_long_bonus_dft)
+    jump_long_bonus_dft = sqlc.arg(jump_long_bonus_dft),
+    speed_swim_ft = sqlc.arg(speed_swim_ft), speed_climb_ft = sqlc.arg(speed_climb_ft), speed_burrow_ft = sqlc.arg(speed_burrow_ft)
 WHERE character_id = sqlc.arg(character_id) AND kind = 'player'
   AND encounter_id IN (SELECT e.id FROM encounters AS e WHERE e.game_session_id = sqlc.arg(game_session_id) AND e.status <> 'ended');
 
@@ -800,12 +812,14 @@ INSERT INTO combatants (
     encounter_id, character_id, user_id, label, kind, hidden, initiative, initiative_bonus, initiative_face,
     order_index, grid_col, grid_row, speed_ft, hp_current, hp_max, hp_temp, created_at,
     creature_id, monster_key, summon_attack, summon_group_id,
-    side, size, speed_fly_ft, jump_long_dft, jump_high_dft
+    side, size, speed_fly_ft, jump_long_dft, jump_high_dft,
+    speed_swim_ft, speed_climb_ft, speed_burrow_ft
 ) VALUES (
     $1, $2, $3, $4, 'creature', false, $5, $6, $7,
     $8, $9, $10, $11, $12, $13, 0, $14,
     $15, $16, $17, $18,
-    'party', $19, $20, $21, $22
+    'party', $19, $20, $21, $22,
+    $23, $24, $25
 )
 RETURNING *;
 
@@ -2067,3 +2081,17 @@ UPDATE game_sessions
 SET tv_mirror = sqlc.arg(tv_mirror), tv_pin = sqlc.arg(tv_pin), tv_choice_revision = tv_choice_revision + 1
 WHERE id = sqlc.arg(id)
 RETURNING *;
+
+-- name: LockSessionForHints :one
+-- The first statement of Service.tx: it takes the session's row lock until the transaction ends, so the writes of one
+-- session take turns in the same order (GetOpenGameSessionForUpdate takes the same lock).
+SELECT id FROM game_sessions WHERE id = $1 FOR UPDATE;
+
+-- name: BumpHintSeq :one
+-- A write that told the live streams something adds 1 to the session's number, in the same transaction as the write
+-- (Service.tx), which holds the row's lock already (LockSessionForHints).
+UPDATE game_sessions SET hint_seq = hint_seq + 1 WHERE id = $1 RETURNING hint_seq;
+
+-- name: GetHintSeq :one
+-- The session's number now: a read of one row by its primary key.
+SELECT hint_seq FROM game_sessions WHERE id = $1;

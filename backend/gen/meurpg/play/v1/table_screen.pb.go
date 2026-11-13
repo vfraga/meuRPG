@@ -1644,7 +1644,10 @@ func (*WatchTableScreenResponse_SessionEnded_) isWatchTableScreenResponse_Event(
 
 // Ready is the stream's first event.
 type WatchTableScreenResponse_Ready struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The session's hint number when the stream opened (see WatchGameSessionResponse.session_seq): the TV reads the screen
+	// after Ready, so what it reads includes every write up to this number. 0 when there is no open session.
+	SessionSeq    int64 `protobuf:"varint,1,opt,name=session_seq,json=sessionSeq,proto3" json:"session_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1679,9 +1682,19 @@ func (*WatchTableScreenResponse_Ready) Descriptor() ([]byte, []int) {
 	return file_meurpg_play_v1_table_screen_proto_rawDescGZIP(), []int{17, 0}
 }
 
-// Heartbeat carries nothing.
+func (x *WatchTableScreenResponse_Ready) GetSessionSeq() int64 {
+	if x != nil {
+		return x.SessionSeq
+	}
+	return 0
+}
+
+// Heartbeat tells the TV the stream is alive and the session's hint number now.
 type WatchTableScreenResponse_Heartbeat struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The session's hint number now; 0 when the server could not read it. A number ahead of the last one the TV saw
+	// means a hint was lost: the TV reads the screen again once.
+	SessionSeq    int64 `protobuf:"varint,1,opt,name=session_seq,json=sessionSeq,proto3" json:"session_seq,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1714,6 +1727,13 @@ func (x *WatchTableScreenResponse_Heartbeat) ProtoReflect() protoreflect.Message
 // Deprecated: Use WatchTableScreenResponse_Heartbeat.ProtoReflect.Descriptor instead.
 func (*WatchTableScreenResponse_Heartbeat) Descriptor() ([]byte, []int) {
 	return file_meurpg_play_v1_table_screen_proto_rawDescGZIP(), []int{17, 1}
+}
+
+func (x *WatchTableScreenResponse_Heartbeat) GetSessionSeq() int64 {
+	if x != nil {
+		return x.SessionSeq
+	}
+	return 0
 }
 
 // Changed carries nothing.
@@ -1876,14 +1896,18 @@ const file_meurpg_play_v1_table_screen_proto_rawDesc = "" +
 	"\x06choice\x18\x02 \x01(\v2!.meurpg.play.v1.TableScreenChoiceR\x06choice\":\n" +
 	"\x17WatchTableScreenRequest\x12\x1f\n" +
 	"\vcampaign_id\x18\x01 \x01(\tR\n" +
-	"campaignId\"\x9c\x03\n" +
+	"campaignId\"\xde\x03\n" +
 	"\x18WatchTableScreenResponse\x12F\n" +
 	"\x05ready\x18\x01 \x01(\v2..meurpg.play.v1.WatchTableScreenResponse.ReadyH\x00R\x05ready\x12R\n" +
 	"\theartbeat\x18\x02 \x01(\v22.meurpg.play.v1.WatchTableScreenResponse.HeartbeatH\x00R\theartbeat\x12L\n" +
 	"\achanged\x18\x03 \x01(\v20.meurpg.play.v1.WatchTableScreenResponse.ChangedH\x00R\achanged\x12\\\n" +
-	"\rsession_ended\x18\x04 \x01(\v25.meurpg.play.v1.WatchTableScreenResponse.SessionEndedH\x00R\fsessionEnded\x1a\a\n" +
-	"\x05Ready\x1a\v\n" +
-	"\tHeartbeat\x1a\t\n" +
+	"\rsession_ended\x18\x04 \x01(\v25.meurpg.play.v1.WatchTableScreenResponse.SessionEndedH\x00R\fsessionEnded\x1a(\n" +
+	"\x05Ready\x12\x1f\n" +
+	"\vsession_seq\x18\x01 \x01(\x03R\n" +
+	"sessionSeq\x1a,\n" +
+	"\tHeartbeat\x12\x1f\n" +
+	"\vsession_seq\x18\x01 \x01(\x03R\n" +
+	"sessionSeq\x1a\t\n" +
 	"\aChanged\x1a\x0e\n" +
 	"\fSessionEndedB\a\n" +
 	"\x05event*\xc3\x01\n" +

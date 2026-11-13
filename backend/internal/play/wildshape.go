@@ -95,6 +95,7 @@ func (s *Service) formEnds(ctx context.Context, q *playdb.Queries, tx pgx.Tx, se
 		CharacterID: characterID, GameSessionID: sessionID, SpeedFt: clamp32(body.SpeedFt, 0, 600), SpeedFlyFt: clamp32(body.SpeedFlyFt, 0, 600),
 		Size: sizeKey(body.Size), JumpLongDft: clamp32(body.JumpLongDFt, 0, 6000), JumpHighDft: clamp32(body.JumpHighDFt, 0, 6000),
 		JumpLongBonusDft: clamp32(body.JumpLongBonusDFt, 0, 6000),
+		SpeedSwimFt:      clamp32(body.SpeedSwimFt, 0, 600), SpeedClimbFt: clamp32(body.SpeedClimbFt, 0, 600), SpeedBurrowFt: clamp32(body.SpeedBurrowFt, 0, 600),
 	}); err != nil {
 		return nil, fmt.Errorf("give the combatant its own numbers: %w", err)
 	}
@@ -206,6 +207,7 @@ func applyBody(ctx context.Context, c *combatTx, who playdb.Combatant, body link
 		ID: who.ID, SpeedFt: clamp32(body.SpeedFt, 0, 600), SpeedFlyFt: clamp32(body.SpeedFlyFt, 0, 600), Size: sizeKey(body.Size),
 		JumpLongDft: clamp32(body.JumpLongDFt, 0, 6000), JumpHighDft: clamp32(body.JumpHighDFt, 0, 6000),
 		JumpLongBonusDft: clamp32(body.JumpLongBonusDFt, 0, 6000),
+		SpeedSwimFt:      clamp32(body.SpeedSwimFt, 0, 600), SpeedClimbFt: clamp32(body.SpeedClimbFt, 0, 600), SpeedBurrowFt: clamp32(body.SpeedBurrowFt, 0, 600),
 	}); err != nil {
 		return fmt.Errorf("give the combatant its form's numbers: %w", err)
 	}

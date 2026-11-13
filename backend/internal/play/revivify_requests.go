@@ -489,7 +489,7 @@ func (s *Service) revivifyRequestsProto(ctx context.Context, campaignID string, 
 
 // publishRevivifyChanged tells the master and the caster's player that the casts changed.
 func (s *Service) publishRevivifyChanged(campaignID, casterUserID string) {
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: live.Audience{Master: true, UserID: casterUserID},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_RevivifyChanged_{
 			RevivifyChanged: &playv1.WatchGameSessionResponse_RevivifyChanged{},

@@ -105,7 +105,7 @@ func (s *Service) EndEncounter(
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, true)
 		if d.enc.MapID != nil {
 			// The player characters' tokens moved with the combat's end.
-			s.Publish(m.CampaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MapChanged_{
+			s.tellMembers(m.CampaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MapChanged_{
 				MapChanged: &playv1.WatchGameSessionResponse_MapChanged{MapId: *d.enc.MapID},
 			}})
 		}

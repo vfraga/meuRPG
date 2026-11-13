@@ -55,11 +55,26 @@
       @if (g.twoHanded && warns(g)) {
         <mat-icon class="gear-row__warn" aria-hidden="true">warning</mat-icon>
       }
+      <app-weapon-tags [marks]="g.marks" />
       @if (idle(g)) {
         <span class="gear-row__idle">Parado</span>
       }
     </span>
-    @if (canChange()) {
+    @if (canChange() || (canMark() && g.kind === 'weapon')) {
+      <span class="gear-row__actions">
+        @if (canMark() && g.kind === 'weapon') {
+          <button
+            type="button"
+            class="gear-row__more"
+            [attr.data-marks-key]="g.key"
+            aria-haspopup="dialog"
+            [attr.aria-label]="'Marcas da ' + g.namePt"
+            (click)="marksOpened.emit(g)"
+          >
+            <mat-icon aria-hidden="true">more_vert</mat-icon>
+          </button>
+        }
+        @if (canChange()) {
       <button
         matButton="outlined"
         type="button"
@@ -81,6 +96,8 @@
           <span class="gear-row__ac">{{ ac }}</span>
         }
       </button>
+        }
+      </span>
     }
     @if (canChange() && blocked()(g); as why) {
       <span class="gear-row__line mr-muted" [id]="reasonId(g)">{{ why }}</span>

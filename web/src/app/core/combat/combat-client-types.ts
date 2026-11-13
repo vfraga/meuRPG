@@ -12,6 +12,7 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { type RollMode } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
 import type { Square } from './combat-grid';
+import type { WallChoice } from './spell-wall';
 
 /** Who joins a combat: a character, how many copies (NPCs) and whether the
  * copies start hidden (unset: the server's default, hidden for an NPC). */
@@ -171,6 +172,8 @@ export type AreaChoice =
 /** What else a cast may carry: the placed area, and the master's choice on the hidden creatures it hits. */
 export interface CastExtras {
   readonly area?: AreaChoice | null;
+  /** A spell that lays a wall (Wall of Fire): its shape, direction, length and burning side. */
+  readonly wall?: WallChoice | null;
   /** The master only: whether the hidden creatures the area hits appear to the players. */
   readonly revealHidden?: boolean;
   /** Aprimorar Habilidade only: the ability it is cast for ("str" to "cha"). */

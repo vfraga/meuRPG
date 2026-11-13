@@ -172,7 +172,7 @@ export class LiveSessionLoader {
     campaignId: string,
     generation: number,
     news: () => NewsCounts,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const { state, parts } = this;
     const before = news();
     try {
@@ -181,7 +181,7 @@ export class LiveSessionLoader {
         this.campaignLoad,
       ]);
       if (generation !== this.generation || !campaign) {
-        return;
+        return false;
       }
       // Another session opened while the stream was down: its rolls start empty.
       if (state.session() && state.session()?.sessionId !== snapshot.session.sessionId) {
@@ -226,11 +226,12 @@ export class LiveSessionLoader {
       // Here already: the notice about this session has nothing to add.
       this.services.openSessions.dismiss(snapshot.session.sessionId);
       this.loadDetails(campaignId, generation);
+      return true;
     } catch (err) {
-      if (generation !== this.generation) {
-        return;
+      if (generation === this.generation) {
+        this.snapshotFailed(err);
       }
-      this.snapshotFailed(err);
+      return false;
     }
   }
 

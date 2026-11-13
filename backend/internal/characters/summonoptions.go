@@ -187,7 +187,7 @@ func (s *Service) featureSummonOptions(ctx context.Context, q *charactersdb.Quer
 	if class, level, ok := content.ClassFeatureSource(rule.Feature); ok {
 		out.GrantedByLabelPt = fmt.Sprintf("%s %d", content.NamePT(class), level)
 	}
-	if grant.UsesLeft > 0 {
+	if grant.UsesLeft >= max(grant.Cost, 1) {
 		if sc, ok := summonCircleOptions(content, key, det.Spell.Level, b); ok {
 			out.Circles = append(out.Circles, sc)
 		}

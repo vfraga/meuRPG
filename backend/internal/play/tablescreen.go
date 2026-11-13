@@ -180,7 +180,7 @@ func (s *Service) SetTableScreen(
 	if err != nil {
 		return nil, s.dbError(ctx, "set the table screen", err)
 	}
-	s.hub.Publish(m.CampaignID, live.Event{
+	s.send(m.CampaignID, live.Event{
 		Audience: live.Audience{Master: true},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TableScreenChanged_{
 			TableScreenChanged: &playv1.WatchGameSessionResponse_TableScreenChanged{ChoiceRevision: updated.TvChoiceRevision},

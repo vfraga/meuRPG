@@ -44,9 +44,7 @@ func (w *world) monkStrikeFight(openHand bool) (toren, dragon *playv1.Combatant,
 		}
 	}
 	toren = w.combatant(w.toren)
-	for id, sq := range map[string][2]int32{toren.GetId(): {12, 13}, dragon.GetId(): {13, 13}} {
-		must(m.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: id, IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true})))
-	}
+	w.placeForced(m, w.encounter.GetId(), placement{toren.GetId(), 12, 13}, placement{dragon.GetId(), 13, 13})
 	for range 40 {
 		cur := must(m.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
 		if cur.GetCurrentCombatantId() == toren.GetId() {
@@ -320,7 +318,14 @@ func checkPassedAndResistedRider(t *testing.T, build func(*world) riderScene) {
 	t.Run("the save fails and the master uses the trait", func(t *testing.T) { resisted = riderRun(t, build, 1, useTrait) })
 	for _, name := range []string{"Ana", "Caio"} {
 		if passed.player[name] != resisted.player[name] {
-			t.Errorf("%s reads a passed save and a resisted one differently:\n--- passed\n%s\n--- resisted\n%s", name, passed.player[name], resisted.player[name])
+			a, b := passed.player[name], resisted.player[name]
+			at := 0
+			for at < len(a) && at < len(b) && a[at] == b[at] {
+				at++
+			}
+			from := max(at-200, 0)
+			t.Errorf("%s reads a passed save and a resisted one differently, first at byte %d:\n--- passed\n…%s\n--- resisted\n…%s",
+				name, at, a[from:min(at+300, len(a))], b[from:min(at+300, len(b))])
 		}
 	}
 	if !strings.Contains(passed.player["Caio"], "Esperando o mestre") {

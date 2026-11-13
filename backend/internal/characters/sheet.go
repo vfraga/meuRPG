@@ -588,6 +588,11 @@ func buildOf(f *charactersv1.FullSheet) rules.Build {
 			Weapon: m.GetWeaponKey(), Silvered: m.GetSilvered(), Adamantine: m.GetAdamantine(), Magical: m.GetMagical(),
 		})
 	}
+	for _, ib := range f.GetItemBonuses() {
+		b.ItemBonuses = append(b.ItemBonuses, rules.ItemBonus{
+			Key: ib.GetKey(), Bonus: int(ib.GetBonus()), RequiresAttunement: ib.GetRequiresAttunement(), Attuned: ib.GetAttuned(),
+		})
+	}
 	for _, c := range f.GetClasses() {
 		b.Classes = append(b.Classes, rules.ClassLevel{
 			Class:              c.GetClassKey(),

@@ -436,7 +436,7 @@ func (s *Service) checkReactor(ctx context.Context, c *combatTx, reactor, mover 
 	if down {
 		return errNoOpportunity("the reactor is down")
 	}
-	surprised, err := s.surprisedReactor(ctx, c.tx, reactor) // no reaction until its first turn ends (SRD 5.1, "Surprise")
+	surprised, err := s.surprisedReactor(ctx, c.tx, c.session.CampaignID, reactor) // no reaction until its first turn ends (SRD 5.1, "Surprise")
 	if err != nil {
 		return err
 	}

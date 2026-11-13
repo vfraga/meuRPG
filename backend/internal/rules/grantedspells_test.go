@@ -198,6 +198,10 @@ func TestGrantedSpellRefusalsNameTheirField(t *testing.T) {
 		{"no ability", []Effect{grant("spell:light", "")}, ".ability"},
 		{"a resource nobody defines", []Effect{grant("spell:light", "wis", func(e *Effect) { e.Uses = "recurso_fantasma" })}, ".uses"},
 		{"a resource with a bad name", []Effect{res, grant("spell:light", "wis", func(e *Effect) { e.Uses = "Sem Espaço" })}, ".uses"},
+		{"a cost with no resource", []Effect{grant("spell:light", "wis", func(e *Effect) { e.UsesCost = 2 })}, ".uses_cost"},
+		{"a cost with an at-will grant", []Effect{grant("spell:light", "wis", func(e *Effect) { e.Uses, e.UsesCost = GrantedAtWill, 2 })}, ".uses_cost"},
+		{"a cost over the bound", []Effect{res, grant("spell:light", "wis", func(e *Effect) { e.Uses, e.UsesCost = graceResrce, MaxGrantUsesCost+1 })}, ".uses_cost"},
+		{"a negative cost", []Effect{res, grant("spell:light", "wis", func(e *Effect) { e.Uses, e.UsesCost = graceResrce, -1 })}, ".uses_cost"},
 		{"a level formula that fails", []Effect{grant("spell:light", "wis", func(e *Effect) { e.FromLevel = "nope()" })}, ".from_level"},
 	}
 	for _, tc := range cases {
@@ -224,6 +228,8 @@ func TestAGrantedSpellFieldsBelongToIt(t *testing.T) {
 		{Type: "note", Spell: "spell:light"},
 		{Type: "modifier", Target: "ac", Mode: "add", Value: "1", Uses: graceResrce},
 		{Type: "note", AlsoWithSlot: true},
+		{Type: "note", NoMaterialComponents: true},
+		{Type: "note", UsesCost: 2},
 	} {
 		if got := unusedField(&e); got == "" {
 			t.Errorf("%+v: no stray field found", e)
@@ -233,4 +239,40 @@ func TestAGrantedSpellFieldsBelongToIt(t *testing.T) {
 
 func graceOverlayNoRace(effects []Effect) Overlay {
 	return Overlay{Revision: 1, Feats: []TableFeat{{TableEntry: TableEntry{Key: graceFeat, NamePT: "Graça de teste"}, DescPT: []string{"Texto de teste."}, Effects: effects}}}
+}
+
+// The grant says what a cast spends and whether the material is waived: one use by default,
+// the effect's cost otherwise, nothing for an at-will grant.
+func TestAGrantedSpellCarriesItsCostAndTheWaivedMaterial(t *testing.T) {
+	c := withOverlay(t, graceOverlay([]Effect{
+		{Type: "resource", Resource: graceResrce, Max: "3", Recharge: "long_rest"},
+		grant("spell:misty-step", "cha", func(e *Effect) { e.Uses = graceResrce }),
+		grant("spell:bless", "cha", func(e *Effect) { e.Uses, e.UsesCost, e.NoMaterialComponents = graceResrce, 2, true }),
+		grant("spell:light", "int"),
+	}, nil))
+	d := Derive(graceBuild(5, []string{graceFeat}), c)
+	for _, w := range []struct {
+		spell      string
+		cost       int
+		noMaterial bool
+	}{{"spell:misty-step", 1, false}, {"spell:bless", 2, true}, {"spell:light", 0, false}} {
+		g, ok := grantedOf(d, w.spell)
+		if !ok || g.Cost != w.cost || g.NoMaterialComponents != w.noMaterial {
+			t.Errorf("%s = %+v (granted %v), want cost %d and no material %v", w.spell, g, ok, w.cost, w.noMaterial)
+		}
+	}
+}
+
+// A feat's spell arrives at its minimum level, whatever the character level is before it: a
+// character below it has no grant, one at it has the grant with its numbers.
+func TestAGrantedSpellArrivesAtItsMinimumLevelWithTheNumbersOfItsAbility(t *testing.T) {
+	c := withOverlay(t, graceOverlay(nil, []Effect{grant("spell:misty-step", "wis", func(e *Effect) { e.FromLevel = "5" })}))
+	if _, ok := grantedOf(Derive(graceBuild(4, nil), c), "spell:misty-step"); ok {
+		t.Error("granted at level 4, before its level 5")
+	}
+	g, ok := grantedOf(Derive(graceBuild(5, nil), c), "spell:misty-step")
+	// Level 5: proficiency +3; Wisdom 8 is -1.
+	if !ok || g.FromLevel != 5 || g.Ability != WIS || g.SaveDC != 8+3-1 || g.AttackBonus != 3-1 {
+		t.Errorf("granted = %+v (%v), want from level 5 with Wisdom: DC 10, attack +2", g, ok)
+	}
 }

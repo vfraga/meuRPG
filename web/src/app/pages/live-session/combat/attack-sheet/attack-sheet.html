@@ -5,7 +5,7 @@
   <div class="sheet__head">
     <div class="sheet__titles">
       <h2 class="sheet__title" id="sheet-t" tabindex="-1">{{ title() }}</h2>
-      <p class="sheet__sub">{{ subtitle() }}</p>
+      <p class="sheet__sub">{{ subtitle() }}@if (marks(); as m) { <span class="sheet__marks">· <app-weapon-tags [marks]="m" /></span>}</p>
     </div>
     <button type="button" class="sheet__close" aria-label="Fechar" [disabled]="s.busy()" (click)="close()">
       <mat-icon aria-hidden="true">close</mat-icon>

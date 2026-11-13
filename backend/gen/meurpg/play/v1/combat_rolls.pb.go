@@ -166,6 +166,12 @@ const (
 	AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_PROTECTION AdvantageSourceKind = 110
 	// A creature's Magic Resistance: advantage on a saving throw against a spell or another magical effect.
 	AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_MAGIC_RESISTANCE AdvantageSourceKind = 112
+	// A creature in sunlight with Sunlight Sensitivity or Sunlight Weakness: disadvantage on its attack rolls, on the checks
+	// the sun spoils (Perception that relies on sight; every ability check for the Weakness) and, for the Weakness, on
+	// its saving throws. Only the master reads these kinds: a player reads "Outra fonte" (RN-20, RN-29).
+	AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_SUNLIGHT_ATTACK     AdvantageSourceKind = 113
+	AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_SUNLIGHT_PERCEPTION AdvantageSourceKind = 114
+	AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_SUNLIGHT_SAVE       AdvantageSourceKind = 115
 )
 
 // Enum value maps for AdvantageSourceKind.
@@ -215,6 +221,9 @@ var (
 		111: "ADVANTAGE_SOURCE_KIND_ARMOR_NOT_PROFICIENT",
 		110: "ADVANTAGE_SOURCE_KIND_PROTECTION",
 		112: "ADVANTAGE_SOURCE_KIND_MAGIC_RESISTANCE",
+		113: "ADVANTAGE_SOURCE_KIND_SUNLIGHT_ATTACK",
+		114: "ADVANTAGE_SOURCE_KIND_SUNLIGHT_PERCEPTION",
+		115: "ADVANTAGE_SOURCE_KIND_SUNLIGHT_SAVE",
 	}
 	AdvantageSourceKind_value = map[string]int32{
 		"ADVANTAGE_SOURCE_KIND_UNSPECIFIED":          0,
@@ -261,6 +270,9 @@ var (
 		"ADVANTAGE_SOURCE_KIND_ARMOR_NOT_PROFICIENT": 111,
 		"ADVANTAGE_SOURCE_KIND_PROTECTION":           110,
 		"ADVANTAGE_SOURCE_KIND_MAGIC_RESISTANCE":     112,
+		"ADVANTAGE_SOURCE_KIND_SUNLIGHT_ATTACK":      113,
+		"ADVANTAGE_SOURCE_KIND_SUNLIGHT_PERCEPTION":  114,
+		"ADVANTAGE_SOURCE_KIND_SUNLIGHT_SAVE":        115,
 	}
 )
 
@@ -356,6 +368,8 @@ const (
 	DamageStepKind_DAMAGE_STEP_KIND_RESISTANCE    DamageStepKind = 1
 	DamageStepKind_DAMAGE_STEP_KIND_VULNERABILITY DamageStepKind = 2
 	DamageStepKind_DAMAGE_STEP_KIND_IMMUNITY      DamageStepKind = 3
+	// A flat amount taken off a weapon attack's damage, before resistance and vulnerability.
+	DamageStepKind_DAMAGE_STEP_KIND_REDUCTION DamageStepKind = 4
 )
 
 // Enum value maps for DamageStepKind.
@@ -365,12 +379,14 @@ var (
 		1: "DAMAGE_STEP_KIND_RESISTANCE",
 		2: "DAMAGE_STEP_KIND_VULNERABILITY",
 		3: "DAMAGE_STEP_KIND_IMMUNITY",
+		4: "DAMAGE_STEP_KIND_REDUCTION",
 	}
 	DamageStepKind_value = map[string]int32{
 		"DAMAGE_STEP_KIND_UNSPECIFIED":   0,
 		"DAMAGE_STEP_KIND_RESISTANCE":    1,
 		"DAMAGE_STEP_KIND_VULNERABILITY": 2,
 		"DAMAGE_STEP_KIND_IMMUNITY":      3,
+		"DAMAGE_STEP_KIND_REDUCTION":     4,
 	}
 )
 
@@ -1894,7 +1910,7 @@ const file_meurpg_play_v1_combat_rolls_proto_rawDesc = "" +
 	"\x15ROLL_MODE_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10ROLL_MODE_NORMAL\x10\x01\x12\x17\n" +
 	"\x13ROLL_MODE_ADVANTAGE\x10\x02\x12\x1a\n" +
-	"\x16ROLL_MODE_DISADVANTAGE\x10\x03*\xd6\x0e\n" +
+	"\x16ROLL_MODE_DISADVANTAGE\x10\x03*\xd9\x0f\n" +
 	"\x13AdvantageSourceKind\x12%\n" +
 	"!ADVANTAGE_SOURCE_KIND_UNSPECIFIED\x10\x00\x12&\n" +
 	"\"ADVANTAGE_SOURCE_KIND_PRONE_TARGET\x10\x01\x12(\n" +
@@ -1940,17 +1956,21 @@ const file_meurpg_play_v1_combat_rolls_proto_rawDesc = "" +
 	"!ADVANTAGE_SOURCE_KIND_TAGGED_SAVE\x10m\x12.\n" +
 	"*ADVANTAGE_SOURCE_KIND_ARMOR_NOT_PROFICIENT\x10o\x12$\n" +
 	" ADVANTAGE_SOURCE_KIND_PROTECTION\x10n\x12*\n" +
-	"&ADVANTAGE_SOURCE_KIND_MAGIC_RESISTANCE\x10p*\xb3\x01\n" +
+	"&ADVANTAGE_SOURCE_KIND_MAGIC_RESISTANCE\x10p\x12)\n" +
+	"%ADVANTAGE_SOURCE_KIND_SUNLIGHT_ATTACK\x10q\x12-\n" +
+	")ADVANTAGE_SOURCE_KIND_SUNLIGHT_PERCEPTION\x10r\x12'\n" +
+	"#ADVANTAGE_SOURCE_KIND_SUNLIGHT_SAVE\x10s*\xb3\x01\n" +
 	"\x15RollModeRequestStatus\x12(\n" +
 	"$ROLL_MODE_REQUEST_STATUS_UNSPECIFIED\x10\x00\x12$\n" +
 	" ROLL_MODE_REQUEST_STATUS_PENDING\x10\x01\x12%\n" +
 	"!ROLL_MODE_REQUEST_STATUS_ANSWERED\x10\x02\x12#\n" +
-	"\x1fROLL_MODE_REQUEST_STATUS_CLOSED\x10\x03*\x96\x01\n" +
+	"\x1fROLL_MODE_REQUEST_STATUS_CLOSED\x10\x03*\xb6\x01\n" +
 	"\x0eDamageStepKind\x12 \n" +
 	"\x1cDAMAGE_STEP_KIND_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bDAMAGE_STEP_KIND_RESISTANCE\x10\x01\x12\"\n" +
 	"\x1eDAMAGE_STEP_KIND_VULNERABILITY\x10\x02\x12\x1d\n" +
-	"\x19DAMAGE_STEP_KIND_IMMUNITY\x10\x03*\xec\x01\n" +
+	"\x19DAMAGE_STEP_KIND_IMMUNITY\x10\x03\x12\x1e\n" +
+	"\x1aDAMAGE_STEP_KIND_REDUCTION\x10\x04*\xec\x01\n" +
 	"\x12CombatantStateKind\x12$\n" +
 	" COMBATANT_STATE_KIND_UNSPECIFIED\x10\x00\x12\x1d\n" +
 	"\x19COMBATANT_STATE_KIND_RAGE\x10\x01\x12,\n" +

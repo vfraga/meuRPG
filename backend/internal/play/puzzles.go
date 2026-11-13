@@ -567,7 +567,7 @@ func (s *Service) publishPuzzleChanged(campaignID, puzzleID string) {
 
 // sendPuzzleChanged is the hint itself.
 func (s *Service) sendPuzzleChanged(campaignID, puzzleID string) {
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: live.Audience{Everyone: true},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_PuzzleChanged_{
 			PuzzleChanged: &playv1.WatchGameSessionResponse_PuzzleChanged{PuzzleId: puzzleID},

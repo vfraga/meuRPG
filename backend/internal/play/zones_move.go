@@ -153,7 +153,7 @@ func (s *Service) mayMoveByAction(ctx context.Context, c *combatTx, z *zone, own
 // when the caster is hidden (a hint to the players would say that something happened).
 func (s *Service) publishZoneMoved(ctx context.Context, campaignID string, enc playdb.Encounter, ownerHidden bool) {
 	if ownerHidden {
-		s.hub.Publish(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
+		s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
 		s.publishLogChanged(ctx, campaignID, enc.ID, false)
 		return
 	}

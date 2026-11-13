@@ -17,7 +17,7 @@ func (s *Service) PublishContentChanged(campaignID string) {
 		every = defaultHintEvery
 	}
 	s.puzzles.hints.fire("content:"+campaignID, every, func() {
-		s.hub.Publish(campaignID, live.Event{
+		s.send(campaignID, live.Event{
 			Audience: live.Audience{Everyone: true},
 			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_ContentChanged_{
 				ContentChanged: &playv1.WatchGameSessionResponse_ContentChanged{},

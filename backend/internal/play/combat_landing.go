@@ -187,10 +187,15 @@ func (s *Service) publishVitals(campaignID string, v *playv1.CharacterVitals) {
 	if v == nil {
 		return
 	}
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, vitalsHint(v))
+}
+
+// vitalsHint is the hint that v changed, for the master and the character's player.
+func vitalsHint(v *playv1.CharacterVitals) live.Event {
+	return live.Event{
 		Audience: vitalsAudience(v),
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_VitalsChanged_{
 			VitalsChanged: &playv1.WatchGameSessionResponse_VitalsChanged{Vitals: v},
 		}},
-	})
+	}
 }

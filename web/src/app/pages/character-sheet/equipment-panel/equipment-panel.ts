@@ -1,5 +1,8 @@
-import { MatButtonModule } from '@angular/material/button';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+
+import type { GearVm } from '../../../core/characters/gear';
 
 import { GearList, type GearToggle } from '../../../shared/gear-list/gear-list';
 import { FullSheetVm } from '../character-sheet.types';
@@ -13,7 +16,7 @@ import { coinEntries, keepUnitsTogether } from '../sheet-format';
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-equipment-panel',
-  imports: [GearList, MatButtonModule],
+  imports: [GearList, MatButtonModule, MatIconModule],
   templateUrl: './equipment-panel.html',
   styleUrl: './equipment-panel.scss',
 })
@@ -33,6 +36,18 @@ export class EquipmentPanel {
   readonly equipRetried = output<void>();
   /** A tap on "Equipar" / "Guardar": the page calls the server and reads the sheet again. */
   readonly gearToggled = output<GearToggle>();
+
+  /** Whether each weapon has its "⋮" for its marks: the owner while the sheet is editable, the master always. */
+  readonly canMark = input(false);
+  /** What the last save of marks said ("Marcas salvas."). */
+  readonly marksNotice = input('');
+  /** A tap on a weapon's "⋮": the page opens the sheet of its marks. */
+  readonly marksOpened = output<GearVm>();
+
+  /** The sheet lists a weapon: there is something to mark. */
+  protected readonly hasWeapons = computed(() =>
+    this.sheet().gear.some((g) => g.kind === 'weapon'),
+  );
 
   /** The background's equipment text, with each number kept beside its unit. */
   protected readonly backgroundEquipment = computed(() =>

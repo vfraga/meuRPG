@@ -210,7 +210,7 @@ func (s *Service) combatantsOfCreatures(ctx context.Context, res combatResult, i
 // publishCreaturesChanged tells the master and the creatures' owner that their
 // lists changed (outside a combat; in one, encounter_changed covers it).
 func (s *Service) publishCreaturesChanged(campaignID, ownerUserID string) {
-	s.hub.Publish(campaignID, live.Event{
+	s.send(campaignID, live.Event{
 		Audience: live.Audience{Master: true, UserID: ownerUserID},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CreaturesChanged_{
 			CreaturesChanged: &playv1.WatchGameSessionResponse_CreaturesChanged{},
@@ -398,6 +398,7 @@ type summonPrice struct {
 	slot     *slotRef
 	circle   int
 	resource string
+	uses     int32
 }
 
 // summonCost is the price of the cast, through the character's options: the spell must be one it has prepared, and a
@@ -439,10 +440,10 @@ func grantedSummonPrice(cast castable) (summonPrice, error) {
 	if g == nil || g.GetAtWill() || g.GetResource() == "" {
 		return summonPrice{}, connect.NewError(connect.CodeInvalidArgument, errors.New("granted_by is not a feature that gives this summon"))
 	}
-	if g.GetUsesLeft() < 1 {
+	if g.GetUsesLeft() < max(g.GetUsesCost(), 1) {
 		return summonPrice{}, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_NO_USES, "the feature has no use left")
 	}
-	return summonPrice{circle: int(cast.level), resource: g.GetResource()}, nil
+	return summonPrice{circle: int(cast.level), resource: g.GetResource(), uses: max(g.GetUsesCost(), 1)}, nil
 }
 
 // summonWrite spends the slot or the use, makes the creatures and writes what the event
@@ -454,7 +455,7 @@ func (s *Service) summonWrite(ctx context.Context, c *combatTx, r *summonRun, co
 	case slot != nil:
 		r.vitals, err = s.spendSlot(ctx, c, characterID, *slot, 1)
 	case cost.resource != "":
-		r.vitals, err = s.spendResource(ctx, c, characterID, cost.resource, 1)
+		r.vitals, err = s.spendResource(ctx, c, characterID, cost.resource, max(cost.uses, 1))
 	}
 	if err != nil {
 		return grantUseError(err)
@@ -467,7 +468,7 @@ func (s *Service) summonWrite(ctx context.Context, c *combatTx, r *summonRun, co
 	if err != nil {
 		return err
 	}
-	r.made = actionEvent{OwnerCharacter: characterID, Source: summonSourceOf(spellKey, chk), Ritual: r.call.ritual, Key: spellKey, Slot: slot, GrantUse: cost.resource}
+	r.made = actionEvent{OwnerCharacter: characterID, Source: summonSourceOf(spellKey, chk), Ritual: r.call.ritual, Key: spellKey, Slot: slot, GrantUse: cost.resource, GrantCost: grantCostOf(cost.uses)}
 	for _, cr := range sum.Created {
 		r.made.Created, r.made.MonsterKeys = append(r.made.Created, cr.ID), append(r.made.MonsterKeys, cr.MonsterKey)
 	}

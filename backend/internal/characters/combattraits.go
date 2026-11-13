@@ -24,6 +24,13 @@ var greatWeaponFighting = []string{
 // ("monster:wolf#pack-tactics").
 const packTacticsSuffix = "#pack-tactics"
 
+// sunlightSensitivitySuffix and sunlightWeaknessSuffix end the keys of a monster's Sunlight Sensitivity and
+// Sunlight Weakness traits ("monster:drow#sunlight-sensitivity", "monster:shadow#sunlight-weakness").
+const (
+	sunlightSensitivitySuffix = "#sunlight-sensitivity"
+	sunlightWeaknessSuffix    = "#sunlight-weakness"
+)
+
 // magicResistanceSuffix ends the key of a monster's Magic Resistance trait.
 const magicResistanceSuffix = "#magic-resistance"
 
@@ -148,6 +155,8 @@ func traitsOf(content *rules.Content, d rules.Derived) link.Traits {
 	t.GreatWeaponFighting = slices.ContainsFunc(greatWeaponFighting, func(k string) bool { return rules.HasFeature(d, k) })
 	t.PackTactics = slices.ContainsFunc(d.Features, func(f rules.Feature) bool { return strings.HasSuffix(f.Key, packTacticsSuffix) })
 	t.MagicResistance = slices.ContainsFunc(d.Features, func(f rules.Feature) bool { return strings.HasSuffix(f.Key, magicResistanceSuffix) })
+	t.SunlightSensitivity = slices.ContainsFunc(d.Features, func(f rules.Feature) bool { return strings.HasSuffix(f.Key, sunlightSensitivitySuffix) })
+	t.SunlightWeakness = slices.ContainsFunc(d.Features, func(f rules.Feature) bool { return strings.HasSuffix(f.Key, sunlightWeaknessSuffix) })
 	// The halfling's Lucky is a race trait, so every halfling has it, whichever its subrace.
 	t.Lucky = rules.HasFeature(d, link.LuckyTrait)
 	for _, f := range d.Features {
@@ -156,11 +165,15 @@ func traitsOf(content *rules.Content, d rules.Derived) link.Traits {
 		}
 	}
 	t.Resistances, t.ConditionImmunities = protections(content, d)
+	for _, r := range d.DamageReductions {
+		t.DamageReductions = append(t.DamageReductions, link.DamageReduction{Source: r.Source, Amount: r.Amount, Nonmagical: r.Nonmagical})
+	}
 	t.SpellAttackIgnoresCover, t.RangedWeaponIgnoresCover = d.SpellAttackIgnoresCover, d.RangedWeaponIgnoresCover
 	t.RangedWeaponNoLongRangeDisadvantage = d.RangedWeaponNoLongRangeDisadvantage
 	t.UnactedAdvantage, t.SurprisedCritical = d.UnactedAdvantage, d.SurprisedCritical
 	t.Maneuvers, t.ExtraDamages, t.SpellModifiers = tableTraitsOf(d)
 	t.RerollRules = rerollRulesOf(d)
+	t.Flags = slices.Clone(d.Flags)
 	t.RollMinimums, t.SpellCriticalRange = rollMinimumsOf(d), spellCriticalRangeOf(d)
 	return t
 }

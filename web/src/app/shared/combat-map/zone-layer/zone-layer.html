@@ -3,34 +3,68 @@
     <defs>
       @for (p of patterns; track $index) {
         <pattern [attr.id]="uid + '-' + $index" patternUnits="userSpaceOnUse" [attr.width]="tile" [attr.height]="tile">
-          <path [attr.d]="p.d" [class]="'zl__' + p.tint" />
+          <path [attr.d]="p.d" [attr.stroke-width]="p.stroke" [class]="'zl__' + p.tint + ' zl__d--' + p.cls" />
         </pattern>
+      }
+      @for (z of drawn(); track z.id) {
+        @if (z.burning; as b) {
+          @if (b.turn !== null) {
+          <pattern
+            [attr.id]="uid + '-b-' + z.id"
+            patternUnits="userSpaceOnUse"
+            [attr.width]="tile"
+            [attr.height]="tile"
+            [attr.patternTransform]="'rotate(' + b.turn + ')'"
+          >
+            <path [attr.d]="burningLook.d" [attr.stroke-width]="burningLook.stroke" [class]="'zl__' + burningLook.tint + ' zl__d--' + burningLook.cls" />
+          </pattern>
+          }
+        }
       }
     </defs>
     @for (z of drawn(); track z.id) {
-      <g class="zl__zone" [class.zl__zone--dashed]="z.dashed">
-        <path class="zl__fill" [attr.d]="z.fill" />
+      @let look = patterns[z.pattern];
+      <g class="zl__zone">
+        @if (z.burning; as b) {
+          <g class="zl__burn">
+            <path [class]="'zl__veil zl__veil--' + burningLook.veil.tone" [attr.fill-opacity]="burningLook.veil.pct / 100" [attr.d]="b.fill" />
+            @if (b.turn !== null) {
+              <path class="zl__pat" [attr.d]="b.fill" [attr.fill]="'url(#' + uid + '-b-' + z.id + ')'" />
+            }
+            <path class="zl__halo" [attr.d]="b.edge" />
+            <path [class]="'zl__edge zl__edge--dashed zl__' + burningLook.edge" [attr.d]="b.edge" />
+          </g>
+        }
+        <path [class]="'zl__veil zl__veil--' + look.veil.tone" [attr.fill-opacity]="look.veil.pct / 100" [attr.d]="z.fill" />
         <path class="zl__pat" [attr.d]="z.fill" [attr.fill]="'url(#' + uid + '-' + z.pattern + ')'" />
+      </g>
+    }
+    @for (o of overlaps(); track $index) {
+      @let older = patterns[o.olderPattern];
+      @let newer = patterns[o.newerPattern];
+      <g class="zl__overlap">
+        <path [class]="'zl__veil zl__veil--' + older.veil.tone" [attr.fill-opacity]="older.veil.pct / 100" [attr.d]="o.upper" />
+        <path class="zl__pat" [attr.d]="o.upper" [attr.fill]="'url(#' + uid + '-' + o.olderPattern + ')'" />
+        <path [class]="'zl__veil zl__veil--' + newer.veil.tone" [attr.fill-opacity]="newer.veil.pct / 100" [attr.d]="o.lower" />
+        <path class="zl__pat" [attr.d]="o.lower" [attr.fill]="'url(#' + uid + '-' + o.newerPattern + ')'" />
+      </g>
+    }
+    @for (z of drawn(); track z.id) {
+      @let look = patterns[z.pattern];
+      <g class="zl__outline" [class.zl__zone--dashed]="z.dashed">
         <path class="zl__halo" [attr.d]="z.edge" />
-        <path [class]="'zl__edge zl__' + z.tint" [attr.d]="z.edge" />
+        <path [class]="'zl__edge zl__' + look.edge" [class.zl__edge--dashed]="look.dashed" [attr.d]="z.edge" />
       </g>
     }
   </svg>
-  @for (z of drawn(); track z.id) {
+  @for (z of badges() ? drawn() : []; track z.id) {
     <span
-      class="zl__label"
-      [class.zl__label--below]="z.below"
-      [class.zl__label--hidden]="z.dashed"
-      [style.left.%]="(z.x / columns()) * 100"
-      [style.top.%]="(z.y / rows()) * 100"
+      class="zl__badge"
+      [class.zl__badge--dashed]="z.dashed"
+      [style.left]="'clamp(calc(var(--zl-badge) / 2), ' + z.x + '%, calc(100% - var(--zl-badge) / 2))'"
+      [style.top]="'clamp(calc(var(--zl-badge) / 2), ' + z.y + '%, calc(100% - var(--zl-badge) / 2))'"
     >
-      @if (z.dashed) {
-        <mat-icon>visibility_off</mat-icon>
-      }
-      {{ z.label }}
-      @if (z.concentration) {
-        <mat-icon>psychology</mat-icon>
-      }
+      <span class="zl__letter">{{ z.letter }}</span>
     </span>
   }
 }

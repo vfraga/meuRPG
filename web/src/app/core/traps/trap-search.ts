@@ -1,3 +1,4 @@
+import type { CheckFloor } from '../combat/combat-dice';
 import type { SearchSkill } from './traps-client';
 
 /** One of the other skills of the sheet, with the character's bonus: a row of "Perícia". */
@@ -16,6 +17,8 @@ export interface SearchSkills {
   readonly others?: readonly OtherSkill[];
   /** The keys of the skills Talento Confiável raises for this character (the proficient ones); empty without the feature. */
   readonly reliableTalent?: readonly string[];
+  /** The highest table minimum that covers checks (`DerivedSheet.roll_minimums`), or `null` without one. */
+  readonly checkFloor?: CheckFloor | null;
 }
 
 export interface SkillOption {

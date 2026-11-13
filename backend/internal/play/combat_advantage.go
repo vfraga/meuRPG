@@ -127,6 +127,9 @@ var sourceKindToProto = map[string]playv1.AdvantageSourceKind{
 	combat.SourceArmorUntrained:     playv1.AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_ARMOR_NOT_PROFICIENT,
 	combat.SourceProtection:         playv1.AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_PROTECTION,
 	combat.SourceMagicResistance:    playv1.AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_MAGIC_RESISTANCE,
+	combat.SourceSunlightAttack:     playv1.AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_SUNLIGHT_ATTACK,
+	combat.SourceSunlightPerception: playv1.AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_SUNLIGHT_PERCEPTION,
+	combat.SourceSunlightSave:       playv1.AdvantageSourceKind_ADVANTAGE_SOURCE_KIND_SUNLIGHT_SAVE,
 }
 
 // statesOf groups the states of a combat by the combatant that has them.
@@ -155,9 +158,11 @@ func creatureFacts(c playdb.Combatant, states map[string][]playdb.CombatantState
 		Reckless:        hasState(states, c.ID, stateReckless),
 		PackTactics:     traits.PackTactics,
 		MagicResistance: traits.MagicResistance,
-		Evasion:         traits.Evasion,
-		DangerSense:     traits.DangerSense,
-		Raging:          hasState(states, c.ID, stateRage) && !traits.HeavyArmor,
+		// The sun itself (Sunlit) is the combat's fact, set where the combat is read; the traits are the sheet's.
+		SunlightSensitivity: traits.SunlightSensitivity, SunlightWeakness: traits.SunlightWeakness,
+		Evasion:     traits.Evasion,
+		DangerSense: traits.DangerSense,
+		Raging:      hasState(states, c.ID, stateRage) && !traits.HeavyArmor,
 		// The effects that last (RN-22): exhaustion, Faerie Fire's outline, the advantage on saving
 		// throws an effect gives and the disadvantage one gives the creature's attack rolls.
 		Exhaustion: int(c.ExhaustionLevel), Outlined: hasEffect(states, c.ID, "spell:faerie-fire"), SaveAdvantage: effectSaveAdvantage(states, c.ID), CheckAdvantage: effectCheckAdvantage(states, c.ID),
@@ -261,6 +266,8 @@ type modeFacts struct {
 	surprised []string
 	// down are the player's characters at 0 hit points: unconscious for an attack against them.
 	down []string
+	// sun is the combat's sunlight, off by default (Sunlight Sensitivity and Weakness).
+	sun sunlight
 }
 
 // modeResult is the mode of one roll: the truth, and what a viewer may read.
@@ -311,7 +318,7 @@ func (f modeFacts) scene(attacker, target playdb.Combatant, traits link.Traits, 
 		reach, long = shape.MeleeReachFt, 0
 	}
 	s := combat.AttackScene{
-		Attacker: creatureFacts(attacker, f.states, traits), Target: creatureFacts(target, f.states, link.Traits{}),
+		Attacker: f.sun.facts(creatureFacts(attacker, f.states, traits), attacker), Target: f.sun.facts(creatureFacts(target, f.states, link.Traits{}), target),
 		Ranged: ranged, StrengthMelee: shape.Weapon && shape.Melee && !ranged && shape.UsesStrength, OwnTurn: ownTurn,
 		DistanceKnown: known, DistanceFt: int(dist), ReachFt: reach, LongRangeFt: long,
 		// A table feat's ranged_attack effect: the weapon keeps its aim at long range.
@@ -325,9 +332,15 @@ func (f modeFacts) scene(attacker, target playdb.Combatant, traits link.Traits, 
 	s.AttackerUnseen = f.unseen(target, attacker)
 	s.TargetUnseen = f.unseen(attacker, target)
 	s.AllyNearTarget = known && traits.PackTactics && f.allyNear(attacker, target, view)
-	s.HostileNearAttacker = known && ranged && f.hostileNear(attacker, view)
+	s.HostileNearAttacker = known && ranged && !ignoresHostileNearby(shape, traits) && f.hostileNear(attacker, view)
 	f.ambush(&s, target, traits)
 	return s
+}
+
+// ignoresHostileNearby says a table feature's ignore_hostile_nearby flag lifts the disadvantage of
+// a ranged weapon attack (not a spell's).
+func ignoresHostileNearby(shape attackShape, traits link.Traits) bool {
+	return shape.Weapon && traits.HasFlag(rules.FlagIgnoreHostileNearby)
 }
 
 // ambush fills what the attacker's ambush effects ask of the target: that it has not had its
@@ -454,6 +467,9 @@ func (c textContext) conditionSentence(key, effect string) string {
 
 // sentence writes a source in Portuguese: an attack roll's here, the others in otherSentence.
 func (c textContext) sentence(src combat.Source) string {
+	if text, ok := sunlightSentence(src); ok {
+		return text
+	}
 	if text, ok := c.attackerSentence(src); ok {
 		return text
 	}
@@ -464,6 +480,52 @@ func (c textContext) sentence(src combat.Source) string {
 		return text
 	}
 	return c.otherSentence(src)
+}
+
+// The sunlight's sources are the master's (RN-20, RN-29): the sentence names the sun and the trait that makes it
+// count, and a player is never given it (hidesSunlight).
+const (
+	sunlightSensitivityName = "Sensibilidade à Luz do Sol"
+	sunlightWeaknessName    = "Fraqueza à Luz do Sol"
+)
+
+// sunlightSentence writes a sunlight source, false for any other kind.
+func sunlightSentence(src combat.Source) (string, bool) {
+	trait := sunlightSensitivityName
+	if src.Condition == combat.TraitSunlightWeakness {
+		trait = sunlightWeaknessName
+	}
+	switch src.Kind {
+	case combat.SourceSunlightAttack, combat.SourceSunlightSave:
+		return fmt.Sprintf("Luz do sol (%s)", trait), true
+	case combat.SourceSunlightPerception:
+		if src.Condition == combat.TraitSunlightWeakness {
+			return fmt.Sprintf("Luz do sol (%s)", trait), true
+		}
+		return fmt.Sprintf("Luz do sol, nos testes que dependem da visão (%s)", trait), true
+	}
+	return "", false
+}
+
+// isSunlight says the source is one of the sun's.
+func isSunlight(src combat.Source) bool {
+	switch src.Kind {
+	case combat.SourceSunlightAttack, combat.SourceSunlightPerception, combat.SourceSunlightSave:
+		return true
+	}
+	return false
+}
+
+// hidesSunlight is the hide of whoever is not the master: the sun and the trait behind it are the master's, so a
+// player reads "Outra fonte" for them, on their own roll too.
+func hidesSunlight(src combat.Source) bool { return isSunlight(src) }
+
+// hideUnlessMaster is hidesSunlight for a viewer: nil for the master, who reads everything.
+func hideUnlessMaster(master bool) func(combat.Source) bool {
+	if master {
+		return nil
+	}
+	return hidesSunlight
 }
 
 // attackerSentence writes a source that comes from the one who attacks.
@@ -737,7 +799,7 @@ func (s *Service) turnModes(ctx context.Context, campaignID string, d *encounter
 	if err != nil {
 		return turnModes{}, err
 	}
-	surprised, err := s.surprisedFacts(ctx, s.queries, d.enc, d.cs)
+	surprised, err := s.surprisedFacts(ctx, nil, campaignID, s.queries, d.enc, d.cs)
 	if err != nil {
 		return turnModes{}, err
 	}
@@ -745,9 +807,13 @@ func (s *Service) turnModes(ctx context.Context, campaignID string, d *encounter
 	if err != nil {
 		return turnModes{}, err
 	}
+	sun, err := s.sunlightOf(ctx, s.queries, d.enc)
+	if err != nil {
+		return turnModes{}, err
+	}
 	return turnModes{
 		who: who, sheet: sheet, viewer: v, names: s.namesFor(ctx, campaignID), ownTurn: actsNow(d.enc, who),
-		facts: modeFacts{cs: d.cs, states: states, theatre: isTheatre(d.enc), sight: sight, hiding: hiding, helps: helps, enc: d.enc, surprised: surprised, down: down},
+		facts: modeFacts{cs: d.cs, states: states, theatre: isTheatre(d.enc), sight: sight, hiding: hiding, helps: helps, enc: d.enc, surprised: surprised, down: down, sun: sun},
 	}, nil
 }
 
@@ -840,9 +906,10 @@ func (s *Service) spellModes(ctx context.Context, c *combatTx, m authz.Membershi
 	}, nil
 }
 
-// shownSources writes the sources of a saving throw or an ability check.
-func shownSources(sources []combat.Source, names func(string) string) []*playv1.AdvantageSource {
-	return shownSourcesHiding(sources, names, nil)
+// shownSources writes the sources of a saving throw or an ability check. The master reads the sun as itself; a player reads
+// "Outra fonte" for it.
+func shownSources(sources []combat.Source, names func(string) string, master bool) []*playv1.AdvantageSource {
+	return shownSourcesHiding(sources, names, hideUnlessMaster(master))
 }
 
 // shownSourcesHiding is shownSources with the sources of an effect the master hides turned

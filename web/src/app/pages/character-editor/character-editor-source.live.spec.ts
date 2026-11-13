@@ -80,6 +80,7 @@ function fullyPopulatedFullSheet(): FullSheet {
     // The editor has no control for it: a save sends it back as read (SetEquipped writes it).
     carriedKeys: ['equipment:dagger'],
     weaponMarks: [],
+    itemBonuses: [],
     cantripKeys: ['spell:fire-bolt', 'spell:ray-of-frost', 'spell:minor-illusion'],
     knownSpellKeys: [
       'spell:magic-missile',
@@ -126,6 +127,46 @@ function fullyPopulatedFullSheet(): FullSheet {
 }
 
 describe('FullSheet round-trips load → save unchanged (integrator fix, phase 2b)', () => {
+  it('keeps the magic bonus of a piece still on the sheet and drops the bonus of a removed one', () => {
+    const loaded = {
+      ...fullyPopulatedFullSheet(),
+      armorKey: 'equipment:chain-mail',
+      shield: true,
+      weaponKeys: ['equipment:dagger', 'equipment:rapier'],
+      itemBonuses: [
+        {
+          $typeName: 'meurpg.characters.v1.ItemBonus' as const,
+          key: 'equipment:chain-mail',
+          bonus: 1,
+          requiresAttunement: false,
+          attuned: false,
+        },
+        {
+          $typeName: 'meurpg.characters.v1.ItemBonus' as const,
+          key: 'equipment:shield',
+          bonus: 2,
+          requiresAttunement: false,
+          attuned: false,
+        },
+        {
+          $typeName: 'meurpg.characters.v1.ItemBonus' as const,
+          key: 'equipment:rapier',
+          bonus: 3,
+          requiresAttunement: false,
+          attuned: false,
+        },
+      ],
+    };
+    const form = toFormFullSheet('Pensantus', loaded);
+    expect(mergeFullSheetInit(loaded, form).itemBonuses?.map((b) => b.key)).toEqual([
+      'equipment:chain-mail',
+      'equipment:shield',
+      'equipment:rapier',
+    ]);
+    const lighter = { ...form, armor: '', shield: false, weapons: ['equipment:dagger'] };
+    expect(mergeFullSheetInit(loaded, lighter).itemBonuses).toEqual([]);
+  });
+
   it('a fully populated FullSheet survives toFormFullSheet → mergeFullSheetInit, coins and feature_choice_keys included', () => {
     const loaded = fullyPopulatedFullSheet();
 
@@ -168,6 +209,7 @@ describe('FullSheet round-trips load → save unchanged (integrator fix, phase 2
       weaponKeys: loaded.weaponKeys,
       carriedKeys: loaded.carriedKeys,
       weaponMarks: loaded.weaponMarks,
+      itemBonuses: loaded.itemBonuses,
       cantripKeys: loaded.cantripKeys,
       knownSpellKeys: loaded.knownSpellKeys,
       preparedSpellKeys: loaded.preparedSpellKeys,

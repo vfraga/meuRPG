@@ -259,7 +259,7 @@ func (s *Service) publishImageDeleted(ctx context.Context, campaignID string, go
 
 // tellAudience sends ev to the master and to the players of the audience, and to no other.
 func (s *Service) tellAudience(campaignID string, who link.ImageAudience, ev *playv1.WatchGameSessionResponse) {
-	s.live.Publish(campaignID, who.Everyone, ev)
+	s.publish(campaignID, who.Everyone, ev)
 	if !who.Everyone {
 		s.live.PublishToUsers(campaignID, who.UserIDs, ev)
 	}

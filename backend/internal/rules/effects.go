@@ -289,6 +289,11 @@ type Effect struct {
 	AlsoWithSlot  bool   `json:"also_with_slot,omitempty"`
 	RitualOnly    bool   `json:"ritual_only,omitempty"`
 	CountsAsKnown bool   `json:"counts_as_known,omitempty"`
+	// NoMaterialComponents waives the spell's material components on the sheet and the cast sheet
+	// (the server never enforces components). UsesCost is how many uses of the Uses resource each
+	// cast spends: 0 and 1 are one; it needs a resource.
+	NoMaterialComponents bool `json:"no_material_components,omitempty"`
+	UsesCost             int  `json:"uses_cost,omitempty"`
 
 	// Spells are spells the effect grants, which then count as on the
 	// character's list (Infernal Legacy's thaumaturgy).
@@ -300,6 +305,9 @@ type Effect struct {
 	// without it ("13"); a note may carry a Value just for that (a save
 	// DC, a number of uses).
 	TextPT string `json:"text_pt,omitempty"`
+
+	// flag (effectflags.go): the closed rule of the game it switches on, one of effectFlags.
+	Flag string `json:"flag,omitempty"`
 
 	// roll_minimum (rolleffects.go) uses Rolls too, with Value the lowest a die counts as (a literal, 2 to 20).
 	// A critical_range modifier uses Applies for its scope (CriticalScope*).
@@ -333,13 +341,15 @@ var (
 		"resource", "choice", "grant_action", "extra_attack", "note", "handler", "wild_shape", "beast_spells", "replaces", "slot_recovery",
 		"ability_increase", "superiority_die", "song_of_rest", "ranged_attack", "extra_damage", "ambush", "resistance",
 		"state", "weapon_rule", "pseudo_weapon", "breathes_water", "condition_immunity", "granted_spell", "on_event", "spell_modifier",
-		"reroll", "roll_minimum",
+		"reroll", "roll_minimum", "flag", "natural_attack",
 	}
 	modifierTargets = []string{
 		"ac.base", "ac", "hp.max", "speed.walk", "speed.fly", "speed.swim", "speed.climb", "speed.burrow", "initiative",
 		"attack.weapon.melee", "attack.weapon.ranged",
 		"damage.weapon.melee", "damage.weapon.ranged",
 		CriticalRangeTarget,
+		PassivePerceptionTarget, PassiveInvestigationTarget, PassiveInsightTarget, ReachMeleeTarget, HitDieMinimumTarget,
+		CarryCapacityTarget, DamageReductionWeaponTarget, DamageReductionNonmagicalWeaponTarget,
 	}
 	modifierModes     = []string{"add", "max", "set"}
 	proficiencyLevels = []string{"half", "full", "expertise"}
@@ -427,7 +437,9 @@ var effectCheckers = map[string]func(x effectCompiler) error{
 	"state":              effectCompiler.state,
 	"weapon_rule":        effectCompiler.weaponRule,
 	"pseudo_weapon":      effectCompiler.pseudoWeapon,
+	"natural_attack":     effectCompiler.naturalAttack,
 	"breathes_water":     effectCompiler.breathesWater,
+	"flag":               effectCompiler.flag,
 	"granted_spell":      effectCompiler.grantedSpell,
 	"replaces":           effectCompiler.replaces,
 	"modifier":           effectCompiler.modifier,
@@ -514,21 +526,14 @@ func (x effectCompiler) compileGated(src string) (*formula.Program, error) {
 
 // strayFields refuses the fields of one type on an effect of another.
 func (x effectCompiler) strayFields() error {
-	e := x.e
 	if err := x.strayShapeAndSlots(); err != nil {
 		return err
 	}
 	if err := x.strayRollFields(); err != nil {
 		return err
 	}
-	if e.Type != "song_of_rest" && e.Sides != 0 {
-		return x.fail("sides belongs to song_of_rest")
-	}
-	if e.Type != "replaces" && e.Replaces != "" {
-		return x.fail("replaces belongs to the replaces effect")
-	}
-	if e.Type != "choice" && (e.Name != "" || e.Set != "") {
-		return x.fail("name and set belong to choice")
+	if err := x.straySidesReplacesChoice(); err != nil {
+		return err
 	}
 	if err := x.strayOwnFields(); err != nil {
 		return err
@@ -545,7 +550,26 @@ func (x effectCompiler) strayFields() error {
 	if err := x.strayCosts(); err != nil {
 		return err
 	}
+	if err := x.strayFlag(); err != nil {
+		return err
+	}
 	return x.straySpellAndRangeFields()
+}
+
+// straySidesReplacesChoice refuses the fields of song_of_rest, replaces and choice on an effect
+// of another type.
+func (x effectCompiler) straySidesReplacesChoice() error {
+	e := x.e
+	if e.Type != "song_of_rest" && e.Sides != 0 {
+		return x.fail("sides belongs to song_of_rest")
+	}
+	if e.Type != "replaces" && e.Replaces != "" {
+		return x.fail("replaces belongs to the replaces effect")
+	}
+	if e.Type != "choice" && (e.Name != "" || e.Set != "") {
+		return x.fail("name and set belong to choice")
+	}
+	return nil
 }
 
 // strayShapeAndSlots refuses the fields of wild_shape, of the slots of grant_action
@@ -568,8 +592,8 @@ func (x effectCompiler) strayShapeAndSlots() error {
 // ranged_attack on an effect of another type.
 func (x effectCompiler) straySpellAndRangeFields() error {
 	e := x.e
-	if e.Type != "granted_spell" && (e.Spell != "" || e.FromLevel != "" || e.Uses != "" || e.AlsoWithSlot || e.RitualOnly || e.CountsAsKnown) {
-		return x.fail("spell, from_level, uses, also_with_slot, ritual_only and counts_as_known belong to granted_spell")
+	if e.Type != "granted_spell" && (e.Spell != "" || e.FromLevel != "" || e.Uses != "" || e.AlsoWithSlot || e.RitualOnly || e.CountsAsKnown || e.NoMaterialComponents || e.UsesCost != 0) {
+		return x.fail("spell, from_level, uses, also_with_slot, ritual_only, counts_as_known, no_material_components and uses_cost belong to granted_spell")
 	}
 	if e.Type != "ranged_attack" && (e.IgnoreCover || e.RangeMultiplier != 0 || e.NoLongRangeDisadvantage) {
 		return x.fail("ignore_cover, range_multiplier and no_long_range_disadvantage belong to ranged_attack")
@@ -584,7 +608,7 @@ func (x effectCompiler) strayExtraDamage() error {
 		return x.fail("dice, dice_sides, frequency and no_crit_doubling belong to extra_damage")
 	}
 	if !slices.Contains(damageTypeEffects, e.Type) && e.DamageType != "" {
-		return x.fail("damage_type belongs to extra_damage, spell_modifier, pseudo_weapon and roll_minimum")
+		return x.fail("damage_type belongs to extra_damage, spell_modifier, pseudo_weapon, natural_attack and roll_minimum")
 	}
 	if !slices.Contains(weaponEffects, e.Type) && e.Weapon != "" {
 		return x.fail("weapon belongs to extra_damage, weapon_rule and pseudo_weapon")
@@ -1127,5 +1151,5 @@ func (c *content) validRollTarget(t string) bool {
 // weapon lines a weapon_rule chooses, the kind of a pseudo_weapon) and damage_type.
 var (
 	weaponEffects     = []string{"extra_damage", "weapon_rule", "pseudo_weapon"}
-	damageTypeEffects = []string{"extra_damage", "spell_modifier", "pseudo_weapon", "roll_minimum"}
+	damageTypeEffects = []string{"extra_damage", "spell_modifier", "pseudo_weapon", "natural_attack", "roll_minimum"}
 )

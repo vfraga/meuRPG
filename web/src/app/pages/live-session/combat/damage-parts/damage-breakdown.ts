@@ -95,6 +95,8 @@ export class DamageBreakdown {
         return 'Ignorar a vulnerabilidade';
       case DamageStepKind.IMMUNITY:
         return 'Ignorar a imunidade';
+      case DamageStepKind.REDUCTION:
+        return 'Ignorar a redução';
       default:
         return 'Ignorar a resistência';
     }

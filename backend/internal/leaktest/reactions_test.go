@@ -53,9 +53,7 @@ func (w *world) reactionFightOf(creatureKey, name string) *playv1.Combatant {
 		w.t.Fatal("the Mago is not in the combat")
 	}
 	w.requireOwnTotal(mage.GetId())
-	for id, sq := range map[string][2]int32{w.combatant(w.toren).GetId(): {12, 14}, mage.GetId(): {13, 14}} {
-		must(m.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: id, IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true})))
-	}
+	w.placeForced(m, e.GetId(), placement{w.combatant(w.toren).GetId(), 12, 14}, placement{mage.GetId(), 13, 14})
 	for range 40 {
 		cur := must(m.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
 		if cur.GetCurrentCombatantId() == w.combatant(w.toren).GetId() {
@@ -213,9 +211,7 @@ func TestHellishRebukeNeverGivesThePlayerTheAggressorsModifier(t *testing.T) {
 	must(m.combat.SetCombatantHidden(ctx, rq(&playv1.SetCombatantHiddenRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: bandit.GetId(), IdempotencyKey: newKey(), Hidden: false})))
 	w.allow("bandit-name", w.ana, w.caio)
 	w.secrets.allowNeedle(bandit.GetId(), w.ana, w.caio)
-	for id, sq := range map[string][2]int32{toren.GetId(): {12, 14}, bandit.GetId(): {13, 14}} {
-		must(m.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: id, IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true})))
-	}
+	w.placeForced(m, w.encounter.GetId(), placement{toren.GetId(), 12, 14}, placement{bandit.GetId(), 13, 14})
 	for range 40 {
 		cur := must(m.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
 		if cur.GetCurrentCombatantId() == bandit.GetId() {
@@ -387,9 +383,7 @@ func TestAPlayersSpentReactionRecordIsTheOwnersAndTheMastersAlone(t *testing.T) 
 	must(m.combat.SetCombatantHidden(ctx, rq(&playv1.SetCombatantHiddenRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: bandit.GetId(), IdempotencyKey: newKey(), Hidden: false})))
 	w.allow("bandit-name", w.ana, w.caio)
 	w.secrets.allowNeedle(bandit.GetId(), w.ana, w.caio)
-	for id, sq := range map[string][2]int32{toren.GetId(): {12, 14}, bandit.GetId(): {13, 14}} {
-		must(m.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: id, IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true})))
-	}
+	w.placeForced(m, w.encounter.GetId(), placement{toren.GetId(), 12, 14}, placement{bandit.GetId(), 13, 14})
 	for range 40 {
 		cur := must(m.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
 		if cur.GetCurrentCombatantId() == toren.GetId() {

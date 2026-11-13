@@ -14,6 +14,7 @@ import { MatBottomSheet } from '@angular/material/bottom-sheet';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -36,6 +37,13 @@ import {
   KIND_NOUNS,
 } from '../../../core/content/content-kinds';
 import { type CatalogVm, catalogVm } from '../../../core/content/catalog';
+import {
+  type LeftOutRow,
+  NO_LEFT_OUT,
+  buildLeftOut,
+  leftOutTitle,
+  togetherWith,
+} from '../../../core/content/left-out';
 import { packFileName, packToText } from '../../../core/content/content-pack';
 import { saveTextFile } from '../../../core/content/save-file';
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
@@ -45,7 +53,7 @@ import { TextField } from '../../../shared/form-fields/text-field';
 import { SelectField, type SelectOption } from '../../../shared/form-fields/select-field';
 import { mediaQuery, PHONE_QUERY } from '../../../shared/map-view/media-query';
 import { openSheet } from '../../../shared/sheet/sheet-host';
-import { ArchiveSheet } from '../archive/archive-sheet';
+import { ArchiveSheet, type ArchiveSheetData } from '../archive/archive-sheet';
 
 type PageState =
   | { status: 'loading' }
@@ -65,6 +73,7 @@ type PageState =
   imports: [
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     MatProgressSpinnerModule,
     RouterLink,
     SelectField,
@@ -120,6 +129,12 @@ export class ContentList {
   protected readonly rows = computed(() =>
     filterEntries(this.entries(), this.current(), this.query(), this.filter()),
   );
+  /** The entries the rules refuse, for the master: the panel above the list, the tag on the rows. */
+  protected readonly leftOut = computed(() => {
+    const ctx = this.ctx();
+    return ctx?.isMaster ? buildLeftOut(ctx.entries, ctx.leftOut) : NO_LEFT_OUT;
+  });
+  protected readonly leftOutHeading = computed(() => leftOutTitle(this.leftOut().count));
   protected readonly limit = computed(() => limitLine(this.entries()));
   protected readonly empty = computed(() => this.entries().length === 0);
   /** The player's panels: only the kinds that have something. */
@@ -263,6 +278,54 @@ export class ContentList {
     );
   }
 
+  /** Whether the rules left the entry out of the campaign: its row says so. */
+  protected isOut(e: TableEntry): boolean {
+    return this.leftOut().keys.has(e.key);
+  }
+
+  protected kindWordOf(e: TableEntry): string {
+    return KIND_WORDS[e.kind] ?? '';
+  }
+
+  protected together(row: LeftOutRow) {
+    return togetherWith(row);
+  }
+
+  /** "Remover" on a left-out entry: it is archived (nothing is deleted), which takes it off this list and keeps the sheets that use it. */
+  protected async remove(row: LeftOutRow): Promise<void> {
+    this.actionError.set('');
+    this.status.set('');
+    const confirmed = await new Promise<boolean>((resolve) =>
+      openSheet<ArchiveSheet, ArchiveSheetData, boolean>(
+        this.dialog,
+        this.bottomSheet,
+        ArchiveSheet,
+        {
+          data: { name: row.entry.namePt, using: row.entry.charactersUsing, verb: 'Remover' },
+          ariaLabel: `Remover ${row.entry.namePt}?`,
+          labelledBy: 'archive-t',
+        },
+      ).subscribe((r) => resolve(r === true)),
+    );
+    if (!confirmed) {
+      return;
+    }
+    this.busyKey.set(row.entry.key);
+    try {
+      const entry = await this.client.archive(this.campaignId(), row.entry.key);
+      this.replace(entry);
+      const noun = KIND_NOUNS[entry.kind];
+      this.status.set(
+        `${noun.article} ${noun.noun} ${entry.namePt} foi ${noun.archived} e saiu da lista de entradas fora da campanha.`,
+      );
+      await this.refresh();
+    } catch (err) {
+      this.actionError.set(contentErrorText(err, 'remover a entrada'));
+    } finally {
+      this.busyKey.set('');
+    }
+  }
+
   protected stateOf(e: TableEntry) {
     return entryState(e, this.isMaster());
   }
@@ -298,7 +361,7 @@ export class ContentList {
     this.actionError.set('');
     if (!e.archived) {
       const confirmed = await new Promise<boolean>((resolve) =>
-        openSheet<ArchiveSheet, { name: string; using: number }, boolean>(
+        openSheet<ArchiveSheet, ArchiveSheetData, boolean>(
           this.dialog,
           this.bottomSheet,
           ArchiveSheet,

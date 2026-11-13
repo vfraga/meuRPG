@@ -81,6 +81,9 @@ type Terrain struct {
 	Walls *Layer
 	// Difficult is the terrain that costs 5 ft more for each square entered.
 	Difficult *Layer
+	// ZoneDifficult is the difficult terrain the areas spells keep on the map make (Web, Spike Growth): it costs the
+	// same as Difficult, but a mover that ignores the map's difficult terrain (Mover.IgnoresMapDifficult) still pays it.
+	ZoneDifficult *Layer
 	// Cover is the painted cover: three-quarters squares block movement
 	// like a wall (but not sight or light), half-cover squares can be crossed.
 	Cover *CoverLayer
@@ -106,7 +109,7 @@ func (t Terrain) Validate() error {
 	if !t.Grid.Valid() {
 		return ErrBadGrid
 	}
-	if (t.Walls != nil && t.Walls.Grid() != t.Grid) || (t.Difficult != nil && t.Difficult.Grid() != t.Grid) || (t.Cover != nil && t.Cover.Grid() != t.Grid) || (t.Doors != nil && t.Doors.Grid() != t.Grid) || (t.NoPass != nil && t.NoPass.Grid() != t.Grid) {
+	if (t.Walls != nil && t.Walls.Grid() != t.Grid) || (t.Difficult != nil && t.Difficult.Grid() != t.Grid) || (t.ZoneDifficult != nil && t.ZoneDifficult.Grid() != t.Grid) || (t.Cover != nil && t.Cover.Grid() != t.Grid) || (t.Doors != nil && t.Doors.Grid() != t.Grid) || (t.NoPass != nil && t.NoPass.Grid() != t.Grid) {
 		return ErrBadGrid
 	}
 	return nil
@@ -152,7 +155,9 @@ func (t Terrain) Standable(sq Square) bool {
 // whether it may pass a hostile creature and whether it may share a square.
 type Mover struct {
 	Flier bool
-	Size  Size
+	// IgnoresMapDifficult skips the difficult terrain painted on the map, not the one a spell makes (ZoneDifficult).
+	IgnoresMapDifficult bool
+	Size                Size
 }
 
 // passes says whether the mover can move through an occupied square: always
@@ -287,12 +292,18 @@ func (t Terrain) blockedBy(sq Square) StopReason {
 	return StopWall
 }
 
+// DifficultFor says whether the square is difficult terrain for the mover: not for a flier, and not the map's own
+// for a mover that ignores it, but a spell's area always.
+func (t Terrain) DifficultFor(sq Square, m Mover) bool {
+	return !m.Flier && ((!m.IgnoresMapDifficult && t.Difficult.Has(sq)) || t.ZoneDifficult.Has(sq))
+}
+
 // extraDFt is what entering a square costs on top of the line: 5 ft for
 // difficult terrain (not for a flier) or another creature's space, once even
 // if several things in the square count as it (SRD): rubble and a creature
 // standing on it.
 func (t Terrain) extraDFt(sq Square, occupied bool, m Mover) int {
-	if (!m.Flier && t.Difficult.Has(sq)) || occupied {
+	if t.DifficultFor(sq, m) || occupied {
 		return DFtPerSquare
 	}
 	return 0

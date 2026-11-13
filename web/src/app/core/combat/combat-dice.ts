@@ -59,9 +59,12 @@ export function rollFormula(roll: DiceRoll, named = false): string {
 /** A d20 of 9 or lower counts as 10 (Talento Confiável, SRD 5.1). */
 export const TREATED_FLOOR = 10;
 
+/** The content key of Talento Confiável, the one floor with a rule of its own (a skill the character is proficient in). */
+const RELIABLE_TALENT = 'feature:reliable-talent';
+
 /** The Portuguese name of the feature that changed a d20 (`DiceRoll.treated_as_source`, a content key). */
 const TREATED_SOURCE_NAMES: Readonly<Record<string, string>> = {
-  'feature:reliable-talent': 'Talento Confiável',
+  [RELIABLE_TALENT]: 'Talento Confiável',
 };
 
 /** The name a roll's `treated_as_source` goes by on the screens: the server's `treated_as_source_name` (sent only to the
@@ -98,12 +101,17 @@ export function treatedFormula(roll: DiceRoll, bonusNote = ''): string | null {
   return `d20: ${face} → ${roll.treatedAs} (${treatedSourceName(roll.treatedAsSource, roll.treatedAsSourceName)})${modifierText(roll.modifier)}${note} = ${roll.total}`;
 }
 
-/** "O d20 de 6 contou como 10: perícia com proficiência.": the sentence under the result, or `null` when nothing changed. */
+/** "O d20 de 6 contou como 10: Talento Confiável (perícia com proficiência).": the sentence under the result, or `null`
+ * when nothing changed. It names the feature that did it: a table feature's own name, or Talento Confiável with the rule it
+ * follows. */
 export function treatedSentence(roll: DiceRoll): string | null {
   const face = treatedFace(roll);
-  return face === null || roll.treatedAs === undefined
-    ? null
-    : `O d20 de ${face} contou como ${roll.treatedAs}: perícia com proficiência.`;
+  if (face === null || roll.treatedAs === undefined) {
+    return null;
+  }
+  const name = treatedSourceName(roll.treatedAsSource, roll.treatedAsSourceName);
+  const why = roll.treatedAsSource === RELIABLE_TALENT ? ' (perícia com proficiência)' : '';
+  return `O d20 de ${face} contou como ${roll.treatedAs}: ${name}${why}.`;
 }
 
 /** What a screen reader says for the same roll: "d20: 6, contou 10 por Talento Confiável, mais 9, total 19". */
@@ -119,21 +127,43 @@ export function treatedSpeech(roll: DiceRoll): string | null {
   return `d20: ${face}, contou ${roll.treatedAs} por ${treatedSourceName(roll.treatedAsSource, roll.treatedAsSourceName)}${mod}, total ${roll.total}`;
 }
 
-/** The typed d20's live total before it is sent, when the character's Talento Confiável will raise it: "6 → 10 (Talento
- * Confiável) + 9 = 19". The server owns the rule; this only shows the account the sheet already knows. */
+/** The lowest a d20 of a check counts as for a character: the value, the feature that gives it (content key) and its name. */
+export interface CheckFloor {
+  readonly value: number;
+  readonly source: string;
+  readonly name: string;
+}
+
+/** The floor of a check the sheet knows: Talento Confiável (10) for a skill with proficiency, and the highest table minimum
+ * that covers checks. The higher wins and a tie keeps Talento Confiável, as the server decides it. `null` when none applies. */
+export function checkFloorOf(
+  skillKey: string | null,
+  reliableTalent: readonly string[] | undefined,
+  table: CheckFloor | null | undefined,
+): CheckFloor | null {
+  const reliable: CheckFloor | null =
+    skillKey && reliableTalent?.includes(skillKey)
+      ? { value: TREATED_FLOOR, source: RELIABLE_TALENT, name: '' }
+      : null;
+  if (reliable && (!table || table.value <= reliable.value)) {
+    return reliable;
+  }
+  return table ?? null;
+}
+
+/** The typed d20's live total before it is sent, when a floor will raise it: "6 → 10 (Talento Confiável) + 9 = 19". The
+ * server owns the rule; this only shows the account the sheet already knows. */
 export function treatedPreview(
   face: number,
   bonus: number,
-  source: string,
-  name = '',
+  floor: CheckFloor,
 ): { readonly text: string; readonly total: number } | null {
-  const to = TREATED_FLOOR;
-  if (face >= to) {
+  if (face >= floor.value) {
     return null;
   }
-  const total = to + bonus;
+  const total = floor.value + bonus;
   return {
-    text: `${face} → ${to} (${treatedSourceName(source, name)})${modifierText(bonus)} = ${total}`,
+    text: `${face} → ${floor.value} (${treatedSourceName(floor.source, floor.name)})${modifierText(bonus)} = ${total}`,
     total,
   };
 }
@@ -147,9 +177,22 @@ export function rollText(roll: DiceRoll): string {
   return roll.modifier === 0 ? `${roll.total} · dado físico` : `${rollFormula(roll)} · dado físico`;
 }
 
-/** A d20 whose bonus is not carried, only its face and total: `1d20 (2) + 2 = 4`, `1d20 (4) − 1 = 3`. */
-export function d20TotalText(face: number, total: number): string {
-  return `1d20 (${face})${modifierText(total - face)} = ${total}`;
+/** The d20 a table feature's floor raised, as the server sends it beside a roll that has no DiceRoll: the number it counted
+ * as, and the feature (its content key and its name, which only the roller and the master get). */
+export interface TreatedD20 {
+  readonly as: number;
+  readonly source: string;
+  readonly name: string;
+}
+
+/** A d20 whose bonus is not carried, only its face and total: `1d20 (2) + 2 = 4`, `1d20 (4) − 1 = 3`. When a feature raised
+ * the die the total counts the raised number, so the line says so: `d20: 2 → 8 (Olho Aguçado) + 2 = 10`. */
+export function d20TotalText(face: number, total: number, treated?: TreatedD20): string {
+  if (treated === undefined) {
+    return `1d20 (${face})${modifierText(total - face)} = ${total}`;
+  }
+  const name = treatedSourceName(treated.source, treated.name);
+  return `d20: ${face} → ${treated.as} (${name})${modifierText(total - treated.as)} = ${total}`;
 }
 
 /** The typed d20 and its bonus, before it is sent: `16 + 5 = 21`. */

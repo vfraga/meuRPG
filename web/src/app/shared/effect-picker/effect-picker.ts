@@ -46,10 +46,14 @@ import { CHOICE_GROUP_ICON, insertAt } from './effect-picker-choices';
 import { FeatChoiceView } from './feat-choice-view';
 import {
   afterTarget,
+  choiceHint,
+  choiceList,
   fieldLabel,
   fieldView,
   fixedHint,
   fixedMode,
+  holdsSomething,
+  leftTheMenuChoice,
   listOptions,
   modeLockNote,
   refHint,
@@ -177,14 +181,7 @@ export class EffectPicker {
   protected readonly typeIssues = computed(() => this.issuesOf()(`${this.basePath()}.type`));
 
   private filled(f: EffectMenuField): boolean {
-    const v = this.effect()[meterKey(f.name) ?? draftKey(f.name)];
-    return Array.isArray(v)
-      ? v.length > 0
-      : typeof v === 'number'
-        ? v !== 0
-        : typeof v === 'string'
-          ? v.trim() !== ''
-          : v === true;
+    return holdsSomething(this.effect()[meterKey(f.name) ?? draftKey(f.name)]);
   }
 
   protected path(field: string): string {
@@ -299,8 +296,7 @@ export class EffectPicker {
     }
     if (f.kind === 'choice') {
       const value = this.read(f.name);
-      const picked = this.optionsOf(f).find((o) => o.value === value);
-      return picked?.hint || this.feat.hint(f, value) || own;
+      return choiceHint(this.optionsOf(f), f, value, this.feat.hint(f, value), own);
     }
     return own;
   }
@@ -310,11 +306,10 @@ export class EffectPicker {
     return listOptions(this.menu(), this.effect(), f, this.spellOptions());
   }
 
-  /** A choice with a placeholder when it is required, and a real "Padrão" (the field left empty) when it is not. */
   protected choiceOptions(f: EffectMenuField): SelectOption[] {
     const list = this.feat.withChoices(f, this.optionsOf(f));
-    const empty = this.effect().type === 'roll_minimum' ? 'Qualquer tipo' : 'Padrão';
-    return f.required || this.unreadable(f) ? list : [{ value: '', label: empty }, ...list];
+    const kept = leftTheMenuChoice(f, this.read(f.name), this.optionsOf(f));
+    return choiceList(list, kept, f.required || this.unreadable(f), this.effect().type);
   }
 
   protected groupsOf(f: EffectMenuField) {

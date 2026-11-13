@@ -105,6 +105,13 @@ Each event, coalesced to at most one per 250 ms, becomes a `changed` that carrie
 The tab then calls `GetTableScreen`, and what it shows is only that read.
 This is why the TV shows nothing when a hidden NPC moves, even though the master's own stream knows it.
 The stream sends `ready` first, `heartbeat` every 25 s and `session_ended` when the session ends.
+`ready` and `heartbeat` carry the session's hint number ([Live session](live-session.md#the-hint-number)): `ready` the number at connect, `heartbeat` the number read from the database, or 0 when it could not be read.
+The TV reads `GetTableScreen` after `ready`, so that read includes every write up to the number.
+A `changed` can be lost, and the screen would then stay stale; a heartbeat whose number is ahead of the watcher's reads the screen again, once.
+`seenSeq` moves to that number only when the read worked, so a failed read is tried again at the next heartbeat.
+A heartbeat that arrives during a read joins it, and one more read follows.
+The number is a counter and carries nothing of what the master chose or hid, so the stream tells the TV nothing a read would not.
+The watcher is `web/src/app/core/play/table-screen-watcher.ts`.
 It lives at most 10 minutes, like `WatchGameSession`.
 Its hub user id is `tv:` and the master's id.
 So the TV's streams do not count in the master's cap of four streams.

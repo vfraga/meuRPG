@@ -245,6 +245,8 @@
   "PassivePerception": 11,
   "PassiveInvestigation": 16,
   "PassiveInsight": 13,
+  "HitDieMinimum": 0,
+  "CarryCapacityLb": 180,
   "Initiative": 3,
   "ArmorClass": 13,
   "ArmorClassDescription": "Sem armadura",

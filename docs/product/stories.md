@@ -69,6 +69,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 | [MR-054](#mr-054-use-a-creatures-action-from-its-turn) | Combat | MVP |
 | [MR-055](#mr-055-answer-a-creatures-rider) | Combat | MVP |
 | [MR-056](#mr-056-show-the-table-on-a-screen) | Session | MVP |
+| [MR-057](#mr-057-turn-the-sun-on-in-a-combat) | Combat | MVP |
 | [MR-002](#mr-002-generate-an-invite) | Campaign | MVP (prerequisite) |
 | [MR-005](#mr-005-create-npcs) | Character | MVP (prerequisite) |
 | [MR-007](#mr-007-import-a-sheet-from-pdf) | Character | Later |
@@ -138,6 +139,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 - **Given** a complete character, **when** the player opens the sheet on a phone, **then** they see the sections of the official sheet (abilities, skills, combat, spells, equipment) **and** the calculated values, such as modifiers, armor class, hit points, spell save DC and spell attack, come ready from the server.
 - **Given** the sheet's "Equipamento", **when** the player reads it, **then** it lists the armour, the shield, the weapons and the items, then the background's equipment as text ("Do antecedente: …", a table background's or what the player wrote for a custom "Outro" background), then the coins. A versatile weapon shows its two-handed damage under its damage ("Com duas mãos: 1d8+1").
 - **Given** armour, a shield or a weapon the sheet lists, **when** the owner equips or stows it after the lock (RN-01), **then** the server returns the armour class, the attacks and the Mage Armor check derived from the equipped gear only; what the character only carries is listed and counts for nothing. The sheet's "Equipamento" lists them in two groups, "Equipado" and "Carregado", each piece with "Equipar" or "Guardar" (the owner, the master, any time the character lives; a dead character's sheet has none); the names, the groups and the armour class a change would give come from the server (`DerivedSheet.gear`), and after a change the sheet says what moved and the new armour class and puts the focus on the moved piece's button.
+- **Given** a weapon with a mark (silvered, adamantine, magical), **when** the sheet, the attacks or the combat's gear shows it, **then** its tags say the marks in words ("Prateada", "Adamantina", "Mágica") and a plain weapon has none; **when** the owner (while the sheet is editable) or the master opens the weapon's "⋮" menu, **then** "Marcas da <weapon>" has one row for each mark, and "Salvar marcas" saves them over the whole sheet with its revision (a stale sheet is refused with the usual conflict text); another player never sees the grid, the toggles or the marks of a character they do not own.
 - **Given** the step "Perícias", **when** the race, the subrace or the background already give a skill, **then** it shows checked and locked with where it comes from ("da raça", "do antecedente") and does not count as a pick. The player picks another skill instead of repeating a proficiency, as the SRD allows.
 - **Given** a new character made above level 1 in a campaign that levels by XP from defeated enemies, **when** the editor opens, **then** the experience field starts at the XP of its level (6.500 at level 5) and follows the level until the player types in it. A milestone campaign keeps 0.
 - **Given** the subclass field, **when** the player edits the class, **then** it offers "Nenhuma", says at which level the class picks it ("O Bárbaro escolhe a subclasse no nível 3.") and changes the subclass when the class changes.
@@ -339,6 +341,7 @@ Where a behaviour came from a product answer, the [archive](../archive/decisions
 - **Given** class abilities, **when** the player taps "Usar" (Second Wind, Action Surge), **then** the use is spent; with no uses left the app says "Sem usos: volta num descanso curto". Extra Attack shows "1 ataque restante".
 - **Given** the action or the bonus action is free, **when** the player looks at "Encerrar turno", **then** it is outlined and, with the action free, asks in place; it becomes the filled button when both are spent.
 - **Given** a combat running and a player on their turn, **when** they draw or stow a weapon, **then** the first one in the turn is free and the second, or the shield, spends the action (an extra action from Haste pays instead); armour is refused ("Vestir ou tirar armadura leva minutos: não dá em pleno combate"). On another player's turn nothing changes. The player's "Ataques" tab has a "Sacar ou guardar" fold under the attacks with the armor class in its header, one rule line (first weapon free, then the action; shield: action; armour: only outside combat), each button saying its cost ("Guardar · grátis", "Sacar · ação"), a warning before drawing a two-handed weapon that would leave the shield idle, and the button disabled with its reason when neither the free interaction nor the action is left; a refusal is said in words (`ARMOR_IN_COMBAT`, `NOT_YOUR_TURN`, `ACTION_USED`, `COMBATANT_DOWN`). The master changes gear on the sheet, at no cost. Whether the turn's free interaction is spent is on the combatant (`Combatant.object_interaction_used`), for the owner and the master only.
+- **Given** a swap of gear in a combat, **when** the master undoes the last action, **then** the swap is taken back first: the free interaction, the action or the extra action it spent come back and the piece returns to where it was on the sheet (armor class and attacks follow), and only then the action under it; an earlier action cannot be undone while the swap stands. **And** the combat log shows the swap ("Reator guardou Adaga (ação)", "(grátis)", "(ação extra)"; "(pelo mestre)" when the master made it) to the master and the character's owner only, and the line is gone once it is undone. If the sheet no longer lists the piece, the undo says so and changes nothing.
 
 **Advantage and disadvantage**
 - **Given** an attack, a spell attack or save, a trap, a puzzle hint, a scene check or a search for traps, **when** the server finds a circumstance that gives advantage or disadvantage (a condition of either creature, a creature one cannot see, long range or a hostile within 5 ft for a ranged attack, Reckless Attack, Danger Sense, Pack Tactics, Dodge, a racial advantage on a save against the kind of source the save has: Bravura against fear, Ancestral Feérico against charm, Esperteza Gnômica on Intelligence, Wisdom and Charisma saves against magic, Resiliência Anã against poison), **then** the roll takes two d20, the higher or the lower counts (they cancel each other out when both apply), the screen lists the reasons the player can see **and** shows both dice, the one that counts marked "vale" and the other "descartado"; with real dice the player types both. A hit within 5 ft of a paralyzed or unconscious target is a critical hit (SRD 5.1, "Advantage and Disadvantage", Conditions).
@@ -633,7 +636,7 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - **Given** I register an area spell (a 4.5 m cone, a 6 m radius sphere), **when** I save it, **then** the area appears in its description, **and** in combat the caster chooses the creatures it hits, as with an SRD area spell.
   A spell with range "Pessoal" or "Toque" is valid; "Pessoal" with "one creature" or "several" is refused.
 - **Given** content registered in "Mirathel", **when** I open another campaign of mine, **then** it does not appear there: content is per campaign.
-- **Given** a feature the game master registers, **when** they pick its effect, **then** they pick from a closed menu (modifier, proficiency, resource, sense, roll mode, action, extra attack, ranged attack, resistance, immunity to a condition, state, weapon rule, weapon of the feature, trigger on an event, choice, maneuver die, note, granted spell).
+- **Given** a feature the game master registers, **when** they pick its effect, **then** they pick from a closed menu (modifier, proficiency, resource, sense, roll mode, action, extra attack, ranged attack, resistance, immunity to a condition, state, weapon rule, weapon of the feature, trigger on an event, choice, maneuver die, note, granted spell, flag, natural attack).
   An action may spend a resource the entry defines (a feat's action, one its own effects define: a table feat with 3 uses per long rest), and a class or subclass feature may carry an **option list** the player picks from (a table's maneuvers, each with its own effects; "Opções para escolher" in the feature editor).
   Table content never runs code.
 - **Given** a table class that casts from a list of its own, **when** I name SRD spells on that list in the class editor ("Magias do SRD na lista da classe"), **then** they join the table spells that name the class: the character prepares and learns them, the level-up offers them and the "Magias" page lists them for the class.
@@ -665,6 +668,12 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 - **Given** a feature with the effect "Valor mínimo no dado" on attack rolls with the value 12, **when** its owner's d20 shows 2, **then** the roll keeps the face 2, says it counts as 12 and names the feature, and the total uses 12.
   A value outside 2 to 20 is refused at its field, and a damage type on a minimum that covers more than damage is refused at its field.
   Of two minimums the higher counts, and a tie with Reliable Talent keeps Reliable Talent.
+- **Given** a feature with the effect "Valor mínimo no dado" on ability checks with the value 12, **when** its owner rolls a scene check or a puzzle hint and the d20 shows 3, **then** the line under the result reads "O d20 de 3 contou como 12: <the feature's name>."
+  The initiative reads "d20: 3 → 12 (<the feature's name>) + 4 = 16" for the master, never "1d20 (3) + 4 = 16".
+  While the player types the d20 of a scene check or a trap search, the total shown before sending already counts the highest minimum that covers checks; a tie with Reliable Talent keeps Reliable Talent.
+  A saving throw in a scene is not a check: the minimum is not previewed there.
+  The server decides the roll.
+- **Given** a feature with the effect "Valor mínimo no dado" on saving throws, **when** the d20 of a creature's rider save (an extra save of an attack) shows less than the value, **then** the log line reads "d20: 2 → 8 (<the feature's name>) + 2 = 10", with the number the total counts.
 - **Given** a feature with the effect "Valor mínimo no dado" on damage with the value 6, **when** its owner rolls a weapon's damage and a d4 shows 1, **then** the die counts as 4 (its highest face) and the damage line shows the 1 and what it counts as; **and** a d8 that shows 3 counts as 6 under the same minimum.
   Another player reads neither the face nor the number.
 - **Given** a feature with the effect "Rolar de novo" on attack rolls, at most 2, spending 1 use of a resource of the feature, **when** its owner's d20 shows 2 or lower and a use is left, **then** the player is asked "rolar de novo?" before the roll is said to succeed or fail; "sim" spends the use and the new d20 stands, "não" spends nothing.
@@ -711,15 +720,16 @@ The data rules, limits and the server side are in [Table content: rules](../arch
 
 - **Given** a feature, a trait or a feat of the table with a modifier of the fly, swim, climb or burrow speed ("Deslocamento de voo", "de natação", "de escalada", "de escavação"; "somar", "pelo menos" or "definir"), **when** a character has it, **then** the sheet lists that speed under the walking speed in meters and feet, **and** it follows the effect's condition (`when`).
   The formula may read `speedwalk()`, the walking speed after the modifiers: a race that swims as fast as it walks writes "definir `speedwalk()`", and a feat that adds 10 ft to the walking speed moves the swimming speed along.
-  In combat a creature moves on its fly speed when it is the better of the two; swimming and climbing are on the sheet only, as the grid has no cost for them.
+  In combat the combatant carries all four speeds (`Combatant.speed_fly_ft`, `speed_swim_ft`, `speed_climb_ft`, `speed_burrow_ft`) for the master and the character's player, as it carries the walking speed; a Wild Shape form and a creature bring their own.
+  A creature moves on its fly speed when it is the better of the two; the grid does not spend the swim, climb or burrow speed, so a move costs what it costs on foot.
 - **Given** an effect "Respira na água", **when** a character has it, **then** the sheet says "Respira na água" in the speed box; the app keeps no air or drowning count.
-- **Given** a feat, a trait or a feature with the effect "Magia concedida" (a spell of the SRD or of the table, the level it starts at, the casting ability — Intelligence, Wisdom, Charisma or "o jogador escolhe" —, the resource each cast spends, a switch to cast it with a slot too, a switch for rituals only and a switch to list it among the known spells), **when** a character has it, **then** the sheet lists the spell under "Magias concedidas" with its source, how it is cast and the DC and attack bonus of the grant, **and** the character's known spells, cantrips and prepared numbers stay as they were.
-  A leveled spell is cast at its own level, a cantrip scales with the character level, and the material components are not waived.
+- **Given** a feat, a trait or a feature with the effect "Magia concedida" (a spell of the SRD or of the table, the level it starts at, the casting ability — Intelligence, Wisdom, Charisma or "o jogador escolhe" —, the resource each cast spends, a switch to cast it with a slot too, a switch for rituals only, a switch to list it among the known spells, a switch for no material components and, for a limited grant, how many uses each cast spends), **when** a character has it, **then** the sheet lists the spell under "Magias concedidas" with its source, how it is cast and the DC and attack bonus of the grant, **and** the character's known spells, cantrips and prepared numbers stay as they were.
+  A leveled spell is cast at its own level, a cantrip scales with the character level, and the material components are not waived unless the grant says so; then the sheet and the cast sheet leave the "M" out of the component line (nothing else changes: the server never checks components).
   When the ability is "o jogador escolhe", the player picks it once, in the sheet's choices, and until then the grant has no numbers.
 - **Given** a granted spell, **when** the player casts it, in a fight or outside one, **then** the cast sheet offers it as a way of its own, with no spell slot (a slot only when the grant allows one), using the grant's ability for the attack roll and the saving throw DC.
-  A limited grant spends one use of its resource: the second cast with no use left is refused ("A concessão não tem mais usos."), the undo of the first gives it back, and an at-will grant never runs out.
+  A limited grant spends the uses its cost says (one by default): a cast the uses left do not cover is refused ("A concessão não tem mais usos."), the undo of the first gives it back, and an at-will grant never runs out.
   A ritual-only grant casts as a ritual.
-- **Given** the effect editor, **when** I register a granted spell, **then** the server refuses a spell that does not exist, a ritual-only grant on a spell without the ritual tag, a resource the entry does not define and an ability that is none of the four, each at its field.
+- **Given** the effect editor, **when** I register a granted spell, **then** the server refuses a spell that does not exist, a ritual-only grant on a spell without the ritual tag, a resource the entry does not define, a cost with no resource and an ability that is none of the four, each at its field.
 
 **Options for the SRD's option sets.**
 
@@ -1757,6 +1767,29 @@ See [Architecture](../architecture/campaign-package.md).
 
 #### Related
 - [MR-012](#mr-012-follow-the-session), [MR-028](#mr-028-show-an-image-to-the-players), [MR-036](#mr-036-fog-of-war-by-sight), [RN-10](rules.md#rn-10-map-without-spoilers).
+
+### MR-057: Turn the sun on in a combat
+
+**As a** game master, **I want** to turn the sunlight on for a combat, on the whole map or on the squares I paint, **so that** the creatures that fear the sun (a drow, a specter, a shadow) roll the way the rules say without my remembering it.
+
+- Priority: MVP
+- Rules: RN-20, RN-29
+- Modules: play, rules
+
+#### Acceptance criteria
+- **Given** I am the master of a combat, **when** I press the sun button on the combat bar ("Luz do sol"), **then** the sun is on for the whole map; **given** I choose "Onde eu pintar" and paint squares, **then** only those squares are in the sun, and "Pronto" ends the painting.
+- **Given** the sun is on and a drow stands in it, **when** I roll its attack, **then** the roll mode suggests "Desvantagem. Luz do sol (Sensibilidade à Luz do Sol)"; a creature with no such trait rolls as before.
+- **Given** a specter in the sun, **when** it makes a Perception check, **then** the check has disadvantage "nos testes que dependem da visão"; **given** a shadow (Sunlight Weakness) in the sun, **then** its attacks, checks and saving throws have it.
+- **Given** a creature stands in a Darkness zone, **then** it is not in the sun.
+- **Given** I turn the sun off, **then** the scope and the painted squares stay for the next time; **given** I undo, **then** the sun change does not close the undo.
+- **Given** I am a player, **then** I never read that the sun is on, where it reaches, who stands in it or which trait a creature has, on a map I see in part or not at all; a roll the sun changed names its source as "Outra fonte" (RN-20).
+
+#### In the app
+- The sun button sits on the combat bar (master only); the scope and "Pintar" are in the map card, only while the sun is on. See [Design](../design/combat.md).
+
+#### Related
+- [MR-042](#mr-042-bestiary), [RN-29](rules.md#rn-29-monsters-in-combat).
+
 
 ## Priority: MVP (prerequisite)
 

@@ -22,11 +22,12 @@
 # everything not named here, so a NEW package lands in "rest" on its own and
 # is never skipped. If a group gets too slow, move a package up.
 #
-# The play package alone took 920 s, so it is split by test: play-1 to play-4
+# The play package alone took 920 s, so it is split by test: play-1 to play-6
 # each run the tests whose name hashes (cksum) to their part, with
 # `-run '^(TestA|TestB)$'`. The leaktest package is split the same way, in
 # leak-1 and leak-2: every test builds its own world, so no test needs another
-# to run first. A package is split by adding its prefix to split_prefixes, its
+# to run first. The rules package (pure, CPU-bound under -race and coverage)
+# is split in rules-1 to rules-3: whole, it reached the 25-minute -timeout. A package is split by adding its prefix to split_prefixes, its
 # directory to split_dir (when it is not the prefix), its number of parts to
 # split_parts, and its parts to case_packages' pattern. The hash is stable:
 # adding a test never moves the others, and a NEW test lands in a part by
@@ -40,29 +41,31 @@ module=github.com/PuraFome/meuRPG/backend
 
 case_packages() {
   case "$1" in
-    play-[1-9]|leak-[1-9]) echo "$module/internal/$(split_dir "${1%-*}")" ;;
+    play-[1-9]|leak-[1-9]|rules-[1-9]) echo "$module/internal/$(split_dir "${1%-*}")" ;;
     maps) echo "$module/internal/maps" ;;
     characters) echo "$module/internal/characters $module/migrations $module/internal/progression" ;;
-    # The CPU-bound pure packages, kept off the runners of the database ones, in two groups.
-    rules) echo "$module/internal/rules" ;;
+    # The CPU-bound pure packages, kept off the runners of the database ones: rules (split
+    # above, in rules-1 to rules-3) and dungeon with puzzle.
     dungeon) echo "$module/internal/rules/dungeon $module/internal/rules/puzzle" ;;
     rest) echo "" ;;
     *) echo "unknown group: $1" >&2; return 1 ;;
   esac
 }
 
-# play-2 to play-4 name the same package as play-1, and leak-2 the same as
-# leak-1: only the first part of a split package counts here.
-named_groups="play-1 maps characters rules dungeon leak-1"
+# play-2 to play-6 name the same package as play-1, leak-2 the same as leak-1,
+# and rules-2 and rules-3 the same as rules-1: only the first part of a split
+# package counts here.
+named_groups="play-1 maps characters rules-1 dungeon leak-1"
 
-# The split packages, by the prefix of their groups (play-N, leak-N): the
+# The split packages, by the prefix of their groups (play-N, leak-N, rules-N): the
 # directory under internal/ that case_packages names, and the number of parts.
-split_prefixes="play leak"
+split_prefixes="play leak rules"
 split_dir() { case "$1" in leak) echo leaktest ;; *) echo "$1" ;; esac; }
 split_parts() {
   case "$1" in
-    play) echo 4 ;;
+    play) echo 6 ;;
     leak) echo 2 ;;
+    rules) echo 3 ;;
     *) echo "not a split package: $1" >&2; return 1 ;;
   esac
 }
@@ -110,7 +113,7 @@ run_regex() {
 if [ "${1:-}" = "--run" ]; then
   group=${2:?usage: go-db-shard.sh --run <group>}
   case "$group" in
-    play-[1-9]|leak-[1-9])
+    play-[1-9]|leak-[1-9]|rules-[1-9])
       # A part number past the package's parts has no tests: fail, do not run nothing.
       if [ "${group#*-}" -gt "$(split_parts "${group%-*}")" ]; then
         echo "::error::unknown group: $group" >&2

@@ -141,7 +141,9 @@ describe('SceneRollSheet', () => {
       'd20: 6 → 10 (Talento Confiável) + 9 = 19',
     );
     const cap = Array.from(el.querySelectorAll('.res__cap')).map((n) => n.textContent?.trim());
-    expect(cap).toContain('O d20 de 6 contou como 10: perícia com proficiência.');
+    expect(cap).toContain(
+      'O d20 de 6 contou como 10: Talento Confiável (perícia com proficiência).',
+    );
     expect(el.querySelector('.res .mr-visually-hidden')?.textContent).toBe(
       'd20: 6, contou 10 por Talento Confiável, mais 9, total 19',
     );
@@ -175,6 +177,43 @@ describe('SceneRollSheet', () => {
     type('14');
     expect(sum()).toContain('14 + 6 = 20 · dado físico');
     expect(sum()).not.toContain('Talento');
+  });
+
+  it('previews the typed d20 raised by a table minimum on a check, naming the feature', () => {
+    const { fixture, el, button, type } = setup({
+      checkFloor: { value: 12, source: 'content:feat-keen', name: 'Olho Aguçado' },
+    });
+    button('Digitar o resultado')!.click();
+    fixture.detectChanges();
+    type('3');
+    const sum = el.querySelector('.type__sum')?.textContent?.replace(/\s+/g, ' ');
+    expect(sum).toContain('3 → 12 (Olho Aguçado) + 6 = 18');
+    expect(el.querySelector('.type__num')?.textContent).toBe('18');
+  });
+
+  it('keeps Talento Confiável when the table minimum only ties it', () => {
+    const { fixture, el, button, type } = setup({
+      action: { ...playerScene().actions[0], key: 'skill:acrobatics' },
+      reliableTalent: ['skill:acrobatics'],
+      checkFloor: { value: 10, source: 'content:feat-keen', name: 'Olho Aguçado' },
+    });
+    button('Digitar o resultado')!.click();
+    fixture.detectChanges();
+    type('6');
+    expect(el.querySelector('.type__sum')?.textContent).toContain('Talento Confiável');
+    expect(el.querySelector('.type__sum')?.textContent).not.toContain('Olho Aguçado');
+  });
+
+  it('does not preview the table check minimum on a saving throw', () => {
+    const { fixture, el, button, type } = setup({
+      action: { ...playerScene().actions[0], key: 'save:wis' },
+      checkFloor: { value: 12, source: 'content:feat-keen', name: 'Olho Aguçado' },
+    });
+    button('Digitar o resultado')!.click();
+    fixture.detectChanges();
+    type('3');
+    expect(el.querySelector('.type__sum')?.textContent).not.toContain('Olho Aguçado');
+    expect(el.querySelector('.type__sum')?.textContent).toContain('3 + 6 = 9');
   });
 
   it('previews nothing of the rule for a check the feature does not raise (no skill with proficiency)', () => {

@@ -2,6 +2,7 @@ import { Component, computed, input, output } from '@angular/core';
 
 import { abilityLabel, formatModifier } from '../../../core/characters/character-labels';
 import type { VitalsVm } from '../../../core/play/live-session.types';
+import { WeaponTags } from '../../../shared/weapon-tags/weapon-tags';
 import { SpellHelp } from '../../../shared/spell-details/spell-help';
 import { FullSheetVm } from '../character-sheet.types';
 import { CombatStats } from '../combat-stats/combat-stats';
@@ -24,7 +25,7 @@ import {
  */
 @Component({
   selector: 'app-combat-column',
-  imports: [CombatStats, SpellHelp],
+  imports: [CombatStats, SpellHelp, WeaponTags],
   templateUrl: './combat-column.html',
   styleUrl: './combat-column.scss',
 })

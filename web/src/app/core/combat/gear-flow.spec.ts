@@ -91,6 +91,18 @@ describe('GearFlow', () => {
     expect(f.gear()[0].equipped).toBe(false);
   });
 
+  it('reads again after the master’s undo of a swap, so the piece comes back to the list', async () => {
+    let gear = [{ ...sword, equipped: false }];
+    const { f, calls, revision, settle } = flow(() => Promise.resolve(read({ gear })));
+    await settle();
+    expect(f.gear()[0].equipped).toBe(false);
+    gear = [sword]; // the undo put the piece back and gave the turn's free interaction back: the signature moves
+    revision.set(2);
+    await settle();
+    expect(calls.read).toBe(2);
+    expect(f.gear()[0].equipped).toBe(true);
+  });
+
   it('does not read while the fold is closed, and reads what moved when it opens', async () => {
     const { f, calls, revision, settle } = flow(() => Promise.resolve(read()));
     await settle();

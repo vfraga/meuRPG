@@ -257,7 +257,7 @@ export class HintTryControl {
     return r.roll?.total ?? 0;
   }
 
-  /** "O d20 de 6 contou como 10: perícia com proficiência.", when a feature raised the die (Talento Confiável). */
+  /** "O d20 de 6 contou como 10: Talento Confiável (perícia com proficiência).", when a feature raised the die (Talento Confiável). */
   protected note(r: HintTry): string {
     return r.roll ? (treatedSentence(r.roll) ?? '') : '';
   }

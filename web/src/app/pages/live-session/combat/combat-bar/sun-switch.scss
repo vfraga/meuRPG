@@ -1,0 +1,74 @@
+:host {
+  display: inline-flex;
+  flex: none;
+  align-self: flex-start; // never stretched across a column bar: it is a switch, not a button
+}
+
+// The master's sun switch: the sun and a visible switch track with a thumb, a 44px target. Off, the thumb sits at the left of an
+// empty track and the sun is the setting one; on, the thumb sits at the right of a filled track and the sun is the full one, so the
+// state never rests on colour alone.
+.sun {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mr-space-1);
+  box-sizing: border-box;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 var(--mr-space-2);
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-pill);
+  background: transparent;
+  color: var(--mr-ink);
+  cursor: pointer;
+
+  &__track {
+    position: relative;
+    flex: none;
+    box-sizing: border-box;
+    width: 34px;
+    height: 20px;
+    border: 2px solid var(--mr-control-line);
+    border-radius: var(--mr-radius-pill);
+    background: var(--mr-surface);
+  }
+
+  &__thumb {
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--mr-ink-muted);
+    transform: translateY(-50%);
+    transition: left 120ms ease;
+  }
+
+  &--on {
+    border-color: var(--mr-warning-line);
+    background: var(--mr-warning-surface);
+  }
+
+  &--on &__track {
+    border-color: var(--mr-accent);
+    background: var(--mr-accent);
+  }
+
+  &--on &__thumb {
+    left: 16px;
+    background: var(--mr-on-accent);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &__thumb {
+      transition: none;
+    }
+  }
+}

@@ -227,9 +227,7 @@ func (w *world) banditsTurn() (toren, bandit *playv1.Combatant) {
 	must(m.combat.SetCombatantHidden(ctx, rq(&playv1.SetCombatantHiddenRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: bandit.GetId(), IdempotencyKey: newKey(), Hidden: false})))
 	w.allow("bandit-name", w.ana, w.caio)
 	w.secrets.allowNeedle(bandit.GetId(), w.ana, w.caio)
-	for id, sq := range map[string][2]int32{toren.GetId(): {12, 14}, bandit.GetId(): {13, 14}} {
-		must(m.combat.MoveCombatant(ctx, rq(&playv1.MoveCombatantRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), CombatantId: id, IdempotencyKey: newKey(), Col: sq[0], Row: sq[1], Forced: true})))
-	}
+	w.placeForced(m, w.encounter.GetId(), placement{toren.GetId(), 12, 14}, placement{bandit.GetId(), 13, 14})
 	w.passTurnsTo(bandit.GetId())
 	return toren, bandit
 }

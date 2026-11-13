@@ -4,17 +4,27 @@ import { timestampDate } from '@bufbuild/protobuf/wkt';
 
 import {
   TableContentKind,
+  type TableContentViolation,
   type TableEntry,
 } from '../../../../gen/meurpg/rules/v1/table_content_pb';
 import { formatDateTime } from '../../../core/characters/character-labels';
 import type { CatalogVm } from '../../../core/content/catalog';
 import { contentErrorText } from '../../../core/content/content-client';
+import type { ContentContext } from '../../../core/content/content-context';
 import {
   type ContentNavKind,
   KIND_NOUNS,
   KIND_WORDS,
   usageSentence,
 } from '../../../core/content/content-kinds';
+import {
+  type LeftOutModel,
+  type LeftOutNote,
+  NO_LEFT_OUT,
+  buildLeftOut,
+  leftOutNote,
+  violationOfEntry,
+} from '../../../core/content/left-out';
 import { readEntry } from '../../../core/content/content-read';
 import type { EntryRead, NameOf } from '../../../core/content/content-read-parts';
 import { optionSummary } from '../../../core/content/feat-options';
@@ -22,7 +32,7 @@ import { featureToDraft } from '../../../core/content/feature-draft';
 import { parentViewOf } from '../../../core/content/subrace-traits';
 import type { EffectMenuVm } from '../../../core/content/effect-draft';
 import { openSheet } from '../../../shared/sheet/sheet-host';
-import { ArchiveSheet } from '../archive/archive-sheet';
+import { ArchiveSheet, type ArchiveSheetData } from '../archive/archive-sheet';
 
 /** The URL's word for the kind of a new entry ("new/spell"). */
 export const NEW_KINDS: Readonly<Record<string, TableContentKind>> = {
@@ -186,18 +196,14 @@ export function confirmArchiveInSheet(
   dialog: MatDialog,
   bottomSheet: MatBottomSheet,
   entry: TableEntry,
+  verb: 'Arquivar' | 'Remover' = 'Arquivar',
 ): Promise<boolean> {
   return new Promise<boolean>((resolve) =>
-    openSheet<ArchiveSheet, { name: string; using: number }, boolean>(
-      dialog,
-      bottomSheet,
-      ArchiveSheet,
-      {
-        data: { name: entry.namePt, using: entry.charactersUsing },
-        ariaLabel: `Arquivar ${entry.namePt}?`,
-        labelledBy: 'archive-t',
-      },
-    ).subscribe((r) => resolve(r === true)),
+    openSheet<ArchiveSheet, ArchiveSheetData, boolean>(dialog, bottomSheet, ArchiveSheet, {
+      data: { name: entry.namePt, using: entry.charactersUsing, verb },
+      ariaLabel: `${verb} ${entry.namePt}?`,
+      labelledBy: 'archive-t',
+    }).subscribe((r) => resolve(r === true)),
   );
 }
 
@@ -270,4 +276,31 @@ export function readOfEntry(
         menu ? (o) => optionSummary(featureToDraft(o), menu, true) : undefined,
       )
     : null;
+}
+
+/** What the page says of the entries the rules refuse (the master's only): the model, the violation to put on the editor's field
+ * when this entry is out for a field of its own, and "Esta classe está fora da campanha." with what to do. */
+export function leftOutView(
+  ctx: ContentContext | null,
+  key: string,
+  editing: boolean,
+): {
+  readonly model: LeftOutModel;
+  readonly violation: TableContentViolation | null;
+  readonly note: LeftOutNote | null;
+  /** "Remover" on an entry the rules left out, "Arquivar" otherwise: the same archive, the master's word for it. */
+  readonly verb: 'Arquivar' | 'Remover';
+} {
+  const model = ctx?.isMaster ? buildLeftOut(ctx.entries, ctx.leftOut) : NO_LEFT_OUT;
+  const entry = ctx?.entries.find((e) => e.key === key);
+  const violation =
+    ctx && model.rows.some((r) => r.entry.key === key)
+      ? (violationOfEntry(ctx.leftOut, key) ?? null)
+      : null;
+  return {
+    model,
+    violation,
+    note: entry ? leftOutNote(entry, model, editing) : null,
+    verb: violation ? 'Remover' : 'Arquivar',
+  };
 }

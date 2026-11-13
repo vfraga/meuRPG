@@ -37,7 +37,7 @@ func (x *deriver) withShield(ac int, name string) (int, string) {
 		x.d.ShieldIdle = true
 		x.d.Hints = append(x.d.Hints, Hint{
 			Source: shieldKey, Target: "ac", Targets: []string{"ac"}, Mode: "note",
-			TextPT: "O escudo não conta na CA enquanto uma arma de duas mãos está na ficha: guarde a arma de duas mãos.",
+			TextPT: "O escudo não conta na CA enquanto uma arma de duas mãos está equipada: guarde a arma de duas mãos.",
 		})
 		return ac, name
 	}

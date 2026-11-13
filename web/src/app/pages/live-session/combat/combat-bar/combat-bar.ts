@@ -26,6 +26,8 @@ import { isCreature } from '../../../../core/combat/creature-names';
 import { pendingCountText } from '../../../../core/held-rolls/held-text';
 import { unactedPlayerOnTurn } from '../../../../core/combat/combat-derived';
 import { NextTurn } from './next-turn';
+import { SunSwitch } from './sun-switch';
+import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query';
 import { TheatrePill } from '../theatre/theatre-pill';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 
@@ -45,6 +47,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
     MatIconModule,
     NextTurn,
     NgTemplateOutlet,
+    SunSwitch,
     TheatrePill,
   ],
   templateUrl: './combat-bar.html',
@@ -88,6 +91,11 @@ export class CombatBar {
   readonly begin = output<void>();
   /** "Cancelar combate" in setup, confirmed. */
   readonly cancelCombat = output<void>();
+  /** The sun switch: `true` asks for the sun, `false` takes it out (the scope stays). */
+  readonly sunlight = output<boolean>();
+
+  /** On a phone the sun switch is in the combat header (active) or the bar's head (setup), not among the buttons. */
+  protected readonly phone = mediaQuery(PHONE_QUERY);
 
   protected readonly confirming = signal(false);
   /** The question "Cancelar o combate?" of the setup is open. */

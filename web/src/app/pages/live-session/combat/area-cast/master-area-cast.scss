@@ -55,3 +55,19 @@
   --mat-button-text-label-text-color: var(--mr-accent-text);
   font-weight: 700;
 }
+
+.missing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: var(--mr-font-14);
+  font-weight: 500;
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}

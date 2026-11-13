@@ -5,7 +5,7 @@ import { getEncounterRPC, passTurnsTo, passTurnsToAndWait } from './combat-suppo
 import { openSessionPage } from './live-session-support';
 import { callRPC } from './support';
 import { combatRPC } from './combat-support';
-import { castZoneRPC, moreZonesTable, zoneCard, zoneLayer, zonesPanel, zonesRPC } from './zones-support';
+import { castZoneRPC, moreZonesTable, expectOnMap, zoneCard, zonesPanel, zonesRPC } from './zones-support';
 
 // The eight spells that keep an area (RN-37) on the two screens, past the three the first spec covers: what the master's and
 // the player's cards read, the master's calls, the saves a player is asked and the log's lines. The table and the casts come
@@ -39,8 +39,8 @@ test(
       await expect(zoneCard(t.m, 'Escuridão · Mago')).toContainText('Esfera de 4,5 m de raio');
       await expect(zoneCard(t.m, 'Escuridão · Mago')).toContainText('Você decide: a luz de uma magia de nível 2 ou menor que toque a Escuridão é dissipada.');
       for (const label of ['Névoa Obscurecente · Druida', 'Escuridão · Mago']) {
-        await expect(zoneLayer(t.m)).toContainText(label);
-        await expect(zoneLayer(t.p)).toContainText(label);
+        await expectOnMap(t.m, label);
+        await expectOnMap(t.p, label);
       }
 
       // The player reads the same two zones by name and area alone: no call of the master's.
@@ -124,7 +124,7 @@ test(
       await openSessionPage(t.m, t.campaignId);
       await castZoneRPC(t.m, t, t.id('Druida'), 'spell:stinking-cloud', { col: me.col ?? 0, row: me.row ?? 0 }, 3);
       await expect(zoneCard(t.m, 'Névoa Fétida · Druida')).toContainText('Você decide: quem não precisa respirar passa no teste sem rolar.');
-      await expect(zoneLayer(t.p)).toContainText('Névoa Fétida · Druida');
+      await expectOnMap(t.p, 'Névoa Fétida · Druida');
       await expect(zoneCard(t.p, 'Névoa Fétida · Druida')).toBeVisible();
       await expect(zoneCard(t.p, 'Névoa Fétida · Druida')).not.toContainText('Você decide');
       await expect(t.p.getByRole('dialog')).toHaveCount(0);
@@ -159,7 +159,7 @@ test(
       await openSessionPage(t.m, t.campaignId);
       await castZoneRPC(t.m, t, t.id('Druida'), 'spell:silence', { col: 3, row: 12 }, 2);
       await passTurnsTo(t.m, t.campaignId, 'Mago');
-      await expect(zoneLayer(t.m)).toContainText('Silêncio · Druida');
+      await expectOnMap(t.m, 'Silêncio · Druida');
       await expect(t.m.getByText('Surdo', { exact: true }).first()).toBeVisible();
 
       const res = await callRPC(t.m, 'meurpg.play.v1.CombatService/CastSpell', {

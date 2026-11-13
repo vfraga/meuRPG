@@ -37,9 +37,14 @@ import {
   shapeText,
   stepOneTitle,
 } from '../../../../core/combat/area-text';
-import { castSubtitle, saveAbility, spellKind } from '../../../../core/combat/cast-flow';
+import {
+  castSubtitle,
+  damageDice,
+  saveAbility,
+  spellKind,
+} from '../../../../core/combat/cast-flow';
 import { CombatClient } from '../../../../core/combat/combat-client';
-import { type SlotRef } from '../../../../core/combat/combat-client-types';
+import { type AreaChoice, type SlotRef } from '../../../../core/combat/combat-client-types';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
 import { circleLabel } from '../../../../core/combat/combat-grid';
 import type { CombatState } from '../../../../core/combat/combat-state';
@@ -48,10 +53,12 @@ import { isCreature } from '../../../../core/combat/creature-names';
 import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { ActionKey } from '../../../../core/connect/idempotency';
 import type { AreaShape } from '../../../../core/combat/spell-area';
+import { type WallChoice, WALL_NEXT, laysWall } from '../../../../core/combat/spell-wall';
 import { AreaList } from '../../../../shared/area-picker/area-list';
 import { AreaNotice } from '../../../../shared/area-picker/area-notice';
 import { AreaMap } from '../../../../shared/area-picker/area-map';
 import { AreaStep } from '../../../../shared/area-picker/area-step';
+import { WallControls } from '../../../../shared/area-picker/wall-controls';
 import { HiddenSwitch } from '../../../../shared/hidden-switch/hidden-switch';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
@@ -93,6 +100,7 @@ export interface MasterAreaCastData {
     MatButtonModule,
     MatIconModule,
     SheetFrame,
+    WallControls,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './master-area-cast.html',
@@ -114,20 +122,36 @@ export class MasterAreaCast {
     sizeFt: this.data.targets.areaSizeFt,
     widthFt: this.data.targets.areaWidthFt,
   };
-  protected readonly flow = new AreaFlow(this.placement, (area) =>
-    this.api.casts.previewSpellArea(
-      this.data.campaignId,
-      this.data.encounterId,
-      this.data.caster.id,
-      this.data.spellKey,
-      this.data.slot,
-      area,
-    ),
+  protected readonly flow = new AreaFlow(
+    this.placement,
+    (area, wall) => this.preview(area, wall),
+    laysWall(this.data.spellKey),
   );
-  protected readonly stepOne = stepOneTitle(this.placement);
-  protected readonly confirmText = confirmLabel(this.placement);
+  /** The spell lays a wall (Muralha de Fogo): "Onde fica", with its shape, length and burning side. */
+  protected readonly lays = !!this.flow.wall();
+  protected readonly stepOne = this.lays ? 'Onde fica' : stepOneTitle(this.placement);
+  protected readonly confirmText = this.lays ? WALL_NEXT : confirmLabel(this.placement);
+
+  /** `PreviewSpellArea` for the placed area; a wall (Muralha de Fogo) goes as the last argument. */
+  private preview(area: AreaChoice | null, wall: WallChoice | null) {
+    const { data } = this;
+    const args = [
+      data.campaignId,
+      data.encounterId,
+      data.caster.id,
+      data.spellKey,
+      data.slot,
+    ] as const;
+    return wall
+      ? this.api.casts.previewSpellArea(...args, area, '', wall)
+      : this.api.casts.previewSpellArea(...args, area);
+  }
 
   protected readonly details = signal<SpellDetails | null>(null);
+  /** The dice of the wall's burning side at the NPC's slot ("5d8"). */
+  protected readonly dice = computed(() =>
+    damageDice(this.details(), this.data.slot?.level ?? this.data.level),
+  );
   /** The table's rule on hidden creatures an area hits, read when the dialog opens (it may change mid-session). */
   protected readonly rule = signal<HiddenAreaHitRule | null>(null);
   /** The master's own choice on the switch; `null` until he touches it. */
@@ -275,12 +299,12 @@ export class MasterAreaCast {
         this.data.slot,
         [],
         die,
-        this.key.keyFor([this.data.slot, area, revealHidden]),
+        this.key.keyFor([this.data.slot, area, this.flow.wall(), revealHidden]),
         undefined,
         '',
         undefined,
         [],
-        { area, revealHidden },
+        { area, revealHidden, ...(this.flow.wall() ? { wall: this.flow.wall() } : {}) },
       );
       this.data.state.apply(res.encounter);
       this.sheet.close(true);

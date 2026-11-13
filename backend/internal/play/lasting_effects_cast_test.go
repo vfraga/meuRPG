@@ -379,7 +379,8 @@ func TestATableSpellEffectDoesNotLeakItsNumbers(t *testing.T) {
 		}
 	}
 	// The other player's log and view carry the canaries nowhere.
-	seen := initiativeRe.ReplaceAllString(a.log(t, a.bia, e).String()+combatantsText(a.get(t, a.bia)), "")
+	// last_seq is a counter of the events the reader may see, never a hit point or a duration
+	seen := initiativeRe.ReplaceAllString(lastSeqRe.ReplaceAllString(a.log(t, a.bia, e).String(), "")+combatantsText(a.get(t, a.bia)), "")
 	for _, canary := range []string{"77", "13"} {
 		if m := regexp.MustCompile(`.{0,60}(^|[^0-9A-Za-z-])` + canary + `([^0-9A-Za-z-]|$).{0,20}`).FindString(seen); m != "" {
 			t.Errorf("the other player's log or view carries %s: %q", canary, m)
@@ -394,6 +395,8 @@ func combatantsText(e *playv1.Encounter) string {
 	}
 	return b.String()
 }
+
+var lastSeqRe = regexp.MustCompile(`last_seq:[0-9]+`)
 
 var initiativeRe = regexp.MustCompile(`initiative[a-z_]*:-?[0-9]+`)
 

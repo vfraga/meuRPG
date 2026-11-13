@@ -348,17 +348,25 @@ func tokenToProto(t mapsdb.MapToken, c *charactersv1.CharacterSummary, v viewer)
 // change to hidden things only reaches the master, so a player's stream
 // never mentions them, not even by a map_changed on a map they see.
 
+// publish is the one function in this package that calls the play module's
+// Publish (master always, players when asked): every other call tells the
+// streams through it (the archtest in internal/archtest/publish_test.go fails
+// for a call to Publish anywhere else). It passes its arguments on unchanged.
+func (s *Service) publish(campaignID string, players bool, ev *playv1.WatchGameSessionResponse) {
+	s.live.Publish(campaignID, players, ev)
+}
+
 // publishMapChanged tells the watching members that a map changed: the
 // master, and the players when players is true.
 func (s *Service) publishMapChanged(campaignID, mapID string, players bool) {
-	s.live.Publish(campaignID, players, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MapChanged_{
+	s.publish(campaignID, players, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MapChanged_{
 		MapChanged: &playv1.WatchGameSessionResponse_MapChanged{MapId: mapID},
 	}})
 }
 
 // publishTokenMoved tells the watching members that a token moved.
 func (s *Service) publishTokenMoved(campaignID string, t mapsdb.MapToken, players bool) {
-	s.live.Publish(campaignID, players, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TokenMoved_{
+	s.publish(campaignID, players, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TokenMoved_{
 		TokenMoved: &playv1.WatchGameSessionResponse_TokenMoved{MapId: t.MapID, CharacterId: t.CharacterID, XBp: t.XBp, YBp: t.YBp},
 	}})
 }
@@ -366,7 +374,7 @@ func (s *Service) publishTokenMoved(campaignID string, t mapsdb.MapToken, player
 // publishCurrentMapCleared tells everyone that the session has no current
 // map anymore: its map was deleted.
 func (s *Service) publishCurrentMapCleared(campaignID string) {
-	s.live.Publish(campaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
+	s.publish(campaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
 		CurrentMapChanged: &playv1.WatchGameSessionResponse_CurrentMapChanged{},
 	}})
 }

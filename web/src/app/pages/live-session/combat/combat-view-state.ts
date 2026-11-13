@@ -103,6 +103,9 @@ export abstract class CombatViewStateDirective {
     return own ? (this.vitals().find((v) => v.characterId === own.characterId) ?? null) : null;
   });
 
+  /** The master is painting the sun on the map (#704): "Próximo turno" waits until "Pronto". */
+  protected readonly sunPainting = signal(false);
+
   /** The calls that answer with the combat: one at a time, the answer applied, a refusal said (`CombatCalls`). */
   protected readonly calls = new CombatCalls({
     api: this.api,
