@@ -8,3 +8,4 @@ Captured on `feat/table-auras-579`, light and dark, at 390, 768 and 1280 (the ma
 - `579-d` a refused number, on the row that wrote it
 - `579-e` the aura row: the range field at a modest width, then "Alcança" as its own group of three equal chips (Aliados, Inimigos, Só quem conjura), one line each; CA, speed and temporary hit points off. `579-e-aura-detalhe` is the close-up of the row.
 - `579-f`, `579-g` what a player reads of the spell
+- `579-h` after merging train 113: both effect blocks on at once, "Deixa um efeito nos alvos" above and "Efeito no próximo golpe" below it, at 768 and 1280 in both themes (390 has no editor). `579-h-costura-2x` is a 2x crop of the seam where the first block ends and the second begins.
