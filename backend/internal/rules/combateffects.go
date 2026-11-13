@@ -94,7 +94,28 @@ const (
 	ModifierSaveDisadvantage = "save_disadvantage"
 	// ModifierCheckDisadvantage gives disadvantage on the ability checks of Abilities.
 	ModifierCheckDisadvantage = "check_disadvantage"
+	// ModifierAura makes the effect an aura: it sits on its bearer and reaches, at the roll or the damage, the
+	// creatures within RadiusFt of the bearer on the Affects side (self, allies, enemies). The other modifiers of
+	// the effect are what the aura gives them. It has no value of its own; it is written by the code of a table
+	// spell's or feature's aura, never chosen as a modifier.
+	ModifierAura = "aura"
 )
+
+// The sides an aura reaches, from its bearer's side.
+const (
+	AuraAffectsSelf    = "self"
+	AuraAffectsAllies  = "allies"
+	AuraAffectsEnemies = "enemies"
+)
+
+// The radius of an aura, in feet: 5 to 120, a multiple of 5 (a square of the map).
+const (
+	MinAuraRadiusFt = 5
+	MaxAuraRadiusFt = 120
+)
+
+// AuraAffects are the sides an aura may reach.
+var AuraAffects = []string{AuraAffectsSelf, AuraAffectsAllies, AuraAffectsEnemies}
 
 // EffectGoaded is the effect a failed goad puts on the target: disadvantage on its attack rolls against
 // anyone but the attacker, until the end of the attacker's next turn (effects/combat_effects.json).
@@ -127,6 +148,9 @@ type EffectModifier struct {
 	Die       int      `json:"die,omitempty"`
 	Sign      int      `json:"sign,omitempty"`
 	AppliesTo []string `json:"applies_to,omitempty"`
+	// RadiusFt and Affects are for ModifierAura: how far from the bearer, and whom (AuraAffects).
+	RadiusFt int    `json:"radius_ft,omitempty"`
+	Affects  string `json:"affects,omitempty"`
 	// Value is the armor class bonus, or the speed multiplier in percent.
 	Value int `json:"value,omitempty"`
 	// Skill is the skill key of ModifierCheckBonus ("skill:stealth").
@@ -283,7 +307,7 @@ var (
 		EffectDurationRounds, EffectDurationUntilStartOfTurnOf, EffectDurationUntilEndOfTurnOf,
 		EffectDurationConcentration, EffectDurationUntilDismissed, EffectDurationLongRest,
 	}
-	modifierKinds = []string{ModifierRollDie, ModifierACBonus, ModifierSpeedMultiplier, ModifierSaveAdvantage, ModifierExtraAction, ModifierNoMove, ModifierNoAction, ModifierNoReaction, ModifierCheckBonus, ModifierSpeedAdd, ModifierBaseAC, ModifierCheckAdvantage, ModifierConditionImmunity, ModifierTurnTempHP, ModifierAttackDisadvantage, ModifierRollBonus, ModifierTempHP, ModifierResistance, ModifierAttackAdvantage, ModifierSaveDisadvantage, ModifierCheckDisadvantage}
+	modifierKinds = []string{ModifierRollDie, ModifierACBonus, ModifierSpeedMultiplier, ModifierSaveAdvantage, ModifierExtraAction, ModifierNoMove, ModifierNoAction, ModifierNoReaction, ModifierCheckBonus, ModifierSpeedAdd, ModifierBaseAC, ModifierCheckAdvantage, ModifierConditionImmunity, ModifierTurnTempHP, ModifierAttackDisadvantage, ModifierRollBonus, ModifierTempHP, ModifierResistance, ModifierAttackAdvantage, ModifierSaveDisadvantage, ModifierCheckDisadvantage, ModifierAura}
 	saveAbilities = []string{"str", "dex", "con", "int", "wis", "cha"}
 	// extraActions are the standard actions an extra action may be: the keys of
 	// effects/standard_actions.json.
@@ -665,6 +689,7 @@ var modifierChecks = map[string]func(m EffectModifier) error{
 	ModifierResistance:        checkResistanceModifier,
 	ModifierSaveDisadvantage:  checkAbilityDisadvantage,
 	ModifierCheckDisadvantage: checkAbilityDisadvantage,
+	ModifierAura:              checkAuraModifier,
 }
 
 // checkModifier checks one modifier's fields against its kind.
@@ -693,6 +718,17 @@ const (
 	maxRollBonus = 20
 	maxTempHP    = 1000
 )
+
+// checkAuraModifier checks the radius and the side of an aura.
+func checkAuraModifier(m EffectModifier) error {
+	if m.RadiusFt < MinAuraRadiusFt || m.RadiusFt > MaxAuraRadiusFt || m.RadiusFt%5 != 0 {
+		return modifierField("radius_ft", "an aura's radius is from %d to %d feet, in steps of 5", MinAuraRadiusFt, MaxAuraRadiusFt)
+	}
+	if !slices.Contains(AuraAffects, m.Affects) {
+		return modifierField("affects", "an aura reaches self, allies or enemies")
+	}
+	return nil
+}
 
 func checkRollBonus(m EffectModifier) error {
 	if m.Value == 0 || m.Value < -maxRollBonus || m.Value > maxRollBonus {

@@ -903,7 +903,11 @@ type LastingEffect struct {
 	EndTextPt string `protobuf:"bytes,28,opt,name=end_text_pt,json=endTextPt,proto3" json:"end_text_pt,omitempty"`
 	// Only the master: the label each target shows the players now ("Paralisado"), or
 	// empty when they read nothing.
-	PlayersSeePt  string `protobuf:"bytes,29,opt,name=players_see_pt,json=playersSeePt,proto3" json:"players_see_pt,omitempty"`
+	PlayersSeePt string `protobuf:"bytes,29,opt,name=players_see_pt,json=playersSeePt,proto3" json:"players_see_pt,omitempty"`
+	// An aura (only the master and the bearer's player read these): how far from the bearer it reaches, in feet, and
+	// whom, from the bearer's side ("self", "allies" or "enemies"). Zero and empty for an effect that is not an aura.
+	RadiusFt      int32  `protobuf:"varint,32,opt,name=radius_ft,json=radiusFt,proto3" json:"radius_ft,omitempty"`
+	Affects       string `protobuf:"bytes,33,opt,name=affects,proto3" json:"affects,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1137,6 +1141,20 @@ func (x *LastingEffect) GetEndTextPt() string {
 func (x *LastingEffect) GetPlayersSeePt() string {
 	if x != nil {
 		return x.PlayersSeePt
+	}
+	return ""
+}
+
+func (x *LastingEffect) GetRadiusFt() int32 {
+	if x != nil {
+		return x.RadiusFt
+	}
+	return 0
+}
+
+func (x *LastingEffect) GetAffects() string {
+	if x != nil {
+		return x.Affects
 	}
 	return ""
 }
@@ -2287,7 +2305,7 @@ const file_meurpg_play_v1_lasting_effects_proto_rawDesc = "" +
 	"\x04dice\x18\x02 \x01(\tR\x04dice\x12&\n" +
 	"\x0fdamage_type_key\x18\x03 \x01(\tR\rdamageTypeKey\x12$\n" +
 	"\x0edamage_type_pt\x18\x04 \x01(\tR\fdamageTypePt\x12!\n" +
-	"\fmax_triggers\x18\x05 \x01(\x05R\vmaxTriggers\"\xa6\n" +
+	"\fmax_triggers\x18\x05 \x01(\x05R\vmaxTriggers\"\xdd\n" +
 	"\n" +
 	"\rLastingEffect\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
@@ -2325,7 +2343,9 @@ const file_meurpg_play_v1_lasting_effects_proto_rawDesc = "" +
 	"\baudience\x18\x1a \x01(\x0e2\x1e.meurpg.play.v1.EffectAudienceR\baudience\x12!\n" +
 	"\fplayer_label\x18\x1b \x01(\tR\vplayerLabel\x12\x1e\n" +
 	"\vend_text_pt\x18\x1c \x01(\tR\tendTextPt\x12$\n" +
-	"\x0eplayers_see_pt\x18\x1d \x01(\tR\fplayersSeePtB\n" +
+	"\x0eplayers_see_pt\x18\x1d \x01(\tR\fplayersSeePt\x12\x1b\n" +
+	"\tradius_ft\x18  \x01(\x05R\bradiusFt\x12\x18\n" +
+	"\aaffects\x18! \x01(\tR\aaffectsB\n" +
 	"\n" +
 	"\b_ends_atB\x0e\n" +
 	"\f_rounds_leftB\v\n" +

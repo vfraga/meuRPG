@@ -21,6 +21,7 @@ func (b *overlayBuilder) checkSpellEffect(c *entryErrors, key, path string, ts *
 	checkEffectHead(c, key, path, ts, target)
 	b.checkEffectConditions(c, key, path, e.Conditions)
 	b.checkEffectModifiers(c, key, path, e.Modifiers)
+	b.checkEffectAura(c, key, path, ts, target)
 	if len(e.Conditions) == 0 && len(e.Modifiers) == 0 {
 		c.at(key, path, ".effect", ReasonValue, "an effect needs a condition or a modifier")
 	}
@@ -34,6 +35,37 @@ func (b *overlayBuilder) checkSpellEffect(c *entryErrors, key, path string, ts *
 		c.at(key, path, ".effect.visibility", ReasonValue, "the visibility is public or owner")
 	}
 	return tableEffectDef(ts)
+}
+
+// auraRefusedKinds are the modifiers an aura cannot give: they are written on the combatant when the effect
+// lands (the armor class, the speed, the temporary hit points), so they would stay behind when it moves away. An
+// aura gives what a roll or a damage reads where the creature stands then.
+var auraRefusedKinds = []string{ModifierACBonus, ModifierSpeedAdd, ModifierSpeedMultiplier, ModifierTempHP}
+
+// checkEffectAura checks the aura of a spell's effect: its radius and side, that the spell is one the caster
+// keeps on themself and that lasts, and that it gives only what is read at the roll.
+func (b *overlayBuilder) checkEffectAura(c *entryErrors, key, path string, ts *TableSpell, target SpellTarget) {
+	a := ts.Effect.Aura
+	if a == nil {
+		return
+	}
+	if err := checkAuraModifier(EffectModifier{Kind: ModifierAura, RadiusFt: a.RadiusFt, Affects: a.Affects}); err != nil {
+		c.at(key, path, ".effect.aura"+modifierFieldSuffix(err), ReasonValue, "%v", err)
+	}
+	if ts.Duration.Kind == DurationInstantaneous {
+		c.at(key, path, ".effect.aura", ReasonValue, "an aura lasts as the spell does: an instantaneous spell has none")
+	}
+	if target.Kind != TargetSelf {
+		c.at(key, path, ".effect.aura", ReasonValue, "an aura is around the caster: the spell's target is the caster")
+	}
+	if len(ts.Effect.Conditions) > 0 {
+		c.at(key, path, ".effect.conditions", ReasonValue, "an aura gives no condition: it is worked out where each creature stands at the roll")
+	}
+	for i, m := range ts.Effect.Modifiers {
+		if slices.Contains(auraRefusedKinds, m.Kind) {
+			c.at(key, path, fmt.Sprintf(".effect.modifiers[%d].kind", i), ReasonValue, "%s is written on the creature when the effect lands, so an aura cannot give it", m.Kind)
+		}
+	}
 }
 
 // checkEffectHead checks whom the effect reaches against what the spell asks of its targets.
@@ -99,7 +131,7 @@ func modifierFieldSuffix(err error) string {
 }
 
 // refusedForTableSpell are the kinds of modifier a table spell's effect does not offer.
-var refusedForTableSpell = []string{ModifierBaseAC, ModifierExtraAction, ModifierNoMove, ModifierNoAction, ModifierNoReaction, ModifierConditionImmunity, ModifierTurnTempHP}
+var refusedForTableSpell = []string{ModifierAura, ModifierBaseAC, ModifierExtraAction, ModifierNoMove, ModifierNoAction, ModifierNoReaction, ModifierConditionImmunity, ModifierTurnTempHP}
 
 // spellModifierRefusal refuses what a modifier may be in the SRD's file but makes no sense for a table
 // spell: the base armor class and the extra action need the engine's own working out, and the rest are
@@ -131,6 +163,9 @@ func tableEffectDef(ts *TableSpell) *EffectDef {
 		m.AppliesTo, m.Abilities = slices.Clone(m.AppliesTo), slices.Clone(m.Abilities)
 		m.Conditions, m.Allowed, m.DamageTypes = slices.Clone(m.Conditions), slices.Clone(m.Allowed), slices.Clone(m.DamageTypes)
 		mods[i] = m
+	}
+	if a := e.Aura; a != nil {
+		mods = append([]EffectModifier{{Kind: ModifierAura, RadiusFt: a.RadiusFt, Affects: a.Affects}}, mods...)
 	}
 	d := &EffectDef{
 		Key: ts.Key, NamePT: ts.NamePT, Kind: "spell", Concentration: ts.Concentration,

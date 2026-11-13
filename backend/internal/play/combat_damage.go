@@ -214,7 +214,7 @@ func (f *damageFlow) prepare(ctx context.Context) error {
 	p := f.p
 	f.expr = dice.Expr{Count: int(p.DiceCount) + int(p.ExtraDice), Sides: int(p.DiceSides), Modifier: int(p.DiceBonus) + int(p.CriticalMax)}
 	var err error
-	f.states, err = f.s.readStates(ctx, f.c.tx, f.c.enc.ID)
+	f.states, err = f.s.readStatesAt(ctx, f.c.tx, f.c.enc.ID, nil)
 	return err
 }
 

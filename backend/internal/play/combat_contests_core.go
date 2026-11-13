@@ -424,16 +424,16 @@ func (s *Service) stateNotes(ctx context.Context, tx pgx.Tx, campaignID string, 
 	if err != nil {
 		return nil, err
 	}
-	states, err := q.ListCombatantStates(ctx, enc.ID)
+	states, err := statesAt(ctx, q, enc.ID, nil)
 	if err != nil {
-		return nil, fmt.Errorf("list the states: %w", err)
+		return nil, err
 	}
 	sun, err := s.sunlightOf(ctx, q, enc)
 	if err != nil {
 		return nil, err
 	}
 	scene := combat.SaveScene{
-		Creature: sun.facts(creatureFacts(who, statesOf(states), sheet.Traits), who), Ability: checkAbilityOf(skill), Check: true,
+		Creature: sun.facts(creatureFacts(who, states, sheet.Traits), who), Ability: checkAbilityOf(skill), Check: true,
 		StealthArmor: skill == skillStealth && sheet.Traits.StealthDisadvantage, Perception: skill == skillPercept,
 	}
 	var out []rollNote
@@ -651,11 +651,11 @@ func contestLogEntry(entry *logEntry, ev actionEvent) bool {
 // roll_bonus of checks, a check_bonus of the skill: the reader the other checks use, checkBonusesOf) to what the check
 // rolls, with a note for each. A bonus to saves never counts in a check.
 func (s *Service) withCheckBonus(ctx context.Context, tx pgx.Tx, campaignID string, q *playdb.Queries, enc playdb.Encounter, who playdb.Combatant, skill string, n checkNumbers, notes []rollNote) (checkNumbers, []rollNote, error) {
-	states, err := q.ListCombatantStates(ctx, enc.ID)
+	states, err := statesAt(ctx, q, enc.ID, nil)
 	if err != nil {
-		return n, notes, fmt.Errorf("list the states: %w", err)
+		return n, notes, err
 	}
-	bonuses := checkBonusesOf(statesOf(states), who.ID, skill, true)
+	bonuses := checkBonusesOf(states, who.ID, skill, true)
 	if len(bonuses) == 0 {
 		return n, notes, nil
 	}

@@ -583,7 +583,7 @@ func (f *attackFlow) modeShape() attackShape {
 // asked for and rolls one d20 or two (SRD 5.1, advantage and disadvantage): the gate rolls it, or keeps it for
 // the question it asks.
 func (f *attackFlow) rollD20(ctx context.Context) error {
-	modeIn, err := f.s.readModeInputs(ctx, f.c, f.cs)
+	modeIn, err := f.s.readModeInputs(ctx, f.c, f.cs, &f.v)
 	if err != nil {
 		return err
 	}

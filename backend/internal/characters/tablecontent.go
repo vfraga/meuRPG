@@ -518,6 +518,11 @@ var (
 		rulesv1.TableEffectApplies_TABLE_EFFECT_APPLIES_FAILED_SAVE: "failed_save",
 		rulesv1.TableEffectApplies_TABLE_EFFECT_APPLIES_HIT:         "hit",
 	}
+	auraAffectsOf = map[rulesv1.TableAuraAffects]string{
+		rulesv1.TableAuraAffects_TABLE_AURA_AFFECTS_SELF:    rules.AuraAffectsSelf,
+		rulesv1.TableAuraAffects_TABLE_AURA_AFFECTS_ALLIES:  rules.AuraAffectsAllies,
+		rulesv1.TableAuraAffects_TABLE_AURA_AFFECTS_ENEMIES: rules.AuraAffectsEnemies,
+	}
 	effectAudienceOf = map[rulesv1.TableEffectAudience]string{
 		rulesv1.TableEffectAudience_TABLE_EFFECT_AUDIENCE_PUBLIC: rules.EffectVisibilityPublic,
 		rulesv1.TableEffectAudience_TABLE_EFFECT_AUDIENCE_OWNER:  rules.EffectVisibilityOwner,
@@ -623,6 +628,10 @@ func tableSpellEffectOf(m *rulesv1.TableSpellEffect) *rules.TableSpellEffect {
 	e := &rules.TableSpellEffect{
 		Applies: enumOrUnknown(effectAppliesOf, m.GetApplies()), Conditions: m.GetConditions(),
 		PlayerLabelPT: m.GetPlayerLabelPt(), Visibility: enumOrUnknown(effectAudienceOf, m.GetVisibility()),
+	}
+	if a := m.GetAura(); a != nil {
+		// An unset side is "": the rules refuse it at effect.aura.affects.
+		e.Aura = &rules.SpellAura{RadiusFt: int(a.GetRadiusFt()), Affects: enumOrUnknown(auraAffectsOf, a.GetAffects())}
 	}
 	for _, x := range m.GetModifiers() {
 		mod := rules.EffectModifier{
@@ -1141,10 +1150,13 @@ func parentHidden(e entryRow, hidden func(string) bool) bool {
 // spell, the list a casting reads from, the spells an effect grants or a subclass
 // always prepares).
 //
+// A table spell's effect goes without who sees it on the creature and the label the other players read (the
+// master's choices; the players read them only on the creatures, as the combat shows them).
+//
 // A table spell's summon goes without the table creatures the player holds none of, and without its count
 // and limits: a player who casts the spell reads the creatures and the count from GetSummonOptions.
 func forPlayer(e entryRow, hidden func(string) bool, held map[string]bool) entryRow {
-	if hidden == nil && !summons(e.body) {
+	if hidden == nil && !summons(e.body) && !effectKeepsItsSecrets(e.body) {
 		return e // nothing is hidden: the entry goes as it is
 	}
 	if hidden == nil {
@@ -1154,6 +1166,13 @@ func forPlayer(e entryRow, hidden func(string) bool, held map[string]bool) entry
 	playerView{hidden: hidden, held: held}.strip(body)
 	e.body = body
 	return e
+}
+
+// effectKeepsItsSecrets says the body is a spell whose effect carries what a player does not read: who sees it, and
+// the label of the other players.
+func effectKeepsItsSecrets(body tableBody) bool {
+	sp, ok := body.(*rulesv1.TableSpell)
+	return ok && (sp.GetEffect().GetVisibility() != rulesv1.TableEffectAudience_TABLE_EFFECT_AUDIENCE_UNSPECIFIED || sp.GetEffect().GetPlayerLabelPt() != "")
 }
 
 // summons says the body brings creatures: a spell with a summon, or an entry with a feature that has one.
@@ -1206,6 +1225,9 @@ func (v playerView) strip(body tableBody) {
 	case *rulesv1.TableSpell:
 		b.ClassKeys = v.visible(b.ClassKeys)
 		v.stripSummon(b.GetSummon())
+		if b.GetEffect() != nil {
+			b.Effect.Visibility, b.Effect.PlayerLabelPt = rulesv1.TableEffectAudience_TABLE_EFFECT_AUDIENCE_UNSPECIFIED, ""
+		}
 	case *rulesv1.TableFeat:
 		v.stripFeat(b)
 	case *rulesv1.TableOption:

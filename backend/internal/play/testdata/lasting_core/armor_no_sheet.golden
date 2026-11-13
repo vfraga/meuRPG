@@ -1,6 +1,6 @@
-initiative bonus 3 -> [{base_ac 0 0 [] 16  [] false false false [] false [] 0  [] 0 false}] true <nil>
-initiative bonus -2 -> [{base_ac 0 0 [] 11  [] false false false [] false [] 0  [] 0 false}] true <nil>
-initiative bonus 40 -> [{base_ac 0 0 [] 53  [] false false false [] false [] 0  [] 0 false}] true <nil>
-initiative bonus -20 -> [{base_ac 0 0 [] 1  [] false false false [] false [] 0  [] 0 false}] true <nil>
-a wizard of Dexterity 14 -> [{base_ac 0 0 [] 15  [] false false false [] false [] 0  [] 0 false}] true <nil>
-a fighter -> [{base_ac 0 0 [] 15  [] false false false [] false [] 0  [] 0 false}] true <nil>
+initiative bonus 3 -> [{base_ac 0 0 [] 0  16  [] false false false [] false [] 0  [] 0 false}] true <nil>
+initiative bonus -2 -> [{base_ac 0 0 [] 0  11  [] false false false [] false [] 0  [] 0 false}] true <nil>
+initiative bonus 40 -> [{base_ac 0 0 [] 0  53  [] false false false [] false [] 0  [] 0 false}] true <nil>
+initiative bonus -20 -> [{base_ac 0 0 [] 0  1  [] false false false [] false [] 0  [] 0 false}] true <nil>
+a wizard of Dexterity 14 -> [{base_ac 0 0 [] 0  15  [] false false false [] false [] 0  [] 0 false}] true <nil>
+a fighter -> [{base_ac 0 0 [] 0  15  [] false false false [] false [] 0  [] 0 false}] true <nil>

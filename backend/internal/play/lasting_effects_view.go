@@ -238,7 +238,13 @@ func (ev *effectViewer) card(g effectGroup, onTarget string) *playv1.LastingEffe
 		out.CasterId = caster.ID
 	}
 	out.OriginPt = ev.originOf(f, caster, casterSeen)
-	for _, m := range effectModifiers(f) {
+	for _, m := range storedModifiers(f) {
+		if m.Kind == rules.ModifierAura {
+			if bearer, ok := ev.byID[f.CombatantID]; ev.v.master || (ok && ev.v.owns(bearer)) {
+				out.RadiusFt, out.Affects = clamp32(m.RadiusFt, 0, rules.MaxAuraRadiusFt), m.Affects
+			}
+			continue
+		}
 		out.Modifiers = append(out.Modifiers, modifierProto(m))
 	}
 	ev.cardClock(out, f, caster, casterSeen)

@@ -150,7 +150,7 @@ type attackModeInputs struct {
 }
 
 // readModeInputs reads the combat's states in the transaction.
-func (s *Service) readModeInputs(ctx context.Context, c *combatTx, cs []playdb.Combatant) (attackModeInputs, error) {
+func (s *Service) readModeInputs(ctx context.Context, c *combatTx, cs []playdb.Combatant, v *combatViewer) (attackModeInputs, error) {
 	rows, err := c.q.ListCombatantStates(ctx, c.enc.ID)
 	if err != nil {
 		return attackModeInputs{}, fmt.Errorf("list the states: %w", err)
@@ -171,7 +171,7 @@ func (s *Service) readModeInputs(ctx context.Context, c *combatTx, cs []playdb.C
 	if err != nil {
 		return attackModeInputs{}, err
 	}
-	return attackModeInputs{cs: cs, states: statesOf(rows), hiding: hiding, helps: helps, surprised: surprised, down: down, sun: sun}, nil
+	return attackModeInputs{cs: cs, states: withAuras(statesOf(rows), cs, v), hiding: hiding, helps: helps, surprised: surprised, down: down, sun: sun}, nil
 }
 
 // facts is the combat as the advantage rules read it.
@@ -311,7 +311,8 @@ func (s *Service) storeRollModeRequest(ctx context.Context, c *combatTx, m authz
 	if err != nil {
 		return zero, err
 	}
-	modeInputs, err := s.readModeInputs(ctx, c, ask.cs)
+	viewer := viewerOf(m)
+	modeInputs, err := s.readModeInputs(ctx, c, ask.cs, &viewer)
 	if err != nil {
 		return zero, err
 	}

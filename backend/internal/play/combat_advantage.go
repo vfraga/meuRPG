@@ -884,7 +884,7 @@ type spellModes struct {
 
 // spellModes reads the combat for the d20 rolls of a cast.
 func (s *Service) spellModes(ctx context.Context, c *combatTx, m authz.Membership, v combatViewer, cs []playdb.Combatant, caster playdb.Combatant, req *playv1.CastSpellRequest) (*spellModes, error) {
-	in, err := s.readModeInputs(ctx, c, cs)
+	in, err := s.readModeInputs(ctx, c, cs, &v)
 	if err != nil {
 		return nil, err
 	}

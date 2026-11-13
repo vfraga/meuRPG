@@ -516,7 +516,7 @@ func (wv *windowView) concentrationMode(reactor *playdb.Combatant, p *playv1.Con
 	if err != nil {
 		return wv.s.dbError(wv.ctx, "read a saving throw", err)
 	}
-	save = withRollBonus(save, statesOf(wv.d.states), reactor.ID, rules.RollAppliesSave)
+	save = withRollBonus(save, wv.statesAtRoll(), reactor.ID, rules.RollAppliesSave)
 	p.SaveBonus, p.BonusKnown = conv.Int32(save.Bonus), save.Known
 	sheet, err := wv.s.sheetOf(wv.ctx, nil, wv.m.CampaignID, *reactor)
 	if err != nil {
@@ -526,10 +526,15 @@ func (wv *windowView) concentrationMode(reactor *playdb.Combatant, p *playv1.Con
 	if err != nil {
 		return wv.s.dbError(wv.ctx, "read the sunlight", err)
 	}
-	sources := concentrationSources(sun.facts(creatureFacts(*reactor, statesOf(wv.d.states), sheet.Traits), *reactor))
+	sources := concentrationSources(sun.facts(creatureFacts(*reactor, wv.statesAtRoll(), sheet.Traits), *reactor))
 	p.Mode = modeKey(combat.Resolve(sources))
 	for _, src := range shownSources(sources, wv.names, wv.v.master) {
 		p.ModeSourcesPt = append(p.ModeSourcesPt, src.GetTextPt())
 	}
 	return nil
+}
+
+// statesAtRoll are the combat's states as the roll the window asks reads them: with the auras where everyone stands now.
+func (wv *windowView) statesAtRoll() map[string][]playdb.CombatantState {
+	return withAuras(statesOf(wv.d.states), wv.d.cs, &wv.v)
 }

@@ -410,7 +410,7 @@ func (s *Service) readEffectSaveFacts(ctx context.Context, c *combatTx, x *effec
 		}
 	}
 	var err error
-	if f.states, err = s.readStates(ctx, c.tx, c.enc.ID); err != nil {
+	if f.states, err = s.readStatesAt(ctx, c.tx, c.enc.ID, nil); err != nil {
 		return f, err
 	}
 	if f.sheet, err = s.sheetOf(ctx, c.tx, c.session.CampaignID, x.reactor); err != nil {

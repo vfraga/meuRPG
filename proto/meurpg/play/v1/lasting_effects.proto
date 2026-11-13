@@ -207,6 +207,10 @@ message LastingEffect {
   // Only the master: the label each target shows the players now ("Paralisado"), or
   // empty when they read nothing.
   string players_see_pt = 29;
+  // An aura (only the master and the bearer's player read these): how far from the bearer it reaches, in feet, and
+  // whom, from the bearer's side ("self", "allies" or "enemies"). Zero and empty for an effect that is not an aura.
+  int32 radius_ft = 32;
+  string affects = 33;
 }
 
 // CatalogEffect is an effect the master may add.

@@ -376,11 +376,19 @@ type TableSpellZone struct {
 // spell's Save) or "hit" (its Attack); Conditions are SRD condition keys; Visibility is "public" or "owner"
 // (the default); PlayerLabelPT is the short label the other players read.
 type TableSpellEffect struct {
+	// Aura makes the effect an aura around the caster (nil: an effect on the targets).
+	Aura          *SpellAura
 	Applies       string
 	Conditions    []string
 	Modifiers     []EffectModifier
 	PlayerLabelPT string
 	Visibility    string
+}
+
+// SpellAura is how far from its bearer an aura reaches, in feet, and whom (rules.AuraAffects).
+type SpellAura struct {
+	RadiusFt int
+	Affects  string
 }
 
 // SpellZoneRule is the zone a table spell keeps, as the combat reads it.

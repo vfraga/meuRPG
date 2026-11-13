@@ -409,7 +409,7 @@ func (s *Service) rollConcentration(
 	// The saving throw has a mode like any other (SRD 5.1): exhaustion 3 or more is
 	// disadvantage on saving throws. Haste's advantage is on Dexterity saves only, so it
 	// does not reach this Constitution save.
-	states, err := s.readStates(ctx, c.tx, c.enc.ID)
+	states, err := s.readStatesAt(ctx, c.tx, c.enc.ID, nil)
 	if err != nil {
 		return false, err
 	}

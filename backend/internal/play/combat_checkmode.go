@@ -90,7 +90,7 @@ func (s *Service) baseCheckModeOf(ctx context.Context, tx pgx.Tx, campaignID, se
 	if !inCombat {
 		return s.outsideModeOf(ctx, tx, campaignID, characterID, skillKey, ability, check)
 	}
-	states, err := s.readStates(ctx, tx, enc.ID)
+	states, err := s.readStatesAt(ctx, tx, enc.ID, nil)
 	if err != nil {
 		return checkMode{}, err
 	}

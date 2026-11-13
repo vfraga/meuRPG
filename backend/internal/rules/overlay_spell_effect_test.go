@@ -157,6 +157,29 @@ func TestTableSpellEffectRefusals(t *testing.T) {
 		{"an instantaneous spell", func(ts *TableSpell) {
 			ts.Concentration, ts.Duration = false, TableDuration{Kind: DurationInstantaneous}
 		}, ".effect"},
+		{"an aura with no radius", func(ts *TableSpell) { auraOf(ts, 0, AuraAffectsAllies) }, ".effect.aura.radius_ft"},
+		{"an aura over the radius", func(ts *TableSpell) { auraOf(ts, 125, AuraAffectsAllies) }, ".effect.aura.radius_ft"},
+		{"an aura off the squares", func(ts *TableSpell) { auraOf(ts, 12, AuraAffectsAllies) }, ".effect.aura.radius_ft"},
+		{"an aura with no side", func(ts *TableSpell) { auraOf(ts, 10, "") }, ".effect.aura.affects"},
+		{"an aura of an unknown side", func(ts *TableSpell) { auraOf(ts, 10, "everyone") }, ".effect.aura.affects"},
+		{"an aura on an instantaneous spell", func(ts *TableSpell) {
+			auraOf(ts, 10, AuraAffectsAllies)
+			ts.Concentration, ts.Duration = false, TableDuration{Kind: DurationInstantaneous}
+		}, ".effect.aura"},
+		{"an aura of a spell that is not on the caster", func(ts *TableSpell) {
+			auraOf(ts, 10, AuraAffectsAllies)
+			ts.Target, ts.Range = SpellTarget{Kind: TargetCreature}, TableRange{Kind: RangeRanged, DistanceFt: 30}
+		}, ".effect.aura"},
+		{"an aura with a condition", func(ts *TableSpell) {
+			auraOf(ts, 10, AuraAffectsAllies)
+			ts.Effect.Conditions = []string{"condition:frightened"}
+		}, ".effect.conditions"},
+		{"an aura that gives armor class", func(ts *TableSpell) {
+			auraOf(ts, 10, AuraAffectsAllies)
+			ts.Effect.Modifiers = []EffectModifier{{Kind: ModifierACBonus, Value: 1}}
+		}, ".effect.modifiers[0].kind"},
+		{"an aura that gives temporary hit points", func(ts *TableSpell) { auraOf(ts, 10, AuraAffectsAllies) }, ".effect.modifiers[1].kind"},
+		{"an aura as a modifier", mods(EffectModifier{Kind: ModifierAura, RadiusFt: 10, Affects: AuraAffectsAllies}), ".effect.modifiers[0].kind"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -169,6 +192,45 @@ func TestTableSpellEffectRefusals(t *testing.T) {
 				t.Errorf("fields %q, want one ending in %q (%v)", refusedFields(err), tc.field, err)
 			}
 		})
+	}
+}
+
+// auraOf makes the spell a self spell with an aura of the radius and side that keeps the bonus and the temporary
+// hit points of effectSpell.
+func auraOf(ts *TableSpell, radius int, affects string) {
+	ts.Target, ts.Range = SpellTarget{Kind: TargetSelf}, TableRange{Kind: RangeSelf}
+	ts.Effect.Aura = &SpellAura{RadiusFt: radius, Affects: affects}
+}
+
+// An aura is the effect's first modifier, the one the combat reads to find the bearer's reach; the other
+// modifiers are what it gives, and the tags say the radius in metres and the side (the positive control of the
+// refusals above: the same spell with a good radius and side is accepted).
+func TestTableSpellAuraIsRegistered(t *testing.T) {
+	t.Parallel()
+	c, err := withEffectSpell(t, func(ts *TableSpell) {
+		auraOf(ts, 15, AuraAffectsEnemies)
+		ts.Effect.Modifiers = ts.Effect.Modifiers[:1] // the bonus; the temporary hit points are refused in an aura
+	})
+	if err != nil {
+		t.Fatalf("a spell with an aura is refused: %v", err)
+	}
+	d, ok := c.CombatSpellEffect(effectSpell(nil).Key)
+	if !ok || len(d.Modifiers) != 2 {
+		t.Fatalf("effect = %+v (found %v), want the aura and the bonus", d, ok)
+	}
+	if a := d.Modifiers[0]; a.Kind != ModifierAura || a.RadiusFt != 15 || a.Affects != AuraAffectsEnemies {
+		t.Errorf("first modifier = %+v, want the aura of 15 ft on enemies", a)
+	}
+	if want := []string{"Aura de 4,5 m: inimigos", "+2 em ataques"}; !slices.Equal(d.TagsPT, want) {
+		t.Errorf("tags = %q, want %q", d.TagsPT, want)
+	}
+	for _, side := range AuraAffects {
+		if _, err := withEffectSpell(t, func(ts *TableSpell) {
+			auraOf(ts, 120, side)
+			ts.Effect.Modifiers = ts.Effect.Modifiers[:1]
+		}); err != nil {
+			t.Errorf("an aura of 120 ft on %q is refused: %v", side, err)
+		}
 	}
 }
 

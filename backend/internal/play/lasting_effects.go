@@ -87,7 +87,18 @@ type lastingEvent struct {
 func isEffect(st playdb.CombatantState) bool { return st.Kind == stateEffect }
 
 // effectModifiers are the modifiers an effect makes.
+// An aura (lasting_effects_aura.go) has none of its own: what it gives is read from the creatures it reaches,
+// where withAuras puts it, so the bearer's row answers nothing here.
 func effectModifiers(st playdb.CombatantState) []rules.EffectModifier {
+	out := storedModifiers(st)
+	if slices.ContainsFunc(out, func(m rules.EffectModifier) bool { return m.Kind == rules.ModifierAura }) {
+		return nil
+	}
+	return out
+}
+
+// storedModifiers are all the modifiers of the row, the aura's mark among them.
+func storedModifiers(st playdb.CombatantState) []rules.EffectModifier {
 	var out []rules.EffectModifier
 	_ = json.Unmarshal(st.Modifiers, &out) // a value this package wrote
 	return out

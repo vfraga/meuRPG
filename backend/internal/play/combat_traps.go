@@ -277,7 +277,7 @@ func (s *Service) triggerInCombat(ctx context.Context, c *combatTx, trap maplink
 // rollTrapInCombat rolls the effect against the combatants caught, and ends the effects whose
 // die a saving throw used.
 func (s *Service) rollTrapInCombat(ctx context.Context, c *combatTx, trap maplink.Trap, effect *rulesv1.TrapEffect, caught []playdb.Combatant) ([]trapOutcome, error) {
-	states, err := s.readStates(ctx, c.tx, c.enc.ID)
+	states, err := s.readStatesAt(ctx, c.tx, c.enc.ID, nil)
 	if err != nil {
 		return nil, err
 	}

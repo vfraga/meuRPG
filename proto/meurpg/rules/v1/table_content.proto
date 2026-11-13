@@ -1127,6 +1127,29 @@ message TableSpellEffect {
   string player_label_pt = 4 [(meurpg.options.v1.max_len) = 120];
   // Who sees the effect on the creature. Unset is OWNER.
   TableEffectAudience visibility = 5;
+  // Makes the effect an aura around the caster: it is not put on the targets, it reaches at the roll or the damage
+  // the creatures within the radius on the chosen side. The spell then targets the caster and lasts (not
+  // instantaneous), `conditions` is empty, and the modifiers are only those a roll reads (not ac_bonus, speed_add,
+  // speed_multiplier or temp_hp). A refusal is at `effect.aura.radius_ft`, `effect.aura.affects` or `effect.aura`.
+  TableEffectAura aura = 6;
+}
+
+// TableEffectAura is how far from the caster an aura reaches and whom, from the caster's side.
+message TableEffectAura {
+  // Feet, 5 to 120, in steps of 5.
+  int32 radius_ft = 1;
+  TableAuraAffects affects = 2;
+}
+
+// TableAuraAffects says whom an aura reaches, judged from the bearer's side at the moment of the roll.
+enum TableAuraAffects {
+  TABLE_AURA_AFFECTS_UNSPECIFIED = 0;
+  // Only the bearer.
+  TABLE_AURA_AFFECTS_SELF = 1;
+  // The creatures on the bearer's side.
+  TABLE_AURA_AFFECTS_ALLIES = 2;
+  // The creatures on the other side.
+  TABLE_AURA_AFFECTS_ENEMIES = 3;
 }
 
 // TableEffectApplies says which targets of a table spell get its effect.

@@ -33,6 +33,9 @@ var (
 	}
 )
 
+// auraAffectsPT is whom an aura reaches, as the card says it.
+var auraAffectsPT = map[string]string{AuraAffectsSelf: "só quem a carrega", AuraAffectsAllies: "aliados", AuraAffectsEnemies: "inimigos"}
+
 // EffectTagsPT are the short labels of a table spell's effect for its card ("CA +2", "Vantagem em ataques"),
 // one for each modifier: a table spell has no tags_pt file to read them from.
 func EffectTagsPT(mods []EffectModifier) []string {
@@ -50,6 +53,8 @@ func modifierTagPT(m EffectModifier) string {
 		return s
 	}
 	switch m.Kind {
+	case ModifierAura:
+		return fmt.Sprintf("Aura de %s: %s", MetersPT(m.RadiusFt), auraAffectsPT[m.Affects])
 	case ModifierRollBonus:
 		return fmt.Sprintf("%+d em %s", m.Value, joinPT(m.AppliesTo, rollNamesPT))
 	case ModifierRollDie:

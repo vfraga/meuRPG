@@ -33,11 +33,11 @@ func (s *Service) settleDamage(ctx context.Context, c *combatTx, target playdb.C
 	if damageType == "" || amount <= 0 {
 		return landing{}, amount, nil
 	}
-	rows, err := c.q.ListCombatantStates(ctx, c.enc.ID)
+	states, err := statesAt(ctx, c.q, c.enc.ID, nil)
 	if err != nil {
-		return landing{}, 0, fmt.Errorf("list the states: %w", err)
+		return landing{}, 0, err
 	}
-	steps, err := s.settleLanding(ctx, c, statesOf(rows), target, map[string]int{damageType: int(amount)}, combat.Origin{})
+	steps, err := s.settleLanding(ctx, c, states, target, map[string]int{damageType: int(amount)}, combat.Origin{})
 	if err != nil {
 		return landing{}, 0, err
 	}
