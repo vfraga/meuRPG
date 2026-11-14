@@ -647,6 +647,28 @@ describe('LiveStream (ADR-0005 client rules)', () => {
       expect(behind).toHaveBeenCalledTimes(2);
     });
 
+    it('does not let the end of an old read free a read of the new connection that is still out', async () => {
+      await connect(7);
+      let finishOld = (_ok: boolean): void => undefined;
+      behind.mockReturnValueOnce(new Promise<boolean>((resolve) => (finishOld = resolve)));
+      last().push({ kind: 'heartbeat', sessionSeq: 9 });
+      await flush();
+      last().end();
+      await vi.advanceTimersByTimeAsync(backoffDelay(0, () => 0.5));
+      last().push({ kind: 'ready', sessionSeq: 12 });
+      await flush();
+      behind.mockReturnValueOnce(new Promise<boolean>(() => undefined));
+      last().push({ kind: 'heartbeat', sessionSeq: 14 });
+      await flush();
+      expect(behind).toHaveBeenCalledTimes(2);
+      finishOld(true);
+      await flush();
+      last().push({ kind: 'heartbeat', sessionSeq: 15 });
+      await flush();
+      // The new connection's own read is still out: the old one finishing does not start another.
+      expect(behind).toHaveBeenCalledTimes(2);
+    });
+
     it('takes the number again from each `ready`', async () => {
       await connect(7);
       last().end();

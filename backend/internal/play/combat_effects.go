@@ -75,7 +75,7 @@ func (s *Service) EndCombatEffect(
 		return nil, err
 	}
 	if !res.repeated {
-		s.publishVitals(m.CampaignID, vitals)
+		s.publishVitals(ctx, m.CampaignID, vitals)
 	}
 	return connect.NewResponse(&playv1.EndCombatEffectResponse{Encounter: out}), nil
 }

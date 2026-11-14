@@ -320,7 +320,7 @@ func (s *Service) CastSummon(
 		return nil, s.dbError(ctx, "read the casting", err)
 	}
 	if !res.repeated {
-		s.publishVitals(m.CampaignID, r.vitals)
+		s.publishVitals(ctx, m.CampaignID, r.vitals)
 		s.publishCreaturesChanged(m.CampaignID, r.owner)
 	}
 	return connect.NewResponse(&playv1.CastSummonResponse{CreatureIds: ev.Created, DismissedCreatureIds: ev.Dismissed, Vitals: r.vitals}), nil

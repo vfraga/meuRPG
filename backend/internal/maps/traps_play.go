@@ -973,7 +973,10 @@ func (s *Service) noticeLanded(ctx context.Context, tx pgx.Tx, t sessiontell.Tel
 	for _, l := range pcs {
 		who = append(who, link.Observer{CharacterID: l.character.GetId(), At: ts.g.SquareOf(int(l.token.XBp), int(l.token.YBp))})
 	}
-	finds := s.notNowFired(ctx, tx, campaignID, mapID, s.noticeFinds(ts, who), who)
+	finds, err := s.notNowFired(ctx, tx, campaignID, mapID, s.noticeFinds(ts, who), who)
+	if err != nil {
+		return err // the landing's write is rolled back with it: nothing of the landing is kept
+	}
 	if len(finds) == 0 {
 		return nil
 	}
@@ -982,21 +985,21 @@ func (s *Service) noticeLanded(ctx context.Context, tx pgx.Tx, t sessiontell.Tel
 
 // notNowFired drops from the finds the traps the landing will fire (the firer says which, by the rule it fires by): a trap that fires is known
 // to all, so it is not also noticed. A trap the firer will not fire (no open session, theatre, a combat on the map) is noticed as any other.
-// If the firer cannot say, nothing is dropped.
-func (s *Service) notNowFired(ctx context.Context, tx pgx.Tx, campaignID, mapID string, finds []noticeFind, who []link.Observer) []noticeFind {
+// If the firer cannot say, the landing fails with its error and the transaction rolls back: a trap noticed and also fired would be
+// told twice, and a landing that guessed would differ from the one that fires.
+func (s *Service) notNowFired(ctx context.Context, tx pgx.Tx, campaignID, mapID string, finds []noticeFind, who []link.Observer) ([]noticeFind, error) {
 	if s.firer == nil || len(finds) == 0 {
-		return finds
+		return finds, nil
 	}
 	fires := map[string][]string{}
 	for _, ob := range who {
 		ids, err := s.firer.TrapsToFire(ctx, tx, campaignID, mapID, ob.At)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "maps: cannot tell which traps a landing fires", "error", err)
-			continue
+			return nil, fmt.Errorf("tell which traps a landing fires: %w", err)
 		}
 		fires[ob.CharacterID] = ids
 	}
-	return slices.DeleteFunc(finds, func(f noticeFind) bool { return slices.Contains(fires[f.character], f.point) })
+	return slices.DeleteFunc(finds, func(f noticeFind) bool { return slices.Contains(fires[f.character], f.point) }), nil
 }
 
 // noticesTold is what a write of notices tells once it committed: the players that learned of a trap, the finders, and the master's trap

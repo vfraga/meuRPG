@@ -10,31 +10,33 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
 // The characterization of GearChanged and ArmorWorn (what the sheet's armor and shield do to
 // Mage Armor) and of the armor class of a summoned creature. See lasting_core_frozen_test.go.
 
-type coreArmorCall func(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (func(context.Context), error)
+type coreArmorCall func(ctx context.Context, tx pgx.Tx, campaignID, characterID string, t sessiontell.Tell) error
 
 // coreArmor runs the call in a transaction the way the characters service does, runs what it
-// returns after the commit, and says what came back.
+// asked to tell after the commit, and says whether it asked for anything.
 func (a *armed) coreArmor(t *testing.T, call coreArmorCall, characterID string) string {
 	t.Helper()
-	var after func(context.Context)
+	var told hints
 	err := db.InTx(t.Context(), a.h.pool, func(tx pgx.Tx) error {
-		var err error
-		after, err = call(t.Context(), tx, a.campaignID, characterID)
-		return err
+		told = hints{}
+		return call(t.Context(), tx, a.campaignID, characterID, &SessionTell{s: a.h.svc, h: &told, campaignID: a.campaignID})
 	})
 	if err != nil {
 		return "error: " + err.Error()
 	}
-	if after == nil {
+	if len(told.afters) == 0 {
 		return "no callback"
 	}
-	after(t.Context())
+	for _, step := range told.afters {
+		step(t.Context(), a.h.svc.sayNow)
+	}
 	return "callback"
 }
 

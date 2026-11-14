@@ -290,6 +290,7 @@ func newFaultRig(t *testing.T, mode campaignsv1.XpMode, n int) *faultRig {
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
+	svc.SetSessionHost(tb.h.play)
 	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
 	svc.Mount(srv.Handle, fakeSessions{}, tb.h.camps, reqlimit.HandlerOption())
 	ts := httptest.NewServer(srv.Handler())

@@ -41,19 +41,27 @@ func (s *Service) takeBackGearSwap(ctx context.Context, c *combatTx, run *undoRu
 		return fmt.Errorf("put back the extra action: %w", err)
 	}
 	run.gearOwner = conv.OrZero(who.UserID)
-	run.afterGear, err = s.roster.RestoreEquipped(ctx, c.tx, c.session.CampaignID, who.CharacterID, ev.Key, ev.EquippedBefore)
-	return err
+	// What the gear tells joins the undo's own hints: it goes out after the commit with the undo's number.
+	return s.roster.RestoreEquipped(ctx, c.tx, c.session.CampaignID, who.CharacterID, ev.Key, ev.EquippedBefore,
+		&SessionTell{s: s, h: c.hints, campaignID: c.session.CampaignID, sessionID: c.session.ID})
 }
 
 // publishGearLog tells the master and the character's owner that the combat's log changed (the swap's line is theirs alone),
 // and no other player.
 func (s *Service) publishGearLog(ctx context.Context, campaignID, encounterID, ownerUserID string) {
 	_ = ctx
-	msg := &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CombatLogChanged_{
-		CombatLogChanged: &playv1.WatchGameSessionResponse_CombatLogChanged{EncounterId: encounterID},
-	}}
-	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
+	s.tellGearLog(s.sayNow, campaignID, encounterID, ownerUserID)
+}
+
+// tellGearLog is publishGearLog through say: an after-commit step of Service.tx tells it with the session's number.
+func (s *Service) tellGearLog(say sayFn, campaignID, encounterID, ownerUserID string) {
+	msg := func() *playv1.WatchGameSessionResponse { // one for each stream group: the number is written into it
+		return &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CombatLogChanged_{
+			CombatLogChanged: &playv1.WatchGameSessionResponse_CombatLogChanged{EncounterId: encounterID},
+		}}
+	}
+	say(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg()})
 	if ownerUserID != "" {
-		s.send(campaignID, live.Event{Audience: live.Audience{UserID: ownerUserID}, Message: msg})
+		say(campaignID, live.Event{Audience: live.Audience{UserID: ownerUserID}, Message: msg()})
 	}
 }

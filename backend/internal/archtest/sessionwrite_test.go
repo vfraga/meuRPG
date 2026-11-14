@@ -30,7 +30,7 @@ var sessionWriteExceptions string
 // sessionWriteDirs are the packages whose transactions are read, with the module that owns the sqlc queries they call.
 // Only the files directly in each directory are read (their subpackages are other packages), and the *.sql files of the
 // directory name the queries.
-var sessionWriteDirs = []string{"internal/play", "internal/maps"}
+var sessionWriteDirs = []string{"internal/play", "internal/maps", "internal/progression"}
 
 // sessionFunnel holds the functions that are the funnel: the test does not read into them, and they are not offenders.
 var sessionFunnel = map[string]bool{
@@ -71,16 +71,24 @@ var sessionSentinels = []string{"send", "tellMembers", "publish", "touch", "Next
 //     non-test file of the same directory counts when that function writes by the same rule (any receiver, any depth, by
 //     name, so two methods of one name are one). The funnel is never entered, and a call of tx or txOn is not a write;
 //   - an exported function or method with a pgx.Tx parameter is also an offender when it writes by that rule: it is the seam
-//     a module calls with its own transaction (characters' ReviewHost), and no closure of this package holds it;
+//     a module calls with its own transaction (characters' ReviewHost), and no closure of this package holds it. One that also
+//     takes a sessiontell.Tell and is one of EquipInCombat, ArmorWorn and GearChanged is not (tellHosts): in production they are reached
+//     only from the funnel, with the session's row held and their hints told through the Tell. The rule trusts the Tell parameter
+//     and the name: it cannot see a caller that passes a Tell around a plain db.InTx, and a Tell is also made by sessiontell.None,
+//     sessiontell.Direct and the funnel's own collectors (an undo's, characters' localTold);
 //   - a writer query called on a Queries that has no WithTx in its chain is an autocommit write: it commits on its own, outside
 //     any transaction and so outside the funnel. The key is the function with the suffix " autocommit". The receiver is the
 //     "queries" field or another Queries field that nothing in the package binds with WithTx, or a local name assigned from
 //     one of them; s.queries.WithTx(tx).X(...) and q := s.queries.WithTx(tx) are not. The same exceptions file lists it, and
 //     only a "# permanent:" reason fits a write that never touches session state;
-//   - an exception whose reason starts with "host:" or "characters host:" says the function runs inside its caller's
+//   - an exception whose reason starts with "host:" says the function runs inside its caller's
 //     transaction: the entry fails if the function takes no pgx.Tx parameter (or is not declared), so the reason cannot go stale.
 //
 // Limits:
+//   - the characters package is pinned by name, not scanned (TestCharactersSessionWritersRunInTheSeam): only the listed writers are
+//     judged, so a new writer of that module that touches the session is not detected until it is listed. The pin cannot see what is
+//     done in a helper, a write through s.pool or an autocommit query inside a pinned function, an inSession call in a dead branch,
+//     or a caller that reaches saveSheetIn or levelUpIn without the pinned function;
 //   - `db` aliased on import: db.InTx is recognized only when the receiver is an identifier literally named db;
 //   - Begin on a field not named pool: only pool.Begin and x.pool.Begin (and their BeginTx) open a transaction;
 //   - closures passed as parameters or method values: a closure that is a method value, a field, a package-level function or
@@ -156,7 +164,7 @@ func TestWritesGoThroughTheFunnel(t *testing.T) {
 
 // hostPrefixes start the reason of an exception that is a host: a function that runs inside the transaction of the module
 // that calls it, so it takes that transaction as a pgx.Tx parameter and opens none of its own.
-var hostPrefixes = []string{"host:", "characters host:"}
+var hostPrefixes = []string{"host:"}
 
 // funcDeclsByKey returns the function declarations of the files by the key an exception uses ("package file function").
 func funcDeclsByKey(srcs map[string][]byte) (map[string]*ast.FuncDecl, error) {
@@ -291,7 +299,7 @@ func sessionWriteKeys(srcs map[string][]byte, writers map[string]bool) ([]string
 				if autocommitWrite(d, writers, queryFields) {
 					add(f, funcName(d)+autocommitSuffix)
 				}
-				if opensWritingTx(d, writers, reach) || (d.Name.IsExported() && hasTxParam(d) && writes(d.Body, writers, reach)) {
+				if opensWritingTx(d, writers, reach) || (d.Name.IsExported() && hasTxParam(d) && !isTellHost(d) && writes(d.Body, writers, reach)) {
 					add(f, funcName(d))
 				}
 			case *ast.GenDecl:
@@ -688,6 +696,26 @@ func callsAny(n ast.Node, names map[string]bool) bool {
 	return found
 }
 
+// tellHosts are the three exported functions of play that take a pgx.Tx and a sessiontell.Tell and write: the seam characters'
+// ReviewHost calls from inside Service.InSession, with the session's row held and the number moved by the funnel. Only these are
+// exempt from the exported-with-Tx rule; another function with a (tx, Tell) signature is an offender until it is listed here.
+var tellHosts = map[string]bool{"EquipInCombat": true, "ArmorWorn": true, "GearChanged": true}
+
+// isTellHost reports whether the function is one of tellHosts and takes a parameter of type sessiontell.Tell.
+func isTellHost(d *ast.FuncDecl) bool { return tellHosts[d.Name.Name] && takesTell(d) }
+
+// takesTell reports whether the function takes a parameter of type sessiontell.Tell.
+func takesTell(d *ast.FuncDecl) bool {
+	for _, p := range d.Type.Params.List {
+		if sel, ok := p.Type.(*ast.SelectorExpr); ok && sel.Sel.Name == "Tell" {
+			if id, ok := sel.X.(*ast.Ident); ok && id.Name == "sessiontell" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // hasTxParam reports whether the function takes a parameter of type pgx.Tx.
 func hasTxParam(d *ast.FuncDecl) bool {
 	for _, p := range d.Type.Params.List {
@@ -712,6 +740,137 @@ func TestWriterQueries(t *testing.T) {
 	}
 }
 
+// charactersSeamWriters are the writers of internal/characters that change what a live session shows and run under play's funnel
+// (#735 part 3): each opens its transaction through Service.inSession, which locks the session's row before the character's and moves
+// the session's number once, and tells the streams through the Tell it is given. The rule above does not scan this package (its writers
+// are far more than these, and most never touch a session), so these are pinned by name.
+var charactersSeamWriters = []seamWriter{
+	{"characters revive.go (*Service).ReviveCharacter", "inSession"},
+	{"characters equip.go (*Service).SetEquipped", "inSession"},
+	{"characters rpc.go (*Service).UpdateCharacter", "writeSheetSave"}, // the only caller of writeSheetSave
+	{"characters updatecharacter.go (*Service).writeSheetSave", "inSession"},
+	{"characters choices.go (*Service).CompleteCharacterChoices", "inSession"},
+	{"characters levelup.go (*Service).LevelUpCharacter", "inSession"},
+	{"characters claims.go (*Service).ClaimCharacter", "inSession"},
+	{"characters claims.go (*Service).ReturnCharacterToReserve", "inSession"},
+}
+
+// seamWriter is a pinned writer and the call that takes it into the funnel: inSession, or the pinned function that calls it.
+type seamWriter struct{ key, via string }
+
+// charactersOwnSends are the calls that tell the streams outside the funnel, after a transaction of the module's own: the seam writers
+// tell through their Tell instead.
+var charactersOwnSends = []string{"PublishXPChanged", "PublishVitalsChanged", "PublishEncounterChanged", "PublishCharacterEvent", "PublishCreaturesChanged", "publishPartyChanged", "publishCharacterEvent"}
+
+// seamProblems says what is wrong with a pinned writer: a transaction of its own (db.InTx, Begin, BeginTx), a send of its own, or no
+// call of w.via.
+func seamProblems(w seamWriter, d *ast.FuncDecl) []string {
+	var problems []string
+	seam := false
+	ast.Inspect(d.Body, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		name := sel.Sel.Name
+		switch {
+		case name == w.via:
+			seam = true
+		case name == "Begin" || name == "BeginTx":
+			problems = append(problems, fmt.Sprintf("%q opens a transaction of its own (%s): it must go through %s", w.key, name, w.via))
+		case name == "InTx":
+			if id, ok := sel.X.(*ast.Ident); ok && id.Name == "db" {
+				problems = append(problems, fmt.Sprintf("%q opens a transaction of its own (db.InTx): it must go through %s", w.key, w.via))
+			}
+		case slices.Contains(charactersOwnSends, name):
+			problems = append(problems, fmt.Sprintf("%q tells the streams itself (%s): it must tell through the Tell of inSession, so that the number moves with the write", w.key, name))
+		}
+		return true
+	})
+	if !seam {
+		problems = append(problems, fmt.Sprintf("%q does not go through %s", w.key, w.via))
+	}
+	return problems
+}
+
+// TestCharactersSessionWritersRunInTheSeam fails for a writer of charactersSeamWriters that opens a transaction of its own (db.InTx,
+// Begin, BeginTx) or tells the streams itself, or that does not go through inSession.
+func TestCharactersSessionWritersRunInTheSeam(t *testing.T) {
+	root := os.DirFS(backendRoot)
+	entries, err := fs.ReadDir(root, "internal/characters")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srcs := map[string][]byte{}
+	for _, e := range entries {
+		p := path.Join("internal/characters", e.Name())
+		if e.IsDir() || path.Ext(p) != ".go" || isTestFile(p) {
+			continue
+		}
+		if srcs[p], err = fs.ReadFile(root, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	decls, err := funcDeclsByKey(srcs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, w := range charactersSeamWriters {
+		d := decls[w.key]
+		if d == nil || d.Body == nil {
+			t.Errorf("%q is not declared: the list of seam writers is stale", w.key)
+			continue
+		}
+		for _, p := range seamProblems(w, d) {
+			t.Error(p)
+		}
+	}
+}
+
+// TestSeamProblems is the rule's own test: a pinned writer that opens a transaction, sends, or never enters the seam is reported, and a
+// conforming one is not.
+func TestSeamProblems(t *testing.T) {
+	srcs := map[string][]byte{"internal/characters/a.go": []byte("package characters\n" +
+		"func (s *Service) Opens() error { return db.InTx(c, s.pool, func(tx pgx.Tx) error { return s.inSession(c, id, f) }) }\n" +
+		"func (s *Service) Begins() error { tx, err := s.pool.Begin(c); _ = tx; _ = err; return s.inSession(c, id, f) }\n" +
+		"func (s *Service) Sends() error { s.live.PublishXPChanged(id); return s.inSession(c, id, f) }\n" +
+		"func (s *Service) Never() error { return s.write(c) }\n" +
+		"func (s *Service) Dead() error { if false { return s.inSession(c, id, f) }; return nil }\n" +
+		"func (s *Service) Fine() error { return s.inSession(c, id, func(tx pgx.Tx, t sessiontell.Tell) error { t.XPChanged(); return nil }) }\n" +
+		"func (s *Service) Entry() error { _, err := s.writeSheetSave(c, u); return err }\n")}
+	decls, err := funcDeclsByKey(srcs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		fn, via string
+		want    int
+	}{
+		{"Opens", "inSession", 1},
+		{"Begins", "inSession", 1},
+		{"Sends", "inSession", 1},
+		{"Never", "inSession", 1},
+		{"Fine", "inSession", 0},
+		{"Entry", "writeSheetSave", 0},
+		{"Entry", "inSession", 1},
+		{"Dead", "inSession", 0}, // a limit, written down in the rule's Limits: a call in a dead branch is a call
+	}
+	for _, c := range cases {
+		w := seamWriter{key: "characters a.go (*Service)." + c.fn, via: c.via}
+		d := decls[w.key]
+		if d == nil {
+			t.Fatalf("%s is not declared", w.key)
+		}
+		if got := seamProblems(w, d); len(got) != c.want {
+			t.Errorf("seamProblems(%s via %s) = %q, want %d problem(s)", c.fn, c.via, got, c.want)
+		}
+	}
+}
+
 func TestCountExceptions(t *testing.T) {
 	work, permanent := countExceptions("# c\n\na f F # 4d: x\nb g G # permanent: y\nc h H\nd i I # permanent: z\n")
 	if work != 2 || permanent != 2 {
@@ -729,7 +888,7 @@ func TestHostExceptionProblems(t *testing.T) {
 		t.Fatal(err)
 	}
 	text := "play a.go (*Service).Host # host: runs inside play's transaction\n" +
-		"play a.go (*Service).Stale # characters host: runs inside the characters module's transaction\n" +
+		"play a.go (*Service).Stale # host: runs inside the characters module's transaction\n" +
 		"play a.go (*Service).Gone # host: runs inside play's transaction\n" +
 		"play a.go (*Service).Other # permanent: not a host\n" +
 		"play a.go (*Service).Other # unconverted: not a host either\n"
@@ -776,6 +935,15 @@ func TestSessionWriteKeys(t *testing.T) {
 					"func F(s S) error { return s.tx(c, id, func(tx pgx.Tx, h *hints) error { _, err := s.q.UpdateThing(c); return err }) }",
 			},
 			nil,
+		},
+		{
+			"an exported (tx, Tell) function that is not a tell host",
+			map[string]string{
+				"internal/play/a.go": "package play\n" +
+					"func (s *Service) Sneaky(c C, tx pgx.Tx, t sessiontell.Tell) error { _, err := s.q.UpdateThing(c); return err }\n" +
+					"func (s *Service) GearChanged(c C, tx pgx.Tx, t sessiontell.Tell) error { _, err := s.q.UpdateThing(c); return err }",
+			},
+			[]string{"play a.go (*Service).Sneaky"},
 		},
 		{
 			"a sentinel",
@@ -898,6 +1066,21 @@ func TestSessionWriteKeys(t *testing.T) {
 			nil,
 		},
 		{
+			// The limit named in the rule's header: the forwarded implementation is not read, so a caller of it is a writer only
+			// through a function of the package that shares the name. With no such function (a package whose RPC handler of that
+			// name is gone, or never was) a new play caller in its own transaction outside Service.tx is NOT flagged. This pins
+			// today's behavior; play's seq rows (hints_*_test.go) are what catch such a caller.
+			"a caller of a delegated method that no function of the package shares the name of is not flagged (a named limit)",
+			map[string]string{
+				"internal/play/a.go": "package play\n" +
+					"type Keeper interface{ SetExhaustion(c C, tx pgx.Tx) error }\n" +
+					"type clocked struct{ Keeper }\n" +
+					"func (k clocked) SetExhaustion(c C, tx pgx.Tx) error { return k.Keeper.SetExhaustion(c, tx) }\n" +
+					"func (s *Service) Tire(c C) error { return db.InTx(c, p, func(tx pgx.Tx) error { return s.vitals.SetExhaustion(c, tx) }) }",
+			},
+			nil,
+		},
+		{
 			"a same-named wrapper that also writes is a writer",
 			map[string]string{
 				"internal/play/a.go": "package play\n" +
@@ -1015,5 +1198,77 @@ func TestSessionWriteKeys(t *testing.T) {
 		if !slices.Equal(got, c.want) {
 			t.Errorf("%s: got %q, want %q", c.name, got, c.want)
 		}
+	}
+}
+
+// appendEventDirs are the packages that are not play and call play's AppendEvent (the open session's history): its first statement
+// takes the session's row, so a caller that opens a transaction of its own would lock the session after what it wrote before it.
+var appendEventDirs = []string{"internal/characters", "internal/maps", "internal/progression"}
+
+// appendEventProblems returns a problem for each function of the sources that calls a method named AppendEvent and takes no pgx.Tx
+// parameter: the call must run in the transaction of the caller (a funnel closure's, through inSession), never in one of its own.
+// Limit: whether that transaction took the session's row first is the seam rows' to prove (the lock-order tests); the rule sees
+// only the parameter.
+func appendEventProblems(srcs map[string][]byte) ([]string, error) {
+	decls, err := funcDeclsByKey(srcs)
+	if err != nil {
+		return nil, err
+	}
+	var problems []string
+	for key, d := range decls {
+		if d.Body == nil || hasTxParam(d) {
+			continue
+		}
+		called := false
+		ast.Inspect(d.Body, func(n ast.Node) bool {
+			if call, ok := n.(*ast.CallExpr); ok && callName(call) == "AppendEvent" {
+				called = true
+			}
+			return !called
+		})
+		if called {
+			problems = append(problems, fmt.Sprintf("%q calls AppendEvent but takes no pgx.Tx: it must run in its caller's transaction, the funnel's (inSession)", key))
+		}
+	}
+	slices.Sort(problems)
+	return problems, nil
+}
+
+func TestAppendEventCallersRunInTheirCallersTransaction(t *testing.T) {
+	root := os.DirFS(backendRoot)
+	for _, dir := range appendEventDirs {
+		entries, err := fs.ReadDir(root, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		srcs := map[string][]byte{}
+		for _, e := range entries {
+			p := path.Join(dir, e.Name())
+			if e.IsDir() || path.Ext(p) != ".go" || isTestFile(p) {
+				continue
+			}
+			if srcs[p], err = fs.ReadFile(root, p); err != nil {
+				t.Fatal(err)
+			}
+		}
+		problems, err := appendEventProblems(srcs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		failProblems(t, problems)
+	}
+}
+
+func TestAppendEventProblems(t *testing.T) {
+	srcs := map[string][]byte{"internal/maps/a.go": []byte("package maps\n" +
+		"func (s *Service) InTheCallersTx(c C, tx pgx.Tx) error { _, err := s.live.AppendEvent(c, tx, id); return err }\n" +
+		"func (s *Service) InOwnTx(c C) error { return db.InTx(c, s.pool, func(tx pgx.Tx) error { _, err := s.live.AppendEvent(c, tx, id); return err }) }\n" +
+		"func (s *Service) NoCall(c C) error { return nil }")}
+	got, err := appendEventProblems(srcs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 || !strings.Contains(got[0], "(*Service).InOwnTx") {
+		t.Errorf("appendEventProblems() = %q, want only (*Service).InOwnTx", got)
 	}
 }

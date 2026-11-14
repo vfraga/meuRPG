@@ -335,7 +335,7 @@ func (s *Service) UseLayOnHands(
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
 		for _, vit := range run.told {
-			s.publishVitals(m.CampaignID, vit)
+			s.publishVitals(ctx, m.CampaignID, vit)
 		}
 	})
 	if err != nil {
@@ -582,7 +582,7 @@ func (s *Service) flexible(ctx context.Context, fr flowRequest, hash *string, ki
 	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
-		s.publishVitals(m.CampaignID, after)
+		s.publishVitals(ctx, m.CampaignID, after)
 	})
 	if err != nil {
 		return nil, nil, 0, err
@@ -663,7 +663,7 @@ func (s *Service) GiveBardicInspiration(
 	out, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
-		s.publishVitals(m.CampaignID, after)
+		s.publishVitals(ctx, m.CampaignID, after)
 	})
 	if err != nil {
 		return nil, err

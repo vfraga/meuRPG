@@ -24,6 +24,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/progression/link"
 	"github.com/PuraFome/meuRPG/backend/internal/progression/progressiondb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -323,9 +324,10 @@ func (s *Service) give(ctx context.Context, m authz.Membership, g grant) (progre
 		return progressiondb.XpAward{}, errBlocked(progressionv1.XPBlockedReason_XP_BLOCKED_REASON_MODE_NOT_ALLOWED, "", campaignMode)
 	}
 	var given givenAward
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
 		given, err = s.giveTx(ctx, tx, m, g) // a retry starts over
+		tellXP(t, given.repeated, given.logged)
 		return err
 	})
 	if err != nil {
@@ -609,7 +611,6 @@ func (s *Service) announceAward(ctx context.Context, m authz.Membership, g grant
 	if len(g.treasureIDs) > 0 {
 		logging.Event(ctx, s.logger, "treasure.converted", slog.String("award_id", given.award.ID), slog.Int("treasures", len(g.treasureIDs)))
 	}
-	s.log.PublishXPChanged(m.CampaignID)
 }
 
 // sameRequest checks that a retried key is for the same request, and returns

@@ -603,7 +603,7 @@ func (s *Service) damageResponse(ctx context.Context, m authz.Membership, res co
 		s.publishReturned(ctx, m.CampaignID, d, ev)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
 		for _, vit := range out.vitals {
-			s.publishVitals(m.CampaignID, vit)
+			s.publishVitals(ctx, m.CampaignID, vit)
 		}
 	})
 	if err != nil {

@@ -64,7 +64,7 @@ func (s *Service) SubmitInitiative(
 	}
 	out, err := s.finish(ctx, call.m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, call.m.CampaignID, d.enc)
-		s.publishVitals(call.m.CampaignID, regained)
+		s.publishVitals(ctx, call.m.CampaignID, regained)
 	})
 	if err != nil {
 		return nil, err

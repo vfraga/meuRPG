@@ -221,7 +221,7 @@ func (s *Service) sightChange(ctx context.Context, campaignID, rawCharacter, raw
 		return nil, nil, err
 	}
 	if !res.repeated {
-		s.publishVitals(m.CampaignID, vitals)
+		s.publishVitals(ctx, m.CampaignID, vitals)
 		s.maps.VisionChanged(ctx, m.CampaignID, r.mapID)
 	}
 	return vitals, out, nil

@@ -110,7 +110,7 @@ func (s *Service) applyDamageResponse(ctx context.Context, m authz.Membership, r
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishReturned(ctx, m.CampaignID, d, ev)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
-		s.publishVitals(m.CampaignID, out.vitals)
+		s.publishVitals(ctx, m.CampaignID, out.vitals)
 		s.publishAttackHit(m.CampaignID, out.hit)
 	})
 	if err != nil {

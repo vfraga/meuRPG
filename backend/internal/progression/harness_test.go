@@ -243,6 +243,7 @@ func newHarnessRolling(t *testing.T, roller dice.Roller) *harness {
 	if err != nil {
 		t.Fatalf("New() error = %v", err)
 	}
+	svc.SetSessionHost(pl)
 	chars.SetLevelUps(svc)
 	camps.SetXPAwards(svc) // changing the XP mode asks once XP was awarded (RN-09)
 	srv := httpserver.New(httpserver.Config{Logger: logger})

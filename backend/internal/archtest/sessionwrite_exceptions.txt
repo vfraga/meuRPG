@@ -1,13 +1,13 @@
-# Functions in internal/play and internal/maps (non-test) that open a transaction which writes (INSERT, UPDATE or DELETE of the package's own queries) outside the funnel (Service.tx, Service.txOn).
+# Functions in internal/play, internal/maps and internal/progression (non-test) that open a transaction which writes (INSERT, UPDATE or DELETE of the package's own queries) outside the funnel (Service.tx, Service.txOn).
 # One entry per line, sorted: "package file function" ("(*T).Method" for a method). The reason after # starts with the area of the #735 plan.
 # Two sections, told apart by the reason:
-#   work queue: any reason but "permanent:". Areas: 4b, 4c, 4d (play), 4d maps, session lifecycle, characters host, host (a maps writer that plays calls inside its own funnel transaction).
+#   work queue: any reason but "permanent:". Areas: 4b, 4c, 4d (play), 4d maps, session lifecycle, host (a writer that its caller runs inside its own funnel transaction: play's call on a maps writer, characters' call on a play one).
 #     The queue can only shrink: convert the writer to Service.tx and delete its line.
 #   permanent: "# permanent: <reason>" is accepted forever, because the function never touches what a live session shows. It is still listed,
 #     so that a new writer is noticed, and it is stale like any entry when it stops being an offender.
 # An entry sits on the callee. Converting it can need the calling module to change too (characters, progression call into play with their own transaction).
 # An autocommit entry ends its function with " autocommit": the function writes on a Queries that has no WithTx.
-# A host entry (reason starting "host:" or "characters host:") must name a function that takes a pgx.Tx parameter.
+# A host entry (reason starting "host:") must name a function that takes a pgx.Tx parameter.
 # A line whose function is no longer an offender fails the test.
 maps clues.go (*SessionMaps).DiscoverScene # host: runs inside play's transaction (already funnel): called by play's scene opening with play's transaction, the session row already locked (Service.tx); the discovery rows tell nothing of their own
 maps clues.go (*SessionMaps).DiscoverSceneFor # host: runs inside play's transaction (already funnel): called by play's scene opening with play's transaction, the session row already locked (Service.tx); the discovery rows tell nothing of their own
@@ -33,15 +33,15 @@ maps traps_play.go (*Service).RestoreTrap # host: runs inside play's transaction
 maps traps_play.go (*Service).SearchTraps # host: runs inside play's transaction (already funnel): called by play's search with play's transaction, the session row already locked (Service.tx); play tells the search
 maps traps_play.go (*Service).TriggerTrap # host: runs inside play's transaction (already funnel): called by play's trap firing with play's transaction, the session row already locked (Service.tx); play tells the firing
 maps upload.go (*Service).storeImage # permanent: gallery_images and image_requests only; no row of game_sessions or the live view
-play creature_host.go (*Service).CreatureRenamed # characters host: called by characters with its transaction and the session row locked (LockSession), then the creature rows; unconverted: it runs inside the characters module's transaction
-play creature_host.go (*Service).CreaturesLeaving # characters host: called by characters with its transaction and the session row locked (LockSession), then the creature rows; unconverted: it runs inside the characters module's transaction
+play creature_host.go (*Service).CreatureRenamed # host: runs inside the funnel's transaction (characters' InSession): the session row is already locked, then the creature rows; characters tells the combat through the Tell
+play creature_host.go (*Service).CreaturesLeaving # host: runs inside the funnel's transaction (characters' InSession): the session row is already locked, then the creature rows; characters tells the combat through the Tell
 play encounters.go (*Service).ClearBattleEncounter # permanent: master prep data (the battle encounter link of a session in preparation); no player view shows it
 play encounters.go (*Service).keepBattleEncounter # permanent: master prep data (the battle encounter link of a session in preparation); no player view shows it
-play equip_combat.go (*Service).EquipInCombat # characters host: called by characters with its transaction; unconverted: it runs inside the characters module's transaction
-play lasting_effects_armor.go (*Service).ArmorWorn # characters host: called by characters with its transaction; unconverted: it runs inside the characters module's transaction
-play lasting_effects_armor.go (*Service).GearChanged # characters host: called by characters with its transaction; unconverted: it runs inside the characters module's transaction
 play package.go (*packagePart).Apply # permanent: campaign package import creates the campaign in the same transaction; assumes import never merges into an existing campaign, so no live session can show these rows
-play revive.go (*Service).ReviveInCombat # characters host: called by characters with its transaction and the character row locked; unconverted: it runs inside the characters module's transaction
+play revive.go (*Service).ReviveInCombat # host: runs inside the funnel's transaction, the session row already locked: called by characters' ReviveCharacter (InSession, which tells the revival and the combat through the Tell) and by play's Revivify requests with their own funnel transaction
 play rpc.go (*Service).StartGameSession # session lifecycle: there is no row to lock before it creates one
 play session_seam.go (*Service).inNoSession # permanent: runs a foreign write when the campaign has no open session, so there is no number to move; a session that opens between the unlocked read and the commit is not locked by the write, and its screens read the change at their next Ready or read
-play xp.go (*Service).AppendEvent # unconverted: callers in characters, progression and play run inside their own transactions; it takes the session row first and moves no number
+play xp.go (*Service).AppendEvent # unconverted: every caller (characters, maps, progression, play) runs in its caller's transaction, in the funnel, where it finds the session row held; it moves no number
+progression milestones.go (*Service).AddMilestone # permanent: planned_milestones only (the master's list of planned marks); no row of game_sessions or the live view
+progression milestones.go (*Service).MoveMilestone # permanent: planned_milestones only (the master's list of planned marks); no row of game_sessions or the live view
+progression milestones.go (*Service).changePlanned # permanent: planned_milestones only (the master's list of planned marks); no row of game_sessions or the live view

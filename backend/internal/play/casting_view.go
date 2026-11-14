@@ -224,7 +224,7 @@ func (s *Service) afterCastChange(ctx context.Context, m authz.Membership, res c
 	}
 	if !res.repeated {
 		for _, v := range made.vitals {
-			s.publishVitals(m.CampaignID, v)
+			s.publishVitals(ctx, m.CampaignID, v)
 		}
 		if made.guard.caster.PlayerUserID != "" && (len(made.created) > 0 || len(made.dismissed) > 0) {
 			s.publishCreaturesChanged(m.CampaignID, made.guard.caster.PlayerUserID)

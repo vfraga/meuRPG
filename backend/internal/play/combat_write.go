@@ -303,6 +303,9 @@ type combatResult struct {
 	lines   []actionEvent
 	// pushed are the forced moves a replayed held action made, to tell the streams.
 	pushed []*forcedMove
+	// seq is the session's hint number the hints of finish carry: the number of the write that made the change, or, for a
+	// retry, the number as it stands. 0 (no number) for a change inside a held action's transaction, which has none of its own.
+	seq int64
 }
 
 // write runs one change to a combat, as AdjustCharacterVitals runs a vitals
@@ -351,6 +354,8 @@ type changeRun struct {
 	ended *combatTx    // the change's transaction, for what it leaves to tell
 	// sessionID is the open session the try resolved before the transaction, whose row Service.tx locked first.
 	sessionID string
+	// h is the collector of the try that committed: its seq is the number the write took (Service.tx sets it after the bump).
+	h *hints
 }
 
 // writeOnce is one try of write, with the sight it was given. The open session is read first, with no lock, so Service.tx can
@@ -365,13 +370,19 @@ func (s *Service) writeOnce(ctx context.Context, w combatWrite, sight *fogSight,
 	}
 	var run changeRun
 	err = s.tx(ctx, open.ID, func(tx pgx.Tx, h *hints) error {
-		run = changeRun{res: combatResult{encounterID: w.encounterID, sight: sight}, sessionID: open.ID}
+		run = changeRun{res: combatResult{encounterID: w.encounterID, sight: sight}, sessionID: open.ID, h: h}
 		return s.changeInTx(ctx, tx, h, w, sight, do, &run)
 	})
 	if err != nil {
 		return combatResult{}, err
 	}
 	run.res.stamped = run.last
+	run.res.seq = run.h.seq
+	if run.res.repeated && run.res.seq == 0 { // a retry wrote nothing: its hints carry the number as it stands
+		if run.res.seq, err = s.queries.GetHintSeq(ctx, open.ID); err != nil {
+			return combatResult{}, fmt.Errorf("read the session's hint number: %w", err)
+		}
+	}
 	if run.ended != nil {
 		run.res.lines = run.ended.lines
 		run.res.pushed = run.ended.pushed
@@ -909,7 +920,7 @@ func (s *Service) finish(ctx context.Context, m authz.Membership, res combatResu
 	}
 	// The sight read after the commit is read once for the publishers and the answer;
 	// the one read before it says who could see the old squares.
-	pctx = withFogMemo(pctx, res.sight, res.lines)
+	pctx = withSay(withFogMemo(pctx, res.sight, res.lines), s.sayWith(res.seq))
 	switch {
 	case publish == nil:
 	case res.repeated:

@@ -970,7 +970,7 @@ func (s *Service) castPublisher(m authz.Membership, ev actionEvent, out *castOut
 		s.publishPushed(ctx, m.CampaignID, d, pushesOf(ev.Hits))
 		out.hook.after(ctx, m.CampaignID, d.enc) // the trap a teleport landed on
 		for _, vit := range out.vitals {
-			s.publishVitals(m.CampaignID, vit)
+			s.publishVitals(ctx, m.CampaignID, vit)
 		}
 		if ev.PendingReveal != "" { // the master alone is told a question waits
 			s.publishHiddenHitPending(m.CampaignID, d.enc.ID, ev.PendingReveal)

@@ -34,7 +34,7 @@ func (s *Service) SetSunlight(
 	if err != nil {
 		return nil, s.dbError(ctx, "set the sunlight", err)
 	}
-	out, err := s.finish(ctx, m, res, func(_ context.Context, d *encounterData) { s.publishEncounterChangedToMaster(m.CampaignID, d.enc) })
+	out, err := s.finish(ctx, m, res, func(_ context.Context, d *encounterData) { s.publishEncounterChangedToMaster(ctx, m.CampaignID, d.enc) })
 	if err != nil {
 		return nil, err
 	}

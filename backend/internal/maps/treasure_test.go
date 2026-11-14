@@ -853,15 +853,15 @@ func TestMR041_AConversionAndItsUndoTellTheMastersMapsOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AwardXP(Voltar à cidade) error = %v", err)
 	}
+	masterWatch.xpChanged() // the funnel sends what the award told, then the steps it collected after the commit (the map's hint)
 	masterWatch.mapChanged(s.mapID)
-	masterWatch.xpChanged()
 	if _, err := m.xp.UndoLastXPAward(t.Context(), connect.NewRequest(&progressionv1.UndoLastXPAwardRequest{
 		CampaignId: s.campaign, IdempotencyKey: uuid.New().String(), ExpectedAwardId: award.Msg.GetAward().GetId(),
 	})); err != nil {
 		t.Fatalf("UndoLastXPAward() error = %v", err)
 	}
+	masterWatch.xpChanged() // the funnel sends what the award told, then the steps it collected after the commit (the map's hint)
 	masterWatch.mapChanged(s.mapID)
-	masterWatch.xpChanged()
 
 	// The probe is the last change, and reaches the players: what came before it
 	// on their stream is all they were sent.

@@ -11,6 +11,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
@@ -111,35 +112,86 @@ func (s *Service) SetCreatureHost(h CreatureHost) { s.creatureHost = h }
 // streams through the CreatureHost, with no number.
 func (s *Service) SetSessionHost(h sessiontell.Host) { s.sessionHost = h }
 
-// creatureTold is the Tell of a creature write that runs without the funnel: it keeps what the write told, and publishChange sends it
-// through the CreatureHost once the transaction committed.
-type creatureTold struct {
+// localTold is the Tell of a write that runs without the funnel (no play module connected: a tool, a test): it keeps what the write
+// told, and publish sends it through the hosts (Live, ReviewHost, CreatureHost) once the transaction committed, with no number.
+type localTold struct {
 	sessiontell.None
 	owner, encounterID string
-	told, replayed     bool
+	creatures          bool
+	replayed           bool
+	xp                 bool
+	vitals             []string
+	events             []localEvent
+	steps              []func(ctx context.Context, out sessiontell.Out)
 }
 
-func (c *creatureTold) CreaturesChanged(owner string) { c.owner, c.told = owner, true }
-func (c *creatureTold) EncounterChanged(id string)    { c.encounterID = id }
+// localEvent is a CharacterEvent a write told.
+type localEvent struct{ owner, characterID, event string }
 
-// Replay marks the repeat of a gift: with no funnel there is no number to tell it with, so the repeat tells nothing.
-func (c *creatureTold) Replay() { c.replayed = true }
+func (c *localTold) CreaturesChanged(owner string) { c.owner, c.creatures = owner, true }
+func (c *localTold) EncounterChanged(id string)    { c.encounterID = id }
+func (c *localTold) XPChanged()                    { c.xp = true }
+func (c *localTold) VitalsChanged(id string)       { c.vitals = append(c.vitals, id) }
+func (c *localTold) CharacterEvent(owner, id, event string) {
+	c.events = append(c.events, localEvent{owner, id, event})
+}
 
-// inSession runs fn on a transaction of the campaign's session, through the funnel when it is connected.
+func (c *localTold) After(fn func(ctx context.Context, out sessiontell.Out)) {
+	c.steps = append(c.steps, fn)
+}
+
+// Replay marks the repeat of a write already made: with no funnel there is no number to tell it with, so the repeat tells nothing.
+func (c *localTold) Replay() { c.replayed = true }
+
+// discardOut is the Out of the steps of a write with no funnel: nothing is sent.
+type discardOut struct{}
+
+func (discardOut) Send(context.Context, sessiontell.Audience, proto.Message) {}
+
+// publishLocal sends what a write with no funnel told, once its transaction committed.
+func (s *Service) publishLocal(ctx context.Context, campaignID string, told *localTold) {
+	if told.replayed {
+		return
+	}
+	if told.xp && s.live != nil {
+		s.live.PublishXPChanged(campaignID)
+	}
+	if s.live != nil {
+		for _, id := range told.vitals {
+			s.live.PublishVitalsChanged(ctx, campaignID, id)
+		}
+	}
+	if s.reviewHost != nil {
+		for _, e := range told.events {
+			s.reviewHost.PublishCharacterEvent(ctx, campaignID, e.owner, e.characterID, e.event)
+		}
+	}
+	switch {
+	case told.creatures:
+		s.publishCreatureChange(ctx, campaignID, told.owner, told.encounterID)
+	case told.encounterID != "" && s.reviewHost != nil:
+		s.reviewHost.PublishEncounterChanged(ctx, campaignID, told.encounterID)
+	}
+	for _, step := range told.steps {
+		step(ctx, discardOut{})
+	}
+}
+
+// inSession runs fn on a transaction of the campaign's session, through the funnel when it is connected: the session's row is taken
+// first, the write moves the session's number once and what it told goes out with it. Without the funnel fn runs in a transaction of
+// its own and what it told goes out after the commit through the hosts, with no number.
 func (s *Service) inSession(ctx context.Context, campaignID string, fn func(tx pgx.Tx, t sessiontell.Tell) error) error {
 	if s.sessionHost != nil {
 		return s.sessionHost.InSession(ctx, campaignID, fn)
 	}
-	var told creatureTold
+	var told localTold
 	if err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		told = creatureTold{}
+		told = localTold{}
 		return fn(tx, &told)
 	}); err != nil {
 		return err
 	}
-	if told.told && !told.replayed {
-		s.publishCreatureChange(ctx, campaignID, told.owner, told.encounterID)
-	}
+	s.publishLocal(ctx, campaignID, &told)
 	return nil
 }
 

@@ -16,6 +16,7 @@ import (
 
 	campaignsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1"
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 )
 
 // "Pedir ajustes" (RN-15, MR-024): the master sends a pending character back with a reason, the
@@ -39,18 +40,16 @@ func (*hostSpy) ReviveInCombat(context.Context, pgx.Tx, string, string, string, 
 	return "", nil
 }
 
-func (*hostSpy) LockSession(context.Context, pgx.Tx, string) error { return nil }
-
-func (*hostSpy) GearChanged(context.Context, pgx.Tx, string, string) (func(context.Context), error) {
-	return nil, nil
+func (*hostSpy) GearChanged(context.Context, pgx.Tx, string, string, sessiontell.Tell) error {
+	return nil
 }
 
-func (*hostSpy) ArmorWorn(context.Context, pgx.Tx, string, string) (func(context.Context), error) {
-	return nil, nil
+func (*hostSpy) ArmorWorn(context.Context, pgx.Tx, string, string, sessiontell.Tell) error {
+	return nil
 }
 
-func (*hostSpy) EquipInCombat(context.Context, pgx.Tx, string, string, string, EquipChange) (func(context.Context), error) {
-	return nil, nil
+func (*hostSpy) EquipInCombat(context.Context, pgx.Tx, string, string, string, EquipChange, sessiontell.Tell) error {
+	return nil
 }
 
 func (*hostSpy) PublishEncounterChanged(context.Context, string, string) {}

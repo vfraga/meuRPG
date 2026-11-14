@@ -925,7 +925,7 @@ func (s *Service) GetEncounter(
 // everything that happens, so a player who got it could count the moves in the dark.
 // The players' hint says 0, "read it again" (and so does the failure to tell).
 func (s *Service) publishEncounterChanged(ctx context.Context, campaignID string, e playdb.Encounter) {
-	s.tellEncounterChanged(ctx, s.sayNow, campaignID, e)
+	s.tellEncounterChanged(ctx, s.sayOf(ctx), campaignID, e)
 }
 
 // tellEncounterChanged is publishEncounterChanged through say: an after-commit step of Service.tx tells it with the session's number.
@@ -947,7 +947,7 @@ func (s *Service) tellEncounterChanged(ctx context.Context, say sayFn, campaignI
 // do not see.
 func (s *Service) publishEncounterChangedFor(ctx context.Context, campaignID string, d *encounterData, ids ...string) {
 	if allHidden(d.cs, ids) {
-		s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
+		s.sayOf(ctx)(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(d.enc)})
 		return
 	}
 	s.publishEncounterChanged(ctx, campaignID, d.enc)
@@ -955,8 +955,8 @@ func (s *Service) publishEncounterChangedFor(ctx context.Context, campaignID str
 
 // publishEncounterChangedToMaster is publishEncounterChanged for a change the players cannot see at all:
 // the hint goes to the master alone, so the players cannot count it.
-func (s *Service) publishEncounterChangedToMaster(campaignID string, enc playdb.Encounter) {
-	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
+func (s *Service) publishEncounterChangedToMaster(ctx context.Context, campaignID string, enc playdb.Encounter) {
+	s.sayOf(ctx)(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
 }
 
 // allHidden says whether every id is a combatant of cs that is hidden now.
@@ -979,7 +979,7 @@ func (s *Service) changedFor(campaignID string, ids ...string) func(ctx context.
 // the players what they may see (a hidden one's turn is "the master's"; on a
 // map with the fog of war, so is the turn of an NPC the player does not see).
 func (s *Service) publishTurnChanged(ctx context.Context, campaignID string, d *encounterData) {
-	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: turnChangedMessage(d.enc, d.turnFor(combatViewer{master: true}), d.enc.Revision)})
+	s.sayOf(ctx)(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: turnChangedMessage(d.enc, d.turnFor(combatViewer{master: true}), d.enc.Revision)})
 	s.publishTurnChangedToPlayers(ctx, campaignID, d)
 }
 
@@ -990,7 +990,7 @@ func (s *Service) publishCombatantMoved(ctx context.Context, campaignID string, 
 	if !placed(c) {
 		return
 	}
-	s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: combatantMovedMessage(e, c)})
+	s.sayOf(ctx)(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: combatantMovedMessage(e, c)})
 	if !c.Hidden {
 		s.publishMovedToPlayers(ctx, campaignID, e, c, from)
 	}

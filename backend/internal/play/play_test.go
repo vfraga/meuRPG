@@ -30,6 +30,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice/dicetest"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/reqlimit"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -732,8 +733,8 @@ func (noRoster) MarkRevivifyBlocked(context.Context, pgx.Tx, string, string, boo
 
 func (noRoster) Conditions() []link.Named { return nil }
 
-func (noRoster) RestoreEquipped(context.Context, pgx.Tx, string, string, string, bool) (func(context.Context), error) {
-	return nil, errors.New("not in this test")
+func (noRoster) RestoreEquipped(context.Context, pgx.Tx, string, string, string, bool, sessiontell.Tell) error {
+	return errors.New("not in this test")
 }
 
 func (noRoster) ContentNames(context.Context, pgx.Tx, string) (func(string) string, error) {

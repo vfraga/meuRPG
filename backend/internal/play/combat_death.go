@@ -106,7 +106,7 @@ func (s *Service) RollDeathSave(
 	enc, err := s.finish(ctx, call.m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, call.m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, call.m.CampaignID, d.enc.ID, true) // a player is never hidden
-		s.publishVitals(call.m.CampaignID, out.vitals)
+		s.publishVitals(ctx, call.m.CampaignID, out.vitals)
 	})
 	if err != nil {
 		return nil, err

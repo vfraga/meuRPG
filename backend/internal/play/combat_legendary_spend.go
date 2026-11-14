@@ -191,7 +191,7 @@ func (s *Service) SpendLegendaryAction(
 	enc, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 		// A text spend changes nothing a player sees: both hints are the master's alone, so the players
 		// cannot count the spends.
-		s.publishEncounterChangedToMaster(m.CampaignID, d.enc)
+		s.publishEncounterChangedToMaster(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, false)
 	})
 	if err != nil {

@@ -73,6 +73,7 @@ func TestAddMilestoneRetriesASerializationConflict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	svc.SetSessionHost(pl)
 	chars.SetLevelUps(svc)
 	camps.SetXPAwards(svc)
 	srv := httpserver.New(httpserver.Config{Logger: logger})

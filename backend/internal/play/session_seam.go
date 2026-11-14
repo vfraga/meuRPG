@@ -81,6 +81,51 @@ func (t *SessionTell) CombatLogChangedFull() {
 	})
 }
 
+// later collects fn for after the commit, for a write with no open session too (it then goes out with no number). It moves nothing by
+// itself. A SessionTell with nothing to collect into (the zero value) drops it.
+func (t *SessionTell) later(fn func(ctx context.Context, say sayFn)) {
+	if h := t.steps(); h != nil {
+		h.after(fn)
+	}
+}
+
+// tellOf is the SessionTell a host method of the characters module was given by InSession. Any other Tell (a module with no play
+// funnel connected) tells nothing.
+func tellOf(t sessiontell.Tell) *SessionTell {
+	if st, ok := t.(*SessionTell); ok && st != nil {
+		return st
+	}
+	return &SessionTell{}
+}
+
+// XPChanged tells every stream of the campaign that the party, its levels or its experience changed. The write moves the number.
+func (t *SessionTell) XPChanged() {
+	t.touchSteps()
+	t.later(func(_ context.Context, say sayFn) { say(t.campaignID, xpChangedEvent()) })
+}
+
+// VitalsChanged tells the master and the character's player the character's vitals as they stand once the transaction committed.
+func (t *SessionTell) VitalsChanged(characterID string) {
+	t.touchSteps()
+	t.later(func(ctx context.Context, say sayFn) { t.s.tellVitalsNow(ctx, say, t.campaignID, characterID) })
+}
+
+// CharacterEvent tells the master and the owner that a review changed or a dead character lives again.
+func (t *SessionTell) CharacterEvent(ownerUserID, characterID, event string) {
+	t.touchSteps()
+	t.later(func(ctx context.Context, say sayFn) {
+		t.s.tellCharacterEvent(ctx, say, t.campaignID, ownerUserID, characterID, event)
+	})
+}
+
+// touchSteps marks the write as one that moves the number, whether or not the campaign has an open session (with none there is no
+// number, and the collector only keeps the steps).
+func (t *SessionTell) touchSteps() {
+	if h := t.steps(); h != nil {
+		h.touch()
+	}
+}
+
 // After runs fn once the transaction committed, after the events told; what fn sends through out carries the session's number (none, with
 // no open session). It moves nothing by itself: the write touches.
 func (t *SessionTell) After(fn func(ctx context.Context, out sessiontell.Out)) {

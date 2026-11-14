@@ -20,6 +20,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/ratelimit"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/secret"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -321,15 +322,18 @@ func (s *Service) ReturnCharacterToReserve(
 	}
 	now := s.now()
 	var row charactersdb.Character
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	// Under the funnel: the session's row first, then the character's, and leaving the party moves the session's number once.
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
 		row, err = s.returnToReserveTx(ctx, tx, m, id, now)
+		if err == nil {
+			t.XPChanged()
+		}
 		return err
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "return a character to the reserve", err)
 	}
-	s.publishPartyChanged(m.CampaignID)
 	logging.Event(ctx, s.logger, "character.returned_to_reserve", slog.String("character_id", id))
 	c, err := s.characterAfterWrite(ctx, content, row, m)
 	if err != nil {
@@ -570,17 +574,28 @@ func (s *Service) ClaimCharacter(
 	now := s.now()
 	var res *charactersv1.ClaimCharacterResponse
 	var linkCampaign string // the link's campaign, for an RN-03 refusal that comes from the unique index
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	campaignID, err := s.claimCampaign(ctx, userID, req.Msg.GetToken(), now)
+	if err != nil {
+		return nil, s.claimError(ctx, "read a claim link", err)
+	}
+	// Under the funnel, on the link's campaign: the session's row first, then the character's, and joining the party moves the
+	// session's number once. A token that opens no link has no campaign: its claim is refused in a plain transaction.
+	claim := func(tx pgx.Tx, t sessiontell.Tell) error {
 		claimed, err := s.claimTx(ctx, tx, userID, req.Msg.GetToken(), now, &linkCampaign)
 		if err == nil {
 			res = claimed
+			t.XPChanged()
 		}
 		return err
-	})
+	}
+	if campaignID == "" {
+		err = sessiontell.Direct{Pool: s.pool}.InSession(ctx, "", claim) // the claim is refused: nothing to tell, no session to lock
+	} else {
+		err = s.inSession(ctx, campaignID, claim)
+	}
 	if err != nil {
 		return nil, s.claimFailure(ctx, err, userID, linkCampaign)
 	}
-	s.publishPartyChanged(res.GetCampaignId())
 	logging.Event(ctx, s.logger, "character.claimed", slog.String("campaign_id", res.GetCampaignId()), slog.String("character_id", res.GetCharacterId()))
 	return connect.NewResponse(res), nil
 }
@@ -714,13 +729,24 @@ func (s *Service) claimFailure(ctx context.Context, err error, userID, linkCampa
 	return s.claimError(ctx, "claim a character", err)
 }
 
-// publishPartyChanged tells every stream of the campaign that the party changed (a
-// character joined it or left it), so each app reads it again. It is the hint of
-// "xp_changed": a notice with no content (RN-10).
-func (s *Service) publishPartyChanged(campaignID string) {
-	if s.live != nil {
-		s.live.PublishXPChanged(campaignID)
+// claimCampaign is the campaign of the link a token (or the sign-in) opens, read before the transaction so that it can start on the campaign's
+// session; "" for a token that opens no link (the claim then answers the generic refusal). A link's campaign never changes.
+func (s *Service) claimCampaign(ctx context.Context, userID, token string, now time.Time) (string, error) {
+	hash, err := s.claimHash(ctx, s.queries, userID, token, now)
+	if _, refused := errors.AsType[*connect.Error](err); refused {
+		return "", nil // the generic refusal: the transaction answers it
 	}
+	if err != nil {
+		return "", err
+	}
+	link, err := s.queries.GetClaimLinkByTokenHash(ctx, hash)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", wrap("read a claim link", err)
+	}
+	return link.CampaignID, nil
 }
 
 // ClaimIntent returns the handler for ClaimIntentKind, for identity.Config.Intents.

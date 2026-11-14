@@ -12,6 +12,7 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -252,81 +253,93 @@ func (s *Service) openArmorTx(ctx context.Context, tx pgx.Tx, q *playdb.Queries,
 // GearChanged implements characters.ReviewHost: the armor class Mage Armor gives is 13 + Dexterity
 // with the shield the character carries now (SRD 5.1, Armor Class), so it is worked out again
 // from the gear whenever the sheet's armor or shield changes, in a combat or out of it.
-func (s *Service) GearChanged(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (func(context.Context), error) {
+//
+// It runs inside characters' InSession, with the session's row already held: what it tells goes out through t after the commit, with
+// the write's number, and a change that touches nothing tells and moves nothing.
+func (s *Service) GearChanged(ctx context.Context, tx pgx.Tx, campaignID, characterID string, t sessiontell.Tell) error {
 	q := s.queries.WithTx(tx)
 	out, err := q.ListCharacterEffects(ctx, []string{characterID})
 	if err != nil {
-		return nil, fmt.Errorf("list the character's effects: %w", err)
+		return fmt.Errorf("list the character's effects: %w", err)
 	}
 	in, err := q.ListCombatEffectsOfCharacter(ctx, characterID)
 	if err != nil {
-		return nil, fmt.Errorf("list the effects in the combats: %w", err)
+		return fmt.Errorf("list the effects in the combats: %w", err)
 	}
 	g := &gearBase{s: s, tx: tx, campaignID: campaignID, characterID: characterID}
 	touched, err := g.refitEffects(ctx, q, out, in)
 	if err != nil || !touched {
-		return nil, err
+		return err
 	}
 	now, err := g.worked(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := q.SetMageArmorACOfCharacter(ctx, playdb.SetMageArmorACOfCharacterParams{CharacterID: characterID, MageArmorAc: new(clamp32(now.AC, 1, 60))}); err != nil {
-		return nil, fmt.Errorf("work out the base armor class of the combatants again: %w", err)
+		return fmt.Errorf("work out the base armor class of the combatants again: %w", err)
 	}
 	c, err := s.openArmorTx(ctx, tx, q, campaignID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := s.syncArmorBase(ctx, c, characterID); err != nil {
-		return nil, err
+		return err
 	}
 	told := c.told
-	return func(ctx context.Context) {
-		s.publishVitalsOf(campaignID, told)
+	st := tellOf(t)
+	st.touchSteps()
+	st.later(func(ctx context.Context, say sayFn) {
+		s.tellVitalsOf(say, campaignID, told)
 		if c.enc.ID != "" {
-			s.publishEncounterChanged(ctx, campaignID, c.enc)
+			s.tellEncounterChanged(ctx, say, campaignID, c.enc)
 		}
-	}, nil
+	})
+	return nil
 }
 
 // ArmorWorn implements characters.ReviewHost: a character that dons armor loses what needs none
 // (Mage Armor, SRD 5.1: "the spell ends if the target dons armor"). The effects that set a base
 // armor class go, in a combat or out of it, the cast that held them ends, and the streams are
 // told after the commit.
-func (s *Service) ArmorWorn(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (func(context.Context), error) {
+//
+// It runs inside characters' InSession, with the session's row already held: what it tells goes out through t after the commit, with
+// the write's number, and a change that ends nothing tells and moves nothing.
+func (s *Service) ArmorWorn(ctx context.Context, tx pgx.Tx, campaignID, characterID string, t sessiontell.Tell) error {
 	q := s.queries.WithTx(tx)
 	c, err := s.openArmorTx(ctx, tx, q, campaignID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	casts, err := endArmorEffects(ctx, q, characterID)
 	if err != nil || len(casts) == 0 {
-		return nil, err
+		return err
 	}
 	if err := q.ClearMageArmorACOfCharacter(ctx, characterID); err != nil {
-		return nil, fmt.Errorf("take the base armor class off the combatants: %w", err)
+		return fmt.Errorf("take the base armor class off the combatants: %w", err)
 	}
 	slices.Sort(casts)
 	for _, id := range slices.Compact(casts) {
 		cast, err := q.GetSpellCast(ctx, playdb.GetSpellCastParams{ID: id, CampaignID: campaignID})
 		if err == nil && cast.Status == castActive {
 			if _, _, _, err := s.closeCast(ctx, c, cast, castEnded, endDismissed); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 	if err := s.syncArmorBase(ctx, c, characterID); err != nil {
-		return nil, err
+		return err
 	}
 	told := c.told
-	return func(ctx context.Context) {
-		s.publishVitalsOf(campaignID, told)
-		s.publishCastsChanged(campaignID, false)
+	st := tellOf(t)
+	st.touchSteps()
+	st.later(func(ctx context.Context, say sayFn) {
+		s.tellVitalsOf(say, campaignID, told)
+		say(campaignID, castsChangedEvent(false))
 		if c.enc.ID != "" {
-			s.publishEncounterChanged(ctx, campaignID, c.enc)
+			s.tellEncounterChanged(ctx, say, campaignID, c.enc)
 		}
-	}, nil
+	})
+	return nil
 }
 
 // endArmorEffects takes away the effects of a character, out of a combat and in the combats, that

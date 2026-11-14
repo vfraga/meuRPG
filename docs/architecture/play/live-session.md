@@ -187,7 +187,14 @@ A stream carries it on `ready` and on every `heartbeat`, and nothing else about 
   A player who was not told the event is "behind" and reads once at the next heartbeat.
   That costs one extra read per hidden write within 25 s, and it tells the player nothing about the write.
 - **Only the writers in `Service.tx` and `Service.InSession` count.** The first are the combat write path (`write`, `changeInTx`, `StartEncounter`), the master's correction of vitals, the rests, the hit dice, the slot recoveries, Bardic Inspiration out of a combat, Revivify's requests, answers and switch, the lasting effects on characters outside a combat (giving one, ending one) and the game clock, and the traps outside a combat (the master's firing, a token or a creature dropped on a trap, a search, and applying or discarding a trap's damage) (`play/hints.go`).
-  The writes of the characters and campaigns modules that change what a session shows run under `Service.InSession` and bump once: giving, renaming and dismissing a character's creature, a correction of a creature's hit points and the table's rules (`SetTableRules`).
+  The writes of the characters and campaigns modules that change what a session shows run under `Service.InSession` and bump once: giving, renaming and dismissing a character's creature, a correction of a creature's hit points and the table's rules (`SetTableRules`), and the characters module's own writers of the sheet and the party.
+  Those are `ReviveCharacter`, `SetEquipped`, the save of a sheet (`UpdateCharacter`), `CompleteCharacterChoices`, `LevelUpCharacter`, `ClaimCharacter` and `ReturnCharacterToReserve`.
+  Each takes the session's row first and the character's after it, the one order of every write of the funnel, and moves the number once, whatever it concerns.
+  A save of a sheet moves it even when it changes nothing a player sees (a master's correction of an NPC), and tells nobody then: the number is all the table's screens get of it.
+  Every save of a sheet while a session is open takes the session's row, a player's save of their own sheet included: it waits behind the writes of the combat that hold the row, the one order every write of the funnel follows.
+  A change of gear tells play through the same transaction (`EquipInCombat`, `ArmorWorn`, `GearChanged` take the write's `Tell`), so the combat, the casts and the vitals it changes carry the write's number.
+  A revival that repeats its key moves nothing and tells the master and the owner again with the number as it stands.
+  A `SetEquipped` that finds the piece as asked, and a refused call, move nothing.
   With no play module wired in (a tool, a test) those writes run in a plain transaction and tell through the creature host with no number.
   The maps module's writes that change what a session shows (tokens and the party on a map, carried lights, a map's own rows, its layers, fog, grid, image and points, the traps and treasures the master changes, the clues, a scene's actions, the gallery and the dungeons) go through `Service.InSession` too ([Transactions](../transactions.md#hints-sent-after-the-commit)): one bump for each write, and what the write tells carries it, to the audience the maps module chose (a hidden change reaches the master alone, a trap found its finder alone).
   A change that shows on screen and sends no event (a renamed gallery image on screen, the fog's memory cleared) touches; a rename reads what is on screen after it holds the session's lock, so an image the master shows meanwhile counts.
@@ -203,9 +210,12 @@ A stream carries it on `ready` and on every `heartbeat`, and nothing else about 
   A paint's `map_changed` goes through a gate that merges close paints into one hint, and carries no number.
   The doors a move opens, the puzzle's reveals of a point or a clue and its other maps steps run in play's step after the commit and carry the move's number.
   Every other writer of the `play` package tells the streams through `send` after its own `db.InTx`: it does not bump, and its events carry no number.
-  The hints a combat handler tells itself after the write (`finish`) carry none either; the write's own bump covers them.
-  The writers of other modules that run in their own transaction and tell the streams after it move no number: `ReviveCharacter`, the gear writes that call play's `ArmorWorn`, `GearChanged` and `EquipInCombat`, `CompleteCharacterChoices`, the level-up's announcement, the party's joining and leaving (`publishPartyChanged`), the experience awards of progression (`give`, `announceAward`) and their undo (`announceUndo`), and `AppendEvent`.
-  The `sessionwrite` rule of `archtest` scans only the `play` and `maps` packages, so it does not see these: a hint lost by one of them, like one lost by the writers above that send with no number, is not detected by the number.
+  The hints a combat handler tells from the `publish` callback of `finish` carry the number of the write that made the change (`combatResult.seq`, the number `Service.tx` took), and `finish` does not bump again: `encounter_changed`, `combat_log_changed`, the vitals, `combatant_moved` and the forced moves.
+  A retry of the key (`publishRetried`) carries the number as it stands.
+  The publishers read the numbered `say` from the context `finish` gives the callback (`sayOf`). Some send no number: the maps module's own fog hints for a moved combatant, a change made inside a held action's transaction, and the hints of `publishOffersMade`, `publishAttackHit`, `publishHiddenHitPending` and `publishHeldRollsChanged`.
+  The writers of other modules that run in their own transaction and tell the streams after it move no number: the rest of the characters module's writes: `MarkCharacterDead`, the portraits, `RequestCharacterChanges`, `ResubmitCharacter`, `SetAttunement`, the creation and approval of a character, the states and the story.
+  The `sessionwrite` rule of `archtest` scans the `play`, `maps` and `progression` packages, and `TestAppendEventCallersRunInTheirCallersTransaction` requires every caller of `AppendEvent` in `characters`, `maps` and `progression` to take its caller's `pgx.Tx`, and the writers of the characters module listed above are pinned by name (`TestCharactersSessionWritersRunInTheSeam`, which also pins `UpdateCharacter` to its call of `writeSheetSave`): the others are not seen, so a hint lost by one of them, like one lost by the writers above that send with no number, is not detected by the number.
+- **An experience award and its undo** run in the funnel through `progression.SetSessionHost` (`progression/session.go`): the session's row is taken first, then the sheets (`AddExperience`) and the campaign, in the order of every other change of the session, and the number moves once when the open session logged the write (`XPChanged`, which carries it). A retry of a key moves nothing. With no session open the write runs in a plain transaction and tells nothing. `TestAnAwardTakesTheSessionBeforeTheSheets` and `TestAnUndoTakesTheSessionBeforeTheSheets` hold the session's row from another connection and require the sheets and the campaign to stay free while the write waits for it. The planned milestones' list (`AddMilestone`, `MoveMilestone`) never shows in a session and is a permanent exception.
 - **Taking back a left image** moves the number once, in the same transaction that removes it from the list, and `LeftImagesChanged` carries it to the master and the players the image was left with.
   A player it was not left with hears nothing of it, and an image that is not on the list is refused and moves nothing.
 - **Making a line's voice** moves the number once, so every screen reads the line again and shows that a voice is available.
@@ -252,7 +262,7 @@ A heartbeat that cannot read it carries 0, which the page ignores.
 | --- | --- |
 | `Service.send` | The one place in `play` that calls `hub.Publish`; it takes no context and waits for nobody |
 | `Service.tellMembers` | The master's streams always, the players' only when asked; the maps module's `Publish` seam |
-| `Service.InSession` | The seam of other modules' writes (the creature writes of `characters`, `SetTableRules` of `campaigns`): `Service.tx` on the open session, with a `sessiontell.Tell` of four hints in place of the hub |
+| `Service.InSession` | The seam of other modules' writes (the creature, sheet, gear, revival, choice, level-up and party writes of `characters`, `SetTableRules` of `campaigns`): `Service.tx` on the open session, with a `sessiontell.Tell` of a few hints in place of the hub |
 | `Service.publish` in `maps` | The one place in `maps` that calls `Publish`; it passes the event to the play module |
 
 `TestPublishOnlyThroughTheFunnel` fails for a call to `Publish` anywhere else in `internal/play` and `internal/maps`.
@@ -273,10 +283,11 @@ What the stored event does not keep is not recovered:
 
 - a public cast change, because the spell level is not kept;
 - a reaction window that closed, because the combat the retry reads already shows it closed.
+- the combat of an in-combat `ReviveCharacter`: its repeat tells the revival and the vitals, and not the combat, because the stored event keeps no encounter id.
 - the `map_changed` hint of `EndEncounter`: its repeat tells the combat, the log and the vitals again, and not the map.
 - a trap a wrong move fired, only in part: the repeat reads the puzzle's trap point's latest stored `trap_triggered` event, which may be a later firing than the move's own, and tells nothing if that event is gone.
 
-The hints `AnswerReaction` tells from its handler after the write (`encounter_changed`, `combat_log_changed`, the answer's vitals) do not go through the collector, so they carry no number.
+The hints `AnswerReaction` tells from its handler after the write (`encounter_changed`, `combat_log_changed`, the answer's vitals) do not go through the collector; `finish` numbers them.
 A repeat of it sends the generic combat and log hints and the forced moves from the stored event (`publishRetried`), with the vitals coming from the replay's step for the combat's players.
 
 ### What the number leaks

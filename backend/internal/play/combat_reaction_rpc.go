@@ -103,7 +103,7 @@ func (s *Service) AnswerReaction(
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret && !ev.AttackerHidden)
 		for _, v := range got.vitals {
-			s.publishVitals(m.CampaignID, v)
+			s.publishVitals(ctx, m.CampaignID, v)
 		}
 		s.publishPushed(ctx, m.CampaignID, d, res.pushed)
 	})

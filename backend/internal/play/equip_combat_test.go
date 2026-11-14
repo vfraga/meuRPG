@@ -290,7 +290,7 @@ func TestEquipSpendRollsBackWithTheTransaction(t *testing.T) {
 		{Key: shieldItem, Kind: link.EquipShield},
 	} {
 		err := db.InTx(t.Context(), a.h.pool, func(tx pgx.Tx) error {
-			if _, err := a.h.svc.EquipInCombat(t.Context(), tx, a.campaignID, a.pens.GetId(), a.ana.id, change); err != nil {
+			if err := a.h.svc.EquipInCombat(t.Context(), tx, a.campaignID, a.pens.GetId(), a.ana.id, change, &SessionTell{}); err != nil {
 				return err
 			}
 			return boom

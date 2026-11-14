@@ -29,6 +29,13 @@ type Tell interface {
 	// committed (who sees which change), which a read inside the transaction cannot tell. After moves nothing by itself: the write
 	// calls Touch. fn's context has the request's values and no cancellation.
 	After(fn func(ctx context.Context, out Out))
+	// XPChanged tells every stream of the campaign that the party, its levels or its experience changed (a content-free hint).
+	XPChanged()
+	// VitalsChanged tells the master and the character's player the character's vitals as they stand once the transaction committed.
+	VitalsChanged(characterID string)
+	// CharacterEvent tells the master and the owner (ownerUserID, empty for none) that a review changed or a dead character lives again
+	// (event "changes_requested", "resubmitted" or "revived"); a content-free hint.
+	CharacterEvent(ownerUserID, characterID, event string)
 	// Replay marks the call as the repeat of a write already made (an idempotency key stored): nothing was written, so the number
 	// does not move, and what the steps of After send carries the number as it stands.
 	Replay()
@@ -74,6 +81,15 @@ func (None) EncounterChanged(string) {}
 
 // CombatLogChangedFull tells nothing.
 func (None) CombatLogChangedFull() {}
+
+// XPChanged tells nothing.
+func (None) XPChanged() {}
+
+// VitalsChanged tells nothing.
+func (None) VitalsChanged(string) {}
+
+// CharacterEvent tells nothing.
+func (None) CharacterEvent(string, string, string) {}
 
 // After drops the step.
 func (None) After(func(context.Context, Out)) {}

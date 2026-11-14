@@ -99,8 +99,13 @@ func (s *Service) AppendEvent(ctx context.Context, tx pgx.Tx, campaignID, kind, 
 // carries no content: the app reads it again, where it is allowed (RN-20).
 // Call it after the commit.
 func (s *Service) PublishXPChanged(campaignID string) {
-	s.send(campaignID, live.Event{
+	s.send(campaignID, xpChangedEvent())
+}
+
+// xpChangedEvent is the hint that the party, its levels or its experience changed, for everyone.
+func xpChangedEvent() live.Event {
+	return live.Event{
 		Audience: live.Audience{Everyone: true},
 		Message:  &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_XpChanged_{XpChanged: &playv1.WatchGameSessionResponse_XpChanged{}}},
-	})
+	}
 }

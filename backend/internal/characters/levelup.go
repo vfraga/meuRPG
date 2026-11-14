@@ -25,6 +25,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -716,15 +717,20 @@ func (s *Service) LevelUpCharacter(
 		return nil, err
 	}
 	var done leveledUp
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	// Under the funnel: the session's row first, then the character's, and the level-up moves the session's number once.
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
 		done, err = s.levelUpIn(ctx, tx, m, id, req.Msg.GetRevision(), req.Msg.GetChoices())
+		if err == nil {
+			t.XPChanged()
+			t.VitalsChanged(id)
+		}
 		return err
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "level up a character", err)
 	}
-	s.announceLevelUp(ctx, m.CampaignID, id)
+	s.announceLevelUp(ctx, id)
 	// The response is derived from the content the level-up was checked with.
 	c, err := s.character(ctx, done.content, done.row, m)
 	if err != nil {
@@ -847,13 +853,9 @@ func (s *Service) recordLevelUp(ctx context.Context, q *charactersdb.Queries, m 
 	return nil
 }
 
-// announceLevelUp logs the committed level-up and tells the live session.
-func (s *Service) announceLevelUp(ctx context.Context, campaignID, id string) {
+// announceLevelUp logs the committed level-up. The streams were told by the level-up's own transaction (inSession).
+func (s *Service) announceLevelUp(ctx context.Context, id string) {
 	logging.Event(ctx, s.logger, "levelup.done", slog.String("character_id", id))
-	if s.live != nil {
-		s.live.PublishXPChanged(campaignID)
-		s.live.PublishVitalsChanged(ctx, campaignID, id)
-	}
 }
 
 // ListLevelUps implements charactersv1connect.CharacterServiceHandler.

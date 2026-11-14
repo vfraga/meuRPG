@@ -13,8 +13,8 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -30,15 +30,13 @@ type equipRequest struct {
 	equip   bool
 }
 
-// equipped is what SetEquipped's transaction leaves: the row as it stands, whether the
-// call changed the sheet, and what play asks to run after the commit.
+// equipped is what SetEquipped's transaction leaves: the row as it stands and whether the
+// call changed the sheet.
 type equipped struct {
-	row         charactersdb.Character
-	carried     []string
-	changed     bool
-	afterGear   func(ctx context.Context)
-	afterCombat func(ctx context.Context)
-	changeInfo  EquipChange
+	row        charactersdb.Character
+	carried    []string
+	changed    bool
+	changeInfo EquipChange
 }
 
 // SetEquipped implements charactersv1connect.CharacterServiceHandler.
@@ -55,9 +53,10 @@ func (s *Service) SetEquipped(
 		return nil, err
 	}
 	var done equipped
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	// Under the funnel: the session's row first, then the character's, and a change of gear moves the session's number once.
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		done, err = s.equipIn(ctx, tx, m, in)
+		done, err = s.equipIn(ctx, tx, m, in, t)
 		return err
 	})
 	if err != nil {
@@ -65,11 +64,6 @@ func (s *Service) SetEquipped(
 	}
 	if done.changed {
 		logging.Event(ctx, s.logger, "character.equipped", slog.String("character_id", in.id), slog.String("kind", string(done.changeInfo.Kind)), slog.Bool("equip", in.equip))
-		for _, after := range []func(context.Context){done.afterCombat, done.afterGear} {
-			if after != nil {
-				after(ctx)
-			}
-		}
 	}
 	return connect.NewResponse(&charactersv1.SetEquippedResponse{CarriedKeys: done.carried, Revision: done.row.Revision}), nil
 }
@@ -92,14 +86,11 @@ func readEquipRequest(msg *charactersv1.SetEquippedRequest) (equipRequest, error
 // changes, and writes the sheet with only carried_keys changed.
 //
 // The lock order is play's session row, then the character row: the one order of a combat write,
-// which takes the session lock first and then key-shares the character row. The session is
-// locked before the character is read, since play's combat check, further on, would take it
+// which takes the session lock first and then key-shares the character row. inSession holds the
+// session's row before the character is read, since play's combat check, further on, would take it
 // after the character's lock.
-func (s *Service) equipIn(ctx context.Context, tx pgx.Tx, m authz.Membership, in equipRequest) (equipped, error) {
+func (s *Service) equipIn(ctx context.Context, tx pgx.Tx, m authz.Membership, in equipRequest, t sessiontell.Tell) (equipped, error) {
 	q := s.queries.WithTx(tx)
-	if err := s.lockSessionForGear(ctx, tx, m.CampaignID); err != nil {
-		return equipped{}, err
-	}
 	current, err := visibleForUpdate(ctx, q, m, in.id)
 	if err != nil {
 		return equipped{}, err
@@ -122,15 +113,12 @@ func (s *Service) equipIn(ctx context.Context, tx pgx.Tx, m authz.Membership, in
 	if slices.Contains(full.GetCarriedKeys(), in.key) == !in.equip {
 		return equipped{row: current, carried: full.GetCarriedKeys()}, nil // already as asked: nothing changes
 	}
-	var afterCombat func(context.Context)
 	if s.reviewHost != nil {
-		if afterCombat, err = s.reviewHost.EquipInCombat(ctx, tx, m.CampaignID, current.ID, m.UserID, change); err != nil {
+		if err := s.reviewHost.EquipInCombat(ctx, tx, m.CampaignID, current.ID, m.UserID, change, t); err != nil {
 			return equipped{}, err
 		}
 	}
-	done, err := s.writeCarried(ctx, tx, m, current, full, change)
-	done.afterCombat = afterCombat
-	return done, err
+	return s.writeCarried(ctx, tx, m, current, full, change, t)
 }
 
 // equipChangeOf names the piece of gear the request moves, or refuses a key the sheet
@@ -152,13 +140,14 @@ func equipChangeOf(full *charactersv1.FullSheet, in equipRequest) (EquipChange, 
 
 // writeCarried stores the sheet with the piece moved in or out of carried_keys, and
 // tells play what the equipped armor and shield became.
-func (s *Service) writeCarried(ctx context.Context, tx pgx.Tx, m authz.Membership, current charactersdb.Character, full *charactersv1.FullSheet, change EquipChange) (equipped, error) {
-	return s.setCarried(ctx, tx, m.CampaignID, current, full, change)
+func (s *Service) writeCarried(ctx context.Context, tx pgx.Tx, m authz.Membership, current charactersdb.Character, full *charactersv1.FullSheet, change EquipChange, t sessiontell.Tell) (equipped, error) {
+	return s.setCarried(ctx, tx, m.CampaignID, current, full, change, t)
 }
 
 // setCarried is the write of writeCarried and of the undo of a swap (RestoreEquipped): the sheet with the piece moved
-// in or out of carried_keys, checked, with the known issues refreshed, and what play is told of the gear.
-func (s *Service) setCarried(ctx context.Context, tx pgx.Tx, campaignID string, current charactersdb.Character, full *charactersv1.FullSheet, change EquipChange) (equipped, error) {
+// in or out of carried_keys, checked, with the known issues refreshed, and what play is told of the gear. The write touches the
+// session's number through t.
+func (s *Service) setCarried(ctx context.Context, tx pgx.Tx, campaignID string, current charactersdb.Character, full *charactersv1.FullSheet, change EquipChange, t sessiontell.Tell) (equipped, error) {
 	next := proto.CloneOf(full)
 	if change.Equip {
 		next.CarriedKeys = slices.DeleteFunc(next.CarriedKeys, func(k string) bool { return k == change.Key })
@@ -184,11 +173,11 @@ func (s *Service) setCarried(ctx context.Context, tx pgx.Tx, campaignID string, 
 	if err != nil {
 		return equipped{}, wrap("update sheet", err)
 	}
-	after, err := s.tellGearChange(ctx, tx, campaignID, current.ID, full, next)
-	if err != nil {
+	t.Touch()
+	if err := s.tellGearChange(ctx, tx, campaignID, current.ID, full, next, t); err != nil {
 		return equipped{}, err
 	}
-	return equipped{row: row, carried: next.CarriedKeys, changed: true, afterGear: after, changeInfo: change}, nil
+	return equipped{row: row, carried: next.CarriedKeys, changed: true, changeInfo: change}, nil
 }
 
 // refreshKnownIssues keeps known_issues true to the gear in use: Derive reads only the
@@ -218,39 +207,38 @@ func (s *Service) refreshKnownIssues(ctx context.Context, tx pgx.Tx, campaignID 
 // RestoreEquipped implements play.CombatRoster: the master's undo of a swap puts the piece back as it was, inside the undo's
 // transaction. It writes carried_keys as SetEquipped does and asks nobody about the turn and spends nothing: play
 // puts the economy back itself. `failed_precondition` when the sheet no longer lists the piece or no longer allows the gear
-// (the sheet changed since the swap): the undo then fails and writes nothing. It returns what to call after the commit.
-func (s *Service) RestoreEquipped(ctx context.Context, tx pgx.Tx, campaignID, characterID, key string, equip bool) (func(context.Context), error) {
+// (the sheet changed since the swap): the undo then fails and writes nothing. What the gear tells goes through t, the undo's.
+func (s *Service) RestoreEquipped(ctx context.Context, tx pgx.Tx, campaignID, characterID, key string, equip bool, t sessiontell.Tell) error {
 	q := s.queries.WithTx(tx)
 	current, err := q.GetCharacterForUpdate(ctx, charactersdb.GetCharacterForUpdateParams{CampaignID: campaignID, ID: characterID})
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, errCharacterNotFound()
+		return errCharacterNotFound()
 	}
 	if err != nil {
-		return nil, wrap("read character", err)
+		return wrap("read character", err)
 	}
 	stored, err := loadSheet(current.ID, current.Sheet)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	full := stored.GetFull()
 	if full == nil {
-		return nil, errGearChanged()
+		return errGearChanged()
 	}
 	change, err := equipChangeOf(full, equipRequest{id: characterID, key: key, equip: equip})
 	if err != nil {
-		return nil, errGearChanged()
+		return errGearChanged()
 	}
 	if slices.Contains(full.GetCarriedKeys(), key) == !equip {
-		return nil, nil // the piece is already as it was
+		return nil // the piece is already as it was
 	}
-	done, err := s.setCarried(ctx, tx, campaignID, current, full, change)
-	if err != nil {
+	if _, err := s.setCarried(ctx, tx, campaignID, current, full, change, t); err != nil {
 		if connect.CodeOf(err) == connect.CodeInvalidArgument {
-			return nil, errGearChanged()
+			return errGearChanged()
 		}
-		return nil, err
+		return err
 	}
-	return done.afterGear, nil
+	return nil
 }
 
 // errGearChanged is the refusal of an undo whose piece the sheet no longer has as the swap left it.

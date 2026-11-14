@@ -922,6 +922,10 @@ func TestAnAwardThatLosesARaceInsideItsTransaction(t *testing.T) {
 
 	goblin := rig.master.minion(t, rig.campaign, "Goblin", 50)
 	enc := rig.fight(t, goblin, 2, 2, true)
+	// With a session open an award runs under play's funnel, which takes the session's row first, so a second award waits for the
+	// first and the races below cannot happen (TestAnAwardTakesTheSessionBeforeTheSheets). They are the races of an award with no
+	// session open, where the transaction's own guards (the retry, the unique index) are all that stands: the session ends first.
+	rig.master.endLiveSession(t, rig.campaign)
 	rig.faults.setBeforeWrite(func() {
 		if _, err := rig.enemies(enc.GetId(), pens); err != nil {
 			t.Errorf("AwardXP(the racing award) error = %v", err)

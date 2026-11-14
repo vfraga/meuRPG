@@ -433,7 +433,7 @@ func (s *Service) publishRevivified(ctx context.Context, m authz.Membership, d *
 	s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 	s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
 	for _, vit := range out.vitals {
-		s.publishVitals(m.CampaignID, vit)
+		s.publishVitals(ctx, m.CampaignID, vit)
 	}
 	if out.told != nil {
 		s.PublishCharacterEvent(ctx, m.CampaignID, out.told.owner, out.told.characterID, characterRevived)

@@ -131,7 +131,7 @@ func (s *Service) hide(ctx context.Context, m authz.Membership, msg *playv1.Hide
 		// reads their own pending attempt.
 		s.publishEncounterChangedFor(ctx, m.CampaignID, d, ev.Actor)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, false)
-		s.publishVitals(m.CampaignID, vitals)
+		s.publishVitals(ctx, m.CampaignID, vitals)
 	})
 	if err != nil {
 		return nil, err

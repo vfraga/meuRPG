@@ -9,8 +9,8 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -37,8 +37,6 @@ type sheetSave struct {
 	portraitErr  error
 	portraitCopy PortraitCopy
 	copyCreated  bool
-	// afterArmor is what package play asks to run after the commit, nil for nothing.
-	afterArmor func(ctx context.Context)
 }
 
 // readSheetSave reads and checks an UpdateCharacter request, in the order the client
@@ -93,19 +91,16 @@ func (s *Service) preparePortraitSave(ctx context.Context, u *sheetSave) error {
 	return nil
 }
 
-// writeSheetSave runs the save's transaction, then what play asked for after the commit,
-// and lets the portrait copy's files go when no gallery row of this call keeps them.
+// writeSheetSave runs the save's transaction, which tells play what it changed, and
+// lets the portrait copy's files go when no gallery row of this call keeps them.
 func (s *Service) writeSheetSave(ctx context.Context, u *sheetSave) (charactersdb.Character, error) {
 	var row charactersdb.Character
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		u.afterArmor = nil
+	// Under the funnel: the session's row first, then the character's, and the save moves the session's number once.
+	err := s.inSession(ctx, u.m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		row, err = s.saveSheetIn(ctx, tx, u)
+		row, err = s.saveSheetIn(ctx, tx, u, t)
 		return err
 	})
-	if u.afterArmor != nil && err == nil {
-		u.afterArmor(ctx)
-	}
 	if u.portraitCopy != nil && (err != nil || !u.copyCreated) {
 		u.portraitCopy.Discard(ctx) // no gallery row: the copy's files go
 	}
@@ -117,15 +112,10 @@ func (s *Service) writeSheetSave(ctx context.Context, u *sheetSave) (charactersd
 
 // saveSheetIn is the save's transaction: the stored character locked and checked, the
 // sheet checked against it, the portrait's gallery row, the write, and what play is told.
-func (s *Service) saveSheetIn(ctx context.Context, tx pgx.Tx, u *sheetSave) (charactersdb.Character, error) {
+func (s *Service) saveSheetIn(ctx context.Context, tx pgx.Tx, u *sheetSave, t sessiontell.Tell) (charactersdb.Character, error) {
 	q := s.queries.WithTx(tx)
-	// The session's row before the character's, the order of a combat write: a save that changes
-	// the armor or the shield goes on to call play (tellGearChange), which takes the session's lock.
-	// Only such a save takes it: a save that leaves the gear alone, and one that is refused, do not
-	// wait for the combat writes.
-	if err := s.lockSessionBeforeCharacter(ctx, tx, u.m.CampaignID, u.id, u.skipsGearLock); err != nil {
-		return charactersdb.Character{}, err
-	}
+	// The session's row is held before the character's (inSession), the order of a combat write: a save that changes the armor
+	// or the shield goes on to call play (tellGearChange), which writes under that lock.
 	current, err := lockSheetToSave(ctx, q, u)
 	if err != nil {
 		return charactersdb.Character{}, err
@@ -159,26 +149,8 @@ func (s *Service) saveSheetIn(ctx context.Context, tx pgx.Tx, u *sheetSave) (cha
 	if err := dropRemovedItemCharges(ctx, q, u.id, u.sheet.GetFull()); err != nil {
 		return row, err
 	}
-	u.afterArmor, err = s.tellGearChange(ctx, tx, u.m.CampaignID, u.id, stored.GetFull(), u.sheet.GetFull())
-	return row, err
-}
-
-// skipsGearLock says, from the stored character read without a lock, that this save cannot reach play's
-// gear calls, so it need not take the session's lock first: the revision is ahead of the request's (the
-// revision check refuses it as stale), or it is the request's own and the sheet leaves the armor and the
-// shield as they are (gearChangeOf, as tellGearChange reads them). The read is safe without a lock because
-// the revision is checked after the character is locked (lockSheetToSave) and a revision is one version of
-// the sheet: a save that goes on finds the version read here, or is stale. A sheet that does not load, or
-// a revision behind the request's, takes the lock.
-func (u *sheetSave) skipsGearLock(pre charactersdb.Character) bool {
-	switch {
-	case pre.Revision > u.revision:
-		return true
-	case pre.Revision == u.revision:
-		stored, err := loadSheet(pre.ID, pre.Sheet)
-		return err == nil && gearChangeOf(stored.GetFull(), u.sheet.GetFull()) == gearUnchanged
-	}
-	return false
+	t.Touch() // the sheet changed, for the master and the table alike: the number moves once
+	return row, s.tellGearChange(ctx, tx, u.m.CampaignID, u.id, stored.GetFull(), u.sheet.GetFull(), t)
 }
 
 // lockSheetToSave reads the stored character, locked, and checks that the caller may
@@ -279,20 +251,20 @@ func (u *sheetSave) insertPortraitCopy(ctx context.Context, tx pgx.Tx) error {
 }
 
 // tellGearChange tells package play, inside the transaction, what a save changed of the
-// character's armor and shield, and returns what play asks to run after the commit.
-func (s *Service) tellGearChange(ctx context.Context, tx pgx.Tx, campaignID, characterID string, stored, next *charactersv1.FullSheet) (func(ctx context.Context), error) {
+// character's armor and shield; what play tells the streams goes through t.
+func (s *Service) tellGearChange(ctx context.Context, tx pgx.Tx, campaignID, characterID string, stored, next *charactersv1.FullSheet, t sessiontell.Tell) error {
 	if s.reviewHost == nil {
-		return nil, nil
+		return nil
 	}
 	switch gearChangeOf(stored, next) {
 	case gearArmorWorn:
 		// A character that dons armor loses Mage Armor.
-		return s.reviewHost.ArmorWorn(ctx, tx, campaignID, characterID)
+		return s.reviewHost.ArmorWorn(ctx, tx, campaignID, characterID, t)
 	case gearChanged:
 		// A shield (or armor taken off) changes what Mage Armor gives.
-		return s.reviewHost.GearChanged(ctx, tx, campaignID, characterID)
+		return s.reviewHost.GearChanged(ctx, tx, campaignID, characterID, t)
 	}
-	return nil, nil
+	return nil
 }
 
 // gearChange is what a save changed of the equipped armor and shield.

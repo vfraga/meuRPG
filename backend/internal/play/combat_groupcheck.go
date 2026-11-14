@@ -70,7 +70,8 @@ type groupTell func(ctx context.Context, q *playdb.Queries, h *hints, session pl
 // groupWrite runs one change to the open session's group check, as the scene checks do: one
 // transaction locks the open session, replays a retry of the key, lets do change the rows
 // and appends the event, and tells what the write changed through the hints of Service.tx (a roll kept for the player's
-// answer wrote nothing and tells nothing). It returns whether the call was a retry.
+// answer changes no group check, but its held row is written: the number moves once and HeldRollsChanged is told, held_rpc.go).
+// It returns whether the call was a retry.
 func (s *Service) groupWrite(ctx context.Context, m authz.Membership, key string, hash *string, kind string, do groupChange, tell groupTell) (groupCheckEvent, bool, error) {
 	call := groupCall{m: m, key: key, hash: hash, kind: kind}
 	var ev groupCheckEvent

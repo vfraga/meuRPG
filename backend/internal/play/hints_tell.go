@@ -7,6 +7,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/protobuf/proto"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
@@ -20,6 +21,35 @@ type sayFn = func(campaignID string, ev live.Event)
 // sayNow sends without a number, for the callers that tell the streams outside Service.tx (the calls of other modules after
 // their own commit).
 func (s *Service) sayNow(campaignID string, ev live.Event) { s.send(campaignID, ev) }
+
+// sayWith is the say that stamps each event with seq (WatchGameSessionResponse.session_seq) and sends it; seq 0 sends it unstamped.
+// It stamps a copy and never the caller's message: a publisher may send one message to several audiences, and a stream may be
+// marshaling an earlier send of it.
+func (s *Service) sayWith(seq int64) sayFn {
+	return func(campaignID string, ev live.Event) {
+		if seq > 0 && ev.Message != nil {
+			ev.Message = proto.CloneOf(ev.Message)
+			ev.Message.SessionSeq = seq
+		}
+		s.send(campaignID, ev)
+	}
+}
+
+type sayKey struct{}
+
+// withSay returns ctx carrying say, for the publishers of a combat handler's publish callback: they take only a context, and
+// sayOf hands them the say that stamps with the number of the write.
+func withSay(ctx context.Context, say sayFn) context.Context {
+	return context.WithValue(ctx, sayKey{}, say)
+}
+
+// sayOf is the say a publisher called with ctx sends through: the one withSay put there, else sayNow (no number).
+func (s *Service) sayOf(ctx context.Context) sayFn {
+	if say, ok := ctx.Value(sayKey{}).(sayFn); ok {
+		return say
+	}
+	return s.sayNow
+}
 
 // txOpen is Service.tx on the campaign's open session: the session is read first, with no lock, so tx can take its row lock as the
 // first statement of the attempt, and fn is given it after the check that it is still the open one (stillOpen). It refuses with

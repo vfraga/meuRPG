@@ -134,12 +134,9 @@ func (s *Service) ReadyAction(
 	if err != nil {
 		return nil, s.dbError(ctx, "ready an action", err)
 	}
-	enc, err := s.readiedAnswer(ctx, m, res, made)
+	enc, err := s.readiedAnswer(ctx, m, res, made, vitals...)
 	if err != nil {
 		return nil, err
-	}
-	for _, v := range vitals { // the slot a readied spell spent
-		s.publishVitals(m.CampaignID, v)
 	}
 	return connect.NewResponse(&playv1.ReadyActionResponse{Encounter: enc}), nil
 }
@@ -174,8 +171,9 @@ func (s *Service) CancelReadied(
 }
 
 // readiedAnswer tells the table after the commit (the combat changed, and its log: a hidden readier's line is the
-// master's alone) and answers the encounter as the caller sees it.
-func (s *Service) readiedAnswer(ctx context.Context, m authz.Membership, res combatResult, made actionEvent) (*playv1.Encounter, error) {
+// master's alone, and the vitals of what the action spent: the slot a readied spell took) and answers the encounter as the caller
+// sees it.
+func (s *Service) readiedAnswer(ctx context.Context, m authz.Membership, res combatResult, made actionEvent, vitals ...*playv1.CharacterVitals) (*playv1.Encounter, error) {
 	ev, err := resultEvent(res, made)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the readied action", err)
@@ -183,6 +181,9 @@ func (s *Service) readiedAnswer(ctx context.Context, m authz.Membership, res com
 	return s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
+		for _, v := range vitals {
+			s.publishVitals(ctx, m.CampaignID, v)
+		}
 	})
 }
 

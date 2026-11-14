@@ -183,11 +183,11 @@ func resolvedAt(status string, c *combatTx) *time.Time {
 
 // publishVitals tells the master and the character's player the vitals
 // changed; nothing when the change did not touch any.
-func (s *Service) publishVitals(campaignID string, v *playv1.CharacterVitals) {
+func (s *Service) publishVitals(ctx context.Context, campaignID string, v *playv1.CharacterVitals) {
 	if v == nil {
 		return
 	}
-	s.send(campaignID, vitalsHint(v))
+	s.sayOf(ctx)(campaignID, vitalsHint(v))
 }
 
 // vitalsHint is the hint that v changed, for the master and the character's player.

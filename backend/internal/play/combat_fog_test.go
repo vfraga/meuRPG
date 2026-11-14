@@ -1713,3 +1713,30 @@ func TestTheMastersTurnOptionsSuggestTheModeTheRollWillHave(t *testing.T) {
 		t.Errorf("Pensantus as the unseen attacker's target = %v, want advantage", got)
 	}
 }
+
+// TestFogCombatTheUndoTellsEachToldPlayerItsOwnStampedCopy: the undo of a fogged action sends one blind encounter_changed to each told
+// player, and a stream marshals the first while the next is sent: the sends must not share a message that is stamped after the
+// first went out (run it with -race).
+func TestFogCombatTheUndoTellsEachToldPlayerItsOwnStampedCopy(t *testing.T) {
+	t.Parallel()
+	f := newFogCave(t)
+	f.fight(t)
+	f.stage(t)
+	if _, err := f.move(t, f.caio, "Toren", 8, 7); err != nil {
+		t.Fatalf("MoveCombatant(Toren) error = %v", err)
+	}
+	s := f.watchAll(t)
+	f.undoLast(t)
+	f.markEnd(t, 2)
+	blind := 0
+	for _, w := range []*watcher{s.caio, s.ana, s.bia} {
+		for _, ev := range f.collect(t, w, 2) {
+			if enc := ev.GetEncounterChanged(); enc != nil && enc.GetRevision() == 0 && ev.GetSessionSeq() > 0 {
+				blind++
+			}
+		}
+	}
+	if blind < 2 {
+		t.Errorf("%d players heard a stamped blind encounter_changed, want at least 2", blind)
+	}
+}

@@ -346,6 +346,22 @@ var hiddenWrites = []hiddenWrite{
 			}
 		},
 	},
+	{
+		// A sheet correction the master saves for an NPC no player sees (its description): it moves the number once and tells nobody, not even
+		// the master, so it is one of silentWrites. The players read the same in the world with the correction and in the one without it.
+		name: "a sheet correction of a hidden NPC",
+		prepare: func(w *world, variant int) func() {
+			description := w.secrets.marker([]string{"seq-sheet-a", "seq-sheet-bcdefgh"}[variant])
+			return func() {
+				cur := must(w.master.characters.GetCharacter(w.t.Context(), rq(&charactersv1.GetCharacterRequest{CampaignId: w.campaign, CharacterId: w.hiddenNPC.GetId()}))).GetCharacter()
+				sheet := proto.CloneOf(cur.GetSheet())
+				sheet.GetBasic().Description = description
+				must(w.master.characters.UpdateCharacter(w.t.Context(), rq(&charactersv1.UpdateCharacterRequest{
+					CampaignId: w.campaign, CharacterId: cur.GetId(), Revision: cur.GetRevision(), Name: cur.GetName(), Sheet: sheet,
+				})))
+			}
+		},
+	},
 	{"a cover mark on a hidden NPC", false, false, nil, func(w *world, variant int) func() {
 		cover := []playv1.CoverDegree{playv1.CoverDegree_COVER_DEGREE_HALF, playv1.CoverDegree_COVER_DEGREE_THREE_QUARTERS}[variant]
 		return func() {
@@ -490,6 +506,10 @@ var hiddenWrites = []hiddenWrite{
 		},
 	},
 }
+
+// silentWrites are the hidden writes that move the number and tell nobody at all, not even the master: the control that the master
+// heard the write does not apply to them (their effect on the master's own views is read by the master's reads, not by an event).
+var silentWrites = map[string]bool{"a sheet correction of a hidden NPC": true}
 
 // seqSnapshot is what two members and the master read of a world after a hidden write, or without one.
 type seqSnapshot struct {
@@ -641,7 +661,7 @@ func hiddenWriteWorld(t *testing.T, row *hiddenWrite, variant int, made bool) se
 				}
 			}
 		}
-		if p == w.master && write != nil && heard == 0 {
+		if p == w.master && write != nil && heard == 0 && !silentWrites[write.name] {
 			t.Errorf("%s: the master heard nothing of the write: the control is gone", write.name)
 		}
 	}

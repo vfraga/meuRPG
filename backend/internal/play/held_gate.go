@@ -22,7 +22,7 @@ import (
 // The gate: the one place a d20 that may wait for a question is rolled, kept, asked about and settled.
 // The path that rolls (an attack, a check, a save) tells it what the roll is (rollSpec) and goes on
 // with what comes back (gateResult): nothing, when the roll waits for nobody (the path rolls as it
-// always did); the question to put to the player, when it waits (nothing is written but the hold); or
+// always did); the question to put to the player, when it waits (only the hold is written, and it moves the number once); or
 // the settled d20, when the gate decided it (a lucky roller's d20 that showed no 1, or the answer to a
 // question). The question is answered by running the path's own request again with the answer in the
 // context (heldReply): the gate then finds the roll it kept and settles it.
@@ -193,7 +193,7 @@ type rollSpec struct {
 
 // gateResult is what the gate gives back.
 type gateResult struct {
-	// Held says the question is to be put to the player: the path writes nothing and answers with it.
+	// Held says the question is to be put to the player: the path writes no result of its own (the gate wrote the held row: the number moves once and HeldRollsChanged is told) and answers with the question.
 	Held *heldOffer
 	// Settled says the gate decided the d20: Roll is it, with the floor applied and the die added
 	// when the player used it (Bonus), and Lucky the die rolled again, which the path's event keeps.

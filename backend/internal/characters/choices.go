@@ -16,9 +16,9 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -305,18 +305,20 @@ func (s *Service) CompleteCharacterChoices(
 		return nil, s.dbError(ctx, "read rules content", err)
 	}
 	var done choicesCompleted
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	// Under the funnel: the session's row first (the history line it appends takes it too), then the character's, and the write
+	// moves the session's number once.
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
 		done, err = s.completeChoicesInTx(ctx, tx, m, in)
+		if err == nil {
+			t.XPChanged()
+		}
 		return err
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "complete the choices of a character", err)
 	}
 	logging.Event(ctx, s.logger, "character.choices_completed", slog.String("character_id", in.id), slog.Int("choices", len(done.labels)))
-	if s.live != nil {
-		s.live.PublishXPChanged(m.CampaignID)
-	}
 	c, err := s.character(ctx, done.content, done.row, m)
 	if err != nil {
 		return nil, s.dbError(ctx, "read a character with its choices made", err)

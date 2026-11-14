@@ -243,6 +243,7 @@ func newHarness(t *testing.T, configure ...func(*Config)) *harness {
 	if err != nil {
 		t.Fatalf("progression.New() error = %v", err)
 	}
+	xp.SetSessionHost(live) // an award and its undo run under play's funnel, as cmd/api wires them
 	chars.SetLevelUps(xp)
 	camps.SetXPAwards(xp)
 

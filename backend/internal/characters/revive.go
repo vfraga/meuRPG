@@ -15,9 +15,9 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 )
 
@@ -62,17 +62,24 @@ func (s *Service) ReviveCharacter(
 	}
 	var done revival
 	now := s.now()
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	// Under the funnel: the session's row first, then the character's, and the write moves the session's number once.
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
 		done, err = s.reviveCharacterTx(ctx, tx, m, id, scoped, hash, now)
-		return err
+		if err != nil {
+			return err
+		}
+		if done.replayed {
+			t.Replay() // the first call may have died before it told: the repeat tells again, with the number as it stands
+		}
+		tellRevived(t, done.row, done.encounterID)
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "revive a character", err)
 	}
 	if !done.replayed {
 		logging.Event(ctx, s.logger, "character.revived", slog.String("character_id", done.row.ID))
-		s.publishRevived(ctx, m.CampaignID, done.row, done.encounterID)
 	}
 	c, err := s.character(ctx, content, done.row, m)
 	if err != nil {
@@ -94,11 +101,8 @@ type revival struct {
 // a dead player character, or the same call again; then it lives again and the table
 // reads the line.
 func (s *Service) reviveCharacterTx(ctx context.Context, tx pgx.Tx, m authz.Membership, id string, key, hash *string, now time.Time) (revival, error) {
-	// A dead character comes back in its combat, which takes the session's lock (ReviveInCombat): the
-	// session first, as every combat write does. An NPC never gets that far, and takes no lock.
-	if err := s.lockSessionBeforeCharacter(ctx, tx, m.CampaignID, id, func(c charactersdb.Character) bool { return c.Kind != kindPlayer }); err != nil {
-		return revival{}, err
-	}
+	// The session's row is held already (inSession), before the character's: a dead character comes back in its combat, which
+	// writes under that lock (ReviveInCombat), as every combat write does.
 	row, err := visibleForUpdate(ctx, s.queries.WithTx(tx), m, id)
 	if err != nil {
 		return revival{}, err
@@ -200,13 +204,10 @@ func (s *Service) revivedInCombat(ctx context.Context, tx pgx.Tx, campaignID str
 	return nil
 }
 
-// publishRevived tells the master and the owner, and the combat when the character was in one,
-// after the commit.
-func (s *Service) publishRevived(ctx context.Context, campaignID string, row charactersdb.Character, encounterID string) {
-	s.publishCharacterEvent(ctx, campaignID, row, hintRevived)
-	if s.reviewHost != nil && encounterID != "" {
-		s.reviewHost.PublishEncounterChanged(ctx, campaignID, encounterID)
-	}
+// tellRevived tells the master and the owner, and the combat when the character was in one, once the transaction committed.
+func tellRevived(t sessiontell.Tell, row charactersdb.Character, encounterID string) {
+	t.CharacterEvent(conv.OrZero(row.PlayerUserID), row.ID, hintRevived)
+	t.EncounterChanged(encounterID)
 }
 
 // eventCharacterRevived is the session event kind of a revival outside a combat (the table

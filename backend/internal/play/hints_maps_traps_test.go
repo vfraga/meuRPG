@@ -1,15 +1,20 @@
 package play
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/proto"
 
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1/mapsv1connect"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/maps"
+	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
 
 // The writes of the maps module that change a trap, a treasure or a scene's clues run under play's funnel (Service.InSession,
@@ -262,5 +267,33 @@ func TestALandingThatFiresATrapIsNotAlsoNoticed(t *testing.T) {
 	}
 	if n := r.eventCount(t, "trap_noticed"); n != 0 {
 		t.Errorf("trap_noticed events = %d, want 0: the trap that fired was not also noticed", n)
+	}
+}
+
+// failingFirer is the firer of the landing's trap rule, with the question "which traps does this landing fire" unanswerable.
+type failingFirer struct {
+	maps.TrapFirer
+	err error
+}
+
+func (f failingFirer) TrapsToFire(context.Context, pgx.Tx, string, string, grid.Square) ([]string, error) {
+	return nil, f.err
+}
+
+// A landing that cannot tell which traps it fires cannot tell which ones to notice: it fails with the firer's error and nothing of it
+// is kept (no token, no notice, no number, nothing heard), instead of noticing a trap that may also fire.
+func TestALandingWhoseFirerCannotSayFailsAndWritesNothing(t *testing.T) {
+	t.Parallel()
+	r := newTrapRig(t)
+	r.trap(t, "Fosso Dourado", 9, 7, func(s *mapsv1.TrapSpec) { s.NoticeDc = 10 })
+	r.msvc.SetTrapFirer(failingFirer{TrapFirer: r.h.svc, err: errors.New("the firer is down")})
+	g := newHintRig(t, r.h, r.campaignID, r.master, map[string]*user{"Caio": r.caio, "Ana": r.ana, "Bia": r.bia})
+	g.refused(r.placeCall(t, r.toren.GetId(), 7, 7))
+	var tokens int
+	if err := r.h.pool.QueryRow(t.Context(), `SELECT count(*) FROM map_tokens WHERE map_id = $1`, r.mapID).Scan(&tokens); err != nil {
+		t.Fatal(err)
+	}
+	if tokens != 0 || r.eventCount(t, "trap_noticed") != 0 {
+		t.Errorf("tokens = %d, trap_noticed = %d after a landing that failed, want 0 and 0", tokens, r.eventCount(t, "trap_noticed"))
 	}
 }

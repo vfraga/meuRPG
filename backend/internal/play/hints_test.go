@@ -104,35 +104,28 @@ func TestTxResetsTheCollectorOnEveryAttempt(t *testing.T) {
 	w := newHintTable(t)
 	ctx := t.Context()
 	attempts := 0
-	var first, second live.Event
 	err := w.h.svc.tx(ctx, w.sessionID, func(tx pgx.Tx, h *hints) error {
 		attempts++
 		if err := w.write(ctx, tx, 1); err != nil {
 			return err
 		}
 		if attempts == 1 {
-			first = w.event("first-attempt", true)
-			h.tell(w.campaignID, first)
+			h.tell(w.campaignID, w.event("first-attempt", true))
 			h.touch()
 			return &pgconn.PgError{Code: "40001", Message: "restart transaction"}
 		}
-		second = w.event("second-attempt", true)
-		h.tell(w.campaignID, second)
+		h.tell(w.campaignID, w.event("second-attempt", true))
 		return nil
 	})
-	defer func() {
-		if first.Message.GetSessionSeq() != 0 || second.Message.GetSessionSeq() != 1 {
-			t.Errorf("stamps: first attempt's event %d, second's %d; want 0 and 1", first.Message.GetSessionSeq(), second.Message.GetSessionSeq())
-		}
-	}()
 	if err != nil {
 		t.Fatalf("tx() error = %v", err)
 	}
 	if attempts != 2 {
 		t.Fatalf("fn ran %d times, want 2 (one retry)", attempts)
 	}
-	if got := w.heard(); !slices.Equal(got, []string{"second-attempt"}) {
-		t.Errorf("the streams heard %q, want only the second attempt's event, once", got)
+	// What the streams heard carries the stamp: sayWith stamps a copy, so the events handed to tell stay unnumbered.
+	if got := w.numbers(); !maps.Equal(got, map[string]int64{"second-attempt": 1}) {
+		t.Errorf("the streams heard %v (event, number), want only the second attempt's event, once, with number 1", got)
 	}
 	if got := w.seq(t); got != 1 {
 		t.Errorf("hint_seq = %d after a retried write, want 1", got)

@@ -254,6 +254,7 @@ func newStackOf(t *testing.T, d20Rerolls bool) *stack {
 		t.Fatalf("progression.New() error = %v", err)
 	}
 	camps.SetXPAwards(xp)
+	xp.SetSessionHost(live)
 	chars.SetLevelUps(xp)
 	notesSvc, err := notes.New(notes.Config{Pool: pool, Scenes: sessionMaps, Logger: logger, Now: clock.Now})
 	if err != nil {

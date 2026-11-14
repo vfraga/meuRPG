@@ -973,7 +973,7 @@ func (s *Service) publishLogChanged(ctx context.Context, campaignID, encounterID
 // not tell that player anything that an ordinary change does not. A player's own read (ListCombatLog with since_seq) answers with the
 // whole log when an undo they may see happened.
 func (s *Service) publishLogChange(ctx context.Context, campaignID, encounterID string, players, full bool) {
-	s.sayLogChange(ctx, s.sayNow, campaignID, encounterID, players, full)
+	s.sayLogChange(ctx, s.sayOf(ctx), campaignID, encounterID, players, full)
 }
 
 // sayLogChange is publishLogChange through say: an after-commit step of Service.tx tells it with the session's number.

@@ -254,7 +254,7 @@ func (s *Service) RollEffectSave(
 // the d20 was kept for one, else the encounter and the result (rebuilt from the event on a retry
 // the change never ran for).
 func (s *Service) effectSaveAnswer(ctx context.Context, m authz.Membership, res combatResult, run *effectSaveRun) (*connect.Response[playv1.RollEffectSaveResponse], error) {
-	if run.offer != nil || run.lucky != nil || run.held != nil { // nothing was written: the question is the whole answer
+	if run.offer != nil || run.lucky != nil || run.held != nil { // only the held row was written (the number moved once): the question is the whole answer
 		out, err := s.finish(ctx, m, res, nil)
 		if err != nil {
 			return nil, err
@@ -375,7 +375,7 @@ func (s *Service) loadEffectSave(ctx context.Context, c *combatTx, x *effectSave
 }
 
 // answerEffectSave answers the save: the master's skip, or the roll. It says whether the target
-// saved, and whether the d20 was kept for a question instead (nothing is written then).
+// saved, and whether the d20 was kept for a question instead (only the held row is written then, and the number moves once).
 func (s *Service) answerEffectSave(ctx context.Context, c *combatTx, x *effectSaveStep) (saved, held bool, err error) {
 	if x.call.skip {
 		x.le.Change = "skipped"
@@ -454,7 +454,7 @@ func (s *Service) rollEffectSaveD20(ctx context.Context, c *combatTx, x *effectS
 	}
 	f.mode, x.ev.Favor = fv.Mode, fv.Used
 	// A player's character that holds a Bardic Inspiration die has the d20 kept until the player
-	// answers (nothing has been written yet); the answer brings it back with the die added. So
+	// answers (no result is written yet, only the held row, which moves the number once); the answer brings it back with the die added. So
 	// has a halfling's d20 that shows a 1, for the Lucky question first.
 	spec := saveSpec(x.call.m, heldEffectSave, x.reactor, x.call.key, x.msg, x.call.in, f.save.Bonus, f.mode, f.sheet.Traits)
 	spec.FavorSpent = fv.Used

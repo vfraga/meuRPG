@@ -112,7 +112,7 @@ func (s *Service) useFeatureResponse(ctx context.Context, m authz.Membership, re
 	enc, err := s.finish(ctx, m, res, func(ctx context.Context, d *encounterData) {
 		s.publishEncounterChanged(ctx, m.CampaignID, d.enc)
 		s.publishLogChanged(ctx, m.CampaignID, d.enc.ID, !ev.Secret)
-		s.publishVitalsOf(m.CampaignID, out.vitals)
+		s.publishVitalsOf(ctx, m.CampaignID, out.vitals)
 	})
 	if err != nil {
 		return nil, err

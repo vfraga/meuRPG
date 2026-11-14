@@ -158,12 +158,7 @@ func (h *hints) stand(ctx context.Context, q *playdb.Queries, sessionID string) 
 
 // sendTold sends what the committed attempt collected: the events in the order told, then the steps of after.
 func (s *Service) sendTold(ctx context.Context, h *hints) {
-	say := func(campaignID string, ev live.Event) {
-		if h.seq > 0 && ev.Message != nil {
-			ev.Message.SessionSeq = h.seq // not shared with a stream yet: send is next
-		}
-		s.send(campaignID, ev)
-	}
+	say := s.sayWith(h.seq)
 	for _, t := range h.events {
 		say(t.campaignID, t.event)
 	}

@@ -227,7 +227,7 @@ The questions and their rules are `rules`' (see [Class and race choices](rules.m
 | RPC | What it does |
 | --- | --- |
 | `PreviewChoices` | The groups, counts, spell sources (patron and Magical Secrets lists) and refusals for a draft or a locked sheet. Read-only; the draft's overlay is made by `sheetForChoices`. In the pending-member allowlist, because a pending member edits their own draft. |
-| `CompleteCharacterChoices` | A locked sheet's missing picks (`ChoicePick`), judged by the same engine; changes nothing else (RN-01). Idempotent by key, one transaction, writes the session event `character_choices_completed`. |
+| `CompleteCharacterChoices` | A locked sheet's missing picks (`ChoicePick`), judged by the same engine; changes nothing else (RN-01). Guarded by the sheet's revision, not by a key: the call names the `expected_revision` it read, and a call whose revision is no longer the sheet's is refused as stale, a repeat of a call that succeeded included (the revision moved). One transaction, writes the session event `character_choices_completed`. Runs under play's funnel (`InSession`): the session's row first, one number for the write. |
 | `GetCampaignOpenChoices` | For the master: the characters with open choices (`OpenChoicesCharacter`). |
 
 `CharacterSummary.pending_choice_count` feeds the tag on the campaign.

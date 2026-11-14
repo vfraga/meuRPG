@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
 
@@ -32,15 +33,15 @@ type equipHostSpy struct {
 	fail      error
 }
 
-func (e *equipHostSpy) EquipInCombat(ctx context.Context, tx pgx.Tx, _, characterID, actor string, change EquipChange) (func(context.Context), error) {
+func (e *equipHostSpy) EquipInCombat(ctx context.Context, tx pgx.Tx, _, characterID, actor string, change EquipChange, _ sessiontell.Tell) error {
 	var revision int32
 	if err := tx.QueryRow(ctx, `SELECT revision FROM characters WHERE id = $1`, characterID).Scan(&revision); err != nil {
-		return nil, err
+		return err
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	e.changes, e.revisions, e.actors = append(e.changes, change), append(e.revisions, revision), append(e.actors, actor)
-	return nil, e.fail
+	return e.fail
 }
 
 // gearSheet is Pensantus with leather armor, a shield and two weapons.

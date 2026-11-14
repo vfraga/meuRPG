@@ -381,7 +381,7 @@ func (s *Service) shapeChange(ctx context.Context, campaignID, rawCharacter, raw
 	if !res.repeated {
 		pctx, stop := afterCommit(ctx) // the change is committed: a caller that hangs up must not leave the fog unheard
 		defer stop()
-		s.publishVitals(m.CampaignID, vitals)
+		s.publishVitals(ctx, m.CampaignID, vitals)
 		s.maps.VisionChanged(pctx, m.CampaignID, r.mapID) // the beast's senses, or the character's again
 	}
 	return vitals, out, nil

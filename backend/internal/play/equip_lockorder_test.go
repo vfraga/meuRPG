@@ -3,6 +3,8 @@ package play
 import (
 	"context"
 	"errors"
+	"slices"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -13,8 +15,10 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
+	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/characters"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dbtest"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
@@ -39,22 +43,22 @@ func (l *lockSpy) note(err error) {
 	}
 }
 
-func (l *lockSpy) EquipInCombat(ctx context.Context, tx pgx.Tx, campaignID, characterID, actorUserID string, change characters.EquipChange) (func(context.Context), error) {
-	after, err := l.ReviewHost.EquipInCombat(ctx, tx, campaignID, characterID, actorUserID, change)
+func (l *lockSpy) EquipInCombat(ctx context.Context, tx pgx.Tx, campaignID, characterID, actorUserID string, change characters.EquipChange, t sessiontell.Tell) error {
+	err := l.ReviewHost.EquipInCombat(ctx, tx, campaignID, characterID, actorUserID, change, t)
 	l.note(err)
-	return after, err
+	return err
 }
 
-func (l *lockSpy) GearChanged(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (func(context.Context), error) {
-	after, err := l.ReviewHost.GearChanged(ctx, tx, campaignID, characterID)
+func (l *lockSpy) GearChanged(ctx context.Context, tx pgx.Tx, campaignID, characterID string, t sessiontell.Tell) error {
+	err := l.ReviewHost.GearChanged(ctx, tx, campaignID, characterID, t)
 	l.note(err)
-	return after, err
+	return err
 }
 
-func (l *lockSpy) ArmorWorn(ctx context.Context, tx pgx.Tx, campaignID, characterID string) (func(context.Context), error) {
-	after, err := l.ReviewHost.ArmorWorn(ctx, tx, campaignID, characterID)
+func (l *lockSpy) ArmorWorn(ctx context.Context, tx pgx.Tx, campaignID, characterID string, t sessiontell.Tell) error {
+	err := l.ReviewHost.ArmorWorn(ctx, tx, campaignID, characterID, t)
 	l.note(err)
-	return after, err
+	return err
 }
 
 func (l *lockSpy) ReviveInCombat(ctx context.Context, tx pgx.Tx, campaignID, characterID, actorUserID string, at time.Time) (string, error) {
@@ -185,80 +189,124 @@ func TestReviveTakesTheSessionBeforeTheCharacter(t *testing.T) {
 	runGearRace(t, reviveRace(t))
 }
 
-// heldSession locks the campaign's open session row on a side connection until the returned release runs,
-// as a combat write in the middle of its transaction does.
-func (a *armed) heldSession(t *testing.T) (release func()) {
+// choicesRace is CompleteCharacterChoices of a fighter whose fighting style is open (the master took the pick out of its sheet).
+// The call writes the sheet and then the master's history line of the open session, which takes the session's row: the character first
+// and the session second is the reverse of every write of the funnel.
+func choicesRace(t *testing.T) gearRace {
 	t.Helper()
-	side := dbtest.SideConnection(t, a.h.pool)
-	tx, err := side.Begin(t.Context())
-	if err != nil {
-		t.Fatalf("Begin() error = %v", err)
-	}
-	if _, err := tx.Exec(t.Context(), `SELECT id FROM game_sessions WHERE campaign_id = $1 AND ended_at IS NULL FOR UPDATE`, a.campaignID); err != nil {
-		t.Fatalf("lock the session: %v", err)
-	}
-	released := false
-	release = func() {
-		if !released {
-			released = true
-			_ = tx.Rollback(context.WithoutCancel(t.Context()))
+	const style = "feature:fighter-fighting-style"
+	sheet := &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: &charactersv1.FullSheet{
+		BaseScores: &rulesv1.AbilityScores{Strength: 15, Dexterity: 14, Constitution: 13, Intelligence: 10, Wisdom: 12, Charisma: 8},
+		RaceKey:    "race:human", Classes: []*charactersv1.ClassLevel{{ClassKey: "class:fighter", Level: 1}},
+		Background: &charactersv1.FullSheet_BackgroundKey{BackgroundKey: "background:acolyte"},
+		Languages:  []string{"Anão", "Élfico", "Gnômico"}, FeatureChoiceKeys: []string{"feature:fighter-fighting-style-defense"},
+	}}}
+	a := newArmedWith(t, func(a *armed) {
+		made, err := a.ana.characters.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+			CampaignId: a.campaignID, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Ardis", Sheet: sheet,
+		}))
+		if err != nil {
+			t.Fatalf("CreateCharacter(Ardis) error = %v", err)
 		}
+		// The way a sheet written before the choices were asked has its style open: the pick is taken out of the stored sheet.
+		a.execSQL(t, `UPDATE characters SET sheet = sheet #- '{full,feature_choice_keys}' WHERE id = $1`, made.Msg.GetCharacter().GetId())
+		a.toren = a.ana.character(t, made.Msg.GetCharacter())
+	})
+	return gearRace{
+		a: a, characterID: a.toren.GetId(),
+		act: func() error {
+			_, err := a.ana.characters.CompleteCharacterChoices(t.Context(), connect.NewRequest(&charactersv1.CompleteCharacterChoicesRequest{
+				CampaignId: a.campaignID, CharacterId: a.toren.GetId(), ExpectedRevision: a.toren.GetRevision(),
+				Picks: []*charactersv1.ChoicePick{{ChoiceKey: style, OptionKeys: []string{"feature:fighter-fighting-style-archery"}}},
+			}))
+			return err
+		},
+		verify: func(t *testing.T) {
+			t.Helper()
+			if got := a.ana.character(t, a.toren).GetSheet().GetFull().GetFeatureChoiceKeys(); !slices.Contains(got, "feature:fighter-fighting-style-archery") {
+				t.Errorf("the sheet's picks = %v, want the style chosen", got)
+			}
+		},
 	}
-	t.Cleanup(release)
-	return release
 }
 
-// A sheet save that leaves the armor and the shield alone, or that is refused as stale, never reaches
-// play's gear calls, so it must not wait for the session's lock: a held session row does not block it.
-func TestASaveWithoutAGearChangeDoesNotTakeTheSessionLock(t *testing.T) {
-	t.Parallel()
-	for _, tt := range []struct {
-		name string
-		edit func(*charactersv1.FullSheet)
-		// stale makes another save come first, so that the one under test carries an old revision.
-		stale   bool
-		wantErr bool
-	}{
-		{name: "the gear is the same", edit: func(*charactersv1.FullSheet) {}},
-		{name: "a stale revision", edit: func(f *charactersv1.FullSheet) { f.Shield = true }, stale: true, wantErr: true},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			a := newCastingParty(t)
-			save := a.sheetEdit(t, a.pens, tt.edit)
-			if tt.stale {
-				if err := a.sheetEdit(t, a.pens, func(*charactersv1.FullSheet) {})(); err != nil {
-					t.Fatalf("the save that comes first: %v", err)
-				}
+// levelUpRace is LevelUpCharacter of a wizard with the XP of the next level, a sheet that is locked when the session opens.
+// Like the other writes of the sheet, the level-up writes the character and then the master's history line of the open session,
+// so the session's row has to come first.
+func levelUpRace(t *testing.T) gearRace {
+	t.Helper()
+	sheet := &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: &charactersv1.FullSheet{
+		BaseScores: &rulesv1.AbilityScores{Strength: 12, Dexterity: 16, Constitution: 15, Intelligence: 16, Wisdom: 13, Charisma: 12},
+		RaceKey:    "race:gnome", SubraceKey: "subrace:rock-gnome",
+		Classes: []*charactersv1.ClassLevel{{
+			ClassKey: "class:wizard", Level: 3, Subclass: &charactersv1.ClassLevel_SubclassKey{SubclassKey: "subclass:evocation"},
+		}},
+		Background: &charactersv1.FullSheet_CustomBackground{CustomBackground: &charactersv1.CustomBackground{
+			Name: "Sábio", SkillKeys: []string{"skill:arcana", "skill:history"},
+			ProficiencyKeys: []string{"language:draconic", "language:elvish"},
+			FeatureName:     "Pesquisador", FeatureText: "Quando você não sabe uma informação, sabe a quem perguntar.",
+			Equipment: "Um tinteiro, uma pena e roupas comuns.",
+		}},
+		SkillProficiencyKeys: []string{"skill:investigation", "skill:insight"},
+		WeaponKeys:           []string{"equipment:quarterstaff"},
+		CantripKeys:          []string{"spell:fire-bolt", "spell:ray-of-frost", "spell:minor-illusion"},
+		KnownSpellKeys: []string{
+			"spell:magic-missile", "spell:burning-hands", "spell:shield", "spell:mage-armor", "spell:sleep",
+			"spell:find-familiar", "spell:detect-magic", "spell:comprehend-languages", "spell:scorching-ray", "spell:web",
+		},
+		PreparedSpellKeys: []string{
+			"spell:magic-missile", "spell:burning-hands", "spell:shield", "spell:mage-armor", "spell:sleep", "spell:scorching-ray", "spell:web",
+		},
+		Equipment:        []*charactersv1.Item{{Name: "Grimório", Quantity: 1}},
+		Languages:        []string{"Dracônico"},
+		ExperiencePoints: 2700, // the XP of level 4
+		Alignment:        charactersv1.Alignment_ALIGNMENT_NEUTRAL_GOOD,
+	}}}
+	a := newArmedWith(t, func(a *armed) {
+		made, err := a.ana.characters.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
+			CampaignId: a.campaignID, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: "Pensantus", Sheet: sheet,
+		}))
+		if err != nil {
+			t.Fatalf("CreateCharacter(Pensantus) error = %v", err)
+		}
+		a.toren = a.ana.character(t, made.Msg.GetCharacter())
+	})
+	return gearRace{
+		a: a, characterID: a.toren.GetId(),
+		act: func() error {
+			_, err := a.ana.characters.LevelUpCharacter(t.Context(), connect.NewRequest(&charactersv1.LevelUpCharacterRequest{
+				CampaignId: a.campaignID, CharacterId: a.toren.GetId(), Revision: a.toren.GetRevision(),
+				Choices: &charactersv1.LevelUpChoices{
+					ClassKey:          "class:wizard",
+					AbilityIncrease:   &rulesv1.AbilityScores{Intelligence: 2},
+					CantripKeys:       []string{"spell:mage-hand"},
+					KnownSpellKeys:    []string{"spell:misty-step", "spell:invisibility"},
+					PreparedSpellKeys: []string{"spell:misty-step", "spell:invisibility"},
+					HitPoints:         &charactersv1.LevelUpHitPoints{Method: charactersv1.LevelUpHitPointsMethod_LEVEL_UP_HIT_POINTS_METHOD_AVERAGE},
+				},
+			}))
+			return err
+		},
+		verify: func(t *testing.T) {
+			t.Helper()
+			if got := a.ana.character(t, a.toren).GetDerived().GetTotalLevel(); got != 4 {
+				t.Errorf("the level = %d, want 4", got)
 			}
-			a.heldSession(t)
-			observer := dbtest.SideConnection(t, a.h.pool)
-			done := make(chan error, 1)
-			go func() { done <- save() }()
-			deadline := time.Now().Add(20 * time.Second)
-			for {
-				select {
-				case err := <-done:
-					if (err != nil) != tt.wantErr {
-						t.Errorf("the save error = %v, want error: %v", err, tt.wantErr)
-					}
-					return
-				default:
-				}
-				n, err := dbtest.WaitingStatements(t.Context(), observer, `%FROM game_sessions%FOR UPDATE%`)
-				if err != nil {
-					t.Fatalf("look for a waiting statement: %v", err)
-				}
-				if n > 0 {
-					t.Fatal("the save waits for the session's lock although it changes no gear")
-				}
-				if time.Now().After(deadline) {
-					t.Fatal("the save never finished")
-				}
-				time.Sleep(5 * time.Millisecond)
-			}
-		})
+		},
 	}
+}
+
+// TestLevelUpTakesTheSessionBeforeTheCharacter is the same race for LevelUpCharacter.
+func TestLevelUpTakesTheSessionBeforeTheCharacter(t *testing.T) {
+	t.Parallel()
+	runGearRace(t, levelUpRace(t))
+}
+
+// TestCompleteChoicesTakeTheSessionBeforeTheCharacter is the same race for CompleteCharacterChoices: it locks the character, writes
+// its sheet, and then appends the history line of the session (AppendEvent), which takes the session's row.
+func TestCompleteChoicesTakeTheSessionBeforeTheCharacter(t *testing.T) {
+	t.Parallel()
+	runGearRace(t, choicesRace(t))
 }
 
 // waitForSessionLock waits, on a condition and not on a clock, until a statement waits for a
@@ -302,6 +350,9 @@ func runGearRace(t *testing.T, g gearRace) {
 
 	// The combat write: the funnel takes the session first; the write then names the character.
 	held, gate := make(chan struct{}), make(chan struct{})
+	var open sync.Once
+	release := func() { open.Do(func() { close(gate) }) }
+	t.Cleanup(release) // a failed check must not leave the combat write holding the session's row
 	var attempts atomic.Int32
 	combat := make(chan error, 1)
 	go func() {
@@ -341,7 +392,7 @@ func runGearRace(t *testing.T, g gearRace) {
 	}
 	_ = probe.Rollback(ctx)
 
-	close(gate)
+	release()
 	for _, r := range []struct {
 		what string
 		ch   chan error

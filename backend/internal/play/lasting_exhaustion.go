@@ -151,7 +151,7 @@ func (s *Service) changeExhaustion(ctx context.Context, m authz.Membership, key 
 			return 0, 0, nil, err
 		}
 	}
-	s.publishVitals(m.CampaignID, done.vitals)
+	s.publishVitals(ctx, m.CampaignID, done.vitals)
 	return done.level, done.hpMax, enc, nil
 }
 

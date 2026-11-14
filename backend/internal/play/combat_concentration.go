@@ -428,7 +428,7 @@ func (s *Service) rollConcentration(
 	ev.Favor = fv.Used
 	save = withRollBonus(save, states, reactor.ID, rules.RollAppliesSave)
 	// A player's character that holds a Bardic Inspiration die has the d20 kept until the player
-	// answers (nothing has been written yet); the answer brings it back with the die added. So
+	// answers (no result is written yet, only the held row, which moves the number once); the answer brings it back with the die added. So
 	// has a halfling's d20 that shows a 1, for the Lucky question first.
 	spec := saveSpec(call.m, heldConcentrationSave, reactor, call.key, call.msg, call.in, save.Bonus, mode, sheet.Traits)
 	spec.FavorSpent = fv.Used

@@ -731,6 +731,7 @@ func wireModules(
 	if err != nil {
 		return nil, err
 	}
+	progressionService.SetSessionHost(playService) // an award and its undo run under play's funnel (#735)
 	// Changing the XP mode asks for a confirmation when XP was already awarded (RN-09).
 	campaignsService.SetXPAwards(progressionService)
 	charactersService.SetLevelUps(progressionService)
@@ -769,7 +770,7 @@ func wireModules(
 	// Every Set... call above must have happened: see the function's comment.
 	for _, check := range []func() error{
 		campaignsService.CheckWired, charactersService.CheckWired, playService.CheckWired,
-		mapsService.CheckWired, sessionMaps.CheckWired, packageService.CheckWired,
+		mapsService.CheckWired, sessionMaps.CheckWired, packageService.CheckWired, progressionService.CheckWired,
 	} {
 		if err := check(); err != nil {
 			return nil, fmt.Errorf("wiring the modules: %w", err)
