@@ -309,7 +309,7 @@ func (st inspirationHoldStore) insert(ctx context.Context, env gateEnv, h heldRo
 		Request: h.Request, Faces: faces32(h.Faces), Modifier: clamp32(h.Modifier, -heldBonusLimit, heldBonusLimit),
 		Total: clamp32(h.Total, -heldBonusLimit, heldBonusLimit), Counted: clamp32(h.Counted, 0, 1), Physical: h.Physical,
 		CreatedAt: env.now, Round: h.Round, LuckyIndex: h.LuckyIndex,
-		CombatantID: nilIfEmpty(h.CombatantID), EncounterID: nilIfEmpty(h.EncounterID), WindowHold: h.Window && h.Kind == heldWeaponAttack,
+		CombatantID: nilIfEmpty(h.CombatantID), EncounterID: nilIfEmpty(h.EncounterID), WindowHold: h.Window,
 		IndomitableAsk: h.IndomAsk, IndomitableFailed: h.IndomFailed, StrokeAsk: h.StrokeAsk, StrokeFailed: h.StrokeFailed,
 		RerollAsk: h.RerollAsk, RerollIndex: h.RerollIndex, RerollAtMost: h.RerollAtMost, RerollResource: h.RerollResource,
 		RerollCost: h.RerollCost, RerollSource: h.RerollSource, CountedBy: h.CountedBy,

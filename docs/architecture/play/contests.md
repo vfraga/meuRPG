@@ -20,6 +20,7 @@ The service is `play/combat_contests*.go` (start, answer, shove choice, close, r
 
 ## How contests fit into combat
 
+- **A start, an answer or a Hide held by a reaction window** (Cutting Words, or the master's check of "Sempre") is run again when the window is answered. If the replay then holds the d20 for a Bardic Inspiration die, the player's answer runs the request under the answer's own key, because the request's key belongs to the event that held it and a run under it would count as a retry and write nothing (`held-rolls.md`, "With a reaction window").
 - **A contest waits in the reaction window** of kind `CONTEST` (`combat_contests_window.go`): `settleReactions` calls `syncContests`, which opens a window for each waiting contest (the reactor is the defender or the shover when a player, the master otherwise) and replaces it when the reactor changes (a roll left to the master); `triggerGone` closes it when the contest no longer waits.
   The player of an NPC's contest reads "Esperando o mestre", of a player's "Esperando <nome>", with no timeout.
   `Hide` and `Help` go through `mustActNow`, and so through the reaction gate (see [Reactions](reactions.md)).

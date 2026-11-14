@@ -4603,8 +4603,9 @@ type InsertInspirationHoldParams struct {
 
 // A d20 roll that waits for the answer about a Bardic Inspiration die, or for the Lucky question
 // of a d20 that shows a 1 (lucky_index, NULL without one). A roll held in a combat also names its
-// combatant and its combat, which own the hold (00255); window_hold is the weapon attack a reaction
-// window kept.
+// combatant and its combat, which own the hold (00255); window_hold says a reaction window held the
+// request first and the roll is the one its replay held (the weapon attack, a contest start or answer,
+// or a Hide), so the hold has a key of its own.
 func (q *Queries) InsertInspirationHold(ctx context.Context, arg InsertInspirationHoldParams) (InspirationHold, error) {
 	row := q.db.QueryRow(ctx, insertInspirationHold,
 		arg.CampaignID,

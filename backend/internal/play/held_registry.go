@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
@@ -79,16 +80,29 @@ func registerRerun[Req, Res any, PReq interface {
 	*Res
 	proto.Message
 }](path func(*Service, context.Context, *connect.Request[Req]) (*connect.Response[Res], error)) func(context.Context, *Service, heldRoll, string) (proto.Message, error) {
-	return func(ctx context.Context, s *Service, h heldRoll, _ string) (proto.Message, error) {
+	return func(ctx context.Context, s *Service, h heldRoll, key string) (proto.Message, error) {
 		orig := PReq(new(Req))
 		if err := proto.Unmarshal(h.Request, orig); err != nil {
 			return nil, s.dbError(ctx, "read the held roll", err)
+		}
+		if h.Window {
+			underKey(orig, key)
 		}
 		out, err := path(s, ctx, connect.NewRequest((*Req)(orig)))
 		if err != nil {
 			return nil, err
 		}
 		return PRes(out.Msg), nil
+	}
+}
+
+// underKey puts the request under the idempotency key given. The request that a reaction window held has its key on the event that
+// held it (a retry of the request answers with that event), so the roll the window's replay held is answered, and the path run
+// again, under the answer's own key: under the request's, the path finds the held event, takes the run for a retry and writes nothing.
+func underKey(req proto.Message, key string) {
+	m := req.ProtoReflect()
+	if f := m.Descriptor().Fields().ByName("idempotency_key"); f != nil {
+		m.Set(f, protoreflect.ValueOfString(key))
 	}
 }
 
@@ -108,7 +122,7 @@ func rerunGroupCheck(ctx context.Context, s *Service, h heldRoll, key string) (p
 
 // rerunContest runs a contest's roll again: the initiator's (StartContest) or the defender's (RespondContest), which the
 // request the hold kept says (it is kept as an Any, since both are the one kind of held roll).
-func rerunContest(ctx context.Context, s *Service, h heldRoll, _ string) (proto.Message, error) {
+func rerunContest(ctx context.Context, s *Service, h heldRoll, key string) (proto.Message, error) {
 	var kept anypb.Any
 	if err := proto.Unmarshal(h.Request, &kept); err != nil {
 		return nil, s.dbError(ctx, "read the held roll", err)
@@ -116,6 +130,9 @@ func rerunContest(ctx context.Context, s *Service, h heldRoll, _ string) (proto.
 	req, err := kept.UnmarshalNew()
 	if err != nil {
 		return nil, s.dbError(ctx, "read the held roll", err)
+	}
+	if h.Window {
+		underKey(req, key)
 	}
 	switch r := req.(type) {
 	case *playv1.StartContestRequest:
