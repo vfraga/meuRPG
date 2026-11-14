@@ -1,3 +1,5 @@
+import { POWER_ATTACK_LIMITS, rangeText, tooManyText } from './power-attack-limits';
+
 /** The labels of the effect fields, in our words (the menu names the fields by their proto name). */
 export const EFFECT_FIELD_LABELS: Readonly<Record<string, string>> = {
   target: 'O que muda',
@@ -148,6 +150,16 @@ export const EFFECT_TYPE_FIELD_LABELS: Readonly<Record<string, Readonly<Record<s
       damage_type: 'Tipo do dano somado',
     },
     modifier: { applies: 'Vale para' },
+    power_attack: {
+      attack_penalty: 'Tira do ataque',
+      damage_bonus: 'Soma no dano',
+      weapon: 'Com que armas',
+      weapon_properties: 'A arma precisa ter',
+      only_proficient: 'Só armas em que o personagem tem proficiência',
+      resource: 'Gasta um uso de',
+      when: 'Quando vale',
+      text_pt: 'Texto do efeito',
+    },
     roll_minimum: { value: 'Valor mínimo' },
     // A state's resource is spent once at each start; a pseudo-weapon names its kind, its ability and its reach in the words of an attack.
     state: { resource: 'Gasta um uso de' },
@@ -176,6 +188,7 @@ const SHORT_TYPE_HINTS: Readonly<Record<string, string>> = {
   superiority_die: 'Um dado que soma a uma rolagem.',
   extra_attack: 'Quantos ataques a ação Atacar faz.',
   extra_damage: 'Dano somado a um ataque que acertou.',
+  power_attack: 'Troca acerto por dano num ataque com arma.',
   ambush: 'Vantagem contra quem é pego de surpresa.',
   wild_shape: 'Muda a Forma Selvagem do druida.',
   slot_recovery: 'Recupera espaços de magia no descanso.',
@@ -206,7 +219,37 @@ export const EFFECT_TYPE_FIELD_HINTS: Readonly<Record<string, Readonly<Record<st
     ability:
       'Dá o bônus de ataque da magia (proficiência + modificador) e a CD de resistência (8 + o mesmo).',
   },
+  power_attack: { text_pt: 'O que a ficha mostra deste efeito.' },
 };
+
+/** The words of the power_attack block ("Ataque poderoso"): the hints under its fields (their ranges are the menu's), the three weapon
+ * cards and the reasons. The server's refusals of its fields are in `EFFECT_REFUSAL_TEXTS`. */
+export const POWER_COPY = {
+  penaltyHint: (r: { min: number; max: number }) =>
+    `De ${r.min} a ${r.max}: sai da jogada de ataque.`,
+  damageHint: (r: { min: number; max: number }) =>
+    `De ${r.min} a ${r.max}, só se acertar; o crítico não dobra.`,
+  propertiesHint: (max: number) =>
+    `Até ${max}; a arma precisa ter todas. Vazio: qualquer arma do tipo escolhido.`,
+  propertiesPlaceholder: 'Procurar propriedade',
+  weaponCards: [
+    { value: '', label: 'Qualquer arma', hint: 'Corpo a corpo ou à distância' },
+    { value: 'melee', label: 'Só corpo a corpo', hint: 'Espada, machado, malho…' },
+    { value: 'ranged', label: 'Só à distância', hint: 'Arco, besta, arma arremessada' },
+  ],
+  weaponRefused: 'Escolha uma das três opções.',
+  readingLabel: 'Vale para:',
+  resourceNone: 'Nenhum: não gasta nada',
+  resourceHint: (inFeat: boolean) =>
+    `Um recurso ${inFeat ? 'deste talento' : 'desta entrada (ou da classe)'}. Vazio: não gasta nada.`,
+  /** Why a second power attack cannot be chosen: the server allows one for each feature. */
+  second: (inFeat: boolean) =>
+    inFeat ? 'Este talento já tem um ataque poderoso.' : 'Já há um ataque poderoso nesta entrada.',
+  /** The fields under "Mais opções", as the button names them while they are folded. */
+  folded: { resource: 'recurso', when: 'quando vale', text_pt: 'texto do efeito' } as Readonly<
+    Record<string, string>
+  >,
+} as const;
 
 /** The line under "Vale nas jogadas" of each type that asks it. */
 export const ROLLS_NOTES: Readonly<Record<string, string>> = {
@@ -245,6 +288,11 @@ export const EFFECT_REFUSAL_TEXTS: Readonly<Record<string, string>> = {
   'reroll.resource': RESOURCE_PICK_COPY.dangling,
   'modifier.critical_range.value': 'A margem vai de 15 a 20.',
   'modifier.critical_range.mode': CRITICAL_COPY.modeLock,
+  'power_attack.attack_penalty': rangeText(POWER_ATTACK_LIMITS.penalty),
+  'power_attack.damage_bonus': rangeText(POWER_ATTACK_LIMITS.damage),
+  'power_attack.weapon': POWER_COPY.weaponRefused,
+  'power_attack.weapon_properties': `${tooManyText(POWER_ATTACK_LIMITS).replace(/\.$/, '')}, cada uma uma vez e da lista.`,
+  'power_attack.resource': RESOURCE_PICK_COPY.dangling,
 };
 
 /** The hint of an effect type: the menu's, or in the feat editor the one line of `SHORT_TYPE_HINTS` when the type has one. */

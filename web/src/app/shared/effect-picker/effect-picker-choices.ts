@@ -1,3 +1,5 @@
+import { type Injector, afterNextRender } from '@angular/core';
+
 import { LATER_TEXT } from '../../core/content/content-violation-texts-feat';
 import type { ChoiceKind, FeatChoice, RefFormId } from '../../core/content/effect-choices';
 import { choiceRef, pickSpec } from '../../core/content/effect-choices';
@@ -176,4 +178,30 @@ export function insertAt(
     right = ` + ${after}`;
   }
   return { next: left + insert + right, caret: left.length + insert.length };
+}
+
+/**
+ * Writes `text` into the formula field `path` of `host` where its cursor is (`write` receives the new text), and puts the cursor after it
+ * once the field is drawn again.
+ */
+export function insertIntoField(
+  host: HTMLElement,
+  injector: Injector,
+  path: string,
+  current: string,
+  text: string,
+  write: (next: string) => void,
+): void {
+  // Looked up when used: a field drawn again leaves a node found earlier detached.
+  const input = () =>
+    host.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[data-field="${path}"]`);
+  const { next, caret } = insertAt(current, text, input()?.selectionStart, input()?.selectionEnd);
+  write(next);
+  afterNextRender(
+    () => {
+      input()?.focus();
+      input()?.setSelectionRange(caret, caret);
+    },
+    { injector },
+  );
 }

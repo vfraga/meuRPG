@@ -66,3 +66,47 @@ describe('SelectField in a browser that draws only text', () => {
     expect(fixture.nativeElement.querySelector('legend')).toBeNull();
   });
 });
+
+describe('SelectField with an option that cannot be picked and says why', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  function withReason(baseSelect: boolean): HTMLElement {
+    vi.stubGlobal('CSS', {
+      supports: (p: string, v: string) => baseSelect && p === 'appearance' && v === 'base-select',
+    });
+    const fixture = TestBed.createComponent(SelectField);
+    fixture.componentRef.setInput('label', 'Efeito');
+    fixture.componentRef.setInput('options', [
+      { value: 'a', label: 'Dano extra' },
+      {
+        value: 'b',
+        label: 'Ataque poderoso',
+        disabled: true,
+        reason: 'Este talento já tem um ataque poderoso.',
+      },
+    ]);
+    fixture.componentRef.setInput('value', 'a');
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('draws the reason under the name where the list is ours, as an attribute the style reads', () => {
+    const el = withReason(true);
+    const option = el.querySelector<HTMLOptionElement>('option[value="b"]')!;
+    expect(el.querySelector('select.rich')).not.toBeNull();
+    expect(option.disabled).toBe(true);
+    expect(option.getAttribute('data-reason')).toBe('Este talento já tem um ataque poderoso.');
+    expect(option.hasAttribute('label')).toBe(false);
+    expect(el.querySelector('option[value="a"]')!.hasAttribute('data-reason')).toBe(false);
+  });
+
+  it('reads "name · reason" in a list that draws only text', () => {
+    const el = withReason(false);
+    const option = el.querySelector<HTMLOptionElement>('option[value="b"]')!;
+    expect(el.querySelector('select.rich')).toBeNull();
+    expect(option.disabled).toBe(true);
+    expect(option.getAttribute('label')).toBe(
+      'Ataque poderoso · Este talento já tem um ataque poderoso.',
+    );
+  });
+});

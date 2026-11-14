@@ -2,7 +2,6 @@ import type {
   EffectMenuField,
   EffectMenuType,
 } from '../../../gen/meurpg/rules/v1/table_content_pb';
-import { TYPES_NOT_OFFERED } from './effect-kept';
 import { onlyProficientApplies } from './effect-writers';
 
 /** What `visibleFields` reads of a draft. */
@@ -117,10 +116,10 @@ export function neverFolded(type: string, name: string): boolean {
   return NEVER_FOLDED[type]?.includes(name) ?? false;
 }
 
-/** The types an editor offers: not the ones it has no block for yet, nor the `feat_only` ones outside the feat editor. */
+/** The types an editor offers: the `feat_only` ones only in the feat editor. */
 export function offeredTypes(
   types: readonly EffectMenuType[],
   featEditor: boolean,
 ): readonly EffectMenuType[] {
-  return types.filter((t) => !TYPES_NOT_OFFERED.includes(t.type) && (featEditor || !t.featOnly));
+  return types.filter((t) => featEditor || !t.featOnly);
 }

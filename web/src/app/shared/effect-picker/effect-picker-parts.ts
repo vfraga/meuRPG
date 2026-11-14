@@ -23,7 +23,7 @@ import type { SelectOption } from '../form-fields/select-field';
  */
 
 /** "sorte_teimosa" as a person says it: "Sorte Teimosa". */
-function titled(key: string): string {
+export function titled(key: string): string {
   return key
     .split('_')
     .filter((w) => w !== '')
@@ -56,8 +56,9 @@ export function resourcePick(
   siblings: readonly EffectDraft[],
   menu: EffectMenuVm,
   current: string,
+  none: string = RESOURCE_PICK_COPY.none,
 ): ResourcePick {
-  const options: SelectOption[] = [{ value: '', label: RESOURCE_PICK_COPY.none }];
+  const options: SelectOption[] = [{ value: '', label: none }];
   const seen = new Set<string>();
   for (const r of siblings.filter((e) => e.type === 'resource')) {
     const key = r.resource.trim();
@@ -272,7 +273,7 @@ export function fieldView(type: string, f: EffectMenuField, ownResources: boolea
   if (f.name === 'rolls' && f.kind === 'choices') {
     return 'rolls';
   }
-  if (f.kind === 'resource_ref' && type === 'reroll' && ownResources) {
+  if (f.kind === 'resource_ref' && (type === 'reroll' || type === 'power_attack') && ownResources) {
     return 'uses';
   }
   return f.name === 'applies' && type === 'modifier' ? 'cards' : f.kind;

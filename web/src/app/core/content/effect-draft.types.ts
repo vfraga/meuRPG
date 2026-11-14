@@ -6,7 +6,7 @@ export interface EffectDraft {
   /** A stable id the editor tracks the row by (never sent): focus and "Mais opções" follow a moved item. */
   id: string;
   type: string;
-  /** A stored effect of a type the editor does not offer (`keptOf`): kept exactly as stored, shown read-only and written back untouched. */
+  /** A stored effect the editor cannot show in its block (`keptOf`: a power_attack with a number outside its range): kept exactly as stored, shown read-only and written back untouched. */
   kept?: TableEffect;
   /** What was typed in a number field when it is not how the number is written back ("+1", "007", text no number): the field keeps it, the
    * saved value is the number. Keyed by the field's proto name; never sent. */
@@ -104,6 +104,10 @@ export interface EffectDraft {
   adamantine: boolean;
   attackName: string;
   damageDice: string;
+  /** power_attack: the number taken off the attack roll, and the weapon properties the weapon must all have (`weapon`, `damageBonus` and
+   * `onlyProficient` are the draft's fields of the same name). */
+  attackPenalty: number;
+  weaponProperties: string[];
   /** reroll and roll_minimum: the rolls it covers ("attack", "check", "save", "damage"). reroll: the highest d20 face it rolls again. */
   rolls: string[];
   atMost: number;

@@ -26,6 +26,7 @@ type NumberKey =
   | 'diceSides'
   | 'rangeMultiplier'
   | 'attackBonus'
+  | 'attackPenalty'
   | 'damageBonus'
   | 'atMost';
 
@@ -107,7 +108,15 @@ const pickedText =
 /** A list that is sent (as a copy) when it has something in it. */
 const pickedList =
   (
-    key: 'targets' | 'from' | 'spells' | 'damageTypes' | 'conditions' | 'endsOn' | 'rolls',
+    key:
+      | 'targets'
+      | 'from'
+      | 'spells'
+      | 'damageTypes'
+      | 'conditions'
+      | 'endsOn'
+      | 'rolls'
+      | 'weaponProperties',
   ): EffectWriter =>
   (d) =>
     d[key].length > 0 ? ({ [key]: [...d[key]] } as EffectInit) : {};
@@ -184,6 +193,8 @@ export const EFFECT_WRITERS: ReadonlyMap<string, EffectWriter> = new Map<string,
   ['damage_ability', pickedText('damageAbility')],
   ['attack_bonus', signedNumber('attackBonus')],
   ['damage_bonus', signedNumber('damageBonus')],
+  ['attack_penalty', positiveNumber('attackPenalty')],
+  ['weapon_properties', pickedList('weaponProperties')],
   ['reach_ft', (d) => (rangeFeet(d.reachM) > 0 ? { reachFt: rangeFeet(d.reachM) } : {})],
   ['magical', (d) => (d.magical ? { magical: true } : {})],
   ['silvered', (d) => (d.silvered ? { silvered: true } : {})],
@@ -211,8 +222,13 @@ export const EFFECT_WRITERS: ReadonlyMap<string, EffectWriter> = new Map<string,
   ],
 ]);
 
-/** Whether "Só onde já tem proficiência" means something for the effect: it doubles a skill, so it goes with the level
- * "Especialização" on a skill ("skill:*" is every skill). The editor shows it only then, and the request sends it only then. */
-export function onlyProficientApplies(d: Pick<EffectDraft, 'level' | 'proficiency'>): boolean {
-  return d.level === 'expertise' && d.proficiency.startsWith('skill:');
+/** Whether the "only where proficient" switch means something for the effect: for the expertise it doubles a skill, so it goes with
+ * the level "Especialização" on a skill ("skill:*" is every skill); a power_attack reads it as "only a weapon the character is proficient
+ * with". The editor shows it only then, and the request sends it only then. */
+export function onlyProficientApplies(
+  d: Pick<EffectDraft, 'type' | 'level' | 'proficiency'>,
+): boolean {
+  return (
+    d.type === 'power_attack' || (d.level === 'expertise' && d.proficiency.startsWith('skill:'))
+  );
 }

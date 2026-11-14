@@ -29,6 +29,8 @@ export interface SelectOption<T extends string | number = string> {
   readonly group?: string;
   /** A line at the option's right edge ("do efeito 1"); a browser that draws only text reads it after the label. */
   readonly side?: string;
+  /** Why a disabled option cannot be picked: drawn under its name (dashed), or after it ("name · reason") where the list is plain text. */
+  readonly reason?: string;
   /** A line of explanation that cannot be picked: it wraps, and is drawn smaller and muted. */
   readonly note?: boolean;
 }
@@ -93,8 +95,9 @@ export interface SelectGroup {
       @for (o of items; track o.value) {
         <option
           [value]="o.value"
-          [attr.label]="rich() || !o.side ? null : o.label + ' · ' + o.side"
+          [attr.label]="rich() ? null : plainLabel(o)"
           [attr.data-side]="o.side || null"
+          [attr.data-reason]="o.reason || null"
           [selected]="o.value === value()"
           [disabled]="o.disabled ?? false"
           [class.note]="o.note ?? false"
@@ -193,6 +196,24 @@ export interface SelectGroup {
         }
       }
 
+      // A disabled option says why under its name, and is dashed: a choice that exists and cannot be taken now.
+      select.rich option[data-reason] {
+        flex-wrap: wrap;
+        align-content: center;
+        padding-block: var(--mr-space-2);
+        border: 1px dashed var(--mr-control-line);
+        border-radius: var(--mr-radius-md);
+        color: var(--mr-ink-muted);
+        cursor: not-allowed;
+      }
+
+      select.rich option[data-reason]::after {
+        content: attr(data-reason);
+        flex-basis: 100%;
+        font-size: var(--mr-font-14);
+        font-weight: 400;
+      }
+
       select.rich option[data-side]::after {
         content: attr(data-side);
         margin-left: auto;
@@ -274,13 +295,19 @@ export class SelectField<T extends string | number = string> {
 
   private readonly customizable = supportsBaseSelect();
 
+  /** What a list that draws only text reads for an option: the label with its side text or its reason after it. */
+  protected plainLabel(o: SelectOption<T>): string | null {
+    const more = o.side || o.reason;
+    return more ? `${o.label} · ${more}` : null;
+  }
+
   /** Whether the list is drawn by us: the browser has a customizable select and there is a group icon, a side text or a footer. */
   protected readonly rich = computed(
     () =>
       this.customizable &&
       (this.footer() !== '' ||
         Object.values(this.groups()).some((g) => g.icon) ||
-        this.options().some((o) => o.side)),
+        this.options().some((o) => o.side || o.reason)),
   );
 
   private readonly control = viewChild<ElementRef<HTMLSelectElement>>('control');

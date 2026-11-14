@@ -19,6 +19,17 @@
   <p class="kept__note">{{ kept.note }}</p>
 }
 <div class="fields">
+  @if (power.active()) {
+    <app-effect-power-attack
+      [effect]="effect()"
+      [menu]="menu()"
+      [basePath]="basePath()"
+      [issuesOf]="issuesOf()"
+      [siblings]="siblings()"
+      (effectChange)="effectChange.emit($event)"
+    />
+    <ng-container *ngTemplateOutlet="moreButton" />
+  }
   @for (f of fields(); track f.name) {
     <div class="frow" [class.frow--wide]="wide(f)">
       <div class="frow__field">
@@ -196,10 +207,18 @@
       <span>Os outros efeitos chamam esta escolha de <strong>{{ own.label }}</strong>; o jogador {{ own.kind === 'ability' ? 'a' : 'o' }} escolhe ao pegar o talento.</span>
     </p>
   }
+  @if (!power.active()) {
+    <ng-container *ngTemplateOutlet="moreButton" />
+  }
+</div>
+<ng-template #moreButton>
   @if (hidden() > 0 || expanded()) {
     <button type="button" class="more" [attr.aria-expanded]="expanded()" (click)="expanded.set(!expanded())">
       <mat-icon aria-hidden="true">{{ expanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
       {{ expanded() ? 'Menos opções' : 'Mais opções' }}
+      @if (power.folded(allFields(), fields(), expanded()); as names) {
+        <span class="more__names">· {{ names }}</span>
+      }
     </button>
   }
-</div>
+</ng-template>

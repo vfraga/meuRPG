@@ -149,6 +149,9 @@ function nameText(r: string, ctx: ViolationContext, shape: string): string | und
   return undefined;
 }
 
+/** What `forbidden_effect` says: the effect (or one more of its kind) is not allowed here. */
+export const FORBIDDEN_EFFECT_TEXT = 'Este efeito não está no menu.';
+
 /** The reasons that say the same wherever they come from, or `undefined`. */
 function reasonText(shape: string, leaf: string, r: string): string | undefined {
   switch (r) {
@@ -161,7 +164,7 @@ function reasonText(shape: string, leaf: string, r: string): string | undefined 
     case 'bad_formula':
       return FORMULA_TEXT;
     case 'forbidden_effect':
-      return 'Este efeito não está no menu.';
+      return FORBIDDEN_EFFECT_TEXT;
     case 'bad_value':
       return shape.endsWith('.effects[].resource')
         ? 'Use só letras minúsculas sem acento, números e _ (de 1 a 40), como vigilia.'

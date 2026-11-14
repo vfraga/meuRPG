@@ -70,7 +70,7 @@ import { combatWithTwoDown, reviveRPC, tableWithDead } from './revivify-support'
 import { brisa, brisaAidSheet, brisaSheet, dalila, dalilaSheet, ragna, ragnaSheet } from './combat-support';
 import { createFeatsRPC, createNightRaceRPC, createSnowSubraceRPC, tor } from './editor-races-support';
 import { createFeatOptionsRPC, expectInViewport, featShotScale, featViewport, openSelect, shootFeat, type FeatOptionsTable } from './feat-options-support';
-import { archiveEntryRPC, checkMinimumFeatBody, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, expectCardsHoldTheirText, giveFeatRPC, hitSpellBody, minimumFeatBody, raceBody, rerollFeatBody, spellBody, updateEntryRPC } from './content-support';
+import { archiveEntryRPC, checkMinimumFeatBody, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, expectCardsHoldTheirText, giveFeatRPC, heavyBlowFeatBody, hitSpellBody, minimumFeatBody, raceBody, rerollFeatBody, spellBody, steadyShotFeatBody, updateEntryRPC } from './content-support';
 import { rerollTable } from './reroll-support';
 import { generateSceneRPC, mapRoute, tableForImages } from './images-support';
 import { treasureRoute } from './treasure-support';
@@ -6731,6 +6731,93 @@ async function scanRollEffects(browser: Browser, colorScheme: 'light' | 'dark', 
     await expectScreenPasses(p, `Característica com margem de crítico, vista por um jogador ${where}`);
   } finally {
     await Promise.all([mContext.close(), pContext.close()]);
+  }
+}
+
+/**
+ * The master's effect editor for the power attack (#586, MR-025): the block of "Ataque poderoso" with its numbers, the three weapon cards, the
+ * properties and the proficiency switch ("Golpe Pesado"), the reading line and the resource under "Mais opções" ("Disparo Firme"), the numbers
+ * outside their ranges and a fifth property (refused by the editor, then by the server), and the second power attack dashed in the "Efeito" menu.
+ * The editor is on the wider screens only: the phone reads and archives.
+ */
+async function scanPowerAttackEditor(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  test.setTimeout(240_000);
+  const mContext = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport: { width, height: 900 } });
+  const pContext = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport: { width, height: 900 } });
+  try {
+    const m = await mContext.newPage();
+    const p = await pContext.newPage();
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const campaignId = await campaignWithEmptyPlayer(m, p, `Acessibilidade ataque poderoso ${Date.now()}`);
+    const where = `(${colorScheme}, ${width}px)`;
+    const heavy = await createEntryRPC(m, campaignId, 'tableFeat', heavyBlowFeatBody());
+    const steady = await createEntryRPC(m, campaignId, 'tableFeat', steadyShotFeatBody());
+
+    if (width >= 768) {
+      // The stored feat in the block: the numbers, the kind, a property chip and the switch, read back in words.
+      await open(m, entryRoute(campaignId, heavy));
+      await expect(m.getByLabel('Nome do talento')).toHaveValue('Golpe Pesado');
+      await expect(m.getByLabel('Tira do ataque', { exact: true })).toHaveValue('5');
+      await expect(m.getByLabel('Soma no dano', { exact: true })).toHaveValue('10');
+      await expect(m.getByRole('radio', { name: /Só corpo a corpo/ })).toBeChecked();
+      await expect(m.getByRole('checkbox', { name: 'Só armas em que o personagem tem proficiência' })).toBeChecked();
+      await expect(m.getByRole('list', { name: 'Escolhidas' }).getByText('Pesada')).toBeVisible();
+      await expect(m.getByRole('status').filter({ hasText: 'Vale para:' })).toContainText('armas corpo a corpo, com a propriedade Pesada, em que o personagem tem proficiência.');
+      await expect(m.getByRole('button', { name: /Mais opções/ })).toContainText('recurso, quando vale, texto do efeito');
+      await expectScreenPasses(m, `Editor de talento, "Ataque poderoso" com a propriedade e a proficiência ${where}`);
+      // The second power attack is dashed in the menu of another effect, with the reason.
+      await m.getByRole('button', { name: 'Adicionar um efeito' }).click();
+      const other = m.getByLabel('Outro efeito', { exact: true });
+      await expect(other.locator('option', { hasText: 'Ataque poderoso' })).toBeDisabled();
+      await expect(other.locator('option[data-reason]')).toHaveAttribute('data-reason', 'Este talento já tem um ataque poderoso.');
+      await expectScreenPasses(m, `Editor de talento, o segundo ataque poderoso tracejado no menu ${where}`);
+
+      // The ranged kind with a resource: "Mais opções" open, the list of the entry's resources and the use said in the reading.
+      await open(m, entryRoute(campaignId, steady));
+      await expect(m.getByLabel('Nome do talento')).toHaveValue('Disparo Firme');
+      await expect(m.getByRole('radio', { name: /Só à distância/ })).toBeChecked();
+      await expect(m.getByRole('checkbox', { name: 'Só armas em que o personagem tem proficiência' })).not.toBeChecked();
+      await expect(m.getByRole('status').filter({ hasText: 'Vale para:' })).toContainText('Cada troca gasta 1 uso de Folego Do Atirador.');
+      await expect(m.getByLabel('Gasta um uso de', { exact: true })).toHaveValue('folego_do_atirador');
+      await expectScreenPasses(m, `Editor de talento, "Ataque poderoso" à distância com o recurso do talento ${where}`);
+
+      // The numbers outside their ranges and a fifth property: the editor says so on the fields, and so does the server on saving.
+      await open(m, `/campaigns/${campaignId}/content/new/feat`);
+      await m.getByLabel('Efeito', { exact: true }).selectOption({ label: 'Ataque poderoso' });
+      await m.getByLabel('Nome do talento').fill('Golpe Exagerado');
+      await m.getByLabel('Tira do ataque', { exact: true }).fill('12');
+      await m.getByLabel('Soma no dano', { exact: true }).fill('0');
+      const search = m.getByRole('combobox', { name: 'A arma precisa ter' });
+      for (const name of ['Pesada', 'Leve', 'Alcance', 'Acuidade', 'Versátil']) {
+        await search.fill(name);
+        await m.getByRole('listbox', { name: 'A arma precisa ter' }).getByRole('option', { name, exact: true }).click();
+      }
+      await expect(m.getByLabel('Tira do ataque', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+      await expect(m.getByLabel('Soma no dano', { exact: true })).toHaveAttribute('aria-invalid', 'true');
+      await expect(m.getByText('De 1 a 10.', { exact: true })).toBeVisible();
+      await expect(m.getByText('De 1 a 20.', { exact: true })).toBeVisible();
+      await expect(m.getByText('Até 4 propriedades.', { exact: true })).toBeVisible();
+      await expectScreenPasses(m, `Editor de talento, "Ataque poderoso" com números fora da faixa e uma propriedade a mais ${where}`);
+      await m.getByRole('button', { name: 'Salvar talento' }).click();
+      await expect(m.getByText('Nada foi salvo; o que você digitou continua aqui.')).toBeVisible();
+      await expect(m.getByLabel('Nome do talento')).toHaveValue('Golpe Exagerado');
+      await expect(m.getByText('De 1 a 10.', { exact: true })).toHaveCount(1);
+      await expectScreenPasses(m, `Editor de talento, "Ataque poderoso" recusado ao salvar ${where}`);
+    } else {
+      await open(m, entryRoute(campaignId, heavy));
+      await expect(m.getByText('Para criar ou editar, abra o conteúdo da mesa no notebook.')).toBeVisible();
+      await expectScreenPasses(m, `Talento com "Ataque poderoso", lido pelo mestre no celular ${where}`);
+    }
+  } finally {
+    await Promise.all([mContext.close(), pContext.close()]);
+  }
+}
+
+for (const [scheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`o editor do ataque poderoso passa no axe e nas conferências de layout no tema ${theme}, em ${width}px`, { tag: ['@a11y', '@586', '@MR-025'] }, async ({ browser }) => {
+      await scanPowerAttackEditor(browser, scheme, width);
+    });
   }
 }
 

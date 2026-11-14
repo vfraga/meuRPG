@@ -145,6 +145,27 @@ export function rerollFeatBody(namePt = 'Sorte Teimosa'): Record<string, unknown
   };
 }
 
+/** A feat with a power attack for heavy melee weapons the character is proficient with: 5 off the attack roll for 10 on the damage. Invented name. */
+export function heavyBlowFeatBody(namePt = 'Golpe Pesado'): Record<string, unknown> {
+  return {
+    namePt,
+    descPt: ['Você sabe trocar precisão por força bruta: antes de golpear com uma arma pesada, pode errar mais para bater mais forte.'],
+    effects: [{ type: 'power_attack', attackPenalty: 5, damageBonus: 10, weapon: 'melee', weaponProperties: ['weapon-property:heavy'], onlyProficient: true }],
+  };
+}
+
+/** A feat with a power attack for any ranged weapon that spends a use of the pool the same feat defines (3, back on a short rest). Invented name. */
+export function steadyShotFeatBody(namePt = 'Disparo Firme'): Record<string, unknown> {
+  return {
+    namePt,
+    descPt: ['Você firma a mira: troca precisão por dano num ataque à distância, e o fôlego volta num descanso curto.'],
+    effects: [
+      { type: 'power_attack', attackPenalty: 5, damageBonus: 10, weapon: 'ranged', resource: 'folego_do_atirador' },
+      { type: 'resource', resource: 'folego_do_atirador', max: '3', recharge: 'short_rest' },
+    ],
+  };
+}
+
 /** A feat with a minimum of 2 on the fire dice of damage. Invented name. */
 export function minimumFeatBody(namePt = 'Chama Insistente'): Record<string, unknown> {
   return {

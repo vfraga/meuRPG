@@ -225,7 +225,13 @@ flowchart LR
   It is off, with the reason, while the class reuses another class's list; the draft keeps the chips, and `castingInit` sends `srd_spell_keys` only while the list is the class's own.
   The subclass editor shows the switch "As magias da subclasse entram na lista da classe, para escolher" (`spells_expanded`) when the subclass names spells; `draftToSubclass` sends it only then.
   A refusal at `srd_spell_keys[<i>]` lands on the picker, at `spells_expanded` on the switch.
-- **Expertise only where proficient.** The effect picker draws the `only_proficient` field of the menu ("Só onde já tem proficiência") only while the effect has the level "Especialização" on a skill (`onlyProficientApplies`); `draftToEffect` sends it only then.
+- **Only where proficient.** The `only_proficient` field of the menu is drawn, and sent by `draftToEffect`, only where it means something (`onlyProficientApplies`): for the level "Especialização" on a skill ("Só onde já tem proficiência"), and for a `power_attack`, where it is the switch of its block.
+- **The power attack's block** (`shared/effect-picker/effect-power-attack.ts`, `power-attack-view.ts`).
+  "Ataque poderoso" draws `attack_penalty` ("Tira do ataque") and `damage_bonus` ("Soma no dano") side by side with the ranges the menu states, `weapon` as three cards ("Qualquer arma", "Só corpo a corpo", "Só à distância"), `weapon_properties` as the search chips of the SRD properties of the menu (up to 4), the proficiency switch and "Vale para:", the filter read back in words (`powerAttackReading`, a pure function).
+  The resource ("Gasta um uso de", the entry's own resources), "Quando vale" and the text are the picker's generic fields under "Mais opções", which names them while it is folded.
+  The editor says a number outside its range and a fifth property before the server does (`powerAttackIssues`, the fifth chip outlined); the server's refusals at the fields land on the same controls in the same words (`EFFECT_REFUSAL_TEXTS`, `power_attack.*`).
+  A feature has at most one: another effect of the entry that is a power attack dashes the type in the "Efeito" menu with the reason, and the server's `forbidden_effect` at `.type` says the same.
+  A stored power_attack with a number outside the ranges, a weapon kind that is not one of the three or a filter the block cannot hold is `EffectDraft.kept` (`keptOf`): shown read-only, written back as stored, only removable.
 - **The grid** (`shared/level-grid`) scrolls inside (titles pinned on top, the level on the left), one `<input>` per cell with `data-field` (`table_class.levels[4].slots[2]`) and an `aria-label`; arrows change row and Page Down jumps five.
   It shows the levels the casting type's default uses, and "Mostrar os 9 níveis de magia" opens the rest.
   The third-caster subclass uses the same grid without bonus and features.

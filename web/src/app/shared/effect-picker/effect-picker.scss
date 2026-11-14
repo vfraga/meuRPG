@@ -76,6 +76,13 @@
   cursor: pointer;
 }
 
+// What "Mais opções" holds, said after it while it is folded (a power attack).
+.more__names {
+  color: var(--mr-ink-muted);
+  font-size: var(--mr-font-14);
+  font-weight: 400;
+}
+
 // What the master reads of a formula that points at a choice of the feat.
 .reading {
   margin: 4px 0 0;

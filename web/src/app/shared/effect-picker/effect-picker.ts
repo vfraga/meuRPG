@@ -3,7 +3,6 @@ import {
   ElementRef,
   Injector,
   TemplateRef,
-  afterNextRender,
   computed,
   inject,
   input,
@@ -33,6 +32,7 @@ import {
   unreadableNumber,
 } from '../../core/content/effect-draft';
 import { readWhole, wholeText } from '../../core/content/whole-number';
+import { withNumber } from '../../core/content/effect-number';
 import { keptView } from '../../core/content/effect-kept';
 import { neverFolded, visibleFields } from '../../core/content/effect-visible';
 import type { EffectMenuField } from '../../../gen/meurpg/rules/v1/table_content_pb';
@@ -40,12 +40,14 @@ import { CheckGroup, type CheckOption } from '../form-fields/check-group';
 import { CheckRow } from '../form-fields/check-row';
 import { type CatalogVm } from '../../core/content/catalog';
 import { EffectAura } from './effect-aura';
+import { EffectPowerAttack, POWER_BLOCK_FIELDS } from './effect-power-attack';
+import { PowerView } from './power-attack-view';
 import { FieldNote } from '../form-fields/field-note';
 import { PickList } from '../form-fields/pick-list';
 import { RadioCards, type RadioCard } from '../form-fields/radio-cards';
 import { SelectField, type SelectOption } from '../form-fields/select-field';
 import { TextField } from '../form-fields/text-field';
-import { CHOICE_GROUP_ICON, insertAt } from './effect-picker-choices';
+import { CHOICE_GROUP_ICON, insertIntoField } from './effect-picker-choices';
 import { FeatChoiceView } from './feat-choice-view';
 import {
   afterTarget,
@@ -91,6 +93,7 @@ import {
     RadioCards,
     SelectField,
     EffectAura,
+    EffectPowerAttack,
     TextField,
   ],
   templateUrl: './effect-picker.html',
@@ -147,7 +150,7 @@ export class EffectPicker {
 
   protected readonly typeOptions = computed<SelectOption[]>(() => {
     const menu = this.menu();
-    const types = menu.typesFor(this.featEditor()).map((t) => ({ value: t.type, label: t.namePt }));
+    const types = menu.typesFor(this.featEditor()).map((t) => this.power.option(t));
     // A stored effect of a type the editor does not offer keeps its own name on the select, so it never reads as another type.
     const own = this.effect().type;
     const kept = menu.typeOf(own);
@@ -163,13 +166,20 @@ export class EffectPicker {
       : typeHintFor(t, this.menu().typeOf(t)?.hintPt ?? '', this.inFeat());
   });
   /** In the feat editor (its effects and its options) the hints are one line. */
-  private readonly inFeat = computed(() => this.featEditor() || this.featOption());
+  protected readonly inFeat = computed(() => this.featEditor() || this.featOption());
   protected readonly kept = computed(() => keptView(this.effect(), this.menu()));
+  /** What the picker does for a power attack: it draws a block of its own ahead of the optional fields. */
+  protected readonly power = new PowerView({
+    effect: this.effect,
+    siblings: this.siblings,
+    inFeat: () => this.inFeat(),
+  });
   protected readonly allFields = computed(() =>
     visibleFields(this.menu().fieldsOf(this.effect().type), this.effect()).filter(
       // The feat editor names a choice by itself ("habilidade"), so the field is not asked.
       (f) =>
         !(f.name === 'name' && this.featEditor()) &&
+        !(this.power.active() && POWER_BLOCK_FIELDS.has(f.name)) &&
         !this.feat.inCards(f, this.issuesOf()(this.path(f.name)).length > 0),
     ),
   );
@@ -190,7 +200,9 @@ export class EffectPicker {
     ),
   );
   protected readonly hidden = computed(() => this.allFields().length - this.fields().length);
-  protected readonly typeIssues = computed(() => this.issuesOf()(`${this.basePath()}.type`));
+  protected readonly typeIssues = computed(() =>
+    this.power.typeIssues(this.issuesOf()(`${this.basePath()}.type`)),
+  );
 
   private filled(f: EffectMenuField): boolean {
     return holdsSomething(this.effect()[meterKey(f.name) ?? draftKey(f.name)]);
@@ -227,7 +239,7 @@ export class EffectPicker {
   }
 
   protected readonly resource = computed(() =>
-    resourcePick(this.siblings(), this.menu(), this.effect().resource),
+    resourcePick(this.siblings(), this.menu(), this.effect().resource, this.power.resourceNone()),
   );
 
   protected rollOptions(f: EffectMenuField): CheckOption[] {
@@ -279,6 +291,9 @@ export class EffectPicker {
     }
     if (this.effect().type === 'reroll' && f.name === 'resource') {
       return RESOURCE_PICK_COPY.hint;
+    }
+    if (this.effect().type === 'power_attack' && f.name === 'resource') {
+      return this.power.resourceHint();
     }
     return f.name === 'from' || f.name === 'spells' ? this.pickHint(f) : this.hintOf(f);
   }
@@ -393,24 +408,14 @@ export class EffectPicker {
 
   /** Writes a choice into a formula where the cursor is, and puts the cursor after it. */
   protected insert(f: EffectMenuField, text: string): void {
-    // Looked up when used: a field drawn again leaves a node found earlier detached.
-    const input = () =>
-      this.host.nativeElement.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-        `[data-field="${this.path(f.name)}"]`,
-      );
-    const { next, caret } = insertAt(
+    const write = (next: string) => this.setText(f.name, next);
+    insertIntoField(
+      this.host.nativeElement,
+      this.injector,
+      this.path(f.name),
       this.read(f.name),
       text,
-      input()?.selectionStart,
-      input()?.selectionEnd,
-    );
-    this.setText(f.name, next);
-    afterNextRender(
-      () => {
-        input()?.focus();
-        input()?.setSelectionRange(caret, caret);
-      },
-      { injector: this.injector },
+      write,
     );
   }
 
@@ -429,14 +434,7 @@ export class EffectPicker {
    * What was typed stays as typed; the draft holds the number, or a NaN for text that is no whole number the server stores, so an editor
    * does not save instead of sending 0. */
   protected setNumber(f: EffectMenuField, text: string): void {
-    const n = readWhole(text, f.min < 0);
-    const { [f.name]: _, ...kept } = this.effect().typed ?? {};
-    const typed = text === wholeText(n) || text.trim() === '' ? kept : { ...kept, [f.name]: text };
-    this.effectChange.emit({
-      ...this.effect(),
-      [draftKey(f.name)]: n,
-      typed: Object.keys(typed).length > 0 ? typed : undefined,
-    });
+    this.effectChange.emit(withNumber(this.effect(), f.name, text, f.min < 0));
   }
 
   /** The refusals of each visible field, the client's own (text no number) after the server's. Computed once per change, not per cycle. */

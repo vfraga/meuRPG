@@ -1,0 +1,64 @@
+// The power attack's block: the two numbers side by side, the weapon cards, the properties with their hint beside them, the
+// proficiency switch and the line that reads the filter back.
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.power {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-4);
+  min-width: 0;
+
+  // The two numbers side by side, each with its range under it.
+  &__numbers {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--mr-space-4);
+
+    @media (min-width: 768px) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+
+  &__props {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--mr-space-2) var(--mr-space-4);
+    align-items: start;
+
+    @media (min-width: 768px) {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+
+  &__hint {
+    margin: 0;
+    padding-top: 14px;
+    font-size: var(--mr-font-14);
+    line-height: 18px;
+    color: var(--mr-ink-muted);
+  }
+
+  // What the filter says in words: the same card as the line under a named choice (a rule, then the sentence).
+  &__reading {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--mr-space-3);
+    margin: 0;
+    padding: 10px var(--mr-space-4);
+    border: 1px solid var(--mr-line);
+    border-left: 3px solid var(--mr-accent);
+    border-radius: var(--mr-radius-md);
+    background: var(--mr-surface);
+    font-size: var(--mr-font-15);
+    line-height: 22px;
+
+    .mat-icon {
+      flex: none;
+      margin-top: -1px;
+      color: var(--mr-accent-text);
+    }
+  }
+}
