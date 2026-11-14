@@ -292,8 +292,9 @@ export class EffectPicker {
     if (this.effect().type === 'reroll' && f.name === 'resource') {
       return RESOURCE_PICK_COPY.hint;
     }
-    if (this.effect().type === 'power_attack' && f.name === 'resource') {
-      return this.power.resourceHint();
+    const power = this.power.hintOf(f.name);
+    if (power !== '') {
+      return power;
     }
     return f.name === 'from' || f.name === 'spells' ? this.pickHint(f) : this.hintOf(f);
   }

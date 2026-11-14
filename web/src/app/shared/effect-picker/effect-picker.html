@@ -155,6 +155,7 @@
             <app-text-field
               [label]="labelOf(f)"
               [value]="read(f.name)"
+              [placeholder]="power.placeholder(f.name)"
               [path]="path(f.name)"
               [issues]="issues(f.name)"
               (valueChange)="setText(f.name, $event)"

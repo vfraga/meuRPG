@@ -6764,6 +6764,11 @@ async function scanPowerAttackEditor(browser: Browser, colorScheme: 'light' | 'd
       await expect(m.getByRole('list', { name: 'Escolhidas' }).getByText('Pesada')).toBeVisible();
       await expect(m.getByRole('status').filter({ hasText: 'Vale para:' })).toContainText('armas corpo a corpo, com a propriedade Pesada, em que o personagem tem proficiência.');
       await expect(m.getByRole('button', { name: /Mais opções/ })).toContainText('recurso, quando vale, texto do efeito');
+      // "Como os jogadores veem": what the trade asks and does, as the board writes it.
+      const seen = m.getByRole('complementary', { name: 'Como os jogadores veem' });
+      await expect(seen.getByText('Pede', { exact: true })).toBeVisible();
+      await expect(seen.getByText('Nada', { exact: true })).toBeVisible();
+      await expect(seen.getByText('\u22125 no ataque, +10 no dano', { exact: true })).toBeVisible();
       await expectScreenPasses(m, `Editor de talento, "Ataque poderoso" com a propriedade e a proficiência ${where}`);
       // The second power attack is dashed in the menu of another effect, with the reason.
       await m.getByRole('button', { name: 'Adicionar um efeito' }).click();
@@ -6779,6 +6784,11 @@ async function scanPowerAttackEditor(browser: Browser, colorScheme: 'light' | 'd
       await expect(m.getByRole('checkbox', { name: 'Só armas em que o personagem tem proficiência' })).not.toBeChecked();
       await expect(m.getByRole('status').filter({ hasText: 'Vale para:' })).toContainText('Cada troca gasta 1 uso de Folego Do Atirador.');
       await expect(m.getByLabel('Gasta um uso de', { exact: true })).toHaveValue('folego_do_atirador');
+      await m.getByRole('button', { name: /Mais opções/ }).first().click();
+      await expect(m.getByLabel('Quando vale', { exact: true })).toHaveAttribute('placeholder', 'Sempre');
+      const steadySeen = m.getByRole('complementary', { name: 'Como os jogadores veem' });
+      await expect(steadySeen.getByText('Usos', { exact: true })).toBeVisible();
+      await expect(steadySeen.getByText('3 \u00b7 voltam no descanso curto', { exact: true })).toBeVisible();
       await expectScreenPasses(m, `Editor de talento, "Ataque poderoso" à distância com o recurso do talento ${where}`);
 
       // The numbers outside their ranges and a fifth property: the editor says so on the fields, and so does the server on saving.

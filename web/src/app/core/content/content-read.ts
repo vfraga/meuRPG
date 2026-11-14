@@ -25,6 +25,7 @@ import {
 import { bonusText } from './feature-draft';
 import { summonLine } from './summon-names';
 import { entryEffectsPart } from './content-read-rolls';
+import { powerAttackRead } from './power-attack-rows';
 import { spellToDraft } from './spell-draft';
 import { readHit } from './hit-effect-read';
 import { previewRows } from './spell-preview';
@@ -127,7 +128,12 @@ function readFeat(
   optionSide?: (o: TableFeature) => string,
 ): EntryRead {
   const asks = prerequisiteSupport(f.prerequisite, nameOf);
-  const rows: ReadRow[] = [{ label: 'Pré-requisito', value: asks || 'Nenhum' }];
+  const power = powerAttackRead(f.effects);
+  // The board of the power attack calls what the feat asks "Pede" and says "Nada" for nothing.
+  const rows: ReadRow[] =
+    power.rows.length > 0
+      ? [{ label: 'Pede', value: asks || 'Nada' }]
+      : [{ label: 'Pré-requisito', value: asks || 'Nenhum' }];
   for (const e of f.effects) {
     if (e.type === 'ability_increase' && e.count > 0) {
       const from = e.from.map((k) => nameOf(`ability:${k}`));
@@ -137,25 +143,27 @@ function readFeat(
       });
     }
   }
-  rows.push(...featChoiceRows(f));
+  rows.push(...featChoiceRows(f), ...power.rows);
   const options = featOptionItems(f, nameOf, optionSide);
   return {
     rows,
     sections: [],
     text: f.descPt,
-    ...entryEffectsPart(f.effects, nameOf),
+    ...entryEffectsPart(power.rest, nameOf),
     ...(options.length > 0 ? { options } : {}),
   };
 }
 
 function readOption(o: TableOption, nameOf: NameOf, offeredByName: OfferedByName): EntryRead {
   const asks = optionPrerequisiteParts(o.prerequisite, nameOf);
+  const power = powerAttackRead(o.effects);
   const rows: ReadRow[] = [
     { label: 'Conjunto', value: optionSetName(o.set) },
     ...(o.offeredBy === '' ? [] : [{ label: 'Oferecida por', value: offeredByName(o.offeredBy) }]),
     { label: 'Pré-requisito', value: asks.length > 0 ? asks.join(', ') : 'Nenhum' },
+    ...power.rows,
   ];
-  return { rows, sections: [], text: o.descPt, ...entryEffectsPart(o.effects, nameOf) };
+  return { rows, sections: [], text: o.descPt, ...entryEffectsPart(power.rest, nameOf) };
 }
 
 function readClassFeature(f: TableClassFeature, nameOf: NameOf): EntryRead {
@@ -168,11 +176,12 @@ function readClassFeature(f: TableClassFeature, nameOf: NameOf): EntryRead {
     },
   ];
   const summon = summonLine(f.summon, nameOf);
+  const power = powerAttackRead(f.effects);
   return {
-    rows,
+    rows: [...rows, ...power.rows],
     sections: [],
     text: summon ? [...f.descPt, summon] : f.descPt,
-    ...entryEffectsPart(f.effects, nameOf),
+    ...entryEffectsPart(power.rest, nameOf),
   };
 }
 

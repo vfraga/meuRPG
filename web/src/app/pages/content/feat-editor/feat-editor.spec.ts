@@ -14,6 +14,7 @@ import { type CatalogVm, catalogVm } from '../../../core/content/catalog';
 import { TableContentClient } from '../../../core/content/content-client';
 import { catalog, entry } from '../../../core/content/content-testing';
 import { menu } from '../../../core/content/content-testing-menu';
+import { powerAttackMenu } from '../../../core/content/content-testing-menu-power';
 import { FeatEditor } from './feat-editor';
 import { settle } from '../../../../test-settle';
 
@@ -201,6 +202,46 @@ describe('FeatEditor (MR-025)', () => {
       'Quantos o jogador escolhe',
     );
     expect(document.activeElement).toBe(field(el, 'table_feat.name_pt'));
+  });
+
+  it('writes the power attack in "Como os jogadores veem" as the board has it, and follows the numbers as they are typed', () => {
+    const power = entry(TableContentKind.FEAT, 'Disparo Firme', {
+      body: {
+        case: 'tableFeat',
+        value: create(TableFeatSchema, {
+          namePt: 'Disparo Firme',
+          descPt: ['Antes de rolar um ataque à distância, você pode trocar acerto por dano.'],
+          effects: [
+            {
+              type: 'power_attack',
+              attackPenalty: 5,
+              damageBonus: 10,
+              weapon: 'ranged',
+              resource: 'folego_do_atirador',
+            },
+            { type: 'resource', resource: 'folego_do_atirador', max: '3', recharge: 'short_rest' },
+          ],
+        }),
+      },
+    });
+    const { el, fixture } = setup(power);
+    fixture.componentRef.setInput('menu', powerAttackMenu());
+    fixture.detectChanges();
+    const rows = () =>
+      Array.from(el.querySelectorAll('.preview .rows__row')).map(
+        (r) => `${r.querySelector('dt')!.textContent}: ${r.querySelector('dd')!.textContent}`,
+      );
+    expect(rows()).toEqual([
+      'Pede: Nada',
+      'Ao atacar: \u22125 no ataque, +10 no dano',
+      'Usos: 3 \u00b7 voltam no descanso curto',
+    ]);
+    expect(text(el.querySelector('.preview')!)).toContain('você pode trocar acerto por dano.');
+    const penalty = field(el, 'table_feat.effects[0].attack_penalty') as HTMLInputElement;
+    penalty.value = '7';
+    penalty.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(rows()[1]).toBe('Ao atacar: \u22127 no ataque, +10 no dano');
   });
 
   it('a new feat starts empty, asks nothing and is called "Novo talento" in the preview', () => {

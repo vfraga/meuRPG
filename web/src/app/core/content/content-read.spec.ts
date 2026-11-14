@@ -566,3 +566,52 @@ describe('what the master reads of a feature that summons (#578)', () => {
     );
   });
 });
+
+describe('what a player reads of a power attack (the board of #586)', () => {
+  const featWith = (descPt: string[], effects: object[], prerequisite: object = {}) =>
+    entry(TableContentKind.FEAT, 'Disparo Firme', {
+      body: {
+        case: 'tableFeat',
+        value: create(TableFeatSchema, { namePt: 'Disparo Firme', descPt, prerequisite, effects }),
+      },
+    });
+  const power = { type: 'power_attack', attackPenalty: 5, damageBonus: 10, weapon: 'ranged' };
+
+  it('reads "Pede: Nada" and "Ao atacar" with the true minus, then the text of the feat', () => {
+    const read = readEntry(featWith(['Antes de rolar um ataque à distância.'], [power]), nameOf);
+    expect(read.rows).toEqual([
+      { label: 'Pede', value: 'Nada' },
+      { label: 'Ao atacar', value: '−5 no ataque, +10 no dano' },
+    ]);
+    expect(read.text).toEqual(['Antes de rolar um ataque à distância.']);
+  });
+
+  it('keeps what the feat asks of the character under "Pede"', () => {
+    const read = readEntry(featWith([], [power], { minimums: { strength: 13 } }), nameOf);
+    expect(read.rows[0]).toEqual({ label: 'Pede', value: 'Força 13' });
+  });
+
+  it('adds the uses of the pool the trade spends once, as a row and not again under the text', () => {
+    const pool = {
+      type: 'resource',
+      resource: 'folego_do_atirador',
+      max: '3',
+      recharge: 'short_rest',
+    };
+    const read = readEntry(
+      featWith([], [{ ...power, resource: 'folego_do_atirador' }, pool]),
+      nameOf,
+    );
+    expect(read.rows.map((r) => `${r.label}: ${r.value}`)).toEqual([
+      'Pede: Nada',
+      'Ao atacar: −5 no ataque, +10 no dano',
+      'Usos: 3 · voltam no descanso curto',
+    ]);
+    expect(read.effects).toBeUndefined();
+  });
+
+  it('leaves a feat without a power attack as it was: "Pré-requisito: Nenhum"', () => {
+    const read = readEntry(featWith([], [{ type: 'note', textPt: 'x' }]), nameOf);
+    expect(read.rows).toEqual([{ label: 'Pré-requisito', value: 'Nenhum' }]);
+  });
+});

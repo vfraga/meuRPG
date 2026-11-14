@@ -12,6 +12,17 @@ import { menuResponse } from './content-testing-menu';
 export function powerAttackMenu(): EffectMenuVm {
   const res = menuResponse();
   res.types.push(
+    // The pool a power attack may spend, as the real menu has it.
+    create(EffectMenuTypeSchema, {
+      type: 'resource',
+      namePt: 'Recurso',
+      hintPt: 'Uma reserva de usos.',
+      fields: [
+        { name: 'resource', kind: 'text', required: true },
+        { name: 'max', kind: 'formula', required: true },
+        { name: 'recharge', kind: 'choice', required: true, list: 'recharges' },
+      ],
+    }),
     create(EffectMenuTypeSchema, {
       type: 'power_attack',
       namePt: 'Ataque poderoso',

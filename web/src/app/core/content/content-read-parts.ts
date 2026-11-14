@@ -59,7 +59,7 @@ export interface EntryRead {
   readonly options?: readonly ReadItem[];
 }
 
-const RECHARGE_WORDS: Readonly<Record<string, string>> = {
+export const RECHARGE_WORDS: Readonly<Record<string, string>> = {
   short_rest: 'voltam num descanso curto',
   long_rest: 'voltam num descanso longo',
   dawn: 'voltam ao amanhecer',

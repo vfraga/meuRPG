@@ -239,6 +239,9 @@ export const POWER_COPY = {
   ],
   weaponRefused: 'Escolha uma das três opções.',
   readingLabel: 'Vale para:',
+  /** "Quando vale" is the effect's condition (a formula, `level() >= 3`): empty it says "Sempre". */
+  whenPlaceholder: 'Sempre',
+  whenHint: 'Uma condição, como um nível mínimo.',
   resourceNone: 'Nenhum: não gasta nada',
   resourceHint: (inFeat: boolean) =>
     `Um recurso ${inFeat ? 'deste talento' : 'desta entrada (ou da classe)'}. Vazio: não gasta nada.`,

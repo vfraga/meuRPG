@@ -356,6 +356,15 @@ describe('EffectPicker: the power_attack block ("Ataque poderoso")', () => {
       expect(text(el)).not.toContain('Gasta o custo');
     });
 
+    it('draws "Quando vale" as the board has it: "Sempre" while it is empty, and the line about a condition', () => {
+      setup(trade());
+      more()!.click();
+      fixture.detectChanges();
+      const when = field('when') as HTMLInputElement;
+      expect(when.getAttribute('placeholder')).toBe('Sempre');
+      expect(text(when.closest('.frow')!)).toContain('Uma condição, como um nível mínimo.');
+    });
+
     it('labels the condition and the text in the words of the block', () => {
       setup(trade({ when: 'level() >= 3', textPt: 'Mira firme.' }));
       expect(text(el)).toContain('Quando vale');

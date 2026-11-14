@@ -55,10 +55,28 @@ export class PowerView {
   }
 
   /** The line beside the resource, or '' for another type. */
-  resourceHint(): string {
+  private resourceHint(): string {
     return this.host.effect().type === 'power_attack'
       ? POWER_COPY.resourceHint(this.host.inFeat())
       : '';
+  }
+
+  /** The grey word in an empty "Quando vale" ("Sempre"), or '' for any other field. */
+  placeholder(field: string): string {
+    return this.host.effect().type === 'power_attack' && field === 'when'
+      ? POWER_COPY.whenPlaceholder
+      : '';
+  }
+
+  /** The line beside the resource and beside "Quando vale", or '' for any other field. */
+  hintOf(field: string): string {
+    if (this.host.effect().type !== 'power_attack') {
+      return '';
+    }
+    if (field === 'resource') {
+      return this.resourceHint();
+    }
+    return field === 'when' ? POWER_COPY.whenHint : '';
   }
 
   /** What "Mais opções" holds, after its name, while it is folded: the fields of `all` that `shown` leaves out, in the words of the block. */
