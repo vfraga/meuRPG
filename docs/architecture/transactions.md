@@ -41,8 +41,41 @@ A cancelled call returns its connection to the pool after about 100 ms, the time
 
 ## Hints sent after the commit
 
-The combat write path of the `play` module (`write`, `changeInTx`, `StartEncounter`) runs in `Service.tx(ctx, sessionID, fn)`, which wraps `db.InTx` and sends after the commit.
-Other writers of the module call `db.InTx` and then `send`; they do not bump the hint number.
+These writers of the `play` module run in `Service.tx(ctx, sessionID, fn)`, which wraps `db.InTx` and sends after the commit:
+
+- the combat write path (`write`, `changeInTx`, `StartEncounter`);
+- vitals, resources, rests and Revivify (`AdjustCharacterVitals`, `TakeRest`, `SpendHitDice`, the slot recoveries, `GiveBardicInspirationOutside`, `RequestRevivify`, `ConfirmRevivifyTime`, `SetRevivifyBlocked`);
+- the lasting effects on characters outside a combat and game time (`AddCharacterEffect`, `EndLastingEffect` with no combat, `AdvanceGameTime`);
+- the traps (`FireTrap` outside a combat, a token or a creature dropped on a trap, `SearchForTraps`, `ApplyTrapDamage`, `DiscardTrapDamage`);
+- what the table shows: the scene and its audience (`OpenScene`, `CloseScene`, `SetSceneAudience`, `SetScenePlayersMayJoin`, `JoinScene`, `RollSceneCheck`, `GrantSceneAttempt`), the stage, the table screen, the puzzles, the conversation's lines, the current map, the shown image with its audience, the free dice, the group check and `EndGameSession`.
+
+A writer that has only the campaign goes through `txOpen`: it reads the open session without a lock, and the closure checks that it is still the open one.
+The writes of the characters and campaigns modules that change what a session shows (`GiveCreature`, `RenameCreature`, `DismissCreature`, `AdjustCreatureHitPoints`, `SetTableRules`) go through `play.Service.InSession(ctx, campaignID, fn)`: it reads the open session without a lock, runs `Service.tx` on it, checks that it is still the open one, and gives `fn` the transaction and a `sessiontell.Tell` with four hints (`Touch`, `CreaturesChanged`, `EncounterChanged`, `CombatLogChangedFull`), so those modules never touch `game_sessions` or the hub. The number moves once if `fn` told, and the hints go out after the commit with it. `GiveCreature` takes an idempotency key: its repeat moves no number and tells again with the number as it stands. The other calls take none: a retry writes again and moves the number once more.
+`ReviveInCombat`, `CreatureRenamed` and `CreaturesLeaving` run in the transaction of the characters module (inside `InSession` for the two creature ones), which holds the session's row, then the character or creature rows; they do not bump themselves, and `LockSession` finds the row already held. `ReviveInCombat` runs in the characters module's own transaction and tells after its commit.
+The writes of the maps module that change what a session shows (every `MapService` writer of a token, the party, a carried light, a map, its layers, fog, grid, image, points, traps, treasures, clues, scene actions, plus `RenameGalleryImage`, `DeleteGalleryImage`, `UseGeneratedImageAsMapImage`, `CreateDungeonMap` and `RedrawDungeonMap`) go through the same `InSession`: the maps service has a `sessiontell.Host` (`SetSessionHost`, wired to play in `cmd/api`), takes the session's row first and the map, token and character rows after it, and runs its writes on the transaction it is given.
+The `Tell` it gets has two more steps than the characters module's: `After(fn)` runs `fn` after the commit and the told events with a `sessiontell.Out`, through which the module sends to an `Audience` (the master, the players, some users, the scene's viewers) and the number is stamped, and `Replay()`, which marks the repeat of a keyed write so that it moves no number and tells again.
+Without a host (no play module) the maps writes run in a transaction of their own and send through the live session with no number.
+With no open session `InSession` runs the write in a plain transaction and moves no number. What the write collected as steps after the commit (`After`, and a combat that changed) goes out with no number, for every module: the steps of `After` and `EncounterChanged`.
+The hints that are events (`CreaturesChanged`) go nowhere, because no stream is open, and `CombatLogChangedFull` sends nothing, because there is no combat to read.
+`AppendEvent`, `OpenSessionID` and the writers that play calls inside its own transaction (`OpenDoors`, the puzzle seam's `PuzzleOpenDoor`, `PuzzleRevealPoint` and `PuzzleRevealClue`, the session maps' `RevealMap`, `LeaveImage`, `TakeBackImage`, `SetTokenPositions`, `DiscoverScene` and `DiscoverSceneFor`, the shown image's copy, `TriggerTrap`, `RestoreTrap` and `SearchTraps`) take that transaction and open none: the session row is already held.
+The fog's memory (`rememberFor`) takes the session's lock and moves no number.
+The `sessionwrite` rule of `archtest` scans only the `play` and `maps` packages and follows calls by name, without types.
+It fails for a function that opens a transaction outside `Service.tx` and `Service.txOn` and writes in it.
+It fails too for an autocommit write: a writer query called on a `Queries` with no `WithTx` in the chain (`s.queries.X(...)`), which commits on its own, outside any transaction and so outside the funnel.
+Both kinds are listed in `sessionwrite_exceptions.txt`, which can only shrink, and an entry whose reason starts with `permanent:` records a writer that never touches session state.
+An entry whose reason starts with `host:` or `characters host:` says the function runs inside its caller's transaction, and the rule fails if the function takes no `pgx.Tx` parameter.
+A method that only forwards its own name to an embedded keeper of another module (`clockedVitals.AssumeWildShape`) is not a writer by itself: the combat write that calls it is the one judged.
+The rule does not see a `db` package aliased on import, a `Begin` on a field not named `pool`, a closure passed as a parameter or a method value, or a call through an interface.
+It matches helpers by bare name across the package, so two functions of one name are one.
+It does not judge a `Queries` that arrives as a parameter, and the host check proves a `pgx.Tx` parameter, not that the caller passes its own transaction.
+The writers of other modules that run in their own transaction and tell the streams after it (`ReviveCharacter`, the gear writes behind `ArmorWorn`, `GearChanged` and `EquipInCombat`, `CompleteCharacterChoices`, the level-up's announcement, the party's joining and leaving, the experience awards and their undo, and `AppendEvent`) are not under the funnel and move no number, so a hint lost by one of them is not detected by the number.
+The context of an After step carries the `Out`, so whatever the step sends with it is stamped: the `map_changed`, the `trap_noticed` and the `vision_changed` of a refresh that the write asked for carry the write's number. Three things do not: the paint's `map_changed` and its refresh (they go through a gate that may send them for a later write, so they carry none), a call that leaves for another write (a token dropped on a trap fires it in play's own transaction), which drops the `Out` first, and the hooks play calls on the maps module after its own commit (`VisionChanged`, `MapShown`, the combat move's refresh, `TrapChanged`, `Told`), which have none in their context and send with no number.
+A trap damage settled with no open session locks the session the damage was made in, tells nothing and moves no number.
+The puzzle writers that need no session (`CreatePuzzle`, `UpdatePuzzle`, archiving) go through `txOrNone`: with an open session they lock it, touch the number and tell `puzzle_changed` only for a puzzle that is shown; with none they run in a plain transaction and nothing moves.
+A write that changes what the screens show and sends no event calls `h.touch()` (a prepared puzzle's reseed, a secret free roll, a change of the shown image's keep switch).
+A scene, an image or a line for some players only is told to those players alone; the number moves for everyone.
+`AppendEvent` (XP awards, milestones, creatures, revives and the maps' reveals) runs in the transaction of the module that calls it and does not move the number; `StartGameSession` has no session row to lock before it creates one and does not move it either.
+Other writers of the `play` module call `db.InTx` and then `send`; they do not bump the hint number.
 `txOn` is the same on any transaction starter; a test passes one whose `COMMIT` fails.
 
 | Rule | How it is met |

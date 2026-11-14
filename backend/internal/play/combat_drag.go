@@ -51,7 +51,7 @@ func dragSquare(terrain grid.Terrain, origin, to grid.Square, mover grid.Mover) 
 // is there, as far as the viewer knows (the whole table for the real move).
 func dragRoom(cs []playdb.Combatant, grappler, dragged playdb.Combatant, sq grid.Square, v *combatViewer) bool {
 	for _, o := range cs {
-		if o.ID == grappler.ID || o.ID == dragged.ID || o.Defeated || !placed(o) || squareOfCombatant(o) != sq {
+		if o.ID == grappler.ID || o.ID == dragged.ID || samePair(o, dragged) || o.Defeated || !placed(o) || squareOfCombatant(o) != sq {
 			continue
 		}
 		if v == nil || v.sees(o) {
@@ -85,6 +85,9 @@ func (s *Service) dragTo(ctx context.Context, c *combatTx, v combatViewer, cs []
 	col, row := clamp32(sq.Col, 0, math.MaxInt32), clamp32(sq.Row, 0, math.MaxInt32)
 	if err := c.q.SetCombatantPlace(ctx, playdb.SetCombatantPlaceParams{ID: dragged.ID, GridCol: &col, GridRow: &row, CoverMark: "none"}); err != nil {
 		return dragged, fmt.Errorf("drag the creature: %w", err)
+	}
+	if err := carryRider(ctx, c.q, dragged.ID); err != nil {
+		return dragged, err
 	}
 	dragged.GridCol, dragged.GridRow, dragged.CoverMark = &col, &row, "none"
 	return dragged, nil

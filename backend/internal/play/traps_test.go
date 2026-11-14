@@ -52,6 +52,7 @@ func newTrapRigOn(t *testing.T, c *cave) *trapRig {
 	if err != nil {
 		t.Fatalf("maps.New() error = %v", err)
 	}
+	msvc.SetSessionHost(c.h.svc)
 	c.h.svc.SetTraps(msvc)
 	msvc.SetTrapFirer(c.h.svc)
 	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})

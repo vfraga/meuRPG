@@ -3,3 +3,7 @@
 # The reason (at least 20 characters) says why the column is not about one feature.
 # A feature that must remember a use does not get a column: it keeps an entry in feature_state
 # (docs/architecture/play/feature-state.md).
+MountKind # a willing mount's setting by the master, read by the view and the rules, not a use of a feature
+MountMoveUsed # the mount-or-dismount mark of one move; the column is fixed by proto field 123 and cleared with the movement counters
+MountPriorInit # a mount's initiative, d20 and master order as one JSON object, a shape feature_state does not hold
+MountedOnID # the link rider to mount: a foreign key with a unique index, which feature_state cannot hold

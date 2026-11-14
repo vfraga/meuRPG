@@ -468,7 +468,7 @@ func TestSceneRollRetryAndAnswer(t *testing.T) {
 		t.Errorf("hints = %q, want scene_check_rolled for the master and the roller alone", got)
 	}
 
-	// The same request again: the same roll (same id, same time), nothing rolled, nothing heard.
+	// The same request again: the same roll (same id, same time), nothing rolled; the master and the roller hear of it again.
 	a.h.roller.queue(3)
 	again, err := sceneRollWith(a, a.ana, a.campaignID, actions[0], key, &playv1.RollSceneCheckRequest{Roll: &playv1.RollSceneCheckRequest_RollInApp{RollInApp: true}})
 	if err != nil {
@@ -478,8 +478,8 @@ func TestSceneRollRetryAndAnswer(t *testing.T) {
 		!again.GetRoll().GetRolledAt().AsTime().Equal(r.GetRolledAt().AsTime()) {
 		t.Errorf("the retry = %v, want the first roll %v", again, first)
 	}
-	if got := sceneHints(t, a, mw, pw); got[0] != "" || got[1] != "" {
-		t.Errorf("hints after the retry = %q, want none", got)
+	if got := sceneHints(t, a, mw, pw); got[0] != "scene_check_rolled" || got[1] != "scene_check_rolled" {
+		t.Errorf("hints after the retry = %q, want the first call's again", got)
 	}
 	if n := a.countSceneRolls(t); n != 1 {
 		t.Errorf("%d rolls after the retry, want 1", n)
@@ -727,15 +727,15 @@ action A1 key=skill:investigation name="" check="Investigação" max=1 dc=12 bon
 roll A1 by="Toren" faces=[10] mod=0 total=10 passed=false left=- physical=false mode=ROLL_MODE_NORMAL
 stage=0`)
 
-	// The same grant again: the answer is the scene, nothing is written or published.
+	// The same grant again: the answer is the scene, nothing is written, and the hint goes again.
 	if _, err := sceneGrant(a, a.master, actions[0], toren, key); err != nil {
 		t.Fatalf("the retry error = %v", err)
 	}
 	if got := sceneKinds(t, a); got != "scene_opened,scene_check_rolled,scene_attempt_granted" {
 		t.Errorf("events after the retry = %q", got)
 	}
-	if got := sceneHints(t, a, mw, pw); got[0] != "" || got[1] != "" {
-		t.Errorf("hints after the retry = %q, want none", got)
+	if got := sceneHints(t, a, mw, pw); got[0] != "scene_changed" || got[1] != "scene_changed" {
+		t.Errorf("hints after the retry = %q, want the first call's again", got)
 	}
 	// The key is bound to what was granted.
 	wantSceneRefusal(t, "same key, another character", grant(a.master, a.campaignID, actions[0], a.pens.GetId(), key), connect.CodeInvalidArgument, sceneNone, "idempotency_key was already used for another change")

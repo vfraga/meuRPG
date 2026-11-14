@@ -22,6 +22,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -230,7 +231,7 @@ func (s *Service) fireByHandOutsideCombat(ctx context.Context, m authz.Membershi
 		return nil, s.dbError(ctx, "fire a trap", err)
 	}
 	if !repeated {
-		s.afterFiring(ctx, m.CampaignID, fired, playdb.Encounter{})
+		s.logFiring(ctx, fired, false) // the streams were told in the transaction
 	} else if fired, err = s.firingWithParts(ctx, sessionID, firingID, fired); err != nil {
 		return nil, s.dbError(ctx, "read the firing", err) // the answer of the first call listed every creature, whatever the events it took
 	}
@@ -381,26 +382,59 @@ func (s *Service) firingWithParts(ctx context.Context, sessionID, hostID string,
 	return &whole, nil
 }
 
-// afterFiring tells the streams, after the commit, what a firing changed: the trap
-// is public now (everyone who sees the map), the combat and its log changed, and
-// the master's trap card has new damage to apply.
-func (s *Service) afterFiring(ctx context.Context, campaignID string, fired *trapFireEvent, enc playdb.Encounter) {
+// logFiring logs a firing that was just made.
+func (s *Service) logFiring(ctx context.Context, fired *trapFireEvent, inCombat bool) {
 	if fired == nil {
 		return
 	}
 	logging.Event(ctx, s.logger, "trap.triggered", slog.String("map_id", fired.MapID), slog.String("point_id", fired.PointID),
-		slog.Int("caught", len(fired.Caught)), slog.Bool("in_combat", enc.ID != ""))
+		slog.Int("caught", len(fired.Caught)), slog.Bool("in_combat", inCombat))
+}
+
+// tellFiredOutside collects what a firing outside a combat changed, for the streams once it is committed: the trap is public now
+// (the maps module tells whoever sees the map), and the master's trap card has new damage to apply. The firing wrote an event, so
+// the session's number moves. Nothing here names who the firing caught: a creature only the master hears of changes nothing a
+// player is told.
+func (s *Service) tellFiredOutside(h *hints, campaignID string, fired *trapFireEvent) {
+	h.touch()
+	if fired == nil {
+		return
+	}
+	h.after(func(ctx context.Context, _ sayFn) {
+		s.traps.TrapChanged(ctx, campaignID, fired.MapID, fired.PointID)
+	})
+	h.tell(campaignID, masterMapChanged(fired.MapID))
+}
+
+// afterFiring tells the streams, after the commit, what a firing in a combat, or one a puzzle's wrong answer made, changed: the trap
+// is public now (everyone who sees the map), the combat and its log changed, and
+// the master's trap card has new damage to apply.
+func (s *Service) afterFiring(ctx context.Context, campaignID string, fired *trapFireEvent, enc playdb.Encounter) {
+	s.sayFiring(ctx, s.sayNow, campaignID, fired, enc)
+}
+
+// sayFiring is afterFiring through say: an after-commit step of Service.tx tells it with the session's number.
+func (s *Service) sayFiring(ctx context.Context, say sayFn, campaignID string, fired *trapFireEvent, enc playdb.Encounter) {
+	if fired == nil {
+		return
+	}
+	s.logFiring(ctx, fired, enc.ID != "")
+	s.sayFiringHints(ctx, say, campaignID, fired, enc)
+}
+
+// sayFiringHints is sayFiring without the log line: the hints of a firing, told again for a retry.
+func (s *Service) sayFiringHints(ctx context.Context, say sayFn, campaignID string, fired *trapFireEvent, enc playdb.Encounter) {
 	s.traps.TrapChanged(ctx, campaignID, fired.MapID, fired.PointID)
 	switch {
 	case enc.ID == "":
 	case fired.addsNothingForAnyPlayer(): // creatures only the master is given: the players cannot count his additions to a firing
-		s.publishEncounterChangedToMaster(campaignID, enc)
-		s.publishLogChanged(ctx, campaignID, enc.ID, false)
+		say(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: encounterChangedMessage(enc)})
+		s.sayLogChange(ctx, say, campaignID, enc.ID, false, false)
 	default:
-		s.publishEncounterChanged(ctx, campaignID, enc)
-		s.publishLogChanged(ctx, campaignID, enc.ID, true)
+		s.tellEncounterChanged(ctx, say, campaignID, enc)
+		s.sayLogChange(ctx, say, campaignID, enc.ID, true, false)
 	}
-	s.tellMembers(campaignID, false, mapChangedHint(fired.MapID)) // the master's trap card: damage waits there
+	say(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: mapChangedHint(fired.MapID)}) // the master's trap card: damage waits there
 }
 
 // characterLabels returns the names of the characters a firing caught.
@@ -521,7 +555,8 @@ type outsideFiring struct {
 }
 
 // fireOutsideCombat fires the trap while no combat runs on its map, in a
-// transaction of its own, and returns the firing and whether it was a retry. key
+// transaction of the open session (Service.tx), which tells the streams once it is saved,
+// and returns the firing and whether it was a retry. key
 // is "" for a firing nobody retries (a token landing); targetIDs are characters
 // with tokens on the map, nil for every character in the area (an empty, non-nil
 // list catches none: a creature's token dropped into a trap that picks its targets by
@@ -535,7 +570,9 @@ func (s *Service) fireOutsideCombat(ctx context.Context, campaignID, actorUserID
 		s.afterTrapRead() // a test starts a combat here
 	}
 	f := &outsideFiring{campaignID: campaignID, actorUserID: actorUserID, key: key, hash: hash, trap: trap, caught: caught, creatures: creatures, manual: manual, extend: extend}
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return s.fireOutsideTx(ctx, tx, f) })
+	err = s.txOpen(ctx, campaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
+		return s.fireOutsideTx(ctx, tx, h, session, f)
+	})
 	if errors.Is(err, maplink.ErrTrapNotArmed) {
 		return nil, "", false, errTrapNotArmed()
 	}
@@ -587,16 +624,16 @@ func charactersCaught(living []link.Character, at map[string]grid.Square, trap m
 	return caught
 }
 
-// fireOutsideTx is a firing outside a combat inside its transaction: a retry answers with the
-// firing it made, else the trap fires and its event is written.
-func (s *Service) fireOutsideTx(ctx context.Context, tx pgx.Tx, f *outsideFiring) error {
+// fireOutsideTx is a firing outside a combat inside its transaction (the session is locked): a retry answers with the
+// firing it made and tells it again, else the trap fires, its event is written and the streams are told.
+func (s *Service) fireOutsideTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, f *outsideFiring) error {
 	q := s.queries.WithTx(tx)
 	f.fired, f.firingID, f.repeated = nil, "", false
-	session, err := lockOpenSessionOrNone(ctx, q, f.campaignID)
-	if err != nil {
-		return err
-	}
 	if done, err := f.replay(ctx, q, session.ID); err != nil || done {
+		if done && err == nil {
+			h.replay() // the first call may have died before it told the streams
+			s.tellFiredOutside(h, f.campaignID, f.fired)
+		}
 		return err
 	}
 	if err := refuseFiringBesideCombat(ctx, q, session.ID, f.trap.MapID); err != nil {
@@ -613,8 +650,11 @@ func (s *Service) fireOutsideTx(ctx context.Context, tx pgx.Tx, f *outsideFiring
 	if f.key != "" {
 		keyPtr = &f.key
 	}
-	f.firingID, err = insertSceneEvent(ctx, c, eventTrapTriggered, &f.actorUserID, keyPtr, actionEvent{Trap: f.fired})
-	return err
+	if f.firingID, err = insertSceneEvent(ctx, c, eventTrapTriggered, &f.actorUserID, keyPtr, actionEvent{Trap: f.fired}); err != nil {
+		return err
+	}
+	s.tellFiredOutside(h, f.campaignID, f.fired)
+	return nil
 }
 
 // replay finds the firing the key made already, and answers with it: the same firing asked the same way.
@@ -850,7 +890,7 @@ func (s *Service) outsideTraits(ctx context.Context, tx pgx.Tx, campaignID strin
 // holds it fire (during a session, while no combat runs on the map; in a combat the
 // character's moves are the combat's). A failure is the maps module's to log.
 func (s *Service) TokenDropped(ctx context.Context, campaignID, mapID, characterID, actorUserID string, at grid.Square) error {
-	traps, err := s.trapsDroppedOn(ctx, campaignID, mapID, at)
+	traps, err := s.trapsDroppedOn(ctx, nil, campaignID, mapID, at)
 	if err != nil {
 		return err
 	}
@@ -866,6 +906,20 @@ func (s *Service) TokenDropped(ctx context.Context, campaignID, mapID, character
 	return nil
 }
 
+// TrapsToFire implements maps.TrapFirer, reading through tx: the ids of the traps a token dropped on the square fires, by the same rule as TokenDropped
+// (trapsDroppedOn): none when no session is open, in theatre, or while a combat runs on the map.
+func (s *Service) TrapsToFire(ctx context.Context, tx pgx.Tx, campaignID, mapID string, at grid.Square) ([]string, error) {
+	traps, err := s.trapsDroppedOn(ctx, tx, campaignID, mapID, at)
+	if err != nil {
+		return nil, err
+	}
+	ids := make([]string, 0, len(traps))
+	for _, t := range traps {
+		ids = append(ids, t.PointID)
+	}
+	return ids, nil
+}
+
 // CreatureDropped implements maps.TrapFirer: the master dropped a creature of a
 // player's character on a square (the maps module hands the drop to the traps), and the armed
 // "Ao entrar na área" traps whose area holds it fire, as for a character's token: the
@@ -873,7 +927,7 @@ func (s *Service) TokenDropped(ctx context.Context, campaignID, mapID, character
 // trap picks its targets by hand. The creature's part is a line only: no hit points
 // are stored for it outside a combat (as for an NPC), so nothing waits for the master.
 func (s *Service) CreatureDropped(ctx context.Context, campaignID, mapID string, creature maplink.MapCreature, actorUserID string, at grid.Square) error {
-	traps, err := s.trapsDroppedOn(ctx, campaignID, mapID, at)
+	traps, err := s.trapsDroppedOn(ctx, nil, campaignID, mapID, at)
 	if err != nil {
 		return err
 	}
@@ -893,24 +947,25 @@ func (s *Service) CreatureDropped(ctx context.Context, campaignID, mapID string,
 // creature was dropped on, when they may fire: only during a session (the vitals and the history
 // need one), and not while a combat runs on the map, where the moves are the combat's, nor in a
 // combat without a map, which has no traps (RN-25).
-func (s *Service) trapsDroppedOn(ctx context.Context, campaignID, mapID string, at grid.Square) ([]maplink.Trap, error) {
+func (s *Service) trapsDroppedOn(ctx context.Context, tx pgx.Tx, campaignID, mapID string, at grid.Square) ([]maplink.Trap, error) {
 	if s.traps == nil {
 		return nil, nil
 	}
-	session, err := s.queries.GetOpenGameSession(ctx, campaignID)
+	q := queriesIn(s.queries, tx)
+	session, err := q.GetOpenGameSession(ctx, campaignID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, fmt.Errorf("find the open session: %w", err)
 	}
-	if theatre, err := theatreRunning(ctx, s.queries, session.ID); err != nil || theatre {
+	if theatre, err := theatreRunning(ctx, q, session.ID); err != nil || theatre {
 		return nil, err
 	}
-	if _, inCombat, err := s.runningEncounterOn(ctx, session.ID, mapID); err != nil || inCombat {
+	if _, inCombat, err := runningEncounterIn(ctx, q, session.ID, mapID); err != nil || inCombat {
 		return nil, err
 	}
-	traps, err := s.traps.Traps(ctx, nil, campaignID, mapID)
+	traps, err := s.traps.Traps(ctx, tx, campaignID, mapID)
 	if err != nil {
 		return nil, err
 	}
@@ -933,6 +988,6 @@ func (s *Service) fireDropped(ctx context.Context, campaignID, actorUserID strin
 	if err != nil {
 		return err
 	}
-	s.afterFiring(ctx, campaignID, fired, playdb.Encounter{})
+	s.logFiring(ctx, fired, false) // the streams were told in the transaction
 	return nil
 }

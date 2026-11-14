@@ -94,6 +94,11 @@ type revival struct {
 // a dead player character, or the same call again; then it lives again and the table
 // reads the line.
 func (s *Service) reviveCharacterTx(ctx context.Context, tx pgx.Tx, m authz.Membership, id string, key, hash *string, now time.Time) (revival, error) {
+	// A dead character comes back in its combat, which takes the session's lock (ReviveInCombat): the
+	// session first, as every combat write does. An NPC never gets that far, and takes no lock.
+	if err := s.lockSessionBeforeCharacter(ctx, tx, m.CampaignID, id, func(c charactersdb.Character) bool { return c.Kind != kindPlayer }); err != nil {
+		return revival{}, err
+	}
 	row, err := visibleForUpdate(ctx, s.queries.WithTx(tx), m, id)
 	if err != nil {
 		return revival{}, err

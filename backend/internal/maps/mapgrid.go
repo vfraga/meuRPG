@@ -11,7 +11,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -53,16 +53,18 @@ func (s *Service) SetMapGrid(
 		return nil, err
 	}
 	var w gridWrite
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		w, err = s.writeGrid(ctx, tx, gridChange{campaignID: m.CampaignID, userID: m.UserID, mapID: mapID, drawn: drawn, factor: factor, imageCopy: imageCopy})
-		return err
+		if w, err = s.writeGrid(ctx, tx, gridChange{campaignID: m.CampaignID, userID: m.UserID, mapID: mapID, drawn: drawn, factor: factor, imageCopy: imageCopy}); err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) { s.announceGrid(ctx, m, mapID, current, w) })
+		return nil
 	})
 	s.discardFogCopy(ctx, m.CampaignID, imageCopy, err != nil || !w.copied)
 	if err != nil {
 		return nil, s.dbError(ctx, "set a map's grid", err)
 	}
-	s.announceGrid(ctx, m, mapID, current, w)
 	out, err := s.masterMap(ctx, m, mapID)
 	if err != nil {
 		return nil, err
@@ -250,7 +252,7 @@ func (s *Service) applyFirstGridFog(ctx context.Context, q *mapsdb.Queries, c gr
 // announceGrid tells the watchers of a map whose grid was set, and forgets what
 // depended on the layers when they changed.
 func (s *Service) announceGrid(ctx context.Context, m authz.Membership, mapID, current string, w gridWrite) {
-	s.publishMapChanged(m.CampaignID, mapID, playersSee(mapID, w.updated.RevealedAt, current))
+	s.publishMapChanged(ctx, m.CampaignID, mapID, playersSee(mapID, w.updated.RevealedAt, current))
 	if w.changed {
 		s.lits.forget(mapID)
 		s.tiles.forget(mapID)

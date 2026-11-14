@@ -15,6 +15,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/campaigns/campaignsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/tablerules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -364,6 +365,18 @@ func tableRulesParams(msg *campaignsv1.TableRules) (campaignsdb.UpsertTableRules
 	}, dice, nil
 }
 
+// SetSessionHost connects the play module's funnel. Without it, the table rules are saved in a transaction of their own and nothing
+// is told.
+func (s *Service) SetSessionHost(h sessiontell.Host) { s.sessionHost = h }
+
+// inSession runs fn on a transaction of the campaign's session, through the funnel when it is connected.
+func (s *Service) inSession(ctx context.Context, campaignID string, fn func(tx pgx.Tx, t sessiontell.Tell) error) error {
+	if s.sessionHost != nil {
+		return s.sessionHost.InSession(ctx, campaignID, fn)
+	}
+	return db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return fn(tx, sessiontell.None{}) })
+}
+
 // SetTableRules implements campaignsv1connect.CampaignServiceHandler.
 func (s *Service) SetTableRules(
 	ctx context.Context,
@@ -379,7 +392,7 @@ func (s *Service) SetTableRules(
 	}
 	params.CampaignID, params.Now = m.CampaignID, s.now()
 	var saved campaignsdb.CampaignTableRule
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		q := s.queries.WithTx(tx)
 		var err error
 		if saved, err = q.UpsertTableRules(ctx, params); err != nil {
@@ -390,6 +403,8 @@ func (s *Service) SetTableRules(
 		if _, err := q.SetCampaignDiceMode(ctx, campaignsdb.SetCampaignDiceModeParams{ID: m.CampaignID, DiceMode: dice}); err != nil {
 			return fmt.Errorf("set the dice mode: %w", err)
 		}
+		// The rules decide what the combat log shows (hideDeath, showSaveDC): the screens read again, and the master's log from the start.
+		t.CombatLogChangedFull()
 		return nil
 	})
 	if err != nil {

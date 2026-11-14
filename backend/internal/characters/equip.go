@@ -91,11 +91,15 @@ func readEquipRequest(msg *charactersv1.SetEquippedRequest) (equipRequest, error
 // and the key, asks play (inside the transaction, before the write) when the state really
 // changes, and writes the sheet with only carried_keys changed.
 //
-// The lock order is the character row, then play's session lock. A combat write takes the
-// session lock first and then key-shares the character row, so a concurrent attack and equip
-// can deadlock; db.InTx retries the one the database aborts (40P01), as for ReviveCharacter.
+// The lock order is play's session row, then the character row: the one order of a combat write,
+// which takes the session lock first and then key-shares the character row. The session is
+// locked before the character is read, since play's combat check, further on, would take it
+// after the character's lock.
 func (s *Service) equipIn(ctx context.Context, tx pgx.Tx, m authz.Membership, in equipRequest) (equipped, error) {
 	q := s.queries.WithTx(tx)
+	if err := s.lockSessionForGear(ctx, tx, m.CampaignID); err != nil {
+		return equipped{}, err
+	}
 	current, err := visibleForUpdate(ctx, q, m, in.id)
 	if err != nil {
 		return equipped{}, err

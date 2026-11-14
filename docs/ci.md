@@ -59,9 +59,10 @@ A pull request that touches no file of a workflow still starts it, and its jobs 
 | `go (integration tests against CockroachDB)` | Waits for every group, the group check and the list check; the stable check for a branch protection rule. The name is stable for a branch protection rule; a preflight runs it on PostgreSQL |
 | `go (coverage)` | Merges the groups' profiles and enforces the [coverage floor](#coverage-floors) |
 
-**The groups** are defined in `.github/scripts/go-db-shard.sh`: `play-1` to `play-6`, `maps`, `characters`, `rules-1` to `rules-3`, `dungeon` (with `rules/puzzle`), `leak-1` and `leak-2`, and `rest`.
+**The groups** are defined in `.github/scripts/go-db-shard.sh`: `play-1` to `play-6`, `maps`, `characters`, `rules-1` to `rules-3`, `dungeon` (with `rules/puzzle`), `leak-1` to `leak-4`, and `rest`.
 The heavy packages are named by hand and `rest` holds everything else, so a new package lands in `rest` and is never skipped.
 The `play`, `leaktest` and `rules` packages are split by test: each part runs the tests whose name hashes (`cksum`) to it, so a new test lands in a part by itself and adding one never moves the others.
+A test that takes more than about a third of the 25-minute `-timeout` on CockroachDB is pinned: `pinned_tests` in the script lists "test part" lines per split package, a pinned test runs alone in its part, and the other tests are hashed over the parts that are not pinned. `leak-4` holds `TestAHiddenWriteMovesThePlayersNumberAndNothingElse` alone. To pin another test, give its package a part of its own (raise `split_parts`, add the part to the matrices of `backend.yml` and `nightly-hunt.yml`) and add its line to `pinned_tests`; `--check` fails for a pinned test that does not exist, a part outside the package's parts, and a package with every part pinned.
 The tests of a split package are independent (each builds its own world, or reads nothing but its own input), so any split of them is sound.
 A group reads those tests from the `func` lines of the package's `_test.go` files, so it needs no compile to get its `-run`.
 `go-db-shard.sh --check` fails unless the groups together are exactly `go list ./...` and the parts of each split package together are exactly the tests read from the source.

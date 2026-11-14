@@ -631,6 +631,9 @@ func (th *trapHook) fire(ctx context.Context, c *combatTx, cs []playdb.Combatant
 	if i := slices.IndexFunc(after, func(o playdb.Combatant) bool { return o.ID == moved.ID }); i >= 0 {
 		after[i] = moved
 	}
+	if rider := riderOf(after, moved.ID); rider != nil { // the rider went along on the mount's square
+		rider.GridCol, rider.GridRow = moved.GridCol, moved.GridRow
+	}
 	caught := []playdb.Combatant{moved}
 	if th.entered.Spec.GetEffect().GetTargets() != rulesv1.TrapTargets_TRAP_TARGETS_MANUAL {
 		caught = inArea(after, *th.entered)

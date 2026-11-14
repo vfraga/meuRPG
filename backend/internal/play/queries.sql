@@ -56,6 +56,12 @@ SELECT * FROM game_sessions
 WHERE campaign_id = $1 AND id = $2
 FOR UPDATE;
 
+-- name: ListCampaignSessionIDs :many
+-- The ids of the campaign's sessions, answered by the unique index on (campaign_id, session_number) alone: the rows of
+-- other campaigns are never read, so a lock another transaction holds on one of them does not make the call wait
+-- (CockroachDB makes a plain read of a locked row wait for it, so a lookup by id would).
+SELECT id FROM game_sessions WHERE campaign_id = $1 ORDER BY session_number;
+
 -- name: ListOpenGameSessions :many
 -- The open sessions of the given campaigns, newest first (RN-06). The
 -- partial unique index game_sessions_one_open_per_campaign finds each one.
@@ -215,6 +221,57 @@ UPDATE combatants
 SET last_move_dft = $2
 WHERE id = $1;
 
+-- name: SetCombatantMountKind :exec
+-- Whether the combatant is a willing mount and how it obeys ('', 'controlled' or 'independent'),
+-- the master's mark (SetCombatantMount).
+UPDATE combatants
+SET mount_kind = $2
+WHERE id = $1;
+
+-- name: SetCombatantRide :exec
+-- A rider mounts or dismounts (SRD 5.1, "Mounting and Dismounting"): the mount it sits on (NULL when it rides
+-- nothing), its square, the movement it has used, whether it used its mount or dismount of the move and the master's cover mark
+-- (a change of square clears it). The undo writes it back.
+UPDATE combatants
+SET mounted_on_id = $2, grid_col = $3, grid_row = $4, movement_used_ft = $5, movement_used_dft = $6, mount_move_used = $7, cover_mark = $8
+WHERE id = $1;
+
+-- name: SetCombatantJoin :exec
+-- A controlled mount takes the initiative of its rider (the total, the d20, the bonus and whether the master ordered the tie) and
+-- keeps its own in mount_prior_init, or gives the prior back and clears it (NULL). The undo writes the stored values back.
+UPDATE combatants
+SET initiative = sqlc.narg(initiative), initiative_face = sqlc.narg(initiative_face), initiative_bonus = sqlc.arg(initiative_bonus),
+    tie_ordered = sqlc.arg(tie_ordered), mount_prior_init = sqlc.narg(mount_prior_init)
+WHERE id = sqlc.arg(id);
+
+-- name: SetCombatantTurnState :exec
+-- The part a combatant takes of the running turn: 'acting' (the mount that joins its rider's turn after its own passed) or
+-- 'idle' (the mount that gets off and leaves the group).
+UPDATE combatants
+SET turn_state = $2
+WHERE id = $1;
+
+-- name: RestoreCombatantTurn :exec
+-- The undo of a mount puts back every column the join of a turn reset (ResetCombatantTurn) and the turn state.
+UPDATE combatants
+SET creature_spent = sqlc.arg(creature_spent), movement_used_ft = sqlc.arg(movement_used_ft), movement_used_dft = sqlc.arg(movement_used_dft),
+    last_move_dft = sqlc.arg(last_move_dft), dashed = sqlc.arg(dashed), disengaged = sqlc.arg(disengaged), jump_doubled = sqlc.arg(jump_doubled),
+    mount_move_used = sqlc.arg(mount_move_used), action_surged = sqlc.arg(action_surged), spell_cast = sqlc.arg(spell_cast),
+    bonus_spell_cast = sqlc.arg(bonus_spell_cast), action_used = sqlc.arg(action_used), bonus_action_used = sqlc.arg(bonus_action_used),
+    object_interaction_used = sqlc.arg(object_interaction_used), reaction_used = sqlc.arg(reaction_used), reaction_kind = sqlc.narg(reaction_kind),
+    reaction_round = sqlc.narg(reaction_round), attacks_made = sqlc.arg(attacks_made), action_attack_key = sqlc.narg(action_attack_key),
+    bonus_attacks_left = sqlc.arg(bonus_attacks_left), ac_bonus = sqlc.arg(ac_bonus), extra_action_used = sqlc.arg(extra_action_used),
+    death_save_rolled = sqlc.arg(death_save_rolled), turn_state = sqlc.arg(turn_state)
+WHERE id = sqlc.arg(id);
+
+-- name: CarryRiders :exec
+-- The rider of a mount goes where the mount is: every mover that changes a square calls it for the mover (carryRider).
+UPDATE combatants r
+SET cover_mark = CASE WHEN r.grid_col IS DISTINCT FROM m.grid_col OR r.grid_row IS DISTINCT FROM m.grid_row THEN 'none' ELSE r.cover_mark END,
+    grid_col = m.grid_col, grid_row = m.grid_row
+FROM combatants m
+WHERE m.id = $1 AND r.mounted_on_id = m.id;
+
 -- name: SetCombatantSide :exec
 -- Whose side the combatant fights on ('party' or 'enemy'), the master's "Aliado".
 UPDATE combatants
@@ -240,7 +297,15 @@ WHERE id = $1;
 -- combatant acts ('acting') in the turn that starts. The legendary actions it
 -- spent come back (creature_spent keeps every other key).
 UPDATE combatants
-SET creature_spent = creature_spent - 'legendary_actions', movement_used_ft = 0, movement_used_dft = 0, last_move_dft = 0, dashed = false, disengaged = false, jump_doubled = false, action_surged = false, spell_cast = false, bonus_spell_cast = false, action_used = false, bonus_action_used = false, object_interaction_used = false, reaction_used = false, reaction_kind = NULL, reaction_round = NULL,
+SET creature_spent = creature_spent - 'legendary_actions', movement_used_ft = 0, movement_used_dft = 0, last_move_dft = 0, dashed = false, disengaged = false, jump_doubled = false, mount_move_used = false, action_surged = false, spell_cast = false, bonus_spell_cast = false, action_used = false, bonus_action_used = false, object_interaction_used = false, reaction_used = false, reaction_kind = NULL, reaction_round = NULL,
+    attacks_made = 0, action_attack_key = NULL, bonus_attacks_left = 0, ac_bonus = 0, extra_action_used = false, death_save_rolled = false, turn_state = 'acting'
+WHERE id = $1;
+
+-- name: JoinCombatantTurn :exec
+-- ResetCombatantTurn for a mount that joins its rider's part of the turn: a reaction it spent stays spent (with its record), as it would
+-- until its own turn came.
+UPDATE combatants
+SET creature_spent = creature_spent - 'legendary_actions', movement_used_ft = 0, movement_used_dft = 0, last_move_dft = 0, dashed = false, disengaged = false, jump_doubled = false, mount_move_used = false, action_surged = false, spell_cast = false, bonus_spell_cast = false, action_used = false, bonus_action_used = false, object_interaction_used = false,
     attacks_made = 0, action_attack_key = NULL, bonus_attacks_left = 0, ac_bonus = 0, extra_action_used = false, death_save_rolled = false, turn_state = 'acting'
 WHERE id = $1;
 

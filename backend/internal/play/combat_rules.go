@@ -61,7 +61,8 @@ const (
 // initiative total first, then the higher bonus, and, among those still tied,
 // the place they already hold (order_index), which is where the master's
 // decision lives (SetInitiativeOrder). Combatants without an initiative yet
-// come last, in the place they hold. It does not change cs.
+// come last, in the place they hold. A controlled mount that carries a rider sits
+// right after it. It does not change cs.
 func orderCombatants(cs []playdb.Combatant) []playdb.Combatant {
 	out := slices.Clone(cs)
 	slices.SortStableFunc(out, func(a, b playdb.Combatant) int {
@@ -79,7 +80,7 @@ func orderCombatants(cs []playdb.Combatant) []playdb.Combatant {
 			cmp.Compare(a.OrderIndex, b.OrderIndex),
 		)
 	})
-	return out
+	return mountsAfterRiders(out)
 }
 
 // sameTie says whether two combatants are tied: the same total and the same
@@ -94,7 +95,7 @@ func unresolvedTies(cs []playdb.Combatant) map[string]bool {
 	out := map[string]bool{}
 	for i, a := range cs {
 		for _, b := range cs[i+1:] {
-			if sameTie(a, b) && (!a.TieOrdered || !b.TieOrdered) {
+			if sameTie(a, b) && !joinedPair(a, b) && (!a.TieOrdered || !b.TieOrdered) { // a mount has its rider's total: no tie to order
 				out[a.ID], out[b.ID] = true, true
 			}
 		}

@@ -453,13 +453,14 @@ func (r combatantReader) read(c playdb.Combatant) *playv1.Combatant {
 		vit = r.vitals[c.CharacterID]
 	}
 	p := combatantToProto(c, v, r.ties[c.ID], vit, r.armorClass[sheetKey(c)], r.npcs[sheetKey(c)].portrait, actsNow(e, c), r.names, r.standing[c.ID])
+	mountFor(p, c, d.cs, v)
 	if v.master {
 		r.masterView(p, c)
 	}
 	if v.master || v.owns(c) { // the limits of a creature: the master's and the player's who controls it (RN-29)
 		p.LimitedActions = limitedActionsView(r.npcs[sheetKey(c)].limited, c, r.npcs[sheetKey(c)].persistent && c.Kind == kindNPC)
 	}
-	if r.shared && inParty(c) && !v.owns(c) && inTurn(e, c) {
+	if (r.shared && inParty(c) && !v.owns(c) && inTurn(e, c)) || v.drives(d.cs, c) { // a joint turn's partner, or the player who moves a controlled mount for its rider
 		shareEconomy(p, c, r.standing[c.ID])
 	}
 	p.InspirationDie = inspirationDieView(d.cs, c, e.Round, v)
@@ -663,6 +664,7 @@ func shareEconomy(out *playv1.Combatant, c playdb.Combatant, standing grid.Surfa
 	out.Dashed, out.ActionUsed, out.BonusActionUsed, out.ReactionUsed = c.Dashed, c.ActionUsed, c.BonusActionUsed, c.ReactionUsed
 	out.Disengaged = c.Disengaged
 	out.StandUpCostDft = clamp32(standUpCostDFt(c, standing), 0, math.MaxInt32)
+	out.MountMoveUsed = c.MountMoveUsed
 }
 
 // markKeyOf is the cover the master marked, as an event keeps it ("" for none).
@@ -915,15 +917,20 @@ func (s *Service) GetEncounter(
 // everything that happens, so a player who got it could count the moves in the dark.
 // The players' hint says 0, "read it again" (and so does the failure to tell).
 func (s *Service) publishEncounterChanged(ctx context.Context, campaignID string, e playdb.Encounter) {
+	s.tellEncounterChanged(ctx, s.sayNow, campaignID, e)
+}
+
+// tellEncounterChanged is publishEncounterChanged through say: an after-commit step of Service.tx tells it with the session's number.
+func (s *Service) tellEncounterChanged(ctx context.Context, say sayFn, campaignID string, e playdb.Encounter) {
 	msg := encounterChangedMessage(e)
 	f, err := s.fogSightOf(ctx, campaignID, e)
 	if err != nil || f != nil {
-		s.send(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
+		say(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: msg})
 		blind := playdb.Encounter{ID: e.ID, Mode: e.Mode}
-		s.send(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: encounterChangedMessage(blind)})
+		say(campaignID, live.Event{Audience: live.Audience{Players: true}, Message: encounterChangedMessage(blind)})
 		return
 	}
-	s.send(campaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: msg})
+	say(campaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: msg})
 }
 
 // publishEncounterChangedFor is publishEncounterChanged for a change made only to the

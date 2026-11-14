@@ -35,16 +35,23 @@ type gateEnv struct {
 	// c is the combat's change, nil out of one; the gate touches c.enc when a question starts to wait in
 	// a store whose questions the combat's readers see.
 	c *combatTx
+	// h collects what the change tells the streams once it is saved: a held roll that is kept, answered or forgotten moves the
+	// session's number and tells HeldRollsChanged through it (heldRowChanged). Nil where the path has no session's transaction to tell
+	// through (a few places that make a combatTx outside write); the request's reply then tells it, with no number (heldHintInterceptor).
+	h *hints
 }
 
 // combatGate is the environment of a path that runs in a combat's change.
-func combatGate(c *combatTx) gateEnv { return gateEnv{tx: c.tx, q: c.q, now: c.now, c: c} }
+func combatGate(c *combatTx) gateEnv { return gateEnv{tx: c.tx, q: c.q, now: c.now, c: c, h: c.hints} }
 
 // outsideGate is the environment of a path that rolls in a transaction of its own, out of a combat's
-// change. The hold is stamped with the clock's time.
-func (s *Service) outsideGate(tx pgx.Tx, q *playdb.Queries) gateEnv {
-	return gateEnv{tx: tx, q: q, now: s.now()}
+// change, which tells through h. The hold is stamped with the clock's time.
+func (s *Service) outsideGate(tx pgx.Tx, q *playdb.Queries, h *hints) gateEnv {
+	return gateEnv{tx: tx, q: q, now: s.now(), h: h}
 }
+
+// stores is the held rolls' stores of the gate's transaction: a roll they keep, answer or forget is told (heldRowChanged).
+func (env gateEnv) stores() heldStores { return heldStores{st: inspirationHoldStore{env.q}, env: env} }
 
 // inspirationGate is the environment of a path in a combat's change whose rolls wait in inspiration_holds:
 // the change's transaction, and the question does not move the combat's revision.
@@ -370,13 +377,14 @@ func (s *Service) gateRoll(spec rollSpec) (gateResult, error) {
 // request that made a question finds it, and rolls nothing again.
 func (s *Service) gateAsk(ctx context.Context, ae answering) (gateResult, error) {
 	spec := ae.spec
-	stores := newHeldStores(ae.q)
+	stores := ae.stores()
 	h, found, err := stores.byKeyOf(ctx, spec.Kind, spec.Roller.in(ae.st), spec.Key)
 	if err != nil {
 		return gateResult{}, err
 	}
 	if found {
-		return gateResult{Held: new(askedBy(h, ae.st))}, nil
+		// A retry of the request that kept the question: no row changes, so the number stands, and the streams are told again with it.
+		return gateResult{Held: new(askedBy(h, ae.st))}, ae.heldRowReplayed(ctx, h)
 	}
 	if err := s.gateOpen(ctx, ae, stores); err != nil {
 		return gateResult{}, err
@@ -468,7 +476,7 @@ func (s *Service) gateAnswer(ctx context.Context, ae answering, a heldReply) (ga
 	if a.die != nil && !ae.st.Holds && checksTheAnswer(ae.spec.Kind) {
 		return gateResult{}, errDieGone()
 	}
-	stores := newHeldStores(ae.q)
+	stores := ae.stores()
 	h, err := stores.byIDOf(ctx, holdRef{Campaign: ae.spec.Roller.CampaignID, Encounter: encounterOf(ae.spec.Roller), ID: a.holdID})
 	if err != nil {
 		return gateResult{}, fmt.Errorf("find the held roll: %w", err)
@@ -481,19 +489,28 @@ func (s *Service) gateAnswer(ctx context.Context, ae answering, a heldReply) (ga
 	}
 	switch {
 	case a.question == askDie && h.DieAnswerKey != nil && *h.DieAnswerKey == a.key:
-		return gateResult{Held: new(askedBy(h, ae.st))}, nil // the die's answer again, while Indomitable's question waits
+		return gateResult{Held: new(askedBy(h, ae.st))}, ae.heldRowReplayed(ctx, h) // the die's answer again, while Indomitable's question waits
 	case a.question != askLucky:
 		return s.gateSettle(ctx, ae, h, a)
 	}
-	// The Lucky answer writes the new d20 in the roll first; a roller that holds a die is asked about it
-	// next, on the new roll, and nothing else is settled.
-	if h, err = (luckyQuestion{}).apply(ctx, ae, h, a); err != nil {
+	return s.gateLuckyAnswer(ctx, ae, h, a)
+}
+
+// gateLuckyAnswer applies the Lucky answer: it writes the new d20 in the roll first; a roller that holds a die is
+// asked about it next, on the new roll, and nothing else is settled.
+func (s *Service) gateLuckyAnswer(ctx context.Context, ae answering, h heldRoll, a heldReply) (gateResult, error) {
+	again := h.LuckyAnswerKey != nil && *h.LuckyAnswerKey == a.key // the same answer a second time: the row is as the first left it
+	h, err := (luckyQuestion{}).apply(ctx, ae, h, a)
+	if err != nil {
 		return gateResult{}, err
 	}
 	if !(dieQuestion{}).pending(h, ae.st) {
 		return s.gateSettle(ctx, ae, h, a)
 	}
-	if err := stores.asked(ctx, ae.gateEnv, h); err != nil {
+	if again {
+		return gateResult{Held: new(askedBy(h, ae.st))}, ae.heldRowReplayed(ctx, h)
+	}
+	if err := ae.stores().asked(ctx, ae.gateEnv, h); err != nil {
 		return gateResult{}, err
 	}
 	return gateResult{Held: new(askedBy(h, ae.st))}, nil

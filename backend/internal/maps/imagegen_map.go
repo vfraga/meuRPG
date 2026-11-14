@@ -22,8 +22,8 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/refimg"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/vision"
@@ -898,18 +898,23 @@ func (s *Service) UseGeneratedImageAsMapImage(
 		return nil, s.dbError(ctx, "copy the textured map", err)
 	}
 	var out useOutcome
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		out, err = s.useGeneratedImageTx(ctx, s.queries.WithTx(tx), &call)
-		return err
+		if out, err = s.useGeneratedImageTx(ctx, s.queries.WithTx(tx), &call); err != nil || out.alreadyUsed {
+			return err // already the map's image: nothing changed, nothing is told and no number moves
+		}
+		if out.retried {
+			t.Replay() // the first call may have died before it told: the notice goes out again, with the number as it stands
+		}
+		s.announce(t, func(ctx context.Context) {
+			s.tiles.forget(call.mapID) // the fog's tiles are cut from the image
+			s.publishMapChanged(ctx, m.CampaignID, call.mapID, playersSee(call.mapID, out.updated.RevealedAt, current))
+		})
+		return nil
 	})
 	s.discardFogCopy(ctx, m.CampaignID, call.imageCopy, err != nil || !out.copied)
 	if err != nil {
 		return nil, s.dbError(ctx, "use a generated image as the map's image", err)
-	}
-	if !out.alreadyUsed {
-		s.tiles.forget(call.mapID) // the fog's tiles are cut from the image
-		s.publishMapChanged(m.CampaignID, call.mapID, playersSee(call.mapID, out.updated.RevealedAt, current))
 	}
 	masterMap, err := s.masterMap(ctx, m, call.mapID)
 	if err != nil {
@@ -936,6 +941,7 @@ type useOutcome struct {
 	updated     mapsdb.Map
 	copied      bool
 	alreadyUsed bool
+	retried     bool // the image was already the map's: the retry tells again and moves no number
 }
 
 // errMapChanged is the refusal for a map that is no longer the one the picture was drawn for.
@@ -979,7 +985,7 @@ func (s *Service) useGeneratedImageTx(ctx context.Context, q *mapsdb.Queries, c 
 		return useOutcome{}, fmt.Errorf("find the map: %w", err)
 	}
 	if locked.ImageID == c.imageID {
-		return useOutcome{updated: locked}, nil // already its image: a retry changes nothing
+		return useOutcome{updated: locked, retried: true}, nil // already its image: a retry changes nothing
 	}
 	// A Use that already happened (maybe with a copy, for a fog map): the same answer
 	// while the image it set is still the map's, with no new copy and no write.

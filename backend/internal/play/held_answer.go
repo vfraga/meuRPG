@@ -77,8 +77,8 @@ func (s *Service) answerHeld(ctx context.Context, m authz.Membership, req answer
 	if err != nil {
 		return nil, s.lostTheRace(ctx, h, req, err)
 	}
-	if state != answerSettled {
-		s.publishHeldRollsChanged(h.CampaignID, s.holdUsers(ctx, h)...)
+	if state != answerSettled { // with a session open the gate told it, with the number
+		s.heldRollsChangedNoSession(ctx, h.CampaignID, s.holdUsers(ctx, h)...)
 	}
 	return out, nil
 }

@@ -39,18 +39,27 @@ func isProne(c playdb.Combatant) bool { return slices.Contains(c.Conditions, con
 // is better in the air than on the ground (the speed it moves on) is not crawling.
 func crawls(c playdb.Combatant) bool { return isProne(c) && !flies(c) }
 
-// standUpCostDFt is what standing up costs the combatant, in tenths of a foot: half the speed of the
-// surface it stands on, rounded down, and 0 when it is not Prone or has no speed (the call is then
-// refused). The Dash does not count: it adds movement, not speed (SRD 5.1, "Dash").
+// halfSpeedDFt is half the speed of the surface the combatant is on, in tenths of a foot and rounded down: what standing up from
+// Prone (SRD 5.1, "Being Prone") and mounting or dismounting (SRD 5.1, "Mounting and Dismounting") cost. The Dash does not count: it
+// adds movement, not speed (SRD 5.1, "Dash").
+func halfSpeedDFt(c playdb.Combatant, on grid.Surface) int {
+	c.Dashed = false
+	return speedOnDFt(c, on) / standUpSpeedDivisor
+}
+
+// standUpCostDFt is what standing up costs the combatant, in tenths of a foot: half the speed of the surface it stands on, and 0
+// when it is not Prone or has no speed (the call is then refused).
 func standUpCostDFt(c playdb.Combatant, standing grid.Surface) int {
 	if !isProne(c) {
 		return 0
 	}
-	c.Dashed = false
-	return speedOnDFt(c, standing) / standUpSpeedDivisor
+	return halfSpeedDFt(c, standing)
 }
 
-// standUpSpeedDivisor: standing up costs half the speed (SRD 5.1, "Being Prone").
+// mountCostDFt is what mounting or dismounting costs the rider, in tenths of a foot: half the speed of the surface it stands on.
+func mountCostDFt(c playdb.Combatant, standing grid.Surface) int { return halfSpeedDFt(c, standing) }
+
+// standUpSpeedDivisor: standing up, mounting and dismounting cost half the speed (SRD 5.1, "Being Prone", "Mounting and Dismounting").
 const standUpSpeedDivisor = 2
 
 // standUpCall is what StandUp reads from its request, checked.

@@ -204,6 +204,17 @@ type heldRig struct {
 	// the answer that wrote it said; nil when it says the same. Today the replay of some kinds is
 	// poorer than the first answer (each one is marked FINDING in its rig below).
 	replayed func(v heldView) heldView
+	// master, player and campaignID are who a stream is opened for to hear the writes of the kind that waits in inspiration_holds
+	// (master is set by the rigs that tell its streams: by).
+	master, player *user
+	campaignID     string
+	h              *harness
+}
+
+// by is the rig with the master of its table, for the test of what the streams hear.
+func (g heldRig) by(master *user) heldRig {
+	g.master = master
+	return g
 }
 
 // countRows counts a table's rows for a campaign or an encounter.
@@ -226,7 +237,7 @@ const (
 // AnswerOutsideLucky and AnswerOutsideInspiration, by the player whose character rolled.
 func outsideRig(h *harness, campaignID, characterID string, who *user, roll func(t *testing.T, key string) (proto.Message, error)) heldRig {
 	return heldRig{
-		roller: h.roller,
+		roller: h.roller, player: who, campaignID: campaignID, h: h,
 		roll: func(t *testing.T, key string) (heldView, error) {
 			t.Helper()
 			res, err := roll(t, key)
@@ -443,7 +454,7 @@ func sceneCheckRig(t *testing.T, die bool) heldRig {
 			return nil, err
 		}
 		return res.Msg, nil
-	})
+	}).by(a.master)
 }
 
 // groupCheckRig is Dalila rolling her own part of the party's group check.
@@ -466,7 +477,7 @@ func groupCheckRig(t *testing.T, die bool) heldRig {
 			return nil, err
 		}
 		return res.Msg, nil
-	})
+	}).by(a.master)
 }
 
 // trapSearchRig is Dalila searching a cave, out of a combat, with Investigation.
@@ -488,7 +499,7 @@ func trapSearchRig(t *testing.T, die bool) heldRig {
 			return nil, err
 		}
 		return res.Msg, nil
-	})
+	}).by(r.master)
 }
 
 // hintTryRig is Dalila trying for a hint of a riddle with Investigation.
@@ -506,5 +517,5 @@ func hintTryRig(t *testing.T, die bool) heldRig {
 		res, err := p.tryHintKey(t, dalila, puz.GetId(), 0, key)
 		return res, err
 	})
-	return rig
+	return rig.by(p.master)
 }

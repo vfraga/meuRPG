@@ -241,7 +241,7 @@ func TestMessageIsIdempotent(t *testing.T) {
 	wantCode(t, "the key for another line", errOf(send("Outra.")), connect.CodeInvalidArgument)
 }
 
-func TestMessageRetryDoesNotSendTheEventAgain(t *testing.T) {
+func TestMessageRetryTellsTheSameLineAgain(t *testing.T) {
 	a := newArmed(t)
 	ana := a.ana.watch(t, a.campaignID)
 	ana.ready(t)
@@ -250,8 +250,10 @@ func TestMessageRetryDoesNotSendTheEventAgain(t *testing.T) {
 		a.mustSay(a.master, asNarrator, "Eco.", func(r *playv1.SendSessionMessageRequest) { r.IdempotencyKey = key })
 	}
 	a.master.markCurrentMap(t, a.campaignID, a.mapID, ana)
-	if got := ana.beforeMarker(t); len(got) != 1 {
-		t.Errorf("Ana's stream got %d events, want 1", len(got))
+	// A retry of the key tells the line again, to the same readers, so a hint lost on the first call is not lost for good; the
+	// screens read it once (the line has one id).
+	if got := ana.beforeMarker(t); len(got) != 2 {
+		t.Errorf("Ana's stream got %d events, want 2 (the line and its retelling)", len(got))
 	}
 }
 

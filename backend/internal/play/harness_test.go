@@ -239,6 +239,8 @@ func newHarness(t *testing.T, live ...LiveConfig) *harness {
 	h.svc, h.chars, h.camps = svc, chars, camps
 	chars.SetCreatureHost(svc) // a creature dismissed leaves its combat, and its events and hints go through play (MR-037)
 	chars.SetReviewHost(svc)
+	chars.SetSessionHost(svc)
+	camps.SetSessionHost(svc)
 	srv := httpserver.New(httpserver.Config{Logger: logger})
 	h.http = srv
 	opt := reqlimit.HandlerOption()

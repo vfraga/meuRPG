@@ -47,6 +47,8 @@ func (f *castFlow) checkTeleport(context.Context) error {
 	switch {
 	case !teleports:
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("destination is for a teleport spell"))
+	case unseenMountOf(f.cs, f.v, f.caster) == nil && f.caster.MountedOnID != nil:
+		return mountedError(f.caster.ID) // a rider does not teleport alone: it gets off first
 	case isTheatre(f.c.enc):
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("this combat has no map: there is no square to teleport to"))
 	case !inGrid(f.c.enc, dest.GetCol(), dest.GetRow()):
@@ -60,6 +62,9 @@ func (f *castFlow) checkTeleport(context.Context) error {
 	}
 	if err := f.squareFree(to); err != nil {
 		return err
+	}
+	if unseenMountOf(f.cs, f.v, f.caster) != nil {
+		return errUnavailable() // the rider of a mount the caller does not see is refused as for a square it may not use, after the checks of a caster on foot
 	}
 	f.landing = &to
 	return nil
@@ -93,7 +98,7 @@ func (f *castFlow) squareFree(to grid.Square) error {
 // occupiedBy says whether a combatant other than who, standing, is on the square: a hidden one too.
 func occupiedBy(cs []playdb.Combatant, who playdb.Combatant, sq grid.Square) bool {
 	for _, o := range cs {
-		if o.ID != who.ID && !o.Defeated && placed(o) && squareOfCombatant(o) == sq {
+		if o.ID != who.ID && !samePair(o, who) && !o.Defeated && placed(o) && squareOfCombatant(o) == sq {
 			return true
 		}
 	}
@@ -109,7 +114,10 @@ func (f *castFlow) teleport(ctx context.Context) error {
 	if err := f.c.q.SetCombatantPlace(ctx, playdb.SetCombatantPlaceParams{ID: f.caster.ID, GridCol: &col, GridRow: &row, CoverMark: "none"}); err != nil {
 		return fmt.Errorf("teleport the caster: %w", err)
 	}
-	f.out.made.Teleport = &teleportEvent{From: moveStateOf(f.caster), Col: col, Row: row}
+	if err := carryRider(ctx, f.c.q, f.caster.ID); err != nil {
+		return err
+	}
+	f.out.made.Teleport = &teleportEvent{From: moveStateIn(f.cs, f.caster), Col: col, Row: row}
 	moved := f.caster
 	moved.GridCol, moved.GridRow, moved.CoverMark = &col, &row, "none"
 	f.landed = &moved
@@ -157,7 +165,7 @@ func (u *undoer) castTeleportBack(ctx context.Context, who playdb.Combatant, ev 
 	if err := u.c.q.SetCombatantPlace(ctx, playdb.SetCombatantPlaceParams{ID: who.ID, GridCol: col, GridRow: row, CoverMark: coverOrNone(from.Cover)}); err != nil {
 		return fmt.Errorf("put back the teleport: %w", err)
 	}
-	return nil
+	return carryRiderBack(ctx, u.c.q, who.ID, from)
 }
 
 // publishTeleport tells the streams and the fog that the caster landed, after the commit.
@@ -174,5 +182,15 @@ func (s *Service) publishTeleport(ctx context.Context, campaignID string, d *enc
 		s.publishCoverCleared(ctx, campaignID, d.enc, moved)
 	}
 	s.positionChanged(ctx, campaignID, d.enc, moved, squareOfState(ev.Teleport.From))
+	s.publishRideAlong(ctx, campaignID, d, moved, squareOfState(ev.Teleport.From))
 	s.noticeAfterMove(ctx, campaignID, d.enc, moved) // a trap near where the caster landed may be noticed, as after a move
+}
+
+// unseenMountOf is the mount a rider sits on when the viewer does not see it, or nil: a rider that is not on one, or whose mount the
+// viewer sees.
+func unseenMountOf(cs []playdb.Combatant, v combatViewer, rider playdb.Combatant) *playdb.Combatant {
+	if mount := ridingOn(cs, rider); mount != nil && !v.sees(*mount) {
+		return mount
+	}
+	return nil
 }

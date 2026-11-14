@@ -46,6 +46,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/campaigns/v1/campaignsv1connect"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/campaigns/campaignsdb"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/wiring"
 )
 
@@ -132,6 +133,8 @@ type Service struct {
 	// characters is set once, before the service handles any call
 	// (SetCharacters).
 	characters Characters
+	// sessionHost is package play's funnel (SetSessionHost): the table rules are saved under it.
+	sessionHost sessiontell.Host
 	// xpAwards is set once, before the service handles any call (SetXPAwards).
 	xpAwards XPAwards
 }
@@ -342,5 +345,6 @@ func (s *Service) queriesIn(tx pgx.Tx) *campaignsdb.Queries {
 func (s *Service) CheckWired() error {
 	return wiring.Check("campaigns",
 		wiring.Dep{Setter: "SetCharacters", Missing: s.characters == nil},
-		wiring.Dep{Setter: "SetXPAwards", Missing: s.xpAwards == nil})
+		wiring.Dep{Setter: "SetXPAwards", Missing: s.xpAwards == nil},
+		wiring.Dep{Setter: "SetSessionHost", Missing: s.sessionHost == nil})
 }

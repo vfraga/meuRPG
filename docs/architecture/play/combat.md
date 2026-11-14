@@ -70,6 +70,8 @@ The mode (`grid` or `theatre`) is chosen at the start and never changes (see [Th
 | `AddMonsters` | Master | "Pôr no combate" (see [Encounters](encounters.md)) |
 | `RemoveCombatant` | Master | Takes someone out; if it was their turn, the turn passes. Refused (`PENDING_DAMAGE`) while a damage the combatant attacked with or took is still to roll or apply. A character's effects go back to game time when it leaves in setup (`effectRowsToCharacters`; its inspiration die is not given back). A creature leaving because its owner or the master dismissed it cannot be refused: the damage waiting on it is written as dropped (`damage_discarded`, before the `combatant_removed`) |
 | `SetCombatantSide` | Master | "Aliado" or enemy for an NPC (`side_set`); passes over opportunity offers now between allies |
+| `SetCombatantMount` | Master | Marks an NPC or a creature as a willing mount (`controlled` or `independent`) or takes the mark off (`mount_kind_set`); see [Mounted combat](movement.md#mounted-combat) |
+| `MountCombatant`, `DismountCombatant` | The rider's player; the master | The rider gets on a willing mount within 5 ft or off onto a free square next to it, for half its speed, once per move (`combatant_mounted`, `combatant_dismounted`); see [Mounted combat](movement.md#mounted-combat) |
 | `SetCombatantHidden` | Master | Hides or shows an NPC |
 | `SetMonsterReactionMode` | Master | Chooses how an NPC's Parry is decided: the server on its own (default) or "Perguntar", a window for the master ([Reactions](reactions.md#parry)) |
 | `SetCombatantCover` | Master | Cover by hand (none, half, three-quarters, total); cleared when the combatant moves |
@@ -199,6 +201,32 @@ stateDiagram-v2
     acting --> [*]: the member leaves, dies or is removed
 ```
 
+- **A mount in the group.**
+  A `controlled` mount takes the rider's total, d20 and tie, and sits right after it in the order.
+  `groupRuns` then makes the pair one group with no change of its own (`syncMounts`, `combat_mount_join.go`).
+  `mount_prior_init` keeps the mount's own initiative, d20, bonus, tie and the id of the combatant that came before it.
+  A dismount, or anything that unseats the rider (the rider removed or dismissed, the mount marked `independent`), gives them back.
+  If the combatant the mount came after has left, the mount comes back first among the combatants it ties with.
+  An `independent` mount keeps its own turn.
+  A mount whose turn already passed this round joins with its economy spent and has no second turn.
+  A mount whose turn is still to come joins with a fresh action, bonus action and movement.
+  A reaction it spent stays spent (`JoinCombatantTurn`).
+  The start of turn effects do not run again for a mount that joins in the middle of a turn.
+  A mount that gets its own total back while a turn runs leaves that turn, unless its own total puts it in the group on turn (`idleReleased`).
+  A rider that is removed or dismissed releases its mount before the turn is settled (`releaseMountOf`), so the turn passes to the group after the rider's.
+  The pair's tie is not a tie for the master to resolve (`unresolvedTies`).
+  `SetInitiativeOrder` keeps the mount right after its rider, and a pair's tie flag is one (`pairTies`).
+  The undo of a mount or a dismount gives back the order, the initiative of the mount and the mount's `turn_state` and economy.
+- **Who ends a part.**
+  The master ends either part.
+  The rider's player ends the rider's part and, for a `controlled` mount, the mount's too (`endingMember` reads `mayMove`).
+  The turn passes when both parts have ended.
+  A defeated or removed mount holds nothing.
+- **A hidden mount.**
+  A player never receives a hidden mount in `turn_group_ids`, `turn_part_ended`, `npc_only_groups` or the order.
+  The order row of the rider does not change when the mount hides.
+  The part of a hidden mount is the master's to end.
+  The player sees `master_turn` while it waits (the rule of a hidden member above).
 - **Who still acts.** `othersActing` counts members whose part has not ended and who are not defeated; a member that dies or is taken to 0 HP (an NPC) never holds the group, and the current member is the first living one (`turnFor`).
 - **Start of the turn.** `startTurn` ends what ends at the start of effects, resets for each living member the movement, action, bonus action, Dash, reaction, Shield bonus and the death save due (`ResetCombatantTurn`), and points `current_combatant_id` at the first.
 - **"Is it their turn"** is always `actsNow` (in the turn and the part not ended): `MoveCombatant`, `RollAttack`, `RollDamage`, `TakeAction`, `CastSpell`, the death saves, the reactions and `GetTurnOptions`.

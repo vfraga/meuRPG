@@ -3,6 +3,7 @@ package play
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -374,7 +375,9 @@ func (l *heldList) combatOf(ctx context.Context, encounterID string) (*listedCom
 	return l.combats[encounterID], nil
 }
 
-// heldRollProcedures are the paths that answer with the question of a roll that waits.
+// heldHintInterceptor tells the master and the caller, after the response, that the question of a roll that waits was put, for the one
+// case the gate cannot: a campaign with no open session, whose writes have no session's transaction to tell through (heldRowChanged)
+// and no number to carry. With a session open the gate has told it, with the number, whether it kept the question or found it kept.
 func heldHintInterceptor(s *Service) connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
@@ -387,7 +390,7 @@ func heldHintInterceptor(s *Service) connect.UnaryInterceptorFunc {
 				return res, err
 			}
 			if userID, uerr := authz.RequireSignedIn(ctx); uerr == nil {
-				s.publishHeldRollsChanged(campaignOf(req.Any()), userID)
+				s.heldRollsChangedNoSession(ctx, campaignOf(req.Any()), userID)
 			}
 			return res, err
 		}
@@ -401,6 +404,73 @@ func campaignOf(msg any) string {
 		return ""
 	}
 	return c.GetCampaignId()
+}
+
+// heldRollsChangedNoSession is the bare hint for a campaign with no open session; with one open the gate told it through the
+// transaction, and a second one, with no number, would only repeat it.
+func (s *Service) heldRollsChangedNoSession(ctx context.Context, campaignID string, userIDs ...string) {
+	if _, err := s.queries.GetOpenGameSession(ctx, campaignID); !errors.Is(err, pgx.ErrNoRows) {
+		return
+	}
+	s.publishHeldRollsChanged(campaignID, userIDs...)
+}
+
+// errHeldWithoutHints is what the gate returns when it is about to write a held roll with no hints to tell it through: the row
+// would move no number and tell nobody.
+var errHeldWithoutHints = errors.New("a held roll is written outside the transaction of a session: it has no hints to tell")
+
+// heldRowChanged is the gate's tell for a held roll it kept, answered or forgot: the session's number moves with the row (the write
+// touches, once however many rows change), and the master and the roller (and the combatant's player) are told, through the
+// transaction, that the questions changed, so the hint carries the number. Third players hear nothing of it, and the number moves
+// the same whether or not a question was kept. A gate with no hints refuses (errHeldWithoutHints), which rolls the write back.
+func (env gateEnv) heldRowChanged(ctx context.Context, h heldRoll) error {
+	if env.h == nil {
+		return errHeldWithoutHints
+	}
+	env.h.touch()
+	return env.tellHeld(ctx, h)
+}
+
+// heldRowReplayed is the tell of a roll that finds its question already kept (a retry of its key, an answer given again): no row
+// changed, so the number stands, and the master and the roller hear again, with it, what the first call told them (hints.replay).
+func (env gateEnv) heldRowReplayed(ctx context.Context, h heldRoll) error {
+	if env.h == nil {
+		return nil // nothing is written: the retry has no number to carry, and the first call told it
+	}
+	env.h.replay()
+	return env.tellHeld(ctx, h)
+}
+
+// tellHeld collects HeldRollsChanged for the master, the roller and the combatant's player, once per attempt.
+func (env gateEnv) tellHeld(ctx context.Context, h heldRoll) error {
+	if env.h.heldTold {
+		return nil
+	}
+	env.h.heldTold = true
+	users := []string{h.UserID}
+	if h.CombatantID != "" {
+		cs, err := env.q.ListCombatants(ctx, h.EncounterID)
+		if err != nil {
+			return fmt.Errorf("list the combatants of the held roll: %w", err)
+		}
+		if i := slices.IndexFunc(cs, func(c playdb.Combatant) bool { return c.ID == h.CombatantID }); i >= 0 && cs[i].UserID != nil {
+			users = append(users, *cs[i].UserID)
+		}
+	}
+	env.h.tell(h.CampaignID, heldRollsChangedEvent(live.Audience{Master: true}))
+	for _, id := range slices.Compact(slices.Sorted(slices.Values(users))) {
+		if id != "" {
+			env.h.tell(h.CampaignID, heldRollsChangedEvent(live.Audience{UserID: id}))
+		}
+	}
+	return nil
+}
+
+// heldRollsChangedEvent is HeldRollsChanged for an audience, in a message of its own (the session's number is written into it).
+func heldRollsChangedEvent(to live.Audience) live.Event {
+	return live.Event{Audience: to, Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_HeldRollsChanged_{
+		HeldRollsChanged: &playv1.WatchGameSessionResponse_HeldRollsChanged{},
+	}}}
 }
 
 // publishHeldRollsChanged tells the master and the given users that the questions of the held rolls changed: a hint

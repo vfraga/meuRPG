@@ -75,7 +75,7 @@ SELECT EXISTS (
 -- How many voices were made since the given instant, for the server-wide daily cap.
 SELECT count(*) FROM session_messages WHERE audio_made_at >= $1;
 
--- name: MarkSessionMessageVoiced :exec
+-- name: MarkSessionMessageVoiced :execrows
 UPDATE session_messages SET audio_made_at = $2 WHERE id = $1 AND audio_made_at IS NULL;
 
 -- name: GetSessionMessage :one

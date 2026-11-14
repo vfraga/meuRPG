@@ -176,6 +176,7 @@ How the hit uses it is in [Attacks and damage](attacks-and-damage.md#a-spells-hi
 
 A player's character keeps its level in `character_vitals.exhaustion_level` (the vitals apply the halved maximum of level 4: `combat.ExhaustedMaxHP`); an NPC's is a column of the combatant.
 `SetExhaustion` and `LowerExhaustion` (master only, `expected_level` required) change it in one transaction, and a long rest lowers it by one.
+The level is written by the vitals keeper of the characters module inside the combat write's transaction (the master's call, and the end of a frenzied rage), so the session's number moves once with the write.
 Level 6 needs `confirm_death`; in a combat it puts the player's character at three death failures (the `ConfirmDeath` flow), outside one the call marks the character dead (`CombatRoster.MarkDead`).
 The concentration save reads `combat.SaveMode` like the other saves (exhaustion 3 gives disadvantage, with `second_d20_face` for physical dice); its prompt (`ConcentrationSavePrompt`) carries the same mode and its sources (`mode`, `mode_sources_pt`, from `concentrationSources`, the function the roll uses too), so the sheet asks for both d20 whenever the roll needs two.
 
@@ -194,6 +195,7 @@ A state a table feature defines (a stance, a form; [Table content](../rules-tabl
 
 - A base-AC effect (Mage Armor) is worked out per target (`modifiersForTarget`: the sheet for a character; 13 + the initiative bonus, the Dexterity modifier, for a summoned creature).
 - A base-AC effect takes no hold of a creature that wears armor (or an NPC with a basic sheet) in every path: a cast outside a combat is refused (`TARGET_WEARS_ARMOR`); a cast in a combat reads "no effect" on that hit (`dropWithoutHold`, the reason is the master's) and spends the slot like any other effect the target resists; `AddCharacterEffect` and `AddLastingEffect` leave that target out and answer `failed_precondition` ("the effect takes no hold of ...") when no target is left.
+- `AddCharacterEffect`, `EndLastingEffect` on a character outside a combat and `AdvanceGameTime` run in `Service.tx` ([Live session](live-session.md#the-hint-number)): each moves the session's number once, tells the casts to everyone and the vitals the write changed (master and the character's player). A retry of the key moves nothing and tells the casts and the vitals again (the effect's characters, or every character's when the stored result does not say whose).
 - `AddCharacterEffect` reads `seconds` with no `duration_kind` as `ROUNDS` (the clock of game time, 1 second to 24 hours); an unknown kind reads as no kind. An effect with conditions and no numeric modifiers (Hold Person, Web, Faerie Fire) is stored with an empty `modifiers` array.
 - A retry of `AddLastingEffect` (same key) answers with the cards of the effects its first answer made, read from the ids in the event it wrote (`addedIDs`).
 - When a caster who concentrates dies or leaves, the effects it held on others end with reason `caster_left` (logged as `left`) and their follow-up runs (Haste's lethargy, Heroism's temporary hit points).

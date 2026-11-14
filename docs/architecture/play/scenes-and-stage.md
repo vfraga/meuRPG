@@ -29,7 +29,7 @@ Opening the scene that is open already with no audience changes nothing, so a se
   The group check asks the scene's players only, and a player taken out stops reading it and answering it (`partyInScene`, `groupViewerOf`).
   The master reads `OpenSceneInfo.audience`: who is in and who is out (the characters' names), and `opened_at`.
 - **Joining.** `game_sessions.scene_players_may_join` ("Os jogadores podem entrar", off by default, reset when the scene closes or another opens; `SetScenePlayersMayJoin`, or `OpenScene(players_may_join)`) lets `openSceneInfo` answer a player who is out with `{name, joinable}` and nothing else (`joinableScene`); `JoinScene` adds the caller (`game_session_scene_players.joined_by_self`, kept when the master changes the list; the master reads it in `ScenePlayer.joined_by_self`) and refuses as no scene when the switch is off. The joiner is one of the scene's players from then on (`sceneImageMove`: the image shown to the scene's players reaches them, a chosen one does not). A change of the switch, and any change of a scene that lets players join, is announced to every player (`audienceChange.wide`).
-- **The stream follows the audience.** Every hint of the scene (`scene_changed`, `stage_changed`, `group_check_changed`) goes to the master and the players in the scene (`PublishToScene`, also what `maps.LiveSession` calls); a change of who is in sends `scene_changed` to the players of the scene before and after, so one reads the scene and the other reads none.
+- **The stream follows the audience.** Every hint of the scene (`scene_changed`, `stage_changed`, `group_check_changed`) goes to the master and the players in the scene (`PublishToScene`, also what `maps.LiveSession` calls; the writers of `play` collect it in `Service.tx` and tell it after the commit with the session's number); a change of who is in sends `scene_changed` to the players of the scene before and after, so one reads the scene and the other reads none.
 - **The rolls remember it.** `scene_opened` carries `players`, and `scene_check_rolled` the `audience` of its moment, when the scene was open to only some players; the summary counts a roll for the master and for those players only (`TallySessionSceneChecks`).
 - **Discovery.** The scene is discovered for the group when it is open to everyone. While it is open to only some players, each of them discovers it alone (`MapKeeper.DiscoverSceneFor`, `scene_player_discoveries`) when it opens, when the master brings them in and when they join, and keeps it after leaving; the list of scenes a note can label (`DiscoveredScenes(campaign, user)`) never names a scene to a player who was not in it.
 - **Who can be named.** The audience names players of the campaign (`authz.IsActivePlayer`), not characters: the player of a dead character follows the scene like anyone in it; the master's view of who is in and out lists the players with a living character of the party, and rolling still needs a living character.
@@ -91,8 +91,8 @@ Total = d20 + the `SceneOptions` bonus, with the advantage rules and the held-ro
   Closing and opening the scene again resets the counts.
   Lowering the limit below what someone spent deletes nothing (what is left is `max(limit - rolls + granted, 0)`, computed on each read).
 - **"Dar mais uma tentativa"** (`GrantSceneAttempt(action_id, character_id, idempotency_key)`): master only, scene open.
-  It adds one attempt, stores `scene_attempt_granted` (the point and action in the payload, the character in the event) and sends `scene_changed` to everyone.
-- **Idempotency.** The same `idempotency_key` returns the first roll and stores nothing; the same key with another action or typed d20 is `invalid_argument`.
+  It adds one attempt, stores `scene_attempt_granted` (the point and action in the payload, the character in the event) and sends `scene_changed` to the players of the scene; a repeat of the key tells it again.
+- **Idempotency.** The same `idempotency_key` returns the first roll, stores nothing and tells `scene_check_rolled` again to the master and the roller; the same key with another action or typed d20 is `invalid_argument`.
 - **The reply** to the player is the roll with the total; the DC and the pass come only when the scene shows the DC.
   The master's log is the `GetOpenScene` roll list, from `session_events`, newest first.
 
@@ -162,7 +162,7 @@ The stage is the queue of NPCs "on scene" in the open scene, as in a visual nove
   A portrait saved at the instant the image is deleted may outlive it: the URL answers `404` and the next sheet save is refused until it is swapped.
   The NPC's combat card (`Combatant.portrait_url`) carries the URL only in the master's copy.
 - **The stage** is the table `stage_npcs`: per session, in order, at most 4, the hidden ones included.
-  Each of the four calls locks the session row, changes the table, stores a `stage_changed` event (ids only) in the same transaction and, after `COMMIT`, publishes `stage_changed` to everyone, or to the master alone when only he read the change (`stageDone.master`).
+  Each of the four calls locks the session row, changes the table, stores a `stage_changed` event (ids only) in the same transaction, moves the session's number and, after `COMMIT`, tells `stage_changed` to the master and the players in the scene, or to the master alone when only he read the change (`stageDone.master`).
   Any living NPC of the campaign may be put on stage, hidden in combat or not (which does not reveal it there).
   The response is the stage as it ended up.
   Closing the scene, or opening another, empties the stage in the same transaction (`clearStage`).

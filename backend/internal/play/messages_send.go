@@ -14,7 +14,6 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -69,9 +68,9 @@ func (s *Service) SendSessionMessage(
 		}
 	}
 	var sent sentMessage
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, in.m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		var err error
-		sent, err = s.sendMessageTx(ctx, tx, in, imageCopy)
+		sent, err = s.sendMessageTx(ctx, tx, h, session, in, imageCopy)
 		return err
 	})
 	if imageCopy != nil && (err != nil || !sent.copyUsed) {
@@ -86,9 +85,6 @@ func (s *Service) SendSessionMessage(
 	view, err := s.messageView(ctx, sent.row, viewer{master: in.m.Role == authz.RoleMaster, userID: in.m.UserID}, nil)
 	if err != nil {
 		return nil, err
-	}
-	if !sent.replayed {
-		s.publishMessage(ctx, sent.row, in.readers)
 	}
 	return connect.NewResponse(&playv1.SendSessionMessageResponse{Message: view}), nil
 }
@@ -237,17 +233,12 @@ type sentMessage struct {
 	copyUsed bool // the image's copy is the one this call inserted
 }
 
-// sendMessageTx locks the open session, finds the line the key already made or inserts a new one with
-// its readers. The copy of a fog map's image gets its gallery row here, before the line that names it.
-func (s *Service) sendMessageTx(ctx context.Context, tx pgx.Tx, in newMessage, imageCopy ShownCopy) (sentMessage, error) {
+// sendMessageTx finds the line the key already made or inserts a new one with its readers, and has the line told to its readers
+// after the commit (again, when the key made it already). The copy of a fog map's image gets its gallery row here, before the line
+// that names it.
+func (s *Service) sendMessageTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, in newMessage, imageCopy ShownCopy) (sentMessage, error) {
 	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, in.m.CampaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return sentMessage{}, errNoOpenSession()
-	}
-	if err != nil {
-		return sentMessage{}, fmt.Errorf("lock the open session: %w", err)
-	}
+	var err error
 	if in, err = s.withoutHiddenPortrait(ctx, q, session.ID, in); err != nil {
 		return sentMessage{}, err
 	}
@@ -265,7 +256,16 @@ func (s *Service) sendMessageTx(ctx context.Context, tx pgx.Tx, in newMessage, i
 			}
 			return s.insertMessage(ctx, q, session.ID, in, image)
 		})
-	return out, err
+	if err != nil {
+		return out, err
+	}
+	if out.replayed {
+		h.replay()
+	}
+	row := out.row
+	h.touch()
+	h.after(func(ctx context.Context, say sayFn) { s.sayMessage(ctx, say, row, in.readers) })
+	return out, nil
 }
 
 // withoutHiddenPortrait takes the portrait off the line of an NPC the master keeps hidden on the stage: the

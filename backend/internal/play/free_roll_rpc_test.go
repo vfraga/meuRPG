@@ -174,8 +174,8 @@ func TestFreeRollKeyReturnsTheFirstRollAndRollsNothingAgain(t *testing.T) {
 	}
 	wantCode(t, "the same key for another request", errOfRoll(a.rollFreeAs(a.ana, withKey, func(r *playv1.RollFreeDiceRequest) { r.Modifier = 4 })), connect.CodeInvalidArgument)
 	a.master.markCurrentMap(t, a.campaignID, a.mapID, ana, caio)
-	if got := caio.beforeMarker(t); len(got) != 2 {
-		t.Errorf("Caio's stream got %d events, want 2: the retry told nobody again", len(got))
+	if got := caio.beforeMarker(t); len(got) != 3 {
+		t.Errorf("Caio's stream got %d events, want 3: the first roll, its retelling by the retry and the next roll", len(got))
 	}
 	if got := a.freeRolls(a.ana).GetMine(); len(got) != 2 {
 		t.Errorf("Ana's rolls = %v, want 2: the retry wrote nothing", rollIDs(got))

@@ -30,8 +30,8 @@ func (s *Service) DeadCharacters(ctx context.Context, tx pgx.Tx, campaignID stri
 	return out, nil
 }
 
-// SetRevivifyBlocked implements play.CombatRoster: the master's switch on a dead character.
-func (s *Service) SetRevivifyBlocked(ctx context.Context, tx pgx.Tx, campaignID, characterID string, blocked bool) error {
+// MarkRevivifyBlocked implements play.CombatRoster: the master's switch on a dead character.
+func (s *Service) MarkRevivifyBlocked(ctx context.Context, tx pgx.Tx, campaignID, characterID string, blocked bool) error {
 	id, ok := uid.Canonical(characterID)
 	if !ok {
 		return errCharacterNotFound()

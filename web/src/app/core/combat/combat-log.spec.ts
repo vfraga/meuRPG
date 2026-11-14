@@ -964,6 +964,25 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
     expect(line).toMatchObject({ actor: 'Toren', icon: 'door_open', text: ' abriu a porta' });
   });
 
+  it('writes "Toren montou em Pônei" and "Toren desmontou de Pônei": the rider, then the sentence with the mount', () => {
+    const mounted = logLine(
+      entry({
+        kind: CombatLogKind.MOUNTED,
+        actorLabel: 'Toren',
+        targetLabel: 'Pônei',
+      } as never),
+    );
+    expect(mounted).toMatchObject({ actor: 'Toren', text: ' montou em Pônei' });
+    const dismounted = logLine(
+      entry({
+        kind: CombatLogKind.DISMOUNTED,
+        actorLabel: 'Toren',
+        targetLabel: 'Pônei',
+      } as never),
+    );
+    expect(dismounted).toMatchObject({ actor: 'Toren', text: ' desmontou de Pônei' });
+  });
+
   it('writes the Wild Shape lines: the form, and why it ended, with the number only where the server sent it (RN-20)', () => {
     const ws = (over: {
       started?: boolean;

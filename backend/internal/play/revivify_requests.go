@@ -15,11 +15,9 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
-	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
@@ -132,13 +130,10 @@ func (s *Service) RequestRevivify(
 
 	var row playdb.RevivifyRequest
 	var replayed bool
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
+		var err error
 		replayed = false
 		q := s.queries.WithTx(tx)
-		session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-		if err != nil {
-			return err
-		}
 		get := func(ctx context.Context, k *string) (playdb.RevivifyRequest, error) {
 			return q.GetRevivifyRequestByCreateKey(ctx, playdb.GetRevivifyRequestByCreateKeyParams{CampaignID: m.CampaignID, CreateKey: k})
 		}
@@ -147,14 +142,20 @@ func (s *Service) RequestRevivify(
 			func() (playdb.RevivifyRequest, error) {
 				return s.openRevivifyRequest(ctx, tx, q, m, session, req.Msg, targetID.String(), scoped, hash)
 			})
-		return err
+		if err != nil {
+			return err
+		}
+		if replayed { // the first call may have died before it told the master and the caster's player
+			h.replay()
+		}
+		h.tell(m.CampaignID, revivifyChangedEvent(conv.OrZero(row.RequestedByUserID)))
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "ask for Revivify", err)
 	}
 	if !replayed {
 		logging.Event(ctx, s.logger, "revivify.requested", slog.String("request_id", row.ID), slog.String("character_id", row.CasterCharacterID))
-		s.publishRevivifyChanged(m.CampaignID, conv.OrZero(row.RequestedByUserID))
 	}
 	out, err := s.revivifyRequestsProto(ctx, m.CampaignID, []playdb.RevivifyRequest{row}, nil)
 	if err != nil {
@@ -310,15 +311,15 @@ func (s *Service) ConfirmRevivifyTime(
 		return nil, err
 	}
 	out := &revivifyAnswered{}
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		*out = revivifyAnswered{}
-		return s.answerRevivify(ctx, tx, m, in, out)
+		return s.answerRevivify(ctx, tx, h, session, m, in, out)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "answer Revivify", err)
 	}
 	if !out.replayed {
-		s.announceAnswer(ctx, m, out)
+		logging.Event(ctx, s.logger, "revivify.answered", slog.String("request_id", out.row.ID), slog.String("status", out.row.Status))
 	}
 	left := map[string]int32{out.row.ID: out.slotsLeft}
 	rows, err := s.revivifyRequestsProto(ctx, m.CampaignID, []playdb.RevivifyRequest{out.row}, left)
@@ -328,14 +329,10 @@ func (s *Service) ConfirmRevivifyTime(
 	return connect.NewResponse(&playv1.ConfirmRevivifyTimeResponse{Request: rows[0]}), nil
 }
 
-// answerRevivify is the transaction of the answer: "less than a minute" revives the target,
-// "já passou" ends the request at no cost.
-func (s *Service) answerRevivify(ctx context.Context, tx pgx.Tx, m authz.Membership, in revivifyAnswer, out *revivifyAnswered) error {
+// answerRevivify is the transaction of the answer (the session is locked): "less than a minute" revives the target,
+// "já passou" ends the request at no cost; it tells the table what the answer changed.
+func (s *Service) answerRevivify(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, m authz.Membership, in revivifyAnswer, out *revivifyAnswered) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-	if err != nil {
-		return err
-	}
 	row, replayed, err := s.pendingRevivify(ctx, q, session, m, in)
 	if err != nil {
 		return err
@@ -343,7 +340,7 @@ func (s *Service) answerRevivify(ctx context.Context, tx pgx.Tx, m authz.Members
 	out.row = row
 	if replayed {
 		out.replayed = true // the same answer again
-		return nil
+		return s.tellAnswerAgain(ctx, q, h, session.ID, m.CampaignID, row)
 	}
 	status := revivifyDenied
 	if in.within {
@@ -357,6 +354,7 @@ func (s *Service) answerRevivify(ctx context.Context, tx pgx.Tx, m authz.Members
 	if err != nil {
 		return fmt.Errorf("answer the request: %w", err)
 	}
+	s.tellAnswer(h, m.CampaignID, *out)
 	return nil
 }
 
@@ -379,22 +377,53 @@ func (s *Service) pendingRevivify(ctx context.Context, q *playdb.Queries, sessio
 	return row, false, connect.NewError(connect.CodeFailedPrecondition, errors.New("the request was answered already"))
 }
 
-// announceAnswer logs the answer and tells the table: the master and the caster's player, the
-// vitals the slot changed and, for a confirmation, the character that came back.
-func (s *Service) announceAnswer(ctx context.Context, m authz.Membership, out *revivifyAnswered) {
+// tellAnswer collects what the answer changed, for the table once it is committed: the master and the caster's player, the
+// vitals the slot changed and, for a confirmation, the character that came back and the combat that had it.
+func (s *Service) tellAnswer(h *hints, campaignID string, out revivifyAnswered) {
 	row := out.row
-	logging.Event(ctx, s.logger, "revivify.answered", slog.String("request_id", row.ID), slog.String("status", row.Status))
-	s.publishRevivifyChanged(m.CampaignID, conv.OrZero(row.RequestedByUserID))
+	h.tell(campaignID, revivifyChangedEvent(conv.OrZero(row.RequestedByUserID)))
 	for _, v := range out.vitals {
-		s.publishVitals(m.CampaignID, v)
+		if v != nil {
+			h.tell(campaignID, vitalsHint(v))
+		}
 	}
 	if row.Status != revivifyConfirmed {
 		return
 	}
-	s.PublishCharacterEvent(ctx, m.CampaignID, s.ownerOf(ctx, m.CampaignID, row.TargetCharacterID), row.TargetCharacterID, characterRevived)
+	s.tellRevived(h, campaignID, row.TargetCharacterID)
 	if out.encounterID != "" {
-		s.PublishEncounterChanged(ctx, m.CampaignID, out.encounterID)
+		s.tellEncounterAfter(h, campaignID, out.encounterID)
 	}
+}
+
+// tellRevived collects the hint that a character lives again: to the master and its player, with its vitals, which the owner is
+// read for once the transaction committed.
+func (s *Service) tellRevived(h *hints, campaignID, characterID string) {
+	h.after(func(ctx context.Context, say sayFn) {
+		s.tellCharacterEvent(ctx, say, campaignID, s.ownerOf(ctx, campaignID, characterID), characterID, characterRevived)
+	})
+}
+
+// tellAnswerAgain fills h for an answer whose key was found stored, with what the first call would have told, worked out from the
+// stored request: the casts to the master and the caster's player, the vitals of the caster and, for a confirmation, of the
+// target as they stand, the character that came back and the combat that has the target as a player's combatant. Nothing was
+// written, so h only replays.
+func (s *Service) tellAnswerAgain(ctx context.Context, q *playdb.Queries, h *hints, sessionID, campaignID string, row playdb.RevivifyRequest) error {
+	h.replay()
+	h.tell(campaignID, revivifyChangedEvent(conv.OrZero(row.RequestedByUserID)))
+	if row.Status != revivifyConfirmed {
+		return nil
+	}
+	s.tellVitalsAfter(h, campaignID, row.CasterCharacterID, row.TargetCharacterID)
+	s.tellRevived(h, campaignID, row.TargetCharacterID)
+	enc, cs, found, err := openCombatants(ctx, q, sessionID)
+	if err != nil {
+		return err
+	}
+	if found && playerFightsIn(cs, row.TargetCharacterID) {
+		s.tellEncounterAfter(h, campaignID, enc.ID)
+	}
+	return nil
 }
 
 // reviveOutside is the master's "less than a minute": the slot is spent, the diamonds are noted,
@@ -485,14 +514,4 @@ func (s *Service) revivifyRequestsProto(ctx context.Context, campaignID string, 
 		out = append(out, p)
 	}
 	return out, nil
-}
-
-// publishRevivifyChanged tells the master and the caster's player that the casts changed.
-func (s *Service) publishRevivifyChanged(campaignID, casterUserID string) {
-	s.send(campaignID, live.Event{
-		Audience: live.Audience{Master: true, UserID: casterUserID},
-		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_RevivifyChanged_{
-			RevivifyChanged: &playv1.WatchGameSessionResponse_RevivifyChanged{},
-		}},
-	})
 }

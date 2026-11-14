@@ -97,7 +97,11 @@ func (s *Service) zonesAfterSteps(ctx context.Context, c *combatTx, steps ...zon
 		return err
 	}
 	mark := currentMark(c)
-	for _, st := range steps {
+	cs, err := listCombatants(ctx, c)
+	if err != nil {
+		return err
+	}
+	for _, st := range withRiders(cs, steps) {
 		if err := s.followCaster(ctx, c, zs, st.who, mark, c.enc.Round); err != nil {
 			return err
 		}
@@ -108,6 +112,22 @@ func (s *Service) zonesAfterSteps(ctx context.Context, c *combatTx, steps ...zon
 		}
 	}
 	return nil
+}
+
+// withRiders adds to the steps the rider of each creature that stepped: it went along on its mount's square, so it entered what the
+// mount did (combat_mount.go, carryRider). A creature that has a step of its own keeps it.
+func withRiders(cs []playdb.Combatant, steps []zoneStep) []zoneStep {
+	out := slices.Clone(steps)
+	for _, st := range steps {
+		rider := riderOf(cs, st.who)
+		if rider == nil || slices.ContainsFunc(steps, func(o zoneStep) bool { return o.who == rider.ID }) {
+			continue
+		}
+		along := st
+		along.who = rider.ID
+		out = append(out, along)
+	}
+	return out
 }
 
 // zoneAfterStep catches the creature that stepped when the step brought it into the zone.

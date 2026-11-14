@@ -78,10 +78,10 @@ func (s *Service) playerViews(ctx context.Context, campaignID string, mapRow map
 // view is worked out again.
 func (s *Service) publishPointsChanged(ctx context.Context, campaignID string, mapRow mapsdb.Map, players bool, points ...mapsdb.MapPoint) {
 	if !fogged(mapRow) {
-		s.publishMapChanged(campaignID, mapRow.ID, players)
+		s.publishMapChanged(ctx, campaignID, mapRow.ID, players)
 		return
 	}
-	s.publishMapChanged(campaignID, mapRow.ID, false)
+	s.publishMapChanged(ctx, campaignID, mapRow.ID, false)
 	if players {
 		s.tellWhoKnows(ctx, campaignID, mapRow, func(pv *playerView) bool {
 			return slices.ContainsFunc(points, func(p mapsdb.MapPoint) bool { return s.pointKnown(pv, p) })
@@ -110,7 +110,7 @@ func (s *Service) tellWhoKnows(ctx context.Context, campaignID string, mapRow ma
 	}
 	slices.Sort(users)
 	if len(users) > 0 {
-		s.live.PublishToUsers(campaignID, users, mapChangedEvent(mapRow.ID))
+		s.publishUsers(ctx, campaignID, users, mapChangedEvent(mapRow.ID))
 	}
 }
 
@@ -127,28 +127,28 @@ func (s *Service) publishTokenWritten(ctx context.Context, campaignID string, ma
 	seen := playersSee(mapRow.ID, mapRow.RevealedAt, current)
 	if !fogged(mapRow) {
 		players := seen && ((before != nil && !before.Hidden) || (after != nil && !after.Hidden))
-		s.publishTokenEvent(campaignID, mapRow.ID, *token, moved, players)
+		s.publishTokenEvent(ctx, campaignID, mapRow.ID, *token, moved, players)
 		return
 	}
 	// A player's character is never hidden from the party on a fog map.
 	if player {
-		s.publishTokenEvent(campaignID, mapRow.ID, *token, moved, seen)
+		s.publishTokenEvent(ctx, campaignID, mapRow.ID, *token, moved, seen)
 		s.refreshVision(ctx, campaignID, mapRow.ID)
 		return
 	}
 	// The master hears as ever. The players hear only through the view.
-	s.publishTokenEvent(campaignID, mapRow.ID, *token, moved, false)
+	s.publishTokenEvent(ctx, campaignID, mapRow.ID, *token, moved, false)
 	s.refreshAfterNPCToken(ctx, campaignID, mapRow, before, after)
 }
 
 // publishTokenEvent tells the watching members of a token written: the stream's
 // `token_moved` for a plain move, else a `map_changed`.
-func (s *Service) publishTokenEvent(campaignID, mapID string, token mapsdb.MapToken, moved, players bool) {
+func (s *Service) publishTokenEvent(ctx context.Context, campaignID, mapID string, token mapsdb.MapToken, moved, players bool) {
 	if moved {
-		s.publishTokenMoved(campaignID, token, players)
+		s.publishTokenMoved(ctx, campaignID, token, players)
 		return
 	}
-	s.publishMapChanged(campaignID, mapID, players)
+	s.publishMapChanged(ctx, campaignID, mapID, players)
 }
 
 // refreshAfterNPCToken works out again what the players see after an NPC's token was

@@ -90,7 +90,12 @@ func errTrapNotArmed() error {
 
 // runningEncounterOn is the session's combat on the map that is not ended.
 func (s *Service) runningEncounterOn(ctx context.Context, sessionID, mapID string) (playdb.Encounter, bool, error) {
-	enc, err := s.queries.GetLatestEncounter(ctx, sessionID)
+	return runningEncounterIn(ctx, s.queries, sessionID, mapID)
+}
+
+// runningEncounterIn is runningEncounterOn on the queries given (a transaction's, for a caller that holds one).
+func runningEncounterIn(ctx context.Context, q *playdb.Queries, sessionID, mapID string) (playdb.Encounter, bool, error) {
+	enc, err := q.GetLatestEncounter(ctx, sessionID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return playdb.Encounter{}, false, nil
 	}
@@ -111,4 +116,12 @@ func mapChangedHint(mapID string) *playv1.WatchGameSessionResponse {
 	return &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MapChanged_{
 		MapChanged: &playv1.WatchGameSessionResponse_MapChanged{MapId: mapID},
 	}}
+}
+
+// queriesIn is q on tx, or q itself when there is none.
+func queriesIn(q *playdb.Queries, tx pgx.Tx) *playdb.Queries {
+	if tx == nil {
+		return q
+	}
+	return q.WithTx(tx)
 }

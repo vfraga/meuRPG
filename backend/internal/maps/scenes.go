@@ -14,9 +14,9 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 )
@@ -120,14 +120,13 @@ func (s *Service) AddSceneAction(
 		return nil, err
 	}
 	call := &addActionCall{pointID: pointID, action: action, scopedKey: scopedKey, requestHash: requestHash}
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		return s.appendAction(ctx, q, call)
+	}, func(ch changedPoint) *sceneTold {
+		return &sceneTold{replayed: call.replayed, tell: func(ctx context.Context) { s.actionsChangedFor(ctx, m.CampaignID, ch, !action.hidden) }}
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "add a scene action", err)
-	}
-	if !call.replayed {
-		s.actionsChangedFor(ctx, m.CampaignID, ch, !action.hidden)
 	}
 	return connect.NewResponse(&mapsv1.AddSceneActionResponse{
 		Action: s.actionToProto(call.added, true), Actions: s.actionsToProto(call.actions, true),
@@ -231,16 +230,19 @@ func (s *Service) UpdateSceneAction(
 
 	var before, changed mapsdb.SceneAction
 	var actions []mapsdb.SceneAction
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		var err error
 		before, changed, actions, err = s.editAction(ctx, q, pointID, actionID, edit)
 		return err
+	}, func(ch changedPoint) *sceneTold {
+		// An action that was hidden and stays hidden is the master's business alone.
+		return &sceneTold{tell: func(ctx context.Context) {
+			s.actionsChangedFor(ctx, m.CampaignID, ch, !before.Hidden || !changed.Hidden)
+		}}
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "update a scene action", err)
 	}
-	// An action that was hidden and stays hidden is the master's business alone.
-	s.actionsChangedFor(ctx, m.CampaignID, ch, !before.Hidden || !changed.Hidden)
 	return connect.NewResponse(&mapsv1.UpdateSceneActionResponse{
 		Action: s.actionToProto(changed, true), Actions: s.actionsToProto(actions, true),
 	}), nil
@@ -345,18 +347,20 @@ func (s *Service) MoveSceneAction(
 
 	var actions []mapsdb.SceneAction
 	moved := false
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		var err error
 		actions, moved, err = shiftAction(ctx, q, pointID, actionID, step)
 		return err
+	}, func(ch changedPoint) *sceneTold {
+		if !moved {
+			return nil
+		}
+		// Moving a hidden action changes nothing the players read.
+		i := slices.IndexFunc(actions, func(a mapsdb.SceneAction) bool { return a.ID == actionID })
+		return &sceneTold{tell: func(ctx context.Context) { s.actionsChangedFor(ctx, m.CampaignID, ch, i < 0 || !actions[i].Hidden) }}
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "move a scene action", err)
-	}
-	if moved {
-		// Moving a hidden action changes nothing the players read.
-		i := slices.IndexFunc(actions, func(a mapsdb.SceneAction) bool { return a.ID == actionID })
-		s.actionsChangedFor(ctx, m.CampaignID, ch, i < 0 || !actions[i].Hidden)
 	}
 	return connect.NewResponse(&mapsv1.MoveSceneActionResponse{Actions: s.actionsToProto(actions, true)}), nil
 }
@@ -423,17 +427,19 @@ func (s *Service) RemoveSceneAction(
 	}
 	var actions []mapsdb.SceneAction
 	var removedHidden bool
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		var err error
 		if removedHidden, actions, err = s.removeAction(ctx, q, pointID, actionID); err != nil {
 			return err
 		}
 		return nil
+	}, func(ch changedPoint) *sceneTold {
+		// the players never knew a hidden action
+		return &sceneTold{tell: func(ctx context.Context) { s.actionsChangedFor(ctx, m.CampaignID, ch, !removedHidden) }}
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "remove a scene action", err)
 	}
-	s.actionsChangedFor(ctx, m.CampaignID, ch, !removedHidden) // the players never knew a hidden action
 	return connect.NewResponse(&mapsv1.RemoveSceneActionResponse{Actions: s.actionsToProto(actions, true)}), nil
 }
 
@@ -483,17 +489,25 @@ type changedPoint struct {
 	currentMap string
 }
 
-// changeActions runs one change to a scene point's actions in a transaction:
+// sceneTold is what a change to a scene point's actions, clues or images tells once it committed: tell runs after the commit, and
+// replayed says the change was already made (a key stored), so nothing moves and the notice goes out again.
+type sceneTold struct {
+	tell     func(ctx context.Context)
+	replayed bool
+}
+
+// changeActions runs one change to a scene point's actions in a transaction, under the session's lock:
 // it checks that the map is the campaign's and the point is a SCENE point of
 // it, locks the point so two changes take turns (the 20-action limit holds),
-// and lets change work on the rows.
-func (s *Service) changeActions(ctx context.Context, m authz.Membership, mapID, pointID string, change func(q *mapsdb.Queries) error) (changedPoint, error) {
+// and lets change work on the rows. Once change succeeded, then says what the change tells
+// (nil: it changed nothing, so nothing moves and nobody hears).
+func (s *Service) changeActions(ctx context.Context, m authz.Membership, mapID, pointID string, change func(q *mapsdb.Queries) error, then func(ch changedPoint) *sceneTold) error {
 	current, err := s.currentMap(ctx, m.CampaignID)
 	if err != nil {
-		return changedPoint{}, err
+		return err
 	}
-	out := changedPoint{currentMap: current}
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	return s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
+		out := changedPoint{currentMap: current}
 		q := s.queries.WithTx(tx)
 		var err error
 		if out.mapRow, err = s.campaignMap(ctx, q, m.CampaignID, mapID); err != nil {
@@ -505,9 +519,17 @@ func (s *Service) changeActions(ctx context.Context, m authz.Membership, mapID, 
 		if out.point.Kind != kindToDB[mapsv1.MapPointKind_MAP_POINT_KIND_SCENE] {
 			return connect.NewError(connect.CodeInvalidArgument, errors.New("only a SCENE point has actions and clues"))
 		}
-		return change(q)
+		if err := change(q); err != nil {
+			return err
+		}
+		if w := then(out); w != nil {
+			if w.replayed {
+				t.Replay()
+			}
+			s.announce(t, w.tell)
+		}
+		return nil
 	})
-	return out, err
 }
 
 // actionsChanged tells the watching members that a scene point's actions
@@ -547,7 +569,7 @@ func (s *Service) publishSceneChangedIf(ctx context.Context, campaignID, pointID
 // publishSceneChanged tells the master and the players in the open scene that it
 // changed (everyone, when it is open to the whole table).
 func (s *Service) publishSceneChanged(ctx context.Context, campaignID string) {
-	s.live.PublishToScene(ctx, campaignID, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneChanged_{
+	s.publishScene(ctx, campaignID, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneChanged_{
 		SceneChanged: &playv1.WatchGameSessionResponse_SceneChanged{},
 	}})
 }

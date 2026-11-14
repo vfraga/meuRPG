@@ -301,7 +301,7 @@ The zero value is the SRD's defaults.
 | Call | Who | What it does |
 | --- | --- | --- |
 | `GetTableRules` | Every member and the pending member | The rules, the style they form, the three preset styles and the numbers of the ability-score methods (standard array, point-buy costs, the 27 points, the typing range, from SRD 5.2.1), so the app does no arithmetic. With no row, the defaults. The dice mode and the rules are read in one read transaction. `IDEMPOTENT`. |
-| `SetTableRules` | The master | Replaces all the rules at once ("Salvar regras"); the dice mode goes in the same transaction. They apply from now on: existing sheets stay as they are. |
+| `SetTableRules` | The master | Replaces all the rules at once ("Salvar regras"); the dice mode goes in the same transaction. They apply from now on: existing sheets stay as they are. It runs under the live session's funnel: the session's number moves once, and the master's combat log is told to be read again in full (see [Combat log](play/combat-log.md)); with no open session nothing moves. |
 | `SetCampaignXpMode` | The master | Changes the XP mode ([below](#xp-mode)). |
 
 The rules in `TableRules` (the proto lists the values):

@@ -170,10 +170,10 @@ func messageToProto(r playdb.SessionMessage, image *playv1.SessionMessageImage, 
 	return out
 }
 
-// publishMessage tells the streams of a line that was added, to the readers and to nobody else
+// sayMessage tells the streams of a line that was added, to the readers and to nobody else
 // (RN-10): everyone for a line for the table; for a line for chosen readers, the master (who also gets the
-// readers), each chosen reader and the author. It runs after the commit.
-func (s *Service) publishMessage(ctx context.Context, row playdb.SessionMessage, readers []string) {
+// readers), each chosen reader and the author. It runs after the commit, through the say of Service.tx.
+func (s *Service) sayMessage(ctx context.Context, say sayFn, row playdb.SessionMessage, readers []string) {
 	forPlayers, err := s.messageView(ctx, row, viewer{}, nil)
 	if err != nil {
 		s.logger.WarnContext(ctx, "play: cannot shape a message to publish it", "error", err)
@@ -185,7 +185,7 @@ func (s *Service) publishMessage(ctx context.Context, row playdb.SessionMessage,
 		}}
 	}
 	if row.ForEveryone {
-		s.send(row.CampaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: event(forPlayers)})
+		say(row.CampaignID, live.Event{Audience: live.Audience{Everyone: true}, Message: event(forPlayers)})
 		return
 	}
 	forMaster, err := s.messageView(ctx, row, viewer{master: true}, nil)
@@ -193,7 +193,7 @@ func (s *Service) publishMessage(ctx context.Context, row playdb.SessionMessage,
 		s.logger.WarnContext(ctx, "play: cannot shape a message to publish it", "error", err)
 		return
 	}
-	s.send(row.CampaignID, live.Event{Audience: live.Audience{Master: true}, Message: event(forMaster)})
+	say(row.CampaignID, live.Event{Audience: live.Audience{Master: true}, Message: event(forMaster)})
 	chosen := forPlayers // the readers get the line without the list of readers
 	targets := slices.Clone(readers)
 	playerLine := row.SpeakerKind == speakerCharacter || row.SpeakerKind == speakerOutOfCharacter // the master's lines reach the master above
@@ -201,7 +201,7 @@ func (s *Service) publishMessage(ctx context.Context, row playdb.SessionMessage,
 		targets = append(targets, *row.AuthorUserID)
 	}
 	for _, id := range targets {
-		s.send(row.CampaignID, live.Event{Audience: live.Audience{UserID: id}, Message: event(chosen)})
+		say(row.CampaignID, live.Event{Audience: live.Audience{UserID: id}, Message: event(chosen)})
 	}
 }
 

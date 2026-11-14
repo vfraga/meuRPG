@@ -33,13 +33,13 @@ var undoableKinds = []string{
 	eventSpellCast, eventReactionUsed, eventReactionDeclined, eventDeathSaveRolled, eventConditionsSet,
 	eventCombatantMoved, eventTrapTriggered, eventWildShapeStarted, eventWildShapeEnded, eventFamiliarSight,
 	eventHideResolved, // only the master's reveal of a hider (undoableHideResolved)
-	eventLegendarySpent, eventGearSwapped, eventFeatureUsed,
+	eventLegendarySpent, eventGearSwapped, eventFeatureUsed, eventCombatantMounted, eventCombatantDismounted,
 }
 
 // leavesHPAlone are the undoable kinds whose undo never writes hit points: they keep no holds.
 var leavesHPAlone = []string{
 	eventAttackRolled, eventDamageDiscarded, eventReactionDeclined, eventConditionsSet,
-	eventCombatantMoved, eventFamiliarSight, eventHideResolved, eventLegendarySpent, eventGearSwapped,
+	eventCombatantMoved, eventFamiliarSight, eventHideResolved, eventLegendarySpent, eventGearSwapped, eventCombatantMounted, eventCombatantDismounted,
 }
 
 // recentEvents is how many of the session's latest events the search for the
@@ -523,7 +523,7 @@ func (u *undoRun) noteSnapBack(ctx context.Context, c *combatTx, id string) erro
 // takeBackCompanions takes back what goes with the action of its kind: the move for the
 // fog, the concentration a damage ended, the other parts of a trap's firing.
 func (s *Service) takeBackCompanions(ctx context.Context, c *combatTx, run *undoRun, recent []playdb.ListRecentSessionEventsRow, last playdb.ListRecentSessionEventsRow, ev actionEvent) error {
-	if last.Kind == eventCombatantMoved {
+	if last.Kind == eventCombatantMoved || last.Kind == eventCombatantMounted || last.Kind == eventCombatantDismounted {
 		run.undoneMove = &ev
 	}
 	if last.Kind == eventSpellCast && ev.Teleport != nil { // the caster is back where it was: the fog follows it
@@ -638,6 +638,7 @@ func (s *Service) publishUndoRun(ctx context.Context, campaignID string, d *enco
 func (s *Service) followToSquare(ctx context.Context, campaignID string, d *encounterData, combatantID string, sq *grid.Square) {
 	if who, ok := combatantByID(d.cs, combatantID); ok {
 		s.positionChanged(ctx, campaignID, d.enc, who, sq)
+		s.publishRideAlong(ctx, campaignID, d, who, sq)
 	}
 }
 

@@ -13,7 +13,6 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
@@ -119,60 +118,56 @@ func (s *Service) AddCharacterEffect(
 	}
 	hash := idem.Hash(req.Msg)
 	var made charEffectEvent
-	var vitals []*playv1.CharacterVitals
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		var err error
-		made, vitals, err = s.giveCharacterEffect(ctx, tx, m, in, hash, req.Msg)
+		made, err = s.giveCharacterEffect(ctx, tx, h, session, m, in, hash, req.Msg)
 		return err
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "give an effect to characters", err)
 	}
-	s.publishCastsChanged(m.CampaignID, false)
-	s.publishVitalsOf(m.CampaignID, vitals)
 	return connect.NewResponse(&playv1.AddCharacterEffectResponse{EffectIds: made.Effects}), nil
 }
 
-// giveCharacterEffect is the transaction of AddCharacterEffect: read and validate (the open
-// session, the retry, the characters), resolve what the effect is, write it and the event. It
-// answers what was made and the vitals the streams are told after the commit.
-func (s *Service) giveCharacterEffect(ctx context.Context, tx pgx.Tx, m authz.Membership, in charEffectInput, hash *string, msg *playv1.AddCharacterEffectRequest) (charEffectEvent, []*playv1.CharacterVitals, error) {
+// giveCharacterEffect is the transaction of AddCharacterEffect (the session is locked): read and validate (the retry, the
+// characters), resolve what the effect is, write it and the event, and collect what the streams are told. It answers what was made.
+func (s *Service) giveCharacterEffect(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, m authz.Membership, in charEffectInput, hash *string, msg *playv1.AddCharacterEffectRequest) (charEffectEvent, error) {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-	if err != nil {
-		return charEffectEvent{}, nil, err
-	}
 	done, again, err := eventByKey(ctx, q, session.ID, in.key, eventLastingAdded, hash)
 	if err != nil {
-		return charEffectEvent{}, nil, err
+		return charEffectEvent{}, err
 	}
 	if again {
 		var made charEffectEvent
-		err := json.Unmarshal(done.Payload, &made)
-		return made, nil, err
+		if err := json.Unmarshal(done.Payload, &made); err != nil {
+			return made, err
+		}
+		s.tellEffectsAgain(h, m.CampaignID, made.Targets...)
+		return made, nil
 	}
 	if err := s.requireOutsideCombat(ctx, tx, q, m.CampaignID, session.ID, in.characterIDs); err != nil {
-		return charEffectEvent{}, nil, err
+		return charEffectEvent{}, err
 	}
 	c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), kind: eventLastingAdded, actorUserID: m.UserID, svc: s, master: true})
 	if err != nil {
-		return charEffectEvent{}, nil, err
+		return charEffectEvent{}, err
 	}
 	plan, err := s.planCharEffect(ctx, c, in, msg)
 	if err != nil {
-		return charEffectEvent{}, nil, err
+		return charEffectEvent{}, err
 	}
 	made, err := s.putCharEffects(ctx, c, m.CampaignID, in, plan)
 	if err != nil {
-		return charEffectEvent{}, nil, err
+		return charEffectEvent{}, err
 	}
 	if err := s.syncArmorBase(ctx, c, slices.Clone(made.Targets)...); err != nil { // it sorts what it is given: the event keeps the order of the request
-		return charEffectEvent{}, nil, err
+		return charEffectEvent{}, err
 	}
 	if err := s.appendKeyedEvent(ctx, q, keyedEvent{sessionID: session.ID, kind: eventLastingAdded, userID: m.UserID, key: in.key, hash: hash}, made); err != nil {
-		return charEffectEvent{}, nil, err
+		return charEffectEvent{}, err
 	}
-	return made, c.told, nil
+	tellEffects(h, m.CampaignID, c.told)
+	return made, nil
 }
 
 // requireOutsideCombat refuses characters the campaign's roster does not know as players' (an NPC,

@@ -12,7 +12,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 )
 
@@ -50,11 +50,10 @@ func (s *Service) PlaceMapToken(
 	if err != nil {
 		return nil, err
 	}
-	pl, err := s.placeTokenTx(ctx, m.CampaignID, mapID, req.Msg.GetXBp(), req.Msg.GetYBp(), character)
+	pl, err := s.placeTokenTx(ctx, m, mapID, current, req.Msg.GetXBp(), req.Msg.GetYBp(), character)
 	if err != nil {
 		return nil, s.dbError(ctx, "place a token", err)
 	}
-	s.announceTokenPlaced(ctx, m, mapID, current, pl, character)
 	return connect.NewResponse(&mapsv1.PlaceMapTokenResponse{Token: tokenToProto(pl.token, character, newViewer(m, current))}), nil
 }
 
@@ -93,18 +92,23 @@ func (s *Service) putToken(ctx context.Context, q *mapsdb.Queries, mapID string,
 	return was, token, placed, nil
 }
 
-// placeTokenTx places or moves the character's token in one transaction.
-func (s *Service) placeTokenTx(ctx context.Context, campaignID, mapID string, x, y int32, character *charactersv1.CharacterSummary) (tokenPlacement, error) {
+// placeTokenTx places or moves the character's token in one transaction, under the session's lock, and tells the watchers once it
+// committed.
+func (s *Service) placeTokenTx(ctx context.Context, m authz.Membership, mapID, current string, x, y int32, character *charactersv1.CharacterSummary) (tokenPlacement, error) {
 	var pl tokenPlacement
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		q := s.queries.WithTx(tx)
 		var err error
 		pl = tokenPlacement{}
-		if pl.mapRow, err = s.campaignMap(ctx, q, campaignID, mapID); err != nil {
+		if pl.mapRow, err = s.campaignMap(ctx, q, m.CampaignID, mapID); err != nil {
 			return err
 		}
-		pl.was, pl.token, pl.placed, err = s.putToken(ctx, q, mapID, x, y, character)
-		return err
+		if pl.was, pl.token, pl.placed, err = s.putToken(ctx, q, mapID, x, y, character); err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) { s.announceTokenPlaced(ctx, m, mapID, current, pl, character) })
+		// What the character sees from where it landed is part of this write: the landing moves the number once.
+		return s.noticeLanded(ctx, tx, t, m.CampaignID, mapID, pl.mapRow, []landedToken{{token: pl.token, character: character}})
 	})
 	return pl, err
 }
@@ -147,15 +151,19 @@ func (s *Service) SetMapTokenHidden(
 
 	var mapRow mapsdb.Map
 	var before, after mapsdb.MapToken
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		mapRow, before, after, err = s.setTokenHiddenTx(ctx, tx, m.CampaignID, mapID, character.GetId(), req.Msg.GetHidden())
-		return err
+		if mapRow, before, after, err = s.setTokenHiddenTx(ctx, tx, m.CampaignID, mapID, character.GetId(), req.Msg.GetHidden()); err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) {
+			s.publishTokenWritten(ctx, m.CampaignID, mapRow, current, &before, &after, isPlayerCharacter(character), false)
+		})
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "hide or show a token", err)
 	}
-	s.publishTokenWritten(ctx, m.CampaignID, mapRow, current, &before, &after, isPlayerCharacter(character), false)
 	return connect.NewResponse(&mapsv1.SetMapTokenHiddenResponse{Token: tokenToProto(after, character, newViewer(m, current))}), nil
 }
 
@@ -222,25 +230,26 @@ func (s *Service) removeCharacterToken(ctx context.Context, m authz.Membership, 
 	if err != nil {
 		return err
 	}
-	mapRow, deleted, err := s.deleteTokenTx(ctx, m.CampaignID, mapID, characterID)
+	err = s.deleteTokenTx(ctx, m.CampaignID, mapID, characterID, func(ctx context.Context, mapRow mapsdb.Map, deleted mapsdb.MapToken) {
+		// Whose token it was: a dead character's is told as an NPC's, which reaches no
+		// player on a fog map but through what they see.
+		player := false
+		if found, err := s.characters.MapCharacters(ctx, nil, m.CampaignID, []string{characterID}); err == nil && len(found) == 1 {
+			player = isPlayerCharacter(found[0])
+		}
+		s.publishTokenWritten(ctx, m.CampaignID, mapRow, current, &deleted, nil, player, false)
+	})
 	if err != nil {
 		return s.dbError(ctx, "remove a token", err)
 	}
-	// Whose token it was: a dead character's is told as an NPC's, which reaches no
-	// player on a fog map but through what they see.
-	player := false
-	if found, err := s.characters.MapCharacters(ctx, nil, m.CampaignID, []string{characterID}); err == nil && len(found) == 1 {
-		player = isPlayerCharacter(found[0])
-	}
-	s.publishTokenWritten(ctx, m.CampaignID, mapRow, current, &deleted, nil, player, false)
 	return nil
 }
 
-// deleteTokenTx deletes the character's token in one transaction.
-func (s *Service) deleteTokenTx(ctx context.Context, campaignID, mapID, characterID string) (mapsdb.Map, mapsdb.MapToken, error) {
+// deleteTokenTx deletes the character's token in one transaction, under the session's lock, and runs tell once it committed.
+func (s *Service) deleteTokenTx(ctx context.Context, campaignID, mapID, characterID string, tell func(ctx context.Context, mapRow mapsdb.Map, deleted mapsdb.MapToken)) error {
 	var mapRow mapsdb.Map
 	var deleted mapsdb.MapToken
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	return s.inSession(ctx, campaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		q := s.queries.WithTx(tx)
 		var err error
 		if mapRow, err = s.campaignMap(ctx, q, campaignID, mapID); err != nil {
@@ -253,7 +262,7 @@ func (s *Service) deleteTokenTx(ctx context.Context, campaignID, mapID, characte
 		if err != nil {
 			return fmt.Errorf("remove token: %w", err)
 		}
+		s.announce(t, func(ctx context.Context) { tell(ctx, mapRow, deleted) })
 		return nil
 	})
-	return mapRow, deleted, err
 }

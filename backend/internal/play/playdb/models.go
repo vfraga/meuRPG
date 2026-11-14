@@ -234,6 +234,10 @@ type Combatant struct {
 	SpeedClimbFt            int32
 	SpeedBurrowFt           int32
 	FeatureState            []byte
+	MountedOnID             *string
+	MountKind               string
+	MountPriorInit          []byte
+	MountMoveUsed           bool
 }
 
 type CombatantState struct {

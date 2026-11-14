@@ -1766,6 +1766,8 @@ options as options of Pensantus to the master
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Capitão Goblin].distanceFt
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Goblin].distanceFt
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Toren].distanceFt
+- .options.mount.mounts[Capitão Goblin].combatantId
+- .options.mount.mounts[Capitão Goblin].costDft
 - .spellTargets[0].areaShape
 - .spellTargets[0].areaSizeFt
 - .spellTargets[0].placement
@@ -2100,6 +2102,8 @@ options as options of Pensantus to the master
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Goblin].distanceFt
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Goblin].eligible
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Goblin].size
+- .options.mount.mounts[Capitão Goblin].combatantId
+- .options.mount.mounts[Capitão Goblin].costDft
 - .spellTargets[0].targets[Goblin].combatantId
 - .spellTargets[0].targets[Goblin].cover
 - .spellTargets[0].targets[Goblin].coverSource
@@ -3152,6 +3156,8 @@ options
 .options.jumps.highStandingDft = 15
 .options.jumps.longRunningDft = 100
 .options.jumps.longStandingDft = 50
+.options.mount.mounts[Capitão Goblin].combatantId = "Capitão Goblin"
+.options.mount.mounts[Capitão Goblin].costDft = 125
 .options.spells[spell:burning-hands].economy = "ACTION_ECONOMY_ACTION"
 .options.spells[spell:burning-hands].enabled = true
 .options.spells[spell:burning-hands].slots[0].free = 4
@@ -4181,6 +4187,9 @@ options as options of Toren on his turn to the master
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Brisa].distanceFt
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Goblin].distanceFt
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Pensantus].distanceFt
+- .options.mount.mounts[Goblin].combatantId
+- .options.mount.mounts[Goblin].costDft
+- .options.mount.mounts[Goblin].refusal
 ~ .attackTargets[attack:unarmed-strike].targets[Pensantus].cover = "COVER_DEGREE_NONE"
 ~ .attackTargets[equipment:battleaxe].targets[Pensantus].cover = "COVER_DEGREE_NONE"
 state unchanged
@@ -4560,6 +4569,9 @@ options
 .options.jumps.highStandingDft = 30
 .options.jumps.longRunningDft = 170
 .options.jumps.longStandingDft = 85
+.options.mount.mounts[Goblin].combatantId = "Goblin"
+.options.mount.mounts[Goblin].costDft = 150
+.options.mount.mounts[Goblin].refusal = "MOUNT_REFUSAL_TOO_SMALL"
 .options.standardActions[standard:attack].action.economy = "ACTION_ECONOMY_ACTION"
 .options.standardActions[standard:attack].action.key = "standard:attack"
 .options.standardActions[standard:attack].action.namePt = "Atacar"

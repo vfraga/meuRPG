@@ -213,6 +213,39 @@ func (s *Service) PuzzleRevealPoint(ctx context.Context, tx pgx.Tx, campaignID, 
 	}, nil
 }
 
+// PuzzleRevealedAgain tells the map's watchers again that a puzzle revealed the point, as the point and the screen stand now
+// (a retry of the solving move, whose first call may have died before it told). It tells no one more than the first call would
+// have. A point or map that is gone tells nobody.
+func (s *Service) PuzzleRevealedAgain(ctx context.Context, campaignID, mapID, pointID string) {
+	mapRow, point, _, err := s.puzzlePoint(ctx, s.queries, campaignID, mapID, pointID, false)
+	if err != nil {
+		return
+	}
+	current, err := s.currentMap(ctx, campaignID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "maps: read the current map after a retried puzzle reveal", "error", err)
+		return
+	}
+	s.publishPointsChanged(ctx, campaignID, mapRow, playersSee(mapRow.ID, mapRow.RevealedAt, current) && everyoneSees(point), point)
+}
+
+// PuzzleClueGivenAgain tells the player and the master's scene again that a puzzle gave the clue (a retry of the solving move).
+// A clue that is gone tells nobody.
+func (s *Service) PuzzleClueGivenAgain(ctx context.Context, campaignID, clueID, userID string) {
+	id, ok := uid.Canonical(clueID)
+	if !ok {
+		return
+	}
+	clue, err := s.queries.GetSceneClueInCampaign(ctx, mapsdb.GetSceneClueInCampaignParams{CampaignID: campaignID, ID: id})
+	if err != nil {
+		return
+	}
+	s.publishUsers(ctx, campaignID, []string{userID}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_NotesChanged_{
+		NotesChanged: &playv1.WatchGameSessionResponse_NotesChanged{},
+	}})
+	s.publishSceneChangedToMasterIf(ctx, campaignID, clue.PointID)
+}
+
 // PuzzleCheckClue says, inside tx, whether the clue is on a scene point of the
 // campaign's maps.
 func (s *Service) PuzzleCheckClue(ctx context.Context, tx pgx.Tx, campaignID, clueID string) error {
@@ -264,7 +297,7 @@ func (s *Service) PuzzleRevealClue(ctx context.Context, tx pgx.Tx, campaignID, c
 		return false, nil, fmt.Errorf("record the reveal: %w", err)
 	}
 	return true, func(ctx context.Context) {
-		s.live.PublishToUsers(campaignID, []string{userID}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_NotesChanged_{
+		s.publishUsers(ctx, campaignID, []string{userID}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_NotesChanged_{
 			NotesChanged: &playv1.WatchGameSessionResponse_NotesChanged{},
 		}})
 		s.publishSceneChangedToMasterIf(ctx, campaignID, clue.PointID)

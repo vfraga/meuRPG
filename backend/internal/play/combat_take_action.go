@@ -234,11 +234,24 @@ func (f *takeActionFlow) locate(ctx context.Context) error {
 	if f.who, err = findCombatant(cs, f.call.combatantID, f.v); err != nil {
 		return err
 	}
-	if err := f.v.mayAct(f.who); err != nil {
+	if err := f.v.mayMove(cs, f.who); err != nil { // the rider's player acts for a controlled mount too
 		return err
 	}
-	f.opts, err = f.s.optionsOf(ctx, f.c.tx, f.m.CampaignID, f.who)
-	return err
+	if f.opts, err = f.s.optionsOf(ctx, f.c.tx, f.m.CampaignID, f.who); err != nil {
+		return err
+	}
+	// A controlled mount that carries a rider takes Dash, Disengage and Dodge; a reaction is no action and stays free.
+	if f.isReaction() {
+		return nil
+	}
+	return mountLimit(cs, f.who, f.call.actionKey)
+}
+
+// isReaction says the action asked for is a feature action of the reaction economy.
+func (f *takeActionFlow) isReaction() bool {
+	return slices.ContainsFunc(f.opts.GetFeatureActions(), func(a *rulesv1.ActionOption) bool {
+		return a.GetAction().GetKey() == f.call.actionKey && a.GetAction().GetEconomy() == rulesv1.ActionEconomy_ACTION_ECONOMY_REACTION
+	})
 }
 
 // choose finds the action among the standard or feature actions the combatant has, and refuses the ones
@@ -290,7 +303,7 @@ func (f *takeActionFlow) mayTake(ctx context.Context) error {
 		if err := f.s.mustReactNowOrOnTurn(ctx, f.c, f.who); err != nil {
 			return err
 		}
-	} else if err := f.s.mustActNow(ctx, f.c, f.who); err != nil {
+	} else if err := f.s.mustBeOnTurn(ctx, f.c, f.who); err != nil {
 		return err
 	}
 	// The master has the last word: he may act again with the action used.

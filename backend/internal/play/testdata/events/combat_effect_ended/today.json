@@ -218,7 +218,9 @@
           "row": 1,
           "used_dft": 1,
           "last_dft": 1,
-          "cover": "x"
+          "cover": "x",
+          "rider_id": "x",
+          "rider_cover": "x"
         },
         "col": 1,
         "row": 1,
@@ -572,7 +574,9 @@
     "row": 1,
     "used_dft": 1,
     "last_dft": 1,
-    "cover": "x"
+    "cover": "x",
+    "rider_id": "x",
+    "rider_cover": "x"
   },
   "stopped_early": true,
   "locked_door": true,
@@ -585,7 +589,9 @@
     "row": 1,
     "used_dft": 1,
     "last_dft": 1,
-    "cover": "x"
+    "cover": "x",
+    "rider_id": "x",
+    "rider_cover": "x"
   },
   "return_blocked": true,
   "by_hand": true,
@@ -621,6 +627,53 @@
   "dismissed_ids": [
     "x"
   ],
+  "unseated": [
+    {
+      "rider": "x",
+      "mount": "x"
+    }
+  ],
+  "join": {
+    "mount": "x",
+    "initiative": 1,
+    "face": 1,
+    "bonus": 1,
+    "tie": true,
+    "prior": {},
+    "turn": {
+      "creature_spent": {},
+      "movement_used_ft": 1,
+      "movement_used_dft": 1,
+      "last_move_dft": 1,
+      "dashed": true,
+      "disengaged": true,
+      "jump_doubled": true,
+      "mount_move_used": true,
+      "action_surged": true,
+      "spell_cast": true,
+      "bonus_spell_cast": true,
+      "action_used": true,
+      "bonus_action_used": true,
+      "object_interaction_used": true,
+      "reaction_used": true,
+      "reaction_kind": "x",
+      "reaction_round": 1,
+      "attacks_made": 1,
+      "action_attack_key": "x",
+      "bonus_attacks_left": 1,
+      "ac_bonus": 1,
+      "extra_action_used": true,
+      "death_save_rolled": true,
+      "turn_state": "x"
+    },
+    "order": [
+      {
+        "id": "x",
+        "index": 1,
+        "tie": true
+      }
+    ]
+  },
   "summon_roll": {
     "total": 1,
     "face": 1,
@@ -914,7 +967,9 @@
         "row": 1,
         "used_dft": 1,
         "last_dft": 1,
-        "cover": "x"
+        "cover": "x",
+        "rider_id": "x",
+        "rider_cover": "x"
       },
       "col": 1,
       "row": 1,
@@ -991,7 +1046,9 @@
     "row": 1,
     "used_dft": 1,
     "last_dft": 1,
-    "cover": "x"
+    "cover": "x",
+    "rider_id": "x",
+    "rider_cover": "x"
   },
   "teleport": {
     "from": {
@@ -1000,7 +1057,9 @@
       "row": 1,
       "used_dft": 1,
       "last_dft": 1,
-      "cover": "x"
+      "cover": "x",
+      "rider_id": "x",
+      "rider_cover": "x"
     },
     "col": 1,
     "row": 1

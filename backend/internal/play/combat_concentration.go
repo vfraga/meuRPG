@@ -223,7 +223,7 @@ func (s *Service) ResolveConcentrationSave(
 // concentrationAnswer is the response of a save once the change is written: the question alone
 // when the d20 was kept for one, else the encounter and the result.
 func (s *Service) concentrationAnswer(ctx context.Context, m authz.Membership, res combatResult, run *concentrationRun) (*connect.Response[playv1.ResolveConcentrationSaveResponse], error) {
-	if run.offer != nil || run.lucky != nil || run.held != nil { // nothing was written: the question is the whole answer
+	if run.offer != nil || run.lucky != nil || run.held != nil { // only the held roll was written: the question is the whole answer
 		out, err := s.finish(ctx, m, res, nil)
 		if err != nil {
 			return nil, err
@@ -326,7 +326,7 @@ func (s *Service) writeConcentrationSave(ctx context.Context, c *combatTx, call 
 	if err != nil {
 		return nil, err
 	}
-	if run.offer != nil || run.lucky != nil || run.held != nil { // the d20 is kept for a question: nothing is written
+	if run.offer != nil || run.lucky != nil || run.held != nil { // the d20 is kept for a question: only the held roll is written
 		return nil, nil
 	}
 	if kept, err = legendary.resistConcentration(ctx, c, reactor, kept, &ev, run); err != nil {
@@ -392,7 +392,7 @@ func (s *Service) loseConcentration(ctx context.Context, c *combatTx, reactor pl
 
 // rollConcentration checks the way of rolling, takes the save's d20 from the gate and writes what it
 // showed in the event. It answers whether the concentration is kept, unless the gate kept the d20 for a
-// question instead (the offers are in run, and nothing is written).
+// question instead (the offers are in run, and only the held roll is written).
 func (s *Service) rollConcentration(
 	ctx context.Context, c *combatTx, call concentrationCall,
 	reactor playdb.Combatant, t windowTrigger, dc int32, ev *actionEvent, run *concentrationRun,

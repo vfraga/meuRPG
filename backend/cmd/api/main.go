@@ -671,6 +671,9 @@ func wireModules(
 	// dismissing a creature takes it out of the fight, and its events and
 	// stream hints go through play.
 	charactersService.SetCreatureHost(playService)
+	// The creature writes and the table rules run under play's funnel: the session's number moves with them (#735).
+	charactersService.SetSessionHost(playService)
+	campaignsService.SetSessionHost(playService)
 	// A review's hints go to the master and the owner on the live stream, and a revived
 	// character goes back to the combat it died in (RN-03).
 	charactersService.SetReviewHost(playService)
@@ -706,6 +709,7 @@ func wireModules(
 	// sees, who knows them) and maps asks play to fire one when a token lands in it
 	playService.SetTraps(mapsService)
 	mapsService.SetTrapFirer(playService)
+	mapsService.SetSessionHost(playService) // the writes that change what a session shows run under play's funnel (#735)
 	// The fog of war and the copy of an image a fog map owns need the maps
 	// service, which is made after SessionMaps (it needs play).
 	sessionMaps.SetService(mapsService)

@@ -138,7 +138,7 @@ func (s *Service) tvFactsOf(ctx context.Context, tx pgx.Tx, session playdb.GameS
 
 // SetTableScreen implements playv1connect.TableScreenServiceHandler.
 //
-// One transaction locks the open session's row, checks the revision of the choice, writes the three
+// One transaction (Service.tx) locks the open session's row, checks the revision of the choice, writes the three
 // columns and bumps the revision. It writes nothing else. After the commit the master's streams
 // hear table_screen_changed; no player's stream does (RN-10).
 func (s *Service) SetTableScreen(
@@ -161,12 +161,8 @@ func (s *Service) SetTableScreen(
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("pin must be the idle screen, the map, the image, the scene or the combat when the TV does not mirror"))
 	}
 	var updated playdb.GameSession
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		q := s.queries.WithTx(tx)
-		session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-		if err != nil {
-			return err
-		}
 		if session.TvChoiceRevision != req.Msg.GetChoiceRevision() {
 			return errStaleTableScreen()
 		}
@@ -174,18 +170,21 @@ func (s *Service) SetTableScreen(
 		if column, ok := tvPinColumn[pin]; ok {
 			keep = column
 		}
-		updated, err = q.SetTableScreenChoice(ctx, playdb.SetTableScreenChoiceParams{ID: session.ID, TvMirror: want.GetMirror(), TvPin: keep})
-		return err
+		var err error
+		if updated, err = q.SetTableScreenChoice(ctx, playdb.SetTableScreenChoiceParams{ID: session.ID, TvMirror: want.GetMirror(), TvPin: keep}); err != nil {
+			return err
+		}
+		h.tell(m.CampaignID, live.Event{
+			Audience: live.Audience{Master: true},
+			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TableScreenChanged_{
+				TableScreenChanged: &playv1.WatchGameSessionResponse_TableScreenChanged{ChoiceRevision: updated.TvChoiceRevision},
+			}},
+		})
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "set the table screen", err)
 	}
-	s.send(m.CampaignID, live.Event{
-		Audience: live.Audience{Master: true},
-		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TableScreenChanged_{
-			TableScreenChanged: &playv1.WatchGameSessionResponse_TableScreenChanged{ChoiceRevision: updated.TvChoiceRevision},
-		}},
-	})
 	choice := tvChoiceOf(updated)
 	return connect.NewResponse(&playv1.SetTableScreenResponse{
 		ChoiceRevision: updated.TvChoiceRevision,

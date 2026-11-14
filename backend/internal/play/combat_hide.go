@@ -232,7 +232,7 @@ func (s *Service) hider(ctx context.Context, c *combatTx, m authz.Membership, v 
 	if err != nil {
 		return who, err
 	}
-	if err := v.mayAct(who); err != nil {
+	if err := v.mayMove(cs, who); err != nil {
 		return who, err
 	}
 	if err := s.mustActNow(ctx, c, who); err != nil {

@@ -5,6 +5,8 @@ With the session open, each change to a map reaches whoever is on the session pa
 A change only to hidden things does not reach the player, not even as a `map_changed` on a map they see.
 Without an open session nobody is subscribed and nothing is published; the app reads the maps when it opens the screen.
 
+Each of these changes is one write under `play`'s funnel (`InSession`): the session's row is locked first, the number moves once, and the events below go out after the commit carrying it. A change that tells nobody (a paint of what was painted, a trap already disarmed) moves nothing. A repeat of a keyed call (`CreateMap`, a point, a treasure, a dungeon) moves nothing and tells the master again.
+
 | Event | When | Who receives it |
 | --- | --- | --- |
 | `current_map_changed{map_id}` | The master changes the current map, or deletes it (empty) | Everyone |
@@ -19,6 +21,7 @@ Without an open session nobody is subscribed and nothing is published; the app r
 - **The master's light warning** has no event of its own: the master's screen reads `ListCharactersInTheDark` again on `map_changed`, `token_moved` and `vision_changed`, which every change to a light, a Darkness or where a character stands sends the master ([Fog](fog.md#the-masters-light-warning)).
 - **On the master's map card** (web) the warning is the amber notice over the fog map: one name with "Ver no mapa" and "Acender luz", or the count, the cause once and a pair of buttons per character; nothing when nobody is in the dark, the fog is off or the read fails (no error in that card). Players' pages read nothing and draw nothing of it (RN-10). `core/maps/dark-watch.ts` makes one more read for a burst of hints (`scheduleVision`: `token_moved`, `vision_changed`, combat moves, `map_changed`; and a change of the map's tokens), and says in a polite live region when a carried light went out or a character lit one. "Ver no mapa" centers the map and labels only the chosen character (`app-dark-marks`; everyone in the dark has the dashed ring); "Acender luz" opens the existing carried-light sheet. The party panel shows a "No escuro" badge. The map page shows the same notice, one line in "Pintar" and without "Acender luz" (that page has no quick light control). Text: `core/maps/in-the-dark.ts`; component: `shared/dark-warning`.
 - **Painting** sends `map_changed` at most once per second per map ([Editor](editor.md#layers)).
+- **The refresh after a write queues behind other writers of the session.** `rememberFor` stores each player's grown memory in a write of its own that takes the session row `FOR UPDATE` first and moves no number, so a refresh waits for a session writer that holds the row. No read reaches it: `GetMapVision` and the tiles never write a memory ([Fog](fog.md)).
 
 ```mermaid
 sequenceDiagram

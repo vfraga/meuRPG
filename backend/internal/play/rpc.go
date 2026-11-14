@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"slices"
 	"uuid"
 
 	"connectrpc.com/connect"
@@ -137,10 +138,26 @@ func (s *Service) EndGameSession(
 		return nil, errSessionNotFound()
 	}
 
+	// The session is found in the caller's campaign before anything is locked or read by its id: a master never touches the row of
+	// another campaign's session, and a foreign id answers as an unknown one. The campaign's own ids come from an index that holds
+	// nothing of other campaigns' rows, so a transaction holding a foreign session never makes this wait.
+	ids, err := s.queries.ListCampaignSessionIDs(ctx, m.CampaignID)
+	if err != nil {
+		return nil, s.dbError(ctx, "find the game session", err)
+	}
+	if !slices.Contains(ids, id.String()) {
+		return nil, errSessionNotFound()
+	}
 	var out sessionEnd
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.tx(ctx, id.String(), func(tx pgx.Tx, h *hints) error {
 		out = sessionEnd{}
-		return s.endSessionIn(ctx, tx, m, id.String(), &out)
+		if err := s.endSessionIn(ctx, tx, m, id.String(), &out); err != nil {
+			return err
+		}
+		if out.ended {
+			s.tellSessionEnd(h, m.CampaignID, out)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "end a game session", err)
@@ -148,24 +165,40 @@ func (s *Service) EndGameSession(
 	res := sessionToProto(out.session)
 	if out.ended {
 		logging.Event(ctx, s.logger, "session.ended", slog.String("session_id", out.session.ID))
-		s.publishCreaturesOfCombat(m.CampaignID, out.fought) // the combat wrote their hit points back
-		for _, v := range out.told {
-			s.publishVitals(m.CampaignID, v)
+	}
+	return connect.NewResponse(&playv1.EndGameSessionResponse{GameSession: res}), nil
+}
+
+// tellSessionEnd collects what the end of a session tells once it committed: the creatures and forms the combat's end changed, the
+// fog that reads again, and, last, the end of every stream of the session (WatchGameSession).
+func (s *Service) tellSessionEnd(h *hints, campaignID string, out sessionEnd) {
+	var owners []string
+	for _, c := range out.fought {
+		if isCreature(c) && c.UserID != nil && !slices.Contains(owners, *c.UserID) {
+			owners = append(owners, *c.UserID)
 		}
-		if out.visionMap != "" {
-			pctx, stop := afterCommit(ctx)
-			defer stop()
-			s.maps.VisionChanged(pctx, m.CampaignID, out.visionMap)
+	}
+	for _, o := range owners {
+		h.tell(campaignID, creaturesChangedEvent(o))
+	}
+	for _, v := range out.told {
+		if v != nil {
+			h.tell(campaignID, vitalsHint(v))
 		}
-		// Every stream of the session ends (WatchGameSession).
-		s.send(m.CampaignID, live.Event{
+	}
+	if out.visionMap != "" {
+		h.after(func(ctx context.Context, _ sayFn) { s.maps.VisionChanged(ctx, campaignID, out.visionMap) })
+	}
+	res := sessionToProto(out.session)
+	h.touch()
+	h.after(func(_ context.Context, say sayFn) { // after the fog's step: the streams end with this
+		say(campaignID, live.Event{
 			Audience: live.Audience{Everyone: true},
 			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SessionEnded_{
 				SessionEnded: &playv1.WatchGameSessionResponse_SessionEnded{GameSession: res},
 			}},
 		})
-	}
-	return connect.NewResponse(&playv1.EndGameSessionResponse{GameSession: res}), nil
+	})
 }
 
 // sessionEnd is what ending a session did.

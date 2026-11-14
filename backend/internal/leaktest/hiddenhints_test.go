@@ -90,6 +90,7 @@ func TestHiddenCombatantEditSendsPlayersNoHint(t *testing.T) {
 		must(c.SetCombatantConditions(ctx, rq(&playv1.SetCombatantConditionsRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: hid.GetId(), IdempotencyKey: newKey(), Conditions: &playv1.ConditionList{Keys: []string{"condition:poisoned"}}})))
 		must(c.SetCombatantSide(ctx, rq(&playv1.SetCombatantSideRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: hid.GetId(), IdempotencyKey: newKey(), Side: playv1.CombatantSide_COMBATANT_SIDE_PARTY})))
 		must(c.SetCombatantCover(ctx, rq(&playv1.SetCombatantCoverRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: hid.GetId(), IdempotencyKey: newKey(), Cover: playv1.CoverDegree_COVER_DEGREE_HALF})))
+		must(c.SetCombatantMount(ctx, rq(&playv1.SetCombatantMountRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: hid.GetId(), IdempotencyKey: newKey(), Kind: "controlled"})))
 	})
 	requireOnlyMaster(t, w, got, "an edit made only to a hidden combatant")
 }

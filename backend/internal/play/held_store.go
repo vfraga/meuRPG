@@ -137,7 +137,12 @@ type holdRef struct {
 }
 
 // heldStores is the store of the held rolls.
-type heldStores struct{ st inspirationHoldStore }
+// env is the gate's environment when the stores are made by it (gateEnv.stores): what they write is told through it. The zero env (a
+// read, or a write outside the gate) tells nothing.
+type heldStores struct {
+	st  inspirationHoldStore
+	env gateEnv
+}
 
 func newHeldStores(q *playdb.Queries) heldStores { return heldStores{st: inspirationHoldStore{q}} }
 
@@ -164,7 +169,10 @@ func (hs heldStores) insert(ctx context.Context, env gateEnv, h heldRoll) (heldR
 }
 
 func (hs heldStores) answerLucky(ctx context.Context, before, after heldRoll, staysHeld bool) error {
-	return hs.st.answerLucky(ctx, before, after, staysHeld)
+	if err := hs.st.answerLucky(ctx, before, after, staysHeld); err != nil {
+		return err
+	}
+	return hs.env.heldRowChanged(ctx, after)
 }
 
 func (hs heldStores) askIndomitable(ctx context.Context, h heldRoll) error {
@@ -172,17 +180,33 @@ func (hs heldStores) askIndomitable(ctx context.Context, h heldRoll) error {
 }
 
 func (hs heldStores) answerIndomitable(ctx context.Context, h heldRoll) error {
-	return hs.st.answerIndomitable(ctx, h)
+	if err := hs.st.answerIndomitable(ctx, h); err != nil {
+		return err
+	}
+	return hs.env.heldRowChanged(ctx, h)
 }
 
 func (hs heldStores) answer(ctx context.Context, h heldRoll, key string) error {
-	return hs.st.answer(ctx, h, key)
+	if err := hs.st.answer(ctx, h, key); err != nil {
+		return err
+	}
+	return hs.env.heldRowChanged(ctx, h)
 }
 
-func (hs heldStores) forget(ctx context.Context, h heldRoll) error { return hs.st.forget(ctx, h) }
+func (hs heldStores) forget(ctx context.Context, h heldRoll) error {
+	if err := hs.st.forget(ctx, h); err != nil {
+		return err
+	}
+	return hs.env.heldRowChanged(ctx, h)
+}
 
+// asked is the end of every write that keeps a question waiting (the hold's first insert, a question that follows an answer): the
+// combat's revision moves, and the number with the row.
 func (hs heldStores) asked(ctx context.Context, env gateEnv, h heldRoll) error {
-	return hs.st.asked(ctx, env, h)
+	if err := hs.st.asked(ctx, env, h); err != nil {
+		return err
+	}
+	return env.heldRowChanged(ctx, h)
 }
 
 // byKeyOf finds the roll of a kind the request with a key made. A reaction window's replay keeps its question under

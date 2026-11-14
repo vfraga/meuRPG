@@ -525,6 +525,55 @@ service CombatService {
   //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED).
   rpc SetCombatantSide(SetCombatantSideRequest) returns (SetCombatantSideResponse);
 
+  // SetCombatantMount marks an NPC or a creature as a willing mount (SRD 5.1, "Mounted Combat": a willing
+  // creature that is at least one size larger than its rider), or takes the mark off. `kind` is "controlled" (it
+  // obeys its rider), "independent" (it keeps its own turn) or "" (not a mount). A player's character is never a mount. The mark is the
+  // master's: the players never read `mount_kind` of a combatant that is not theirs. Only the master may call it. It is a
+  // session event, `mount_kind_set`, and, like SetCombatantSide, the undo does not take it back (the master marks it
+  // again).
+  //
+  // Errors:
+  //   - `not_found`: the combatant is not in this combat.
+  //   - `permission_denied`: the caller is a player.
+  //   - `invalid_argument`: `kind` is not "", "controlled" or "independent", or the combatant is a player's character.
+  //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED); the combatant rides something
+  //     (ALREADY_MOUNTED); the mark is taken off a mount that carries a rider (MOUNT_TAKEN).
+  rpc SetCombatantMount(SetCombatantMountRequest) returns (SetCombatantMountResponse);
+
+  // MountCombatant puts a rider on a mount (SRD 5.1, "Mounting and Dismounting": it takes an amount of movement equal to
+  // half your speed to mount, and you cannot mount without that much movement left or with a speed of 0). The rider acts on
+  // its own turn (the master, on any turn of it). The mount is within 5 ft of the rider (a diagonal neighbour counts, as a
+  // reach does; a combat with no map is refused), alive, in this combat, at least one size larger than
+  // the rider (Tiny, Small, Medium, Large, Huge, Gargantuan) and willing: a player mounts a creature of their own and a
+  // combatant the master marked (`mount_kind`) on the party's side, and the master mounts anything (a combatant with no mark
+  // obeys its own turn as an "independent" one). The cost is half the speed of the surface the rider stands on, without the
+  // Dash, rounded down to a tenth of a foot, added to `movement_used_dft`. A rider mounts or dismounts once in a move
+  // (`mount_move_used`; the start of its turn clears it). The rider takes the mount's square and the pair is one occupant
+  // from then on: the rider is not moved by itself, the mount's moves carry it (SRD 5.1, "Mounted Combat"). It is a line of
+  // the combat log for who sees both combatants ("Toren montou em Pônei"), and the master can undo it (UndoLastAction). A
+  // replay of the same key answers the same.
+  //
+  // Errors:
+  //   - `not_found`: the combat, the rider or the mount is not in the open session (a hidden NPC is not found for a player).
+  //   - `permission_denied`: the caller is a player and the rider is not theirs.
+  //   - `failed_precondition`: the combat is ended (ENCOUNTER_ENDED) or not ACTIVE (NOT_ACTIVE); it is not the rider's turn
+  //     (NOT_YOUR_TURN); an opportunity attack waits for an answer (OPPORTUNITY_PENDING); the rider cannot act (CANNOT_ACT);
+  //     the rider already rides (ALREADY_MOUNTED) or mounted or dismounted in this move (MOUNT_MOVE_USED); the mount is not a
+  //     willing one for the caller (NOT_A_MOUNT), is not larger than the rider (MOUNT_TOO_SMALL), is farther than 5 ft
+  //     (MOUNT_TOO_FAR), carries a rider (MOUNT_TAKEN) or rides (ALREADY_MOUNTED); the rider has less movement left than the
+  //     cost, or no speed (TOO_FAR, with missing_ft and missing_dft).
+  rpc MountCombatant(MountCombatantRequest) returns (MountCombatantResponse);
+
+  // DismountCombatant takes a rider off its mount, on its turn (SRD 5.1, "Mounting and Dismounting"). The rider lands on the
+  // square `col`, `row`: free, passable, and next to the mount (a diagonal neighbour counts; a combat with no map is refused).
+  // The cost, the turn, the once per move and the audience are those of MountCombatant, and the master can undo it. The
+  // mount keeps its square; the rider is a combatant on its own square again.
+  //
+  // Errors: those of MountCombatant for the rider, plus
+  //   - `invalid_argument`: the rider rides nothing.
+  //   - `failed_precondition`: the square is not next to the mount, is a wall, or is taken (NO_ROOM_TO_DISMOUNT).
+  rpc DismountCombatant(DismountCombatantRequest) returns (DismountCombatantResponse);
+
   // SetCombatantCover marks the cover a combatant has that the map does not show
   // (D4): none, half (+2 to AC and Dexterity saves), three-quarters (+5) or
   // total (it cannot be targeted). It adds to the cover the map gives against
@@ -2043,6 +2092,33 @@ enum EncounterBlockedReason {
   // A stay in a Wild Shape form (AssumeWildShapeRequest.stay) came after the form
   // had ended: nothing was spent and no new form was taken.
   ENCOUNTER_BLOCKED_REASON_WILD_SHAPE_ENDED = 130;
+  // Mounted combat: the combatant already rides something (SetCombatantMount cannot make a rider a mount), or, for a
+  // mount and dismount call, the rider is already mounted. `combatant_ids` names it. Nothing is changed.
+  ENCOUNTER_BLOCKED_REASON_ALREADY_MOUNTED = 137;
+  // Mounted combat: the mount carries a rider already (one rider per mount). SetCombatantMount cannot take the mark off a
+  // mount that carries one: the rider gets off first. `combatant_ids` names the mount. Nothing is changed.
+  ENCOUNTER_BLOCKED_REASON_MOUNT_TAKEN = 138;
+  // MountCombatant: the combatant is not a mount the caller may mount: it has no `mount_kind` (a player mounts only a
+  // creature of their own and the combatants the master marked on the party's side), or it is a player's character, or it is
+  // defeated. `combatant_ids` names it.
+  ENCOUNTER_BLOCKED_REASON_NOT_A_MOUNT = 134;
+  // MountCombatant: the mount is not at least one size larger than the rider (SRD 5.1, "Mounted Combat"). `combatant_ids`
+  // names the mount.
+  ENCOUNTER_BLOCKED_REASON_MOUNT_TOO_SMALL = 135;
+  // MountCombatant: the mount is farther than 5 ft from the rider (a diagonal neighbour is 5 ft). `combatant_ids` names it.
+  ENCOUNTER_BLOCKED_REASON_MOUNT_TOO_FAR = 136;
+  // MountCombatant, DismountCombatant: the rider already mounted or dismounted in this move (once per move). `combatant_ids`
+  // names the rider.
+  ENCOUNTER_BLOCKED_REASON_MOUNT_MOVE_USED = 139;
+  // MoveCombatant: the combatant rides, so the mount moves and carries it; the rider gets off first to move on its own.
+  // `combatant_ids` names the rider.
+  ENCOUNTER_BLOCKED_REASON_MOUNTED = 140;
+  // DismountCombatant: no free square next to the mount (a wall, another combatant, or a square that is not next to it).
+  ENCOUNTER_BLOCKED_REASON_NO_ROOM_TO_DISMOUNT = 141;
+  // A controlled mount that carries a rider takes only the Dash, Disengage and Dodge actions (SRD 5.1, "Mounted Combat"): any
+  // other action of the mount (an attack, a spell, Help, Hide, Search, Ready, Use an Object, a grapple or a shove, a creature's
+  // action) is refused. A reaction is not an action and stays free. `combatant_ids` names the mount. Nothing is changed.
+  ENCOUNTER_BLOCKED_REASON_MOUNT_ACTION_LIMITED = 142;
 }
 
 // FamiliarSightBlockedReason says why "Ver pelos olhos do familiar" was refused
@@ -2969,6 +3045,21 @@ message Combatant {
   // Only the master: the sunlight trait its stat block has (a creature that has the trait is marked whether or not the
   // sun is on it now; a player's character is not read). A player's copy has the zero value.
   SunlightTrait sunlight_trait = 118;
+
+  // 119 is the core's.
+
+  // Mounted combat (SRD 5.1): the combatant this one rides, a UUID, empty when it rides nothing. Only a viewer who sees BOTH
+  // rows gets it (the master always; a player when the rider and the mount are both visible to them, RN-10, RN-20): a hidden
+  // mount leaves its rider plain, with no id, name or hit points of it.
+  string mounted_on_id = 120;
+  // The combatant that rides this one, a UUID, empty when it carries nobody. Same audience as `mounted_on_id`.
+  string rider_id = 121;
+  // How a willing mount obeys, "controlled" or "independent"; empty for a combatant that is not a marked mount
+  // (SetCombatantMount). Only the master and the player who controls the combatant: never another player's.
+  string mount_kind = 122;
+  // The rider already mounted or dismounted in this move (once per move; the start of its turn clears it). Same audience as
+  // the economy fields (`action_used`).
+  bool mount_move_used = 123;
 }
 
 // The trait of a stat block that makes the sun count against a creature's rolls (SRD 5.1, Monsters).
@@ -3493,6 +3584,63 @@ message SetCombatantSideRequest {
 // SetCombatantSideResponse returns the combat after the change.
 message SetCombatantSideResponse {
   Encounter encounter = 1;
+}
+
+// SetCombatantMountRequest marks a combatant as a willing mount, or takes the mark off.
+message SetCombatantMountRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // An NPC or a creature combatant (a UUID).
+  string combatant_id = 3;
+  string idempotency_key = 4;
+  // "controlled", "independent", or "" to take the mark off.
+  string kind = 5;
+}
+
+// SetCombatantMountResponse returns the combat after the change.
+message SetCombatantMountResponse {
+  Encounter encounter = 1;
+}
+
+// MountCombatantRequest puts a rider on a mount.
+message MountCombatantRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The combatant that mounts (a UUID).
+  string rider_id = 3;
+  // The combatant it mounts (a UUID).
+  string mount_id = 4;
+  string idempotency_key = 5;
+}
+
+// MountCombatantResponse returns the combat and what the rider has left.
+message MountCombatantResponse {
+  Encounter encounter = 1;
+  // The movement the rider has left this turn, in tenths of a foot, after the cost.
+  int32 movement_left_dft = 2;
+}
+
+// DismountCombatantRequest takes a rider off its mount.
+message DismountCombatantRequest {
+  string campaign_id = 1;
+  string encounter_id = 2;
+  // The combatant that dismounts (a UUID).
+  string rider_id = 3;
+  // The square it lands on, next to the mount.
+  int32 col = 4;
+  int32 row = 5;
+  string idempotency_key = 6;
+}
+
+// DismountCombatantResponse returns the combat and what the rider has left.
+message DismountCombatantResponse {
+  Encounter encounter = 1;
+  // The movement the rider has left this turn, in tenths of a foot, after the cost.
+  int32 movement_left_dft = 2;
+  // True when the rider stayed on the mount because something the caller does not see held
+  // the square it chose (a hidden creature): nothing was spent and the screen says "Algo
+  // bloqueia o caminho", never what it was (RN-10), as a move that stops early does.
+  bool stopped_early = 3;
 }
 
 // SetCombatantCoverRequest marks the cover a combatant has that the map does not
@@ -5677,6 +5825,12 @@ enum CombatLogKind {
   // A monk's rider answered (UseHitRider): the Open Hand technique or Stunning Strike,
   // the actor the monk and the target the creature hit. `hit_rider` has the result.
   COMBAT_LOG_KIND_HIT_RIDER = 40;
+  // A rider got on a mount ("Toren montou em Pônei"): the actor is the rider and the target the mount. A line of the master
+  // and of the players who see both combatants; the line of a hidden combatant is the master's alone, even after the reveal
+  // (RN-10).
+  COMBAT_LOG_KIND_MOUNTED = 107;
+  // A rider got off its mount ("Toren desmontou de Pônei"): the same audience as MOUNTED.
+  COMBAT_LOG_KIND_DISMOUNTED = 108;
 }
 
 // CombatLogStateChange is a state that began or ended.

@@ -19,7 +19,6 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
@@ -147,13 +146,6 @@ func (s *Service) OpenScenePoint(ctx context.Context, campaignID string) (string
 	return conv.OrZero(point), nil
 }
 
-// publishSceneChanged tells the master and the players in the open scene that it changed (everyone,
-// when it is open to the whole table). The hint names nothing: each app reads the scene again,
-// filtered for it.
-func (s *Service) publishSceneChanged(ctx context.Context, campaignID string) {
-	s.PublishToScene(ctx, campaignID, sceneChangedEvent())
-}
-
 // insertSceneEvent appends a session event inside tx, and returns its id.
 func insertSceneEvent(ctx context.Context, c *combatTx, kind string, actor, key *string, payload any) (string, error) {
 	body, err := json.Marshal(payload)
@@ -225,16 +217,16 @@ type sceneSwitch struct {
 	audience audienceChange
 }
 
-// publishSceneSwitch tells the streams what a switch changed: the master and the players of the scene
-// that closed or opened, to each the hint that makes them read it again.
-func (s *Service) publishSceneSwitch(ctx context.Context, campaignID string, sw sceneSwitch) {
+// tellSceneSwitch collects what a switch changed: the master and the players of the scene that closed or opened hear the hint
+// that makes them read it again, and the image shown to the scene's players follows.
+func (s *Service) tellSceneSwitch(h *hints, campaignID string, sw sceneSwitch) {
 	if sw.changed {
-		s.publishToViewers(campaignID, sw.audience.notify(), sceneChangedEvent())
+		tellViewers(h, campaignID, sw.audience.notify(), sceneChangedEvent)
 	}
 	if sw.stageCleared {
-		s.publishToViewers(campaignID, sw.audience.notify(), stageChangedEvent())
+		tellViewers(h, campaignID, sw.audience.notify(), stageChangedEvent)
 	}
-	s.publishImageMove(ctx, campaignID, sw.audience.image)
+	s.tellImageMove(h, campaignID, sw.audience.image)
 }
 
 // OpenScene implements playv1connect.PlayServiceHandler.
@@ -264,9 +256,13 @@ func (s *Service) OpenScene(
 	opening := sceneOpening{point: pointID.String(), actions: len(scene.Actions), audience: audience, given: given, mayJoin: req.Msg.GetPlayersMayJoin()}
 
 	var sw sceneSwitch
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		sw = sceneSwitch{}
-		return s.switchSceneOn(ctx, tx, m, opening, &sw)
+		if err := s.switchSceneOn(ctx, tx, m, session, opening, &sw); err != nil {
+			return err
+		}
+		s.tellSceneSwitch(h, m.CampaignID, sw)
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "open a scene", err)
@@ -274,7 +270,6 @@ func (s *Service) OpenScene(
 	if sw.changed {
 		logging.Event(ctx, s.logger, "scene.opened", slog.String("session_id", sw.session.ID), slog.String("point_id", pointID.String()))
 	}
-	s.publishSceneSwitch(ctx, m.CampaignID, sw)
 	info, err := s.sceneInfo(ctx, m, sw.session, scene)
 	if err != nil {
 		return nil, err
@@ -311,13 +306,9 @@ func openedBefore(ctx context.Context, q *playdb.Queries, session playdb.GameSes
 // switchSceneOn opens the point in the locked session, unless it is the open one already
 // (the rolls so far stay, and so does who is in unless the master named the players), and empties
 // the stage: another scene is another stage (MR-031).
-func (s *Service) switchSceneOn(ctx context.Context, tx pgx.Tx, m authz.Membership, op sceneOpening, sw *sceneSwitch) error {
+func (s *Service) switchSceneOn(ctx context.Context, tx pgx.Tx, m authz.Membership, session playdb.GameSession, op sceneOpening, sw *sceneSwitch) (err error) {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
 	sw.session = session
-	if err != nil {
-		return err
-	}
 	if equal(session.OpenScenePointID, &op.point) {
 		return s.reopenScene(ctx, tx, q, m, session, op, sw)
 	}
@@ -414,9 +405,13 @@ func (s *Service) CloseScene(
 		return nil, err
 	}
 	var sw sceneSwitch
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		sw = sceneSwitch{}
-		return s.switchSceneOff(ctx, tx, m, &sw)
+		if err := s.switchSceneOff(ctx, tx, m, session, &sw); err != nil {
+			return err
+		}
+		s.tellSceneSwitch(h, m.CampaignID, sw)
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "close a scene", err)
@@ -424,18 +419,13 @@ func (s *Service) CloseScene(
 	if sw.changed {
 		logging.Event(ctx, s.logger, "scene.closed")
 	}
-	s.publishSceneSwitch(ctx, m.CampaignID, sw)
 	return connect.NewResponse(&playv1.CloseSceneResponse{}), nil
 }
 
 // switchSceneOff closes the open scene of the locked session, if any, and empties the
 // stage: no scene, no stage (MR-031).
-func (s *Service) switchSceneOff(ctx context.Context, tx pgx.Tx, m authz.Membership, sw *sceneSwitch) error {
+func (s *Service) switchSceneOff(ctx context.Context, tx pgx.Tx, m authz.Membership, session playdb.GameSession, sw *sceneSwitch) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-	if err != nil {
-		return err
-	}
 	if session.OpenScenePointID == nil {
 		return nil // none open: nothing to close
 	}
@@ -905,6 +895,7 @@ type sceneRollCall struct {
 	in       rollInput
 	tx       pgx.Tx
 	q        *playdb.Queries
+	h        *hints
 	out      *sceneRolled
 }
 
@@ -963,10 +954,10 @@ func (s *Service) RollSceneCheck(
 	}
 	var out sceneRolled
 	call.out = &out
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		out.repeated, out.offer, out.lucky = false, nil, nil
-		call.tx, call.q = tx, s.queries.WithTx(tx)
-		return call.run(ctx)
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
+		out.repeated, out.offer, out.lucky, out.held = false, nil, nil, nil
+		call.tx, call.q, call.h = tx, s.queries.WithTx(tx), h
+		return call.run(ctx, session)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "roll a scene check", err)
@@ -978,7 +969,7 @@ func (s *Service) RollSceneCheck(
 	return connect.NewResponse(&playv1.RollSceneCheckResponse{Roll: s.sceneRollAnswer(ctx, m, &out)}), nil
 }
 
-// sceneRollAnswer builds the roll the caller reads, and tells the table when it is a new one.
+// sceneRollAnswer builds the roll the caller reads.
 func (s *Service) sceneRollAnswer(ctx context.Context, m authz.Membership, out *sceneRolled) *playv1.SceneRoll {
 	characterID, name := out.who.ID, out.who.Name
 	if out.repeated {
@@ -991,13 +982,6 @@ func (s *Service) sceneRollAnswer(ctx context.Context, m authz.Membership, out *
 		logging.Event(ctx, s.logger, "scene.check_rolled",
 			slog.String("point_id", out.ev.PointID), slog.String("action_id", out.ev.ActionID),
 			slog.String("character_id", out.who.ID), slog.Bool("physical_dice", out.ev.Physical))
-		// Only the master and the roller hear of it (RN-20).
-		s.send(m.CampaignID, live.Event{
-			Audience: live.Audience{Master: true, UserID: m.UserID},
-			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneCheckRolled_{
-				SceneCheckRolled: &playv1.WatchGameSessionResponse_SceneCheckRolled{ActionId: out.ev.ActionID},
-			}},
-		})
 	}
 	// The caller is a player: the pass or fail is in the answer only when the
 	// scene showed its DC (RN-20).
@@ -1008,13 +992,13 @@ func (s *Service) sceneRollAnswer(ctx context.Context, m authz.Membership, out *
 
 // run is the transaction of a roll: a retry gets its roll back; otherwise the rules and the
 // attempts allow it, the dice are rolled (or held for a question) and the roll is written.
-func (c *sceneRollCall) run(ctx context.Context) error {
-	session, err := lockOpenSessionOrNone(ctx, c.q, c.m.CampaignID)
-	if err != nil {
-		return err
-	}
-	// A retry of a roll already made returns that roll, and changes nothing.
+func (c *sceneRollCall) run(ctx context.Context, session playdb.GameSession) error {
+	// A retry of a roll already made returns that roll, and changes nothing; it tells again what the first call told.
 	if replayed, err := c.replay(ctx, session.ID); replayed || err != nil {
+		if replayed && err == nil {
+			c.h.replay()
+			c.tellRolled()
+		}
 		return err
 	}
 	scene, err := c.s.openSceneIn(ctx, c.tx, c.m.CampaignID, session)
@@ -1044,7 +1028,7 @@ func (c *sceneRollCall) run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	step, err := c.s.heldGate(ctx, c.s.outsideGate(c.tx, c.q), rollSpec{
+	step, err := c.s.heldGate(ctx, c.s.outsideGate(c.tx, c.q, c.h), rollSpec{
 		Kind: heldSceneCheck, Key: c.key, Request: c.req, Roller: heldRoller{CampaignID: c.m.CampaignID, CharacterID: c.out.who.ID, UserID: c.m.UserID},
 		In: c.in, Modifier: bonus, Mode: cm.Mode, Floor: floor, Lucky: opt.Lucky, MayAsk: true,
 		Stroke: checkStrokeRule(action.DC, !scene.ShowDC),
@@ -1213,7 +1197,21 @@ func (c *sceneRollCall) write(ctx context.Context, session playdb.GameSession, s
 		return err
 	}
 	c.out.rollID, err = insertSceneEvent(ctx, tc, eventSceneCheckRolled, &c.m.UserID, &c.key, ev)
-	return err
+	if err != nil {
+		return err
+	}
+	c.tellRolled()
+	return nil
+}
+
+// tellRolled collects the hint of the roll: only the master and the roller hear of it (RN-20), and it names the action alone.
+func (c *sceneRollCall) tellRolled() {
+	c.h.tell(c.m.CampaignID, live.Event{
+		Audience: live.Audience{Master: true, UserID: c.m.UserID},
+		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneCheckRolled_{
+			SceneCheckRolled: &playv1.WatchGameSessionResponse_SceneCheckRolled{ActionId: c.out.ev.ActionID},
+		}},
+	})
 }
 
 // grantSceneCall is a grant of one more attempt being made.
@@ -1248,17 +1246,11 @@ func (s *Service) GrantSceneAttempt(
 	}
 	call := grantSceneCall{s: s, m: m, key: key, actionID: actionID.String(), characterID: characterID.String()}
 
-	var granted bool
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		granted = false
-		return call.run(ctx, tx, &granted)
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
+		return call.run(ctx, tx, h, session)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "grant a scene attempt", err)
-	}
-	if granted {
-		// The hint names nothing: the player reads the scene again.
-		s.publishSceneChanged(ctx, m.CampaignID)
 	}
 	info, err := s.openSceneInfo(ctx, m)
 	if err != nil {
@@ -1269,14 +1261,14 @@ func (s *Service) GrantSceneAttempt(
 
 // run is the transaction of a grant: a retry changes nothing; otherwise the action and the
 // character must be the open scene's and the party's, and an action with a limit gets an event.
-func (g grantSceneCall) run(ctx context.Context, tx pgx.Tx, granted *bool) error {
+func (g grantSceneCall) run(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession) error {
 	q := g.s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, g.m.CampaignID)
-	if err != nil {
-		return err
-	}
-	// A retry of a grant already made changes nothing.
+	// A retry of a grant already made changes nothing, and tells again what the first call told.
 	if replayed, err := g.replay(ctx, q, session.ID); replayed || err != nil {
+		if replayed && err == nil {
+			h.replay()
+			return g.tellGranted(ctx, q, h, session)
+		}
 		return err
 	}
 	scene, err := g.s.openSceneIn(ctx, tx, g.m.CampaignID, session)
@@ -1301,9 +1293,20 @@ func (g grantSceneCall) run(ctx context.Context, tx pgx.Tx, granted *bool) error
 	if err != nil {
 		return err
 	}
-	*granted = true
-	_, err = insertSceneEvent(ctx, c, eventSceneAttemptGranted, &g.m.UserID, &g.key, sceneGrantEvent{PointID: scene.PointID, ActionID: action.ID})
-	return err
+	if _, err = insertSceneEvent(ctx, c, eventSceneAttemptGranted, &g.m.UserID, &g.key, sceneGrantEvent{PointID: scene.PointID, ActionID: action.ID}); err != nil {
+		return err
+	}
+	return g.tellGranted(ctx, q, h, session)
+}
+
+// tellGranted collects the hint of a grant: it names nothing, the master and the players in the scene read it again.
+func (g grantSceneCall) tellGranted(ctx context.Context, q *playdb.Queries, h *hints, session playdb.GameSession) error {
+	in, err := sceneViewersOf(ctx, q, session)
+	if err != nil {
+		return err
+	}
+	tellViewers(h, g.m.CampaignID, in, sceneChangedEvent)
+	return nil
 }
 
 // inTheScene checks the character is a living character of the party whose player is in the scene: a

@@ -15,7 +15,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/vision"
 )
@@ -1123,7 +1123,7 @@ func (s *Service) updateVision(ctx context.Context, campaignID, mapID string, wa
 		}
 	}
 	if len(changed) > 0 {
-		s.live.PublishToUsersCoalesced(campaignID, changed, visionKey(mapID), visionChangedEvent(mapID))
+		s.publishUsersCoalesced(ctx, campaignID, changed, visionKey(mapID), visionChangedEvent(mapID))
 	}
 	return nil
 }
@@ -1223,7 +1223,9 @@ func (s *Service) refreshUser(ctx context.Context, in fogInput, sg *sight, userI
 // foi visto") is never undone. It says whether the memory was written.
 func (s *Service) rememberFor(ctx context.Context, in fogInput, userID string, memory *grid.Layer) (bool, error) {
 	var wrote int64
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) (err error) {
+	// Under the session's lock, like every write of what a screen shows. It tells nothing and moves no number: it is the
+	// consequence of the write that asked for the refresh, whose bump covers it.
+	err := s.inSession(ctx, in.campaignID, func(tx pgx.Tx, _ sessiontell.Tell) (err error) {
 		wrote, err = s.queries.WithTx(tx).UpsertMapVisionMemory(ctx, mapsdb.UpsertMapVisionMemoryParams{
 			MapID: in.mapID, UserID: userID, Seen: memory.Encode(), Epoch: in.epoch, UpdatedAt: s.now(),
 		})

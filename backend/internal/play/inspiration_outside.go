@@ -11,7 +11,6 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -70,59 +69,59 @@ func (s *Service) GiveBardicInspirationOutside(
 	if err != nil {
 		return nil, s.dbError(ctx, "give bardic inspiration", err)
 	}
-	if given.told {
-		s.publishCastsChanged(m.CampaignID, false) // the table's hint to read the dice held again
-		s.publishVitals(m.CampaignID, given.after)
-		if v, err := s.vitals.GetVitals(ctx, m.CampaignID, target); err == nil {
-			s.publishVitals(m.CampaignID, v)
-		}
-	}
 	return connect.NewResponse(s.giveOutsideResponse(ctx, m.CampaignID, target, given)), nil
 }
 
-// outsideGiven is what the transaction of GiveBardicInspirationOutside answers: the bard, its vitals
-// after the use (nil on a retry) and whether the die was given now, so the table is told.
+// outsideGiven is what the transaction of GiveBardicInspirationOutside answers: the bard and its vitals
+// after the use (nil on a retry).
 type outsideGiven struct {
 	bard  link.Character
 	after *playv1.CharacterVitals
-	told  bool
 }
 
 // giveOutsideTx is the transaction of GiveBardicInspirationOutside: the open session locked, then the
-// die given or, for a key already used by the same caller, nothing.
+// die given or, for a key already used by the same caller, nothing; it tells the table after the commit.
 func (s *Service) giveOutsideTx(ctx context.Context, m authz.Membership, key string, hash *string, target string) (outsideGiven, error) {
 	var given outsideGiven
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		given = outsideGiven{}
 		q := s.queries.WithTx(tx)
-		session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-		if err != nil {
-			return err
-		}
 		done, again, err := eventByKey(ctx, q, session.ID, key, eventInspirationGiven, hash)
 		if err != nil {
 			return err
 		}
 		if again {
-			return s.replayGive(ctx, tx, m, done, &given)
+			return s.replayGive(ctx, tx, h, m, done, target, &given)
 		}
 		if given.bard, given.after, err = s.giveDie(ctx, tx, q, m, session, key, hash, target); err != nil {
 			return err
 		}
-		given.told = true
+		// The table's hint to read the dice held again, the bard's vitals after the use and the target's.
+		h.tell(m.CampaignID, castsChangedEvent(false))
+		if given.after != nil {
+			h.tell(m.CampaignID, vitalsHint(given.after))
+		}
+		s.tellVitalsAfter(h, m.CampaignID, target)
 		return nil
 	})
 	return given, err
 }
 
-// replayGive answers a key the caller already used: the bard, and nothing written.
-func (s *Service) replayGive(ctx context.Context, tx pgx.Tx, m authz.Membership, done playdb.GetSessionEventByIdempotencyKeyRow, given *outsideGiven) error {
+// replayGive answers a key the caller already used: the bard, and nothing written. It tells again what the first call told, which
+// may have died before it sent: the dice held, and the vitals of the bard and the target as they stand.
+func (s *Service) replayGive(ctx context.Context, tx pgx.Tx, h *hints, m authz.Membership, done playdb.GetSessionEventByIdempotencyKeyRow, target string, given *outsideGiven) error {
 	if done.ActorUserID == nil || *done.ActorUserID != m.UserID {
 		return errKeyReused()
 	}
 	bard, _, err := s.myCharacter(ctx, tx, m)
 	given.bard = bard
-	return err
+	if err != nil {
+		return err
+	}
+	h.replay()
+	h.tell(m.CampaignID, castsChangedEvent(false))
+	s.tellVitalsAfter(h, m.CampaignID, bard.ID, target)
+	return nil
 }
 
 // giveOutsideResponse is the answer of GiveBardicInspirationOutside: the bard's vitals and the die the

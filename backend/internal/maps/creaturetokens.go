@@ -13,7 +13,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 )
 
@@ -111,7 +111,7 @@ func (s *Service) placeCreatureToken(ctx context.Context, m authz.Membership, re
 	}
 	var mapRow mapsdb.Map
 	var token mapsdb.MapCreatureToken
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		q := s.queries.WithTx(tx)
 		var err error
 		if mapRow, err = s.campaignMap(ctx, q, m.CampaignID, mapID); err != nil {
@@ -123,13 +123,15 @@ func (s *Service) placeCreatureToken(ctx context.Context, m authz.Membership, re
 		if err != nil {
 			return fmt.Errorf("place creature token: %w", err)
 		}
+		s.announce(t, func(ctx context.Context) {
+			s.publishCreatureToken(ctx, m.CampaignID, mapRow, current)
+			s.creatureLanded(ctx, m.CampaignID, m.UserID, mapID, token, creature) // a trap may fire (MR-035)
+		})
 		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "place a creature's token", err)
 	}
-	s.publishCreatureToken(ctx, m.CampaignID, mapRow, current)
-	s.creatureLanded(ctx, m.CampaignID, m.UserID, mapID, token, creature) // a trap may fire (MR-035)
 	return &mapsv1.PlaceMapTokenResponse{Token: creatureTokenToProto(token, creature, newViewer(m, current))}, nil
 }
 
@@ -145,7 +147,7 @@ func (s *Service) removeCreatureToken(ctx context.Context, m authz.Membership, m
 		return err
 	}
 	var mapRow mapsdb.Map
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		q := s.queries.WithTx(tx)
 		var err error
 		if mapRow, err = s.campaignMap(ctx, q, m.CampaignID, mapID); err != nil {
@@ -156,12 +158,12 @@ func (s *Service) removeCreatureToken(ctx context.Context, m authz.Membership, m
 		} else if err != nil {
 			return fmt.Errorf("remove creature token: %w", err)
 		}
+		s.announce(t, func(ctx context.Context) { s.publishCreatureToken(ctx, m.CampaignID, mapRow, current) })
 		return nil
 	})
 	if err != nil {
 		return s.dbError(ctx, "remove a creature's token", err)
 	}
-	s.publishCreatureToken(ctx, m.CampaignID, mapRow, current)
 	return nil
 }
 
@@ -169,7 +171,7 @@ func (s *Service) removeCreatureToken(ctx context.Context, m authz.Membership, m
 // a party token reaches every player who sees the map, and on a fog map what the
 // familiar's eyes see may have changed too.
 func (s *Service) publishCreatureToken(ctx context.Context, campaignID string, mapRow mapsdb.Map, current string) {
-	s.publishMapChanged(campaignID, mapRow.ID, playersSee(mapRow.ID, mapRow.RevealedAt, current))
+	s.publishMapChanged(ctx, campaignID, mapRow.ID, playersSee(mapRow.ID, mapRow.RevealedAt, current))
 	if fogged(mapRow) {
 		s.refreshVision(ctx, campaignID, mapRow.ID)
 	}

@@ -62,7 +62,7 @@ flowchart LR
   A target that vanished does not undo the win, and the master sees what happened in `outcome`: a door painted over or already open is `DOOR_NOT_CLOSED`; a deleted point or clue, or a gone map, `TARGET_GONE`.
   Players read, once solved, `solved_message`: the text the master wrote (`PuzzleOnSolve.message`, up to 200 characters) or a generic line ("Uma porta se abriu.", "<point> apareceu no mapa.", "Algo apareceu no mapa.", "Você ganhou uma pista."), stored in the same transaction (`puzzle_runs.solve_message`).
   The target is checked on creation (it belongs to the campaign, and a light is refused, since players never see one: `PUZZLE_INVALID_REASON_TARGET`).
-- **The stream** sends `puzzle_changed` (only the puzzle's id) to everyone, after the commit of each change.
+- **The stream** sends `puzzle_changed` (only the puzzle's id) to everyone, after the commit of each change, through a time gate that sends it later and so without the session's number (the write itself moves the number; a write that changes what the screens show and tells nobody, such as a prepared puzzle's reseed or the creation of a puzzle, moves the number alone). A repeat of a move's key, or of a hint try's, tells `puzzle_changed` again and moves nothing.
   A time gate per puzzle, like `map_changed`'s: the first hint goes out at once, the changes of the next 250 ms become one, sent when the interval ends; one already waiting in a connection's queue does not enter again (`live.Event.Coalesce`).
   Archiving an already shown puzzle also sends the hint; archiving one never shown does not.
   Each app reads the run again (`GetPuzzleRun` for the player, `GetMasterPuzzleRun` for the master, `ListShownPuzzles` when the puzzle is not yet on screen).
@@ -113,6 +113,7 @@ flowchart TD
   The server stores only when the play began (`puzzle_runs.play_started_at`) and how many plays there were (`plays`).
   Each player read computes, by the server clock, how many steps have appeared (`rules/puzzle.SequencePlayback`: the first at once and one every 1.2 s) and returns only those bells in `SequencePlayback.shown`, plus `next_in_ms`.
   The server schedules a `puzzle_changed` hint for each step (`time.AfterFunc`, through the same time gate), and the app also reads again when `next_in_ms` ends, so a hint lost to a restart blocks nobody.
+  The steps' hints carry the number of the write that started the play (`PlayPuzzleSequence` moves it once, the timers do not).
   Past the end `shown` goes back to empty and never again carries the sequence.
   While it plays, or before the first play, moves are refused (`SEQUENCE_PLAYING`, `SEQUENCE_NOT_PLAYED`).
   "Recomeçar" ends a play that is running and keeps the count.

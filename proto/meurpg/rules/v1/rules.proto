@@ -2216,6 +2216,62 @@ message TurnOptions {
   // How far and how high it can jump (MR-034). Unset for a combatant with no
   // Strength on its sheet (a basic-sheet NPC): the master moves it by hand.
   JumpLimits jumps = 6;
+  // Mounting and dismounting (SRD 5.1, "Mounting and Dismounting"): the mounts the combatant could get on or, when it rides,
+  // how it gets off. Unset out of a combat grid or for a combatant that cannot be shown any.
+  MountOptions mount = 7;
+}
+
+// MountOptions is what a combatant can do about mounts this turn, as the caller may know it (RN-10): the combatants it does
+// not see are not in it.
+message MountOptions {
+  // Not mounted: the willing mounts it sees (a player: its own creatures and the party's marked ones; the master: the
+  // marked ones and any combatant next to it), each with the cost and why it cannot be mounted now.
+  repeated MountChoice mounts = 1;
+  // Mounted: the combatant it rides, a UUID. Empty when it rides nothing.
+  string mounted_on_id = 2;
+  // Mounted: the cost of getting off, in tenths of a foot, and why it cannot now (unspecified when it can).
+  int32 dismount_cost_dft = 3;
+  MountRefusal dismount_refusal = 4;
+  // Mounted: the squares next to the mount it can land on, free and passable.
+  repeated MountSquare landing = 5;
+  // The movement missing, in tenths of a foot, when the refusal is NO_MOVEMENT.
+  int32 missing_dft = 6;
+}
+
+// MountChoice is one mount a combatant could get on.
+message MountChoice {
+  string combatant_id = 1;
+  // The cost in tenths of a foot: half the speed of the surface the rider stands on, without the Dash.
+  int32 cost_dft = 2;
+  // Why it cannot be mounted now; unspecified when it can.
+  MountRefusal refusal = 3;
+  // The movement missing, in tenths of a foot, when the refusal is NO_MOVEMENT.
+  int32 missing_dft = 4;
+}
+
+// MountSquare is a square of the grid.
+message MountSquare {
+  int32 col = 1;
+  int32 row = 2;
+}
+
+// MountRefusal says why a mount or a dismount cannot be made now.
+enum MountRefusal {
+  MOUNT_REFUSAL_UNSPECIFIED = 0;
+  // The mount is not larger than the rider.
+  MOUNT_REFUSAL_TOO_SMALL = 1;
+  // The mount is farther than 5 ft.
+  MOUNT_REFUSAL_TOO_FAR = 2;
+  // The mount carries a rider already.
+  MOUNT_REFUSAL_TAKEN = 3;
+  // The combatant mounted or dismounted in this move already.
+  MOUNT_REFUSAL_MOVE_USED = 4;
+  // Less movement left than the cost, or a speed of 0.
+  MOUNT_REFUSAL_NO_MOVEMENT = 5;
+  // Dismount: no free square next to the mount.
+  MOUNT_REFUSAL_NO_ROOM = 6;
+  // The combatant rides already (it is not mounting).
+  MOUNT_REFUSAL_ALREADY_MOUNTED = 7;
 }
 
 // TurnEconomy is the state of the turn's action economy.

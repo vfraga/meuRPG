@@ -343,6 +343,8 @@ func (*gearHostSpy) ReviveInCombat(context.Context, pgx.Tx, string, string, stri
 	return "", nil
 }
 
+func (*gearHostSpy) LockSession(context.Context, pgx.Tx, string) error { return nil }
+
 func (g *gearHostSpy) ArmorWorn(context.Context, pgx.Tx, string, string) (func(context.Context), error) {
 	g.record("ArmorWorn")
 	return func(context.Context) { g.record("after ArmorWorn") }, nil

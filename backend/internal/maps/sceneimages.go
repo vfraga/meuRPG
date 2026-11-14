@@ -41,16 +41,18 @@ func (s *Service) SetSceneImages(
 	}
 	var rows []mapsdb.ListPointImagesRow
 	changed := false
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		var err error
 		rows, changed, err = s.replaceSceneImages(ctx, q, m.CampaignID, pointID, ids)
 		return err
+	}, func(ch changedPoint) *sceneTold {
+		if !changed {
+			return nil // the same list: nothing changes, nobody is told
+		}
+		return &sceneTold{tell: func(ctx context.Context) { s.actionsChanged(ctx, m.CampaignID, ch) }}
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "set a scene's images", err)
-	}
-	if changed {
-		s.actionsChanged(ctx, m.CampaignID, ch)
 	}
 	return connect.NewResponse(&mapsv1.SetSceneImagesResponse{Images: sceneImagesToProto(rows)}), nil
 }

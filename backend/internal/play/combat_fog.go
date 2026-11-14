@@ -367,7 +367,7 @@ func npcSightSquares(kind string, ev actionEvent, npc playdb.Combatant) []grid.S
 	if placed(npc) {
 		squares = append(squares, squareOfCombatant(npc))
 	}
-	if kind == eventCombatantMoved && npc.ID == ev.Actor && ev.From != nil && ev.From.Placed {
+	if (kind == eventCombatantMoved || kind == eventCombatantMounted || kind == eventCombatantDismounted) && npc.ID == ev.Actor && ev.From != nil && ev.From.Placed {
 		squares = append(squares, grid.Square{Col: int(ev.From.Col), Row: int(ev.From.Row)})
 	}
 	if kind == eventAttackRolled && ev.OfferID != "" && npc.ID == ev.Target {

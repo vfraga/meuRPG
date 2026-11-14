@@ -57,6 +57,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/blob"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/nostore"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/ratelimit"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/tasks"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/wiring"
 	playlink "github.com/PuraFome/meuRPG/backend/internal/play/link"
@@ -174,6 +175,8 @@ type LiveSession interface {
 	// ImageShown reports whether the image is the one the open session shows the
 	// players. It reads through tx, for a transaction that is about to delete it.
 	ImageShown(ctx context.Context, tx pgx.Tx, campaignID, imageID string) (bool, error)
+	// CurrentMapIn is the open session's current map ("" for none), read through tx, for a write that holds the session's lock.
+	CurrentMapIn(ctx context.Context, tx pgx.Tx, campaignID string) (string, error)
 	// PublishToUsers sends ev to the streams of those of userIDs who watch
 	// the campaign's session, and to nobody else: not the master, not the
 	// other players. Without an open session nothing happens.
@@ -303,12 +306,14 @@ type Service struct {
 	blobs      blob.Store
 	characters CharacterDirectory
 	live       LiveSession
-	checks     SceneChecks
-	rules      Rules
-	combats    CombatMaps
-	defaults   MapDefaults
-	firer      TrapFirer
-	layerHints hintGate
+	// sessionHost is play's funnel, connected by SetSessionHost (session.go).
+	sessionHost sessiontell.Host
+	checks      SceneChecks
+	rules       Rules
+	combats     CombatMaps
+	defaults    MapDefaults
+	firer       TrapFirer
+	layerHints  hintGate
 	// layerHintEvery is the gate's interval (defaultLayerHintEvery); a test sets
 	// it on its own service to see every hint at once.
 	layerHintEvery time.Duration
@@ -588,5 +593,7 @@ func errImagesOff() error {
 // CheckWired fails when a collaborator that cmd/api connects after New is
 // still nil (see platform/wiring).
 func (s *Service) CheckWired() error {
-	return wiring.Check("maps", wiring.Dep{Setter: "SetTrapFirer", Missing: s.firer == nil})
+	return wiring.Check("maps",
+		wiring.Dep{Setter: "SetTrapFirer", Missing: s.firer == nil},
+		wiring.Dep{Setter: "SetSessionHost", Missing: s.sessionHost == nil})
 }

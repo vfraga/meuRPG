@@ -12,7 +12,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 )
 
@@ -53,15 +53,18 @@ func (s *Service) SetCarriedLight(
 
 	var mapRow mapsdb.Map
 	var token mapsdb.MapToken
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
 		mapRow, token, err = s.writeCarriedLight(ctx, s.queries.WithTx(tx), v, m, mapID, character.GetId(), carried)
-		return err
+		if err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) { s.announceCarriedLight(ctx, m.CampaignID, mapRow, v, character) })
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "set a carried light", err)
 	}
-	s.announceCarriedLight(ctx, m.CampaignID, mapRow, v, character)
 	return connect.NewResponse(&mapsv1.SetCarriedLightResponse{Token: tokenToProto(token, character, v)}), nil
 }
 
@@ -132,9 +135,9 @@ func (s *Service) writeCarriedLight(ctx context.Context, q *mapsdb.Queries, v vi
 // see of the light is what the fog's view works out: on a fog map the light is
 // remembered and the players whose view changed are told (`vision_changed`).
 func (s *Service) announceCarriedLight(ctx context.Context, campaignID string, mapRow mapsdb.Map, v viewer, character *charactersv1.CharacterSummary) {
-	s.publishMapChanged(campaignID, mapRow.ID, false)
+	s.publishMapChanged(ctx, campaignID, mapRow.ID, false)
 	if owner := character.GetPlayerUserId(); owner != "" && playersSee(mapRow.ID, mapRow.RevealedAt, v.currentMap) {
-		s.live.PublishToUsers(campaignID, []string{owner}, mapChangedEvent(mapRow.ID))
+		s.publishUsers(ctx, campaignID, []string{owner}, mapChangedEvent(mapRow.ID))
 	}
 	if fogged(mapRow) {
 		s.refreshVision(ctx, campaignID, mapRow.ID)

@@ -2,6 +2,7 @@ package play
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -16,8 +17,8 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	maplink "github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
@@ -145,6 +146,8 @@ type moveResult struct {
 	doorMap  string           // a map whose door the solve opened: tell its watchers
 	fired    *trapFireEvent   // the trap a wrong move fired: tell the watchers
 	firedEnc playdb.Encounter // the combat it fired in, zero outside a combat
+	// again says the firing is the stored one of a retry: told again, not logged again.
+	again bool
 }
 
 // logPuzzleMove writes the DEBUG events of a move that was committed: the move
@@ -168,23 +171,94 @@ func logPuzzleMove(ctx context.Context, l *slog.Logger, puzzleID string, res *mo
 	}
 }
 
-// announceMove tells the log and the watchers of a move that was committed (a replay
-// changed nothing, so it tells nothing).
-func (s *Service) announceMove(ctx context.Context, campaignID, puzzleID string, res *moveResult) {
+// tellMove collects what a move that was made tells the watchers once it is committed: the puzzle changed, the notices the solve's
+// action asks the maps module to send, the doors it opened and the firing of the trap a wrong move fired. The retry of a move tells
+// the puzzle again (and the door the solve opened), and changes nothing.
+func (s *Service) tellMove(h *hints, campaignID, userID, puzzleID string, res *moveResult) {
+	s.tellPuzzleChanged(h, campaignID, puzzleID)
 	if res.replayed {
+		h.replay()
+		s.replayRevealAfter(campaignID, userID, res)
+	}
+	h.after(func(ctx context.Context, say sayFn) {
+		// What the maps module tells from here carries the move's number.
+		mctx := sessiontell.WithOut(ctx, &sessionOut{s: s, campaignID: campaignID, say: say})
+		for _, f := range res.after {
+			f(mctx)
+		}
+		if res.doorMap != "" && s.puzzles.maps != nil {
+			s.puzzles.maps.DoorsChanged(mctx, campaignID, res.doorMap)
+		}
+		if res.fired != nil {
+			if res.again {
+				s.sayFiringHints(ctx, say, campaignID, res.fired, res.firedEnc)
+			} else {
+				s.sayFiring(ctx, say, campaignID, res.fired, res.firedEnc)
+			}
+		}
+	})
+}
+
+// replayRevealAfter fills res with what the solving move of a retry told, worked out from the stored outcome of the run: the door it
+// opened, the point it revealed (told as the screen stands now) or the clue it gave to the solver. The firing of a wrong move is
+// read from its stored event (recallFiring).
+func (s *Service) replayRevealAfter(campaignID, userID string, res *moveResult) {
+	if !res.solved || s.puzzles.maps == nil {
 		return
 	}
-	logPuzzleMove(ctx, s.logger, puzzleID, res)
-	s.publishPuzzleChanged(campaignID, puzzleID)
-	for _, f := range res.after {
-		f(ctx)
+	outcome, on := conv.OrZero(res.run.SolveOutcome), res.d.onSolve
+	switch {
+	case on.GetAction() == playv1.PuzzleSolveAction_PUZZLE_SOLVE_ACTION_OPEN_DOOR && outcome == outcomeName(playv1.PuzzleSolveOutcome_PUZZLE_SOLVE_OUTCOME_DOOR_OPENED):
+		res.doorMap = on.GetDoor().GetMapId() // the door the first call opened: tell its watchers again
+	case on.GetAction() == playv1.PuzzleSolveAction_PUZZLE_SOLVE_ACTION_REVEAL_POINT && outcome == outcomeName(playv1.PuzzleSolveOutcome_PUZZLE_SOLVE_OUTCOME_POINT_REVEALED):
+		res.after = append(res.after, func(ctx context.Context) {
+			s.puzzles.maps.PuzzleRevealedAgain(ctx, campaignID, on.GetPoint().GetMapId(), on.GetPoint().GetPointId())
+		})
+	case on.GetAction() == playv1.PuzzleSolveAction_PUZZLE_SOLVE_ACTION_REVEAL_CLUE && outcome == outcomeName(playv1.PuzzleSolveOutcome_PUZZLE_SOLVE_OUTCOME_CLUE_REVEALED):
+		res.after = append(res.after, func(ctx context.Context) {
+			s.puzzles.maps.PuzzleClueGivenAgain(ctx, campaignID, on.GetClue().GetClueId(), userID)
+		})
 	}
-	if res.doorMap != "" && s.puzzles.maps != nil {
-		s.puzzles.maps.DoorsChanged(ctx, campaignID, res.doorMap)
+}
+
+// recallFiring reads the firing of the puzzle's trap from the session's stored trap_triggered event, for the retry of a wrong move:
+// the retry tells it again (the trap, and the combat it fired in with its log). A trap that never fired, or whose event is gone,
+// tells nothing; the event is the trap's latest firing, which may be another move's, so the retry may tell more than the first call.
+func (s *Service) recallFiring(ctx context.Context, tx pgx.Tx, q *playdb.Queries, session playdb.GameSession, d puzzleDef, res *moveResult) error {
+	target := d.onWrong.GetTrap()
+	if target == nil || s.traps == nil {
+		return nil
 	}
-	if res.fired != nil {
-		s.afterFiring(ctx, campaignID, res.fired, res.firedEnc)
+	var encID *string
+	var payload []byte
+	err := tx.QueryRow(ctx, `
+		SELECT encounter_id, payload FROM session_events
+		WHERE game_session_id = $1 AND kind = 'trap_triggered' AND payload->'trap'->>'point_id' = $2
+		ORDER BY seq DESC LIMIT 1`, session.ID, target.GetPointId()).Scan(&encID, &payload)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
 	}
+	if err != nil {
+		return fmt.Errorf("find the firing of the puzzle's trap: %w", err)
+	}
+	var ev actionEvent
+	if err := json.Unmarshal(payload, &ev); err != nil {
+		// An event that cannot be read is not told again.
+		s.logger.WarnContext(ctx, "the puzzle's trap firing cannot be read", "error", err)
+		return nil
+	}
+	if ev.Trap == nil {
+		return nil
+	}
+	if encID != nil {
+		enc, err := q.GetEncounterInSession(ctx, playdb.GetEncounterInSessionParams{GameSessionID: session.ID, ID: *encID})
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("find the combat of the firing: %w", err)
+		}
+		res.firedEnc = enc
+	}
+	res.fired, res.again = ev.Trap, true
+	return nil
 }
 
 // MakePuzzleMove implements playv1connect.PuzzleServiceHandler.
@@ -210,18 +284,21 @@ func (s *Service) MakePuzzleMove(
 
 	var res *moveResult
 	var names runNames
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpenOr(ctx, m.CampaignID, errNoOpenSessionForPuzzle, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		res = &moveResult{}
 		var err error
-		if names, err = s.applyMove(ctx, tx, m, id, key, req.Msg.GetMove(), res); err != nil {
+		if names, err = s.applyMove(ctx, tx, session, m, id, key, req.Msg.GetMove(), res); err != nil {
 			return err
 		}
+		s.tellMove(h, m.CampaignID, m.UserID, id, res)
 		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "make a puzzle move", err)
 	}
-	s.announceMove(ctx, m.CampaignID, id, res)
+	if !res.replayed {
+		logPuzzleMove(ctx, s.logger, id, res)
+	}
 	view, err := s.viewerOf(ctx, nil, m, res.d, res.run)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the puzzle after a move", err)
@@ -233,17 +310,13 @@ func (s *Service) MakePuzzleMove(
 	return connect.NewResponse(&playv1.MakePuzzleMoveResponse{Run: out, Replayed: res.replayed, SolvedByThisMove: res.solved, Wrong: res.wrong}), nil
 }
 
-// applyMove is the move's transaction. The session's row is locked first (so the
+// applyMove is the move's transaction. The session's row is locked first (Service.tx: so the
 // solve's event gets its number in order, and a master's reset waits), then the
 // run's: two players' moves take turns, each applied to the state the other left,
 // which is why both count. A move is relative, so the order they take does not
 // change where the pieces end.
-func (s *Service) applyMove(ctx context.Context, tx pgx.Tx, m authz.Membership, puzzleID, key string, mv *playv1.PuzzleMove, res *moveResult) (runNames, error) {
+func (s *Service) applyMove(ctx context.Context, tx pgx.Tx, session playdb.GameSession, m authz.Membership, puzzleID, key string, mv *playv1.PuzzleMove, res *moveResult) (runNames, error) {
 	q := s.queriesIn(tx)
-	session, err := lockOpenSession(ctx, q, m.CampaignID)
-	if err != nil {
-		return nil, err
-	}
 	d, _, err := s.shownRun(ctx, q, session, m.CampaignID, puzzleID)
 	if err != nil {
 		return nil, err
@@ -260,7 +333,7 @@ func (s *Service) applyMove(ctx context.Context, tx pgx.Tx, m authz.Membership, 
 		return nil, err
 	}
 	if replayed {
-		return s.namesOfRuns(ctx, tx, m.CampaignID, run)
+		return s.replayedMove(ctx, tx, q, session, m.CampaignID, d, run, res)
 	}
 	if run.SolvedAt != nil {
 		return nil, puzzleBlocked(playv1.PuzzleBlockedReason_PUZZLE_BLOCKED_REASON_SOLVED, "the puzzle is solved: nothing moves any more")
@@ -288,6 +361,17 @@ func (s *Service) applyMove(ctx context.Context, tx pgx.Tx, m authz.Membership, 
 		}
 	}
 	return s.savePuzzleMove(ctx, tx, q, session, m, who, key, mv, moveStep{puzzleID: puzzleID, out: out, last: last, solved: solved, now: now}, res)
+}
+
+// replayedMove answers a retry: a wrong move's trap firing is read back from storage, and the
+// names of the run's players are the current ones.
+func (s *Service) replayedMove(ctx context.Context, tx pgx.Tx, q *playdb.Queries, session playdb.GameSession, campaignID string, d puzzleDef, run playdb.PuzzleRun, res *moveResult) (runNames, error) {
+	if res.wrong {
+		if err := s.recallFiring(ctx, tx, q, session, d, res); err != nil {
+			return nil, err
+		}
+	}
+	return s.namesOfRuns(ctx, tx, campaignID, run)
 }
 
 // checkMoveKey says whether the move is a retry of one already made (it then fills res with

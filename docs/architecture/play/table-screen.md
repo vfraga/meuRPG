@@ -25,7 +25,7 @@ The choice is three columns of the open session (`game_sessions`): `tv_mirror`, 
 It is a stored row, not hub memory.
 So a deploy, a second instance or a reloaded tab keeps it.
 `SetTableScreen` locks the session row, checks the revision, writes the choice, bumps the revision and writes nothing else.
-After the commit the hub tells the master's streams (`table_screen_changed`) and the TV streams (a `changed`), and no player's stream.
+The write moves the session's number, and after the commit the hub tells the master's streams (`table_screen_changed`, carrying it) and the TV streams (a `changed`), and no player's stream.
 A pin stays stored when its item ends; the stage then falls to the idle screen with the notice `PIN_ENDED`, and a new item of that kind brings the pin back.
 
 ## The three decision points

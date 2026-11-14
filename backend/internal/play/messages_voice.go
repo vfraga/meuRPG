@@ -11,6 +11,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/blob"
@@ -229,10 +230,24 @@ func (s *Service) makeVoice(ctx context.Context, row playdb.SessionMessage) erro
 	if err := s.msgs.blobs.Put(ctx, key, audio.ContentType, bytes.NewReader(audio.Data)); err != nil {
 		return fmt.Errorf("store the voice: %w", err)
 	}
-	if err := s.queries.MarkSessionMessageVoiced(ctx, playdb.MarkSessionMessageVoicedParams{ID: row.ID, AudioMadeAt: timeRef(s.now())}); err != nil {
-		return fmt.Errorf("mark the line voiced: %w", err)
-	}
-	return nil
+	return s.markVoiced(ctx, row)
+}
+
+// markVoiced records that the line has its voice, which the chat screen shows. It is a write of the session like any other: it runs in
+// a transaction of its own, after the slow call and the store (the session's lock is never held across them), and moves the number
+// once so every screen reads the line again. A line already marked (another maker was first) moves nothing; with no open session it
+// runs plain.
+func (s *Service) markVoiced(ctx context.Context, row playdb.SessionMessage) error {
+	return s.txOrNone(ctx, row.CampaignID, func(tx pgx.Tx, h *hints, _ string) error {
+		n, err := s.queries.WithTx(tx).MarkSessionMessageVoiced(ctx, playdb.MarkSessionMessageVoicedParams{ID: row.ID, AudioMadeAt: timeRef(s.now())})
+		if err != nil {
+			return fmt.Errorf("mark the line voiced: %w", err)
+		}
+		if n > 0 {
+			h.touch()
+		}
+		return nil
+	})
 }
 
 // checkVoiceCap refuses a new voice once the server made its day's limit (Brasília days, as the images).

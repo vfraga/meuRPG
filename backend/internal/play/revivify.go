@@ -602,43 +602,92 @@ func (s *Service) SetRevivifyBlocked(
 	}
 	blocked := req.Msg.GetBlocked()
 
-	var encounterID string
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		var err error
-		encounterID, err = s.setBlockedIn(ctx, tx, m, target, blocked)
-		return err
-	})
-	if err != nil {
+	if err := s.setBlocked(ctx, m, target, blocked); err != nil {
 		return nil, s.dbError(ctx, "set the Revivify switch", err)
-	}
-	if encounterID != "" {
-		s.PublishEncounterChanged(ctx, m.CampaignID, encounterID)
 	}
 	return connect.NewResponse(&playv1.SetRevivifyBlockedResponse{}), nil
 }
 
-// setBlockedIn is the transaction of the switch. It returns the combat that changed, empty when
-// none did.
-func (s *Service) setBlockedIn(ctx context.Context, tx pgx.Tx, m authz.Membership, target revivifyBlockTarget, blocked bool) (string, error) {
-	q := s.queries.WithTx(tx)
-	session, err := q.GetOpenGameSessionForUpdate(ctx, m.CampaignID)
-	hasSession := err == nil
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return "", fmt.Errorf("lock the open session: %w", err)
-	}
-	if target.combatantID != "" {
-		if !hasSession {
-			return "", errNoOpenSession()
+// errSessionMoved says the open session is not the one setBlocked read: it ended, or another opened.
+var errSessionMoved = errors.New("the open session changed")
+
+// maxSessionTries bounds how many times setBlocked reads the open session again after it moved under the lock.
+const maxSessionTries = 3
+
+// setBlocked is the switch's write. The open session is read first, with no lock, so Service.tx can take its row lock as the first
+// statement of the transaction; the closure checks it is still the open one and, if not, the write starts over on the one that is
+// open now, so a write is always made under the lock of the open session and told. It does not use txOpen because it tolerates no
+// open session: the switch of a dead character is then all there is to write.
+func (s *Service) setBlocked(ctx context.Context, m authz.Membership, target revivifyBlockTarget, blocked bool) error {
+	for try := 1; ; try++ {
+		open, err := s.queries.GetOpenGameSession(ctx, m.CampaignID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return s.setBlockedOffSession(ctx, m, target, blocked)
 		}
-		return s.blockCombatant(ctx, tx, q, session.ID, m.CampaignID, target.combatantID, blocked)
+		if err != nil {
+			return fmt.Errorf("find the open session: %w", err)
+		}
+		if s.afterSessionRead != nil {
+			s.afterSessionRead(m.CampaignID) // a test changes the session here
+		}
+		err = s.tx(ctx, open.ID, func(tx pgx.Tx, h *hints) error {
+			if _, err := stillOpen(ctx, s.queries.WithTx(tx), m.CampaignID, open.ID); err != nil {
+				return errSessionMoved // the lock is held: nothing was written
+			}
+			return s.setBlockedIn(ctx, tx, h, m, target, blocked, open.ID)
+		})
+		if !errors.Is(err, errSessionMoved) {
+			return err
+		}
+		if try >= maxSessionTries {
+			return connect.NewError(connect.CodeAborted, errors.New("the session keeps changing: try again"))
+		}
 	}
-	if err := s.roster.SetRevivifyBlocked(ctx, tx, m.CampaignID, target.characterID, blocked); err != nil {
-		return "", err
+}
+
+// setBlockedOffSession is the switch of a dead character when the campaign has no open session: no screen of a session shows it, so
+// it is a plain transaction that moves no hint number and tells nothing. The roster's method is named apart from the RPC handler
+// (MarkRevivifyBlocked): the archtest follows calls by name, and the handler's name would make this transaction look like a
+// session write.
+func (s *Service) setBlockedOffSession(ctx context.Context, m authz.Membership, target revivifyBlockTarget, blocked bool) error {
+	if target.combatantID != "" {
+		return errNoOpenSession()
 	}
-	if !hasSession {
-		return "", nil
+	return db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+		return s.roster.MarkRevivifyBlocked(ctx, tx, m.CampaignID, target.characterID, blocked)
+	})
+}
+
+// setBlockedIn is the transaction of the switch, with the open session sessionID locked.
+// It moves the session's number, and tells the combat that changed, if one did.
+func (s *Service) setBlockedIn(ctx context.Context, tx pgx.Tx, h *hints, m authz.Membership, target revivifyBlockTarget, blocked bool, sessionID string) error {
+	q := s.queries.WithTx(tx)
+	if target.combatantID != "" {
+		encounterID, err := s.blockCombatant(ctx, tx, q, sessionID, m.CampaignID, target.combatantID, blocked)
+		if err != nil {
+			return err
+		}
+		s.tellSwitched(h, m.CampaignID, encounterID)
+		return nil
 	}
-	return s.blockDeadInCombat(ctx, q, session.ID, target.characterID, blocked)
+	if err := s.roster.MarkRevivifyBlocked(ctx, tx, m.CampaignID, target.characterID, blocked); err != nil {
+		return err
+	}
+	encounterID, err := s.blockDeadInCombat(ctx, q, sessionID, target.characterID, blocked)
+	if err != nil {
+		return err
+	}
+	s.tellSwitched(h, m.CampaignID, encounterID)
+	return nil
+}
+
+// tellSwitched collects what the switch changed: the screens that show a dead creature read it, and the combat that holds it
+// (empty for none) is told once the transaction committed.
+func (s *Service) tellSwitched(h *hints, campaignID, encounterID string) {
+	h.touch()
+	if encounterID != "" {
+		s.tellEncounterAfter(h, campaignID, encounterID)
+	}
 }
 
 // blockCombatant sets the switch on a dead combatant of the open combat, and on its character
@@ -655,7 +704,7 @@ func (s *Service) blockCombatant(ctx context.Context, tx pgx.Tx, q *playdb.Queri
 		return "", fmt.Errorf("set the switch: %w", err)
 	}
 	if who.Kind == kindPlayer {
-		if err := s.roster.SetRevivifyBlocked(ctx, tx, campaignID, who.CharacterID, blocked); err != nil {
+		if err := s.roster.MarkRevivifyBlocked(ctx, tx, campaignID, who.CharacterID, blocked); err != nil {
 			return "", err
 		}
 	}

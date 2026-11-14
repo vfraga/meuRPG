@@ -475,6 +475,7 @@ func TestRevivifyFrozen_FogHidesAnNPCInTheDarkFromThePlayer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("maps.New() error = %v", err)
 	}
+	msvc.SetSessionHost(a.h.svc)
 	a.h.svc.SetTerrain(msvc)
 	a.h.svc.SetFog(msvc)
 	a.execSQL(t, `UPDATE maps SET fog_enabled = true WHERE id = $1`, a.mapID) // the base light is dark

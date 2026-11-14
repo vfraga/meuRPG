@@ -26,6 +26,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/ratelimit"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/dungeon"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
@@ -219,8 +220,6 @@ func (s *Service) CreateDungeonMap(
 	if replayed {
 		return s.dungeonReplay(ctx, in.m, created)
 	}
-	// A new map is hidden: only the master hears about it.
-	s.publishMapChanged(in.m.CampaignID, created.ID, false)
 	out, err := s.masterMap(ctx, in.m, created.ID)
 	if err != nil {
 		return nil, err
@@ -319,7 +318,7 @@ func (s *Service) buildDungeon(ctx context.Context, campaignID string, d *dungeo
 // insertDungeon writes the map in one transaction. replayed says another call with the same
 // key won the race, and created is its map (this call's files are then deleted by the caller).
 func (s *Service) insertDungeon(ctx context.Context, in dungeonCreate, b *dungeonBuild) (created mapsdb.Map, replayed bool, err error) {
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, in.m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		q := s.queries.WithTx(tx)
 		var err error
 		// The first lookup was outside the transaction: this one is what holds when two calls with the
@@ -327,7 +326,12 @@ func (s *Service) insertDungeon(ctx context.Context, in dungeonCreate, b *dungeo
 		created, replayed, err = idem.Create(ctx, in.scopedKey, in.requestHash, q.GetMapByCreateKey,
 			func(row mapsdb.Map) *string { return row.CreateHash },
 			func() (mapsdb.Map, error) { return s.writeDungeonMap(ctx, q, in, b) })
-		return err
+		if err != nil || replayed {
+			return err // the other call's map: it is told by the replay's answer (dungeonReplay)
+		}
+		// A new map is hidden: only the master hears about it.
+		s.announce(t, func(ctx context.Context) { s.publishMapChanged(ctx, in.m.CampaignID, created.ID, false) })
+		return nil
 	})
 	return created, replayed, err
 }
@@ -396,6 +400,15 @@ func (s *Service) writeDungeonRows(ctx context.Context, q *mapsdb.Queries, mapID
 // map, seed and room count, read back from the stored dungeon. It announces nothing (the first
 // call did).
 func (s *Service) dungeonReplay(ctx context.Context, m authz.Membership, prior mapsdb.Map) (*connect.Response[mapsv1.CreateDungeonMapResponse], error) {
+	// The first call may have died before it told: the master hears of the map again, with the number as it stands.
+	// The answer does not depend on it: a failure to tell is logged and the replay goes on.
+	if err := s.inSession(ctx, m.CampaignID, func(_ pgx.Tx, t sessiontell.Tell) error {
+		t.Replay()
+		s.announce(t, func(ctx context.Context) { s.publishMapChanged(ctx, m.CampaignID, prior.ID, false) })
+		return nil
+	}); err != nil {
+		s.logger.ErrorContext(ctx, "maps: cannot tell the master again about the dungeon of the key", "error", err)
+	}
 	rec, err := s.dungeonOf(ctx, s.queries, m.CampaignID, prior.ID)
 	if err != nil {
 		return nil, s.dbError(ctx, "read the dungeon of the key", err)
@@ -602,16 +615,19 @@ func (s *Service) RedrawDungeonMap(
 		s.beforeRedrawTx() // tests change the map here, between the render and the transaction
 	}
 	var out redrawOutcome
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		out, err = s.redrawTx(ctx, tx, m, src, img)
-		return err
+		if out, err = s.redrawTx(ctx, tx, m, src, img); err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) { s.announceRedraw(ctx, m.CampaignID, src, out, current) })
+		return nil
 	})
 	if err != nil {
 		s.deleteFiles(ctx, m.CampaignID, img.id)
 		return nil, s.dbError(ctx, "redraw a dungeon map", err)
 	}
-	mp, err := s.finishRedraw(ctx, m, src, out, current)
+	mp, err := s.finishRedraw(ctx, m, src, out)
 	if err != nil {
 		return nil, err
 	}
@@ -816,20 +832,24 @@ func (s *Service) deleteReplacedImage(ctx context.Context, tx pgx.Tx, q *mapsdb.
 	return portraits, nil
 }
 
-// finishRedraw is what comes after the commit: the old image's files, the stage when a
-// portrait was cleared, the fog's tiles and the map's change, and the answer.
-func (s *Service) finishRedraw(ctx context.Context, m authz.Membership, src *redrawSource, out redrawOutcome, current string) (*mapsv1.Map, error) {
+// finishRedraw is what comes after the commit that is not told: the old image's files and the map as the master reads it.
+func (s *Service) finishRedraw(ctx context.Context, m authz.Membership, src *redrawSource, out redrawOutcome) (*mapsv1.Map, error) {
 	if out.deleted {
 		s.deleteFiles(ctx, m.CampaignID, src.old.ID)
 	}
+	return s.masterMap(ctx, m, src.id)
+}
+
+// announceRedraw tells what the redraw changed, once it committed: the portraits it took off the stage and the map, whose fog tiles are cut
+// from the image.
+func (s *Service) announceRedraw(ctx context.Context, campaignID string, src *redrawSource, out redrawOutcome, current string) {
 	if out.portraits > 0 {
-		s.live.PublishToScene(ctx, m.CampaignID, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_StageChanged_{
+		s.publishScene(ctx, campaignID, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_StageChanged_{
 			StageChanged: &playv1.WatchGameSessionResponse_StageChanged{},
 		}})
 	}
 	s.tiles.forget(src.id) // the fog's tiles are cut from the image
-	s.publishMapChanged(m.CampaignID, src.id, playersSee(src.id, out.updated.RevealedAt, current))
-	return s.masterMap(ctx, m, src.id)
+	s.publishMapChanged(ctx, campaignID, src.id, playersSee(src.id, out.updated.RevealedAt, current))
 }
 
 // isGeneratedImage says whether the map's image is the one the generator drew for it.

@@ -18,6 +18,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
@@ -363,7 +364,7 @@ func (s *Service) shapeChange(ctx context.Context, campaignID, rawCharacter, raw
 		kind = eventWildShapeEnded
 	}
 	r := &shapeRun{m: m, v: viewerOf(m), characterID: characterID, beast: beast, leave: leave, wantStay: stay}
-	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: requestHash(campaignID, rawCharacter, beast, strconv.FormatBool(leave), strconv.FormatBool(stay)), kind: kind}, func(c *combatTx) (any, error) {
+	res, err := s.write(ctx, combatWrite{m: m, key: key, hash: requestHash(campaignID, rawCharacter, beast, strconv.FormatBool(leave), strconv.FormatBool(stay)), kind: kind, replayed: s.tellFormAgain(campaignID, characterID)}, func(c *combatTx) (any, error) {
 		return s.shapeTx(ctx, c, r)
 	})
 	if err != nil {
@@ -384,6 +385,28 @@ func (s *Service) shapeChange(ctx context.Context, campaignID, rawCharacter, raw
 		s.maps.VisionChanged(pctx, m.CampaignID, r.mapID) // the beast's senses, or the character's again
 	}
 	return vitals, out, nil
+}
+
+// tellFormAgain is what a repeated change of form adds to the hints of any repeated change: outside a combat nothing else tells
+// the vitals again (a combat's repeat tells those of its players), so the repeat tells the character's vitals as they stand and the
+// session's map sight again, as the first call did after its commit. A key that is another character's tells nothing: the call
+// is refused.
+func (s *Service) tellFormAgain(campaignID, characterID string) func(h *hints, session playdb.GameSession, payload []byte) {
+	return func(h *hints, session playdb.GameSession, payload []byte) {
+		var ev actionEvent
+		if json.Unmarshal(payload, &ev) != nil || ev.EncounterID != "" || ev.OwnerCharacter != characterID {
+			return
+		}
+		mapID := conv.OrZero(session.CurrentMapID)
+		h.after(func(ctx context.Context, say func(string, live.Event)) {
+			if v, err := s.vitals.GetVitals(ctx, campaignID, characterID); err == nil {
+				say(campaignID, vitalsHint(v))
+			} else {
+				s.logger.WarnContext(ctx, "play: cannot read the vitals to tell a repeated change of form", "error", err)
+			}
+			s.maps.VisionChanged(ctx, campaignID, mapID)
+		})
+	}
 }
 
 // shapeTx is the Wild Shape transaction: the form is checked, the turn's cost is

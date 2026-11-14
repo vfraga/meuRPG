@@ -138,6 +138,14 @@ func (s *Service) mustNotBeDown(ctx context.Context, tx pgx.Tx, campaignID strin
 // mustActNow checks, inside a write, that the combatant is the one that may
 // act now (on turn, in a running combat, not down).
 func (s *Service) mustActNow(ctx context.Context, c *combatTx, who playdb.Combatant) error {
+	if err := s.mustBeOnTurn(ctx, c, who); err != nil {
+		return err
+	}
+	return s.mustNotBeLimited(ctx, c, who, "") // a controlled mount that carries a rider takes no action but three (TakeAction asks for them)
+}
+
+// mustBeOnTurn is mustActNow without the limit of a mount: the combatant may act now, whatever the action.
+func (s *Service) mustBeOnTurn(ctx context.Context, c *combatTx, who playdb.Combatant) error {
 	if err := notEnded(c.enc); err != nil {
 		return err
 	}

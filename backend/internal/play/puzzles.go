@@ -74,6 +74,10 @@ type PuzzleMaps interface {
 	// currentMapID, or the map was revealed), "" otherwise; the function it returns
 	// tells the watchers after the commit.
 	PuzzleRevealPoint(ctx context.Context, tx pgx.Tx, campaignID, mapID, pointID, currentMapID string) (changed bool, name string, after func(context.Context), err error)
+	// PuzzleRevealedAgain tells the watchers again that the point was revealed, for the retry of the move that solved the puzzle.
+	PuzzleRevealedAgain(ctx context.Context, campaignID, mapID, pointID string)
+	// PuzzleClueGivenAgain tells the player again that the clue was given, for the same retry.
+	PuzzleClueGivenAgain(ctx context.Context, campaignID, clueID, userID string)
 	// PuzzleCheckClue says whether the clue is on a scene point of the campaign.
 	PuzzleCheckClue(ctx context.Context, tx pgx.Tx, campaignID, clueID string) error
 	// PuzzleRevealClue gives the clue to the character's player and says whether
@@ -553,21 +557,31 @@ func (s *Service) clueCheck(ctx context.Context, tx pgx.Tx, campaignID string, o
 
 // --- the stream ---
 
-// publishPuzzleChanged tells everyone in the session that a puzzle changed. The
-// hint names the puzzle and nothing else (RN-10): each app reads the puzzle again,
-// as a player or as the master. A hint that waits in a stream's queue is not queued
-// twice, and a time gate (puzzleGate) lets one hint out per puzzle every 250 ms.
-func (s *Service) publishPuzzleChanged(campaignID, puzzleID string) {
-	every := s.puzzles.hintEvery
-	if every <= 0 {
-		every = defaultHintEvery
-	}
-	s.puzzles.hints.fire(puzzleID, every, func() { s.sendPuzzleChanged(campaignID, puzzleID) })
+// tellPuzzleChanged collects the hint that a puzzle changed, for everyone in the session. The hint names the puzzle and nothing
+// else (RN-10): each app reads the puzzle again, as a player or as the master. It goes out after the commit through a time gate
+// (puzzleGate): one hint per puzzle every 250 ms, the changes in between merged into one, and a hint that waits in a stream's queue
+// is not queued twice. The write moves the session's number whether or not the gate lets the hint out at once.
+func (s *Service) tellPuzzleChanged(h *hints, campaignID, puzzleID string, later ...time.Duration) {
+	h.touch()
+	// The gate holds a hint back and sends it later, when the session's number has moved on: it goes without a number, which the
+	// write's own touch already moved.
+	h.after(func(_ context.Context, _ sayFn) {
+		every := s.puzzles.hintEvery
+		if every <= 0 {
+			every = defaultHintEvery
+		}
+		s.puzzles.hints.fire(puzzleID, every, func() { sayPuzzleChanged(s.sayNow, campaignID, puzzleID) })
+		for _, after := range later { // the apps read the run again at each moment the change asked for
+			if after > 0 {
+				s.puzzles.hints.schedule(after, func() { sayPuzzleChanged(s.sayNow, campaignID, puzzleID) })
+			}
+		}
+	})
 }
 
-// sendPuzzleChanged is the hint itself.
-func (s *Service) sendPuzzleChanged(campaignID, puzzleID string) {
-	s.send(campaignID, live.Event{
+// sayPuzzleChanged is the hint itself.
+func sayPuzzleChanged(say sayFn, campaignID, puzzleID string) {
+	say(campaignID, live.Event{
 		Audience: live.Audience{Everyone: true},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_PuzzleChanged_{
 			PuzzleChanged: &playv1.WatchGameSessionResponse_PuzzleChanged{PuzzleId: puzzleID},
@@ -593,19 +607,6 @@ func puzzleSessionEvent(ctx context.Context, q *playdb.Queries, session playdb.G
 		return fmt.Errorf("insert session event: %w", err)
 	}
 	return nil
-}
-
-// lockOpenSession locks the campaign's open session inside tx, the first step of
-// every change to a run, or fails with NO_OPEN_SESSION.
-func lockOpenSession(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, error) {
-	session, err := q.GetOpenGameSessionForUpdate(ctx, campaignID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return playdb.GameSession{}, errNoOpenSessionForPuzzle()
-	}
-	if err != nil {
-		return playdb.GameSession{}, fmt.Errorf("lock the open session: %w", err)
-	}
-	return session, nil
 }
 
 // requireMaster is the check at the top of the master's handlers.

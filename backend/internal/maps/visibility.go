@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
@@ -14,6 +15,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 )
 
 // Who sees what on a map (RN-10, MR-009). The master sees everything. A
@@ -356,25 +358,39 @@ func (s *Service) publish(campaignID string, players bool, ev *playv1.WatchGameS
 	s.live.Publish(campaignID, players, ev)
 }
 
+// publishUsers, publishUsersCoalesced and publishScene tell the streams of exactly those users, of those users with a hint that
+// a stream still holding one with the same key does not get again, and of the master and the players of the open scene.
+func (s *Service) publishUsers(ctx context.Context, campaignID string, users []string, ev *playv1.WatchGameSessionResponse) {
+	s.tellStreams(ctx, campaignID, sessiontell.Audience{Users: users}, ev)
+}
+
+func (s *Service) publishUsersCoalesced(ctx context.Context, campaignID string, users []string, key string, ev *playv1.WatchGameSessionResponse) {
+	s.tellStreams(ctx, campaignID, sessiontell.Audience{Users: users, Coalesce: key}, ev)
+}
+
+func (s *Service) publishScene(ctx context.Context, campaignID string, ev *playv1.WatchGameSessionResponse) {
+	s.tellStreams(ctx, campaignID, sessiontell.Audience{Scene: true}, ev)
+}
+
 // publishMapChanged tells the watching members that a map changed: the
 // master, and the players when players is true.
-func (s *Service) publishMapChanged(campaignID, mapID string, players bool) {
-	s.publish(campaignID, players, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MapChanged_{
+func (s *Service) publishMapChanged(ctx context.Context, campaignID, mapID string, players bool) {
+	s.tellStreams(ctx, campaignID, sessiontell.Audience{Master: true, Players: players}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_MapChanged_{
 		MapChanged: &playv1.WatchGameSessionResponse_MapChanged{MapId: mapID},
 	}})
 }
 
 // publishTokenMoved tells the watching members that a token moved.
-func (s *Service) publishTokenMoved(campaignID string, t mapsdb.MapToken, players bool) {
-	s.publish(campaignID, players, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TokenMoved_{
+func (s *Service) publishTokenMoved(ctx context.Context, campaignID string, t mapsdb.MapToken, players bool) {
+	s.tellStreams(ctx, campaignID, sessiontell.Audience{Master: true, Players: players}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TokenMoved_{
 		TokenMoved: &playv1.WatchGameSessionResponse_TokenMoved{MapId: t.MapID, CharacterId: t.CharacterID, XBp: t.XBp, YBp: t.YBp},
 	}})
 }
 
 // publishCurrentMapCleared tells everyone that the session has no current
 // map anymore: its map was deleted.
-func (s *Service) publishCurrentMapCleared(campaignID string) {
-	s.publish(campaignID, true, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
+func (s *Service) publishCurrentMapCleared(ctx context.Context, campaignID string) {
+	s.tellStreams(ctx, campaignID, sessiontell.Audience{Master: true, Players: true}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CurrentMapChanged_{
 		CurrentMapChanged: &playv1.WatchGameSessionResponse_CurrentMapChanged{},
 	}})
 }
@@ -384,7 +400,7 @@ func (s *Service) publishCurrentMapCleared(campaignID string) {
 // hidden: those points gained or lost their target. A player hears about a
 // parent they see, with a revealed point, when the target was visible to
 // them before or after (targetBefore, targetAfter) and that changed.
-func (s *Service) publishParentsChanged(campaignID, target string, cm campaignMaps, currentMap string, targetBefore, targetAfter bool) {
+func (s *Service) publishParentsChanged(ctx context.Context, campaignID, target string, cm campaignMaps, currentMap string, targetBefore, targetAfter bool) {
 	players := map[string]bool{}
 	var order []string
 	for _, l := range cm.links {
@@ -402,7 +418,7 @@ func (s *Service) publishParentsChanged(campaignID, target string, cm campaignMa
 			(l.Revealed && playersSee(parent.ID, parent.RevealedAt, currentMap) && targetBefore != targetAfter)
 	}
 	for _, id := range order {
-		s.publishMapChanged(campaignID, id, players[id])
+		s.publishMapChanged(ctx, campaignID, id, players[id])
 	}
 }
 
@@ -417,4 +433,41 @@ func stairsFromDB(s *string) mapsv1.StairDirection {
 		return mapsv1.StairDirection_STAIR_DIRECTION_DOWN
 	}
 	return mapsv1.StairDirection_STAIR_DIRECTION_UNSPECIFIED
+}
+
+// tellStreams sends ev to the audience: through the out of a funnel write's step when ctx has one, else straight to the live session
+// (a seam that play calls after its own commit, a write not under the funnel).
+func (s *Service) tellStreams(ctx context.Context, campaignID string, to sessiontell.Audience, ev *playv1.WatchGameSessionResponse) {
+	if out, ok := sessiontell.OutFrom(ctx); ok {
+		out.Send(ctx, to, ev)
+		return
+	}
+	liveOut{s: s, campaignID: campaignID}.Send(ctx, to, ev)
+}
+
+// liveOut is the Out over the LiveSession: no number.
+type liveOut struct {
+	s          *Service
+	campaignID string
+}
+
+// Send tells ev to the audience through the LiveSession.
+func (o liveOut) Send(ctx context.Context, to sessiontell.Audience, msg proto.Message) {
+	ev, ok := msg.(*playv1.WatchGameSessionResponse)
+	if !ok {
+		return
+	}
+	s := o.s
+	if to.Master { // the master always, the players when asked: the LiveSession has no audience of players alone
+		s.publish(o.campaignID, to.Players, ev)
+	}
+	switch {
+	case len(to.Users) > 0 && to.Coalesce != "":
+		s.live.PublishToUsersCoalesced(o.campaignID, to.Users, to.Coalesce, ev)
+	case len(to.Users) > 0:
+		s.live.PublishToUsers(o.campaignID, to.Users, ev)
+	}
+	if to.Scene {
+		s.live.PublishToScene(ctx, o.campaignID, ev)
+	}
 }

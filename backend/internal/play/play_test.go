@@ -626,7 +626,7 @@ func (noMaps) ListLeftImages(context.Context, string, string, bool) ([]*playv1.S
 	return nil, errors.New("not in this test")
 }
 
-func (noMaps) TakeBackImage(context.Context, string, string) (link.ImageAudience, error) {
+func (noMaps) TakeBackImage(context.Context, pgx.Tx, string, string) (link.ImageAudience, error) {
 	return link.ImageAudience{}, errors.New("not in this test")
 }
 
@@ -726,7 +726,7 @@ func (noRoster) ReviveDead(context.Context, pgx.Tx, string, string, time.Time) (
 	return "", errors.New("not in this test")
 }
 
-func (noRoster) SetRevivifyBlocked(context.Context, pgx.Tx, string, string, bool) error {
+func (noRoster) MarkRevivifyBlocked(context.Context, pgx.Tx, string, string, bool) error {
 	return errors.New("not in this test")
 }
 
@@ -961,6 +961,9 @@ func TestEveryMethodNeedsASession(t *testing.T) {
 	_, combat["StandUp"] = cc.StandUp(ctx, connect.NewRequest(&playv1.StandUpRequest{CampaignId: id}))
 	_, combat["GetMoveOptions"] = cc.GetMoveOptions(ctx, connect.NewRequest(&playv1.GetMoveOptionsRequest{CampaignId: id}))
 	_, combat["SetCombatantSide"] = cc.SetCombatantSide(ctx, connect.NewRequest(&playv1.SetCombatantSideRequest{CampaignId: id}))
+	_, combat["MountCombatant"] = cc.MountCombatant(ctx, connect.NewRequest(&playv1.MountCombatantRequest{CampaignId: id}))
+	_, combat["DismountCombatant"] = cc.DismountCombatant(ctx, connect.NewRequest(&playv1.DismountCombatantRequest{CampaignId: id}))
+	_, combat["SetCombatantMount"] = cc.SetCombatantMount(ctx, connect.NewRequest(&playv1.SetCombatantMountRequest{CampaignId: id}))
 	_, combat["SetCombatantCover"] = cc.SetCombatantCover(ctx, connect.NewRequest(&playv1.SetCombatantCoverRequest{CampaignId: id}))
 	_, combat["SetMonsterReactionMode"] = cc.SetMonsterReactionMode(ctx, connect.NewRequest(&playv1.SetMonsterReactionModeRequest{CampaignId: id}))
 	_, combat["SetSunlight"] = cc.SetSunlight(ctx, connect.NewRequest(&playv1.SetSunlightRequest{CampaignId: id}))

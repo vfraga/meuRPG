@@ -187,7 +187,10 @@ func (st inspirationHoldStore) answerReroll(ctx context.Context, h heldRoll) err
 
 // answerReroll writes the answer of a hold in the store that keeps it; only inspiration_holds keeps a reroll question.
 func (hs heldStores) answerReroll(ctx context.Context, h heldRoll) error {
-	return hs.st.answerReroll(ctx, h)
+	if err := hs.st.answerReroll(ctx, h); err != nil {
+		return err
+	}
+	return hs.env.heldRowChanged(ctx, h)
 }
 
 // rerollQuestion is "Rolar de novo?".
@@ -222,7 +225,7 @@ func (q rerollQuestion) apply(ctx context.Context, ae answering, h heldRoll, a h
 			return h, err
 		}
 	}
-	if err := newHeldStores(ae.q).answerReroll(ctx, after); err != nil {
+	if err := ae.stores().answerReroll(ctx, after); err != nil {
 		return h, fmt.Errorf("answer the reroll question: %w", err)
 	}
 	return after, nil
@@ -290,7 +293,7 @@ func (s *Service) gateRerollAnswer(ctx context.Context, ae answering, h heldRoll
 	if !(dieQuestion{}).pending(h, ae.st) {
 		return s.gateSettle(ctx, ae, h, a)
 	}
-	if err := newHeldStores(ae.q).asked(ctx, ae.gateEnv, h); err != nil {
+	if err := ae.stores().asked(ctx, ae.gateEnv, h); err != nil {
 		return gateResult{}, err
 	}
 	return gateResult{Held: new(askedBy(h, ae.st))}, nil

@@ -96,7 +96,7 @@ func (q luckyQuestion) apply(ctx context.Context, ae answering, h heldRoll, a he
 		return h, connect.NewError(connect.CodeFailedPrecondition, errors.New("the Lucky question was answered already"))
 	}
 	after := h.afterLucky(a, ae.spec)
-	if err := newHeldStores(ae.q).answerLucky(ctx, h, after, ae.st.Holds); err != nil {
+	if err := ae.stores().answerLucky(ctx, h, after, ae.st.Holds); err != nil {
 		return h, fmt.Errorf("answer the Lucky question: %w", err)
 	}
 	return after, nil
@@ -159,7 +159,7 @@ func (dieQuestion) apply(ctx context.Context, ae answering, h heldRoll, a heldRe
 			return h, err
 		}
 	}
-	if err := newHeldStores(ae.q).answer(ctx, h, a.key); err != nil {
+	if err := ae.stores().answer(ctx, h, a.key); err != nil {
 		return h, fmt.Errorf("answer the held roll: %w", err)
 	}
 	h.AnswerKey = &a.key

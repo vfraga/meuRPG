@@ -217,6 +217,7 @@ func newHarness(t *testing.T, configure ...func(*Config)) *harness {
 	// gate's once-a-second timing (armed by the setup's own paints) would race it.
 	// TestMR036_APaintHeldByTheGateStillReachesThePlayers sets its own interval.
 	svc.layerHintEvery = 0
+	svc.SetSessionHost(live) // the writes run under play's funnel, as cmd/api wires them
 	h.svc = svc
 	// A request's goroutine must end before the test's pool goes away.
 	t.Cleanup(func() {

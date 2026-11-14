@@ -11,7 +11,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -48,16 +48,18 @@ func (s *Service) UpdateMap(
 		}
 	}
 	var w mapUpdateWrite
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		w, err = s.writeMapUpdate(ctx, tx, mapUpdateTx{mapUpdate: update, campaignID: m.CampaignID, userID: m.UserID, mapID: mapID, imageCopy: imageCopy, fogSeen: fogSeen})
-		return err
+		if w, err = s.writeMapUpdate(ctx, tx, mapUpdateTx{mapUpdate: update, campaignID: m.CampaignID, userID: m.UserID, mapID: mapID, imageCopy: imageCopy, fogSeen: fogSeen}); err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) { s.announceMapUpdate(ctx, m, mapID, current, w) })
+		return nil
 	})
 	s.discardFogCopy(ctx, m.CampaignID, imageCopy, err != nil || !w.copied)
 	if err != nil {
 		return nil, s.dbError(ctx, "update a map", err)
 	}
-	s.announceMapUpdate(ctx, m, mapID, current, w)
 	out, err := s.masterMap(ctx, m, mapID)
 	if err != nil {
 		return nil, err
@@ -199,7 +201,7 @@ func checkImageFitsGrid(row mapsdb.Map, imageID string, img mapsdb.GalleryImage)
 // announceMapUpdate tells the watchers of an updated map, and forgets what
 // depended on the layers when a new image cleared them.
 func (s *Service) announceMapUpdate(ctx context.Context, m authz.Membership, mapID, current string, w mapUpdateWrite) {
-	s.publishMapChanged(m.CampaignID, mapID, playersSee(mapID, w.updated.RevealedAt, current))
+	s.publishMapChanged(ctx, m.CampaignID, mapID, playersSee(mapID, w.updated.RevealedAt, current))
 	if w.cleared {
 		s.tiles.forget(mapID)
 		s.refreshVision(ctx, m.CampaignID, mapID) // the players' memory went with the layers

@@ -14,7 +14,7 @@ func TestCheckWiredNamesWhatIsMissing(t *testing.T) {
 	if err == nil {
 		t.Fatal("CheckWired() on an unwired service = nil, want an error")
 	}
-	for _, setter := range []string{"SetGallery", "SetLive", "SetCreatureHost", "SetReviewHost", "SetLevelUps"} {
+	for _, setter := range []string{"SetGallery", "SetLive", "SetCreatureHost", "SetReviewHost", "SetLevelUps", "SetSessionHost"} {
 		if !strings.Contains(err.Error(), setter) {
 			t.Errorf("CheckWired() = %q, want it to name %s", err, setter)
 		}

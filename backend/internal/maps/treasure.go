@@ -16,7 +16,7 @@ import (
 	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1/mapsv1connect"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
@@ -239,17 +239,22 @@ func (s *Service) PlaceTreasure(
 	requestHash := hashTreasureRequest(plan.mapID, plan.column, plan.row, plan.mode, plan.level, plan.seed, plan.name, plan.version)
 
 	var placed treasurePlacement
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		placed, err = s.placeTreasureTx(ctx, s.queries.WithTx(tx), m.CampaignID, plan, scopedKey, requestHash)
-		return err
+		if placed, err = s.placeTreasureTx(ctx, s.queries.WithTx(tx), m.CampaignID, plan, scopedKey, requestHash); err != nil {
+			return err
+		}
+		if placed.replayed {
+			t.Replay() // the first call may have died before it told: the notice goes out again, with the number as it stands
+		}
+		// A new point is hidden: only the master hears about it (MR-009).
+		s.announce(t, func(ctx context.Context) {
+			s.publishPointsChanged(ctx, m.CampaignID, placed.mapRow, playersSee(plan.mapID, placed.mapRow.RevealedAt, current) && everyoneSees(placed.point), placed.point)
+		})
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "place a treasure", err)
-	}
-	// A new point is hidden: only the master hears about it (MR-009).
-	if !placed.replayed {
-		s.publishPointsChanged(ctx, m.CampaignID, placed.mapRow, playersSee(plan.mapID, placed.mapRow.RevealedAt, current) && everyoneSees(placed.point), placed.point)
 	}
 	out, err := s.masterPoint(ctx, m, placed.point)
 	if err != nil {

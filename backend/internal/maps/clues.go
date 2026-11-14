@@ -17,9 +17,9 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
 	notelink "github.com/PuraFome/meuRPG/backend/internal/notes/link"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/names"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 )
@@ -97,14 +97,11 @@ func (s *Service) AddSceneClue(
 		return nil, err
 	}
 	call := &addClueCall{pointID: pointID, text: text, scopedKey: scopedKey, requestHash: requestHash}
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		return s.appendClue(ctx, q, call)
-	})
+	}, s.cluesTold(m.CampaignID, func() bool { return call.replayed }))
 	if err != nil {
 		return nil, s.dbError(ctx, "add a scene clue", err)
-	}
-	if !call.replayed {
-		s.cluesChanged(ctx, m.CampaignID, ch)
 	}
 	clues, err := s.cluesOfPoint(ctx, m.CampaignID, pointID)
 	if err != nil {
@@ -146,6 +143,13 @@ func (s *Service) insertClue(ctx context.Context, q *mapsdb.Queries, call *addCl
 	return c, err
 }
 
+// cluesTold is what a change to a point's clues tells: the master hears, and a repeat of the key (replayed) tells it again.
+func (s *Service) cluesTold(campaignID string, replayed func() bool) func(ch changedPoint) *sceneTold {
+	return func(ch changedPoint) *sceneTold {
+		return &sceneTold{replayed: replayed != nil && replayed(), tell: func(ctx context.Context) { s.cluesChanged(ctx, campaignID, ch) }}
+	}
+}
+
 // UpdateSceneClue implements mapsv1connect.MapServiceHandler.
 func (s *Service) UpdateSceneClue(
 	ctx context.Context,
@@ -163,7 +167,7 @@ func (s *Service) UpdateSceneClue(
 	if err != nil {
 		return nil, err
 	}
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		if _, err := q.GetSceneClueForUpdate(ctx, mapsdb.GetSceneClueForUpdateParams{PointID: pointID, ID: clueID}); errors.Is(err, pgx.ErrNoRows) {
 			return errClueNotFound()
 		} else if err != nil {
@@ -173,11 +177,10 @@ func (s *Service) UpdateSceneClue(
 			return fmt.Errorf("update clue: %w", err)
 		}
 		return nil
-	})
+	}, s.cluesTold(m.CampaignID, nil))
 	if err != nil {
 		return nil, s.dbError(ctx, "update a scene clue", err)
 	}
-	s.cluesChanged(ctx, m.CampaignID, ch)
 	clues, err := s.cluesOfPoint(ctx, m.CampaignID, pointID)
 	if err != nil {
 		return nil, err
@@ -203,16 +206,19 @@ func (s *Service) MoveSceneClue(
 		return nil, err
 	}
 	moved := false
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	tell := s.cluesTold(m.CampaignID, nil)
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		var err error
 		moved, err = shiftClue(ctx, q, pointID, clueID, step)
 		return err
+	}, func(ch changedPoint) *sceneTold {
+		if !moved {
+			return nil // the first clue up or the last down: nothing changed
+		}
+		return tell(ch)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "move a scene clue", err)
-	}
-	if moved {
-		s.cluesChanged(ctx, m.CampaignID, ch)
 	}
 	clues, err := s.cluesOfPoint(ctx, m.CampaignID, pointID)
 	if err != nil {
@@ -257,7 +263,7 @@ func (s *Service) RemoveSceneClue(
 	if !ok {
 		return nil, errClueNotFound()
 	}
-	ch, err := s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
+	err = s.changeActions(ctx, m, mapID, pointID, func(q *mapsdb.Queries) error {
 		n, err := q.DeleteSceneClue(ctx, mapsdb.DeleteSceneClueParams{PointID: pointID, ID: clueID})
 		if err != nil {
 			return fmt.Errorf("delete clue: %w", err)
@@ -266,11 +272,10 @@ func (s *Service) RemoveSceneClue(
 			return errClueNotFound()
 		}
 		return nil
-	})
+	}, s.cluesTold(m.CampaignID, nil))
 	if err != nil {
 		return nil, s.dbError(ctx, "remove a scene clue", err)
 	}
-	s.cluesChanged(ctx, m.CampaignID, ch)
 	clues, err := s.cluesOfPoint(ctx, m.CampaignID, pointID)
 	if err != nil {
 		return nil, err
@@ -315,15 +320,17 @@ func (s *Service) RevealSceneClue(
 	}
 	call := revealCall{m: m, clueID: clueID, characterIDs: characterIDs, userOf: userOf}
 	var res clueReveal
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		res, err = s.revealClueTx(ctx, tx, call)
-		return err
+		if res, err = s.revealClueTx(ctx, tx, call); err != nil || len(res.newUsers) == 0 {
+			return err // everyone had it: nothing is told and no number moves
+		}
+		s.announce(t, func(ctx context.Context) { s.publishReveal(ctx, m.CampaignID, res) })
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "reveal a scene clue", err)
 	}
-	s.publishReveal(ctx, m.CampaignID, res)
 	clues, err := s.cluesOfPoint(ctx, m.CampaignID, res.clue.PointID)
 	if err != nil {
 		return nil, err
@@ -391,7 +398,7 @@ func (s *Service) publishReveal(ctx context.Context, campaignID string, res clue
 	if len(res.newUsers) == 0 {
 		return
 	}
-	s.live.PublishToUsers(campaignID, res.newUsers, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_NotesChanged_{
+	s.publishUsers(ctx, campaignID, res.newUsers, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_NotesChanged_{
 		NotesChanged: &playv1.WatchGameSessionResponse_NotesChanged{},
 	}})
 	s.publishSceneChangedToMasterIf(ctx, campaignID, res.clue.PointID)
@@ -400,7 +407,7 @@ func (s *Service) publishReveal(ctx context.Context, campaignID string, res clue
 // cluesChanged tells the master's watching streams that a point's clues
 // changed. A player's stream hears nothing: no player reads a clue from here.
 func (s *Service) cluesChanged(ctx context.Context, campaignID string, ch changedPoint) {
-	s.publishMapChanged(campaignID, ch.mapRow.ID, false)
+	s.publishMapChanged(ctx, campaignID, ch.mapRow.ID, false)
 	s.publishSceneChangedToMasterIf(ctx, campaignID, ch.point.ID)
 }
 
@@ -413,7 +420,7 @@ func (s *Service) publishSceneChangedToMasterIf(ctx context.Context, campaignID,
 		return
 	}
 	if open != "" && open == pointID {
-		s.publish(campaignID, false, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneChanged_{
+		s.tellStreams(ctx, campaignID, sessiontell.Audience{Master: true}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_SceneChanged_{
 			SceneChanged: &playv1.WatchGameSessionResponse_SceneChanged{},
 		}})
 	}

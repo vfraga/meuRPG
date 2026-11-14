@@ -317,7 +317,7 @@ func (s *Service) orderWrite(ctx context.Context, c *combatTx, call orderCall) (
 	if err := mustBeTied(cs, call.ids, call.m); err != nil {
 		return nil, err
 	}
-	if _, err := saveOrder(ctx, c.q, cs, withOrder(orderCombatants(cs), call.ids)); err != nil {
+	if _, err := saveOrder(ctx, c.q, cs, pairTies(mountsAfterRiders(withOrder(orderCombatants(cs), call.ids)))); err != nil {
 		return nil, err
 	}
 	if err := touch(ctx, c); err != nil {
@@ -620,6 +620,10 @@ func (s *Service) removeWrite(ctx context.Context, c *combatTx, m authz.Membersh
 	if cs, err = s.releaseCreatures(ctx, c, cs, target); err != nil {
 		return nil, err
 	}
+	// A mount it carried has its own place back before the turn is settled.
+	if cs, _, err = releaseMountOf(ctx, c, cs, target); err != nil {
+		return nil, err
+	}
 	// It leaves the turn first; the turn passes when nobody who acts is left.
 	if *turnPassed, err = leaveTurn(ctx, c, cs, target); err != nil {
 		return nil, err
@@ -638,6 +642,9 @@ func (s *Service) removeWrite(ctx context.Context, c *combatTx, m authz.Membersh
 	}
 	rest := slices.DeleteFunc(slices.Clone(cs), func(o playdb.Combatant) bool { return o.ID == target.ID })
 	if _, err := saveOrder(ctx, c.q, cs, rest); err != nil {
+		return nil, err
+	}
+	if err := settleMounts(ctx, c); err != nil { // the mount of a rider that left has its own place back
 		return nil, err
 	}
 	c.characterID = &target.CharacterID

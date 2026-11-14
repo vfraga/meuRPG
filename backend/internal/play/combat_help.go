@@ -250,7 +250,7 @@ func (s *Service) helpParties(ctx context.Context, c *combatTx, v combatViewer, 
 	if helper, err = findCombatant(cs, p.helperID, v); err != nil {
 		return helper, ally, err
 	}
-	if err := v.mayAct(helper); err != nil {
+	if err := v.mayMove(cs, helper); err != nil {
 		return helper, ally, err
 	}
 	if err := s.mustActNow(ctx, c, helper); err != nil {

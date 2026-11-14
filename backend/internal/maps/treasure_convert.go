@@ -42,7 +42,7 @@ func (t *Treasures) PublishChanged(campaignID string, mapIDs []string) {
 		return
 	}
 	for _, id := range mapIDs {
-		t.svc.publishMapChanged(campaignID, id, false)
+		t.svc.publishMapChanged(context.Background(), campaignID, id, false)
 	}
 }
 

@@ -86,6 +86,11 @@ func (s *Service) legendaryCheck(ctx context.Context, c *combatTx, ask legendary
 	if err := s.legendaryTableHeld(ctx, c, ask.who); err != nil {
 		return none, err
 	}
+	if ask.kind != rules.LegendaryKindMove { // an attack or a text option is an action: a mount that carries a rider takes none but three
+		if err := s.mustNotBeLimited(ctx, c, ask.who, ""); err != nil {
+			return none, err
+		}
+	}
 	opt, err := legendaryOptionOf(p, ask)
 	if err != nil {
 		return none, err

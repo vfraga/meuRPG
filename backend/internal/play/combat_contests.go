@@ -303,7 +303,7 @@ func (s *Service) readContestRun(ctx context.Context, c *combatTx, st contestSta
 	if err != nil {
 		return nil, err
 	}
-	if err := v.mayAct(initiator); err != nil {
+	if err := v.mayMove(cs, initiator); err != nil {
 		return nil, err
 	}
 	open, err := c.q.ListUnansweredContestsOf(ctx, playdb.ListUnansweredContestsOfParams{EncounterID: c.enc.ID, InitiatorID: initiator.ID})
@@ -610,7 +610,7 @@ func (s *Service) startContest(ctx context.Context, m authz.Membership, msg *pla
 		if made, err = s.startContestTx(ctx, c, st, &held); err != nil {
 			return nil, err
 		}
-		if held != nil { // the d20 is kept for a question: nothing is written
+		if held != nil { // the d20 is kept for a question: only the held roll is written
 			return nil, nil
 		}
 		return made, nil
@@ -869,7 +869,7 @@ func (s *Service) answerContestTx(ctx context.Context, c *combatTx, ans contestA
 		if p, gate, err = s.gateContestDefender(ctx, r); err != nil {
 			return actionEvent{}, err
 		}
-		if gate.Held != nil { // the d20 is kept for a question: nothing is written
+		if gate.Held != nil { // the d20 is kept for a question: only the held roll is written
 			*held = s.heldCheckOffer(ctx, c, gate)
 			return actionEvent{}, nil
 		}
@@ -920,7 +920,7 @@ func (s *Service) respondContest(ctx context.Context, m authz.Membership, msg *p
 		if made, err = s.answerContestTx(ctx, c, ans, &held); err != nil {
 			return nil, err
 		}
-		if held != nil { // the d20 is kept for a question: nothing is written
+		if held != nil { // the d20 is kept for a question: only the held roll is written
 			return nil, nil
 		}
 		return made, nil
@@ -969,7 +969,7 @@ type pushPlan struct {
 // feet straight away from the shover, free when it is on the grid, not a wall or a column
 // and not held by another creature. A player is told only what they know of the map and
 // see of the creatures (RN-10): a push that really is blocked by something they do not
-// see is offered and does not move the target.
+// see is offered and does not move the target. A rider is never pushed: its mount holds its square.
 func (s *Service) pushPlanOf(terrain, plan grid.Terrain, enc playdb.Encounter, cs []playdb.Combatant, shover, target playdb.Combatant, v combatViewer) pushPlan {
 	if isTheatre(enc) || !placed(shover) || !placed(target) {
 		return pushPlan{}
@@ -977,6 +977,15 @@ func (s *Service) pushPlanOf(terrain, plan grid.Terrain, enc playdb.Encounter, c
 	col, row := combat.PushStep(int(*shover.GridCol), int(*shover.GridRow), int(*target.GridCol), int(*target.GridRow))
 	to := grid.Square{Col: col, Row: row}
 	out := pushPlan{has: true, to: to}
+	if mount := ridingOn(cs, target); mount != nil {
+		return riderPushPlan(out, v, *mount)
+	}
+	return pushBlocks(terrain, plan, cs, target, v, out)
+}
+
+// pushBlocks says what holds the square a push would send the target to, as the viewer knows the map and the creatures.
+func pushBlocks(terrain, plan grid.Terrain, cs []playdb.Combatant, target playdb.Combatant, v combatViewer, out pushPlan) pushPlan {
+	to := out.to
 	from := squareOfCombatant(target)
 	mover := moverOf(target)
 	wallIn := func(t grid.Terrain) bool { return t.Move(from, to, grid.OccupantMap{}, mover).Blocked }
@@ -998,6 +1007,16 @@ func (s *Service) pushPlanOf(terrain, plan grid.Terrain, enc playdb.Encounter, c
 		out.blocked, out.why = true, playv1.ShoveBlockedReason_SHOVE_BLOCKED_REASON_CREATURE
 	}
 	out.reallyBlocked = out.blocked || wallIn(terrain) || creatureAt(false)
+	return out
+}
+
+// riderPushPlan is the push of a rider: it sits on its mount's square and is not pushed off it, so the shove can knock it prone and
+// not push it. A viewer who does not see the mount is offered the push, which then stays, as for any blocker they do not see (RN-10).
+func riderPushPlan(out pushPlan, v combatViewer, mount playdb.Combatant) pushPlan {
+	out.reallyBlocked = true
+	if v.sees(mount) {
+		out.blocked, out.why = true, playv1.ShoveBlockedReason_SHOVE_BLOCKED_REASON_CREATURE
+	}
 	return out
 }
 
@@ -1100,6 +1119,9 @@ func shovePushes(ctx context.Context, r *shoveRun) (stored, line string, err err
 		ID: r.target.ID, GridCol: new(clamp32(push.to.Col, 0, math.MaxInt32)), GridRow: new(clamp32(push.to.Row, 0, math.MaxInt32)), CoverMark: "none",
 	}); err != nil {
 		return "", "", fmt.Errorf("push the target: %w", err)
+	}
+	if err := carryRider(ctx, r.c.q, r.target.ID); err != nil {
+		return "", "", err
 	}
 	from := squareOfCombatant(r.target)
 	if err := r.c.svc.zonesAfterSteps(ctx, r.c, zoneStep{who: r.target.ID, from: &from, path: []grid.Square{push.to}, travels: true}); err != nil {

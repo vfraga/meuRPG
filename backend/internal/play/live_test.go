@@ -469,15 +469,16 @@ func TestAdjustCharacterVitalsIsIdempotent(t *testing.T) {
 		t.Errorf("vitals after the refused call = %v, want them as they were", v)
 	}
 
-	// The player's stream got exactly the two changes, not the retries.
-	for _, want := range []int32{3, 5} {
+	// The player's stream got the two changes, each followed by the hint of the retry that found its key stored (the first call may
+	// have died before it told: the hint says "read again", with the vitals as they stood), and nothing of the refused calls.
+	for _, want := range []int32{3, 3, 5, 5} {
 		if got := stream.nextChange(t).GetVitalsChanged().GetVitals().GetHitPointsCurrent(); got != want {
 			t.Errorf("vitals_changed hit points = %d, want %d", got, want)
 		}
 	}
 	master.end(t, session)
 	if ev := stream.nextChange(t); ev.GetSessionEnded() == nil {
-		t.Errorf("event after the retries = %v, want session_ended (no vitals_changed for a retry)", ev)
+		t.Errorf("event after the retries = %v, want session_ended (nothing for the refused calls)", ev)
 	}
 }
 

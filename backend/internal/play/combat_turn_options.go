@@ -66,6 +66,9 @@ func (s *Service) GetTurnOptions(
 	if err != nil {
 		return nil, err
 	}
+	if err := s.attachMountOptions(ctx, m.CampaignID, d, v, who, terrain, res.GetOptions()); err != nil {
+		return nil, err
+	}
 	modes, err := s.weighTurnModes(ctx, m, d, v, sight, who)
 	if err != nil {
 		return nil, err
@@ -93,6 +96,7 @@ func (s *Service) GetTurnOptions(
 	if err := s.markUnseenTargets(ctx, m, res, d, v, sight, who); err != nil {
 		return nil, err
 	}
+	limitMountOptions(res, d.cs, v, who) // last: nothing above turns a row of a mount back on
 	return connect.NewResponse(res), nil
 }
 
@@ -143,7 +147,7 @@ func (s *Service) locateTurnOptions(ctx context.Context, m authz.Membership, cal
 	if err != nil {
 		return nil, v, sight, who, err
 	}
-	return d, v, sight, who, v.mayAct(who)
+	return d, v, sight, who, v.mayMove(d.cs, who)
 }
 
 // workOutOptions works out the options of the combatant, and disables them all with the reason it cannot

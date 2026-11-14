@@ -30,6 +30,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"connectrpc.com/connect"
@@ -189,9 +190,10 @@ type MapKeeper interface {
 	// reads, oldest first: every one for the master (each with its audience),
 	// and for a player the ones left with them.
 	ListLeftImages(ctx context.Context, campaignID, userID string, master bool) ([]*playv1.ShownImage, error)
-	// TakeBackImage removes the image from the left list and returns who it was
-	// left with, or returns a `not_found` Connect error when it is not on it.
-	TakeBackImage(ctx context.Context, campaignID, imageID string) (link.ImageAudience, error)
+	// TakeBackImage removes the image from the left list inside tx and returns
+	// who it was left with, or returns a `not_found` Connect error when it is
+	// not on it.
+	TakeBackImage(ctx context.Context, tx pgx.Tx, campaignID, imageID string) (link.ImageAudience, error)
 	// MapGrid, ScenePoint and MapTokens read inside tx when the caller has one
 	// (nil: the pool): a change that holds a transaction must pass it.
 	//
@@ -303,9 +305,9 @@ type CombatRoster interface {
 	// has another living character). It returns its name. `failed_precondition` for a
 	// character that is not dead.
 	ReviveDead(ctx context.Context, tx pgx.Tx, campaignID, characterID string, at time.Time) (name string, err error)
-	// SetRevivifyBlocked sets the master's switch "Revivificar não funciona nesta morte" on
+	// MarkRevivifyBlocked sets the master's switch "Revivificar não funciona nesta morte" on
 	// a dead player's character inside tx; `failed_precondition` when it is not dead.
-	SetRevivifyBlocked(ctx context.Context, tx pgx.Tx, campaignID, characterID string, blocked bool) error
+	MarkRevivifyBlocked(ctx context.Context, tx pgx.Tx, campaignID, characterID string, blocked bool) error
 	// SceneOptions returns, for each key of a scene's checks, the character's
 	// bonus and passive value (the rules engine's SceneOptions), in the order of
 	// keys. `not_found` for any other character.
@@ -595,11 +597,15 @@ type Service struct {
 	// afterSightRead is a test hook: it runs between the moment a change reads the
 	// sight and the moment it opens its transaction.
 	afterSightRead func(encounterID string)
+	// afterSessionRead is a test hook: it runs between the moment a write reads the open session without a lock and the moment
+	// Service.tx locks it (txOpen, setBlocked).
+	afterSessionRead func(campaignID string)
 	// afterTrapRead is a test hook: it runs between the moment a firing outside a combat
 	// reads where the tokens stand and the moment it opens its transaction.
 	afterTrapRead func()
 	// dropSend is a test hook: send drops an event for which it returns true, as a send lost after the commit would be.
-	dropSend func(campaignID string, ev live.Event) bool
+	// It is swapped while sends run (a gate's timer sends on its own goroutine), so it is read and stored atomically.
+	dropSend atomic.Pointer[sendDrop]
 	roller   dice.Roller
 	logger   *slog.Logger
 	now      func() time.Time

@@ -16,8 +16,8 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
@@ -180,19 +180,57 @@ func trapDamageProto(d playdb.TrapDamage, trapName, characterName string) *playv
 
 // settleTrapDamage applies or discards a trap damage outside a combat. apply says
 // which; override is the master's amount, nil to apply the rolled one.
+//
+// The damage outlives its session, so it may be settled with none open: then it is the damage's own session that is locked (its
+// row is the one the vitals' event is written in), and nothing is told, because no stream watches a session that is over.
 func (s *Service) settleTrapDamage(ctx context.Context, m authz.Membership, key, rawID string, apply bool, override *int32) (playdb.TrapDamage, *playv1.CharacterVitals, error) {
 	id, err := uuid.Parse(rawID)
 	if err != nil {
-		return playdb.TrapDamage{}, nil, connect.NewError(connect.CodeNotFound, errors.New("trap damage not found"))
+		return playdb.TrapDamage{}, nil, errTrapDamageNotFound()
 	}
 	st := newTrapSettle(m, key, id.String(), apply, override)
-	if err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return s.settleTrapDamageTx(ctx, tx, st) }); err != nil {
-		return playdb.TrapDamage{}, nil, err
+	for try := 1; ; try++ {
+		lock, err := s.settleSessionOf(ctx, m.CampaignID, st.id)
+		if err != nil {
+			return playdb.TrapDamage{}, nil, err
+		}
+		err = s.tx(ctx, lock, func(tx pgx.Tx, h *hints) error { return s.settleTrapDamageTx(ctx, tx, h, st, lock) })
+		if err == nil {
+			return st.row, st.after, nil
+		}
+		if !errors.Is(err, errSessionMoved) {
+			return playdb.TrapDamage{}, nil, err
+		}
+		if try >= maxSessionTries {
+			return playdb.TrapDamage{}, nil, connect.NewError(connect.CodeAborted, errors.New("the session keeps changing: try again"))
+		}
 	}
-	if !st.repeated {
-		s.afterTrapSettled(ctx, st)
+}
+
+// errTrapDamageNotFound is the answer for a damage the campaign does not hold.
+func errTrapDamageNotFound() error {
+	return connect.NewError(connect.CodeNotFound, errors.New("trap damage not found"))
+}
+
+// settleSessionOf is the session a settling locks: the campaign's open one, read without a lock, or, when none is open, the session
+// the damage was made in.
+func (s *Service) settleSessionOf(ctx context.Context, campaignID, damageID string) (string, error) {
+	open, err := s.queries.GetOpenGameSession(ctx, campaignID)
+	if err == nil {
+		return open.ID, nil
 	}
-	return st.row, st.after, nil
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return "", s.dbError(ctx, "find the open session", err)
+	}
+	// A statement of its own: the row is locked for the instant it takes to read it, and the transaction reads it again, under the session's lock.
+	found, err := s.queries.GetCampaignTrapDamageForUpdate(ctx, playdb.GetCampaignTrapDamageForUpdateParams{CampaignID: campaignID, ID: damageID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", errTrapDamageNotFound()
+	}
+	if err != nil {
+		return "", s.dbError(ctx, "find the trap damage", err)
+	}
+	return found.GameSessionID, nil
 }
 
 // trapSettle is one settling of a trap damage: what the master asked, and what the transaction
@@ -239,27 +277,20 @@ func (st *trapSettle) reset() {
 	st.after, st.repeated, st.shapeChanged, st.touched, st.visionMap = nil, false, false, nil, ""
 }
 
-// settleTrapDamageTx is the settling inside its transaction: the damage is found, a retry answers
-// with the damage as the first call left it, and a new settling changes the vitals, closes the
-// damage and writes the event.
-func (s *Service) settleTrapDamageTx(ctx context.Context, tx pgx.Tx, st *trapSettle) error {
+// settleTrapDamageTx is the settling inside its transaction, with the session lock held (the open session, or the damage's own when
+// none is open): the damage is found, a retry answers with the damage as the first call left it and tells it again, and a new
+// settling changes the vitals, closes the damage, writes the event and tells the streams.
+func (s *Service) settleTrapDamageTx(ctx context.Context, tx pgx.Tx, h *hints, st *trapSettle, lock string) error {
 	q := s.queries.WithTx(tx)
 	st.reset()
-	// The damage outlives its session, so it may be settled with none open (then there
-	// is no event to write; the damage keeps the key).
-	session, hasSession, err := lockTrapSettleSession(ctx, q, st.m.CampaignID)
+	session, hasSession, err := s.findTrapDamageToSettle(ctx, q, st, lock)
 	if err != nil {
 		return err
 	}
-	found, err := q.GetCampaignTrapDamageForUpdate(ctx, playdb.GetCampaignTrapDamageForUpdateParams{CampaignID: st.m.CampaignID, ID: st.id})
-	if errors.Is(err, pgx.ErrNoRows) {
-		return connect.NewError(connect.CodeNotFound, errors.New("trap damage not found"))
-	}
-	if err != nil {
-		return fmt.Errorf("find the trap damage: %w", err)
-	}
-	st.row = trapDamageOf(playdb.ListCampaignTrapDamagesRow(found))
 	if done, err := st.replay(ctx, q, session, hasSession); err != nil || done {
+		if done && err == nil && hasSession {
+			return s.tellSettledAgain(ctx, q, h, st, session)
+		}
 		return err
 	}
 	if st.row.Status != "rolled" {
@@ -284,15 +315,43 @@ func (s *Service) settleTrapDamageTx(ctx context.Context, tx pgx.Tx, st *trapSet
 	if !hasSession {
 		return nil
 	}
-	_, err = insertSceneEvent(ctx, c, st.kind, &st.m.UserID, &st.key, ev)
-	return err
+	if _, err = insertSceneEvent(ctx, c, st.kind, &st.m.UserID, &st.key, ev); err != nil {
+		return err
+	}
+	s.tellSettled(h, st)
+	return nil
 }
 
-// lockTrapSettleSession locks the campaign's open session, and says whether there is one.
-func lockTrapSettleSession(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, bool, error) {
-	session, err := q.GetOpenGameSessionForUpdate(ctx, campaignID)
+// findTrapDamageToSettle reads the open session and the damage, and checks that the session locked is the one to settle in. The damage
+// outlives its session, so it may be settled with none open (then there is no event to write; the damage keeps the key).
+func (s *Service) findTrapDamageToSettle(ctx context.Context, q *playdb.Queries, st *trapSettle, lock string) (playdb.GameSession, bool, error) {
+	session, hasSession, err := openTrapSettleSession(ctx, q, st.m.CampaignID)
+	if err != nil {
+		return session, false, err
+	}
+	if hasSession && session.ID != lock {
+		return session, false, errSessionMoved // another session opened since it was read: nothing was written
+	}
+	found, err := q.GetCampaignTrapDamageForUpdate(ctx, playdb.GetCampaignTrapDamageForUpdateParams{CampaignID: st.m.CampaignID, ID: st.id})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return session, false, errTrapDamageNotFound()
+	}
+	if err != nil {
+		return session, false, fmt.Errorf("find the trap damage: %w", err)
+	}
+	st.row = trapDamageOf(playdb.ListCampaignTrapDamagesRow(found))
+	if !hasSession && st.row.GameSessionID != lock {
+		return session, false, errSessionMoved // the session that was open ended since it was read: the damage's own is the one to lock
+	}
+	return session, hasSession, nil
+}
+
+// openTrapSettleSession reads the campaign's open session without a lock (the transaction holds the one it locked), and says whether
+// there is one.
+func openTrapSettleSession(ctx context.Context, q *playdb.Queries, campaignID string) (playdb.GameSession, bool, error) {
+	session, err := q.GetOpenGameSession(ctx, campaignID)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return playdb.GameSession{}, false, fmt.Errorf("lock the open session: %w", err)
+		return playdb.GameSession{}, false, fmt.Errorf("find the open session: %w", err)
 	}
 	return session, err == nil, nil
 }
@@ -444,19 +503,49 @@ func (s *Service) followSettledCombat(ctx context.Context, q *playdb.Queries, st
 	return nil
 }
 
-// afterTrapSettled tells the streams, after the commit, what the settling changed.
-func (s *Service) afterTrapSettled(ctx context.Context, st *trapSettle) {
+// masterMapChanged is the hint that the master's trap card changed: a hint with no content, for the master alone.
+func masterMapChanged(mapID string) live.Event {
+	return live.Event{Audience: live.Audience{Master: true}, Message: mapChangedHint(mapID)}
+}
+
+// tellSettled collects what the settling changed, for the streams once it is committed: the character's vitals (to the master and
+// its player), the trap card (one damage less), the combat in progress that shows the character, and, when the beast form ended,
+// the fog. The settling wrote an event, so the session's number moves.
+func (s *Service) tellSettled(h *hints, st *trapSettle) {
 	campaignID := st.m.CampaignID
-	pctx, stop := afterCommit(ctx) // the change is committed: a caller that hangs up must not leave the streams and the fog unheard
-	defer stop()
-	s.publishVitals(campaignID, st.after)
-	s.tellMembers(campaignID, false, mapChangedHint("")) // the trap card has one damage less
+	h.touch()
+	if st.after != nil {
+		h.tell(campaignID, vitalsHint(st.after))
+	}
+	h.tell(campaignID, masterMapChanged(""))
 	if st.touched != nil {
-		s.publishEncounterChanged(pctx, campaignID, *st.touched)
+		s.tellEncounterRowAfter(h, campaignID, *st.touched)
 	}
 	if st.shapeChanged { // the beast's senses went away: the fog hears of it (MR-036)
-		s.maps.VisionChanged(pctx, campaignID, st.visionMap)
+		visionMap := st.visionMap
+		h.after(func(ctx context.Context, _ sayFn) { s.maps.VisionChanged(ctx, campaignID, visionMap) })
 	}
+}
+
+// tellSettledAgain fills h for a settling whose key was found stored, with what the first call would have told, worked out from the
+// stored damage: the character's vitals as they stand when the damage was applied, the trap card, and the combat in progress when
+// the character is a player's combatant in it. Whether the beast form ended is not kept, so the fog is not told again. Nothing was
+// written, so h only replays.
+func (s *Service) tellSettledAgain(ctx context.Context, q *playdb.Queries, h *hints, st *trapSettle, session playdb.GameSession) error {
+	campaignID := st.m.CampaignID
+	h.replay()
+	if st.row.Status == "applied" {
+		s.tellVitalsAfter(h, campaignID, st.row.CharacterID)
+	}
+	h.tell(campaignID, masterMapChanged(""))
+	enc, cs, found, err := openCombatants(ctx, q, session.ID)
+	if err != nil {
+		return err
+	}
+	if found && st.row.Status == "applied" && playerFightsIn(cs, st.row.CharacterID) {
+		s.tellEncounterRowAfter(h, campaignID, enc)
+	}
+	return nil
 }
 
 // trapDamageNames reads the names a trap damage's answer shows.

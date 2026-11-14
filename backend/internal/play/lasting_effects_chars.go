@@ -14,7 +14,6 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -161,11 +160,9 @@ func gameTimeText(seconds *int32, concentration bool) string {
 	return "Dura " + strings.Join(parts, " e ")
 }
 
-// endCharacterEnd is what the transaction of endCharacterEffect leaves for after it: how many
-// effects ended and the vitals to tell.
+// endCharacterEnd is what the transaction of endCharacterEffect leaves for the answer: how many effects ended.
 type endCharacterEnd struct {
 	ended int32
-	told  []*playv1.CharacterVitals
 }
 
 // endCharacterEffect is EndLastingEffect for an effect on a character outside a combat: the
@@ -179,26 +176,20 @@ func (s *Service) endCharacterEffect(
 	}
 	hash := idem.Hash(msg)
 	var out endCharacterEnd
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		out = endCharacterEnd{}
-		return s.endCharacterEffectTx(ctx, tx, m, msg, id, key, hash, &out)
+		return s.endCharacterEffectTx(ctx, tx, h, session, m, msg, id, key, hash, &out)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "end an effect", err)
 	}
-	s.publishCastsChanged(m.CampaignID, false)
-	s.publishVitalsOf(m.CampaignID, out.told)
 	return connect.NewResponse(&playv1.EndLastingEffectResponse{Ended: out.ended}), nil
 }
 
-// endCharacterEffectTx is the transaction of endCharacterEffect: lock the open session, answer a
-// retry from the event it wrote, end the effect or its casting, and write the event.
-func (s *Service) endCharacterEffectTx(ctx context.Context, tx pgx.Tx, m authz.Membership, msg *playv1.EndLastingEffectRequest, id, key string, hash *string, out *endCharacterEnd) error {
+// endCharacterEffectTx is the transaction of endCharacterEffect (the session is locked): answer a retry from the event it wrote,
+// end the effect or its casting, write the event, and collect what the streams are told.
+func (s *Service) endCharacterEffectTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, m authz.Membership, msg *playv1.EndLastingEffectRequest, id, key string, hash *string, out *endCharacterEnd) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-	if err != nil {
-		return err
-	}
 	done, again, err := eventByKey(ctx, q, session.ID, key, eventLastingEnded, hash)
 	if err != nil {
 		return err
@@ -207,6 +198,7 @@ func (s *Service) endCharacterEffectTx(ctx context.Context, tx pgx.Tx, m authz.M
 		var ev gameTimeEvent
 		_ = json.Unmarshal(done.Payload, &ev)
 		out.ended = ev.Ended
+		s.tellEffectsAgain(h, m.CampaignID)
 		return nil
 	}
 	row, err := q.GetCharacterEffect(ctx, playdb.GetCharacterEffectParams{ID: id, CampaignID: m.CampaignID})
@@ -228,8 +220,11 @@ func (s *Service) endCharacterEffectTx(ctx context.Context, tx pgx.Tx, m authz.M
 	if err != nil {
 		return err
 	}
-	out.told = c.told
-	return s.appendKeyedEvent(ctx, q, keyedEvent{sessionID: session.ID, kind: eventLastingEnded, userID: m.UserID, key: key, hash: hash}, gameTimeEvent{Ended: out.ended})
+	if err := s.appendKeyedEvent(ctx, q, keyedEvent{sessionID: session.ID, kind: eventLastingEnded, userID: m.UserID, key: key, hash: hash}, gameTimeEvent{Ended: out.ended}); err != nil {
+		return err
+	}
+	tellEffects(h, m.CampaignID, c.told)
+	return nil
 }
 
 // endCharacterCasting ends every effect of a casting on the characters, and the cast that held

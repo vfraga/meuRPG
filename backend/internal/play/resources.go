@@ -314,9 +314,9 @@ func (s *Service) TakeRest(
 		return nil, err
 	}
 	var run restRun
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, call.m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		run = restRun{castsChanged: castsUnchanged} // a retry starts over
-		return s.takeRestTx(ctx, tx, call, &run)
+		return s.takeRestTx(ctx, tx, h, session, call, &run)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "take a rest", err)
@@ -324,19 +324,14 @@ func (s *Service) TakeRest(
 	if run.repeated != nil {
 		return connect.NewResponse(s.repeatedRestAnswer(ctx, call.m.CampaignID, run.repeated)), nil
 	}
-	s.publishRest(ctx, call.m.CampaignID, run)
 	logging.Event(ctx, s.logger, "rest.taken", slog.String("kind", call.kind), slog.Int("characters", len(run.after)))
 	return connect.NewResponse(&playv1.TakeRestResponse{Vitals: run.after}), nil
 }
 
-// takeRestTx is the transaction of TakeRest: lock, retry, the keeper's rest, the spells
-// and the clock, the combats that show the vitals, the event.
-func (s *Service) takeRestTx(ctx context.Context, tx pgx.Tx, call restCall, run *restRun) error {
+// takeRestTx is the transaction of TakeRest (the session is locked): retry, the keeper's rest, the spells
+// and the clock, the combats that show the vitals, the event, and what it tells.
+func (s *Service) takeRestTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call restCall, run *restRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID)
-	if err != nil {
-		return err
-	}
 	done, again, err := eventByKey(ctx, q, session.ID, call.keyText, eventRestTaken, call.hash)
 	if err != nil {
 		return err
@@ -347,7 +342,7 @@ func (s *Service) takeRestTx(ctx context.Context, tx pgx.Tx, call restCall, run 
 			return fmt.Errorf("read the rest event: %w", err)
 		}
 		run.repeated = append([]string{}, ev.Characters...)
-		return nil
+		return s.tellRestAgain(ctx, q, h, session.ID, call.m.CampaignID, run.repeated)
 	}
 	if err := activeCombatBlocks(ctx, q, session.ID); err != nil {
 		return err
@@ -365,9 +360,13 @@ func (s *Service) takeRestTx(ctx context.Context, tx pgx.Tx, call restCall, run 
 	if err != nil {
 		return err
 	}
-	return s.appendKeyedEvent(ctx, q, keyedEvent{
+	if err := s.appendKeyedEvent(ctx, q, keyedEvent{
 		sessionID: session.ID, kind: eventRestTaken, userID: call.m.UserID, key: call.keyText, hash: call.hash,
-	}, restEvent{Kind: call.kind, Characters: ids})
+	}, restEvent{Kind: call.kind, Characters: ids}); err != nil {
+		return err
+	}
+	s.tellRest(h, call.m.CampaignID, *run)
+	return nil
 }
 
 // restNPCUses gives the hand-made NPCs what the rest returns: a long rest their spell slots, uses a day and
@@ -453,18 +452,38 @@ func (s *Service) repeatedRestAnswer(ctx context.Context, campaignID string, cha
 	return res
 }
 
-// publishRest tells the streams what the committed rest changed.
-func (s *Service) publishRest(ctx context.Context, campaignID string, run restRun) {
-	s.publishVitalsOf(campaignID, run.after)
-	s.publishVitalsOf(campaignID, run.spellVitals)
+// tellRest collects what the rest changed, for the streams once it is committed. The rest writes an event and moves the
+// game's clock, so the session's number moves whatever else it tells.
+func (s *Service) tellRest(h *hints, campaignID string, run restRun) {
+	h.touch()
+	for _, v := range slices.Concat(run.after, run.spellVitals) {
+		if v != nil {
+			h.tell(campaignID, vitalsHint(v))
+		}
+	}
 	if run.castsChanged != castsUnchanged {
-		s.publishCastsChanged(campaignID, run.castsChanged == castsMasterOnly)
+		h.tell(campaignID, castsChangedEvent(run.castsChanged == castsMasterOnly))
 	}
-	pctx, stop := afterCommit(ctx)
-	defer stop()
 	for _, enc := range run.touched {
-		s.publishEncounterChanged(pctx, campaignID, enc)
+		s.tellEncounterRowAfter(h, campaignID, enc)
 	}
+}
+
+// tellRestAgain fills h for a rest whose key was found stored, with what the first call would have told, worked out from the
+// stored event: the vitals of the characters it changed as they stand, the casts to the master only (a rest ends spells; whether
+// the players were told is not kept) and the open combat when one of those characters is a player's combatant in it, which shows the vitals. Nothing was written, so h only replays.
+func (s *Service) tellRestAgain(ctx context.Context, q *playdb.Queries, h *hints, sessionID, campaignID string, characterIDs []string) error {
+	h.replay()
+	s.tellVitalsAfter(h, campaignID, characterIDs...)
+	h.tell(campaignID, castsChangedEvent(true))
+	enc, cs, found, err := openCombatants(ctx, q, sessionID)
+	if err != nil {
+		return err
+	}
+	if found && slices.ContainsFunc(characterIDs, func(id string) bool { return playerFightsIn(cs, id) }) {
+		s.tellEncounterRowAfter(h, campaignID, enc)
+	}
+	return nil
 }
 
 // hitDieRequest reads the size of the die to spend and how its face is given: rolled in the
@@ -544,9 +563,9 @@ func (s *Service) SpendHitDice(
 		return nil, err
 	}
 	var run hitDiceRun
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, call.m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		run = hitDiceRun{} // a retry starts over
-		return s.spendHitDiceTx(ctx, tx, call, &run)
+		return s.spendHitDiceTx(ctx, tx, h, session, call, &run)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "spend a hit die", err)
@@ -558,25 +577,20 @@ func (s *Service) SpendHitDice(
 		}
 		return connect.NewResponse(spendResponse(current, run.ev)), nil
 	}
-	s.publishVitals(call.m.CampaignID, run.after)
 	logging.Event(ctx, s.logger, "hit_dice.spent", slog.String("character_id", call.charText), slog.Int("faces", call.faces))
 	return connect.NewResponse(spendResponse(run.after, run.ev)), nil
 }
 
-// spendHitDiceTx is the transaction of SpendHitDice: lock, retry, who may, roll, spend, write.
-func (s *Service) spendHitDiceTx(ctx context.Context, tx pgx.Tx, call hitDiceCall, run *hitDiceRun) error {
+// spendHitDiceTx is the transaction of SpendHitDice (the session is locked): retry, who may, roll, spend, write, and tell the vitals.
+func (s *Service) spendHitDiceTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call hitDiceCall, run *hitDiceRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID)
-	if err != nil {
-		return err
-	}
 	done, again, err := eventByKey(ctx, q, session.ID, call.keyText, eventHitDiceSpent, call.hash)
 	if err != nil {
 		return err
 	}
 	if again {
 		run.repeated = true
-		return replayCharacterEvent(done, call.charText, "hit die", &run.ev)
+		return s.tellCharacterAgain(h, call.m.CampaignID, call.charText, replayCharacterEvent(done, call.charText, "hit die", &run.ev))
 	}
 	if err := s.requireCharacterOwnerOrMaster(ctx, tx, call.m, call.charText); err != nil {
 		return err
@@ -590,9 +604,25 @@ func (s *Service) spendHitDiceTx(ctx context.Context, tx pgx.Tx, call hitDiceCal
 	if err := s.spendHitDieRolled(ctx, tx, q, session.ID, call, run); err != nil {
 		return err
 	}
-	return s.appendKeyedEvent(ctx, q, keyedEvent{
+	if err := s.appendKeyedEvent(ctx, q, keyedEvent{
 		sessionID: session.ID, kind: eventHitDiceSpent, userID: call.m.UserID, characterID: &call.charText, key: call.keyText, hash: call.hash,
-	}, run.ev)
+	}, run.ev); err != nil {
+		return err
+	}
+	h.tell(call.m.CampaignID, vitalsHint(run.after))
+	return nil
+}
+
+// tellCharacterAgain fills h for the retry of a write of one character's vitals whose key was found stored (err is what reading
+// the stored event answered): the vitals as they stand, to the master and the character's player, which the first call may have
+// died before telling. Nothing was written, so h only replays.
+func (s *Service) tellCharacterAgain(h *hints, campaignID, characterID string, err error) error {
+	if err != nil {
+		return err
+	}
+	h.replay()
+	s.tellVitalsAfter(h, campaignID, characterID)
+	return nil
 }
 
 // spendHitDieRolled rolls the die (or takes the typed face), asks for the Song of Rest's

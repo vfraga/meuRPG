@@ -1409,6 +1409,7 @@ func TestMR034_TheMapsLayersDecideTheMove(t *testing.T) {
 	if err != nil {
 		t.Fatalf("maps.New() error = %v", err)
 	}
+	msvc.SetSessionHost(c.h.svc)
 	c.h.svc.SetTerrain(msvc)
 	srv := httpserver.New(httpserver.Config{Logger: slog.New(slog.DiscardHandler)})
 	msvc.Mount(srv.Handle, mapsSessions{testSessions}, c.h.camps, reqlimit.HandlerOption())

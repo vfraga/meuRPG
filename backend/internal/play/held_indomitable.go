@@ -180,7 +180,7 @@ func (q indomitableQuestion) apply(ctx context.Context, ae answering, h heldRoll
 		after.Faces, after.Counted, after.Total, after.CountedBy, after.Physical = roll.Faces, roll.Index, roll.Total, roll.CountedBy, roll.Physical
 		after.IndomFrom, after.IndomTo = new(from), new(clamp32(roll.Face(), 1, d20Sides))
 	}
-	if err := newHeldStores(ae.q).answerIndomitable(ctx, after); err != nil {
+	if err := ae.stores().answerIndomitable(ctx, after); err != nil {
 		return h, fmt.Errorf("answer the Indomitable question: %w", err)
 	}
 	return after, nil
@@ -244,7 +244,7 @@ func (s *Service) gateIndomitableNext(ctx context.Context, ae answering, h heldR
 	if a.question == askDie {
 		h.DieAnswerKey = &a.key
 	}
-	stores := newHeldStores(ae.q)
+	stores := ae.stores()
 	if err := stores.askIndomitable(ctx, h); err != nil {
 		return gateResult{}, false, fmt.Errorf("ask the Indomitable question: %w", err)
 	}

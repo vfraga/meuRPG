@@ -305,7 +305,7 @@ func (f *castFlow) findCaster(ctx context.Context) error {
 	if f.caster, err = findCombatant(cs, f.call.casterID, f.v); err != nil {
 		return err
 	}
-	if err := f.v.mayAct(f.caster); err != nil {
+	if err := f.v.mayMove(cs, f.caster); err != nil {
 		return err
 	}
 	f.sees = f.c.actorSight(f.v, cs, f.caster)

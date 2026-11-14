@@ -84,7 +84,7 @@ func (s *Service) AnswerReaction(
 	if err != nil {
 		return nil, s.dbError(ctx, "answer a reaction", err)
 	}
-	if got.held != nil { // the d20 is kept for a question: nothing was written
+	if got.held != nil { // the d20 is kept for a question: only the held roll was written
 		enc, err := s.finish(ctx, m, res, s.changed(m.CampaignID))
 		if err != nil {
 			return nil, err

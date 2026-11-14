@@ -126,7 +126,7 @@ func pushBlockers(cs []playdb.Combatant, target playdb.Combatant) grid.OccupantM
 	size := moverOf(target).Size
 	out := grid.OccupantMap{}
 	for _, o := range cs {
-		if o.ID != target.ID && !o.Defeated && placed(o) {
+		if o.ID != target.ID && !samePair(o, target) && !o.Defeated && placed(o) {
 			out[squareOfCombatant(o)] = grid.Occupant{Size: size, Hostile: true}
 		}
 	}
@@ -166,7 +166,7 @@ func (p *pusher) push(ctx context.Context, target playdb.Combatant) (*forcedMove
 		return &forcedMove{Target: target.ID, NoMap: true}, nil
 	}
 	target, ok := combatantByID(p.cs, target.ID)
-	if !ok || !placed(target) || target.Defeated || (p.rider.MaxSize > 0 && moverOf(target).Size > p.rider.MaxSize) {
+	if !ok || !placed(target) || target.Defeated || target.MountedOnID != nil || (p.rider.MaxSize > 0 && moverOf(target).Size > p.rider.MaxSize) {
 		return nil, nil
 	}
 	from := squareOfCombatant(target)
@@ -177,17 +177,23 @@ func (p *pusher) push(ctx context.Context, target playdb.Combatant) (*forcedMove
 		}
 		// A wall or a creature leaves nowhere to go: the save failed, nothing moves, and the log says the push was stopped.
 		col, row := clamp32(from.Col, 0, math.MaxInt32), clamp32(from.Row, 0, math.MaxInt32)
-		return &forcedMove{Target: target.ID, From: moveStateOf(target), Col: col, Row: row, Short: true}, nil
+		return &forcedMove{Target: target.ID, From: moveStateIn(p.cs, target), Col: col, Row: row, Short: true}, nil
 	}
 	col, row := clamp32(plan.to.Col, 0, math.MaxInt32), clamp32(plan.to.Row, 0, math.MaxInt32)
 	if err := p.c.q.SetCombatantPlace(ctx, playdb.SetCombatantPlaceParams{ID: target.ID, GridCol: &col, GridRow: &row, CoverMark: "none"}); err != nil {
 		return nil, fmt.Errorf("push the creature: %w", err)
 	}
+	if err := carryRider(ctx, p.c.q, target.ID); err != nil {
+		return nil, err
+	}
 	moved := forcedMove{
-		Target: target.ID, From: moveStateOf(target), Col: col, Row: row,
+		Target: target.ID, From: moveStateIn(p.cs, target), Col: col, Row: row,
 		DistanceFt: clamp32(grid.LengthDFt(from, plan.to)/10, 0, math.MaxInt32), Short: plan.short,
 	}
 	p.remember(target.ID, col, row)
+	if rider := riderOf(p.cs, target.ID); rider != nil {
+		p.remember(rider.ID, col, row)
+	}
 	p.moved = append(p.moved, zoneStep{who: target.ID, from: &from, path: []grid.Square{plan.to}, travels: true})
 	return &moved, nil
 }
@@ -268,7 +274,7 @@ func putPushedBack(ctx context.Context, c *combatTx, m *forcedMove) error {
 	if err := c.q.SetCombatantPlace(ctx, playdb.SetCombatantPlaceParams{ID: m.Target, GridCol: &m.From.Col, GridRow: &m.From.Row, CoverMark: coverOrNone(m.From.Cover)}); err != nil {
 		return fmt.Errorf("put the pushed creature back: %w", err)
 	}
-	return nil
+	return carryRiderBack(ctx, c.q, m.Target, m.From)
 }
 
 // publishPushed tells the streams and the fog that the creatures moved, after the commit.
@@ -280,6 +286,7 @@ func (s *Service) publishPushed(ctx context.Context, campaignID string, d *encou
 		if who, ok := combatantByID(d.cs, m.Target); ok {
 			s.publishCombatantMoved(ctx, campaignID, d.enc, who, squareOfState(m.From))
 			s.positionChanged(ctx, campaignID, d.enc, who, squareOfState(m.From))
+			s.publishRideAlong(ctx, campaignID, d, who, squareOfState(m.From))
 		}
 	}
 }

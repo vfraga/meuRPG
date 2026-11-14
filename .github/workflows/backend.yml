@@ -280,7 +280,7 @@ jobs:
   # slowest group's, not the sum. 07/10/2026, one runner: 1105 s of go test.
   # 10/10/2026, four groups: 18 min for "rest" and "play", which was one
   # package of 920 s. Now play is split by test (play-1 to play-6), leaktest
-  # too (leak-1 and leak-2), and the CPU-bound pure packages (rules, and
+  # too (leak-1 to leak-4), and the CPU-bound pure packages (rules, and
   # dungeon with puzzle) have runners of their own, so they stop fighting for
   # four vCPUs. "rest" is still the catch-all for a new package.
   go-db-shard:
@@ -292,7 +292,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [play-1, play-2, play-3, play-4, play-5, play-6, maps, characters, rules-1, rules-2, rules-3, dungeon, leak-1, leak-2, rest]
+        group: [play-1, play-2, play-3, play-4, play-5, play-6, maps, characters, rules-1, rules-2, rules-3, dungeon, leak-1, leak-2, leak-3, leak-4, rest]
     defaults:
       run:
         working-directory: backend

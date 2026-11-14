@@ -14,7 +14,6 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
@@ -65,11 +64,12 @@ func readAdjustCall(ctx context.Context, msg *playv1.AdjustCharacterVitalsReques
 // AdjustCharacterVitals implements playv1connect.PlayServiceHandler: the
 // master's correction of a character's vitals (RN-02).
 //
-// One transaction locks the open session's row, checks the idempotency
-// key, changes the vitals (through the VitalsKeeper) and appends the
+// One transaction (Service.tx: the open session's row locked first) checks the
+// idempotency key, changes the vitals (through the VitalsKeeper) and appends the
 // session event. The lock makes two corrections in the same session take
-// turns, so the events get their numbers in order. Only after the commit
-// does the change go out on the live streams.
+// turns, so the events get their numbers in order. The change moves the
+// session's number and goes out on the live streams after the commit; the retry
+// of a key tells the vitals again and moves nothing.
 func (s *Service) AdjustCharacterVitals(
 	ctx context.Context,
 	req *connect.Request[playv1.AdjustCharacterVitalsRequest],
@@ -79,23 +79,21 @@ func (s *Service) AdjustCharacterVitals(
 		return nil, err
 	}
 	var run adjustRun
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, call.m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		run = adjustRun{} // a retry starts over
-		return s.adjustWrite(ctx, tx, call, &run)
+		return s.adjustWrite(ctx, tx, h, session, call, &run)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "adjust a character's vitals", err)
 	}
 	if run.repeated {
-		// Nothing changed and nothing goes out: answer with the vitals as
-		// they are now.
+		// Nothing changed: answer with the vitals as they are now.
 		current, err := s.vitals.GetVitals(ctx, call.m.CampaignID, call.charText)
 		if err != nil {
 			return nil, s.dbError(ctx, "get vitals", err)
 		}
 		return connect.NewResponse(&playv1.AdjustCharacterVitalsResponse{Vitals: current}), nil
 	}
-	s.publishAdjusted(ctx, call.m.CampaignID, run)
 	return connect.NewResponse(&playv1.AdjustCharacterVitalsResponse{Vitals: run.after, ConcentrationDc: run.check.dc, ConcentrationCastId: run.check.castID}), nil
 }
 
@@ -133,20 +131,19 @@ func retryOfCorrection(done playdb.GetSessionEventByIdempotencyKeyRow, call adju
 	return nil
 }
 
-// adjustWrite is the transaction of AdjustCharacterVitals: lock, retry, the change, the
-// event, the beast form that ended, the combat that shows it, the concentration.
-func (s *Service) adjustWrite(ctx context.Context, tx pgx.Tx, call adjustCall, run *adjustRun) error {
+// adjustWrite is the transaction of AdjustCharacterVitals (the session is locked, RN-02: during the session): retry, the
+// change, the event, the beast form that ended, the combat that shows it, the concentration, and what it tells.
+func (s *Service) adjustWrite(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call adjustCall, run *adjustRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID) // RN-02: during the session
-	if err != nil {
-		return err
-	}
 	done, again, err := eventByKey(ctx, q, session.ID, call.keyText, eventCharacterVitalsAdjusted, call.hash)
 	if err != nil {
 		return err
 	}
 	if again {
-		return retryOfCorrection(done, call, run)
+		if err := retryOfCorrection(done, call, run); err != nil {
+			return err
+		}
+		return s.tellAdjustedAgain(ctx, tx, h, session, call)
 	}
 	if err := s.checkExpectedRevision(ctx, tx, call); err != nil {
 		return err
@@ -190,6 +187,7 @@ func (s *Service) adjustWrite(ctx context.Context, tx pgx.Tx, call adjustCall, r
 		return err
 	}
 	run.after = adjusted
+	s.tellAdjusted(h, call.m.CampaignID, *run)
 	return nil
 }
 
@@ -229,25 +227,54 @@ func (s *Service) leaveBeastForm(ctx context.Context, tx pgx.Tx, q *playdb.Queri
 	return &body, adjusted, nil
 }
 
-// publishAdjusted tells the streams and the fog what the committed correction changed.
-func (s *Service) publishAdjusted(ctx context.Context, campaignID string, run adjustRun) {
-	s.send(campaignID, live.Event{
-		Audience: vitalsAudience(run.after),
-		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_VitalsChanged_{
-			VitalsChanged: &playv1.WatchGameSessionResponse_VitalsChanged{Vitals: run.after},
-		}},
-	})
-	pctx, stop := afterCommit(ctx) // the change is committed: a caller that hangs up must not leave the streams and the fog unheard
-	defer stop()
+// tellAdjusted collects what the correction changed, for the streams and the fog once it is committed: the vitals, the combat
+// that shows them, the fog when the beast's senses went away or a cloud did (MR-036), and the casts a concentration that ended
+// leaves.
+func (s *Service) tellAdjusted(h *hints, campaignID string, run adjustRun) {
+	h.tell(campaignID, vitalsHint(run.after))
 	if run.touched != nil {
-		s.publishEncounterChanged(pctx, campaignID, *run.touched)
+		s.tellEncounterRowAfter(h, campaignID, *run.touched)
 	}
-	if run.shapeChanged || run.zonesEnded { // the beast's senses went away, or a cloud did: the fog hears of it (MR-036)
-		s.maps.VisionChanged(pctx, campaignID, run.visionMap)
+	if run.shapeChanged || run.zonesEnded {
+		s.tellVisionAfter(h, campaignID, run.visionMap)
 	}
 	if run.check.castID != "" && run.castsEnded {
-		s.publishCastsChanged(campaignID, run.check.secret)
+		h.tell(campaignID, castsChangedEvent(run.check.secret))
 	}
+}
+
+// tellAdjustedAgain fills h for a correction whose key was found stored, with what the first call would have told, worked out
+// from the stored event: the first call may have died between its commit and its sending. Nothing was written, so h only
+// replays. What the first call told is not kept, so this tells a superset to the audiences it reached at most: the character's
+// vitals as they stand (to the master and its player), the casts to the master only (a concentration that ended told the
+// players when its cast was public: that is not recovered), the combat that has the character as a player's combatant and the
+// fog of the map the correction touched.
+func (s *Service) tellAdjustedAgain(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call adjustCall) error {
+	h.replay()
+	q := s.queries.WithTx(tx)
+	campaignID := call.m.CampaignID
+	v, err := s.vitals.GetVitalsTx(ctx, tx, campaignID, call.charText)
+	if err != nil {
+		return err
+	}
+	h.tell(campaignID, vitalsHint(v))
+	h.tell(campaignID, castsChangedEvent(true))
+	visionMap := conv.OrZero(session.CurrentMapID)
+	enc, cs, found, err := openCombatants(ctx, q, session.ID)
+	if err != nil {
+		return err
+	}
+	if found && playerFightsIn(cs, call.charText) {
+		s.tellEncounterRowAfter(h, campaignID, enc)
+		visionMap = conv.OrZero(enc.MapID)
+	}
+	s.tellVisionAfter(h, campaignID, visionMap)
+	return nil
+}
+
+// tellVisionAfter collects the fog's hint of a map, which the maps module sends itself, once the transaction committed.
+func (s *Service) tellVisionAfter(h *hints, campaignID, mapID string) {
+	h.after(func(ctx context.Context, _ sayFn) { s.maps.VisionChanged(ctx, campaignID, mapID) })
 }
 
 // touchCombatOf tells the session's open combat that a character's vitals changed:

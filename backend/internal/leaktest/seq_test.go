@@ -3,7 +3,9 @@ package leaktest
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,7 +18,9 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	"github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1/playv1connect"
 
+	mapsv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/maps/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
+	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 )
 
 // The hint number (#735): game_sessions.hint_seq, which every write of a session adds 1 to, hidden or not, and which a stream
@@ -29,6 +33,13 @@ import (
 //     depend on the content (TestAHiddenWriteMovesThePlayersNumberAndNothingElse, three worlds that differ in that write);
 //   - ListCombatLog with since_seq answers a player as if the write they cannot see had not been made
 //     (TestAPlayersSinceSeqAnswerIgnoresWhatTheyCannotSee).
+//
+// What the number depends on, exactly: it moves once for each write that had an effect, and not for one that changed nothing (a
+// paint of what was painted, a trap already disarmed, a clue the player had), whatever the write held. A token a player's
+// character drops on a map is one write whatever the map and the token (TestALandingMovesAThirdPlayersNumberOnceWhateverTheMapAndTheToken):
+// what it sees from where it stands is part of that write, and moves the number no more whether or not it found a trap
+// (TestADropThatNoticesATrapMovesAThirdPlayersNumberLikeOneThatDoesNot), so a third player's number says nothing of a find, of the map
+// or of a hidden token. The notice after a combat move, in package play, is a write of its own that always touches, found or not.
 //
 // The counter-per-transaction rule (one bump whatever the transaction told) is TestTxBumpsOncePerTransactionWhateverItTold
 // and TestTxBumpsOnceWhateverTheSizeOfWhatItTold, in package play.
@@ -300,6 +311,41 @@ var hiddenWrites = []hiddenWrite{
 			}
 		},
 	},
+	{
+		// A trap the master fires by hand on a map no player sees (outside a combat: none runs there): the firing writes an event, so the
+		// number moves once, and what the table is told is the master's alone. A player's stream and the twin's without the firing read
+		// the same; the trap and what it did to the party are hidden whatever they are (the two variants fire two other traps).
+		name: "a hidden trap fired outside a combat on a map the players do not see",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12}))) // a map with no grid has no traps
+			for i, name := range []string{"seq-fired-a", "seq-fired-bcdefgh"} {
+				w.pts[name] = w.point(w.hiddenMap, mapsv1.MapPointKind_MAP_POINT_KIND_TRAP, w.secrets.marker(name), w.secrets.marker(name+"-description"), 8+i, 8, func(r *mapsv1.CreateMapPointRequest) {
+					r.Trap = w.trapSpec()
+					r.Trap.Trigger = rulesv1.TrapTrigger_TRAP_TRIGGER_MANUAL
+				})
+				w.secrets.id("trap", w.pts[name].GetId())
+			}
+		},
+		prepare: func(w *world, variant int) func() {
+			point := w.pts[[]string{"seq-fired-a", "seq-fired-bcdefgh"}[variant]]
+			return func() {
+				must(w.master.play.FireTrap(w.t.Context(), rq(&playv1.FireTrapRequest{CampaignId: w.campaign, MapId: w.hiddenMap, PointId: point.GetId(), IdempotencyKey: newKey()})))
+			}
+		},
+	},
+	{
+		// The master changes the table's rules while a combat runs with hidden combatants: the rules decide what the log shows (the
+		// save DC, the death saves), so the master's log is read again from the start and the number moves once. A player hears
+		// nothing that names a kind: their stream reads the same whichever rule was set.
+		name: "the table's rules changed in a combat with hidden combatants",
+		prepare: func(w *world, variant int) func() {
+			return func() {
+				rules := must(w.master.campaigns.GetTableRules(w.t.Context(), rq(&campaignsv1.GetTableRulesRequest{CampaignId: w.campaign}))).GetRules()
+				rules.ShowSaveDc = variant == 1
+				must(w.master.campaigns.SetTableRules(w.t.Context(), rq(&campaignsv1.SetTableRulesRequest{CampaignId: w.campaign, Rules: rules})))
+			}
+		},
+	},
 	{"a cover mark on a hidden NPC", false, false, nil, func(w *world, variant int) func() {
 		cover := []playv1.CoverDegree{playv1.CoverDegree_COVER_DEGREE_HALF, playv1.CoverDegree_COVER_DEGREE_THREE_QUARTERS}[variant]
 		return func() {
@@ -316,6 +362,133 @@ var hiddenWrites = []hiddenWrite{
 			})))
 		}
 	}},
+	// The writes of the maps module (#735 part 2, 4d maps). Each one is made to what no player sees (a map they cannot open, or a token
+	// that is hidden): the master hears map_changed, the players hear nothing, and their number moves once, the same whatever the write held.
+	{
+		name: "a token placed on a map the players do not see",
+		before: func(w *world) {
+			for _, kind := range []string{"seq-token-a", "seq-token-bcdefgh"} {
+				npc, _ := w.npc(kind, &charactersv1.BasicSheet{HitPointsMax: 12, ArmorClass: 12, SpeedFt: 30})
+				w.notes[kind] = npc.GetId()
+			}
+		},
+		prepare: func(w *world, variant int) func() {
+			id := w.notes[[]string{"seq-token-a", "seq-token-bcdefgh"}[variant]]
+			return func() { w.place(w.hiddenMap, id, 3+variant*5, 6+variant) }
+		},
+	},
+	{
+		name: "a token moved on a map the players do not see",
+		before: func(w *world) {
+			npc, _ := w.npc("seq-token-moved", &charactersv1.BasicSheet{HitPointsMax: 12, ArmorClass: 12, SpeedFt: 30})
+			w.notes["moved"] = npc.GetId()
+			w.place(w.hiddenMap, npc.GetId(), 2, 2)
+		},
+		prepare: func(w *world, variant int) func() {
+			return func() { w.place(w.hiddenMap, w.notes["moved"], 5+variant*6, 4+variant*3) }
+		},
+	},
+	{
+		name: "the fog of a map the players do not see written",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12})))
+		},
+		prepare: func(w *world, variant int) func() {
+			light := []mapsv1.LightLevel{mapsv1.LightLevel_LIGHT_LEVEL_DIM, mapsv1.LightLevel_LIGHT_LEVEL_DARK}[variant]
+			return func() {
+				must(w.master.maps.SetMapFog(w.t.Context(), rq(&mapsv1.SetMapFogRequest{CampaignId: w.campaign, MapId: w.hiddenMap, FogEnabled: proto.Bool(true), BaseLight: &light})))
+			}
+		},
+	},
+	{
+		name: "a wall painted on a map the players do not see",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12})))
+		},
+		prepare: func(w *world, variant int) func() {
+			return func() {
+				w.paint(w.hiddenMap, mapsv1.MapLayer_MAP_LAYER_WALL, 1, [][2]int32{{int32(2 + variant), 3}, {int32(3 + variant*4), 3}})
+			}
+		},
+	},
+	{
+		name: "a light painted on a map the players do not see",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12})))
+		},
+		prepare: func(w *world, variant int) func() {
+			return func() {
+				w.paint(w.hiddenMap, mapsv1.MapLayer_MAP_LAYER_LIGHT, int32(2+variant), [][2]int32{{int32(2 + variant), 5}, {int32(3 + variant*4), 6}})
+			}
+		},
+	},
+	{
+		name: "a locked door painted on a map the players do not see",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12})))
+		},
+		prepare: func(w *world, variant int) func() {
+			return func() {
+				w.paint(w.hiddenMap, mapsv1.MapLayer_MAP_LAYER_DOORS, 3, [][2]int32{{int32(2 + variant), 6}, {int32(3 + variant*4), 7}})
+			}
+		},
+	},
+	{
+		name: "a point created on a map the players do not see",
+		prepare: func(w *world, variant int) func() {
+			kind := []mapsv1.MapPointKind{mapsv1.MapPointKind_MAP_POINT_KIND_SCENE, mapsv1.MapPointKind_MAP_POINT_KIND_BATTLE}[variant]
+			name := w.secrets.marker([]string{"seq-point-a", "seq-point-bcdefgh"}[variant])
+			return func() { w.point(w.hiddenMap, kind, name, name+"-description", 5, 5+variant, nil) }
+		},
+	},
+	{
+		name: "a hidden trap renamed on a map the players do not see",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12})))
+			w.pts["seq-trap-edit"] = w.point(w.hiddenMap, mapsv1.MapPointKind_MAP_POINT_KIND_TRAP, w.secrets.marker("seq-trap-edit"), w.secrets.marker("seq-trap-edit-description"), 6, 6, func(r *mapsv1.CreateMapPointRequest) { r.Trap = w.trapSpec() })
+			w.secrets.id("trap", w.pts["seq-trap-edit"].GetId())
+		},
+		prepare: func(w *world, variant int) func() {
+			p := w.pts["seq-trap-edit"]
+			name := w.secrets.marker([]string{"seq-trap-renamed-a", "seq-trap-renamed-bcdefgh"}[variant])
+			return func() {
+				must(w.master.maps.UpdateMapPoint(w.t.Context(), rq(&mapsv1.UpdateMapPointRequest{CampaignId: w.campaign, MapId: w.hiddenMap, PointId: p.GetId(), Name: &name})))
+			}
+		},
+	},
+	{
+		name: "a trap disarmed on a map the players do not see",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12})))
+			for _, name := range []string{"seq-disarm-a", "seq-disarm-bcdefgh"} {
+				w.pts[name] = w.point(w.hiddenMap, mapsv1.MapPointKind_MAP_POINT_KIND_TRAP, w.secrets.marker(name), w.secrets.marker(name+"-description"), 7, 7, func(r *mapsv1.CreateMapPointRequest) { r.Trap = w.trapSpec() })
+				w.secrets.id("trap", w.pts[name].GetId())
+			}
+		},
+		prepare: func(w *world, variant int) func() {
+			p := w.pts[[]string{"seq-disarm-a", "seq-disarm-bcdefgh"}[variant]]
+			return func() {
+				must(w.master.maps.DisarmTrap(w.t.Context(), rq(&mapsv1.DisarmTrapRequest{CampaignId: w.campaign, MapId: w.hiddenMap, PointId: p.GetId()})))
+			}
+		},
+	},
+	{
+		name: "a treasure placed on a map the players do not see",
+		before: func(w *world) {
+			must(w.master.maps.SetMapGrid(w.t.Context(), rq(&mapsv1.SetMapGridRequest{CampaignId: w.campaign, MapId: w.hiddenMap, Columns: 12})))
+		},
+		prepare: func(w *world, variant int) func() {
+			seed := uint64(w.secrets.number("seq-treasure-seed", []int64{6101, 6202}[variant]))
+			name := w.secrets.marker([]string{"seq-treasure-a", "seq-treasure-bcdefgh"}[variant])
+			return func() {
+				rolled := must(w.master.treasure.GenerateTreasure(w.t.Context(), rq(&mapsv1.GenerateTreasureRequest{CampaignId: w.campaign, Mode: mapsv1.TreasureMode_TREASURE_MODE_HOARD, PartyLevel: proto.Int32(5), Seed: &seed}))).GetTreasure()
+				must(w.master.treasure.PlaceTreasure(w.t.Context(), rq(&mapsv1.PlaceTreasureRequest{
+					CampaignId: w.campaign, MapId: w.hiddenMap, Mode: mapsv1.TreasureMode_TREASURE_MODE_HOARD, PartyLevel: 5, Seed: &seed, Column: 4, Row: 4,
+					Name: &name, IdempotencyKey: newKey(), ContentVersion: rolled.GetContentVersion(),
+				})))
+			}
+		},
+	},
 }
 
 // seqSnapshot is what two members and the master read of a world after a hidden write, or without one.
@@ -422,7 +595,13 @@ func hiddenWriteWorld(t *testing.T, row *hiddenWrite, variant int, made bool) se
 	}
 	snap.masterLog = normalized(jsonOf(w.seqLog(w.master, 0)))
 
-	// The streams until the session ends: a player heard no event, the master heard the write.
+	// The streams until the session ends: a player heard no event, the master heard the write. Ending the session is a write too, and moves
+	// the number once: a heartbeat that goes out after the call reads the number of the end, so the number of the heartbeats is
+	// checked up to the event each stream had when the call was made.
+	beforeEnd := map[*person]int{}
+	for p, sw := range watchers {
+		beforeEnd[p] = sw.count()
+	}
 	must(w.master.play.EndGameSession(t.Context(), rq(&playv1.EndGameSessionRequest{CampaignId: w.campaign, GameSessionId: w.session})))
 	for p, sw := range watchers {
 		select {
@@ -431,11 +610,11 @@ func hiddenWriteWorld(t *testing.T, row *hiddenWrite, variant int, made bool) se
 			t.Fatalf("%s's stream did not end", p.name)
 		}
 		heard := 0
-		for _, ev := range sw.since(1) {
+		for i, ev := range sw.since(1) {
 			switch c := eventCase(ev); c {
 			case "heartbeat":
 				n := ev.GetHeartbeat().GetSessionSeq()
-				if n != snap.start && n != want {
+				if i+1 < beforeEnd[p] && n != snap.start && n != want {
 					t.Errorf("%s: a heartbeat says %d, want %d or %d (one write, one bump)", p.name, n, snap.start, want)
 				}
 				if p != w.master && !proto.Equal(ev, &playv1.WatchGameSessionResponse{SessionSeq: n, Event: &playv1.WatchGameSessionResponse_Heartbeat_{Heartbeat: &playv1.WatchGameSessionResponse_Heartbeat{SessionSeq: n}}}) {
@@ -490,31 +669,60 @@ func (w *world) seqLog(p *person, since int64) *playv1.ListCombatLogResponse {
 // TestAHiddenWriteMovesThePlayersNumberAndNothingElse: three worlds built the same way, with a write only the master sees
 // (content A in one, content B in another, in the third none). A player's view of the world with the write and of the world
 // without it differ in the number and in nothing else; the two worlds with the write read the same, down to the number, though
-// the hidden content differs (a longer name, other hit points): the number is a counter of writes, never a function of what they
-// held. Inside each world the players heard no event, a heartbeat held the number alone, and the answers of the combat log are
+// the hidden content differs (a longer name, other hit points): the number is a counter of writes that had an effect, never a function of
+// what they held. Inside each world the players heard no event, a heartbeat held the number alone, and the answers of the combat log are
 // what they were before (hiddenWriteWorld).
 func TestAHiddenWriteMovesThePlayersNumberAndNothingElse(t *testing.T) {
-	for _, hw := range hiddenWrites {
-		t.Run(hw.name, func(t *testing.T) {
-			a := hiddenWriteWorld(t, &hw, 0, true)
-			b := hiddenWriteWorld(t, &hw, 1, true)
-			none := hiddenWriteWorld(t, &hw, 0, false)
-			if a.start != b.start || a.start != none.start {
-				t.Errorf("the worlds opened at numbers %d, %d and %d: they are built the same way", a.start, b.start, none.start)
-			}
-			if a.end != a.start+1 || b.end != b.start+1 || none.end != none.start {
-				t.Errorf("the numbers after: %d, %d and %d (before: %d), want one bump for each write and none without", a.end, b.end, none.end, a.start)
-			}
-			for name := range a.players {
-				if a.players[name] != b.players[name] {
-					t.Errorf("%s read other things in two worlds whose hidden content differs:\n A %s\n B %s", name, shorten([]byte(a.players[name])), shorten([]byte(b.players[name])))
-				}
-				if a.players[name] != none.players[name] {
-					t.Errorf("%s read other things in the world with the hidden write and the world without it:\n with    %s\n without %s", name, shorten([]byte(a.players[name])), shorten([]byte(none.players[name])))
-				}
-			}
-			if hw.masterLine && (a.masterLog == b.masterLog || a.masterLog == none.masterLog) {
-				t.Errorf("the master read the same log in worlds that differ in what he wrote: the control is gone")
+	// The world without the write is built the same way for every row that makes nothing before it (hiddenWrite.before): one
+	// of them serves all of those rows, built by the first that asks.
+	var (
+		sharedOnce sync.Once
+		shared     seqSnapshot
+		sharedOK   bool
+	)
+	control := func(t *testing.T, hw *hiddenWrite) seqSnapshot {
+		t.Helper()
+		if hw.before != nil {
+			return hiddenWriteWorld(t, hw, 0, false)
+		}
+		sharedOnce.Do(func() {
+			shared = hiddenWriteWorld(t, hw, 0, false)
+			sharedOK = true // not reached when the world's build stopped its test
+		})
+		if !sharedOK {
+			t.Fatal("the world without a write, shared by the rows that make nothing before it, could not be built")
+		}
+		return shared
+	}
+	// The rows run in two groups at the same time (each row builds three worlds, and most of a world's time is the database's
+	// copy of the schema, which waits for the server, not for this process); inside a group one row follows another.
+	for g := range 2 {
+		t.Run(fmt.Sprintf("group %d", g+1), func(t *testing.T) {
+			t.Parallel()
+			for i := g; i < len(hiddenWrites); i += 2 {
+				hw := &hiddenWrites[i]
+				t.Run(hw.name, func(t *testing.T) {
+					a := hiddenWriteWorld(t, hw, 0, true)
+					b := hiddenWriteWorld(t, hw, 1, true)
+					none := control(t, hw)
+					if a.start != b.start || a.start != none.start {
+						t.Errorf("the worlds opened at numbers %d, %d and %d: they are built the same way", a.start, b.start, none.start)
+					}
+					if a.end != a.start+1 || b.end != b.start+1 || none.end != none.start {
+						t.Errorf("the numbers after: %d, %d and %d (before: %d), want one bump for each write and none without", a.end, b.end, none.end, a.start)
+					}
+					for name := range a.players {
+						if a.players[name] != b.players[name] {
+							t.Errorf("%s read other things in two worlds whose hidden content differs:\n A %s\n B %s", name, shorten([]byte(a.players[name])), shorten([]byte(b.players[name])))
+						}
+						if a.players[name] != none.players[name] {
+							t.Errorf("%s read other things in the world with the hidden write and the world without it:\n with    %s\n without %s", name, shorten([]byte(a.players[name])), shorten([]byte(none.players[name])))
+						}
+					}
+					if hw.masterLine && (a.masterLog == b.masterLog || a.masterLog == none.masterLog) {
+						t.Errorf("the master read the same log in worlds that differ in what he wrote: the control is gone")
+					}
+				})
 			}
 		})
 	}
@@ -754,4 +962,283 @@ func TestAPlayersSinceSeqAnswerIgnoresWhatTheyCannotSee(t *testing.T) {
 		log := w.seqLog(m, 0)
 		must(m.combat.UndoLastAction(ctx, rq(&playv1.UndoLastActionRequest{CampaignId: w.campaign, EncounterId: e.GetId(), ExpectedEventId: log.GetUndoableEventId(), IdempotencyKey: newKey()})))
 	})
+}
+
+// ===== A drop that notices a trap, and one that does not.
+
+// landing says where a landing happens and what the landing token is, in a world of landingWorld.
+type landing struct {
+	// unseenMap lands the token on a map the players do not see (neither revealed nor current), where no trap is.
+	unseenMap bool
+	// hiddenToken has the master hide Toren's token before it lands.
+	hiddenToken bool
+	// noticeDC is the DC to notice of the armed trap beside the landing square on the map the players see (0: never noticed by passing).
+	noticeDC int32
+	// how is the write that lands the token: "" is PlaceMapToken, "move" is MoveMapTokens and "party" is PutPartyOnMap. A move and a
+	// party put run with no combat on the map, as a landing that fires a trap does (the combat of the world is ended).
+	how string
+	// fires lands the token on the square of the trap, so that the landing fires it.
+	fires bool
+	// npc lands an NPC's token (which notices and fires nothing) in place of Toren's.
+	npc bool
+}
+
+// noticeWorld is landingWorld for a token that lands on the map the players see, visible, beside a trap with the given DC to notice.
+func noticeWorld(t *testing.T, noticeDC int32) (ana, caio []string, moved int64) {
+	t.Helper()
+	return landingWorld(t, landing{noticeDC: noticeDC})
+}
+
+// landingWorld builds a world, adds an armed trap on the map the players see, has the master drop Toren (Caio's character) as l says
+// (the token placed once before, so the landing is a move), and reads what Ana, a third player, was told: the kinds of her events (the
+// heartbeats left out) and how far her number went from the landing. It returns what Caio heard as well.
+func landingWorld(t *testing.T, l landing) (ana, caio []string, moved int64) {
+	t.Helper()
+	w := newWorld(t)
+	w.pts["seq-notice-trap"] = w.point(w.fogMap, mapsv1.MapPointKind_MAP_POINT_KIND_TRAP, w.secrets.marker("seq-notice-trap"), w.secrets.marker("seq-notice-trap-description"), 7, 13, func(r *mapsv1.CreateMapPointRequest) {
+		r.Trap = w.trapSpec()
+		r.Trap.NoticeDc = l.noticeDC
+	})
+	w.secrets.id("trap", w.pts["seq-notice-trap"].GetId())
+	onMap := w.fogMap
+	if l.unseenMap {
+		onMap = w.map2
+	}
+	if l.fires || l.how != "" {
+		must(w.master.combat.EndEncounter(t.Context(), rq(&playv1.EndEncounterRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), IdempotencyKey: newKey()})))
+	}
+	who := w.toren.GetId()
+	if l.npc {
+		who = w.stage2.GetId()
+	}
+	col := 8
+	if l.fires {
+		col = 7 // the trap's own square
+	}
+	w.place(onMap, who, 20, 2) // far from the trap: the first placement notices nothing
+	if l.hiddenToken {
+		must(w.master.maps.SetMapTokenHidden(t.Context(), rq(&mapsv1.SetMapTokenHiddenRequest{CampaignId: w.campaign, MapId: onMap, CharacterId: who, Hidden: true})))
+	}
+	w.hints.Settle(w.t)
+	streams := map[*person]*streamWatcher{w.ana: w.watchStream(w.ana), w.caio: w.watchStream(w.caio)}
+	start := streams[w.ana].number()
+	x, y := at(col, 13)
+	switch l.how {
+	case "move":
+		must(w.master.maps.MoveMapTokens(t.Context(), rq(&mapsv1.MoveMapTokensRequest{CampaignId: w.campaign, MapId: onMap, CharacterIds: []string{who}, XBp: x, YBp: y})))
+	case "party":
+		must(w.master.maps.PutPartyOnMap(t.Context(), rq(&mapsv1.PutPartyOnMapRequest{CampaignId: w.campaign, MapId: onMap, CharacterIds: []string{who}, XBp: x, YBp: y})))
+	default:
+		w.place(onMap, who, col, 13)
+	}
+	// The landing was made when place returned: a beat that begins after the next one reads what it left.
+	watch := streams[w.ana]
+	watch.beatAfter(t, watch.count(), func(int64) bool { return true })
+	end := watch.beatAfter(t, watch.count(), func(int64) bool { return true })
+	must(w.master.play.EndGameSession(t.Context(), rq(&playv1.EndGameSessionRequest{CampaignId: w.campaign, GameSessionId: w.session})))
+	kinds := map[*person][]string{}
+	for p, sw := range streams {
+		<-sw.done
+		for _, ev := range sw.since(1) {
+			if c := eventCase(ev); c != "heartbeat" && c != "session_ended" {
+				kinds[p] = append(kinds[p], c)
+			}
+		}
+	}
+	return kinds[w.ana], kinds[w.caio], end - start
+}
+
+// TestALandingMovesAThirdPlayersNumberOnceWhateverTheMapAndTheToken: a player's character that lands moves the session's number once,
+// whether the map is one the players see or not (twins: the map the players see with a trap Toren notices, and a map they do not see)
+// and whether the token is hidden or visible (twins: the same landing of a hidden token and of a visible one), so a third player's number
+// says nothing of where the token landed or of what the master hid. Ana, who sees none of it, is the third player.
+func TestALandingMovesAThirdPlayersNumberOnceWhateverTheMapAndTheToken(t *testing.T) {
+	_, _, seen := landingWorld(t, landing{noticeDC: 1})
+	_, _, unseen := landingWorld(t, landing{unseenMap: true, noticeDC: 1})
+	_, _, hidden := landingWorld(t, landing{hiddenToken: true})
+	_, _, visible := landingWorld(t, landing{})
+	if seen != unseen {
+		t.Errorf("Ana's number moved by %d where the map was seen and by %d where it was not, want the same", seen, unseen)
+	}
+	if hidden != visible {
+		t.Errorf("Ana's number moved by %d where the token was hidden and by %d where it was visible, want the same", hidden, visible)
+	}
+	_, _, npc := landingWorld(t, landing{npc: true, noticeDC: 1})
+	_, _, moves := landingWorld(t, landing{how: "move", noticeDC: 1})
+	_, _, party := landingWorld(t, landing{how: "party", noticeDC: 1})
+	_, _, movesUnseen := landingWorld(t, landing{how: "move", unseenMap: true, noticeDC: 1})
+	if moves != movesUnseen {
+		t.Errorf("Ana's number moved by %d for a move where the map was seen and by %d where it was not, want the same", moves, movesUnseen)
+	}
+	for name, moved := range map[string]int64{"seen": seen, "unseen": unseen, "hidden": hidden, "visible": visible, "an NPC's": npc, "a move": moves, "a party put": party, "a move on an unseen map": movesUnseen} {
+		if moved != 1 {
+			t.Errorf("Ana's number moved by %d for the landing in the %s world, want 1: a landing is one write", moved, name)
+		}
+	}
+}
+
+// TestADropThatNoticesATrapMovesAThirdPlayersNumberLikeOneThatDoesNot: a token dropped beside a trap is one write, whose number moves
+// whether or not a trap was noticed (and whether or not the map holds one), so a player who
+// hears nothing of it reads the same number and the same events in the world where Toren noticed the trap (a DC he reaches) and in
+// the one where he could not (a trap with no DC to notice). Control: only Toren's player hears trap_noticed.
+func TestADropThatNoticesATrapMovesAThirdPlayersNumberLikeOneThatDoesNot(t *testing.T) {
+	anaA, caioA, movedA := noticeWorld(t, 1)
+	anaB, caioB, movedB := noticeWorld(t, 0)
+	if !slices.Contains(caioA, "trap_noticed") || slices.Contains(caioB, "trap_noticed") {
+		t.Fatalf("Caio heard %v where the trap was noticed and %v where it was not: the control is gone", caioA, caioB)
+	}
+	if slices.Contains(anaA, "trap_noticed") {
+		t.Errorf("Ana heard %v: the hint of a trap is its finder's alone", anaA)
+	}
+	if movedA != movedB {
+		t.Errorf("Ana's number moved by %d where the trap was noticed and by %d where it was not, want the same", movedA, movedB)
+	}
+	if !slices.Equal(anaA, anaB) {
+		t.Errorf("Ana heard %v where the trap was noticed and %v where it was not, want the same", anaA, anaB)
+	}
+}
+
+// ===== A search whose d20 is kept for a question, and one that is not.
+
+// heldSearchWorld builds a world and has Caio's character search for traps with a d20 of 20 (Investigation). With held, the character
+// holds a Bardic Inspiration die, so the roll is kept for the question about it and the search writes only the held roll; without it,
+// the search is made. It reads what Ana, a third player, was told: the kinds of her events (the heartbeats left out) and how far her
+// number went. It returns what the master and Caio heard as well.
+func heldSearchWorld(t *testing.T, held, inCombat bool) (ana, master, caio []string, moved int64) {
+	t.Helper()
+	w := newWorld(t)
+	die := `INSERT INTO character_inspiration (character_id, campaign_id, sides, seconds_left) VALUES ($1, $2, 8, 600)`
+	args := []any{w.toren.GetId(), w.campaign}
+	if inCombat {
+		die = `UPDATE combatants SET inspiration_sides = 8, inspiration_expires_round = (SELECT round FROM encounters WHERE id = combatants.encounter_id) + 50 WHERE id = $1`
+		args = []any{w.combatant(w.toren).GetId()}
+	} else {
+		must(w.master.combat.EndEncounter(t.Context(), rq(&playv1.EndEncounterRequest{CampaignId: w.campaign, EncounterId: w.encounter.GetId(), IdempotencyKey: newKey()})))
+		w.place(w.fogMap, w.toren.GetId(), 8, 13)
+	}
+	if held {
+		if _, err := w.pool.Exec(t.Context(), die, args...); err != nil {
+			t.Fatalf("give the die: %v", err)
+		}
+	}
+	w.hints.Settle(w.t)
+	streams := map[*person]*streamWatcher{w.master: w.watchStream(w.master), w.ana: w.watchStream(w.ana), w.caio: w.watchStream(w.caio)}
+	start := streams[w.ana].number()
+	res := must(w.caio.play.SearchForTraps(t.Context(), rq(&playv1.SearchForTrapsRequest{
+		CampaignId: w.campaign, Skill: playv1.TrapSearchSkill_TRAP_SEARCH_SKILL_INVESTIGATION, IdempotencyKey: newKey(),
+		Roll: &playv1.SearchForTrapsRequest_D20Face{D20Face: 20},
+	})))
+	if (res.GetHeldRollOffer() != nil) != held {
+		t.Fatalf("the search = %s, want the roll held: %v", protojson.Format(res), held)
+	}
+	watch := streams[w.ana]
+	watch.beatAfter(t, watch.count(), func(int64) bool { return true })
+	end := watch.beatAfter(t, watch.count(), func(int64) bool { return true })
+	must(w.master.play.EndGameSession(t.Context(), rq(&playv1.EndGameSessionRequest{CampaignId: w.campaign, GameSessionId: w.session})))
+	kinds := map[*person][]string{}
+	for p, sw := range streams {
+		<-sw.done
+		for _, ev := range sw.since(1) {
+			if c := eventCase(ev); c != "heartbeat" && c != "session_ended" {
+				kinds[p] = append(kinds[p], c)
+			}
+		}
+	}
+	return kinds[w.ana], kinds[w.master], kinds[w.caio], end - start
+}
+
+// TestAHeldSearchMovesAThirdPlayersNumberLikeOneThatIsNot: a search whose d20 waits for a die's question is one write for the held
+// roll, and one for the search that is made, each moving the number once, so a player who hears nothing of either reads the same
+// number and the same events in the world where the roll was kept and in the one where it was not. Control: only the master and
+// the searcher hear that the questions changed.
+func TestAHeldSearchMovesAThirdPlayersNumberLikeOneThatIsNot(t *testing.T) {
+	for _, inCombat := range []bool{false, true} {
+		t.Run(map[bool]string{false: "out of a combat", true: "the Search action of a combat"}[inCombat], func(t *testing.T) {
+			heldSearchTwins(t, inCombat)
+		})
+	}
+}
+
+func heldSearchTwins(t *testing.T, inCombat bool) {
+	t.Helper()
+	anaH, masterH, caioH, movedH := heldSearchWorld(t, true, inCombat)
+	anaN, masterN, caioN, movedN := heldSearchWorld(t, false, inCombat)
+	for who, got := range map[string][]string{"the master": masterH, "Caio": caioH} {
+		if !slices.Contains(got, "held_rolls_changed") {
+			t.Errorf("%s heard %v where the roll was kept: the control is gone", who, got)
+		}
+	}
+	if slices.Contains(masterN, "held_rolls_changed") || slices.Contains(caioN, "held_rolls_changed") {
+		t.Errorf("the master heard %v and Caio %v where the roll was not kept: no question changed", masterN, caioN)
+	}
+	if slices.Contains(anaH, "held_rolls_changed") {
+		t.Errorf("Ana heard %v: the hint of a question is its roller's and the master's alone", anaH)
+	}
+	if movedH != movedN {
+		t.Errorf("Ana's number moved by %d where the roll was kept and by %d where it was not, want the same", movedH, movedN)
+	}
+	if !slices.Equal(anaH, anaN) {
+		t.Errorf("Ana heard %v where the roll was kept and %v where it was not, want the same", anaH, anaN)
+	}
+}
+
+// TestALandingThatFiresATrapMovesAThirdPlayersNumberByTheLandingAndTheFiring: a token dropped on the square of an armed trap fires it, in a write of
+// play's own, and is not also noticed, so the number moves by the landing (once) and by the firing, and the landing adds nothing for a
+// find. The same landing where the trap is never noticed by passing (no DC) moves it the same.
+func TestALandingThatFiresATrapMovesAThirdPlayersNumberByTheLandingAndTheFiring(t *testing.T) {
+	_, _, noticeable := landingWorld(t, landing{fires: true, noticeDC: 1})
+	_, _, unnoticeable := landingWorld(t, landing{fires: true, noticeDC: 0})
+	if noticeable != unnoticeable {
+		t.Errorf("Ana's number moved by %d where the trap could be noticed and by %d where it could not, want the same", noticeable, unnoticeable)
+	}
+	if noticeable != 2 {
+		t.Errorf("Ana's number moved by %d for a landing that fires, want 2: the landing, then the firing", noticeable)
+	}
+}
+
+// takeBackWorld builds a world where the master left an image with Ana alone (or with Caio too, when withCaio), takes it back, and reads
+// what Caio's stream was told: how far his number went, and the kinds of his events (the heartbeats left out).
+func takeBackWorld(t *testing.T, withCaio bool) (moved int64, kinds []string) {
+	t.Helper()
+	w := newWorld(t)
+	image := w.newShown("seq-take-back", w.ana, w.caio)
+	aud := chosen(w.ana)
+	if withCaio {
+		aud = chosen(w.ana, w.caio)
+	}
+	w.showImage(image, true, aud)
+	must(w.master.play.SetShownImage(t.Context(), rq(&playv1.SetShownImageRequest{CampaignId: w.campaign})))
+	w.hints.Settle(w.t)
+	watch := w.watchStream(w.caio)
+	start := watch.number()
+	must(w.master.play.TakeBackLeftImage(t.Context(), rq(&playv1.TakeBackLeftImageRequest{CampaignId: w.campaign, ImageId: image.id})))
+	// The take-back was made when the call returned: a beat that begins after the next one reads what it left.
+	watch.beatAfter(t, watch.count(), func(int64) bool { return true })
+	end := watch.beatAfter(t, watch.count(), func(int64) bool { return true })
+	for _, ev := range watch.since(1) {
+		if c := eventCase(ev); c != "heartbeat" {
+			kinds = append(kinds, c)
+			if ev.GetSessionSeq() != start+1 {
+				t.Errorf("Caio heard %s with number %d, want %d, the take-back's", c, ev.GetSessionSeq(), start+1)
+			}
+		}
+	}
+	return end - start, kinds
+}
+
+// TestATakeBackMovesAThirdPlayersNumberOnceWhetherItConcernedThemOrNot: taking back an image left on the table is one write that moves
+// the number once, so Caio, who the image was not left with, reads the same number as Caio, who it was left with, and hears nothing
+// but his own list's hint in the world where it concerned him (control). The number is all he learns of the take-back.
+func TestATakeBackMovesAThirdPlayersNumberOnceWhetherItConcernedThemOrNot(t *testing.T) {
+	movedNot, heardNot := takeBackWorld(t, false)
+	movedWith, heardWith := takeBackWorld(t, true)
+	if movedNot != 1 || movedWith != 1 {
+		t.Errorf("Caio's number moved by %d where the image was not his and by %d where it was, want 1 for both: a take-back is one write", movedNot, movedWith)
+	}
+	if len(heardNot) != 0 {
+		t.Errorf("Caio heard %v of the take-back of an image left with Ana alone, want nothing", heardNot)
+	}
+	if len(heardWith) != 1 || heardWith[0] != "left_images_changed" {
+		t.Errorf("Caio heard %v of the take-back of an image left with him, want left_images_changed alone: the control is gone", heardWith)
+	}
 }

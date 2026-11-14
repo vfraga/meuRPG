@@ -506,6 +506,8 @@ func (noLive) ImageInConversation(context.Context, string, string, string) (bool
 	return false, nil
 }
 
+func (noLive) CurrentMapIn(context.Context, pgx.Tx, string) (string, error) { return "", nil }
+
 func (noLive) ImageShown(context.Context, pgx.Tx, string, string) (bool, error) {
 	return false, errors.New("not in this test")
 }

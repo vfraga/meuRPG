@@ -119,6 +119,13 @@ func (s *Service) writeSheetSave(ctx context.Context, u *sheetSave) (charactersd
 // sheet checked against it, the portrait's gallery row, the write, and what play is told.
 func (s *Service) saveSheetIn(ctx context.Context, tx pgx.Tx, u *sheetSave) (charactersdb.Character, error) {
 	q := s.queries.WithTx(tx)
+	// The session's row before the character's, the order of a combat write: a save that changes
+	// the armor or the shield goes on to call play (tellGearChange), which takes the session's lock.
+	// Only such a save takes it: a save that leaves the gear alone, and one that is refused, do not
+	// wait for the combat writes.
+	if err := s.lockSessionBeforeCharacter(ctx, tx, u.m.CampaignID, u.id, u.skipsGearLock); err != nil {
+		return charactersdb.Character{}, err
+	}
 	current, err := lockSheetToSave(ctx, q, u)
 	if err != nil {
 		return charactersdb.Character{}, err
@@ -151,6 +158,24 @@ func (s *Service) saveSheetIn(ctx context.Context, tx pgx.Tx, u *sheetSave) (cha
 	}
 	u.afterArmor, err = s.tellGearChange(ctx, tx, u.m.CampaignID, u.id, stored.GetFull(), u.sheet.GetFull())
 	return row, err
+}
+
+// skipsGearLock says, from the stored character read without a lock, that this save cannot reach play's
+// gear calls, so it need not take the session's lock first: the revision is ahead of the request's (the
+// revision check refuses it as stale), or it is the request's own and the sheet leaves the armor and the
+// shield as they are (gearChangeOf, as tellGearChange reads them). The read is safe without a lock because
+// the revision is checked after the character is locked (lockSheetToSave) and a revision is one version of
+// the sheet: a save that goes on finds the version read here, or is stale. A sheet that does not load, or
+// a revision behind the request's, takes the lock.
+func (u *sheetSave) skipsGearLock(pre charactersdb.Character) bool {
+	switch {
+	case pre.Revision > u.revision:
+		return true
+	case pre.Revision == u.revision:
+		stored, err := loadSheet(pre.ID, pre.Sheet)
+		return err == nil && gearChangeOf(stored.GetFull(), u.sheet.GetFull()) == gearUnchanged
+	}
+	return false
 }
 
 // lockSheetToSave reads the stored character, locked, and checks that the caller may

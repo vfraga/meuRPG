@@ -151,7 +151,7 @@ func endingMember(cs []playdb.Combatant, v combatViewer, expected string) (playd
 	if err != nil {
 		return current, err
 	}
-	return current, v.mayAct(current)
+	return current, v.mayMove(cs, current) // the rider's player ends the part of the controlled mount it directs too
 }
 
 // endTurnGates are the things that hold a part from ending: a question for the master, the rage

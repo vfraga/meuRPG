@@ -150,7 +150,10 @@ func (st inspirationHoldStore) answerStroke(ctx context.Context, h heldRoll) err
 func (hs heldStores) askStroke(ctx context.Context, h heldRoll) error { return hs.st.askStroke(ctx, h) }
 
 func (hs heldStores) answerStroke(ctx context.Context, h heldRoll) error {
-	return hs.st.answerStroke(ctx, h)
+	if err := hs.st.answerStroke(ctx, h); err != nil {
+		return err
+	}
+	return hs.env.heldRowChanged(ctx, h)
 }
 
 // strokeQuestion is the rogue's "Errou o ataque. Usar Golpe de Sorte para acertar?" or "Falhou no teste. Usar Golpe
@@ -196,7 +199,7 @@ func (q strokeQuestion) apply(ctx context.Context, ae answering, h heldRoll, a h
 			after.Total, after.CountedBy = d20Sides+ae.spec.Modifier, "" // the 20 is no minimum's
 		}
 	}
-	if err := newHeldStores(ae.q).answerStroke(ctx, after); err != nil {
+	if err := ae.stores().answerStroke(ctx, after); err != nil {
 		return h, fmt.Errorf("answer the Stroke of Luck question: %w", err)
 	}
 	return after, nil
@@ -292,7 +295,7 @@ func (s *Service) gateStrokeNext(ctx context.Context, ae answering, h heldRoll, 
 	if a.question == askDie {
 		h.DieAnswerKey = &a.key
 	}
-	stores := newHeldStores(ae.q)
+	stores := ae.stores()
 	if err := stores.askStroke(ctx, h); err != nil {
 		return gateResult{}, false, fmt.Errorf("ask the Stroke of Luck question: %w", err)
 	}

@@ -16,11 +16,11 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	maplink "github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -70,6 +70,7 @@ type searchTurn struct {
 	floor   rollFloor // the lowest number each d20 of the search counts as
 	step    gateResult
 	dieFace int // the die the player added after rolling: it counts in every total of the search
+	h       *hints
 }
 
 // searchDice is the d20 of a search and the totals it is answered with.
@@ -88,18 +89,17 @@ func (s *Service) SearchForTraps(
 	if err != nil {
 		return nil, err
 	}
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error { return s.searchInTx(ctx, tx, ts) })
+	err = s.txOpen(ctx, ts.m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
+		return s.searchInTx(ctx, tx, h, session, ts)
+	})
 	if err != nil {
 		return nil, s.dbError(ctx, "search for traps", err)
 	}
-	if ts.offer != nil || ts.lucky != nil { // nothing was written: the question is the whole answer
-		if ts.place.spent {
-			s.publishEncounterChanged(ctx, ts.m.CampaignID, ts.place.enc) // the question moved the combat's revision
-		}
+	if ts.offer != nil || ts.lucky != nil { // only the held roll was written (the search and its event wait for the answer): the question is the whole answer
 		return connect.NewResponse(&playv1.SearchForTrapsResponse{InspirationOffer: ts.offer, LuckyOffer: ts.lucky, HeldRollOffer: ts.held}), nil
 	}
 	if !ts.repeated {
-		s.tellTrapSearch(ctx, ts)
+		s.logTrapSearch(ctx, ts)
 	}
 	return connect.NewResponse(trapSearchAnswer(ts)), nil
 }
@@ -200,16 +200,15 @@ func searchSecondFace(msg *playv1.SearchForTrapsRequest, in rollInput, skill str
 	return typed2, nil
 }
 
-// searchInTx is the change: the retry of a search already made, the checks of the state, the place,
-// the d20, what the roll finds and the event.
-func (s *Service) searchInTx(ctx context.Context, tx pgx.Tx, ts *trapSearch) error {
+// searchInTx is the change (the session is locked): the retry of a search already made, the checks of the state, the place,
+// the d20, what the roll finds and the event, and what the streams are told.
+func (s *Service) searchInTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, ts *trapSearch) error {
 	q := s.queries.WithTx(tx)
 	ts.repeated, ts.told, ts.place, ts.offer, ts.lucky = false, nil, searchPlace{}, nil, nil
-	session, err := lockOpenSessionOrNone(ctx, q, ts.m.CampaignID)
-	if err != nil {
-		return err
-	}
 	if done, err := s.searchRetried(ctx, q, session, ts); done || err != nil {
+		if done && err == nil {
+			return s.tellSearchAgain(ctx, q, h, session, ts)
+		}
 		return err
 	}
 	opt, err := s.searchGuards(ctx, tx, q, session, ts)
@@ -227,9 +226,17 @@ func (s *Service) searchInTx(ctx context.Context, tx pgx.Tx, ts *trapSearch) err
 	if err != nil {
 		return err
 	}
-	r := &searchTurn{c: c, opt: opt, floor: floor}
+	return s.searchRolled(ctx, h, c, ts, &searchTurn{c: c, opt: opt, floor: floor, h: h})
+}
+
+// searchRolled is the search from the roll on: the held question, the action a combat spends, the d20, the event and what the
+// streams are told.
+func (s *Service) searchRolled(ctx context.Context, h *hints, c *combatTx, ts *trapSearch, r *searchTurn) error {
 	held, err := s.prepareSearchRoll(ctx, ts, r)
 	if err != nil || held {
+		if held && ts.place.spent { // the question moved the combat's revision: the combat's readers read it again
+			s.tellEncounterRowAfter(h, ts.m.CampaignID, ts.place.enc)
+		}
 		return err
 	}
 	if ts.place.spent { // the Search action of a combat: the action goes once the d20 is no longer kept for a question
@@ -245,7 +252,11 @@ func (s *Service) searchInTx(ctx context.Context, tx pgx.Tx, ts *trapSearch) err
 	if err != nil {
 		return err
 	}
-	return s.writeTrapSearch(ctx, ts, r, d)
+	if err := s.writeTrapSearch(ctx, ts, r, d); err != nil {
+		return err
+	}
+	s.tellTrapSearch(h, ts)
+	return nil
 }
 
 // searchRetried answers a retry of a search already made with that search, and changes nothing. It
@@ -337,9 +348,10 @@ func (s *Service) askSearchGate(ctx context.Context, ts *trapSearch, r *searchTu
 		held.typed, held.typedFaces = ts.in.typedFaces[0], nil
 	}
 	// Out of a combat the roll is the character's; in one it is its combatant's, in the round, like any other roll of a turn.
-	env, roller := s.outsideGate(r.c.tx, r.c.q), heldRoller{CampaignID: ts.m.CampaignID, CharacterID: ts.who.ID, UserID: ts.m.UserID}
+	env, roller := s.outsideGate(r.c.tx, r.c.q, r.h), heldRoller{CampaignID: ts.m.CampaignID, CharacterID: ts.who.ID, UserID: ts.m.UserID}
 	if ts.place.spent {
 		env, roller = combatGate(r.c), attackRoller(ts.m, ts.place.me, r.c.enc.Round)
+		env.h = r.h // the search's combatTx has no hints of its own: the held row is told through the search's
 	}
 	step, err := s.heldGate(ctx, env, rollSpec{
 		Kind: heldTrapSearch, Key: ts.key, Request: ts.req, Roller: roller,
@@ -458,21 +470,56 @@ func trapSearchEvent(ts *trapSearch, r *searchTurn, d searchDice, found maplink.
 	return ev
 }
 
-// tellTrapSearch tells the streams of a search that was just written.
-func (s *Service) tellTrapSearch(ctx context.Context, ts *trapSearch) {
-	pctx, stop := afterCommit(ctx) // the change is committed: a caller that hangs up must not leave the players unheard
-	defer stop()
+// logTrapSearch logs a search that was just written.
+func (s *Service) logTrapSearch(ctx context.Context, ts *trapSearch) {
 	if len(ts.ev.Found) > 0 {
 		logging.Event(ctx, s.logger, "trap.noticed", slog.String("map_id", ts.place.mapID), slog.Int("found", len(ts.ev.Found)), slog.Bool("physical_dice", ts.ev.Physical))
 	}
-	if len(ts.told) > 0 {
-		s.traps.Told(pctx, ts.m.CampaignID, ts.place.mapID, ts.told)
+}
+
+// tellTrapSearch collects what a search that was just written changed, for the streams once it is committed: the players who found a
+// trap are told by the maps module, the combat that spent the action changed (its log has the search, for the master) and the
+// master's activity read has a new line. The search wrote an event, so the session's number moves.
+func (s *Service) tellTrapSearch(h *hints, ts *trapSearch) {
+	h.touch()
+	s.tellSearched(h, ts.m.CampaignID, ts.place.mapID, ts.told, ts.place.spent, ts.place.enc)
+}
+
+// tellSearched is what tellTrapSearch collects: users are the players told that the map changed, and enc is the combat the search
+// took the action in (spent).
+func (s *Service) tellSearched(h *hints, campaignID, mapID string, users []string, spent bool, enc playdb.Encounter) {
+	if len(users) > 0 {
+		h.after(func(ctx context.Context, _ sayFn) { s.traps.Told(ctx, campaignID, mapID, users) })
 	}
-	if ts.place.spent {
-		s.publishEncounterChanged(pctx, ts.m.CampaignID, ts.place.enc)
-		s.publishLogChanged(pctx, ts.m.CampaignID, ts.place.enc.ID, false) // the master's log has the search
+	if spent {
+		s.tellEncounterRowAfter(h, campaignID, enc)
+		h.tell(campaignID, live.Event{Audience: live.Audience{Master: true}, Message: combatLogChangedMessage(enc.ID, false)}) // the master's log has the search
 	}
-	s.tellMembers(ts.m.CampaignID, false, mapChangedHint(ts.place.mapID)) // the master's activity read has a new line: a hint with no content
+	h.tell(campaignID, masterMapChanged(mapID)) // the master's activity read has a new line: a hint with no content
+}
+
+// tellSearchAgain fills h for a retry of a search whose key was found stored (ts.ev is what it wrote), with what the first call would
+// have told, worked out from the stored event: the searcher, if the search found a trap, and the master, and the combat the search
+// spent the action in. The map is the combat's or, outside one, the session's current map. Nothing was written, so h only replays.
+func (s *Service) tellSearchAgain(ctx context.Context, q *playdb.Queries, h *hints, session playdb.GameSession, ts *trapSearch) error {
+	h.replay()
+	var enc playdb.Encounter
+	mapID := conv.OrZero(session.CurrentMapID)
+	if ts.ev.OnTurn {
+		latest, err := q.GetLatestEncounter(ctx, session.ID)
+		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+			return fmt.Errorf("find the session's combat: %w", err)
+		}
+		if err == nil {
+			enc, mapID = latest, conv.OrZero(latest.MapID)
+		}
+	}
+	var users []string
+	if len(ts.ev.Found) > 0 {
+		users = []string{ts.m.UserID}
+	}
+	s.tellSearched(h, ts.m.CampaignID, mapID, users, enc.ID != "", enc)
+	return nil
 }
 
 // trapSearchAnswer is the response for the event of the search.

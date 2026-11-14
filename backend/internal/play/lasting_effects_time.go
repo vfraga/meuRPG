@@ -12,8 +12,8 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
 const eventGameTimeAdvanced = "game_time_advanced"
@@ -44,36 +44,25 @@ func (s *Service) AdvanceGameTime(
 	}
 	keyText, hash := key.String(), idem.Hash(req.Msg)
 	var done gameTimeDone
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		done = gameTimeDone{}
-		return s.advanceGameTimeIn(ctx, tx, m, keyText, hash, req.Msg.GetSeconds(), &done)
+		return s.advanceGameTimeIn(ctx, tx, h, session, m, keyText, hash, req.Msg.GetSeconds(), &done)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "move game time on", err)
 	}
-	if done.told {
-		s.publishCastsChanged(m.CampaignID, false)
-		s.publishVitalsOf(m.CampaignID, done.vitals)
-	}
 	return connect.NewResponse(&playv1.AdvanceGameTimeResponse{EffectsEnded: done.ended}), nil
 }
 
-// gameTimeDone is what the transaction of AdvanceGameTime leaves for the answer and the streams.
+// gameTimeDone is what the transaction of AdvanceGameTime leaves for the answer.
 type gameTimeDone struct {
 	ended int32
-	// told says game time moved on in this call (not a repeat of one), so the streams are told.
-	told   bool
-	vitals []*playv1.CharacterVitals
 }
 
-// advanceGameTimeIn is the transaction of AdvanceGameTime: the same key again answers with what
-// the first call did; a combat that runs stops it.
-func (s *Service) advanceGameTimeIn(ctx context.Context, tx pgx.Tx, m authz.Membership, keyText string, hash *string, seconds int32, done *gameTimeDone) error {
+// advanceGameTimeIn is the transaction of AdvanceGameTime (the session is locked): the same key again answers with what
+// the first call did; a combat that runs stops it. It collects what the streams are told.
+func (s *Service) advanceGameTimeIn(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, m authz.Membership, keyText string, hash *string, seconds int32, done *gameTimeDone) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-	if err != nil {
-		return err
-	}
 	first, again, err := eventByKey(ctx, q, session.ID, keyText, eventGameTimeAdvanced, hash)
 	if err != nil {
 		return err
@@ -82,6 +71,7 @@ func (s *Service) advanceGameTimeIn(ctx context.Context, tx pgx.Tx, m authz.Memb
 		var ev gameTimeEvent
 		_ = json.Unmarshal(first.Payload, &ev)
 		done.ended = ev.Ended
+		s.tellEffectsAgain(h, m.CampaignID)
 		return nil
 	}
 	if err := activeCombatBlocks(ctx, q, session.ID); err != nil {
@@ -98,7 +88,6 @@ func (s *Service) advanceGameTimeIn(ctx context.Context, tx pgx.Tx, m authz.Memb
 	if err := s.advanceGameTime(ctx, c, seconds); err != nil {
 		return err
 	}
-	done.vitals = c.told
 	after, err := q.ListCharacterEffectsOfCampaign(ctx, m.CampaignID)
 	if err != nil {
 		return fmt.Errorf("list the effects: %w", err)
@@ -107,6 +96,6 @@ func (s *Service) advanceGameTimeIn(ctx context.Context, tx pgx.Tx, m authz.Memb
 	if err := s.appendKeyedEvent(ctx, q, keyedEvent{sessionID: session.ID, kind: eventGameTimeAdvanced, userID: m.UserID, key: keyText, hash: hash}, gameTimeEvent{Seconds: seconds, Ended: done.ended}); err != nil {
 		return err
 	}
-	done.told = true
+	tellEffects(h, m.CampaignID, c.told)
 	return nil
 }

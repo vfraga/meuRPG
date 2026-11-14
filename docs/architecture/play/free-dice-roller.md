@@ -59,8 +59,8 @@ A new session starts both lists empty.
 
 - **The idempotency key is required**, 1 to 64 characters (`idem.Clean`).
   `session_events.idempotency_key` is a UUID, so the server stores a UUID derived from the member and the key (`freeRollKey`): two members may send the same text, and one member's key is unique in the session.
-  The same key with the same request returns the first roll (same id, same dice, same time) and rolls, writes and publishes nothing; the same key with another request is `invalid_argument` (the request hash, `idem.Hash`).
+  The same key with the same request returns the first roll (same id, same dice, same time) and rolls and writes nothing (the roll is told again, see below); the same key with another request is `invalid_argument` (the request hash, `idem.Hash`).
   The app makes a key per tap and renews it after a roll succeeded, so a double tap rolls once.
 - **The rate limit** is per user: a burst of 20 and one more roll every 3 seconds (`ratelimit.Policy.FreeRoll`, wired as `play.Config.FreeRolls`), checked right after the membership and before anything else, as the lines of the conversation are.
   A refusal is `resource_exhausted` with `Retry-After`, the answer the app already turns into "Tente de novo em N segundos" ([API](../api.md#abuse-limits)).
-- **After the commit** a table roll is published to the hub, which never waits for a slow stream ([The hub](live-session.md#the-hub)); a repeat of the key publishes nothing.
+- **After the commit** a table roll is published to the hub with the session's number, which never waits for a slow stream ([The hub](live-session.md#the-hub)); a secret roll is published to nobody, and moves the number all the same. A repeat of the key tells the table roll again, the same roll to the same streams, and moves nothing.

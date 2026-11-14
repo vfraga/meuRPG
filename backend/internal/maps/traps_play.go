@@ -19,7 +19,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/link"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/vision"
 )
@@ -262,35 +262,45 @@ func (ts *trapScene) knows(p mapsdb.MapPoint, characterID string) bool {
 // armed says the trap can still fire.
 func armed(p mapsdb.MapPoint) bool { return p.TrapState != nil && *p.TrapState == "armed" }
 
-// Notice is the passive notice after a move (MR-035, D5): each observer that
-// ends a move within 3 m of an armed trap's area, sees a square of it, and has a
-// passive Perception, less the light penalty there, that reaches the trap's DC to
-// notice it, learns of the trap (map_point_reveals, how "noticed"), and only its
-// player hears of it (`map_changed`, per user). A trap with no DC to notice is
-// never noticed this way. The play module calls it after a combat move commits
-// and PlaceMapToken calls it after a token lands. It implements play.TrapBook;
-// it takes no caller, and failing leaves the move made.
+// Notice is the passive notice after a combat move (MR-035, D5).
+// Each observer that ends a move within 3 m of an armed trap's area, sees a square of it, and has a passive Perception, less the light
+// penalty there, that reaches the trap's DC to notice it, learns of the trap (map_point_reveals, how "noticed"), and only its player
+// hears of it (`map_changed`, per user).
+// A trap with no DC to notice is never noticed this way.
+// The play module calls it after a combat move commits (it implements play.TrapBook); it takes no caller, and failing leaves the move made.
+// It is a write of its own that moves the session's number once, whether or not a trap was noticed (and whether or not the map holds one):
+// the number says nothing of a find.
+// A token's landing does not go through it: its notice is part of the landing's write (noticeLanded).
 func (s *Service) Notice(ctx context.Context, campaignID, mapID string, who []link.Observer) error {
 	if len(who) == 0 {
 		return nil
 	}
-	ts, err := s.loadTrapScene(ctx, nil, campaignID, mapID, true)
-	if err != nil || len(ts.points) == 0 {
+	finds, row, err := s.findsAt(ctx, campaignID, mapID, who)
+	if err != nil {
 		return err
 	}
-	finds := s.noticeFinds(ts, who)
 	if len(finds) == 0 {
-		return nil
+		// Nothing was noticed (or the map holds no trap): the notice still moves the number, once, so that the number says nothing of a find.
+		return s.inSession(ctx, campaignID, func(_ pgx.Tx, t sessiontell.Tell) error {
+			t.Touch()
+			return nil
+		})
 	}
-	told, noticed, err := s.recordNotices(ctx, campaignID, finds)
+	// The reveals are one write under the session's lock; what it tells goes out once it committed.
+	err = s.recordNotices(ctx, campaignID, finds, s.noticesTold(campaignID, mapID, row))
 	if err != nil {
 		return fmt.Errorf("notice a trap: %w", err)
 	}
-	s.tellUsers(ctx, campaignID, mapID, ts.row, told)
-	s.tellNoticers(ctx, campaignID, mapID, ts.row, noticed)
-	// The master's trap card and log have news: a hint with no content.
-	s.publish(campaignID, false, mapChangedEvent(mapID))
 	return nil
+}
+
+// findsAt is what the observers notice on the map, and the map's row (none: no finds).
+func (s *Service) findsAt(ctx context.Context, campaignID, mapID string, who []link.Observer) ([]noticeFind, mapsdb.Map, error) {
+	ts, err := s.loadTrapScene(ctx, nil, campaignID, mapID, true)
+	if err != nil || len(ts.points) == 0 {
+		return nil, mapsdb.Map{}, err
+	}
+	return s.noticeFinds(ts, who), ts.row, nil
 }
 
 // noticeFind is one trap that one character, played by user, notices.
@@ -330,25 +340,30 @@ func (s *Service) noticesTrap(ts *trapScene, p mapsdb.MapPoint, characterID stri
 	return sg.eligible && eyes.Passive+sg.penalty >= int(spec.GetNoticeDc())
 }
 
-// recordNotices writes the reveals of the finds in one transaction, and one event for each
-// trap and player (the actor is the one whose character noticed). It returns the players
-// told, and the (trap, player) pairs that are new, in order.
-func (s *Service) recordNotices(ctx context.Context, campaignID string, finds []noticeFind) ([]string, []noticeKey, error) {
-	var told []string
-	var noticed []noticeKey
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
-		told, noticed = nil, nil
-		now := s.now()
-		var order []noticeKey
-		var byKey map[noticeKey][]string
-		var err error
-		if told, order, byKey, err = s.insertNotices(ctx, s.queries.WithTx(tx), finds, now); err != nil {
-			return err
-		}
-		noticed, err = s.appendNotices(ctx, tx, campaignID, order, byKey, now)
-		return err
+// recordNotices writes the reveals of the finds in one transaction, under the session's lock, and one event for each
+// trap and player (the actor is the one whose character noticed). Once it committed, tell gets the players told, and the
+// (trap, player) pairs that are new, in order. A find that nobody learns anew tells the players nothing; the master's card still reads
+// again, and the number moves as for any notice.
+func (s *Service) recordNotices(ctx context.Context, campaignID string, finds []noticeFind, tell func(ctx context.Context, told []string, noticed []noticeKey)) error {
+	return s.inSession(ctx, campaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
+		return s.writeNotices(ctx, tx, t, campaignID, finds, tell)
 	})
-	return told, noticed, err
+}
+
+// writeNotices is the body of recordNotices on a transaction the caller holds under the session's lock: the reveals and the events, and
+// the hints told once it committed (the write touches, so the number moves once however many writes share the transaction).
+func (s *Service) writeNotices(ctx context.Context, tx pgx.Tx, t sessiontell.Tell, campaignID string, finds []noticeFind, tell func(ctx context.Context, told []string, noticed []noticeKey)) error {
+	now := s.now()
+	told, order, byKey, err := s.insertNotices(ctx, s.queries.WithTx(tx), finds, now)
+	if err != nil {
+		return err
+	}
+	noticed, err := s.appendNotices(ctx, tx, campaignID, order, byKey, now)
+	if err != nil {
+		return err
+	}
+	s.announce(t, func(ctx context.Context) { tell(ctx, told, noticed) })
+	return nil
 }
 
 // insertNotices writes a "noticed" reveal for each find, and groups the new ones by trap
@@ -405,7 +420,7 @@ func (s *Service) tellUsers(ctx context.Context, campaignID, mapID string, row m
 		return
 	}
 	if playersSee(mapID, row.RevealedAt, current) {
-		s.live.PublishToUsers(campaignID, users, mapChangedEvent(mapID))
+		s.publishUsers(ctx, campaignID, users, mapChangedEvent(mapID))
 	}
 }
 
@@ -426,7 +441,7 @@ func (s *Service) tellNoticers(ctx context.Context, campaignID, mapID string, ro
 		return
 	}
 	for _, n := range noticed {
-		s.live.PublishToUsers(campaignID, []string{n.user}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TrapNoticed_{
+		s.publishUsers(ctx, campaignID, []string{n.user}, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_TrapNoticed_{
 			TrapNoticed: &playv1.WatchGameSessionResponse_TrapNoticed{MapId: mapID, PointId: n.point},
 		}})
 	}
@@ -797,19 +812,21 @@ func (s *Service) DisarmTrap(
 		return nil, err
 	}
 	var res trapDisarm
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		res, err = s.disarmTrapTx(ctx, tx, m, mapID, pointID)
-		return err
+		if res, err = s.disarmTrapTx(ctx, tx, m, mapID, pointID); err != nil || !res.changed {
+			return err // already disarmed: nothing is told and no number moves
+		}
+		s.announce(t, func(ctx context.Context) {
+			// Everyone who sees a public trap hears of it; one that is not public reaches
+			// the players whose characters know it, and nobody else (RN-10).
+			s.publishPointsChanged(ctx, m.CampaignID, res.mapRow, everyoneSees(res.after) && playersSee(mapID, res.mapRow.RevealedAt, current), res.after)
+			s.tellTrapKnowers(ctx, m.CampaignID, mapID, res.mapRow, current, res.knowers)
+		})
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "disarm a trap", err)
-	}
-	if res.changed {
-		// Everyone who sees a public trap hears of it; one that is not public reaches
-		// the players whose characters know it, and nobody else (RN-10).
-		s.publishPointsChanged(ctx, m.CampaignID, res.mapRow, everyoneSees(res.after) && playersSee(mapID, res.mapRow.RevealedAt, current), res.after)
-		s.tellTrapKnowers(m.CampaignID, mapID, res.mapRow, current, res.knowers)
 	}
 	out, err := s.masterPoint(ctx, m, res.after)
 	if err != nil {
@@ -875,22 +892,25 @@ type TrapFirer interface {
 	// was dropped on a square, and the traps whose area holds it fire (the creature is
 	// caught with whoever stands there). Same terms as TokenDropped.
 	CreatureDropped(ctx context.Context, campaignID, mapID string, creature link.MapCreature, actorUserID string, at grid.Square) error
+	// TrapsToFire says, reading through tx, which traps (point ids) TokenDropped fires for a token dropped on the square, by the one rule of both: none with no
+	// open session, in theatre, or while a combat runs on the map.
+	TrapsToFire(ctx context.Context, tx pgx.Tx, campaignID, mapID string, at grid.Square) ([]string, error)
 }
 
 // SetTrapFirer connects the module that fires traps.
 func (s *Service) SetTrapFirer(f TrapFirer) { s.firer = f }
 
 // tokenLanded is what a token dropped on a map does to traps, after the commit: a
-// player's character may fire a trap in whose area it lands, and notices what it
-// can from where it stands (NPCs do neither: they never fire a trap by walking,
-// and have no player to tell). It never fails the move.
+// player's character may fire a trap in whose area it lands (NPCs never fire a trap
+// by walking). It never fails the move. What the character notices from where it stands
+// is not here: it is part of the landing's own write (noticeLanded), so the landing moves the session's number once.
 func (s *Service) tokenLanded(ctx context.Context, campaignID, actorUserID, mapID string, token mapsdb.MapToken, character *charactersv1.CharacterSummary) {
-	if !isPlayerCharacter(character) {
+	if !isPlayerCharacter(character) || s.firer == nil {
 		return
 	}
-	ctx = context.WithoutCancel(ctx)
+	ctx = withoutOut(ctx)
 	// Only on a map the players see (revealed, or the session's current one): a token
-	// put right on a map the master is still preparing fires and notices nothing.
+	// put right on a map the master is still preparing fires nothing.
 	row, err := s.queries.GetMap(ctx, mapsdb.GetMapParams{CampaignID: campaignID, ID: mapID})
 	if err != nil {
 		return
@@ -904,13 +924,88 @@ func (s *Service) tokenLanded(ctx context.Context, campaignID, actorUserID, mapI
 		return
 	}
 	at := g.SquareOf(int(token.XBp), int(token.YBp))
-	if s.firer != nil {
-		if err := s.firer.TokenDropped(ctx, campaignID, mapID, character.GetId(), actorUserID, at); err != nil {
-			s.logger.ErrorContext(ctx, "maps: cannot fire a trap for a token", "error", err)
+	if err := s.firer.TokenDropped(ctx, campaignID, mapID, character.GetId(), actorUserID, at); err != nil {
+		s.logger.ErrorContext(ctx, "maps: cannot fire a trap for a token", "error", err)
+		// The landing left out of its notice the traps the firing was to take; since it failed, they are noticed now, as any notice.
+		if err := s.Notice(ctx, campaignID, mapID, []link.Observer{{CharacterID: character.GetId(), At: at}}); err != nil {
+			s.logger.ErrorContext(ctx, "maps: cannot notice a trap after a failed firing", "error", err)
 		}
 	}
-	if err := s.Notice(ctx, campaignID, mapID, []link.Observer{{CharacterID: character.GetId(), At: at}}); err != nil {
-		s.logger.ErrorContext(ctx, "maps: cannot notice a trap for a token", "error", err)
+}
+
+// landedToken is a token a landing wrote and the character it belongs to.
+type landedToken struct {
+	token     mapsdb.MapToken
+	character *charactersv1.CharacterSummary
+}
+
+// noticeLanded is the passive notice of the player characters that landed (MR-035, D5), made inside the landing's own transaction, after
+// its tokens were written and under the session's lock: what each sees from its square decides which traps it notices, and the reveals
+// are written with the tokens. The landing is one write and moves the session's number once, whether the map is one the players see
+// (this does nothing on one they do not), whether a token is hidden, and whether or not a trap was noticed: the number says nothing of
+// any of them. Only the finder hears of it, once the transaction committed (trap_noticed and map_changed); the master's card reads again.
+// The current map is read here, after the lock. An NPC's token notices nothing.
+func (s *Service) noticeLanded(ctx context.Context, tx pgx.Tx, t sessiontell.Tell, campaignID, mapID string, row mapsdb.Map, landed []landedToken) error {
+	current, err := s.live.CurrentMapIn(ctx, tx, campaignID) // under the session's lock: the map the players see now
+	if err != nil {
+		return fmt.Errorf("read the current map: %w", err)
+	}
+	if !playersSee(mapID, row.RevealedAt, current) {
+		return nil
+	}
+	var pcs []landedToken
+	for _, l := range landed {
+		if isPlayerCharacter(l.character) {
+			pcs = append(pcs, l)
+		}
+	}
+	if len(pcs) == 0 {
+		return nil
+	}
+	ts, err := s.loadTrapScene(ctx, tx, campaignID, mapID, true)
+	if err != nil {
+		return err
+	}
+	if !ts.g.Valid() {
+		return nil
+	}
+	who := make([]link.Observer, 0, len(pcs))
+	for _, l := range pcs {
+		who = append(who, link.Observer{CharacterID: l.character.GetId(), At: ts.g.SquareOf(int(l.token.XBp), int(l.token.YBp))})
+	}
+	finds := s.notNowFired(ctx, tx, campaignID, mapID, s.noticeFinds(ts, who), who)
+	if len(finds) == 0 {
+		return nil
+	}
+	return s.writeNotices(ctx, tx, t, campaignID, finds, s.noticesTold(campaignID, mapID, ts.row))
+}
+
+// notNowFired drops from the finds the traps the landing will fire (the firer says which, by the rule it fires by): a trap that fires is known
+// to all, so it is not also noticed. A trap the firer will not fire (no open session, theatre, a combat on the map) is noticed as any other.
+// If the firer cannot say, nothing is dropped.
+func (s *Service) notNowFired(ctx context.Context, tx pgx.Tx, campaignID, mapID string, finds []noticeFind, who []link.Observer) []noticeFind {
+	if s.firer == nil || len(finds) == 0 {
+		return finds
+	}
+	fires := map[string][]string{}
+	for _, ob := range who {
+		ids, err := s.firer.TrapsToFire(ctx, tx, campaignID, mapID, ob.At)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "maps: cannot tell which traps a landing fires", "error", err)
+			continue
+		}
+		fires[ob.CharacterID] = ids
+	}
+	return slices.DeleteFunc(finds, func(f noticeFind) bool { return slices.Contains(fires[f.character], f.point) })
+}
+
+// noticesTold is what a write of notices tells once it committed: the players that learned of a trap, the finders, and the master's trap
+// card and log, which have news (a hint with no content).
+func (s *Service) noticesTold(campaignID, mapID string, row mapsdb.Map) func(ctx context.Context, told []string, noticed []noticeKey) {
+	return func(ctx context.Context, told []string, noticed []noticeKey) {
+		s.tellUsers(ctx, campaignID, mapID, row, told)
+		s.tellNoticers(ctx, campaignID, mapID, row, noticed)
+		s.tellStreams(ctx, campaignID, sessiontell.Audience{Master: true}, mapChangedEvent(mapID))
 	}
 }
 
@@ -922,7 +1017,7 @@ func (s *Service) creatureLanded(ctx context.Context, campaignID, actorUserID, m
 	if s.firer == nil {
 		return
 	}
-	ctx = context.WithoutCancel(ctx)
+	ctx = withoutOut(ctx)
 	row, err := s.queries.GetMap(ctx, mapsdb.GetMapParams{CampaignID: campaignID, ID: mapID})
 	if err != nil {
 		return

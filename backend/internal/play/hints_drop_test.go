@@ -35,13 +35,13 @@ func newDropWorld(t *testing.T) *dropWorld {
 		t.Fatalf("GetOpenGameSession() error = %v", err)
 	}
 	w.session = open.ID
-	w.h.svc.dropSend = func(string, live.Event) bool {
+	w.h.svc.setDropSend(func(string, live.Event) bool {
 		if w.on.Load() {
 			w.dropped.Add(1)
 			return true
 		}
 		return false
-	}
+	})
 	w.h.hints.Settle(t) // the start's trailing hints are sent: the stream opens after them
 	w.player = w.caio.watch(t, w.campaignID)
 	ev := w.player.next(t)
@@ -252,4 +252,10 @@ func TestReplayOfADroppedHitPointChangeSendsAgainWithTheStoredNumber(t *testing.
 		}
 		return
 	}
+}
+
+// setDropSend installs the hook of send. Sends run on other goroutines (a gate's timer), so the hook is swapped atomically.
+func (s *Service) setDropSend(f func(campaignID string, ev live.Event) bool) {
+	hook := sendDrop(f)
+	s.dropSend.Store(&hook)
 }

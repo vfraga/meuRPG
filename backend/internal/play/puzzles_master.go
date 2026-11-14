@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -146,15 +145,25 @@ func (s *Service) CreatePuzzle(
 	// returns the first puzzle (with the start it was drawn) and makes no other.
 	scopedKey, requestHash := idem.Scope(m.CampaignID, key), idem.Hash(req.Msg)
 	var row playdb.Puzzle
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOrNone(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, _ string) error {
 		q := s.queriesIn(tx)
+		var replayed bool
 		var err error
-		row, _, err = idem.Create(ctx, scopedKey, requestHash, q.GetPuzzleByCreateKey,
+		row, replayed, err = idem.Create(ctx, scopedKey, requestHash, q.GetPuzzleByCreateKey,
 			func(p playdb.Puzzle) *string { return p.CreateHash },
 			func() (playdb.Puzzle, error) {
 				return s.insertPuzzle(ctx, tx, m.CampaignID, in, scopedKey, requestHash)
 			})
-		return err
+		if err != nil {
+			return err
+		}
+		// A new puzzle is in the master's list of the session's puzzles: a screen that shows it reads again. The retry of the key
+		// wrote nothing and has nothing to tell again but that.
+		if replayed {
+			h.replay()
+		}
+		h.touch()
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "create a puzzle", err)
@@ -250,10 +259,13 @@ func (s *Service) UpdatePuzzle(
 	in := puzzleInputOf(req.Msg.GetName(), req.Msg.GetConfig(), req.Msg.GetSolution(), req.Msg.GetStart(), req.Msg.GetSeed(), req.Msg.GetClue(), req.Msg.GetHints(), req.Msg.GetOnSolve(),
 		puzzleExtras{hintCheck: req.Msg.GetHintCheck(), parts: req.Msg.GetParts(), onWrong: req.Msg.GetOnWrong()})
 	var row playdb.Puzzle
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOrNone(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, _ string) error {
 		var err error
-		row, err = s.updatePuzzle(ctx, tx, m.CampaignID, id, in)
-		return err
+		if row, err = s.updatePuzzle(ctx, tx, m.CampaignID, id, in); err != nil {
+			return err
+		}
+		h.touch() // the master's list of the session's puzzles shows the edited puzzle (and no longer a run prepared at the old start)
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "update a puzzle", err)
@@ -384,7 +396,12 @@ func (s *Service) PreviewPuzzleCipher(
 
 // shownSet is the set of the campaign's puzzle IDs that were shown in any session.
 func (s *Service) shownSet(ctx context.Context, campaignID string) (map[string]bool, error) {
-	ids, err := s.queries.ListShownPuzzleIDs(ctx, campaignID)
+	return s.shownSetIn(ctx, s.queries, campaignID)
+}
+
+// shownSetIn is shownSet read through q (a transaction's, or the pool's).
+func (s *Service) shownSetIn(ctx context.Context, q *playdb.Queries, campaignID string) (map[string]bool, error) {
+	ids, err := q.ListShownPuzzleIDs(ctx, campaignID)
 	if err != nil {
 		return nil, fmt.Errorf("read which puzzles were shown: %w", err)
 	}
@@ -462,11 +479,22 @@ func (s *Service) setArchived(ctx context.Context, campaignID, rawID string, arc
 		return nil, err
 	}
 	var row playdb.Puzzle
-	changed := false
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOrNone(ctx, campaignID, func(tx pgx.Tx, h *hints, _ string) error {
+		var changed bool
 		var err error
-		row, changed, err = s.flipArchived(ctx, s.queriesIn(tx), campaignID, id, archive)
-		return err
+		if row, changed, err = s.flipArchived(ctx, s.queriesIn(tx), campaignID, id, archive); err != nil || !changed {
+			return err
+		}
+		shown, err := s.shownSetIn(ctx, s.queriesIn(tx), campaignID)
+		if err != nil {
+			return err
+		}
+		if shown[id] {
+			s.tellPuzzleChanged(h, campaignID, id) // a shown puzzle leaves, or comes back to, the players' list
+		} else {
+			h.touch() // the master's list of puzzles shows it archived, or back
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "archive a puzzle", err)
@@ -474,9 +502,6 @@ func (s *Service) setArchived(ctx context.Context, campaignID, rawID string, arc
 	shown, err := s.shownSet(ctx, campaignID)
 	if err != nil {
 		return nil, s.dbError(ctx, "archive a puzzle", err)
-	}
-	if changed && shown[id] {
-		s.publishPuzzleChanged(campaignID, id) // a shown puzzle leaves, or comes back to, the players' list
 	}
 	p, err := s.masterPuzzle(ctx, row, shown[row.ID])
 	if err != nil {

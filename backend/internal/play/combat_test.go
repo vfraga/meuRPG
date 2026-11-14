@@ -927,6 +927,18 @@ func TestMR013_CombatAuthorizationMatrix(t *testing.T) {
 			_, err := u.combat.SetCombatantSide(ctx, connect.NewRequest(&playv1.SetCombatantSideRequest{CampaignId: campaign, EncounterId: enc, CombatantId: gob, IdempotencyKey: newKey(), Side: playv1.CombatantSide_COMBATANT_SIDE_PARTY}))
 			return err
 		},
+		"SetCombatantMount": func(u *user, ctx context.Context) error {
+			_, err := u.combat.SetCombatantMount(ctx, connect.NewRequest(&playv1.SetCombatantMountRequest{CampaignId: campaign, EncounterId: enc, CombatantId: gob, IdempotencyKey: newKey(), Kind: "controlled"}))
+			return err
+		},
+		"MountCombatant": func(u *user, ctx context.Context) error {
+			_, err := u.combat.MountCombatant(ctx, connect.NewRequest(&playv1.MountCombatantRequest{CampaignId: campaign, EncounterId: enc, RiderId: pens, MountId: gob, IdempotencyKey: newKey()}))
+			return err
+		},
+		"DismountCombatant": func(u *user, ctx context.Context) error {
+			_, err := u.combat.DismountCombatant(ctx, connect.NewRequest(&playv1.DismountCombatantRequest{CampaignId: campaign, EncounterId: enc, RiderId: pens, Col: 1, Row: 1, IdempotencyKey: newKey()}))
+			return err
+		},
 		"SetCombatantCover": func(u *user, ctx context.Context) error {
 			_, err := u.combat.SetCombatantCover(ctx, connect.NewRequest(&playv1.SetCombatantCoverRequest{CampaignId: campaign, EncounterId: enc, CombatantId: gob, IdempotencyKey: newKey(), Cover: playv1.CoverDegree_COVER_DEGREE_HALF}))
 			return err
@@ -1016,7 +1028,7 @@ func TestMR013_CombatAuthorizationMatrix(t *testing.T) {
 
 	masterOnly := map[string]bool{
 		"StartEncounter": true, "GetStartRoster": true, "SetInitiativeOrder": true, "BeginCombat": true, "SetCombatantHidden": true,
-		"AddCombatants": true, "AddMonsters": true, "RemoveCombatant": true, "EndEncounter": true, "SetCombatantSide": true, "SetCombatantCover": true, "SetMonsterReactionMode": true, "SetSunlight": true,
+		"AddCombatants": true, "AddMonsters": true, "RemoveCombatant": true, "EndEncounter": true, "SetCombatantSide": true, "SetCombatantMount": true, "SetCombatantCover": true, "SetMonsterReactionMode": true, "SetSunlight": true,
 		"OfferOpportunity": true, "WithdrawOpportunity": true, "EndCombatEffect": true, "EndSpellZone": true, "UseCreatureAction": true, "SpendLegendaryAction": true,
 	}
 	for name, call := range calls {
@@ -1152,7 +1164,7 @@ func TestSessionEventKindsMatchTheTable(t *testing.T) {
 		eventClueRevealed, eventStageChanged,
 		eventSceneAttemptGranted, eventTurnPartEnded,
 		eventTrapNoticed, eventTrapSearched, eventTrapTriggered, eventTrapDisarmed, eventTrapRevealed,
-		eventTreasureFound, eventTreasureUnfound, eventCoverSet, eventSideSet, eventOpportunityOffered,
+		eventTreasureFound, eventTreasureUnfound, eventCoverSet, eventSideSet, eventMountKindSet, eventCombatantMounted, eventCombatantDismounted, eventOpportunityOffered,
 		eventCreatureSummoned, eventCreatureDismissed, eventWildShapeStarted, eventWildShapeEnded,
 		eventFamiliarSight, eventDoorOpened, eventHiddenRevealAnswered, eventReactionAnswered, eventConcentrationSaveRolled,
 		eventPuzzleShown, eventPuzzleSolved, eventPuzzleReset, eventPuzzleClosed,

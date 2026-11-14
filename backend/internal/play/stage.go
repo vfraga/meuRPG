@@ -12,8 +12,8 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
+	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
@@ -76,15 +76,19 @@ func stageChangedEvent() *playv1.WatchGameSessionResponse {
 	}}
 }
 
-// publishStageChanged tells the session that the stage changed: the master and the players in the scene
-// when the players saw the change, the master alone when only he did (a hidden NPC put on the stage or
-// taken off it).
-func (s *Service) publishStageChanged(ctx context.Context, campaignID string, players bool) {
-	if players {
-		s.PublishToScene(ctx, campaignID, stageChangedEvent())
-		return
+// tellStageChanged collects the hint that the stage changed: the master and the players in the scene when the players saw the
+// change, the master alone when only he did (a hidden NPC put on the stage or taken off it).
+func tellStageChanged(ctx context.Context, q *playdb.Queries, h *hints, session playdb.GameSession, players bool) error {
+	if !players {
+		h.tell(session.CampaignID, live.Event{Audience: live.Audience{Master: true}, Message: stageChangedEvent()})
+		return nil
 	}
-	s.tellMembers(campaignID, false, stageChangedEvent())
+	in, err := sceneViewersOf(ctx, q, session)
+	if err != nil {
+		return err
+	}
+	tellViewers(h, session.CampaignID, in, stageChangedEvent)
+	return nil
 }
 
 // stageOf builds the stage as the caller sees it: the master gets the
@@ -212,40 +216,33 @@ type stageDone struct {
 // stageChange is one master's call to the stage, inside the transaction.
 type stageChange func(c *combatTx) (stageDone, error)
 
-// changeStage runs a change of the stage for the master: it locks the open
-// session, applies the change, writes the stage_changed event, and answers with
-// the stage. Once it is committed everyone hears of it, unless only the master
-// read the change.
+// changeStage runs a change of the stage for the master: it takes the open session's row (Service.tx), applies the change, writes
+// the stage_changed event, and answers with the stage. Once it is committed everyone hears of it, unless only the master read the
+// change.
 func (s *Service) changeStage(ctx context.Context, m authz.Membership, what string, apply stageChange) ([]*playv1.StageNpc, error) {
-	var done stageDone
 	var sessionID string
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		q := s.queries.WithTx(tx)
-		done = stageDone{}
-		session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-		if err != nil {
-			return err
-		}
 		sessionID = session.ID
 		c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now()})
 		if err != nil {
 			return err
 		}
-		if done, err = apply(c); err != nil || done.change == "" {
+		done, err := apply(c)
+		if err != nil || done.change == "" {
 			return err
 		}
 		if done.characterID != "" {
 			c.characterID = &done.characterID
 		}
 		ev := stageEvent{Change: done.change, CharacterID: done.characterID, Hidden: done.hidden, Revealed: done.revealed}
-		_, err = insertSceneEvent(ctx, c, eventStageChanged, &m.UserID, nil, ev)
-		return err
+		if _, err = insertSceneEvent(ctx, c, eventStageChanged, &m.UserID, nil, ev); err != nil {
+			return err
+		}
+		return tellStageChanged(ctx, q, h, session, !done.master)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, what, err)
-	}
-	if done.change != "" {
-		s.publishStageChanged(ctx, m.CampaignID, !done.master)
 	}
 	return s.stageOf(ctx, m, sessionID)
 }

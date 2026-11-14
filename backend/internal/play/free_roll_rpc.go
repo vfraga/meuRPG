@@ -106,9 +106,9 @@ func (s *Service) RollFreeDice(
 		return nil, err
 	}
 	var run freeRollRun
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, call.m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		run = freeRollRun{} // a retry starts over
-		return s.freeRollTx(ctx, tx, call, &run)
+		return s.freeRollTx(ctx, tx, h, session, call, &run)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "roll free dice", err)
@@ -116,26 +116,26 @@ func (s *Service) RollFreeDice(
 	roll := freeRollToProto(run.id, s.freeRollerName(ctx, call.m.UserID, run.ev.ByMaster), run.at, run.ev)
 	if !run.repeated {
 		logging.Event(ctx, s.logger, "free_roll.rolled", slog.Int("sides", int(run.ev.Sides)), slog.Int("count", int(run.ev.Count)), slog.Bool("secret", run.ev.Secret))
-		s.publishFreeRoll(call.m.CampaignID, run.ev, roll)
 	}
 	return connect.NewResponse(&playv1.RollFreeDiceResponse{Roll: roll}), nil
 }
 
-// freeRollTx is the transaction of RollFreeDice: lock the open session, find the roll of a retry of
-// the key, or roll and write the event.
-func (s *Service) freeRollTx(ctx context.Context, tx pgx.Tx, call freeRollCall, run *freeRollRun) error {
+// freeRollTx is the transaction of RollFreeDice: find the roll of a retry of the key, or roll and write the event, and have the
+// roll told once it committed (again for a retry: a table roll to the table, a secret one to nobody).
+func (s *Service) freeRollTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, call freeRollCall, run *freeRollRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID)
-	if err != nil {
-		return err
-	}
 	done, again, err := eventByKey(ctx, q, session.ID, call.keyText, eventFreeRoll, call.hash)
 	if err != nil {
 		return err
 	}
 	if again {
 		run.repeated, run.id, run.at = true, done.ID, done.CreatedAt
-		return decodeFreeRoll(done.Payload, &run.ev)
+		h.replay()
+		if err := decodeFreeRoll(done.Payload, &run.ev); err != nil {
+			return err
+		}
+		s.tellFreeRoll(h, call, run)
+		return nil
 	}
 	ev, err := rollFree(s.roller, call.ask)
 	if err != nil {
@@ -146,20 +146,30 @@ func (s *Service) freeRollTx(ctx context.Context, tx pgx.Tx, call freeRollCall, 
 	run.id, run.at, err = s.insertKeyedEvent(ctx, q, keyedEvent{
 		sessionID: session.ID, kind: eventFreeRoll, userID: call.m.UserID, key: call.keyText, hash: call.hash,
 	}, ev)
-	return err
+	if err != nil {
+		return err
+	}
+	h.touch() // a secret roll tells nobody, and the master's list changed
+	s.tellFreeRoll(h, call, run)
+	return nil
 }
 
-// publishFreeRoll tells the streams of a table roll, whole, and a secret roll to nobody (RN-10).
-func (s *Service) publishFreeRoll(campaignID string, ev freeRollEvent, roll *playv1.FreeRoll) {
+// tellFreeRoll has the roll told to the streams after the commit: a table roll whole, and a secret roll to nobody (RN-10). The
+// roller's name is read then, outside the transaction.
+func (s *Service) tellFreeRoll(h *hints, call freeRollCall, run *freeRollRun) {
+	ev, id, at := run.ev, run.id, run.at
 	aud, ok := ev.audience()
 	if !ok {
 		return
 	}
-	s.send(campaignID, live.Event{
-		Audience: aud,
-		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_FreeRollRolled_{
-			FreeRollRolled: &playv1.WatchGameSessionResponse_FreeRollRolled{Roll: roll},
-		}},
+	h.after(func(ctx context.Context, say sayFn) {
+		roll := freeRollToProto(id, s.freeRollerName(ctx, call.m.UserID, ev.ByMaster), at, ev)
+		say(call.m.CampaignID, live.Event{
+			Audience: aud,
+			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_FreeRollRolled_{
+				FreeRollRolled: &playv1.WatchGameSessionResponse_FreeRollRolled{Roll: roll},
+			}},
+		})
 	})
 }
 

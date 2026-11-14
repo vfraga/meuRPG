@@ -61,6 +61,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/characters/charactersdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/nostore"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/wiring"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 )
@@ -182,6 +183,8 @@ type Service struct {
 	// that holds a character's creatures and the history they are written to
 	// (MR-037). Nil until then.
 	creatureHost CreatureHost
+	// sessionHost is package play's funnel, connected by SetSessionHost: the creature writes run under it.
+	sessionHost sessiontell.Host
 	// reviewHost is package play, connected by SetReviewHost: the streams a review or a
 	// revival is told on, and the combat a revived character goes back to. Nil until then.
 	reviewHost ReviewHost
@@ -306,5 +309,6 @@ func (s *Service) CheckWired() error {
 		wiring.Dep{Setter: "SetLive", Missing: s.live == nil},
 		wiring.Dep{Setter: "SetCreatureHost", Missing: s.creatureHost == nil},
 		wiring.Dep{Setter: "SetReviewHost", Missing: s.reviewHost == nil},
-		wiring.Dep{Setter: "SetLevelUps", Missing: s.levelUps == nil})
+		wiring.Dep{Setter: "SetLevelUps", Missing: s.levelUps == nil},
+		wiring.Dep{Setter: "SetSessionHost", Missing: s.sessionHost == nil})
 }

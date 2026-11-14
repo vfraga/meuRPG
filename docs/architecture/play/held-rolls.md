@@ -140,7 +140,21 @@ When the owner and the master answer at once, the first answer wins; the other, 
 
 Every roll that waits asks one question in one shape, `HeldRollOffer`: the hold, the kind, who rolls (the combatant, the character of a player, the name as the viewer reads it), the d20 with its bonus, the question that waits (`LuckyQuestion` first, `RerollQuestion` after it, `DieQuestion` after that, then `IndomitableQuestion` or `StrokeOfLuckQuestion`) and when the roll was held. The nine answers of the paths carry it as `held_roll_offer` beside the deprecated `inspiration_offer` and `lucky_offer` (and the lists `offers` and `lucky_offers` of the state out of a combat), which are still filled for a tab opened before the one question existed, and so does the `Combatant` of a roll held in a combat, for the master and the roller's player only (`heldOfferOfCombatant`). `ListHeldRolls` lists the questions the caller may answer, oldest first: a player's own, the master's every one of the table, in a combat or out of one, leaving out the stale (`heldList`). `AnswerHeldRoll` answers with the path's own response in a `oneof` and the next question of the same roll in `next`.
 
-The question of any roll held in a combat moves the combat's revision (`inspirationHoldStore.asked`), as the weapon attack's always did, so the master and the roller read the combat again. `HeldRollsChanged` is a content-free hint on the stream for the master and the roller's user: the interceptor `heldHintInterceptor` sends it when a path answers with a question, and `answerHeld` when an answer changed one.
+The question of any roll held in a combat moves the combat's revision (`inspirationHoldStore.asked`), as the weapon attack's always did, so the master and the roller read the combat again.
+`HeldRollsChanged` is a content-free hint on the stream for the master, the roller's user and the player of the roller's combatant.
+
+A held roll is a row of the session, so the gate moves the session's hint number whenever a row changes.
+`heldStores` is made by the gate's environment (`gateEnv.stores`), and each row it keeps, answers or forgets calls `heldRowChanged`.
+That touches the transaction's hints once, however many rows change, and tells `HeldRollsChanged` through them, so the hint carries the number.
+It holds for the paths in a combat and for the ones out of it (the scene check, the group check, the trap search and the puzzle hint try), because each gives the gate the hints of its own transaction.
+A stale question the gate forgets before a roll that settles is told the same way: the master's page and the roller's second device read the questions again.
+A third player hears nothing of it, and the number moves once whether or not the roll was held, so the two cases read the same to them.
+A roll that finds its question already kept (a retry of its key, an answer given again) changes no row.
+The gate marks the attempt as a replay (`hints.replay`) and tells `HeldRollsChanged` again through the transaction, so the hint carries the number as it stands and the number does not move.
+A gate that is about to write a held roll with no hints to tell it through refuses, and the write rolls back (`errHeldWithoutHints`).
+
+The bare hint of `heldHintInterceptor` (and of `answerHeld`) goes out only for a campaign with no open session.
+There is no session's transaction or number then, so it is sent with no number.
 
 ## The web
 

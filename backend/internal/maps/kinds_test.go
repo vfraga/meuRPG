@@ -927,11 +927,9 @@ func TestMR036_CarriedLight(t *testing.T) {
 	}
 }
 
-// The master's change to a trap locks the point and then the session (the event it
-// records); the play module's trigger locks the session and then the point. When a
-// move fires a trap while the master reveals it, the two wait for each other:
-// the database aborts one (40001 on CockroachDB, 40P01 on PostgreSQL) and the retry of its
-// transaction goes on, so the master's call still succeeds and the trap is revealed.
+// The master's change to a trap locks the session row first and then the point, the order of every change in play
+// (the funnel, #735 part 2), so it and the play module's trigger (the session row, then the point) take turns and neither is
+// aborted: when a move fires a trap while the master reveals it, the one that took the session finishes, then the other goes on.
 func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 	t.Parallel()
 	s := newScenes(t, true)
@@ -949,24 +947,29 @@ func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 		t.Fatal(err)
 	}
 	masterConn.Release()
-	// waiting counts the statements of the two sides asking for the trap's lock right now.
-	waiting := func() int {
-		n, err := dbtest.WaitingStatements(ctx, probe, `%FROM map_points%FOR UPDATE%`, masterSession, playSession)
+	// The open session's id, read before the master's call holds its row (a read of a locked row waits).
+	var openSession string
+	if err := probe.QueryRow(ctx, `SELECT id FROM game_sessions WHERE campaign_id = $1 AND ended_at IS NULL`, s.campaign).Scan(&openSession); err != nil {
+		t.Fatal(err)
+	}
+	// waiting counts the statements of the given sides that wait for the lock of the rows a pattern names right now.
+	waiting := func(pattern string, sessions ...string) int {
+		n, err := dbtest.WaitingStatements(ctx, probe, pattern, sessions...)
 		if err != nil {
 			t.Fatal(err)
 		}
 		return n
 	}
-	waitFor := func(what string, n int) {
+	waitFor := func(what, pattern string, sessions ...string) {
 		t.Helper()
-		for waiting() < n {
+		for waiting(pattern, sessions...) < 1 {
 			if ctx.Err() != nil {
-				t.Fatalf("%s never waited for the trap", what)
+				t.Fatalf("%s never waited", what)
 			}
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
-	// A transaction holds the point, so the master's call stops right at it.
+	// A transaction holds the point, so the master's call stops right at it, holding the session row it took first.
 	holder, err := dbtest.SideConnection(t, s.h.pool).Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -980,9 +983,9 @@ func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 		_, err := s.master.maps.RevealTrap(ctx, connect.NewRequest(&mapsv1.RevealTrapRequest{CampaignId: s.campaign, MapId: s.mapID, PointId: trap.GetId(), All: true}))
 		revealed <- err
 	}()
-	waitFor("the master's call", 1)
-	// The play module's transaction: the session row first, as every change in play
-	// does, then the trap the move fires. It queues behind the master's call.
+	waitFor("the master's call", `%FROM map_points%FOR UPDATE%`, masterSession)
+	// The play module's transaction: the session row first, as every change in play does. It queues behind the master's call,
+	// which holds the row, and does not reach the point.
 	play, err := dbtest.SideConnection(t, s.h.pool).Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
@@ -991,31 +994,31 @@ func TestMR035_ARevealCrossingATriggerInPlayTakesTurns(t *testing.T) {
 	if playSession, err = dbtest.BackendID(ctx, play); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := play.Exec(ctx, `SELECT id FROM game_sessions WHERE campaign_id = $1 AND ended_at IS NULL FOR UPDATE`, s.campaign); err != nil {
-		t.Fatal(err)
-	}
 	fired := make(chan error, 1)
 	go func() {
+		// The funnel's first statement (play.LockSessionForHints): the row by its id.
+		if _, err := play.Exec(ctx, `SELECT id FROM game_sessions WHERE id = $1 FOR UPDATE`, openSession); err != nil {
+			fired <- err
+			return
+		}
 		_, err := s.h.svc.TriggerTrap(ctx, play, s.campaign, s.mapID, trap.GetId(), time.Now())
+		if err == nil {
+			err = play.Commit(ctx) // a move ends its transaction at once: a read of the point in the master's answer waits for these locks
+		}
 		fired <- err
 	}()
-	waitFor("the move", 2)
-	// The master's call takes the point first and then waits for the session, which the
-	// move holds while it waits for the point: one of them is aborted.
+	waitFor("the move", `%FROM game_sessions%FOR UPDATE%`, playSession)
 	if err := holder.Rollback(ctx); err != nil {
 		t.Fatal(err)
 	}
-	err = <-fired
-	if err == nil {
-		err = play.Commit(ctx)
-	}
-	var pg *pgconn.PgError
-	// The abort is 40001 on CockroachDB and 40P01 (a deadlock) on PostgreSQL.
-	if err != nil && (!errors.As(err, &pg) || (pg.Code != "40001" && pg.Code != "40P01")) {
-		t.Fatalf("the move ended with %v, want success or a retryable abort", err)
-	}
-	_ = play.Rollback(ctx)
 	if err := <-revealed; err != nil {
 		t.Errorf("RevealTrap() crossing a trigger = %v, want success", err)
+	}
+	// The move's transaction began before the reveal committed, so it may be asked to go again (40001); play's funnel retries it. What
+	// it never is is a deadlock: the two wait on the session row first, in one order.
+	err = <-fired
+	var pg *pgconn.PgError
+	if err != nil && (!errors.As(err, &pg) || pg.Code != "40001") {
+		t.Fatalf("the move ended with %v, want success or a request to go again", err)
 	}
 }

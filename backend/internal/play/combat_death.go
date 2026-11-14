@@ -70,7 +70,7 @@ type deathSaveOutcome struct {
 	made   actionEvent
 	vitals *playv1.CharacterVitals // after a natural 20
 	viewer combatViewer
-	held   *playv1.HeldRollOffer // the d20 was kept for a question: nothing is written
+	held   *playv1.HeldRollOffer // the d20 was kept for a question: only the held roll is written
 	// hookName is the name of the feature whose hook ran on this save.
 	hookName string
 }
@@ -92,7 +92,7 @@ func (s *Service) RollDeathSave(
 	if err != nil {
 		return nil, s.dbError(ctx, "roll a death save", err)
 	}
-	if out.held != nil { // nothing was written: the question is the whole answer
+	if out.held != nil { // only the held roll was written: the question is the whole answer
 		enc, err := s.finish(ctx, call.m, res, s.changed(call.m.CampaignID))
 		if err != nil {
 			return nil, err

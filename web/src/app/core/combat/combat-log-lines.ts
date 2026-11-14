@@ -253,6 +253,20 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
       return { ...base, icon: 'door_open', text: ' abriu a porta' };
     },
   ],
+  // A rider got on or off a mount (SRD 5.1, "Mounting and Dismounting"): "Toren montou em Pônei". The server sends the line only to who
+  // sees both combatants; the master's alone when either is hidden.
+  [
+    CombatLogKind.MOUNTED,
+    ({ base, e }) => {
+      return { ...base, icon: 'pets', text: ` montou em ${e.targetLabel || 'uma montaria'}` };
+    },
+  ],
+  [
+    CombatLogKind.DISMOUNTED,
+    ({ base, e }) => {
+      return { ...base, icon: 'pets', text: ` desmontou de ${e.targetLabel || 'uma montaria'}` };
+    },
+  ],
   [
     CombatLogKind.EFFECT_ENDED,
     ({ e, base, ctx }) => {

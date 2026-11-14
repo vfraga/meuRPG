@@ -48,9 +48,9 @@ func (s *Service) opportunityReactors(ctx context.Context, tx pgx.Tx, campaignID
 // couldReactTo is the part of the filter that needs no read: r is a placed,
 // living foe of the mover, not the creature the mover drags (SRD 5.1, "Moving a
 // Grappled Creature": it moves with the mover, never leaves its reach and takes no
-// opportunity attack), seen by the viewer, and not incapacitated or blinded.
+// opportunity attack), not the rider of the mover or the mount of the mover, seen by the viewer, and not incapacitated or blinded.
 func couldReactTo(r, mover playdb.Combatant, v *combatViewer, draggedID string) bool {
-	if r.ID == mover.ID || r.Defeated || !placed(r) || r.Side == mover.Side || r.ID == draggedID {
+	if r.ID == mover.ID || r.Defeated || !placed(r) || r.Side == mover.Side || r.ID == draggedID || samePair(r, mover) {
 		return false
 	}
 	if v != nil && !v.sees(r) {

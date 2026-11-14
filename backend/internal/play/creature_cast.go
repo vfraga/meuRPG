@@ -210,12 +210,17 @@ func (s *Service) combatantsOfCreatures(ctx context.Context, res combatResult, i
 // publishCreaturesChanged tells the master and the creatures' owner that their
 // lists changed (outside a combat; in one, encounter_changed covers it).
 func (s *Service) publishCreaturesChanged(campaignID, ownerUserID string) {
-	s.send(campaignID, live.Event{
+	s.send(campaignID, creaturesChangedEvent(ownerUserID))
+}
+
+// creaturesChangedEvent is the hint that the creature lists changed, for the master and the owner's player.
+func creaturesChangedEvent(ownerUserID string) live.Event {
+	return live.Event{
 		Audience: live.Audience{Master: true, UserID: ownerUserID},
 		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_CreaturesChanged_{
 			CreaturesChanged: &playv1.WatchGameSessionResponse_CreaturesChanged{},
 		}},
-	})
+	}
 }
 
 // publishCreaturesOfCombat tells the owners of the creatures in cs (and the

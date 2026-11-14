@@ -11,7 +11,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -253,18 +253,23 @@ func (s *Service) ForgetMapVision(
 	}
 	// The epoch goes up with the clear, so a refresh that is already running cannot
 	// write the old memory back (rememberFor).
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		q := s.queries.WithTx(tx)
 		if _, err := s.campaignMap(ctx, q, m.CampaignID, mapID); err != nil {
 			return err
 		}
-		return clearVisionMemory(ctx, q, mapID)
+		if err := clearVisionMemory(ctx, q, mapID); err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) {
+			// What the players see now is theirs again, from this moment.
+			s.tiles.forget(mapID) // every player's mask changes: the tiles start over
+			s.refreshVision(ctx, m.CampaignID, mapID)
+		})
+		return nil
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "forget what the players saw", err)
 	}
-	// What the players see now is theirs again, from this moment.
-	s.tiles.forget(mapID) // every player's mask changes: the tiles start over
-	s.refreshVision(ctx, m.CampaignID, mapID)
 	return connect.NewResponse(&mapsv1.ForgetMapVisionResponse{}), nil
 }

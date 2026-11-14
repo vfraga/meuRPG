@@ -64,30 +64,39 @@ type groupCall struct {
 	kind string
 }
 
+// groupTell collects what a write of the group check tells once it committed (and what a retry of its key tells again).
+type groupTell func(ctx context.Context, q *playdb.Queries, h *hints, session playdb.GameSession) error
+
 // groupWrite runs one change to the open session's group check, as the scene checks do: one
 // transaction locks the open session, replays a retry of the key, lets do change the rows
-// and appends the event. It returns whether the call was a retry.
-func (s *Service) groupWrite(ctx context.Context, m authz.Membership, key string, hash *string, kind string, do groupChange) (groupCheckEvent, bool, error) {
+// and appends the event, and tells what the write changed through the hints of Service.tx (a roll kept for the player's
+// answer wrote nothing and tells nothing). It returns whether the call was a retry.
+func (s *Service) groupWrite(ctx context.Context, m authz.Membership, key string, hash *string, kind string, do groupChange, tell groupTell) (groupCheckEvent, bool, error) {
 	call := groupCall{m: m, key: key, hash: hash, kind: kind}
 	var ev groupCheckEvent
 	var repeated bool
-	err := db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err := s.txOpen(ctx, m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		ev, repeated = groupCheckEvent{}, false
 		q := s.queries.WithTx(tx)
-		session, err := lockOpenSessionOrNone(ctx, q, m.CampaignID)
-		if err != nil {
-			return err
-		}
 		replayed, found, err := groupReplay(ctx, q, session.ID, call)
 		if err != nil {
 			return err
 		}
 		if found {
 			ev, repeated = replayed, true
-			return nil
+			h.replay()
+			return tell(ctx, q, h, session)
 		}
-		ev, err = s.groupApply(ctx, tx, q, session, call, do)
-		return err
+		if gh := groupHoldOf(ctx); gh != nil {
+			gh.h = h
+		}
+		var wrote bool
+		ev, wrote, err = s.groupApply(ctx, tx, q, session, call, do)
+		if err != nil || !wrote {
+			return err
+		}
+		h.touch()
+		return tell(ctx, q, h, session)
 	})
 	return ev, repeated, err
 }
@@ -113,23 +122,26 @@ func groupReplay(ctx context.Context, q *playdb.Queries, sessionID string, call 
 }
 
 // groupApply lets do change the rows of a call that is not a retry and appends its event.
-func (s *Service) groupApply(ctx context.Context, tx pgx.Tx, q *playdb.Queries, session playdb.GameSession, call groupCall, do groupChange) (groupCheckEvent, error) {
+// It says whether it wrote: a roll kept for an answer did not.
+func (s *Service) groupApply(ctx context.Context, tx pgx.Tx, q *playdb.Queries, session playdb.GameSession, call groupCall, do groupChange) (groupCheckEvent, bool, error) {
 	c, err := s.openTx(ctx, combatTx{tx: tx, q: q, session: session, now: s.now(), hash: call.hash, svc: s})
 	if err != nil {
-		return groupCheckEvent{}, err
+		return groupCheckEvent{}, false, err
 	}
 	payload, characterID, err := do(q, tx, session)
 	if errors.Is(err, errRollHeld) {
-		return groupCheckEvent{}, nil // the roll waits for the player's answer (a die, or Lucky): nothing is written yet
+		return groupCheckEvent{}, false, nil // the roll waits for the player's answer (a die, or Lucky): only the held roll is written, and the gate told it
 	}
 	if err != nil {
-		return groupCheckEvent{}, err
+		return groupCheckEvent{}, false, err
 	}
 	if characterID != "" {
 		c.characterID = &characterID
 	}
-	_, err = insertSceneEvent(ctx, c, call.kind, &call.m.UserID, &call.key, payload)
-	return payload, err
+	if _, err = insertSceneEvent(ctx, c, call.kind, &call.m.UserID, &call.key, payload); err != nil {
+		return payload, false, err
+	}
+	return payload, true, nil
 }
 
 // errRollHeld is what a write's closure returns when its roll was kept for the player's answer
@@ -146,9 +158,11 @@ type groupHold struct {
 	offer *playv1.OutsideInspirationOffer
 	lucky *playv1.LuckyOffer
 	held  *playv1.HeldRollOffer
+	// h collects what the write tells once it is saved, for the gate (groupWrite sets it on each attempt).
+	h *hints
 }
 
-// asking says the roll was kept for one of the player's answers: nothing is written yet.
+// asking says the roll was kept for one of the player's answers: only the held roll is written.
 func (g *groupHold) asking() bool {
 	return g.offer != nil || g.lucky != nil || g.held != nil
 }
@@ -160,13 +174,19 @@ func groupHoldOf(ctx context.Context) *groupHold {
 	return g
 }
 
-// publishGroupCheckChanged tells the table that the group check changed: a hint with no
-// content, read again by each as their own role. While a scene open to only some players is
-// open, only its players hear it (RN-10).
-func (s *Service) publishGroupCheckChanged(ctx context.Context, campaignID string) {
-	s.PublishToScene(ctx, campaignID, &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_GroupCheckChanged_{
-		GroupCheckChanged: &playv1.WatchGameSessionResponse_GroupCheckChanged{},
-	}})
+// tellGroupChanged tells the table that the group check changed: a hint with no content, read again by each as their own role.
+// While a scene open to only some players is open, only its players hear it (RN-10).
+func tellGroupChanged(ctx context.Context, q *playdb.Queries, h *hints, session playdb.GameSession) error {
+	v, err := sceneViewersOf(ctx, q, session)
+	if err != nil {
+		return err
+	}
+	tellViewers(h, session.CampaignID, v, func() *playv1.WatchGameSessionResponse {
+		return &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_GroupCheckChanged_{
+			GroupCheckChanged: &playv1.WatchGameSessionResponse_GroupCheckChanged{},
+		}}
+	})
+	return nil
 }
 
 // maxGroupCheckDC is the highest DC a group check can ask (0 asks none).
@@ -229,15 +249,12 @@ func (s *Service) RequestGroupCheck(
 	if err != nil {
 		return nil, err
 	}
-	ev, repeated, err := s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckRequested, func(q *playdb.Queries, tx pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
+	ev, _, err := s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckRequested, func(q *playdb.Queries, tx pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
 		ev, err := s.askGroupCheck(ctx, q, tx, m, session, ask)
 		return ev, "", err
-	})
+	}, tellGroupChanged)
 	if err != nil {
 		return nil, s.dbError(ctx, "ask a group check", err)
-	}
-	if !repeated {
-		s.publishGroupCheckChanged(ctx, m.CampaignID)
 	}
 	view, err := s.groupCheckView(ctx, m, ev.GroupCheckID)
 	if err != nil {
@@ -350,17 +367,14 @@ func (s *Service) RollGroupCheck(
 	}
 	hold := &groupHold{m: m, key: key, raw: req.Msg}
 	ctx = context.WithValue(ctx, groupHoldKey{}, hold)
-	_, repeated, err := s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckRolled, func(q *playdb.Queries, tx pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
+	_, _, err = s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckRolled, func(q *playdb.Queries, tx pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
 		return s.rollOwnGroupCheck(ctx, q, tx, m, session, hold, checkID, in)
-	})
+	}, tellGroupRolled(m))
 	if err != nil {
 		return nil, s.dbError(ctx, "roll a group check", err)
 	}
 	if hold.asking() {
 		return connect.NewResponse(&playv1.RollGroupCheckResponse{InspirationOffer: hold.offer, LuckyOffer: hold.lucky, HeldRollOffer: hold.held}), nil
-	}
-	if !repeated {
-		s.publishGroupRolled(m)
 	}
 	view, err := s.groupCheckView(ctx, m, checkID)
 	if err != nil {
@@ -369,15 +383,17 @@ func (s *Service) RollGroupCheck(
 	return connect.NewResponse(&playv1.RollGroupCheckResponse{GroupCheck: view}), nil
 }
 
-// publishGroupRolled tells the master and the roller that a player rolled: the other players
-// have nothing to read of it.
-func (s *Service) publishGroupRolled(m authz.Membership) {
-	s.send(m.CampaignID, live.Event{
-		Audience: live.Audience{Master: true, UserID: m.UserID},
-		Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_GroupCheckChanged_{
-			GroupCheckChanged: &playv1.WatchGameSessionResponse_GroupCheckChanged{},
-		}},
-	})
+// tellGroupRolled tells the master and the roller that a player rolled: the other players have nothing to read of it.
+func tellGroupRolled(m authz.Membership) groupTell {
+	return func(_ context.Context, _ *playdb.Queries, h *hints, _ playdb.GameSession) error {
+		h.tell(m.CampaignID, live.Event{
+			Audience: live.Audience{Master: true, UserID: m.UserID},
+			Message: &playv1.WatchGameSessionResponse{Event: &playv1.WatchGameSessionResponse_GroupCheckChanged_{
+				GroupCheckChanged: &playv1.WatchGameSessionResponse_GroupCheckChanged{},
+			}},
+		})
+		return nil
+	}
 }
 
 // rollOwnGroupCheck rolls the caller's own character for the group check, in the dice mode the
@@ -497,7 +513,7 @@ type memberRoll struct {
 }
 
 // memberRollOf makes the d20 of the member. held says the roll was kept for the player's answer
-// (a Bardic Inspiration die, or the halfling's Lucky): nothing is written then.
+// (a Bardic Inspiration die, or the halfling's Lucky): only the held roll is written then.
 //
 // A character that holds a Bardic Inspiration die has the d20 kept until the player
 // answers whether to use it, and so has a halfling's d20 that shows a 1, for the Lucky
@@ -530,7 +546,7 @@ func (s *Service) mayAskMember(ctx context.Context, tx pgx.Tx, gh *groupHold, sp
 // gatedMemberRoll puts the member's d20 through the held-roll gate. It says whether the gate
 // settled the roll (settled), or kept it for an answer (held).
 func (s *Service) gatedMemberRoll(ctx context.Context, q *playdb.Queries, tx pgx.Tx, gh *groupHold, spec memberRoll) (roll contestRoll, settled, held bool, err error) {
-	step, err := s.heldGate(ctx, s.outsideGate(tx, q), rollSpec{
+	step, err := s.heldGate(ctx, s.outsideGate(tx, q, gh.h), rollSpec{
 		Kind: heldGroupCheck, Key: gh.key, Request: gh.raw, Roller: heldRoller{CampaignID: gh.m.CampaignID, CharacterID: spec.characterID, UserID: gh.m.UserID},
 		In: rollInput{inApp: spec.in.inApp, typedFaces: spec.in.faces}, Modifier: spec.bonus, Mode: spec.mode.Mode, Floor: spec.floor, Lucky: spec.lucky, MayAsk: true,
 		Stroke: groupStrokeRule(spec.check),
@@ -610,7 +626,7 @@ func (s *Service) RollForPlayer(
 	// player reads the same question, and the first answer wins (AnswerHeldRoll).
 	hold := &groupHold{m: m, key: key, raw: req.Msg}
 	ctx = context.WithValue(ctx, groupHoldKey{}, hold)
-	_, repeated, err := s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckRolled, func(q *playdb.Queries, tx pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
+	_, _, err = s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckRolled, func(q *playdb.Queries, tx pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
 		hold.offer, hold.lucky, hold.held = nil, nil, nil
 		if err := s.rollMember(ctx, q, tx, m.CampaignID, session, checkID, characterID, in, true); err != nil {
 			return groupCheckEvent{}, "", err
@@ -619,15 +635,12 @@ func (s *Service) RollForPlayer(
 			return groupCheckEvent{}, "", errRollHeld
 		}
 		return groupCheckEvent{GroupCheckID: checkID, CharacterID: characterID}, characterID, nil
-	})
+	}, tellGroupChanged)
 	if err != nil {
 		return nil, s.dbError(ctx, "roll for a player", err)
 	}
 	if hold.asking() {
 		return connect.NewResponse(&playv1.RollForPlayerResponse{InspirationOffer: hold.offer, LuckyOffer: hold.lucky, HeldRollOffer: hold.held}), nil
-	}
-	if !repeated {
-		s.publishGroupCheckChanged(ctx, m.CampaignID)
 	}
 	view, err := s.groupCheckView(ctx, m, checkID)
 	if err != nil {
@@ -653,15 +666,12 @@ func (s *Service) CloseGroupCheck(
 	if err != nil {
 		return nil, err
 	}
-	_, repeated, err := s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckClosed, func(q *playdb.Queries, _ pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
+	_, _, err = s.groupWrite(ctx, m, key, idem.Hash(req.Msg), eventGroupCheckClosed, func(q *playdb.Queries, _ pgx.Tx, session playdb.GameSession) (groupCheckEvent, string, error) {
 		ev, err := s.closeGroupCheckRows(ctx, q, session.ID, checkID)
 		return ev, "", err
-	})
+	}, tellGroupChanged)
 	if err != nil {
 		return nil, s.dbError(ctx, "close a group check", err)
-	}
-	if !repeated {
-		s.publishGroupCheckChanged(ctx, m.CampaignID)
 	}
 	view, err := s.groupCheckView(ctx, m, checkID)
 	if err != nil {

@@ -149,6 +149,29 @@ With no open session the stream ends by itself and opens again when the window r
 The map page counts as one of the person's streams in the campaign (the cap of 4).
 It adds no read a player could not already make (RN-10).
 
+### What a re-read costs
+
+Every page re-reads at the next heartbeat after any write that moves the hint number ([What moves it](#what-moves-it)), the hidden writes included.
+No tick, timer or content-free hint stands in between: a page that is behind reads everything `ready` reads, once, and `seenSeq` catches up when the read worked.
+Two pages watch the heartbeat: the session page (master and player) and the TV (`TableScreenWatcher`).
+The map page, the character page and the content and XP watchers have no `onBehind` and make no read on a heartbeat.
+
+The session page's re-read (`readAll` in `live-session-events.ts`) issues these unary calls, with the panels of the role on screen, no combat open and a fog map current:
+
+| Role   | Calls |
+| ------ | ----- |
+| Both   | `GetLiveSession`, `ListTrapActivity`, `ListSessionMessages` (one page; more only for a wide gap), `ListFreeRolls`, `GetEncounter`, `GetOpenScene`, `ListLeftImages`, `GetMap`, `GetMapVision`, `GetMapLayers`, `ListSpellCasts`, `GetOutsideInspiration`, `ListCharacterEffects`, `GetGroupCheck` |
+| Master | `ListTrapDamages`, `ListSessionPuzzles`, `ListCharactersInTheDark`, `ListMaps`, `GetTableScreen`, `GetCampaignExperience`, `ListCharacters`, `ListHeldRolls`, `ListRevivifyRequests`, and one `GetMapVision` per character in "Névoa e luz" |
+| Player | `ListShownPuzzles`, `ListNotes`, `ListNoteScenes`, `ListCharacterCreatures`, and `ListHeldRolls` when no question waits |
+| TV     | `GetTableScreen` |
+
+A combat adds `ListCombatLog` and the reads its revision moves; a map with no fog drops `GetMapVision`, `GetMapLayers` and `ListCharactersInTheDark`; an open trap card adds one `GetTrapNoticers`.
+
+The bound is one re-read per page per heartbeat interval (`DefaultHeartbeat`), however many writes land in it, because a heartbeat during a read does nothing and one that is not ahead does nothing.
+Each page's heartbeat has its own phase, so the re-reads of a table spread over the interval.
+A table with no write in an interval makes none.
+To recount the lists, find the unary calls behind `readSnapshot`, `trapBoard.refresh`, `conversation.sync` and the panels that read on `bumpTicks`.
+
 ## The hint number
 
 A hint can be lost, and the stream then shows a number ahead of what the page applied, so the page reads the session again.
@@ -163,10 +186,30 @@ A stream carries it on `ready` and on every `heartbeat`, and nothing else about 
 - **Hidden writes move it too.** A write only the master sees bumps the number for everyone.
   A player who was not told the event is "behind" and reads once at the next heartbeat.
   That costs one extra read per hidden write within 25 s, and it tells the player nothing about the write.
-- **Only the combat write path counts.** `write`, `changeInTx` and `StartEncounter` run in `Service.tx` (`play/hints.go`).
+- **Only the writers in `Service.tx` and `Service.InSession` count.** The first are the combat write path (`write`, `changeInTx`, `StartEncounter`), the master's correction of vitals, the rests, the hit dice, the slot recoveries, Bardic Inspiration out of a combat, Revivify's requests, answers and switch, the lasting effects on characters outside a combat (giving one, ending one) and the game clock, and the traps outside a combat (the master's firing, a token or a creature dropped on a trap, a search, and applying or discarding a trap's damage) (`play/hints.go`).
+  The writes of the characters and campaigns modules that change what a session shows run under `Service.InSession` and bump once: giving, renaming and dismissing a character's creature, a correction of a creature's hit points and the table's rules (`SetTableRules`).
+  With no play module wired in (a tool, a test) those writes run in a plain transaction and tell through the creature host with no number.
+  The maps module's writes that change what a session shows (tokens and the party on a map, carried lights, a map's own rows, its layers, fog, grid, image and points, the traps and treasures the master changes, the clues, a scene's actions, the gallery and the dungeons) go through `Service.InSession` too ([Transactions](../transactions.md#hints-sent-after-the-commit)): one bump for each write, and what the write tells carries it, to the audience the maps module chose (a hidden change reaches the master alone, a trap found its finder alone).
+  A change that shows on screen and sends no event (a renamed gallery image on screen, the fog's memory cleared) touches; a rename reads what is on screen after it holds the session's lock, so an image the master shows meanwhile counts.
+  A held roll that is kept, answered or forgotten moves it once, in the transaction of the path that holds it, and `HeldRollsChanged` carries it ([Held rolls](held-rolls.md#the-wire)).
+  A call that changes nothing (a paint of what was painted, a trap already disarmed, a clue the player had) moves nothing and tells nothing.
+  With no open session there is no number to move: the revivify switch of a dead character is a plain transaction that tells nothing, a trap's damage settled then tells nothing, and the writes of `InSession` run in a plain transaction.
+  The hooks that play calls on the maps module after its own commit (`TrapChanged`, `Told`, `MapShown`, `VisionChanged`, the fog's refresh after a combat move) send through the hub with no number: the write's own bump covers them, and the maps module never lends them the number of the write that called it (a token dropped on a trap leaves its `Out` behind before play fires the trap).
+  A token that lands (`PlaceMapToken`, `MoveMapTokens`, `PutPartyOnMap`) is one write that moves the number once, whatever the map and the token.
+  The notice of what the player characters see from where they stand is made in the same transaction, on a map the players see, so a hidden token or a map they do not see changes nothing in the number.
+  A trap that goes off with the landing (the firer says which, by the rule it fires by: a session open, no theatre, no combat on the map) is not also noticed, and any other armed trap is.
+  The firing is a write of its own and moves the number once more; only the finder hears `trap_noticed`.
+  The notice after a combat move (`noticeAfterMove`) is a write of its own and always touches, so it moves the number once, found or not.
+  A paint's `map_changed` goes through a gate that merges close paints into one hint, and carries no number.
+  The doors a move opens, the puzzle's reveals of a point or a clue and its other maps steps run in play's step after the commit and carry the move's number.
   Every other writer of the `play` package tells the streams through `send` after its own `db.InTx`: it does not bump, and its events carry no number.
   The hints a combat handler tells itself after the write (`finish`) carry none either; the write's own bump covers them.
-  A hint lost by one of those is not detected by the number.
+  The writers of other modules that run in their own transaction and tell the streams after it move no number: `ReviveCharacter`, the gear writes that call play's `ArmorWorn`, `GearChanged` and `EquipInCombat`, `CompleteCharacterChoices`, the level-up's announcement, the party's joining and leaving (`publishPartyChanged`), the experience awards of progression (`give`, `announceAward`) and their undo (`announceUndo`), and `AppendEvent`.
+  The `sessionwrite` rule of `archtest` scans only the `play` and `maps` packages, so it does not see these: a hint lost by one of them, like one lost by the writers above that send with no number, is not detected by the number.
+- **Taking back a left image** moves the number once, in the same transaction that removes it from the list, and `LeftImagesChanged` carries it to the master and the players the image was left with.
+  A player it was not left with hears nothing of it, and an image that is not on the list is refused and moves nothing.
+- **Making a line's voice** moves the number once, so every screen reads the line again and shows that a voice is available.
+  The slow call to the voice service and the store of the file run before the transaction, never under the session's lock, and a request that finds the voice made moves nothing.
 
 ```mermaid
 sequenceDiagram
@@ -190,6 +233,7 @@ The rules of `Service.tx`:
 - The collector is empty at the start of every attempt: a 40001 retry keeps nothing of the attempt the database rolled back.
 - Nothing is sent before the commit.
   `h.after` queues a step that runs after the told events, for a read of committed state or another module's own sending (the fog of the maps module); it sends through the `say` it is given, which stamps the number.
+  A write of the maps module hands such a step to `Tell.After`; the step gets a `sessiontell.Out` whose `Send(audience, event)` goes through `say`, so the module's own announce code (which reads what committed and works out who hears) runs unchanged and its events carry the number.
 - An error sends nothing and leaves the number as it was.
   An ambiguous commit (`*db.AmbiguousCommitError`, never retried) sends nothing either: the next heartbeat shows the number, if the write did commit.
 - The collector rules for a closure are in [Transactions](../transactions.md#hints-sent-after-the-commit).
@@ -208,6 +252,7 @@ A heartbeat that cannot read it carries 0, which the page ignores.
 | --- | --- |
 | `Service.send` | The one place in `play` that calls `hub.Publish`; it takes no context and waits for nobody |
 | `Service.tellMembers` | The master's streams always, the players' only when asked; the maps module's `Publish` seam |
+| `Service.InSession` | The seam of other modules' writes (the creature writes of `characters`, `SetTableRules` of `campaigns`): `Service.tx` on the open session, with a `sessiontell.Tell` of four hints in place of the hub |
 | `Service.publish` in `maps` | The one place in `maps` that calls `Publish`; it passes the event to the play module |
 
 `TestPublishOnlyThroughTheFunnel` fails for a call to `Publish` anywhere else in `internal/play` and `internal/maps`.
@@ -216,15 +261,20 @@ Its exception list (`publish_exceptions.txt`) is empty and can only shrink.
 
 ### The replay rule
 
-A repeat of a combat write whose key is stored sends its hints again, with the number as it stands.
+A repeat of a write in `Service.tx` whose key is stored sends its hints again, with the number as it stands.
 The first call may have committed and died before it sent, and a hint only says "read again", so a second one is harmless.
+What the first call told is not kept: the repeat tells a superset worked out from the stored result (the vitals as they stand, the combat that holds the character), to the audiences the first call reached at most; the casts go to the master only.
 The closure calls `h.replay()` and `tellReplayed` fills the collector from what is stored: the master's cast change, the vitals of the combat's players (each to the master and its own player), the open reaction windows, the fog of the combat's map, and for a start the current map.
 The forced moves of a cast, a creature action or a rider answer are worked out from the stored event.
+The scene's rolls and attempts, a line of the conversation, a free roll, a group check's write, a puzzle move and a hint try tell again what the stored result says, to the audiences the first call reached (a secret free roll to nobody).
+A repeat of a solving `MakePuzzleMove` tells the revealed point (as the screen stands now), the revealed clue, the opened door and, for a wrong move, the trap's firing (the encounter, log and map hints, the master's map hint), to the same audiences as the first call and numbered by the funnel.
 
 What the stored event does not keep is not recovered:
 
 - a public cast change, because the spell level is not kept;
 - a reaction window that closed, because the combat the retry reads already shows it closed.
+- the `map_changed` hint of `EndEncounter`: its repeat tells the combat, the log and the vitals again, and not the map.
+- a trap a wrong move fired, only in part: the repeat reads the puzzle's trap point's latest stored `trap_triggered` event, which may be a later firing than the move's own, and tells nothing if that event is gone.
 
 The hints `AnswerReaction` tells from its handler after the write (`encounter_changed`, `combat_log_changed`, the answer's vitals) do not go through the collector, so they carry no number.
 A repeat of it sends the generic combat and log hints and the forced moves from the stored event (`publishRetried`), with the vitals coming from the replay's step for the combat's players.
@@ -264,8 +314,8 @@ It requires `expected_revision`, the revision of the vitals the master saw (a re
 An absent or changed revision is `aborted` and nothing is written.
 The check runs in the same transaction as the write, so two corrections from one revision let one win.
 The "Ajustar" sheet also returns spent uses of resources (`resources_used`), sets the hit dice by size (`hit_dice_used_by_die`, or the older sum `hit_dice_used`, never both) and, for a druid in a beast form, the beast's hit points (`wild_shape_hit_points_current`; 0 ends the form).
-In one transaction `play` locks the session row, checks the key, asks `characters` to store and writes the `session_events` row; after `COMMIT` it publishes `vitals_changed`.
-The same key again stores and publishes nothing and answers with the HP as they are now (`TestAdjustCharacterVitalsIsIdempotent`); the same key for another character is `invalid_argument`.
+In one transaction `play` locks the session row, checks the key, asks `characters` to store and writes the `session_events` row, and moves the hint number; after `COMMIT` it publishes `vitals_changed`.
+The same key again stores nothing, tells `vitals_changed` again and answers with the HP as they are now (`TestAdjustCharacterVitalsIsIdempotent`, `TestAdjustCharacterVitalsHints`); the same key for another character is `invalid_argument`.
 Event numbers come out as 1, 2, 3 without a gap, even for simultaneous corrections (`TestSessionEventsAreOrderedPerSession`).
 A correction during a combat with that character raises the encounter's revision and publishes `encounter_changed`.
 
@@ -295,7 +345,7 @@ A line the caller may not read is answered exactly like one that does not exist 
 - **The stream.** After `COMMIT`, `session_message_added` carries the line itself.
   The hub's audience names one user, so the line is published once per reader (`live.Audience{UserID}`) and once to the master; a line for everyone goes to the master and the players (`Audience{Master}` plus `Audience{Players}`), never twice to the same stream.
   `master_typing` goes to `Audience{Players}` and says nothing but how long to show it.
-  A retry with the same key stores and publishes nothing.
+  A retry with the same key stores nothing and tells the line again, to the same readers, with the session's number as it stands (it does not move it).
 - **The image.** A fog map's image is copied first (`PrepareShow`, as "mostrar imagem"), so the raw image of a fog map never leaves through a line.
   `GET /images/{id}` lets a player open an image when a line they may read carries it or an NPC with it as its portrait speaks (`LiveSession.ImageInConversation`); the fog map's own image stays refused (MR-036).
 - **The speaker** is kept with the line (`speaker_name`, `speaker_image_id`), so a renamed or deleted NPC does not change what was said. The line of an NPC hidden on the stage keeps its name and no portrait (`withoutHiddenPortrait`), so the image route never opens a hidden NPC's portrait; the stage is untouched, and only `SetSpeaker` shows the NPC.
@@ -371,7 +421,7 @@ The shown image has one audience, `game_sessions.shown_image_audience`, and the 
 
 - **The read.** `GetLiveSession.shown_image` is unset for a player outside the audience (`shownImageFor`); the master gets the image with `ShownImage.audience`.
 - **The image route.** `maps.playersSeeImage` asks `LiveSession.ImageShownTo(user, image)` (one query, `ShownImageSeenBy`), so a player taken out is `404` on their next request, also on `If-None-Match`.
-- **The stream.** `shown_image_changed` goes to the master with the audience, to the players who see the image now with the image, and to the players who saw an image and do not any more with no image (the update they already get when an image stops being shown); a player who never saw it hears nothing (`imageMove`, `publishImageMove`). The same image with the same audience, in any order of the players, sends nothing.
+- **The stream.** `shown_image_changed` goes to the master with the audience, to the players who see the image now with the image, and to the players who saw an image and do not any more with no image (the update they already get when an image stops being shown); a player who never saw it hears nothing (`imageMove`, `tellImageMove`). The same image with the same audience, in any order of the players, sends nothing.
 - **When the scene stops being the image's** (it closes, another one opens, or it opens to everyone) the image stays with the players who were in: `settleShownImage` turns `scene` into `chosen` with them, in the same transaction, and tells the master alone. The same image shown again with no audience keeps its own.
 - **Tests.** `TestImageAudience_*` (play) and `TestRN10_AShownImageReachesOnlyItsAudience` (leak test: a needle and a positive control for each audience, the narrowing and the widening, on the read, the stream and the route).
 

@@ -54,7 +54,7 @@ var actionEventKinds = []string{
 	"combatant_hidden_set", "combatants_added", "combatant_removed", "encounter_ended", "attack_rolled", "damage_rolled",
 	"damage_applied", "damage_discarded", "action_taken", "hit_points_adjusted", "action_undone", "spell_cast", "reaction_used",
 	"reaction_declined", "death_save_rolled", "death_confirmed", "conditions_set", "turn_part_ended", "trap_searched",
-	"trap_triggered", "cover_set", "side_set", "opportunity_offered", "creature_summoned", "creature_dismissed",
+	"trap_triggered", "cover_set", "side_set", "mount_kind_set", "combatant_mounted", "combatant_dismounted", "opportunity_offered", "creature_summoned", "creature_dismissed",
 	"feature_used", "wild_shape_started", "wild_shape_ended", "familiar_sight", "door_opened", "hidden_reveal_answered", "combat_effect_ended",
 	"roll_mode_requested", "roll_mode_answered", "damage_part_removed", "state_changed", "reaction_answered",
 	"concentration_save_rolled", "character_revived", "lasting_effect_added", "lasting_effect_changed", "lasting_effect_ended",

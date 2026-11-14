@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/jackc/pgx/v5"
@@ -273,5 +274,24 @@ func TestDefaultRetryPolicyBacksOff(t *testing.T) {
 	want := []int64{10, 20, 40, 80, 160, 320, 500, 500}
 	if !slices.Equal(delays, want) {
 		t.Errorf("retry delays (ms) = %v, want %v", delays, want)
+	}
+}
+
+func TestJitteredStaysInTheUpperHalfOfTheDelay(t *testing.T) {
+	t.Parallel()
+	const delay = 80 * time.Millisecond
+	seen := map[time.Duration]bool{}
+	for range 200 {
+		got := jittered(delay)
+		if got < delay/2 || got > delay {
+			t.Fatalf("jittered(%v) = %v, want within [%v, %v]", delay, got, delay/2, delay)
+		}
+		seen[got] = true
+	}
+	if len(seen) < 10 {
+		t.Errorf("200 delays gave %d different values, want them spread", len(seen))
+	}
+	if got := jittered(0); got != 0 {
+		t.Errorf("jittered(0) = %v, want 0", got)
 	}
 }

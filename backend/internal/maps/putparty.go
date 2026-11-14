@@ -13,7 +13,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/maps/mapsdb"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
+	"github.com/PuraFome/meuRPG/backend/internal/platform/sessiontell"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/uid"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/grid"
 )
@@ -67,10 +67,18 @@ func (s *Service) PutPartyOnMap(
 		return nil, err
 	}
 	var put partyPut
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.inSession(ctx, m.CampaignID, func(tx pgx.Tx, t sessiontell.Tell) error {
 		var err error
-		put, err = s.putPartyTx(ctx, tx, m, mapID, chars, req.Msg)
-		return err
+		if put, err = s.putPartyTx(ctx, tx, m, mapID, chars, req.Msg); err != nil {
+			return err
+		}
+		s.announce(t, func(ctx context.Context) { s.announcePut(ctx, m, mapID, current, put) })
+		landed := make([]landedToken, len(put.chars))
+		for i, c := range put.chars {
+			landed[i] = landedToken{token: put.tokens[i], character: c}
+		}
+		// What the characters see from where they landed is part of this write: the formation moves the number once.
+		return s.noticeLanded(ctx, tx, t, m.CampaignID, mapID, put.row, landed)
 	})
 	if err != nil {
 		return nil, s.dbError(ctx, "put the party on the map", err)
@@ -78,15 +86,21 @@ func (s *Service) PutPartyOnMap(
 	v := newViewer(m, current)
 	res := &mapsv1.PutPartyOnMapResponse{MovedForRoom: conv.Int32(put.forRoom)}
 	for i, c := range put.chars {
+		res.Tokens = append(res.Tokens, tokenToProto(put.tokens[i], c, v))
+	}
+	return connect.NewResponse(res), nil
+}
+
+// announcePut tells the watchers of each token the party's formation wrote, and lets a trap react to it.
+func (s *Service) announcePut(ctx context.Context, m authz.Membership, mapID, current string, put partyPut) {
+	for i, c := range put.chars {
 		before := &put.was[i]
 		if put.placed[i] {
 			before = nil
 		}
 		s.publishTokenWritten(ctx, m.CampaignID, put.row, current, before, &put.tokens[i], isPlayerCharacter(c), !put.placed[i])
 		s.tokenLanded(ctx, m.CampaignID, m.UserID, mapID, put.tokens[i], c)
-		res.Tokens = append(res.Tokens, tokenToProto(put.tokens[i], c, v))
 	}
-	return connect.NewResponse(res), nil
 }
 
 // putPartyTx chooses the squares of the formation and writes the tokens, in one transaction.

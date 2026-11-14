@@ -335,7 +335,7 @@ func (q *Queries) ListSessionMessages(ctx context.Context, arg ListSessionMessag
 	return items, nil
 }
 
-const markSessionMessageVoiced = `-- name: MarkSessionMessageVoiced :exec
+const markSessionMessageVoiced = `-- name: MarkSessionMessageVoiced :execrows
 UPDATE session_messages SET audio_made_at = $2 WHERE id = $1 AND audio_made_at IS NULL
 `
 
@@ -344,7 +344,10 @@ type MarkSessionMessageVoicedParams struct {
 	AudioMadeAt *time.Time
 }
 
-func (q *Queries) MarkSessionMessageVoiced(ctx context.Context, arg MarkSessionMessageVoicedParams) error {
-	_, err := q.db.Exec(ctx, markSessionMessageVoiced, arg.ID, arg.AudioMadeAt)
-	return err
+func (q *Queries) MarkSessionMessageVoiced(ctx context.Context, arg MarkSessionMessageVoicedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markSessionMessageVoiced, arg.ID, arg.AudioMadeAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

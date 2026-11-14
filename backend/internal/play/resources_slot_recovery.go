@@ -14,7 +14,6 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
-	"github.com/PuraFome/meuRPG/backend/internal/platform/db"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/logging"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
@@ -165,9 +164,9 @@ func (s *Service) useRecovery(ctx context.Context, rec slotRecovery, req slotRec
 		return nil, 0, err
 	}
 	var run recoveryRun
-	err = db.InTx(ctx, s.pool, func(tx pgx.Tx) error {
+	err = s.txOpen(ctx, call.m.CampaignID, func(tx pgx.Tx, h *hints, session playdb.GameSession) error {
 		run = recoveryRun{} // a retry starts over
-		return s.recoveryTx(ctx, tx, rec, call, &run)
+		return s.recoveryTx(ctx, tx, h, session, rec, call, &run)
 	})
 	if err != nil {
 		return nil, 0, s.dbError(ctx, "use "+rec.name, err)
@@ -179,26 +178,21 @@ func (s *Service) useRecovery(ctx context.Context, rec slotRecovery, req slotRec
 		}
 		return current, run.ev.Levels, nil
 	}
-	s.publishVitals(call.m.CampaignID, run.after)
 	logging.Event(ctx, s.logger, rec.log, slog.String("character_id", call.charText), slog.Int("levels", int(run.ev.Levels)))
 	return run.after, run.ev.Levels, nil
 }
 
-// recoveryTx is the transaction of a slot recovery: lock, retry, who may, the
-// keeper's recovery, the short rest it needs, the event.
-func (s *Service) recoveryTx(ctx context.Context, tx pgx.Tx, rec slotRecovery, call recoveryCall, run *recoveryRun) error {
+// recoveryTx is the transaction of a slot recovery (the session is locked): retry, who may, the
+// keeper's recovery, the short rest it needs, the event, and the vitals it tells.
+func (s *Service) recoveryTx(ctx context.Context, tx pgx.Tx, h *hints, session playdb.GameSession, rec slotRecovery, call recoveryCall, run *recoveryRun) error {
 	q := s.queries.WithTx(tx)
-	session, err := lockOpenSessionOrNone(ctx, q, call.m.CampaignID)
-	if err != nil {
-		return err
-	}
 	done, again, err := eventByKey(ctx, q, session.ID, call.keyText, rec.event, call.hash)
 	if err != nil {
 		return err
 	}
 	if again {
 		run.repeated = true
-		return replayCharacterEvent(done, call.charText, rec.name, &run.ev)
+		return s.tellCharacterAgain(h, call.m.CampaignID, call.charText, replayCharacterEvent(done, call.charText, rec.name, &run.ev))
 	}
 	if err := s.requireCharacterOwnerOrMaster(ctx, tx, call.m, call.charText); err != nil {
 		return err
@@ -222,9 +216,13 @@ func (s *Service) recoveryTx(ctx context.Context, tx pgx.Tx, rec slotRecovery, c
 	run.after = afterVitals
 	run.ev = recoveryEventOf(call.slots, levels)
 	run.ev.Feature = rec.feature
-	return s.appendKeyedEvent(ctx, q, keyedEvent{
+	if err := s.appendKeyedEvent(ctx, q, keyedEvent{
 		sessionID: session.ID, kind: rec.event, userID: call.m.UserID, characterID: &call.charText, key: call.keyText, hash: call.hash,
-	}, run.ev)
+	}, run.ev); err != nil {
+		return err
+	}
+	h.tell(call.m.CampaignID, vitalsHint(run.after))
+	return nil
 }
 
 // mustFollowShortRest says "when you finish a short rest": the latest rest of the session is a
