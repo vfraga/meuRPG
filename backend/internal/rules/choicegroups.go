@@ -490,7 +490,7 @@ func optionLabel(name string) string {
 func (c *content) effectChoices(key, kind string) []*Effect {
 	var out []*Effect
 	for _, e := range c.effects[key] {
-		if e.Type == "choice" && e.Choice == kind {
+		if e.Type == "choice" && e.Choice == kind && !e.DailyChoice { // a daily choice is answered each day (SetDailyChoice), not in the sheet's picks
 			out = append(out, e)
 		}
 	}

@@ -567,6 +567,8 @@ func buildOf(f *charactersv1.FullSheet) rules.Build {
 		Subrace:             f.GetSubraceKey(),
 		Size:                f.GetSize(),
 		SkillProficiencies:  f.GetSkillProficiencyKeys(),
+		DailyPicks:          dailyPicksOf(f.GetDailyPicks()),
+		ShortRested:         f.GetShortRested(),
 		Expertise:           f.GetExpertiseSkillKeys(),
 		ExtraAbilityBonuses: abilityMap(f.GetExtraAbilityBonuses()),
 		Armor:               f.GetArmorKey(),
@@ -670,4 +672,13 @@ func loadStory(characterID string, doc []byte) (*charactersv1.CharacterStory, er
 		return nil, fmt.Errorf("%w: the story of character %s", errCorruptDocument, characterID)
 	}
 	return story, nil
+}
+
+// dailyPicksOf is the engine's form of the sheet's daily picks.
+func dailyPicksOf(in []*charactersv1.DailyPick) []rules.DailyPick {
+	out := make([]rules.DailyPick, len(in))
+	for i, p := range in {
+		out[i] = rules.DailyPick{ChoiceID: p.GetChoiceId(), Key: p.GetKey(), Until: restBoundOf(p.GetUntilRest()), Signature: p.GetSignature()}
+	}
+	return out
 }

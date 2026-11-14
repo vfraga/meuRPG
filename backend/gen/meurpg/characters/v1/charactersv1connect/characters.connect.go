@@ -80,6 +80,9 @@ const (
 	// CharacterServiceSetEquippedProcedure is the fully-qualified name of the CharacterService's
 	// SetEquipped RPC.
 	CharacterServiceSetEquippedProcedure = "/meurpg.characters.v1.CharacterService/SetEquipped"
+	// CharacterServiceSetDailyChoiceProcedure is the fully-qualified name of the CharacterService's
+	// SetDailyChoice RPC.
+	CharacterServiceSetDailyChoiceProcedure = "/meurpg.characters.v1.CharacterService/SetDailyChoice"
 	// CharacterServiceSetAttunementProcedure is the fully-qualified name of the CharacterService's
 	// SetAttunement RPC.
 	CharacterServiceSetAttunementProcedure = "/meurpg.characters.v1.CharacterService/SetAttunement"
@@ -436,6 +439,14 @@ type CharacterServiceClient interface {
 	//   - `failed_precondition`: the character is dead (CharacterBlocked with
 	//     reason CHARACTER_DEAD), or play refused the change in the combat.
 	SetEquipped(context.Context, *connect.Request[v1.SetEquippedRequest]) (*connect.Response[v1.SetEquippedResponse], error)
+	// SetDailyChoice picks the skill or tool of a daily choice (TableEffect.daily_choice), or takes the pick back with an empty key.
+	// The owner and the master may do it on a locked sheet, as for SetEquipped: it is a pick for the day, not an edit.
+	//
+	// Errors:
+	//   - `invalid_argument`: `choice_id` is not a daily choice of the sheet, or `key` is not one it offers.
+	//   - `not_found`: the character does not exist, or the caller is neither its owner nor the master.
+	//   - `failed_precondition`: the character is dead.
+	SetDailyChoice(context.Context, *connect.Request[v1.SetDailyChoiceRequest]) (*connect.Response[v1.SetDailyChoiceResponse], error)
 	// SetAttunement attunes the character to a magic item, or ends it (SRD 5.1, attunement).
 	// The owner needs the window a short or long rest opens (one attunement or ending for each
 	// window); the master needs none and may attune past a restriction. At most three items,
@@ -1081,6 +1092,12 @@ func NewCharacterServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(characterServiceMethods.ByName("SetEquipped")),
 			connect.WithClientOptions(opts...),
 		),
+		setDailyChoice: connect.NewClient[v1.SetDailyChoiceRequest, v1.SetDailyChoiceResponse](
+			httpClient,
+			baseURL+CharacterServiceSetDailyChoiceProcedure,
+			connect.WithSchema(characterServiceMethods.ByName("SetDailyChoice")),
+			connect.WithClientOptions(opts...),
+		),
 		setAttunement: connect.NewClient[v1.SetAttunementRequest, v1.SetAttunementResponse](
 			httpClient,
 			baseURL+CharacterServiceSetAttunementProcedure,
@@ -1293,6 +1310,7 @@ type characterServiceClient struct {
 	updateCharacterStory     *connect.Client[v1.UpdateCharacterStoryRequest, v1.UpdateCharacterStoryResponse]
 	setStoryEditing          *connect.Client[v1.SetStoryEditingRequest, v1.SetStoryEditingResponse]
 	setEquipped              *connect.Client[v1.SetEquippedRequest, v1.SetEquippedResponse]
+	setDailyChoice           *connect.Client[v1.SetDailyChoiceRequest, v1.SetDailyChoiceResponse]
 	setAttunement            *connect.Client[v1.SetAttunementRequest, v1.SetAttunementResponse]
 	markCharacterDead        *connect.Client[v1.MarkCharacterDeadRequest, v1.MarkCharacterDeadResponse]
 	getMasterNotes           *connect.Client[v1.GetMasterNotesRequest, v1.GetMasterNotesResponse]
@@ -1374,6 +1392,11 @@ func (c *characterServiceClient) SetStoryEditing(ctx context.Context, req *conne
 // SetEquipped calls meurpg.characters.v1.CharacterService.SetEquipped.
 func (c *characterServiceClient) SetEquipped(ctx context.Context, req *connect.Request[v1.SetEquippedRequest]) (*connect.Response[v1.SetEquippedResponse], error) {
 	return c.setEquipped.CallUnary(ctx, req)
+}
+
+// SetDailyChoice calls meurpg.characters.v1.CharacterService.SetDailyChoice.
+func (c *characterServiceClient) SetDailyChoice(ctx context.Context, req *connect.Request[v1.SetDailyChoiceRequest]) (*connect.Response[v1.SetDailyChoiceResponse], error) {
+	return c.setDailyChoice.CallUnary(ctx, req)
 }
 
 // SetAttunement calls meurpg.characters.v1.CharacterService.SetAttunement.
@@ -1793,6 +1816,14 @@ type CharacterServiceHandler interface {
 	//   - `failed_precondition`: the character is dead (CharacterBlocked with
 	//     reason CHARACTER_DEAD), or play refused the change in the combat.
 	SetEquipped(context.Context, *connect.Request[v1.SetEquippedRequest]) (*connect.Response[v1.SetEquippedResponse], error)
+	// SetDailyChoice picks the skill or tool of a daily choice (TableEffect.daily_choice), or takes the pick back with an empty key.
+	// The owner and the master may do it on a locked sheet, as for SetEquipped: it is a pick for the day, not an edit.
+	//
+	// Errors:
+	//   - `invalid_argument`: `choice_id` is not a daily choice of the sheet, or `key` is not one it offers.
+	//   - `not_found`: the character does not exist, or the caller is neither its owner nor the master.
+	//   - `failed_precondition`: the character is dead.
+	SetDailyChoice(context.Context, *connect.Request[v1.SetDailyChoiceRequest]) (*connect.Response[v1.SetDailyChoiceResponse], error)
 	// SetAttunement attunes the character to a magic item, or ends it (SRD 5.1, attunement).
 	// The owner needs the window a short or long rest opens (one attunement or ending for each
 	// window); the master needs none and may attune past a restriction. At most three items,
@@ -2434,6 +2465,12 @@ func NewCharacterServiceHandler(svc CharacterServiceHandler, opts ...connect.Han
 		connect.WithSchema(characterServiceMethods.ByName("SetEquipped")),
 		connect.WithHandlerOptions(opts...),
 	)
+	characterServiceSetDailyChoiceHandler := connect.NewUnaryHandler(
+		CharacterServiceSetDailyChoiceProcedure,
+		svc.SetDailyChoice,
+		connect.WithSchema(characterServiceMethods.ByName("SetDailyChoice")),
+		connect.WithHandlerOptions(opts...),
+	)
 	characterServiceSetAttunementHandler := connect.NewUnaryHandler(
 		CharacterServiceSetAttunementProcedure,
 		svc.SetAttunement,
@@ -2653,6 +2690,8 @@ func NewCharacterServiceHandler(svc CharacterServiceHandler, opts ...connect.Han
 			characterServiceSetStoryEditingHandler.ServeHTTP(w, r)
 		case CharacterServiceSetEquippedProcedure:
 			characterServiceSetEquippedHandler.ServeHTTP(w, r)
+		case CharacterServiceSetDailyChoiceProcedure:
+			characterServiceSetDailyChoiceHandler.ServeHTTP(w, r)
 		case CharacterServiceSetAttunementProcedure:
 			characterServiceSetAttunementHandler.ServeHTTP(w, r)
 		case CharacterServiceMarkCharacterDeadProcedure:
@@ -2762,6 +2801,10 @@ func (UnimplementedCharacterServiceHandler) SetStoryEditing(context.Context, *co
 
 func (UnimplementedCharacterServiceHandler) SetEquipped(context.Context, *connect.Request[v1.SetEquippedRequest]) (*connect.Response[v1.SetEquippedResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.characters.v1.CharacterService.SetEquipped is not implemented"))
+}
+
+func (UnimplementedCharacterServiceHandler) SetDailyChoice(context.Context, *connect.Request[v1.SetDailyChoiceRequest]) (*connect.Response[v1.SetDailyChoiceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("meurpg.characters.v1.CharacterService.SetDailyChoice is not implemented"))
 }
 
 func (UnimplementedCharacterServiceHandler) SetAttunement(context.Context, *connect.Request[v1.SetAttunementRequest]) (*connect.Response[v1.SetAttunementResponse], error) {

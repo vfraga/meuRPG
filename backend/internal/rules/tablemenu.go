@@ -113,6 +113,7 @@ const (
 	ListRollTargets        = "roll_targets"
 	ListSenses             = "senses"
 	ListRecharges          = "recharges"
+	ListRestDurations      = "rest_durations"
 	ListEvents             = "events"
 	ListEconomies          = "economies"
 	ListManeuverApplies    = "maneuver_applies"
@@ -192,6 +193,7 @@ var menuTypes = []MenuType{
 		{Name: "proficiency", Required: true, Kind: "choice", List: ListProficiencies},
 		{Name: "level", Kind: "choice", List: ListProficiencyLevels},
 		{Name: "only_proficient", Kind: "yes_no"},
+		{Name: "duration", Kind: "choice", List: ListRestDurations},
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
@@ -428,6 +430,8 @@ var menuTypes = []MenuType{
 		{Name: "from", Kind: "choices"},
 		{Name: "name", Kind: "text"},
 		{Name: "set", Kind: "choice", List: ListFeatOptionSets},
+		{Name: "daily_choice", Kind: "yes_no"},
+		{Name: "duration", Kind: "choice", List: ListRestDurations},
 		{Name: "when", Kind: "condition"},
 		{Name: "text_pt", Kind: "text"},
 	}},
@@ -732,6 +736,7 @@ func (c *content) menuLists() []MenuList {
 		{Name: ListRollTargets, Values: c.menuRollTargets()},
 		{Name: ListSenses, Values: namedMenu(senses, func(k string) string { return senseNames[k] })},
 		{Name: ListRecharges, Values: hintedMenu(recharges, rechargeNms)},
+		{Name: ListRestDurations, Values: hintedMenu([]string{DurationShortRest, DurationLongRest}, rechargeNms)},
 		{Name: ListEvents, Values: hintedMenu(eventKinds, eventNms)},
 		{Name: ListEconomies, Values: namedMenu(economies, func(k string) string { return economyNms[k] })},
 		{Name: ListManeuverApplies, Values: namedMenu(maneuverApplies, func(k string) string { return maneuverNms[k] })},

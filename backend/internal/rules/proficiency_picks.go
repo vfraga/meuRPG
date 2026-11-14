@@ -136,7 +136,7 @@ func (x *deriver) checkProficiencyPicks() {
 		languages += bg.LanguageChoices
 	}
 	for _, a := range x.active {
-		if a.effect.Type == "choice" && a.effect.Choice == "tool" {
+		if a.effect.Type == "choice" && a.effect.Choice == "tool" && !a.effect.DailyChoice {
 			tools += max(a.effect.Count, 1)
 		}
 	}

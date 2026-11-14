@@ -117,6 +117,7 @@ func derivedNumbersToProto(d rules.Derived) *rulesv1.DerivedSheet {
 		ArmorClassDescription: d.ArmorClassDescription,
 		ShieldIdle:            d.ShieldIdle,
 		ItemModifiers:         itemModifiersOf(d.ItemModifiers),
+		DailyChoices:          dailyChoicesOf(d.DailyChoices),
 		Size:                  d.Size,
 		HitPointsMax:          i32(max(d.HitPointsMax, 1)),
 		HitPointsFromEffects:  i32(d.HitPointsFromEffects),
@@ -146,7 +147,7 @@ func savingThrowToProto(st rules.SavingThrow) *rulesv1.SavingThrow {
 
 func derivedSkillToProto(sk rules.Skill) *rulesv1.DerivedSkill {
 	return &rulesv1.DerivedSkill{
-		Key: sk.Key, NamePt: sk.NamePT, Ability: abilityToProto[sk.Ability], Proficiency: proficiencyToProto[sk.Proficiency], Bonus: i32(sk.Bonus),
+		Key: sk.Key, NamePt: sk.NamePT, Ability: abilityToProto[sk.Ability], Proficiency: proficiencyToProto[sk.Proficiency], Bonus: i32(sk.Bonus), UntilRest: restBoundToProto(sk.UntilRest),
 	}
 }
 
@@ -584,4 +585,39 @@ func itemModifiersOf(in []rules.ItemModifier) []*rulesv1.ItemModifier {
 		})
 	}
 	return out
+}
+
+// dailyChoicesOf is the wire form of Derived.DailyChoices.
+func dailyChoicesOf(in []rules.DailyChoice) []*rulesv1.DailyChoice {
+	out := make([]*rulesv1.DailyChoice, len(in))
+	for i, c := range in {
+		out[i] = &rulesv1.DailyChoice{Id: c.ID, OwnerNamePt: c.OwnerNamePT, Kind: dailyKindToProto[c.Kind], UntilRest: restBoundToProto(c.UntilRest), Options: c.Options, Picked: c.Picked}
+	}
+	return out
+}
+
+// restBoundToProto is the wire form of a duration of the rules ("short_rest", "long_rest"; anything else is unspecified).
+func restBoundToProto(duration string) rulesv1.RestBound {
+	switch duration {
+	case rules.DurationShortRest:
+		return rulesv1.RestBound_REST_BOUND_SHORT
+	case rules.DurationLongRest:
+		return rulesv1.RestBound_REST_BOUND_LONG
+	}
+	return rulesv1.RestBound_REST_BOUND_UNSPECIFIED
+}
+
+// restBoundOf is the rules' duration of a wire form.
+func restBoundOf(b rulesv1.RestBound) string {
+	switch b {
+	case rulesv1.RestBound_REST_BOUND_SHORT:
+		return rules.DurationShortRest
+	case rulesv1.RestBound_REST_BOUND_LONG:
+		return rules.DurationLongRest
+	}
+	return ""
+}
+
+var dailyKindToProto = map[string]rulesv1.DailyChoiceKind{
+	"skill": rulesv1.DailyChoiceKind_DAILY_CHOICE_KIND_SKILL, "tool": rulesv1.DailyChoiceKind_DAILY_CHOICE_KIND_TOOL,
 }

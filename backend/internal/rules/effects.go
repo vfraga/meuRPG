@@ -93,6 +93,11 @@ type Effect struct {
 	Count  int      `json:"count,omitempty"`
 	From   []string `json:"from,omitempty"`
 
+	// proficiency, choice (a skill or a tool): Duration is how long it lasts (restShort or restLong; empty for ever),
+	// and DailyChoice makes a choice picked again after each rest of that duration (restrest.go).
+	Duration    string `json:"duration,omitempty"`
+	DailyChoice bool   `json:"daily_choice,omitempty"`
+
 	// choice, picks of a feat (picks.go).
 	// Name names the choice within its entry (a-z, 0-9 and _).
 	// A later effect of the same feat writes "@name" for what was picked.

@@ -3,6 +3,7 @@ package rules
 import (
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/PuraFome/meuRPG/backend/internal/rules/formula"
@@ -67,6 +68,7 @@ type deriver struct {
 	// not change during one Derive, and a broken condition must report one
 	// Issue, not one per use.
 	conditions map[*Effect]bool
+	daily      *dailyPicks
 	// appliedTagged are the tagged modifiers the engine applied to an attack, so
 	// no Hint repeats them.
 	appliedTagged map[*Effect]bool
@@ -85,6 +87,8 @@ type ownedClass struct {
 type activeEffect struct {
 	owner  string // the feature, trait or background key
 	effect *Effect
+	// id is the owner's key, "#" and the effect's number in it: what a daily choice is answered by.
+	id string
 }
 
 func derive(b Build, c *content) Derived {
@@ -471,7 +475,8 @@ func (col *collector) add(key string) {
 	}
 	col.owned[key] = true
 	var picks map[string]string
-	for _, e := range col.x.c.effects[key] {
+	for i, e := range col.x.c.effects[key] {
+		id := key + "#" + strconv.Itoa(i)
 		if len(e.picks) > 0 {
 			// An effect of a feat that reads a pick applies with the pick written out, or not at all.
 			if picks == nil {
@@ -483,7 +488,10 @@ func (col *collector) add(key string) {
 			}
 			e = r
 		}
-		col.x.active = append(col.x.active, activeEffect{owner: key, effect: e})
+		if e.Duration == DurationShortRest && e.Type == "proficiency" {
+			col.x.d.RestBound = true
+		}
+		col.x.active = append(col.x.active, activeEffect{owner: key, effect: e, id: id})
 	}
 }
 
@@ -867,6 +875,9 @@ func (x *deriver) buildEnv() {
 // applies says whether an active effect's condition holds. A broken
 // condition becomes an Issue and the effect is skipped.
 func (x *deriver) applies(a activeEffect) bool {
+	if a.effect.Type == "proficiency" && a.effect.Duration == DurationShortRest && x.b.ShortRested {
+		return false // lasts until a short rest, and one was taken since the last long rest
+	}
 	// A resistance holds in a state through Content.Resistances, which asks gateOpen itself.
 	if a.effect.Type != "resistance" && !x.gateOpen(a) {
 		return false

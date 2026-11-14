@@ -3535,6 +3535,32 @@ func (q *Queries) SetItemCharges(ctx context.Context, arg SetItemChargesParams) 
 	return err
 }
 
+const setRestState = `-- name: SetRestState :exec
+UPDATE characters
+SET sheet = jsonb_set(jsonb_set(sheet, '{full,daily_picks}', $1::JSONB), '{full,short_rested}', $2::JSONB),
+    revision = revision + 1, updated_at = $3
+WHERE id = $4 AND sheet ? 'full'
+`
+
+type SetRestStateParams struct {
+	Picks       []byte
+	ShortRested []byte
+	Now         time.Time
+	ID          string
+}
+
+// A rest ended what the sheet's daily picks and short-rest proficiencies last until (#580): the whole list of picks and the
+// "short rest taken" flag are written into the stored sheet, and the revision goes up so a stale editor is told.
+func (q *Queries) SetRestState(ctx context.Context, arg SetRestStateParams) error {
+	_, err := q.db.Exec(ctx, setRestState,
+		arg.Picks,
+		arg.ShortRested,
+		arg.Now,
+		arg.ID,
+	)
+	return err
+}
+
 const setStoryEditing = `-- name: SetStoryEditing :one
 UPDATE characters
 SET story_editing_allowed = $1

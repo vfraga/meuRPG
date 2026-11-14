@@ -3,6 +3,7 @@ import {
   BasicSheet as GenBasicSheet,
   CuttingWordsAsk,
   CustomBackground,
+  DailyPick,
   FullSheet as GenFullSheet,
   HitPointsMethod as GenHitPointsMethod,
   Item,
@@ -191,6 +192,10 @@ export function toFullSheetInit(v: CharacterFormValue) {
     // Nor for the magic items and their attunement: a new sheet has none, and a save of a loaded one keeps the list
     // as it was read (`SetAttunement` is the one call that changes who is attuned).
     magicItems: [] as SheetMagicItem[],
+    // Nor for the daily picks and the short-rest mark: the server keeps them (`SetDailyChoice` and the rests are the
+    // calls that change them), so a save of a loaded sheet carries them as read.
+    dailyPicks: [] as DailyPick[],
+    shortRested: false,
     cantripKeys: v.cantrips,
     knownSpellKeys: v.spellsKnown,
     preparedSpellKeys: v.spellsPrepared,
@@ -254,7 +259,15 @@ export function mergeFullSheetInit(original: GenFullSheet | undefined, v: Charac
     (key === SHIELD_KEY && init.shield === true) ||
     init.weaponKeys.includes(key);
   const itemBonuses = original.itemBonuses.filter((b) => onSheet(b.key));
-  return { ...rest, ...init, weaponMarks, itemBonuses, magicItems: original.magicItems };
+  return {
+    ...rest,
+    ...init,
+    weaponMarks,
+    itemBonuses,
+    magicItems: original.magicItems,
+    dailyPicks: original.dailyPicks,
+    shortRested: original.shortRested,
+  };
 }
 
 /** Exported for `character-editor-source.live.spec.ts`. */

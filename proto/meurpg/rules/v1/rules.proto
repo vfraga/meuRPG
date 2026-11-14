@@ -835,6 +835,8 @@ message DerivedSheet {
   // It lists the ones that count and the ones that add nothing now.
   // armor_class and the attacks already include the counting ones.
   repeated ItemModifier item_modifiers = 55;
+  // The daily choices of skills and tools the character has, picked or waiting (TableEffect.daily_choice).
+  repeated DailyChoice daily_choices = 56;
 }
 
 // RollMinimum is a roll minimum a feature gives: a die of the covered rolls that
@@ -1192,6 +1194,40 @@ message DerivedSkill {
   ProficiencyLevel proficiency = 4;
   // The total bonus to add to the d20.
   int32 bonus = 5;
+  // The rest the proficiency lasts until: set for a skill the player picked for the day (TableEffect.daily_choice);
+  // unspecified for a lasting proficiency.
+  RestBound until_rest = 6;
+}
+
+// RestBound is the rest a proficiency or a daily pick lasts until (TableEffect.duration is its table-content string).
+enum RestBound {
+  REST_BOUND_UNSPECIFIED = 0;
+  // Until the next short rest (a long rest ends it too).
+  REST_BOUND_SHORT = 1;
+  // Until the next long rest.
+  REST_BOUND_LONG = 2;
+}
+
+// DailyChoiceKind is what a daily choice picks.
+enum DailyChoiceKind {
+  DAILY_CHOICE_KIND_UNSPECIFIED = 0;
+  DAILY_CHOICE_KIND_SKILL = 1;
+  DAILY_CHOICE_KIND_TOOL = 2;
+}
+
+// DailyChoice is a choice of a skill or a tool that the player makes again after each rest of its duration (TableEffect.daily_choice),
+// and its answer. `options` is empty when any skill (or tool) is allowed.
+message DailyChoice {
+  // The id the pick is sent with: the owner's key, "#" and the effect's number in it.
+  string id = 1;
+  // The name of the feature, feat or option that gives it.
+  string owner_name_pt = 2;
+  DailyChoiceKind kind = 3;
+  RestBound until_rest = 4;
+  // The keys the player picks from; empty when any is allowed.
+  repeated string options = 5;
+  // The key picked for today; empty while the choice waits.
+  string picked = 6;
 }
 
 // HitDice is a number of hit dice of one size, such as 3d6.

@@ -87,6 +87,8 @@ function fullyPopulatedFullSheet(): FullSheet {
     weaponMarks: [],
     itemBonuses: [],
     magicItems: [],
+    dailyPicks: [],
+    shortRested: false,
     cantripKeys: ['spell:fire-bolt', 'spell:ray-of-frost', 'spell:minor-illusion'],
     knownSpellKeys: [
       'spell:magic-missile',
@@ -264,6 +266,8 @@ describe('FullSheet round-trips load → save unchanged (integrator fix, phase 2
       carriedKeys: loaded.carriedKeys,
       weaponMarks: loaded.weaponMarks,
       magicItems: loaded.magicItems,
+      dailyPicks: loaded.dailyPicks,
+      shortRested: loaded.shortRested,
       itemBonuses: loaded.itemBonuses,
       cantripKeys: loaded.cantripKeys,
       knownSpellKeys: loaded.knownSpellKeys,

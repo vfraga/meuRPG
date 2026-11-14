@@ -509,6 +509,12 @@ func TestAuthorizationMatrix(t *testing.T) {
 			_, err := u.api.SetAttunement(ctx, connect.NewRequest(&charactersv1.SetAttunementRequest{CampaignId: campaign, CharacterId: pc.GetId(), EntryId: "m99", Attuned: true}))
 			return err
 		}, [6]connect.Code{connect.CodeInvalidArgument, connect.CodeInvalidArgument, connect.CodeNotFound, connect.CodeNotFound, connect.CodeUnauthenticated, connect.CodeNotFound}},
+		// A daily choice's pick: the master and the owner reach the rule (the sheet has no such choice, so both are told so);
+		// another player, a stranger and a pending member are told the character is not there.
+		{"SetDailyChoice", "", nil, func(ctx context.Context, u *user) error {
+			_, err := u.api.SetDailyChoice(ctx, connect.NewRequest(&charactersv1.SetDailyChoiceRequest{CampaignId: campaign, CharacterId: pc.GetId(), ChoiceId: "feat:nada#0", Key: "skill:stealth"}))
+			return err
+		}, [6]connect.Code{connect.CodeInvalidArgument, connect.CodeInvalidArgument, connect.CodeNotFound, connect.CodeNotFound, connect.CodeUnauthenticated, connect.CodeNotFound}},
 		// Reserved characters and claim links (MR-049): only the master makes, revokes and gives
 		// back; every other member is refused with the master's answer (permission_denied), and
 		// whoever is no member, or only pending, cannot tell the campaign from one that does not exist.

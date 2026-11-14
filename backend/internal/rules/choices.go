@@ -184,8 +184,8 @@ func (x *deriver) skillAllowance() (skills, expertise int) {
 		}
 	}
 	for _, a := range x.active {
-		if a.effect.Type != "choice" {
-			continue
+		if a.effect.Type != "choice" || a.effect.DailyChoice {
+			continue // a daily choice is made again each day: it never adds to the skills the player keeps
 		}
 		switch a.effect.Choice {
 		case "skill":

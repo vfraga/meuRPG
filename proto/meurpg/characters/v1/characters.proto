@@ -346,6 +346,15 @@ service CharacterService {
   //     reason CHARACTER_DEAD), or play refused the change in the combat.
   rpc SetEquipped(SetEquippedRequest) returns (SetEquippedResponse);
 
+  // SetDailyChoice picks the skill or tool of a daily choice (TableEffect.daily_choice), or takes the pick back with an empty key.
+  // The owner and the master may do it on a locked sheet, as for SetEquipped: it is a pick for the day, not an edit.
+  //
+  // Errors:
+  //   - `invalid_argument`: `choice_id` is not a daily choice of the sheet, or `key` is not one it offers.
+  //   - `not_found`: the character does not exist, or the caller is neither its owner nor the master.
+  //   - `failed_precondition`: the character is dead.
+  rpc SetDailyChoice(SetDailyChoiceRequest) returns (SetDailyChoiceResponse);
+
   // SetAttunement attunes the character to a magic item, or ends it (SRD 5.1, attunement).
   // The owner needs the window a short or long rest opens (one attunement or ending for each
   // window); the master needs none and may attune past a restriction. At most three items,
@@ -1604,6 +1613,25 @@ message FullSheet {
   // key already on the sheet and never sets it; only SetAttunement does. Adding and removing
   // entries follows the sheet's lock, like the marks.
   repeated SheetMagicItem magic_items = 44;
+  // The skills and tools the player picked for today (TableEffect.daily_choice), each until a rest. Only SetDailyChoice writes it,
+  // and a short rest or a long rest clears what it ends; a save keeps it as it is.
+  repeated DailyPick daily_picks = 46;
+  // A short rest was taken since the last long rest: a proficiency that lasts until a short rest is spent (TableEffect.duration).
+  // Only a rest writes it.
+  bool short_rested = 47;
+}
+
+// DailyPick is the answer to one daily choice.
+message DailyPick {
+  // The choice's id (DailyChoice.id).
+  string choice_id = 1;
+  // The skill or tool key picked.
+  string key = 2;
+  // The rest that ends the pick.
+  meurpg.rules.v1.RestBound until_rest = 3;
+  // What the choice was when the pick was made (its kind, duration and options): a pick whose choice has since changed to
+  // something else counts for nothing, so a reordered or edited effect never gives a pick to another choice.
+  string signature = 4;
 }
 
 // SheetMagicItem is a magic item of the sheet that is not a +N weapon, armor or shield.
@@ -2271,6 +2299,21 @@ message SetEquippedRequest {
   string key = 3;
   // true equips the piece, false stows it (it is carried, not wielded).
   bool equipped = 4;
+}
+
+// SetDailyChoiceRequest picks for one daily choice.
+message SetDailyChoiceRequest {
+  string campaign_id = 1;
+  string character_id = 2;
+  // DailyChoice.id.
+  string choice_id = 3;
+  // The skill or tool key; empty takes the pick back.
+  string key = 4;
+}
+
+// SetDailyChoiceResponse returns the sheet's revision after the call.
+message SetDailyChoiceResponse {
+  int32 revision = 1;
 }
 
 // SetEquippedResponse returns the gear as it stands.

@@ -212,6 +212,9 @@ func (x *deriver) proficiencies() {
 		}
 	}
 	x.proficiencyPicks()
+	for t := range x.dailyState().tools {
+		x.proficient[t] = true
+	}
 	for _, p := range x.pickedTools {
 		x.proficient[p.Value] = true
 	}
@@ -328,6 +331,9 @@ func (x *deriver) skillLevels() (map[string]ProficiencyLevel, map[string]bool) {
 		if _, ok := x.c.skills[s]; ok {
 			sk.raise(s, ProficiencyFull)
 		}
+	}
+	for s := range x.dailyState().skills {
+		sk.raise(s, ProficiencyFull)
 	}
 	var conditional []*Effect
 	for _, a := range x.active {
@@ -473,7 +479,7 @@ func (x *deriver) skills() {
 		b = x.modifiers("skill."+strings.TrimPrefix(key, "skill:"), b)
 		bonus[key] = b
 		x.d.Skills = append(x.d.Skills, Skill{
-			Key: key, NamePT: x.c.namePT(key), Ability: a, Proficiency: levels[key], Bonus: b,
+			Key: key, NamePT: x.c.namePT(key), Ability: a, Proficiency: levels[key], Bonus: b, UntilRest: x.dailyState().skills[key],
 		})
 	}
 	slices.SortFunc(x.d.Skills, func(a, b Skill) int { return comparePT(a.NamePT, b.NamePT) })

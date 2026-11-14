@@ -490,6 +490,14 @@ message TableEffect {
   // one the character is proficient with; `resource`, when set, is spent once per use. A feature has at most one.
   int32 attack_penalty = 89;
   repeated string weapon_properties = 91;
+  // proficiency and choice (a skill or a tool) only: how long what it gives lasts, "short_rest" (until the next short
+  // rest) or "long_rest" (until the next long rest); empty lasts for ever. A short rest also ends at a long rest. A fixed
+  // proficiency has "" or "short_rest" (a long-rest duration would be "for ever": the next long rest grants it again);
+  // a daily choice requires one of the two.
+  string duration = 93;
+  // choice of a skill or a tool only: the player picks again after each rest of `duration`, apart from the sheet (a
+  // locked sheet takes the pick), and what is picked lasts until that rest. Required with `duration`.
+  bool daily_choice = 94;
   // Field 90 is not used.
   reserved 90;
 }

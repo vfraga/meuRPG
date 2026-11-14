@@ -1980,8 +1980,16 @@ type TableEffect struct {
 	// one the character is proficient with; `resource`, when set, is spent once per use. A feature has at most one.
 	AttackPenalty    int32    `protobuf:"varint,89,opt,name=attack_penalty,json=attackPenalty,proto3" json:"attack_penalty,omitempty"`
 	WeaponProperties []string `protobuf:"bytes,91,rep,name=weapon_properties,json=weaponProperties,proto3" json:"weapon_properties,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// proficiency and choice (a skill or a tool) only: how long what it gives lasts, "short_rest" (until the next short
+	// rest) or "long_rest" (until the next long rest); empty lasts for ever. A short rest also ends at a long rest. A fixed
+	// proficiency has "" or "short_rest" (a long-rest duration would be "for ever": the next long rest grants it again);
+	// a daily choice requires one of the two.
+	Duration string `protobuf:"bytes,93,opt,name=duration,proto3" json:"duration,omitempty"`
+	// choice of a skill or a tool only: the player picks again after each rest of `duration`, apart from the sheet (a
+	// locked sheet takes the pick), and what is picked lasts until that rest. Required with `duration`.
+	DailyChoice   bool `protobuf:"varint,94,opt,name=daily_choice,json=dailyChoice,proto3" json:"daily_choice,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TableEffect) Reset() {
@@ -2649,6 +2657,20 @@ func (x *TableEffect) GetWeaponProperties() []string {
 		return x.WeaponProperties
 	}
 	return nil
+}
+
+func (x *TableEffect) GetDuration() string {
+	if x != nil {
+		return x.Duration
+	}
+	return ""
+}
+
+func (x *TableEffect) GetDailyChoice() bool {
+	if x != nil {
+		return x.DailyChoice
+	}
+	return false
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
@@ -9180,7 +9202,7 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\rlong_range_ft\x18\n" +
 	" \x01(\x05R\vlongRangeFt\x12\x1b\n" +
 	"\tweight_oz\x18\v \x01(\x05R\bweightOz\x12\x19\n" +
-	"\bprice_cp\x18\f \x01(\x05R\apriceCp\"\xc4\x15\n" +
+	"\bprice_cp\x18\f \x01(\x05R\apriceCp\"\x83\x16\n" +
 	"\vTableEffect\x12\x12\n" +
 	"\x04type\x18\x01 \x01(\tR\x04type\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x12\n" +
@@ -9288,7 +9310,9 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\x03use\x18X \x01(\v2\x1b.meurpg.rules.v1.FeatureUseR\x03use\x125\n" +
 	"\x04aura\x18\\ \x01(\v2!.meurpg.rules.v1.TableSpellEffectR\x04aura\x12%\n" +
 	"\x0eattack_penalty\x18Y \x01(\x05R\rattackPenalty\x12+\n" +
-	"\x11weapon_properties\x18[ \x03(\tR\x10weaponPropertiesJ\x04\bZ\x10[\"\xca\x02\n" +
+	"\x11weapon_properties\x18[ \x03(\tR\x10weaponProperties\x12\x1a\n" +
+	"\bduration\x18] \x01(\tR\bduration\x12!\n" +
+	"\fdaily_choice\x18^ \x01(\bR\vdailyChoiceJ\x04\bZ\x10[\"\xca\x02\n" +
 	"\fTableFeature\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x1f\n" +

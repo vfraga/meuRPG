@@ -122,6 +122,11 @@ type Build struct {
 	// or from anywhere the table allows). Background and race skills are
 	// added by Derive and need not be repeated here.
 	SkillProficiencies []string
+	// DailyPicks are the skills and tools the player picked for today (TableEffect.daily_choice), and
+	// ShortRested says a short rest was taken since the last long rest (a proficiency that lasts until
+	// a short rest is spent). Both are stored on the sheet and written by SetDailyChoice and the rests.
+	DailyPicks  []DailyPick `json:",omitempty"`
+	ShortRested bool        `json:",omitempty"`
 	// Expertise doubles the proficiency bonus of these skills (Rogue,
 	// Bard). Derive flags an expertise the build is not entitled to as an
 	// Issue, never as an error.
@@ -647,6 +652,10 @@ const (
 // shows that follows from the Build. The characters module maps it to
 // rules.v1.DerivedSheet.
 type Derived struct {
+	// DailyChoices are the skill and tool choices the player makes again after each rest.
+	DailyChoices []DailyChoice `json:",omitempty"`
+	// RestBound says the sheet has a proficiency that lasts until a short rest (Build.ShortRested matters to it).
+	RestBound bool `json:",omitempty"`
 	// StatBlockConditionImmunities are the condition keys a creature's stat block lists as immune
 	// ("condition:poisoned"); empty for a character. Content.ConditionImmunities lists them with the stat block.
 	StatBlockConditionImmunities []string `json:",omitempty"`
@@ -921,6 +930,23 @@ type Skill struct {
 	Ability     Ability
 	Proficiency ProficiencyLevel
 	Bonus       int
+	// UntilRest is the rest ("short_rest" or "long_rest") a proficiency the player picked for the day lasts
+	// until; empty for a lasting one.
+	UntilRest string `json:",omitempty"`
+}
+
+// DailyPick is the answer to a daily choice: the choice's id (an owner's key, "#" and the effect's number),
+// the skill or tool picked and the rest that ends it.
+type DailyPick struct{ ChoiceID, Key, Until, Signature string }
+
+// DailyChoice is a daily choice of a skill or a tool the character has, picked or waiting. Options is empty
+// when any is allowed.
+type DailyChoice struct {
+	ID, OwnerNamePT, Kind, UntilRest string
+	// Signature is what the choice is (its kind, duration and options): a pick made for another one does not fit.
+	Signature string
+	Options   []string
+	Picked    string
 }
 
 // HitDice is a pool of hit dice of one size: Count d Die.
