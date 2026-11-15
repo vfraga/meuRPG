@@ -1,0 +1,32 @@
+name: zz-nodelocal
+on:
+  push:
+    branches: [throwaway/nodelocal-833]
+permissions:
+  contents: read
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: nodelocal in the database container
+        run: |
+          image=$(.github/scripts/database-image.sh ref cockroach)
+          docker run --detach --name cockroach --publish 127.0.0.1:26257:26257 \
+            --tmpfs /cockroach-io:rw,mode=1777 \
+            "$image" start-single-node --insecure \
+            --store=type=mem,size=4GiB --cache=512MiB --max-sql-memory=2GiB \
+            --external-io-dir=/cockroach-io
+          for _ in $(seq 1 60); do
+            docker exec cockroach cockroach sql --insecure --host=localhost:26257 -e 'SELECT 1' >/dev/null 2>&1 && break
+            sleep 2
+          done
+          sql() { docker exec cockroach cockroach sql --insecure --host=localhost:26257 "$@"; }
+          sql -e "CREATE DATABASE tpl" -e "CREATE TABLE tpl.t (id INT PRIMARY KEY, v TEXT)" -e "INSERT INTO tpl.t VALUES (1, 'a')"
+          sql -e "BACKUP DATABASE tpl INTO 'nodelocal://1/proof'"
+          for i in 1 2 3; do
+            sql -e "RESTORE DATABASE tpl FROM LATEST IN 'nodelocal://1/proof' WITH new_db_name = 'copy$i'"
+            sql -e "SELECT * FROM copy$i.t"
+          done
+          echo "uid in the container: $(docker exec cockroach id)"
