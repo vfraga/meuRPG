@@ -2413,6 +2413,10 @@ message MountSavePrompt {
   // stunned, unconscious: it auto-fails a Dexterity saving throw) reads `auto_fail`.
   RollMode mode = 5;
   bool auto_fail = 6;
+  // The rider's Dexterity saving throw bonus, the number RollMountSave adds to the d20 ("1d20 + 2"). Unknown for a basic sheet,
+  // which rolls d20 + 0.
+  int32 save_bonus = 7;
+  bool bonus_known = 8;
 }
 
 // MountSaveCause is what asks a rider for its saving throw.

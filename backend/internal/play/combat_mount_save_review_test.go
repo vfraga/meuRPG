@@ -269,3 +269,21 @@ func TestMountedCombat_ThePushThatThrewADyingRiderCannotBeUndone(t *testing.T) {
 		t.Errorf("the log offers %s to undo, want nothing: the fall cannot be taken back", id)
 	}
 }
+
+// The prompt carries the Dexterity saving throw bonus RollMountSave adds, so the screen can write "1d20 + 2" before the roll: it is the
+// modifier of the save the same rider then rolls. A character's bonus is known.
+func TestMountedCombat_ThePromptCarriesTheSaveBonus(t *testing.T) {
+	t.Parallel()
+	c := riddenCave(t)
+	c.askSave(t, "Toren", causePushed)
+	for who, u := range map[string]*user{"the rider's player": c.caio, "the master": c.master} {
+		if got := c.mountSaveOf(t, u); !got.GetBonusKnown() {
+			t.Errorf("%s reads bonus_known = false in %v, want a character's bonus known", who, got)
+		}
+	}
+	asked := c.mountSaveOf(t, c.caio).GetSaveBonus()
+	rolled := c.mustRollSave(t, c.caio, "Toren", saveFace(15)).GetResult().GetSave()
+	if rolled.GetModifier() != asked || rolled.GetTotal() != 15+asked {
+		t.Errorf("the prompt's save_bonus = %d, the roll = %v, want the roll's modifier and 15 plus it", asked, rolled)
+	}
+}

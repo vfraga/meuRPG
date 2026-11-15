@@ -14,6 +14,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/play/advantage"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
+	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/reaction"
 )
@@ -229,7 +230,8 @@ func (s *Service) mountSaveView(ctx context.Context, m authz.Membership, d *enco
 	return nil, nil
 }
 
-// mountSavePrompt is the prompt of an open window: the rider, the mount when the caller sees it, the DC and the circumstances of the d20.
+// mountSavePrompt is the prompt of an open window: the rider, the mount when the caller sees it, the DC, the circumstances of the d20
+// and the bonus it adds.
 func (s *Service) mountSavePrompt(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, w playdb.ReactionWindow, rider playdb.Combatant) (*playv1.MountSavePrompt, error) {
 	t := windowTriggerOf(w)
 	out := &playv1.MountSavePrompt{RiderId: rider.ID, Cause: mountCauseOf(t.Cause)}
@@ -244,6 +246,12 @@ func (s *Service) mountSavePrompt(ctx context.Context, m authz.Membership, d *en
 		return nil, err
 	}
 	out.Mode, out.AutoFail = advantage.ModeToProto[facts.mode], facts.autoFail
+	save, err := s.saveOf(ctx, nil, m.CampaignID, rider, "dex")
+	if err != nil {
+		return nil, s.dbError(ctx, "read a saving throw", err)
+	}
+	save = withRollBonus(save, statesOf(d.states), rider.ID, rules.RollAppliesSave) // the number RollMountSave adds
+	out.SaveBonus, out.BonusKnown = conv.Int32(save.Bonus), save.Known
 	return out, nil
 }
 

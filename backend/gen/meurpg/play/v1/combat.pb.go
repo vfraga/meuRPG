@@ -4585,8 +4585,12 @@ type MountSavePrompt struct {
 	// The circumstances of the d20 as the sheet shows them for a Dexterity saving throw ("desvantagem"), the same ones RollMountSave
 	// rolls with: one d20 for a normal roll, two for advantage or disadvantage. A rider that fails the save with no roll (paralyzed,
 	// stunned, unconscious: it auto-fails a Dexterity saving throw) reads `auto_fail`.
-	Mode          RollMode `protobuf:"varint,5,opt,name=mode,proto3,enum=meurpg.play.v1.RollMode" json:"mode,omitempty"`
-	AutoFail      bool     `protobuf:"varint,6,opt,name=auto_fail,json=autoFail,proto3" json:"auto_fail,omitempty"`
+	Mode     RollMode `protobuf:"varint,5,opt,name=mode,proto3,enum=meurpg.play.v1.RollMode" json:"mode,omitempty"`
+	AutoFail bool     `protobuf:"varint,6,opt,name=auto_fail,json=autoFail,proto3" json:"auto_fail,omitempty"`
+	// The rider's Dexterity saving throw bonus, the number RollMountSave adds to the d20 ("1d20 + 2"). Unknown for a basic sheet,
+	// which rolls d20 + 0.
+	SaveBonus     int32 `protobuf:"varint,7,opt,name=save_bonus,json=saveBonus,proto3" json:"save_bonus,omitempty"`
+	BonusKnown    bool  `protobuf:"varint,8,opt,name=bonus_known,json=bonusKnown,proto3" json:"bonus_known,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4659,6 +4663,20 @@ func (x *MountSavePrompt) GetMode() RollMode {
 func (x *MountSavePrompt) GetAutoFail() bool {
 	if x != nil {
 		return x.AutoFail
+	}
+	return false
+}
+
+func (x *MountSavePrompt) GetSaveBonus() int32 {
+	if x != nil {
+		return x.SaveBonus
+	}
+	return 0
+}
+
+func (x *MountSavePrompt) GetBonusKnown() bool {
+	if x != nil {
+		return x.BonusKnown
 	}
 	return false
 }
@@ -29690,14 +29708,18 @@ const file_meurpg_play_v1_combat_proto_rawDesc = "" +
 	"\x0esunlight_scope\x18! \x01(\x0e2\x1d.meurpg.play.v1.SunlightScopeR\rsunlightScope\x12I\n" +
 	"\x10sunlight_squares\x18\" \x03(\v2\x1e.meurpg.play.v1.SunlightSquareR\x0fsunlightSquares\x12>\n" +
 	"\n" +
-	"mount_save\x18# \x01(\v2\x1f.meurpg.play.v1.MountSavePromptR\tmountSave\"\xd8\x01\n" +
+	"mount_save\x18# \x01(\v2\x1f.meurpg.play.v1.MountSavePromptR\tmountSave\"\x98\x02\n" +
 	"\x0fMountSavePrompt\x12\x19\n" +
 	"\brider_id\x18\x01 \x01(\tR\ariderId\x12\x19\n" +
 	"\bmount_id\x18\x02 \x01(\tR\amountId\x12\x0e\n" +
 	"\x02dc\x18\x03 \x01(\x05R\x02dc\x124\n" +
 	"\x05cause\x18\x04 \x01(\x0e2\x1e.meurpg.play.v1.MountSaveCauseR\x05cause\x12,\n" +
 	"\x04mode\x18\x05 \x01(\x0e2\x18.meurpg.play.v1.RollModeR\x04mode\x12\x1b\n" +
-	"\tauto_fail\x18\x06 \x01(\bR\bautoFail\"\xd2\b\n" +
+	"\tauto_fail\x18\x06 \x01(\bR\bautoFail\x12\x1d\n" +
+	"\n" +
+	"save_bonus\x18\a \x01(\x05R\tsaveBonus\x12\x1f\n" +
+	"\vbonus_known\x18\b \x01(\bR\n" +
+	"bonusKnown\"\xd2\b\n" +
 	"\tSpellZone\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tspell_key\x18\x02 \x01(\tR\bspellKey\x12\"\n" +
