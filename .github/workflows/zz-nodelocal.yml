@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: nodelocal in the database container
         run: |
-          image=$(.github/scripts/database-image.sh ref cockroach)
+          image=us-docker.pkg.dev/cockroach-cloud-images/cockroachdb/cockroach:v26.2.8@sha256:1ad58b6a69928691e0c9289b847dcb35ac25108c6ead23fcabf47e37b9195e9a
           docker run --detach --name cockroach --publish 127.0.0.1:26257:26257 \
             --tmpfs /cockroach-io:rw,mode=1777 \
             "$image" start-single-node --insecure \
