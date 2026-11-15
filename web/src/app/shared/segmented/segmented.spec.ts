@@ -59,4 +59,18 @@ describe('Segmented', () => {
     expect(label.querySelector('app-saddle-icon svg')?.getAttribute('aria-hidden')).toBe('true');
     expect(label.textContent?.trim()).toBe('Cavalgar');
   });
+
+  it('draws the saddle at the size of the check, so a choice never changes the width', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.segments = [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B', custom: 'saddle' },
+    ];
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const saddle = el.querySelector('app-saddle-icon')!;
+    const check = el.querySelector('mat-icon')!;
+    expect(getComputedStyle(saddle).width).toBe('20px');
+    expect(getComputedStyle(check).width).toBe('20px');
+  });
 });

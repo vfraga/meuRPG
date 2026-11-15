@@ -61,7 +61,8 @@ export class MountRide {
   });
   /** A tap on a square that is not a landing square was ignored: the page says why. */
   readonly ignored = signal(false);
-  /** The warning of a failed dismount is on the page: it comes with the flow's word and goes with the next change of mode, of mount or of move. */
+  /** The warning of a failed dismount is on the page: it follows the flow's word (on with a refusal, off when a retry starts),
+   * and goes earlier with a change of mode or of mount. */
   readonly blockedShown = signal(false);
   /** The mount obeys its rider: the rider's walk is the mount's. */
   readonly controlled = computed(() => this.mountedOn()?.mountKind === 'controlled');
@@ -204,9 +205,13 @@ export class MountRide {
       });
     });
     effect(() => {
-      if (this.deps.dismountBlocked()) {
-        this.blockedShown.set(true);
-      }
+      const blocked = this.deps.dismountBlocked();
+      untracked(() => this.blockedShown.set(blocked));
+    });
+    // "Ver mapa" (the page read only) and back: a tap ignored before is old news.
+    effect(() => {
+      this.deps.readOnly();
+      untracked(() => this.ignored.set(false));
     });
   }
 

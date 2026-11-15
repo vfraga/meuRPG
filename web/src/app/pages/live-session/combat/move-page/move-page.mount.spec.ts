@@ -216,6 +216,7 @@ describe('MovePage, the "Montaria" panel', () => {
     fixture.componentRef.setInput('busy', false);
     fixture.detectChanges();
     expect(buttons().map((b) => plain(b))).toEqual(['Montar', 'Montar']);
+    expect(buttons()[0].querySelector('app-saddle-icon')?.hasAttribute('matButtonIcon')).toBe(true);
   });
 
   it('says what to do when a mount is there to get on, and nothing when none can be', () => {
@@ -448,5 +449,37 @@ describe('MovePage, mounted', () => {
     expect(warning.closest('[role="status"]')?.classList.contains('move__live')).toBe(true);
     pick('Cavalgar');
     expect(el.querySelector('[data-testid="dismount-blocked"]')).toBeNull();
+  });
+
+  it('drops the old warning when a retry starts, so it never sits beside a new error', () => {
+    const { el, pick, fixture } = setup({
+      combatants: ridden,
+      mounts: create(MountOptionsSchema, { mountedOnId: 'cav' }),
+    });
+    pick('Desmontar');
+    fixture.componentRef.setInput('dismountBlocked', true);
+    fixture.detectChanges();
+    expect(el.querySelector('[data-testid="dismount-blocked"]')).not.toBeNull();
+    // The flow clears its word as the next dismount is sent.
+    fixture.componentRef.setInput('dismountBlocked', false);
+    fixture.detectChanges();
+    expect(el.querySelector('[data-testid="dismount-blocked"]')).toBeNull();
+  });
+
+  it('forgets the tap that was ignored when the page goes read only ("Ver mapa") and back', () => {
+    const { el, choose, fixture } = setup({
+      combatants: [tor({ mountedOnId: 'cav' }), horse({ mountKind: 'independent' })],
+      mounts: create(MountOptionsSchema, {
+        mountedOnId: 'cav',
+        landing: [create(MountSquareSchema, { col: 6, row: 6 })],
+      }),
+    });
+    choose(9, 9);
+    expect(el.querySelector('[data-testid="dismount-ignored"]')).not.toBeNull();
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    fixture.componentRef.setInput('readOnly', false);
+    fixture.detectChanges();
+    expect(el.querySelector('[data-testid="dismount-ignored"]')).toBeNull();
   });
 });

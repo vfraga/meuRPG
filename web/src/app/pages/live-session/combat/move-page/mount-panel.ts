@@ -42,7 +42,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
               [attr.aria-describedby]="'mp-name-' + row.id + ' mp-line-' + row.id"
               (click)="press(row)"
             >
-              <app-saddle-icon />{{ busy() && pending() === row.id ? 'Montando…' : 'Montar' }}
+              <app-saddle-icon matButtonIcon />{{ busy() && pending() === row.id ? 'Montando…' : 'Montar' }}
             </button>
           </li>
         }
