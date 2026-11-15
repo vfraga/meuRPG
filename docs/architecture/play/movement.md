@@ -189,6 +189,7 @@ There is one window for each rider, whatever opens it a second time.
 The roll is the rider's Dexterity saving throw through the save machinery (proficiency, advantage and disadvantage, auto-failure of a paralyzed, stunned, unconscious or petrified rider), and it goes through the held-roll gate (Lucky and a Bardic Inspiration die).
 The circumstances of the d20 take the effect as seen (`SaveScene.EffectVisible` is always true), because the window does not keep what the rider sees of the cause.
 The DC is the fixed 10, but a player reads it only when the table shows the DC of saves (`show_save_dc`, RN-24), in the prompt, the result, a retry and the log; the master always reads it.
+The prompt carries the rider's Dexterity save bonus as the roll will use it (`save_bonus`, with `bonus_known` false when the sheet has no number to read), so the screen writes "1d20 + 2" without computing it.
 A save that holds writes a log line and nothing else.
 A save that fails gives the rider the Prone condition, clears `mounted_on_id` and gives the mount its own initiative back (`settleMounts`).
 A rider at 0 hit points that is alive is unconscious and auto-fails the save, so it falls at once with no window, no prompt and no d20, and the log has the line of the fall.
@@ -224,7 +225,7 @@ A mount that was knocked prone and is then defeated keeps the window, and a moun
 The landing and the fall are told to the streams and the fog after the commit, as the fall of a failed save is (`riderLanded`).
 A fall from the window writes no save: its log line has cause unspecified, no d20, no DC and no automatic failure, and reads "caiu da montaria" for everyone who gets it.
 A surprised rider has no reaction (as an opportunity attack's reactor) and falls at once.
-The web has no prompt for this window: the master answers it, for a player's character too.
+The window is never passed by a clock: the master's auto-pass leaves it alone (`OPTIONAL_KINDS` in `core/combat/reaction-autopass.ts` does not list it), because passing it is a fall.
 The master's manual edit of a mount's conditions opens no window, like the rider's save.
 
 | Path | Asks the save |
@@ -255,6 +256,22 @@ The only length the browser measures is a long jump's line (`core/combat/jump-pl
 Opportunity offers (`Encounter.opportunity_offers`) become the player's `alertdialog` (`OpportunitySheet`, opened once per offer), the master's card (`OpportunityCard`) and the mover's wait (`core/combat/opportunity.ts`); "Atacar com <arma>" opens the `AttackSheet` with the offer, which makes `RollAttack` carry `opportunity_offer_id`.
 The offer reaches the player through `encounter_changed` without a revision, and the page reads the combat again at each of those; with a revision it reads only when newer.
 Each target's cover comes from `TargetInReach` (`core/combat/cover.ts`).
+
+The rider's save and the rider's dismount each have a sheet, opened from `ReactionSheets` (`pages/live-session/combat/reaction-sheets.ts`), and their words come from `core/combat/mount-save.ts` and `core/combat/reaction-dismount.ts`.
+
+| What the server sends | Who | What the screen does |
+|---|---|---|
+| `Encounter.mount_save` whose rider is the reader's | The rider's player | `MountSaveSheet` opens by itself as an `alertdialog` with no "Fechar" and is up while the combat carries the save. It says the cause, the roll and the bonus, and the DC only when `dc` is above 0 (the server sends 0 to a player on a table that hides the DC of saves). "Rolar no app" or "Digitar o resultado" call `RollMountSave`; `auto_fail` leaves one button, "Continuar" |
+| `Encounter.mount_save` | The master | The card "Esperando o teste de Tor" (`MountSaveWaitCard`) with the save, its DC and the cause, "Próximo turno" dashed with "Espera o teste de Tor", and "Rolar por Tor", which opens the same sheet with the rider read by name and a "Fechar" |
+| A held roll on the save (`held_roll_offer`) | Whoever rolled | The question (Lucky, a Bardic Inspiration die) takes the sheet before any result; a sheet opened while the rider's row already carries the offer starts on the question, never on a second roll |
+| `INVALID_ARGUMENT` for a missing extra die | Whoever typed | The sheet asks for the d4 and sends the faces in `extra_die_faces` |
+| The save leaves the combat without a roll from this sheet | Whoever has it open | The sheet says the save is no longer owed and only closes |
+| A window of kind `dismount` that is `for_you` | The rider's player | `DismountSheet` opens by itself as an `alertdialog`: "Cair derrubado" (PASS, with the focus) and "Desmontar de pé" (USE), answered with `AnswerReaction`, with no countdown |
+| The same window | The master | The reaction queue's card, as for any reaction |
+| `reaction_wait` | The other players | The neutral wait card with the server's words |
+
+`MOUNT_SAVE_PENDING` reads "O cavaleiro precisa do teste de Destreza para ficar na montaria. Nada foi mudado." wherever a call is refused by it.
+The log line of a save has no ", CD 10" when the server sent no DC.
 
 ## Limits
 
