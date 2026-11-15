@@ -1165,6 +1165,16 @@
       } @else if (options(); as opts) {
         @if (opts.options; as turnOptions) {
           <div class="player__blocks">
+            @if (riding(); as ride) {
+              <!-- The mount the character directs: its three actions, one "Mover" and one "Encerrar turno" for the two (588-04). -->
+              <app-pair-card
+                [rider]="me"
+                [mount]="ride"
+                [options]="creatureOptions.data().get(ride.id) ?? null"
+                [busy]="busy()"
+                (act)="takeActionFor(ride.id, $event)"
+              />
+            }
             <app-action-groups
               [options]="turnOptions"
               [gearFlow]="gearFlow"

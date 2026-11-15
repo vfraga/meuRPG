@@ -1,3 +1,4 @@
+import { mountedOn } from '../../../../core/combat/mount-view';
 import { holdsReadied } from '../../../../core/combat/ready-card';
 import { ReadiedCard } from '../readied-card/readied-card';
 import { NgTemplateOutlet } from '@angular/common';
@@ -306,6 +307,8 @@ export class TurnPanel {
       wasMine = mine;
     });
   }
+
+  protected readonly mountedOn = mountedOn;
 
   protected initial(c: Combatant): string {
     return combatantInitial(c.label);

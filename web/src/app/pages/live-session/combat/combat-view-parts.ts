@@ -6,7 +6,7 @@ import {
   PendingDamageStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { searchRoute } from '../../../core/traps/trap-search';
-import { acts } from '../../../core/combat/joint-turn';
+import { partToEnd, rideToEnd } from '../../../core/combat/joint-turn';
 import { awaitsRoll, featureNote } from '../../../core/combat/combat-derived';
 import { CombatSheets } from './combat-sheets';
 import { pressedButton, revealMap } from './target-mode/reveal-map';
@@ -198,15 +198,17 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     return this.endTurn(discard);
   }
 
-  protected endTurn(discard: boolean): Promise<boolean> {
-    // In a joint turn a player ends their own part; the master ends the part of
-    // the first member who still acts (the others have their own button).
-    return this.calls.run((e) => {
-      // The player ends their own part; so does the master for the character he acts for (`own` is that one).
-      const own = this.own();
-      const who = own && acts(e, own) ? own.id : e.currentCombatantId;
-      return this.api.turn.endTurn(this.campaignId(), e.id, who, discard, e.round);
-    });
+  protected async endTurn(discard: boolean): Promise<boolean> {
+    // A rider ends the part of the mount it directs first, then its own: one call each (588-04).
+    const mount = rideToEnd(this.encounter(), this.riding());
+    if (mount && !(await this.endPart(mount.id))) {
+      return false;
+    }
+    // In a joint turn a player ends their own part (the master too, for the character he acts for); else the master ends
+    // the part of the first member who still acts (the others have their own button).
+    return this.calls.run((e) =>
+      this.api.turn.endTurn(this.campaignId(), e.id, partToEnd(e, this.own()), discard, e.round),
+    );
   }
 
   /** "Revelar" or "Manter escondidas" on a question about hidden creatures (PM-02c state 9). */

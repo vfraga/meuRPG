@@ -15,8 +15,11 @@
           <app-joint-pill [text]="text" />
         }
         <p class="banner__sub">
+          @if (banner().riding; as m) {
+            {{ mountedOn(m) }} ·
+          }
           @if (banner().after; as after) {
-            Em seguida: <b>{{ after.name }}</b>
+            {{ banner().riding ? 'em seguida' : 'Em seguida' }}: <b>{{ after.name }}</b>
           }
           @if (form(); as f) {
             <app-form-chip class="banner__chip" [beast]="f.name" [time]="formTime()" />
@@ -87,6 +90,9 @@
       @if (banner().mine && !down()) {
         <p class="turn__sub">
           {{ round() }} · {{ encounter().name }}
+          @if (banner().riding; as m) {
+            · {{ mountedOn(m) }}
+          }
           @if (banner().after; as after) {
             · em seguida: <b>{{ after.name }}</b>
           }

@@ -255,6 +255,44 @@ describe('combat view helpers', () => {
       });
     });
 
+    describe('a rider and the mount it directs (588-04)', () => {
+      const pair = (mountKind: string, mine = true) =>
+        encounter({
+          combatants: [
+            combatant({
+              id: 'tor',
+              label: 'Tor',
+              kind: CombatantKind.PLAYER,
+              initiative: 17,
+              mine,
+              mountedOnId: 'h',
+            }),
+            combatant({
+              id: 'h',
+              label: 'Cavalo de guerra',
+              initiative: 17,
+              riderId: 'tor',
+              mountKind,
+            }),
+            combatant({ id: 'z', label: 'Zumbi 1', initiative: 12 }),
+          ],
+          turnGroupIds: ['tor', 'h'],
+          currentCombatantId: 'tor',
+        });
+
+      it("is the rider's own turn, not a joint one, with the mount it rides", () => {
+        const banner = turnBanner(pair('controlled'));
+        expect(banner).toMatchObject({ title: 'Sua vez, Tor', mine: true, joint: null });
+        expect(banner.riding?.id).toBe('h');
+        expect(banner.after?.name).toBe('Zumbi 1');
+      });
+
+      it('stays a joint turn for anyone else, and for a mount that is not controlled', () => {
+        expect(turnBanner(pair('controlled', false)).joint).not.toBeNull();
+        expect(turnBanner(pair('independent')).riding).toBeUndefined();
+      });
+    });
+
     it('skips a defeated combatant and goes round the order', () => {
       const e = encounter({ combatants: order, currentCombatantId: 'pen' });
       expect(nextCombatant(e)?.label).toBe('Brisa');

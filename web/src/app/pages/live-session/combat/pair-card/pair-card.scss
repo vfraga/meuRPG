@@ -1,0 +1,86 @@
+// The pair card (588-04, 588-05): the accent frame of the turn, the mount's line, three equal outlined buttons and one line.
+:host {
+  display: block;
+}
+
+.pair {
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1.5px solid var(--mr-accent);
+  border-radius: 10px;
+  background: var(--mr-accent-soft);
+}
+
+.pair__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+
+  b {
+    color: var(--mr-ink);
+  }
+
+  .mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+
+  // On the phone the card sits under the rider's own shapes and "Mover": the mount's line comes alone (588-05).
+  @media (max-width: 767.98px) {
+    display: none;
+  }
+}
+
+.pair__mount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+}
+
+.pair__name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--mr-ink);
+}
+
+.pair__actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pair__act {
+  min-width: 0;
+  padding: 0 8px;
+  white-space: nowrap;
+
+  .mat-icon {
+    margin-right: 4px;
+  }
+}
+
+.pair__why,
+.pair__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+
+  .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}

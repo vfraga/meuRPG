@@ -46,7 +46,7 @@ const onThe = (name: string): string => `${article(name) === 'a' ? 'na' : 'no'} 
 export function mountLine(e: Encounter, c: Combatant, master: boolean, boxed: boolean): string {
   const mount = mountOf(e, c);
   if (mount) {
-    return boxed ? '' : `Montado ${onThe(mount.label)}`;
+    return boxed ? '' : mountedOn(mount);
   }
   const rider = riderOn(e, c);
   if (!rider) {
@@ -63,4 +63,9 @@ export function mountLine(e: Encounter, c: Combatant, master: boolean, boxed: bo
 export function mountLineOf(e: Encounter, c: Combatant, master: boolean): string {
   const partner = mountOf(e, c) ?? riderOn(e, c);
   return mountLine(e, c, master, partner !== undefined && boxedPair(c, partner, master));
+}
+
+/** "Montado no Cavalo de guerra": the rider's line, in the order and under "Sua vez, Tor" (588-04). */
+export function mountedOn(mount: Combatant): string {
+  return `Montado ${onThe(mount.label)}`;
 }

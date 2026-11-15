@@ -1,6 +1,7 @@
 import {
   type Combatant,
   CombatantState,
+  EncounterStatus,
   type Encounter,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { groupName, isCreature } from './creature-names';
@@ -128,4 +129,14 @@ export function dyingIds(e: Encounter | null | undefined): Set<string> {
   return new Set(
     (e?.combatants ?? []).filter((c) => c.state === CombatantState.DYING).map((c) => c.id),
   );
+}
+
+/** The combatants whose turn options the player's page reads besides the character's: its creatures, and the mount the
+ * character directs on this turn (its three actions are on the pair card, 588-04). */
+export function optionIds(e: Encounter | null, master: boolean, ride: Combatant | null): string[] {
+  if (!e || master || e.status !== EncounterStatus.ACTIVE) {
+    return [];
+  }
+  const ids = ownCreatures(e).map((c) => c.id);
+  return ride && !ids.includes(ride.id) ? [...ids, ride.id] : ids;
 }

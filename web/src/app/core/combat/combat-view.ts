@@ -8,6 +8,7 @@ import {
 import { article } from './combat-log';
 import { treatedSourceName } from './combat-dice';
 import { creatureTurnTitle, isCreature } from './creature-names';
+import { boxedPair } from './mount-view';
 import { afterTurn, jointTurn, listNames, type JointTurn, npcPlural } from './joint-turn';
 
 /**
@@ -232,11 +233,18 @@ export interface TurnBanner {
   readonly joint: JointTurn | null;
   /** The caller's own part of the joint turn ended. */
   readonly ownEnded: boolean;
+  /** The mount the caller's character rides and directs on this turn (588-04): the two play as one, so the banner is the rider's
+   * alone, with "Montado no Cavalo de guerra". Absent otherwise. */
+  readonly riding?: Combatant;
 }
 
 export function turnBanner(e: Encounter): TurnBanner {
   const joint = jointTurn(e);
   const after = afterTurn(e);
+  const ridden = joint ? riddenPair(joint) : null;
+  if (ridden) {
+    return pairBanner(e, ridden.rider, ridden.mount, after);
+  }
   if (joint) {
     return jointBanner(e, joint, after);
   }
@@ -254,6 +262,37 @@ const MASTER_BANNER: TurnBanner = {
   joint: null,
   ownEnded: false,
 };
+
+/** The joint turn is the caller's character and the mount it directs, and nobody else. */
+function riddenPair(joint: JointTurn): { rider: Combatant; mount: Combatant } | null {
+  const [a, b] = joint.members;
+  if (joint.members.length !== 2 || !boxedPair(a, b, false)) {
+    return null;
+  }
+  const rider = a.mountedOnId === b.id ? a : b;
+  return rider.mine ? { rider, mount: rider === a ? b : a } : null;
+}
+
+/** The turn of a rider and the mount it directs, for the rider's player: one turn, theirs ("Sua vez, Tor"). */
+function pairBanner(
+  e: Encounter,
+  rider: Combatant,
+  mount: Combatant,
+  after: TurnBanner['after'],
+): TurnBanner {
+  return {
+    title: rider.turnPartEnded ? 'Você encerrou a sua parte' : `Sua vez, ${rider.label}`,
+    who: rider,
+    mine: !rider.turnPartEnded,
+    masterTurn: e.masterTurn,
+    next: null,
+    nextIsMine: after?.mine ?? false,
+    after,
+    joint: null,
+    ownEnded: rider.turnPartEnded,
+    riding: mount,
+  };
+}
 
 /** The title of a joint turn: the caller's own part when they have one, else who is on turn. */
 function jointTitle(e: Encounter, joint: JointTurn, own: Combatant | undefined): string {

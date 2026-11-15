@@ -364,3 +364,16 @@ export function groupAriaLabel(item: OrderItem): string {
     ? `${item.mounted ? 'Montado' : 'Turno conjunto'}: ${listNames(item.members.map((m) => m.label))}, iniciativa ${item.total}`
     : '';
 }
+
+/** The mount whose part ends before its rider's when the rider ends the turn, or `null` once it no longer acts. Its part goes
+ * first: with the rider's part ended, the mount's would no longer be the player's to end. */
+export function rideToEnd(e: Encounter | null, ride: Combatant | null): Combatant | null {
+  const mount = ride ? e?.combatants.find((c) => c.id === ride.id) : undefined;
+  return e && mount && acts(e, mount) ? mount : null;
+}
+
+/** Whose part "Encerrar turno" ends: the caller's own while it acts (the master's, for the character he acts for), else the
+ * combatant on turn. */
+export function partToEnd(e: Encounter, own: Combatant | null): string {
+  return own && acts(e, own) ? own.id : e.currentCombatantId;
+}

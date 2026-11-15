@@ -38,7 +38,13 @@ import { offersToAnswer } from '../../../core/combat/opportunity';
 import { LayersState } from '../../../core/maps/layers-state';
 import { CombatLogState } from '../../../core/combat/combat-log-state';
 import { TurnOptionsState } from '../../../core/combat/turn-options-state';
-import { currentCombatant, isDown, isPlayer, ownCombatant } from '../../../core/combat/combat-view';
+import {
+  currentCombatant,
+  isDown,
+  isPlayer,
+  ownCombatant,
+  turnBanner,
+} from '../../../core/combat/combat-view';
 import { acts, jointTurn, masterActor } from '../../../core/combat/joint-turn';
 import { MasterAutoPass } from '../../../core/combat/auto-pass';
 import { CombatCalls } from '../../../core/combat/combat-calls';
@@ -215,10 +221,15 @@ export abstract class CombatViewStateDirective {
   protected readonly creatureOptions = new CreatureOptionsState();
   /** The question to end a group's part is open: the tabs are inert until it is answered. */
   protected readonly partAsking = signal(false);
-  /** The joint turn that is running (a group of two or more), or `null`. */
+  /** The mount the player's character rides and directs on this turn (588-04): the pair card, and one turn with one "Encerrar turno". */
+  protected readonly riding = computed(() => {
+    const e = this.encounter();
+    return e && !this.isMaster() ? (turnBanner(e).riding ?? null) : null;
+  });
+  /** The joint turn that is running (a group of two or more), or `null`; a rider and the mount it directs are one turn, not a joint one. */
   protected readonly joint = computed(() => {
     const e = this.encounter();
-    return e ? jointTurn(e) : null;
+    return e && !this.riding() ? jointTurn(e) : null;
   });
   /** In a joint turn, who else must end their part, for the player's footer. */
   protected readonly jointOthers = computed(() => {

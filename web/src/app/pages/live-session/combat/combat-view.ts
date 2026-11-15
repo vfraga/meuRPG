@@ -20,6 +20,7 @@ import {
   actingTab,
   dyingIds,
   membersToEnd,
+  optionIds,
   ownCreatures,
   validTab,
 } from '../../../core/combat/mine';
@@ -304,10 +305,7 @@ export class CombatView extends CombatViewPartsDirective {
     effect(() => {
       const e = this.encounter();
       const campaignId = this.campaignId();
-      const ids =
-        e && !this.isMaster() && e.status === EncounterStatus.ACTIVE
-          ? ownCreatures(e).map((c) => c.id)
-          : [];
+      const ids = optionIds(e, this.isMaster(), this.riding());
       if (!e || ids.length === 0) {
         untracked(() => this.creatureOptions.clear());
         return;
