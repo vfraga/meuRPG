@@ -28,6 +28,8 @@ describe('the link of a rider and its mount', () => {
     // The player is not told the mark of a mount that is not theirs: the empty mark still boxes.
     expect(boxedPair(tor, horse(''), false)).toBe(true);
     expect(boxedPair(tor, skeleton, false)).toBe(false);
+    // The rider's player reads the mark: an independent mount is not boxed for them either.
+    expect(boxedPair(tor, horse('independent'), false)).toBe(false);
   });
 });
 

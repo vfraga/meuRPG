@@ -4,6 +4,7 @@ import {
   type Encounter,
   EncounterStatus,
 } from '../../../gen/meurpg/play/v1/combat_pb';
+import { boxedPair } from './mount-view';
 import { article } from './combat-log';
 import { groupName, ofOwner, pluralName } from './creature-names';
 import { distanceText } from '../units';
@@ -121,6 +122,8 @@ export type OrderItem =
       readonly members: readonly Combatant[];
       /** It is the group whose turn is running. */
       readonly onTurn: boolean;
+      /** The box is a rider and its mount ("Montado"), not a turn that was shared by chance. */
+      readonly mounted: boolean;
     };
 
 /**
@@ -146,6 +149,7 @@ export function orderItems(e: Encounter, master: boolean): OrderItem[] {
         total,
         members: run,
         onTurn: onTurn.length > 1 && run.some((c) => onTurn.some((t) => t.id === c.id)),
+        mounted: run.length === 2 && boxedPair(run[0], run[1], master),
       });
     } else {
       out.push(...run.map((combatant) => ({ kind: 'single' as const, combatant })));
@@ -174,6 +178,10 @@ function sameGroup(
   }
   if (inTurnGroup.has(a.id) || inTurnGroup.has(b.id)) {
     return false;
+  }
+  // A rider and its mount are one box whatever the totals the viewer reads: the mount takes its rider's.
+  if (boxedPair(a, b, master)) {
+    return true;
   }
   if (a.initiative === undefined || b.initiative === undefined || a.initiative !== b.initiative) {
     return false;

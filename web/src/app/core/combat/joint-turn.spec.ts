@@ -50,6 +50,39 @@ describe('joint turns (MR-013)', () => {
       expect(items.filter((i) => i.kind === 'group')).toHaveLength(1);
     });
 
+    describe('a rider and its mount', () => {
+      const rider = combatant({ id: 'r', label: 'Tor', kind: P, initiative: 17, mountedOnId: 'h' });
+      const horse = (over = {}) =>
+        combatant({ id: 'h', label: 'Cavalo de guerra', mountKind: 'controlled', ...over });
+      const zombie = combatant({ id: 'z', label: 'Zumbi', initiative: 15 });
+      const names = (e: ReturnType<typeof encounter>, master: boolean) =>
+        orderItems(e, master).map((i) =>
+          i.kind === 'group'
+            ? `${i.mounted ? 'montado:' : ''}${i.members.map((m) => m.label).join('+')}`
+            : i.combatant.label,
+        );
+
+      it('boxes the pair as "Montado", for the master and for a player who is not told the total of the mount', () => {
+        const e = encounter({ combatants: [rider, horse(), zombie] });
+        expect(names(e, true)).toEqual(['montado:Tor+Cavalo de guerra', 'Zumbi']);
+        expect(names(e, false)).toEqual(['montado:Tor+Cavalo de guerra', 'Zumbi']);
+        const box = orderItems(e, false)[0];
+        expect(box.kind === 'group' ? box.total : null).toBe(17);
+      });
+
+      it('leaves a mount that keeps its own turn in its own row for the master', () => {
+        const e = encounter({
+          combatants: [rider, horse({ mountKind: 'independent', initiative: 9 }), zombie],
+        });
+        expect(names(e, true)).toEqual(['Tor', 'Cavalo de guerra', 'Zumbi']);
+      });
+
+      it('does not box a hidden mount: the link is not sent, so the rider is plain', () => {
+        const plain = { ...rider, mountedOnId: '' } as typeof rider;
+        expect(names(encounter({ combatants: [plain, zombie] }), false)).toEqual(['Tor', 'Zumbi']);
+      });
+    });
+
     it('marks the box on turn', () => {
       const e = encounter({ combatants: all, turnGroupIds: ['b', 't'], currentCombatantId: 'b' });
       const group = orderItems(e, true)[0];

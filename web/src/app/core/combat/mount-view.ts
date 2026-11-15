@@ -31,7 +31,8 @@ export function boxedPair(a: Combatant, b: Combatant, master: boolean): boolean 
     return false;
   }
   const mount = a.mountedOnId === b.id ? b : a;
-  return !master || mount.mountKind === 'controlled';
+  // A mark the viewer reads decides; an empty one, for a player, is a mark they are not told.
+  return mount.mountKind === 'controlled' || (!master && mount.mountKind === '');
 }
 
 const the = (name: string): string => `${article(name) === 'a' ? 'a' : 'o'} ${name}`;
