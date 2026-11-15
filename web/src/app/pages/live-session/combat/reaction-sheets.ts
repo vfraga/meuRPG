@@ -8,6 +8,7 @@ import type {
 import { reactorAttacks } from '../../../core/combat/opportunity';
 import { tradesOf } from '../../../core/combat/power-attack-trade';
 import { openWindows, promptView } from '../../../core/combat/reactions';
+import { dismountView, isDismountWindow } from '../../../core/combat/reaction-dismount';
 import { featureWindowView, isFeatureWindow } from '../../../core/combat/reaction-feature';
 import {
   isReadiedWindow,
@@ -20,6 +21,7 @@ import {
   EffectSaveSheet,
   type EffectSaveSheetData,
 } from '../effects/effect-save-sheet/effect-save-sheet';
+import { DismountSheet, type DismountSheetData } from './dismount-sheet/dismount-sheet';
 import {
   FeatureWindowSheet,
   type FeatureWindowSheetData,
@@ -77,6 +79,10 @@ export class ReactionSheets {
     }
     if (isReadiedWindow(window)) {
       this.readiedWindow(window, e);
+      return;
+    }
+    if (isDismountWindow(window)) {
+      this.dismountWindow(window, e);
       return;
     }
     const data: ReactionSheetData = {
@@ -160,6 +166,25 @@ export class ReactionSheets {
           ariaLabel: readiedPrompt(data.readied, e.round, window.reactorLabel).ariaLabel,
           alert: true,
         },
+      ),
+    );
+  }
+
+  /** The prompt of a rider whose mount fell (#588): "O Cavalo de guerra caiu. Usar a reação para desmontar de pé?". Opens by itself, and has to be answered: nothing passes it. */
+  private dismountWindow(window: ReactionWindow, e: Encounter): void {
+    const data: DismountSheetData = {
+      campaignId: this.ctx.campaignId(),
+      encounterId: e.id,
+      window,
+      state: this.ctx.state(),
+    };
+    trackOpen(
+      this.reactionOpen,
+      openSheet<DismountSheet, DismountSheetData, void>(
+        this.ctx.dialog,
+        this.ctx.bottomSheet,
+        DismountSheet,
+        { data, ariaLabel: dismountView(e, window).ariaLabel, alert: true },
       ),
     );
   }

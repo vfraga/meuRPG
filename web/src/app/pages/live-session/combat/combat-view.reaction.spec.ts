@@ -24,6 +24,7 @@ import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { AttackSheet } from './attack-sheet/attack-sheet';
 import { CombatView } from './combat-view';
+import { DismountSheet } from './dismount-sheet/dismount-sheet';
 import { ReadiedWindowSheet } from './readied-window-sheet/readied-window-sheet';
 import { FeatureWindowSheet } from './feature-window-sheet/feature-window-sheet';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
@@ -263,6 +264,33 @@ describe('CombatView, the reaction windows', () => {
     expect(
       plain(master.el.querySelector('app-reaction-queue[part="rest"]')?.textContent),
     ).toContain('Ação preparada');
+  });
+
+  it('opens the dismount prompt by itself for the rider whose mount fell (#588), and the master answers from his queue', async () => {
+    const fell = (over: object = {}) =>
+      reactionWindow({
+        id: 'wd',
+        kind: ReactionKind.DISMOUNT,
+        reactorId: 't',
+        reactorLabel: 'Toren',
+        reactorIsPlayer: true,
+        ...over,
+      } as never);
+    const player = setup({ windows: [fell()] });
+    await settle(player.fixture);
+    expect(player.opened).toHaveLength(1);
+    expect(player.opened[0].component).toBe(DismountSheet);
+    expect(player.opened[0].config.role).toBe('alertdialog');
+    expect(player.opened[0].config.disableClose).toBe(true);
+    expect((player.opened[0].config as { ariaLabel?: string }).ariaLabel).toBe(
+      'A sua montaria caiu: usar a reação para desmontar de pé?',
+    );
+    const master = setup({ master: true, windows: [fell({ answerNow: true })] });
+    await settle(master.fixture);
+    expect(master.opened.filter((o) => o.component === DismountSheet)).toHaveLength(0);
+    expect(
+      plain(master.el.querySelector('app-reaction-queue[part="rest"]')?.textContent),
+    ).toContain('Reações a uma montaria');
   });
 
   it("opens nothing for a window that is not the player's to answer, or the master's check", async () => {
