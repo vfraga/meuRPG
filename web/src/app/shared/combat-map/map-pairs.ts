@@ -2,7 +2,7 @@ import { computed } from '@angular/core';
 
 import type { Combatant } from '../../../gen/meurpg/play/v1/combat_pb';
 import { conditionTags } from '../../core/combat/conditions';
-import { mountedOn } from '../../core/combat/mount-view';
+import { ridingOn } from '../../core/combat/mount-view';
 
 /**
  * A rider and the mount it sits on, as the map draws them (588-04): one token, the mount's, with the rider's disc on it, one
@@ -32,7 +32,7 @@ export class MapPairs {
   readonly listed = computed(() =>
     this.shown().map((c) => {
       const mount = this.rides(c) ? this.shown().find((m) => m.id === c.mountedOnId) : undefined;
-      const on = mount ? `, m${mountedOn(mount).slice(1)}` : '';
+      const on = mount ? `, ${ridingOn(mount)}` : '';
       const tags = c.conditions.length ? `, ${conditionTags(c).join(', ')}` : '';
       return { id: c.id, text: `${c.label}${on}, coluna ${c.col + 1}, linha ${c.row + 1}${tags}` };
     }),

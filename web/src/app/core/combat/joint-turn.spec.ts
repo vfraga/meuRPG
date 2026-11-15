@@ -80,10 +80,11 @@ describe('joint turns (MR-013)', () => {
       });
 
       it('does not link a mount a player is not sent: the rider stays plain, in its own row and line', () => {
-        // The server leaves the hidden mount's row out for a player; the rider is alone in the order.
-        const e = encounter({ combatants: [rider, zombie] });
+        // For a player who does not see the mount the server leaves its row out and sends the rider's `mounted_on_id` empty.
+        const plain = { ...rider, mountedOnId: '' } as typeof rider;
+        const e = encounter({ combatants: [plain, zombie] });
         expect(names(e, false)).toEqual(['Tor', 'Zumbi']);
-        expect(mountLineOf(e, rider, false)).toBe('');
+        expect(mountLineOf(e, plain, false)).toBe('');
       });
 
       it('boxes a hidden mount for the master, who sees both rows', () => {

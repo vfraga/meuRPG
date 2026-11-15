@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { combatant, encounter } from './combat-testing';
-import { boxedPair, followsRider, isPair, mountLine, mountOf, riderOn } from './mount-view';
+import {
+  boxedPair,
+  followsRider,
+  isPair,
+  mountLine,
+  mountOf,
+  mountedOn,
+  ridingOn,
+  riderOn,
+} from './mount-view';
 
 const tor = combatant({ id: 'tor', label: 'Tor', mountedOnId: 'cav' });
 const horse = (kind = 'controlled') =>
@@ -88,5 +97,13 @@ describe('the line a row says about the link', () => {
         false,
       ),
     ).toBe('');
+  });
+});
+
+describe('the words of who rides what', () => {
+  it('opens a line with "Montado no Cavalo de guerra" and goes on inside a sentence with "montado no"', () => {
+    expect(mountedOn(horse())).toBe('Montado no Cavalo de guerra');
+    expect(ridingOn(horse())).toBe('montado no Cavalo de guerra');
+    expect(ridingOn(spider)).toBe('montado na Aranha');
   });
 });

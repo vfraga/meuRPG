@@ -78,3 +78,8 @@ export function mountLineOf(e: Encounter, c: Combatant, master: boolean): string
 export function mountedOn(mount: Combatant): string {
   return `Montado ${onThe(mount.label)}`;
 }
+
+/** "montado no Cavalo de guerra": the same, inside a sentence ("Tor, montado no Cavalo de guerra, coluna 6"). */
+export function ridingOn(mount: Combatant): string {
+  return `montado ${onThe(mount.label)}`;
+}
