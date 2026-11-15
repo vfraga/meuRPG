@@ -244,11 +244,14 @@ export function leftLine(
   totalDft: number,
   usedDft: number,
   squares: number | null = null,
+  /** The mount whose counter this is, when a rider moves it ("ao Cavalo de guerra"). */
+  mount = '',
 ): string {
   const count =
     squares === null
       ? ''
       : ` (${squares} ${squares === 1 ? 'quadrado' : 'quadrados'} de 1,5\u00a0m)`;
   const walked = usedDft > 0 ? ` Você já andou ${metersFixed(usedDft / 10)}.` : '';
-  return `Restam ${metersFixed(leftDft / 10)} de ${metersFixed(totalDft / 10)}${count}.${walked}`;
+  const owner = mount ? ` ${article(mount) === 'a' ? 'à' : 'ao'} ${mount}` : '';
+  return `Restam ${metersFixed(leftDft / 10)} de ${metersFixed(totalDft / 10)}${owner}${count}.${walked}`;
 }

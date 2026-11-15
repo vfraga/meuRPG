@@ -73,6 +73,51 @@ export class CombatMoveCalls {
     };
   }
 
+  /** `MountCombatant`: the rider gets on a mount next to it (it pays half its speed). */
+  async mount(
+    campaignId: string,
+    encounterId: string,
+    riderId: string,
+    mountId: string,
+  ): Promise<Encounter> {
+    const res = await this.base.keyed(
+      ['mountCombatant', campaignId, encounterId, riderId, mountId],
+      (sent) =>
+        this.base.client.mountCombatant({
+          campaignId,
+          encounterId,
+          riderId,
+          mountId,
+          idempotencyKey: sent,
+        }),
+    );
+    return need(res.encounter, 'MountCombatant');
+  }
+
+  /** `DismountCombatant`: the rider lands on a square next to its mount. `stoppedEarly` is "something you did not see held
+   * that square": the rider stays on the mount and nothing was spent. */
+  async dismount(
+    campaignId: string,
+    encounterId: string,
+    riderId: string,
+    col: number,
+    row: number,
+  ): Promise<{ readonly encounter: Encounter; readonly stoppedEarly: boolean }> {
+    const res = await this.base.keyed(
+      ['dismountCombatant', campaignId, encounterId, riderId, col, row],
+      (sent) =>
+        this.base.client.dismountCombatant({
+          campaignId,
+          encounterId,
+          riderId,
+          col,
+          row,
+          idempotencyKey: sent,
+        }),
+    );
+    return { encounter: need(res.encounter, 'DismountCombatant'), stoppedEarly: res.stoppedEarly };
+  }
+
   /** "Colocar no mapa": the server picks the square of a combatant that has none
    * (free floor, away from the players), so the screen never guesses one. */
   async place(campaignId: string, encounterId: string, combatantId: string): Promise<Encounter> {

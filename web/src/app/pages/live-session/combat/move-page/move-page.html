@@ -15,7 +15,18 @@
     } @else {
       <h1 class="mr-page-title move__title">{{ title() }}</h1>
       <p class="move__lead">{{ lead() }}</p>
-      @if (jumps()) {
+      @if (ride.mountedOn()) {
+        <app-segmented class="move__seg" label="Montado" [segments]="ride.modes()" [value]="ride.dismounting() ? 'dismount' : 'ride'" (choose)="ride.pick($event)" />
+        @for (why of ride.why(); track why) {
+          <p class="move__why"><mat-icon aria-hidden="true">block</mat-icon>{{ why }}</p>
+        }
+        @if (ride.riding() && ride.line(); as m) {
+          <div class="mr-notice" role="status" data-testid="mounted-notice">
+            <mat-icon aria-hidden="true">link</mat-icon>
+            <p><strong class="move__strong">{{ m.notice }}</strong> {{ m.detail }}</p>
+          </div>
+        }
+      } @else if (jumps()) {
         <app-segmented class="move__seg" label="Como se mover" [segments]="modes" [value]="mode()" (choose)="setMode($event)" />
         @if (jumping()) {
           <app-segmented class="move__seg" label="Tipo de salto" [segments]="kinds" [value]="kind()" (choose)="setKind($event)" />
@@ -62,8 +73,12 @@
         <!-- The zoom sits beside the legend under the map, never over it. -->
         <div class="move__below">
         <app-map-layers-legend class="move__legend" [layers]="layers()">
-          <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : 'Você alcança' }}</li>
-          <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de {{ jumping() ? limitText() : leftText() }}</li>
+          @if (ride.dismounting()) {
+            <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>Dá para descer</li>
+          } @else {
+            <li><span class="mr-swatch mr-swatch--reach" aria-hidden="true"></span>{{ jumping() ? 'Alcance do salto' : ride.riding() ? 'O ' + ride.mountedOn()?.label + ' alcança' : 'Você alcança' }}</li>
+            <li><span class="mr-swatch mr-swatch--ring" aria-hidden="true"></span>Alcance de {{ jumping() ? limitText() : leftText() }}</li>
+          }
           @if (chosen()) {
             <li><span class="mr-swatch mr-swatch--chosen" aria-hidden="true"></span>Quadrado escolhido</li>
           }
@@ -82,7 +97,10 @@
           </div>
         }
         </div>
-        @if (!jumping()) {
+        @if (ride.rows().length > 0) {
+          <app-mount-panel [rows]="ride.rows()" [busy]="busy()" (mount)="mountOn.emit($event)" />
+        }
+        @if (!jumping() && !ride.dismounting()) {
           <p class="move__rule">
             <mat-icon aria-hidden="true">info</mat-icon>
             Dentro do círculo, o que fica sem cor não dá para alcançar: parede, inimigo ou custo a mais.
@@ -121,6 +139,12 @@
         }
         @if (drag.text() && !visibleError()) {
           <p class="move__drag-text" role="status" data-testid="drag-text">{{ drag.text() }}</p>
+        }
+        @if (dismountBlocked()) {
+          <div class="mr-notice mr-notice--warning" role="status" data-testid="dismount-blocked">
+            <mat-icon aria-hidden="true">block</mat-icon>
+            <p>Algo bloqueia o caminho: {{ own()?.label }} continua montado e nada foi gasto. Escolha outro quadrado.</p>
+          </div>
         }
         @if (visibleError()) {
           <div class="mr-notice mr-notice--danger" role="alert">
