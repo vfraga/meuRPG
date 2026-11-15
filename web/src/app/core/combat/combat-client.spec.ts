@@ -207,6 +207,36 @@ describe('CombatClient.moveOptions', () => {
   });
 });
 
+describe('CombatClient, mounting', () => {
+  function clientMounting() {
+    TestBed.configureTestingModule({
+      providers: [CombatClient, { provide: CONNECT_TRANSPORT, useValue: {} }],
+    });
+    const client = TestBed.inject(CombatClient);
+    const sent: Record<string, unknown>[] = [];
+    (client as unknown as { base: { client: unknown } }).base.client = {
+      mountCombatant: (req: Record<string, unknown>) => {
+        sent.push({ call: 'mount', ...req });
+        return Promise.resolve({ encounter: {} });
+      },
+      dismountCombatant: (req: Record<string, unknown>) => {
+        sent.push({ call: 'dismount', ...req });
+        return Promise.resolve({ encounter: {}, stoppedEarly: true });
+      },
+    };
+    return { client, sent };
+  }
+
+  it('puts the rider on the mount, and lets it land on a square, telling when something held it', async () => {
+    const { client, sent } = clientMounting();
+    await client.moves.mount('c', 'e', 'tor', 'cav');
+    const landed = await client.moves.dismount('c', 'e', 'tor', 6, 7);
+    expect(sent[0]).toMatchObject({ call: 'mount', riderId: 'tor', mountId: 'cav' });
+    expect(sent[1]).toMatchObject({ call: 'dismount', riderId: 'tor', col: 6, row: 7 });
+    expect(landed.stoppedEarly).toBe(true);
+  });
+});
+
 describe('CombatClient, the reaction windows (PM-04)', () => {
   function fake() {
     const calls = {

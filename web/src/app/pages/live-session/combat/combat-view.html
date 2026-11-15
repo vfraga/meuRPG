@@ -111,11 +111,15 @@
             [moverId]="moves.moverId()"
             [jumps]="moves.jumps()"
             [canDisengage]="moves.canDisengage()"
+            [mounts]="moves.mount.options()"
+            [dismountBlocked]="moves.mount.blocked()"
             [start]="moves.dropStart()"
             (confirm)="moves.confirmMove($event)"
             (jump)="moves.confirmJump($event)"
             (readJump)="moves.jump.set($event)"
             (disengage)="moves.disengage()"
+            (mountOn)="moves.mount.mountOn($event)"
+            (dismountTo)="moves.mount.dismountTo($event)"
             (back)="moves.closeFullPage()"
           />
         } @else {
@@ -209,11 +213,15 @@
             [moverId]="moves.moverId()"
             [jumps]="moves.jumps()"
             [canDisengage]="moves.canDisengage()"
+            [mounts]="moves.mount.options()"
+            [dismountBlocked]="moves.mount.blocked()"
             [start]="moves.dropStart()"
             (confirm)="moves.confirmMove($event)"
             (jump)="moves.confirmJump($event)"
             (readJump)="moves.jump.set($event)"
             (disengage)="moves.disengage()"
+            (mountOn)="moves.mount.mountOn($event)"
+            (dismountTo)="moves.mount.dismountTo($event)"
             (back)="moves.closeFullPage()"
           />
         } @else {

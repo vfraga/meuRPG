@@ -316,3 +316,19 @@
   font-size: var(--mr-font-16);
   line-height: 22px;
 }
+
+.move__why {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--mr-space-2);
+  font-size: var(--mr-font-14);
+  color: var(--mr-ink-muted);
+
+  mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+  }
+}

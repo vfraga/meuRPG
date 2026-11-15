@@ -211,13 +211,14 @@ export function leadOf(
   left: number,
   total: number,
   used: number,
+  mount = '',
 ): string {
   let ask = 'Toque num quadrado destacado.';
   if (jumping) {
     ask = kind === 'long' ? 'Toque no quadrado onde quer cair.' : '';
   }
   const squares = jumping ? null : reachSquares(left / DFT_PER_FT);
-  return [leftLine(left, total, used, squares), ask].filter(Boolean).join(' ');
+  return [leftLine(left, total, used, squares, mount), ask].filter(Boolean).join(' ');
 }
 
 /** The footer button's words. */
