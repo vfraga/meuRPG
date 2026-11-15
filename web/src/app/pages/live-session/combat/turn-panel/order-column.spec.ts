@@ -205,7 +205,8 @@ describe('OrderColumn', () => {
             id: 'h',
             label: 'Cavalo de guerra',
             riderId: 'tor',
-            mountKind: '',
+            // The rider's player reads the mark: only a controlled mount shares the box.
+            mountKind: 'controlled',
             state: CombatantState.UNHURT,
           }),
         ],
@@ -214,12 +215,34 @@ describe('OrderColumn', () => {
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     const box = el.querySelector('app-order-group');
-    expect(box?.textContent?.replace(/\s+/g, ' ')).toContain('Montadoiniciativa 17');
+    expect(box?.textContent?.replace(/\s+/g, ' ')).toContain('Montado· iniciativa 17');
     expect(box?.textContent).not.toContain('Turno conjunto');
     expect(box?.querySelector('.box')?.getAttribute('aria-label')).toBe(
       'Montado: Tor e Cavalo de guerra, iniciativa 17',
     );
     const mount = el.querySelector('.row--mount');
     expect(mount?.textContent).toContain('Montaria de Tor');
+    expect(mount?.querySelector('.row__link')?.getAttribute('aria-hidden')).toBe('true');
+    expect(getComputedStyle(mount!).paddingLeft).toBe('22px');
+  });
+
+  it('boxes an NPC pair without a number: a player has no total of theirs (RN-20)', () => {
+    const fixture = TestBed.createComponent(OrderColumn);
+    fixture.componentRef.setInput(
+      'encounter',
+      encounter({
+        currentCombatantId: 'w',
+        combatants: [
+          combatant({ id: 'w', label: 'Wight', mountedOnId: 'e' }),
+          combatant({ id: 'e', label: 'Esqueleto', riderId: 'w', mountKind: '' }),
+        ],
+      }),
+    );
+    fixture.detectChanges();
+    const box = (fixture.nativeElement as HTMLElement).querySelector('app-order-group');
+    expect(box?.querySelector('.head')?.textContent?.replace(/\s+/g, '')).toBe('linkMontado');
+    expect(box?.querySelector('.box')?.getAttribute('aria-label')).toBe(
+      'Montado: Wight e Esqueleto',
+    );
   });
 });

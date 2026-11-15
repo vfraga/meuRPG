@@ -20,7 +20,9 @@ import { MatIconModule } from '@angular/material/icon';
         @if (names()) {
           <span>{{ names() }} ·</span>
         }
-        <span>iniciativa {{ total() }}</span>
+        @if (total() !== null) {
+          <span>{{ mounted() ? '· ' : '' }}iniciativa {{ total() }}</span>
+        }
         @if (onTurn()) {
           <span class="vez">Vez</span>
         } @else if (hint()) {
@@ -143,7 +145,8 @@ import { MatIconModule } from '@angular/material/icon';
   `,
 })
 export class OrderGroup {
-  readonly total = input.required<number>();
+  /** `null`: the viewer has no total for the box (an NPC pair, to a player), and the head says none. */
+  readonly total = input.required<number | null>();
   readonly onTurn = input(false);
   /** A rider and the mount it rides: the head reads "Montado" and no hint (588-04). */
   readonly mounted = input(false);

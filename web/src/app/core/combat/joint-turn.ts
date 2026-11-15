@@ -117,8 +117,8 @@ export type OrderItem =
   | { readonly kind: 'single'; readonly combatant: Combatant }
   | {
       readonly kind: 'group';
-      /** The initiative total they share. */
-      readonly total: number;
+      /** The initiative total they share; `null` when the viewer has none of theirs (an NPC pair, to a player: RN-20). */
+      readonly total: number | null;
       readonly members: readonly Combatant[];
       /** It is the group whose turn is running. */
       readonly onTurn: boolean;
@@ -132,6 +132,10 @@ export type OrderItem =
  * only the totals of the players, so a box is a run of players with the same
  * total (an NPC-only group never shows a box: RN-20), plus the NPCs the
  * server names in the group on turn when it holds a player's character.
+ * A rider and the mount it directs are one box for everyone who sees the
+ * link (`boxedPair`), NPCs too: the box tells the link, which the player
+ * already reads, and no total, which an NPC pair shows without (`total` null).
+ * A pair that ties with others stays together inside the larger box.
  */
 export function orderItems(e: Encounter, master: boolean): OrderItem[] {
   const list = e.combatants;
@@ -143,7 +147,7 @@ export function orderItems(e: Encounter, master: boolean): OrderItem[] {
   let run: Combatant[] = [];
   const flush = () => {
     if (run.length > 1) {
-      const total = run.find((c) => c.initiative !== undefined)?.initiative ?? 0;
+      const total = run.find((c) => c.initiative !== undefined)?.initiative ?? null;
       out.push({
         kind: 'group',
         total,
@@ -157,7 +161,10 @@ export function orderItems(e: Encounter, master: boolean): OrderItem[] {
     run = [];
   };
   for (const c of list) {
-    const joins = run.length > 0 && sameGroup(run[0], c, master, inTurnGroup);
+    // The mount right after its rider joins the rider's box, even a tie's that the rider joined (a tie is read on its first).
+    const joins =
+      run.length > 0 &&
+      (sameGroup(run[0], c, master, inTurnGroup) || boxedPair(run[run.length - 1], c, master));
     if (!joins) {
       flush();
     }
@@ -361,7 +368,7 @@ export function passNote(others: readonly string[], masterToo: boolean): string 
 /** "Turno conjunto: Brisa e Toren, iniciativa 19" or "Montado: Tor e Cavalo de guerra, iniciativa 17", for a screen reader. */
 export function groupAriaLabel(item: OrderItem): string {
   return item.kind === 'group'
-    ? `${item.mounted ? 'Montado' : 'Turno conjunto'}: ${listNames(item.members.map((m) => m.label))}, iniciativa ${item.total}`
+    ? `${item.mounted ? 'Montado' : 'Turno conjunto'}: ${listNames(item.members.map((m) => m.label))}${item.total === null ? '' : `, iniciativa ${item.total}`}`
     : '';
 }
 

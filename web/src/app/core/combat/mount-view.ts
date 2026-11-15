@@ -3,8 +3,9 @@ import { article } from './combat-log';
 
 /**
  * A rider and its mount in the order and on the map (RN-21, RN-10). The server sends `mounted_on_id` and `rider_id` only to
- * someone who sees both rows, so every link read here is one the viewer may read; the mark (`mount_kind`) is the master's, the
- * owner's and the rider's player's, and is empty for anyone else. Pure TypeScript, tested without a DOM.
+ * someone who sees both rows, so every link read here is one the viewer may read. The mark (`mount_kind`) goes to the master,
+ * the mount's owner and the rider's player: for them an empty mark is an unmarked mount, which keeps its own turn. Anyone else
+ * gets it empty whatever it is. Pure TypeScript, tested without a DOM.
  */
 
 /** The mount the combatant sits on, when the viewer sees the link. */
@@ -23,16 +24,24 @@ export function isPair(a: Combatant, b: Combatant): boolean {
 }
 
 /**
- * Whether the order boxes the two together. The master knows the mark, so only a controlled mount shares its rider's box; a
- * player is not told the mark of a mount that is not theirs, and reads a mount that follows its rider in the order as the pair.
+ * Whether the order boxes the two together. A viewer told the mark (the master, the mount's owner, the rider's player) boxes only
+ * a controlled mount. A third party is not told it, and reads a mount that follows its rider in the order as the pair.
+ *
+ * Known limit: for that third party, an independent NPC mount right after its rider is boxed too (its mark reads empty to them).
  */
 export function boxedPair(a: Combatant, b: Combatant, master: boolean): boolean {
   if (!isPair(a, b)) {
     return false;
   }
-  const mount = a.mountedOnId === b.id ? b : a;
-  // A mark the viewer reads decides; an empty one, for a player, is a mark they are not told.
-  return mount.mountKind === 'controlled' || (!master && mount.mountKind === '');
+  const [rider, mount] = a.mountedOnId === b.id ? [a, b] : [b, a];
+  const readsMark = master || rider.mine || rider.controlledByMe || mount.controlledByMe;
+  return mount.mountKind === 'controlled' || (!readsMark && mount.mountKind === '');
+}
+
+/** The combatant is a mount the order boxes under its rider: its row is indented (588-04, 588-08). */
+export function followsRider(e: Encounter, c: Combatant, master: boolean): boolean {
+  const rider = riderOn(e, c);
+  return !!rider && boxedPair(rider, c, master);
 }
 
 const the = (name: string): string => `${article(name) === 'a' ? 'a' : 'o'} ${name}`;

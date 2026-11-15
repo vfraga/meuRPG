@@ -1,6 +1,3 @@
-import { costAbove } from './cost-above';
-import { MapPairs } from './map-pairs';
-import { SaddleIcon } from '../saddle-icon/saddle-icon';
 import { Component, computed, input, output, signal, viewChild, ElementRef } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -24,6 +21,9 @@ import { DoorPicks } from '../map-layers/door-picks';
 import { MapLayersOverlay } from '../map-layers/map-layers';
 import { gridPath, watchUnit } from './measure-unit';
 import { type PickMark, type PickNote, PickLayer } from './pick-layer';
+import { costAbove } from './cost-above';
+import { MapPairs } from './map-pairs';
+import { SaddleIcon } from '../saddle-icon/saddle-icon';
 
 export type { PickMark, PickNote } from './pick-layer';
 

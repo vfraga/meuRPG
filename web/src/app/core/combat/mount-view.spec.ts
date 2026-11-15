@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { combatant, encounter } from './combat-testing';
-import { boxedPair, isPair, mountLine, mountOf, riderOn } from './mount-view';
+import { boxedPair, followsRider, isPair, mountLine, mountOf, riderOn } from './mount-view';
 
 const tor = combatant({ id: 'tor', label: 'Tor', mountedOnId: 'cav' });
 const horse = (kind = 'controlled') =>
@@ -30,6 +30,26 @@ describe('the link of a rider and its mount', () => {
     expect(boxedPair(tor, skeleton, false)).toBe(false);
     // The rider's player reads the mark: an independent mount is not boxed for them either.
     expect(boxedPair(tor, horse('independent'), false)).toBe(false);
+  });
+
+  it("reads an empty mark as unmarked for whoever is told the mark: the rider's player and the mount's owner", () => {
+    const mine = { ...tor, mine: true } as typeof tor;
+    expect(boxedPair(mine, horse(''), false)).toBe(false);
+    const owned = { ...horse(''), controlledByMe: true } as ReturnType<typeof horse>;
+    expect(boxedPair(tor, owned, false)).toBe(false);
+    expect(boxedPair(tor, horse(''), true)).toBe(false);
+  });
+
+  it('boxes, for a third party, a mount right after its rider whatever its mark (a known limit: the mark is not theirs)', () => {
+    // An independent NPC mount reads as '' to them, so it is boxed like a controlled one.
+    expect(boxedPair(wight, { ...skeleton, mountKind: '' } as typeof skeleton, false)).toBe(true);
+  });
+
+  it('says which mount follows its rider in a box', () => {
+    const both = encounter({ combatants: [tor, horse(), wight, skeleton] });
+    expect(followsRider(both, horse(), true)).toBe(true);
+    expect(followsRider(both, skeleton, true)).toBe(false);
+    expect(followsRider(both, tor, true)).toBe(false);
   });
 });
 

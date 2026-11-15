@@ -1,4 +1,3 @@
-import { mountLineOf } from '../../../../core/combat/mount-view';
 import { NgTemplateOutlet } from '@angular/common';
 import { type LimitLine, limitLines } from '../../../../core/combat/creature-action';
 import {
@@ -77,6 +76,7 @@ import { ShieldWatch } from './shield-watch';
 import { DeathRow } from '../death-saves/death-marks';
 import { OrderGroup } from '../joint-turn/order-group';
 import { PartState } from '../joint-turn/part-state';
+import { followsRider, mountLineOf } from '../../../../core/combat/mount-view';
 
 /** The spell a combatant concentrates on, as the question says it. */
 function concentrationOf(c: Combatant): string {
@@ -277,17 +277,19 @@ export class OrderList {
     return [c.label, this.current(c) ? 'é a vez' : '', rowState(c), hp].filter(Boolean).join(', ');
   }
 
+  /** "Adestrada · leva Tor": the link first on the line, with its icon (588-08); a mount under its rider is indented. */
+  protected readonly ride = (c: Combatant): string => mountLineOf(this.encounter(), c, true);
+  protected readonly follows = (c: Combatant): boolean => followsRider(this.encounter(), c, true);
+
   /** The line under the name of a compact row: "Inic. 14 · CA 15", or the state word first ("Escondido · inic. 7"). */
   protected compactSub(c: Combatant, inGroup: boolean): string {
     const init = c.initiative !== undefined && !inGroup ? c.initiative : null;
     const state = rowState(c);
-    const ride = mountLineOf(this.encounter(), c, true);
     if (state) {
-      return joinDots([ride, state, init === null ? '' : `inic. ${init}`].filter(Boolean));
+      return joinDots([state, init === null ? '' : `inic. ${init}`].filter(Boolean));
     }
     return joinDots(
       [
-        ride,
         init === null ? '' : `Inic. ${init}`,
         rowDetail(c, this.encounter(), this.info().get(c.characterId), this.shield(c) > 0),
       ].filter(Boolean),

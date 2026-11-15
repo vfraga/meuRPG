@@ -1,4 +1,3 @@
-import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 import { Component, computed, effect, input, model, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -43,6 +42,7 @@ import {
   tileRects,
   visionLegend,
 } from '../../../../core/maps/vision';
+import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 
 /**
  * The map panel of a running combat or of its setup (E6-04, E6-05, E6-11):

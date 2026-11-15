@@ -1,4 +1,3 @@
-import { mountLineOf } from '../../../../core/combat/mount-view';
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
@@ -29,6 +28,7 @@ import { OrderGroup } from '../joint-turn/order-group';
 import { PartState } from '../joint-turn/part-state';
 import type { OwnHitPoints } from './own-numbers';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
+import { followsRider, mountLineOf } from '../../../../core/combat/mount-view';
 
 /**
  * "Ordem" (E6-14): the order of the turns as a column on the left, from
@@ -69,7 +69,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
         }
       </ol>
       <ng-template #rowTpl let-c let-grouped="grouped">
-        <li class="row" [class.row--turn]="current(c)" [class.row--mount]="grouped && !!c.riderId">
+        <li class="row" [class.row--turn]="current(c)" [class.row--mount]="grouped && follows(c)">
           <span class="row__n" aria-hidden="true">{{ number(c) }}</span>
           <app-combatant-token [initial]="initial(c)" [npc]="npc(c)" [creature]="creature(c)" [defeated]="c.defeated" [mine]="c.mine" [current]="current(c)" [size]="30" />
           <span class="row__text">
@@ -79,7 +79,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
               @if (grouped && inTurn(c)) {<app-part-state [ended]="c.turnPartEnded" />}
             </span>
             <span class="row__word" [class.row__word--out]="c.defeated">
-              @if (c.defeated) {<mat-icon aria-hidden="true">close</mat-icon>}{{ word(c) }}
+              @if (ride(c); as r) {<mat-icon class="row__link" aria-hidden="true">link</mat-icon>{{ r }} · }@if (c.defeated) {<mat-icon aria-hidden="true">close</mat-icon>}{{ word(c) }}
             </span>
             @if (c.wildShapeBeastKey && !c.mine) {
               <app-form-tag [beast]="c.wildShapeBeastNamePt" />
@@ -149,12 +149,11 @@ export class OrderColumn {
     return pool ? ` · ${pool.current} de ${pool.max} PV${beast}` : '';
   }
 
-  /** "Montaria de Tor · Ileso": the link first, then how it is. */
-  protected word(c: Combatant): string {
-    return [mountLineOf(this.encounter(), c, false), this.plainWord(c)].filter(Boolean).join(' · ');
-  }
+  /** "Montaria de Tor · Ileso": the link first, with its icon, then how it is (588-04); a mount under its rider is indented. */
+  protected readonly ride = (c: Combatant): string => mountLineOf(this.encounter(), c, false);
+  protected readonly follows = (c: Combatant): boolean => followsRider(this.encounter(), c, false);
 
-  private plainWord(c: Combatant): string {
+  protected word(c: Combatant): string {
     if (c.defeated) {
       return isPlayer(c) ? stateWord(CombatantState.DEAD, c.label) : 'Derrotado';
     }

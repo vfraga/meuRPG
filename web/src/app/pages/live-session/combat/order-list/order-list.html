@@ -91,7 +91,7 @@
     </button>
   }
   <ng-template #rowTpl let-c let-inGroup="inGroup">
-    <li class="row" [class.row--mount]="inGroup && !!c.riderId" [class.row--open]="isOpen(c)" [class.row--effects]="shield(c) > 0 || aid(c) > 0" [class.row--turn]="current(c)" [class.row--dying]="dying(c)" [class.row--fallen]="down(c)" [class.on-danger]="dying(c)" [attr.data-combatant]="c.id">
+    <li class="row" [class.row--mount]="inGroup && follows(c)" [class.row--open]="isOpen(c)" [class.row--effects]="shield(c) > 0 || aid(c) > 0" [class.row--turn]="current(c)" [class.row--dying]="dying(c)" [class.row--fallen]="down(c)" [class.on-danger]="dying(c)" [attr.data-combatant]="c.id">
       <button
         type="button"
         class="row__head"
@@ -124,7 +124,7 @@
             }
           </span>
           <span class="row__meta">
-            <span class="row__sub"><span class="row__lead">{{ compactSub(c, inGroup) }}@if (shield(c) > 0) {{{ compactSub(c, inGroup) ? ' · ' : '' }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>}</span>@if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {<span class="row__sun" data-testid="order-sun">{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span>}@if (holdsReadied(c)) {<span class="row__ready" data-testid="order-readied"><mat-icon aria-hidden="true">alarm</mat-icon>Preparada</span>}</span>
+            <span class="row__sub">@if (ride(c); as r) {<span class="row__ride"><mat-icon aria-hidden="true">link</mat-icon>{{ r }}</span>{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}}<span class="row__lead">{{ compactSub(c, inGroup) }}@if (shield(c) > 0) {{{ compactSub(c, inGroup) ? ' · ' : '' }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>}</span>@if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {<span class="row__sun" data-testid="order-sun">{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span>}@if (holdsReadied(c)) {<span class="row__ready" data-testid="order-readied"><mat-icon aria-hidden="true">alarm</mat-icon>Preparada</span>}</span>
           </span>
         </span>
         <span class="row__hp">

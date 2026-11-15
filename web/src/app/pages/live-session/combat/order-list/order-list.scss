@@ -218,7 +218,16 @@
   line-height: 1;
 }
 
-// The mount under its rider in a pair's box: indented, the link says whose it is (588-04).
-.row--mount {
-  padding-left: 28px;
+// The mount under its rider in a pair's box: indented, the link says whose it is (588-08). On the row's head, which the
+// box's own row padding (order-group's `.bleed`) does not reach.
+.row--mount .row__head {
+  padding-left: 22px;
+}
+
+.row__ride .mat-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  font-size: var(--mr-font-14);
+  vertical-align: -2px;
 }
