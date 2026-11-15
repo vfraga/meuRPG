@@ -646,3 +646,29 @@ describe('CombatMapCard, the sun (#704)', () => {
     });
   });
 });
+
+describe('CombatMapCard: the "Montado" legend line (588-04)', () => {
+  const tor = combatant({ id: 'p', label: 'Tor', kind: CombatantKind.PLAYER, mountedOnId: 'h' });
+  const horse = combatant({ id: 'h', label: 'Cavalo de guerra', riderId: 'p' });
+  const legend = (el: HTMLElement) => plain(el.querySelector('.legend')?.textContent);
+
+  it('names the pair when a rider sits on a mount that is on the map, for the master and for a player', () => {
+    for (const isMaster of [true, false]) {
+      const { el } = mount({
+        isMaster,
+        encounter: encounter({ currentCombatantId: 'p', combatants: [tor, horse] }),
+      });
+      expect(legend(el)).toContain('Montado');
+      expect(el.querySelector('.legend app-saddle-icon')).not.toBeNull();
+    }
+  });
+
+  it('says nothing when no one rides, or when the mount is not placed', () => {
+    expect(legend(mount().el)).not.toContain('Montado');
+    const off = { ...horse, placed: false } as typeof horse;
+    const { el } = mount({
+      encounter: encounter({ currentCombatantId: 'p', combatants: [tor, off] }),
+    });
+    expect(legend(el)).not.toContain('Montado');
+  });
+});
