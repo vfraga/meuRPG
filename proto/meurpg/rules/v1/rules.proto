@@ -2336,6 +2336,8 @@ message MountChoice {
   MountRefusal refusal = 3;
   // The movement missing, in tenths of a foot, when the refusal is NO_MOVEMENT.
   int32 missing_dft = 4;
+  // How far the mount is, in feet: the straight line in whole squares, the measure that refuses TOO_FAR (more than 5 ft).
+  int32 distance_ft = 5;
 }
 
 // MountSquare is a square of the grid.

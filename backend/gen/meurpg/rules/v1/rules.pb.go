@@ -11238,7 +11238,9 @@ type MountChoice struct {
 	// Why it cannot be mounted now; unspecified when it can.
 	Refusal MountRefusal `protobuf:"varint,3,opt,name=refusal,proto3,enum=meurpg.rules.v1.MountRefusal" json:"refusal,omitempty"`
 	// The movement missing, in tenths of a foot, when the refusal is NO_MOVEMENT.
-	MissingDft    int32 `protobuf:"varint,4,opt,name=missing_dft,json=missingDft,proto3" json:"missing_dft,omitempty"`
+	MissingDft int32 `protobuf:"varint,4,opt,name=missing_dft,json=missingDft,proto3" json:"missing_dft,omitempty"`
+	// How far the mount is, in feet: the straight line in whole squares, the measure that refuses TOO_FAR (more than 5 ft).
+	DistanceFt    int32 `protobuf:"varint,5,opt,name=distance_ft,json=distanceFt,proto3" json:"distance_ft,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11297,6 +11299,13 @@ func (x *MountChoice) GetRefusal() MountRefusal {
 func (x *MountChoice) GetMissingDft() int32 {
 	if x != nil {
 		return x.MissingDft
+	}
+	return 0
+}
+
+func (x *MountChoice) GetDistanceFt() int32 {
+	if x != nil {
+		return x.DistanceFt
 	}
 	return 0
 }
@@ -15402,13 +15411,15 @@ const file_meurpg_rules_v1_rules_proto_rawDesc = "" +
 	"\x10dismount_refusal\x18\x04 \x01(\x0e2\x1d.meurpg.rules.v1.MountRefusalR\x0fdismountRefusal\x126\n" +
 	"\alanding\x18\x05 \x03(\v2\x1c.meurpg.rules.v1.MountSquareR\alanding\x12\x1f\n" +
 	"\vmissing_dft\x18\x06 \x01(\x05R\n" +
-	"missingDft\"\xa5\x01\n" +
+	"missingDft\"\xc6\x01\n" +
 	"\vMountChoice\x12!\n" +
 	"\fcombatant_id\x18\x01 \x01(\tR\vcombatantId\x12\x19\n" +
 	"\bcost_dft\x18\x02 \x01(\x05R\acostDft\x127\n" +
 	"\arefusal\x18\x03 \x01(\x0e2\x1d.meurpg.rules.v1.MountRefusalR\arefusal\x12\x1f\n" +
 	"\vmissing_dft\x18\x04 \x01(\x05R\n" +
-	"missingDft\"1\n" +
+	"missingDft\x12\x1f\n" +
+	"\vdistance_ft\x18\x05 \x01(\x05R\n" +
+	"distanceFt\"1\n" +
 	"\vMountSquare\x12\x10\n" +
 	"\x03col\x18\x01 \x01(\x05R\x03col\x12\x10\n" +
 	"\x03row\x18\x02 \x01(\x05R\x03row\"\xcd\x02\n" +

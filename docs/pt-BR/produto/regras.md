@@ -634,7 +634,7 @@ O par ocupa um só lugar, o quadrado da montaria, e o turno da montaria continua
   A Inteligência da montaria é no mínimo 6, e nenhum efeito lê um valor menor.
   O conjurador escolhe celestial, fada ou ínfero; só o dono e o mestre leem a escolha.
   Uma magia que mira só o conjurador também pode alcançar a montaria (`also_steed`) enquanto ele a cavalga: um efeito duradouro cai nos dois, e qualquer outra magia deixa uma nota de texto.
-- O jogador lê o vínculo entre duas criaturas só quando vê as duas; uma montaria escondida deixa o cavaleiro como se estivesse sozinho, e nenhum jogador lê a marca do mestre nem a rolagem de outro.
+- O jogador lê o vínculo entre duas criaturas só quando vê as duas; uma montaria escondida deixa o cavaleiro como se estivesse sozinho, e a marca "adestrada" ou "independente" que o mestre põe numa montaria só o mestre, o dono da criatura e o jogador do cavaleiro que está sobre ela leem; nenhum outro jogador lê a marca nem a rolagem de outro.
 
 **Esculpir Magias** (SRD 5.1, Escola de Evocação).
 Um mago de evocação a partir do nível 2, ao conjurar uma magia de evocação que afeta outras criaturas que ele vê, poupa até 1 + o nível da magia delas (o nível em que é conjurada). Uma criatura poupada passa no teste de resistência sem rolar e não sofre dano quando a magia causaria metade; a linha do teste diz "Esculpir Magias".

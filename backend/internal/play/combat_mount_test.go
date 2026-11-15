@@ -130,7 +130,7 @@ func TestMountedCombat_ViewLinks(t *testing.T) {
 			t.Errorf("Toren's rider_id for %s = %q, want empty (he carries nobody)", who, got)
 		}
 	}
-	wantMark := map[string]string{"the master": "independent", "Toren's player": "", "another player": ""}
+	wantMark := map[string]string{"the master": "independent", "Toren's player": "independent", "another player": ""} // the rider's player reads the mark of the mount it rides
 	wantUsed := map[string]bool{"the master": true, "Toren's player": true, "another player": false}
 	for who, u := range map[string]*user{"the master": c.master, "Toren's player": c.caio, "another player": c.ana} {
 		if got := c.who(t, u, "Escudeiro").GetMountKind(); got != wantMark[who] {
@@ -212,6 +212,20 @@ func TestMountedCombat_ViewOfAnOwnedSteed(t *testing.T) {
 	}
 	hiddenRider := rider
 	hiddenRider.Hidden = true
+	// The player of the rider reads the mark of the mount it rides, and nobody else does (RN-10, RN-21).
+	riderOwned := rider
+	riderOwned.UserID = &other
+	if got := read(combatViewer{userID: other}, steed, []playdb.Combatant{steed, riderOwned}); got.GetMountKind() != "controlled" {
+		t.Errorf("the rider's player reads kind %q of its mount, want controlled", got.GetMountKind())
+	}
+	if got := read(combatViewer{userID: "user-third"}, steed, []playdb.Combatant{steed, riderOwned}); got.GetMountKind() != "" {
+		t.Errorf("a third player reads kind %q of the mount, want empty", got.GetMountKind())
+	}
+	hiddenOwned := riderOwned
+	hiddenOwned.Hidden = true
+	if got := read(combatViewer{userID: other}, steed, []playdb.Combatant{steed, hiddenOwned}); got.GetMountKind() != "" {
+		t.Errorf("the player of a hidden rider reads kind %q, want empty", got.GetMountKind())
+	}
 	if got := read(combatViewer{userID: owner}, steed, []playdb.Combatant{steed, hiddenRider}); got.GetRiderId() != "" {
 		t.Errorf("a player reads a hidden rider's id %q on the mount, want empty", got.GetRiderId())
 	}

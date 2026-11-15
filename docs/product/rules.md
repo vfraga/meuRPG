@@ -615,6 +615,7 @@ Mounting needs the mount within 1.5 m and costs half the rider's speed on the su
 A move holds one mount or one dismount.
 A player mounts their own creatures and the mounts the master marked "Montaria" on the party's side, and the master mounts any creature.
 A creature the master marked nothing acts on its own.
+The mark ("adestrada" or "independente") is read by the master, by the owner of the creature and by the player of the rider that sits on it, so that player knows whether the mount obeys; no other player reads it.
 The pair is one occupant of the mount's square, and the mount's turn is its own.
 
 - **A controlled mount** (the Find Steed steed, or a mount marked "adestrada") takes the rider's initiative and acts right after the rider, in one joint turn that ends when both parts have ended.
