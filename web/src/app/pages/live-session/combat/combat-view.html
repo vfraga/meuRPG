@@ -1121,6 +1121,19 @@
   <ng-container *ngTemplateOutlet="actionsBody" />
 </ng-template>
 
+<!-- The mount the character directs: its three actions, one "Mover" and one "Encerrar turno" for the two (588-04). -->
+<ng-template #pairCard let-me>
+  @if (riding(); as ride) {
+    <app-pair-card
+      [rider]="me"
+      [mount]="ride"
+      [options]="creatureOptions.data().get(ride.id) ?? null"
+      [busy]="busy()"
+      (act)="takeActionFor(ride.id, $event)"
+    />
+  }
+</ng-template>
+
 <!-- What the actions rail holds: a creature's blocks, the death saves, the action tabs, or off turn the reaction. -->
 <ng-template #actionsBody>
   @if (encounter(); as e) {
@@ -1149,6 +1162,8 @@
     } @else if (myTurn() && own(); as me) {
       @if (ownDown()) {
         <div>
+          <!-- A rider at 0 hit points: the three are dashed, the master leads the mount (588-10 card 5). -->
+          <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
           <app-death-saves
             [ownerOnly]="deathsHidden()"
             [own]="me"
@@ -1165,16 +1180,7 @@
       } @else if (options(); as opts) {
         @if (opts.options; as turnOptions) {
           <div class="player__blocks">
-            @if (riding(); as ride) {
-              <!-- The mount the character directs: its three actions, one "Mover" and one "Encerrar turno" for the two (588-04). -->
-              <app-pair-card
-                [rider]="me"
-                [mount]="ride"
-                [options]="creatureOptions.data().get(ride.id) ?? null"
-                [busy]="busy()"
-                (act)="takeActionFor(ride.id, $event)"
-              />
-            }
+            <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
             <app-action-groups
               [options]="turnOptions"
               [gearFlow]="gearFlow"

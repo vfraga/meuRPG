@@ -1,10 +1,14 @@
-import { CombatantKind, CombatantSide } from '../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  CombatantKind,
+  CombatantSide,
+  CombatantState,
+} from '../../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant, encounter } from '../../../core/combat/combat-testing';
 import { mountCombatView } from './combat-view-testing';
 
 describe('CombatView: the rider and the mount it directs (588-04)', () => {
-  const enc = (mountKind = 'controlled') =>
+  const enc = (mountKind = 'controlled', state = CombatantState.UNHURT) =>
     encounter({
       currentCombatantId: 'tor',
       turnGroupIds: ['tor', 'h'],
@@ -17,6 +21,7 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
           mine: true,
           initiative: 17,
           mountedOnId: 'h',
+          state,
         }),
         combatant({
           id: 'h',
@@ -68,6 +73,19 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
       turnOptions: (id) => (id === 'h' ? (three(false) as never) : undefined),
     });
     await settle(m.fixture);
+    expect(m.el.querySelectorAll('app-pair-card .mr-button--off')).toHaveLength(3);
+    expect(m.el.querySelector('app-pair-card .pair__why')?.textContent).toContain(
+      'Caído: o mestre conduz o Cavalo de guerra.',
+    );
+  });
+
+  it('keeps the card, dashed, beside the death saves of a rider at 0 hit points', async () => {
+    const m = mountCombatView({
+      enc: enc('controlled', CombatantState.DYING),
+      turnOptions: (id) => (id === 'h' ? (three(false) as never) : undefined),
+    });
+    await settle(m.fixture);
+    expect(m.el.querySelector('app-death-saves')).not.toBeNull();
     expect(m.el.querySelectorAll('app-pair-card .mr-button--off')).toHaveLength(3);
     expect(m.el.querySelector('app-pair-card .pair__why')?.textContent).toContain(
       'Caído: o mestre conduz o Cavalo de guerra.',
