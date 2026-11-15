@@ -2,12 +2,14 @@ import { signal, untracked } from '@angular/core';
 import type {
   Encounter,
   GetTurnOptionsResponse,
+  MountSavePrompt,
   OpportunityOffer,
   ReactionWindow,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { reactorAttacks } from '../../../core/combat/opportunity';
 import { tradesOf } from '../../../core/combat/power-attack-trade';
 import { openWindows, promptView, sheetWindow } from '../../../core/combat/reactions';
+import { mountSaveView, ownMountSave } from '../../../core/combat/mount-save';
 import { dismountView, isDismountWindow } from '../../../core/combat/reaction-dismount';
 import { featureWindowView, isFeatureWindow } from '../../../core/combat/reaction-feature';
 import {
@@ -22,6 +24,7 @@ import {
   type EffectSaveSheetData,
 } from '../effects/effect-save-sheet/effect-save-sheet';
 import { DismountSheet, type DismountSheetData } from './dismount-sheet/dismount-sheet';
+import { MountSaveSheet, type MountSaveSheetData } from './mount-save-sheet/mount-save-sheet';
 import {
   FeatureWindowSheet,
   type FeatureWindowSheetData,
@@ -67,7 +70,40 @@ export class ReactionSheets {
     if (window && !this.reactionHandled.has(window.id)) {
       this.reactionHandled.add(window.id);
       this.reaction(window);
+      return;
     }
+    // A rider's save to stay mounted is no window: it is owed while the combat carries it, so its sheet is up while it is.
+    const save = ownMountSave(e);
+    if (save) {
+      this.mountSave(save, false);
+    }
+  }
+
+  /** "Você cai da montaria?" (#588): by itself for the rider's player, who has to answer it; from "Rolar por Tor" for the master. */
+  mountSave(prompt: MountSavePrompt, byMaster: boolean): void {
+    const e = this.ctx.encounter();
+    if (!e || this.reactionOpen()) {
+      return;
+    }
+    const data: MountSaveSheetData = {
+      campaignId: this.ctx.campaignId(),
+      encounterId: e.id,
+      prompt,
+      byMaster,
+      state: this.ctx.state(),
+      diceMode: this.ctx.diceMode(),
+      preference: this.ctx.preference(),
+    };
+    const v = mountSaveView(e, prompt, !byMaster);
+    trackOpen(
+      this.reactionOpen,
+      openSheet<MountSaveSheet, MountSaveSheetData, void>(
+        this.ctx.dialog,
+        this.ctx.bottomSheet,
+        MountSaveSheet,
+        { data, ariaLabel: `${v.title} ${v.subtitle}`, alert: !byMaster },
+      ),
+    );
   }
 
   /** "Você foi atingido: usar Escudo?" and the other reactions: opens by itself, and has to be answered. */

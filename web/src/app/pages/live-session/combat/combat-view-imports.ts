@@ -33,6 +33,7 @@ import { OpportunityCard } from './opportunity/opportunity-card';
 import { HiddenRevealCard } from './hidden-reveal/hidden-reveal-card';
 import { NpcCard } from './npc-card/npc-card';
 import { DeathsBlock } from './deaths-block/deaths-block';
+import { MountSaveWaitCard } from './mount-save-wait/mount-save-wait';
 import { RollModeQueue } from './roll-mode/roll-mode-queue';
 import { OrderList } from './order-list/order-list';
 import { PlayerInitiative } from './player-initiative/player-initiative';
@@ -117,6 +118,7 @@ export const COMBAT_VIEW_IMPORTS = [
   OrderStrip,
   OrderList,
   PlayerInitiative,
+  MountSaveWaitCard,
   RollModeQueue,
   TheatreReaction,
   ReactionQueue,

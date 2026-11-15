@@ -806,6 +806,7 @@
       />
     }
     <app-roll-mode-queue [encounter]="e" [campaignId]="campaignId()" [state]="state()" />
+    <app-mount-save-wait [wait]="mountWait()" [busy]="busy()" (roll)="sheets.reactions.mountSave($event, true)" />
     <app-hidden-reveal-card
       [encounter]="e"
       [spellNames]="revealSpellNames()"

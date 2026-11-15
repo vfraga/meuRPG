@@ -159,6 +159,12 @@ export class MountSaveSheet {
   private readonly keys = new ActionKey();
 
   constructor() {
+    // The d20 was rolled and kept before this sheet opened (a reload): its question is what is owed, not another roll.
+    const kept = this.opened?.combatants.find((c) => c.id === this.data.prompt.riderId);
+    const offer = kept ? heldOfferOf(kept) : undefined;
+    if (offer) {
+      this.held.ask(offer);
+    }
     // The master answers the question for the roller: the sheet drops it, so it never offers an answer that is no longer open.
     effect(() => {
       const rider = this.data.state

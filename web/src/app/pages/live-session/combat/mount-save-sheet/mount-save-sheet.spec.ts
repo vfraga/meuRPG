@@ -63,9 +63,9 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
   const resources = { answerHeldRoll: vi.fn() };
   const closed: unknown[] = [];
 
-  function setup(p = prompt(), over: Partial<MountSaveSheetData> = {}) {
+  function setup(p = prompt(), over: Partial<MountSaveSheetData> = {}, kept?: object) {
     const state = new CombatState();
-    state.apply(fight(p));
+    state.apply(fight(p, 1, kept));
     const data: MountSaveSheetData = {
       campaignId: 'c',
       encounterId: 'enc',
@@ -311,6 +311,13 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     await flush(fixture);
     expect(rollMountSave.mock.calls[1][4]).toBe(rollMountSave.mock.calls[0][4]);
     expect(el.querySelector('.res')).not.toBeNull();
+  });
+
+  it('opens on the question of a d20 already rolled and kept (the screen was read again), never on a second roll', () => {
+    const { el } = setup(prompt(), {}, heldLucky([1], 1));
+    expect(el.querySelector('app-held-roll-prompt')).not.toBeNull();
+    expect(button(el, 'Rolar no app')).toBeUndefined();
+    expect(button(el, 'Rolar de novo')).toBeTruthy();
   });
 
   it('settles the save with the answer to the question, and tells the result then', async () => {

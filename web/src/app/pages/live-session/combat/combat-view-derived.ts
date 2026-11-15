@@ -308,7 +308,7 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
     if (e && this.isMaster() && this.sunPainting()) {
       return SUN_PAINTING_WHY;
     }
-    return e && this.isMaster() ? revealWhy(e) : '';
+    return e && this.isMaster() ? revealWhy(e) || (this.mountWait()?.why ?? '') : '';
   });
   /** The master's last action is a move: the log's undoable entry says so ("Desfazer o movimento"). */
   protected readonly canUndoMove = computed(
@@ -394,7 +394,10 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
     if (this.sunPainting()) {
       return SUN_PAINTING_WAIT;
     }
-    return masterWaitNote(e, this.autoLeft(), (id) => this.info().get(id)?.playerName ?? '');
+    return (
+      masterWaitNote(e, this.autoLeft(), (id) => this.info().get(id)?.playerName ?? '') ||
+      (this.mountWait()?.title ?? '')
+    );
   });
   /** The reactors drawn on the map for whoever answers, with the square the mover left. */
   protected readonly offerMarks = computed<readonly OfferMark[]>(() => {

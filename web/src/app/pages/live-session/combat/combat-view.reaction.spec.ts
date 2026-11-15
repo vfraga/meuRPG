@@ -25,6 +25,7 @@ import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { AttackSheet } from './attack-sheet/attack-sheet';
 import { CombatView } from './combat-view';
 import { DismountSheet } from './dismount-sheet/dismount-sheet';
+import { MountSaveSheet } from './mount-save-sheet/mount-save-sheet';
 import { ReadiedWindowSheet } from './readied-window-sheet/readied-window-sheet';
 import { FeatureWindowSheet } from './feature-window-sheet/feature-window-sheet';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
@@ -77,6 +78,7 @@ function setup(opts: {
   windows?: ReturnType<typeof reactionWindow>[];
   wait?: { titlePt: string; detailPt: string };
   current?: string;
+  mountSave?: object;
 }) {
   TestBed.resetTestingModule();
   const opened: Opened[] = [];
@@ -127,6 +129,7 @@ function setup(opts: {
       combatants: [toren, goblin, mago],
       reactionWindows: opts.windows ?? [],
       reactionWait: opts.wait,
+      mountSave: opts.mountSave,
     } as never),
   );
   const dialog = {
@@ -291,6 +294,81 @@ describe('CombatView, the reaction windows', () => {
     expect(
       plain(master.el.querySelector('app-reaction-queue[part="rest"]')?.textContent),
     ).toContain('Reações a uma montaria');
+  });
+
+  describe("a rider's save to stay mounted (#588)", () => {
+    // The server sends the prompt only to the master and to the rider's player; the player's DC is 0 on a table that hides it.
+    const owed = (over: object = {}) => ({
+      riderId: 't',
+      mountId: '',
+      cause: 1,
+      saveBonus: 2,
+      bonusKnown: true,
+      ...over,
+    });
+    const after = (state: CombatState, mountSave: object | undefined, revision: number) =>
+      state.apply(
+        encounter({
+          revision,
+          mode: EncounterMode.THEATRE,
+          currentCombatantId: 'g',
+          combatants: [toren, goblin, mago],
+          mountSave,
+        } as never),
+      );
+
+    it("opens the sheet by itself for the rider's player, once, as an alert that has to be answered, and again for a later save", async () => {
+      const { fixture, state, opened, closes } = setup({ mountSave: owed() });
+      await settle(fixture);
+      expect(opened.map((o) => o.component)).toEqual([MountSaveSheet]);
+      expect(opened[0].config.role).toBe('alertdialog');
+      expect(opened[0].config.disableClose).toBe(true);
+      expect(opened[0].config.data['byMaster']).toBe(false);
+      expect((opened[0].config as { ariaLabel?: string }).ariaLabel).toBe(
+        'Você cai da montaria? Teste de resistência de Destreza',
+      );
+      after(state, owed(), 5);
+      await settle(fixture);
+      expect(opened).toHaveLength(1);
+      // Rolled and closed; the rider mounts again and is pushed once more: a new save, a new sheet.
+      after(state, undefined, 6);
+      closes[0].next(undefined);
+      closes[0].complete();
+      await settle(fixture);
+      after(state, owed(), 7);
+      await settle(fixture);
+      expect(opened).toHaveLength(2);
+    });
+
+    it('tells the master who the table waits for, with "Rolar por Toren", and holds "Próximo turno" with the reason', async () => {
+      const { fixture, el, opened } = setup({ master: true, mountSave: owed({ dc: 10 }) });
+      await settle(fixture);
+      expect(opened).toHaveLength(0);
+      const card = el.querySelector('[data-testid="mount-save-wait"]')!;
+      expect(plain(card.querySelector('h3')?.textContent)).toBe('Esperando o teste de Toren');
+      expect(plain(card.querySelector('p')?.textContent)).toBe(
+        'Teste de resistência de Destreza CD 10: a montaria foi empurrada. Toren está respondendo no celular.',
+      );
+      const next = Array.from(el.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+        plain(b.textContent).includes('Próximo turno'),
+      )!;
+      expect(next.getAttribute('aria-disabled')).toBe('true');
+      expect(plain(el.textContent)).toContain('Espera o teste de Toren');
+      Array.from(card.querySelectorAll('button'))
+        .find((b) => plain(b.textContent) === 'Rolar por Toren')!
+        .click();
+      await settle(fixture);
+      expect(opened.map((o) => o.component)).toEqual([MountSaveSheet]);
+      expect(opened[0].config.role).not.toBe('alertdialog');
+      expect(opened[0].config.data['byMaster']).toBe(true);
+    });
+
+    it('shows no card and opens nothing when no save is owed', async () => {
+      const { fixture, el, opened } = setup({ master: true });
+      await settle(fixture);
+      expect(el.querySelector('[data-testid="mount-save-wait"]')).toBeNull();
+      expect(opened).toHaveLength(0);
+    });
   });
 
   it("opens nothing for a window that is not the player's to answer, or the master's check", async () => {

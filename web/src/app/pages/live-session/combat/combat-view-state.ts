@@ -47,6 +47,7 @@ import {
 } from '../../../core/combat/combat-view';
 import { acts, jointTurn, masterActor } from '../../../core/combat/joint-turn';
 import { MasterAutoPass } from '../../../core/combat/auto-pass';
+import { mountSaveWait } from '../../../core/combat/mount-save';
 import { CombatCalls } from '../../../core/combat/combat-calls';
 import { removalsOf, spellSavesOf } from '../../../core/combat/group-take-out';
 import { CombatReads } from './combat-reads';
@@ -243,6 +244,11 @@ export abstract class CombatViewStateDirective {
   protected readonly pairLive = computed(() => {
     const e = this.encounter();
     return !!e && !!this.riding() && turnBanner(e).mine;
+  });
+  /** The master's "Esperando o teste de Tor": a rider's save to stay mounted holds the table. */
+  protected readonly mountWait = computed(() => {
+    const e = this.encounter();
+    return e && this.isMaster() ? mountSaveWait(e) : null;
   });
   /** In a joint turn, who else must end their part, for the player's footer. */
   protected readonly jointOthers = computed(() => {
