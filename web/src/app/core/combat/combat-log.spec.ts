@@ -1023,6 +1023,19 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
       actor: 'Toren',
       text: ' se segurou na montaria (15 + 2 = 17, CD 10)',
     });
+    // A table that hides the DC of saves (the default): the rider's player gets the d20 and no DC (RN-24).
+    const heldNoDc = logLine(
+      entry({
+        kind: CombatLogKind.MOUNT_SAVE,
+        actorLabel: 'Toren',
+        targetLabel: 'Pônei',
+        mountSave: { held: true, d20: 15, total: 17, dc: 0 },
+      } as never),
+    );
+    expect(heldNoDc).toMatchObject({
+      actor: 'Toren',
+      text: ' se segurou na montaria (15 + 2 = 17)',
+    });
     const heldForOthers = logLine(
       entry({
         kind: CombatLogKind.MOUNT_SAVE,

@@ -8,7 +8,8 @@ interface MountArgs {
   readonly base: { id: string; actor: string; hidden: boolean; undoable: boolean };
 }
 
-/** The numbers of a rider's save: "(15 + 2 = 17, CD 10)" for the master and the rider's player, "(falha automática)" for a rider that
+/** The numbers of a rider's save: "(15 + 2 = 17, CD 10)" for the master and the rider's player (with no DC
+ * for a player whose table hides it), "(falha automática)" for a rider that
  * failed with no d20, and nothing for another player, who is sent no number. */
 function mountSaveRoll(e: CombatLogEntry): string {
   const save = e.mountSave;
@@ -20,7 +21,9 @@ function mountSaveRoll(e: CombatLogEntry): string {
   }
   const modifier = save.total - save.d20;
   const sign = modifier < 0 ? '-' : '+';
-  return ` (${save.d20} ${sign} ${Math.abs(modifier)} = ${save.total}, CD ${save.dc})`;
+  // The DC is a player's only when the table shows the DC of saves (RN-24): the server sends 0 otherwise.
+  const dc = save.dc > 0 ? `, CD ${save.dc}` : '';
+  return ` (${save.d20} ${sign} ${Math.abs(modifier)} = ${save.total}${dc})`;
 }
 
 /** The master's note of a fall that found no free square next to the mount. */
