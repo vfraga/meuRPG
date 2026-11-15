@@ -185,3 +185,9 @@
     display: flex;
   }
 }
+
+// A pair on the map: the rider's disc holds the top right, so the seal goes top left (588-04).
+:host(.tk--seal-left) .tk__badge {
+  right: auto;
+  left: -6px;
+}

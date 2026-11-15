@@ -152,7 +152,6 @@
         [attr.data-id]="c.id"
         [class.cm__tk--movable]="movable(c)"
         [class.cm__tk--current]="pair.isCurrent(c)"
-        [class.cm__tk--pair]="!!pair.riderOf(c)"
         [class.cm__tk--dim]="layer.dim(c.id)"
         [style.left.%]="centerX(c)"
         [style.top.%]="centerY(c)"
@@ -171,6 +170,7 @@
           [mine]="c.mine"
           [marked]="c.conditions.length > 0"
           [onMap]="true"
+          [sealLeft]="!!pair.riderOf(c)"
           size="calc(var(--cm-tk) * var(--span, 1))"
         />
         @if (pair.riderOf(c); as r) {
@@ -185,7 +185,9 @@
     }
     @if (pick()) {
       @for (c of shown(); track c.id) {
+        <!-- A pair has one button, the mount's, at the pair's square; the rider's only when the mount is not one to pick. -->
         @if (layer.of(c.id); as m) {
+         @if (!pair.rides(c) || !layer.of(c.mountedOnId)) {
           <button
             type="button"
             class="cm__pick"
@@ -195,7 +197,7 @@
             [attr.data-pick]="c.id"
             [attr.aria-disabled]="m.reason ? 'true' : null"
             [attr.aria-pressed]="m.mode === 'offer' ? m.count > 0 : null"
-            [attr.aria-label]="layer.name(m)"
+            [attr.aria-label]="pair.pickName(c, layer.name(m))"
             [style.left.%]="centerX(c)"
             [style.top.%]="centerY(c)"
             [style.--span]="span(c)"
@@ -218,6 +220,7 @@
               }
             </span>
           }
+         }
         }
       }
       @if (layer.note(); as n) {

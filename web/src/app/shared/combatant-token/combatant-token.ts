@@ -40,6 +40,7 @@ import { MatIconModule } from '@angular/material/icon';
     '[class.tk--current]': 'current()',
     '[class.tk--mine]': 'mine()',
     '[class.tk--map]': 'onMap()',
+    '[class.tk--seal-left]': 'sealLeft()',
     '[class.tk--long]': 'initial().length > 1',
     '[style.--tk]': 'css()',
   },
@@ -58,6 +59,8 @@ export class CombatantToken {
   readonly mine = input(false);
   /** Drawn on a battle map: fixed colours, since the picture is not themed. */
   readonly onMap = input(false);
+  /** The eye-off seal sits top left: the mount of a pair on the map, whose top right holds its rider's disc (588-04). */
+  readonly sealLeft = input(false);
   /** The side: pixels as a number (28 in lists, 48 in the bar), or any CSS
    * length (the map sizes it from its square). */
   readonly size = input<number | string>(28);

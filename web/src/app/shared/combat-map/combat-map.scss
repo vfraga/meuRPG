@@ -526,7 +526,7 @@
   right: -22%;
   display: flex;
   border-radius: 50%;
-  background: var(--mr-surface);
+  background: var(--mr-map-token-surface);
   pointer-events: none;
 }
 
@@ -535,7 +535,7 @@
   bottom: -14%;
   left: 50%;
   font-size: calc(var(--cm-tk) * 0.4);
-  color: var(--mr-ink);
+  color: var(--mr-map-token-ink);
   transform: translateX(-50%);
   pointer-events: none;
 }

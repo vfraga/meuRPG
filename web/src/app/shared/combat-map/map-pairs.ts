@@ -1,8 +1,13 @@
+import { computed } from '@angular/core';
+
 import type { Combatant } from '../../../gen/meurpg/play/v1/combat_pb';
+import { conditionTags } from '../../core/combat/conditions';
+import { mountedOn } from '../../core/combat/mount-view';
 
 /**
- * A rider and the mount it sits on, as the map draws them (588-04): one token, the mount's, with the rider's disc on it.
- * Only a pair the viewer sees both of is drawn so; the server sends the link only then (RN-10).
+ * A rider and the mount it sits on, as the map draws them (588-04): one token, the mount's, with the rider's disc on it, one
+ * pick button for the two, and the rider's line in the map's text list. Only a pair the viewer sees both of is drawn so; the
+ * server sends the link only then (RN-10).
  */
 export class MapPairs {
   constructor(
@@ -10,7 +15,8 @@ export class MapPairs {
     private readonly currentId: () => string,
   ) {}
 
-  private pairs(): Map<string, Combatant> {
+  /** Each mount on the map with the rider that sits on it. */
+  private readonly pairs = computed(() => {
     const shown = this.shown();
     const ids = new Set(shown.map((c) => c.id));
     const out = new Map<string, Combatant>();
@@ -20,7 +26,17 @@ export class MapPairs {
       }
     }
     return out;
-  }
+  });
+
+  /** What the map's visually hidden list says of each token: "Tor, montado no Cavalo de guerra, coluna 6, linha 6". */
+  readonly listed = computed(() =>
+    this.shown().map((c) => {
+      const mount = this.rides(c) ? this.shown().find((m) => m.id === c.mountedOnId) : undefined;
+      const on = mount ? `, m${mountedOn(mount).slice(1)}` : '';
+      const tags = c.conditions.length ? `, ${conditionTags(c).join(', ')}` : '';
+      return { id: c.id, text: `${c.label}${on}, coluna ${c.col + 1}, linha ${c.row + 1}${tags}` };
+    }),
+  );
 
   /** The rider drawn on this mount's token. */
   riderOf(c: Combatant): Combatant | undefined {
@@ -40,5 +56,11 @@ export class MapPairs {
   /** The turn belongs to the token when it belongs to the rider on it. */
   isCurrent(c: Combatant): boolean {
     return c.id === this.currentId() || this.riderOf(c)?.id === this.currentId();
+  }
+
+  /** The pick button of a pair names both: "Escolher Cavalo de guerra como alvo · leva Tor". */
+  pickName(c: Combatant, name: string): string {
+    const rider = this.riderOf(c);
+    return rider ? `${name} · leva ${rider.label}` : name;
   }
 }
