@@ -242,8 +242,8 @@ export function turnBanner(e: Encounter): TurnBanner {
   const joint = jointTurn(e);
   const after = afterTurn(e);
   const ridden = joint ? riddenPair(joint) : null;
-  if (ridden) {
-    return pairBanner(e, ridden.rider, ridden.mount, after);
+  if (joint && ridden) {
+    return pairBanner(e, joint, ridden, after);
   }
   if (joint) {
     return jointBanner(e, joint, after);
@@ -263,33 +263,43 @@ const MASTER_BANNER: TurnBanner = {
   ownEnded: false,
 };
 
-/** The joint turn is the caller's character and the mount it directs, and nobody else. */
-function riddenPair(joint: JointTurn): { rider: Combatant; mount: Combatant } | null {
-  const [a, b] = joint.members;
-  if (joint.members.length !== 2 || !boxedPair(a, b, false)) {
-    return null;
-  }
-  const rider = a.mountedOnId === b.id ? a : b;
-  return rider.mine ? { rider, mount: rider === a ? b : a } : null;
+/** The caller's character and the mount it directs, among the members of the turn that is running. */
+interface RiddenPair {
+  readonly rider: Combatant;
+  readonly mount: Combatant;
 }
 
-/** The turn of a rider and the mount it directs, for the rider's player: one turn, theirs ("Sua vez, Tor"). */
+/** The caller's own pair inside the group on turn: alone in it, or tied with others. `null` for anyone else's pair, for an
+ * independent mount (it has its own turn) and for a mount that is not in the group. */
+function riddenPair(joint: JointTurn): RiddenPair | null {
+  const rider = joint.members.find((m) => m.mine && m.mountedOnId !== '');
+  const mount = rider ? joint.members.find((m) => m.id === rider.mountedOnId) : undefined;
+  return rider && mount && boxedPair(rider, mount, false) ? { rider, mount } : null;
+}
+
+/**
+ * The turn of a rider and the mount it directs, for the rider's player: one turn, theirs ("Sua vez, Tor"), for as long as
+ * either part is theirs to end. The mount's part is theirs while the rider is on its feet; a down rider leaves it to the
+ * master. The pair alone in the group is no joint turn; tied with others, the joint banner stays for the larger group.
+ */
 function pairBanner(
   e: Encounter,
-  rider: Combatant,
-  mount: Combatant,
+  joint: JointTurn,
+  pair: RiddenPair,
   after: TurnBanner['after'],
 ): TurnBanner {
+  const { rider, mount } = pair;
+  const live = !rider.turnPartEnded || (!mount.turnPartEnded && !isDown(rider));
   return {
-    title: rider.turnPartEnded ? 'Você encerrou a sua parte' : `Sua vez, ${rider.label}`,
+    title: live ? `Sua vez, ${rider.label}` : 'Você encerrou a sua parte',
     who: rider,
-    mine: !rider.turnPartEnded,
+    mine: live,
     masterTurn: e.masterTurn,
     next: null,
     nextIsMine: after?.mine ?? false,
     after,
-    joint: null,
-    ownEnded: rider.turnPartEnded,
+    joint: joint.members.length > 2 ? joint : null,
+    ownEnded: !live,
     riding: mount,
   };
 }

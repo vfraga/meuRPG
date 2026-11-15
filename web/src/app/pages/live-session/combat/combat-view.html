@@ -527,10 +527,10 @@
                   (select)="tabId.set($event)"
                   (endPart)="endTab(ct)"
                 />
-              } @else if (showTabs() || (myTurn() && own() && !ownDown())) {
+              } @else if (showTabs() || ((myTurn() || pairLive()) && own() && !ownDown())) {
                 <app-turn-bar
                   class="player__bar"
-                  [own]="myTurn() && !ownDown() ? own() : null"
+                  [own]="(myTurn() || pairLive()) && !ownDown() ? own() : null"
                   [tabs]="tabs()"
                   [selected]="tab()?.id ?? ''"
                   [attacksLeft]="attacksLeft()"
@@ -1236,6 +1236,11 @@
           </div>
         }
       }
+    } @else if (pairLive() && own(); as me) {
+      <!-- The rider's own part ended (the master, or another tab) and the mount's is live: its card stays, to act and to end it. -->
+      <div class="player__blocks">
+        <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
+      </div>
     } @else if (offRail(); as me) {
       <!-- Off turn, from 1024px: the rail says what the player still has (C6-07). -->
       <div class="player__blocks">

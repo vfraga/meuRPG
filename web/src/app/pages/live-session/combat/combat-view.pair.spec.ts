@@ -1,3 +1,5 @@
+import { Code, ConnectError } from '@connectrpc/connect';
+
 import {
   CombatantKind,
   CombatantSide,
@@ -112,14 +114,102 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     );
   });
 
-  it('ends the mount\'s part first, then the rider\'s: one "Encerrar turno" for the two', async () => {
-    // The server answers each call with the combat, the mount's part ended after the first.
+  it('ends the rider\'s part first, then the mount\'s: one "Encerrar turno" for the two', async () => {
+    // The server answers each call with the combat, the rider's part ended after the first.
     const after = enc();
-    after.combatants[1].turnPartEnded = true;
+    after.combatants[0].turnPartEnded = true;
     const m = mountCombatView({ enc: enc(), api: { endTurn: async () => after } });
     await settle(m.fixture);
     await m.view.endTurn(false);
-    expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['h', 'tor']);
+    expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h']);
+  });
+
+  it("sends nothing for the mount when the rider's part is refused (a damage still to roll): the mount keeps its move", async () => {
+    const m = mountCombatView({
+      enc: enc(),
+      api: {
+        endTurn: async () => {
+          throw new ConnectError('a damage is still to roll', Code.FailedPrecondition);
+        },
+      },
+    });
+    await settle(m.fixture);
+    expect(await m.view.endTurn(false)).toBe(false);
+    expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor']);
+  });
+
+  it("ends only the rider's part when the rider is down: the master leads the mount", async () => {
+    const down = enc('controlled', CombatantState.DYING);
+    const m = mountCombatView({ enc: down, api: { endTurn: async () => down } });
+    await settle(m.fixture);
+    await m.view.endTurn(false);
+    expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor']);
+  });
+
+  it("keeps the card and a control to end the mount's part when the rider's part ended elsewhere", async () => {
+    const left = enc();
+    left.combatants[0].turnPartEnded = true;
+    const m = mountCombatView({
+      enc: left,
+      turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),
+      api: { endTurn: async () => left },
+    });
+    await settle(m.fixture);
+    expect(m.el.querySelector('app-pair-card')).not.toBeNull();
+    const end = [...m.el.querySelectorAll<HTMLButtonElement>('app-end-turn button')].find((b) =>
+      b.textContent?.includes('Encerrar turno'),
+    );
+    expect(end).toBeDefined();
+    end!.click();
+    await settle(m.fixture);
+    expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['h']);
+  });
+
+  describe('tied with another character (a larger group)', () => {
+    const tied = () => {
+      const e = enc();
+      e.combatants.push(
+        combatant({
+          id: 'b',
+          label: 'Brisa',
+          kind: CombatantKind.PLAYER,
+          side: CombatantSide.PARTY,
+          initiative: 17,
+        }),
+      );
+      e.turnGroupIds = ['tor', 'h', 'b'];
+      return e;
+    };
+
+    it('still draws the pair card, inside the joint turn, and waits only for the others', async () => {
+      const m = mountCombatView({
+        enc: tied(),
+        turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),
+      });
+      await settle(m.fixture);
+      expect(m.el.querySelectorAll('app-pair-card .pair__act')).toHaveLength(3);
+      expect(m.el.querySelector('app-end-part')).not.toBeNull();
+      expect(m.view.jointOthers()).toEqual(['Brisa']);
+    });
+
+    it('"Encerrar a minha parte" ends the rider\'s part and the mount\'s', async () => {
+      const after = tied();
+      after.combatants[0].turnPartEnded = true;
+      const m = mountCombatView({ enc: tied(), api: { endTurn: async () => after } });
+      await settle(m.fixture);
+      await m.view.endTurn(false);
+      expect(m.callsOf('endTurn').map((c) => c.args[2])).toEqual(['tor', 'h']);
+    });
+  });
+
+  it('is one turn, not a joint one, for the pair alone: no others to wait for, and the phone bar says "Encerrar turno"', async () => {
+    const m = mountCombatView({ enc: enc(), matches: [PHONE_QUERY] });
+    await settle(m.fixture);
+    expect(m.view.joint()).toBeNull();
+    expect(m.view.jointOthers()).toBeNull();
+    const bar = m.el.querySelector('app-turn-bar');
+    expect(bar?.textContent).toContain('Encerrar turno');
+    expect(bar?.textContent).not.toContain('Encerrar a minha parte');
   });
 
   it('has no pair card and ends only its own part beside an independent mount', async () => {

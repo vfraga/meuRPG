@@ -6,7 +6,7 @@ import {
   PendingDamageStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { searchRoute } from '../../../core/traps/trap-search';
-import { partToEnd, rideToEnd } from '../../../core/combat/joint-turn';
+import { turnEnds } from '../../../core/combat/pair-turn';
 import { awaitsRoll, featureNote } from '../../../core/combat/combat-derived';
 import { CombatSheets } from './combat-sheets';
 import { pressedButton, revealMap } from './target-mode/reveal-map';
@@ -198,17 +198,15 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     return this.endTurn(discard);
   }
 
+  /** One call for each part the button ends (`turnEnds`): a rider's own part, then the mount's; a refusal stops there. */
   protected async endTurn(discard: boolean): Promise<boolean> {
-    // A rider ends the part of the mount it directs first, then its own: one call each (588-04).
-    const mount = rideToEnd(this.encounter(), this.riding());
-    if (mount && !(await this.endPart(mount.id))) {
-      return false;
+    const e = this.encounter();
+    for (const id of e ? turnEnds(e, this.own(), this.riding()) : []) {
+      if (!(await this.endPart(id, discard))) {
+        return false;
+      }
     }
-    // In a joint turn a player ends their own part (the master too, for the character he acts for); else the master ends
-    // the part of the first member who still acts (the others have their own button).
-    return this.calls.run((e) =>
-      this.api.turn.endTurn(this.campaignId(), e.id, partToEnd(e, this.own()), discard, e.round),
-    );
+    return !!e;
   }
 
   /** "Revelar" or "Manter escondidas" on a question about hidden creatures (PM-02c state 9). */
@@ -232,9 +230,9 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
   }
 
   /** "Encerrar a parte da Brisa": the master ends one member's part. */
-  protected endPart(id: string): Promise<boolean> {
+  protected endPart(id: string, discard = false): Promise<boolean> {
     return this.calls.run((e) =>
-      this.api.turn.endTurn(this.campaignId(), e.id, id, false, e.round),
+      this.api.turn.endTurn(this.campaignId(), e.id, id, discard, e.round),
     );
   }
 

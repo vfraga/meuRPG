@@ -226,10 +226,19 @@ export abstract class CombatViewStateDirective {
     const e = this.encounter();
     return e && !this.isMaster() ? (turnBanner(e).riding ?? null) : null;
   });
-  /** The joint turn that is running (a group of two or more), or `null`; a rider and the mount it directs are one turn, not a joint one. */
+  /** The joint turn that is running (a group of two or more), or `null`; a rider and the mount it directs, alone in the group, are one turn, not a joint one. */
   protected readonly joint = computed(() => {
     const e = this.encounter();
-    return e && !this.riding() ? jointTurn(e) : null;
+    if (!e) {
+      return null;
+    }
+    // The pair alone is one turn; tied with others, the larger group is the joint turn (the banner says which).
+    return this.riding() ? turnBanner(e).joint : jointTurn(e);
+  });
+  /** The pair's turn is the player's to end: their own part, or the part of the mount they direct once theirs ended. */
+  protected readonly pairLive = computed(() => {
+    const e = this.encounter();
+    return !!e && !!this.riding() && turnBanner(e).mine;
   });
   /** In a joint turn, who else must end their part, for the player's footer. */
   protected readonly jointOthers = computed(() => {
@@ -238,7 +247,8 @@ export abstract class CombatViewStateDirective {
       return null;
     }
     return [
-      ...joint.acting.filter((m) => !m.mine).map((m) => m.label),
+      // The mount the player directs ends with their own part: it is nobody else's to wait for.
+      ...joint.acting.filter((m) => !m.mine && m.id !== this.riding()?.id).map((m) => m.label),
       ...(joint.waitsForMaster ? ['o mestre'] : []),
     ];
   });
