@@ -64,9 +64,10 @@
               class="bleed"
               [total]="item.total"
               [onTurn]="item.onTurn"
+              [mounted]="item.mounted"
               [label]="groupLabel(item)"
-              [names]="creatureNames(item)"
-              [hint]="item.members.length === 2 ? 'os dois agem no mesmo turno' : 'todos agem no mesmo turno'"
+              [names]="item.mounted ? '' : creatureNames(item)"
+              [hint]="item.mounted ? '' : item.members.length === 2 ? 'os dois agem no mesmo turno' : 'todos agem no mesmo turno'"
             >
               <ol class="rows">
                 @for (c of item.members; track c.id) {
@@ -90,7 +91,7 @@
     </button>
   }
   <ng-template #rowTpl let-c let-inGroup="inGroup">
-    <li class="row" [class.row--open]="isOpen(c)" [class.row--effects]="shield(c) > 0 || aid(c) > 0" [class.row--turn]="current(c)" [class.row--dying]="dying(c)" [class.row--fallen]="down(c)" [class.on-danger]="dying(c)" [attr.data-combatant]="c.id">
+    <li class="row" [class.row--mount]="inGroup && !!c.riderId" [class.row--open]="isOpen(c)" [class.row--effects]="shield(c) > 0 || aid(c) > 0" [class.row--turn]="current(c)" [class.row--dying]="dying(c)" [class.row--fallen]="down(c)" [class.on-danger]="dying(c)" [attr.data-combatant]="c.id">
       <button
         type="button"
         class="row__head"

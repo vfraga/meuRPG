@@ -58,3 +58,9 @@ export function mountLine(e: Encounter, c: Combatant, master: boolean, boxed: bo
   }
   return `Leva ${the(rider.label)}${kind === 'independent' || master ? ' · independente' : ''}`;
 }
+
+/** `mountLine` for a combatant in the order, working out whether the order boxes it with its partner. */
+export function mountLineOf(e: Encounter, c: Combatant, master: boolean): string {
+  const partner = mountOf(e, c) ?? riderOn(e, c);
+  return mountLine(e, c, master, partner !== undefined && boxedPair(c, partner, master));
+}

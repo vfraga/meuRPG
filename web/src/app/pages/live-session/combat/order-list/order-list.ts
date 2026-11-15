@@ -1,3 +1,4 @@
+import { mountLineOf } from '../../../../core/combat/mount-view';
 import { NgTemplateOutlet } from '@angular/common';
 import { type LimitLine, limitLines } from '../../../../core/combat/creature-action';
 import {
@@ -59,8 +60,8 @@ import {
 import {
   type OrderItem,
   jointTurn,
-  listNames,
   orderItems,
+  groupAriaLabel,
 } from '../../../../core/combat/joint-turn';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import type { CombatantInfo } from '../combat-info';
@@ -280,11 +281,13 @@ export class OrderList {
   protected compactSub(c: Combatant, inGroup: boolean): string {
     const init = c.initiative !== undefined && !inGroup ? c.initiative : null;
     const state = rowState(c);
+    const ride = mountLineOf(this.encounter(), c, true);
     if (state) {
-      return joinDots([state, init === null ? '' : `inic. ${init}`].filter(Boolean));
+      return joinDots([ride, state, init === null ? '' : `inic. ${init}`].filter(Boolean));
     }
     return joinDots(
       [
+        ride,
         init === null ? '' : `Inic. ${init}`,
         rowDetail(c, this.encounter(), this.info().get(c.characterId), this.shield(c) > 0),
       ].filter(Boolean),
@@ -416,12 +419,7 @@ export class OrderList {
     return item.kind === 'group' ? item.members.map((m) => m.id).join('+') : item.combatant.id;
   }
 
-  /** "Turno conjunto: Brisa e Toren, iniciativa 19", for a screen reader. */
-  protected groupLabel(item: OrderItem): string {
-    return item.kind === 'group'
-      ? `Turno conjunto: ${listNames(item.members.map((m) => m.label))}, iniciativa ${item.total}`
-      : '';
-  }
+  protected readonly groupLabel = groupAriaLabel;
 
   /** "Três quartos (do mapa) contra o Pensantus", or `''` when there is none or nobody has the turn. */
   protected coverLine(c: Combatant): string {

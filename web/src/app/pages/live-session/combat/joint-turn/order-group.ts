@@ -16,7 +16,7 @@ import { MatIconModule } from '@angular/material/icon';
     <div class="box" role="group" [attr.aria-label]="label()" [class.box--turn]="onTurn()">
       <p class="head">
         <mat-icon aria-hidden="true">link</mat-icon>
-        <b>Turno conjunto</b>
+        <b>{{ mounted() ? 'Montado' : 'Turno conjunto' }}</b>
         @if (names()) {
           <span>{{ names() }} ·</span>
         }
@@ -145,6 +145,8 @@ import { MatIconModule } from '@angular/material/icon';
 export class OrderGroup {
   readonly total = input.required<number>();
   readonly onTurn = input(false);
+  /** A rider and the mount it rides: the head reads "Montado" and no hint (588-04). */
+  readonly mounted = input(false);
   /** For a screen reader: "Turno conjunto: Brisa e Toren, iniciativa 19". */
   readonly label = input('');
   /** Who is in it, when the box names them ("Lobos atrozes da Sálvia"). */

@@ -357,3 +357,10 @@ export function passNote(others: readonly string[], masterToo: boolean): string 
   const who = ['você', ...others.map(withArticle), ...(masterToo ? ['o mestre'] : [])];
   return `O turno passa quando ${listNames(who)} encerrar${who.length > 1 ? 'em' : ''}.`;
 }
+
+/** "Turno conjunto: Brisa e Toren, iniciativa 19" or "Montado: Tor e Cavalo de guerra, iniciativa 17", for a screen reader. */
+export function groupAriaLabel(item: OrderItem): string {
+  return item.kind === 'group'
+    ? `${item.mounted ? 'Montado' : 'Turno conjunto'}: ${listNames(item.members.map((m) => m.label))}, iniciativa ${item.total}`
+    : '';
+}
