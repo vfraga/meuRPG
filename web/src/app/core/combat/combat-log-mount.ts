@@ -1,4 +1,5 @@
 import { type CombatLogEntry, CombatLogKind } from '../../../gen/meurpg/play/v1/combat_pb';
+import { article } from '../format/article';
 import type { LogLine } from './combat-log-types';
 
 /** What a builder of these lines is given: the entry and the fields every line shares. */
@@ -28,7 +29,20 @@ function landing(e: CombatLogEntry): string {
   if (!save?.noRoomNextToMount) {
     return '';
   }
-  return ` e parou em (${save.landedCol}, ${save.landedRow}), sem lugar ao lado de ${e.targetLabel || 'a montaria'}`;
+  const mount = e.targetLabel
+    ? `${article(e.targetLabel) === 'a' ? 'da' : 'do'} ${e.targetLabel}`
+    : 'da montaria';
+  return ` e parou no quadrado livre mais perto: não havia lugar ao lado ${mount}`;
+}
+
+/** "no Cavalo de guerra", "na Aranha": the mount with the article that agrees with its name. */
+function onMount(label: string, preposition: 'em' | 'de'): string {
+  if (!label) {
+    return preposition === 'em' ? 'em uma montaria' : 'de uma montaria';
+  }
+  const feminine = article(label) === 'a';
+  const word = preposition === 'em' ? (feminine ? 'na' : 'no') : feminine ? 'da' : 'do';
+  return `${word} ${label}`;
 }
 
 const line = (args: MountArgs, text: string): LogLine => ({ ...args.base, icon: 'pets', text });
@@ -36,8 +50,8 @@ const line = (args: MountArgs, text: string): LogLine => ({ ...args.base, icon: 
 /** The lines of a mount (SRD 5.1, "Mounting and Dismounting", "Mounted Combat"). The server sends a line only to who sees both
  * combatants, and the master's alone when either is hidden. A save's numbers are the master's and the rider's player's (RN-10). */
 export const MOUNT_LINES: readonly (readonly [CombatLogKind, (args: MountArgs) => LogLine])[] = [
-  [CombatLogKind.MOUNTED, (a) => line(a, ` montou em ${a.e.targetLabel || 'uma montaria'}`)],
-  [CombatLogKind.DISMOUNTED, (a) => line(a, ` desmontou de ${a.e.targetLabel || 'uma montaria'}`)],
+  [CombatLogKind.MOUNTED, (a) => line(a, ` montou ${onMount(a.e.targetLabel, 'em')}`)],
+  [CombatLogKind.DISMOUNTED, (a) => line(a, ` desmontou ${onMount(a.e.targetLabel, 'de')}`)],
   [CombatLogKind.MOUNT_SAVE, (a) => line(a, ` se segurou na montaria${mountSaveRoll(a.e)}`)],
   [
     CombatLogKind.RIDER_THROWN,
