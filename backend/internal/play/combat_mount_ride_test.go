@@ -694,6 +694,9 @@ func TestMountedCombat_TurnOptionsListTheMountsAndTheLanding(t *testing.T) {
 	if got := mount.GetMounts()[0].GetRefusal(); got != 2 { // MOUNT_REFUSAL_TOO_FAR
 		t.Errorf("the refusal of a mount two squares away = %v, want TOO_FAR", got)
 	}
+	if got := mount.GetMounts()[0].GetDistanceFt(); got != 10 {
+		t.Errorf("the distance of a mount two squares away = %d ft, want 10 (the measure that refuses)", got)
+	}
 	c.mustMove(t, c.master, "Ogro", 7, 7)
 	c.mustMount(t, c.caio, "Toren", "Ogro")
 	mount = turn(c.caio).GetOptions().GetMount()

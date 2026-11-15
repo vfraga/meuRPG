@@ -190,3 +190,37 @@ func TestMountOptionsNeverNameAHiddenCreature(t *testing.T) {
 		t.Errorf("Caio's move options of a rider on a hidden mount say %q, want a refusal that names nothing", got)
 	}
 }
+
+// The mark the master puts on a mount is read by the master and by the player of the rider that sits on it: that player has to know
+// whether the mount obeys (RN-21). Another player never reads it, and it stays out of the player's copy when the mount is not ridden.
+func TestTheMountMarkReachesOnlyTheRidersPlayer(t *testing.T) {
+	w := newWorld(t)
+	ctx := t.Context()
+	e := w.encounter
+	mount, rider := w.combatant(w.seenNPC), w.combatant(w.pens)
+	must(w.master.combat.SetCombatantMount(ctx, rq(&playv1.SetCombatantMountRequest{CampaignId: w.campaign, EncounterId: e.GetId(), CombatantId: mount.GetId(), IdempotencyKey: newKey(), Kind: "controlled"})))
+	markOf := func(p *person) string {
+		enc := must(p.combat.GetEncounter(ctx, rq(&playv1.GetEncounterRequest{CampaignId: w.campaign}))).GetEncounter()
+		for _, c := range enc.GetCombatants() {
+			if c.GetId() == mount.GetId() {
+				return c.GetMountKind()
+			}
+		}
+		return "" // the player does not see the mount at all: nothing of it to read
+	}
+	if got := markOf(w.master); got != "controlled" {
+		t.Fatalf("the positive control failed: the master reads the mark %q", got)
+	}
+	if got := markOf(w.ana); got != "" {
+		t.Errorf("Ana reads the mark %q of a mount nobody of hers rides", got)
+	}
+	if _, err := w.pool.Exec(ctx, `UPDATE combatants SET mounted_on_id = $1 WHERE id = $2`, mount.GetId(), rider.GetId()); err != nil {
+		t.Fatalf("put Pensantus on the mount: %v", err)
+	}
+	if got := markOf(w.ana); got != "controlled" {
+		t.Errorf("Pensantus's player reads the mark %q of the mount he rides, want controlled", got)
+	}
+	if got := markOf(w.caio); got != "" {
+		t.Errorf("Caio reads the mark %q of a mount he does not ride", got)
+	}
+}
