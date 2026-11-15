@@ -1,3 +1,4 @@
+import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 import { Component, computed, effect, input, model, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -62,6 +63,7 @@ const CROP_MAX_SHARE = 0.6;
 @Component({
   selector: 'app-combat-map-card',
   imports: [
+    SaddleIcon,
     AreaOverlay,
     CombatMap,
     CombatantToken,
@@ -311,6 +313,11 @@ export class CombatMapCard {
   }
   protected readonly emptyLayers = NO_LAYERS;
   protected readonly reachMeters = computed(() => metersFixed((this.reach()?.leftDft ?? 0) / 10));
+  /** A rider sits on a mount that is on the map: the legend names the pair's mark. */
+  protected readonly hasMounted = computed(() => {
+    const placed = this.encounter().combatants.filter((c) => c.placed);
+    return placed.some((c) => c.mountedOnId && placed.some((m) => m.id === c.mountedOnId));
+  });
   protected readonly hasHidden = computed(() => this.encounter().combatants.some((c) => c.hidden));
   /** A player's creature has a square on the map: the legend names the dashed round token. */
   protected readonly hasCreatures = computed(() =>

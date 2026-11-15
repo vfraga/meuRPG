@@ -146,17 +146,19 @@
     }
 
     @for (c of shown(); track c.id) {
+     @if (!pair.rides(c)) {
       <span
         class="cm__tk"
         [attr.data-id]="c.id"
         [class.cm__tk--movable]="movable(c)"
-        [class.cm__tk--current]="c.id === currentId()"
+        [class.cm__tk--current]="pair.isCurrent(c)"
+        [class.cm__tk--pair]="!!pair.riderOf(c)"
         [class.cm__tk--dim]="layer.dim(c.id)"
         [style.left.%]="centerX(c)"
         [style.top.%]="centerY(c)"
         [style.--span]="span(c)"
       >
-        @if (c.id === currentId() && showTurn()) {
+        @if (pair.isCurrent(c) && showTurn()) {
           <span class="cm__turn" [class]="'cm__turn cm__turn--' + turnSide(c) + layer.turnLean(c)">Vez</span>
         }
         <app-combatant-token
@@ -165,13 +167,21 @@
           [creature]="creature(c)"
           [hidden]="c.hidden"
           [defeated]="c.defeated"
-          [current]="c.id === currentId()"
+          [current]="pair.isCurrent(c)"
           [mine]="c.mine"
           [marked]="c.conditions.length > 0"
           [onMap]="true"
           size="calc(var(--cm-tk) * var(--span, 1))"
         />
+        @if (pair.riderOf(c); as r) {
+          <!-- The rider rides on the mount's token: its initial in a small disc top right and the saddle under it (588-04). -->
+          <span class="cm__rider" aria-hidden="true">
+            <app-combatant-token [initial]="initial(r)" [npc]="npc(r)" [creature]="creature(r)" [defeated]="r.defeated" [mine]="r.mine" size="calc(var(--cm-tk) * 0.5)" />
+          </span>
+          <app-saddle-icon class="cm__saddle" />
+        }
       </span>
+     }
     }
     @if (pick()) {
       @for (c of shown(); track c.id) {

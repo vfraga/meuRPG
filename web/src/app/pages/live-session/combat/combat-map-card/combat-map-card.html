@@ -374,6 +374,9 @@
           />Derrotado
         </li>
       }
+      @if (hasMounted()) {
+        <li><app-saddle-icon />Montado</li>
+      }
       <li>
         <app-combatant-token initial="P" [current]="true" [onMap]="true" [size]="18" />{{
           isMaster() ? 'Vez' : 'Vez (o anel grená e a palavra)'
