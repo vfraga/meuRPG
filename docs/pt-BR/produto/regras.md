@@ -632,7 +632,7 @@ O par ocupa um só lugar, o quadrado da montaria, e o turno da montaria continua
   Num combate que tem a montaria, qualquer um dos dois custa a ação do dono; o mestre e a dispensa fora do combate são gratuitos.
   Com 0 PV a montaria desaparece e o vínculo fica, então uma nova conjuração a traz de volta.
   A Inteligência da montaria é no mínimo 6, e nenhum efeito lê um valor menor.
-  O conjurador escolhe celestial, feérico ou ínfero; só o dono e o mestre leem a escolha.
+  O conjurador escolhe celestial, fada ou ínfero; só o dono e o mestre leem a escolha.
   Uma magia que mira só o conjurador também pode alcançar a montaria (`also_steed`) enquanto ele a cavalga: um efeito duradouro cai nos dois, e qualquer outra magia deixa uma nota de texto.
 - O jogador lê o vínculo entre duas criaturas só quando vê as duas; uma montaria escondida deixa o cavaleiro como se estivesse sozinho, e nenhum jogador lê a marca do mestre nem a rolagem de outro.
 

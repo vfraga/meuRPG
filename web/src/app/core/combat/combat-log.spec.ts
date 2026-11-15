@@ -987,7 +987,7 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
     expect(line).toMatchObject({ actor: 'Toren', icon: 'door_open', text: ' abriu a porta' });
   });
 
-  it('writes "Toren montou em Pônei" and "Toren desmontou de Pônei": the rider, then the sentence with the mount', () => {
+  it('writes "Toren montou no Pônei" and "Toren desmontou do Pônei": the rider, then the sentence with the mount', () => {
     const mounted = logLine(
       entry({
         kind: CombatLogKind.MOUNTED,
@@ -995,7 +995,7 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
         targetLabel: 'Pônei',
       } as never),
     );
-    expect(mounted).toMatchObject({ actor: 'Toren', text: ' montou em Pônei' });
+    expect(mounted).toMatchObject({ actor: 'Toren', text: ' montou no Pônei' });
     const dismounted = logLine(
       entry({
         kind: CombatLogKind.DISMOUNTED,
@@ -1003,7 +1003,11 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
         targetLabel: 'Pônei',
       } as never),
     );
-    expect(dismounted).toMatchObject({ actor: 'Toren', text: ' desmontou de Pônei' });
+    expect(dismounted).toMatchObject({ actor: 'Toren', text: ' desmontou do Pônei' });
+    const onAFeminine = logLine(
+      entry({ kind: CombatLogKind.MOUNTED, actorLabel: 'Toren', targetLabel: 'Aranha' } as never),
+    );
+    expect(onAFeminine).toMatchObject({ text: ' montou na Aranha' });
   });
 
   it('writes "Toren se segurou" and "Toren caiu da montaria": the numbers only where the server sent them (RN-10)', () => {
@@ -1045,7 +1049,7 @@ describe('the log of spells, reactions, the fallen and conditions', () => {
     );
     expect(thrown).toMatchObject({
       actor: 'Toren',
-      text: ' caiu da montaria (7 + 2 = 9, CD 10) e parou em (6, 7), sem lugar ao lado de Pônei',
+      text: ' caiu da montaria (7 + 2 = 9, CD 10) e parou no quadrado livre mais perto: não havia lugar ao lado do Pônei',
     });
     const thrownForOthers = logLine(
       entry({
