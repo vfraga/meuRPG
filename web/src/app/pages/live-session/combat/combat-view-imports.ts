@@ -13,6 +13,7 @@ import { HitRiderCard } from './hit-rider/hit-rider-card';
 import { RageQuestion } from './rage-end/rage-question';
 import { InspirationCard } from './inspiration-card/inspiration-card';
 import { ContestMaster } from './contest-master/contest-master';
+import { ReadiedFold } from './readied-fold/readied-fold';
 import { ReactionQueue } from './reaction-queue/reaction-queue';
 import { LegendaryOffers } from './legendary-card/legendary-offers';
 import { LegendaryNote } from './legendary-card/legendary-note';
@@ -120,6 +121,7 @@ export const COMBAT_VIEW_IMPORTS = [
   LegendaryOffers,
   LegendaryNote,
   ContestMaster,
+  ReadiedFold,
   SurpriseCard,
   TurnBar,
   TrapDamages,

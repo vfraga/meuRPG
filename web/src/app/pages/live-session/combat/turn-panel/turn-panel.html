@@ -167,6 +167,10 @@
             Sua reação: {{ me.reactionUsed ? 'Usada até o começo do seu próximo turno' : 'Disponível' }}.
           </p>
         }
+        @if (readied(); as held) {
+          <!-- The readied action, read off the turn (#582, 582-03): no button, the master decides when the trigger happens. -->
+          <app-readied-card class="turn__readied" [readied]="held" [combatants]="encounter().combatants" [reactionUsed]="me.reactionUsed" />
+        }
         <app-turn-reaction [opportunities]="opportunities()" (opportunity)="opportunity.emit($event)" />
       }
     }

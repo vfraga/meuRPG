@@ -46,7 +46,7 @@ export function logGroups(
 ): LogGroup[] {
   return rounds.map((r) => {
     const lines = r.entries
-      .map((e) => byMaster(e, logLine(e, encounterName, ctx)))
+      .map((e, i) => byMaster(e, logLine(e, encounterName, ctx, r.entries[i + 1])))
       .filter((l): l is LogLine => l !== null);
     if (r.round > 1) {
       lines.push({
@@ -102,7 +102,9 @@ function attackUndoDamage(e: CombatLogEntry): string {
   if (e.outcome === AttackOutcome.MISS) {
     return ' (errou)';
   }
-  return e.damage && e.damage.status !== PendingDamageStatus.AWAITING_ROLL
+  return e.damage &&
+    e.damage.status !== PendingDamageStatus.AWAITING_ROLL &&
+    e.damage.status !== PendingDamageStatus.AWAITING_GROUP_SUM
     ? ` (${e.damage.amount} de dano)`
     : '';
 }

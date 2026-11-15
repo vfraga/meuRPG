@@ -90,7 +90,7 @@ describe('PendingDamages: the parts of a rolled damage and its resistance steps'
 
   it('shows a row for each part and the resistance step, and applies the damage after it', () => {
     const { el, plain, button } = setup();
-    expect(el.querySelectorAll('tbody tr')).toHaveLength(2);
+    expect(el.querySelectorAll('ul.rows > li')).toHaveLength(2);
     expect(plain()).toContain('Resistência a fogo (tiefling): 10 → 5');
     expect(button('Aplicar 5 de dano')).toBeTruthy();
   });

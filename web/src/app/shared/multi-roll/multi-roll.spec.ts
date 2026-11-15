@@ -181,3 +181,18 @@ describe('MultiRoll: fields with a hint, a note and a verb for the answer', () =
     expect(el.querySelectorAll('input')[0].getAttribute('aria-invalid')).toBe('false');
   });
 });
+
+describe('MultiRoll formula line', () => {
+  it('writes the sum out once the number is typed, never before', () => {
+    const { fixture, el, button, type } = setup({
+      fields: [{ key: 'a', label: 'Soma', min: 1, max: 6 }],
+      typing: true,
+      formula: (n: number) => ({ text: `Dano: ${n} + 3 = ${n + 3}`, total: n + 3 }),
+    });
+    expect(el.querySelector('.type__formula')).toBeNull();
+    type(0, '4');
+    fixture.detectChanges();
+    expect(el.querySelector('.type__formula')!.textContent).toContain('Dano: 4 + 3 = 7');
+    expect(button('Confirmar')).toBeTruthy();
+  });
+});

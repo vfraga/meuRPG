@@ -3,10 +3,11 @@ import { CombatCombatantCalls } from './combat-client-combatant';
 import { CombatFeatureCalls } from './combat-client-feature';
 import { CombatAttackCalls } from './combat-client-attack';
 import { CombatMoveCalls } from './combat-client-move';
+import { CombatReadyCalls } from './combat-client-ready';
 import { CombatTurnCalls } from './combat-client-turn';
 import { type CombatClient } from './combat-client';
 
-type PartName = 'turn' | 'moves' | 'attacks' | 'casts' | 'combatants' | 'features';
+type PartName = 'turn' | 'moves' | 'attacks' | 'casts' | 'combatants' | 'features' | 'ready';
 
 const PARTS: Record<PartName, { prototype: object }> = {
   turn: CombatTurnCalls,
@@ -15,6 +16,7 @@ const PARTS: Record<PartName, { prototype: object }> = {
   casts: CombatCastCalls,
   combatants: CombatCombatantCalls,
   features: CombatFeatureCalls,
+  ready: CombatReadyCalls,
 };
 
 /** The part of `CombatClient` that holds a call, or `undefined` for a name no part has. */
@@ -36,6 +38,7 @@ export function fakeCombatClient(calls: object): CombatClient {
     casts: {},
     combatants: {},
     features: {},
+    ready: {},
   };
   for (const [name, call] of Object.entries(calls)) {
     const part = combatPartOf(name);
@@ -56,5 +59,6 @@ export function anyCallCombatClient(answer: (call: string) => unknown): CombatCl
     casts: part(),
     combatants: part(),
     features: part(),
+    ready: part(),
   } as unknown as CombatClient;
 }

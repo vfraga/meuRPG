@@ -7,11 +7,16 @@
 # lint, format check and dependency rules (depcruise) for web/, the e2e lint for e2e/. A preflight starts only at `ready:`, so it
 # then never fails on lint or format alone. Before a branch's first `ready:`, every other push
 # (progress commits, work in between) passes untouched, so a session's signs of life never wait on
-# unfinished code; so do pushes to status/* and pr-screenshots, and branch deletions.
+# unfinished code; so do pushes to status/*, wip/* and pr-screenshots, and branch deletions.
 #
 # Once the remote branch carries `ready: <branch>`, it has a preflight PR, and every push to it runs
 # CI and cancels the run in progress. A push to it without a new `ready:` is refused: the work in
-# between stays local, and status commits go to status/<area>.
+# between goes to wip/<branch>, and status commits go to status/<area>.
+#
+# wip/<branch> is the backup of work no preflight should see yet: the commits between two `ready:`
+# rounds, and a branch stacked on another branch's `ready:`. A container can be reset between turns,
+# and a reset loses what the fork does not have. Push it after every commit:
+# `git push origin HEAD:refs/heads/wip/<branch>`. No PR reads a wip/ branch, so it runs no CI.
 #
 # A failed check stops the push and prints the check's last lines. Fix them and push again; never
 # push with --no-verify.
@@ -26,7 +31,7 @@ head=$(git rev-parse HEAD)
 git fetch -q origin main || { echo "pre-push: git fetch origin main failed" >&2; exit 1; }
 lint=0
 while read -r _ local_sha remote_ref remote_sha; do
-  case "$remote_ref" in refs/heads/status/* | refs/heads/pr-screenshots) continue ;; esac
+  case "$remote_ref" in refs/heads/status/* | refs/heads/wip/* | refs/heads/pr-screenshots) continue ;; esac
   [ "$local_sha" = "$zero" ] && continue
   base=$remote_sha
   [ "$base" = "$zero" ] && base=origin/main
@@ -36,7 +41,7 @@ while read -r _ local_sha remote_ref remote_sha; do
     branch=${remote_ref#refs/heads/}
     if [ "$remote_sha" != "$zero" ] &&
       grep -qxF "ready: $branch" <<<"$(git log --format=%s "origin/main..$remote_sha" 2>/dev/null)"; then
-      echo "pre-push: $branch has a preflight (it carries ready: $branch), so every push to it runs CI. Push it again only with a new ready: commit, which runs the linters first. Keep the work in between local, and put status commits on status/<your area>." >&2
+      echo "pre-push: $branch has a preflight (it carries ready: $branch), so every push to it runs CI. Push it again only with a new ready: commit, which runs the linters first. Back the work in between up with git push origin HEAD:refs/heads/wip/$branch, and put status commits on status/<your area>." >&2
       exit 1
     fi
     continue

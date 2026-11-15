@@ -4,6 +4,13 @@ import { damageFormula, extraDiceOf } from '../../../../core/combat/combat-dice'
 import { criticalSentence, criticalSum, brutalTyped } from '../../../../core/combat/critical';
 import { isTradePart } from '../../../../core/combat/power-attack-trade';
 import { activeParts, rollFormula } from '../../../../core/combat/damage-parts';
+import {
+  awaitedSumOf,
+  keptRowsOf,
+  removalFor,
+  sumFormula,
+} from '../../../../core/combat/group-take-out';
+import { article } from '../../../../core/format/article';
 import { typedBonusLine, typedFields } from '../../../../core/combat/typed-fields';
 import type { RollField } from '../../../../shared/multi-roll/multi-roll';
 import {
@@ -59,6 +66,40 @@ export class AttackDamage {
     const d = this.s.damage();
     return d?.roll ? damageFormula(d.roll, d.damageTypePt, extraDiceOf(d), d.criticalMax) : '';
   });
+  /** The master took an extra out of a group: the one sum this damage awaits, and what stays (`AWAITING_GROUP_SUM`). */
+  readonly awaited = computed(() => {
+    const p = this.s.pending();
+    return p ? awaitedSumOf(p) : null;
+  });
+  readonly kept = computed(() => {
+    const p = this.s.pending();
+    return this.awaited() && p ? keptRowsOf(p) : [];
+  });
+  /** The part the master took out, as the log read by the attacker's player says it, with the reason. */
+  readonly removal = computed(() => {
+    const p = this.s.pending();
+    return p ? removalFor(p, this.s.data.state.removals()) : undefined;
+  });
+  /** "O mestre tirou o Ataque Furtivo: “motivo”. Digite de novo só a soma de perfurante." */
+  readonly groupNotice = computed(() => {
+    const a = this.awaited();
+    const r = this.removal();
+    if (!a) {
+      return '';
+    }
+    const what = r ? `${article(r.name)} ${r.name}` : 'um extra';
+    return `O mestre tirou ${what}${r?.reason ? `: “${r.reason}”` : ''}. Digite de novo só a soma de ${a.typePt}.`;
+  });
+  /** "Dano: 4 + 3 + 6 de frio = 13", and the total, as the sum is typed. */
+  readonly groupFormula = computed(() => {
+    const a = this.awaited();
+    const kept = this.kept();
+    return a ? (sum: number) => sumFormula(a, kept, sum) : null;
+  });
+  /** What the hit points of the target never carry: the total without the typed sum, added to it by the field. */
+  readonly groupModifier = computed(
+    () => (this.awaited()?.flat ?? 0) + this.kept().reduce((n, k) => n + k.total, 0),
+  );
   /** The typed sum's live total with the groups, only for the damage with extra dice. */
   readonly typedFormula = computed(() => {
     const b = this.brutal();

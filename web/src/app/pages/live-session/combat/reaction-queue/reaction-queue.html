@@ -350,40 +350,78 @@
         @if (row.status) {
           <p class="row__status" [id]="uid + row.window.id + '-why'">{{ row.status }}</p>
         }
-        @if (autoLeft()[row.window.id] !== undefined) {
+        @if (row.readied) {
+          <p class="row__status" [id]="uid + row.window.id + '-wait'">
+            {{ row.readied.waits }}@if (autoLeft()[row.window.id] !== undefined) {
+              · {{ autoText(autoLeft()[row.window.id]).toLowerCase() }}
+            }
+          </p>
+          @if (row.readied.useOff) {
+            <p class="row__status" [id]="uid + row.window.id + '-off'">{{ row.readied.useOff }}</p>
+          }
+        } @else if (autoLeft()[row.window.id] !== undefined) {
           <p class="row__status">
             {{ row.window.rolling ? rollingText(autoLeft()[row.window.id]) : autoText(autoLeft()[row.window.id]) }}
           </p>
         }
         <ng-container *ngTemplateOutlet="slotsTpl; context: { row: row }" />
+        @if (row.readied?.aims && row.answerNow && aim.held(row); as held) {
+          <app-readied-aim
+            [campaignId]="campaignId()"
+            [encounterId]="encounter().id"
+            [reactorId]="row.window.reactorId"
+            [readied]="held"
+            [encounter]="encounter()"
+            failedText="Dá para deixar passar."
+            [need]="aim.needOf(row)"
+            (needChange)="aim.setNeed(row, $event)"
+            [target]="aim.targetOf(row)"
+            (targetChange)="aim.setTarget(row, $event)"
+          />
+        }
         <div class="btns">
-          <button
-            matButton="outlined"
-            type="button"
-            class="btn"
-            [class.btn--off]="!row.answerNow"
-            [attr.data-initial]="row.answerNow ? '' : null"
-            [disabled]="busy() || !row.answerNow"
-            disabledInteractive
-            [attr.aria-describedby]="row.status ? uid + row.window.id + '-why' : null"
-            (click)="use(row)"
-          >
-            {{ row.useLabel }}
-          </button>
-          <button
-            matButton="outlined"
-            type="button"
-            class="btn"
-            [class.btn--off]="!row.answerNow"
-            [disabled]="busy() || !row.answerNow"
-            disabledInteractive
-            [attr.aria-describedby]="row.status ? uid + row.window.id + '-why' : null"
-            (click)="pass(row.window)"
-          >
-            {{ row.passLabel }}
-          </button>
+          @if (row.readied) {
+            <!-- A readied action: the safe answer ("Deixar passar") comes first, as on the player's own prompt (582-05). -->
+            <ng-container *ngTemplateOutlet="passTpl; context: { row: row }" />
+            <ng-container *ngTemplateOutlet="useTpl; context: { row: row }" />
+          } @else {
+            <ng-container *ngTemplateOutlet="useTpl; context: { row: row }" />
+            <ng-container *ngTemplateOutlet="passTpl; context: { row: row }" />
+          }
         </div>
       </div>
+    </ng-template>
+
+    <ng-template #useTpl let-row="row">
+      <button
+        matButton="outlined"
+        type="button"
+        class="btn"
+        [class.btn--off]="aim.useOff(row)"
+        [attr.data-initial]="row.answerNow && !row.readied ? '' : null"
+        [disabled]="busy() || aim.useOff(row)"
+        disabledInteractive
+        [attr.aria-describedby]="describedBy(row, true)"
+        (click)="use(row)"
+      >
+        {{ row.useLabel }}
+      </button>
+    </ng-template>
+
+    <ng-template #passTpl let-row="row">
+      <button
+        matButton="outlined"
+        type="button"
+        class="btn"
+        [class.btn--off]="!row.answerNow"
+        [attr.data-initial]="row.answerNow && row.readied ? '' : null"
+        [disabled]="busy() || !row.answerNow"
+        disabledInteractive
+        [attr.aria-describedby]="describedBy(row, false)"
+        (click)="pass(row.window)"
+      >
+        {{ row.passLabel }}
+      </button>
     </ng-template>
 
     <ng-template #slotsTpl let-row="row">

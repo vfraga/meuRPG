@@ -174,6 +174,7 @@ export class CombatView extends CombatViewPartsDirective {
       }
       untracked(() => void this.log.load(this.api, campaignId, e.id, this.state().takeLogFull()));
     });
+    // The parts the master took out of a damage, read from the log: the reason of a part is not on the damage itself.
     // What a turn said is not carried into the next one.
     let turnOf = '';
     effect(() => {

@@ -45,7 +45,7 @@ export interface AttackOpen {
 export interface CombatSheetsContext {
   readonly dialog: MatDialog;
   readonly bottomSheet: MatBottomSheet;
-  readonly api: Pick<CombatClient, 'attacks' | 'moves' | 'features'>;
+  readonly api: Pick<CombatClient, 'attacks' | 'moves' | 'features' | 'ready'>;
   readonly creatures: Pick<CreaturesClient, 'summonOptions'>;
   readonly catalog: Pick<SpellCatalog, 'details'>;
   readonly campaignId: () => string;

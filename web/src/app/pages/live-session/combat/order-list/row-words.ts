@@ -56,7 +56,7 @@ export function rowDetail(
   info: CombatantInfo | undefined,
   shielded: boolean,
 ): string {
-  const ac = c.armorClass === undefined || shielded ? '' : `CA ${c.armorClass}`;
+  const ac = c.armorClass === undefined || shielded ? '' : `CA\u00a0${c.armorClass}`; // no-break: the line wraps beside "Preparada" between its parts, not inside one
   if (isCreature(c)) {
     const kind = kindWord(c);
     return [kind === 'Criatura' ? '' : kind, ac, ofOwner(encounter, c)].filter(Boolean).join(' · ');

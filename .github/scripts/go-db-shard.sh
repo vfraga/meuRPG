@@ -49,8 +49,8 @@ case_packages() {
     characters) echo "$module/internal/characters $module/internal/progression" ;;
     # The CPU-bound pure packages, kept off the runners of the database ones: rules (split
     # above, in rules-1 to rules-3), dungeon with puzzle, and the subpackages of play that hold pure
-    # logic (play/advantage).
-    dungeon) echo "$module/internal/rules/dungeon $module/internal/rules/puzzle $module/internal/play/advantage" ;;
+    # logic (play/advantage, play/damagesteps).
+    dungeon) echo "$module/internal/rules/dungeon $module/internal/rules/puzzle $module/internal/play/advantage $module/internal/play/damagesteps" ;;
     rest) echo "" ;;
     *) echo "unknown group: $1" >&2; return 1 ;;
   esac

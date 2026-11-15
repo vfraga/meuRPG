@@ -1518,6 +1518,15 @@ describe('the log of states, roll modes and damage parts', () => {
     expect(hidden?.text).toBe('O mestre tirou o Ataque Furtivo');
   });
 
+  it('reads a removal the way the other players get it: the part by its name, "outra fonte" for a hidden one', () => {
+    expect(
+      line(entry({ kind: CombatLogKind.DAMAGE_PART_REMOVED, keyNamePt: 'Ataque Furtivo' }))?.text,
+    ).toBe('O mestre tirou o Ataque Furtivo');
+    expect(
+      line(entry({ kind: CombatLogKind.DAMAGE_PART_REMOVED, keyNamePt: 'Outra fonte' }))?.text,
+    ).toBe('O mestre tirou outra fonte');
+  });
+
   it('shows the d20 pair of an attack with the counted one, and the mode against the suggestion', () => {
     const l = line(
       entry({

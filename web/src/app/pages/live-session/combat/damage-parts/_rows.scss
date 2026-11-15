@@ -1,0 +1,84 @@
+/* The rows of a damage by part: the master's take-out card and the card that waits for a sum read the same list. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mr-rule);
+  font-size: var(--mr-font-15);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.row__name {
+  font-weight: 700;
+}
+
+.row__formula {
+  font-size: var(--mr-font-14);
+  color: var(--mr-ink-muted);
+}
+
+.row__num {
+  grid-column: 2;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.row .take {
+  grid-column: 3;
+}
+
+.row--group {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+/* A part of a typed group: indented under the head with a rule on the left and a short stub to its name. */
+.row--child {
+  position: relative;
+  margin-left: 12px;
+  padding-left: 16px;
+  border-left: 2px solid var(--mr-control-line);
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 22px;
+    width: 8px;
+    border-top: 2px solid var(--mr-control-line);
+  }
+
+  .row__name {
+    font-weight: 400;
+  }
+
+  .take {
+    grid-column: 3;
+  }
+}
+
+.row--asked {
+  background: var(--mr-danger-surface);
+}

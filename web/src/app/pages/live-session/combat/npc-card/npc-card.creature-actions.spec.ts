@@ -89,6 +89,8 @@ async function open(blocks: Record<string, ReturnType<typeof create<typeof Creat
   fixture.componentRef.setInput('subject', npc);
   fixture.componentRef.setInput('state', {
     apply: vi.fn(),
+    removals: () => [],
+    saves: () => [],
     encounter: () => enc,
   } as unknown as CombatState);
   fixture.componentRef.setInput('theatre', true);

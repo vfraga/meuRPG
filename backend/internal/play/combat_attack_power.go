@@ -11,6 +11,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -48,9 +49,9 @@ func (p *powerAttackEvent) logView(owner bool) *playv1.CombatLogPowerAttack {
 }
 
 // powerNameForOthers is the name of the trade's feature as another player reads it: "Outra fonte" when the feature is
-// hidden from the players, through the same path as every hidden source of a damage (hidingNames).
+// hidden from the players, through the same path as every hidden source of a damage (damagesteps.HidingNames).
 func powerNameForOthers(hidden bool, key, name string) string {
-	return hidingNames(func(string) string { return name }, []combat.Modifier{{Source: key, Hidden: hidden}})(key)
+	return damagesteps.HidingNames(func(string) string { return name }, []combat.Modifier{{Source: key, Hidden: hidden}})(key)
 }
 
 // powerPart is the automatic part the trade adds to the damage of a hit: its flat number, of the weapon's damage type,

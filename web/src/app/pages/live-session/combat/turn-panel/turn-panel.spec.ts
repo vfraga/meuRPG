@@ -2,7 +2,12 @@ import { TestBed } from '@angular/core/testing';
 
 import { textOf } from '../../../../core/format/text-testing';
 
-import { CombatantKind, CombatantState } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  CombatantKind,
+  CombatantState,
+  ReadiedKind,
+  ReadiedStatus,
+} from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { TurnPanel } from './turn-panel';
 
@@ -53,6 +58,38 @@ describe('TurnPanel', () => {
     const el = text({ currentCombatantId: 'cap', combatants: dead });
     expect(el.textContent).not.toContain('Sua reação');
     expect(el.textContent).not.toContain('Ataque de oportunidade');
+  });
+
+  const readied = (status = ReadiedStatus.WAITING) => ({
+    id: 'r1',
+    triggerText: 'Quando o zumbi passar pela porta',
+    kind: ReadiedKind.ATTACK,
+    actionNamePt: 'Espada longa',
+    targetCombatantId: 'g1',
+    status,
+  });
+
+  it('shows the readied action off the turn as a card with no button, and says the reaction is free (#582)', () => {
+    const held = order.map((c) => (c.id === 'pen' ? { ...c, readied: readied() } : c));
+    const el = text({ currentCombatantId: 'cap', combatants: held as never });
+    const card = el.querySelector('app-readied-card')!;
+    expect(card).toBeTruthy();
+    expect(card.textContent).toContain('Espada longa no Goblin 1');
+    expect(card.textContent).toContain('“Quando o zumbi passar pela porta”');
+    expect(card.textContent).toContain('Esperando o gatilho · reação livre');
+    expect(card.querySelector('button')).toBeNull();
+  });
+
+  it('shows no card when the readied action is over (#582)', () => {
+    const lost = order.map((c) =>
+      c.id === 'pen' ? { ...c, readied: readied(ReadiedStatus.LOST) } : c,
+    );
+    expect(
+      text({ currentCombatantId: 'cap', combatants: lost as never }).querySelector(
+        'app-readied-card',
+      ),
+    ).toBeNull();
+    expect(text({ currentCombatantId: 'cap' }).querySelector('app-readied-card')).toBeNull();
   });
 
   it('names another one on turn and says the player is next', () => {

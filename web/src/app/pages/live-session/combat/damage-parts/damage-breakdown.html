@@ -1,74 +1,117 @@
 @if (rolls().length > 1 || steps().length) {
   @if (master()) {
     @if (rolls().length > 1) {
-    <table class="table">
-      <caption class="mr-visually-hidden">Dano por parte</caption>
-      <thead>
-        <tr>
-          <th scope="col">Parte</th>
-          <th scope="col">Dados</th>
-          <th scope="col" class="num">Total</th>
-          <th scope="col"><span class="mr-visually-hidden">Ação</span></th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (r of rolls(); track r.partKey) {
-          <tr [class.row--off]="!r.counted">
-            <th scope="row">
-              {{ r.labelPt }}
-              @if (!r.counted) {
-                <span class="off">não conta</span>
+      <ul class="rows" aria-label="Dano por parte">
+        @for (row of rows(); track row.key) {
+          @if (row.kind === 'group') {
+            <li class="row row--group">
+              <span class="row__main">
+                <b class="row__name">{{ row.label }}</b>
+                <small class="row__formula">{{ row.formula }}</small>
+              </span>
+              <span class="row__num">{{ row.total }}</span>
+            </li>
+          } @else if (row.roll; as r) {
+            <li class="row" [class.row--off]="!r.counted" [class.row--child]="row.kind === 'child'" [class.row--asked]="asking() === r.partKey">
+              <span class="row__main">
+                <b class="row__name">
+                  {{ r.labelPt }}
+                  @if (autoKeys().has(r.partKey)) {
+                    <span class="off">automático</span>
+                  }
+                  @if (!r.counted) {
+                    <span class="off">não conta</span>
+                  }
+                </b>
+                <small class="row__formula">
+                  {{ row.kind === 'child' ? row.formula : formula(r) }}
+                  @if (rerolls(r)) {
+                    <span class="re">{{ rerolls(r) }}</span>
+                  }
+                  @if (r.riderPt) {
+                    <span class="re rider">{{ r.riderPt }}</span>
+                  }
+                </small>
+              </span>
+              @if (row.kind !== 'child') {
+                <span class="row__num">{{ r.counted ? r.sum + r.flat : 0 }}</span>
               }
-            </th>
-            <td>
-              {{ formula(r) }}
-              @if (rerolls(r)) {
-                <span class="re">{{ rerolls(r) }}</span>
-              }
-              @if (r.riderPt) {
-                <span class="re rider">{{ r.riderPt }}</span>
-              }
-            </td>
-            <td class="num">{{ r.counted ? r.sum + r.flat : 0 }}</td>
-            <td class="act">
               @if (removable().has(r.partKey) && r.counted) {
                 <button
+                  #take
                   matButton="outlined"
                   type="button"
                   class="take"
-                  [attr.aria-label]="'Tirar o ' + r.labelPt"
+                  [attr.data-part]="r.partKey"
+                  [attr.aria-label]="'Tirar ' + the(r.labelPt)"
                   [disabled]="busy()"
                   (click)="ask(r)"
                 >
                   Tirar
                 </button>
               }
-            </td>
-          </tr>
+            </li>
+          }
         }
-      </tbody>
-    </table>
+      </ul>
     }
     @if (asked(); as r) {
       <form class="ask" role="alertdialog" [attr.aria-labelledby]="id + '-q'" (submit)="$event.preventDefault(); confirm()">
-        <p class="ask__q" [id]="id + '-q'">{{ question(r) }}</p>
-        <label class="ask__label" [for]="id + '-r'">Motivo (aparece no registro)</label>
-        <input
-          #reasonField
-          [id]="id + '-r'"
-          class="ask__field"
-          type="text"
-          maxlength="120"
-          autocomplete="off"
-          [value]="reason()"
-          [attr.aria-describedby]="id + '-h'"
-          (input)="onReason($event)"
-        />
-        <span class="ask__hint" [id]="id + '-h'">{{ reason().trim().length }}/120 · É ficção; não escreva dados reais de pessoas.</span>
+        <p class="ask__q" [id]="id + '-q'">{{ plan()?.title ?? question(r) }}</p>
+        <mat-form-field appearance="outline" class="ask__form" [class.ask__form--bad]="reasonMissing()" subscriptSizing="dynamic">
+          <mat-label>Motivo (aparece no registro)</mat-label>
+          <input
+            #reasonField
+            matInput
+            [id]="id + '-r'"
+            class="ask__field"
+            type="text"
+            maxlength="120"
+            autocomplete="off"
+            [value]="reason()"
+            [attr.aria-invalid]="reasonMissing()"
+            [attr.aria-describedby]="reasonMissing() ? id + '-e ' + id + '-h' : id + '-h'"
+            [readOnly]="sending()"
+            (input)="onReason($event)"
+            (blur)="touched.set(true)"
+          />
+        </mat-form-field>
+        <div class="ask__sub">
+          <span class="ask__hint" [id]="id + '-h'">
+            @if (reasonMissing()) {
+              <span class="ask__error" [id]="id + '-e'"><mat-icon aria-hidden="true">error</mat-icon>Escreva o motivo, com até 120 caracteres.</span>
+            } @else {
+              É ficção; não escreva dados reais de pessoas.
+            }
+          </span>
+          <span class="ask__count">{{ reason().trim().length }}/120</span>
+        </div>
+        @if (plan(); as p) {
+          @if (p.notice) {
+            <p class="ask__notice"><mat-icon aria-hidden="true">casino</mat-icon>{{ p.notice }}</p>
+          }
+          @if (p.lines.length) {
+            <ul class="ask__list" aria-label="O que tirar a parte desfaz">
+              @for (line of p.lines; track $index) {
+                <li><mat-icon aria-hidden="true">{{ $last ? 'casino' : 'undo' }}</mat-icon>{{ line }}</li>
+              }
+            </ul>
+          }
+        }
+        @if (error()) {
+          <p class="ask__banner" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ error() }}</p>
+        }
         <div class="ask__buttons">
-          <button matButton="outlined" type="button" (click)="asking.set(null)">Voltar</button>
-          <button matButton="outlined" type="submit" class="ask__danger" [disabled]="!reasonOk() || busy()" disabledInteractive>
-            Tirar
+          <button matButton="outlined" type="button" class="ask__back" [class.ask__off]="sending()" [disabled]="sending()" disabledInteractive (click)="back()">Voltar</button>
+          <button
+            matButton="outlined"
+            type="submit"
+            class="ask__danger"
+            [class.ask__off]="!reasonOk() || busy()"
+            [disabled]="!reasonOk() || busy()"
+            disabledInteractive
+          >
+            {{ sending() ? 'Tirando…' : (plan()?.confirm ?? 'Tirar') }}
           </button>
         </div>
       </form>

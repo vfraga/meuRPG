@@ -6,7 +6,93 @@
     @if (it.zoneLabel) {
       <p class="dmg__trap" data-testid="zone-part">{{ it.zoneLabel }}</p>
     }
-    @if (it.rolled) {
+    @if (it.awaitedSum; as sum) {
+      <!-- A part of a typed group was taken out (#835): what the damage did is undone, and the sum of that type alone is awaited. -->
+      <div class="dmg__head" #sumHead tabindex="-1">
+        <b class="dmg__title">{{ it.weapon }} no {{ it.target }}</b>
+        <span class="badge badge--wait"><mat-icon aria-hidden="true">hourglass_empty</mat-icon>Esperando {{ it.attacker }}</span>
+      </div>
+      <ul class="rows" aria-label="Dano por tipo">
+        <li class="row row--group">
+          <span class="row__main">
+            <b class="row__name">{{ it.typeTitle }}</b>
+            <small class="row__formula">{{ sum.dice }}{{ sum.flat ? ' + ' + sum.flat : '' }} · esperando a soma de {{ it.attacker }}</small>
+          </span>
+          <span class="row__num" aria-label="falta">—</span>
+        </li>
+        @for (x of sum.parts; track x.key) {
+          <li class="row row--child">
+            <span class="row__main">
+              <b class="row__name">{{ x.labelPt }}</b>
+              <small class="row__formula">{{ x.diceCount }}d{{ x.diceSides }}{{ x.flat ? ' + ' + x.flat : '' }}</small>
+            </span>
+          </li>
+        }
+        @for (t of it.takenOut; track t.name) {
+          <li class="row row--child row--off">
+            <span class="row__main">
+              <b class="row__name"><s>{{ t.name }}</s></b>
+              <small class="row__formula">tirado{{ t.reason ? ': “' + t.reason + '”' : '' }}</small>
+            </span>
+          </li>
+        }
+        @for (k of it.kept; track k.label) {
+          <li class="row row--group">
+            <span class="row__main">
+              <b class="row__name">{{ k.label }}@if (k.auto) { <span class="off">automático</span> }</b>
+              <small class="row__formula">{{ k.formula }} ({{ k.total }}) · {{ k.typePt }} · fica</small>
+            </span>
+            <span class="row__num">{{ k.total }}</span>
+          </li>
+        }
+        <li class="row row--group">
+          <span class="row__main"><b class="row__name">Total</b></span>
+          <b class="row__num">falta</b>
+        </li>
+      </ul>
+      <p class="dmg__why dmg__why--plain">
+        {{ it.attacker }} digita a soma de {{ sum.dice }} ({{ it.awaitedRange }}).{{ it.hpNote }}
+      </p>
+      <app-roll-picker
+        [canType]="true"
+        [outlined]="true"
+        [min]="sum.min"
+        [max]="sum.max"
+        [modifier]="sum.flat"
+        [(typing)]="typing"
+        [label]="sum.label"
+        [hint]="sum.hint"
+        totalNote="Soma"
+        [hideTotal]="true"
+        [appLabel]="'Rolar ' + sum.dice + ' no app'"
+        [typeLabel]="'Digitar por ' + it.attacker"
+        [busy]="busy()"
+        (app)="rollInApp(it.p)"
+        (typed)="rollTyped(it.p, $event)"
+      />
+    } @else if (it.applied) {
+      <div class="dmg__head">
+        <b class="dmg__title">{{ it.weapon }} no {{ it.target }}</b>
+        <span class="badge badge--ok"><mat-icon aria-hidden="true">check</mat-icon>Aplicado · {{ it.total }}</span>
+      </div>
+      <app-damage-breakdown
+        [master]="true"
+        [rolls]="it.rolls"
+        [steps]="it.steps"
+        [amount]="it.p.amount"
+        [amountAfterSteps]="it.p.amountAfterSteps"
+        [removable]="it.removable"
+        [typeNames]="it.typeNames"
+        [autoKeys]="it.autoKeys"
+        [plans]="it.plans"
+        [sending]="busy() && taking() === it.p.id"
+        [error]="takeError()?.id === it.p.id ? takeError()!.text : ''"
+        [busy]="busy()"
+        [ignored]="[]"
+        (remove)="takeOut(it.p, $event)"
+        (closed)="takeError.set(null)"
+      />
+    } @else if (it.rolled) {
       <div class="dmg__line">
         <span class="dmg__formula">{{ it.line }}</span>
         @if (it.effect) {
@@ -20,10 +106,16 @@
         [amount]="it.p.amount"
         [amountAfterSteps]="it.p.amountAfterSteps"
         [removable]="it.removable"
+        [typeNames]="it.typeNames"
+        [autoKeys]="it.autoKeys"
+        [plans]="it.plans"
+        [sending]="busy() && taking() === it.p.id"
+        [error]="takeError()?.id === it.p.id ? takeError()!.text : ''"
         [busy]="busy()"
         [ignored]="ignored()[it.p.id] ?? []"
         (ignoredChange)="setIgnored(it.p.id, $event)"
         (remove)="takeOut(it.p, $event)"
+        (closed)="takeError.set(null)"
       />
       @if (discarding() === it.p.id) {
         <div class="ask" role="alertdialog" data-confirm [attr.aria-label]="'Descartar o dano de ' + it.total">

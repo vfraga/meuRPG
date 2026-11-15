@@ -245,6 +245,7 @@
   <app-pending-damages
     (settledNote)="settledNote.emit()"
     [pendings]="isNpc() ? others() : pendings()"
+    [applied]="options()?.pendingDamages ?? []"
     [encounter]="encounter()"
     [campaignId]="campaignId()"
     [state]="state()"

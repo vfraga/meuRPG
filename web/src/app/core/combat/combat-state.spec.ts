@@ -488,4 +488,19 @@ describe('CombatState, the reaction windows that closed (PM-04)', () => {
     });
     expect(due('p')).toBe(false);
   });
+
+  it('keeps the removals the master just made before the log says them, newest first', () => {
+    const state = new CombatState();
+    const old = { attackerId: 'a', targetId: 't', key: 'rage', name: 'Fúria', reason: 'x' };
+    const fresh = {
+      attackerId: 'a',
+      targetId: 't',
+      key: 'sneak-attack',
+      name: 'Ataque Furtivo',
+      reason: 'y',
+    };
+    state.logged.set([old]);
+    state.noteRemoval(fresh);
+    expect(state.removals().map((r) => r.key)).toEqual(['sneak-attack', 'rage']);
+  });
 });

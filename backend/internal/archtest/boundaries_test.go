@@ -366,8 +366,9 @@ func reachable(edges map[string]map[string]string, from string) map[string]bool 
 // with the other play subpackages it may import. A subpackage that is not here, and is not one of
 // playSeamPackages, fails the test, so a new one is added on purpose with its place in the order.
 var playSubpackages = map[string][]string{
-	"advantage": {}, // the modes, the source kinds of the API and the sentence of each source
-	"steed":     {}, // the rules of Find Steed over plain values: the spells that reach the steed, its notes, the Intelligence floor
+	"advantage":   {}, // the modes, the source kinds of the API and the sentence of each source
+	"damagesteps": {}, // what a damage lands as after the target's modifiers, the stored steps and their text
+	"steed":       {}, // the rules of Find Steed over plain values: the spells that reach the steed, its notes, the Intelligence floor
 }
 
 // playSeamPackages are the subpackages of play that are not moved logic: the seam to other modules, the live hub, the

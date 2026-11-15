@@ -6,6 +6,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/play/advantage"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 )
 
@@ -149,7 +150,7 @@ func (e *logEntry) dressSteps(d *playv1.CombatLogDamage, master bool) {
 	if e.applied != nil {
 		ignored = e.applied.Ignored
 	}
-	d.Steps = stepsProto(e.dmg.Steps, ignored, names, dtPT, master)
+	d.Steps = damagesteps.Proto(e.dmg.Steps, ignored, names, dtPT, master)
 }
 
 // removalView is the master's removal of an extra, as a line for every reader: the master and the attacker's player read

@@ -14,6 +14,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
@@ -160,7 +161,7 @@ type removal struct {
 	ev     actionEvent
 	total  int32 // the roll's total, before the target's modifiers
 	amount int32 // the amount the pending damage keeps
-	land   landing
+	land   damagesteps.Landing
 }
 
 // workOutRemoval works the damage out again from the parts that still count, through the
@@ -168,8 +169,8 @@ type removal struct {
 func workOutRemoval(ctx context.Context, c *combatTx, p playdb.PendingDamage, attacker, target playdb.Combatant, partKey string, rolls []partRoll) (removal, error) {
 	byType, total := countedByType(rolls)
 	// The target's modifiers are the ones the roll used: the stored groups say them.
-	groups := readStepGroups(p.Steps)
-	land := settleSteps(byType, modsOfGroups(groups), nil, originOfGroups(groups))
+	groups := damagesteps.Read(p.Steps)
+	land := damagesteps.Settle(byType, damagesteps.Mods(groups), nil, damagesteps.Origin(groups))
 	amount := clamp32(total, 0, math.MaxInt32)
 	rem := removal{total: amount, amount: amount, land: land}
 	rem.ev = actionEvent{
@@ -178,8 +179,8 @@ func workOutRemoval(ctx context.Context, c *combatTx, p playdb.PendingDamage, at
 		PartHidden: slices.ContainsFunc(rolls, func(x partRoll) bool { return x.Key == partKey && x.Hide }),
 	}
 	landed := amount
-	if land.changed {
-		landed = land.amount
+	if land.Changed {
+		landed = land.Amount
 	}
 	rem.ev.Amount = landed
 	if holdsHP(target) && p.Status == pendingApplied {
@@ -197,11 +198,11 @@ func workOutRemoval(ctx context.Context, c *combatTx, p playdb.PendingDamage, at
 // removal's event with the reason and the amount the damage keeps.
 func keepRemoval(ctx context.Context, c *combatTx, p playdb.PendingDamage, parts []partRecord, rolls []partRoll, rem removal, reason string) (actionEvent, error) {
 	var after *int32
-	if rem.land.changed {
-		after = &rem.land.amount
+	if rem.land.Changed {
+		after = &rem.land.Amount
 	}
 	if err := c.q.SetPendingDamageAmount(ctx, playdb.SetPendingDamageAmountParams{
-		ID: p.ID, Amount: &rem.amount, RollTotal: &rem.total, Parts: mustJSON(parts), PartRolls: mustJSON(rolls), Steps: mustJSON(rem.land.groups), AfterSteps: after,
+		ID: p.ID, Amount: &rem.amount, RollTotal: &rem.total, Parts: mustJSON(parts), PartRolls: mustJSON(rolls), Steps: mustJSON(rem.land.Groups), AfterSteps: after,
 	}); err != nil {
 		return actionEvent{}, fmt.Errorf("keep the damage without the extra: %w", err)
 	}
@@ -314,21 +315,4 @@ func rolledPending(ctx context.Context, c *combatTx, id string) (playdb.PendingD
 		return p, errEncounter(playv1.EncounterBlockedReason_ENCOUNTER_BLOCKED_REASON_DAMAGE_NOT_ROLLED, "the damage was not rolled")
 	}
 	return p, nil
-}
-
-// modsOfGroups are the modifiers the stored steps were worked out with.
-func modsOfGroups(groups []stepGroup) []combat.Modifier {
-	var mods []combat.Modifier
-	for _, g := range groups {
-		mods = append(mods, g.Mods...)
-	}
-	return mods
-}
-
-// originOfGroups is where the damage of the stored steps came from: the same for every group.
-func originOfGroups(groups []stepGroup) combat.Origin {
-	if len(groups) == 0 {
-		return combat.Origin{}
-	}
-	return groups[0].From
 }

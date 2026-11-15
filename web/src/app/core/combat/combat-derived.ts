@@ -9,6 +9,7 @@ import {
   type Encounter,
   type GetMoveOptionsResponse,
   type GetTurnOptionsResponse,
+  type PendingDamage,
   PendingDamageStatus,
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { type FallNote, fallNote } from '../traps/trap-log';
@@ -104,13 +105,17 @@ export function opportunityAttacks(
   return reachingAttacks(opts);
 }
 
+/** The damage waits for its roll: the first one, or the sum of one damage type after the master took an extra out of its group. */
+export function awaitsRoll(p: PendingDamage): boolean {
+  return (
+    p.status === PendingDamageStatus.AWAITING_ROLL ||
+    p.status === PendingDamageStatus.AWAITING_GROUP_SUM
+  );
+}
+
 /** The player's hit whose damage is still to roll (the sheet was closed). */
 export function pendingRollOf(opts: GetTurnOptionsResponse | null, ownId: string | undefined) {
-  return (
-    opts?.pendingDamages.find(
-      (p) => p.status === PendingDamageStatus.AWAITING_ROLL && p.attackerId === ownId,
-    ) ?? null
-  );
+  return opts?.pendingDamages.find((p) => awaitsRoll(p) && p.attackerId === ownId) ?? null;
 }
 
 /** The newest attack of the one on turn was stopped by the target's Escudo (from the log). */

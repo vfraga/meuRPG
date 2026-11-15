@@ -118,8 +118,18 @@ export interface ThirdPlayer {
  * A second player with a character in the table (RN-03 allows one living character each, so the first account's Pensantus and this one's
  * Toren): the third devidp account "E-mail Não Verificado", from the session `auth.setup.ts` saves.
  */
-export async function thirdPlayer(browser: Browser, t: TrapTable, build: CharacterBuild, sheet: Record<string, unknown> = {}): Promise<ThirdPlayer> {
-  const context = await newSignedInContext(browser, 'E-mail Não Verificado', { viewport: { width: 1280, height: 1000 } });
+export async function thirdPlayer(
+  browser: Browser,
+  t: TrapTable,
+  build: CharacterBuild,
+  sheet: Record<string, unknown> = {},
+  look: { colorScheme?: 'light' | 'dark'; width?: number; deviceScaleFactor?: number } = {},
+): Promise<ThirdPlayer> {
+  const context = await newSignedInContext(browser, 'E-mail Não Verificado', {
+    viewport: { width: look.width ?? 1280, height: look.width === undefined ? 1000 : 844 },
+    colorScheme: look.colorScheme,
+    deviceScaleFactor: look.deviceScaleFactor,
+  });
   const page = await context.newPage();
   await page.goto('/');
   const invite = await callRPC(t.m, 'meurpg.campaigns.v1.CampaignService/CreateInvite', { campaignId: t.campaignId, maxUses: 1, expiresIn: '3600s' });

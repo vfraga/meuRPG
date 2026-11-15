@@ -13,6 +13,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -220,10 +221,10 @@ func settleable(p playdb.PendingDamage) error {
 // roll, unless the master leaves a source out or sets another number. It starts the event.
 func (f *applyDamageFlow) settleAmount() {
 	rolled := conv.OrZero(f.p.Amount)
-	groups := readStepGroups(f.p.Steps)
+	groups := damagesteps.Read(f.p.Steps)
 	expected := rolled
 	if len(groups) > 0 {
-		expected = reapply(rolled, groups, f.call.ignored)
+		expected = damagesteps.Reapply(rolled, groups, f.call.ignored)
 	}
 	amount := expected
 	if f.call.override != nil {

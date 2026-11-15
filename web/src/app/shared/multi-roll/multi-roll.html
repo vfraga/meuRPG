@@ -60,6 +60,9 @@
     @if (note()) {
       <p class="type__note">{{ note() }}</p>
     }
+    @if (formulaText()) {
+      <p class="type__formula" role="status">{{ formulaText() }}</p>
+    }
     @if (totalNote()) {
       <div class="type__sum" [class.type__sum--wait]="total() === null" role="status">
         @if (total() !== null) {

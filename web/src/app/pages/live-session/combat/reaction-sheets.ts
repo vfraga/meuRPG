@@ -1,5 +1,6 @@
 import { signal, untracked } from '@angular/core';
 import type {
+  Encounter,
   GetTurnOptionsResponse,
   OpportunityOffer,
   ReactionWindow,
@@ -8,6 +9,11 @@ import { reactorAttacks } from '../../../core/combat/opportunity';
 import { tradesOf } from '../../../core/combat/power-attack-trade';
 import { openWindows, promptView } from '../../../core/combat/reactions';
 import { featureWindowView, isFeatureWindow } from '../../../core/combat/reaction-feature';
+import {
+  isReadiedWindow,
+  readiedOfWindow,
+  readiedPrompt,
+} from '../../../core/combat/reaction-readied';
 import { zoneCasterLabel, zoneSaveTitle } from '../../../core/effects/zone-save';
 import { openSheet, trackOpen } from '../../../shared/sheet/sheet-host';
 import {
@@ -18,6 +24,10 @@ import {
   FeatureWindowSheet,
   type FeatureWindowSheetData,
 } from './feature-window-sheet/feature-window-sheet';
+import {
+  ReadiedWindowSheet,
+  type ReadiedWindowSheetData,
+} from './readied-window-sheet/readied-window-sheet';
 import { AttackSheet, type AttackSheetData } from './attack-sheet/attack-sheet';
 import { THROW_BACK_KEY, maneuverDiceOf, throwBackAttack } from './attack-sheet/attack-sheet-data';
 import {
@@ -63,6 +73,10 @@ export class ReactionSheets {
     }
     if (isFeatureWindow(window)) {
       this.featureWindow(window, e.id, e.round);
+      return;
+    }
+    if (isReadiedWindow(window)) {
+      this.readiedWindow(window, e);
       return;
     }
     const data: ReactionSheetData = {
@@ -120,6 +134,32 @@ export class ReactionSheets {
         this.ctx.bottomSheet,
         FeatureWindowSheet,
         { data, ariaLabel: view.ariaLabel, alert: true },
+      ),
+    );
+  }
+
+  /** The prompt of a readied action the master fired (#582): "O mestre disse que o gatilho aconteceu: ... Atacar com a Espada longa agora?". Opens by itself, and has to be answered. */
+  private readiedWindow(window: ReactionWindow, e: Encounter): void {
+    const data: ReadiedWindowSheetData = {
+      campaignId: this.ctx.campaignId(),
+      encounterId: e.id,
+      window,
+      round: e.round,
+      readied: readiedOfWindow(e, window),
+      reactorLabel: window.reactorLabel,
+      state: this.ctx.state(),
+    };
+    trackOpen(
+      this.reactionOpen,
+      openSheet<ReadiedWindowSheet, ReadiedWindowSheetData, void>(
+        this.ctx.dialog,
+        this.ctx.bottomSheet,
+        ReadiedWindowSheet,
+        {
+          data,
+          ariaLabel: readiedPrompt(data.readied, e.round, window.reactorLabel).ariaLabel,
+          alert: true,
+        },
       ),
     );
   }

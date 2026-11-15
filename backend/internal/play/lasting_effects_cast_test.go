@@ -11,6 +11,7 @@ import (
 	charactersv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/characters/v1"
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	rulesv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/rules/v1"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -280,9 +281,9 @@ func TestStepGroupsWithoutHiddenStillDecode(t *testing.T) {
 	}
 }
 
-func readStepGroupsForTest(t *testing.T, raw string) []stepGroup {
+func readStepGroupsForTest(t *testing.T, raw string) []damagesteps.Group {
 	t.Helper()
-	var out []stepGroup
+	var out []damagesteps.Group
 	if err := json.Unmarshal([]byte(raw), &out); err != nil {
 		t.Fatalf("Unmarshal() error = %v", err)
 	}

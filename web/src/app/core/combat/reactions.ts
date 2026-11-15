@@ -74,8 +74,10 @@ export function sheetWindow(e: Encounter): ReactionWindow | undefined {
     (w) =>
       w.forYou &&
       !masterOffer(w) &&
-      // A feature window has no prompt of its own: its sheet reads the trigger.
-      (w.prompt.case !== undefined || w.kind === ReactionKind.FEATURE) &&
+      // A feature window and a readied action's have no prompt of their own: their sheets read the trigger and the row.
+      (w.prompt.case !== undefined ||
+        w.kind === ReactionKind.FEATURE ||
+        w.kind === ReactionKind.READIED) &&
       w.prompt.case !== 'masterCheck' &&
       w.prompt.case !== 'hellishRebukeSave',
   );

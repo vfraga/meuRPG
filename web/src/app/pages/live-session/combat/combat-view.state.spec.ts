@@ -397,7 +397,7 @@ describe('CombatView state: the combat as the master reads it', () => {
     expect(none.view.owed()).toBeNull();
   });
 
-  it('owes nothing and opens no card for the applied damage the options list for a take-out', async () => {
+  it('owes nothing, and keeps the card for the applied damage the options list for a take-out', async () => {
     const turnOptions = () => ({
       pendingDamages: [
         { status: PendingDamageStatus.APPLIED, amount: 5, attackerId: 't' },
@@ -406,7 +406,7 @@ describe('CombatView state: the combat as the master reads it', () => {
     const m = master({ currentCombatantId: 't' }, { turnOptions });
     await settle(m.fixture);
     expect(m.view.owed()).toBeNull();
-    expect(m.view.cardVisible()).toBe(false);
+    expect(m.view.cardVisible()).toBe(true);
   });
 
   it('shows the master card for an NPC on turn, and for a player only while a damage waits or was just settled', async () => {

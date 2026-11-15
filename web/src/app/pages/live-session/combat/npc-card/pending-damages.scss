@@ -1,3 +1,5 @@
+@use '../damage-parts/rows';
+
 :host {
   display: flex;
   flex-direction: column;
@@ -202,4 +204,51 @@
   font-size: var(--mr-font-15);
   line-height: 20px;
   font-weight: 700;
+}
+
+.dmg__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.dmg__title {
+  font-size: var(--mr-font-16);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--mr-radius-pill);
+  font-size: var(--mr-font-13);
+  font-weight: 700;
+
+  .mat-icon {
+    width: 16px;
+    height: 16px;
+    font-size: var(--mr-font-16);
+  }
+}
+
+.badge--wait {
+  border: 1px solid var(--mr-warning-line);
+  background: var(--mr-warning-surface);
+  color: var(--mr-warning-ink);
+}
+
+.badge--ok {
+  border: 1px solid var(--mr-success-ink);
+  background: var(--mr-success-surface);
+  color: var(--mr-success-ink);
+}
+
+.dmg__why--plain {
+  margin: 0;
+  font-weight: 400;
+  color: var(--mr-ink-muted);
 }

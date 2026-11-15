@@ -90,6 +90,7 @@ The package `play` itself is capped in size (`.github/play-cap`, [CI](../../ci.m
 | `play/live` | The live stream's hub |
 | `play/playdb` | The sqlc queries (generated) |
 | `play/voice` | The voice generator and its fake |
+| `play/damagesteps` | What a damage comes to after resistance, vulnerability, immunity and flat reductions, the steps as the store keeps them (JSON), and the Portuguese text of each step with the hiding of an effect the master does not show |
 | `play/advantage` | The roll modes as the database and the API spell them, the API's source kinds, and the sentence of each advantage source with the hiding of the ones a viewer may not know |
 | `play/steed` | The rules of Find Steed over plain values: the spells that reach the steed with the caster, the notes of such a cast, and the Intelligence floor read by Hideous Laughter |
 

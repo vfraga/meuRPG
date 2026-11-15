@@ -28,6 +28,7 @@ import { CombatClient } from '../../../../core/combat/combat-client';
 import { newKey } from '../../../../core/connect/idempotency';
 import { RollAnimator, showOfDice } from '../../../../shared/roll-overlay/roll-animator';
 import { combatErrorMessage } from '../../../../core/combat/combat-errors';
+import { takeOutErrorMessage } from '../../../../core/combat/take-out-errors';
 import type { CombatState } from '../../../../core/combat/combat-state';
 import { article } from '../../../../core/combat/combat-log';
 import { DamageBreakdown } from '../damage-parts/damage-breakdown';
@@ -65,6 +66,9 @@ export class PendingDamages {
   private readonly injector = inject(Injector);
 
   readonly pendings = input.required<readonly PendingDamage[]>();
+  /** The applied damage a take-out could still undo (the master's options list it with the status APPLIED): drawn only as
+   * its breakdown with "Tirar", never as a damage that waits. */
+  readonly applied = input<readonly PendingDamage[]>([]);
   readonly encounter = input.required<Encounter>();
   readonly campaignId = input.required<string>();
   readonly state = input.required<CombatState>();
@@ -103,19 +107,35 @@ export class PendingDamages {
       });
     });
   }
+  private readonly sumHead = viewChild('sumHead', { read: ElementRef<HTMLElement> });
   private readonly safe = viewChild('safe', { read: ElementRef<HTMLButtonElement> });
   private readonly otherInput = viewChild('otherInput', { read: ElementRef<HTMLInputElement> });
   private readonly otherLinks = viewChildren('otherLink', { read: ElementRef<HTMLButtonElement> });
 
   protected readonly items = computed(() =>
-    this.pendings()
-      .filter(
+    [
+      ...this.pendings().filter(
         (p) =>
           p.status === PendingDamageStatus.ROLLED ||
           p.status === PendingDamageStatus.AWAITING_ROLL ||
-          p.status === PendingDamageStatus.AWAITING_REACTION,
-      )
-      .map((p) => pendingCard(p, this.encounter(), this.pendings())),
+          p.status === PendingDamageStatus.AWAITING_REACTION ||
+          p.status === PendingDamageStatus.AWAITING_GROUP_SUM,
+      ),
+      ...this.applied().filter((p) => p.status === PendingDamageStatus.APPLIED),
+    ].map((p) =>
+      pendingCard(
+        p,
+        this.encounter(),
+        this.pendings(),
+        this.state().removals(),
+        this.state().saves(),
+      ),
+    ),
+  );
+  /** The take-out on its way (the damage's id), and what the server refused. */
+  protected readonly taking = signal<string | null>(null);
+  protected readonly takeError = signal<{ readonly id: string; readonly text: string } | null>(
+    null,
   );
 
   private keyFor(id: string): string {
@@ -267,18 +287,39 @@ export class PendingDamages {
     this.ignored.update((all) => ({ ...all, [id]: keys }));
   }
 
-  /** "Tirar": the extra leaves the damage, with the reason the master gave. */
+  /** "Tirar": the extra leaves the damage, with the reason the master gave. A part of a typed group undoes what the damage
+   * did and asks a new sum: the panel stays open while the call is out, and a refusal is said in it. */
   protected takeOut(p: PendingDamage, part: { partKey: string; reason: string }): Promise<void> {
+    const name = p.parts.find((x) => x.key === part.partKey)?.labelPt ?? '';
+    const labelOf = (id: string) => this.encounter().combatants.find((c) => c.id === id)?.label;
     return this.run(async () => {
-      const res = await this.api.attacks.removeDamagePart(
-        this.campaignId(),
-        this.encounter().id,
-        p.id,
-        part.partKey,
-        part.reason,
-        this.keyFor(`remove:${p.id}:${part.partKey}:${part.reason}`),
-      );
-      this.state().apply(res.encounter);
+      this.takeError.set(null);
+      this.taking.set(p.id);
+      try {
+        const res = await this.api.attacks.removeDamagePart(
+          this.campaignId(),
+          this.encounter().id,
+          p.id,
+          part.partKey,
+          part.reason,
+          this.keyFor(`remove:${p.id}:${part.partKey}:${part.reason}`),
+        );
+        this.renewKey(`remove:${p.id}:${part.partKey}:${part.reason}`);
+        this.state().noteRemoval({
+          attackerId: p.attackerId,
+          targetId: p.targetId,
+          key: part.partKey,
+          name,
+          reason: part.reason,
+        });
+        this.state().apply(res.encounter);
+        // The panel and its button are gone with the card that waits for the sum: the focus goes to that card's head.
+        afterNextRender(() => this.sumHead()?.nativeElement.focus(), { injector: this.injector });
+      } catch (err) {
+        this.takeError.set({ id: p.id, text: takeOutErrorMessage(err, labelOf) });
+      } finally {
+        this.taking.set(null);
+      }
     });
   }
 

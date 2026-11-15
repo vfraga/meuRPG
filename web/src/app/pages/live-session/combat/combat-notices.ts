@@ -12,6 +12,11 @@ import {
   formNoticeText,
   lostNoticeText,
 } from '../../../core/combat/combat-notices';
+import {
+  type ReadiedLost,
+  ReadiedNotices,
+  readiedLostNoticeText,
+} from '../../../core/combat/ready-notice';
 import type { CombatCalls } from '../../../core/combat/combat-calls';
 import type { CombatClient } from '../../../core/combat/combat-client';
 
@@ -24,7 +29,7 @@ export interface CombatNoticesContext {
 }
 
 /**
- * The two notices the player is told when something of theirs ended without them asking: the Wild Shape form (from the
+ * The notices the player is told when something of theirs ended without them asking: the Wild Shape form (from the
  * combat log's line) and the concentration that held creatures (from the combat's own data). Each stays until it is
  * touched. The screen's effects read the signals they track and hand the values to `readForm` and `readConcentration`.
  */
@@ -41,8 +46,15 @@ export class CombatNotices {
     const lost = this.lostConcentration();
     return lost ? lostNoticeText(lost) : '';
   });
+  /** The readied action of the player that was lost (#582), from the combat log's `READIED_LOST` line: until it is touched. */
+  readonly readiedLost = signal<ReadiedLost | null>(null);
+  readonly readiedNotice = computed(() => {
+    const lost = this.readiedLost();
+    return lost ? readiedLostNoticeText(lost) : null;
+  });
   readonly concentration = new ConcentrationWatch();
   private readonly formNotices = new FormNotices();
+  private readonly readiedNotices = new ReadiedNotices();
 
   constructor(private readonly ctx: CombatNoticesContext) {}
 
@@ -54,12 +66,17 @@ export class CombatNotices {
     entries: readonly CombatLogEntry[],
   ): void {
     const { reset, notice } = this.formNotices.read(encounterId, ownId, loaded, entries);
+    const readied = this.readiedNotices.read(encounterId, ownId, loaded, entries);
     if (reset) {
       this.formEnded.set(null);
       this.lostConcentration.set(null);
+      this.readiedLost.set(null);
     }
     if (notice) {
       this.formEnded.set(notice);
+    }
+    if (readied.notice) {
+      this.readiedLost.set(readied.notice);
     }
   }
 

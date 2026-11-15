@@ -17,6 +17,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/idem"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -479,8 +480,8 @@ func (f *damageFlow) land(ctx context.Context, g playdb.PendingDamage) error {
 // settleSteps takes the target's resistance, vulnerability and immunity off the damage of a type, after every
 // bonus and the half of a save (SRD 5.1). An NPC or a creature takes what is left at once; a player's
 // character waits for the master with the same account as a preview. It answers the steps and the amount.
-func (f *damageFlow) settleSteps(ctx context.Context, g playdb.PendingDamage, tgt playdb.Combatant, amount int32, own bool) (landing, int32, error) {
-	var steps landing
+func (f *damageFlow) settleSteps(ctx context.Context, g playdb.PendingDamage, tgt playdb.Combatant, amount int32, own bool) (damagesteps.Landing, int32, error) {
+	var steps damagesteps.Landing
 	if g.Healing {
 		return steps, amount, nil
 	}
@@ -496,8 +497,8 @@ func (f *damageFlow) settleSteps(ctx context.Context, g playdb.PendingDamage, tg
 	if err != nil {
 		return steps, amount, err
 	}
-	if holdsHP(tgt) && steps.changed {
-		amount = steps.amount
+	if holdsHP(tgt) && steps.Changed {
+		amount = steps.Amount
 	}
 	return steps, amount, nil
 }
@@ -554,7 +555,7 @@ func (f *damageFlow) landHit(ctx context.Context, g playdb.PendingDamage, tgt pl
 
 // keepRoll saves the roll on the pending damage, with its detail, and notes the concentration save a cast
 // owes its target.
-func (f *damageFlow) keepRoll(ctx context.Context, g playdb.PendingDamage, tgt playdb.Combatant, amount int32, steps landing, hit *damageHit) error {
+func (f *damageFlow) keepRoll(ctx context.Context, g playdb.PendingDamage, tgt playdb.Combatant, amount int32, steps damagesteps.Landing, hit *damageHit) error {
 	c := f.c
 	status := pendingRolled // a player's character waits for the master (RN-02)
 	if hit.Applied {
@@ -582,10 +583,10 @@ func (f *damageFlow) keepRoll(ctx context.Context, g playdb.PendingDamage, tgt p
 }
 
 // fillEvent puts what the roll did to its own target in the event.
-func (f *damageFlow) fillEvent(ctx context.Context, g playdb.PendingDamage, tgt playdb.Combatant, hit damageHit, steps landing, shown int32) error {
+func (f *damageFlow) fillEvent(ctx context.Context, g playdb.PendingDamage, tgt playdb.Combatant, hit damageHit, steps damagesteps.Landing, shown int32) error {
 	made := &f.out.made
 	made.Amount, made.Applied, made.Before, made.After, made.ConcentrationDC = hit.Amount, hit.Applied, hit.Before, hit.After, hit.ConcentrationDC
-	made.Steps, made.Shown = steps.groups, shown
+	made.Steps, made.Shown = steps.Groups, shown
 	made.DeathBefore = hit.DeathBefore
 	// The 0 hit points rule: an opportunity attack that drops its mover to 0 takes it back to where it left
 	// the reach.

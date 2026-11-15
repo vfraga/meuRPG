@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
-	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
 )
 
 // A creature that resists the bludgeoning, piercing and slashing damage of nonmagical
@@ -91,41 +90,4 @@ func TestUnlessSilveredResistanceHalvesAnUnsilveredAttack(t *testing.T) {
 		}
 	}
 	t.Fatal("no attack line")
-}
-
-// The same blow from a silvered weapon is not reduced; a damage with no attack is not
-// either; the adamantine entry follows the adamantine weapon.
-func TestSettleStepsMaterialOrigin(t *testing.T) {
-	t.Parallel()
-	slash := "damage-type:slashing"
-	silver := []combat.Modifier{{Kind: combat.StepResistance, Source: "monster:wight", DamageTypes: []string{slash}, Qualifier: combat.QualifierNonmagicalUnlessSilvered}}
-	adamant := []combat.Modifier{{Kind: combat.StepResistance, Source: "monster:gargoyle", DamageTypes: []string{slash}, Qualifier: combat.QualifierNonmagicalUnlessAdamantine}}
-	tests := []struct {
-		name string
-		mods []combat.Modifier
-		from combat.Origin
-		want int32
-	}{
-		{"unsilvered", silver, combat.Origin{Attack: true}, 4},
-		{"silvered", silver, combat.Origin{Attack: true, Silvered: true}, 9},
-		{"silver entry, adamantine weapon", silver, combat.Origin{Attack: true, Adamantine: true}, 4},
-		{"no attack", silver, combat.Origin{}, 9},
-		{"non-adamantine", adamant, combat.Origin{Attack: true, Silvered: true}, 4},
-		{"adamantine", adamant, combat.Origin{Attack: true, Adamantine: true}, 9},
-	}
-	for _, tt := range tests {
-		if got := settleSteps(map[string]int{slash: 9}, tt.mods, nil, tt.from).amount; got != tt.want {
-			t.Errorf("%s: amount = %d, want %d", tt.name, got, tt.want)
-		}
-	}
-	names := func(s string) string { return s }
-	pt := func(s string) string { return s }
-	for q, want := range map[string]string{
-		combat.QualifierNonmagicalUnlessSilvered:   "Resistência a x de ataque não mágico nem prateado",
-		combat.QualifierNonmagicalUnlessAdamantine: "Resistência a x de ataque não mágico nem adamantino",
-	} {
-		if got := stepLabel(combat.Step{Kind: combat.StepResistance, DamageType: "x", Qualifier: q}, names, pt); got != want {
-			t.Errorf("label = %q, want %q", got, want)
-		}
-	}
 }

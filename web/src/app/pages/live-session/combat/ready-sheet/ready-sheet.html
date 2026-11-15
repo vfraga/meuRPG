@@ -1,0 +1,141 @@
+<app-sheet-frame
+  icon="alarm"
+  title="Preparar uma ação"
+  [subtitle]="data.ownerLabel + ' · fica guardada até o gatilho'"
+  [phone]="inSheet"
+  (closed)="close()"
+>
+  <div class="body">
+    @if (error(); as e) {
+      <div class="mr-notice mr-notice--danger" role="alert">
+        <mat-icon aria-hidden="true">error</mat-icon>
+        <p>{{ e }}</p>
+      </div>
+    }
+    <div class="ready" [class.ready--two]="kind() === 'spell'">
+      <div class="ready__col">
+        <fieldset class="kinds">
+          <legend class="ask">O que você prepara</legend>
+          <div class="kinds__grid" [class.kinds__grid--four]="kinds.length === 4">
+            @for (k of kinds; track k.key) {
+              <button
+                type="button"
+                class="kind"
+                [class.kind--on]="k.key === kind()"
+                [class.kind--off]="!!k.blocked"
+                [attr.aria-pressed]="k.key === kind()"
+                [attr.aria-describedby]="k.blocked && k.key === kind() ? 'ready-kind-why' : null"
+                [disabled]="busy()"
+                disabledInteractive
+                (click)="pickKind(k.key)"
+              >
+                @if (k.key === kind()) {
+                  <mat-icon aria-hidden="true">check</mat-icon>
+                } @else {
+                  <mat-icon aria-hidden="true">{{ k.icon }}</mat-icon>
+                }
+                {{ k.label }}
+              </button>
+            }
+          </div>
+          @if (kindBlocked(); as why) {
+            <p class="missing" id="ready-kind-why"><mat-icon aria-hidden="true">block</mat-icon>{{ why }}</p>
+          }
+        </fieldset>
+        @if (kind() === 'move') {
+          @if (!kindBlocked()) {
+            <p class="what" id="ready-move">{{ moveText }}</p>
+          }
+        } @else if (!kindBlocked()) {
+          <app-resource-pick
+            [label]="listLabel()"
+            [rows]="rows()"
+            [chosen]="key()"
+            empty="Não há nada para preparar aqui."
+            (pick)="pickRow($event)"
+          />
+        }
+      </div>
+      <div class="ready__col">
+        @if (slots().length > 0) {
+          <fieldset class="kinds">
+            <legend class="ask">Com que espaço</legend>
+            <div class="kinds__grid">
+              @for (s of slots(); track s.level) {
+                <button
+                  type="button"
+                  class="kind"
+                  [class.kind--on]="s.level === slotLevel()"
+                  [attr.aria-pressed]="s.level === slotLevel()"
+                  [disabled]="busy()"
+                  disabledInteractive
+                  (click)="pickSlot(s.level)"
+                >
+                  @if (s.level === slotLevel()) {
+                    <mat-icon aria-hidden="true">check</mat-icon>
+                  }
+                  {{ s.text }}
+                </button>
+              }
+            </div>
+          </fieldset>
+        }
+        <div class="field">
+          <label class="field__label" for="ready-target">Em quem (opcional)</label>
+          <select id="ready-target" class="field__control" [value]="targetId()" [disabled]="busy()" (change)="pickTarget($event)">
+            <option value="">Ninguém em especial</option>
+            @for (t of targets; track t.id) {
+              <option [value]="t.id" [selected]="t.id === targetId()">{{ t.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="field" [class.field--bad]="!!trigger().error">
+          <label class="field__label" for="ready-trigger">Quando dispara, nas suas palavras</label>
+          <textarea
+            id="ready-trigger"
+            class="field__control field__control--area"
+            rows="3"
+            placeholder="Ex.: quando o zumbi passar pela porta"
+            [value]="triggerText()"
+            [disabled]="busy()"
+            [attr.aria-invalid]="trigger().error ? 'true' : null"
+            aria-describedby="ready-trigger-note ready-trigger-count"
+            (input)="typed($event)"
+            (blur)="touched.set(true)"
+          ></textarea>
+          <div class="field__foot">
+            <span id="ready-trigger-note" class="field__note" [class.field__note--bad]="!!trigger().error">{{ trigger().error || hint }}</span>
+            <span id="ready-trigger-count" class="field__count" [class.field__note--bad]="trigger().count > max">{{ trigger().count }}/{{ max }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    @if (concentration(); as c) {
+      <p class="warn" role="status"><mat-icon aria-hidden="true">adjust</mat-icon><span><b>{{ c.lead }}</b> {{ c.rest }}</span></p>
+    }
+    <ul class="legend" aria-label="O que custa">
+      @for (l of legend(); track l.lead) {
+        <li><mat-icon aria-hidden="true">{{ l.icon }}</mat-icon><span>@if (l.lead) {<b>{{ l.lead }}</b>}{{ (l.lead ? ' ' : '') + l.text }}</span></li>
+      }
+    </ul>
+    @if (missing() && !busy() && touched() && !kindBlocked()) {
+      <p class="missing" id="ready-missing"><mat-icon aria-hidden="true">block</mat-icon>{{ missing() }}</p>
+    }
+  </div>
+  <div foot>
+    <div class="pair">
+      <button matButton="outlined" type="button" class="pair__btn" [disabled]="busy()" (click)="close()">Cancelar</button>
+      <button
+        matButton="filled"
+        type="button"
+        class="pair__btn"
+        [disabled]="!!missing() || busy()"
+        disabledInteractive
+        [attr.aria-describedby]="kindBlocked() ? 'ready-kind-why' : missing() && touched() ? 'ready-missing' : null"
+        (click)="ready()"
+      >
+        <mat-icon aria-hidden="true">alarm</mat-icon>{{ busy() ? 'Preparando…' : doLabel() }}
+      </button>
+    </div>
+  </div>
+</app-sheet-frame>

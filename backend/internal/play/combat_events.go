@@ -10,6 +10,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -790,7 +791,7 @@ type actionEvent struct {
 	// FeatureBefore are the entries of the attacker's feature state before the roll, one for each key it marked (nil: no entry
 	// that held); an undo puts them back.
 	FeatureBefore map[string]*featureEntry `json:"feature_before,omitempty"`
-	Steps         []stepGroup              `json:"steps,omitempty"`
+	Steps         []damagesteps.Group      `json:"steps,omitempty"`
 	// Shown is the damage as rolled, before the target's modifiers and with every die the
 	// roll made: what a player who is not the target's reads.
 	Shown int32 `json:"shown,omitempty"`

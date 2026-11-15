@@ -24,6 +24,7 @@ import { RosterClient } from '../../../core/maps/roster-client';
 import { SpellCatalog } from '../../../core/combat/spell-catalog';
 import { AttackSheet } from './attack-sheet/attack-sheet';
 import { CombatView } from './combat-view';
+import { ReadiedWindowSheet } from './readied-window-sheet/readied-window-sheet';
 import { FeatureWindowSheet } from './feature-window-sheet/feature-window-sheet';
 import { ReactionSheet } from './reaction-sheet/reaction-sheet';
 import { nextTurn } from '../../../../test-settle';
@@ -238,6 +239,30 @@ describe('CombatView, the reaction windows', () => {
     expect(
       plain(master.el.querySelector('app-reaction-queue[part="rest"]')?.textContent),
     ).toContain('Halo de esporos');
+  });
+
+  it("opens the readied action's prompt by itself for its readier, and the master answers from his queue", async () => {
+    const fired = (over: object = {}) =>
+      reactionWindow({
+        id: 'wr',
+        kind: ReactionKind.READIED,
+        reactorId: 't',
+        reactorLabel: 'Toren',
+        reactorIsPlayer: true,
+        ...over,
+      } as never);
+    const player = setup({ windows: [fired()] });
+    await settle(player.fixture);
+    expect(player.opened).toHaveLength(1);
+    expect(player.opened[0].component).toBe(ReadiedWindowSheet);
+    expect(player.opened[0].config.role).toBe('alertdialog');
+    expect(player.opened[0].config.disableClose).toBe(true);
+    const master = setup({ master: true, windows: [fired({ answerNow: true })] });
+    await settle(master.fixture);
+    expect(master.opened.filter((o) => o.component === ReadiedWindowSheet)).toHaveLength(0);
+    expect(
+      plain(master.el.querySelector('app-reaction-queue[part="rest"]')?.textContent),
+    ).toContain('Ação preparada');
   });
 
   it("opens nothing for a window that is not the player's to answer, or the master's check", async () => {

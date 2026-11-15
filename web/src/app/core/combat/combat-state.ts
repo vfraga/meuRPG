@@ -7,6 +7,7 @@ import {
   type Encounter,
   EncounterStatus,
 } from '../../../gen/meurpg/play/v1/combat_pb';
+import { type Removal, type SpellSave } from './group-take-out';
 import { isTheatre } from './theatre';
 
 /** What `turn_changed` carries (play.proto). */
@@ -109,6 +110,19 @@ export class CombatState {
   readonly logTick = signal(0);
   /** The latest attack that hurt the player's own character, read from the combat log (the sheet says it as the attack's damage). */
   readonly ownHit = signal<OwnHit | null>(null);
+  /** The parts the master took out of a damage, from the combat log (the master's and the attacker's reading carry the reason). */
+  readonly logged = signal<readonly Removal[]>([]);
+  /** The saves of spell hit effects the log names, newest first: what undoing a hit effect says. */
+  readonly saves = signal<readonly SpellSave[]>([]);
+  private readonly noted = signal<readonly Removal[]>([]);
+  /** Newest first: what this page's master just took out (before the log says it), then the log's. */
+  readonly removals = computed(() => [...this.noted(), ...this.logged()]);
+
+  /** The master took a part out here: its reason is known before the log is read again. */
+  noteRemoval(r: Removal): void {
+    this.noted.update((all) => [r, ...all]);
+  }
+
   /** What a reaction window that closed by itself said (`reaction_window_closed`), kept in a status line until it is
    * dismissed, and gone with the combat. Nothing of it is stored in the browser. */
   readonly reactionNotice = signal<ReactionNotice | null>(null);

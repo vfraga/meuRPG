@@ -177,6 +177,7 @@ describe('the damage that waits for the master', () => {
     expect(pendingNote([waiting, rolled])).toBe('Falta aplicar 5 de dano');
     expect(pendingNote([waiting])).toBe('Falta rolar o dano');
     expect(pendingNote([sum])).toBe('Falta rolar o dano');
+    expect(pendingNote([sum], () => 'Jabuti')).toBe('Falta a soma de Jabuti');
     expect(pendingNote([applied])).toBeNull();
   });
 

@@ -22,7 +22,7 @@
         [class.pick__link]="preferApp() && canApp() && !typeOutlined()"
         (click)="startTyping()"
       >
-        Digitar o resultado
+        {{ typeLabel() }}
       </button>
     }
   </div>

@@ -31,8 +31,14 @@ import { attackText, damageNotes, modeNote, pairOf } from './combat-log-attack';
 import { contestText } from './combat-log-contest';
 import { effectEndedText, effectLine, exhaustionLogText } from './combat-log-effects';
 import { LogContext, LogLine, NO_CONTEXT } from './combat-log-types';
-import { the } from './combat-log-words';
+import { removedName } from './combat-log-words';
 import { MOUNT_LINES } from './combat-log-mount';
+import {
+  followsReadiedFire,
+  readiedFiredText,
+  readiedLostLine,
+  readiedText,
+} from './combat-log-readied';
 import { ITEM_USE_LINES } from './combat-log-item-use';
 
 /** What a line builder is given: the entry, the fields every line shares, the combat's name and who is reading. */
@@ -41,6 +47,8 @@ interface LineArgs {
   readonly base: { id: string; actor: string; hidden: boolean; undoable: boolean };
   readonly encounterName: string;
   readonly ctx: LogContext;
+  /** The entry just before this one in time, when the caller has it. */
+  readonly older?: CombatLogEntry;
 }
 
 /** One builder per kind of entry, so a new kind is one more row and no function grows with it. A builder answers `null` for an
@@ -65,11 +73,11 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
   // A spell attack (Raio de Fogo) has the sparkles E6-15 draws for spells.
   [
     CombatLogKind.ATTACK,
-    ({ e, base }) => {
+    ({ e, base, older }) => {
       return {
         ...base,
         icon: e.key.startsWith('spell:') ? 'auto_awesome' : 'swords',
-        text: attackText(e),
+        text: attackText(e, followsReadiedFire(e, older)),
         roll: pairOf(e.attackRoll, 'd20 do ataque'),
         notes: [modeNote(e.modeChange), rerollNote(e.attackRoll), ...damageNotes(e.damage)].filter(
           Boolean,
@@ -294,6 +302,19 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
     CombatLogKind.FEATURE_USED,
     ({ e, base, ctx }) => ({ ...base, icon: 'auto_awesome', text: featureUsedText(e, ctx) }),
   ],
+  // A readied action (#582): what each audience reads is in the entry as the server filled it (RN-10).
+  [
+    CombatLogKind.ACTION_READIED,
+    ({ e, base }) => ({ ...base, icon: 'alarm', text: readiedText(e) }),
+  ],
+  [
+    CombatLogKind.READIED_FIRED,
+    ({ e, base }) => ({ ...base, icon: 'alarm', text: readiedFiredText(e) }),
+  ],
+  [
+    CombatLogKind.READIED_LOST,
+    ({ e, base, ctx }) => ({ ...base, icon: 'alarm', ...readiedLostLine(e, ctx) }),
+  ],
   // A swap of gear in the combat: the master's and the character's owner's line. The cost is what it spent.
   [
     CombatLogKind.GEAR_SWAPPED,
@@ -332,7 +353,8 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
       };
     },
   ],
-  // The master took an extra out of a damage; the reason is only for him and the attacker's player.
+  // The master took an extra out of a damage; the reason is only for him and the attacker's player. The others read the
+  // part's name as the roll line shows it, "Outra fonte" for a part hidden from them.
   [
     CombatLogKind.DAMAGE_PART_REMOVED,
     ({ e, base }) => {
@@ -340,7 +362,7 @@ const LINE_BUILDERS: ReadonlyMap<CombatLogKind, (args: LineArgs) => LogLine | nu
         ...base,
         icon: 'remove_circle_outline',
         actor: '',
-        text: `O mestre tirou ${e.keyNamePt ? the(e.keyNamePt) : 'um extra'}${e.reason ? `: “${e.reason}”` : ''}`,
+        text: `O mestre tirou ${removedName(e.keyNamePt)}${e.reason ? `: “${e.reason}”` : ''}`,
       };
     },
   ],
@@ -379,9 +401,10 @@ export function logLine(
   e: CombatLogEntry,
   encounterName = '',
   ctx: LogContext = NO_CONTEXT,
+  older?: CombatLogEntry,
 ): LogLine | null {
   const base = { id: e.id, actor: e.actorLabel, hidden: e.hidden, undoable: e.undoable };
-  const line = LINE_BUILDERS.get(e.kind)?.({ e, base, encounterName, ctx }) ?? null;
+  const line = LINE_BUILDERS.get(e.kind)?.({ e, base, encounterName, ctx, older }) ?? null;
   // "<nome> usou a Inspiração.": the server sends it only to the master and the roller's player, so a line that has it shows it.
   return line && e.favorTextPt ? { ...line, notes: [...(line.notes ?? []), e.favorTextPt] } : line;
 }

@@ -7,7 +7,7 @@
     <ol class="strip__list">
       @for (c of flat(); track c.id) {
         <li>
-          <button type="button" class="strip__token" [attr.aria-label]="stripLabel(c)" (click)="openFromStrip(c.id)">
+          <button type="button" class="strip__token" [attr.aria-label]="headName(c)" (click)="openFromStrip(c.id)">
             <app-combatant-token
               [initial]="initial(c)"
               [npc]="npc(c)"
@@ -123,7 +123,7 @@
             }
           </span>
           <span class="row__meta">
-            <span class="row__sub"><span class="row__lead">{{ compactSub(c, inGroup) }}@if (shield(c) > 0) {{{ compactSub(c, inGroup) ? ' · ' : '' }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>}</span>@if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {<span class="row__sun" data-testid="order-sun">{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span>}</span>
+            <span class="row__sub"><span class="row__lead">{{ compactSub(c, inGroup) }}@if (shield(c) > 0) {{{ compactSub(c, inGroup) ? ' · ' : '' }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>}</span>@if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {<span class="row__sun" data-testid="order-sun">{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span>}@if (holdsReadied(c)) {<span class="row__ready" data-testid="order-readied"><mat-icon aria-hidden="true">alarm</mat-icon>Preparada</span>}</span>
           </span>
         </span>
         <span class="row__hp">

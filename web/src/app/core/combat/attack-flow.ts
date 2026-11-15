@@ -253,7 +253,10 @@ export function openPendingDamages(pendings: readonly PendingDamage[]): PendingD
 
 /** What the master still owes a hit: the damage waiting for "Aplicar", or
  * waiting to be rolled. `null` when nothing is pending. */
-export function pendingNote(pendings: readonly PendingDamage[]): string | null {
+export function pendingNote(
+  pendings: readonly PendingDamage[],
+  attackerLabel: (p: PendingDamage) => string | undefined = () => undefined,
+): string | null {
   const rolled = pendings.filter((p) => p.status === PendingDamageStatus.ROLLED);
   if (rolled.length > 0) {
     const sum = rolled.reduce((n, p) => n + p.amount, 0);
@@ -262,11 +265,12 @@ export function pendingNote(pendings: readonly PendingDamage[]): string | null {
   if (pendings.some((p) => p.status === PendingDamageStatus.AWAITING_REACTION)) {
     return 'Falta a reação do alvo';
   }
-  return pendings.some(
-    (p) =>
-      p.status === PendingDamageStatus.AWAITING_ROLL ||
-      p.status === PendingDamageStatus.AWAITING_GROUP_SUM,
-  )
-    ? 'Falta rolar o dano'
-    : null;
+  const roll = pendings.find((p) => p.status === PendingDamageStatus.AWAITING_ROLL);
+  const sum = pendings.find((p) => p.status === PendingDamageStatus.AWAITING_GROUP_SUM);
+  if (sum && !roll) {
+    // A take-out asked the attacker for the sum of one damage type again: whose it is.
+    const who = attackerLabel(sum);
+    return who ? `Falta a soma de ${who}` : 'Falta rolar o dano';
+  }
+  return roll || sum ? 'Falta rolar o dano' : null;
 }

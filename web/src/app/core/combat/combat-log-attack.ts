@@ -71,6 +71,8 @@ function baseDamageText(d: CombatLogDamage): string {
   switch (d.status) {
     case PendingDamageStatus.AWAITING_ROLL:
       return ', falta rolar o dano';
+    case PendingDamageStatus.AWAITING_GROUP_SUM:
+      return ', falta a soma do dano';
     case PendingDamageStatus.ROLLED:
       return `, ${d.amount} de dano, esperando o mestre aplicar`;
     case PendingDamageStatus.DISCARDED:
@@ -133,11 +135,17 @@ function bonusDiceNote(e: CombatLogEntry): string {
     .join('');
 }
 
-export function attackText(e: CombatLogEntry): string {
+/** " (ataque de oportunidade)" for a reaction attack that is not the use of a readied action. */
+function opportunityNote(e: CombatLogEntry, readied: boolean): string {
+  return e.asReaction && !readied ? ' (ataque de oportunidade)' : '';
+}
+
+/** `readied`: the line is the use of a readied attack, which is not an opportunity attack although it is a reaction. */
+export function attackText(e: CombatLogEntry, readied = false): string {
   const target = e.targetLabel || 'alguém';
   const weapon = e.keyNamePt ? ` com ${the(e.keyNamePt)}` : '';
   const verb = isShot(e.key) ? `atira ${inThe(target)}` : `ataca ${the(target)}`;
-  const opportunity = e.asReaction ? ' (ataque de oportunidade)' : '';
+  const opportunity = opportunityNote(e, readied);
   let out = ` ${verb}${weapon}${opportunity}: ${e.outcome === AttackOutcome.CRITICAL_HIT ? 'crítico' : e.outcome === AttackOutcome.MISS ? 'errou' : 'acertou'}`;
   out += coverNote(e);
   out += bonusDiceNote(e);

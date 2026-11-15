@@ -237,8 +237,8 @@ func (s *Service) dealZoneDamage(ctx context.Context, c *combatTx, k zoneCatch, 
 	if err != nil {
 		return zoneDamageDealt{}, fmt.Errorf("open the zone's damage: %w", err)
 	}
-	if steps.changed { // the steps the effects and the stat block took it through: the master reads them, and a player's character's player
-		if err := storePartsRoll(ctx, c, p.ID, nil, []partRoll{}, steps.groups, &steps.amount, nil); err != nil {
+	if steps.Changed { // the steps the effects and the stat block took it through: the master reads them, and a player's character's player
+		if err := storePartsRoll(ctx, c, p.ID, nil, []partRoll{}, steps.Groups, &steps.Amount, nil); err != nil {
 			return zoneDamageDealt{}, err
 		}
 	}

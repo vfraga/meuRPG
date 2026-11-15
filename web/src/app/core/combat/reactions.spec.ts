@@ -622,3 +622,18 @@ describe('a feature window (#743) opens its own sheet for the player who answers
     ).toBeUndefined();
   });
 });
+
+describe("a readied action's window (#582) opens its own sheet for the readier who answers it", () => {
+  const fired = (over: object = {}) =>
+    reactionWindow({ id: 'rw', kind: ReactionKind.READIED, forYou: true, ...over } as never);
+
+  it('is the window the sheet opens by itself although it has no prompt of its own', () => {
+    expect(sheetWindow(encounter({ reactionWindows: [fired()] } as never))?.id).toBe('rw');
+  });
+
+  it('is not opened for another reactor (a window a player who is not its reactor reads as one that does not exist)', () => {
+    expect(
+      sheetWindow(encounter({ reactionWindows: [fired({ forYou: false })] } as never)),
+    ).toBeUndefined();
+  });
+});

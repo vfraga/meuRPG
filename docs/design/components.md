@@ -100,6 +100,8 @@ The campaign import says its `--danger` cards that way, because each card replac
 
 ## Map and combat pieces
 
+`app-group-sum-parts` (the notice, the parts with the taken one struck and the sums kept; the roller's sheet in the waiting state, #835) is drawn with `app-multi-roll` (its `formula` input writes "Dano: 4 + 3 + 6 de frio = 13") and, on the master's card, `app-damage-breakdown` (group head rows from `damage-rows.ts`, the confirm panel with its `.ask__list`, `.ask__banner` and dashed `.ask__off` buttons) and `app-roll-picker` (`typeLabel` "Digitar por Jabuti"); details in [combat.md](combat.md#rolling-and-results).
+
 Documented with their screens: `map-view`, `map-layers`, `map-pins`, `fog-map`, `point-sheet`, `map-lists`, `dungeon-preview`, `door-crop` in [maps.md](maps.md); `combat-map`, `combatant-token`, `area-picker`, `start-combat`, `creature-pick`, `revive`, `familiar-eyes`, `wild-shape`, `summon-sheet` in [combat.md](combat.md); `roll-overlay`, `highlights`, `session-summary`, `xp`, `puzzle-boards`, `puzzles-panel`, `notes`, `trap-noticers`, `treasure-facts` in [session.md](session.md); `sheet` pieces in [sheet.md](sheet.md).
 
 ## Lists, cards and rows

@@ -1,0 +1,217 @@
+// What "Preparar uma ação" adds to the resource sheets' shared styles (#582, boards 582-01, 582-02, 582-09): the kind buttons,
+// the two columns of a dialog, the outlined fields, the cost box and why "Preparar" is off.
+.ready {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-4);
+
+  // A dialog has room for the second column: the slot, whom and the trigger sit beside the choice.
+  @media (min-width: 768px) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--mr-space-4) var(--mr-space-5);
+  }
+}
+
+.ready__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-3);
+  min-width: 0;
+}
+
+// Why a kind or "Preparar" is off: written with an icon, never colour alone.
+.missing {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-1);
+  margin: 0;
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    font-size: var(--mr-font-18);
+  }
+}
+
+.kinds {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.kinds .ask {
+  padding: 0;
+  margin-bottom: var(--mr-space-2);
+}
+
+.kinds__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--mr-space-2);
+}
+
+.kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mr-space-1);
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-surface);
+  color: var(--mr-ink);
+  font: inherit;
+  font-size: var(--mr-font-15);
+  font-weight: 700;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-focus);
+    outline-offset: 2px;
+  }
+
+  &--on {
+    padding: 0 11px;
+    border: 2px solid var(--mr-accent);
+    background: var(--mr-accent-soft);
+  }
+
+  // A kind that cannot be held now: dashed, and the reason is written under the row.
+  &--off {
+    border-style: dashed;
+    color: var(--mr-ink-muted);
+  }
+
+  .mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+
+  @media (min-width: 768px) {
+    min-height: 44px;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field__label {
+  font-size: var(--mr-font-14);
+  line-height: 18px;
+  font-weight: 700;
+  color: var(--mr-ink-muted);
+}
+
+.field__control {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-surface);
+  color: var(--mr-ink);
+  font: inherit;
+  font-size: var(--mr-font-16);
+  line-height: 22px;
+
+  &:focus-visible {
+    outline: 2px solid var(--mr-focus);
+    outline-offset: 2px;
+  }
+
+  &--area {
+    resize: vertical;
+    min-height: 84px;
+  }
+}
+
+// A refused field: the accent frame and the words, never the colour alone.
+.field--bad .field__control {
+  border: 2px solid var(--mr-danger-ink);
+  padding: 9px 11px;
+}
+
+.field__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--mr-space-3);
+  font-size: var(--mr-font-14);
+  line-height: 19px;
+}
+
+.field__note,
+.field__count {
+  color: var(--mr-ink-muted);
+}
+
+.field__note--bad {
+  color: var(--mr-danger-ink);
+  font-weight: 700;
+}
+
+.field__count {
+  flex: none;
+}
+
+.warn {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--mr-warning-ink);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-warning-surface);
+  color: var(--mr-warning-ink);
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+
+  .mat-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    font-size: var(--mr-font-20);
+  }
+}
+
+// What Ready costs: three short lines, each with its own mark.
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-2);
+  margin: 0;
+  padding: 12px 14px;
+  list-style: none;
+  border: 1px solid var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+  background: var(--mr-ground);
+  font-size: var(--mr-font-14);
+  line-height: 19px;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--mr-space-2);
+  }
+
+  .mat-icon {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    margin-top: 3px;
+    font-size: var(--mr-font-14);
+  }
+}

@@ -44,6 +44,7 @@ import { NudgeButton } from '../../nudge-button/nudge-button';
 import { tieNumbers } from '../../../../core/format/text';
 import { joinDots } from '../../../../core/format/text';
 import { conditionTags } from '../../../../core/combat/conditions';
+import { holdsReadied } from '../../../../core/combat/ready-card';
 import { type Pool, combatPool } from '../../../../core/combat/form-pool';
 import { labelTags } from '../../../../core/effects/effects';
 import { coverMark, coverText, sideTags } from '../../../../core/combat/cover';
@@ -172,6 +173,7 @@ export class OrderList {
   protected readonly Stable = CombatantState.STABLE;
   /** The sun note of a row shows only for a combatant with the sun trait that stands in the light. */
   protected readonly NoSunTrait = SunlightTrait.UNSPECIFIED;
+  protected readonly holdsReadied = holdsReadied;
 
   /** The count chip of the heading shows from this many combatants (the board's eight players). */
   protected readonly crowded = 7;
@@ -267,12 +269,7 @@ export class OrderList {
     this.folded.set(false);
   }
 
-  /** The strip's token has no words of its own: "Goblin 1, 7 de 7 PV, é a vez". */
-  protected stripLabel(c: Combatant): string {
-    return this.headName(c);
-  }
-
-  /** The name of a row's head for a screen reader: who, whether it is their turn, their state and hit points. */
+  /** The name of a row's head, and of the folded strip's token ("Goblin 1, 7 de 7 PV, é a vez"), for a screen reader: who, whether it is their turn, their state and hit points. */
   protected headName(c: Combatant): string {
     const pool = combatPool(c);
     const hp = pool ? `${pool.current} de ${pool.max} PV` : '';

@@ -5,6 +5,7 @@ import { CombatCombatantCalls } from './combat-client-combatant';
 import { CombatCastCalls } from './combat-client-cast';
 import { CombatFeatureCalls } from './combat-client-feature';
 import { CombatMoveCalls } from './combat-client-move';
+import { CombatReadyCalls } from './combat-client-ready';
 import { CombatTurnCalls } from './combat-client-turn';
 
 /**
@@ -19,7 +20,8 @@ import { CombatTurnCalls } from './combat-client-turn';
  * the keyed sender through one base: `turn` (setting up, turns, actions, undo,
  * log), `moves` (movement, sides, cover, opportunities), `attacks` (attacks,
  * damage, roll modes, reactions), `casts` (spells) and `combatants` (death
- * saves, conditions, effects, hit points) and `features` (using a feature of the combatant, on `FeatureService`).
+ * saves, conditions, effects, hit points), `features` (using a feature of the combatant, on
+ * `FeatureService`) and `ready` (Ready, on `ReadyService`).
  */
 @Injectable({ providedIn: 'root' })
 export class CombatClient {
@@ -30,4 +32,5 @@ export class CombatClient {
   readonly casts = new CombatCastCalls(this.base);
   readonly combatants = new CombatCombatantCalls(this.base);
   readonly features = new CombatFeatureCalls();
+  readonly ready = new CombatReadyCalls();
 }

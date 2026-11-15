@@ -1,3 +1,5 @@
+import { holdsReadied } from '../../../../core/combat/ready-card';
+import { ReadiedCard } from '../readied-card/readied-card';
 import { NgTemplateOutlet } from '@angular/common';
 import {
   Component,
@@ -92,6 +94,7 @@ import { isMasterWait } from '../../../../core/combat/reactions';
     OrderStrip,
     OwnNumbers,
     RageStatus,
+    ReadiedCard,
     TurnReaction,
     FavorChip,
     FormChip,
@@ -168,6 +171,11 @@ export class TurnPanel {
   });
   protected readonly round = computed(() => roundLabel(this.encounter().round));
   protected readonly own = computed(() => ownCombatant(this.encounter()));
+  /** The action the player's character holds for its trigger, read off its turn (#582): the master decides when it happens. */
+  protected readonly readied = computed(() => {
+    const me = this.own();
+    return holdsReadied(me) ? me!.readied! : null;
+  });
   private readonly favor = inject(FavorState);
   /** The player's own character has the master's Inspiração (RN-43): the chip in the band. The read gives a player only their own characters (RN-10). */
   protected readonly hasFavor = computed(() => {

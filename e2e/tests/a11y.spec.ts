@@ -78,6 +78,7 @@ import { beginCrowdedCombatRPC, boxIn, callFeatBody, chamadosFeatBody, elementFe
 import { createFeatOptionsRPC, expectInViewport, featShotScale, featViewport, openSelect, shootFeat, type FeatOptionsTable } from './feat-options-support';
 import { archiveEntryRPC, checkMinimumFeatBody, costsRaceBody, createEntryRPC, creatureBody, criticalFeatureBody, damageCreatureBody, entryRoute, expectCardsHoldTheirText, giveFeatRPC, heavyBlowFeatBody, hitModifier, hitSpellBody, minimumFeatBody, raceBody, rerollFeatBody, spellBody, steadyShotFeatBody, updateEntryRPC } from './content-support';
 import { rerollTable } from './reroll-support';
+import { aloneFlow, damageCard, expectDashed, expectFits, otherPlayerLogFlow, rolledFlow, shootTakeOut, sneakHit, takeOutRPC, takeOutShotScale, takeOutTable, twoPartsFlow, type TakeOutOptions } from './take-out-support';
 import { generateSceneRPC, mapRoute, tableForImages } from './images-support';
 import { treasureRoute } from './treasure-support';
 import { classBody, createClassRPC, createSubclassRPC, halfCasterBody, listEntries } from './classes-support';
@@ -97,6 +98,7 @@ import {
 } from './table-sheet-support';
 import { masterLog, openCombatPanel, openMap, openOrderRow, openTurn } from './combat-layout';
 import { waitForEncounterRevision } from './revision-support';
+import { goblinTrigger, moveOffText, openReadySheet, pensantusReadyKit, readyAttackRPC, readyRPC, readySpellRPC, shootReady, spellOffText } from './ready-support';
 import { WIDTHS, beginVrockFight, pagesFor, shoot, useCreatureActionRPC, viewportOf } from './recharge-support';
 import { chooseRow, openTvPanel, rollForTableRPC, tvRoute } from './table-screen-support';
 import { LIT, WIDTHS as SUN_WIDTHS, sunSpot as sunBar, mapCard as sunMapCard, paintStatus as sunPaintStatus, setSunlightRPC, shoot as shootSun, sunSwitch, sunlightTable, viewportOf as sunViewport } from './sunlight-support';
@@ -14831,6 +14833,499 @@ for (const [colorScheme, theme] of [
       async ({ browser }) => {
         test.setTimeout(300_000);
         await scanFeatureWindowScreens(browser, colorScheme, width);
+      },
+    );
+  }
+}
+
+/**
+ * "Preparar" (#582, boards 582-01, 02, 03 and 09), the player's side: the row of "Outras", the sheet of each kind, the trigger refused over 200
+ * characters before anything is sent, the server's refusal in the red band and the readied card on and off the turn with its "Desistir" menu.
+ */
+async function scanReadyScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = featViewport(width);
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport, ...featShotScale });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport, ...featShotScale });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  m.setDefaultTimeout(20_000);
+  p.setDefaultTimeout(20_000);
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableForCombat(m, p, `Acessibilidade preparar ${Date.now()}`, true, true, { sheet: pensantusReadyKit });
+    campaignId = table.campaignId;
+    const begun = await beginAttackCombatRPC(m, table, { Pensantus: 20, 'Capitão Goblin': 15, 'Goblin 1': 5, 'Goblin 2': 4 }, attackCombatSquares);
+    const shoot = async (page: Page, screen: string): Promise<void> => shootReady(page, screen, width, colorScheme);
+
+    await openSessionPage(p, campaignId);
+    await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
+    const other = await openActionTab(p, 'Outras');
+    await expect(other.getByRole('button', { name: 'Preparar uma ação' })).toBeVisible();
+    await expectScreenPasses(p, `Preparar, a linha da aba Outras ${where}`);
+    await shoot(p, 'preparar-linha');
+
+    // The sheet opens on the attack: nothing is chosen, "Preparar" waits.
+    await other.getByRole('button', { name: 'Preparar uma ação' }).click();
+    const sheet = p.getByRole('dialog', { name: 'Preparar uma ação' });
+    await expect(sheet.getByRole('button', { name: 'Preparar', exact: true })).toBeDisabled();
+    await expectScreenPasses(p, `Preparar, a folha do ataque ${where}`);
+    await shoot(p, 'preparar-ataque');
+
+    // The trigger over 200 characters is refused in the field, before anything is sent.
+    const field = sheet.getByLabel('Quando dispara, nas suas palavras');
+    await field.fill('a'.repeat(231));
+    await expect(sheet.getByText('Até 200 caracteres.')).toBeVisible();
+    await expectScreenPasses(p, `Preparar, o gatilho longo demais ${where}`);
+    await shoot(p, 'preparar-campo');
+
+    // A spell: the circle to hold it with, and the warning that it is the concentration.
+    await sheet.getByRole('button', { name: 'Magia', exact: true }).click();
+    await expect(sheet.locator('label', { hasText: 'Mísseis Mágicos' })).toContainText(spellOffText);
+    await sheet.locator('label', { hasText: 'Enfeitiçar Pessoa' }).click();
+    await expect(sheet.getByRole('group', { name: 'Com que espaço' })).toBeVisible();
+    await field.fill('Se o goblin sair da sombra do pilar');
+    await expectScreenPasses(p, `Preparar, a folha da magia ${where}`);
+    await shoot(p, 'preparar-magia');
+
+    await sheet.getByRole('button', { name: 'Mover', exact: true }).click();
+    await expect(sheet.getByText(moveOffText)).toBeVisible();
+    await expect(sheet.getByRole('button', { name: 'Preparar', exact: true })).toBeDisabled();
+    await expectScreenPasses(p, `Preparar, a folha do movimento, desligada ${where}`);
+    await shoot(p, 'preparar-mover');
+
+    await sheet.getByRole('button', { name: 'Outra', exact: true }).click();
+    await expectScreenPasses(p, `Preparar, a folha de outra ação ${where}`);
+    await shoot(p, 'preparar-outra');
+
+    // The action is spent meanwhile: the server refuses and the sheet keeps what was typed.
+    await sheet.getByRole('button', { name: 'Ataque', exact: true }).click();
+    await sheet.locator('label', { hasText: 'Adaga' }).click();
+    await waitForEncounterRevision(p, await combatRPC(m, 'TakeAction', { campaignId, encounterId: begun.id, combatantId: begun.combatants.find((c) => c.label === 'Pensantus')!.id, actionKey: 'standard:dodge' }));
+    await sheet.getByRole('button', { name: 'Preparar', exact: true }).click();
+    await expect(sheet.getByRole('alert')).toContainText('Sua ação já foi usada neste turno.');
+    await expectScreenPasses(p, `Preparar, a recusa do servidor ${where}`);
+    await shoot(p, 'preparar-recusa');
+    await sheet.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(sheet).toHaveCount(0);
+
+    // The next round: the action is free again, the attack is held and the card sits under the economy row.
+    await endTurnOf(p, m, campaignId, 'Pensantus');
+    await passTurnsToAndWait(m, campaignId, 'Pensantus', p);
+    await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
+    const again = await openReadySheet(p);
+    await again.locator('label', { hasText: 'Adaga' }).click();
+    await again.getByLabel('Em quem (opcional)').selectOption({ label: 'Capitão Goblin' });
+    await again.getByLabel('Quando dispara, nas suas palavras').fill(goblinTrigger);
+    await again.getByRole('button', { name: 'Preparar', exact: true }).click();
+    await expect(again).toHaveCount(0);
+    const card = p.getByRole('region', { name: 'Ação preparada: Adaga no Capitão Goblin' });
+    await expect(card).toBeVisible();
+    await expectScreenPasses(p, `Preparar, o cartão na vez ${where}`);
+    await shoot(p, 'preparar-cartao');
+    await card.getByRole('button', { name: 'Mais ações da ação preparada' }).click();
+    await expect(p.getByRole('menuitem', { name: /Desistir da ação preparada/ })).toBeVisible();
+    await expectScreenPasses(p, `Preparar, o menu Desistir ${where}`);
+    await shoot(p, 'preparar-desistir');
+    await p.keyboard.press('Escape');
+
+    // Off the turn the card only reads.
+    await endTurnOf(p, m, campaignId, 'Pensantus');
+    const off = p.getByRole('region', { name: 'Ação preparada: Adaga no Capitão Goblin' });
+    await expect(off).toBeVisible();
+    await expect(off.getByRole('button', { name: 'Mais ações da ação preparada' })).toHaveCount(0);
+    await expectScreenPasses(p, `Preparar, o cartão fora da vez ${where}`);
+    await shoot(p, 'preparar-cartao-fora');
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+for (const [colorScheme, theme] of [
+  ['light', 'claro'],
+  ['dark', 'escuro'],
+] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`preparar uma ação passa no axe e nas conferências de layout no tema ${theme}, em ${width}`, { tag: ['@a11y', '@RN-31'] }, async ({ browser }) => {
+      test.setTimeout(300_000);
+      await scanReadyScreens(browser, colorScheme, width);
+    });
+  }
+}
+
+/**
+ * "Ações preparadas" (#582, boards 582-04 and 582-09), the master's side: the fold in "Turno" with a row that cannot fire on its readier's own
+ * turn (the reason in its line), a hidden creature that readied (the chip "Só você vê") beside a row that can, and the row once the fire
+ * opened the readier's window. The order row says "Preparada" in all of them.
+ */
+async function scanReadyMasterScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = featViewport(width);
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport, ...featShotScale });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport, ...featShotScale });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  m.setDefaultTimeout(20_000);
+  p.setDefaultTimeout(20_000);
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableForCombat(m, p, `Acessibilidade preparar mestre ${Date.now()}`, true, true, { sheet: pensantusCasting });
+    campaignId = table.campaignId;
+    const begun = await beginAttackCombatRPC(m, table, { Pensantus: 20, 'Capitão Goblin': 15, 'Goblin 1': 5, 'Goblin 2': 4 }, attackCombatSquares, ['Goblin 1']);
+    const shoot = async (page: Page, screen: string): Promise<void> => shootReady(page, screen, width, colorScheme);
+    await openSessionPage(p, campaignId);
+    await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
+    await readyAttackRPC(p, campaignId, begun, 'Pensantus', 'Capitão Goblin');
+
+    await openSessionPage(m, campaignId);
+    const row = m.locator('app-readied-fold li.row');
+    await expect(row).toContainText('É a vez de Pensantus: só dispara fora da vez dele.');
+    await expectScreenPasses(m, `Preparar, o mestre e a ação preparada na vez de quem preparou ${where}`);
+    await m.locator('app-readied-fold').scrollIntoViewIfNeeded();
+    await shoot(m, 'mestre-vez');
+    await openOrderRow(m, 'Pensantus');
+    await expect(m.locator('app-order-list').getByTestId('order-readied')).toHaveText(/Preparada/);
+    // The mark does not eat the initiative: the number is whole ("Inic. 20"), not cut to "Inic. 2…" by the mark beside it.
+    const lead = m.locator('app-order-list .row__sub', { has: m.getByTestId('order-readied') }).locator('.row__lead');
+    await expect(lead).toContainText(/Inic\. \d+/);
+    const cut = await lead.evaluate((el) => ({ text: el.textContent?.trim() ?? '', clipped: el.scrollWidth > el.clientWidth + 0.5, shown: el.clientWidth, wanted: el.scrollWidth }));
+    expect(cut.clipped, `"${cut.text}" cabe inteiro na linha da ordem ao lado de "Preparada" (${cut.shown}px de ${cut.wanted}px) ${where}`).toBe(false);
+    await expectScreenPasses(m, `Preparar, a linha da ordem com "Preparada" ${where}`);
+    await shoot(m, 'mestre-ordem');
+    await openTurn(m);
+
+    // Goblin 1 (hidden) readies a Dodge on its turn; Pensantus' row can fire.
+    const enc = await passTurnsToAndWait(m, campaignId, 'Goblin 1', m);
+    const readied = await readyRPC(m, 'ReadyAction', {
+      campaignId,
+      encounterId: enc.id,
+      combatantId: enc.combatants.find((c) => c.label === 'Goblin 1')!.id,
+      triggerText: 'Quando o guerreiro passar pela coluna',
+      kind: 'READIED_KIND_OTHER',
+      actionKey: 'standard:dodge',
+    });
+    await waitForEncounterRevision(m, readied);
+    await expect(m.locator('app-readied-fold li.row')).toHaveCount(2);
+    await expect(m.locator('app-readied-fold').getByText('Só você vê')).toBeVisible();
+    await expectScreenPasses(m, `Preparar, duas ações preparadas, uma de criatura escondida ${where}`);
+    await m.locator('app-readied-fold').scrollIntoViewIfNeeded();
+    await shoot(m, 'mestre-dois');
+
+    // The fire opens the readier's window: the row says so and "Disparar" stays off.
+    await row.filter({ hasText: 'Pensantus' }).getByRole('button', { name: 'Disparar a ação de Pensantus' }).click();
+    await expect(row.filter({ hasText: 'Pensantus' })).toContainText('A janela de Pensantus já está aberta: espere a resposta.');
+    await expectScreenPasses(m, `Preparar, a janela do preparado aberta ${where}`);
+    await m.locator('app-readied-fold').scrollIntoViewIfNeeded();
+    await shoot(m, 'mestre-janela');
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+for (const [colorScheme, theme] of [
+  ['light', 'claro'],
+  ['dark', 'escuro'],
+] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`as ações preparadas do mestre passam no axe e nas conferências de layout no tema ${theme}, em ${width}`, { tag: ['@a11y', '@RN-31'] }, async ({ browser }) => {
+      test.setTimeout(300_000);
+      await scanReadyMasterScreens(browser, colorScheme, width);
+    });
+  }
+}
+
+/** The windows and prompts of a readied action (#582): the readier's notice of a loss, the prompt of an attack, the master's queue row, the window that closed without the player and the prompt of a move. */
+async function scanReadyWindowScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const viewport = featViewport(width);
+  const master = await browser.newContext({ storageState: authStatePath('Mestre Teste'), colorScheme, viewport, ...featShotScale });
+  const player = await browser.newContext({ storageState: authStatePath('Jogador Teste'), colorScheme, viewport, ...featShotScale });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  m.setDefaultTimeout(20_000);
+  p.setDefaultTimeout(20_000);
+  const where = `(${colorScheme}, ${width}px)`;
+  let campaignId = '';
+  try {
+    await m.goto('/');
+    await p.goto('/');
+    const table = await tableForCombat(m, p, `Acessibilidade preparar janelas ${Date.now()}`, true, true, { sheet: pensantusCasting });
+    campaignId = table.campaignId;
+    const squares: Record<string, [number, number]> = { Pensantus: [1, 1], 'Capitão Goblin': [2, 1], 'Goblin 1': [9, 9], 'Goblin 2': [14, 10] };
+    const begun = await beginAttackCombatRPC(m, table, { Pensantus: 20, 'Capitão Goblin': 15, 'Goblin 1': 5, 'Goblin 2': 4 }, squares);
+    const shoot = async (page: Page, screen: string): Promise<void> => shootReady(page, screen, width, colorScheme);
+    await openSessionPage(p, campaignId);
+    await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
+    await waitForEncounterRevision(p, await readyAttackRPC(p, campaignId, begun, 'Pensantus', 'Capitão Goblin'));
+    await openSessionPage(m, campaignId);
+
+    // The trigger never came: the turns go round and the readier's turn starts first; the notice opens the turn.
+    await passTurnsToAndWait(m, campaignId, 'Capitão Goblin', [m, p]);
+    const round2 = await passTurnsToAndWait(m, campaignId, 'Pensantus', [m, p]);
+    await expect(p.getByRole('heading', { name: 'Sua vez, Pensantus' })).toBeVisible();
+    const notice = p.getByTestId('readied-lost');
+    await expect(notice).toContainText('A sua ação preparada se perdeu.');
+    await expectScreenPasses(p, `Preparar, o aviso de que a ação preparada se perdeu ${where}`);
+    await shoot(p, 'aviso-perdida');
+    await notice.getByRole('button', { name: 'Entendi' }).click();
+
+    // A new readied attack, fired on the Capitão's turn: the readier's prompt and the master's row.
+    await waitForEncounterRevision(p, await readyAttackRPC(p, campaignId, round2, 'Pensantus', 'Capitão Goblin'));
+    await passTurnsToAndWait(m, campaignId, 'Capitão Goblin', [m, p]);
+    await m.locator('app-readied-fold').getByRole('button', { name: 'Disparar a ação de Pensantus' }).click();
+    const prompt = p.getByRole('alertdialog', { name: 'Ação preparada: atacar com Adaga' });
+    await expect(prompt).toBeVisible();
+    await expect(prompt.getByRole('radio', { name: /Capitão Goblin/ })).toBeChecked();
+    await expectScreenPasses(p, `Preparar, o aviso do gatilho com um ataque ${where}`);
+    await shoot(p, 'janela-ataque');
+    const queue = m.locator('app-reaction-queue[part="rest"]');
+    await expect(queue).toContainText(/Esperando Pensantus · passa sozinho em \d+ s/);
+    await queue.scrollIntoViewIfNeeded();
+    await expectScreenPasses(m, `Preparar, a janela do preparado na fila do mestre ${where}`);
+    await shoot(m, 'janela-fila');
+
+    // The master lets it pass: the readier reads that it closed without them.
+    await queue.getByRole('button', { name: 'Deixar passar' }).click();
+    await expect(prompt).toContainText('A janela fechou.');
+    await expect(prompt.getByRole('button', { name: 'Fechar' })).toBeFocused();
+    await expectScreenPasses(p, `Preparar, a janela que fechou sem resposta ${where}`);
+    await shoot(p, 'janela-acabou');
+    await prompt.getByRole('button', { name: 'Fechar' }).click();
+    await expect(prompt).toHaveCount(0);
+
+    // A readied move cannot be released from the prompt yet: it only lets it pass.
+    const round3 = await passTurnsToAndWait(m, campaignId, 'Pensantus', [m, p]);
+    await waitForEncounterRevision(
+      p,
+      await readyRPC(p, 'ReadyAction', { campaignId, encounterId: round3.id, combatantId: round3.combatants.find((c) => c.label === 'Pensantus')!.id, triggerText: 'Quando o goblin recuar, corro até a porta', kind: 'READIED_KIND_MOVE' }),
+    );
+    await passTurnsToAndWait(m, campaignId, 'Capitão Goblin', [m, p]);
+    await m.locator('app-readied-fold').getByRole('button', { name: 'Disparar a ação de Pensantus' }).click();
+    const move = p.getByRole('alertdialog', { name: 'Ação preparada: mover' });
+    await expect(move).toBeVisible();
+    await expect(move).toContainText('Mover agora, até');
+    await expectScreenPasses(p, `Preparar, o aviso do gatilho com um movimento ${where}`);
+    await shoot(p, 'janela-mover');
+    await move.getByRole('button', { name: 'Deixar passar' }).click();
+    await expect(move).toHaveCount(0);
+
+    // A readied spell is released from the prompt ("Soltar"), with the creature named at Ready chosen.
+    const round4 = await passTurnsToAndWait(m, campaignId, 'Pensantus', [m, p]);
+    await waitForEncounterRevision(p, await readySpellRPC(p, campaignId, round4, 'Pensantus', 'spell:magic-missile', 1, 'Capitão Goblin'));
+    await passTurnsToAndWait(m, campaignId, 'Capitão Goblin', [m, p]);
+    await m.locator('app-readied-fold').getByRole('button', { name: 'Disparar a ação de Pensantus' }).click();
+    const spell = p.getByRole('alertdialog', { name: 'Soltar Mísseis Mágicos' });
+    await expect(spell).toBeVisible();
+    await expect(spell.getByRole('radio', { name: /Capitão Goblin/ })).toBeChecked();
+    await expectScreenPasses(p, `Preparar, o aviso do gatilho com uma magia ${where}`);
+    await shoot(p, 'janela-magia');
+    await spell.getByRole('button', { name: 'Deixar passar' }).click();
+    await expect(spell).toHaveCount(0);
+
+    // A readied attack with no creature named: the master's row asks who, with the use off until he picks.
+    const round5 = await passTurnsToAndWait(m, campaignId, 'Pensantus', [m, p]);
+    await waitForEncounterRevision(p, await readyAttackRPC(p, campaignId, round5, 'Pensantus'));
+    await passTurnsToAndWait(m, campaignId, 'Capitão Goblin', [m, p]);
+    await m.locator('app-readied-fold').getByRole('button', { name: 'Disparar a ação de Pensantus' }).click();
+    const who = m.locator('app-reaction-queue[part="rest"]');
+    await expect(who.getByRole('radio', { name: /Capitão Goblin/ })).toBeVisible();
+    await who.scrollIntoViewIfNeeded();
+    await expectScreenPasses(m, `Preparar, a fila do mestre pedindo em quem o ataque preparado é feito ${where}`);
+    await shoot(m, 'janela-fila-alvo');
+    await who.getByRole('button', { name: 'Deixar passar' }).click();
+  } finally {
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
+for (const [colorScheme, theme] of [
+  ['light', 'claro'],
+  ['dark', 'escuro'],
+] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(`as janelas e os avisos da ação preparada passam no axe e nas conferências de layout no tema ${theme}, em ${width}`, { tag: ['@a11y', '@RN-31'] }, async ({ browser }) => {
+      test.setTimeout(420_000);
+      await scanReadyWindowScreens(browser, colorScheme, width);
+    });
+  }
+}
+
+// #835: taking an extra out of a typed group. One table per theme and width; the screens come in the order the flow goes.
+async function scanTakeOutScreens(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `(${colorScheme}, ${width}px)`;
+  const t = await takeOutTable(browser, { colorScheme, masterWidth: width, playerWidth: width, ...takeOutShotScale });
+  const { m, p, campaignId } = t;
+  try {
+    await sneakHit(t);
+    await openSessionPage(m, campaignId);
+    const card = damageCard(m);
+    await expect(card.getByText('Aplicado · 15')).toBeVisible();
+    await expectScreenPasses(m, `Tirar parte, o grupo na carta do mestre ${where}`);
+    await expectFits(m, card, `Tirar parte, o grupo ${where}`);
+    await shootTakeOut(m, 'master-group', width, colorScheme, card);
+
+    // The panel with what it undoes, and the empty reason.
+    await card.getByRole('button', { name: 'Tirar o Ataque Furtivo' }).click();
+    const panel = card.getByRole('alertdialog', { name: 'Tirar o Ataque Furtivo do dano?' });
+    const field = panel.getByLabel('Motivo (aparece no registro)');
+    const confirm = panel.getByRole('button', { name: 'Tirar e pedir a soma' });
+    await field.fill('x');
+    await field.fill('');
+    await expect(panel.getByText('Escreva o motivo, com até 120 caracteres.')).toBeVisible();
+    await expectDashed(confirm);
+    await expectScreenPasses(m, `Tirar parte, o motivo vazio ${where}`);
+    await shootTakeOut(m, 'empty-reason', width, colorScheme, panel);
+    await field.fill('Sem aliado perto do alvo');
+    await expectScreenPasses(m, `Tirar parte, a confirmação com a lista do que se desfaz ${where}`);
+    await expectFits(m, panel, `Tirar parte, a confirmação ${where}`);
+    await shootTakeOut(m, 'confirm', width, colorScheme, panel);
+
+    // Sending, then a refusal of the server: nothing changed and the panel stays.
+    let release = (): void => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    await m.route('**/*CombatService/RemoveDamagePart', async (route) => {
+      await gate;
+      await route.fulfill({ status: 503, contentType: 'application/json', body: '{"code":"unavailable","message":"x"}' });
+    });
+    await confirm.click();
+    const sending = panel.getByRole('button', { name: 'Tirando…' });
+    await expect(sending).toBeVisible();
+    await expectDashed(sending);
+    await expectDashed(panel.getByRole('button', { name: 'Voltar' }));
+    await expectScreenPasses(m, `Tirar parte, enviando ${where}`);
+    await shootTakeOut(m, 'sending', width, colorScheme, panel);
+    release();
+    await expect(panel.getByRole('alert')).toContainText('Não deu para tirar a parte agora. Nada mudou. Tente de novo.');
+    await expectScreenPasses(m, `Tirar parte, a recusa ${where}`);
+    await expectFits(m, panel, `Tirar parte, a recusa ${where}`);
+    await shootTakeOut(m, 'refusal', width, colorScheme, panel);
+    await m.unroute('**/*CombatService/RemoveDamagePart');
+    await confirm.click();
+
+    // The master waits for the sum of the one who attacked.
+    await expect(card.getByText('Esperando Vex')).toBeVisible();
+    await expect(card.getByText('tirado: “Sem aliado perto do alvo”')).toBeVisible();
+    await expectScreenPasses(m, `Tirar parte, a espera do mestre ${where}`);
+    await expectFits(m, card, `Tirar parte, a espera ${where}`);
+    await shootTakeOut(m, 'waiting-master', width, colorScheme, card);
+    const strip = m.getByText('Falta a soma de Vex').first();
+    await expect(strip).toBeVisible();
+    await shootTakeOut(m, 'strip', width, colorScheme, strip);
+
+    // The roller: the card on her turn, then the sheet with one field.
+    const notice = p.getByText('Falta digitar de novo a soma do dano do seu ataque.');
+    await expect(notice).toBeVisible();
+    await expectScreenPasses(p, `Tirar parte, o aviso na vez de quem rolou ${where}`);
+    await shootTakeOut(p, 'roller-card', width, colorScheme, notice);
+    await p.getByRole('button', { name: 'Digitar a soma' }).click();
+    const sheet = p.getByRole('dialog').filter({ has: p.getByRole('heading', { name: 'Digitar o dano de novo' }) });
+    await expect(sheet.getByLabel('Rapieira, perfurante: 1d8')).toBeVisible();
+    await expect(sheet.getByText(/ PV/)).toHaveCount(0);
+    await expectScreenPasses(p, `Tirar parte, a folha de quem rolou ${where}`);
+    await expectFits(p, sheet, `Tirar parte, a folha ${where}`);
+    await shootTakeOut(p, 'roller-sheet', width, colorScheme);
+    await sheet.getByLabel('Rapieira, perfurante: 1d8').fill('1');
+    await sheet.getByRole('button', { name: 'Aplicar 4 de dano' }).click();
+    await sheet.getByRole('button', { name: /Voltar à sua vez/ }).click();
+    await expect(card.getByText('Esperando Vex')).toHaveCount(0);
+
+    // The log: the master and the attacker read the reason.
+    await openCombatPanel(m, 'Registro');
+    const masterLog = m.getByRole('log', { name: 'Registro do combate' });
+    await expect(masterLog.getByText(/Sem aliado perto do alvo/)).toBeVisible();
+    await expectScreenPasses(m, `Tirar parte, o registro do mestre ${where}`);
+    await shootTakeOut(m, 'master-log', width, colorScheme, masterLog);
+    const playerLog = await openCombatLog(p);
+    await expect(playerLog.getByText(/Sem aliado perto do alvo/)).toBeVisible();
+    await expectScreenPasses(p, `Tirar parte, o registro de quem rolou ${where}`);
+    await shootTakeOut(p, 'player-log', width, colorScheme, playerLog);
+  } finally {
+    await t.done().catch(() => undefined);
+  }
+
+  // The sheet was still open on the applied damage when the master took the part out: it goes back to the group field.
+  const again = await takeOutTable(browser, { colorScheme, masterWidth: width, playerWidth: width, ...takeOutShotScale });
+  try {
+    const open = await sneakHit(again, true);
+    await takeOutRPC(again, 'Sem aliado perto do alvo');
+    await expect(open.getByText(/O mestre tirou o Ataque Furtivo/)).toBeVisible();
+    await expect(open.getByLabel('Rapieira, perfurante: 1d8')).toBeVisible();
+    await expectScreenPasses(again.p, `Tirar parte, a folha que já estava aberta ${where}`);
+    await shootTakeOut(again.p, 'sheet-open', width, colorScheme);
+  } finally {
+    await again.done().catch(() => undefined);
+  }
+}
+
+for (const [colorScheme, theme] of [
+  ['light', 'claro'],
+  ['dark', 'escuro'],
+] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(
+      `tirar uma parte de um grupo digitado passa no axe e nas conferências de layout no tema ${theme}, em ${width}`,
+      { tag: ['@a11y', '@MR-012'] },
+      async ({ browser }) => {
+        test.setTimeout(300_000);
+        await scanTakeOutScreens(browser, colorScheme, width);
+      },
+    );
+  }
+}
+
+// #835, board 835-04 states 2 to 4: a part alone in its type, the group that keeps two parts, and the damage rolled on a character and not applied.
+async function scanTakeOutStates(browser: Browser, colorScheme: 'light' | 'dark', width: number): Promise<void> {
+  const where = `(${colorScheme}, ${width}px)`;
+  const view = {
+    scan: async (page: Page, screen: string) => {
+      await expectScreenPasses(page, `${screen} ${where}`);
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(wide, `${screen} ${where}: a página rola de lado em ${wide}px`).toBeLessThanOrEqual(0);
+    },
+    shoot: (page: Page, screen: string, at?: Locator) => shootTakeOut(page, screen, width, colorScheme, at),
+  };
+  const states: [TakeOutOptions, (t: Awaited<ReturnType<typeof takeOutTable>>, v: typeof view) => Promise<void>][] = [
+    [{ feats: ['radiant'] }, aloneFlow],
+    [{ feats: ['pierce'] }, twoPartsFlow],
+    [{ ally: true }, rolledFlow],
+    [{ ally: true }, otherPlayerLogFlow],
+  ];
+  for (const [options, flow] of states) {
+    const t = await takeOutTable(browser, { colorScheme, masterWidth: width, playerWidth: width, ...takeOutShotScale }, options);
+    try {
+      await flow(t, view);
+    } finally {
+      await t.done().catch(() => undefined);
+    }
+  }
+}
+
+for (const [colorScheme, theme] of [
+  ['light', 'claro'],
+  ['dark', 'escuro'],
+] as const) {
+  for (const width of [390, 768, 1280]) {
+    test(
+      `tirar uma parte de um grupo digitado, os outros estados, passa no axe e nas conferências de layout no tema ${theme}, em ${width}`,
+      { tag: ['@a11y', '@MR-012'] },
+      async ({ browser }) => {
+        test.setTimeout(420_000);
+        await scanTakeOutStates(browser, colorScheme, width);
       },
     );
   }

@@ -17,6 +17,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/dice"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
@@ -141,22 +142,6 @@ type rerolled struct {
 	SourceKey string `json:"source_key,omitempty"`
 }
 
-// stepGroup is the damage of one type and the modifiers that covered it: what the
-// steps are worked out from again when the master leaves a source out.
-type stepGroup struct {
-	DamageType string `json:"damage_type"`
-	// Before is the damage of the type before the modifiers.
-	Before int32             `json:"before"`
-	Mods   []combat.Modifier `json:"mods"`
-	// From says where the damage came from: the steps are worked out with it again when
-	// the master leaves a source out (a modifier can hold for a nonmagical attack only).
-	From combat.Origin `json:"origin,omitzero"`
-	// Allot is set on the group of the flat damage reductions, which are taken once from the whole
-	// attack: the damage of each type before them (Before is the total, DamageType is empty, Mods are
-	// the reductions). The groups of the types then start from what the reduction left.
-	Allot map[string]int `json:"allot,omitempty"`
-}
-
 func readParts(raw []byte) []partRecord {
 	var out []partRecord
 	if len(raw) == 0 || json.Unmarshal(raw, &out) != nil {
@@ -173,14 +158,6 @@ func rewritesParts(offered []byte, rolled []partRecord) bool {
 
 func readPartRolls(raw []byte) []partRoll {
 	var out []partRoll
-	if len(raw) == 0 || json.Unmarshal(raw, &out) != nil {
-		return nil
-	}
-	return out
-}
-
-func readStepGroups(raw []byte) []stepGroup {
-	var out []stepGroup
 	if len(raw) == 0 || json.Unmarshal(raw, &out) != nil {
 		return nil
 	}
@@ -677,181 +654,6 @@ func partRollProto(r partRoll, damageTypePT func(string) string) *playv1.DamageP
 	return pr
 }
 
-// groupSteps works out the steps of one stored group: the single reduction step of an Allot group,
-// the adjustment steps of a damage type otherwise.
-func groupSteps(g stepGroup, ignored []string) []combat.Step {
-	if g.Allot == nil {
-		_, steps := combat.Adjust(int(g.Before), g.DamageType, g.Mods, ignored, g.From)
-		return steps
-	}
-	if st, _, ok := combat.Reduce(g.Allot, g.Mods, ignored, g.From); ok {
-		return []combat.Step{st}
-	}
-	return nil
-}
-
-// stepsProto writes the steps the modifiers take the damage through, in Portuguese.
-func stepsProto(groups []stepGroup, ignored []string, names func(string) string, damageTypePT func(string) string, master bool) []*playv1.DamageStep {
-	var out []*playv1.DamageStep
-	for _, g := range groups {
-		gnames := names
-		if !master { // an effect the master hides is "Outra fonte" to a player (RN-10)
-			gnames = hidingNames(names, g.Mods)
-		}
-		for _, st := range groupSteps(g, ignored) {
-			out = append(out, &playv1.DamageStep{
-				Kind: stepKindProto(st.Kind), SourceKeys: shownSourceKeys(st.Sources, g.Mods, master), LabelPt: stepLabel(st, gnames, damageTypePT),
-				Before: clamp32(st.Before, 0, math.MaxInt32), After: clamp32(st.After, 0, math.MaxInt32), DamageTypeKey: st.DamageType,
-			})
-		}
-		// A source the master left out is still listed, struck.
-		for _, ig := range ignored {
-			for _, m := range g.Mods {
-				if m.Source == ig && m.Covers(g.DamageType, g.From) {
-					out = append(out, &playv1.DamageStep{
-						Kind: stepKindProto(m.Kind), SourceKeys: shownSourceKeys([]string{m.Source}, g.Mods, master), LabelPt: stepLabel(combat.Step{Kind: m.Kind, Sources: []string{m.Source}, DamageType: g.DamageType, Qualifier: m.Qualifier}, gnames, damageTypePT),
-						Before: g.Before, After: g.Before, DamageTypeKey: g.DamageType, Ignored: true,
-					})
-				}
-			}
-		}
-	}
-	return out
-}
-
-// hiddenSources are the keys of the modifiers that come from an effect the master hides.
-func hiddenSources(mods []combat.Modifier) []string {
-	var out []string
-	for _, m := range mods {
-		if m.Hidden {
-			out = append(out, m.Source)
-		}
-	}
-	return out
-}
-
-// hidingNames is names with "Outra fonte" for the sources the master hides.
-func hidingNames(names func(string) string, mods []combat.Modifier) func(string) string {
-	hidden := hiddenSources(mods)
-	if len(hidden) == 0 {
-		return names
-	}
-	return func(key string) string {
-		if slices.Contains(hidden, key) {
-			return otherSourceTx
-		}
-		return names(key)
-	}
-}
-
-// shownSourceKeys are the keys of a step's sources a viewer may read: a player gets none of an effect the master hides.
-func shownSourceKeys(keys []string, mods []combat.Modifier, master bool) []string {
-	if master {
-		return keys
-	}
-	hidden := hiddenSources(mods)
-	return slices.DeleteFunc(slices.Clone(keys), func(k string) bool { return slices.Contains(hidden, k) })
-}
-
-func stepKindProto(kind string) playv1.DamageStepKind {
-	switch kind {
-	case combat.StepResistance:
-		return playv1.DamageStepKind_DAMAGE_STEP_KIND_RESISTANCE
-	case combat.StepVulnerability:
-		return playv1.DamageStepKind_DAMAGE_STEP_KIND_VULNERABILITY
-	case combat.StepImmunity:
-		return playv1.DamageStepKind_DAMAGE_STEP_KIND_IMMUNITY
-	case combat.StepReduction:
-		return playv1.DamageStepKind_DAMAGE_STEP_KIND_REDUCTION
-	}
-	return playv1.DamageStepKind_DAMAGE_STEP_KIND_UNSPECIFIED
-}
-
-// stepLabel writes a step as the screen reads it: "Resistência a fogo (tiefling)",
-// "Vulnerabilidade a concussão (Esqueleto)".
-func stepLabel(st combat.Step, names func(string) string, damageTypePT func(string) string) string {
-	var head string
-	switch st.Kind {
-	case combat.StepResistance:
-		head = "Resistência a "
-	case combat.StepVulnerability:
-		head = "Vulnerabilidade a "
-	case combat.StepImmunity:
-		head = "Imunidade a "
-	case combat.StepReduction:
-		head = "Redução de dano de arma"
-	}
-	var sources []string
-	for _, s := range st.Sources {
-		sources = append(sources, sourceNamePT(s, names))
-	}
-	if st.Kind == combat.StepReduction { // it covers every damage type of the attack
-		out := head
-		if st.Qualifier == combat.QualifierNonmagical {
-			out += " não mágica"
-		}
-		if len(sources) > 0 {
-			out += " (" + joinPT(sources) + ")"
-		}
-		return out
-	}
-	out := head + damageTypePT(st.DamageType)
-	switch st.Qualifier {
-	case combat.QualifierNonmagical:
-		out += " de ataque não mágico"
-	case combat.QualifierNonmagicalUnlessSilvered:
-		out += " de ataque não mágico nem prateado"
-	case combat.QualifierNonmagicalUnlessAdamantine:
-		out += " de ataque não mágico nem adamantino"
-	}
-	if len(sources) > 0 {
-		out += " (" + joinPT(sources) + ")"
-	}
-	return out
-}
-
-// joinPT joins words with commas and "e".
-func joinPT(words []string) string {
-	switch len(words) {
-	case 0:
-		return ""
-	case 1:
-		return words[0]
-	}
-	return fmt.Sprintf("%s e %s", joinWith(words[:len(words)-1], ", "), words[len(words)-1])
-}
-
-func joinWith(words []string, sep string) string {
-	out := ""
-	for i, w := range words {
-		if i > 0 {
-			out += sep
-		}
-		out += w
-	}
-	return out
-}
-
-// sourceNamePT is the name of a source of a resistance: the race for a racial trait
-// ("tiefling"), "fúria", the creature's name for a stat block.
-func sourceNamePT(source string, names func(string) string) string {
-	switch source {
-	case "feature:rage":
-		return "fúria"
-	case "trait:hellish-resistance":
-		return "tiefling"
-	case "trait:dwarven-resilience":
-		return "anão"
-	}
-	if len(source) > 25 && source[:25] == "trait:draconic-ancestry-" {
-		return "draconato"
-	}
-	if n := names(source); n != "" {
-		return n
-	}
-	return source
-}
-
 // ---- rolling ----
 
 // partsRoll is the result of rolling the parts of a damage.
@@ -1298,7 +1100,7 @@ func (g *typeGroup) check(lo, hi int) error {
 }
 
 // storePartsRoll writes what a roll left on the pending damage.
-func storePartsRoll(ctx context.Context, c *combatTx, id string, parts []partRecord, rolls []partRoll, groups []stepGroup, afterSteps *int32, landedBefore *hpState) error {
+func storePartsRoll(ctx context.Context, c *combatTx, id string, parts []partRecord, rolls []partRoll, groups []damagesteps.Group, afterSteps *int32, landedBefore *hpState) error {
 	var landed []byte
 	if landedBefore != nil {
 		landed = mustJSON(landedBefore)
@@ -1604,91 +1406,6 @@ func (s *Service) statBlockModifiers(ctx context.Context, c *combatTx, campaignI
 	return out, nil
 }
 
-// landing is what a damage comes to once its modifiers apply.
-type landing struct {
-	// amount is the damage that lands, groups the damage of the types the modifiers
-	// changed, and changed says any did.
-	amount  int32
-	groups  []stepGroup
-	changed bool
-}
-
-// settleSteps takes the damage through the target's modifiers. byType is the damage by type
-// (one entry for a damage of one type). The flat reductions are taken once from the whole attack
-// first; then each type goes through immunity, resistance and vulnerability.
-func settleSteps(byType map[string]int, mods []combat.Modifier, ignored []string, from combat.Origin) landing {
-	var out landing
-	amounts := byType
-	if _, after, ok := combat.Reduce(byType, mods, ignored, from); ok {
-		out.groups, out.changed, amounts = append(out.groups, reductionGroup(byType, mods, from)), true, after
-	}
-	others := slices.DeleteFunc(slices.Clone(mods), func(m combat.Modifier) bool { return m.Kind == combat.StepReduction })
-	for _, t := range slices.Sorted(maps.Keys(amounts)) {
-		final, steps := combat.Adjust(amounts[t], t, others, ignored, from)
-		if len(steps) > 0 || out.changed {
-			group := stepGroup{DamageType: t, Before: clamp32(amounts[t], 0, math.MaxInt32), From: from}
-			for _, m := range others {
-				if m.Covers(t, from) {
-					group.Mods = append(group.Mods, combat.Modifier{Kind: m.Kind, Source: m.Source, DamageTypes: []string{t}, Qualifier: m.Qualifier, Hidden: m.Hidden})
-				}
-			}
-			out.groups = append(out.groups, group)
-			out.changed = out.changed || len(steps) > 0
-		}
-		out.amount += clamp32(final, 0, math.MaxInt32)
-	}
-	return out
-}
-
-// reductionGroup is the stored group of the flat reductions taken once from the whole attack.
-func reductionGroup(byType map[string]int, mods []combat.Modifier, from combat.Origin) stepGroup {
-	group := stepGroup{Before: clamp32(sumOf(byType), 0, math.MaxInt32), From: from, Allot: maps.Clone(byType)}
-	for _, m := range mods {
-		if m.Kind == combat.StepReduction && m.Covers("", from) {
-			group.Mods = append(group.Mods, m)
-		}
-	}
-	return group
-}
-
-func sumOf(byType map[string]int) int {
-	n := 0
-	for _, v := range byType {
-		n += max(v, 0)
-	}
-	return n
-}
-
-// reapply works the landing out again from the stored groups, leaving out the sources
-// the master told the app to ignore. total is the damage before any modifier.
-func reapply(total int32, groups []stepGroup, ignored []string) int32 {
-	out := total
-	var allotted map[string]int
-	for _, g := range groups {
-		if g.Allot == nil {
-			continue
-		}
-		if st, after, ok := combat.Reduce(g.Allot, g.Mods, ignored, g.From); ok {
-			allotted = after
-			out += clamp32(st.After, 0, math.MaxInt32) - g.Before
-		} else {
-			allotted = g.Allot
-		}
-	}
-	for _, g := range groups {
-		if g.Allot != nil {
-			continue
-		}
-		before := int(g.Before)
-		if allotted != nil {
-			before = allotted[g.DamageType]
-		}
-		after, _ := combat.Adjust(before, g.DamageType, g.Mods, ignored, g.From)
-		out += clamp32(after, 0, math.MaxInt32) - clamp32(before, 0, math.MaxInt32)
-	}
-	return max(out, 0)
-}
-
 // ---- what the API says of a pending damage ----
 
 // criticalRuleOf is the rule a pending damage was made under.
@@ -1720,8 +1437,8 @@ func (s *Service) pendingView(ctx context.Context, campaignID string, p playdb.P
 	}
 	out.PartRolls = partRollsProto(p, v.master, reads, dtPT)
 	if i >= 0 && (v.master || (cs[i].Kind == kindPlayer && v.owns(cs[i]))) {
-		if groups := readStepGroups(p.Steps); len(groups) > 0 {
-			out.Steps = stepsProto(groups, nil, s.namesFor(ctx, campaignID), dtPT, v.master)
+		if groups := damagesteps.Read(p.Steps); len(groups) > 0 {
+			out.Steps = damagesteps.Proto(groups, nil, s.namesFor(ctx, campaignID), dtPT, v.master)
 			out.AmountAfterSteps = p.AfterSteps
 		}
 	}
@@ -1764,12 +1481,12 @@ func (s *Service) addSlotOptions(ctx context.Context, campaignID string, out *pl
 // settleLanding is the damage that lands, and the steps that made it, for a target
 // that takes a damage by type: the target's own modifiers apply (an NPC's or a creature's
 // at once, a player's character's as the preview the master applies from).
-func (s *Service) settleLanding(ctx context.Context, c *combatTx, states map[string][]playdb.CombatantState, tgt playdb.Combatant, byType map[string]int, from combat.Origin) (landing, error) {
+func (s *Service) settleLanding(ctx context.Context, c *combatTx, states map[string][]playdb.CombatantState, tgt playdb.Combatant, byType map[string]int, from combat.Origin) (damagesteps.Landing, error) {
 	mods, err := s.modifiersOf(ctx, c, c.session.CampaignID, states, tgt)
 	if err != nil {
-		return landing{}, err
+		return damagesteps.Landing{}, err
 	}
-	return settleSteps(byType, mods, nil, from), nil
+	return damagesteps.Settle(byType, mods, nil, from), nil
 }
 
 // legacy is the roll as the one-roll damage reads it: the total, the weapon's faces and
@@ -1930,24 +1647,24 @@ type onceMarks struct {
 // keepRollDetail stores what a roll left on a pending damage: the parts and their rolls
 // (the roll's own pending), the steps and the damage after them, and the hit points an
 // NPC had before the damage landed on it.
-func (s *Service) keepRollDetail(ctx context.Context, c *combatTx, g, p playdb.PendingDamage, pr *partsRoll, steps landing, hit damageHit) error {
+func (s *Service) keepRollDetail(ctx context.Context, c *combatTx, g, p playdb.PendingDamage, pr *partsRoll, steps damagesteps.Landing, hit damageHit) error {
 	var parts []partRecord
 	var rolls []partRoll
 	if pr != nil && g.ID == p.ID {
 		parts, rolls = pr.parts, pr.rolls
 	}
 	var after *int32
-	if steps.changed {
-		after = &steps.amount
+	if steps.Changed {
+		after = &steps.Amount
 	}
 	var landed *hpState
 	if hit.Applied && hit.Before != nil {
 		landed = hit.Before
 	}
-	if len(parts) == 0 && len(rolls) == 0 && !steps.changed && landed == nil {
+	if len(parts) == 0 && len(rolls) == 0 && !steps.Changed && landed == nil {
 		return nil
 	}
-	return storePartsRoll(ctx, c, g.ID, parts, rolls, steps.groups, after, landed)
+	return storePartsRoll(ctx, c, g.ID, parts, rolls, steps.Groups, after, landed)
 }
 
 // shownTotal is the damage as the roll made it for a player who is not the target's: every
@@ -1981,7 +1698,7 @@ func shownOfPending(p playdb.PendingDamage) (int32, bool) {
 	if rolls := readPartRolls(p.PartRolls); len(rolls) > 0 {
 		return clamp32(shownTotalOf(rolls), 0, math.MaxInt32), true
 	}
-	if len(readStepGroups(p.Steps)) > 0 && p.RollTotal != nil {
+	if len(damagesteps.Read(p.Steps)) > 0 && p.RollTotal != nil {
 		total := *p.RollTotal
 		if p.Half {
 			total = clamp32(combat.HalfDamage(int(total)), 0, math.MaxInt32)

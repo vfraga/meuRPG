@@ -68,6 +68,8 @@ export class RollPicker {
   >(null);
   /** What the buttons are called when the way is a damage roll. */
   readonly appLabel = input('Rolar no app');
+  /** The button that opens the typed field. */
+  readonly typeLabel = input('Digitar o resultado');
   /** The master's NPC card has no filled button of its own ("Próximo turno" owns it). */
   readonly outlined = input(false);
   /** "Digitar o resultado" is the outlined button beside the filled one, never the underlined link (the attack sheet). */

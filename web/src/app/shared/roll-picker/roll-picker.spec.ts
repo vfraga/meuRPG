@@ -27,6 +27,12 @@ describe('RollPicker', () => {
     return { fixture, el, rolled, type, button };
   }
 
+  it('names the button that opens the typed field when it is asked to', () => {
+    const { el } = setup({ typeLabel: 'Digitar por Jabuti' });
+    expect(el.textContent).toContain('Digitar por Jabuti');
+    expect(el.textContent).not.toContain('Digitar o resultado');
+  });
+
   it('offers both ways while the campaign lets each player choose, the saved one as the filled button', () => {
     const { el } = setup();
     const buttons = Array.from(el.querySelectorAll('button'), (b) => b.textContent?.trim());

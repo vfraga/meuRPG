@@ -8,6 +8,7 @@ import (
 
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/live"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -29,20 +30,20 @@ func (s *Service) afterResistance(ctx context.Context, c *combatTx, target playd
 // damage goes through (settleLanding: the creature's own, its lasting effects', a Silence's) and answers the steps and what
 // lands. Only a target that takes the damage at once is adjusted; for a player's character the steps are the preview the
 // master applies from, and the amount is the one given.
-func (s *Service) settleDamage(ctx context.Context, c *combatTx, target playdb.Combatant, damageType string, amount int32) (landing, int32, error) {
+func (s *Service) settleDamage(ctx context.Context, c *combatTx, target playdb.Combatant, damageType string, amount int32) (damagesteps.Landing, int32, error) {
 	if damageType == "" || amount <= 0 {
-		return landing{}, amount, nil
+		return damagesteps.Landing{}, amount, nil
 	}
 	states, err := s.statesAt(ctx, c.tx, c.q, c.enc.ID, nil)
 	if err != nil {
-		return landing{}, 0, err
+		return damagesteps.Landing{}, 0, err
 	}
 	steps, err := s.settleLanding(ctx, c, states, target, map[string]int{damageType: int(amount)}, combat.Origin{})
 	if err != nil {
-		return landing{}, 0, err
+		return damagesteps.Landing{}, 0, err
 	}
-	if holdsHP(target) && steps.changed {
-		return steps, steps.amount, nil
+	if holdsHP(target) && steps.Changed {
+		return steps, steps.Amount, nil
 	}
 	return steps, amount, nil
 }

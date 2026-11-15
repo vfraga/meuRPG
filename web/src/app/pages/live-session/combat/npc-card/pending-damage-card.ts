@@ -14,7 +14,14 @@ import {
 import { article } from '../../../../core/combat/combat-log';
 import { isPlayer } from '../../../../core/combat/combat-view';
 import { criticalHint, criticalTypedHint, fixedParts } from '../../../../core/combat/critical';
-import { inTypedGroup } from '../../../../core/combat/damage-parts';
+import {
+  type Removal,
+  type SpellSave,
+  awaitedSumOf,
+  keptRowsOf,
+  removalFor,
+  takeOutPlan,
+} from '../../../../core/combat/group-take-out';
 import { heldReason } from '../../../../core/combat/reaction-master';
 
 /**
@@ -115,20 +122,107 @@ export function zoneLabel(p: PendingDamage, e: Encounter): string {
   return zone ? `Zona de magia: ${zone.spellNamePt}` : '';
 }
 
-/** The keys of the parts the master may take out: a choosable extra that is not in a typed group (the server refuses those). */
+/** Divine Smite's dice stay out of every group and keep their own key: the server refuses to take them out. */
+const NOT_REMOVABLE: ReadonlySet<string> = new Set(['divine-smite', 'divine-smite-extra']);
+
+/** The keys of the parts the master may take out: a choosable extra that counts, inside a typed group or not (a group asks a new
+ * sum). Never while the damage waits for a sum, for a spell's damage or for a part a spell's hit effect made. */
 function removableKeys(p: PendingDamage): Set<string> {
-  const rolls = p.partRolls ?? [];
-  const grouped = new Set(rolls.filter((r) => inTypedGroup(r, rolls)).map((r) => r.partKey));
+  if (p.status === PendingDamageStatus.AWAITING_GROUP_SUM || p.castId) {
+    return new Set();
+  }
+  const effects = new Set((p.partRolls ?? []).filter((r) => r.hitEffect).map((r) => r.partKey));
   return new Set(
-    (p.parts ?? []).filter((x) => x.choosable && !grouped.has(x.key)).map((x) => x.key),
+    (p.parts ?? [])
+      .filter((x) => x.choosable && !NOT_REMOVABLE.has(x.key) && !effects.has(x.key))
+      .map((x) => x.key),
   );
 }
 
+/** The Portuguese name of each damage type of the parts, by key. */
+function typeNames(p: PendingDamage): Map<string, string> {
+  return new Map(
+    (p.parts ?? []).filter((x) => x.damageTypeKey).map((x) => [x.damageTypeKey, x.damageTypePt]),
+  );
+}
+
+/** What each removable part's panel says. */
+function plansOf(
+  p: PendingDamage,
+  attacker: Combatant | undefined,
+  target: Combatant | undefined,
+  saves: readonly SpellSave[],
+) {
+  const keys = removableKeys(p);
+  return new Map(
+    (p.partRolls ?? [])
+      .filter((r) => keys.has(r.partKey))
+      .map((r) => [r.partKey, takeOutPlan(r, p, attacker, target, saves)]),
+  );
+}
+
+/** The parts out of the awaited group: the one the log names with its reason, or, before the log is read, the extras of the type that no longer count. */
+function takenOutOf(p: PendingDamage, typeKey: string, removal: Removal | undefined) {
+  if (removal) {
+    return [{ name: removal.name, reason: removal.reason }];
+  }
+  return (p.parts ?? [])
+    .filter((x) => x.damageTypeKey === typeKey && x.choosable && !x.selected && !x.available)
+    .map((x) => ({ name: x.labelPt, reason: '' }));
+}
+
+/** " Até lá, o Zumbi 1 fica com 22 PV.": what the target keeps while the sum is awaited. */
+function holdsLine(target: Combatant): string {
+  return target.hitPointsCurrent === undefined
+    ? ''
+    : ` Até lá, ${article(target.label)} ${target.label} fica com ${target.hitPointsCurrent} PV.`;
+}
+
+/** The weapon's name, for the head of a card. */
+function weaponName(p: PendingDamage): string {
+  return (p.parts ?? []).find((x) => !x.choosable && !x.auto)?.labelPt ?? '';
+}
+
+/** What the card of a damage that awaits the sum of a damage type says (nothing for any other damage). */
+function groupSumCard(
+  p: PendingDamage,
+  removals: readonly Removal[],
+  target: Combatant | undefined,
+) {
+  const awaitedSum = awaitedSumOf(p);
+  if (!awaitedSum) {
+    return {
+      awaitedSum,
+      typeTitle: '',
+      awaitedRange: '',
+      kept: [],
+      takenOut: [],
+      hpNote: '',
+    };
+  }
+  const { min, max, typePt } = awaitedSum;
+  return {
+    awaitedSum,
+    typeTitle: typePt.charAt(0).toUpperCase() + typePt.slice(1),
+    awaitedRange: min === max ? `deve ser ${min}` : `de ${min} a ${max}`,
+    kept: keptRowsOf(p),
+    takenOut: takenOutOf(p, awaitedSum.typeKey, removalFor(p, removals)),
+    hpNote: target ? holdsLine(target) : '',
+  };
+}
+
 /** One pending damage as its card shows it. */
-export function pendingCard(p: PendingDamage, e: Encounter, all: readonly PendingDamage[]) {
+export function pendingCard(
+  p: PendingDamage,
+  e: Encounter,
+  all: readonly PendingDamage[],
+  removals: readonly Removal[] = [],
+  saves: readonly SpellSave[] = [],
+) {
   const attacker = e.combatants.find((c) => c.id === p.attackerId);
   const target = e.combatants.find((c) => c.id === p.targetId);
   const rolled = p.status === PendingDamageStatus.ROLLED;
+  const applied = p.status === PendingDamageStatus.APPLIED;
   // What "Aplicar" applies: the damage after resistance, vulnerability and immunity when a step changed it.
   const total = p.amountAfterSteps ?? p.amount;
   return {
@@ -136,6 +230,14 @@ export function pendingCard(p: PendingDamage, e: Encounter, all: readonly Pendin
     total,
     /** The extras the master may take out: the ones the player could choose, while they count, and no damage-type sum covers. */
     removable: removableKeys(p),
+    plans: plansOf(p, attacker, target, saves),
+    typeNames: typeNames(p),
+    autoKeys: new Set((p.parts ?? []).filter((x) => x.auto).map((x) => x.key)),
+    /** The damage was applied (the master's options list the latest one a take-out can still undo): only its breakdown and "Tirar". */
+    applied,
+    /** A part of a typed group was taken out: the damage waits for the sum of that type alone. */
+    ...groupSumCard(p, removals, target),
+    weapon: weaponName(p),
     rolls: p.partRolls ?? [],
     steps: p.steps ?? [],
     rolled,

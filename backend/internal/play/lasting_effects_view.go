@@ -9,6 +9,7 @@ import (
 	playv1 "github.com/PuraFome/meuRPG/backend/gen/meurpg/play/v1"
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
+	"github.com/PuraFome/meuRPG/backend/internal/play/damagesteps"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -27,7 +28,7 @@ var ownerOnlyConditions = []string{"condition:charmed", "condition:deafened", co
 // The line a player reads for what they may not read.
 const (
 	unseenOrigin  = "De alguém que você não vê"
-	otherSourceTx = "Outra fonte"
+	otherSourceTx = damagesteps.OtherSource
 )
 
 // effectGroup is the rows of one casting of one effect: one for each target.

@@ -12,14 +12,9 @@ import { ofThe } from './move-plan';
 import { combatantIsPlayer, ofReactor } from './reaction-bar';
 import { type ParryCard, parryCard } from './parry-card';
 import { type LegendaryResistanceCard, legendaryResistanceCard } from './legendary-resistance-card';
-import { reactionKindName } from './reaction-record';
-import {
-  featureLateCost,
-  featureWindowFact,
-  featureWindowGroup,
-  featureWindowName,
-  isFeatureWindow,
-} from './reaction-feature';
+import { featureLateCost, featureWindowFact, isFeatureWindow } from './reaction-feature';
+import { isReadiedWindow, readiedRowFields } from './reaction-readied';
+import { groupSubtitle, groupTitle, reactionName } from './reaction-groups';
 import { REACTION_NAMES, openWindows } from './reactions';
 
 export { heldReason, windowsBarText } from './reaction-bar';
@@ -31,10 +26,7 @@ export { heldReason, windowsBarText } from './reaction-bar';
  * name: a player's window reads "pelo jogador". Pure functions, tested without a DOM.
  */
 
-/** The name of the reaction a window offers, as `names_pt.json` writes it. */
-export function reactionName(w: ReactionWindow): string {
-  return isFeatureWindow(w) ? featureWindowName(w) : reactionKindName(w.kind);
-}
+export { reactionName } from './reaction-groups';
 
 /** The Shield spell's bonus to armor class (SRD 5.1). */
 const SHIELD_BONUS = 5;
@@ -63,6 +55,15 @@ export interface QueueRow {
   readonly useLabel: string;
   readonly passLabel: string;
   readonly slots: readonly SlotOption[];
+  /** A readied action's window (#582, board 582-05): "Deixar passar" comes first and the wait is said in one line. */
+  readonly readied?: {
+    /** "Esperando Tor". */
+    readonly waits: string;
+    /** Why "use" is not offered from the queue, or `''`. */
+    readonly useOff: string;
+    /** The use is an attack or a spell: the dice come from the app, and the creature is picked from a list (`app-readied-aim`). */
+    readonly aims: boolean;
+  };
 }
 
 /** A card of the master's side. */
@@ -167,61 +168,6 @@ export function describeRow(w: ReactionWindow): string {
   return joinDots([reactionName(w), ...facts]);
 }
 
-/** What the group's title says: the kind of action that provoked its windows. */
-function groupTitle(first: ReactionWindow): string {
-  switch (first.kind) {
-    case ReactionKind.COUNTERSPELL:
-      return 'Reações a uma magia';
-    case ReactionKind.FEATHER_FALL:
-    case ReactionKind.SLOW_FALL:
-      return 'Reações a uma queda';
-    case ReactionKind.HELLISH_REBUKE:
-      return 'Reações a um dano';
-    case ReactionKind.FEATURE:
-      return 'Reações a uma criatura';
-    case ReactionKind.DISMOUNT:
-      return 'Reações a uma montaria';
-    default:
-      return 'Reações a um ataque';
-  }
-}
-
-function groupSubtitle(first: ReactionWindow): string {
-  const t = first.trigger;
-  if (!t) {
-    return 'na ordem da iniciativa';
-  }
-  switch (first.kind) {
-    case ReactionKind.COUNTERSPELL:
-      return joinDots([`${t.actionNamePt} ${ofThe([t.actorLabel])}`, 'na ordem da iniciativa']);
-    case ReactionKind.SHIELD:
-    case ReactionKind.UNCANNY_DODGE:
-    case ReactionKind.DEFLECT_MISSILES:
-    case ReactionKind.MANEUVER_REDUCE:
-      return joinDots([
-        `Ataque ${ofThe([t.actorLabel])}${t.targetLabel ? ` contra ${t.targetLabel}` : ''}`,
-        'acertou',
-      ]);
-    case ReactionKind.FEATHER_FALL:
-    case ReactionKind.SLOW_FALL:
-      return joinDots(['Queda num fosso', 'na ordem da iniciativa']);
-    case ReactionKind.DISMOUNT:
-      return joinDots(['Montaria derrubada ou morta', 'na ordem da iniciativa']);
-    case ReactionKind.PROTECTION:
-      return joinDots([
-        `Ataque ${ofThe([t.actorLabel])}${t.targetLabel ? ` contra ${t.targetLabel}` : ''}`,
-        'ainda não rolado',
-      ]);
-    case ReactionKind.FEATURE:
-      return joinDots([featureWindowGroup(first), 'na ordem da iniciativa']);
-    default:
-      return joinDots([
-        `${t.actionNamePt || reactionName(first)} ${ofThe([t.actorLabel])}`,
-        'na ordem da iniciativa',
-      ]);
-  }
-}
-
 /** The slots the master may use for an NPC's Counterspell, with what each does. */
 export function slotOptions(w: ReactionWindow): readonly SlotOption[] {
   return (w.trigger?.slotEffects ?? []).flatMap((s) =>
@@ -240,6 +186,17 @@ export function slotOptions(w: ReactionWindow): readonly SlotOption[] {
 function rowOf(e: Encounter, w: ReactionWindow, before: ReactionWindow | undefined): QueueRow {
   const name = reactionName(w);
   const player = w.reactorIsPlayer || combatantIsPlayer(e, w.reactorId);
+  if (isReadiedWindow(w)) {
+    return {
+      window: w,
+      label: w.reactorLabel,
+      isPlayer: player,
+      tag: player ? 'Jogador' : 'NPC',
+      answerNow: w.answerNow,
+      slots: [],
+      ...readiedRowFields(e, w),
+    };
+  }
   const status = player
     ? joinDots(['Respondendo no celular', ...(w.answerNow ? ['vez de responder'] : [])])
     : '';

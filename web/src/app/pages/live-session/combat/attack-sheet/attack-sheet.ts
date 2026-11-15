@@ -45,6 +45,9 @@ import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
 import { DamageParts } from '../damage-parts/damage-parts';
+import { GroupSumParts } from './group-sum-parts';
+import { watchGroupSum } from './group-sum-follow';
+import { headingSubtitle, headingTitle } from './attack-heading';
 import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollModePicker } from '../roll-mode/roll-mode-picker';
 import { AttackDamage } from './attack-damage';
@@ -100,6 +103,7 @@ export type { AttackSheetData } from './attack-sheet-types';
     DamageParts,
     ExtraDice,
     FavorSpendBox,
+    GroupSumParts,
     MatButtonModule,
     MatIconModule,
     MultiRoll,
@@ -289,26 +293,17 @@ export class AttackSheet {
           attacksPerAction: this.data.attacksPerAction,
         }),
   );
-  protected readonly title = computed(() =>
-    this.s.typing()
-      ? 'Digite o resultado do dado'
-      : this.data.opportunity
-        ? `Ataque de oportunidade\u00a0· ${this.name}`
-        : (this.data.legendary?.title ?? `Atacar com ${this.name}`),
-  );
-  /** An opportunity attack names who attacks and what it costs; the numbers of the weapon are on the list. */
-  protected readonly subtitle = computed(() => {
-    if (this.s.typing()) {
-      return `${this.name} contra ${this.targetLabel()} · Rodada ${this.data.round}`;
-    }
-    if (this.data.opportunity) {
-      const who = this.data.state
-        .encounter()
-        ?.combatants.find((c) => c.id === this.data.attackerId)?.label;
-      return who ? `${who} · gasta a sua reação` : 'Gasta a sua reação';
-    }
-    return this.data.legendary?.subtitle ?? this.detail;
-  });
+  protected readonly again = computed(() => !!this.data.resume && !!this.dmg.awaited());
+  protected readonly title = computed(() => headingTitle(this.heading()));
+  protected readonly subtitle = computed(() => headingSubtitle(this.heading()));
+  private readonly heading = computed(() => ({
+    again: this.again(),
+    typing: this.s.typing(),
+    name: this.name,
+    detail: this.detail,
+    target: this.targetLabel(),
+    data: this.data,
+  }));
   /** The weapon's marks, a chip after the numbers in the header (not on an opportunity attack or a typed roll: their subtitle says who and why). */
   protected readonly marks = computed(() =>
     this.s.typing() || this.data.opportunity || this.data.legendary
@@ -328,6 +323,7 @@ export class AttackSheet {
   constructor() {
     const { s } = this;
     this.question.ask(this.data.held?.offer);
+    watchGroupSum(s, this.api);
     // The master answers the question for the roller: the sheet drops it (or shows the next one), so it never offers an answer that is no longer open.
     effect(() => {
       const me = this.data.state.encounter()?.combatants.find((c) => c.id === this.data.attackerId);
@@ -462,6 +458,11 @@ export class AttackSheet {
 
   protected rollDamageTyped(sum: number): Promise<void> {
     return this.rolls.rollDamage({ sum });
+  }
+
+  /** The sum asked again after the master took an extra out of a group: that damage type alone. */
+  protected rollAwaitedSum(sums: number[], typeKey: string): Promise<void> {
+    return this.rolls.rollDamage({ parts: true }, [{ damageType: typeKey, sum: sums[0] }]);
   }
 
   protected rollDamageParts(sums: number[]): Promise<void> {

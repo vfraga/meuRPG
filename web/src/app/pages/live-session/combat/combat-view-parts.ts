@@ -7,7 +7,7 @@ import {
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { searchRoute } from '../../../core/traps/trap-search';
 import { acts } from '../../../core/combat/joint-turn';
-import { featureNote } from '../../../core/combat/combat-derived';
+import { awaitsRoll, featureNote } from '../../../core/combat/combat-derived';
 import { CombatSheets } from './combat-sheets';
 import { pressedButton, revealMap } from './target-mode/reveal-map';
 import { TargetFlow } from './target-mode/target-flow';
@@ -438,9 +438,7 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
       this.creatureOptions
         .data()
         .get(id)
-        ?.pendingDamages.find(
-          (p) => p.status === PendingDamageStatus.AWAITING_ROLL && p.attackerId === id,
-        ) ?? null
+        ?.pendingDamages.find((p) => awaitsRoll(p) && p.attackerId === id) ?? null
     );
   }
 

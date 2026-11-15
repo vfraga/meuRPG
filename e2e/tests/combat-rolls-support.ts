@@ -1,6 +1,8 @@
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 
 import { beginAttackCombatRPC, tableForCombat, type CombatTable } from './combat-support';
+import { placeTokenRPC } from './maps-support';
+import { sq20, thirdPlayer, type ThirdPlayer } from './trap-support';
 import { endOpenSessionRPC } from './live-session-support';
 import { newSignedInContext, type CharacterBuild } from './support';
 
@@ -56,7 +58,15 @@ export interface RollsTable {
   p: Page;
   table: CombatTable;
   campaignId: string;
+  /** The second player's character when the table was asked for one (a player's character to hit). */
+  ally?: ThirdPlayer;
   done: () => Promise<void>;
+}
+
+/** What a table may add to the attacker's: content made before the character (it returns the build), and a second player's character on the map beside it. */
+export interface RollsExtras {
+  before?: (campaignId: string, master: Page) => Promise<CharacterBuild>;
+  ally?: { build: CharacterBuild; col: number; row: number };
 }
 
 export async function rollsTable(
@@ -65,23 +75,31 @@ export async function rollsTable(
   who: CharacterBuild,
   sheet: Record<string, unknown>,
   faces: Record<string, number>,
-  look: { colorScheme?: 'light' | 'dark'; masterWidth?: number; playerWidth?: number } = {},
+  look: { colorScheme?: 'light' | 'dark'; masterWidth?: number; playerWidth?: number; deviceScaleFactor?: number } = {},
+  extras: RollsExtras = {},
 ): Promise<RollsTable> {
-  const master: BrowserContext = await newSignedInContext(browser, 'Mestre Teste', { viewport: { width: look.masterWidth ?? 1280, height: 900 }, colorScheme: look.colorScheme });
-  const player: BrowserContext = await newSignedInContext(browser, 'Jogador Teste', { viewport: { width: look.playerWidth ?? 390, height: 844 }, colorScheme: look.colorScheme });
+  const master: BrowserContext = await newSignedInContext(browser, 'Mestre Teste', { viewport: { width: look.masterWidth ?? 1280, height: 900 }, colorScheme: look.colorScheme, deviceScaleFactor: look.deviceScaleFactor });
+  const player: BrowserContext = await newSignedInContext(browser, 'Jogador Teste', { viewport: { width: look.playerWidth ?? 390, height: 844 }, colorScheme: look.colorScheme, deviceScaleFactor: look.deviceScaleFactor });
   const m = await master.newPage();
   const p = await player.newPage();
   await m.goto('/');
   await p.goto('/');
-  const table = await tableForCombat(m, p, `${name} ${Date.now()}`, true, true, { build: who, sheet });
-  await beginAttackCombatRPC(m, table, faces, { 'Capitão Goblin': [11, 5], 'Goblin 1': [9, 9], 'Goblin 2': [14, 10], [who.name]: [8, 9] });
+  const table = await tableForCombat(m, p, `${name} ${Date.now()}`, true, true, { build: who, sheet, before: extras.before });
+  const ally = extras.ally ? await thirdPlayer(browser, { m, p, table, campaignId: table.campaignId, done: async () => undefined }, extras.ally.build, {}, { colorScheme: look.colorScheme, width: look.playerWidth, deviceScaleFactor: look.deviceScaleFactor }) : undefined;
+  if (ally && extras.ally) {
+    const at = sq20(extras.ally.col, extras.ally.row);
+    await placeTokenRPC(m, table.campaignId, table.mapId, ally.characterId, at.xBp, at.yBp);
+  }
+  await beginAttackCombatRPC(m, table, faces, { 'Capitão Goblin': [11, 5], 'Goblin 1': [9, 9], 'Goblin 2': [14, 10], [who.name]: [8, 9], ...(extras.ally ? { [extras.ally.build.name]: [extras.ally.col, extras.ally.row] } : {}) });
   return {
     m,
     p,
     table,
     campaignId: table.campaignId,
+    ally,
     done: async () => {
       await endOpenSessionRPC(m, table.campaignId);
+      await ally?.close();
       await master.close();
       await player.close();
     },

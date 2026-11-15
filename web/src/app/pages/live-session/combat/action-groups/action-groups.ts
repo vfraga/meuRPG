@@ -21,7 +21,6 @@ import {
   type SpellOption,
   type TurnOptions,
 } from '../../../../../gen/meurpg/rules/v1/rules_pb';
-import { article } from '../../../../core/combat/combat-log';
 import { AMMUNITION } from '../../../../core/combat/ammunition-line';
 import {
   attackDetail,
@@ -72,6 +71,9 @@ import { AttackLegend } from './attack-legend';
 import { Fold } from '../../../../shared/fold/fold';
 import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes';
 import { movementOf, turnLineOf } from './turn-line';
+import { leaveDetailOf, SURPRISE_ROWS } from './surprise-and-form-text';
+import { holdsReadied, isReadyOption, withoutReady } from '../../../../core/combat/ready';
+import { ReadiedCard } from '../readied-card/readied-card';
 import { TabList, tabId, tabPanelId } from '../../../../shared/tab-list/tab-list';
 import type { PactSlotsVm, SlotUsageVm } from '../../../../core/play/resource-usage.types';
 import { SlotDots } from '../../../../shared/slot-dots/slot-dots';
@@ -120,6 +122,7 @@ import { offersWeaponAttack } from './weapon-offer';
     MatButtonModule,
     MatIconModule,
     NgTemplateOutlet,
+    ReadiedCard,
     SlotDots,
     TabList,
   ],
@@ -212,6 +215,12 @@ export class ActionGroups {
   readonly extraStandard = output<string>();
   /** A standard action, by key ("standard:dash"). */
   readonly action = output<string>();
+  /** "Preparar" (#582): the sheet of the Ready action, which names the trigger. */
+  readonly ready = output<void>();
+  /** "Desistir da ação preparada": the id of the readied action to give up (`CancelReadied`). */
+  readonly giveUp = output<string>();
+  /** Whether the combatant holds an action for its trigger: its card sits under the economy row, in every tab. */
+  protected readonly holdsReadied = holdsReadied;
   /** "Conjurar": the key of the spell, or of a cantrip that asks for a save. */
   readonly cast = output<string>();
   /** "Usar": the key of a feature action ("feature:second-wind"). */
@@ -230,13 +239,7 @@ export class ActionGroups {
   readonly familiarEyes = output<void>();
   /** The "?" of a spell: the key and the Portuguese name. */
   readonly describe = output<{ key: string; name: string }>();
-  /** "Você volta a ser a Sálvia, com os seus PV. Os PV que sobraram do Lobo se perdem.": the character and the beast, by name. */
-  protected readonly leaveDetail = computed(() => {
-    const name = this.own().label;
-    const beast = this.beast();
-    const a = (n: string) => (article(n) === 'a' ? 'a' : 'o');
-    return `Você volta a ser ${a(name)} ${name}, com os seus PV. Os PV que sobraram d${a(beast)} ${beast} se perdem.`;
-  });
+  protected readonly leaveDetail = computed(() => leaveDetailOf(this.own().label, this.beast()));
 
   /** "Transformar": the page opens the list of beasts. */
   readonly transform = output<void>();
@@ -258,13 +261,7 @@ export class ActionGroups {
   protected readonly specialNote = computed(() =>
     this.beast() ? SHOVE_ATTACK_NOTE : SPECIAL_ATTACKS_NOTE,
   );
-  /** The four groups of a surprised character's turn, each unavailable for the same reason (SRD 5.1, Surprise). */
-  protected readonly surpriseRows: readonly { readonly name: string; readonly why: string }[] = [
-    { name: 'Atacar', why: 'Surpresa.' },
-    { name: 'Movimento', why: 'Surpresa.' },
-    { name: 'Ação bônus', why: 'Surpresa.' },
-    { name: 'Reação', why: 'Surpresa até o fim do turno.' },
-  ];
+  protected readonly surpriseRows = SURPRISE_ROWS;
   protected readonly escapeDetail = ESCAPE_DETAIL;
   protected readonly escapeWhy = computed(() => reasonText(this.contest()?.escapeReason));
   /** The word of the attack list for Agarrar and Empurrar. */
@@ -384,8 +381,11 @@ export class ActionGroups {
       (a) => !/^standard:(attack|cast-a-spell)$/.test(a.action?.key ?? ''),
     ),
   );
+  /** "Preparar" (`via_ready_action`) is a row of its own, with its sheet; the others stay the buttons below it. */
+  protected readonly readyOption = computed(() => this.standard().find((a) => isReadyOption(a)));
+  protected readonly standardButtons = computed(() => withoutReady(this.standard()));
   protected readonly standardWhy = computed(() => {
-    const first = this.standard().find((a) => !a.enabled);
+    const first = this.standardButtons().find((a) => !a.enabled);
     return first ? reasonText(first.reason) : '';
   });
   /** The first row of the panel: what is left of the turn (Ação, Bônus, Reação and the walker with the metres), and "Mover". */

@@ -57,6 +57,8 @@ export class MultiRoll {
   /** Something typed beside these numbers is still missing (an extra die's face): no total until it is there. */
   readonly waiting = input(false);
   readonly appLabel = input('Rolar no app');
+  /** A line with the sum written out ("Dano: 4 + 3 + 6 de frio = 13"), instead of the big number, once every number is typed. */
+  readonly formula = input<((sum: number) => { text: string; total: number }) | null>(null);
   readonly hint = input('');
   /** The button that sends the numbers, from the total (`null` until every number is valid): "Aplicar 14 de dano". */
   readonly confirmLabel = input<((total: number | null) => string) | null>(null);
@@ -97,6 +99,14 @@ export class MultiRoll {
           ? Math.min(...v)
           : v.reduce((a, n) => a + n, 0);
     return base + this.modifier();
+  });
+  /** The typed numbers added up, and the line the formula writes for them. */
+  protected readonly formulaText = computed(() => {
+    const make = this.formula();
+    if (!make || !this.complete() || this.waiting()) {
+      return '';
+    }
+    return make((this.values() as number[]).reduce((a, n) => a + n, 0)).text;
   });
   protected readonly confirmText = computed(
     () => this.confirmLabel()?.(this.total()) ?? 'Confirmar',

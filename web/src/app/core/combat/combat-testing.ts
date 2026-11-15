@@ -91,6 +91,7 @@ export function encounter(over: Partial<Encounter> = {}): Encounter {
     reactionPrompts: [],
     reactionWindows: [],
     turnGroupIds: [],
+    pendingHiddenReveals: [],
     npcOnlyGroups: [],
     opportunityOffers: [],
     deaths: [],

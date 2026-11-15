@@ -55,7 +55,11 @@ describe('NpcCard: the idempotency key follows the target', () => {
       encounter({ combatants: [combatant({ id: 'npc', label: 'Goblin' })] }),
     );
     fixture.componentRef.setInput('subject', combatant({ id: 'npc', label: 'Goblin' }));
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.componentRef.setInput('options', opts(['t1', 't2']));
     fixture.detectChanges();
     await fixture.whenStable();
@@ -94,7 +98,11 @@ describe('NpcCard: the idempotency key follows the target', () => {
       encounter({ combatants: [combatant({ id: 'npc', label: 'Espada voadora 2' })] }),
     );
     fixture.componentRef.setInput('subject', combatant({ id: 'npc', label: 'Espada voadora 2' }));
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     const options = opts(['toren', 'pensantus', 'brisa']);
     const [row] = (
       options as unknown as { attackTargets: { targets: Record<string, unknown>[] }[] }
@@ -126,7 +134,11 @@ describe('NpcCard: the idempotency key follows the target', () => {
       encounter({ combatants: [combatant({ id: 'npc', label: 'Goblin' })] }),
     );
     fixture.componentRef.setInput('subject', combatant({ id: 'npc', label: 'Goblin' }));
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.componentRef.setInput('options', opts([]));
     fixture.detectChanges();
     await fixture.whenStable();
@@ -157,7 +169,11 @@ describe('NpcCard: the idempotency key follows the target', () => {
       encounter({ combatants: [combatant({ id: 'npc', label: 'Goblin' })] }),
     );
     fixture.componentRef.setInput('subject', combatant({ id: 'npc', label: 'Goblin' }));
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     const open = {
       ...(opts(['t1']) as object),
       pendingDamages: [{ id: 'p1', status: PendingDamageStatus.AWAITING_ROLL }],
@@ -194,7 +210,11 @@ describe('NpcCard: the idempotency key follows the target', () => {
       encounter({ combatants: [combatant({ id: 'npc', label: 'Goblin' })] }),
     );
     fixture.componentRef.setInput('subject', combatant({ id: 'npc', label: 'Goblin' }));
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     const listed = {
       ...(opts(['t1']) as object),
       pendingDamages: [{ id: 'p1', status: PendingDamageStatus.APPLIED, amount: 4 }],
@@ -238,7 +258,11 @@ describe('NpcCard: the idempotency key follows the target', () => {
       encounter({ combatants: [combatant({ id: 'npc', label: 'Goblin' })] }),
     );
     fixture.componentRef.setInput('subject', combatant({ id: 'npc', label: 'Goblin' }));
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.componentRef.setInput('options', opts(['t1']));
     fixture.detectChanges();
     await fixture.whenStable();
@@ -267,6 +291,8 @@ describe("NpcCard: an NPC's area spell", () => {
     fixture.componentRef.setInput('subject', zuk);
     fixture.componentRef.setInput('state', {
       apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
       encounter: () => encounter({ combatants: [zuk] }),
     } as unknown as CombatState);
     fixture.componentRef.setInput('theatre', theatre);
@@ -348,7 +374,11 @@ describe('NpcCard: the typed d20 follows the roll mode of the target', () => {
       encounter({ combatants: [combatant({ id: 'npc', label: 'Carniçal' })] }),
     );
     fixture.componentRef.setInput('subject', combatant({ id: 'npc', label: 'Carniçal' }));
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.componentRef.setInput('options', opts(rollMode, sources));
     fixture.detectChanges();
     await fixture.whenStable();
@@ -440,7 +470,11 @@ describe('NpcCard: Levantar-se of a prone NPC', () => {
     fixture.componentRef.setInput('campaignId', 'c');
     fixture.componentRef.setInput('encounter', encounter({ combatants: [goblin] }));
     fixture.componentRef.setInput('subject', goblin);
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
   };
@@ -470,7 +504,11 @@ describe('NpcCard: compact in the rail (C7-02)', () => {
     fixture.componentRef.setInput('campaignId', 'c');
     fixture.componentRef.setInput('encounter', encounter({ combatants: [goblin] }));
     fixture.componentRef.setInput('subject', goblin);
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.componentRef.setInput('framed', framed);
     fixture.detectChanges();
     return fixture.nativeElement as HTMLElement;
@@ -503,7 +541,11 @@ describe('NpcCard: compact in the rail (C7-02)', () => {
     fixture.componentRef.setInput('campaignId', 'c');
     fixture.componentRef.setInput('encounter', encounter({ combatants: [mage] }));
     fixture.componentRef.setInput('subject', mage);
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.componentRef.setInput('framed', false);
     fixture.detectChanges();
     const title = (fixture.nativeElement as HTMLElement).querySelector('h2')!;
@@ -564,7 +606,11 @@ describe('NpcCard: the target an NPC attack starts on (G3)', () => {
     fixture.componentRef.setInput('campaignId', 'c');
     fixture.componentRef.setInput('encounter', encounter({ combatants: everyone() }));
     fixture.componentRef.setInput('subject', armor());
-    fixture.componentRef.setInput('state', { apply: vi.fn() } as unknown as CombatState);
+    fixture.componentRef.setInput('state', {
+      apply: vi.fn(),
+      removals: () => [],
+      saves: () => [],
+    } as unknown as CombatState);
     fixture.componentRef.setInput('options', options);
     fixture.detectChanges();
     await fixture.whenStable();

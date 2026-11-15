@@ -24,7 +24,7 @@ import { coverTargets, everyoneStanding } from '../../../core/combat/theatre';
 import { offersHolding, waitingText } from '../../../core/combat/opportunity';
 import { masterQueue } from '../../../core/combat/reaction-queue';
 import type { OfferMark } from '../../../shared/combat-map/combat-map';
-import { openPendingDamages, pendingNote } from '../../../core/combat/attack-flow';
+import { pendingNote } from '../../../core/combat/attack-flow';
 import { isDead, isDown, isPlayer } from '../../../core/combat/combat-view';
 import type { TabItem } from '../../../shared/tab-list/tab-list';
 import { masterWaitNote } from '../../../core/combat/auto-pass';
@@ -356,7 +356,12 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   });
   /** What the master's turn still owes a hit: "Falta aplicar 5 de dano". */
   protected readonly owed = computed(() =>
-    this.isMaster() ? pendingNote(this.options()?.pendingDamages ?? []) : null,
+    this.isMaster()
+      ? pendingNote(
+          this.options()?.pendingDamages ?? [],
+          (p) => this.encounter()?.combatants.find((c) => c.id === p.attackerId)?.label,
+        )
+      : null,
   );
   /** The master's card shows for an NPC on turn, and for any turn that left
    * damage to apply. */
@@ -369,7 +374,7 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
     return (
       !!c &&
       (!isPlayer(c) ||
-        openPendingDamages(this.options()?.pendingDamages ?? []).length > 0 ||
+        (this.options()?.pendingDamages ?? []).length > 0 ||
         this.settledTurn() === c.id)
     );
   });

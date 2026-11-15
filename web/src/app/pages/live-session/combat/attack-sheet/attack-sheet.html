@@ -228,12 +228,30 @@
                 <span class="crit__text">{{ card.sentence }}</span>
               </div>
             }
-          } @else {
+          } @else if (!dmg.awaited()) {
             <p class="dmg__what">
               {{ dmg.showCritical() ? dmg.intro() : (s.pending()?.critical ? 'Acerto crítico: o dano segue a regra da mesa.' : 'Acertou: role o dano.') }}
             </p>
           }
-          @if (dmg.parts().length) {
+          @if (dmg.awaited(); as a) {
+            <!-- The master took an extra out of a group (#835): only the notice, the parts and the one sum that is asked again. -->
+            <app-group-sum-parts [notice]="dmg.groupNotice()" [awaited]="a" [kept]="dmg.kept()" [removal]="dmg.removal()" />
+            <app-multi-roll
+              [fields]="[{ key: a.typeKey, label: a.label, hint: a.hint + ' ' + dmg.bonusLine(), min: a.min, max: a.max }]"
+              [canApp]="canApp"
+              [canType]="canType"
+              [preferApp]="preferApp"
+              [modifier]="dmg.groupModifier()"
+              [formula]="dmg.groupFormula()"
+              [wide]="true"
+              [confirmLabel]="dmg.applyLabel"
+              [appLabel]="'Rolar ' + a.dice + ' no app'"
+              [busy]="s.busy()"
+              [(typing)]="s.typing"
+              (app)="rollDamage({ inApp: true })"
+              (typed)="rollAwaitedSum($event, a.typeKey)"
+            />
+          } @else if (dmg.parts().length) {
             <app-damage-parts [parts]="dmg.parts()" [(picks)]="s.picks" [disabled]="s.busy()" />
             <app-multi-roll
               [fields]="dmg.fields()"

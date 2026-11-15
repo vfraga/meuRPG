@@ -202,7 +202,7 @@ Ki-Empowered Strikes (`feature:ki-empowered-strikes` in `Derived.Features`, monk
 A `pseudo_weapon` line is never marked by a `weapon_rule`.
 A damage with no attack behind it (a trap, a zone, an ongoing effect, a reaction's own damage) is no attack: `AdjustForType` does not read the nonmagical lists, so no nonmagical clause reduces it.
 The step is the usual resistance or immunity step with `combat.Step.Qualifier` set, and its label says so ("Resistência a perfurante de ataque não mágico (Grick)", "... de ataque não mágico nem prateado", "... de ataque não mágico nem adamantino"). `stepGroup.From` keeps the origin so the steps are worked out the same when the master leaves a source out.
-The steps are kept per type with their sources (`pending_damages.steps`) and shown to the master and the target's player as `DamageStep[]`.
+The steps are kept per type with their sources (`pending_damages.steps`) and shown to the master and the target's player as `DamageStep[]`. The working out of the steps, their stored form and their Portuguese text are in the subpackage `play/damagesteps`.
 The master may leave a source out when applying (`ignore_modifiers`, at most `maxIgnoredSources`).
 An NPC's resistances reach the master alone (RN-20).
 `leaktest.TestAMaterialResistanceIsTheMastersAlone` proves it for a wight hit by a plain and a silvered weapon: the step, its label and the amounts are the master's, and no player reads the qualifier words in the roll, the combat, the log or the stream.

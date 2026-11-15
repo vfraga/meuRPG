@@ -246,6 +246,22 @@
                   </button>
                 </div>
               }
+              @if (notices.readiedNotice(); as lost) {
+                <div class="mr-notice mr-notice--warning notice" data-testid="readied-lost">
+                  <mat-icon aria-hidden="true">alarm</mat-icon>
+                  <p>
+                    <b>{{ lost.lead }}</b> {{ lost.rest }}
+                  </p>
+                  <button
+                    matButton
+                    type="button"
+                    class="notice__ok"
+                    (click)="notices.readiedLost.set(null)"
+                  >
+                    Entendi
+                  </button>
+                </div>
+              }
               @if (notices.lostNotice(); as text) {
                 <div class="mr-notice mr-notice--warning notice" data-testid="concentration-lost">
                   <mat-icon aria-hidden="true">hourglass_empty</mat-icon>
@@ -754,6 +770,8 @@
     @if (!queueFirst()) {
       <ng-container *ngTemplateOutlet="masterAfter" />
     }
+    <!-- The readied actions that wait (#582, board 582-04): "Disparar" says the trigger happened; the fold shows while the table holds one. -->
+    <app-readied-fold [encounter]="e" [campaignId]="campaignId()" [busy]="busy()" (fire)="sheets.actions.fire($event)" />
     <app-zones-panel
       [zones]="zoneFlow.views()"
       [master]="true"
@@ -1183,6 +1201,8 @@
               (feature)="useFeature($event)"
               (rage)="useFeature($event.key, $event.frenzy)"
               (action)="standardAction($event)"
+              (ready)="sheets.actions.openReady()"
+              (giveUp)="sheets.actions.giveUp($event)"
               (move)="moves.open()"
               (standUp)="standUp()"
               (rollDamage)="rollPendingDamage()"
