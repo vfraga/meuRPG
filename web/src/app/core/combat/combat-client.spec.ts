@@ -223,6 +223,10 @@ describe('CombatClient, mounting', () => {
         sent.push({ call: 'dismount', ...req });
         return Promise.resolve({ encounter: {}, stoppedEarly: true });
       },
+      rollMountSave: (req: Record<string, unknown>) => {
+        sent.push({ call: 'save', ...req });
+        return Promise.resolve({ encounter: {}, result: { held: true }, heldRollOffer: undefined });
+      },
     };
     return { client, sent };
   }
@@ -234,6 +238,36 @@ describe('CombatClient, mounting', () => {
     expect(sent[0]).toMatchObject({ call: 'mount', riderId: 'tor', mountId: 'cav' });
     expect(sent[1]).toMatchObject({ call: 'dismount', riderId: 'tor', col: 6, row: 7 });
     expect(landed.stoppedEarly).toBe(true);
+  });
+
+  it("rolls the rider's save in the app, or sends the typed d20 with the second one and the extra dice, under the caller's key", async () => {
+    const { client, sent } = clientMounting();
+    const app = await client.moves.rollMountSave('c', 'e', 'tor', { kind: 'app' }, 'k1');
+    expect(sent[0]).toMatchObject({
+      call: 'save',
+      campaignId: 'c',
+      encounterId: 'e',
+      riderId: 'tor',
+      roll: { case: 'rollInApp', value: true },
+      extraDieFaces: [],
+      idempotencyKey: 'k1',
+    });
+    expect(sent[0]['secondD20Face']).toBeUndefined();
+    expect(app.result?.held).toBe(true);
+    expect(app.held).toBeUndefined();
+    await client.moves.rollMountSave(
+      'c',
+      'e',
+      'tor',
+      { kind: 'typed', face: 15, second: 4, extra: [3] },
+      'k2',
+    );
+    expect(sent[1]).toMatchObject({
+      roll: { case: 'd20Face', value: 15 },
+      secondD20Face: 4,
+      extraDieFaces: [3],
+      idempotencyKey: 'k2',
+    });
   });
 });
 

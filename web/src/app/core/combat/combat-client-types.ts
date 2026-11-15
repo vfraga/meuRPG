@@ -7,6 +7,7 @@ import {
   type Encounter,
   EncounterMode,
   type HeldRollOffer,
+  type MountSaveResult,
   type PendingDamage,
   type SpellCast,
 } from '../../../gen/meurpg/play/v1/combat_pb';
@@ -104,6 +105,25 @@ export interface AttackResult {
    * Inspiration die): the d20 is rolled and the result is held until the player answers (`AnswerHeldRoll`). `roll`
    * then carries only the d20, with no outcome. */
   readonly held?: HeldRollOffer;
+}
+
+/** How a rider's save is rolled (`RollMountSave`): by the app, or the d20 the person typed, with the second one for advantage or
+ * disadvantage and the faces of the dice an effect adds (Bênção's d4). */
+export type MountSaveRoll =
+  | { readonly kind: 'app' }
+  | {
+      readonly kind: 'typed';
+      readonly face: number;
+      readonly second?: number;
+      readonly extra?: readonly number[];
+    };
+
+/** What a rider's save answers: the combat and the save, or, when the d20 was kept for a question (Lucky, a Bardic Inspiration
+ * die), the question and no save yet. */
+export interface MountSaveAnswer {
+  readonly encounter: Encounter;
+  readonly result: MountSaveResult | undefined;
+  readonly held: HeldRollOffer | undefined;
 }
 
 /** What a move answers: the combat, and whether it stopped short or provoked. */

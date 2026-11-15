@@ -6,7 +6,13 @@ import {
   type GetTurnOptionsResponse,
   JumpKind,
 } from '../../../gen/meurpg/play/v1/combat_pb';
-import { type JoinSpec, type MoveResult, type SpendResult } from './combat-client-types';
+import {
+  type JoinSpec,
+  type MountSaveAnswer,
+  type MountSaveRoll,
+  type MoveResult,
+  type SpendResult,
+} from './combat-client-types';
 import { toParticipant, need } from './combat-client-wire';
 import { type CombatClientBase } from './combat-client-base';
 
@@ -116,6 +122,31 @@ export class CombatMoveCalls {
         }),
     );
     return { encounter: need(res.encounter, 'DismountCombatant'), stoppedEarly: res.stoppedEarly };
+  }
+
+  /** `RollMountSave`: the Dexterity saving throw of a rider to stay on its mount. The caller makes the key from the request. */
+  async rollMountSave(
+    campaignId: string,
+    encounterId: string,
+    riderId: string,
+    roll: MountSaveRoll,
+    key: string,
+  ): Promise<MountSaveAnswer> {
+    const typed = roll.kind === 'typed' ? roll : null;
+    const res = await this.base.client.rollMountSave({
+      campaignId,
+      encounterId,
+      riderId,
+      roll: typed ? { case: 'd20Face', value: typed.face } : { case: 'rollInApp', value: true },
+      secondD20Face: typed?.second,
+      extraDieFaces: [...(typed?.extra ?? [])],
+      idempotencyKey: key,
+    });
+    return {
+      encounter: need(res.encounter, 'RollMountSave'),
+      result: res.result,
+      held: res.heldRollOffer,
+    };
   }
 
   /** "Colocar no mapa": the server picks the square of a combatant that has none
