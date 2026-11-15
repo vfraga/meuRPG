@@ -80,6 +80,12 @@ describe('mount rows', () => {
     );
   });
 
+  it('says no distance when the server has none (a rider that is not placed)', () => {
+    expect(why({ combatantId: 'm', refusal: MountRefusal.TOO_FAR, distanceFt: 0 })).toBe(
+      'Longe demais: chegue ao lado do Mastim primeiro.',
+    );
+  });
+
   it('does not say 0,0 m when the rider has no movement at all', () => {
     expect(why({ refusal: MountRefusal.NO_MOVEMENT, costDft: 0, missingDft: 0 })).toBe(
       'Sem deslocamento: não dá para montar.',

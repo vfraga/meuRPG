@@ -3,6 +3,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { MountRow } from '../../../../core/combat/mount-plan';
+import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 
 /**
@@ -11,12 +12,12 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
  */
 @Component({
   selector: 'app-mount-panel',
-  imports: [CombatantToken, MatButtonModule, MatIconModule],
+  imports: [CombatantToken, MatButtonModule, MatIconModule, SaddleIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mp" aria-labelledby="mount-panel-title">
       <header class="mp__head">
-        <h2 id="mount-panel-title" class="mp__title"><mat-icon aria-hidden="true">pets</mat-icon>Montaria</h2>
+        <h2 id="mount-panel-title" class="mp__title"><app-saddle-icon />Montaria</h2>
         <span class="mp__rule">custa metade do deslocamento</span>
       </header>
       <ul class="mp__list">
@@ -41,7 +42,7 @@ import { CombatantToken } from '../../../../shared/combatant-token/combatant-tok
               [attr.aria-describedby]="'mp-name-' + row.id + ' mp-line-' + row.id"
               (click)="press(row)"
             >
-              <mat-icon aria-hidden="true">pets</mat-icon>{{ busy() && pending() === row.id ? 'Montando…' : 'Montar' }}
+              <app-saddle-icon />{{ busy() && pending() === row.id ? 'Montando…' : 'Montar' }}
             </button>
           </li>
         }

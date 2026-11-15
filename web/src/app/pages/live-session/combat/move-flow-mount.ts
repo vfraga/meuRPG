@@ -70,9 +70,12 @@ export class MoveMount {
   }
 
   /** The walk of a combatant to a square: the mount carries its rider along (RN-21), so it is the mount's. */
-  move(e: Encounter, who: Combatant, to: Square): Promise<MoveResult> {
+  async move(e: Encounter, who: Combatant, to: Square): Promise<MoveResult> {
     const { api, campaignId } = this.ctx();
-    return api.moves.move(campaignId(), e.id, this.subjectOf(who), to.col, to.row);
+    const res = await api.moves.move(campaignId(), e.id, this.subjectOf(who), to.col, to.row);
+    // A move that works says the rider's square is free of the old trouble.
+    this.blocked.set(false);
+    return res;
   }
 
   /** "Montar" on a row of the "Montaria" panel. The page stays open: it is now the mount's. */

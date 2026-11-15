@@ -1,11 +1,15 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
+import { SaddleIcon } from '../saddle-icon/saddle-icon';
+
 /** One choice of a `Segmented` group. */
 export interface Segment<T extends string> {
   readonly value: T;
   readonly label: string;
   readonly icon?: string;
+  /** An icon the Material font has not: the saddle of "Cavalgar". */
+  readonly custom?: 'saddle';
   /** The choice exists but cannot be taken now (the radio is disabled). */
   readonly disabled?: boolean;
   /** The id of the line that says why it is off: the radio then stays focusable (`aria-disabled`) and reads that line. */
@@ -26,7 +30,7 @@ let nextId = 0;
  */
 @Component({
   selector: 'app-segmented',
-  imports: [MatIconModule],
+  imports: [MatIconModule, SaddleIcon],
   host: {
     '[class.seg--track]': "appearance() === 'track'",
     '[class.seg--wrap]': 'wrap()',
@@ -52,6 +56,8 @@ let nextId = 0;
           @if (appearance() === 'buttons') {
             @if (s.value === value()) {
               <mat-icon aria-hidden="true">check</mat-icon>
+            } @else if (s.custom === 'saddle') {
+              <app-saddle-icon />
             } @else if (s.icon) {
               <mat-icon aria-hidden="true">{{ s.icon }}</mat-icon>
             }

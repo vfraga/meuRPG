@@ -130,6 +130,27 @@ const choices = create(MountOptionsSchema, {
   ],
 });
 
+describe('MovePage, on foot', () => {
+  it('says nothing about a mount on a plain page, for a character and for a creature', () => {
+    expect(setup({ combatants: [tor(), mastiff] }).el.querySelector('.move__why')).toBeNull();
+    const creature = combatant({
+      id: 'cr',
+      label: 'Lobo',
+      kind: CombatantKind.CREATURE,
+      controlledByMe: true,
+      col: 5,
+      row: 5,
+    });
+    const page = setup({ combatants: [tor(), creature] });
+    page.fixture.componentRef.setInput('moverId', 'cr');
+    page.fixture.detectChanges();
+    expect(page.el.querySelector('.move__why')).toBeNull();
+    expect(
+      page.el.querySelector('[role="radiogroup"][aria-label="Como se mover montado"]'),
+    ).toBeNull();
+  });
+});
+
 describe('MovePage, the "Montaria" panel', () => {
   it('lists each mount with its cost or why it cannot be mounted, and mounts the one chosen', () => {
     const { el, mounted } = setup({
@@ -370,13 +391,55 @@ describe('MovePage, mounted', () => {
     expect(plain(el)).not.toContain('Desmontar custa 0,0 m');
   });
 
-  it('says something unseen holds the square, never what, in the live region, and drops it for Cavalgar', () => {
-    const { el, pick } = setup({
+  it('forgets the tap that was ignored when the rider gets on or off', () => {
+    const { el, choose, fixture } = setup({
+      combatants: [tor({ mountedOnId: 'cav' }), horse({ mountKind: 'independent' })],
+      mounts: create(MountOptionsSchema, {
+        mountedOnId: 'cav',
+        landing: [create(MountSquareSchema, { col: 6, row: 6 })],
+      }),
+    });
+    choose(9, 9);
+    expect(el.querySelector('[data-testid="dismount-ignored"]')).not.toBeNull();
+    const set = (mountedOnId: string) => {
+      fixture.componentRef.setInput(
+        'encounter',
+        encounter({
+          combatants: [tor({ mountedOnId }), horse({ mountKind: 'independent' })],
+          currentCombatantId: 'tor',
+          turnGroupIds: ['tor'],
+        }),
+      );
+      fixture.componentRef.setInput('mounts', create(MountOptionsSchema, { mountedOnId }));
+      fixture.detectChanges();
+    };
+    set('');
+    set('cav');
+    expect(el.querySelector('[data-testid="dismount-ignored"]')).toBeNull();
+  });
+
+  it('shows the warning of a failed dismount once: Cavalgar and back does not bring it again', () => {
+    const { el, pick, fixture } = setup({
       combatants: ridden,
       mounts: create(MountOptionsSchema, { mountedOnId: 'cav' }),
-      blocked: true,
     });
     pick('Desmontar');
+    fixture.componentRef.setInput('dismountBlocked', true);
+    fixture.detectChanges();
+    expect(el.querySelector('[data-testid="dismount-blocked"]')).not.toBeNull();
+    pick('Cavalgar');
+    pick('Desmontar');
+    expect(el.querySelector('[data-testid="dismount-blocked"]')).toBeNull();
+  });
+
+  it('says something unseen holds the square, never what, in the live region, and drops it for Cavalgar', () => {
+    const { el, pick, fixture } = setup({
+      combatants: ridden,
+      mounts: create(MountOptionsSchema, { mountedOnId: 'cav' }),
+    });
+    pick('Desmontar');
+    fixture.componentRef.setInput('dismountBlocked', true);
+    fixture.detectChanges();
     const warning = el.querySelector('[data-testid="dismount-blocked"]')!;
     expect(plain(warning)).toBe(
       'Algo bloqueia o caminho: Tor continua montado e nada foi gasto. Escolha outro quadrado.',

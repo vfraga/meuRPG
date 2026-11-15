@@ -46,4 +46,17 @@ describe('Segmented', () => {
     a.click();
     expect(a.getAttribute('aria-disabled')).toBeNull();
   });
+
+  it('draws the saddle of Cavalgar as a decoration, the words name it', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.segments = [
+      { value: 'a', label: 'Cavalgar', custom: 'saddle' },
+      { value: 'b', label: 'Desmontar' },
+    ];
+    fixture.componentInstance.value.set('b');
+    fixture.detectChanges();
+    const label = (fixture.nativeElement as HTMLElement).querySelector('.seg__item')!;
+    expect(label.querySelector('app-saddle-icon svg')?.getAttribute('aria-hidden')).toBe('true');
+    expect(label.textContent?.trim()).toBe('Cavalgar');
+  });
 });

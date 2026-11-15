@@ -34,6 +34,8 @@ export interface MountRideDeps {
   readonly readOnly: Signal<boolean>;
   readonly origin: Signal<Square>;
   readonly chosen: WritableSignal<Square | null>;
+  /** The flow's word that the last dismount found its square held by something unseen. */
+  readonly dismountBlocked: Signal<boolean>;
 }
 
 const IDLE: MoveSummary = { kind: 'idle', title: '', detail: '', warning: '', trap: '' };
@@ -59,6 +61,8 @@ export class MountRide {
   });
   /** A tap on a square that is not a landing square was ignored: the page says why. */
   readonly ignored = signal(false);
+  /** The warning of a failed dismount is on the page: it comes with the flow's word and goes with the next change of mode, of mount or of move. */
+  readonly blockedShown = signal(false);
   /** The mount obeys its rider: the rider's walk is the mount's. */
   readonly controlled = computed(() => this.mountedOn()?.mountKind === 'controlled');
   /** Picking where to get off (an independent mount only lets the rider do that, on the rider's own turn). */
@@ -74,6 +78,9 @@ export class MountRide {
   );
   /** Why the segments are off, one line each. */
   readonly why = computed(() => {
+    if (!this.mountedOn()) {
+      return [];
+    }
     const lines = [
       {
         id: 'move-why-ride',
@@ -88,7 +95,7 @@ export class MountRide {
     {
       value: 'ride',
       label: 'Cavalgar',
-      icon: 'pets',
+      custom: 'saddle',
       disabled: !this.controlled(),
       describedBy: this.controlled() ? undefined : 'move-why-ride',
     },
@@ -190,9 +197,16 @@ export class MountRide {
         if (before !== undefined && before !== now) {
           this.deps.chosen.set(null);
           this.mode.set('ride');
+          this.ignored.set(false);
+          this.blockedShown.set(false);
         }
         before = now;
       });
+    });
+    effect(() => {
+      if (this.deps.dismountBlocked()) {
+        this.blockedShown.set(true);
+      }
     });
   }
 
@@ -200,6 +214,7 @@ export class MountRide {
   pick(mode: 'ride' | 'dismount'): void {
     this.mode.set(mode);
     this.ignored.set(false);
+    this.blockedShown.set(false);
     this.deps.chosen.set(null);
   }
 

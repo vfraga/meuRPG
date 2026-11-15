@@ -147,4 +147,13 @@ describe('MoveFlow, mounts', () => {
     await flow.mount.mountOn('cav');
     expect(flow.moveError()).toBe('');
   });
+
+  it('drops the warning of a failed dismount once a move works', async () => {
+    const { flow, blocked } = setup(true);
+    blocked.value = true;
+    await flow.mount.dismountTo({ col: 6, row: 6 });
+    expect(flow.mount.blocked()).toBe(true);
+    await flow.confirmMove({ col: 8, row: 5 });
+    expect(flow.mount.blocked()).toBe(false);
+  });
 });

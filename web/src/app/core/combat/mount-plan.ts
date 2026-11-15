@@ -48,8 +48,8 @@ export function mountRefusalText(choice: MountChoice, combatants: readonly Comba
     case MountRefusal.TOO_SMALL:
       return `${feminine(name) ? 'Pequena' : 'Pequeno'} demais para você: precisa ser maior.`;
     case MountRefusal.TOO_FAR:
-      // The server's own distance: the measure that refuses (whole squares in feet).
-      return `A ${metersFixed(choice.distanceFt)}: chegue ao lado ${ofThe([name])} primeiro.`;
+      // The server's own distance: the measure that refuses (whole squares in feet). A rider that is not placed has none.
+      return `${choice.distanceFt > 0 ? `A ${metersFixed(choice.distanceFt)}` : 'Longe demais'}: chegue ao lado ${ofThe([name])} primeiro.`;
     case MountRefusal.NO_MOVEMENT:
       return choice.costDft === 0
         ? 'Sem deslocamento: não dá para montar.'
