@@ -7,7 +7,7 @@ import type {
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { reactorAttacks } from '../../../core/combat/opportunity';
 import { tradesOf } from '../../../core/combat/power-attack-trade';
-import { openWindows, promptView } from '../../../core/combat/reactions';
+import { openWindows, promptView, sheetWindow } from '../../../core/combat/reactions';
 import { dismountView, isDismountWindow } from '../../../core/combat/reaction-dismount';
 import { featureWindowView, isFeatureWindow } from '../../../core/combat/reaction-feature';
 import {
@@ -60,6 +60,15 @@ export class ReactionSheets {
     /** The attack sheet of the screen (the throw-back attack opens it). */
     private readonly openAttack: (req: AttackOpen) => void,
   ) {}
+
+  /** What the player owes an answer to opens its sheet by itself, once: a reload brings it back, as the window lives on the server. */
+  auto(e: Encounter): void {
+    const window = sheetWindow(e);
+    if (window && !this.reactionHandled.has(window.id)) {
+      this.reactionHandled.add(window.id);
+      this.reaction(window);
+    }
+  }
 
   /** "Você foi atingido: usar Escudo?" and the other reactions: opens by itself, and has to be answered. */
   reaction(window: ReactionWindow): void {

@@ -15,17 +15,8 @@ import {
   CoverDegree,
   EncounterStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
-import {
-  type MineTab,
-  actingTab,
-  dyingIds,
-  membersToEnd,
-  optionIds,
-  ownCreatures,
-  validTab,
-} from '../../../core/combat/mine';
+import { actingTab, dyingIds, optionIds, ownCreatures, validTab } from '../../../core/combat/mine';
 import { offersToAnswer, reactorIsMasters } from '../../../core/combat/opportunity';
-import { sheetWindow } from '../../../core/combat/reactions';
 import { questions } from '../../../core/combat/hidden-reveal';
 import { heldOfferOf } from '../../../core/held-rolls/held-roll-offer';
 import { COMBAT_VIEW_IMPORTS } from './combat-view-imports';
@@ -205,11 +196,7 @@ export class CombatView extends CombatViewPartsDirective {
       ) {
         return;
       }
-      const window = sheetWindow(e);
-      if (window && !this.reactionHandled.has(window.id)) {
-        this.reactionHandled.add(window.id);
-        untracked(() => this.sheets.reactions.reaction(window));
-      }
+      untracked(() => this.sheets.reactions.auto(e));
     });
     // A roll held for a question, Lucky or Bardic Inspiration (the player read the screen again, or left the sheet): the
     // question opens by itself, once.
@@ -368,23 +355,6 @@ export class CombatView extends CombatViewPartsDirective {
     );
   }
 
-  /** "Encerrar a parte dos Lobos" / "Encerrar a vez do Nanquim": the part of every member of the tab that still acts, one call each (a joint turn ends part by part). */
-  protected async endTab(tab: MineTab): Promise<void> {
-    for (const member of tab.members) {
-      const e = this.encounter();
-      // Read again before each call: the answer to the one before may have moved the turn on.
-      if (!e || !membersToEnd(e, { ...tab, members: [member] }).length) {
-        continue;
-      }
-      if (
-        !(await this.calls.run((current) =>
-          this.api.turn.endTurn(this.campaignId(), current.id, member.id, false, current.round),
-        ))
-      ) {
-        return;
-      }
-    }
-  }
   /** A damage was settled: the master's card stays for its note. */
   protected settled(): void {
     this.settledTurn.set(this.subject()?.id ?? '');

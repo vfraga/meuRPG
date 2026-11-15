@@ -6,7 +6,6 @@ import {
   PendingDamageStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { searchRoute } from '../../../core/traps/trap-search';
-import { turnEnds } from '../../../core/combat/pair-turn';
 import { awaitsRoll, featureNote } from '../../../core/combat/combat-derived';
 import { CombatSheets } from './combat-sheets';
 import { pressedButton, revealMap } from './target-mode/reveal-map';
@@ -21,7 +20,6 @@ import { SunlightFlow } from './sunlight-flow';
 import { ContestClient } from '../../../core/combat/contest-client';
 import { resourceFlow } from '../../../core/resources/resource-actions';
 import { openWindows } from '../../../core/combat/reactions';
-import { type RevealAnswer } from './hidden-reveal/hidden-reveal-card';
 import { CombatViewActingDirective } from './combat-view-acting';
 import { DiceMode } from '../../../../gen/meurpg/campaigns/v1/campaigns_pb';
 import { HeldQuestions } from '../../../core/held-rolls/held-questions';
@@ -185,37 +183,6 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
 
   // ---- calls ----
 
-  protected begin(): Promise<boolean> {
-    return this.calls.run((e) => this.api.turn.begin(this.campaignId(), e.id));
-  }
-
-  /** `discard`: the master passes the turn although a damage waits. A downed character's turn does not pass before its death
-   * save (SRD 5.1): the button is off and the server refuses it too. */
-  protected nextTurn(discard = false): Promise<boolean> {
-    if (this.deathDue().length > 0) {
-      return Promise.resolve(false);
-    }
-    return this.endTurn(discard);
-  }
-
-  /** One call for each part the button ends (`turnEnds`): a rider's own part, then the mount's; a refusal stops there. */
-  protected async endTurn(discard: boolean): Promise<boolean> {
-    const e = this.encounter();
-    for (const id of e ? turnEnds(e, this.own(), this.riding()) : []) {
-      if (!(await this.endPart(id, discard))) {
-        return false;
-      }
-    }
-    return !!e;
-  }
-
-  /** "Revelar" or "Manter escondidas" on a question about hidden creatures (PM-02c state 9). */
-  protected answerReveal(a: RevealAnswer): Promise<boolean> {
-    return this.calls.run((e) =>
-      this.api.casts.resolveHiddenReveal(this.campaignId(), e.id, a.id, a.reveal),
-    );
-  }
-
   /** The last question answered: the focus goes on to the order, the next stop of the column. */
   protected focusOrder(): void {
     afterNextRender(
@@ -226,27 +193,6 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
           )
           ?.focus(),
       { injector: this.injector },
-    );
-  }
-
-  /** "Encerrar a parte da Brisa": the master ends one member's part. */
-  protected endPart(id: string, discard = false): Promise<boolean> {
-    return this.calls.run((e) =>
-      this.api.turn.endTurn(this.campaignId(), e.id, id, discard, e.round),
-    );
-  }
-
-  /** A standard action ("Disparada"): it spends the action; Dash doubles the
-   * movement. */
-  protected takeAction(key: string): Promise<boolean> {
-    const own = this.own();
-    return own ? this.takeActionFor(own.id, key) : Promise.resolve(false);
-  }
-
-  /** The same for a combatant of the player's: their character, or one of their creatures. */
-  protected takeActionFor(id: string, key: string): Promise<boolean> {
-    return this.calls.run(
-      async (e) => (await this.api.turn.takeAction(this.campaignId(), e.id, id, key)).encounter,
     );
   }
 
