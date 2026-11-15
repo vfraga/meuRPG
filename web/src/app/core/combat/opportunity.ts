@@ -33,12 +33,16 @@ export function offersOn(e: Encounter, moverId: string): OpportunityOffer[] {
 }
 
 /** The offers that hold a player's turn: the server makes the whole turn group of the same
- * player wait (their character and their creatures that act in it), not only the one who moved. */
+ * player wait (their character and their creatures that act in it), not only the one who moved.
+ * The controlled mount their character directs is theirs to move too, an NPC's included (#588). */
 export function offersHolding(e: Encounter, ownId: string): OpportunityOffer[] {
+  const mine = (c: Combatant) => c.id === ownId || c.mine || c.controlledByMe;
+  const directed = (c: Combatant) =>
+    c.mountKind === 'controlled' && e.combatants.some((r) => r.mountedOnId === c.id && mine(r));
   const group = new Set([
     ownId,
     ...e.turnGroupIds.filter((id) =>
-      e.combatants.some((c) => c.id === id && (c.mine || c.controlledByMe)),
+      e.combatants.some((c) => c.id === id && (c.mine || c.controlledByMe || directed(c))),
     ),
   ]);
   return e.opportunityOffers.filter((o) => group.has(o.moverId));

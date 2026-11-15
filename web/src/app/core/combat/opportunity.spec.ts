@@ -105,6 +105,22 @@ describe('opportunity attacks in words', () => {
     expect(offersHolding(e, 'toren').map((o) => o.id)).toEqual(['o1', 'o4']);
   });
 
+  it("holds the rider's turn on an offer the NPC mount it directs raised (#588): a wait, not a refusal", () => {
+    const rider = combatant({ id: 'toren', label: 'Toren', mine: true, mountedOnId: 'horse' });
+    const horse = (mountKind: string) =>
+      combatant({ id: 'horse', label: 'Cavalo de guerra', riderId: 'toren', mountKind });
+    const onHorse = create(OpportunityOfferSchema, { ...toGoblin, id: 'o9', moverId: 'horse' });
+    const fight = (mountKind: string) =>
+      encounter({
+        combatants: [rider, horse(mountKind), g2],
+        turnGroupIds: ['toren', 'horse'],
+        opportunityOffers: [onHorse],
+      });
+    expect(offersHolding(fight('controlled'), 'toren').map((o) => o.id)).toEqual(['o9']);
+    // An independent mount moves on its own turn, the master's: its offers are not the rider's wait.
+    expect(offersHolding(fight('independent'), 'toren')).toEqual([]);
+  });
+
   it("counts a reactor the caller cannot see among the master's", () => {
     const e = encounter({ combatants: [toren, g2] });
     expect(reactorIsMasters(e, create(OpportunityOfferSchema, { reactorId: 'ghost' }))).toBe(true);
