@@ -2,9 +2,11 @@ import type { Combatant } from '../../../gen/meurpg/play/v1/combat_pb';
 import { type MountChoice, MountRefusal } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { metersFixed } from '../units';
 import { type Square } from './combat-grid';
-import { combatantInitial } from './combat-view';
+import { combatantInitial, isPlayer } from './combat-view';
+import { isCreature } from './creature-names';
 import { article } from './combat-log';
 import { lineLengthDft } from './jump-plan';
+import { ofThe } from './move-plan';
 
 /**
  * Mounting and dismounting on the "Mover" page (RN-21, "Combate montado"): the server decides what can be mounted and says why
@@ -19,6 +21,10 @@ export interface MountRow {
   readonly id: string;
   readonly name: string;
   readonly initial: string;
+  /** What the token looks like: an NPC is a rounded square, a player's creature is round and dashed, a hidden one has the seal. */
+  readonly npc: boolean;
+  readonly creature: boolean;
+  readonly hidden: boolean;
   /** "Ao lado · custa 3,8 m", or the reason the button is dashed. */
   readonly line: string;
   /** The mount cannot be mounted now. */
@@ -26,6 +32,8 @@ export interface MountRow {
 }
 
 const cost = (dft: number): string => metersFixed(dft / DFT_PER_FT);
+/** "o"/"a" for a name, as the rest of the combat words it. */
+const feminine = (name: string): boolean => article(name) === 'a';
 
 /** Who sits on the combatant, if the viewer sees them. */
 function riderOf(mountId: string, combatants: readonly Combatant[]): string {
@@ -34,21 +42,18 @@ function riderOf(mountId: string, combatants: readonly Combatant[]): string {
 
 /** Why a mount cannot be mounted, in a sentence. The server says nothing of what the viewer does not see (RN-10): a rider
  * that is hidden leaves "Já leva alguém." */
-export function mountRefusalText(
-  choice: MountChoice,
-  combatants: readonly Combatant[],
-  from: Square,
-): string {
-  const mount = combatants.find((c) => c.id === choice.combatantId);
+export function mountRefusalText(choice: MountChoice, combatants: readonly Combatant[]): string {
+  const name = combatants.find((c) => c.id === choice.combatantId)?.label ?? '';
   switch (choice.refusal) {
     case MountRefusal.TOO_SMALL:
-      return 'Pequeno demais para você: precisa ser maior.';
-    case MountRefusal.TOO_FAR: {
-      const away = mount ? lineLengthDft(from, { col: mount.col, row: mount.row }) : 0;
-      return `A ${cost(away)}: chegue ao lado dele primeiro.`;
-    }
+      return `${feminine(name) ? 'Pequena' : 'Pequeno'} demais para você: precisa ser maior.`;
+    case MountRefusal.TOO_FAR:
+      // The server's own distance: the measure that refuses (whole squares in feet).
+      return `A ${metersFixed(choice.distanceFt)}: chegue ao lado ${ofThe([name])} primeiro.`;
     case MountRefusal.NO_MOVEMENT:
-      return `Falta movimento: custa ${cost(choice.costDft)}, restam ${cost(Math.max(choice.costDft - choice.missingDft, 0))}.`;
+      return choice.costDft === 0
+        ? 'Sem deslocamento: não dá para montar.'
+        : `Falta movimento: custa ${cost(choice.costDft)}, restam ${cost(Math.max(choice.costDft - choice.missingDft, 0))}.`;
     case MountRefusal.MOVE_USED:
       return 'Você já montou ou desmontou neste movimento.';
     case MountRefusal.TAKEN:
@@ -64,19 +69,21 @@ export function mountRefusalText(
 export function mountRows(
   mounts: readonly MountChoice[],
   combatants: readonly Combatant[],
-  from: Square,
 ): MountRow[] {
   return mounts.flatMap((m) => {
     const mount = combatants.find((c) => c.id === m.combatantId);
     if (!mount) {
       return [];
     }
-    const reason = mountRefusalText(m, combatants, from);
+    const reason = mountRefusalText(m, combatants);
     return [
       {
         id: m.combatantId,
         name: mount.label,
         initial: combatantInitial(mount.label),
+        npc: !isPlayer(mount) && !isCreature(mount),
+        creature: isCreature(mount),
+        hidden: mount.hidden,
         line: reason || `Ao lado · custa ${cost(m.costDft)}`,
         refused: reason !== '',
       },
@@ -90,12 +97,15 @@ export function dismountRefusalText(
   costDft: number,
   missingDft: number,
   rider: string,
+  mount: string,
 ): string {
   switch (refusal) {
     case MountRefusal.NO_ROOM:
-      return 'Nenhum quadrado livre ao lado do cavalo.';
+      return `Nenhum quadrado livre ao lado ${ofThe([mount])}.`;
     case MountRefusal.NO_MOVEMENT:
-      return `Falta movimento: desmontar custa ${cost(costDft)}, restam ${cost(Math.max(costDft - missingDft, 0))} a ${rider}.`;
+      return costDft === 0
+        ? 'Sem deslocamento: não dá para desmontar.'
+        : `Falta movimento: desmontar custa ${cost(costDft)}, restam ${cost(Math.max(costDft - missingDft, 0))} a ${rider}.`;
     case MountRefusal.MOVE_USED:
       return 'Você já montou ou desmontou neste movimento.';
     default:
@@ -112,8 +122,8 @@ export function mountedNotice(mount: string): string {
 }
 
 /** What follows it: whose movement it is, and that the rider goes along. */
-export function mountedDetail(rider: string): string {
-  return `O movimento é dele, e ${rider} vai junto no mesmo quadrado.`;
+export function mountedDetail(rider: string, mount: string): string {
+  return `O movimento é ${ofThe([mount])}, e ${rider} vai junto no mesmo quadrado.`;
 }
 
 /** The rider's walk is the mount's: "Depois restam 3,0 m ao Cavalo de guerra. Os 9,0 m de Tor ficam para desmontar." */
@@ -131,10 +141,13 @@ export function dismountCard(
   costDft: number,
   riderLeftDft: number,
   rider: string,
+  mount: string,
   controlled: boolean,
 ): { readonly title: string; readonly detail: string } {
   const after = Math.max(riderLeftDft - costDft, 0);
-  const back = controlled ? ' O cavalo volta à iniciativa dele.' : '';
+  const back = controlled
+    ? ` ${feminine(mount) ? 'A' : 'O'} ${mount} volta à iniciativa própria.`
+    : '';
   return {
     title: `Desmontar aqui · ${cost(costDft)}`,
     detail: `Depois restam ${cost(after)} a ${rider}, a pé.${back}`,
@@ -142,8 +155,8 @@ export function dismountCard(
 }
 
 /** The line under the title while the rider picks where to get off. */
-export function dismountLead(costDft: number, rider: string): string {
-  return `Desmontar custa ${cost(costDft)}, metade do deslocamento ${on(rider, 'da', 'de')}. Toque num quadrado ao lado do cavalo.`;
+export function dismountLead(costDft: number, rider: string, mount: string): string {
+  return `Desmontar custa ${cost(costDft)}, metade do deslocamento ${on(rider, 'da', 'de')}. Toque num quadrado ao lado ${ofThe([mount])}.`;
 }
 
 /** The landing square nearest to where the arrows pointed, so a nudge never lands on a square that cannot be chosen. */

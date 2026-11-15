@@ -23,7 +23,7 @@ import { ActionKey } from '../../../core/connect/idempotency';
 import { MoveSaves } from '../../../core/maps/move-saves';
 import { metersFixed } from '../../../core/units';
 import type { Reach, TokenDrop } from '../../../shared/combat-map/combat-map';
-import { MoveMount } from './move-flow-mount';
+import { MoveMount, stoppedMessage } from './move-flow-mount';
 import type { JumpRequest } from './move-page/move-page';
 
 /** What `MoveFlow` reads from the screen it serves. */
@@ -269,7 +269,10 @@ export class MoveFlow {
               `${c.label} foi mov${article(c.label) === 'a' ? 'ida' : 'ido'} à força. Ninguém recebeu oferta de ataque de oportunidade.`,
             );
           }
-          this.sayStopped(res);
+          const stopped = stoppedMessage(res);
+          if (stopped) {
+            calls.error.set(stopped);
+          }
         },
         failed: (saved, err) => {
           if (legendary) {
@@ -323,21 +326,6 @@ export class MoveFlow {
   dropOverAsk(): void {
     this.overAsk.set(null);
     this.overDrag = null;
-  }
-
-  /** What stopped the master's drag short, in the page's notice. */
-  private sayStopped(res: MoveResult): void {
-    if (res.lockedDoor) {
-      // The master walks through closed doors but a locked one stops them too (RN-26).
-      this.ctx.calls.error.set(
-        'Uma porta trancada parou o movimento. Destranque a porta (toque nela no mapa) e mova de novo.',
-      );
-    } else if (res.stoppedEarly) {
-      // A barred or secret door stops it too: the token stands where it stopped.
-      this.ctx.calls.error.set(
-        'Uma grade levadiça ou uma porta secreta parou o movimento. Abra a porta (toque nela no mapa) e mova de novo.',
-      );
-    }
   }
 
   /** "Mover para cá" on the "Mover" page. */
@@ -457,6 +445,7 @@ export class MoveFlow {
 
   closeFullPage(): void {
     this.lockedDoor.set(false);
+    this.mount.reset();
     this.moverId.set('');
     this.dropStart.set(null);
     this.ctx.state().moving.set(false);
@@ -470,7 +459,7 @@ export class MoveFlow {
       return;
     }
     this.lockedDoor.set(false);
-    this.mount.blocked.set(false);
+    this.mount.reset();
     // The master moves the character he acts for: the page is told whose it is.
     this.moverId.set(this.ctx.isMaster() ? (this.ctx.own()?.id ?? '') : '');
     this.dropStart.set(null);
@@ -487,6 +476,7 @@ export class MoveFlow {
     this.moverName = this.ctx.encounter()?.combatants.find((c) => c.id === id)?.label ?? '';
     this.moverId.set(id);
     this.lockedDoor.set(false);
+    this.mount.reset();
     this.dropStart.set(null);
     this.moveError.set('');
     this.ctx.state().moving.set(true);

@@ -24,6 +24,8 @@ export interface MoveMountContext {
 export interface MoveMountHost {
   readonly mover: () => Combatant | null;
   readonly moverId: () => string;
+  /** The refusal the page shows next to the map: a new try clears the last one. */
+  readonly moveError: { set(text: string): void };
   /** Sends a move through the flow (busy, notes, applying the answer). */
   runMove(call: (e: Encounter) => Promise<MoveResult>): Promise<boolean>;
   /** The flow's answer to a refusal: the words go next to the map. */
@@ -52,6 +54,11 @@ export class MoveMount {
     return mount?.mountKind === 'controlled' ? mount.id : '';
   });
 
+  /** A page that closes or opens takes the warning of the last dismount with it. */
+  reset(): void {
+    this.blocked.set(false);
+  }
+
   constructor(
     private readonly ctx: () => MoveMountContext,
     private readonly host: MoveMountHost,
@@ -75,6 +82,7 @@ export class MoveMount {
       return;
     }
     this.blocked.set(false);
+    this.host.moveError.set('');
     const ok = await this.host.runMove(async (e) => ({
       encounter: await this.ctx().api.moves.mount(this.ctx().campaignId(), e.id, own.id, mountId),
       stoppedEarly: false,
@@ -93,6 +101,7 @@ export class MoveMount {
       return;
     }
     this.blocked.set(false);
+    this.host.moveError.set('');
     let stopped = false;
     const ok = await this.host.runMove(async (e) => {
       const res = await this.ctx().api.moves.dismount(
@@ -111,4 +120,16 @@ export class MoveMount {
       this.host.afterMove(false);
     }
   }
+}
+
+/** What stopped the master's drag short, in the page's notice (empty when nothing did). */
+export function stoppedMessage(res: MoveResult): string {
+  if (res.lockedDoor) {
+    // The master walks through closed doors but a locked one stops them too (RN-26).
+    return 'Uma porta trancada parou o movimento. Destranque a porta (toque nela no mapa) e mova de novo.';
+  }
+  // A barred or secret door stops it too: the token stands where it stopped.
+  return res.stoppedEarly
+    ? 'Uma grade levadiça ou uma porta secreta parou o movimento. Abra a porta (toque nela no mapa) e mova de novo.'
+    : '';
 }

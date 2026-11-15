@@ -1,0 +1,49 @@
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+
+import { type Segment, Segmented } from './segmented';
+
+@Component({
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Segmented],
+  template: `<app-segmented label="Como se mover" [segments]="segments" [value]="value()" (choose)="picked.push($event)" />`,
+})
+class Host {
+  readonly value = signal<'a' | 'b'>('a');
+  readonly picked: string[] = [];
+  segments: readonly Segment<'a' | 'b'>[] = [
+    { value: 'a', label: 'A' },
+    { value: 'b', label: 'B', disabled: true },
+  ];
+}
+
+describe('Segmented', () => {
+  const radios = (host: HTMLElement) =>
+    Array.from(host.querySelectorAll<HTMLInputElement>('input[type="radio"]'));
+
+  it('disables an off choice that has no reason to read', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.detectChanges();
+    const [, b] = radios(fixture.nativeElement);
+    expect(b.disabled).toBe(true);
+  });
+
+  it('keeps an off choice with a reason focusable, reads the reason and never takes the choice', () => {
+    const fixture = TestBed.createComponent(Host);
+    fixture.componentInstance.segments = [
+      { value: 'a', label: 'A' },
+      { value: 'b', label: 'B', disabled: true, describedBy: 'why' },
+    ];
+    fixture.detectChanges();
+    const [a, b] = radios(fixture.nativeElement);
+    expect(b.disabled).toBe(false);
+    expect(b.getAttribute('aria-disabled')).toBe('true');
+    expect(b.getAttribute('aria-describedby')).toBe('why');
+    b.click();
+    fixture.detectChanges();
+    expect(fixture.componentInstance.picked).toEqual([]);
+    expect(b.checked).toBe(false);
+    a.click();
+    expect(a.getAttribute('aria-disabled')).toBeNull();
+  });
+});

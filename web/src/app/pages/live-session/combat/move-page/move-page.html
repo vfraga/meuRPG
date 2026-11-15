@@ -15,22 +15,27 @@
     } @else {
       <h1 class="mr-page-title move__title">{{ title() }}</h1>
       <p class="move__lead">{{ lead() }}</p>
-      @if (ride.mountedOn()) {
-        <app-segmented class="move__seg" label="Montado" [segments]="ride.modes()" [value]="ride.dismounting() ? 'dismount' : 'ride'" (choose)="ride.pick($event)" />
-        @for (why of ride.why(); track why) {
-          <p class="move__why"><mat-icon aria-hidden="true">block</mat-icon>{{ why }}</p>
+      <div class="move__ride">
+        @if (ride.mountedOn()) {
+          <app-segmented class="move__seg" label="Como se mover montado" [segments]="ride.modes()" [value]="ride.dismounting() ? 'dismount' : 'ride'" (choose)="ride.pick($event)" />
+        } @else if (jumps()) {
+          <app-segmented class="move__seg" label="Como se mover" [segments]="modes" [value]="mode()" (choose)="setMode($event)" />
         }
-        @if (ride.riding() && ride.line(); as m) {
-          <div class="mr-notice" role="status" data-testid="mounted-notice">
-            <mat-icon aria-hidden="true">link</mat-icon>
-            <p><strong class="move__strong">{{ m.notice }}</strong> {{ m.detail }}</p>
-          </div>
-        }
-      } @else if (jumps()) {
-        <app-segmented class="move__seg" label="Como se mover" [segments]="modes" [value]="mode()" (choose)="setMode($event)" />
-        @if (jumping()) {
-          <app-segmented class="move__seg" label="Tipo de salto" [segments]="kinds" [value]="kind()" (choose)="setKind($event)" />
-        }
+        <!-- On the page before its text arrives, so a screen reader reads the notice when the rider mounts. -->
+        <div role="status" aria-live="polite" class="move__live move__ride-live">
+          @if (ride.riding() && ride.line(); as m) {
+            <div class="mr-notice" data-testid="mounted-notice">
+              <mat-icon aria-hidden="true">link</mat-icon>
+              <p><strong class="move__strong">{{ m.notice }}</strong> {{ m.detail }}</p>
+            </div>
+          }
+        </div>
+      </div>
+      @for (why of ride.why(); track why.id) {
+        <p class="move__why" [id]="why.id"><mat-icon aria-hidden="true">block</mat-icon>{{ why.text }}</p>
+      }
+      @if (!ride.mountedOn() && jumps() && jumping()) {
+        <app-segmented class="move__seg" label="Tipo de salto" [segments]="kinds" [value]="kind()" (choose)="setKind($event)" />
       }
     }
 
@@ -133,18 +138,24 @@
               <p><strong class="move__strong">A porta está trancada.</strong>O movimento para antes dela. Só o mestre a destranca.</p>
             </div>
           }
+          @if (dismountBlocked() && ride.dismounting()) {
+            <div class="mr-notice mr-notice--warning" data-testid="dismount-blocked">
+              <mat-icon aria-hidden="true">block</mat-icon>
+              <p>Algo bloqueia o caminho: {{ own()?.label }} continua montado e nada foi gasto. Escolha outro quadrado.</p>
+            </div>
+          }
+          @if (ride.ignoredText(); as ignored) {
+            <p class="move__why" data-testid="dismount-ignored">{{ ignored }}</p>
+          }
         </div>
+        @if (summary().kind === 'idle' && ride.hint(); as hint) {
+          <p class="move__hint" data-testid="mount-hint"><mat-icon aria-hidden="true">info</mat-icon>{{ hint }}</p>
+        }
         @if (drag.line()) {
           <p class="move__drag" data-testid="drag-line">{{ drag.line() }}</p>
         }
         @if (drag.text() && !visibleError()) {
           <p class="move__drag-text" role="status" data-testid="drag-text">{{ drag.text() }}</p>
-        }
-        @if (dismountBlocked()) {
-          <div class="mr-notice mr-notice--warning" role="status" data-testid="dismount-blocked">
-            <mat-icon aria-hidden="true">block</mat-icon>
-            <p>Algo bloqueia o caminho: {{ own()?.label }} continua montado e nada foi gasto. Escolha outro quadrado.</p>
-          </div>
         }
         @if (visibleError()) {
           <div class="mr-notice mr-notice--danger" role="alert">

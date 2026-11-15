@@ -8,6 +8,8 @@ export interface Segment<T extends string> {
   readonly icon?: string;
   /** The choice exists but cannot be taken now (the radio is disabled). */
   readonly disabled?: boolean;
+  /** The id of the line that says why it is off: the radio then stays focusable (`aria-disabled`) and reads that line. */
+  readonly describedBy?: string;
 }
 
 let nextId = 0;
@@ -41,8 +43,11 @@ let nextId = 0;
             [name]="name"
             [value]="s.value"
             [checked]="s.value === value()"
-            [disabled]="s.disabled ?? false"
-            (change)="choose.emit(s.value)"
+            [disabled]="(s.disabled && !s.describedBy) ?? false"
+            [attr.aria-disabled]="s.disabled && s.describedBy ? 'true' : null"
+            [attr.aria-describedby]="s.describedBy ?? null"
+            (click)="holdIfOff($event, s)"
+            (change)="!s.disabled && choose.emit(s.value)"
           />
           @if (appearance() === 'buttons') {
             @if (s.value === value()) {
@@ -70,4 +75,11 @@ export class Segmented<T extends string> {
   readonly stackOnPhone = input(false);
   readonly choose = output<T>();
   protected readonly name = `seg-${nextId++}`;
+
+  /** An off choice that stays focusable (it has a reason linked) is never checked by a click or an arrow. */
+  protected holdIfOff(event: Event, s: Segment<T>): void {
+    if (s.disabled) {
+      event.preventDefault();
+    }
+  }
 }
