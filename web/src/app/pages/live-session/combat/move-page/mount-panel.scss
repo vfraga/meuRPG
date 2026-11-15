@@ -21,7 +21,7 @@
 .mp__title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--mr-space-2);
   margin: 0;
   font-family: var(--mr-font-display);
   font-size: var(--mr-font-18);
@@ -49,21 +49,6 @@
   }
 }
 
-.mp__disc {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 2px solid var(--mr-ink);
-  border-radius: var(--mr-radius-sm);
-  background: var(--mr-surface);
-  font-family: var(--mr-font-display);
-  font-size: var(--mr-font-14);
-  font-weight: 800;
-}
-
 .mp__text {
   display: flex;
   flex: 1;
@@ -78,7 +63,7 @@
 .mp__line {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mr-space-2);
   font-size: var(--mr-font-14);
   line-height: 18px;
   color: var(--mr-ink-muted);
@@ -97,10 +82,6 @@
 
 .mp__go {
   flex: none;
-  min-width: 112px;
-  min-height: 44px;
-}
-
-.mp__go--off {
-  border-style: dashed;
+  min-width: 7rem;
+  min-height: 2.75rem;
 }

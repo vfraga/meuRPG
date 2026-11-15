@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { MountRow } from '../../../../core/combat/mount-plan';
+import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 
 /**
  * The "Montaria" panel of the "Mover" page (RN-21): one row for each mount the server lists, with what mounting costs, or why
@@ -10,7 +11,7 @@ import type { MountRow } from '../../../../core/combat/mount-plan';
  */
 @Component({
   selector: 'app-mount-panel',
-  imports: [MatButtonModule, MatIconModule],
+  imports: [CombatantToken, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="mp" aria-labelledby="mount-panel-title">
@@ -21,10 +22,10 @@ import type { MountRow } from '../../../../core/combat/mount-plan';
       <ul class="mp__list">
         @for (row of rows(); track row.id) {
           <li class="mp__row" [class.mp__row--off]="row.refused">
-            <span class="mp__disc" aria-hidden="true">{{ row.initial }}</span>
+            <app-combatant-token [initial]="row.initial" [npc]="row.npc" [creature]="row.creature" [hidden]="row.hidden" [size]="32" />
             <span class="mp__text">
-              <strong class="mp__name">{{ row.name }}</strong>
-              <span class="mp__line">
+              <strong class="mp__name" [id]="'mp-name-' + row.id">{{ row.name }}</strong>
+              <span class="mp__line" [id]="'mp-line-' + row.id">
                 @if (row.refused) {
                   <mat-icon aria-hidden="true">block</mat-icon>
                 }{{ row.line }}
@@ -34,13 +35,13 @@ import type { MountRow } from '../../../../core/combat/mount-plan';
               matButton="outlined"
               type="button"
               class="mp__go"
-              [class.mp__go--off]="row.refused"
+              [class.mr-button--off]="row.refused"
               [disabled]="row.refused || busy()"
               disabledInteractive
-              [attr.aria-label]="'Montar ' + row.name"
-              (click)="mount.emit(row.id)"
+              [attr.aria-describedby]="'mp-name-' + row.id + ' mp-line-' + row.id"
+              (click)="press(row)"
             >
-              <mat-icon aria-hidden="true">pets</mat-icon>{{ busy() ? 'Montando…' : 'Montar' }}
+              <mat-icon aria-hidden="true">pets</mat-icon>{{ busy() && pending() === row.id ? 'Montando…' : 'Montar' }}
             </button>
           </li>
         }
@@ -53,4 +54,22 @@ export class MountPanel {
   readonly rows = input.required<readonly MountRow[]>();
   readonly busy = input(false);
   readonly mount = output<string>();
+  /** The row that was pressed: only its button says "Montando…" while the call runs. */
+  protected readonly pending = signal('');
+
+  constructor() {
+    effect(() => {
+      if (!this.busy()) {
+        this.pending.set('');
+      }
+    });
+  }
+
+  protected press(row: MountRow): void {
+    if (row.refused || this.busy()) {
+      return;
+    }
+    this.pending.set(row.id);
+    this.mount.emit(row.id);
+  }
 }

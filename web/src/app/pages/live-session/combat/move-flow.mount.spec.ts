@@ -44,7 +44,7 @@ function setup(mounted: boolean, kind = 'controlled') {
     },
     mount: (...args: unknown[]) => {
       sent.push(['mount', ...args]);
-      return Promise.resolve(answer);
+      return failing.mount ? Promise.reject(new Error('boom')) : Promise.resolve(answer);
     },
     dismount: (...args: unknown[]) => {
       sent.push(['dismount', ...args]);
@@ -52,6 +52,7 @@ function setup(mounted: boolean, kind = 'controlled') {
     },
   };
   const blocked = { value: false };
+  const failing = { mount: false };
   const mountOptions = create(MountOptionsSchema, { mountedOnId: mounted ? 'cav' : '' });
   const ctx = {
     api: { moves },
@@ -77,7 +78,7 @@ function setup(mounted: boolean, kind = 'controlled') {
     openSpend: () => undefined,
   } as unknown as MoveFlowContext;
   const flow = TestBed.runInInjectionContext(() => new MoveFlow(ctx));
-  return { flow, asked, sent, blocked, tick: () => TestBed.tick() };
+  return { flow, asked, sent, blocked, failing, tick: () => TestBed.tick() };
 }
 
 describe('MoveFlow, mounts', () => {
@@ -123,5 +124,27 @@ describe('MoveFlow, mounts', () => {
     blocked.value = false;
     await flow.mount.dismountTo({ col: 7, row: 6 });
     expect(flow.mount.blocked()).toBe(false);
+  });
+
+  it('drops the warning when the page closes, and when the page opens for a creature', async () => {
+    const { flow, blocked } = setup(true);
+    blocked.value = true;
+    await flow.mount.dismountTo({ col: 6, row: 6 });
+    flow.closeFullPage();
+    expect(flow.mount.blocked()).toBe(false);
+    await flow.mount.dismountTo({ col: 6, row: 6 });
+    expect(flow.mount.blocked()).toBe(true);
+    flow.openCreature('cav');
+    expect(flow.mount.blocked()).toBe(false);
+  });
+
+  it('keeps the page open and says why when mounting is refused, and forgets it on the next try', async () => {
+    const { flow, failing } = setup(false);
+    failing.mount = true;
+    await flow.mount.mountOn('cav');
+    expect(flow.moveError()).not.toBe('');
+    failing.mount = false;
+    await flow.mount.mountOn('cav');
+    expect(flow.moveError()).toBe('');
   });
 });

@@ -589,13 +589,17 @@ describe('MovePage', () => {
     it('says why the move stopped, with the lock, and nothing about a lock when none stopped it', () => {
       const { fixture, choose } = setup();
       // The live region is on the page before the text arrives (so a screen reader reads it when it does).
-      expect((fixture.nativeElement as HTMLElement).querySelector('.move__live')).not.toBeNull();
+      expect(
+        (fixture.nativeElement as HTMLElement).querySelector('.move__live:not(.move__ride-live)'),
+      ).not.toBeNull();
       expect(plain(fixture.nativeElement.textContent)).not.toContain('A porta está trancada.');
       choose(9, 8);
       expect(plain(fixture.nativeElement.textContent)).toContain('Mover 2,1 m');
       fixture.componentRef.setInput('lockedDoor', true);
       fixture.detectChanges();
-      const live = (fixture.nativeElement as HTMLElement).querySelector('.move__live');
+      const live = (fixture.nativeElement as HTMLElement).querySelector(
+        '.move__live:not(.move__ride-live)',
+      );
       expect(live?.getAttribute('role')).toBe('status');
       const notice = live?.querySelector('.mr-notice--warning');
       expect(plain(notice?.textContent)).toContain('lock');

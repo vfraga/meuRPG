@@ -320,7 +320,7 @@
 .move__why {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--mr-space-2);
   margin: 0 0 var(--mr-space-2);
   font-size: var(--mr-font-14);
   color: var(--mr-ink-muted);
@@ -330,5 +330,38 @@
     width: 18px;
     height: 18px;
     font-size: 18px;
+  }
+}
+
+// Mounted: the segments and the notice share a row from 1024px (588-02); under it the notice sits below the segments.
+.move__ride {
+  @media (min-width: 1024px) {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--mr-space-3);
+
+    .move__seg {
+      flex: none;
+      width: 20rem;
+    }
+  }
+}
+
+.move__ride-live {
+  flex: 1;
+  min-width: 0;
+}
+
+.move__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--mr-space-2);
+  margin: 0 0 var(--mr-space-3);
+  font-size: var(--mr-font-15);
+  color: var(--mr-ink-muted);
+
+  mat-icon {
+    flex: none;
   }
 }
