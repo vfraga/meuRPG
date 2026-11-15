@@ -1770,6 +1770,7 @@ options as options of Pensantus to the master
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Toren].distanceFt
 - .options.mount.mounts[Capitão Goblin].combatantId
 - .options.mount.mounts[Capitão Goblin].costDft
+- .options.mount.mounts[Capitão Goblin].distanceFt
 - .spellTargets[0].areaShape
 - .spellTargets[0].areaSizeFt
 - .spellTargets[0].placement
@@ -2106,6 +2107,7 @@ options as options of Pensantus to the master
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Goblin].size
 - .options.mount.mounts[Capitão Goblin].combatantId
 - .options.mount.mounts[Capitão Goblin].costDft
+- .options.mount.mounts[Capitão Goblin].distanceFt
 - .spellTargets[0].targets[Goblin].combatantId
 - .spellTargets[0].targets[Goblin].cover
 - .spellTargets[0].targets[Goblin].coverSource
@@ -3163,6 +3165,7 @@ options
 .options.jumps.longStandingDft = 50
 .options.mount.mounts[Capitão Goblin].combatantId = "Capitão Goblin"
 .options.mount.mounts[Capitão Goblin].costDft = 125
+.options.mount.mounts[Capitão Goblin].distanceFt = 5
 .options.spells[spell:burning-hands].economy = "ACTION_ECONOMY_ACTION"
 .options.spells[spell:burning-hands].enabled = true
 .options.spells[spell:burning-hands].slots[0].free = 4
@@ -4195,6 +4198,7 @@ options as options of Toren on his turn to the master
 - .contestAttackOptions[CONTEST_ATTACK_OPTION_KIND_SHOVE].targets[Pensantus].distanceFt
 - .options.mount.mounts[Goblin].combatantId
 - .options.mount.mounts[Goblin].costDft
+- .options.mount.mounts[Goblin].distanceFt
 - .options.mount.mounts[Goblin].refusal
 ~ .attackTargets[attack:unarmed-strike].targets[Pensantus].cover = "COVER_DEGREE_NONE"
 ~ .attackTargets[equipment:battleaxe].targets[Pensantus].cover = "COVER_DEGREE_NONE"
@@ -4578,6 +4582,7 @@ options
 .options.jumps.longStandingDft = 85
 .options.mount.mounts[Goblin].combatantId = "Goblin"
 .options.mount.mounts[Goblin].costDft = 150
+.options.mount.mounts[Goblin].distanceFt = 5
 .options.mount.mounts[Goblin].refusal = "MOUNT_REFUSAL_TOO_SMALL"
 .options.standardActions[standard:attack].action.economy = "ACTION_ECONOMY_ACTION"
 .options.standardActions[standard:attack].action.key = "standard:attack"
