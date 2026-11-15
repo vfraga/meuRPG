@@ -1,0 +1,107 @@
+<app-sheet-frame
+  icon="shield"
+  [title]="view?.title ?? 'Teste de resistência'"
+  [subtitle]="view?.subtitle ?? ''"
+  [phone]="inSheet"
+  [closable]="canClose()"
+  [focusableBody]="true"
+  (closed)="close()"
+>
+  @if (error()) {
+    <div class="mr-notice mr-notice--danger" role="alert">
+      <mat-icon aria-hidden="true">error</mat-icon>
+      <p>{{ error() }}</p>
+    </div>
+  }
+  @switch (stage()) {
+    @case ('ask') {
+      @if (held.offer(); as o) {
+        <!-- The d20 is rolled and kept (a halfling's 1, a Bardic Inspiration die): the question comes before the result. -->
+        <app-held-roll-prompt
+          [offer]="o"
+          look="sheet"
+          [canApp]="canApp"
+          [canType]="canType"
+          [preferApp]="preferApp"
+          [busy]="busy()"
+          (answer)="held.answer($event)"
+        />
+      } @else if (view; as v) {
+        <p class="what">{{ v.cause }} {{ v.autoFail ? v.autoFailLine : v.body }}</p>
+        <div class="tags">
+          @for (tag of v.tags; track tag) {
+            <span class="tag">{{ tag }}</span>
+          }
+        </div>
+        @if (v.modeLine) {
+          <p class="small">{{ v.modeLine }}</p>
+        }
+        <p class="small wait"><mat-icon aria-hidden="true">hourglass_top</mat-icon>{{ v.wait }}</p>
+        @if (typingNow() && !v.autoFail) {
+          <app-extra-dice [fields]="fields()" [(faces)]="extraFaces" />
+          @if (v.mode === 'normal') {
+            <app-roll-picker
+              [canApp]="false"
+              [canType]="true"
+              [min]="1"
+              [max]="20"
+              [modifier]="v.bonus"
+              label="Face do d20 (1 a 20)"
+              hint="Role o seu dado e digite o número que saiu."
+              totalNote="Teste de resistência"
+              [busy]="busy()"
+              (typed)="answerTyped([$event])"
+            />
+          } @else {
+            <app-multi-roll
+              [fields]="pair"
+              [canApp]="false"
+              [canType]="true"
+              [combine]="v.mode === 'advantage' ? 'higher' : 'lower'"
+              hint="Role os dois d20 e digite os dois números, na ordem em que saíram (1 a 20 cada)."
+              [busy]="busy()"
+              (typed)="answerTyped($event)"
+            />
+          }
+        }
+      }
+    }
+    @case ('result') {
+      @if (resultView(); as r) {
+        <div class="res" role="status">
+          <span class="pill" [class.pill--bad]="!r.good">
+            <mat-icon aria-hidden="true">{{ r.good ? 'check' : 'close' }}</mat-icon>{{ r.word }}
+          </span>
+          <p class="what">{{ r.line }}</p>
+        </div>
+      }
+    }
+    @default {
+      <p class="what" role="status">{{ goneText }}</p>
+    }
+  }
+  <div foot>
+    @if (stage() === 'ask' && !held.offer() && view; as v) {
+      <div class="stack">
+        @if (v.autoFail) {
+          <button matButton="filled" type="button" class="btn" data-initial-focus [disabled]="busy()" (click)="roll({ kind: 'app' })">
+            {{ v.rollLabel }}
+          </button>
+        } @else {
+          @if (canApp) {
+            <button matButton="filled" type="button" class="btn" data-initial-focus [disabled]="busy()" (click)="roll({ kind: 'app' })">
+              <mat-icon aria-hidden="true">casino</mat-icon>{{ v.rollLabel }}
+            </button>
+          }
+          @if (canType && !typingNow()) {
+            <button matButton="outlined" type="button" class="btn" [disabled]="busy()" (click)="typing.set(true)">
+              Digitar o resultado
+            </button>
+          }
+        }
+      </div>
+    } @else if (stage() !== 'ask') {
+      <button matButton="outlined" type="button" class="btn" data-initial-focus (click)="close()">Fechar</button>
+    }
+  </div>
+</app-sheet-frame>

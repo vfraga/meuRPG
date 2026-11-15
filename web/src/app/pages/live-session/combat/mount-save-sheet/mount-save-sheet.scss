@@ -1,0 +1,13 @@
+// "A vez do Wight espera este teste.": the hourglass sits on the first line of the sentence.
+.wait {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-1);
+
+  .mat-icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    font-size: var(--mr-font-18);
+  }
+}
