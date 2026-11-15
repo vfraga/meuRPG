@@ -93,6 +93,24 @@ export function mineTabs(e: Encounter): MineTab[] {
   return tabs.sort((a, b) => (a.id === CHARACTER_TAB ? -1 : b.id === CHARACTER_TAB ? 1 : 0));
 }
 
+/**
+ * The tabs beside the pair card (588-04): the mount the character directs has no tab of its own while the card stands in for
+ * it, so a player's own steed (Find Steed) does not show its three actions twice. Only the steed leaves a group it shares.
+ */
+export function tabsBesideRide(tabs: readonly MineTab[], ride: Combatant | null): MineTab[] {
+  if (!ride) {
+    return [...tabs];
+  }
+  return tabs.flatMap((tab) => {
+    if (!tab.creature || !tab.members.some((m) => m.id === ride.id)) {
+      return [tab];
+    }
+    const members = tab.members.filter((m) => m.id !== ride.id);
+    const acting = tab.acting.filter((m) => m.id !== ride.id);
+    return members.length ? [{ ...tab, members, acting, label: tabLabel(members) }] : [];
+  });
+}
+
 /** The tab's word: "Sua vez · 10", "Já agiu · 13", "Espera · vez 10"; without the number when `compact` (a 320 px phone). */
 export function tabWord(tab: MineTab, compact = false): string {
   const n = tab.initiative;

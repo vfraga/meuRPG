@@ -235,6 +235,22 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     });
   });
 
+  it("does not repeat the three actions on a tab for a player's own steed: the card stands in for it", async () => {
+    const e = enc();
+    e.combatants[1].kind = CombatantKind.CREATURE;
+    e.combatants[1].controlledByMe = true;
+    const m = mountCombatView({
+      enc: e,
+      turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),
+    });
+    await settle(m.fixture);
+    expect(m.el.querySelectorAll('app-pair-card .pair__act')).toHaveLength(3);
+    expect(m.el.querySelector('app-creature-block')).toBeNull();
+    expect((m.view as unknown as { tabs(): { id: string }[] }).tabs().map((t) => t.id)).toEqual([
+      'character',
+    ]);
+  });
+
   it('is one turn, not a joint one, for the pair alone: no others to wait for, and the phone bar says "Encerrar turno"', async () => {
     const m = mountCombatView({ enc: enc(), matches: [PHONE_QUERY] });
     await settle(m.fixture);

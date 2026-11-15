@@ -33,7 +33,7 @@ import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { EncounterStatus } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { isTheatre } from '../../../core/combat/theatre';
 import { CreatureOptionsState } from '../../../core/combat/creature-options-state';
-import { CHARACTER_TAB, type MineTab, mineTabs } from '../../../core/combat/mine';
+import { CHARACTER_TAB, type MineTab, mineTabs, tabsBesideRide } from '../../../core/combat/mine';
 import { offersToAnswer } from '../../../core/combat/opportunity';
 import { LayersState } from '../../../core/maps/layers-state';
 import { CombatLogState } from '../../../core/combat/combat-log-state';
@@ -203,7 +203,11 @@ export abstract class CombatViewStateDirective {
   /** The tabs of the turn bar: the character, then each group of creatures (a casting's, in a joint turn, or one alone). */
   protected readonly tabs = computed<readonly MineTab[]>(() => {
     const e = this.encounter();
-    return !this.isMaster() && e && e.status === EncounterStatus.ACTIVE ? mineTabs(e) : [];
+    if (this.isMaster() || !e || e.status !== EncounterStatus.ACTIVE) {
+      return [];
+    }
+    // The mount the character directs is on the pair card, not on a tab of its own.
+    return tabsBesideRide(mineTabs(e), this.riding());
   });
   /** The tabs show only when the player plays more than one combatant. */
   protected readonly showTabs = computed(() => this.tabs().length > 1);

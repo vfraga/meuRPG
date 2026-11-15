@@ -7,7 +7,7 @@ import { combatant, encounter } from './combat-testing';
 import { turnBanner } from './combat-view';
 import { partToEnd } from './joint-turn';
 import { rideToEnd, turnEnds } from './pair-turn';
-import { optionIds } from './mine';
+import { CHARACTER_TAB, mineTabs, optionIds, tabsBesideRide } from './mine';
 
 const P = CombatantKind.PLAYER;
 
@@ -174,6 +174,37 @@ describe('the turn of a rider and the mount it directs (#588, 588-04)', () => {
       expect(optionIds(null, false, who(e, 'h'))).toEqual([]);
       e.status = EncounterStatus.ENDED;
       expect(optionIds(e, false, who(e, 'h'))).toEqual([]);
+    });
+  });
+
+  describe('the tabs of a player whose own steed is the mount (Find Steed)', () => {
+    const steedFight = () => {
+      const e = fight({ horse: { kind: CombatantKind.CREATURE, controlledByMe: true } });
+      e.combatants.push(
+        combatant({ id: 'w', label: 'Lobo', kind: CombatantKind.CREATURE, controlledByMe: true }),
+      );
+      return e;
+    };
+
+    it('leaves the steed out while the pair card stands in for its tab, and keeps the other creatures', () => {
+      const e = steedFight();
+      expect(mineTabs(e).map((t) => t.id)).toEqual([CHARACTER_TAB, 'h', 'w']);
+      expect(tabsBesideRide(mineTabs(e), who(e, 'h')).map((t) => t.id)).toEqual([
+        CHARACTER_TAB,
+        'w',
+      ]);
+      expect(tabsBesideRide(mineTabs(e), null).map((t) => t.id)).toEqual([CHARACTER_TAB, 'h', 'w']);
+    });
+
+    it("takes only the steed out of a group it shares, with the group's name and who still acts", () => {
+      const e = steedFight();
+      who(e, 'h').summonGroupId = 'pack';
+      who(e, 'w').summonGroupId = 'pack';
+      e.turnGroupIds = ['tor', 'h', 'w'];
+      const tabs = tabsBesideRide(mineTabs(e), who(e, 'h'));
+      expect(tabs.map((t) => t.members.map((m) => m.id))).toEqual([['tor'], ['w']]);
+      expect(tabs[1].acting.map((m) => m.id)).toEqual(['w']);
+      expect(tabs[1].label).toBe('Lobo');
     });
   });
 });
