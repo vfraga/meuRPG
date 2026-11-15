@@ -9,6 +9,7 @@ import type {
 import { combatantInitial } from '../../../../core/combat/combat-view';
 import { pairActions, type PairAction } from '../../../../core/combat/pair-actions';
 import { metersFixed } from '../../../../core/units';
+import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
 import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes';
 
@@ -54,9 +55,13 @@ import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes'
       @if (why(); as text) {
         <p class="pair__why" id="pair-why"><mat-icon aria-hidden="true">block</mat-icon>{{ text }}</p>
       } @else {
-        <p class="pair__note">
-          Montaria adestrada: só estas três ações; a reação fica livre. "Encerrar turno" encerra a vez dos dois.
-        </p>
+        @if (phone()) {
+          <p class="pair__note"><mat-icon aria-hidden="true">link</mat-icon>Adestrada: só estas três. "Mover" leva os dois.</p>
+        } @else {
+          <p class="pair__note">
+            Montaria adestrada: só estas três ações; a reação fica livre. "Encerrar turno" encerra a vez dos dois.
+          </p>
+        }
       }
     </section>
   `,
@@ -68,6 +73,8 @@ export class PairCard {
   /** The mount's own `GetTurnOptions`, read for the rider's player (the three actions and the mount's economy only). */
   readonly options = input<GetTurnOptionsResponse | null>(null);
   readonly busy = input(false);
+  /** The phone's card comes under the rider's own shapes and "Mover": its last line is the short one (588-05). */
+  protected readonly phone = mediaQuery(PHONE_QUERY);
   /** The key of the action pressed ("standard:dash"). */
   readonly act = output<string>();
 

@@ -5,6 +5,7 @@ import {
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../../gen/meurpg/rules/v1/rules_pb';
 import { combatant, encounter } from '../../../core/combat/combat-testing';
+import { PHONE_QUERY } from '../../../shared/map-view/media-query';
 import { mountCombatView } from './combat-view-testing';
 
 describe('CombatView: the rider and the mount it directs (588-04)', () => {
@@ -77,6 +78,25 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     expect(m.el.querySelector('app-pair-card .pair__why')?.textContent).toContain(
       'Caído: o mestre conduz o Cavalo de guerra.',
     );
+  });
+
+  it('words the last line for the width: the desktop line, and the short one on a phone (588-05)', async () => {
+    const opts = {
+      enc: enc(),
+      turnOptions: (id: string) => (id === 'h' ? (three(true) as never) : undefined),
+    };
+    const wide = mountCombatView(opts);
+    await settle(wide.fixture);
+    expect(wide.el.querySelector('.pair__note')?.textContent?.trim()).toBe(
+      'Montaria adestrada: só estas três ações; a reação fica livre. "Encerrar turno" encerra a vez dos dois.',
+    );
+    const phone = mountCombatView({ ...opts, matches: [PHONE_QUERY] });
+    await settle(phone.fixture);
+    const note = phone.el.querySelector('.pair__note');
+    expect(note?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      'linkAdestrada: só estas três. "Mover" leva os dois.',
+    );
+    expect(note?.querySelector('mat-icon')?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('keeps the card, dashed, beside the death saves of a rider at 0 hit points', async () => {
