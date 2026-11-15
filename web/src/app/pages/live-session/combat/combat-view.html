@@ -1161,7 +1161,7 @@
       </div>
     } @else if (myTurn() && own(); as me) {
       @if (ownDown()) {
-        <div>
+        <div class="player__blocks">
           <!-- A rider at 0 hit points: the three are dashed, the master leads the mount (588-10 card 5). -->
           <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
           <app-death-saves
@@ -1180,8 +1180,8 @@
       } @else if (options(); as opts) {
         @if (opts.options; as turnOptions) {
           <div class="player__blocks">
-            <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
             <app-action-groups
+              [shapesAside]="!!riding() && !phone()"
               [options]="turnOptions"
               [gearFlow]="gearFlow"
               [choosing]="targeting.mode.session()?.key ?? ''"
@@ -1229,6 +1229,10 @@
               @if (targeting.mode.active() && laptop()) {
                 <app-target-bar pending variant="card" [mode]="targeting.mode" />
               }
+              <!-- The mount the character directs: under the economy row on a phone, first from 768 px (588-04, 588-05). -->
+              <ng-container ngProjectAs="[pair]">
+                <ng-container *ngTemplateOutlet="pairCard; context: { $implicit: me }" />
+              </ng-container>
             </app-action-groups>
             @if (beastBlock(); as block) {
               <app-beast-traits [creature]="block" [beast]="me.wildShapeBeastNamePt" />

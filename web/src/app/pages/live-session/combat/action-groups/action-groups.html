@@ -2,8 +2,11 @@
   <h2 class="groups__title" id="groups-title">O que você pode fazer</h2>
 
   <!-- The economy of the turn, first in the panel and there while any tab is open (584-01, 584-02): the words say the state, the shape never alone. -->
-  <div class="econ" data-testid="turn-economy">
-    <app-economy-shapes class="econ__shapes" variant="inline" label="O que resta da vez" [shapes]="turnLine().shapes" />
+  @if (!shapesAside() || turnLine().canMove) {
+  <div class="econ" [class.econ--move]="shapesAside()" data-testid="turn-economy">
+    @if (!shapesAside()) {
+      <app-economy-shapes class="econ__shapes" variant="inline" label="O que resta da vez" [shapes]="turnLine().shapes" />
+    }
     @if (turnLine().canMove) {
       <button
         matButton="outlined"
@@ -18,6 +21,9 @@
       </button>
     }
   </div>
+  }
+  <!-- The card of the mount the character directs (588-05): between the economy row and the tabs. -->
+  <ng-content select="[pair]" />
 
   @if (holdsReadied(own())) {
     <!-- The readied action (#582, 582-03): under the economy row, in any tab; "Desistir" is the card's own menu. -->

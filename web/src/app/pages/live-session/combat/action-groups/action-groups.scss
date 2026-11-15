@@ -288,3 +288,8 @@ app-fold {
     min-height: 44px;
   }
 }
+
+// With a pair card above it (588-04), the row holds only "Mover": at the end of the line, where it is with the shapes.
+.groups > .econ--move {
+  justify-content: flex-end;
+}

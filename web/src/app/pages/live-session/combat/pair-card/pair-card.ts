@@ -2,16 +2,18 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
-import type {
-  Combatant,
-  GetTurnOptionsResponse,
+import {
+  type Combatant,
+  CombatantKind,
+  type GetTurnOptionsResponse,
 } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import { article } from '../../../../core/format/article';
 import { combatantInitial } from '../../../../core/combat/combat-view';
 import { pairActions, type PairAction } from '../../../../core/combat/pair-actions';
 import { metersFixed } from '../../../../core/units';
 import { PHONE_QUERY, mediaQuery } from '../../../../shared/map-view/media-query';
 import { CombatantToken } from '../../../../shared/combatant-token/combatant-token';
-import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes';
+import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/economy-shapes';
 
 /**
  * The rider's turn with the mount it directs (588-04 desktop, 588-05 phone): one card in the accent frame, with the mount's
@@ -25,15 +27,31 @@ import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes'
   imports: [CombatantToken, EconomyShapes, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="pair" aria-labelledby="pair-title">
-      <p class="pair__head" id="pair-title">
-        <mat-icon aria-hidden="true">link</mat-icon><b>{{ rider().label }} e {{ mount().label }}</b
-        ><span class="pair__joint"> · turno conjunto</span>
-      </p>
-      <div class="pair__mount">
-        <app-combatant-token [initial]="initial()" [npc]="true" [size]="28" />
+    <section
+      class="pair"
+      [attr.aria-labelledby]="phone() ? null : 'pair-title'"
+      [attr.aria-label]="phone() ? rider().label + ' e ' + mount().label + ', turno conjunto' : null"
+    >
+      @if (!phone()) {
+        <!-- On a phone the card comes under the rider's own shapes and "Mover": the mount's line comes alone (588-05). -->
+        <p class="pair__head" id="pair-title">
+          <mat-icon aria-hidden="true">link</mat-icon><b>{{ rider().label }} e {{ mount().label }}</b
+          ><span class="pair__joint"> · turno conjunto</span>
+        </p>
+        <div class="pair__line pair__rider">
+          <app-combatant-token [initial]="riderInitial()" [mine]="true" [size]="28" />
+          <span class="pair__name">{{ rider().label }}</span>
+          <app-economy-shapes variant="inline" [shapes]="riderShapes()" [label]="'O que ' + rider().label + ' tem'" />
+        </div>
+      }
+      <div class="pair__line pair__mount">
+        <app-combatant-token [initial]="initial()" [npc]="npc()" [creature]="!npc()" [size]="28" />
         <span class="pair__name">{{ mount().label }}</span>
-        <app-economy-shapes variant="inline" [shapes]="shapes()" [label]="'O que ' + mount().label + ' tem'" />
+        @if (shapes(); as s) {
+          <app-economy-shapes variant="inline" [shapes]="s" [label]="'O que ' + theMount() + ' tem'" />
+        } @else {
+          <span class="pair__loading mr-muted" role="status">Carregando…</span>
+        }
       </div>
       <div class="pair__actions">
         @for (a of actions(); track a.key) {
@@ -44,7 +62,8 @@ import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes'
             [class.mr-button--off]="a.off"
             [disabled]="a.off || busy()"
             disabledInteractive
-            [attr.aria-describedby]="a.off ? 'pair-why' : null"
+            [attr.aria-label]="a.name + ' ' + ofMount()"
+            [attr.aria-describedby]="a.off && why() ? 'pair-why' : null"
             [attr.data-action]="a.key"
             (click)="press(a)"
           >
@@ -52,9 +71,13 @@ import { EconomyShapes } from '../../../../shared/economy-shapes/economy-shapes'
           </button>
         }
       </div>
-      @if (why(); as text) {
-        <p class="pair__why" id="pair-why"><mat-icon aria-hidden="true">block</mat-icon>{{ text }}</p>
-      } @else {
+      <!-- The reason arrives after the card is drawn: the region is there from the start, so it is announced. -->
+      <div class="mr-live" role="status">
+        @if (why(); as text) {
+          <p class="pair__why" id="pair-why"><mat-icon aria-hidden="true">block</mat-icon>{{ text }}</p>
+        }
+      </div>
+      @if (!why()) {
         @if (phone()) {
           <p class="pair__note"><mat-icon aria-hidden="true">link</mat-icon>Adestrada: só estas três. "Mover" leva os dois.</p>
         } @else {
@@ -79,11 +102,27 @@ export class PairCard {
   readonly act = output<string>();
 
   protected readonly initial = computed(() => combatantInitial(this.mount().label));
+  protected readonly riderInitial = computed(() => combatantInitial(this.rider().label));
+  /** An NPC's token for an NPC; a player's own steed (Find Steed) is a creature. */
+  protected readonly npc = computed(() => this.mount().kind === CombatantKind.NPC);
+  /** "o Cavalo de guerra", "a Égua". */
+  protected readonly theMount = computed(
+    () => `${article(this.mount().label)} ${this.mount().label}`,
+  );
+  /** "do Cavalo de guerra": whose action a button is, in its accessible name. */
+  protected readonly ofMount = computed(() => `d${this.theMount()}`);
   private readonly view = computed(() => pairActions(this.options(), this.rider(), this.mount()));
   protected readonly actions = computed(() => this.view().actions);
   protected readonly why = computed(() => this.view().why);
+  /** The rider's own action, bonus action and reaction, on one line (588-04). */
+  protected readonly riderShapes = computed(() => economyShapes(this.rider()));
+  /** The mount's action and the metres it has left; `null` until its options are read (nothing is made up meanwhile). */
   protected readonly shapes = computed(() => {
-    const economy = this.options()?.options?.economy;
+    const res = this.options();
+    if (!res) {
+      return null;
+    }
+    const economy = res.options?.economy;
     const used = economy?.action?.used ?? this.mount().actionUsed;
     const left = metersFixed(economy?.movement?.leftFt ?? this.mount().movementLeftFt);
     return [

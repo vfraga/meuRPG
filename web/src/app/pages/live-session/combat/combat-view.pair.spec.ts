@@ -101,6 +101,35 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     expect(note?.querySelector('mat-icon')?.getAttribute('aria-hidden')).toBe('true');
   });
 
+  it('on a phone sits inside the one action card: the shapes and "Mover", then the mount, then the tabs (588-05)', async () => {
+    const m = mountCombatView({
+      enc: enc(),
+      matches: [PHONE_QUERY],
+      turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),
+    });
+    await settle(m.fixture);
+    const kids = [...m.el.querySelector('app-action-groups .groups')!.children];
+    const at = (sel: string) => kids.findIndex((k) => k.matches(sel));
+    expect(at('.econ')).toBeGreaterThanOrEqual(0);
+    expect(at('app-pair-card')).toBeGreaterThan(at('.econ'));
+    expect(at('app-tab-list')).toBeGreaterThan(at('app-pair-card'));
+    expect(m.el.querySelector('.econ app-economy-shapes')).not.toBeNull();
+    expect(m.el.querySelector('.econ .econ__move')).not.toBeNull();
+  });
+
+  it('from 768 px comes first, with the rider\'s shapes in it: the row under it keeps only "Mover" (588-04)', async () => {
+    const m = mountCombatView({
+      enc: enc(),
+      turnOptions: (id) => (id === 'h' ? (three(true) as never) : undefined),
+    });
+    await settle(m.fixture);
+    const card = m.el.querySelector<HTMLElement>('app-action-groups app-pair-card')!;
+    expect(card.querySelector('.pair__rider app-economy-shapes')).not.toBeNull();
+    expect(m.el.querySelector('.econ app-economy-shapes')).toBeNull();
+    expect(m.el.querySelector('.econ .econ__move')).not.toBeNull();
+    expect(m.el.querySelectorAll('app-pair-card')).toHaveLength(1);
+  });
+
   it('keeps the card, dashed, beside the death saves of a rider at 0 hit points', async () => {
     const m = mountCombatView({
       enc: enc('controlled', CombatantState.DYING),
@@ -109,6 +138,10 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     await settle(m.fixture);
     expect(m.el.querySelector('app-death-saves')).not.toBeNull();
     expect(m.el.querySelectorAll('app-pair-card .mr-button--off')).toHaveLength(3);
+    // The card and the death saves are two blocks of the column, with its gap between them.
+    const column = m.el.querySelector('app-death-saves')!.parentElement!;
+    expect(column.classList.contains('player__blocks')).toBe(true);
+    expect(column.querySelector(':scope > app-pair-card')).not.toBeNull();
     expect(m.el.querySelector('app-pair-card .pair__why')?.textContent).toContain(
       'Caído: o mestre conduz o Cavalo de guerra.',
     );

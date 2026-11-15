@@ -184,6 +184,9 @@ export class ActionGroups {
   } | null>(null);
   /** The character's resources, for the name of the one a feature spends from ("gasta 1 uso de Forma Selvagem"). */
   readonly resources = input<readonly ResourceUsageVm[]>([]);
+  /** The character directs a mount and the screen is 768 px or wider (588-04): the pair card, projected in `[pair]`, comes
+   * first and holds the character's shapes, so the economy row keeps only "Mover". On a phone the row is whole (588-05). */
+  readonly shapesAside = input(false);
   /** The master acts for the character: "Mover" is in the map's header (C8-01), so the economy row does not repeat it. */
   readonly moveAside = input(false);
   /** "Permanecer na forma": what it costs and why it cannot be pressed ('' when it can); `null` outside a form. */

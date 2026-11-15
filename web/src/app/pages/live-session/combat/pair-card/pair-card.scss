@@ -1,6 +1,11 @@
 // The pair card (588-04, 588-05): the accent frame of the turn, the mount's line, three equal outlined buttons and one line.
 :host {
   display: block;
+
+  // Inside the action card the phone keeps it under the economy row (588-05); from 768 px it comes first (588-04).
+  @media (min-width: 768px) {
+    order: -1;
+  }
 }
 
 .pair {
@@ -29,18 +34,24 @@
     height: 16px;
     font-size: var(--mr-font-16);
   }
-
-  // On the phone the card sits under the rider's own shapes and "Mover": the mount's line comes alone (588-05).
-  @media (max-width: 767.98px) {
-    display: none;
-  }
 }
 
-.pair__mount {
+// The rider's line and the mount's: the token, the name, and what each still has, on one line.
+.pair__line {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 36px;
+}
+
+.pair__rider {
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--mr-line);
+}
+
+.pair__loading {
+  font-size: var(--mr-font-13);
 }
 
 .pair__name {
@@ -50,20 +61,31 @@
   color: var(--mr-ink);
 }
 
+// Three in a row at 390 px and in the 368 px rail (588-04, 588-05): each button as wide as its words, sharing what is left.
+// Equal columns would cut "Desengajar"; the label is one step smaller and the padding tight, as the boards draw them.
 .pair__actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  gap: 6px;
   margin-top: 10px;
 }
 
 .pair__act {
+  --mat-button-outlined-label-text-size: var(--mr-font-13);
+  --mat-button-outlined-horizontal-padding: 6px;
+  --mat-button-outlined-icon-spacing: 4px;
+  --mat-button-outlined-icon-offset: 0;
+  flex: 1 1 auto;
   min-width: 0;
-  padding: 0 8px;
+  padding: 0 6px;
   white-space: nowrap;
+  letter-spacing: 0;
 
   .mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
     margin-right: 4px;
+    font-size: var(--mr-font-16);
   }
 }
 
