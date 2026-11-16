@@ -8,9 +8,11 @@ import {
   DisabledReasonCode,
   DisabledReasonSchema,
   Recharge,
+  VersatileGrip,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import {
   attackDetail,
+  versatileLine,
   throwLine,
   throwNote,
   beamSpentText,
@@ -131,6 +133,52 @@ describe('the line under an attack', () => {
     expect(plain(attackDetail(dagger, true))).toBe(
       '+4 para acertar · 1d4 + 2 perfurante · corpo a corpo, 1,5 m',
     );
+  });
+});
+
+describe('the two-handed line of a versatile weapon (board 580-14)', () => {
+  const axe = (grip: VersatileGrip) =>
+    create(AttackSchema, {
+      name: 'Woodcutter axe',
+      namePt: 'Machado de Lenhador',
+      attackBonus: 4,
+      damage: '1d6+3',
+      versatileDamage: '1d8+3',
+      grip,
+      damageTypePt: 'cortante',
+      kind: AttackKind.WEAPON,
+      rangeFt: 5,
+    });
+
+  it('keeps the one-handed dice on the stats and says what two hands need, with a shield', () => {
+    const a = axe(VersatileGrip.ONE_HAND_SHIELD);
+    expect(plain(attackDetail(a))).toContain('1d6 + 3 cortante');
+    expect(plain(versatileLine(a))).toBe('Com duas mãos, sem o escudo: 1d8 + 3');
+  });
+
+  it('says another weapon in hand is what stops the two hands', () => {
+    expect(plain(versatileLine(axe(VersatileGrip.ONE_HAND_WEAPON)))).toBe(
+      'Com duas mãos, sem a outra arma: 1d8 + 3',
+    );
+  });
+
+  it('keeps the one-handed dice with the Dueling bonus on the stats, and the line gives the two-handed dice without it', () => {
+    const a = axe(VersatileGrip.ONE_HAND_DUELING);
+    a.damage = '1d6+5';
+    expect(plain(attackDetail(a))).toContain('1d6 + 5 cortante');
+    expect(plain(versatileLine(a))).toBe('Com duas mãos, sem o Duelismo: 1d8 + 3');
+  });
+
+  it('puts the two-handed dice on the stats and the one-handed ones on the line, with both hands free', () => {
+    const a = axe(VersatileGrip.TWO_HANDS);
+    expect(plain(attackDetail(a))).toContain('1d8 + 3 cortante');
+    expect(plain(versatileLine(a))).toBe('Com duas mãos; com uma: 1d6 + 3');
+    expect(versatileLine(a)).toContain('1d6\u00a0+\u00a03');
+  });
+
+  it('is empty for an attack with no grip', () => {
+    expect(versatileLine(axe(VersatileGrip.UNSPECIFIED))).toBe('');
+    expect(plain(attackDetail(axe(VersatileGrip.UNSPECIFIED)))).toContain('1d6 + 3 cortante');
   });
 });
 

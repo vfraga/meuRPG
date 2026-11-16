@@ -27,7 +27,7 @@ import { KIND_FROM_GEN } from '../../core/characters/character-kind-gen';
 import { ABILITY_FROM_GEN } from '../../core/characters/ability-gen';
 import { SkillProficiency } from '../../core/characters/character-labels';
 import { metersWithFeet } from '../../core/units';
-import { throwLine } from '../../core/combat/combat-options';
+import { gripDice, throwLine, versatileLine } from '../../core/combat/combat-options';
 import { AbilityKey, CharacterState, ReviewStatus } from '../../core/characters/characters.types';
 import { damageTypeFromGen } from '../../core/characters/damage-type-gen';
 import {
@@ -116,9 +116,9 @@ function toAttackVm(attack: GenAttack): AttackVm {
     namePt: attack.namePt,
     kind: attack.kind === GenAttackKind.SPELL ? 'spell' : 'weapon',
     attackBonus: attack.attackBonus,
-    damage: attack.damage,
+    damage: gripDice(attack),
     damageTypePt: attack.damageTypePt,
-    versatileDamage: attack.versatileDamage,
+    versatileLine: versatileLine(attack),
     throwText: throwLine(attack),
     damageNotePt: attack.damageNotePt,
     saveDc: attack.saveDc,

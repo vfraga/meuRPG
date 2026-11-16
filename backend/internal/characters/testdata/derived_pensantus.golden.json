@@ -58,6 +58,7 @@
       },
       "damageTypeKey": "damage-type:bludgeoning",
       "damageTypePt": "concussão",
+      "grip": "VERSATILE_GRIP_TWO_HANDS",
       "key": "equipment:quarterstaff",
       "kind": "ATTACK_KIND_WEAPON",
       "melee": true,

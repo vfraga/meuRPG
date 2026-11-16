@@ -18,6 +18,7 @@ import {
   AttackKind,
   CreatureSize,
   DerivedSheet,
+  VersatileGrip,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { BasicSheetVm, FullSheetVm } from './character-sheet.types';
 import { toCharacterSheetVm, toCharacterStoryInit, toStoryVm } from './character-sheet-map';
@@ -437,7 +438,7 @@ describe('the sheet maps armor_class_description, features and hints (integrator
 });
 
 describe("the sheet maps the background equipment and a versatile weapon's two-handed damage", () => {
-  it('carries background_equipment_pt and versatile_damage straight through', () => {
+  it('carries background_equipment_pt through, and the versatile weapon by its grip', () => {
     const derived: DerivedSheet = {
       ...minimalDerivedSheet(),
       backgroundEquipmentPt: 'Uma capa e 10 po',
@@ -451,6 +452,7 @@ describe("the sheet maps the background equipment and a versatile weapon's two-h
           damage: '1d6',
           damageTypePt: 'concussão',
           versatileDamage: '1d8',
+          grip: VersatileGrip.ONE_HAND_SHIELD,
           rangeFt: 20,
           longRangeFt: 60,
           thrown: true,
@@ -463,11 +465,54 @@ describe("the sheet maps the background equipment and a versatile weapon's two-h
       derived,
     }).sheet as FullSheetVm;
     expect(sheet.backgroundEquipment).toBe('Uma capa e 10 po');
-    expect(sheet.attacks[0].versatileDamage).toBe('1d8');
+    expect(sheet.attacks[0].damage).toBe('1d6');
+    expect(sheet.attacks[0].versatileLine).toBe('Com duas mãos, sem o escudo: 1d8');
     expect(sheet.attacks[0].throwText!.replace(/\u00a0/g, ' ')).toBe('Arremesso: 6 m, até 18 m');
     const bare = toCharacterSheetVm(characterWithFullSheet(minimalFullSheet()))
       .sheet as FullSheetVm;
     expect(bare.backgroundEquipment).toBe('');
+  });
+
+  it('shows the dice of the grip in use, and the other grip as the rail words it (board 580-13)', () => {
+    const axe = {
+      $typeName: 'meurpg.rules.v1.Attack',
+      key: 'equipment:battleaxe',
+      kind: AttackKind.WEAPON,
+      damage: '1d8+3',
+      versatileDamage: '1d10+3',
+      grip: VersatileGrip.TWO_HANDS,
+    } as Attack;
+    const sheet = toCharacterSheetVm({
+      ...characterWithFullSheet(minimalFullSheet()),
+      derived: { ...minimalDerivedSheet(), attacks: [axe] },
+    }).sheet as FullSheetVm;
+    expect(sheet.attacks[0].damage).toBe('1d10 + 3');
+    expect(sheet.attacks[0].versatileLine.replace(/\u00a0/g, ' ')).toBe(
+      'Com duas mãos; com uma: 1d8 + 3',
+    );
+  });
+});
+
+describe('the sheet row of a lone versatile weapon of a Dueling character', () => {
+  it('shows the one-handed dice with the bonus and its note, and the two-handed dice without it on the line', () => {
+    const sword = {
+      $typeName: 'meurpg.rules.v1.Attack',
+      key: 'equipment:longsword',
+      kind: AttackKind.WEAPON,
+      damage: '1d8+5',
+      versatileDamage: '1d10+3',
+      damageNotePt: 'Inclui +2 de Estilo de Luta: Duelismo (sem outra arma na mão)',
+      grip: VersatileGrip.ONE_HAND_DUELING,
+    } as Attack;
+    const sheet = toCharacterSheetVm({
+      ...characterWithFullSheet(minimalFullSheet()),
+      derived: { ...minimalDerivedSheet(), attacks: [sword] },
+    }).sheet as FullSheetVm;
+    expect(sheet.attacks[0].damage).toBe('1d8 + 5');
+    expect(sheet.attacks[0].damageNotePt).toContain('Inclui +2');
+    expect(sheet.attacks[0].versatileLine.replace(/\u00a0/g, ' ')).toBe(
+      'Com duas mãos, sem o Duelismo: 1d10 + 3',
+    );
   });
 });
 

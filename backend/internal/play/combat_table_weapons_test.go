@@ -76,8 +76,8 @@ func TestAWeaponRuleChangesACarriedWeaponInTheRollsToo(t *testing.T) {
 	if roll := res.GetRoll(); roll.GetD20().GetModifier() != 6 || roll.GetOutcome() != playv1.AttackOutcome_ATTACK_OUTCOME_HIT {
 		t.Errorf("the attack roll = %v, want a hit with +6", roll)
 	}
-	if p := res.GetPendingDamage(); p.GetBonus() != 3 || p.GetDiceSides() != 8 {
-		t.Errorf("the damage to roll = %v, want 1d8 + 3", p)
+	if p := res.GetPendingDamage(); p.GetBonus() != 3 || p.GetDiceSides() != 10 {
+		t.Errorf("the damage to roll = %v, want 1d10 + 3 (held in both hands)", p)
 	}
 }
 

@@ -1043,8 +1043,28 @@ type ItemModifier struct {
 	ReasonPT     string
 }
 
+// Grip says how a versatile weapon is held, from the gear on the sheet.
+type Grip string
+
+// The grips of a versatile weapon. A line of any other weapon has no grip.
+const (
+	GripNone           Grip = ""
+	GripOneHandShield  Grip = "one_hand_shield"  // a shield is equipped
+	GripOneHandWeapon  Grip = "one_hand_weapon"  // another weapon is equipped
+	GripOneHandDueling Grip = "one_hand_dueling" // nothing else is in hand, and the Dueling style keeps it in one
+	GripTwoHands       Grip = "two_hands"        // nothing else is in hand, and no style asks for one hand
+)
+
+// InBothHands says the weapon is wielded with two hands: a two-handed weapon, or a versatile one held
+// in both hands. Great Weapon Fighting rerolls the damage of such a melee weapon.
+func (a Attack) InBothHands() bool {
+	return a.TwoHanded || a.Grip == GripTwoHands
+}
+
 // Attack is one line of the sheet's attacks: a weapon or an attack cantrip.
 type Attack struct {
+	// Grip is how a versatile weapon is held; the attack rolls the dice of its grip.
+	Grip Grip
 	// Key is the weapon or spell key; Name is the SRD's English name and
 	// NamePT ours.
 	Key, Name, NamePT string
@@ -1099,8 +1119,8 @@ type Attack struct {
 	// Two-Weapon Fighting (the attack and the bonus action attack).
 	Light bool
 	// Finesse and TwoHanded are the weapon properties of the same names: Sneak
-	// Attack takes a finesse or a ranged weapon, and Great Weapon Fighting a
-	// two-handed melee one. False for a spell and a creature's attack.
+	// Attack takes a finesse or a ranged weapon, and Great Weapon Fighting a melee
+	// one in both hands (InBothHands). False for a spell and a creature's attack.
 	Finesse, TwoHanded bool
 	// Properties are the weapon's property keys ("weapon-property:heavy"), for the effects that choose
 	// weapons by them (power_attack). A pseudo-weapon line, a natural attack, the unarmed strike and a

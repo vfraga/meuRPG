@@ -37,7 +37,7 @@ func (u *user) heroWith(t *testing.T, campaignID, name string, cl *charactersv1.
 	t.Helper()
 	sheet := &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: &charactersv1.FullSheet{
 		BaseScores: scores, RaceKey: "race:human", Classes: []*charactersv1.ClassLevel{cl},
-		WeaponKeys: weapons, CantripKeys: cantrips, FeatureChoiceKeys: choices,
+		WeaponKeys: weapons, CantripKeys: cantrips, FeatureChoiceKeys: styleOf(cl.GetClassKey(), cl.GetLevel(), choices),
 	}}}
 	res, err := u.characters.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
 		CampaignId: campaignID, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: name, Sheet: sheet,

@@ -262,7 +262,7 @@ The name another player reads (the feature's, or "Outra fonte") is in the damage
 The feature is hidden from the moment of the attack, so a later change by the master does not alter what the attack's damage and log say.
 
 Sneak Attack and Colossus Slayer are once per turn (the keys `sneak_attack` and `colossus_slayer` of `combatants.feature_state`); Hunter's Mark follows the caster's concentration (`combatant_states`).
-Great Weapon Fighting rerolls 1s and 2s once, shown on the part.
+Great Weapon Fighting rerolls 1s and 2s once, shown on the part, only for a melee weapon wielded with both hands: a two-handed weapon, or a versatile one whose grip is both hands (`link.Attack.TwoHanded`, from `rules.Attack.InBothHands`).
 A table `reroll` effect that covers `damage` rolls again each die at or below its `at_most`, once, in the damage step (`combat_damage_reroll.go`); the player is never asked.
 One use of its resource (none for a free rule) covers one damage roll and is spent in the transaction of the damage, and undoing the damage gives it back.
 It skips typed sums, damage held for a reaction window and a die Great Weapon Fighting already rolled again.

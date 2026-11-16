@@ -9,7 +9,7 @@
         "Spell": false,
         "ToHit": 3,
         "DiceCount": 1,
-        "DiceSides": 6,
+        "DiceSides": 8,
         "DiceBonus": 1,
         "DamageType": "damage-type:bludgeoning",
         "RangeFt": 5,
@@ -23,7 +23,7 @@
         "AbilityMod": 1,
         "Ability": "str",
         "Finesse": false,
-        "TwoHanded": false,
+        "TwoHanded": true,
         "Weapon": true,
         "Properties": [
           "weapon-property:versatile",

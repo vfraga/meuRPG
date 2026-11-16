@@ -1698,6 +1698,7 @@
             },
             "damageTypeKey": "damage-type:slashing",
             "damageTypePt": "cortante",
+            "grip": "VERSATILE_GRIP_ONE_HAND_SHIELD",
             "key": "equipment:longsword",
             "kind": "ATTACK_KIND_WEAPON",
             "melee": true,

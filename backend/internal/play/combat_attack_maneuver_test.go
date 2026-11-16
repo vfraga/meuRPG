@@ -345,8 +345,8 @@ func TestTheDieNeverTurnsAFumbleIntoAHitAndIsNotDoubledOnACriticalHit(t *testing
 	if crit.GetRoll().GetOutcome() != playv1.AttackOutcome_ATTACK_OUTCOME_CRITICAL_HIT {
 		t.Fatalf("the attack = %v, want a critical hit", crit.GetRoll())
 	}
-	if p := crit.GetPendingDamage(); p.GetDiceCount() != 2 || p.GetDiceSides() != 8 {
-		t.Errorf("the damage = %d d%d, want the longsword's 1d8 doubled and nothing of the die", p.GetDiceCount(), p.GetDiceSides())
+	if p := crit.GetPendingDamage(); p.GetDiceCount() != 2 || p.GetDiceSides() != 10 {
+		t.Errorf("the damage = %d d%d, want the longsword's 1d10 (both hands) doubled and nothing of the die", p.GetDiceCount(), p.GetDiceSides())
 	}
 }
 

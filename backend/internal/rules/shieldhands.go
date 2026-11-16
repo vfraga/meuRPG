@@ -15,8 +15,9 @@ const (
 // wieldsTwoHanded says a weapon that needs both hands is on the sheet. The sheet lists
 // the weapons and has no notion of the hand each one is in, so a two-handed
 // weapon on it is read as the one in hand, and the player puts the shield back to use
-// by carrying that weapon instead of equipping it. A versatile weapon counts as one-handed: the
-// sheet does not say whether the player grips it with both hands.
+// by carrying that weapon instead of equipping it. A versatile weapon does not take
+// the shield's hand here: it is held with both hands only when no shield and no other weapon is
+// equipped (see versatileGrip), so a player who wants it in one hand equips the shield.
 func (x *deriver) wieldsTwoHanded() bool {
 	return slices.ContainsFunc(x.b.Weapons, func(key string) bool {
 		eq, ok := x.c.equipment[key]

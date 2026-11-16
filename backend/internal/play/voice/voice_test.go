@@ -59,6 +59,23 @@ func answerOf(mime string, pcm []byte) string {
 	return `{"candidates":[{"content":{"parts":[{"inlineData":{"mimeType":"` + mime + `","data":"` + base64.StdEncoding.EncodeToString(pcm) + `"}}]}}]}`
 }
 
+// geminiOf is a Gemini that calls srv with srv's own client, so that no other test shares its
+// connections: the zero client uses http.DefaultTransport, and every httptest.Server.Close of a parallel
+// test closes the idle connections of that one, which can break a call of this test in flight. It logs
+// into the returned builder, and prints the log if the test fails.
+func geminiOf(t *testing.T, srv *httptest.Server, model string) (*Gemini, *strings.Builder) {
+	t.Helper()
+	client := srv.Client()
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	log := &strings.Builder{}
+	t.Cleanup(func() {
+		if t.Failed() {
+			t.Logf("log of the call: %s", log.String())
+		}
+	})
+	return &Gemini{Key: "secret-key", ModelName: model, URL: srv.URL + "/", Client: client, Logger: slog.New(slog.NewTextHandler(log, nil))}, log
+}
+
 func TestGeminiAsksForAudioWithTheVoiceAndWrapsThePCM(t *testing.T) {
 	t.Parallel()
 	var gotPath, gotKey, gotBody string
@@ -69,7 +86,8 @@ func TestGeminiAsksForAudioWithTheVoiceAndWrapsThePCM(t *testing.T) {
 		_, _ = w.Write([]byte(answerOf("audio/L16;codec=pcm;rate=16000", []byte{1, 0, 2, 0})))
 	}))
 	t.Cleanup(srv.Close)
-	g := &Gemini{Key: "secret-key", ModelName: "a-model", URL: srv.URL + "/models/"}
+	g, _ := geminiOf(t, srv, "a-model")
+	g.URL = srv.URL + "/models/"
 	a, err := g.Speak(t.Context(), "Bem-vindos", "Puck")
 	if err != nil {
 		t.Fatalf("Speak() error = %v", err)
@@ -109,11 +127,10 @@ func TestGeminiFailuresAreTypedAndNeverQuoteTheTextOrTheKey(t *testing.T) {
 				_, _ = w.Write([]byte(tc.body))
 			}))
 			t.Cleanup(srv.Close)
-			var log strings.Builder
-			g := &Gemini{Key: "secret-key", ModelName: "m", URL: srv.URL + "/", Logger: slog.New(slog.NewTextHandler(&log, nil))}
+			g, log := geminiOf(t, srv, "m")
 			_, err := g.Speak(t.Context(), "TEXTO-SECRETO", "Kore")
-			if err != tc.want { //nolint:errorlint // the sentinel itself
-				t.Errorf("error = %v, want %v", err, tc.want)
+			if !isSentinel(err, tc.want) {
+				t.Errorf("error = %v (%T), want the sentinel %v itself", err, err, tc.want)
 			}
 			if strings.Contains(log.String(), "secret-key") || strings.Contains(log.String(), "TEXTO-SECRETO") {
 				t.Errorf("the log holds the key or the text: %s", log.String())
@@ -122,12 +139,38 @@ func TestGeminiFailuresAreTypedAndNeverQuoteTheTextOrTheKey(t *testing.T) {
 	}
 }
 
+func TestGeminiATransportFailureIsTheSentinelAndLogsTheCauseNotTheTextOrTheKey(t *testing.T) {
+	t.Parallel()
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	url := srv.URL + "/"
+	srv.Close() // nothing listens at url any more: the call itself fails
+	var log strings.Builder
+	g := &Gemini{Key: "secret-key", ModelName: "m", URL: url, Logger: slog.New(slog.NewTextHandler(&log, nil))}
+	_, err := g.Speak(t.Context(), "TEXTO-SECRETO", "Kore")
+	if !isSentinel(err, ErrUnavailable) {
+		t.Errorf("error = %v (%T), want the sentinel ErrUnavailable itself, as on every other path; log: %s", err, err, log.String())
+	}
+	if !strings.Contains(log.String(), "the call failed") || !strings.Contains(log.String(), "cause=") {
+		t.Errorf("the log does not say the call failed and why: %s", log.String())
+	}
+	if strings.Contains(log.String(), "secret-key") || strings.Contains(log.String(), "TEXTO-SECRETO") {
+		t.Errorf("the log holds the key or the text: %s", log.String())
+	}
+}
+
+// isSentinel says err is the sentinel itself: it is, or wraps, want, and it wraps nothing on top.
+func isSentinel(err, want error) bool {
+	return errors.Is(err, want) && errors.Unwrap(err) == nil
+}
+
 func TestGeminiWithoutAModelOrTextAsksNothing(t *testing.T) {
 	t.Parallel()
 	called := false
 	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
 	t.Cleanup(srv.Close)
-	for _, g := range []*Gemini{{Key: "k", URL: srv.URL + "/"}, {Key: "k", ModelName: "m", URL: srv.URL + "/"}} {
+	noModel, _ := geminiOf(t, srv, "")
+	noText, _ := geminiOf(t, srv, "m")
+	for _, g := range []*Gemini{noModel, noText} {
 		text := "x"
 		if g.ModelName != "" {
 			text = "  "
@@ -171,7 +214,7 @@ func speakWith(t *testing.T, mime string, data []byte) (Audio, error) {
 		_, _ = w.Write([]byte(answerOf(mime, data)))
 	}))
 	t.Cleanup(srv.Close)
-	g := &Gemini{Key: "k", ModelName: "m", URL: srv.URL + "/"}
+	g, _ := geminiOf(t, srv, "m")
 	return g.Speak(t.Context(), "Olá", "Puck")
 }
 

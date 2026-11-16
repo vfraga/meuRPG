@@ -265,7 +265,7 @@
             @if (a.attack; as atk) {
               <app-action-row
                 [name]="attackName(atk)"
-                [detail]="attackDetail(atk)"
+                [detail]="lines.detail(atk)"
                 button="Atacar"
                 icon="swords"
                 [buttonLabel]="'Atacar com ' + attackName(atk) + ' (' + extra.labelPt + ')'"
@@ -315,7 +315,8 @@
       [bonus]="bonus"
       [oneLine]="true"
       [ammo]="ammo.tag(atk)"
-      [detail]="withTags(attackTags(a), attackDetail(atk))"
+      [detail]="withTags(attackTags(a), lines.detail(atk))"
+      [versatile]="lines.versatile(atk)"
       [note]="attackNote(a)"
       [power]="powerLines(a)"
       [rider]="rider(atk)"

@@ -624,6 +624,7 @@
   "GrantedSpells": null,
   "Attacks": [
     {
+      "Grip": "two_hands",
       "Key": "equipment:quarterstaff",
       "Name": "Quarterstaff",
       "NamePT": "Bordão",
@@ -667,6 +668,7 @@
       "Notes": ""
     },
     {
+      "Grip": "",
       "Key": "spell:fire-bolt",
       "Name": "Fire Bolt",
       "NamePT": "Raio de Fogo",
@@ -707,6 +709,7 @@
       "Notes": ""
     },
     {
+      "Grip": "",
       "Key": "spell:ray-of-frost",
       "Name": "Ray of Frost",
       "NamePT": "Raio de Gelo",
@@ -747,6 +750,7 @@
       "Notes": ""
     },
     {
+      "Grip": "",
       "Key": "attack:unarmed-strike",
       "Name": "Unarmed Strike",
       "NamePT": "Golpe desarmado",

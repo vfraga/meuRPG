@@ -482,7 +482,7 @@ describe('CharacterSheetPage', () => {
                 attackBonus: 5,
                 damage: '1d6+3',
                 damageTypePt: 'concussão',
-                versatileDamage: '',
+                versatileLine: '',
                 saveDc: 0,
                 saveAbility: null,
                 beams: 0,
@@ -495,7 +495,7 @@ describe('CharacterSheetPage', () => {
                 attackBonus: 6,
                 damage: '1d10',
                 damageTypePt: 'fogo',
-                versatileDamage: '',
+                versatileLine: '',
                 saveDc: 0,
                 saveAbility: null,
                 beams: 0,
@@ -508,7 +508,7 @@ describe('CharacterSheetPage', () => {
                 attackBonus: 0,
                 damage: '1d12',
                 damageTypePt: 'veneno',
-                versatileDamage: '',
+                versatileLine: '',
                 saveDc: 14,
                 saveAbility: 'con',
                 beams: 0,
@@ -547,7 +547,7 @@ describe('CharacterSheetPage', () => {
                 damageTypePt: 'concussão',
                 saveDc: 0,
                 saveAbility: null,
-                versatileDamage: '',
+                versatileLine: '',
                 beams: 0,
                 magicBonus: 0,
               },
@@ -560,7 +560,7 @@ describe('CharacterSheetPage', () => {
                 damageTypePt: 'energia',
                 saveDc: 0,
                 saveAbility: null,
-                versatileDamage: '',
+                versatileLine: '',
                 beams: 3,
                 magicBonus: 0,
               },
@@ -1181,7 +1181,7 @@ describe('CharacterSheetPage', () => {
                 attackBonus: 4,
                 damage: '1d6+2',
                 damageTypePt: 'perfurante',
-                versatileDamage: '',
+                versatileLine: '',
                 saveDc: 0,
                 saveAbility: null,
                 beams: 0,
@@ -1194,7 +1194,7 @@ describe('CharacterSheetPage', () => {
                 attackBonus: 6,
                 damage: '1d10',
                 damageTypePt: 'fogo',
-                versatileDamage: '',
+                versatileLine: '',
                 saveDc: 0,
                 saveAbility: null,
                 beams: 0,
@@ -1294,7 +1294,7 @@ describe('CharacterSheetPage', () => {
                 attackBonus: 2,
                 damage: '1d6',
                 damageTypePt: 'concussão',
-                versatileDamage: '1d8',
+                versatileLine: 'Com duas mãos, sem o escudo: 1d8',
                 saveDc: 0,
                 saveAbility: null,
                 beams: 1,
@@ -1307,7 +1307,7 @@ describe('CharacterSheetPage', () => {
                 attackBonus: 2,
                 damage: '1d4',
                 damageTypePt: 'perfurante',
-                versatileDamage: '',
+                versatileLine: '',
                 damageNotePt: 'Inclui +2 de Estilo de Luta: Duelismo (sem outra arma na mão)',
                 saveDc: 0,
                 saveAbility: null,
@@ -1320,7 +1320,7 @@ describe('CharacterSheetPage', () => {
       );
     const el = await render();
     const rows = Array.from(sectionTitled(el, 'Ataques').querySelectorAll('tbody tr'));
-    expect(rows[0].textContent).toContain('Com duas mãos: 1d8');
+    expect(rows[0].textContent).toContain('Com duas mãos, sem o escudo: 1d8');
     expect(rows[1].textContent).not.toContain('duas mãos');
     expect(rows[1].textContent).toContain('(sem outra arma na mão)');
     expect(rows[0].textContent).not.toContain('sem outra arma');

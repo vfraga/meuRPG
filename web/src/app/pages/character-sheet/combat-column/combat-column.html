@@ -83,8 +83,8 @@
             </td>
             <td class="attacks__damage">
               {{ atk.damage }} {{ atk.damageTypePt }}
-              @if (atk.versatileDamage) {
-                <span class="attacks__versatile">Com duas mãos: {{ atk.versatileDamage }}</span>
+              @if (atk.versatileLine) {
+                <span class="attacks__versatile" data-testid="versatile-line">{{ atk.versatileLine }}</span>
               }
               @if (atk.throwText) {
                 <span class="attacks__versatile">{{ atk.throwText }}</span>

@@ -4010,7 +4010,7 @@ options as options of Toren on his turn to his player
 + .pendingDamages[equipment:battleaxe].damageTypeKey = "damage-type:slashing"
 + .pendingDamages[equipment:battleaxe].damageTypePt = "cortante"
 + .pendingDamages[equipment:battleaxe].diceCount = 1
-+ .pendingDamages[equipment:battleaxe].diceSides = 8
++ .pendingDamages[equipment:battleaxe].diceSides = 10
 + .pendingDamages[equipment:battleaxe].id = "?"
 + .pendingDamages[equipment:battleaxe].status = "PENDING_DAMAGE_STATUS_AWAITING_ROLL"
 + .pendingDamages[equipment:battleaxe].targetId = "Goblin"
@@ -4352,6 +4352,7 @@ options
 .options.attacks[equipment:battleaxe].attack.damageDice.sides = 8
 .options.attacks[equipment:battleaxe].attack.damageTypeKey = "damage-type:slashing"
 .options.attacks[equipment:battleaxe].attack.damageTypePt = "cortante"
+.options.attacks[equipment:battleaxe].attack.grip = "VERSATILE_GRIP_TWO_HANDS"
 .options.attacks[equipment:battleaxe].attack.key = "equipment:battleaxe"
 .options.attacks[equipment:battleaxe].attack.kind = "ATTACK_KIND_WEAPON"
 .options.attacks[equipment:battleaxe].attack.melee = true
@@ -4542,6 +4543,7 @@ options
 .options.attacks[equipment:battleaxe].attack.damageDice.sides = 8
 .options.attacks[equipment:battleaxe].attack.damageTypeKey = "damage-type:slashing"
 .options.attacks[equipment:battleaxe].attack.damageTypePt = "cortante"
+.options.attacks[equipment:battleaxe].attack.grip = "VERSATILE_GRIP_TWO_HANDS"
 .options.attacks[equipment:battleaxe].attack.key = "equipment:battleaxe"
 .options.attacks[equipment:battleaxe].attack.kind = "ATTACK_KIND_WEAPON"
 .options.attacks[equipment:battleaxe].attack.melee = true
@@ -5088,7 +5090,7 @@ options as options of Toren on his turn to his player
 + .pendingDamages[equipment:battleaxe].damageTypeKey = "damage-type:slashing"
 + .pendingDamages[equipment:battleaxe].damageTypePt = "cortante"
 + .pendingDamages[equipment:battleaxe].diceCount = 1
-+ .pendingDamages[equipment:battleaxe].diceSides = 8
++ .pendingDamages[equipment:battleaxe].diceSides = 10
 + .pendingDamages[equipment:battleaxe].id = "?"
 + .pendingDamages[equipment:battleaxe].status = "PENDING_DAMAGE_STATUS_AWAITING_ROLL"
 + .pendingDamages[equipment:battleaxe].targetId = "Goblin"
@@ -5136,7 +5138,7 @@ options as options of Toren on his turn to the master
 + .pendingDamages[equipment:battleaxe].damageTypeKey = "damage-type:slashing"
 + .pendingDamages[equipment:battleaxe].damageTypePt = "cortante"
 + .pendingDamages[equipment:battleaxe].diceCount = 1
-+ .pendingDamages[equipment:battleaxe].diceSides = 8
++ .pendingDamages[equipment:battleaxe].diceSides = 10
 + .pendingDamages[equipment:battleaxe].id = "?"
 + .pendingDamages[equipment:battleaxe].status = "PENDING_DAMAGE_STATUS_AWAITING_ROLL"
 + .pendingDamages[equipment:battleaxe].targetId = "Goblin"
@@ -5410,7 +5412,7 @@ options as options of Toren on his turn to the master
 + .pendingDamages[equipment:battleaxe].damageTypeKey = "damage-type:slashing"
 + .pendingDamages[equipment:battleaxe].damageTypePt = "cortante"
 + .pendingDamages[equipment:battleaxe].diceCount = 1
-+ .pendingDamages[equipment:battleaxe].diceSides = 8
++ .pendingDamages[equipment:battleaxe].diceSides = 10
 + .pendingDamages[equipment:battleaxe].id = "?"
 + .pendingDamages[equipment:battleaxe].status = "PENDING_DAMAGE_STATUS_AWAITING_ROLL"
 + .pendingDamages[equipment:battleaxe].targetId = "Goblin"

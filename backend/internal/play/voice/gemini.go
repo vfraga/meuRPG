@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -121,11 +122,21 @@ func (g *Gemini) Speak(ctx context.Context, text, voice string) (Audio, error) {
 	httpReq.Header.Set("x-goog-api-key", string(g.Key))
 	res, err := g.client().Do(httpReq)
 	if err != nil {
-		g.log(ctx, "the call failed")
-		return Audio{}, fmt.Errorf("%w", ErrUnavailable)
+		g.log(ctx, "the call failed", "cause", causeOf(err))
+		return Audio{}, ErrUnavailable
 	}
 	defer func() { _ = res.Body.Close() }()
 	return g.parse(ctx, res.StatusCode, io.LimitReader(res.Body, maxResponseBytes))
+}
+
+// causeOf is why a call failed, without the URL a *url.Error carries: the transport's own error never
+// holds the text (it travels in the body) or the key (it travels in a header).
+func causeOf(err error) string {
+	var ue *url.Error
+	if errors.As(err, &ue) && ue.Err != nil {
+		return ue.Err.Error()
+	}
+	return err.Error()
 }
 
 func (g *Gemini) client() *http.Client {

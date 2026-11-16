@@ -105,7 +105,7 @@ func (a *armed) casterCrits(t *testing.T, ogre *playv1.Participant, theatre bool
 }
 
 // critRound is one round of criticals under the rule the table has now: Pensantus's
-// Raio de Fogo (a spell attack of the Attack action, 1d10), Toren's machado (1d8+3,
+// Raio de Fogo (a spell attack of the Attack action, 1d10), Toren's machado (1d10+3 in both hands,
 // typed with real dice), Brisa's Raio Guiador (a spell that attacks, 4d6) and the
 // Ogro's scimitar on Toren (1d6+2, the master's). dice and kept say what the rule
 // makes of each: how many dice are rolled and the maximum added. Every roll is
@@ -149,12 +149,12 @@ func (a *armed) critRound(t *testing.T, e *playv1.Encounter, rule playv1.Critica
 	}
 	a.mustEndTurn(t, a.ana, e)
 
-	// A weapon attack (1d8+3), the player's own dice: the typed sum is of the dice
+	// A weapon attack (1d10+3, the axe held in both hands), the player's own dice: the typed sum is of the dice
 	// that are rolled, never of what the rule keeps.
 	hit = a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Ogro", d20(20))
-	wantCritical(t, "the machado", hit.GetPendingDamage(), rule, pick(2, 1), kept(8))
+	wantCritical(t, "the machado", hit.GetPendingDamage(), rule, pick(2, 1), kept(10))
 	id := hit.GetPendingDamage().GetId()
-	top := pick(16, 8)
+	top := pick(20, 10)
 	for _, sum := range []int32{pick(1, 0), top + 1} {
 		if _, err := a.damage(t, a.caio, e, id, typedDamage(sum)); connect.CodeOf(err) != connect.CodeInvalidArgument {
 			t.Errorf("typed_sum %d for the machado's %d dice = %v, want invalid_argument", sum, pick(2, 1), err)
@@ -163,7 +163,7 @@ func (a *armed) critRound(t *testing.T, e *playv1.Encounter, rule playv1.Critica
 	if doubledRule {
 		wantRolled(t, "the machado", a.mustDamage(t, a.caio, e, id, typedDamage(11)).GetPendingDamage(), 14, nil, 3) // 11 + 3
 	} else {
-		wantRolled(t, "the machado", a.mustDamage(t, a.caio, e, id, typedDamage(5)).GetPendingDamage(), 16, nil, 11) // 5 + 8 + 3
+		wantRolled(t, "the machado", a.mustDamage(t, a.caio, e, id, typedDamage(5)).GetPendingDamage(), 18, nil, 13) // 5 + 10 + 3
 	}
 	a.mustEndTurn(t, a.caio, e)
 
@@ -246,7 +246,7 @@ func TestRN24_TheCriticalFollowsTheTablesRule(t *testing.T) {
 	wantRolled(t, "the damage opened under doubled dice, rolled under the new rule", a.mustDamage(t, a.ana, e, opened.GetId(), inAppDamage).GetPendingDamage(), 11, []int32{5, 6}, 0)
 	a.mustEndTurn(t, a.ana, e)
 	next := a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Ogro", d20(20)).GetPendingDamage()
-	wantCritical(t, "the next attack", next, playv1.CriticalDamageRule_CRITICAL_DAMAGE_RULE_MAX_PLUS_ROLL, 1, 8)
+	wantCritical(t, "the next attack", next, playv1.CriticalDamageRule_CRITICAL_DAMAGE_RULE_MAX_PLUS_ROLL, 1, 10)
 
 	// A hit that is not a critical one never follows the rule: its dice are rolled as they are.
 	a.mustDamage(t, a.caio, e, next.GetId(), typedDamage(1))
@@ -808,9 +808,9 @@ func TestRN24_TheTheatreFollowsTheSameRules(t *testing.T) {
 
 	e = a.passTo(t, e, "Toren")
 	hit := a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Ogro", d20(20)) // no reach in the theatre: the master judges
-	wantCritical(t, "the machado without a map", hit.GetPendingDamage(), playv1.CriticalDamageRule_CRITICAL_DAMAGE_RULE_MAX_PLUS_ROLL, 1, 8)
+	wantCritical(t, "the machado without a map", hit.GetPendingDamage(), playv1.CriticalDamageRule_CRITICAL_DAMAGE_RULE_MAX_PLUS_ROLL, 1, 10)
 	a.h.roller.queue(2)
-	wantRolled(t, "the machado without a map", a.mustDamage(t, a.caio, e, hit.GetPendingDamage().GetId(), inAppDamage).GetPendingDamage(), 13, []int32{2}, 11)
+	wantRolled(t, "the machado without a map", a.mustDamage(t, a.caio, e, hit.GetPendingDamage().GetId(), inAppDamage).GetPendingDamage(), 15, []int32{2}, 13)
 
 	a.setRules(t, criticalIs(doubled))
 	e = a.passTo(t, e, "Pensantus")

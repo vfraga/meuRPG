@@ -73,6 +73,9 @@ let nextId = 0;
       @if (detail()) {
         <span class="row__detail">{{ detail() }}</span>
       }
+      @if (versatile()) {
+        <span class="row__detail row__versatile" data-testid="versatile-line">{{ versatile() }}</span>
+      }
       @if (note()) {
         <span class="row__detail row__note">{{ note() }}</span>
       }
@@ -137,6 +140,8 @@ export class ActionRow {
   /** The economy the row spends (a mark and its word beside the name's tags); `null` for a row that spends none, or says it elsewhere. */
   readonly economy = input<RowEconomy | null>(null);
   readonly detail = input('');
+  /** A versatile weapon's second line under the stats: "Com duas mãos: 1d8 + 3" (board 580-14). */
+  readonly versatile = input('');
   /** A short line of why under the detail ("Golpe desarmado das Artes Marciais"). */
   readonly note = input('');
   /** The power attack trades the weapon accepts ("Golpe Pesado: −5 no ataque, +10 no dano"), each a line of its own with an icon. */

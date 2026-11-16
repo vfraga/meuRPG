@@ -57,10 +57,11 @@ export interface AttackVm {
    * throw instead (`kind === 'spell'` with `saveDc > 0`) — use `saveDc` /
    * `saveAbility` in that case, not `attackBonus`. */
   readonly attackBonus: number;
+  /** The dice of the grip in use ("1d10 + 3"): a versatile weapon rolls the dice of how the server says it is held. */
   readonly damage: string;
   readonly damageTypePt: string;
-  /** The two-handed damage of a versatile weapon ("1d8+1"); empty otherwise. */
-  readonly versatileDamage: string;
+  /** The other grip of a versatile weapon, worded as on the combat rail ("Com duas mãos, sem o escudo: 1d8 + 3"); empty otherwise. */
+  readonly versatileLine: string;
   /** "Arremesso: 6 m, até 18 m" for a thrown weapon; empty otherwise. */
   readonly throwText?: string;
   /** The condition of a bonus the damage already includes ("Inclui +2 de Estilo de Luta: Duelismo (sem outra arma na mão)"); absent or empty when there is none. */

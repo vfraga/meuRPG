@@ -3,7 +3,7 @@ import type { AttackOption, PowerAttackOption } from '../../../gen/meurpg/rules/
 import { type RollMode } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { signed } from '../effects/effects';
 import { rechargeText } from './combat-errors';
-import { damageText } from './combat-options';
+import { damageText, gripDamage } from './combat-options';
 import { d20Count } from './roll-mode';
 
 /** The trades the server lists on a weapon line (a "power_attack" effect of the character's features): none for a
@@ -95,7 +95,7 @@ export function tradeBox(
   readonly damageBefore: string;
   readonly damageAfter: string;
 } {
-  const { dice, flat } = damageParts(attack.damage);
+  const { dice, flat } = damageParts(gripDamage(attack));
   const type = attack.damageTypePt ? ` ${attack.damageTypePt}` : '';
   return {
     attackBefore: attackText(mode, attack.attackBonus),

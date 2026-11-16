@@ -59,7 +59,7 @@ func (u *user) hero(t *testing.T, campaignID, name, class, race string, level in
 	t.Helper()
 	sheet := &charactersv1.CharacterSheet{Content: &charactersv1.CharacterSheet_Full{Full: &charactersv1.FullSheet{
 		BaseScores: scores, RaceKey: race, Classes: []*charactersv1.ClassLevel{{ClassKey: class, Level: level}},
-		WeaponKeys: weapons, CantripKeys: cantrips,
+		WeaponKeys: weapons, CantripKeys: cantrips, FeatureChoiceKeys: styleOf(class, level, nil),
 	}}}
 	res, err := u.characters.CreateCharacter(t.Context(), connect.NewRequest(&charactersv1.CreateCharacterRequest{
 		CampaignId: campaignID, Kind: charactersv1.CharacterKind_CHARACTER_KIND_PLAYER, Name: name, Sheet: sheet,
@@ -68,6 +68,22 @@ func (u *user) hero(t *testing.T, campaignID, name, class, race string, level in
 		t.Fatalf("CreateCharacter(%s) error = %v", name, err)
 	}
 	return res.Msg.GetCharacter()
+}
+
+// defenseStyles is the fighting style a test fighter or paladin gets when the test names none: without armor
+// it adds nothing. Great Weapon Fighting, the sheet's default, would reroll a versatile weapon held in both hands.
+var defenseStyles = map[string]string{
+	"class:fighter": "feature:fighter-fighting-style-defense",
+	"class:paladin": "feature:fighting-style-defense",
+}
+
+// styleOf adds Defense to the choices of a fighter, or of a paladin that has a style (level 2), that names none.
+func styleOf(class string, level int32, choices []string) []string {
+	style, ok := defenseStyles[class]
+	if !ok || (class == "class:paladin" && level < 2) || slices.ContainsFunc(choices, func(k string) bool { return strings.Contains(k, "fighting-style") }) {
+		return choices
+	}
+	return append(slices.Clone(choices), style)
 }
 
 // npc creates a basic NPC with a sword at +4 (1d6+2, "basic:0") and a short
@@ -656,7 +672,7 @@ func TestMR012_DamageToAnNPCIsAppliedAndDefeatsIt(t *testing.T) {
 		t.Fatalf("AdjustCombatantHitPoints(temp) error = %v", err)
 	}
 
-	// 1d8 (2) + 3 = 5 slashing: the temporary hit points take 3, the hit
+	// 1d10 (2) + 3 = 5 slashing (the axe is held in both hands): the temporary hit points take 3, the hit
 	// points the other 2, applied at once.
 	a.h.roller.queue(15, 2)
 	hit := a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Goblin", inAppRoll)
@@ -667,8 +683,8 @@ func TestMR012_DamageToAnNPCIsAppliedAndDefeatsIt(t *testing.T) {
 	if dmg.GetStatus() != playv1.PendingDamageStatus_PENDING_DAMAGE_STATUS_APPLIED || dmg.GetAmount() != 5 || dmg.GetDamageTypeKey() != "damage-type:slashing" || dmg.GetDamageTypePt() != "cortante" {
 		t.Fatalf("damage = %v, want 5 of cortante, applied at once to an NPC", dmg)
 	}
-	if r := dmg.GetRoll(); r.GetDiceCount() != 1 || r.GetDiceSides() != 8 || r.GetModifier() != 3 || r.GetTotal() != 5 || r.GetFaces()[0] != 2 {
-		t.Errorf("damage roll = %v, want 1d8 (2) + 3 = 5", r)
+	if r := dmg.GetRoll(); r.GetDiceCount() != 1 || r.GetDiceSides() != 10 || r.GetModifier() != 3 || r.GetTotal() != 5 || r.GetFaces()[0] != 2 {
+		t.Errorf("damage roll = %v, want 1d10 (2) + 3 = 5", r)
 	}
 	if cur, temp, defeated := a.hp(t, "Goblin"); cur != 5 || temp != 0 || defeated {
 		t.Fatalf("goblin = %d PV, %d temporários, defeated %v; want 5 PV, 0 temporários after 3 temporary and 2 real", cur, temp, defeated)
@@ -1063,14 +1079,14 @@ func TestRN18_PhysicalRollsAreTypedSums(t *testing.T) {
 		t.Fatalf("typed attack = %v, want 16 + 5 = 21, physical, a hit", hit.GetRoll())
 	}
 	id := hit.GetPendingDamage().GetId()
-	if p := hit.GetPendingDamage(); p.GetDiceCount() != 1 || p.GetDiceSides() != 8 || p.GetBonus() != 3 || p.GetCritical() {
-		t.Errorf("pending damage = %v, want 1d8 + 3, not critical", p)
+	if p := hit.GetPendingDamage(); p.GetDiceCount() != 1 || p.GetDiceSides() != 10 || p.GetBonus() != 3 || p.GetCritical() {
+		t.Errorf("pending damage = %v, want 1d10 + 3, not critical", p)
 	}
 
-	// The damage is the typed sum of the dice, without the modifier: 1d8 is 1 to 8.
-	for _, sum := range []int32{0, 9, -1} {
+	// The damage is the typed sum of the dice, without the modifier: 1d10 is 1 to 10.
+	for _, sum := range []int32{0, 11, -1} {
 		if _, err := a.damage(t, a.caio, e, id, typedDamage(sum)); connect.CodeOf(err) != connect.CodeInvalidArgument {
-			t.Errorf("typed_sum %d for 1d8 = %v, want invalid_argument", sum, err)
+			t.Errorf("typed_sum %d for 1d10 = %v, want invalid_argument", sum, err)
 		}
 	}
 	dmg := a.mustDamage(t, a.caio, e, id, typedDamage(6)).GetPendingDamage()
@@ -1113,7 +1129,7 @@ func TestRN18_PhysicalRollsAreTypedSums(t *testing.T) {
 	}
 
 	// A natural 20 typed by a player with real dice doubles the dice, and the
-	// sum's range doubles with it: 2d8 is 2 to 16.
+	// sum's range doubles with it: 2d10 is 2 to 20.
 	a.mustEndTurn(t, a.master, e) // Brisa
 	a.mustEndTurn(t, a.bia, e)    // Toren, round 2
 	a.forceDice(t, campaignsv1.DiceMode_DICE_MODE_PHYSICAL)
@@ -1121,14 +1137,14 @@ func TestRN18_PhysicalRollsAreTypedSums(t *testing.T) {
 	cid := crit.GetPendingDamage().GetId()
 	_, err = a.damage(t, a.caio, e, cid, inAppDamage)
 	wantBlockedBy(t, "the app's damage when everybody rolls real dice", err, blockedWrongDice)
-	for _, sum := range []int32{1, 17} {
+	for _, sum := range []int32{1, 21} {
 		if _, err := a.damage(t, a.caio, e, cid, typedDamage(sum)); connect.CodeOf(err) != connect.CodeInvalidArgument {
-			t.Errorf("typed_sum %d for 2d8 = %v, want invalid_argument", sum, err)
+			t.Errorf("typed_sum %d for 2d10 = %v, want invalid_argument", sum, err)
 		}
 	}
 	dmg = a.mustDamage(t, a.caio, e, cid, typedDamage(16)).GetPendingDamage()
 	if dmg.GetAmount() != 19 || dmg.GetRoll().GetDiceCount() != 2 { // 16 + 3
-		t.Errorf("typed critical damage = %v, want 2d8 = 16 + 3 = 19", dmg)
+		t.Errorf("typed critical damage = %v, want 2d10 = 16 + 3 = 19", dmg)
 	}
 }
 
@@ -1137,7 +1153,7 @@ func TestCombatUndoRestoresTheLastAction(t *testing.T) {
 	a := newArmed(t)
 	e := a.threeAndAGoblin(t)
 
-	// Toren kills the goblin: 1d8 (8) + 3 = 11 against its 7 hit points.
+	// Toren kills the goblin: 1d10 (8) + 3 = 11 against its 7 hit points.
 	a.h.roller.queue(15, 8)
 	hit := a.mustAttack(t, a.caio, e, "Toren", battleaxe, "Goblin", inAppRoll)
 	a.mustDamage(t, a.caio, e, hit.GetPendingDamage().GetId(), inAppDamage)

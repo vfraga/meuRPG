@@ -295,12 +295,16 @@ func combatAttack(a rules.Attack) link.Attack {
 	if name == "" {
 		name = a.Name
 	}
+	dice := a.DamageDice
+	if a.Grip == rules.GripTwoHands {
+		dice = a.VersatileDice // the grip picks the dice the attack rolls, the same ones the rail shows
+	}
 	return link.Attack{
 		Key: a.Key, Name: name, Save: a.SaveDC > 0, Spell: a.Kind == "spell", ToHit: a.AttackBonus,
-		DiceCount: a.DamageDice.Count, DiceSides: a.DamageDice.Sides, DiceBonus: a.DamageDice.Bonus,
+		DiceCount: dice.Count, DiceSides: dice.Sides, DiceBonus: dice.Bonus,
 		DamageType: a.DamageType, RangeFt: a.RangeFt, LongRangeFt: a.LongRangeFt, Melee: a.Melee, ReachFt: a.ReachFt,
 		Beams: a.Beams, Light: a.Light, Unarmed: a.Key == rules.UnarmedStrikeKey, MartialArts: a.MartialArts, AbilityMod: a.AbilityMod,
-		Ability: string(a.Ability), Finesse: a.Finesse, TwoHanded: a.TwoHanded, Weapon: a.Kind == "weapon",
+		Ability: string(a.Ability), Finesse: a.Finesse, TwoHanded: a.InBothHands(), Weapon: a.Kind == "weapon",
 		Magical: a.Magical, Silvered: a.Silvered, Adamantine: a.Adamantine, Properties: slices.Clone(a.Properties), Proficient: a.Proficient,
 		Ammunition: a.AmmunitionKey,
 	}

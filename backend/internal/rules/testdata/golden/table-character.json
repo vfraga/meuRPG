@@ -439,6 +439,7 @@
     "GrantedSpells": null,
     "Attacks": [
       {
+        "Grip": "",
         "Key": "spell:faisca-de-teste@mesa",
         "Name": "Faísca de teste",
         "NamePT": "Faísca de teste",
@@ -479,6 +480,7 @@
         "Notes": ""
       },
       {
+        "Grip": "",
         "Key": "attack:unarmed-strike",
         "Name": "Unarmed Strike",
         "NamePT": "Golpe desarmado",
@@ -1496,6 +1498,7 @@
     "GrantedSpells": null,
     "Attacks": [
       {
+        "Grip": "",
         "Key": "spell:faisca-de-teste@mesa",
         "Name": "Faísca de teste",
         "NamePT": "Faísca de teste",
@@ -1536,6 +1539,7 @@
         "Notes": ""
       },
       {
+        "Grip": "",
         "Key": "attack:unarmed-strike",
         "Name": "Unarmed Strike",
         "NamePT": "Golpe desarmado",
@@ -2503,6 +2507,7 @@
     "GrantedSpells": null,
     "Attacks": [
       {
+        "Grip": "",
         "Key": "spell:faisca-de-teste@mesa",
         "Name": "Faísca de teste",
         "NamePT": "Faísca de teste",
@@ -2543,6 +2548,7 @@
         "Notes": ""
       },
       {
+        "Grip": "",
         "Key": "attack:unarmed-strike",
         "Name": "Unarmed Strike",
         "NamePT": "Golpe desarmado",

@@ -563,3 +563,90 @@ func TestAnAmmunitionWeaponHasAnImprovisedMeleeLine(t *testing.T) {
 		}
 	}
 }
+
+// A versatile weapon is held with both hands only when no shield and no other weapon is equipped (the grip
+// follows the gear); a carried piece does not count as in hand.
+func TestVersatileGripFollowsTheGear(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	cases := []struct {
+		name    string
+		style   string
+		weapons []string
+		shield  bool
+		carried []string
+		want    Grip
+	}{
+		{"alone", styleDefense, []string{"equipment:longsword"}, false, nil, GripTwoHands},
+		{"with a shield", styleDefense, []string{"equipment:longsword"}, true, nil, GripOneHandShield},
+		{"with the shield carried", styleDefense, []string{"equipment:longsword"}, true, []string{ShieldKey}, GripTwoHands},
+		{"with a second weapon", styleDefense, []string{"equipment:longsword", "equipment:dagger"}, false, nil, GripOneHandWeapon},
+		{"with the second weapon carried", styleDefense, []string{"equipment:longsword", "equipment:dagger"}, false, []string{"equipment:dagger"}, GripTwoHands},
+		{"with a key that is no weapon", styleDefense, []string{"equipment:longsword", "equipment:nonexistent"}, false, nil, GripTwoHands},
+		{"with a greatsword and a shield", styleDefense, []string{"equipment:longsword", "equipment:greatsword"}, true, nil, GripOneHandWeapon},
+		{"with a shield and a second weapon", styleDefense, []string{"equipment:longsword", "equipment:dagger"}, true, nil, GripOneHandShield},
+		// The Dueling style keeps a lone weapon in one hand; a shield or a second weapon say their own grip.
+		{"Dueling, alone", styleDueling, []string{"equipment:longsword"}, false, nil, GripOneHandDueling},
+		{"Dueling, with a shield", styleDueling, []string{"equipment:longsword"}, true, nil, GripOneHandShield},
+		{"Dueling, with a second weapon", styleDueling, []string{"equipment:longsword", "equipment:dagger"}, false, nil, GripOneHandWeapon},
+		{"Dueling, with the shield and the second weapon carried", styleDueling, []string{"equipment:longsword", "equipment:dagger"}, true, []string{ShieldKey, "equipment:dagger"}, GripOneHandDueling},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			b := duelist(tc.weapons...)
+			b.FeatureChoices = []string{tc.style}
+			b.Shield, b.Carried = tc.shield, tc.carried
+			d := Derive(b, c)
+			sword, ok := attackOf(d, "equipment:longsword")
+			if !ok {
+				t.Fatalf("no longsword in %+v", d.Attacks)
+			}
+			if sword.Grip != tc.want {
+				t.Errorf("longsword grip = %q, want %q", sword.Grip, tc.want)
+			}
+			if dagger, ok := attackOf(d, "equipment:dagger"); ok && dagger.Grip != GripNone {
+				t.Errorf("a weapon that is not versatile has grip %q, want none", dagger.Grip)
+			}
+			// The Dueling note stands under the one-handed dice only: never under the dice of both hands.
+			if note := sword.DamageNotePT != ""; note != (tc.style == styleDueling) || (note && sword.Grip == GripTwoHands) {
+				t.Errorf("longsword note = %q with grip %q and style %s", sword.DamageNotePT, sword.Grip, tc.style)
+			}
+		})
+	}
+}
+
+// Great Weapon Fighting takes a melee weapon wielded with two hands: a versatile weapon in both hands
+// counts, the same weapon in one hand beside a shield does not, and a two-handed weapon always does.
+func TestAWeaponInBothHandsFollowsTheGrip(t *testing.T) {
+	t.Parallel()
+	c := loadForTest(t)
+	for _, tc := range []struct {
+		name   string
+		style  string
+		weapon string
+		shield bool
+		want   bool
+	}{
+		{"a versatile weapon alone", styleDefense, "equipment:longsword", false, true},
+		{"a versatile weapon beside a shield", styleDefense, "equipment:longsword", true, false},
+		{"a two-handed weapon", styleDefense, "equipment:greatsword", false, true},
+		{"a one-handed weapon", styleDefense, "equipment:shortsword", false, false},
+		{"a versatile weapon alone, with Dueling", styleDueling, "equipment:longsword", false, false},
+		{"a two-handed weapon, with Dueling", styleDueling, "equipment:greatsword", false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			b := duelist(tc.weapon)
+			b.FeatureChoices = []string{tc.style}
+			b.Shield = tc.shield
+			a, ok := attackOf(Derive(b, c), tc.weapon)
+			if !ok {
+				t.Fatalf("no %s on the sheet", tc.weapon)
+			}
+			if got := a.InBothHands(); got != tc.want {
+				t.Errorf("%s: in both hands = %v, want %v (grip %q)", tc.weapon, got, tc.want, a.Grip)
+			}
+		})
+	}
+}

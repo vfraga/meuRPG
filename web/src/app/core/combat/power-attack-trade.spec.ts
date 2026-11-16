@@ -6,6 +6,7 @@ import {
   AttackSchema,
   PowerAttackOptionSchema,
   Recharge,
+  VersatileGrip,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { DiceRoll } from '../../../gen/meurpg/play/v1/combat_pb';
 import { RollMode } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
@@ -180,6 +181,18 @@ describe('the before and after box', () => {
     expect(box.attackAfter).toBe('2d20 − 3');
     expect(box.damageBefore).toBe('1d8');
     expect(box.damageAfter).toBe('1d8 + 10 cortante, se acertar');
+  });
+
+  it('writes the dice of the grip when a versatile weapon is held in two hands', () => {
+    const twoHands = {
+      ...montante,
+      damage: '1d8 + 3',
+      versatileDamage: '1d10 + 3',
+      grip: VersatileGrip.TWO_HANDS,
+    };
+    const box = tradeBox(twoHands, heavy, RollMode.NORMAL);
+    expect(box.damageBefore).toBe('1d10 + 3');
+    expect(box.damageAfter).toBe('1d10 + 13 cortante, se acertar');
   });
 
   it('adds to a negative modifier of the damage', () => {

@@ -537,6 +537,7 @@
     "GrantedSpells": null,
     "Attacks": [
       {
+        "Grip": "one_hand_shield",
         "Key": "equipment:longsword",
         "Name": "Longsword",
         "NamePT": "Espada longa",
@@ -579,6 +580,7 @@
         "Notes": ""
       },
       {
+        "Grip": "",
         "Key": "spell:fire-bolt",
         "Name": "Fire Bolt",
         "NamePT": "Raio de Fogo",
@@ -619,6 +621,7 @@
         "Notes": ""
       },
       {
+        "Grip": "",
         "Key": "attack:unarmed-strike",
         "Name": "Unarmed Strike",
         "NamePT": "Golpe desarmado",
@@ -1272,6 +1275,7 @@
     "GrantedSpells": null,
     "Attacks": [
       {
+        "Grip": "one_hand_shield",
         "Key": "equipment:longsword",
         "Name": "Longsword",
         "NamePT": "Espada longa",
@@ -1314,6 +1318,7 @@
         "Notes": ""
       },
       {
+        "Grip": "",
         "Key": "attack:unarmed-strike",
         "Name": "Unarmed Strike",
         "NamePT": "Golpe desarmado",

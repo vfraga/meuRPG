@@ -282,6 +282,13 @@ var economyToProto = map[string]rulesv1.ActionEconomy{
 	rules.EconomyMovement:    rulesv1.ActionEconomy_ACTION_ECONOMY_MOVEMENT,
 }
 
+var gripToProto = map[rules.Grip]rulesv1.VersatileGrip{
+	rules.GripOneHandShield:  rulesv1.VersatileGrip_VERSATILE_GRIP_ONE_HAND_SHIELD,
+	rules.GripOneHandWeapon:  rulesv1.VersatileGrip_VERSATILE_GRIP_ONE_HAND_WEAPON,
+	rules.GripOneHandDueling: rulesv1.VersatileGrip_VERSATILE_GRIP_ONE_HAND_DUELING,
+	rules.GripTwoHands:       rulesv1.VersatileGrip_VERSATILE_GRIP_TWO_HANDS,
+}
+
 func attackToProto(a rules.Attack) *rulesv1.Attack {
 	return &rulesv1.Attack{
 		DamageDice:          diceToProto(a.DamageDice),
@@ -308,6 +315,7 @@ func attackToProto(a rules.Attack) *rulesv1.Attack {
 		SpellDice:           a.SpellDice,
 		ReachFt:             i32(a.ReachFt),
 		Silvered:            a.Silvered,
+		Grip:                gripToProto[a.Grip],
 		Adamantine:          a.Adamantine,
 		Magical:             a.Magical,
 		MagicBonus:          i32(a.MagicBonus),

@@ -458,8 +458,9 @@ type Attack struct {
 	// them.
 	Light, Unarmed, MartialArts bool
 	AbilityMod                  int
-	// Ability is the ability the attack uses ("str", "dex"...), Finesse and TwoHanded
-	// the weapon's properties, and Weapon says it is a weapon attack (an unarmed
+	// Ability is the ability the attack uses ("str", "dex"...), Finesse the weapon's
+	// property, TwoHanded says the weapon is wielded with both hands (a two-handed
+	// weapon, or a versatile one held in both), and Weapon says it is a weapon attack (an unarmed
 	// strike too) and not a spell.
 	Ability            string
 	Finesse, TwoHanded bool

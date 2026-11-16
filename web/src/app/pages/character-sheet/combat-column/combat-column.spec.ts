@@ -12,7 +12,7 @@ const attack = (key: string, marks?: AttackVm['marks'], magicBonus = 0): AttackV
   attackBonus: 5,
   damage: '1d8',
   damageTypePt: 'cortante',
-  versatileDamage: '',
+  versatileLine: '',
   saveDc: 0,
   saveAbility: null,
   beams: 0,

@@ -29,8 +29,8 @@ func TestRollDamageRefusesTheRequest(t *testing.T) {
 			r.Roll = &playv1.RollDamageRequest_RollInApp{RollInApp: false}
 		}, connect.CodeInvalidArgument, "roll_in_app must be true"},
 		{"no roll at all", func(r *playv1.RollDamageRequest) { r.Roll = nil }, connect.CodeInvalidArgument, "set roll_in_app, typed_sum or typed_parts"},
-		{"a typed sum of 0", typedSum(0), connect.CodeInvalidArgument, "typed_sum must be 1 to 8"},
-		{"a typed sum of 9 for 1d8", typedSum(9), connect.CodeInvalidArgument, "typed_sum must be 1 to 8"},
+		{"a typed sum of 0", typedSum(0), connect.CodeInvalidArgument, "typed_sum must be 1 to 10"},
+		{"a typed sum of 11 for 1d10", typedSum(11), connect.CodeInvalidArgument, "typed_sum must be 1 to 10"},
 		{"a pending damage that is not there", func(r *playv1.RollDamageRequest) {
 			r.PendingDamageId = "00000000-0000-4000-8000-000000000001"
 		}, connect.CodeNotFound, "pending damage not found"},

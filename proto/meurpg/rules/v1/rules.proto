@@ -1427,6 +1427,26 @@ message Attack {
   bool thrown = 28;
   // For a weapon that fires ammunition, the catalog key of the kind it fires ("equipment:arrow"), which names the pieces on the attack line; empty when the weapon fires none, and on its improvised melee line. It does not say how many pieces the character has: ammunition_left does.
   string ammunition_key = 29;
+  // For a versatile weapon (versatile_damage is set): how the character holds it, from the gear on the
+  // sheet. The attack rolls the dice of the grip: versatile_damage_dice with both hands, damage_dice with one.
+  // UNSPECIFIED for every other line.
+  VersatileGrip grip = 30;
+}
+
+// VersatileGrip says how a versatile weapon is held. The sheet has no hand for each piece of gear, so the
+// gear and the Dueling style decide: both hands when no shield and no other weapon is equipped and the
+// character has no Dueling, one hand otherwise.
+enum VersatileGrip {
+  VERSATILE_GRIP_UNSPECIFIED = 0;
+  // One hand, because a shield is equipped.
+  VERSATILE_GRIP_ONE_HAND_SHIELD = 1;
+  // One hand, because another weapon is equipped.
+  VERSATILE_GRIP_ONE_HAND_WEAPON = 2;
+  // Both hands: nothing else is in hand.
+  VERSATILE_GRIP_TWO_HANDS = 3;
+  // One hand with nothing else in hand, because the character has the Dueling style: damage carries its
+  // bonus and versatile_damage does not.
+  VERSATILE_GRIP_ONE_HAND_DUELING = 4;
 }
 
 // AttackKind says whether an attack is a weapon or a spell.

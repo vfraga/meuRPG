@@ -1,6 +1,10 @@
 import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import type { ExtraActionOption } from '../../../../../gen/meurpg/play/v1/lasting_effects_pb';
-import { AttackKind, type AttackOption } from '../../../../../gen/meurpg/rules/v1/rules_pb';
+import {
+  type Attack,
+  AttackKind,
+  type AttackOption,
+} from '../../../../../gen/meurpg/rules/v1/rules_pb';
 import { groupState } from '../../../../core/combat/combat-options';
 import { cannotAct } from '../../../../core/combat/conditions';
 import type { ActionTabId } from '../../../../core/combat/action-tabs';
@@ -9,9 +13,16 @@ import {
   ContestAttackOptionKind,
   type ContestAttackOption,
 } from '../../../../../gen/meurpg/play/v1/contest_types_pb';
+import { attackDetail, versatileLine } from '../../../../core/combat/combat-options';
 import { circleLabel } from '../../../../core/combat/combat-grid';
 import { freeText } from '../../../../core/combat/cast-flow';
 import type { PactSlotsVm, SlotUsageVm } from '../../../../core/play/resource-usage.types';
+
+/** The lines of an attack row: the stats under the name, and a versatile weapon's second line (board 580-14). */
+export const attackLines = {
+  detail: (a: Attack) => attackDetail(a),
+  versatile: versatileLine,
+};
 
 /** The standard actions an extra action may be, by the key the server sends. */
 export const EXTRA_NAMES: Readonly<Record<string, string>> = {

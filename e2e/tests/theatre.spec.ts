@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test';
 import { test } from './diagnostics';
 
-import { type Encounter, adjustVitalsRPC, brisa, brisaSheet, combatRPC, getEncounterRPC, passTurnsTo, passTurnsToAndWait } from './combat-support';
+import { type Encounter, adjustVitalsRPC, brisa, brisaSheet, combatRPC, getEncounterRPC, passTurnsTo, passTurnsToAndWait, torenSheet } from './combat-support';
 import { openSessionPage } from './live-session-support';
 import { required } from './support';
 import { setTableRulesRPC } from './table-rules-support';
@@ -222,7 +222,8 @@ test(
   { tag: ['@RN-24', '@RN-18', '@MR-025'] },
   async ({ browser }) => {
     test.setTimeout(300_000);
-    const t = await theatreTable(browser, 'Crítico');
+    // Toren carries a shield: the longsword in one hand rolls 1d8, in one roll.
+    const t = await theatreTable(browser, 'Crítico', { sheet: { ...torenSheet, shield: true } });
     const { m, p, table, campaignId } = t;
     try {
       await setTableRulesRPC(m, campaignId, {

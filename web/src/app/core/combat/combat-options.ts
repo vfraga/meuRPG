@@ -9,6 +9,7 @@ import {
   type SpellGrantOption,
   type SpellOption,
   type TurnOptions,
+  VersatileGrip,
 } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { ActionEconomy } from '../../../gen/meurpg/rules/v1/rules_pb';
 import { type MarksVm, attackMarksFor, markWords } from '../characters/gear';
@@ -92,13 +93,25 @@ export function isReactionHint(reason: DisabledReason | undefined): boolean {
   );
 }
 
+/** "1d8 + 3": the dice as the sheet writes them, with the sign spaced and a real minus. */
+function spacedDice(dice: string): string {
+  return dice.replace(/\s*([+-])\s*/g, (_, sign: string) => ` ${sign === '-' ? '−' : '+'} `);
+}
+
+/** "1d10 + 3": the dice of the grip in use, written as the rail writes them (the character sheet's attack row too). */
+export function gripDice(attack: Attack): string {
+  return spacedDice(gripDamage(attack));
+}
+
+/** The damage dice the attack rolls: the server says how a versatile weapon is held, and the attack rolls the dice of that grip. */
+export function gripDamage(attack: Attack): string {
+  return attack.grip === VersatileGrip.TWO_HANDS ? attack.versatileDamage : attack.damage;
+}
+
 /** "1d4 + 2 perfurante" for a weapon, "1d10 de fogo" for a cantrip: the dice
  * as the sheet writes them, spaced, and the damage type. */
 export function damageText(attack: Attack): string {
-  const dice = attack.damage.replace(
-    /\s*([+-])\s*/g,
-    (_, sign: string) => ` ${sign === '-' ? '−' : '+'} `,
-  );
+  const dice = gripDice(attack);
   const type = attack.damageTypePt;
   const adjective = /^(cortante|perfurante|contundente)$/.test(type);
   if (!type) {
@@ -245,6 +258,30 @@ export function attackDetail(attack: Attack, reach = false): string {
       ? `CD ${attack.saveDc}`
       : `${attack.attackBonus < 0 ? '−' : '+'}${Math.abs(attack.attackBonus)} para acertar`;
   return tight(joinDots([bonus, damageText(attack), rangeText(attack, reach)]));
+}
+
+/**
+ * The second line under the stats of a versatile weapon (board 580-14, canvas H), by the grip the server worked out
+ * from the gear. One hand, because a shield or another weapon is in hand: "Com duas mãos, sem o escudo: 1d8 + 3" (the
+ * stats line keeps the one-handed dice). One hand with nothing else in it, because the Dueling style's bonus needs the
+ * one hand: "Com duas mãos, sem o Duelismo: 1d10 + 3" (the stats line keeps the one-handed dice with the bonus). Both hands: "Com duas mãos; com uma: 1d6 + 3" (the stats line shows the
+ * two-handed dice). Empty for any other attack.
+ */
+export function versatileLine(attack: Attack): string {
+  // The dice stay on one line ("1d10 + 3" never breaks before the "+ 3").
+  const block = (dice: string) => spacedDice(dice).replace(/ ([+−]) /g, '\u00a0$1\u00a0');
+  switch (attack.grip) {
+    case VersatileGrip.ONE_HAND_SHIELD:
+      return `Com duas mãos, sem o escudo: ${block(attack.versatileDamage)}`;
+    case VersatileGrip.ONE_HAND_WEAPON:
+      return `Com duas mãos, sem a outra arma: ${block(attack.versatileDamage)}`;
+    case VersatileGrip.ONE_HAND_DUELING:
+      return `Com duas mãos, sem o Duelismo: ${block(attack.versatileDamage)}`;
+    case VersatileGrip.TWO_HANDS:
+      return `Com duas mãos; com uma: ${block(attack.damage)}`;
+    default:
+      return '';
+  }
 }
 
 /** "Cimitarra +5": the master's radio rows. */

@@ -174,15 +174,10 @@ func checkPackHeader(pack *rulesv1.TableContentPack) []*rulesv1.TableContentViol
 // checkPackEntry is the first thing wrong with the form of one entry of a pack (its kind,
 // its key, a key seen before, its body, its name), or nil; it marks a good key as seen.
 func checkPackEntry(field string, e *rulesv1.TableEntry, seen map[string]bool) *rulesv1.TableContentViolation {
-	prefix := kindPrefix(e.GetKind())
-	if prefix == "" {
+	if kindPrefix(e.GetKind()) == "" {
 		return packViolation(field+".kind", rules.ReasonValue, "the kind of an entry is one of the kinds of table content")
 	}
-	reason, msg := rules.CheckEntryKey(prefix, e.GetKey())
-	if e.GetKind() == rulesv1.TableContentKind_TABLE_CONTENT_KIND_OPTION {
-		reason, msg = rules.CheckOptionKey(e.GetKey())
-	}
-	if reason != "" {
+	if reason, msg := entryKeyProblem(e.GetKind(), e.GetKey()); reason != "" {
 		return packViolation(field+".key", reason, "%s", msg)
 	}
 	if seen[e.GetKey()] {
@@ -197,6 +192,16 @@ func checkPackEntry(field string, e *rulesv1.TableEntry, seen map[string]bool) *
 		return packViolation(field+".name_pt", rules.ReasonValue, "the name of an entry is the name in its body")
 	}
 	return nil
+}
+
+// entryKeyProblem is the reason and the English message of what is wrong with the key of an
+// entry of the kind, or "" and "" when the key is one the table makes: "<kind>:<slug>@mesa", and
+// for an option "option:<set>:<slug>@mesa" with a known set.
+func entryKeyProblem(kind rulesv1.TableContentKind, key string) (reason, message string) {
+	if kind == rulesv1.TableContentKind_TABLE_CONTENT_KIND_OPTION {
+		return rules.CheckOptionKey(key)
+	}
+	return rules.CheckEntryKey(kindPrefix(kind), key)
 }
 
 // bodyOfEntry is the body of an entry and the kind it gives, or nil.
