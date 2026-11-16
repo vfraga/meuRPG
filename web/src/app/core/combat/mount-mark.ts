@@ -1,4 +1,5 @@
 import type { Combatant, Encounter } from '../../../gen/meurpg/play/v1/combat_pb';
+import { article } from '../format/article';
 import { isPlayer } from './combat-view';
 
 /** `Combatant.mount_kind` and `SetCombatantMountRequest.kind`: `''` takes the mark off. */
@@ -18,8 +19,10 @@ export interface MountMarkView {
   readonly options: readonly MountMarkOption[];
   /** The line under the select: what the current mark means, naming the rider it carries. */
   readonly hint: string;
-  /** Why "Nenhuma" is off: "Nenhuma: só depois que Tor desmontar."; `''` when it is not. */
+  /** Why "Nenhuma" is off: "Só depois que Tor desmontar."; `''` when it is not. */
   readonly why: string;
+  /** With no mark yet: what marking does ("Marcado, o Mastim aceita um cavaleiro…"); `''` once it is marked. */
+  readonly note: string;
 }
 
 /** The mark is for an NPC or a creature: a player's character is never a marked mount. */
@@ -34,6 +37,11 @@ function hintOf(kind: MountKind, rider: string): string {
   return kind === 'independent'
     ? `Mantém a própria vez e leva ${rider || 'quem monta'}.`
     : 'Não aceita cavaleiro.';
+}
+
+function noteOf(label: string): string {
+  const a = article(label);
+  return `Marcad${a}, ${a} ${label} aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.`;
 }
 
 /** `null` for a combatant that takes no mark, or is not in the combat. The server decides every refusal. */
@@ -60,6 +68,7 @@ export function mountMarkView(e: Encounter, id: string): MountMarkView | null {
       option('independent', 'Independente'),
     ],
     hint: hintOf(current, rider),
-    why: c.riderId ? `Nenhuma: só depois que ${rider || 'o cavaleiro'} desmontar.` : '',
+    why: c.riderId ? `Só depois que ${rider || 'o cavaleiro'} desmontar.` : '',
+    note: current === '' ? noteOf(c.label) : '',
   };
 }

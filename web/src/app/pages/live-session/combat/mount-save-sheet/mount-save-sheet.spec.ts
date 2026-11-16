@@ -136,6 +136,12 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
       '1d20 + 2',
       'Destreza +2',
     ]);
+    // Board 588-06: the mount's glyph beside the title, and the dice in the accent as the first tag.
+    expect(el.querySelector('.frame__head app-saddle-icon')).not.toBeNull();
+    expect(el.querySelector('.frame__head mat-icon.frame__icon')).toBeNull();
+    expect(
+      Array.from(el.querySelectorAll('.tag')).map((t) => t.classList.contains('tag--dice')),
+    ).toEqual([true, false]);
     expect(plain(el.querySelector('.wait')?.textContent)).toBe(
       'hourglass_topA vez do Wight espera este teste.',
     );
@@ -157,8 +163,9 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
       held: undefined,
     });
     const { fixture, el } = setup(prompt({ dc: 10 }));
+    expect(plain(el.querySelector('h2')?.textContent)).toBe('Você cai da montaria? · CD 10');
     expect(plain(el.querySelector('.frame__sub')?.textContent)).toBe(
-      'Teste de resistência de Destreza · CD 10',
+      'Teste de resistência de Destreza',
     );
     expect(Array.from(el.querySelectorAll('.tag')).map((t) => plain(t.textContent))).toContain(
       'CD 10',
@@ -411,7 +418,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
 
   it('speaks of the rider by name to the master, who may close it and roll later', () => {
     const { el } = setup(prompt({ dc: 10 }), { byMaster: true });
-    expect(plain(el.querySelector('h2')?.textContent)).toBe('Tor cai da montaria?');
+    expect(plain(el.querySelector('h2')?.textContent)).toBe('Tor cai da montaria? · CD 10');
     expect(plain(el.querySelector('.what')?.textContent)).toContain(
       'Se passar, continua montado; se falhar, cai Derrubado num quadrado ao lado dele.',
     );

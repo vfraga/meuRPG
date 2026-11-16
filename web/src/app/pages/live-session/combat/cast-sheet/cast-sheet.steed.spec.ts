@@ -11,9 +11,11 @@ import { SpellCatalog } from '../../../../core/combat/spell-catalog';
 import { CastSheet, type CastSheetData } from './cast-sheet';
 
 describe('CastSheet: "Estrela também", a self-only spell that reaches the steed the caster rides (#588, board 588-26 card 6)', () => {
-  async function open(alsoSteed: boolean) {
+  async function open(alsoSteed: boolean, answer?: unknown) {
     TestBed.resetTestingModule();
-    const castSpell = vi.fn().mockRejectedValue(new Error('stop'));
+    const castSpell = answer
+      ? vi.fn().mockResolvedValue(answer)
+      : vi.fn().mockRejectedValue(new Error('stop'));
     const details = { spell: { level: 1 }, damage: [], healBySlotLevel: {}, higherLevel: [] };
     const lia = combatant({ id: 'lia', label: 'Lia', mountedOnId: 'estrela' });
     const estrela = combatant({ id: 'estrela', label: 'Estrela', riderId: 'lia' });
@@ -78,6 +80,38 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
     await cast();
     expect(castSpell).toHaveBeenCalledTimes(1);
     expect(castSpell.mock.calls[0][12]).toMatchObject({ alsoSteed: true });
+  });
+
+  it('frames the check in the accent, as board 588-26 card 6 draws it', async () => {
+    const { el } = await open(true);
+    const row = getComputedStyle(el.querySelector('app-steed-also .also')!);
+    expect(row.borderTopStyle).toBe('solid');
+    expect(parseFloat(row.borderTopWidth)).toBe(1);
+    expect(parseFloat(row.minHeight)).toBe(44);
+  });
+
+  it("says the steed's line in the result, with what the cast did (the live region), not among what it spent", async () => {
+    const { fixture, el, cast } = await open(true, {
+      encounter: encounter({ combatants: [] }),
+      cast: {
+        targets: [],
+        pendingDamages: [],
+        metamagicKeys: [],
+        sorceryPointsSpent: 0,
+        slot: { level: 1, pact: false },
+        concentrating: true,
+        concentrationEndedSpellKey: '',
+        steedNote: 'O corcel também é alvo da magia.',
+      },
+      summoned: [],
+    });
+    await cast();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const note = el.querySelector('app-cast-result [role=status] .steed');
+    expect(note?.textContent?.trim()).toBe('O corcel também é alvo da magia.');
+    expect(el.querySelector('app-cast-slots')?.textContent).not.toContain('O corcel também');
   });
 
   it('unticked, the cast reaches the caster alone', async () => {

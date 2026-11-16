@@ -11,3 +11,10 @@
     font-size: var(--mr-font-18);
   }
 }
+
+// The dice of the roll, the first tag: in the accent (588-06).
+.tag--dice {
+  border-color: var(--mr-accent);
+  color: var(--mr-accent-text);
+  font-weight: 700;
+}

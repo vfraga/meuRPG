@@ -18,9 +18,8 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
     fixture.componentRef.setInput('label', 'Cavalo de guerra');
     fixture.componentRef.setInput('busy', busy);
     const picked: string[] = [];
-    let closed = 0;
     fixture.componentInstance.pick.subscribe((k) => picked.push(k));
-    fixture.componentInstance.closed.subscribe(() => closed++);
+    document.body.appendChild(fixture.nativeElement);
     fixture.detectChanges();
     // The select takes its value in a microtask.
     await fixture.whenStable();
@@ -31,10 +30,10 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
       fixture.detectChanges();
       return Array.from(document.querySelectorAll<HTMLElement>('mat-option'));
     };
-    return { fixture, el, open, picked, closed: () => closed };
+    return { fixture, el, open, picked };
   }
 
-  afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((n) => n.remove()));
+  afterEach(() => document.body.replaceChildren());
 
   it('shows the current mark in a select named for the combatant, with what it means under it', async () => {
     const { el } = await setup({ mountKind: 'controlled', riderId: 'tor' });
@@ -52,11 +51,18 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
   it('lists the three marks, each with its line; the current one is the only one picked', async () => {
     const { open } = await setup({ mountKind: 'independent' });
     const options = open();
-    expect(options.map((o) => text(o))).toEqual([
-      'Nenhuma: não aceita cavaleiro.',
-      'Adestrada: age logo depois de quem monta e só usa Disparada, Desengajar e Esquivar.',
-      'Independente: mantém a própria vez e leva quem monta.',
+    // Board 588-09: two lines an option, the name in bold and its line under it.
+    expect(options.map((o) => text(o.querySelector('.opt__t')))).toEqual([
+      'Nenhuma',
+      'Adestrada',
+      'Independente',
     ]);
+    expect(options.map((o) => text(o.querySelector('.opt__d')))).toEqual([
+      'Não aceita cavaleiro.',
+      'Age logo depois de quem monta e só usa Disparada, Desengajar e Esquivar.',
+      'Mantém a própria vez e leva quem monta.',
+    ]);
+    expect(getComputedStyle(options[1].querySelector('.opt__d')!).display).toBe('block');
     expect(options.map((o) => o.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true']);
   });
 
@@ -68,23 +74,51 @@ describe('RowMount, the master\'s "Montaria" select of a row (#588, 588-08)', ()
 
   it('keeps "Nenhuma" off, with the reason in words, while the mount carries its rider', async () => {
     const { el, open, picked } = await setup({ mountKind: 'controlled', riderId: 'tor' });
-    expect(text(el.querySelector('.mount__why'))).toBe('Nenhuma: só depois que Tor desmontar.');
+    expect(text(el.querySelector('.mount__why'))).toBe('Só depois que Tor desmontar.');
     const none = open()[0];
     expect(none.getAttribute('aria-disabled')).toBe('true');
     none.click();
     expect(picked).toEqual([]);
   });
 
-  it('has no reason line for a mount that carries nobody, and "Fechar" closes the select', async () => {
-    const { el, closed } = await setup({ mountKind: 'controlled' });
+  it('has no reason line for a mount that carries nobody, and no button of its own: "Montaria…" closes it (boards 588-08, 588-09)', async () => {
+    const { el } = await setup({ mountKind: 'controlled' });
     expect(el.querySelector('.mount__why')).toBeNull();
-    const close = Array.from(el.querySelectorAll('button')).find((b) => text(b) === 'Fechar')!;
-    close.click();
-    expect(closed()).toBe(1);
+    expect(el.querySelector('button')).toBeNull();
+    expect(el.querySelector('.mount__note')).toBeNull();
   });
 
-  it('is off while a call is in the air', async () => {
-    const { el } = await setup({ mountKind: 'controlled' }, true);
-    expect(el.querySelector('mat-select')?.getAttribute('aria-disabled')).toBe('true');
+  it('with no mark yet, says under the select what marking does (board 588-09)', async () => {
+    const { el } = await setup({});
+    expect(text(el.querySelector('.mount__hint'))).toBe('Não aceita cavaleiro.');
+    expect(text(el.querySelector('.mount__note'))).toBe(
+      'Marcado, o Cavalo de guerra aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
+    );
+  });
+
+  it('takes the focus when it opens, as the cover picker does', async () => {
+    const { fixture, el } = await setup({ mountKind: 'controlled' });
+    await fixture.whenStable();
+    expect(document.activeElement).toBe(el.querySelector('mat-select'));
+  });
+
+  it('shows no saddle before "Nenhuma": nothing is marked (board 588-09)', async () => {
+    const { el } = await setup({});
+    expect(text(el.querySelector('.mat-mdc-select-value'))).toBe('Nenhuma');
+    expect(el.querySelector('.mat-mdc-select-value app-saddle-icon')).toBeNull();
+  });
+
+  it('while a call is in the air, keeps the select and its focus and holds every option off', async () => {
+    const { fixture, el, open, picked } = await setup({ mountKind: 'controlled' });
+    fixture.componentRef.setInput('busy', true);
+    fixture.detectChanges();
+    const select = el.querySelector('mat-select')!;
+    expect(select.getAttribute('aria-disabled')).toBe('false');
+    expect(select.getAttribute('aria-busy')).toBe('true');
+    expect(document.activeElement).toBe(select);
+    const options = open();
+    expect(options.map((o) => o.getAttribute('aria-disabled'))).toEqual(['true', 'true', 'true']);
+    options[2].click();
+    expect(picked).toEqual([]);
   });
 });

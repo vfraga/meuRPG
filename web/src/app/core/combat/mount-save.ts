@@ -8,6 +8,7 @@ import {
 import { RollMode } from '../../../gen/meurpg/play/v1/combat_rolls_pb';
 import { article } from '../format/article';
 import { dcLabel } from '../format/save-dc';
+import { joinDots } from '../format/text';
 import { modifierText } from './combat-dice';
 import { isPlayer, signed } from './combat-view';
 import { whoseTurn } from './reaction-dismount';
@@ -157,8 +158,9 @@ export function mountSaveView(e: Encounter, p: MountSavePrompt, mine: boolean): 
   const beside = besideOf(mount);
   const condition = failingCondition(rider);
   return {
-    title: `${who} cai da montaria?`,
-    subtitle: dc ? `${SAVE} · ${dc}` : SAVE,
+    // With the DC (a table with `show_save_dc`, or the master) the title gains it: "Você cai da montaria? · CD 10".
+    title: joinDots([`${who} cai da montaria?`, ...(dc ? [dc] : [])]),
+    subtitle: SAVE,
     cause: causeOf(p, mount, rider, mine, who),
     body: mine
       ? `Passe para continuar montado; se falhar, você cai Derrubado num quadrado ao lado ${beside}.`

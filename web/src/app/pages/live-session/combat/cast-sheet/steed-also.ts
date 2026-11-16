@@ -27,8 +27,14 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       align-items: flex-start;
       gap: var(--mr-space-2);
       min-height: 44px;
-      padding-block: 6px;
+      padding: 8px 12px;
       box-sizing: border-box;
+      // Framed in the accent, on its soft ground (588-26 card 6): the one choice here that reaches someone else.
+      border-width: 1px;
+      border-style: solid;
+      border-color: var(--mr-accent);
+      border-radius: var(--mr-radius-md);
+      background: var(--mr-accent-soft);
     }
 
     input {

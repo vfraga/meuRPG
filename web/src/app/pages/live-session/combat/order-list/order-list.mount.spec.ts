@@ -125,7 +125,7 @@ describe('OrderList with a rider and its mount', () => {
       expect(menu('Tor').some((i) => flat(i)?.includes('Montaria'))).toBe(false);
     });
 
-    it('opens the select in the row, sends the pick with the combatant, and "Fechar" takes it away', async () => {
+    it('opens the select in the row, sends the pick with the combatant, and "Montaria…" again takes it away', async () => {
       const { fixture, el, menu, marks } = live([tor, horse('controlled'), zombie]);
       expect(el.querySelector('app-row-mount')).toBeNull();
       menu('Cavalo de guerra')
@@ -143,10 +143,56 @@ describe('OrderList with a rider and its mount', () => {
       fixture.detectChanges();
       document.querySelectorAll<HTMLElement>('mat-option')[2].click();
       expect(marks).toEqual([{ id: 'h', kind: 'independent' }]);
-      Array.from(select.querySelectorAll('button'))
-        .find((b) => text(b) === 'Fechar')!
+      expect(Array.from(select.querySelectorAll('button')).some((b) => text(b) === 'Fechar')).toBe(
+        false,
+      );
+      menu('Cavalo de guerra')
+        .find((i) => flat(i) === 'Montaria…')!
         .click();
       fixture.detectChanges();
+      expect(el.querySelector('app-row-mount')).toBeNull();
+    });
+
+    it('puts the focus in the select when it opens', async () => {
+      const { fixture, el, menu } = live([tor, horse('controlled'), zombie]);
+      document.body.appendChild(el);
+      menu('Cavalo de guerra')
+        .find((i) => flat(i) === 'Montaria…')!
+        .click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(el.querySelector('app-row-mount mat-select'));
+      el.remove();
+    });
+
+    it('takes the select away when the combat ends', async () => {
+      const { fixture, el, menu } = live([tor, horse('controlled'), zombie]);
+      menu('Cavalo de guerra')
+        .find((i) => flat(i) === 'Montaria…')!
+        .click();
+      fixture.detectChanges();
+      expect(el.querySelector('app-row-mount')).not.toBeNull();
+      fixture.componentRef.setInput(
+        'encounter',
+        encounter({
+          currentCombatantId: 'z',
+          combatants: [tor, horse('controlled'), zombie],
+          status: EncounterStatus.ENDED,
+        }),
+      );
+      fixture.detectChanges();
+      expect(el.querySelector('app-row-mount')).toBeNull();
+    });
+
+    it('is off, with why, for an NPC that is itself riding: a rider is no mount', () => {
+      const knight = combatant({ id: 'k', label: 'Cavaleiro', initiative: 9, mountedOnId: 'h2' });
+      const steed = combatant({ id: 'h2', label: 'Corcel', initiative: 9, riderId: 'k' });
+      const { menu, el } = live([zombie, knight, steed]);
+      const item = menu('Cavaleiro').find((i) => flat(i)?.startsWith('Montaria…'))!;
+      expect(item.getAttribute('aria-disabled')).toBe('true');
+      expect(text(item.querySelector('.row__menu-why'))).toBe('Só depois que Cavaleiro desmontar.');
+      item.click();
       expect(el.querySelector('app-row-mount')).toBeNull();
     });
   });

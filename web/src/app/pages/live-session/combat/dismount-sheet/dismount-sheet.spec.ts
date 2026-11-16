@@ -76,11 +76,18 @@ describe('DismountSheet (#588, board 588-07)', () => {
     const { el, settle } = setup();
     await settle();
     expect(flat(el.querySelector('h2'))).toBe('A montaria caiu');
-    expect(flat(el.querySelector('.frame__sub'))).toContain('Reação · desmontar · Rodada 4');
+    // Board 588-07: the reaction's square, "Reação" in bold, then what it is for and the round.
+    const sub = el.querySelector('.frame__sub')!;
+    expect(flat(sub)).toBe('Reação · desmontar · Rodada 4');
+    expect(flat(sub.querySelector('b'))).toBe('Reação');
+    expect(sub.querySelector('app-economy-mark rect')).not.toBeNull();
     expect(flat(el.querySelector('.what'))).toBe(
       'O Cavalo de guerra caiu. Usar a reação para desmontar de pé?',
     );
-    expect(flat(el.querySelector('.what b'))).toBe('O Cavalo de guerra caiu.');
+    // The fall and the question are one bold sentence pair.
+    expect(flat(el.querySelector('.what b'))).toBe(
+      'O Cavalo de guerra caiu. Usar a reação para desmontar de pé?',
+    );
     expect(flat(el.querySelector('.small'))).toBe(
       'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai Derrubado a até 1,5 m.',
     );

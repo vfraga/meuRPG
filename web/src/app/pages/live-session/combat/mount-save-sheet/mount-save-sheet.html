@@ -1,5 +1,4 @@
 <app-sheet-frame
-  icon="shield"
   [title]="view?.title ?? 'Teste de resistência'"
   [subtitle]="view?.subtitle ?? ''"
   [phone]="inSheet"
@@ -7,6 +6,7 @@
   [focusableBody]="true"
   (closed)="close()"
 >
+  <app-saddle-icon head-icon />
   @if (error()) {
     <div class="mr-notice mr-notice--danger" role="alert">
       <mat-icon aria-hidden="true">error</mat-icon>
@@ -29,8 +29,8 @@
       } @else if (view; as v) {
         <p class="what">{{ v.cause }} {{ v.autoFail ? v.autoFailLine : v.body }}</p>
         <div class="tags">
-          @for (tag of v.tags; track tag) {
-            <span class="tag">{{ tag }}</span>
+          @for (tag of v.tags; track tag; let first = $first) {
+            <span class="tag" [class.tag--dice]="first && !v.autoFail">{{ tag }}</span>
           }
         </div>
         @if (v.modeLine) {

@@ -231,3 +231,11 @@
   font-size: var(--mr-font-14);
   vertical-align: -2px;
 }
+
+// Why a menu item is off, under its words.
+.row__menu-why {
+  display: block;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  white-space: normal;
+}

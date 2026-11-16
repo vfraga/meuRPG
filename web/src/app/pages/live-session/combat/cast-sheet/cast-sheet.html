@@ -308,7 +308,7 @@
         />
       }
     } @else {
-      <app-cast-result [rows]="tx.resultRows()" [plain]="tx.plain()" [sentence]="tx.sentence()" [pool]="tx.poolText()" />
+      <app-cast-result [rows]="tx.resultRows()" [plain]="tx.plain()" [sentence]="tx.sentence()" [pool]="tx.poolText()" [steed]="s.cast()?.steedNote ?? ''" />
       @if (tx.nextRoll(); as r) {
         <div class="dmg">
           <p class="dmg__what">

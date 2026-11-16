@@ -66,6 +66,9 @@ export interface SlotAfter {
       @if (plain()) {
         <p class="plain"><mat-icon aria-hidden="true">auto_awesome</mat-icon>A magia foi conjurada: o mestre resolve o efeito.</p>
       }
+      @if (steed()) {
+        <p class="steed">{{ steed() }}</p>
+      }
     </div>
   `,
   styleUrl: './cast-result.scss',
@@ -78,6 +81,8 @@ export class CastResult {
   readonly sentence = input('');
   /** The caster's own roll of the pool, `5d8 (2, 4, 1, 5, 3) = 15`: never an enemy's hit points. */
   readonly pool = input('');
+  /** The bonded steed the cast reached too (`SpellCast.steed_note`, #588): "O corcel também é alvo da magia." */
+  readonly steed = input('');
 }
 
 /**

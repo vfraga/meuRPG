@@ -35,6 +35,7 @@ import { rerollShow } from '../../../../shared/held-roll-prompt/held-roll-shows'
 import { MultiRoll, type RollField } from '../../../../shared/multi-roll/multi-roll';
 import { RollAnimator } from '../../../../shared/roll-overlay/roll-animator';
 import { RollPicker } from '../../../../shared/roll-picker/roll-picker';
+import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 import { ExtraDice } from '../../effects/extra-dice/extra-dice';
@@ -76,6 +77,7 @@ const EFFECT_DIE_FACES = 4;
     MatIconModule,
     MultiRoll,
     RollPicker,
+    SaddleIcon,
     SheetFrame,
   ],
   host: { '(keydown.escape)': 'close()' },

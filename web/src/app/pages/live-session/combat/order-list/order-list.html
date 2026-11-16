@@ -226,7 +226,6 @@
                 [label]="c.label"
                 [busy]="busy()"
                 (pick)="mount.emit({ id: c.id, kind: $event })"
-                (closed)="mounting.set(null)"
               />
             }
           }
@@ -378,8 +377,12 @@
                   }
                   @if (canMount(c)) {
                     <!-- The master's mount mark (#588, 588-08): the select opens in the row, as the cover picker does. -->
-                    <button mat-menu-item type="button" (click)="mounting.set(c.id)">
+                    <button mat-menu-item type="button" [disabled]="!!c.mountedOnId" (click)="mounting.set(mounting() === c.id ? null : c.id)">
                       <app-saddle-icon class="mat-icon row__menu-saddle" />Montaria…
+                      @if (c.mountedOnId) {
+                        <!-- A rider is no mount: the mark waits for it to be on foot. -->
+                        <span class="row__menu-why">Só depois que {{ c.label }} desmontar.</span>
+                      }
                     </button>
                   }
                   @if (npc(c)) {

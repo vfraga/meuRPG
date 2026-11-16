@@ -27,6 +27,18 @@ describe("the master's mount mark (#588, boards 588-08 and 588-09)", () => {
     ]);
     expect(v?.hint).toBe('Mantém a própria vez e leva quem monta.');
     expect(v?.why).toBe('');
+    expect(v?.note).toBe('');
+  });
+
+  it('with no mark yet, says what marking does, naming the creature (board 588-09)', () => {
+    const mastim = combatant({ id: 'm', label: 'Mastim' });
+    expect(mountMarkView(encounter({ combatants: [mastim] }), 'm')?.note).toBe(
+      'Marcado, o Mastim aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
+    );
+    const aranha = combatant({ id: 'a', label: 'Aranha gigante' });
+    expect(mountMarkView(encounter({ combatants: [aranha] }), 'a')?.note).toBe(
+      'Marcada, a Aranha gigante aceita um cavaleiro, que monta na própria vez. Você monta qualquer criatura.',
+    );
   });
 
   it('names the rider in the line of a mount that carries one, and holds "Nenhuma" until the rider is off', () => {
@@ -34,7 +46,8 @@ describe("the master's mount mark (#588, boards 588-08 and 588-09)", () => {
     const v = mountMarkView(e, 'h');
     expect(v?.hint).toBe('Age logo depois de Tor e só usa Disparada, Desengajar e Esquivar.');
     expect(v?.options[0].disabled).toBe(true);
-    expect(v?.why).toBe('Nenhuma: só depois que Tor desmontar.');
+    // The notes' words (588-10 card 9): no label before them.
+    expect(v?.why).toBe('Só depois que Tor desmontar.');
     const free = mountMarkView(
       encounter({ combatants: [horse({ mountKind: 'independent', riderId: 'tor' }), tor] }),
       'h',

@@ -29,6 +29,8 @@ export interface DismountView {
   readonly title: string;
   /** "Reação · desmontar · Rodada 4". */
   readonly subtitle: string;
+  /** What follows the bold "Reação" in the sheet's subtitle: " · desmontar · Rodada 4". */
+  readonly subtitleRest: string;
   /** "O Cavalo de guerra caiu." (bold) */
   readonly lead: string;
   readonly question: string;
@@ -65,6 +67,7 @@ export function dismountView(e: Encounter, w: ReactionWindow): DismountView {
   return {
     title: 'A montaria caiu',
     subtitle: `Reação · desmontar · Rodada ${e.round}`,
+    subtitleRest: ` · desmontar · Rodada ${e.round}`,
     lead,
     question,
     note: 'Com a reação, você desce de pé num quadrado ao lado da montaria. Sem ela, cai Derrubado a até 1,5 m.',

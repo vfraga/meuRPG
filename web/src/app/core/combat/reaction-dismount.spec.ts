@@ -48,6 +48,7 @@ describe("the rider's dismount as its mount falls (#588, board 588-07)", () => {
     const v = dismountView(fight(), window());
     expect(v.title).toBe('A montaria caiu');
     expect(v.subtitle).toBe('Reação · desmontar · Rodada 4');
+    expect(v.subtitleRest).toBe(' · desmontar · Rodada 4');
     expect(v.lead).toBe('O Cavalo de guerra caiu.');
     expect(v.question).toBe('Usar a reação para desmontar de pé?');
     expect(v.note).toBe(

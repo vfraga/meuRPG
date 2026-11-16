@@ -81,8 +81,11 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
 
   it('shows the DC only when the server sent one (show_save_dc, or the master)', () => {
     const v = mountSaveView(fight(), prompt({ dc: 10 }), true);
-    expect(plain(v.subtitle)).toBe('Teste de resistência de Destreza · CD 10');
+    // The notes (588-10 card 6): "the title gains '· CD 10'", the subtitle stays as it is.
+    expect(plain(v.title)).toBe('Você cai da montaria? · CD 10');
+    expect(v.subtitle).toBe('Teste de resistência de Destreza');
     expect(v.tags.map(plain)).toEqual(['1d20 + 2', 'Destreza +2', 'CD 10']);
+    expect(mountSaveView(fight(), prompt({ dc: 0 }), true).title).toBe('Você cai da montaria?');
     expect(mountSaveView(fight(), prompt({ dc: 0 }), true).tags.join(' ')).not.toContain('CD');
   });
 
@@ -148,7 +151,8 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
       prompt({ dc: 10, cause: MountSaveCause.PRONE }),
       false,
     );
-    expect(v.title).toBe('Tor cai da montaria?');
+    // The master always reads the DC: the title carries it.
+    expect(plain(v.title)).toBe('Tor cai da montaria? · CD 10');
     expect(
       mountSaveView(fight(), prompt({ riderId: 'w', cause: MountSaveCause.PRONE }), false).cause,
     ).toBe('O Wight foi derrubado.');

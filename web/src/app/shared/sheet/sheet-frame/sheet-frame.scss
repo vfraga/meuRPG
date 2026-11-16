@@ -82,6 +82,28 @@
   color: var(--mr-ink-muted);
 }
 
+.frame__lead {
+  color: var(--mr-ink);
+}
+
+// A mark before the subtitle's lead (the reaction's square), at the text's height.
+.frame__sub ::ng-deep [sub-mark] {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+
+// A glyph projected in the icon's place takes the icon's box and colour.
+.frame__head ::ng-deep [head-icon] {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin-top: 1px;
+  color: var(--mr-accent-text);
+}
+
 // An icon button projected before the close one: the title's row keeps both at
 // the top right, 44 px each, like the artboard's "?" and X.
 .frame__head ::ng-deep [head-action] {

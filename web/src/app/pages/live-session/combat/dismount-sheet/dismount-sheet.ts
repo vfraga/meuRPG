@@ -22,6 +22,7 @@ import type { CombatState } from '../../../../core/combat/combat-state';
 import { ownCombatant } from '../../../../core/combat/combat-view';
 import { dismountGoneText, dismountView } from '../../../../core/combat/reaction-dismount';
 import { ActionKey } from '../../../../core/connect/idempotency';
+import { EconomyMark } from '../../../../shared/economy-shapes/economy-shapes';
 import { SheetFrame } from '../../../../shared/sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../../../../shared/sheet/sheet-host';
 
@@ -43,16 +44,18 @@ export interface DismountSheetData {
 @Component({
   selector: 'app-dismount-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [MatButtonModule, MatIconModule, SheetFrame],
+  imports: [EconomyMark, MatButtonModule, MatIconModule, SheetFrame],
   template: `
     <app-sheet-frame
       icon="download"
       [title]="view.title"
-      [subtitle]="view.subtitle"
+      subtitleLead="Reação"
+      [subtitle]="view.subtitleRest"
       [phone]="inSheet"
       [closable]="false"
       [focusableBody]="true"
     >
+      <app-economy-mark sub-mark kind="reaction" />
       <div class="body">
         @if (error()) {
           <div class="mr-notice mr-notice--danger" role="alert">
@@ -64,7 +67,7 @@ export interface DismountSheetData {
           <p class="what" role="status">{{ goneText() }}</p>
         } @else {
           <p class="what">
-            <b>{{ view.lead }}</b> {{ view.question }}
+            <b>{{ view.lead }} {{ view.question }}</b>
           </p>
           <p class="small">{{ view.note }}</p>
           <div class="tags">
