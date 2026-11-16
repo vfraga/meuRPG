@@ -18,8 +18,8 @@ Every state exists at 390, 768 and 1280 px, light (`claro`) and dark (`escuro`),
 | Escolhas, long names | `715-escolhas-5-nomes-longos` | a group "Posturas Ancestrais do Vale Seco e das Montanhas Geladas" (the chip takes the row) and options of two lines |
 | Resumo | `715-resumo` | "Posturas" as a row of the table, "Postura da Garça → Postura do Lobo" (no loose sentence) |
 | Ficha, after confirming | `715-ficha-depois` | the sheet at level 5 (not shot again) |
-| Habilidades | `715-habilidades-1-antes` | ASI level 6: the panel now comes after "O que muda com o aumento"; "Não trocar" on its row, "Estilo de Luta" and "Posturas" below |
-| Habilidades, two swaps | `715-habilidades-2-duas-trocas` | "Trocas escolhidas" with "Estilo de Luta: Defesa → Duelismo" and "Posturas: Postura do Touro → Postura do Urso"; both chips checked, "Posturas" open; at 1280 the same two rows in "O que muda até aqui" |
+| Habilidades | `715-habilidades-1-antes` | ASI level 6: the panel now comes after "O que muda com o aumento"; "Não trocar" on its row, "Estilo de luta" and "Posturas" below |
+| Habilidades, two swaps | `715-habilidades-2-duas-trocas` | "Trocas escolhidas" with "Estilo de luta: Defesa → Duelismo" and "Posturas: Postura do Touro → Postura do Urso"; both chips checked, "Posturas" open; at 1280 the same two rows in "O que muda até aqui" |
 | Habilidades, "Não trocar" after two swaps | `715-habilidades-3-nao-trocar-depois-de-duas` | both swaps gone, the list gone, the check back on "Não trocar" |
 | Resumo, two swaps | `715-resumo-duas-trocas` | the two swaps as rows of the table |
 | Ficha, the swap line | `715-ficha-linha-de-troca` (390 and 1280, light only, the feature's block) | "**Troca:** nos níveis 5 e 6 de Guerreiro você pode trocar uma opção desta característica por outra." with the bold lead |
@@ -30,5 +30,5 @@ Notes:
 - "Próximo" is filled at every width when it is enabled; it stays dashed while a choice is missing (the "Habilidades" shots).
 - The pick names lose the group's lead in the panel and the rows ("Estilo de Luta: Defesa" is "Defesa" under "Estilo de luta"); the group is "Estilo de luta" as on the board, the picks keep the SRD's "Estilo de Luta: ..." names.
 - The banner of the 390 x 844 shots is the one of a session in another campaign of the same player ("Mesa do Vale"); no fixture name.
-- Not shot again after the group name went back to "Estilo de luta": `715-habilidades-*` and `715-resumo-duas-trocas-*` still draw "Estilo de Luta" (capital L) for the rule's group; the build now says "Estilo de luta".
+- `715-habilidades-*` and `715-resumo-duas-trocas-*` are shot again with the branch at 118014ea6: the rule's group is "Estilo de luta", as the build says.
 - The half-swap shots (`715-escolhas-4-*` and `715-escolhas-6-*`) are of the build with the missing-choice behaviour; `715-resumo-meia-troca-*` is gone because a half swap no longer reaches the summary.
