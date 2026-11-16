@@ -96,7 +96,7 @@ export type { TokenDrop } from './token-drag';
   selector: 'app-combat-map',
   imports: [CombatantToken, DoorPicks, FogBase, MapLayersOverlay, MatIconModule, SaddleIcon],
   templateUrl: './combat-map.html',
-  styleUrl: './combat-map.scss',
+  styleUrls: ['./combat-map.scss', './combat-map-pairs.scss'],
 })
 export class CombatMap {
   readonly image = input.required<CombatMapImage>();

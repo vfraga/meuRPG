@@ -1,0 +1,21 @@
+// Split from combat-map.scss, which sits at the 8 kB budget of one component stylesheet.
+// A rider on its mount's token: a small disc top right, the saddle low on the mount (588-04).
+.cm__rider {
+  position: absolute;
+  top: -22%;
+  right: -22%;
+  display: flex;
+  border-radius: 50%;
+  background: var(--mr-map-token-surface);
+  pointer-events: none;
+}
+
+.cm__saddle {
+  position: absolute;
+  bottom: -14%;
+  left: 50%;
+  font-size: calc(var(--cm-tk) * 0.4);
+  color: var(--mr-map-token-ink);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
