@@ -79,3 +79,10 @@ export async function setConditionsRPC(master: Page, campaignId: string, encount
   expect(combatant, `${label} must be in the combat`).toBeTruthy();
   return combatRPC(master, 'SetCombatantConditions', { campaignId, encounterId: encounter.id, combatantId: combatant!.id, conditions: { keys } });
 }
+
+/** `PassFavor` as `page`'s user, the owner of `fromCharacterId`: the ask to give the Inspiração to `toCharacterId`. Answers the pass's id. The session must be open. */
+export async function passFavorRPC(page: Page, campaignId: string, fromCharacterId: string, toCharacterId: string): Promise<string> {
+  const res = await callRPC(page, 'meurpg.play.v1.FavorService/PassFavor', { campaignId, fromCharacterId, toCharacterId, idempotencyKey: crypto.randomUUID() });
+  expect(res.ok(), await res.text()).toBeTruthy();
+  return ((await res.json()) as { pass: { id: string } }).pass.id;
+}

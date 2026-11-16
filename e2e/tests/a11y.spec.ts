@@ -30,6 +30,7 @@ import { beginCreatureCombat, hitAndApply, tableForCreatureCombat } from './crea
 import { claimRoute, linkRPC, reservedRPC, revokeLinkRPC, rowOf } from './claim-support';
 import { authStatePath, boxOf, callRPC, layoutSize, characterRpcBody, createCharacterRPC, newSignedInContext, pensantus, showAllPicks, signIn, type TestUser, openActionTab, openCombatLog, openFoldedPanel, openSpentGroup, openXpHistory, viaTargetList } from './support';
 import { FAVOR_WIDTHS, favorBox, favorCheck, favorShotScale, favorViewport, holdersRPC, setConditionsRPC, shootFavor, tickFavor, grantFavorRPC } from './favor-support';
+import { passFavorRPC } from './favor-support';
 import { beginJointCombat, endPartRPC, jointTable } from './joint-turn-support';
 import { tableForCaster, tableForCreatures } from './creatures-support';
 import { grog, pipo, rollsTable, vex } from './combat-rolls-support';
@@ -14695,6 +14696,229 @@ async function scanFavorSpend(browser: Browser, colorScheme: 'light' | 'dark'): 
   }
 }
 
+// The Inspiração's pass (#581, RN-43, boards 581-04 to 581-07): the owner's ask that waits (the row on the sheet, the chip, the dashed
+// spend box), the master's cards "Para você responder" (the ask, the ask whose receiver has one, the ask in flight), what each side
+// reads when the ask is canceled, refused or accepted, and the dialog "Passar a Inspiração". Every state is scanned and photographed
+// at 390, 768 and 1280 px. Two states are not reached here, and the specs of the components cover them: the card "Inspiração sem efeito"
+// needs a roll that spent it over a source of advantage the roller cannot read, and the dialog needs the list of the other player
+// characters, which the server gives the master alone (a player's `ListCharacters` holds only their own), so its step answers the
+// player's call with the master's own list of the same campaign.
+async function scanFavorPass(browser: Browser, colorScheme: 'light' | 'dark'): Promise<void> {
+  const viewport = favorViewport(1280);
+  const master = await newSignedInContext(browser, 'Mestre Teste', {
+    viewport,
+    colorScheme,
+    ...favorShotScale,
+  });
+  const player = await newSignedInContext(browser, 'Jogador Teste', {
+    viewport,
+    colorScheme,
+    ...favorShotScale,
+  });
+  const m = await master.newPage();
+  const p = await player.newPage();
+  let campaignId = '';
+  let close: () => Promise<void> = async () => undefined;
+  const everyWidth = async (
+    page: Page,
+    name: string,
+    what: string,
+    show: () => Promise<Locator>,
+    hide?: () => Promise<void>,
+  ) => {
+    for (const width of FAVOR_WIDTHS) {
+      await page.setViewportSize(favorViewport(width));
+      const at = await show();
+      await expectScreenPasses(page, `${what} (${colorScheme}, ${width}px)`);
+      await shootFavor(page, name, width, colorScheme, at);
+      await hide?.();
+    }
+    await page.setViewportSize(favorViewport(1280));
+  };
+  const requests = m.locator('app-favor-requests');
+  const askCard = (who: string) => requests.locator('article', { hasText: `${who} quer passar a Inspiração` });
+  const dismissLines = async (page: Page) => {
+    const closeButtons = page.locator('app-favor-lines button.close');
+    while ((await closeButtons.count()) > 0) {
+      await closeButtons.first().click();
+    }
+  };
+  // Pensantus attacks Goblin 1 with Raio de Fogo; the sheet is open on the "Rolar" step when this returns.
+  const openAttack = async (page: Page): Promise<Locator> => {
+    await page.getByRole('button', { name: 'Atacar com Raio de Fogo' }).click();
+    await viaTargetList(page, page.getByRole('dialog'));
+    await page.locator('label', { hasText: 'Goblin 1' }).click();
+    await expect(page.getByRole('heading', { name: 'Como rolar o d20' })).toBeVisible();
+    return page.getByRole('dialog');
+  };
+  try {
+    await Promise.all([m.goto('/'), p.goto('/')]);
+    const table = await tableForCombat(
+      m,
+      p,
+      `Acessibilidade passar a Inspiração ${Date.now()}`,
+      true,
+      true,
+      { sheet: pensantusCasting },
+    );
+    campaignId = table.campaignId;
+    const third = await thirdPlayer(
+      browser,
+      { m, p, table, campaignId, done: async () => undefined } satisfies TrapTable,
+      brisa,
+    );
+    close = third.close;
+    const square = sq20(4, 7);
+    await placeTokenRPC(m, campaignId, table.mapId, third.characterId, square.xBp, square.yBp);
+    const b = third.page;
+    await grantFavorRPC(m, campaignId, table.characterId);
+    await openSessionPage(m, campaignId);
+    await openSessionPage(p, campaignId);
+    await openSessionPage(b, campaignId);
+    const sheetRoute = `/campaigns/${campaignId}/characters/${table.characterId}`;
+
+    // The ask: the master reads the card with the receiver and what accepting does; the other player reads nothing.
+    await passFavorRPC(p, campaignId, table.characterId, third.characterId);
+    await expect(askCard('Pensantus')).toBeVisible({ timeout: 15_000 });
+    await expect(askCard('Pensantus')).toContainText('Para Brisa. Se aceitar, ela sai de Pensantus e vai para Brisa.');
+    await expect(requests.getByRole('heading', { name: /Para você responder/ })).toBeVisible();
+    await expect(askCard('Pensantus').getByRole('button', { name: 'Recusar' })).toBeEnabled();
+    await expect(askCard('Pensantus').getByRole('button', { name: 'Aceitar' })).toBeEnabled();
+    await expect(b.locator('app-favor-requests')).toHaveCount(0);
+    await expect(b.locator('app-favor-lines [data-testid=favor-line]')).toHaveCount(0);
+    await everyWidth(m, 'passar-mestre-cartao', 'O mestre, o cartão "Pensantus quer passar a Inspiração"', async () => requests);
+
+    // The owner's sheet: the row "Para Brisa · esperando o mestre" with "Cancelar o pedido".
+    await p.goto(sheetRoute);
+    const panel = p.locator('app-favor-panel');
+    await expect(panel.getByTestId('favor-ask')).toContainText('Para Brisa · esperando o mestre', { timeout: 30_000 });
+    await expect(panel.getByRole('button', { name: 'Cancelar o pedido' })).toBeVisible();
+    await expectLoaded(p);
+    await everyWidth(p, 'passar-ficha-espera', 'A ficha, a linha "Para Brisa · esperando o mestre"', async () => panel);
+
+    // The giver gives it up: the card leaves the master's screen and says why.
+    await panel.getByRole('button', { name: 'Cancelar o pedido' }).click();
+    await expect(panel.getByTestId('favor-ask')).toHaveCount(0);
+    await expect(askCard('Pensantus')).toHaveCount(0, { timeout: 15_000 });
+    await expect(m.locator('app-favor-lines')).toContainText('Pensantus cancelou o pedido antes da sua resposta. Nada mudou.');
+    await everyWidth(m, 'passar-mestre-cancelou', 'O mestre, o aviso "cancelou o pedido antes da sua resposta"', async () => m.locator('app-favor-lines'));
+    await dismissLines(m);
+    await openSessionPage(p, campaignId);
+
+    // The master answers: "Recusando…" while the call is on its way, the pair dashed, then the giver reads the refusal.
+    await passFavorRPC(p, campaignId, table.characterId, third.characterId);
+    await expect(askCard('Pensantus')).toBeVisible({ timeout: 15_000 });
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    await m.route('**/meurpg.play.v1.FavorService/AnswerFavorPass', async (route) => {
+      await gate;
+      await route.continue();
+    });
+    await askCard('Pensantus').getByRole('button', { name: 'Recusar' }).click();
+    await expect(askCard('Pensantus').getByRole('button', { name: 'Recusando…' })).toBeVisible();
+    await expect(askCard('Pensantus').getByRole('button', { name: 'Aceitar' })).toHaveAttribute('aria-disabled', 'true');
+    await everyWidth(m, 'passar-mestre-recusando', 'O mestre, o cartão com "Recusando…" e "Aceitar" tracejado', async () => askCard('Pensantus'));
+    release();
+    await expect(askCard('Pensantus')).toHaveCount(0, { timeout: 15_000 });
+    await m.unroute('**/meurpg.play.v1.FavorService/AnswerFavorPass');
+    await expect(p.locator('app-favor-lines')).toContainText('O mestre recusou: a Inspiração continua com você.');
+    await expect(b.locator('app-favor-lines [data-testid=favor-line]')).toHaveCount(0);
+    expect(await holdersRPC(p, campaignId)).toEqual([table.characterId]);
+    await everyWidth(p, 'passar-jogador-recusou', 'O jogador, o aviso "O mestre recusou"', async () => p.locator('app-favor-lines'));
+    await dismissLines(p);
+
+    // The master accepts: the giver reads where it went; the receiver has it, and the master's card is gone.
+    await passFavorRPC(p, campaignId, table.characterId, third.characterId);
+    await expect(askCard('Pensantus')).toBeVisible({ timeout: 15_000 });
+    await askCard('Pensantus').getByRole('button', { name: 'Aceitar' }).click();
+    await expect(askCard('Pensantus')).toHaveCount(0, { timeout: 15_000 });
+    await expect(p.locator('app-favor-lines')).toContainText('O mestre aceitou: a sua Inspiração foi para Brisa.');
+    await expect(b.locator('app-favor-notice')).toContainText('Use antes de rolar um d20 seu.');
+    expect(await holdersRPC(p, campaignId)).toEqual([]);
+    expect(await holdersRPC(b, campaignId)).toEqual([third.characterId]);
+    await everyWidth(p, 'passar-jogador-aceitou', 'O jogador, o aviso "O mestre aceitou"', async () => p.locator('app-favor-lines'));
+    await dismissLines(p);
+
+    // The receiver has one already: "Aceitar" is dashed with the reason, "Recusar" still works.
+    await grantFavorRPC(m, campaignId, table.characterId);
+    await passFavorRPC(p, campaignId, table.characterId, third.characterId);
+    await expect(askCard('Pensantus')).toBeVisible({ timeout: 15_000 });
+    await expect(askCard('Pensantus')).toContainText('Para Brisa. Brisa já tem Inspiração: aceitar não é possível.');
+    const accept = askCard('Pensantus').getByRole('button', { name: 'Aceitar' });
+    await expect(accept).toHaveAttribute('aria-disabled', 'true');
+    await accept.dispatchEvent('click');
+    await expect(askCard('Pensantus')).toBeVisible();
+    await everyWidth(m, 'passar-mestre-receptor-tem', 'O mestre, o cartão com "Aceitar" tracejado: Brisa já tem Inspiração', async () => askCard('Pensantus'));
+
+    // A combat: the ask waits, so the chip and the spend box say it, and the card is at the top of "Turno".
+    await beginAttackCombatRPC(m, table, { Pensantus: 20, Brisa: 15, 'Capitão Goblin': 10, 'Goblin 1': 5, 'Goblin 2': 4 });
+    await openSessionPage(m, campaignId);
+    await openSessionPage(p, campaignId);
+    await openSessionPage(b, campaignId);
+    await expect(askCard('Pensantus')).toBeVisible({ timeout: 15_000 });
+    await everyWidth(m, 'passar-mestre-em-combate', 'O mestre, o cartão no alto de "Turno" em combate', async () => {
+      await openTurn(m);
+      return requests;
+    });
+    const chip = p.locator('app-favor-chip');
+    await expect(chip).toContainText('Inspiração · esperando o mestre');
+    await expect(b.locator('app-favor-chip', { hasText: 'esperando' })).toHaveCount(0);
+    await everyWidth(p, 'passar-vez-chip-espera', 'Sua vez, o chip "Inspiração · esperando o mestre"', async () => {
+      await openTurn(p);
+      return chip;
+    });
+    const sheet = await openAttack(p);
+    await expect(favorBox(sheet)).toContainText('Você pediu para passar a Inspiração a Brisa. Cancele o pedido para usar.');
+    await expect(favorCheck(sheet)).toHaveAttribute('aria-disabled', 'true');
+    await everyWidth(p, 'passar-gasto-espera', 'Atacar, a caixa tracejada: o pedido de passar espera o mestre', async () => favorBox(sheet));
+    await p.keyboard.press('Escape');
+    await expect(p.getByRole('dialog')).toHaveCount(0);
+    await askCard('Pensantus').getByRole('button', { name: 'Recusar' }).click();
+    await expect(askCard('Pensantus')).toHaveCount(0, { timeout: 15_000 });
+    await expect(chip).not.toContainText('esperando o mestre');
+    await dismissLines(p);
+
+    // The dialog on the sheet. A player's `ListCharacters` holds only their own characters, so the other player characters the dialog
+    // names are the master's list of this campaign, handed to the player's page.
+    const roster = await (await callRPC(m, 'meurpg.characters.v1.CharacterService/ListCharacters', { campaignId })).text();
+    await p.route('**/meurpg.characters.v1.CharacterService/ListCharacters', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: roster }));
+    await p.goto(sheetRoute);
+    const pass = p.locator('app-favor-panel').getByRole('button', { name: 'Passar a…' });
+    await expect(pass).toBeVisible({ timeout: 30_000 });
+    const dialog = p.getByRole('dialog', { name: 'Passar a Inspiração' });
+    await everyWidth(
+      p,
+      'passar-dialogo',
+      'A ficha, o diálogo "Passar a Inspiração"',
+      async () => {
+        await pass.click();
+        await expect(dialog).toBeVisible();
+        await expect(dialog).toContainText('Até o mestre responder, ela continua com você e não pode ser usada.');
+        return dialog;
+      },
+      async () => {
+        await dialog.getByRole('button', { name: 'Cancelar' }).click();
+        await expect(dialog).toHaveCount(0);
+        await expect(pass).toBeFocused();
+      },
+    );
+    await pass.click();
+    await dialog.getByRole('button', { name: 'Pedir ao mestre' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(p.locator('app-favor-panel').getByTestId('favor-ask')).toContainText('esperando o mestre');
+    await p.unroute('**/meurpg.characters.v1.CharacterService/ListCharacters');
+    await p.locator('app-favor-panel').getByRole('button', { name: 'Cancelar o pedido' }).click();
+    await expect(p.locator('app-favor-panel').getByTestId('favor-ask')).toHaveCount(0);
+  } finally {
+    await close();
+    if (campaignId) {
+      await endOpenSessionRPC(m, campaignId);
+    }
+    await master.close();
+    await player.close();
+  }
+}
+
 for (const [colorScheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as const) {
   test(`a Inspiração do mestre passa no axe e nas conferências de layout no tema ${theme}: o Grupo, a ordem, a faixa do jogador, o aviso, o painel da ficha e a leitura que falha, em 390, 768 e 1280`, { tag: ['@a11y', '@RN-43', '@RN-10'] }, async ({ browser }) => {
     test.setTimeout(720_000);
@@ -14703,6 +14927,10 @@ for (const [colorScheme, theme] of [['light', 'claro'], ['dark', 'escuro']] as c
   test(`a caixa "Inspiração do mestre" da folha de ataque passa no axe e nas conferências de layout no tema ${theme}: aberta, marcada, com desvantagem, tracejada (vantagem já dada, o mestre age, leitura que falha) e o resultado, em 390, 768 e 1280`, { tag: ['@a11y', '@RN-43', '@RN-10'] }, async ({ browser }) => {
     test.setTimeout(720_000);
     await scanFavorSpend(browser, colorScheme);
+  });
+  test(`passar a Inspiração passa no axe e nas conferências de layout no tema ${theme}: o cartão do mestre (o pedido, cancelado, recusando, recusado, aceito, o receptor que já tem, em combate), a linha de espera, o chip, a caixa tracejada, os avisos do jogador e o diálogo, em 390, 768 e 1280`, { tag: ['@a11y', '@RN-43', '@RN-10'] }, async ({ browser }) => {
+    test.setTimeout(900_000);
+    await scanFavorPass(browser, colorScheme);
   });
   for (const width of [390, 1280]) {
     test(`usar característica com oito alvos passa no axe e mantém "Usar" à vista no tema ${theme}, em ${width}`, { tag: ['@a11y', '@MR-014'] }, async ({ browser }) => {
