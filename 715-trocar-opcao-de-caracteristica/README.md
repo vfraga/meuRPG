@@ -15,3 +15,6 @@ Every state exists at 390, 768 and 1280 px, light (`claro`) and dark (`escuro`),
 | Ficha, after confirming | `715-ficha-depois` | the sheet at level 5 |
 | Habilidades, rule group and feature group | `715-habilidades-1-antes` | ASI level 6: "Não trocar", "Estilo de luta", "Posturas" in the one panel |
 | Habilidades, two swaps | `715-habilidades-2-duas-trocas` | one swap in each group (Defesa for Duelismo; Touro for Urso); both chips checked |
+| Ficha, the swap line | `715-ficha-linha-de-troca` (390 and 1280, light only) | "Posturas" opened in "Características e traços": "Escolha duas posturas de luta." and, as its own paragraph, "Troca de opção: nos níveis 5 e 6 da classe, …" |
+
+Note: `715-habilidades-2-duas-trocas-*` was shot again after the chip of a group whose swap is chosen lost its check (the board's chip is plain); only the open chip and the selected rows carry a check.
