@@ -174,6 +174,7 @@ export class SummonSheet {
       inCombat: !!this.combat,
       ritual: this.ritual(),
       slot: this.slot(),
+      tail: this.steed.tail(),
     }),
   );
   protected readonly title = computed(
@@ -227,10 +228,16 @@ export class SummonSheet {
   );
   /** A creature was chosen: the slot and the quantity fold into one line, so the list gets the room. */
   protected readonly collapsed = computed(
-    () => this.hasSetup() && this.total() > 0 && !this.editing(),
+    () => this.hasSetup() && (this.total() > 0 || this.steed.on) && !this.editing(),
   );
   /** "3º nível · 2 feras de ND 1 ou menos". */
-  protected readonly setupLine = computed(() => setupLineOf(this.slot(), this.opt()));
+  protected readonly setupLine = computed(() =>
+    this.steed.on ? this.steed.setupLine(this.slot()) : setupLineOf(this.slot(), this.opt()),
+  );
+  /** The bonded steed's stat block, for its fixed row. */
+  protected readonly steedBlock = computed(
+    () => this.forms()?.find((c) => c.summary?.key === this.steed.bonded()?.monsterKey) ?? null,
+  );
 
   protected readonly replacesNote = computed(() => replacesNoteOf(this.spell()));
 
@@ -241,6 +248,7 @@ export class SummonSheet {
       beastBlocks: this.beastBlocks(),
       forms: this.forms(),
       bring: this.bring(),
+      steed: this.steed.on,
     }),
   );
   protected readonly loadingRows = computed(() => {
@@ -248,7 +256,15 @@ export class SummonSheet {
     return !!o && (o.forms.length === 0 ? this.beasts() === null : this.forms() === null);
   });
   protected readonly listLabel = computed(() =>
-    listLabelOf(this.rows().length, this.familiar(), this.several(), this.total(), this.count()),
+    this.steed.on
+      ? 'Forma'
+      : listLabelOf(
+          this.rows().length,
+          this.familiar(),
+          this.several(),
+          this.total(),
+          this.count(),
+        ),
   );
 
   /** What is still missing, in one sentence naming everything; empty when the cast is ready. */

@@ -6,6 +6,8 @@ import {
   steedCastError,
   steedCastVerb,
   steedCostLine,
+  steedSetupLine,
+  steedSubtitleTail,
 } from '../../core/creatures/steed';
 
 /**
@@ -21,7 +23,8 @@ export class SteedPick {
   /** The type is still to pick: the cast button stays off. */
   readonly needsType = computed(() => this.on && this.type() === '');
   readonly costLine = computed(() => steedCostLine(this.spell()?.level ?? 0));
-  readonly castError = steedCastError;
+  /** The end of the sheet's subtitle. */
+  readonly tail = computed(() => (this.on ? steedSubtitleTail(this.bonded() !== null) : ''));
 
   constructor(
     spellKey: string,
@@ -43,6 +46,15 @@ export class SteedPick {
   /** "Convocar Estrela", "Convocar Cavalo de guerra", or the plain verb before a form is chosen. */
   verb(formTitle: string): string {
     return steedCastVerb(this.bonded()?.name ?? '', formTitle);
+  }
+
+  /** "Espaço de 2º nível · 2 livres"; `''` with no slot chosen. */
+  setupLine(slot: { readonly level: number; readonly free: number } | null): string {
+    return slot ? steedSetupLine(slot.level, slot.free) : '';
+  }
+
+  castError(err: unknown): string {
+    return steedCastError(err, this.bonded()?.name ?? '');
   }
 
   /** What the cast adds to `SummonChoice`. */

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { creature, flat } from '../../core/creatures/creatures-testing';
+import { creature, flat, raven, summary } from '../../core/creatures/creatures-testing';
 import { steedSpell } from '../../core/creatures/steed-testing';
 import { SteedChoice } from './steed-choice';
 
@@ -63,8 +63,8 @@ describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 a
     expect(fold()).toBeUndefined();
   });
 
-  it('with a bonded steed, shows one fixed row tagged "Mesmo corcel" and what the cast does, and no type to pick', () => {
-    const bondedSteed = creature('steed-1', 'Estrela', {
+  const estrela = () =>
+    creature('steed-1', 'Estrela', {
       monsterKey: 'monster:warhorse',
       monsterNamePt: 'Cavalo de guerra',
       creatureType: 'celestial',
@@ -72,17 +72,41 @@ describe('SteedChoice: the steed part of the summon sheet (#588, boards 588-21 a
       hitPointsMax: 19,
       bonded: true,
     });
-    const { el, types } = setup({ spell: steedSpell({ bondedSteed }) });
+  const horse = () =>
+    raven({
+      summary: summary('monster:warhorse', 'Cavalo de guerra', { sizePt: 'Grande' }),
+      armorClass: 11,
+      hitPoints: 19,
+      speedWalkFt: 60,
+      speedFlyFt: 0,
+    });
+
+  it('part "same" (board 588-22): the fixed row with the silhouette, the name, the tag "Mesmo corcel" with the link icon, the numbers, and the line under it', () => {
+    const { el, types, fold } = setup({
+      spell: steedSpell({ bondedSteed: estrela() }),
+      part: 'same',
+      block: horse(),
+    });
     expect(types()).toBeNull();
-    const row = el.querySelector('.same');
-    expect(row?.querySelector('.same__name')?.textContent?.trim()).toBe('Estrela');
-    expect(row?.querySelector('.mr-tag')?.textContent?.trim()).toBe('Mesmo corcel');
-    expect(flat(row?.querySelector('.same__sub'))).toBe(
-      'Cavalo de guerra · celestial · CA 11 · 19 PV',
+    expect(fold()).toBeUndefined();
+    const row = el.querySelector('.same')!;
+    expect(row.querySelector('app-creature-art')).not.toBeNull();
+    expect(row.querySelector('.same__name')?.textContent?.trim()).toBe('Estrela');
+    expect(flat(row.querySelector('.mr-tag'))).toBe('Mesmo corcel');
+    expect(row.querySelector('.mr-tag mat-icon')?.textContent?.trim()).toBe('link');
+    expect(flat(row.querySelector('.same__sub'))).toBe(
+      'Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19',
     );
     expect(el.querySelector('.same__line')?.textContent?.trim()).toBe(
-      'Estrela volta como era, com todos os pontos de vida. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
+      'Estrela volta como era: a mesma forma, o mesmo tipo, e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
     );
+  });
+
+  it('part "rest" of a bonded steed has no type to pick and no fixed row: only "Como funciona"', () => {
+    const { el, types, fold } = setup({ spell: steedSpell({ bondedSteed: estrela() }) });
+    expect(types()).toBeNull();
+    expect(el.querySelector('.same')).toBeNull();
+    expect(fold()).toBeDefined();
     expect(el.querySelectorAll('input[type=radio]').length).toBe(0);
   });
 });

@@ -1,5 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 
+import type { Creature } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type {
   CharacterCreature,
   SummonSpellOptions,
@@ -10,7 +11,8 @@ import {
 } from '../../../gen/meurpg/play/v1/combat_pb';
 import { sessionClosed } from '../combat/combat-errors';
 import { circleLabel } from '../combat/combat-grid';
-import { joinDots } from '../format/text';
+import { joinDots, tieNumbers } from '../format/text';
+import { metersText } from '../units';
 import { creatureErrorMessage } from './creature-errors';
 import { CREATURE_TYPES } from './creature-types';
 
@@ -53,25 +55,49 @@ export function steedCostLine(level: number): string {
   return `Gasta um espaço de ${circleLabel(level)} ou maior. Só durante uma sessão, fora de combate.`;
 }
 
-/** Under the fixed row of a bonded steed ("Mesmo corcel"). */
+/** Under the fixed row of a bonded steed ("Mesmo corcel"): board 588-22's words. */
 export function steedSameLine(name: string): string {
-  return `${name} volta como era, com todos os pontos de vida. Para outra forma ou outro tipo, liberte ${name} antes, no bloco Criaturas.`;
+  return `${name} volta como era: a mesma forma, o mesmo tipo, e os PV cheios. Para outra forma ou outro tipo, liberte ${name} antes, no bloco Criaturas.`;
 }
 
-/** The fixed row's second line: "Cavalo de guerra · celestial · CA 11 · 19 PV". */
-export function steedFixedLine(steed: CharacterCreature): string {
+/** The end of the sheet's subtitle: "Magia de 2º nível · 10 minutos · um corcel vinculado". */
+export function steedSubtitleTail(bonded: boolean): string {
+  return bonded ? 'o seu corcel vinculado' : 'um corcel vinculado';
+}
+
+/** The slot, folded from the start (the steed is one creature): "Espaço de 2º nível · 2 livres". */
+export function steedSetupLine(level: number, free: number): string {
+  return joinDots([
+    tieNumbers(`Espaço de ${circleLabel(level)}`),
+    `${free} ${free === 1 ? 'livre' : 'livres'}`,
+  ]);
+}
+
+/** A form's line in the steed's list: "Grande · 18 m · CA 11 · PV 19". */
+export function steedFormLine(block: Creature): string {
+  return joinDots([
+    block.summary?.sizePt ?? '',
+    tieNumbers(metersText(block.speedWalkFt)),
+    tieNumbers(`CA ${block.armorClass}`),
+    tieNumbers(`PV ${block.hitPoints}`),
+  ]);
+}
+
+/** The fixed row's second line: "Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19"; without the stat block, what the steed's own row carries. */
+export function steedFixedLine(steed: CharacterCreature, block: Creature | null): string {
   return joinDots(
     [
       steed.monsterNamePt,
       steedTypeWord(steed.creatureType),
-      `CA ${steed.armorClass}`,
-      `${steed.hitPointsMax} PV`,
+      ...(block
+        ? [steedFormLine(block)]
+        : [tieNumbers(`CA ${steed.armorClass}`), tieNumbers(`PV ${steed.hitPointsMax}`)]),
     ].filter((part) => part !== ''),
   );
 }
 
-/** A refused cast of Convocar Montaria: the two refusals of a ten-minute casting in its own words, the rest as any summon. */
-export function steedCastError(err: unknown): string {
+/** A refused cast of Convocar Montaria, in board 588-26's words: the two refusals of a ten-minute casting, the choice a bonded steed does not take, and a call that did not arrive. */
+export function steedCastError(err: unknown, bondedName = ''): string {
   const connectErr = ConnectError.from(err, Code.Unavailable);
   if (connectErr.code === Code.FailedPrecondition) {
     if (sessionClosed(err)) {
@@ -81,6 +107,12 @@ export function steedCastError(err: unknown): string {
     if (reason === EncounterBlockedReason.SUMMON_IN_COMBAT) {
       return 'Leva 10 minutos: não dá durante um combate.';
     }
+    if (reason === EncounterBlockedReason.SUMMON_CHOICE_INVALID && bondedName) {
+      return `${bondedName} já tem forma e tipo. Para escolher outros, liberte ${bondedName} antes.`;
+    }
+  }
+  if (connectErr.code === Code.Unavailable || connectErr.code === Code.DeadlineExceeded) {
+    return 'Não deu para convocar agora. Nada foi gasto. Tente de novo.';
   }
   return creatureErrorMessage(err, 'cast');
 }

@@ -31,7 +31,13 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     api.options = summonAnswer([spell], [[2, 2, 2]]);
     api.blocks.set(
       'monster:warhorse',
-      raven({ summary: summary('monster:warhorse', 'Cavalo de guerra'), hitPoints: 19 }),
+      raven({
+        summary: summary('monster:warhorse', 'Cavalo de guerra', { sizePt: 'Grande' }),
+        armorClass: 11,
+        hitPoints: 19,
+        speedWalkFt: 60,
+        speedFlyFt: 0,
+      }),
     );
     api.blocks.set('monster:pony', raven({ summary: summary('monster:pony', 'Pônei') }));
     close = vi.fn();
@@ -92,6 +98,16 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     expect(rows[1].querySelector('.row__warn')?.textContent).toContain(
       'Pequeno demais para você montar',
     );
+    // Board 588-21: the subtitle, the slot folded from the start, the list named "Forma", each row with its silhouette and numbers.
+    expect(flat(el.querySelector('.frame__sub'))).toBe(
+      'Magia de 2º nível · 10 minutos · um corcel vinculado',
+    );
+    expect(flat(el.querySelector('.setup__text'))).toBe('Espaço de 2º nível · 2 livres');
+    expect(flat(el.querySelector('.setup__edit'))).toBe('Mudar');
+    expect(el.querySelector('app-slot-picker')).toBeNull();
+    expect(flat(el.querySelector('#forms-cap'))).toBe('Forma');
+    expect(rows[0].querySelector('app-creature-art')).not.toBeNull();
+    expect(flat(rows[0].querySelector('.row__sub'))).toBe('Grande · 18 m · CA 11 · PV 19');
     expect(isOff(go())).toBe(true);
     expect(flat(go())).toBe('Convocar a montaria');
     expect(foot()).toContain('Escolha a forma e escolha o tipo do corcel.');
@@ -130,7 +146,18 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     const { el, go, settle } = await setup(steedSpell({ bondedSteed: estrela() }));
     expect(el.querySelector('app-creature-choice-list')).toBeNull();
     expect(el.querySelector('[aria-label="Tipo do corcel"]')).toBeNull();
-    expect(el.querySelector('.same .mr-tag')?.textContent?.trim()).toBe('Mesmo corcel');
+    expect(flat(el.querySelector('.same .mr-tag'))).toBe('Mesmo corcel');
+    // Board 588-22: the fixed row and its line come before the slot, "Como funciona" after it.
+    expect(flat(el.querySelector('.frame__sub'))).toBe(
+      'Magia de 2º nível · 10 minutos · o seu corcel vinculado',
+    );
+    expect(flat(el.querySelector('.same__sub'))).toBe(
+      'Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19',
+    );
+    const order = Array.from(el.querySelectorAll('.same, .setup, .mr-fold__head')).map(
+      (n) => n.className.split(' ')[0],
+    );
+    expect(order).toEqual(['same', 'setup', 'mr-fold__head']);
     expect(flat(go())).toBe('Convocar Estrela');
     expect(isOff(go())).toBe(false);
     go().click();
@@ -157,6 +184,30 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
       'Leva 10 minutos: não dá durante um combate.',
     );
     expect(close).not.toHaveBeenCalled();
+  });
+
+  it('"Mudar" opens the slot picker of the folded slot line', async () => {
+    const { el, settle } = await setup();
+    el.querySelector<HTMLButtonElement>('.setup__edit')!.click();
+    await settle();
+    expect(el.querySelector('app-slot-picker')).not.toBeNull();
+  });
+
+  it('a choice the server refuses for a bonded steed says to release it first (board 588-26 card 5)', async () => {
+    const { el, go, settle } = await setup(steedSpell({ bondedSteed: estrela() }));
+    api.failWith = new ConnectError('no', Code.FailedPrecondition, undefined, [
+      {
+        desc: EncounterBlockedSchema,
+        value: create(EncounterBlockedSchema, {
+          reason: EncounterBlockedReason.SUMMON_CHOICE_INVALID,
+        }),
+      },
+    ]);
+    go().click();
+    await settle();
+    expect(el.querySelector('[role=alert]')?.textContent).toContain(
+      'Estrela já tem forma e tipo. Para escolher outros, liberte Estrela antes.',
+    );
   });
 
   it('opens "Como funciona" in a dialog (tablet and up)', async () => {

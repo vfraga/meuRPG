@@ -5,6 +5,7 @@ import {
   CharacterCreatureSchema,
   SummonSpellOptionsSchema,
 } from '../../../gen/meurpg/characters/v1/characters_pb';
+import { CreatureSchema } from '../../../gen/meurpg/rules/v1/rules_pb';
 import {
   EncounterBlockedReason,
   EncounterBlockedSchema,
@@ -20,6 +21,9 @@ import {
   steedCastVerb,
   steedCostLine,
   steedFixedLine,
+  steedFormLine,
+  steedSetupLine,
+  steedSubtitleTail,
   steedHowLines,
   steedSameLine,
   steedTypeWord,
@@ -75,8 +79,12 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
       'Gasta um espaço de 2º\u00a0nível ou maior. Só durante uma sessão, fora de combate.',
     );
     expect(steedSameLine('Estrela')).toBe(
-      'Estrela volta como era, com todos os pontos de vida. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
+      'Estrela volta como era: a mesma forma, o mesmo tipo, e os PV cheios. Para outra forma ou outro tipo, liberte Estrela antes, no bloco Criaturas.',
     );
+    expect(steedSubtitleTail(false)).toBe('um corcel vinculado');
+    expect(steedSubtitleTail(true)).toBe('o seu corcel vinculado');
+    expect(steedSetupLine(2, 2)).toBe('Espaço de 2º\u00a0nível\u00a0· 2 livres');
+    expect(steedSetupLine(3, 1)).toBe('Espaço de 3º\u00a0nível\u00a0· 1 livre');
     expect(STEED_TOO_SMALL).toBe('Pequeno demais para você montar');
   });
 
@@ -103,6 +111,33 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
     );
   });
 
+  it("says a refused choice in the bonded steed's name, and a call that did not arrive as nothing spent (board 588-26 card 5)", () => {
+    const invalid = new ConnectError('x', Code.FailedPrecondition, undefined, [
+      {
+        desc: EncounterBlockedSchema,
+        value: { reason: EncounterBlockedReason.SUMMON_CHOICE_INVALID },
+      },
+    ]);
+    expect(steedCastError(invalid, 'Estrela')).toBe(
+      'Estrela já tem forma e tipo. Para escolher outros, liberte Estrela antes.',
+    );
+    expect(steedCastError(new ConnectError('down', Code.Unavailable))).toBe(
+      'Não deu para convocar agora. Nada foi gasto. Tente de novo.',
+    );
+  });
+
+  it('writes the line of a form: the size, the walking speed, the armor class and the hit points (board 588-21)', () => {
+    const horse = create(CreatureSchema, {
+      summary: { key: 'monster:warhorse', namePt: 'Cavalo de guerra', sizePt: 'Grande' },
+      armorClass: 11,
+      hitPoints: 19,
+      speedWalkFt: 60,
+    });
+    expect(steedFormLine(horse)).toBe(
+      'Grande\u00a0· 18\u00a0m\u00a0· CA\u00a011\u00a0· PV\u00a019',
+    );
+  });
+
   it("writes the fixed row of a bonded steed: the form, the type's word and the numbers", () => {
     const steed = create(CharacterCreatureSchema, {
       name: 'Estrela',
@@ -112,11 +147,19 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
       armorClass: 11,
       hitPointsMax: 19,
     });
-    expect(steedFixedLine(steed)).toBe(
-      'Cavalo de guerra\u00a0· celestial\u00a0· CA 11\u00a0· 19 PV',
+    const horse = create(CreatureSchema, {
+      summary: { key: 'monster:warhorse', namePt: 'Cavalo de guerra', sizePt: 'Grande' },
+      armorClass: 11,
+      hitPoints: 19,
+      speedWalkFt: 60,
+    });
+    // Board 588-22: "Cavalo de guerra · celestial · Grande · 18 m · CA 11 · PV 19".
+    expect(steedFixedLine(steed, horse)).toBe(
+      'Cavalo de guerra\u00a0· celestial\u00a0· Grande\u00a0· 18\u00a0m\u00a0· CA\u00a011\u00a0· PV\u00a019',
     );
-    expect(steedFixedLine(create(CharacterCreatureSchema, { ...steed, creatureType: '' }))).toBe(
-      'Cavalo de guerra\u00a0· CA 11\u00a0· 19 PV',
+    // Until the stat block is read: what the steed's own row carries.
+    expect(steedFixedLine(steed, null)).toBe(
+      'Cavalo de guerra\u00a0· celestial\u00a0· CA\u00a011\u00a0· PV\u00a019',
     );
   });
 });

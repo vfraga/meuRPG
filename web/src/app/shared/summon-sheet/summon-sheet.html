@@ -48,6 +48,10 @@
         </mat-form-field>
       }
 
+      @if (steed.bonded()) {
+        <app-steed-choice class="fixed" part="same" [spell]="s" [block]="steedBlock()" />
+      }
+
       @if (collapsed()) {
         <!-- A creature is chosen: the slot and the quantity fold into one line, so the list gets the room. -->
         <p class="setup fixed">

@@ -16,7 +16,7 @@ import {
   formSubtitle,
   isTableCreature,
 } from '../../core/creatures/creature-format';
-import { STEED_TOO_SMALL } from '../../core/creatures/steed';
+import { STEED_TOO_SMALL, steedFormLine } from '../../core/creatures/steed';
 import { creaturesText, replacesText } from '../../core/creatures/summon-labels';
 import { tight } from '../../core/format/text';
 import { metersText } from '../../core/units';
@@ -77,6 +77,8 @@ export interface SubtitleInput {
   readonly inCombat: boolean;
   readonly ritual: boolean;
   readonly slot: SlotRow | null;
+  /** Convocar Montaria: what the cast brings closes the line ("um corcel vinculado"). */
+  readonly tail?: string;
 }
 
 export function subtitleOf(i: SubtitleInput): string {
@@ -105,7 +107,7 @@ export function subtitleOf(i: SubtitleInput): string {
     );
   }
   return tight(
-    `Magia de ${circleLabel(s.level)}${i.ritual ? ' · ritual' : ''} · ${s.castingTimePt}${i.inCombat && s.concentration ? ' · concentração' : ''}`,
+    `Magia de ${circleLabel(s.level)}${i.ritual ? ' · ritual' : ''} · ${s.castingTimePt}${i.inCombat && s.concentration ? ' · concentração' : ''}${i.tail ? ` · ${i.tail}` : ''}`,
   );
 }
 
@@ -162,6 +164,8 @@ export interface RowsInput {
   readonly forms: readonly Creature[] | null;
   /** The list is the creatures a table's feature or spell brings: a row says what a beast's row does (ND, CA, PV, speed, attacks), the table's first. */
   readonly bring?: boolean;
+  /** Convocar Montaria: a row shows the silhouette and what matters to ride ("Grande · 18 m · CA 11 · PV 19"). */
+  readonly steed?: boolean;
 }
 
 /** The list of the sheet: the beasts the search found, or the forms the option offers, by name. */
@@ -192,8 +196,9 @@ export function rowsOf(i: RowsInput): readonly ChoiceRow[] {
       return {
         key: f.monsterKey,
         title: f.namePt,
-        subtitle: block ? formSubtitle(block) : '',
+        subtitle: block ? (i.steed ? steedFormLine(block) : formSubtitle(block)) : '',
         table,
+        ...(i.steed ? { art: true } : {}),
         ...(o.tooSmallForYou.includes(f.monsterKey) ? { warning: STEED_TOO_SMALL } : {}),
       };
     }
