@@ -18,6 +18,11 @@ export class RowFavor {
     return isPlayer(c) && !!c.characterId && this.state.has(c.characterId);
   }
 
+  /** The character's own ask to pass it waits for the master, and the reader is its owner: the chip says so (581-07, item 4). */
+  waiting(c: Combatant): boolean {
+    return isPlayer(c) && !!c.characterId && this.state.waiting(c.characterId);
+  }
+
   /** Off for a holder and while its own grant is on its way. */
   off(c: Combatant): boolean {
     return this.holds(c) || this.state.granting().has(c.characterId);

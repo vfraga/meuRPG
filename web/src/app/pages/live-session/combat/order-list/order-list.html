@@ -1,13 +1,23 @@
 @if (folded()) {
   <!-- The order folded to a strip of tokens (C1-02): the turn ring, the dashed hidden one, an HP bar each. It lives in memory only. -->
   <section class="mr-panel strip" aria-label="Ordem de iniciativa, recolhida">
-    <button type="button" class="strip__fold" aria-label="Abrir a ordem de iniciativa" (click)="fold(false)">
+    <button
+      type="button"
+      class="strip__fold"
+      aria-label="Abrir a ordem de iniciativa"
+      (click)="fold(false)"
+    >
       <mat-icon aria-hidden="true">left_panel_open</mat-icon>
     </button>
     <ol class="strip__list">
       @for (c of flat(); track c.id) {
         <li>
-          <button type="button" class="strip__token" [attr.aria-label]="headName(c)" (click)="openFromStrip(c.id)">
+          <button
+            type="button"
+            class="strip__token"
+            [attr.aria-label]="headName(c)"
+            (click)="openFromStrip(c.id)"
+          >
             <app-combatant-token
               [initial]="initial(c)"
               [npc]="npc(c)"
@@ -18,7 +28,9 @@
               [size]="36"
             />
             @if (pool(c)) {
-              <span class="strip__bar" aria-hidden="true"><span class="row__fill" [style.width.%]="percent(c)"></span></span>
+              <span class="strip__bar" aria-hidden="true"
+                ><span class="row__fill" [style.width.%]="percent(c)"></span
+              ></span>
             }
           </button>
         </li>
@@ -26,364 +38,521 @@
     </ol>
   </section>
 } @else {
-<section class="mr-panel order" aria-label="Ordem de iniciativa">
-  <div class="order__head">
-    @if (titled()) {
-      <mat-icon class="order__icon" aria-hidden="true">swords</mat-icon>
-    }
-    <h2 class="order__title" [class.mr-visually-hidden]="!titled()">Ordem</h2>
-    @if (titled() && rows().length > crowded) {
-      <span class="order__count" [attr.aria-label]="rows().length + ' combatentes'">{{ rows().length }}</span>
-    }
-    <span class="order__tools">
-      @if (live()) {
-        <button type="button" class="order__tool" aria-label="Adicionar combatente" (click)="add.emit()">
-          <mat-icon aria-hidden="true">add</mat-icon>
-        </button>
+  <section class="mr-panel order" aria-label="Ordem de iniciativa">
+    <div class="order__head">
+      @if (titled()) {
+        <mat-icon class="order__icon" aria-hidden="true">swords</mat-icon>
       }
-      @if (foldable()) {
-        <button type="button" class="order__tool" aria-label="Recolher a ordem de iniciativa" (click)="fold(true)">
-          <mat-icon aria-hidden="true">left_panel_close</mat-icon>
-        </button>
+      <h2 class="order__title" [class.mr-visually-hidden]="!titled()">Ordem</h2>
+      @if (titled() && rows().length > crowded) {
+        <span class="order__count" [attr.aria-label]="rows().length + ' combatentes'">{{
+          rows().length
+        }}</span>
       }
-    </span>
-  </div>
-
-  <div class="order__live" role="status">
-    @if (shieldEnded()) {
-      <p class="order__ended"><mat-icon aria-hidden="true">shield</mat-icon>{{ shieldEnded() }}</p>
-    }
-  </div>
-
-  <div #scroller class="order__scroll" (scroll)="measure()">
-    <ol class="order__list">
-      @for (item of items(); track key(item)) {
-        @if (item.kind === 'group') {
-          <li>
-            <app-order-group
-              class="bleed"
-              [total]="item.total"
-              [onTurn]="item.onTurn"
-              [label]="groupLabel(item)"
-              [names]="creatureNames(item)"
-              [hint]="item.members.length === 2 ? 'os dois agem no mesmo turno' : 'todos agem no mesmo turno'"
-            >
-              <ol class="rows">
-                @for (c of item.members; track c.id) {
-                  <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: c, inGroup: true }" />
-                }
-              </ol>
-            </app-order-group>
-          </li>
-        } @else {
-          <ng-container *ngTemplateOutlet="rowTpl; context: { $implicit: item.combatant, inGroup: false }" />
+      <span class="order__tools">
+        @if (live()) {
+          <button
+            type="button"
+            class="order__tool"
+            aria-label="Adicionar combatente"
+            (click)="add.emit()"
+          >
+            <mat-icon aria-hidden="true">add</mat-icon>
+          </button>
         }
+        @if (foldable()) {
+          <button
+            type="button"
+            class="order__tool"
+            aria-label="Recolher a ordem de iniciativa"
+            (click)="fold(true)"
+          >
+            <mat-icon aria-hidden="true">left_panel_close</mat-icon>
+          </button>
+        }
+      </span>
+    </div>
+
+    <div class="order__live" role="status">
+      @if (shieldEnded()) {
+        <p class="order__ended">
+          <mat-icon aria-hidden="true">shield</mat-icon>{{ shieldEnded() }}
+        </p>
       }
-    </ol>
-    @if (hasCreatures()) {
-      <app-order-legend />
-    }
-  </div>
-  @if (below() > 0) {
-    <button type="button" class="order__more" (click)="scrollDown()">
-      <mat-icon aria-hidden="true">expand_more</mat-icon>Mais {{ below() }} abaixo
-    </button>
-  }
-  <ng-template #rowTpl let-c let-inGroup="inGroup">
-    <li class="row" [class.row--open]="isOpen(c)" [class.row--effects]="shield(c) > 0 || aid(c) > 0" [class.row--turn]="current(c)" [class.row--dying]="dying(c)" [class.row--fallen]="down(c)" [class.on-danger]="dying(c)" [attr.data-combatant]="c.id">
-      <button
-        type="button"
-        class="row__head"
-        [attr.aria-expanded]="isOpen(c)"
-        [attr.aria-controls]="'row-' + c.id"
-        [attr.aria-describedby]="'rowsay-' + c.id"
-        (click)="toggle(c.id)"
-      >
-        <app-combatant-token
-          class="row__token"
-          [initial]="initial(c)"
-          [npc]="npc(c)"
-          [creature]="creature(c)"
-          [hidden]="c.hidden"
-          [defeated]="c.defeated"
-          [current]="current(c)"
-          [size]="36"
-        />
-        <span class="row__text">
-          <span class="row__name" [class.row__name--out]="c.defeated">
-            <span class="row__label">{{ c.label }}</span>
-            @if (current(c)) {
-              <span class="row__turn">Vez</span>
-            }
-            @if (favor.holds(c)) {
-              <app-favor-chip variant="inline" data-testid="order-favor" />
-            }
-            @if (inTurn(c)) {
-              <app-part-state [ended]="c.turnPartEnded" />
-            }
-          </span>
-          <span class="row__meta">
-            <span class="row__sub"><span class="row__lead">{{ compactSub(c, inGroup) }}@if (shield(c) > 0) {{{ compactSub(c, inGroup) ? ' · ' : '' }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>}</span>@if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {<span class="row__sun" data-testid="order-sun">{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span>}@if (holdsReadied(c)) {<span class="row__ready" data-testid="order-readied"><mat-icon aria-hidden="true">alarm</mat-icon>Preparada</span>}</span>
-          </span>
-        </span>
-        <span class="row__hp">
-          @if (pool(c); as hp) {
-            <span class="row__hp-n">{{ hp.current }}<span class="row__hp-of">/{{ hp.max }}</span>@if (aid(c) > 0) {<span class="row__aid">{{ aidTag(aid(c)) }}</span>}</span>
-            <span
-              class="row__bar"
-              role="img"
-              [attr.aria-label]="hp.current + ' de ' + hp.max + ' pontos de vida'"
-            >
-              @if (aid(c) > 0) {
-                <span class="row__fill row__fill--own" [style.width.%]="aidBar(c).solid"></span>
-                <span class="row__fill row__fill--aid" [style.width.%]="aidBar(c).striped"></span>
-              } @else {
-                <span class="row__fill" [style.width.%]="percent(c)"></span>
-              }
-            </span>
-          }
-        </span>
-        <mat-icon class="row__chev" aria-hidden="true">{{ isOpen(c) ? 'expand_less' : 'expand_more' }}</mat-icon>
-      </button>
-      <!-- The head's name is what it shows (WCAG 2.5.3); the state and the hit points in words are its description. -->
-      <span class="mr-visually-hidden" [id]="'rowsay-' + c.id">{{ headName(c) }}</span>
+    </div>
 
-      @if (isOpen(c)) {
-        <div class="row__open" [id]="'row-' + c.id">
-          @if (c.defeated || down(c) || c.hidden || ally(c)) {
-            <span class="row__state-line">
-              @if (c.defeated && player(c)) {
-                <span class="row__state row__state--out"><mat-icon aria-hidden="true">close</mat-icon>{{ word(c) }}</span>
-              } @else if (c.defeated) {
-                <span class="row__state row__state--out"><mat-icon aria-hidden="true">close</mat-icon>Derrotado</span>
-              } @else if (down(c)) {
-                <span class="row__state" [class.row__state--out]="c.state !== Stable">
-                  <mat-icon aria-hidden="true">{{ dying(c) ? 'skull' : 'favorite_border' }}</mat-icon>{{ downText(c) }}
-                </span>
-              } @else if (c.hidden) {
-                <span class="row__state"><mat-icon aria-hidden="true">visibility_off</mat-icon>Escondido</span>
-              }
-              @if (ally(c)) {
-                <span class="row__state"><mat-icon aria-hidden="true">handshake</mat-icon>Aliado</span>
-              }
-            </span>
-          }
-          <!-- The board's first line of an opened row: "CA 13 · 14 de 24 PV". -->
-          @if (facts(c); as line) {
-            <span class="row__facts">{{ line }}</span>
-          }
-          @if (limits(c); as lines) {
-            @for (l of lines; track l.key) {
-              <span class="row__limit" data-testid="order-limit"><mat-icon aria-hidden="true">{{ l.icon }}</mat-icon>{{ l.text }}</span>
-            }
-          }
-          @if (shield(c) > 0 || aid(c) > 0) {
-            <span class="row__effects">
-              @if (shield(c) > 0) {
-                <span class="row__effect"><mat-icon aria-hidden="true">shield</mat-icon>{{ shieldLabel(shield(c)) }}</span>
-              }
-              @if (aid(c) > 0) {
-                <span class="row__effect row__effect--aid"><mat-icon aria-hidden="true">favorite_border</mat-icon>{{ aidRowLabel(aid(c)) }}</span>
-              }
-            </span>
-          }
-          @if (live() && player(c)) {
-            <!-- What the master's "Dar Inspiração" answered (RN-43): the words of the board, never a log line (the server writes none). -->
-            <div role="status">
-              @if (favor.state.note(); as n) {
-                @if (n.characterId === c.characterId) {
-                  <p class="row__hidden-note js-favor-note" [class.mr-visually-hidden]="!n.refused">{{ n.text }}</p>
-                }
-              }
-            </div>
-          }
-          <app-combatant-tags [names]="tags(c)" [label]="c.label" [states]="c.states" [sources]="c.conditionSources" [people]="rows()" />
-          @if (c.wildShapeBeastKey) {
-            <app-form-tag [beast]="c.wildShapeBeastNamePt" [time]="formTimes().get(c.characterId) ?? ''" named />
-          }
-
-          @if (down(c)) {
-            <app-death-row class="row__death" [successes]="c.deathSuccesses" [failures]="c.deathFailures" [ownerOnly]="deathsHidden()" />
-          }
-
-          <app-row-cover
-            [label]="c.label"
-            [line]="coverLine(c)"
-            [pictogram]="coverPictogram(c)"
-            [current]="c.coverMark"
-            [offer]="live() && hasCover(c) && !theatre()"
-            [marking]="marking() === c.id"
-            [busy]="busy()"
-            (open)="marking.set(c.id)"
-            (close)="marking.set(null)"
-            (pick)="pickCover(c.id, $event)"
-          />
-
-          @if (live() && dying(c) && deathDismissed().has(c.id)) {
-            <div class="row__extra">
-              <p class="row__hidden-note">O mestre ainda não confirmou a morte.</p>
-              <button matButton type="button" class="row__reveal" (click)="askDeath.emit(c.id)">Confirmar a morte</button>
-            </div>
-          }
-          @if (live() && c.hidden && removing() !== c.id) {
-            <div class="row__extra">
-              <p class="row__hidden-note">Só você vê este combatente.</p>
-              <button
-                matButton
-                type="button"
-                class="row__reveal"
-                [disabled]="busy()"
-                (click)="reveal.emit({ id: c.id, hidden: false })"
+    <div #scroller class="order__scroll" (scroll)="measure()">
+      <ol class="order__list">
+        @for (item of items(); track key(item)) {
+          @if (item.kind === 'group') {
+            <li>
+              <app-order-group
+                class="bleed"
+                [total]="item.total"
+                [onTurn]="item.onTurn"
+                [label]="groupLabel(item)"
+                [names]="creatureNames(item)"
+                [hint]="
+                  item.members.length === 2
+                    ? 'os dois agem no mesmo turno'
+                    : 'todos agem no mesmo turno'
+                "
               >
-                Revelar aos jogadores
-              </button>
-            </div>
+                <ol class="rows">
+                  @for (c of item.members; track c.id) {
+                    <ng-container
+                      *ngTemplateOutlet="rowTpl; context: { $implicit: c, inGroup: true }"
+                    />
+                  }
+                </ol>
+              </app-order-group>
+            </li>
+          } @else {
+            <ng-container
+              *ngTemplateOutlet="rowTpl; context: { $implicit: item.combatant, inGroup: false }"
+            />
           }
-          @if (live() && c.concentrationSpell && losing() !== c.id && removing() !== c.id) {
-            <div class="row__extra">
-              <p class="row__conc"><mat-icon aria-hidden="true">hourglass_empty</mat-icon>Concentração: <b>{{ c.concentrationSpellNamePt }}</b>{{ held(c) }}</p>
-              @if (heldBy(c).length > 0) {
-                <button matButton="outlined" type="button" class="row__lose" [disabled]="busy()" (click)="losing.set(c.id)">Perdeu a concentração</button>
+        }
+      </ol>
+      @if (hasCreatures()) {
+        <app-order-legend />
+      }
+    </div>
+    @if (below() > 0) {
+      <button type="button" class="order__more" (click)="scrollDown()">
+        <mat-icon aria-hidden="true">expand_more</mat-icon>Mais {{ below() }} abaixo
+      </button>
+    }
+    <ng-template #rowTpl let-c let-inGroup="inGroup">
+      <li
+        class="row"
+        [class.row--open]="isOpen(c)"
+        [class.row--effects]="shield(c) > 0 || aid(c) > 0"
+        [class.row--turn]="current(c)"
+        [class.row--dying]="dying(c)"
+        [class.row--fallen]="down(c)"
+        [class.on-danger]="dying(c)"
+        [attr.data-combatant]="c.id"
+      >
+        <button
+          type="button"
+          class="row__head"
+          [attr.aria-expanded]="isOpen(c)"
+          [attr.aria-controls]="'row-' + c.id"
+          [attr.aria-describedby]="'rowsay-' + c.id"
+          (click)="toggle(c.id)"
+        >
+          <app-combatant-token
+            class="row__token"
+            [initial]="initial(c)"
+            [npc]="npc(c)"
+            [creature]="creature(c)"
+            [hidden]="c.hidden"
+            [defeated]="c.defeated"
+            [current]="current(c)"
+            [size]="36"
+          />
+          <span class="row__text">
+            <span class="row__name" [class.row__name--out]="c.defeated">
+              <span class="row__label">{{ c.label }}</span>
+              @if (current(c)) {
+                <span class="row__turn">Vez</span>
               }
-            </div>
-          }
-          @if (losing() === c.id && c.concentrationSpell) {
-            <app-lose-question
-              class="row__confirm"
-              [question]="loseQuestion(c)"
-              [text]="heldText(c)"
-              [answer]="dismissLabel(c)"
-              (cancel)="losing.set(null)"
-              (confirm)="confirmLose(c.id)"
-            />
-          }
-          @if (endingAid() === c.id && aid(c) > 0) {
-            <app-end-aid-question
-              class="row__confirm"
-              [question]="endAidQuestion(c)"
-              [text]="endAidText(c)"
-              (declined)="endingAid.set(null)"
-              (confirm)="confirmEndAid(c.id)"
-            />
-          }
-          @if (removing() === c.id) {
-            <div class="row__confirm" role="alertdialog" [attr.aria-label]="'Remover ' + c.label">
-              <p>Remover {{ c.label }} do combate?</p>
-              <button matButton="outlined" type="button" #back (click)="removing.set(null)">Voltar</button>
-              <button matButton="outlined" type="button" class="danger" [disabled]="busy()" (click)="confirmRemove(c.id)">
-                Remover
-              </button>
-            </div>
-          }
+              @if (favor.holds(c)) {
+                <app-favor-chip
+                  variant="inline"
+                  [waiting]="favor.waiting(c)"
+                  data-testid="order-favor"
+                />
+              }
+              @if (inTurn(c)) {
+                <app-part-state [ended]="c.turnPartEnded" />
+              }
+            </span>
+            <span class="row__meta">
+              <span class="row__sub"
+                ><span class="row__lead"
+                  >{{ compactSub(c, inGroup) }}
+                  @if (shield(c) > 0) {
+                    {{ compactSub(c, inGroup) ? ' · ' : ''
+                    }}<b>CA {{ c.armorClass }} + {{ shield(c) }}</b>
+                  }
+                </span>
+                @if (c.inSunlight && c.sunlightTrait !== NoSunTrait) {
+                  <span class="row__sun" data-testid="order-sun"
+                    >{{ compactSub(c, inGroup) || shield(c) > 0 ? ' · ' : '' }}Na luz do sol</span
+                  >
+                }
+                @if (holdsReadied(c)) {
+                  <span class="row__ready" data-testid="order-readied"
+                    ><mat-icon aria-hidden="true">alarm</mat-icon>Preparada</span
+                  >
+                }
+              </span>
+            </span>
+          </span>
+          <span class="row__hp">
+            @if (pool(c); as hp) {
+              <span class="row__hp-n"
+                >{{ hp.current }}<span class="row__hp-of">/{{ hp.max }}</span>
+                @if (aid(c) > 0) {
+                  <span class="row__aid">{{ aidTag(aid(c)) }}</span>
+                }
+              </span>
+              <span
+                class="row__bar"
+                role="img"
+                [attr.aria-label]="hp.current + ' de ' + hp.max + ' pontos de vida'"
+              >
+                @if (aid(c) > 0) {
+                  <span class="row__fill row__fill--own" [style.width.%]="aidBar(c).solid"></span>
+                  <span class="row__fill row__fill--aid" [style.width.%]="aidBar(c).striped"></span>
+                } @else {
+                  <span class="row__fill" [style.width.%]="percent(c)"></span>
+                }
+              </span>
+            }
+          </span>
+          <mat-icon class="row__chev" aria-hidden="true">{{
+            isOpen(c) ? 'expand_less' : 'expand_more'
+          }}</mat-icon>
+        </button>
+        <!-- The head's name is what it shows (WCAG 2.5.3); the state and the hit points in words are its description. -->
+        <span class="mr-visually-hidden" [id]="'rowsay-' + c.id">{{ headName(c) }}</span>
 
-          @if (live()) {
-            <span class="row__actions">
-              @if (canAdjust(c)) {
-                <button
-                  matButton="outlined"
-                  type="button"
-                  class="row__adjust"
-                  [attr.aria-label]="'Dano/Cura: ' + c.label"
-                  (click)="adjust.emit(c.characterId)"
+        @if (isOpen(c)) {
+          <div class="row__open" [id]="'row-' + c.id">
+            @if (c.defeated || down(c) || c.hidden || ally(c)) {
+              <span class="row__state-line">
+                @if (c.defeated && player(c)) {
+                  <span class="row__state row__state--out"
+                    ><mat-icon aria-hidden="true">close</mat-icon>{{ word(c) }}</span
+                  >
+                } @else if (c.defeated) {
+                  <span class="row__state row__state--out"
+                    ><mat-icon aria-hidden="true">close</mat-icon>Derrotado</span
+                  >
+                } @else if (down(c)) {
+                  <span class="row__state" [class.row__state--out]="c.state !== Stable">
+                    <mat-icon aria-hidden="true">{{
+                      dying(c) ? 'skull' : 'favorite_border'
+                    }}</mat-icon
+                    >{{ downText(c) }}
+                  </span>
+                } @else if (c.hidden) {
+                  <span class="row__state"
+                    ><mat-icon aria-hidden="true">visibility_off</mat-icon>Escondido</span
+                  >
+                }
+                @if (ally(c)) {
+                  <span class="row__state"
+                    ><mat-icon aria-hidden="true">handshake</mat-icon>Aliado</span
+                  >
+                }
+              </span>
+            }
+            <!-- The board's first line of an opened row: "CA 13 · 14 de 24 PV". -->
+            @if (facts(c); as line) {
+              <span class="row__facts">{{ line }}</span>
+            }
+            @if (limits(c); as lines) {
+              @for (l of lines; track l.key) {
+                <span class="row__limit" data-testid="order-limit"
+                  ><mat-icon aria-hidden="true">{{ l.icon }}</mat-icon
+                  >{{ l.text }}</span
                 >
-                  <mat-icon aria-hidden="true">favorite_border</mat-icon>Dano/Cura
-                </button>
               }
-              @if (canAdjustNpc(c)) {
+            }
+            @if (shield(c) > 0 || aid(c) > 0) {
+              <span class="row__effects">
+                @if (shield(c) > 0) {
+                  <span class="row__effect"
+                    ><mat-icon aria-hidden="true">shield</mat-icon
+                    >{{ shieldLabel(shield(c)) }}</span
+                  >
+                }
+                @if (aid(c) > 0) {
+                  <span class="row__effect row__effect--aid"
+                    ><mat-icon aria-hidden="true">favorite_border</mat-icon
+                    >{{ aidRowLabel(aid(c)) }}</span
+                  >
+                }
+              </span>
+            }
+            @if (live() && player(c)) {
+              <!-- What the master's "Dar Inspiração" answered (RN-43): the words of the board, never a log line (the server writes none). -->
+              <div role="status">
+                @if (favor.state.note(); as n) {
+                  @if (n.characterId === c.characterId) {
+                    <p
+                      class="row__hidden-note js-favor-note"
+                      [class.mr-visually-hidden]="!n.refused"
+                    >
+                      {{ n.text }}
+                    </p>
+                  }
+                }
+              </div>
+            }
+            <app-combatant-tags
+              [names]="tags(c)"
+              [label]="c.label"
+              [states]="c.states"
+              [sources]="c.conditionSources"
+              [people]="rows()"
+            />
+            @if (c.wildShapeBeastKey) {
+              <app-form-tag
+                [beast]="c.wildShapeBeastNamePt"
+                [time]="formTimes().get(c.characterId) ?? ''"
+                named
+              />
+            }
+
+            @if (down(c)) {
+              <app-death-row
+                class="row__death"
+                [successes]="c.deathSuccesses"
+                [failures]="c.deathFailures"
+                [ownerOnly]="deathsHidden()"
+              />
+            }
+
+            <app-row-cover
+              [label]="c.label"
+              [line]="coverLine(c)"
+              [pictogram]="coverPictogram(c)"
+              [current]="c.coverMark"
+              [offer]="live() && hasCover(c) && !theatre()"
+              [marking]="marking() === c.id"
+              [busy]="busy()"
+              (open)="marking.set(c.id)"
+              (close)="marking.set(null)"
+              (pick)="pickCover(c.id, $event)"
+            />
+
+            @if (live() && dying(c) && deathDismissed().has(c.id)) {
+              <div class="row__extra">
+                <p class="row__hidden-note">O mestre ainda não confirmou a morte.</p>
+                <button matButton type="button" class="row__reveal" (click)="askDeath.emit(c.id)">
+                  Confirmar a morte
+                </button>
+              </div>
+            }
+            @if (live() && c.hidden && removing() !== c.id) {
+              <div class="row__extra">
+                <p class="row__hidden-note">Só você vê este combatente.</p>
+                <button
+                  matButton
+                  type="button"
+                  class="row__reveal"
+                  [disabled]="busy()"
+                  (click)="reveal.emit({ id: c.id, hidden: false })"
+                >
+                  Revelar aos jogadores
+                </button>
+              </div>
+            }
+            @if (live() && c.concentrationSpell && losing() !== c.id && removing() !== c.id) {
+              <div class="row__extra">
+                <p class="row__conc">
+                  <mat-icon aria-hidden="true">hourglass_empty</mat-icon>Concentração:
+                  <b>{{ c.concentrationSpellNamePt }}</b
+                  >{{ held(c) }}
+                </p>
+                @if (heldBy(c).length > 0) {
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    class="row__lose"
+                    [disabled]="busy()"
+                    (click)="losing.set(c.id)"
+                  >
+                    Perdeu a concentração
+                  </button>
+                }
+              </div>
+            }
+            @if (losing() === c.id && c.concentrationSpell) {
+              <app-lose-question
+                class="row__confirm"
+                [question]="loseQuestion(c)"
+                [text]="heldText(c)"
+                [answer]="dismissLabel(c)"
+                (cancel)="losing.set(null)"
+                (confirm)="confirmLose(c.id)"
+              />
+            }
+            @if (endingAid() === c.id && aid(c) > 0) {
+              <app-end-aid-question
+                class="row__confirm"
+                [question]="endAidQuestion(c)"
+                [text]="endAidText(c)"
+                (declined)="endingAid.set(null)"
+                (confirm)="confirmEndAid(c.id)"
+              />
+            }
+            @if (removing() === c.id) {
+              <div class="row__confirm" role="alertdialog" [attr.aria-label]="'Remover ' + c.label">
+                <p>Remover {{ c.label }} do combate?</p>
+                <button matButton="outlined" type="button" #back (click)="removing.set(null)">
+                  Voltar
+                </button>
                 <button
                   matButton="outlined"
                   type="button"
-                  class="row__adjust"
-                  [attr.aria-label]="'Dano/Cura: ' + c.label"
-                  (click)="adjustNpc.emit(c.id)"
+                  class="danger"
+                  [disabled]="busy()"
+                  (click)="confirmRemove(c.id)"
                 >
-                  <mat-icon aria-hidden="true">favorite_border</mat-icon>Dano/Cura
+                  Remover
                 </button>
-              }
-              @if (npc(c) || !c.defeated) {
-                <button
-                  matButton="outlined"
-                  type="button"
-                  class="row__conditions"
-                  [attr.aria-label]="'Condições de ' + c.label"
-                  (click)="conditions.emit(c.id)"
-                >
-                  <mat-icon aria-hidden="true">task_alt</mat-icon>Condições
-                </button>
-                <button
-                  matButton="outlined"
-                  type="button"
-                  class="row__more"
-                  [attr.aria-label]="'Mais ações para ' + c.label"
-                  [matMenuTriggerFor]="menu"
-                >
-                  <mat-icon aria-hidden="true">more_vert</mat-icon>Mais
-                </button>
-                <mat-menu #menu="matMenu" xPosition="before">
-                  @if (c.challengeRating) {
-                    <button mat-menu-item type="button" disabled class="row__menu-fact">
-                      <mat-icon aria-hidden="true">pest_control</mat-icon>ND&nbsp;{{ c.challengeRating }}
+              </div>
+            }
+
+            @if (live()) {
+              <span class="row__actions">
+                @if (canAdjust(c)) {
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    class="row__adjust"
+                    [attr.aria-label]="'Dano/Cura: ' + c.label"
+                    (click)="adjust.emit(c.characterId)"
+                  >
+                    <mat-icon aria-hidden="true">favorite_border</mat-icon>Dano/Cura
+                  </button>
+                }
+                @if (canAdjustNpc(c)) {
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    class="row__adjust"
+                    [attr.aria-label]="'Dano/Cura: ' + c.label"
+                    (click)="adjustNpc.emit(c.id)"
+                  >
+                    <mat-icon aria-hidden="true">favorite_border</mat-icon>Dano/Cura
+                  </button>
+                }
+                @if (npc(c) || !c.defeated) {
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    class="row__conditions"
+                    [attr.aria-label]="'Condições de ' + c.label"
+                    (click)="conditions.emit(c.id)"
+                  >
+                    <mat-icon aria-hidden="true">task_alt</mat-icon>Condições
+                  </button>
+                  <button
+                    matButton="outlined"
+                    type="button"
+                    class="row__more"
+                    [attr.aria-label]="'Mais ações para ' + c.label"
+                    [matMenuTriggerFor]="menu"
+                  >
+                    <mat-icon aria-hidden="true">more_vert</mat-icon>Mais
+                  </button>
+                  <mat-menu #menu="matMenu" xPosition="before">
+                    @if (c.challengeRating) {
+                      <button mat-menu-item type="button" disabled class="row__menu-fact">
+                        <mat-icon aria-hidden="true">pest_control</mat-icon>ND&nbsp;{{
+                          c.challengeRating
+                        }}
+                      </button>
+                    }
+                    @if (aid(c) > 0) {
+                      <button mat-menu-item type="button" (click)="endingAid.set(c.id)">
+                        <mat-icon aria-hidden="true">favorite_border</mat-icon>Encerrar Ajuda em
+                        {{ c.label }}
+                      </button>
+                    }
+                    @if (npc(c)) {
+                      <button
+                        mat-menu-item
+                        type="button"
+                        (click)="reveal.emit({ id: c.id, hidden: !c.hidden })"
+                      >
+                        <mat-icon aria-hidden="true">{{
+                          c.hidden ? 'visibility' : 'visibility_off'
+                        }}</mat-icon
+                        >{{ c.hidden ? 'Revelar aos jogadores' : 'Esconder' }}
+                      </button>
+                    }
+                    @if (favor.canGive(c)) {
+                      <!-- The master's Inspiração (RN-43, 581-01): only on a player's row, in an open session; dashed with the reason when it already has it. -->
+                      <button
+                        mat-menu-item
+                        type="button"
+                        class="mr-favor-item js-favor"
+                        [disabled]="favor.off(c)"
+                        (click)="favor.give(c)"
+                      >
+                        <mat-icon aria-hidden="true">star_border</mat-icon>
+                        <span class="mr-favor-item__text">
+                          Dar Inspiração
+                          @if (favor.holds(c)) {
+                            <span class="mr-favor-item__sub">{{ favor.reason(c) }}</span>
+                          }
+                        </span>
+                      </button>
+                    }
+                    <button mat-menu-item type="button" (click)="conditions.emit(c.id)">
+                      <mat-icon aria-hidden="true">edit</mat-icon>Mudar condições
                     </button>
-                  }
-                  @if (aid(c) > 0) {
-                    <button mat-menu-item type="button" (click)="endingAid.set(c.id)">
-                      <mat-icon aria-hidden="true">favorite_border</mat-icon>Encerrar Ajuda em {{ c.label }}
-                    </button>
-                  }
-                  @if (npc(c)) {
-                    <button mat-menu-item type="button" (click)="reveal.emit({ id: c.id, hidden: !c.hidden })">
-                      <mat-icon aria-hidden="true">{{ c.hidden ? 'visibility' : 'visibility_off' }}</mat-icon>{{ c.hidden ? 'Revelar aos jogadores' : 'Esconder' }}
-                    </button>
-                  }
-                  @if (favor.canGive(c)) {
-                    <!-- The master's Inspiração (RN-43, 581-01): only on a player's row, in an open session; dashed with the reason when it already has it. -->
                     <button
                       mat-menu-item
                       type="button"
-                      class="mr-favor-item js-favor"
-                      [disabled]="favor.off(c)"
-                      (click)="favor.give(c)"
+                      (click)="theatre() ? coverEdit.emit(c.id) : marking.set(c.id)"
                     >
-                      <mat-icon aria-hidden="true">star_border</mat-icon>
-                      <span class="mr-favor-item__text">
-                        Dar Inspiração
-                        @if (favor.holds(c)) {
-                          <span class="mr-favor-item__sub">{{ favor.reason(c) }}</span>
-                        }
-                      </span>
+                      <mat-icon aria-hidden="true">shield</mat-icon>Marcar cobertura
                     </button>
-                  }
-                  <button mat-menu-item type="button" (click)="conditions.emit(c.id)">
-                    <mat-icon aria-hidden="true">edit</mat-icon>Mudar condições
-                  </button>
-                  <button mat-menu-item type="button" (click)="theatre() ? coverEdit.emit(c.id) : marking.set(c.id)">
-                    <mat-icon aria-hidden="true">shield</mat-icon>Marcar cobertura
-                  </button>
-                  @if (c.parryAsk !== undefined) {
-                    <button mat-menu-item type="button" role="menuitemcheckbox" [attr.aria-checked]="c.parryAsk" (click)="parryAsk.emit({ id: c.id, ask: !c.parryAsk })">
-                      <mat-icon aria-hidden="true">{{ c.parryAsk ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>Aparar: perguntar a cada golpe
-                    </button>
-                  }
-                  @if (npc(c)) {
-                    <button mat-menu-item type="button" (click)="side.emit({ id: c.id, side: c.side === Party ? Enemy : Party })">
-                      <mat-icon aria-hidden="true">{{ c.side === Party ? 'undo' : 'handshake' }}</mat-icon>{{ c.side === Party ? 'Voltar a ser inimigo' : 'Marcar como aliado' }}
-                    </button>
-                  }
-                  @if (npc(c)) {
-                    <button mat-menu-item type="button" (click)="ask(c.id)">
-                      <mat-icon aria-hidden="true">close</mat-icon>Remover do combate
-                    </button>
-                  }
-                </mat-menu>
-              }
-              @if (campaignId() && player(c) && c.characterId) {
-                <app-nudge-button [campaignId]="campaignId()" [characterId]="c.characterId" [name]="c.label" [compact]="true" />
-              }
-            </span>
-          }
-        </div>
-      }
-    </li>
-  </ng-template>
-</section>
+                    @if (c.parryAsk !== undefined) {
+                      <button
+                        mat-menu-item
+                        type="button"
+                        role="menuitemcheckbox"
+                        [attr.aria-checked]="c.parryAsk"
+                        (click)="parryAsk.emit({ id: c.id, ask: !c.parryAsk })"
+                      >
+                        <mat-icon aria-hidden="true">{{
+                          c.parryAsk ? 'check_box' : 'check_box_outline_blank'
+                        }}</mat-icon
+                        >Aparar: perguntar a cada golpe
+                      </button>
+                    }
+                    @if (npc(c)) {
+                      <button
+                        mat-menu-item
+                        type="button"
+                        (click)="side.emit({ id: c.id, side: c.side === Party ? Enemy : Party })"
+                      >
+                        <mat-icon aria-hidden="true">{{
+                          c.side === Party ? 'undo' : 'handshake'
+                        }}</mat-icon
+                        >{{ c.side === Party ? 'Voltar a ser inimigo' : 'Marcar como aliado' }}
+                      </button>
+                    }
+                    @if (npc(c)) {
+                      <button mat-menu-item type="button" (click)="ask(c.id)">
+                        <mat-icon aria-hidden="true">close</mat-icon>Remover do combate
+                      </button>
+                    }
+                  </mat-menu>
+                }
+                @if (campaignId() && player(c) && c.characterId) {
+                  <app-nudge-button
+                    [campaignId]="campaignId()"
+                    [characterId]="c.characterId"
+                    [name]="c.label"
+                    [compact]="true"
+                  />
+                }
+              </span>
+            }
+          </div>
+        }
+      </li>
+    </ng-template>
+  </section>
 }

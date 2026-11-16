@@ -14,6 +14,13 @@
   font-weight: 700;
 }
 
+// The ask to pass it waits for the master: the warning surface, still one filled chip (the words say it, not the colour).
+:host(.favor--waiting) {
+  border-color: var(--mr-warning-line);
+  background: var(--mr-warning-surface);
+  color: var(--mr-warning-ink);
+}
+
 // Sized to its words, also in a column that stretches its children.
 :host(.favor--pill) {
   align-self: flex-start;

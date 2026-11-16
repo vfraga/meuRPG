@@ -6,7 +6,12 @@
       <span class="banner__big">{{ round() }}</span>
     </div>
     <div class="banner__who">
-      <app-combatant-token [initial]="initial(banner().who!)" [npc]="false" [current]="true" [size]="44" />
+      <app-combatant-token
+        [initial]="initial(banner().who!)"
+        [npc]="false"
+        [current]="true"
+        [size]="44"
+      />
       <div class="banner__main">
         <div role="status" aria-live="polite">
           <h2 #hero class="banner__title" tabindex="-1">{{ banner().title }}</h2>
@@ -24,15 +29,32 @@
         </p>
         @if (hasFavor()) {
           <!-- The master's Inspiração (RN-43, 581-03): a read-only chip, only for the owner's own character. -->
-          <app-favor-chip class="banner__favor" />
+          <app-favor-chip class="banner__favor" [waiting]="favorWaits()" />
         }
       </div>
     </div>
     <div class="banner__end">
       @if (banner().joint) {
-        <app-end-part [note]="footerNote()" [left]="partLeft()" [busy]="busy()" (endPart)="endTurn.emit()" />
+        <app-end-part
+          [note]="footerNote()"
+          [left]="partLeft()"
+          [busy]="busy()"
+          (endPart)="endTurn.emit()"
+        />
       } @else {
-        <app-end-turn class="banner__endturn" [block]="true" [filled]="true" [own]="me" [attacksLeft]="attacksLeft()" [settling]="optionsSettling()" [busy]="busy()" [waiting]="waiting()?.title ?? ''" [label]="endLabel()" [surprised]="surprised()" (endTurn)="endTurn.emit()" />
+        <app-end-turn
+          class="banner__endturn"
+          [block]="true"
+          [filled]="true"
+          [own]="me"
+          [attacksLeft]="attacksLeft()"
+          [settling]="optionsSettling()"
+          [busy]="busy()"
+          [waiting]="waiting()?.title ?? ''"
+          [label]="endLabel()"
+          [surprised]="surprised()"
+          (endTurn)="endTurn.emit()"
+        />
       }
     </div>
   </section>
@@ -41,156 +63,239 @@
     <app-joint-others class="banner__strip" mode="others" [encounter]="encounter()" />
   }
   @if (concentration()) {
-    <app-concentration-line class="banner__strip" [spell]="concentration()" [busy]="busy()" (end)="endConcentration.emit()" />
+    <app-concentration-line
+      class="banner__strip"
+      [spell]="concentration()"
+      [busy]="busy()"
+      (end)="endConcentration.emit()"
+    />
   }
   @if (!wide()) {
     <app-order-strip class="banner__strip" [encounter]="encounter()" />
   }
 } @else {
-@if (down() && !wide()) {
-  <!-- E6-13: the order first, then the hero that says she is down. -->
-  <section class="ordercard" aria-labelledby="ordercard-t">
-    <div class="ordercard__head">
-      <h2 class="ordercard__title" id="ordercard-t">Ordem</h2>
-      <span class="ordercard__round">{{ round() }}</span>
-    </div>
-    <app-order-strip [encounter]="encounter()" />
-  </section>
-}
-<section class="turn" [class.turn--mine]="banner().mine && !down()" [class.turn--down]="banner().mine && down()" aria-label="Vez no combate">
-  @if (!banner().mine) {
-    <span class="mr-label turn__kicker">
-      {{ banner().ownEnded ? round() + ' · ' + encounter().name : 'Combate · ' + round() }}
-    </span>
-  }
-  <div class="turn__banner" role="status" aria-live="polite">
-    @if (groupTokens().length > 1) {
-      <!-- A group of creatures on turn (the wolves): all its tokens, not the first alone. -->
-      <span class="turn__tokens">
-        @for (m of groupTokens(); track m.id) {
-          <app-combatant-token [initial]="initial(m)" [creature]="true" [current]="true" [size]="30" />
-        }
-      </span>
-    } @else if (banner().who; as who) {
-      <app-combatant-token
-        [initial]="initial(who)"
-        [npc]="npc(who)"
-        [creature]="creature(who)"
-        [current]="true"
-        [size]="30"
-      />
-    } @else {
-      <app-combatant-token initial="M" [npc]="true" [size]="30" />
-    }
-    <div class="turn__who">
-      <h2 #hero class="turn__title" tabindex="-1">{{ downTitle() || banner().title }}</h2>
-      @if (banner().mine && !down()) {
-        <p class="turn__sub">
-          {{ round() }} · {{ encounter().name }}
-          @if (banner().after; as after) {
-            · em seguida: <b>{{ after.name }}</b>
-          }
-        </p>
-      }
-      @if (banner().mine && form(); as f) {
-        <app-form-chip [beast]="f.name" [time]="formTime()" />
-      } @else if (!banner().mine && banner().who?.wildShapeBeastKey) {
-        <!-- Another player's turn: the name of the beast, never the time (RN-20). -->
-        <app-form-chip [beast]="banner().who!.wildShapeBeastNamePt" />
-      }
-      @if (banner().mine && hasFavor()) {
-        <app-favor-chip class="turn__favor" />
-      }
-      @if (banner().mine && own(); as me) {
-        <app-combatant-tags class="turn__states" [names]="conditions(me)" [label]="me.label" [states]="me.states" [sources]="me.conditionSources" [people]="encounter().combatants" />
-      }
-    </div>
-  </div>
-  @if (pill(); as text) {
-    <app-joint-pill [text]="text" />
-  }
-
-  @if (banner().mine && own(); as me) {
-    @if (down()) {
-      <p class="turn__next">{{ downText() }}</p>
-    } @else {
-    <ng-container *ngTemplateOutlet="notes" />
-    <app-rage-status class="turn__rage" [subject]="me" [busy]="busy()" (endRage)="endRage.emit(me.id)" />
-    <app-own-numbers class="turn__numbers" [own]="me" [armorClass]="armorClass()" [slots]="slots()" [hitPoints]="hitPoints()" />
-    @if (banner().joint) {
-      <div class="turn__end">
-        <app-end-part [note]="footerNote()" [left]="partLeft()" [busy]="busy()" (endPart)="endTurn.emit()" />
+  @if (down() && !wide()) {
+    <!-- E6-13: the order first, then the hero that says she is down. -->
+    <section class="ordercard" aria-labelledby="ordercard-t">
+      <div class="ordercard__head">
+        <h2 class="ordercard__title" id="ordercard-t">Ordem</h2>
+        <span class="ordercard__round">{{ round() }}</span>
       </div>
-    } @else {
-      <app-end-turn class="turn__end" [own]="me" [attacksLeft]="attacksLeft()" [settling]="optionsSettling()" [busy]="busy()" [waiting]="waiting()?.title ?? ''" [label]="endLabel()" [surprised]="surprised()" (endTurn)="endTurn.emit()" />
+      <app-order-strip [encounter]="encounter()" />
+    </section>
+  }
+  <section
+    class="turn"
+    [class.turn--mine]="banner().mine && !down()"
+    [class.turn--down]="banner().mine && down()"
+    aria-label="Vez no combate"
+  >
+    @if (!banner().mine) {
+      <span class="mr-label turn__kicker">
+        {{ banner().ownEnded ? round() + ' · ' + encounter().name : 'Combate · ' + round() }}
+      </span>
     }
-    @if (banner().joint) {
-      <app-joint-others mode="others" [encounter]="encounter()" />
-    }
-    }
-  } @else {
-    @if (waiting(); as w) {
-      <!-- Off turn, the wait is the same sentence the player on turn reads (a reaction, a concentration save, a wait for
-           the master, never why: RN-10), once, above whose turn comes next. -->
-      @if (masterWait(w)) {
-        <app-master-wait id="master-wait-note" class="turn__notice" data-testid="reaction-wait" [title]="w.title" [detail]="w.detail" />
+    <div class="turn__banner" role="status" aria-live="polite">
+      @if (groupTokens().length > 1) {
+        <!-- A group of creatures on turn (the wolves): all its tokens, not the first alone. -->
+        <span class="turn__tokens">
+          @for (m of groupTokens(); track m.id) {
+            <app-combatant-token
+              [initial]="initial(m)"
+              [creature]="true"
+              [current]="true"
+              [size]="30"
+            />
+          }
+        </span>
+      } @else if (banner().who; as who) {
+        <app-combatant-token
+          [initial]="initial(who)"
+          [npc]="npc(who)"
+          [creature]="creature(who)"
+          [current]="true"
+          [size]="30"
+        />
       } @else {
-        <div class="mr-notice mr-notice--warning turn__notice" role="status" data-testid="reaction-wait">
-          <mat-icon aria-hidden="true">hourglass_top</mat-icon>
-          <p><strong>{{ w.title }}.</strong> {{ w.detail }}</p>
-        </div>
+        <app-combatant-token initial="M" [npc]="true" [size]="30" />
       }
-    }
-    @if (banner().ownEnded) {
-      <p class="turn__next" role="status">{{ missing() }}</p>
-      <app-joint-others mode="summary" [encounter]="encounter()" />
-    } @else if (outsiderJoint()) {
-      @if (before(); as who) {
-        <p class="turn__next">A sua vez vem depois {{ who }}.</p>
-      }
-      <app-joint-others mode="outside" [encounter]="encounter()" />
-    } @else if (nextLine(); as next) {
-      <p class="turn__next">{{ next.prefix }}<b>{{ next.name }}</b>.</p>
-    }
-    @if (own(); as me) {
-      @if (dead()) {
-        <!-- A dead character has no reaction to show. -->
-      } @else if (isDown()) {
-        <p class="turn__react turn__react--top">
-          <mat-icon aria-hidden="true">favorite_border</mat-icon>
-          <span>{{ offTurnDown() }}</span>
-        </p>
-      } @else {
-        @if (!banner().ownEnded) {
-          <p class="turn__react">
-            <mat-icon aria-hidden="true">{{ me.reactionUsed ? 'cancel' : 'radio_button_unchecked' }}</mat-icon>
-            Sua reação: {{ me.reactionUsed ? 'Usada até o começo do seu próximo turno' : 'Disponível' }}.
+      <div class="turn__who">
+        <h2 #hero class="turn__title" tabindex="-1">{{ downTitle() || banner().title }}</h2>
+        @if (banner().mine && !down()) {
+          <p class="turn__sub">
+            {{ round() }} · {{ encounter().name }}
+            @if (banner().after; as after) {
+              · em seguida: <b>{{ after.name }}</b>
+            }
           </p>
         }
-        @if (readied(); as held) {
-          <!-- The readied action, read off the turn (#582, 582-03): no button, the master decides when the trigger happens. -->
-          <app-readied-card class="turn__readied" [readied]="held" [combatants]="encounter().combatants" [reactionUsed]="me.reactionUsed" />
+        @if (banner().mine && form(); as f) {
+          <app-form-chip [beast]="f.name" [time]="formTime()" />
+        } @else if (!banner().mine && banner().who?.wildShapeBeastKey) {
+          <!-- Another player's turn: the name of the beast, never the time (RN-20). -->
+          <app-form-chip [beast]="banner().who!.wildShapeBeastNamePt" />
         }
-        <app-turn-reaction [opportunities]="opportunities()" (opportunity)="opportunity.emit($event)" />
+        @if (banner().mine && hasFavor()) {
+          <app-favor-chip class="turn__favor" [waiting]="favorWaits()" />
+        }
+        @if (banner().mine && own(); as me) {
+          <app-combatant-tags
+            class="turn__states"
+            [names]="conditions(me)"
+            [label]="me.label"
+            [states]="me.states"
+            [sources]="me.conditionSources"
+            [people]="encounter().combatants"
+          />
+        }
+      </div>
+    </div>
+    @if (pill(); as text) {
+      <app-joint-pill [text]="text" />
+    }
+
+    @if (banner().mine && own(); as me) {
+      @if (down()) {
+        <p class="turn__next">{{ downText() }}</p>
+      } @else {
+        <ng-container *ngTemplateOutlet="notes" />
+        <app-rage-status
+          class="turn__rage"
+          [subject]="me"
+          [busy]="busy()"
+          (endRage)="endRage.emit(me.id)"
+        />
+        <app-own-numbers
+          class="turn__numbers"
+          [own]="me"
+          [armorClass]="armorClass()"
+          [slots]="slots()"
+          [hitPoints]="hitPoints()"
+        />
+        @if (banner().joint) {
+          <div class="turn__end">
+            <app-end-part
+              [note]="footerNote()"
+              [left]="partLeft()"
+              [busy]="busy()"
+              (endPart)="endTurn.emit()"
+            />
+          </div>
+        } @else {
+          <app-end-turn
+            class="turn__end"
+            [own]="me"
+            [attacksLeft]="attacksLeft()"
+            [settling]="optionsSettling()"
+            [busy]="busy()"
+            [waiting]="waiting()?.title ?? ''"
+            [label]="endLabel()"
+            [surprised]="surprised()"
+            (endTurn)="endTurn.emit()"
+          />
+        }
+        @if (banner().joint) {
+          <app-joint-others mode="others" [encounter]="encounter()" />
+        }
+      }
+    } @else {
+      @if (waiting(); as w) {
+        <!-- Off turn, the wait is the same sentence the player on turn reads (a reaction, a concentration save, a wait for
+           the master, never why: RN-10), once, above whose turn comes next. -->
+        @if (masterWait(w)) {
+          <app-master-wait
+            id="master-wait-note"
+            class="turn__notice"
+            data-testid="reaction-wait"
+            [title]="w.title"
+            [detail]="w.detail"
+          />
+        } @else {
+          <div
+            class="mr-notice mr-notice--warning turn__notice"
+            role="status"
+            data-testid="reaction-wait"
+          >
+            <mat-icon aria-hidden="true">hourglass_top</mat-icon>
+            <p>
+              <strong>{{ w.title }}.</strong> {{ w.detail }}
+            </p>
+          </div>
+        }
+      }
+      @if (banner().ownEnded) {
+        <p class="turn__next" role="status">{{ missing() }}</p>
+        <app-joint-others mode="summary" [encounter]="encounter()" />
+      } @else if (outsiderJoint()) {
+        @if (before(); as who) {
+          <p class="turn__next">A sua vez vem depois {{ who }}.</p>
+        }
+        <app-joint-others mode="outside" [encounter]="encounter()" />
+      } @else if (nextLine(); as next) {
+        <p class="turn__next">
+          {{ next.prefix }}<b>{{ next.name }}</b
+          >.
+        </p>
+      }
+      @if (own(); as me) {
+        @if (dead()) {
+          <!-- A dead character has no reaction to show. -->
+        } @else if (isDown()) {
+          <p class="turn__react turn__react--top">
+            <mat-icon aria-hidden="true">favorite_border</mat-icon>
+            <span>{{ offTurnDown() }}</span>
+          </p>
+        } @else {
+          @if (!banner().ownEnded) {
+            <p class="turn__react">
+              <mat-icon aria-hidden="true">{{
+                me.reactionUsed ? 'cancel' : 'radio_button_unchecked'
+              }}</mat-icon>
+              Sua reação:
+              {{ me.reactionUsed ? 'Usada até o começo do seu próximo turno' : 'Disponível' }}.
+            </p>
+          }
+          @if (readied(); as held) {
+            <!-- The readied action, read off the turn (#582, 582-03): no button, the master decides when the trigger happens. -->
+            <app-readied-card
+              class="turn__readied"
+              [readied]="held"
+              [combatants]="encounter().combatants"
+              [reactionUsed]="me.reactionUsed"
+            />
+          }
+          <app-turn-reaction
+            [opportunities]="opportunities()"
+            (opportunity)="opportunity.emit($event)"
+          />
+        }
       }
     }
-  }
 
-  @if (concentration()) {
-    <app-concentration-line [spell]="concentration()" [busy]="busy()" (end)="endConcentration.emit()" />
-  }
+    @if (concentration()) {
+      <app-concentration-line
+        [spell]="concentration()"
+        [busy]="busy()"
+        (end)="endConcentration.emit()"
+      />
+    }
 
-  @if (!wide() && !down() && !(orderBelow() && banner().mine)) {
-    <app-order-strip [encounter]="encounter()" />
-  }
-</section>
+    @if (!wide() && !down() && !(orderBelow() && banner().mine)) {
+      <app-order-strip [encounter]="encounter()" />
+    }
+  </section>
 }
 <ng-template #notes>
   @for (s of states(); track s.tag) {
     <!-- W7-X: "Escondida" (the player reads only that, never from whom) and "Surpresa", a tag and the sentence under it. -->
     <div class="turn__state" role="status">
-      <span class="mr-tag" [class.mr-tag--success]="s.tone === 'success'" [class.mr-tag--pending]="s.tone === 'pending'">
-        <mat-icon aria-hidden="true">{{ s.icon }}</mat-icon>{{ s.tag }}
+      <span
+        class="mr-tag"
+        [class.mr-tag--success]="s.tone === 'success'"
+        [class.mr-tag--pending]="s.tone === 'pending'"
+      >
+        <mat-icon aria-hidden="true">{{ s.icon }}</mat-icon
+        >{{ s.tag }}
       </span>
       <p class="turn__state-text">{{ s.text }}</p>
     </div>
@@ -199,16 +304,25 @@
     <!-- What an effect or a condition takes from this turn (RN-22): the server's own sentence, never its cause for a player. -->
     <div class="mr-notice mr-notice--warning turn__notice" role="status" data-testid="effect-note">
       <mat-icon aria-hidden="true">block</mat-icon>
-      <p><strong>{{ noteParts(n.textPt).lead }}</strong> {{ noteParts(n.textPt).rest }}</p>
+      <p>
+        <strong>{{ noteParts(n.textPt).lead }}</strong> {{ noteParts(n.textPt).rest }}
+      </p>
     </div>
   }
   @if (waiting(); as w) {
     @if (masterWait(w)) {
-      <app-master-wait id="master-wait-note" class="turn__notice" [title]="w.title" [detail]="w.detail" />
+      <app-master-wait
+        id="master-wait-note"
+        class="turn__notice"
+        [title]="w.title"
+        [detail]="w.detail"
+      />
     } @else {
       <div class="mr-notice mr-notice--warning turn__notice" role="status">
         <mat-icon aria-hidden="true">hourglass_top</mat-icon>
-        <p><strong>{{ w.title }}.</strong> {{ w.detail }}</p>
+        <p>
+          <strong>{{ w.title }}.</strong> {{ w.detail }}
+        </p>
       </div>
     }
   }
@@ -235,7 +349,9 @@
       </p>
     </div>
     @if (fall.waiting) {
-      <span class="mr-tag mr-tag--pending turn__wait"><mat-icon aria-hidden="true">info</mat-icon>Esperando o mestre aplicar o dano</span>
+      <span class="mr-tag mr-tag--pending turn__wait"
+        ><mat-icon aria-hidden="true">info</mat-icon>Esperando o mestre aplicar o dano</span
+      >
     }
   }
 </ng-template>

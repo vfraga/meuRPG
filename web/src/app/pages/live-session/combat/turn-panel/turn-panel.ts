@@ -182,6 +182,11 @@ export class TurnPanel {
     const id = this.own()?.characterId;
     return !!id && this.favor.has(id);
   });
+  /** The owner's ask to pass it waits for the master: the chip says so (581-07, item 4). Never for the master, who reads the ask as a card. */
+  protected readonly favorWaits = computed(() => {
+    const id = this.own()?.characterId;
+    return !!id && this.favor.waiting(id);
+  });
   /** The beast the druid is in, with its own reserve of hit points (only the druid's player and the master get the numbers). */
   protected readonly form = computed(() => {
     const c = this.own();

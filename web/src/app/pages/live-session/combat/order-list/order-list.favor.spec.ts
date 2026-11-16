@@ -5,7 +5,7 @@ import { CombatantKind } from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { FavorClient } from '../../../../core/play/favor-client';
 import { FavorState } from '../../../../core/play/favor-state';
-import { FakeFavorClient, openFavor } from '../../../../core/play/favor-testing';
+import { FakeFavorClient, favorPass, openFavor } from '../../../../core/play/favor-testing';
 import { OrderList } from './order-list';
 import { openAllRows } from './order-list-testing';
 
@@ -151,5 +151,18 @@ describe("OrderList: the master's Inspiração", () => {
     expect(flat(el.querySelector('.js-favor-note'))).toBe('Brisa ganhou Inspiração.');
     expect(el.querySelector('.js-favor-note')?.parentElement?.getAttribute('role')).toBe('status');
     expect(el.querySelectorAll('.js-favor-note')).toHaveLength(1);
+  });
+
+  it('reads "Tem Inspiração · esperando o mestre" in the owner\'s own row while the ask waits, and the plain chip to the master', () => {
+    const { fixture, favor, el } = mount({ 'bri-c': 'Brisa' });
+    favor.passes.set([favorPass({ fromId: 'bri-c' })]);
+    openAllRows(fixture);
+    fixture.detectChanges();
+    expect(flat(el.querySelector('[data-testid="order-favor"]'))).toBe(
+      'starTem Inspiração · esperando o mestre',
+    );
+    favor.master.set(true);
+    fixture.detectChanges();
+    expect(flat(el.querySelector('[data-testid="order-favor"]'))).toBe('starTem Inspiração');
   });
 });

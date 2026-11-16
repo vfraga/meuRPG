@@ -9,7 +9,7 @@ import {
   FavorSpend,
 } from '../../core/play/favor-spend';
 import { FavorState } from '../../core/play/favor-state';
-import { FakeFavorClient, openFavor } from '../../core/play/favor-testing';
+import { FakeFavorClient, favorPass, openFavor } from '../../core/play/favor-testing';
 import { FavorSpendBox } from './favor-spend';
 
 const plain = (t: string | null | undefined) => (t ?? '').replace(/\s+/g, ' ').trim();
@@ -102,6 +102,25 @@ describe('FavorSpendBox', () => {
     const { el } = setup({ byMaster: () => true });
     expect(plain(el.querySelector('.favor__hint')?.textContent)).toBe('O mestre agindo por Brisa');
     expect(plain(el.querySelector('.favor__why')?.textContent)).toContain(FAVOR_ONLY_PLAYER);
+  });
+
+  it('is dashed with the ask that waits for the master, the reason linked, and a tap changes nothing (581-07, item 4)', () => {
+    const { fixture, el, fav, favor, box } = setup();
+    favor.passes.set([favorPass({ fromId: 'c1' })]);
+    fixture.detectChanges();
+    const why = el.querySelector('.favor__why')!;
+    expect(plain(why.textContent)).toContain(
+      'Você pediu para passar a Inspiração a Tor. Cancele o pedido para usar.',
+    );
+    expect(box()!.getAttribute('aria-disabled')).toBe('true');
+    expect(box()!.getAttribute('aria-describedby')).toContain(why.id);
+    box()!.click();
+    fixture.detectChanges();
+    expect(fav.spend()).toBe(false);
+    // The ask is gone: the box opens again.
+    favor.passes.set([]);
+    fixture.detectChanges();
+    expect(box()!.getAttribute('aria-disabled')).toBeNull();
   });
 
   it('is dashed when the read failed', () => {
