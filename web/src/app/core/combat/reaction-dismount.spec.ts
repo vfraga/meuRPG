@@ -93,7 +93,7 @@ describe("the rider's dismount as its mount falls (#588, board 588-07)", () => {
 
   it('says how a window that closed without the player ended', () => {
     expect(dismountGoneText(combatant({ id: 'tor', label: 'Tor', mountedOnId: 'horse' }))).toBe(
-      'Não é mais preciso responder: você continua montado.',
+      'Não é mais preciso responder: você segue na montaria.',
     );
     expect(
       dismountGoneText(combatant({ id: 'tor', label: 'Tor', conditions: ['condition:prone'] })),

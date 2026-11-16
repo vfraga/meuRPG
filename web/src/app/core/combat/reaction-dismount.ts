@@ -86,7 +86,7 @@ export function dismountView(e: Encounter, w: ReactionWindow): DismountView {
  */
 export function dismountGoneText(own: Combatant | null): string {
   if (own?.mountedOnId) {
-    return 'Não é mais preciso responder: você continua montado.';
+    return 'Não é mais preciso responder: você segue na montaria.';
   }
   if (own?.conditions.includes(PRONE)) {
     return 'A pergunta se fechou sem a sua resposta: você caiu Derrubado.';

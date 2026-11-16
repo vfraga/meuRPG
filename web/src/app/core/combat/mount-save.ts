@@ -69,7 +69,7 @@ export interface MountSaveView {
   readonly title: string;
   /** "Teste de resistência de Destreza", with "· CD 10" when the server sent the DC. */
   readonly subtitle: string;
-  /** "O Cavalo de guerra foi empurrado." or "Você foi derrubado." */
+  /** "O Cavalo de guerra foi empurrado." or "Você cai da montaria." */
   readonly cause: string;
   /** What a pass keeps and what a failure does. */
   readonly body: string;
@@ -115,16 +115,15 @@ function tagsOf(p: MountSavePrompt, mode: MountSaveView['mode']): string[] {
   ];
 }
 
-/** "O Cavalo de guerra foi empurrado." or "Você foi derrubado.", for the reader (`who` is "Você" or the rider as a subject). */
+/** "O Cavalo de guerra foi empurrado." or "Você cai da montaria.", for the reader (`who` is "Você" or the rider as a subject). */
 function causeOf(
   p: MountSavePrompt,
   mount: Combatant | undefined,
-  rider: Combatant | undefined,
   mine: boolean,
   who: string,
 ): string {
   if (p.cause === MountSaveCause.PRONE) {
-    return mine ? 'Você foi derrubado.' : `${who} foi derrubad${ending(rider?.label ?? '')}.`;
+    return mine ? 'Você cai da montaria.' : `${who} cai da montaria (Derrubado).`;
   }
   return mount
     ? `${article(mount.label) === 'a' ? 'A' : 'O'} ${mount.label} foi empurrad${ending(mount.label)}.`
@@ -162,10 +161,10 @@ export function mountSaveView(e: Encounter, p: MountSavePrompt, mine: boolean): 
     // With the DC (a table with `show_save_dc`, or the master) the title gains it: "Você cai da montaria? · CD 10".
     title: joinDots([`${who} cai da montaria?`, ...(dc ? [dc] : [])]),
     subtitle: SAVE,
-    cause: causeOf(p, mount, rider, mine, who),
+    cause: causeOf(p, mount, mine, who),
     body: mine
-      ? `Passe para continuar montado; se falhar, você cai Derrubado num quadrado ao lado ${beside}.`
-      : `Se passar, continua montado; se falhar, cai Derrubado num quadrado ao lado ${beside}.`,
+      ? `Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado ${beside}.`
+      : `Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado ${beside}.`,
     tags: tagsOf(p, mode),
     wait: `${whoseTurn(e, mine ? p.riderId : '')} espera este teste.`,
     mode,
@@ -207,7 +206,7 @@ export function mountSaveResultView(
   const dc = dcLabel(r.dc);
   const sum = `${sumOf(r)}${dc ? ` contra ${dc}` : ''}`;
   if (r.held) {
-    return { word: 'Passou', good: true, line: `${sum}: ${who} continua montado.` };
+    return { word: 'Passou', good: true, line: `${sum}: ${who} segue na montaria.` };
   }
   const where = r.noRoomNextToMount
     ? `no quadrado livre mais perto: não havia lugar ${beside}`

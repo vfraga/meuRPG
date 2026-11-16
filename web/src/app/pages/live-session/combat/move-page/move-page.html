@@ -141,7 +141,7 @@
           @if (ride.blockedShown() && ride.dismounting()) {
             <div class="mr-notice mr-notice--warning" data-testid="dismount-blocked">
               <mat-icon aria-hidden="true">block</mat-icon>
-              <p>Algo bloqueia o caminho: {{ own()?.label }} continua montado e nada foi gasto. Escolha outro quadrado.</p>
+              <p>Algo bloqueia o caminho: {{ own()?.label }} segue na montaria e nada foi gasto. Escolha outro quadrado.</p>
             </div>
           }
           @if (ride.ignoredText(); as ignored) {

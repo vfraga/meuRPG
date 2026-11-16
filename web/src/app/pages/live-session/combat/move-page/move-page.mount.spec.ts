@@ -445,7 +445,7 @@ describe('MovePage, mounted', () => {
     fixture.detectChanges();
     const warning = el.querySelector('[data-testid="dismount-blocked"]')!;
     expect(plain(warning)).toBe(
-      'Algo bloqueia o caminho: Tor continua montado e nada foi gasto. Escolha outro quadrado.',
+      'Algo bloqueia o caminho: Tor segue na montaria e nada foi gasto. Escolha outro quadrado.',
     );
     expect(warning.getAttribute('role')).toBeNull();
     expect(warning.closest('[role="status"]')?.classList.contains('move__live')).toBe(true);

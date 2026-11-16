@@ -68,7 +68,7 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     expect(v.subtitle).toBe('Teste de resistência de Destreza');
     expect(v.cause).toBe('O Cavalo de guerra foi empurrado.');
     expect(v.body).toBe(
-      'Passe para continuar montado; se falhar, você cai Derrubado num quadrado ao lado dele.',
+      'Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado dele.',
     );
     expect(v.tags).toEqual(['1d20 + 2', 'Destreza +2']);
     expect(v.wait).toBe('A vez do Wight espera este teste.');
@@ -89,11 +89,11 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     expect(mountSaveView(fight(), prompt({ dc: 0 }), true).tags.join(' ')).not.toContain('CD');
   });
 
-  it('says "Você foi derrubado." for the other cause, and takes the gender of the mount from its name', () => {
+  it('says "Você cai da montaria." for the other cause, and takes the gender of the mount from its name', () => {
     const mare = combatant({ id: 'horse', label: 'Égua', riderId: 'tor' });
     const e = fight(prompt({ cause: MountSaveCause.PRONE }), { combatants: [tor(), mare, wight] });
     const prone = mountSaveView(e, prompt({ cause: MountSaveCause.PRONE }), true);
-    expect(prone.cause).toBe('Você foi derrubado.');
+    expect(prone.cause).toBe('Você cai da montaria.');
     expect(prone.body).toContain('num quadrado ao lado dela.');
     expect(mountSaveView(e, prompt(), true).cause).toBe('A Égua foi empurrada.');
   });
@@ -155,10 +155,10 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     expect(plain(v.title)).toBe('Tor cai da montaria? · CD 10');
     expect(
       mountSaveView(fight(), prompt({ riderId: 'w', cause: MountSaveCause.PRONE }), false).cause,
-    ).toBe('O Wight foi derrubado.');
-    expect(v.cause).toBe('Tor foi derrubado.');
+    ).toBe('O Wight cai da montaria (Derrubado).');
+    expect(v.cause).toBe('Tor cai da montaria (Derrubado).');
     expect(v.body).toBe(
-      'Se passar, continua montado; se falhar, cai Derrubado num quadrado ao lado dele.',
+      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado dele.',
     );
   });
 
@@ -167,10 +167,10 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     expect(mountSaveResultView(result(), true, names)).toEqual({
       word: 'Passou',
       good: true,
-      line: '15 + 2 = 17: você continua montado.',
+      line: '15 + 2 = 17: você segue na montaria.',
     });
     expect(plain(mountSaveResultView(result({ dc: 10 }), true, names).line)).toBe(
-      '15 + 2 = 17 contra CD 10: você continua montado.',
+      '15 + 2 = 17 contra CD 10: você segue na montaria.',
     );
     const failed = result({
       held: false,
@@ -188,7 +188,7 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
       '6 + 2 = 8: Tor caiu Derrubado ao lado do Cavalo de guerra.',
     );
     expect(mountSaveResultView(result(), false, names).line).toBe(
-      '15 + 2 = 17: Tor continua montado.',
+      '15 + 2 = 17: Tor segue na montaria.',
     );
   });
 
@@ -214,7 +214,7 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
       },
     });
     expect(mountSaveResultView(pair, true, { rider: 'Tor', mount: '' }).line).toBe(
-      '15 + 2 + 4 = 21: você continua montado.',
+      '15 + 2 + 4 = 21: você segue na montaria.',
     );
   });
 
@@ -254,7 +254,7 @@ describe("the rider's save to stay on the mount (#588, boards 588-06, 588-08 and
     const w = mountSaveWait(encounter({ combatants: [rider, steed], mountSave: p } as never))!;
     expect(w.title).toBe('Esperando o teste do Wight');
     expect(plain(w.detail)).toBe(
-      'Teste de resistência de Destreza CD 10: o Wight foi derrubado. O teste é seu.',
+      'Teste de resistência de Destreza CD 10: o Wight cai da montaria (Derrubado). O teste é seu.',
     );
     expect(w.rollLabel).toBe('Rolar pelo Wight');
     expect(w.why).toBe('Espera o teste do Wight');

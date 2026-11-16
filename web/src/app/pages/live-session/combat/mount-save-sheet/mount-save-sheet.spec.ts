@@ -130,7 +130,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
       'Teste de resistência de Destreza',
     );
     expect(plain(el.querySelector('.what')?.textContent)).toBe(
-      'O Cavalo de guerra foi empurrado. Passe para continuar montado; se falhar, você cai Derrubado num quadrado ao lado dele.',
+      'O Cavalo de guerra foi empurrado. Passe para seguir na montaria; se falhar, você cai Derrubado num quadrado ao lado dele.',
     );
     expect(Array.from(el.querySelectorAll('.tag')).map((t) => plain(t.textContent))).toEqual([
       '1d20 + 2',
@@ -173,7 +173,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     button(el, 'Rolar no app').click();
     await flush(fixture);
     expect(plain(el.querySelector('.res')?.textContent)).toContain(
-      '15 + 2 = 17 contra CD 10: você continua montado.',
+      '15 + 2 = 17 contra CD 10: você segue na montaria.',
     );
   });
 
@@ -198,7 +198,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     expect(res.getAttribute('role')).toBe('status');
     expect(plain(res.querySelector('.pill')?.textContent)).toBe('checkPassou');
     expect(plain(res.querySelector('.what')?.textContent)).toBe(
-      '15 + 2 = 17: você continua montado.',
+      '15 + 2 = 17: você segue na montaria.',
     );
     expect(plain(res.textContent)).not.toMatch(/\bCD\b/);
     // The buttons that had the focus are gone: it goes to "Fechar", not to the page behind.
@@ -366,7 +366,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     expect(resources.answerHeldRoll.mock.calls[0].slice(0, 2)).toEqual(['c', kept.holdId]);
     expect(state.encounter()?.revision).toBe(3);
     expect(plain(el.querySelector('.res .what')?.textContent)).toBe(
-      '15 + 2 = 17: você continua montado.',
+      '15 + 2 = 17: você segue na montaria.',
     );
   });
 
@@ -420,7 +420,7 @@ describe('MountSaveSheet (#588, boards 588-06 and 588-10 card 6)', () => {
     const { el } = setup(prompt({ dc: 10 }), { byMaster: true });
     expect(plain(el.querySelector('h2')?.textContent)).toBe('Tor cai da montaria? · CD 10');
     expect(plain(el.querySelector('.what')?.textContent)).toContain(
-      'Se passar, continua montado; se falhar, cai Derrubado num quadrado ao lado dele.',
+      'Se passar, segue na montaria; se falhar, cai Derrubado num quadrado ao lado dele.',
     );
     expect(el.querySelector('.frame__close')).not.toBeNull();
   });
