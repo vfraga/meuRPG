@@ -287,3 +287,52 @@ func TestMountedCombat_ThePromptCarriesTheSaveBonus(t *testing.T) {
 		t.Errorf("the prompt's save_bonus = %d, the roll = %v, want the roll's modifier and 15 plus it", asked, rolled)
 	}
 }
+
+// The prompt's bonus for the three riders the first test leaves out: a rider under Bênção (the d4 is a die the roll adds, never in the
+// prompt's bonus) and an NPC rider with a basic sheet (the master's alone, and no number: bonus_known is false).
+func TestMountedCombat_ThePromptsBonusUnderBlessAndForAnNPCRider(t *testing.T) {
+	t.Parallel()
+	t.Run("a rider under Bênção: the bonus is the save's own, and the d4 is added by the roll", func(t *testing.T) {
+		t.Parallel()
+		plain := riddenCave(t)
+		plain.askSave(t, "Toren", causePushed)
+		want := plain.mountSaveOf(t, plain.caio).GetSaveBonus()
+
+		c := riddenCave(t)
+		c.mustAddEffect(t, c.get(t, c.master), "spell:bless", []string{"Toren"}, nil)
+		c.askSave(t, "Toren", causePushed)
+		asked := c.mountSaveOf(t, c.caio)
+		if asked.GetSaveBonus() != want || !asked.GetBonusKnown() {
+			t.Errorf("under Bênção the prompt reads save_bonus = %d known = %v, want %d known: the d4 is not a bonus", asked.GetSaveBonus(), asked.GetBonusKnown(), want)
+		}
+		rolled := c.mustRollSave(t, c.caio, "Toren", func(r *playv1.RollMountSaveRequest) {
+			saveFace(15)(r)
+			r.ExtraDieFaces = []int32{3}
+		}).GetResult().GetSave()
+		if rolled.GetModifier() != want+3 || rolled.GetTotal() != 15+want+3 {
+			t.Errorf("the roll = %v, want the prompt's bonus %d plus the d4's 3 in the modifier and in the total", rolled, want)
+		}
+	})
+	t.Run("an NPC rider: the master reads the bonus the roll uses, and no player reads the prompt", func(t *testing.T) {
+		t.Parallel()
+		c := newCave(t)
+		c.squireOnTheOgre(t)
+		c.askSave(t, "Escudeiro", causePushed)
+		asked := c.mountSaveOf(t, c.master)
+		if asked == nil {
+			t.Fatal("the master reads no mount save for the Escudeiro")
+		}
+		for who, u := range map[string]*user{"Toren's player": c.caio, "Pensantus's player": c.ana} {
+			if got := c.mountSaveOf(t, u); got != nil {
+				t.Errorf("%s reads the prompt of an NPC rider: %v", who, got)
+			}
+		}
+		rolled := c.mustRollSave(t, c.master, "Escudeiro", saveFace(15)).GetResult().GetSave()
+		if rolled.GetModifier() != asked.GetSaveBonus() || rolled.GetTotal() != 15+asked.GetSaveBonus() {
+			t.Errorf("the prompt's save_bonus = %d (known = %v), the roll = %v, want the roll's modifier", asked.GetSaveBonus(), asked.GetBonusKnown(), rolled)
+		}
+		if asked.GetBonusKnown() || asked.GetSaveBonus() != 0 {
+			t.Errorf("a basic sheet has no number for the save: save_bonus = %d known = %v, want 0 and unknown", asked.GetSaveBonus(), asked.GetBonusKnown())
+		}
+	})
+}
