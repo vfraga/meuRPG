@@ -50,6 +50,17 @@ export class SteedPick {
     return steedCastVerb(this.bonded()?.name ?? '', formTitle);
   }
 
+  /** The bold part of the footer's line: all of it, or for Convocar Montaria only what it spends (its first sentence, 588-21). */
+  costLead(line: string): string {
+    const end = this.on ? line.indexOf('. ') : -1;
+    return end < 0 ? line : line.slice(0, end + 1);
+  }
+
+  /** What follows the bold part, with its space; `''` when the whole line is bold. */
+  costRest(line: string): string {
+    return line.slice(this.costLead(line).length);
+  }
+
   /** "Espaço de 2º nível · 2 livres"; `''` with no slot chosen. */
   setupLine(slot: { readonly level: number; readonly free: number } | null): string {
     return slot ? steedSetupLine(slot.level, slot.free) : '';

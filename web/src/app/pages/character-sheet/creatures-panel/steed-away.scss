@@ -68,23 +68,3 @@
   color: var(--mr-ink);
   cursor: pointer;
 }
-
-.release {
-  height: auto;
-  min-height: 56px;
-  padding-block: 8px;
-}
-
-.release__t {
-  display: block;
-  font-weight: 700;
-  color: var(--mr-danger-ink);
-}
-
-.release__line {
-  display: block;
-  font-size: var(--mr-font-13);
-  line-height: 18px;
-  color: var(--mr-ink-muted);
-  white-space: normal;
-}

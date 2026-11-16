@@ -1,0 +1,30 @@
+// "Libertar Estrela" in a steed's "⋮" menu (the card and the "Fora" row): the broken link and the words in danger, what it
+// does under them at 13 px, and why it is off after the combat refused.
+.release {
+  height: auto;
+  min-height: 56px;
+  padding-block: 8px;
+}
+
+.release .mat-icon {
+  color: var(--mr-danger-ink);
+}
+
+.release__t {
+  display: block;
+  font-weight: 700;
+  color: var(--mr-danger-ink);
+}
+
+.release__line,
+.release__why {
+  display: block;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+  white-space: normal;
+}
+
+.release__why {
+  color: var(--mr-ink);
+}

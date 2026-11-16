@@ -5,11 +5,19 @@ import {
   EncounterBlockedReason,
   EncounterBlockedSchema,
   EncounterSchema,
+  EncounterStatus,
 } from '../../../gen/meurpg/play/v1/combat_pb';
+import {
+  ContestBlockedReason,
+  ContestBlockedSchema,
+} from '../../../gen/meurpg/play/v1/contest_types_pb';
+import { contestBlockedMessage } from '../combat/combat-errors';
 import { CreatureSource } from '../../../gen/meurpg/characters/v1/characters_pb';
 import { sourcePhrase } from './creature-format';
 import {
   STEED_RELEASE_LINE,
+  steedActionsHint,
+  steedAskError,
   steedAskText,
   steedAwaySubtitle,
   steedCastHint,
@@ -32,28 +40,30 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
     expect(steedSubtitle('Cavalo de guerra', 'Grande', '')).toBe('Cavalo de guerra\u00a0· Grande');
   });
 
-  const out = { combat: false, mounted: false };
-  const riding = { combat: true, mounted: true };
+  const out = { combat: false, spends: false, mounted: false };
+  const riding = { combat: true, spends: true, mounted: true };
 
   it("says what a dismissal does to the rider in a combat, in board 588-24's words: the bond stays", () => {
     expect(steedAskText('dismiss', 'Estrela', '', riding)).toBe(
-      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria a traz de volta.',
+      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
     expect(steedAskText('dismiss', 'Trovão', 'Lia', riding)).toBe(
-      'Trovão some do mapa e da ficha de Lia, e Lia desce de pé no quadrado dele. O vínculo fica: Convocar Montaria o traz de volta.',
+      'Trovão some do mapa e da ficha de Lia, e Lia desce de pé no quadrado dele. O vínculo fica: Convocar Montaria traz Trovão de volta.',
     );
   });
 
   it('with nobody on the steed says nothing of a rider, and out of a combat tells the owner it spends nothing', () => {
-    expect(steedAskText('dismiss', 'Estrela', '', { combat: true, mounted: false })).toBe(
-      'Estrela some do mapa e da sua ficha. O vínculo fica: Convocar Montaria a traz de volta.',
+    expect(
+      steedAskText('dismiss', 'Estrela', '', { combat: true, spends: true, mounted: false }),
+    ).toBe(
+      'Estrela some do mapa e da sua ficha. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
     expect(steedAskText('dismiss', 'Estrela', '', out)).toBe(
-      'Estrela some do mapa e da sua ficha. O vínculo fica: Convocar Montaria a traz de volta. Fora de combate, não gasta nada.',
+      'Estrela some do mapa e da sua ficha. O vínculo fica: Convocar Montaria traz Estrela de volta. Fora de combate, não gasta nada.',
     );
     // The master never spends: the sentence about the cost is the owner's.
     expect(steedAskText('dismiss', 'Estrela', 'Lia', out)).toBe(
-      'Estrela some do mapa e da ficha de Lia. O vínculo fica: Convocar Montaria a traz de volta.',
+      'Estrela some do mapa e da ficha de Lia. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
   });
 
@@ -72,15 +82,27 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
 
   it('reads from the combat whether it holds the steed and whether its owner rides it', () => {
     const enc = create(EncounterSchema, {
+      status: EncounterStatus.ACTIVE,
       combatants: [
         { id: 'c-1', characterId: 'char-1', mountedOnId: 'c-9' },
         { id: 'c-9', creatureId: 'steed-1', riderId: 'c-1' },
       ],
     });
-    expect(steedWhere(enc, 'steed-1', 'char-1')).toEqual({ combat: true, mounted: true });
-    expect(steedWhere(enc, 'steed-1', 'char-2')).toEqual({ combat: true, mounted: false });
-    expect(steedWhere(enc, 'steed-2', 'char-1')).toEqual({ combat: false, mounted: false });
-    expect(steedWhere(null, 'steed-1', 'char-1')).toEqual({ combat: false, mounted: false });
+    expect(steedWhere(enc, 'steed-1', 'char-1')).toEqual(riding);
+    expect(steedWhere(enc, 'steed-1', 'char-2')).toEqual({
+      combat: true,
+      spends: true,
+      mounted: false,
+    });
+    expect(steedWhere(enc, 'steed-2', 'char-1')).toEqual(out);
+    expect(steedWhere(null, 'steed-1', 'char-1')).toEqual(out);
+    // A combat still being set up charges nothing (`SpendDismissal`): no chip, and it is not "fora de combate" either.
+    const setup = create(EncounterSchema, { ...enc, status: EncounterStatus.SETUP });
+    expect(steedWhere(setup, 'steed-1', 'char-1')).toEqual({
+      combat: true,
+      spends: false,
+      mounted: true,
+    });
   });
 
   it("names the two refusals of a combat by the owner's turn and action; any other error is not one of them", () => {
@@ -90,6 +112,23 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
     expect(steedRefusal(blocked(EncounterBlockedReason.ACTION_USED), 'Lia')).toBe(
       'Você já usou a ação desta vez.',
     );
+    // The rest of the server's gate, in the combat's own words.
+    expect(steedRefusal(blocked(EncounterBlockedReason.COMBATANT_DOWN), 'Lia')).toBe(
+      'Quem está caído não age.',
+    );
+    expect(steedRefusal(blocked(EncounterBlockedReason.CANNOT_ACT), 'Lia')).toBe(
+      'Não dá para agir agora.',
+    );
+    const surprised = new ConnectError('no', Code.FailedPrecondition, undefined, [
+      {
+        desc: ContestBlockedSchema,
+        value: create(ContestBlockedSchema, { reason: ContestBlockedReason.SURPRISED }),
+      },
+    ]);
+    expect(steedRefusal(surprised, 'Lia')).toBe(
+      contestBlockedMessage(surprised.findDetails(ContestBlockedSchema)[0]),
+    );
+    expect(steedRefusal(surprised, 'Lia')).not.toBe('');
     expect(steedRefusal(blocked(EncounterBlockedReason.NO_SLOT), 'Lia')).toBe('');
     expect(steedRefusal(new ConnectError('down', Code.Unavailable), 'Lia')).toBe('');
   });
@@ -106,6 +145,22 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
     );
     expect(steedCastHint('Estrela', false)).toBe('Com Estrela aqui, ela volta aos PV cheios.');
     expect(steedCastHint('Trovão', false)).toBe('Com Trovão aqui, ele volta aos PV cheios.');
+  });
+
+  it('any other refusal of the combat stays in the question without sending the person to close a sheet: the card is no sheet', () => {
+    expect(steedAskError(blocked(EncounterBlockedReason.NO_SLOT))).toBe(
+      'Não dá para fazer isso agora. Tente de novo.',
+    );
+    expect(steedAskError(new ConnectError('down', Code.Unavailable))).not.toContain('Feche');
+  });
+
+  it('says under the actions what "Dispensar" keeps, and to the owner that it is free out of a combat (board 588-23)', () => {
+    expect(steedActionsHint('Estrela', false)).toBe(
+      'Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta. Fora de combate, não gasta nada.',
+    );
+    expect(steedActionsHint('Estrela', true)).toBe(
+      'Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta.',
+    );
   });
 
   it('RN-10: to another player the steed is "Criatura de Lia", with no word of its bond or its type', () => {

@@ -63,7 +63,7 @@
         [familiarName]="c.name"
       />
     }
-    <div class="acts">
+    <div class="acts" [class.acts--steed]="c.bonded">
       <button type="button" class="act js-rename" (click)="open('rename')">
         <mat-icon aria-hidden="true">edit</mat-icon>Renomear
       </button>
@@ -91,10 +91,14 @@
           <mat-icon aria-hidden="true">more_vert</mat-icon>
         </button>
         <mat-menu #more="matMenu">
-          <button type="button" mat-menu-item class="release" (click)="ask('release')">
+          <!-- The release spends the action too: after a refusal it is off, with the same reason. -->
+          <button type="button" mat-menu-item class="release" [disabled]="!!refusal()" (click)="ask('release')">
             <mat-icon aria-hidden="true">link_off</mat-icon>
             <span class="release__t">Libertar {{ c.name }}</span>
             <span class="release__line">{{ releaseLine }}</span>
+            @if (refusal()) {
+              <span class="release__why">{{ refusal() }}</span>
+            }
           </button>
         </mat-menu>
       } @else {
@@ -103,6 +107,9 @@
         </button>
       }
     </div>
+    @if (c.bonded && !refusal()) {
+      <p class="acts__hint">{{ hint() }}</p>
+    }
     @if (refusal()) {
       <p class="acts__why"><mat-icon aria-hidden="true">block</mat-icon><span [id]="'steed-why-' + c.id">{{ refusal() }}</span></p>
     }

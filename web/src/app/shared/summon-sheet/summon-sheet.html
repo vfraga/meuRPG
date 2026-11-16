@@ -139,7 +139,7 @@
         @if (missing()) {
           <p class="line line--missing" role="status"><mat-icon aria-hidden="true">block</mat-icon>{{ missing() }}</p>
         } @else if (!combat && costLine()) {
-          <p class="line" role="status"><mat-icon aria-hidden="true">info</mat-icon><span><b>{{ costLine() }}</b></span></p>
+          <p class="line" role="status"><mat-icon aria-hidden="true">info</mat-icon><span><b>{{ steed.costLead(costLine()) }}</b>{{ steed.costRest(costLine()) }}</span></p>
         }
       }
       @if (combat && spell()) {

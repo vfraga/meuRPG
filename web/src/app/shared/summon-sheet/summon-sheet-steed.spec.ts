@@ -122,6 +122,8 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
     expect(foot()).toContain(
       'Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate.',
     );
+    // Board 588-21: only what it spends is bold.
+    expect(flat(el.querySelector('[foot] .line b'))).toBe('Gasta um espaço de 2º nível ou maior.');
   });
 
   it("casts with the form and the type picked, by the server's value", async () => {

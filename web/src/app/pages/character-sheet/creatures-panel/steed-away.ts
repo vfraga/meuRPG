@@ -65,7 +65,7 @@ import { SteedAsk } from '../../../shared/creatures/steed-ask';
       }
     </article>
   `,
-  styleUrl: './steed-away.scss',
+  styleUrls: ['./steed-away.scss', '../../../shared/creatures/steed-release.scss'],
 })
 export class SteedAway {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

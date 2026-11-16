@@ -15,12 +15,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 
 import type { CharacterCreature } from '../../../gen/meurpg/characters/v1/characters_pb';
-import { creatureErrorMessage } from '../../core/creatures/creature-errors';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { focusWithRing } from '../../core/creatures/focus-ring';
 import {
   type SteedGoing,
+  STEED_NOWHERE,
   type SteedWhere,
+  steedAskError,
   steedAskText,
   steedRefusal,
 } from '../../core/creatures/steed-card';
@@ -34,7 +35,7 @@ let nextId = 0;
  * `DismissCreature`, with `dismissal` DISMISS or RELEASE.
  *
  * In a combat that holds the steed the owner's player spends the action of the turn: the chip "● Gasta a sua ação" says so
- * (`where.combat`), and a refusal for the turn or the action goes to the card (`refused`), which shows it under its
+ * (`where.spends`), and a refusal for the turn or the action goes to the card (`refused`), which shows it under its
  * actions. Any other error stays here, in words, with the question open.
  */
 @Component({
@@ -69,7 +70,7 @@ export class SteedAsk {
   readonly ownerView = input(true);
   readonly ownerName = input('');
   /** Where the steed is: in a combat (the owner's player then spends the action: the chip), and under its owner. */
-  readonly where = input<SteedWhere>({ combat: false, mounted: false });
+  readonly where = input<SteedWhere>(STEED_NOWHERE);
   /** Done: true when the steed went (the list is read again), false when the person backed out. */
   readonly closed = output<boolean>();
   /** The combat refused for the turn or the action: the card says why under its actions. */
@@ -89,7 +90,7 @@ export class SteedAsk {
       this.where(),
     ),
   );
-  protected readonly chip = computed(() => this.where().combat && this.ownerView());
+  protected readonly chip = computed(() => this.where().spends && this.ownerView());
 
   constructor() {
     afterNextRender(
@@ -116,7 +117,7 @@ export class SteedAsk {
       if (refusal) {
         this.refused.emit(refusal);
       } else {
-        this.error.set(creatureErrorMessage(err, 'dismiss'));
+        this.error.set(steedAskError(err));
       }
     } finally {
       this.busy.set(false);

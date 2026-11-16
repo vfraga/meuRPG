@@ -8,6 +8,7 @@ import {
   EncounterBlockedReason,
   EncounterBlockedSchema,
   EncounterSchema,
+  EncounterStatus,
 } from '../../../../gen/meurpg/play/v1/combat_pb';
 import { CombatClient } from '../../../core/combat/combat-client';
 import { fakeCombatClient } from '../../../core/combat/combat-client-testing';
@@ -38,7 +39,11 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     });
   /** A running combat that holds the steed. */
   const combatWithSteed = () =>
-    create(EncounterSchema, { id: 'enc-1', combatants: [{ id: 'c-9', creatureId: 'steed-1' }] });
+    create(EncounterSchema, {
+      id: 'enc-1',
+      status: EncounterStatus.ACTIVE,
+      combatants: [{ id: 'c-9', creatureId: 'steed-1' }],
+    });
 
   async function setup(inputs: Record<string, unknown> = {}) {
     api = new FakeCreaturesClient();
@@ -110,6 +115,26 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     const order = Array.from(el.querySelector('.head__text')!.children).map((n) => n.className);
     expect(order).toEqual(['name', 'sub', 'mr-tag']);
     expect(el.querySelector('.head__text')?.classList).toContain('head__text');
+  });
+
+  it('says under the actions what "Dispensar" keeps (board 588-23), and writes "Renomear" in ink', async () => {
+    const owner = await setup();
+    expect(flat(owner.el.querySelector('.acts__hint'))).toBe(
+      'Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta. Fora de combate, não gasta nada.',
+    );
+    expect(owner.el.querySelector('.acts')?.classList).toContain('acts--steed');
+
+    TestBed.resetTestingModule();
+    document.body.replaceChildren();
+    const master = await setup({ isMaster: true });
+    expect(flat(master.el.querySelector('.acts__hint'))).toBe(
+      'Dispensar mantém o vínculo: Convocar Montaria traz Estrela de volta.',
+    );
+    TestBed.resetTestingModule();
+    document.body.replaceChildren();
+    const other = await setup({ creature: creature('cr-1', 'Nanquim') });
+    expect(other.el.querySelector('.acts__hint')).toBeNull();
+    expect(other.el.querySelector('.acts')?.classList).not.toContain('acts--steed');
   });
 
   it('"⋮" is a bordered square at the far right of the actions (board 588-23)', async () => {
@@ -217,6 +242,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     getEncounter.mockResolvedValue(
       create(EncounterSchema, {
         id: 'enc-1',
+        status: EncounterStatus.ACTIVE,
         combatants: [
           { id: 'c-1', characterId: 'char-1', mountedOnId: 'c-9' },
           { id: 'c-9', creatureId: 'steed-1', riderId: 'c-1' },
@@ -226,7 +252,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     acts()[1].click();
     await settle();
     expect(flat(el.querySelector('.ask__d'))).toBe(
-      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria a traz de volta.',
+      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
   });
 
@@ -290,6 +316,18 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     expect(why?.parentElement?.querySelector('mat-icon')?.textContent?.trim()).toBe('block');
     // Off is off: a tap asks nothing.
     off.click();
+    await settle();
+    expect(el.querySelector('app-steed-ask')).toBeNull();
+    // The release spends the action too (588-26 card 4): its item is off with the same reason, never a silent tap.
+    el.querySelector<HTMLButtonElement>('.js-more')!.click();
+    await settle();
+    const panels = document.querySelectorAll('.mat-mdc-menu-panel');
+    const item = panels[panels.length - 1].querySelector<HTMLElement>('[mat-menu-item]')!;
+    expect(item.getAttribute('aria-disabled')).toBe('true');
+    expect(flat(item.querySelector('.release__why'))).toBe(
+      'Só na vez de Lia: dispensar gasta a ação.',
+    );
+    item.click();
     await settle();
     expect(el.querySelector('app-steed-ask')).toBeNull();
   });

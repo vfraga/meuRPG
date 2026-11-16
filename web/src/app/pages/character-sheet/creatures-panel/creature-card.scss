@@ -179,6 +179,25 @@
   color: var(--mr-ink);
 }
 
+// Open: the accent, as the board draws it.
+.act--more[aria-expanded='true'] {
+  border-color: var(--mr-accent);
+  background: var(--mr-accent-soft);
+}
+
+// A bonded steed's card (588-23): "Renomear" and "Corrigir PV" in ink; only "Dispensar" keeps its danger.
+.acts--steed .act:not(.act--danger, .act--off) {
+  color: var(--mr-ink);
+}
+
+// What "Dispensar" keeps, under the actions.
+.acts__hint {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
 // Off after the combat refused: muted, with the block icon and the word; the reason is the line under the actions.
 .act--off {
   color: var(--mr-ink-muted);
@@ -205,25 +224,4 @@
   font-size: var(--mr-font-14);
   line-height: 20px;
   color: var(--mr-ink);
-}
-
-// "Libertar Estrela" in the menu: the words in danger, and what it does under them at 13 px.
-.release {
-  height: auto;
-  min-height: 56px;
-  padding-block: 8px;
-}
-
-.release__t {
-  display: block;
-  font-weight: 700;
-  color: var(--mr-danger-ink);
-}
-
-.release__line {
-  display: block;
-  font-size: var(--mr-font-13);
-  line-height: 18px;
-  color: var(--mr-ink-muted);
-  white-space: normal;
 }

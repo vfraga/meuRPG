@@ -62,7 +62,7 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
     // Board 588-24: the confirm carries the "✕" of the card's action.
     expect(buttons()[1].querySelector('mat-icon')?.textContent?.trim()).toBe('close');
     expect(flat(el.querySelector('.ask__d'))).toBe(
-      'Estrela some do mapa e da sua ficha. O vínculo fica: Convocar Montaria a traz de volta. Fora de combate, não gasta nada.',
+      'Estrela some do mapa e da sua ficha. O vínculo fica: Convocar Montaria traz Estrela de volta. Fora de combate, não gasta nada.',
     );
     expect(document.activeElement).toBe(buttons()[0]);
     expect(buttons()[0].hasAttribute('data-confirm')).toBe(false);
@@ -71,9 +71,9 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
   });
 
   it('in a combat that holds the steed, adds the chip "Gasta a sua ação", with its dot', async () => {
-    const { el } = await setup('dismiss', { where: { combat: true, mounted: true } });
+    const { el } = await setup('dismiss', { where: { combat: true, spends: true, mounted: true } });
     expect(flat(el.querySelector('.ask__d'))).toBe(
-      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria a traz de volta.',
+      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria traz Estrela de volta.',
     );
     const chip = el.querySelector('.ask__chip');
     expect(flat(chip)).toBe('● Gasta a sua ação');
@@ -135,11 +135,19 @@ describe('SteedAsk: "Dispensar Estrela?" and "Libertar Estrela?", asked in place
     expect(flat(buttons()[1])).toBe('Libertar Estrela');
   });
 
+  it('in a combat still being set up there is no chip: nothing is charged', async () => {
+    const { el } = await setup('dismiss', {
+      where: { combat: true, spends: false, mounted: false },
+    });
+    expect(el.querySelector('.ask__chip')).toBeNull();
+    expect(flat(el.querySelector('.ask__d'))).not.toContain('não gasta nada');
+  });
+
   it("to the master the sentence names the owner's sheet, and no chip even in a combat", async () => {
     const { el } = await setup('dismiss', {
       ownerView: false,
       ownerName: 'Lia',
-      where: { combat: true, mounted: true },
+      where: { combat: true, spends: true, mounted: true },
     });
     expect(flat(el.querySelector('.ask__d'))).toContain(
       'da ficha de Lia, e Lia desce de pé no quadrado dela',
