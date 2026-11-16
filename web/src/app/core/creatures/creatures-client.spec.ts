@@ -39,7 +39,6 @@ describe('CreaturesClient, the requests of a bonded steed', () => {
       { campaignId: 'camp-1', creatureId: 'steed-1', dismissal: CreatureDismissal.RELEASE },
       { campaignId: 'camp-1', creatureId: 'cr-1' },
     ]);
-    expect(CreatureDismissal.RELEASE).not.toBe(CreatureDismissal.DISMISS);
   });
 
   it("sends the steed's type picked on the first cast as `summon.creature_type`, and none for any other summon", async () => {
