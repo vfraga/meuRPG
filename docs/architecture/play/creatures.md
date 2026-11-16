@@ -50,6 +50,7 @@ The steed has `source` `find_steed`, `bonded` and the type, and its stat block s
 A character has one bonded steed.
 A new casting brings the same row back at full hit points, with its form, name and type, and refuses another form or type (`SUMMON_CHOICE_INVALID`).
 Only the owner and the master read the type.
+`GetSummonOptions.bonded_steed` carries the bond, with the steed's hit points and armor class, whether or not the spell is prepared.
 The spell takes 10 minutes, so the steed joins a combat when the combat starts, with `mount_kind` `controlled`.
 The rider mounts it with `MountCombatant`, and the pair then shares the steed's square and initiative.
 At 0 hit points its creature is dismissed at once with the reason `disappeared` and 0 hit points, and a heal in the combat brings it back.

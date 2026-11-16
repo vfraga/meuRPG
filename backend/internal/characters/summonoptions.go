@@ -25,7 +25,7 @@ import (
 // summonStanding for what the sheet lets the character cast), so the
 // "Criaturas" panel keeps no copy of them. Same access as ListCharacterCreatures:
 // the master and the owner's player; anyone else gets `not_found` (RN-20). It
-// carries no hit points.
+// carries no hit points but the bonded steed's, read by the owner and the master.
 func (s *Service) GetSummonOptions(
 	ctx context.Context,
 	req *connect.Request[charactersv1.GetSummonOptionsRequest],
