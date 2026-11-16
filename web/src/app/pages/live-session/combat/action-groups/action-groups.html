@@ -3,7 +3,7 @@
 
   <!-- The economy of the turn, first in the panel and there while any tab is open (584-01, 584-02): the words say the state, the shape never alone. -->
   @if (!shapesAside() || turnLine().canMove) {
-  <div class="econ" [class.econ--move]="shapesAside()" data-testid="turn-economy">
+  <div class="econ" [class.econ--move]="shapesAside()" [class.econ--paired]="paired()" data-testid="turn-economy">
     @if (!shapesAside()) {
       <app-economy-shapes class="econ__shapes" variant="inline" label="O que resta da vez" [shapes]="turnLine().shapes" />
     }

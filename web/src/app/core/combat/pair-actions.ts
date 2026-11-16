@@ -1,6 +1,6 @@
 import type { Combatant, GetTurnOptionsResponse } from '../../../gen/meurpg/play/v1/combat_pb';
 import { DisabledReasonCode } from '../../../gen/meurpg/rules/v1/rules_pb';
-import { article } from './combat-log';
+import { article } from '../format/article';
 import { reasonText } from './combat-options';
 
 /** One of the three actions a controlled mount takes while it carries its rider (SRD 5.1, "Mounted Combat"). */

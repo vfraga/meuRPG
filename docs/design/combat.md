@@ -39,6 +39,8 @@ The browser draws what the server sends (reach from `GetMoveOptions`, totals, ve
   The three sit in one row, each as wide as its words and sharing what is left, with a 13 px label, so "Desengajar" is whole at 390 px and in the 368 px rail.
   From 768 px the card comes first in the actions and has its head ("Tor e Cavalo de guerra · turno conjunto"), the rider's line with its Ação, Bônus and Reação, and the mount's line (its Ação and metres, from the mount's own options, "Carregando…" until they are read); the economy row under it keeps only "Mover", and the last line is "Montaria adestrada: só estas três ações; a reação fica livre…".
   On a phone the card is inside the one action card, under the row of the rider's shapes and "Mover" and above the tabs, with the mount's line alone and "Adestrada: só estas três. \"Mover\" leva os dois.".
+  There the economy row has no divider and no room of its own under it: the column's 12 px gap is all that separates the two (`paired` on `app-action-groups`).
+  Under about 360 px the three buttons wrap to a second row, and no label is cut.
   A refused action stays in its place, dashed, and the reason is one line in a polite live region that the three point to.
   There is one "Mover" (the rider's, which moves the pair) and one "Encerrar turno".
   - **Ending the turn:** "Encerrar turno" ends the rider's own part first and then the mount's, one call each.

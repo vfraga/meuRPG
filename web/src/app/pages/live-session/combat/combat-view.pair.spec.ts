@@ -92,7 +92,7 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     const wide = mountCombatView(opts);
     await settle(wide.fixture);
     expect(wide.el.querySelector('.pair__note')?.textContent?.trim()).toBe(
-      'Montaria adestrada: só estas três ações; a reação fica livre. "Encerrar turno" encerra a vez dos dois.',
+      'Montaria adestrada: só estas três ações; a reação fica livre. Encerrar turno encerra a vez dos dois.',
     );
     const phone = mountCombatView({ ...opts, matches: [PHONE_QUERY] });
     await settle(phone.fixture);
@@ -117,6 +117,11 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     expect(at('app-tab-list')).toBeGreaterThan(at('app-pair-card'));
     expect(m.el.querySelector('.econ app-economy-shapes')).not.toBeNull();
     expect(m.el.querySelector('.econ .econ__move')).not.toBeNull();
+    // No divider between the row and the card, and 12 px of the column's gap (588-05).
+    expect(getComputedStyle(m.el.querySelector('.econ')!).borderBottomStyle).toBe('none');
+    expect(parseFloat(getComputedStyle(m.el.querySelector('app-pair-card')!).marginTop) || 0).toBe(
+      0,
+    );
   });
 
   it('from 768 px comes first, with the rider\'s shapes in it: the row under it keeps only "Mover" (588-04)', async () => {
@@ -129,6 +134,8 @@ describe('CombatView: the rider and the mount it directs (588-04)', () => {
     expect(card.querySelector('.pair__rider app-economy-shapes')).not.toBeNull();
     expect(m.el.querySelector('.econ app-economy-shapes')).toBeNull();
     expect(m.el.querySelector('.econ .econ__move')).not.toBeNull();
+    // The row under the card keeps its divider over the tabs.
+    expect(getComputedStyle(m.el.querySelector('.econ')!).borderBottomStyle).toBe('solid');
     expect(m.el.querySelectorAll('app-pair-card')).toHaveLength(1);
   });
 

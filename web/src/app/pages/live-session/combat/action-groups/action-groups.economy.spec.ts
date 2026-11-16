@@ -63,6 +63,18 @@ describe('ActionGroups: the economy row', () => {
     ]);
   });
 
+  it('has no divider and no room of its own under it when the pair card comes next (588-05): the column gap, 12 px, is all there is', () => {
+    const plain = getComputedStyle(setup().el.querySelector('.econ')!);
+    expect(plain.borderBottomStyle).toBe('solid');
+    expect(plain.paddingBottom).toBe('12px');
+    const { el } = setup({}, { paired: true });
+    const row = getComputedStyle(el.querySelector('.econ')!);
+    expect(row.borderBottomStyle).toBe('none');
+    expect(parseFloat(row.paddingBottom)).toBe(0);
+    expect(parseFloat(row.marginBottom)).toBe(0);
+    expect(getComputedStyle(el.querySelector('section.groups')!).gap).toBe('var(--mr-space-3)');
+  });
+
   it('has "Mover" as its only button, and it opens the move page', () => {
     const { el, events } = setup();
     const buttons = [...el.querySelectorAll('.econ button')];

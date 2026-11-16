@@ -49,9 +49,9 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
         <span class="pair__name">{{ mount().label }}</span>
         @if (shapes(); as s) {
           <app-economy-shapes variant="inline" [shapes]="s" [label]="'O que ' + theMount() + ' tem'" />
-        } @else {
-          <span class="pair__loading mr-muted" role="status">Carregando…</span>
         }
+        <!-- The region is in the card from the start, with or without words, so "Carregando…" is announced when it comes. -->
+        <span class="pair__loading mr-muted" role="status">{{ shapes() ? '' : 'Carregando…' }}</span>
       </div>
       <div class="pair__actions">
         @for (a of actions(); track a.key) {
@@ -82,7 +82,7 @@ import { EconomyShapes, economyShapes } from '../../../../shared/economy-shapes/
           <p class="pair__note"><mat-icon aria-hidden="true">link</mat-icon>Adestrada: só estas três. "Mover" leva os dois.</p>
         } @else {
           <p class="pair__note">
-            Montaria adestrada: só estas três ações; a reação fica livre. "Encerrar turno" encerra a vez dos dois.
+            Montaria adestrada: só estas três ações; a reação fica livre. Encerrar turno encerra a vez dos dois.
           </p>
         }
       }

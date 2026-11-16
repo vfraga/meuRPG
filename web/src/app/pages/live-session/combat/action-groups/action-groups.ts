@@ -16,7 +16,6 @@ import {
   type ActionOption,
   type Attack,
   type AttackOption,
-  AttackKind,
   type SpellDetails,
   type SpellOption,
   type TurnOptions,
@@ -83,8 +82,10 @@ import { resourceOf, useLine } from '../../../../core/combat/feature-use';
 import type { ResourceUsageVm } from '../../../../core/play/resource-usage.types';
 import { GroupState } from './group-state';
 import {
-  EXTRA_NAMES,
   FRENZY_QUESTION,
+  actionWordOf,
+  extraStandardsOf,
+  extraWeaponsOf,
   TAB_ICONS,
   slotRowsOf,
   specialAttack,
@@ -187,6 +188,8 @@ export class ActionGroups {
   /** The character directs a mount and the screen is 768 px or wider (588-04): the pair card, projected in `[pair]`, comes
    * first and holds the character's shapes, so the economy row keeps only "Mover". On a phone the row is whole (588-05). */
   readonly shapesAside = input(false);
+  /** The pair card comes right under the economy row (a phone, 588-05): the row has no divider and no room of its own under it. */
+  readonly paired = input(false);
   /** The master acts for the character: "Mover" is in the map's header (C8-01), so the economy row does not repeat it. */
   readonly moveAside = input(false);
   /** "Permanecer na forma": what it costs and why it cannot be pressed ('' when it can); `null` outside a form. */
@@ -405,37 +408,17 @@ export class ActionGroups {
   /** The word on the Ação header: with Extra Attack, once the first attack
    * spent the action, "1 ataque restante" (an open circle: it is not over). */
   protected readonly cannot = computed(() => cannotAct(this.own()));
-  protected readonly actionWord = computed(() => {
-    if (cannotAct(this.own())) {
-      return { word: 'Indisponível', used: true };
-    }
-    const used = this.own().actionUsed;
-    const left = this.attacksLeft();
-    if (used && left > 0 && this.attacksPerAction() > 1) {
-      return {
-        word: `${left} ${left === 1 ? 'ataque restante' : 'ataques restantes'}`,
-        used: false,
-      };
-    }
-    return { word: groupState(used), used };
-  });
+  protected readonly actionWord = computed(() =>
+    actionWordOf(this.own(), this.attacksLeft(), this.attacksPerAction()),
+  );
 
   protected readonly attackName = attackName;
 
-  /** The weapon attacks the extra action may make (one weapon attack, SRD 5.1, Velocidade): no cantrip and no save. */
+  /** What the extra action of an effect (Velocidade) may be: one weapon attack, or a standard action but the attack. */
   protected readonly extraWeapons = computed(() =>
-    this.extraAction()?.allowedActions.includes('attack')
-      ? this.options().attacks.filter(
-          (a) => a.attack?.kind === AttackKind.WEAPON && a.attack.saveDc === 0,
-        )
-      : [],
+    extraWeaponsOf(this.extraAction(), this.options().attacks),
   );
-  /** The standard actions the extra action may be, but the attack: "Disparada", "Desengajar", "Esconder", "Usar um objeto". */
-  protected readonly extraStandards = computed(() =>
-    (this.extraAction()?.allowedActions ?? [])
-      .filter((k) => k !== 'attack' && k in EXTRA_NAMES)
-      .map((k) => ({ key: `standard:${k}`, name: EXTRA_NAMES[k] })),
-  );
+  protected readonly extraStandards = computed(() => extraStandardsOf(this.extraAction()));
 
   /** The line of why under an attack: its bonus action rule, or the beams of a cast still to fire. */
   protected attackNote(o: AttackOption): string {

@@ -34,8 +34,18 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: calc(var(--mr-space-3) * -1);
-  padding-block: 12px;
-  border-bottom: 1px solid var(--mr-line);
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-bottom-width: 1px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--mr-line);
+
+  // The pair card comes next on a phone (588-05): no divider between them, and only the column's 12 px gap.
+  &.econ--paired {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom-style: none;
+  }
 }
 
 .econ__move {

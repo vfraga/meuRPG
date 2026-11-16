@@ -1184,6 +1184,7 @@
           <div class="player__blocks">
             <app-action-groups
               [shapesAside]="!!riding() && !phone()"
+              [paired]="!!riding() && phone()"
               [options]="turnOptions"
               [gearFlow]="gearFlow"
               [choosing]="targeting.mode.session()?.key ?? ''"

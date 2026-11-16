@@ -121,6 +121,10 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
     const row = fromRow.el.querySelector('.pair__mount app-economy-shapes')!;
     expect(flat(row)).toContain('9,0 m');
     expect(row.innerHTML).toContain('Ação disponível');
+    const spent = setup({ mount: horse({ actionUsed: true, movementLeftFt: 30 }) });
+    expect(spent.el.querySelector('.pair__mount app-economy-shapes')!.innerHTML).toContain(
+      'Ação usada',
+    );
   });
 
   it('labels the shapes with the article of the mount', () => {
@@ -149,6 +153,10 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
     expect(el.querySelector('.pair__mount app-economy-shapes')).toBeNull();
     expect(flat(el.querySelector('.pair__loading'))).toBe('Carregando…');
     expect(el.querySelector('.pair__loading')?.getAttribute('role')).toBe('status');
+    // The region is in the card whether or not it has words, so the words are announced when they come.
+    const read = setup();
+    expect(read.el.querySelector('.pair__loading')?.getAttribute('role')).toBe('status');
+    expect(flat(read.el.querySelector('.pair__loading'))).toBe('');
     expect(buttons().every((b) => b.classList.contains('mr-button--off'))).toBe(true);
     expect(buttons().every((b) => !b.hasAttribute('aria-describedby'))).toBe(true);
     expect(el.querySelector('#pair-why')).toBeNull();
@@ -195,6 +203,8 @@ describe('PairCard (#588, boards 588-04 and 588-05)', () => {
     const row = getComputedStyle(el.querySelector('.pair__actions')!);
     expect(row.display).toBe('flex');
     expect(row.gap).toBe('6px');
+    // Under about 360 px (320 is supported) the three do not fit: the row wraps, and no label is cut.
+    expect(row.flexWrap).toBe('wrap');
     for (const b of buttons()) {
       const s = getComputedStyle(b);
       expect(s.flexGrow).toBe('1');

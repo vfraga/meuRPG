@@ -1,3 +1,8 @@
+import type { Combatant } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import type { ExtraActionOption } from '../../../../../gen/meurpg/play/v1/lasting_effects_pb';
+import { AttackKind, type AttackOption } from '../../../../../gen/meurpg/rules/v1/rules_pb';
+import { groupState } from '../../../../core/combat/combat-options';
+import { cannotAct } from '../../../../core/combat/conditions';
 import type { ActionTabId } from '../../../../core/combat/action-tabs';
 import { GRAPPLE_DETAIL, SHOVE_DETAIL } from '../../../../core/combat/contest-view';
 import {
@@ -72,4 +77,39 @@ export function slotRowsOf(slots: {
     });
   }
   return rows;
+}
+
+/** The word on the Ação header: with Extra Attack, once the first attack spent the action, "1 ataque restante" (an open circle: it is not over). */
+export function actionWordOf(
+  own: Combatant,
+  left: number,
+  perAction: number,
+): { readonly word: string; readonly used: boolean } {
+  if (cannotAct(own)) {
+    return { word: 'Indisponível', used: true };
+  }
+  const used = own.actionUsed;
+  if (used && left > 0 && perAction > 1) {
+    return { word: `${left} ${left === 1 ? 'ataque restante' : 'ataques restantes'}`, used: false };
+  }
+  return { word: groupState(used), used };
+}
+
+/** The weapon attacks the extra action may make (one weapon attack, SRD 5.1, Velocidade): no cantrip and no save. */
+export function extraWeaponsOf(
+  extra: ExtraActionOption | null,
+  attacks: readonly AttackOption[],
+): readonly AttackOption[] {
+  return extra?.allowedActions.includes('attack')
+    ? attacks.filter((a) => a.attack?.kind === AttackKind.WEAPON && a.attack.saveDc === 0)
+    : [];
+}
+
+/** The standard actions the extra action may be, but the attack: "Disparada", "Desengajar", "Esconder", "Usar um objeto". */
+export function extraStandardsOf(
+  extra: ExtraActionOption | null,
+): readonly { readonly key: string; readonly name: string }[] {
+  return (extra?.allowedActions ?? [])
+    .filter((k) => k !== 'attack' && k in EXTRA_NAMES)
+    .map((k) => ({ key: `standard:${k}`, name: EXTRA_NAMES[k] }));
 }
