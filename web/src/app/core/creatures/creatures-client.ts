@@ -49,6 +49,8 @@ export interface SummonCast {
     readonly option: number;
     readonly creatureKeys: readonly string[];
     readonly names: readonly string[];
+    /** Convocar Montaria's steed type (`SummonChoice.creature_type`). */
+    readonly creatureType?: string;
   };
   readonly idempotencyKey: string;
 }
@@ -265,6 +267,7 @@ export class CreaturesClient {
         option: cast.summon.option,
         creatureKeys: [...cast.summon.creatureKeys],
         names: [...cast.summon.names],
+        ...(cast.summon.creatureType ? { creatureType: cast.summon.creatureType } : {}),
       },
       idempotencyKey: cast.idempotencyKey,
     });

@@ -88,7 +88,7 @@
 
       }
 
-      @if (opt()) {
+      @if (opt() && !steed.bonded()) {
         <div class="forms">
           <span class="cap" id="forms-cap">{{ listLabel() }}</span>
           @if (loadingRows()) {
@@ -111,11 +111,14 @@
           }
         </div>
       }
-      @if (combat && canApp && canType && !typing()) {
+      @if (steed.on) {
+        <app-steed-choice [spell]="s" [type]="steed.type()" [phone]="inSheet" (pickType)="pickSteedType($event)" />
+      }
+      @if (combat && die.canApp && die.canType && !die.typing()) {
         <!-- One d20 rolls the initiative of the whole group: the app's, unless the player has a physical die. -->
         <p class="roll__line">
           O app rola o d20 da iniciativa das criaturas.
-          <button type="button" class="roll__switch" (click)="typing.set(true)">Digitar o d20 de um dado físico</button>
+          <button type="button" class="roll__switch" (click)="die.typing.set(true)">Digitar o d20 de um dado físico</button>
         </p>
       }
     }
@@ -137,7 +140,7 @@
       }
       @if (combat && spell()) {
         <!-- One d20 for the whole group's initiative: the app's (the server rolls it), or the face of a physical die. -->
-        @if (needsFace()) {
+        @if (die.needsFace()) {
           <div class="roll">
             <label class="roll__label" for="initiative-face">Role 1d20 para a iniciativa das criaturas</label>
             <input
@@ -148,14 +151,14 @@
               maxlength="2"
               autocomplete="off"
               aria-describedby="initiative-hint"
-              [value]="typed()"
-              (input)="typed.set($any($event.target).value)"
+              [value]="die.typed()"
+              (input)="die.typed.set($any($event.target).value)"
             />
             <!-- What the die is for, next to the field: one d20 for the whole group. -->
             <p class="roll__hint" id="initiative-hint">
               A iniciativa das criaturas sai do dado físico que você digitar.
-              @if (canApp && canType) {
-                <button type="button" class="roll__switch" (click)="typing.set(false)">Rolar no app</button>
+              @if (die.canApp && die.canType) {
+                <button type="button" class="roll__switch" (click)="die.typing.set(false)">Rolar no app</button>
               }
             </p>
           </div>

@@ -101,6 +101,12 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   Hit dice are written by size everywhere ("5d10 e 1d6").
 - **Creatures** (`creatures-panel`, `creature-card`, `creature-page`): a "Criaturas" panel after "Combate" and "Magias", only for whoever can have a creature; HP numbers reach the owner and the master only (RN-20), and for others the panel does not exist.
   Renaming, dismissing and fixing HP are questions in place (`creature-edit`), never dialogs; a dismissal is a warning `alertdialog` with focus on "Voltar" that states what it costs.
+- **Convocar Montaria (588-21, 588-22)** (`shared/summon-sheet`, `steed-choice`, `steed-pick`, `core/creatures/steed.ts`): the summon sheet with three things of its own.
+  On the first cast a form the caster cannot ride carries the warning line "Pequeno demais para você montar" (`creature-choice-list`'s `warning`, with an icon); the form stays pickable.
+  Under the list, "Tipo do corcel" is three segments with the app's words (Celestial, Fada, Ínfero), none picked at first; the footer reads "Escolha a forma e escolha o tipo do corcel." until both are picked, and the button is "Convocar Cavalo de guerra".
+  With a bonded steed there is no list and no type: one fixed row in the chosen row's frame (the name, the tag "Mesmo corcel", "Cavalo de guerra · celestial · CA 11 · 19 PV"), the line that says it comes back as it was and where to release it, and the button "Convocar Estrela".
+  "Como funciona" (`app-fold`) holds the spell's notes and the least Intelligence, closed in a phone's bottom sheet and open in a dialog.
+  The footer says "Gasta um espaço de 2º nível ou maior. Só durante uma sessão, fora de combate."; the two refusals read "Agora não há sessão aberta." and "Leva 10 minutos: não dá durante um combate.".
 - **XP and level up:** `xp-block` shows XP; `level-up-banner` shows "Pode subir de nível"; the steps page is `pages/level-up`. "A classe mudou" (`changed-content`) lists what a master's change did to this character.
 - **Level-up steps bar:** `pages/level-up/steps-bar` draws one segment per step on a phone. From 768 px it draws numbered circles with a line between them, 56 px long and down to 16 px as the row narrows, so the last step is always inside the page. Between 768 and 1023 px only the current step keeps its label on screen; the others keep theirs for screen readers, and the line under the title says the step.
 

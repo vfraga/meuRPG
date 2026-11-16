@@ -2344,9 +2344,6 @@
   "src/app/shared/summon-sheet/summon-sheet.ts": {
     "@angular-eslint/prefer-on-push-component-change-detection": {
       "count": 1
-    },
-    "@typescript-eslint/no-magic-numbers": {
-      "count": 1
     }
   },
   "src/app/shared/table-mark/table-mark.ts": {

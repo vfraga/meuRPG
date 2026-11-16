@@ -27,9 +27,7 @@ import type { SlotRow } from '../../core/combat/cast-flow';
 import { CombatClient } from '../../core/combat/combat-client';
 import { combatErrorMessage } from '../../core/combat/combat-errors';
 import type { CombatState } from '../../core/combat/combat-state';
-import { parseSum } from '../../core/combat/combat-dice';
 import { stateWord } from '../../core/combat/combat-view';
-import { summonResult } from '../../core/combat/summon-result';
 import { CreatureArt } from '../creatures/creature-art';
 import { newKey } from '../../core/connect/idempotency';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
@@ -40,18 +38,19 @@ import { SlotPicker } from '../slot-picker/slot-picker';
 import { SheetFrame } from '../sheet/sheet-frame/sheet-frame';
 import { injectSheet } from '../sheet/sheet-host';
 import { type ChoiceRow, CreatureChoiceList } from '../creatures/creature-choice-list';
+import { SteedChoice } from './steed-choice';
+import { SteedPick } from './steed-pick';
+import { InitiativeDie, type SummonCombatResult, castSummonInCombat } from './summon-combat-cast';
 import { SummonLists } from './summon-lists';
 import {
   concentrationLineOf,
   costLineOf,
   creatureKeysOf,
-  diceFlagsOf,
   listLabelOf,
   missingOf,
   optionLabel,
   replacesNoteOf,
   resultLineOf,
-  resultTitleOf,
   rowsOf,
   setupLineOf,
   slotId,
@@ -109,6 +108,7 @@ export interface SummonSheetData {
     MatInputModule,
     SheetFrame,
     SlotPicker,
+    SteedChoice,
   ],
   templateUrl: './summon-sheet.html',
   styleUrl: './summon-sheet.scss',
@@ -121,20 +121,9 @@ export class SummonSheet {
   /** Set when the spell is cast in a combat. */
   protected readonly combat = this.data.combat;
   /** The result stage of a casting in a combat: the sentence and the creatures that joined. */
-  protected readonly result = signal<{
-    readonly text: string;
-    readonly creatures: readonly Combatant[];
-    readonly title: string;
-  } | null>(null);
-  /** The group's initiative d20 typed from a physical die (a combat only). */
-  private readonly dice = diceFlagsOf(this.combat);
-  protected readonly canApp = this.dice.canApp;
-  protected readonly canType = this.dice.canType;
-  /** The group's initiative d20 comes from a physical die: the campaign allows no other (RN-18), or the player prefers it where both are allowed. */
-  protected readonly typing = signal(this.dice.typing);
-  protected readonly typed = signal('');
-  /** The face field shows, and the cast needs and sends the face. */
-  protected readonly needsFace = computed(() => !!this.combat && (this.typing() || !this.canApp));
+  protected readonly result = signal<SummonCombatResult | null>(null);
+  /** The group's initiative d20 (a combat only): the app's, or a physical die's face typed here. */
+  protected readonly die = new InitiativeDie(this.combat);
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
   protected readonly inSheet = this.sheet.inSheet;
   protected readonly max = CREATURE_NAME_MAX;
@@ -173,6 +162,8 @@ export class SummonSheet {
     () => this.granted() !== '' || this.data.spellKey.endsWith('@mesa'),
   );
   protected readonly familiar = computed(() => this.data.spellKey === FIND_FAMILIAR);
+  /** Convocar Montaria (#588): the steed's type, or the bonded steed that comes back. */
+  protected readonly steed = new SteedPick(this.data.spellKey, this.spell);
   /** A feature's summon spends a use of the feature's resource: no slot, and the one circle the server lists. */
   protected readonly granted = computed(() => this.spell()?.grantedBy ?? '');
 
@@ -188,8 +179,6 @@ export class SummonSheet {
   protected readonly title = computed(
     () => this.result()?.title ?? this.spell()?.namePt ?? this.data.spellKey,
   );
-  /** The d20 typed for the group's initiative: a number from 1 to 20, or `null`. */
-  protected readonly face = computed(() => parseSum(this.typed(), 1, 20));
   /** In a combat: what losing the concentration does, and what casting it ends now, in the footer where it is always in view. */
   protected readonly concentrationLine = computed(() => {
     const s = this.spell();
@@ -273,6 +262,8 @@ export class SummonSheet {
       several: this.several(),
       count: this.count(),
       total: this.total(),
+      steed: this.steed.on,
+      needsType: this.steed.needsType(),
     }),
   );
   protected readonly ready = computed(
@@ -281,7 +272,7 @@ export class SummonSheet {
       !this.busy() &&
       this.spell() !== null &&
       !this.spent() &&
-      (!this.needsFace() || this.face() !== null),
+      (!this.die.needsFace() || this.die.face() !== null),
   );
 
   /** A feature's summon with no use left: the server offers no circle for it, and there is nothing to cast. */
@@ -289,11 +280,15 @@ export class SummonSheet {
 
   /** "Conjurar como ritual · 1 hora · sem gastar espaço", or what the slot costs. */
   protected readonly costLine = computed(() =>
-    costLineOf(this.spell(), this.ritual(), this.slot(), this.count()),
+    this.steed.on
+      ? this.steed.costLine()
+      : costLineOf(this.spell(), this.ritual(), this.slot(), this.count()),
   );
 
   protected readonly buttonLabel = computed(() =>
-    castVerb(this.data.spellKey, this.spell()?.namePt ?? ''),
+    this.steed.on
+      ? this.steed.verb(this.rows().find((r) => r.key === this.single())?.title ?? '')
+      : castVerb(this.data.spellKey, this.spell()?.namePt ?? ''),
   );
 
   constructor() {
@@ -318,6 +313,10 @@ export class SummonSheet {
       }
       if (this.familiar() && spell.replaces[0]) {
         this.name.set(spell.replaces[0].name);
+      }
+      const same = this.steed.preset();
+      if (same) {
+        this.counts.set({ [same]: 1 });
       }
       const free = this.slotRows().find((r) => r.enabled);
       this.slotKey.set(free ? slotId(free) : this.slotKey());
@@ -364,6 +363,11 @@ export class SummonSheet {
     this.changed();
   }
 
+  protected pickSteedType(type: string): void {
+    this.steed.type.set(type);
+    this.changed();
+  }
+
   protected setName(value: string): void {
     this.name.set(value);
     this.changed();
@@ -384,8 +388,10 @@ export class SummonSheet {
     }
     this.busy.set(true);
     this.error.set('');
-    // The kinds in the list's order, each as many times as it was chosen.
-    const keys = creatureKeysOf(this.rows(), this.counts());
+    // The kinds in the list's order, each as many times as it was chosen; a bonded steed is its own one kind.
+    const keys = this.steed.bonded()
+      ? Object.keys(this.counts())
+      : creatureKeysOf(this.rows(), this.counts());
     // Only a familiar is named by the table; any other creature takes the book's name, numbered when several.
     const names = this.familiar() && this.name().trim() !== '' ? [this.name().trim()] : [];
     const slot = this.slot();
@@ -401,7 +407,7 @@ export class SummonSheet {
         ritual: this.ritual(),
         slot: this.ritual() || !slot ? undefined : { level: slot.level, pact: slot.pact },
         ...(spell.grantedBy ? { grantedBy: spell.grantedBy } : {}),
-        summon: { option: this.option(), creatureKeys: keys, names },
+        summon: { option: this.option(), creatureKeys: keys, names, ...this.steed.choice() },
         idempotencyKey: this.key,
       });
       this.sheet.close({
@@ -416,7 +422,9 @@ export class SummonSheet {
       this.error.set(
         this.combat
           ? combatErrorMessage(err, 'conjurar a magia')
-          : creatureErrorMessage(err, 'cast'),
+          : this.steed.on
+            ? this.steed.castError(err)
+            : creatureErrorMessage(err, 'cast'),
       );
       // The refusal is at the top of the body: scroll there, where it is seen.
       setTimeout(() => this.frame().scrollToTop());
@@ -425,7 +433,6 @@ export class SummonSheet {
     }
   }
 
-  /** In a combat the cast goes through `CastSpell`: the d20 of the group's initiative (the app's, or the one typed), the slot and the choice. */
   private async castInCombat(
     spell: SummonSpellOptions,
     keys: readonly string[],
@@ -436,41 +443,26 @@ export class SummonSheet {
     if (!combat || (!slot && !spell.grantedBy)) {
       return;
     }
-    const face = this.face();
-    const die = this.needsFace() && face !== null ? { face } : { inApp: true as const };
-    const res = await this.combatApi.casts.castSpell(
-      this.data.campaignId,
-      combat.encounterId,
-      combat.casterId,
-      spell.spellKey,
-      slot ? { level: slot.level, pact: slot.pact } : null,
-      [],
-      die,
-      this.key,
-      { option: this.option(), creatureKeys: keys, names },
-      '',
-      undefined,
-      [],
-      spell.grantedBy ? { grantedBy: spell.grantedBy } : {},
-    );
-    combat.state.apply(res.encounter);
-    const made = summonResult(res.encounter, res.summoned);
-    this.result.set({
-      text: made.text,
-      creatures: made.creatures,
-      title: resultTitleOf(made.creatures),
+    const made = await castSummonInCombat(this.combatApi, {
+      campaignId: this.data.campaignId,
+      encounterId: combat.encounterId,
+      casterId: combat.casterId,
+      state: combat.state,
+      spell,
+      slot,
+      face: this.die.needsFace() ? this.die.face() : null,
+      key: this.key,
+      option: this.option(),
+      creatureKeys: keys,
+      names,
     });
+    this.result.set(made);
     this.lists.readArmorClasses(made.creatures.map((c) => c.monsterKey));
     queueMicrotask(() => this.frame().scrollToTop());
   }
 
-  protected line(c: Combatant): string {
-    return resultLineOf(c, this.resultAc().get(c.monsterKey));
-  }
-
-  protected word(c: Combatant): string {
-    return stateWord(c.state);
-  }
+  protected readonly line = (c: Combatant) => resultLineOf(c, this.resultAc().get(c.monsterKey));
+  protected readonly word = (c: Combatant) => stateWord(c.state);
 
   protected close(): void {
     // A casting in a combat hands nothing back: the combat already has what it did.
