@@ -426,6 +426,13 @@ export class CombatView extends CombatViewPartsDirective {
     );
   }
 
+  /** The master's "Montaria" mark of a row, applied at once. */
+  protected setMount(change: { id: string; kind: string }): Promise<boolean> {
+    return this.calls.run((e) =>
+      this.api.moves.setMount(this.campaignId(), e.id, change.id, change.kind),
+    );
+  }
+
   /** The master's cover mark, applied at once. */
   protected setCover(change: { id: string; cover: CoverDegree }): Promise<boolean> {
     return this.calls.run((e) =>

@@ -237,6 +237,7 @@ const SIMPLE: Row[] = [
     'setSide',
     ['c', 'enc', 'g', CombatantSide.PARTY],
   ],
+  ['setMount', [{ id: 'g', kind: 'controlled' }], 'setMount', ['c', 'enc', 'g', 'controlled']],
   [
     'setCover',
     [{ id: 'g', cover: CoverDegree.HALF }],

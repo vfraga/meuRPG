@@ -205,6 +205,27 @@ export class CombatMoveCalls {
     return need(res.encounter, 'SetCombatantSide');
   }
 
+  /** The master's "Montaria": marks an NPC or a creature a willing mount ("controlled", "independent"), or takes the mark off (`''`). */
+  async setMount(
+    campaignId: string,
+    encounterId: string,
+    combatantId: string,
+    kind: string,
+  ): Promise<Encounter> {
+    const res = await this.base.keyed(
+      ['setCombatantMount', campaignId, encounterId, combatantId, kind],
+      (sent) =>
+        this.base.client.setCombatantMount({
+          campaignId,
+          encounterId,
+          combatantId,
+          idempotencyKey: sent,
+          kind,
+        }),
+    );
+    return need(res.encounter, 'SetCombatantMount');
+  }
+
   /** The master's "Marcar cobertura": the cover the map does not show. */
   async setCover(
     campaignId: string,

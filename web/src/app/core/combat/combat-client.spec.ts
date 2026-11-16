@@ -223,6 +223,10 @@ describe('CombatClient, mounting', () => {
         sent.push({ call: 'dismount', ...req });
         return Promise.resolve({ encounter: {}, stoppedEarly: true });
       },
+      setCombatantMount: (req: Record<string, unknown>) => {
+        sent.push({ call: 'mark', ...req });
+        return Promise.resolve({ encounter: {} });
+      },
       rollMountSave: (req: Record<string, unknown>) => {
         sent.push({ call: 'save', ...req });
         return Promise.resolve({ encounter: {}, result: { held: true }, heldRollOffer: undefined });
@@ -230,6 +234,22 @@ describe('CombatClient, mounting', () => {
     };
     return { client, sent };
   }
+
+  it("sends the master's mount mark, and the empty kind that takes it off, each under a key", async () => {
+    const { client, sent } = clientMounting();
+    await client.moves.setMount('c', 'e', 'cav', 'controlled');
+    await client.moves.setMount('c', 'e', 'cav', '');
+    expect(sent[0]).toMatchObject({
+      call: 'mark',
+      campaignId: 'c',
+      encounterId: 'e',
+      combatantId: 'cav',
+      kind: 'controlled',
+    });
+    expect(sent[1]).toMatchObject({ call: 'mark', combatantId: 'cav', kind: '' });
+    expect(sent[0]['idempotencyKey']).toBeTruthy();
+    expect(sent[1]['idempotencyKey']).not.toBe(sent[0]['idempotencyKey']);
+  });
 
   it('puts the rider on the mount, and lets it land on a square, telling when something held it', async () => {
     const { client, sent } = clientMounting();
