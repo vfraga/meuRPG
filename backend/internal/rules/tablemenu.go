@@ -131,11 +131,15 @@ const (
 	ListWeaponProficiencies = "weapon_proficiencies"
 	ListToolProficiencies   = "tool_proficiencies"
 	ListOtherProficiencies  = "other_proficiencies"
-	ListTagPrefixes         = "tag_prefixes"
-	ListAbilities           = "abilities"
-	ListIncreaseAmounts     = "ability_increase_amounts"
-	ListRangedAttacks       = "ranged_attack_applies"
-	ListExtraDamageApplies  = "extra_damage_applies"
+	// ListSpellSchools and ListClassLists are the schools of magic and the classes whose spell list the master reads (the
+	// SRD's and the table's), which a filter of a choice of cantrips or of spells names.
+	ListSpellSchools       = "spell_schools"
+	ListClassLists         = "class_lists"
+	ListTagPrefixes        = "tag_prefixes"
+	ListAbilities          = "abilities"
+	ListIncreaseAmounts    = "ability_increase_amounts"
+	ListRangedAttacks      = "ranged_attack_applies"
+	ListExtraDamageApplies = "extra_damage_applies"
 	// ListExtraDamageWeapons and ListExtraDamageFrequencies are the closed values of an
 	// extra_damage's weapon and frequency.
 	ListExtraDamageWeapons     = "extra_damage_weapons"
@@ -699,6 +703,31 @@ func (c *content) menuProficiencies() (profs, skills, tools []MenuValue) {
 	return profs, skills, tools
 }
 
+// menuSpellSchools are the schools of magic a filter of spells may name, by Portuguese name.
+func (c *content) menuSpellSchools() []MenuValue {
+	var out []MenuValue
+	for _, k := range sortedKeys(c.named) {
+		if strings.HasPrefix(k, "school:") {
+			out = append(out, MenuValue{Key: k, NamePT: c.namePT(k)})
+		}
+	}
+	sortMenuByName(out)
+	return out
+}
+
+// menuClassLists are the classes whose spell list a filter of spells may name: the ones that cast or reuse a list, the SRD's
+// and the table's, but the ones the table retired. A table class that reuses another's list is under its own key.
+func (c *content) menuClassLists() []MenuValue {
+	var out []MenuValue
+	for _, k := range sortedKeys(c.classes) {
+		if _, casts := c.casting[k]; (casts || c.listFrom[k] != "") && !c.archived[k] {
+			out = append(out, MenuValue{Key: k, NamePT: c.namePT(k)})
+		}
+	}
+	sortMenuByName(out)
+	return out
+}
+
 // menuToolChoices are the tools and the weapons a choice of tools may list, by Portuguese name.
 func (c *content) menuToolChoices(tools []MenuValue) []MenuValue {
 	out := append(slices.Clone(tools), c.menuProficienciesOfKind(filterKindWeapon)...)
@@ -769,6 +798,8 @@ func (c *content) menuLists() []MenuList {
 		{Name: ListWeaponProficiencies, Values: c.menuProficienciesOfKind(filterKindWeapon)},
 		{Name: ListToolProficiencies, Values: c.menuProficienciesOfKind(filterKindTool)},
 		{Name: ListOtherProficiencies, Values: c.menuProficienciesOfKind(filterKindOther)},
+		{Name: ListSpellSchools, Values: c.menuSpellSchools()},
+		{Name: ListClassLists, Values: c.menuClassLists()},
 		{Name: ListTagPrefixes, Values: tagPrefixes},
 		{Name: ListAbilities, Values: abilityValues},
 		{Name: ListIncreaseAmounts, Values: []MenuValue{{Key: "1", NamePT: "+1"}, {Key: "2", NamePT: "+2"}}},

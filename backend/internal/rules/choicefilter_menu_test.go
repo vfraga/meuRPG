@@ -2,6 +2,7 @@ package rules
 
 import (
 	"slices"
+	"strings"
 	"testing"
 )
 
@@ -70,6 +71,53 @@ func TestTheMenuListsTheProficienciesAToolChoiceMayName(t *testing.T) {
 	for _, k := range tools {
 		if c.c.proficiencies[k].Kind == filterKindWeapon {
 			t.Errorf("the list of tools names the weapon %s", k)
+		}
+	}
+}
+
+// The master's editor names the schools and the class lists a filter of spells offers from the menu: every school of the
+// SRD, and every class whose spell list the content has, the SRD's and the table's (one that reuses another's list too).
+func TestTheMenuListsTheSchoolsAndTheClassListsOfASpellFilter(t *testing.T) {
+	t.Parallel()
+	base := loadForTest(t)
+	o := spellFilterOverlay(t, 1, Effect{Type: "note"})
+	o.Classes[1].Archived = true
+	retired := o.Classes[1].Key
+	c := withOverlayOn(t, base, o)
+	m := c.EffectMenu()
+	schools := menuList(t, m, "spell_schools")
+	if len(schools) != 8 {
+		t.Errorf("spell_schools has %d schools, want the SRD's eight", len(schools))
+	}
+	for _, s := range schools {
+		if !strings.HasPrefix(s.Key, "school:") || s.NamePT == "" {
+			t.Errorf("school %+v has no school key or no name", s)
+		}
+	}
+	lists := valueKeys(menuList(t, m, "class_lists"))
+	for _, want := range []string{"class:wizard", "class:cleric", "class:warlock", "class:paladin"} {
+		if !slices.Contains(lists, want) {
+			t.Errorf("class_lists %v lacks %s", lists, want)
+		}
+	}
+	for _, not := range []string{"class:fighter", "class:barbarian", spellFilterClass, retired} {
+		if slices.Contains(lists, not) {
+			t.Errorf("class_lists names %s, a class with no list or a retired one", not)
+		}
+	}
+	// A table class that reuses another's list is listed under its own key.
+	o.Classes[1].Archived = false
+	live := valueKeys(menuList(t, withOverlayOn(t, base, o).EffectMenu(), "class_lists"))
+	if !slices.Contains(live, spellFilterList) {
+		t.Errorf("class_lists %v lacks the table class that reuses the cleric's list", live)
+	}
+	for _, mt := range m.Types {
+		if mt.Type != "choice" {
+			continue
+		}
+		i := slices.IndexFunc(mt.Fields, func(f MenuField) bool { return f.Name == "filter" })
+		if i < 0 || mt.Fields[i].Kind != "choice_filter" {
+			t.Errorf("the choice's filter field is %+v, want kind choice_filter", mt.Fields)
 		}
 	}
 }
