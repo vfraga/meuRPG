@@ -1,0 +1,1536 @@
+{
+ "ac:alternate": {
+  "count": 5,
+  "examples": [
+   "monster:ankheg",
+   "monster:archmage",
+   "monster:druid"
+  ]
+ },
+ "action-usage:per-day": {
+  "count": 14,
+  "examples": [
+   "monster:aboleth",
+   "monster:androsphinx",
+   "monster:darkmantle"
+  ]
+ },
+ "action-usage:recharge 4-6": {
+  "count": 3,
+  "examples": [
+   "monster:air-elemental",
+   "monster:blink-dog",
+   "monster:water-elemental"
+  ]
+ },
+ "action-usage:recharge 5-6": {
+  "count": 55,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ "action-usage:recharge 6": {
+  "count": 7,
+  "examples": [
+   "monster:ankheg",
+   "monster:dust-mephit",
+   "monster:ghost"
+  ]
+ },
+ "action-usage:recharge-after-rest": {
+  "count": 6,
+  "examples": [
+   "monster:chain-devil",
+   "monster:cloaker",
+   "monster:duergar"
+  ]
+ },
+ "action:melee-attack": {
+  "count": 277,
+  "examples": [
+   "monster:aboleth",
+   "monster:acolyte",
+   "monster:adult-black-dragon"
+  ]
+ },
+ "action:melee-attack+grapple": {
+  "count": 29,
+  "examples": [
+   "monster:ankheg",
+   "monster:behir",
+   "monster:chain-devil"
+  ]
+ },
+ "action:melee-attack+save": {
+  "count": 51,
+  "examples": [
+   "monster:aboleth",
+   "monster:assassin",
+   "monster:balor"
+  ]
+ },
+ "action:melee-attack+save+grapple+prone": {
+  "count": 1,
+  "examples": [
+   "monster:giant-crocodile"
+  ]
+ },
+ "action:melee-attack+save+grapple+swallow": {
+  "count": 1,
+  "examples": [
+   "monster:kraken"
+  ]
+ },
+ "action:melee-attack+save+prone": {
+  "count": 9,
+  "examples": [
+   "monster:dire-wolf",
+   "monster:dragon-turtle",
+   "monster:gibbering-mouther"
+  ]
+ },
+ "action:melee-attack+save+swallow": {
+  "count": 1,
+  "examples": [
+   "monster:purple-worm"
+  ]
+ },
+ "action:multiattack": {
+  "count": 148,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ "action:other:animate chains": {
+  "count": 1,
+  "examples": [
+   "monster:chain-devil"
+  ]
+ },
+ "action:other:animate trees": {
+  "count": 1,
+  "examples": [
+   "monster:treant"
+  ]
+ },
+ "action:other:breath weapons": {
+  "count": 20,
+  "examples": [
+   "monster:adult-brass-dragon",
+   "monster:adult-bronze-dragon",
+   "monster:adult-copper-dragon"
+  ]
+ },
+ "action:other:change shape": {
+  "count": 9,
+  "examples": [
+   "monster:ancient-brass-dragon",
+   "monster:ancient-bronze-dragon",
+   "monster:ancient-copper-dragon"
+  ]
+ },
+ "action:other:children of the night": {
+  "count": 2,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-vampire"
+  ]
+ },
+ "action:other:create specter": {
+  "count": 1,
+  "examples": [
+   "monster:wraith"
+  ]
+ },
+ "action:other:darkness aura": {
+  "count": 1,
+  "examples": [
+   "monster:darkmantle"
+  ]
+ },
+ "action:other:enlarge": {
+  "count": 1,
+  "examples": [
+   "monster:duergar"
+  ]
+ },
+ "action:other:ethereal stride": {
+  "count": 1,
+  "examples": [
+   "monster:nightmare"
+  ]
+ },
+ "action:other:etherealness": {
+  "count": 3,
+  "examples": [
+   "monster:ghost",
+   "monster:night-hag",
+   "monster:succubus-incubus"
+  ]
+ },
+ "action:other:flying sword": {
+  "count": 1,
+  "examples": [
+   "monster:solar"
+  ]
+ },
+ "action:other:haste": {
+  "count": 1,
+  "examples": [
+   "monster:clay-golem"
+  ]
+ },
+ "action:other:healing touch": {
+  "count": 4,
+  "examples": [
+   "monster:deva",
+   "monster:planetar",
+   "monster:solar"
+  ]
+ },
+ "action:other:illusory appearance": {
+  "count": 2,
+  "examples": [
+   "monster:green-hag",
+   "monster:sea-hag"
+  ]
+ },
+ "action:other:ink cloud": {
+  "count": 1,
+  "examples": [
+   "monster:giant-octopus"
+  ]
+ },
+ "action:other:invisibility": {
+  "count": 5,
+  "examples": [
+   "monster:duergar",
+   "monster:imp",
+   "monster:quasit"
+  ]
+ },
+ "action:other:invisible passage": {
+  "count": 1,
+  "examples": [
+   "monster:green-hag"
+  ]
+ },
+ "action:other:leadership": {
+  "count": 1,
+  "examples": [
+   "monster:knight"
+  ]
+ },
+ "action:other:nightmare haunting": {
+  "count": 1,
+  "examples": [
+   "monster:night-hag"
+  ]
+ },
+ "action:other:phantasms": {
+  "count": 1,
+  "examples": [
+   "monster:cloaker"
+  ]
+ },
+ "action:other:read thoughts": {
+  "count": 1,
+  "examples": [
+   "monster:doppelganger"
+  ]
+ },
+ "action:other:reel": {
+  "count": 1,
+  "examples": [
+   "monster:roper"
+  ]
+ },
+ "action:other:roar": {
+  "count": 1,
+  "examples": [
+   "monster:androsphinx"
+  ]
+ },
+ "action:other:swallow": {
+  "count": 2,
+  "examples": [
+   "monster:giant-frog",
+   "monster:giant-toad"
+  ]
+ },
+ "action:other:teleport": {
+  "count": 5,
+  "examples": [
+   "monster:balor",
+   "monster:blink-dog",
+   "monster:marilith"
+  ]
+ },
+ "action:ranged-attack": {
+  "count": 36,
+  "examples": [
+   "monster:ape",
+   "monster:bandit",
+   "monster:barbed-devil"
+  ]
+ },
+ "action:ranged-attack+save": {
+  "count": 7,
+  "examples": [
+   "monster:assassin",
+   "monster:deep-gnome-svirfneblin",
+   "monster:drow"
+  ]
+ },
+ "action:ranged-attack+save+prone": {
+  "count": 1,
+  "examples": [
+   "monster:stone-giant"
+  ]
+ },
+ "action:save-effect": {
+  "count": 62,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ "action:save-effect+damage": {
+  "count": 57,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ "condition_immunities": {
+  "count": 92,
+  "examples": [
+   "monster:adult-green-dragon",
+   "monster:air-elemental",
+   "monster:ancient-green-dragon"
+  ]
+ },
+ "immunities:nonmagical-clause": {
+  "count": 26,
+  "examples": [
+   "monster:androsphinx",
+   "monster:clay-golem",
+   "monster:couatl"
+  ]
+ },
+ "immunities:plain": {
+  "count": 120,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ "legendary:actions": {
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ "legendary:cost-1": {
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ "legendary:cost-2": {
+  "count": 32,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ "legendary:cost-3": {
+  "count": 6,
+  "examples": [
+   "monster:androsphinx",
+   "monster:gynosphinx",
+   "monster:kraken"
+  ]
+ },
+ "reaction:parry": {
+  "count": 6,
+  "examples": [
+   "monster:bandit-captain",
+   "monster:erinyes",
+   "monster:gladiator"
+  ]
+ },
+ "reaction:rock catching": {
+  "count": 1,
+  "examples": [
+   "monster:stone-giant"
+  ]
+ },
+ "reaction:shield": {
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ]
+ },
+ "reaction:shriek": {
+  "count": 1,
+  "examples": [
+   "monster:shrieker"
+  ]
+ },
+ "reaction:split": {
+  "count": 2,
+  "examples": [
+   "monster:black-pudding",
+   "monster:ochre-jelly"
+  ]
+ },
+ "reaction:unnerving mask": {
+  "count": 1,
+  "examples": [
+   "monster:chain-devil"
+  ]
+ },
+ "resistances:nonmagical-clause": {
+  "count": 44,
+  "examples": [
+   "monster:air-elemental",
+   "monster:archmage",
+   "monster:balor"
+  ]
+ },
+ "resistances:plain": {
+  "count": 59,
+  "examples": [
+   "monster:air-elemental",
+   "monster:archmage",
+   "monster:assassin"
+  ]
+ },
+ "sense:blindsight": {
+  "count": 83,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ "sense:darkvision": {
+  "count": 181,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon"
+  ]
+ },
+ "sense:tremorsense": {
+  "count": 6,
+  "examples": [
+   "monster:ankheg",
+   "monster:bulette",
+   "monster:earth-elemental"
+  ]
+ },
+ "sense:truesight": {
+  "count": 13,
+  "examples": [
+   "monster:androsphinx",
+   "monster:balor",
+   "monster:couatl"
+  ]
+ },
+ "speed:burrow": {
+  "count": 21,
+  "examples": [
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon",
+   "monster:adult-white-dragon"
+  ]
+ },
+ "speed:climb": {
+  "count": 36,
+  "examples": [
+   "monster:adult-copper-dragon",
+   "monster:adult-red-dragon",
+   "monster:ancient-copper-dragon"
+  ]
+ },
+ "speed:fly": {
+  "count": 104,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ "speed:hover": {
+  "count": 7,
+  "examples": [
+   "monster:air-elemental",
+   "monster:flying-sword",
+   "monster:ghost"
+  ]
+ },
+ "speed:swim": {
+  "count": 60,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-bronze-dragon"
+  ]
+ },
+ "trait:aberrant ground": {
+  "count": 1,
+  "examples": [
+   "monster:gibbering-mouther"
+  ]
+ },
+ "trait:acid absorption": {
+  "count": 1,
+  "examples": [
+   "monster:clay-golem"
+  ]
+ },
+ "trait:adhesive": {
+  "count": 1,
+  "examples": [
+   "monster:mimic"
+  ]
+ },
+ "trait:aggressive": {
+  "count": 1,
+  "examples": [
+   "monster:orc"
+  ]
+ },
+ "trait:air form": {
+  "count": 1,
+  "examples": [
+   "monster:air-elemental"
+  ]
+ },
+ "trait:ambusher": {
+  "count": 1,
+  "examples": [
+   "monster:doppelganger"
+  ]
+ },
+ "trait:amorphous": {
+  "count": 4,
+  "examples": [
+   "monster:black-pudding",
+   "monster:gray-ooze",
+   "monster:ochre-jelly"
+  ]
+ },
+ "trait:amphibious": {
+  "count": 30,
+  "examples": [
+   "monster:aboleth",
+   "monster:adult-black-dragon",
+   "monster:adult-bronze-dragon"
+  ]
+ },
+ "trait:angelic weapons": {
+  "count": 3,
+  "examples": [
+   "monster:deva",
+   "monster:planetar",
+   "monster:solar"
+  ]
+ },
+ "trait:antimagic susceptibility": {
+  "count": 3,
+  "examples": [
+   "monster:animated-armor",
+   "monster:flying-sword",
+   "monster:rug-of-smothering"
+  ]
+ },
+ "trait:assassinate": {
+  "count": 1,
+  "examples": [
+   "monster:assassin"
+  ]
+ },
+ "trait:aversion of fire": {
+  "count": 1,
+  "examples": [
+   "monster:flesh-golem"
+  ]
+ },
+ "trait:barbed hide": {
+  "count": 1,
+  "examples": [
+   "monster:barbed-devil"
+  ]
+ },
+ "trait:beast of burden": {
+  "count": 1,
+  "examples": [
+   "monster:mule"
+  ]
+ },
+ "trait:berserk": {
+  "count": 2,
+  "examples": [
+   "monster:clay-golem",
+   "monster:flesh-golem"
+  ]
+ },
+ "trait:blind senses": {
+  "count": 1,
+  "examples": [
+   "monster:grimlock"
+  ]
+ },
+ "trait:blood frenzy": {
+  "count": 5,
+  "examples": [
+   "monster:giant-shark",
+   "monster:hunter-shark",
+   "monster:quipper"
+  ]
+ },
+ "trait:bound": {
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ]
+ },
+ "trait:brave": {
+  "count": 2,
+  "examples": [
+   "monster:gladiator",
+   "monster:knight"
+  ]
+ },
+ "trait:brute": {
+  "count": 2,
+  "examples": [
+   "monster:bugbear",
+   "monster:gladiator"
+  ]
+ },
+ "trait:charge": {
+  "count": 14,
+  "examples": [
+   "monster:boar",
+   "monster:centaur",
+   "monster:elk"
+  ]
+ },
+ "trait:confer fire resistance": {
+  "count": 1,
+  "examples": [
+   "monster:nightmare"
+  ]
+ },
+ "trait:consume life": {
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ]
+ },
+ "trait:corrode metal": {
+  "count": 1,
+  "examples": [
+   "monster:gray-ooze"
+  ]
+ },
+ "trait:corrosive form": {
+  "count": 1,
+  "examples": [
+   "monster:black-pudding"
+  ]
+ },
+ "trait:cunning action": {
+  "count": 1,
+  "examples": [
+   "monster:spy"
+  ]
+ },
+ "trait:damage transfer": {
+  "count": 2,
+  "examples": [
+   "monster:cloaker",
+   "monster:rug-of-smothering"
+  ]
+ },
+ "trait:dark devotion": {
+  "count": 2,
+  "examples": [
+   "monster:cult-fanatic",
+   "monster:cultist"
+  ]
+ },
+ "trait:death burst": {
+  "count": 5,
+  "examples": [
+   "monster:dust-mephit",
+   "monster:ice-mephit",
+   "monster:magma-mephit"
+  ]
+ },
+ "trait:death throes": {
+  "count": 1,
+  "examples": [
+   "monster:balor"
+  ]
+ },
+ "trait:devil's sight": {
+  "count": 8,
+  "examples": [
+   "monster:barbed-devil",
+   "monster:bearded-devil",
+   "monster:bone-devil"
+  ]
+ },
+ "trait:divine awareness": {
+  "count": 2,
+  "examples": [
+   "monster:planetar",
+   "monster:solar"
+  ]
+ },
+ "trait:divine eminence": {
+  "count": 1,
+  "examples": [
+   "monster:priest"
+  ]
+ },
+ "trait:duergar resilience": {
+  "count": 1,
+  "examples": [
+   "monster:duergar"
+  ]
+ },
+ "trait:earth glide": {
+  "count": 2,
+  "examples": [
+   "monster:earth-elemental",
+   "monster:xorn"
+  ]
+ },
+ "trait:echolocation": {
+  "count": 5,
+  "examples": [
+   "monster:bat",
+   "monster:darkmantle",
+   "monster:giant-bat"
+  ]
+ },
+ "trait:elemental demise": {
+  "count": 2,
+  "examples": [
+   "monster:djinni",
+   "monster:efreeti"
+  ]
+ },
+ "trait:ephemeral": {
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ]
+ },
+ "trait:ethereal jaunt": {
+  "count": 1,
+  "examples": [
+   "monster:phase-spider"
+  ]
+ },
+ "trait:ethereal sight": {
+  "count": 1,
+  "examples": [
+   "monster:ghost"
+  ]
+ },
+ "trait:evasion": {
+  "count": 1,
+  "examples": [
+   "monster:assassin"
+  ]
+ },
+ "trait:false appearance": {
+  "count": 16,
+  "examples": [
+   "monster:animated-armor",
+   "monster:awakened-shrub",
+   "monster:awakened-tree"
+  ]
+ },
+ "trait:faultless tracker": {
+  "count": 1,
+  "examples": [
+   "monster:invisible-stalker"
+  ]
+ },
+ "trait:fear aura": {
+  "count": 1,
+  "examples": [
+   "monster:pit-fiend"
+  ]
+ },
+ "trait:fey ancestry": {
+  "count": 2,
+  "examples": [
+   "monster:drider",
+   "monster:drow"
+  ]
+ },
+ "trait:fire absorption": {
+  "count": 1,
+  "examples": [
+   "monster:iron-golem"
+  ]
+ },
+ "trait:fire aura": {
+  "count": 1,
+  "examples": [
+   "monster:balor"
+  ]
+ },
+ "trait:fire form": {
+  "count": 1,
+  "examples": [
+   "monster:fire-elemental"
+  ]
+ },
+ "trait:flyby": {
+  "count": 3,
+  "examples": [
+   "monster:flying-snake",
+   "monster:giant-owl",
+   "monster:owl"
+  ]
+ },
+ "trait:freedom of movement": {
+  "count": 1,
+  "examples": [
+   "monster:kraken"
+  ]
+ },
+ "trait:freeze": {
+  "count": 1,
+  "examples": [
+   "monster:water-elemental"
+  ]
+ },
+ "trait:gibbering": {
+  "count": 1,
+  "examples": [
+   "monster:gibbering-mouther"
+  ]
+ },
+ "trait:gnome cunning": {
+  "count": 1,
+  "examples": [
+   "monster:deep-gnome-svirfneblin"
+  ]
+ },
+ "trait:grappler": {
+  "count": 1,
+  "examples": [
+   "monster:mimic"
+  ]
+ },
+ "trait:grasping tendrils": {
+  "count": 1,
+  "examples": [
+   "monster:roper"
+  ]
+ },
+ "trait:heated body": {
+  "count": 3,
+  "examples": [
+   "monster:azer",
+   "monster:remorhaz",
+   "monster:salamander"
+  ]
+ },
+ "trait:heated weapons": {
+  "count": 2,
+  "examples": [
+   "monster:azer",
+   "monster:salamander"
+  ]
+ },
+ "trait:hellish rejuvenation": {
+  "count": 1,
+  "examples": [
+   "monster:lemure"
+  ]
+ },
+ "trait:hellish weapons": {
+  "count": 1,
+  "examples": [
+   "monster:erinyes"
+  ]
+ },
+ "trait:hold breath": {
+  "count": 8,
+  "examples": [
+   "monster:crocodile",
+   "monster:giant-crocodile",
+   "monster:giant-octopus"
+  ]
+ },
+ "trait:horrific appearance": {
+  "count": 1,
+  "examples": [
+   "monster:sea-hag"
+  ]
+ },
+ "trait:ice walk": {
+  "count": 3,
+  "examples": [
+   "monster:adult-white-dragon",
+   "monster:ancient-white-dragon",
+   "monster:young-white-dragon"
+  ]
+ },
+ "trait:ignited illumination": {
+  "count": 1,
+  "examples": [
+   "monster:magmin"
+  ]
+ },
+ "trait:illumination": {
+  "count": 4,
+  "examples": [
+   "monster:azer",
+   "monster:fire-elemental",
+   "monster:giant-fire-beetle"
+  ]
+ },
+ "trait:immutable form": {
+  "count": 4,
+  "examples": [
+   "monster:clay-golem",
+   "monster:flesh-golem",
+   "monster:iron-golem"
+  ]
+ },
+ "trait:incorporeal movement": {
+  "count": 4,
+  "examples": [
+   "monster:ghost",
+   "monster:specter",
+   "monster:will-o-wisp"
+  ]
+ },
+ "trait:innate spellcasting": {
+  "count": 24,
+  "examples": [
+   "monster:cloud-giant",
+   "monster:couatl",
+   "monster:deep-gnome-svirfneblin"
+  ]
+ },
+ "trait:inscrutable": {
+  "count": 2,
+  "examples": [
+   "monster:androsphinx",
+   "monster:gynosphinx"
+  ]
+ },
+ "trait:invisibility": {
+  "count": 1,
+  "examples": [
+   "monster:invisible-stalker"
+  ]
+ },
+ "trait:iron scent": {
+  "count": 1,
+  "examples": [
+   "monster:rust-monster"
+  ]
+ },
+ "trait:keen hearing": {
+  "count": 4,
+  "examples": [
+   "monster:bat",
+   "monster:giant-bat",
+   "monster:killer-whale"
+  ]
+ },
+ "trait:keen hearing and sight": {
+  "count": 3,
+  "examples": [
+   "monster:giant-owl",
+   "monster:owl",
+   "monster:scout"
+  ]
+ },
+ "trait:keen hearing and smell": {
+  "count": 17,
+  "examples": [
+   "monster:blink-dog",
+   "monster:dire-wolf",
+   "monster:giant-weasel"
+  ]
+ },
+ "trait:keen senses": {
+  "count": 1,
+  "examples": [
+   "monster:pseudodragon"
+  ]
+ },
+ "trait:keen sight": {
+  "count": 7,
+  "examples": [
+   "monster:blood-hawk",
+   "monster:eagle",
+   "monster:giant-eagle"
+  ]
+ },
+ "trait:keen sight and smell": {
+  "count": 3,
+  "examples": [
+   "monster:giant-vulture",
+   "monster:owlbear",
+   "monster:vulture"
+  ]
+ },
+ "trait:keen smell": {
+  "count": 22,
+  "examples": [
+   "monster:badger",
+   "monster:black-bear",
+   "monster:brown-bear"
+  ]
+ },
+ "trait:labyrinthine recall": {
+  "count": 1,
+  "examples": [
+   "monster:minotaur"
+  ]
+ },
+ "trait:legendary resistance": {
+  "count": 25,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ "trait:light sensitivity": {
+  "count": 1,
+  "examples": [
+   "monster:cloaker"
+  ]
+ },
+ "trait:lightning absorption": {
+  "count": 2,
+  "examples": [
+   "monster:flesh-golem",
+   "monster:shambling-mound"
+  ]
+ },
+ "trait:limited amphibiousness": {
+  "count": 1,
+  "examples": [
+   "monster:sahuagin"
+  ]
+ },
+ "trait:limited magic immunity": {
+  "count": 1,
+  "examples": [
+   "monster:rakshasa"
+  ]
+ },
+ "trait:limited telepathy": {
+  "count": 2,
+  "examples": [
+   "monster:otyugh",
+   "monster:pseudodragon"
+  ]
+ },
+ "trait:magic resistance": {
+  "count": 31,
+  "examples": [
+   "monster:archmage",
+   "monster:balor",
+   "monster:barbed-devil"
+  ]
+ },
+ "trait:magic weapons": {
+  "count": 12,
+  "examples": [
+   "monster:androsphinx",
+   "monster:balor",
+   "monster:clay-golem"
+  ]
+ },
+ "trait:martial advantage": {
+  "count": 1,
+  "examples": [
+   "monster:hobgoblin"
+  ]
+ },
+ "trait:mimicry": {
+  "count": 2,
+  "examples": [
+   "monster:green-hag",
+   "monster:raven"
+  ]
+ },
+ "trait:misty escape": {
+  "count": 3,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-mist",
+   "monster:vampire-vampire"
+  ]
+ },
+ "trait:mucous cloud": {
+  "count": 1,
+  "examples": [
+   "monster:aboleth"
+  ]
+ },
+ "trait:multiple heads": {
+  "count": 1,
+  "examples": [
+   "monster:hydra"
+  ]
+ },
+ "trait:night hag items": {
+  "count": 1,
+  "examples": [
+   "monster:night-hag"
+  ]
+ },
+ "trait:nimble escape": {
+  "count": 1,
+  "examples": [
+   "monster:goblin"
+  ]
+ },
+ "trait:ooze cube": {
+  "count": 1,
+  "examples": [
+   "monster:gelatinous-cube"
+  ]
+ },
+ "trait:pack tactics": {
+  "count": 17,
+  "examples": [
+   "monster:baboon",
+   "monster:blood-hawk",
+   "monster:dire-wolf"
+  ]
+ },
+ "trait:petrifying gaze": {
+  "count": 2,
+  "examples": [
+   "monster:basilisk",
+   "monster:medusa"
+  ]
+ },
+ "trait:pounce": {
+  "count": 6,
+  "examples": [
+   "monster:lion",
+   "monster:panther",
+   "monster:saber-toothed-tiger"
+  ]
+ },
+ "trait:probing telepathy": {
+  "count": 1,
+  "examples": [
+   "monster:aboleth"
+  ]
+ },
+ "trait:rampage": {
+  "count": 2,
+  "examples": [
+   "monster:giant-hyena",
+   "monster:gnoll"
+  ]
+ },
+ "trait:reactive": {
+  "count": 1,
+  "examples": [
+   "monster:marilith"
+  ]
+ },
+ "trait:reactive heads": {
+  "count": 1,
+  "examples": [
+   "monster:hydra"
+  ]
+ },
+ "trait:reckless": {
+  "count": 2,
+  "examples": [
+   "monster:berserker",
+   "monster:minotaur"
+  ]
+ },
+ "trait:reflective carapace": {
+  "count": 1,
+  "examples": [
+   "monster:tarrasque"
+  ]
+ },
+ "trait:regeneration": {
+  "count": 7,
+  "examples": [
+   "monster:oni",
+   "monster:shield-guardian",
+   "monster:troll"
+  ]
+ },
+ "trait:rejuvenation": {
+  "count": 4,
+  "examples": [
+   "monster:guardian-naga",
+   "monster:lich",
+   "monster:mummy-lord"
+  ]
+ },
+ "trait:relentless": {
+  "count": 5,
+  "examples": [
+   "monster:boar",
+   "monster:giant-boar",
+   "monster:wereboar-boar"
+  ]
+ },
+ "trait:running leap": {
+  "count": 1,
+  "examples": [
+   "monster:lion"
+  ]
+ },
+ "trait:rust metal": {
+  "count": 1,
+  "examples": [
+   "monster:rust-monster"
+  ]
+ },
+ "trait:sense magic": {
+  "count": 1,
+  "examples": [
+   "monster:chuul"
+  ]
+ },
+ "trait:shadow stealth": {
+  "count": 1,
+  "examples": [
+   "monster:shadow"
+  ]
+ },
+ "trait:shapechanger": {
+  "count": 23,
+  "examples": [
+   "monster:doppelganger",
+   "monster:imp",
+   "monster:mimic"
+  ]
+ },
+ "trait:shark telepathy": {
+  "count": 1,
+  "examples": [
+   "monster:sahuagin"
+  ]
+ },
+ "trait:shielded mind": {
+  "count": 1,
+  "examples": [
+   "monster:couatl"
+  ]
+ },
+ "trait:siege monster": {
+  "count": 4,
+  "examples": [
+   "monster:earth-elemental",
+   "monster:kraken",
+   "monster:tarrasque"
+  ]
+ },
+ "trait:sneak attack": {
+  "count": 2,
+  "examples": [
+   "monster:assassin",
+   "monster:spy"
+  ]
+ },
+ "trait:snow camouflage": {
+  "count": 1,
+  "examples": [
+   "monster:winter-wolf"
+  ]
+ },
+ "trait:speak with beasts and plants": {
+  "count": 1,
+  "examples": [
+   "monster:dryad"
+  ]
+ },
+ "trait:spell storing": {
+  "count": 1,
+  "examples": [
+   "monster:shield-guardian"
+  ]
+ },
+ "trait:spellcasting": {
+  "count": 12,
+  "examples": [
+   "monster:acolyte",
+   "monster:androsphinx",
+   "monster:archmage"
+  ]
+ },
+ "trait:spider climb": {
+  "count": 14,
+  "examples": [
+   "monster:black-pudding",
+   "monster:drider",
+   "monster:ettercap"
+  ]
+ },
+ "trait:standing leap": {
+  "count": 4,
+  "examples": [
+   "monster:bulette",
+   "monster:frog",
+   "monster:giant-frog"
+  ]
+ },
+ "trait:steadfast": {
+  "count": 1,
+  "examples": [
+   "monster:bearded-devil"
+  ]
+ },
+ "trait:stench": {
+  "count": 2,
+  "examples": [
+   "monster:ghast",
+   "monster:hezrou"
+  ]
+ },
+ "trait:stone camouflage": {
+  "count": 5,
+  "examples": [
+   "monster:deep-gnome-svirfneblin",
+   "monster:grick",
+   "monster:grimlock"
+  ]
+ },
+ "trait:sunlight sensitivity": {
+  "count": 7,
+  "examples": [
+   "monster:drider",
+   "monster:drow",
+   "monster:duergar"
+  ]
+ },
+ "trait:sunlight weakness": {
+  "count": 1,
+  "examples": [
+   "monster:shadow"
+  ]
+ },
+ "trait:sure-footed": {
+  "count": 3,
+  "examples": [
+   "monster:giant-goat",
+   "monster:goat",
+   "monster:mule"
+  ]
+ },
+ "trait:surprise attack": {
+  "count": 2,
+  "examples": [
+   "monster:bugbear",
+   "monster:doppelganger"
+  ]
+ },
+ "trait:swarm": {
+  "count": 10,
+  "examples": [
+   "monster:swarm-of-bats",
+   "monster:swarm-of-beetles",
+   "monster:swarm-of-centipedes"
+  ]
+ },
+ "trait:tail spike regrowth": {
+  "count": 1,
+  "examples": [
+   "monster:manticore"
+  ]
+ },
+ "trait:telepathic bond": {
+  "count": 2,
+  "examples": [
+   "monster:homunculus",
+   "monster:succubus-incubus"
+  ]
+ },
+ "trait:trampling charge": {
+  "count": 5,
+  "examples": [
+   "monster:elephant",
+   "monster:gorgon",
+   "monster:mammoth"
+  ]
+ },
+ "trait:transparent": {
+  "count": 1,
+  "examples": [
+   "monster:gelatinous-cube"
+  ]
+ },
+ "trait:treasure sense": {
+  "count": 1,
+  "examples": [
+   "monster:xorn"
+  ]
+ },
+ "trait:tree stride": {
+  "count": 1,
+  "examples": [
+   "monster:dryad"
+  ]
+ },
+ "trait:tunneler": {
+  "count": 1,
+  "examples": [
+   "monster:purple-worm"
+  ]
+ },
+ "trait:turn defiance": {
+  "count": 1,
+  "examples": [
+   "monster:ghast"
+  ]
+ },
+ "trait:turn resistance": {
+  "count": 1,
+  "examples": [
+   "monster:lich"
+  ]
+ },
+ "trait:two heads": {
+  "count": 1,
+  "examples": [
+   "monster:ettin"
+  ]
+ },
+ "trait:two-headed": {
+  "count": 1,
+  "examples": [
+   "monster:death-dog"
+  ]
+ },
+ "trait:undead fortitude": {
+  "count": 2,
+  "examples": [
+   "monster:ogre-zombie",
+   "monster:zombie"
+  ]
+ },
+ "trait:underwater camouflage": {
+  "count": 2,
+  "examples": [
+   "monster:giant-octopus",
+   "monster:octopus"
+  ]
+ },
+ "trait:vampire weaknesses": {
+  "count": 4,
+  "examples": [
+   "monster:vampire-bat",
+   "monster:vampire-mist",
+   "monster:vampire-spawn"
+  ]
+ },
+ "trait:variable illumination": {
+  "count": 1,
+  "examples": [
+   "monster:will-o-wisp"
+  ]
+ },
+ "trait:wakeful": {
+  "count": 2,
+  "examples": [
+   "monster:ettin",
+   "monster:hydra"
+  ]
+ },
+ "trait:water breathing": {
+  "count": 9,
+  "examples": [
+   "monster:giant-octopus",
+   "monster:giant-sea-horse",
+   "monster:giant-shark"
+  ]
+ },
+ "trait:water form": {
+  "count": 1,
+  "examples": [
+   "monster:water-elemental"
+  ]
+ },
+ "trait:water susceptibility": {
+  "count": 1,
+  "examples": [
+   "monster:fire-elemental"
+  ]
+ },
+ "trait:web sense": {
+  "count": 5,
+  "examples": [
+   "monster:ettercap",
+   "monster:giant-spider",
+   "monster:giant-wolf-spider"
+  ]
+ },
+ "trait:web walker": {
+  "count": 7,
+  "examples": [
+   "monster:drider",
+   "monster:ettercap",
+   "monster:giant-spider"
+  ]
+ },
+ "usage:per-day": {
+  "count": 25,
+  "examples": [
+   "monster:adult-black-dragon",
+   "monster:adult-blue-dragon",
+   "monster:adult-brass-dragon"
+  ]
+ },
+ "usage:recharge-after-rest": {
+  "count": 5,
+  "examples": [
+   "monster:boar",
+   "monster:giant-boar",
+   "monster:wereboar-boar"
+  ]
+ },
+ "vulnerabilities:plain": {
+  "count": 15,
+  "examples": [
+   "monster:awakened-shrub",
+   "monster:awakened-tree",
+   "monster:dust-mephit"
+  ]
+ }
+}
