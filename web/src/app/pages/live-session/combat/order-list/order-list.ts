@@ -41,13 +41,12 @@ import { FavorChip } from '../../../../shared/favor-chip/favor-chip';
 import { FavorState } from '../../../../core/play/favor-state';
 import { RowFavor } from './row-favor';
 import { NudgeButton } from '../../nudge-button/nudge-button';
-import { tieNumbers } from '../../../../core/format/text';
 import { joinDots } from '../../../../core/format/text';
 import { conditionTags } from '../../../../core/combat/conditions';
 import { holdsReadied } from '../../../../core/combat/ready-card';
 import { type Pool, combatPool } from '../../../../core/combat/form-pool';
 import { labelTags } from '../../../../core/effects/effects';
-import { coverMark, coverText, sideTags } from '../../../../core/combat/cover';
+import { sideTags } from '../../../../core/combat/cover';
 import { article } from '../../../../core/combat/combat-log';
 import { combatantInitial, isPlayer } from '../../../../core/combat/combat-view';
 import {
@@ -70,6 +69,10 @@ import { EndAidQuestion } from './end-aid-question';
 import { LoseQuestion } from './lose-question';
 import { OrderLegend } from './order-legend';
 import { RowCover } from './row-cover';
+import { coverLineOf, coverPictogramOf, hasCoverMark } from './row-cover-words';
+import { RowMount } from './row-mount';
+import { canMarkMount, mountMarkView } from '../../../../core/combat/mount-mark';
+import { SaddleIcon } from '../../../../shared/saddle-icon/saddle-icon';
 import { downText, isDown, isDying, rowDetail, rowFacts, rowState, stateWordOf } from './row-words';
 import { rowsBelow } from './rows-below';
 import { ShieldWatch } from './shield-watch';
@@ -106,6 +109,8 @@ function concentrationOf(c: Combatant): string {
     CombatantToken,
     OrderLegend,
     RowCover,
+    RowMount,
+    SaddleIcon,
     DeathRow,
     MatButtonModule,
     MatIconModule,
@@ -158,6 +163,8 @@ export class OrderList {
   readonly cover = output<{ id: string; cover: CoverDegree }>();
   /** In a combat without a map the menu's "Marcar cobertura…" opens the theatre cover editor (the fallback for a joint or master turn). */
   readonly coverEdit = output<string>();
+  /** The master's "Montaria" mark: "controlled", "independent", or `''` to take it off. */
+  readonly mount = output<{ id: string; kind: string }>();
   /** The master's "Aparar: perguntar a cada golpe" switch of an NPC with a Parry: `ask` is the mode it is switched to. */
   readonly parryAsk = output<{ id: string; ask: boolean }>();
   /** The characters whose "Confirmar a morte" question the master put away. */
@@ -193,6 +200,8 @@ export class OrderList {
   private readonly shields = new ShieldWatch();
   /** The combatant whose cover mark is open. */
   protected readonly marking = signal<string | null>(null);
+  /** The combatant whose "Montaria" select is open. */
+  protected readonly mounting = signal<string | null>(null);
   protected readonly Party = CombatantSide.PARTY;
   protected readonly Enemy = CombatantSide.ENEMY;
   private readonly back = viewChild('back', { read: ElementRef<HTMLButtonElement> });
@@ -246,6 +255,7 @@ export class OrderList {
     return (
       this.openIds().has(c.id) ||
       this.marking() === c.id ||
+      this.mounting() === c.id ||
       this.losing() === c.id ||
       this.removing() === c.id ||
       this.endingAid() === c.id
@@ -423,33 +433,22 @@ export class OrderList {
 
   protected readonly groupLabel = groupAriaLabel;
 
-  /** "Três quartos (do mapa) contra o Pensantus", or `''` when there is none or nobody has the turn. */
   protected coverLine(c: Combatant): string {
-    const against = this.coverAgainst().get(c.id);
-    const text = against ? coverText(against.cover, against.source) : '';
-    const who = this.turnLabel();
-    const side = this.turnSide();
-    // Only against opponents: a combatant of the same side as whoever has the turn is no target of theirs.
-    return text && who && c.label !== who && (side === CombatantSide.UNSPECIFIED || c.side !== side)
-      ? tieNumbers(`${text} contra ${article(who)} ${who}`)
-      : '';
+    return coverLineOf(c, this.coverAgainst(), this.turnLabel(), this.turnSide());
   }
 
   protected coverPictogram(c: Combatant): 'half' | 'three' | null {
-    return coverMark(this.coverAgainst().get(c.id)?.cover ?? CoverDegree.NONE);
+    return coverPictogramOf(c, this.coverAgainst());
   }
 
   /** The text action shows where cover matters: a line, or a mark already there. */
   protected hasCover(c: Combatant): boolean {
-    return (
-      !!this.coverLine(c) ||
-      (c.coverMark !== CoverDegree.NONE && c.coverMark !== CoverDegree.UNSPECIFIED)
-    );
+    return !!this.coverLine(c) || hasCoverMark(c);
   }
 
-  protected pickCover(id: string, cover: CoverDegree): void {
-    this.cover.emit({ id, cover });
-  }
+  /** The master's "Montaria" select of a row; `null` for a player's character, which takes no mark. */
+  protected readonly canMount = canMarkMount;
+  protected readonly mountView = (c: Combatant) => mountMarkView(this.encounter(), c.id);
 
   protected canAdjust(c: Combatant): boolean {
     return isPlayer(c) && this.adjustable().has(c.characterId);

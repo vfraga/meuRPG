@@ -217,8 +217,19 @@
             [busy]="busy()"
             (open)="marking.set(c.id)"
             (close)="marking.set(null)"
-            (pick)="pickCover(c.id, $event)"
+            (pick)="cover.emit({ id: c.id, cover: $event })"
           />
+          @if (live() && mounting() === c.id) {
+            @if (mountView(c); as mark) {
+              <app-row-mount
+                [view]="mark"
+                [label]="c.label"
+                [busy]="busy()"
+                (pick)="mount.emit({ id: c.id, kind: $event })"
+                (closed)="mounting.set(null)"
+              />
+            }
+          }
 
           @if (live() && dying(c) && deathDismissed().has(c.id)) {
             <div class="row__extra">
@@ -363,6 +374,12 @@
                   @if (c.parryAsk !== undefined) {
                     <button mat-menu-item type="button" role="menuitemcheckbox" [attr.aria-checked]="c.parryAsk" (click)="parryAsk.emit({ id: c.id, ask: !c.parryAsk })">
                       <mat-icon aria-hidden="true">{{ c.parryAsk ? 'check_box' : 'check_box_outline_blank' }}</mat-icon>Aparar: perguntar a cada golpe
+                    </button>
+                  }
+                  @if (canMount(c)) {
+                    <!-- The master's mount mark (#588, 588-08): the select opens in the row, as the cover picker does. -->
+                    <button mat-menu-item type="button" (click)="mounting.set(c.id)">
+                      <app-saddle-icon class="mat-icon row__menu-saddle" />Montaria…
                     </button>
                   }
                   @if (npc(c)) {

@@ -1,8 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { type Combatant, CombatantKind } from '../../../../../gen/meurpg/play/v1/combat_pb';
+import {
+  type Combatant,
+  CombatantKind,
+  EncounterStatus,
+} from '../../../../../gen/meurpg/play/v1/combat_pb';
 import { combatant, encounter } from '../../../../core/combat/combat-testing';
 import { OrderList } from './order-list';
+import { openAllRows } from './order-list-testing';
 
 describe('OrderList with a rider and its mount', () => {
   const text = (n: Element | null | undefined) => n?.textContent?.replace(/\s+/g, ' ').trim();
@@ -73,5 +78,76 @@ describe('OrderList with a rider and its mount', () => {
     expect(text(el.querySelector('[data-combatant="h"] .row__sub'))).toContain(
       'Leva o Tor · independente',
     );
+  });
+
+  describe('the master\'s "Montaria…" of the row menu (588-08)', () => {
+    const flat = (n: Element) => text(n)?.replace(/^[a-z_]+(?=[A-Z])/, '');
+    function live(combatants: Combatant[]) {
+      const fixture = TestBed.createComponent(OrderList);
+      fixture.componentRef.setInput(
+        'encounter',
+        encounter({ currentCombatantId: 'z', combatants, status: EncounterStatus.ACTIVE }),
+      );
+      const marks: { id: string; kind: string }[] = [];
+      fixture.componentInstance.mount.subscribe((m) => marks.push(m));
+      fixture.detectChanges();
+      openAllRows(fixture);
+      const el = fixture.nativeElement as HTMLElement;
+      const menu = (name: string) => {
+        el.querySelector<HTMLButtonElement>(
+          `button[aria-label="Mais ações para ${name}"]`,
+        )!.click();
+        fixture.detectChanges();
+        // A menu that was closed may still be leaving the page: the one just opened is the last.
+        const panels = document.querySelectorAll('.mat-mdc-menu-panel');
+        return Array.from(
+          panels[panels.length - 1].querySelectorAll<HTMLElement>('.mat-mdc-menu-item'),
+        );
+      };
+      return { fixture, el, menu, marks };
+    }
+    afterEach(() => document.querySelectorAll('.cdk-overlay-container').forEach((n) => n.remove()));
+
+    it("is offered for an NPC and for a creature, with the saddle, and never for a player's character", () => {
+      const wolf = combatant({
+        id: 'w',
+        label: 'Lobo',
+        kind: CombatantKind.CREATURE,
+        initiative: 3,
+      });
+      const { menu } = live([tor, horse('controlled'), zombie, wolf]);
+      const item = menu('Zumbi').find((i) => flat(i) === 'Montaria…');
+      expect(item).toBeTruthy();
+      expect(item?.querySelector('app-saddle-icon')).not.toBeNull();
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(menu('Lobo').some((i) => flat(i) === 'Montaria…')).toBe(true);
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(menu('Tor').some((i) => flat(i)?.includes('Montaria'))).toBe(false);
+    });
+
+    it('opens the select in the row, sends the pick with the combatant, and "Fechar" takes it away', async () => {
+      const { fixture, el, menu, marks } = live([tor, horse('controlled'), zombie]);
+      expect(el.querySelector('app-row-mount')).toBeNull();
+      menu('Cavalo de guerra')
+        .find((i) => flat(i) === 'Montaria…')!
+        .click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      const row = el.querySelector('[data-combatant="h"]')!;
+      const select = row.querySelector('app-row-mount')!;
+      expect(text(select.querySelector('.mount__hint'))).toBe(
+        'Age logo depois de Tor e só usa Disparada, Desengajar e Esquivar.',
+      );
+      select.querySelector<HTMLElement>('.mat-mdc-select-trigger')!.click();
+      fixture.detectChanges();
+      document.querySelectorAll<HTMLElement>('mat-option')[2].click();
+      expect(marks).toEqual([{ id: 'h', kind: 'independent' }]);
+      Array.from(select.querySelectorAll('button'))
+        .find((b) => text(b) === 'Fechar')!
+        .click();
+      fixture.detectChanges();
+      expect(el.querySelector('app-row-mount')).toBeNull();
+    });
   });
 });
