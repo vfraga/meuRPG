@@ -50,6 +50,11 @@ export class SteedPick {
     return steedCastVerb(this.bonded()?.name ?? '', formTitle);
   }
 
+  /** Who the cast's result names: the bonded steed, or the form of a first cast (a steed takes its form's name); nobody for another spell. */
+  arrived(formTitle: string): string[] {
+    return this.on ? [this.bonded()?.name || formTitle].filter((n) => n !== '') : [];
+  }
+
   /** The bold part of the footer's line: all of it, or for Convocar Montaria only what it spends (its first sentence, 588-21). */
   costLead(line: string): string {
     const end = this.on ? line.indexOf('. ') : -1;

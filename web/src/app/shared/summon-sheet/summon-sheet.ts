@@ -275,9 +275,13 @@ export class SummonSheet {
       : costLineOf(this.spell(), this.ritual(), this.slot(), this.count()),
   );
 
+  /** The title of the one form chosen; `''` before it. */
+  private readonly formTitle = computed(
+    () => this.rows().find((r) => r.key === this.single())?.title ?? '',
+  );
   protected readonly buttonLabel = computed(() =>
     this.steed.on
-      ? this.steed.verb(this.rows().find((r) => r.key === this.single())?.title ?? '')
+      ? this.steed.verb(this.formTitle())
       : castVerb(this.data.spellKey, this.spell()?.namePt ?? ''),
   );
 
@@ -399,7 +403,7 @@ export class SummonSheet {
         spellName: spell.namePt,
         ritual: this.ritual(),
         castingTime: spell.castingTimePt,
-        names,
+        names: names.length ? names : this.steed.arrived(this.formTitle()),
         count: keys.length,
         dismissed: res.replacedIds.length,
       });

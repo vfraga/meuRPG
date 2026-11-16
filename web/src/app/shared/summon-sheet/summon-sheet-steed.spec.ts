@@ -141,7 +141,8 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
       names: [],
       creatureType: 'fiend',
     });
-    expect(close).toHaveBeenCalled();
+    // The steed is named by its form: the cast's result says who arrived.
+    expect(close).toHaveBeenCalledWith(expect.objectContaining({ names: ['Pônei'], count: 1 }));
   });
 
   it('with a bonded steed there is no list and no type: the fixed row, and "Convocar Estrela" casts the same steed', async () => {
@@ -170,6 +171,7 @@ describe('SummonSheet: Convocar Montaria (#588, boards 588-21 and 588-22)', () =
       names: [],
       creatureType: 'celestial',
     });
+    expect(close).toHaveBeenCalledWith(expect.objectContaining({ names: ['Estrela'] }));
   });
 
   it('a cast refused during a combat says the ten minutes, with the sheet open', async () => {
