@@ -139,12 +139,17 @@
 }
 
 // A bonded steed (#588). The tag sits under the name, before the subtitle.
-// "Montaria vinculada": under the subtitle on a phone (588-23), beside the name from the tablet up (588-25).
+// "Montaria vinculada": under the subtitle on a phone (588-23), beside the name where the card has the room (588-25): the
+// card's own width decides, since the sheet's column at 768 px is as narrow as a phone.
+:host {
+  container-type: inline-size;
+}
+
 .head__text .mr-tag {
   margin: 6px 0 0;
 }
 
-@media (min-width: 768px) {
+@container (min-width: 480px) {
   .head__text:has(.mr-tag) {
     display: grid;
     grid-template-columns: minmax(0, auto) minmax(0, 1fr);

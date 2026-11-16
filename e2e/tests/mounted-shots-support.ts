@@ -106,6 +106,7 @@ async function steedScreens(t: MountedTable, l: Look): Promise<void> {
   const panel = p.locator('app-creatures-panel');
   const card = panel.locator('app-creature-card');
   await expect(card.getByRole('heading', { name: STEED })).toBeVisible();
+  await expectInside(card.locator('.card'), card.locator('.head .mr-tag'), `a etiqueta "Montaria vinculada" no cartão (${l.scheme}, ${l.width}px)`);
   await see(p, 'cartao', l, card);
   await crop(card, 'cartao', l);
   await card.getByRole('button', { name: `Mais ações de ${STEED}` }).click();
