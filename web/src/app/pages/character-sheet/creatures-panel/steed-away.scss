@@ -1,0 +1,84 @@
+:host {
+  display: block;
+}
+
+// Dashed: the steed is not here. The same radius and padding as a creature's card.
+.away {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--mr-space-1);
+  padding: var(--mr-space-3);
+  border-width: 1px;
+  border-style: dashed;
+  border-color: var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
+}
+
+.away__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mr-space-2);
+  // Room for "⋮" at the right.
+  padding-right: 44px;
+}
+
+.away__name {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  outline: none;
+  font-size: var(--mr-font-20);
+  font-weight: 800;
+  line-height: 26px;
+  overflow-wrap: anywhere;
+}
+
+.away__sub,
+.away__line {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
+
+.away__line {
+  color: var(--mr-ink);
+}
+
+// "⋮": a 44 px square target at the row's top right.
+.away__more {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--mr-ink);
+  cursor: pointer;
+}
+
+.release {
+  height: auto;
+  min-height: 56px;
+  padding-block: 8px;
+}
+
+.release__t {
+  display: block;
+  font-weight: 700;
+  color: var(--mr-danger-ink);
+}
+
+.release__line {
+  display: block;
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+  white-space: normal;
+}

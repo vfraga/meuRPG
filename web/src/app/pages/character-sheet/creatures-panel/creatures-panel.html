@@ -31,7 +31,7 @@
         <p>Não deu para ler as criaturas agora.</p>
       </div>
       <button type="button" class="retry" (click)="retry()"><mat-icon aria-hidden="true">refresh</mat-icon>Tentar de novo</button>
-    } @else if (creatures().length === 0 && !form()) {
+    } @else if (creatures().length === 0 && !form() && !away()) {
       <p class="empty">{{ emptyText() }}</p>
     } @else {
       <ul class="cards">
@@ -44,7 +44,19 @@
               [creature]="c"
               [isMaster]="isMaster()"
               [live]="live()"
+              [tick]="formReload()"
               (changed)="changed(c.id, $event)"
+            />
+          </li>
+        }
+        @if (away(); as steed) {
+          <li>
+            <app-steed-away
+              [campaignId]="campaignId()"
+              [steed]="steed"
+              [ownerName]="characterName()"
+              [isMaster]="isMaster()"
+              (released)="changed(steed.id, 'dismiss')"
             />
           </li>
         }

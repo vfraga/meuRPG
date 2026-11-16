@@ -101,6 +101,13 @@ The browser draws what the server sends and computes no rule: multiclass prerequ
   Hit dice are written by size everywhere ("5d10 e 1d6").
 - **Creatures** (`creatures-panel`, `creature-card`, `creature-page`): a "Criaturas" panel after "Combate" and "Magias", only for whoever can have a creature; HP numbers reach the owner and the master only (RN-20), and for others the panel does not exist.
   Renaming, dismissing and fixing HP are questions in place (`creature-edit`), never dialogs; a dismissal is a warning `alertdialog` with focus on "Voltar" that states what it costs.
+- **The bonded steed (588-23 to 588-26)** (`creature-card`, `shared/creatures/steed-ask`, `creatures-panel/steed-away`, `core/creatures/steed-card.ts`): its card has the tag "Montaria vinculada" (link icon) and the subtitle "Cavalo de guerra · Grande · celestial".
+  Its text actions are 44 px targets: "Renomear", the master's "Corrigir PV", "Dispensar" in danger, and "⋮" › "Libertar Estrela" in danger with "Acaba o vínculo: a próxima é outra montaria." under it at 13 px.
+  Both questions are asked in place as an `alertdialog`, "Voltar" first and with the focus, the confirm marked `data-confirm`; both call `DismissCreature`, with DISMISS or RELEASE.
+  During a session the card reads the combat when the owner's player opens a question, and the chip "● Gasta a sua ação" shows when the combat holds the steed; the master never spends an action.
+  A refusal for the turn or the action closes the question and turns "Dispensar" off (muted, the block icon, the word "desligado") with "Só na vez de Lia: dispensar gasta a ação." or "Você já usou a ação desta vez." linked under the actions, until the page says the combat changed.
+  A bonded steed that is not among the creatures is a dashed row from `SummonSpellOptions.bonded_steed`: the name, the tag "Fora", the form and type, "Convocar Montaria traz Estrela de volta.", and its own "⋮" › "Libertar Estrela".
+  The master reads the summon options too, for that row only.
 - **Convocar Montaria (588-21, 588-22)** (`shared/summon-sheet`, `steed-choice`, `steed-pick`, `core/creatures/steed.ts`): the summon sheet with three things of its own.
   On the first cast a form the caster cannot ride carries the warning line "Pequeno demais para você montar" (`creature-choice-list`'s `warning`, with an icon); the form stays pickable.
   Under the list, "Tipo do corcel" is three segments with the app's words (Celestial, Fada, Ínfero), none picked at first; the footer reads "Escolha a forma e escolha o tipo do corcel." until both are picked, and the button is "Convocar Cavalo de guerra".

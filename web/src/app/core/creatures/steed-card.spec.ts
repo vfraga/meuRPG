@@ -5,6 +5,8 @@ import {
   EncounterBlockedReason,
   EncounterBlockedSchema,
 } from '../../../gen/meurpg/play/v1/combat_pb';
+import { CreatureSource } from '../../../gen/meurpg/characters/v1/characters_pb';
+import { sourcePhrase } from './creature-format';
 import {
   STEED_RELEASE_LINE,
   steedAskText,
@@ -59,5 +61,9 @@ describe("the bonded steed's card, in words (#588, boards 588-23 to 588-26)", ()
 
   it('says how a steed that is away comes back', () => {
     expect(steedAwayLine('Estrela')).toBe('Convocar Montaria traz Estrela de volta.');
+  });
+
+  it('RN-10: to another player the steed is "Criatura de Lia", with no word of its bond or its type', () => {
+    expect(sourcePhrase(CreatureSource.FIND_STEED, 'Lia')).toBe('Criatura de Lia');
   });
 });
