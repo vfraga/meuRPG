@@ -186,13 +186,13 @@
   "name": "Wizard prepares Int mod + wizard level spells",
   "class": "wizard",
   "level": 1,
-  "verdict": "by-hand-silent",
+  "verdict": "by-design",
   "says": "Prepare spells from the book equal to Int modifier + wizard level (minimum 1), of a level you have slots for, and change the list after a long rest.",
-  "does": "The count is exact (prepared_max max(1, mod(int)+classLevel(wizard)); test: 2 at level 1 with Int 13, 13 at level 12, 1 with Int 3, 4 for wizard 3 + fighter 2) and the sheet flags too many, spells off the book and spells above the castable level; but the list only grows at level-up and is locked after the first session (RN-01), so changing it after a long rest is done only by the master in the editor and nothing prompts it.",
+  "does": "RN-01 (sheet lock: a level-up adds prepared spells, none removed) rules the daily change; The count is exact (prepared_max max(1, mod(int)+classLevel(wizard)); test: 2 at level 1 with Int 13, 13 at level 12, 1 with Int 3, 4 for wizard 3 + fighter 2) and the sheet flags too many, spells off the book and spells above the castable level; but the list only grows at level-up and is locked after the first session (RN-01), so changing it after a long rest is done only by the master in the editor and nothing prompts it.",
   "seen": "Sheet open choice 'spells_prepared' and the editor limit; no text about re-preparing after a long rest.",
   "code": "backend/internal/rules/srd51/effects/wizard.json; backend/internal/rules/spellcasting.go addPrepared/checkPreparedCount; backend/internal/rules/levelup.go checkSpellCounts; docs/product/rules.md RN-01",
-  "fix": "A reminder text_pt on feature:spellcasting-wizard or on the long rest that the master may swap the prepared list after a long rest.",
-  "checked": "test"
+  "fix": "",
+  "checked": "coordinator"
  },
  {
   "key": "rule:wizard-ritual-casting",
