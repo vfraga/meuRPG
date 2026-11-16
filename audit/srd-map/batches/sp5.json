@@ -147,13 +147,13 @@
   "name": "Dominate Person",
   "list": "wizard",
   "level": 5,
-  "verdict": "by-hand-silent",
+  "verdict": "wrong",
   "says": "A humanoid within 60 ft makes a WIS save (advantage if you or friends fight it) or is charmed and dominated up to 1 minute (10 minutes at a 6th slot, 1 hour at 7th, 8 hours at 8th or 9th); it saves again each time it takes damage.",
-  "does": "Rolls the target's WIS save against the caster's DC (the elf's and similar advantages against charm count, through spellImposes) and shows Falhou/Resistiu; concentration held. No charmed condition, no commands, no new save on damage, no advantage for a target in a fight with you, no humanoid check, and the longer durations are not tracked; nothing reminds the table.",
+  "does": "Rolls the Wisdom save with no advantage for a target the caster's side is fighting (combat SaveMode has no such source), so the app rolls a save the text gives at advantage; no charmed condition follows. The table can roll the second d20 by hand and set charmed. Rolls the target's WIS save against the caster's DC (the elf's and similar advantages against charm count, through spellImposes) and shows Falhou/Resistiu; concentration held. No charmed condition, no commands, no new save on damage, no advantage for a target in a fight with you, no humanoid check, and the longer durations are not tracked; nothing reminds the table.",
   "seen": "Save row with the roll and 'CD n'; nothing says what a failure does beyond the spell text.",
   "code": "backend/internal/play/combat_spells.go spellSave; backend/internal/play/combat_against.go spellImposes",
   "fix": "A combat_effects.json spells row like hold-person (failed_save, target_type humanoid, condition charmed, concentration) plus a reminder for the advantage when fighting it and the new save on damage",
-  "checked": "test"
+  "checked": "coordinator"
  },
  {
   "key": "spell:dream",

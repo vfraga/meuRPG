@@ -43,13 +43,13 @@
   "name": "Charm Person",
   "list": "wizard,warlock,druid",
   "level": 1,
-  "verdict": "by-hand-silent",
+  "verdict": "wrong",
   "says": "A humanoid makes a Wisdom save (advantage if the caster's side is fighting it) or is charmed for 1 hour; +1 target per slot above 1st.",
-  "does": "Rolls the Wisdom save (no advantage when fighting) and scales targets by slot level, but applies no charmed condition and does not check humanoid; nothing tells the table to apply it.",
+  "does": "Rolls the Wisdom save with no advantage for a target the caster's side is fighting (combat SaveMode has no such source), so the app rolls a save the text gives at advantage; no charmed condition follows. The table can roll the second d20 by hand and set charmed. Rolls the Wisdom save (no advantage when fighting) and scales targets by slot level, but applies no charmed condition and does not check humanoid; nothing tells the table to apply it.",
   "seen": "Pass or fail of the save only",
   "code": "backend/internal/play/combat_against.go (AgainstCharmed only reads an existing charmed); effects/combat_effects.json has no spell:charm-person row",
   "fix": "Add a combat_effects row for spell:charm-person with applies failed_save, target_type humanoid, condition:charmed and a 1 hour duration, plus advantage on the save when the caster's side is fighting",
-  "checked": "test"
+  "checked": "coordinator"
  },
  {
   "key": "spell:color-spray",
