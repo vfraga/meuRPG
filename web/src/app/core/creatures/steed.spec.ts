@@ -1,7 +1,10 @@
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import { SummonSpellOptionsSchema } from '../../../gen/meurpg/characters/v1/characters_pb';
+import {
+  CharacterCreatureSchema,
+  SummonSpellOptionsSchema,
+} from '../../../gen/meurpg/characters/v1/characters_pb';
 import {
   EncounterBlockedReason,
   EncounterBlockedSchema,
@@ -16,6 +19,7 @@ import {
   steedCastError,
   steedCastVerb,
   steedCostLine,
+  steedFixedLine,
   steedHowLines,
   steedSameLine,
   steedTypeWord,
@@ -96,6 +100,21 @@ describe('Convocar Montaria, the words of the summon sheet (#588, boards 588-21 
     ).toBe('Agora não há sessão aberta.');
     expect(steedCastError(blocked(EncounterBlockedReason.NO_SLOT))).toBe(
       'Não há espaço de magia livre.',
+    );
+  });
+
+  it("writes the fixed row of a bonded steed: the form, the type's word and the numbers", () => {
+    const steed = create(CharacterCreatureSchema, {
+      name: 'Estrela',
+      monsterKey: 'monster:warhorse',
+      monsterNamePt: 'Cavalo de guerra',
+      creatureType: 'celestial',
+      armorClass: 11,
+      hitPointsMax: 19,
+    });
+    expect(steedFixedLine(steed)).toBe('Cavalo de guerra · celestial · CA 11 · 19 PV');
+    expect(steedFixedLine(create(CharacterCreatureSchema, { ...steed, creatureType: '' }))).toBe(
+      'Cavalo de guerra · CA 11 · 19 PV',
     );
   });
 });

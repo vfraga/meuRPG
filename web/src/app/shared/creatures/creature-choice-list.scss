@@ -158,6 +158,24 @@
   color: var(--mr-ink-muted);
 }
 
+// A warning that does not stop the pick: the warning ink and an icon, never the colour alone.
+.row__warn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--mr-font-13);
+  font-weight: 500;
+  line-height: 18px;
+  color: var(--mr-warning-ink);
+
+  mat-icon {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    font-size: 16px;
+  }
+}
+
 // What the creature attacks with: the name and the numbers, and under them the book's own text (English).
 .row__attacks {
   display: flex;

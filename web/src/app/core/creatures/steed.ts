@@ -1,6 +1,9 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 
-import type { SummonSpellOptions } from '../../../gen/meurpg/characters/v1/characters_pb';
+import type {
+  CharacterCreature,
+  SummonSpellOptions,
+} from '../../../gen/meurpg/characters/v1/characters_pb';
 import {
   EncounterBlockedReason,
   EncounterBlockedSchema,
@@ -52,6 +55,18 @@ export function steedCostLine(level: number): string {
 /** Under the fixed row of a bonded steed ("Mesmo corcel"). */
 export function steedSameLine(name: string): string {
   return `${name} volta como era, com todos os pontos de vida. Para outra forma ou outro tipo, liberte ${name} antes, no bloco Criaturas.`;
+}
+
+/** The fixed row's second line: "Cavalo de guerra · celestial · CA 11 · 19 PV". */
+export function steedFixedLine(steed: CharacterCreature): string {
+  return [
+    steed.monsterNamePt,
+    steedTypeWord(steed.creatureType),
+    `CA ${steed.armorClass}`,
+    `${steed.hitPointsMax} PV`,
+  ]
+    .filter((part) => part !== '')
+    .join(' · ');
 }
 
 /** A refused cast of Convocar Montaria: the two refusals of a ten-minute casting in its own words, the rest as any summon. */

@@ -16,6 +16,7 @@ import {
   formSubtitle,
   isTableCreature,
 } from '../../core/creatures/creature-format';
+import { STEED_TOO_SMALL } from '../../core/creatures/steed';
 import { creaturesText, replacesText } from '../../core/creatures/summon-labels';
 import { tight } from '../../core/format/text';
 import { metersText } from '../../core/units';
@@ -193,6 +194,7 @@ export function rowsOf(i: RowsInput): readonly ChoiceRow[] {
         title: f.namePt,
         subtitle: block ? formSubtitle(block) : '',
         table,
+        ...(o.tooSmallForYou.includes(f.monsterKey) ? { warning: STEED_TOO_SMALL } : {}),
       };
     }
     return {
@@ -234,6 +236,10 @@ export interface MissingInput {
   readonly several: boolean;
   readonly count: number;
   readonly total: number;
+  /** Convocar Montaria: the one creature is "a forma". */
+  readonly steed?: boolean;
+  /** Convocar Montaria with no bonded steed and no type picked yet. */
+  readonly needsType?: boolean;
 }
 
 /** What is still missing, in one sentence naming everything; empty when the cast is ready. */
@@ -250,12 +256,15 @@ export function missingOf(i: MissingInput): string {
     parts.push(
       i.several
         ? `escolha mais ${creaturesText(need)}`
-        : i.familiar
+        : i.familiar || i.steed
           ? 'escolha a forma'
           : 'escolha a criatura',
     );
   } else if (need < 0) {
     parts.push(`tire ${creaturesText(-need)}`);
+  }
+  if (i.needsType) {
+    parts.push('escolha o tipo do corcel');
   }
   if (parts.length === 0) {
     return '';

@@ -185,6 +185,12 @@ describe('summon views: the lines of the sheet', () => {
       'Escolha a forma e dê um nome ao familiar.',
     );
     expect(plain(missingOf({ ...ready, total: 3, count: 1 }))).toBe('Tire 2 criaturas.');
+    // Convocar Montaria (#588): the form and the steed's type, each named until it is picked.
+    expect(missingOf({ ...ready, steed: true, needsType: true, total: 0 })).toBe(
+      'Escolha a forma e escolha o tipo do corcel.',
+    );
+    expect(missingOf({ ...ready, steed: true, needsType: true })).toBe('Escolha o tipo do corcel.');
+    expect(missingOf({ ...ready, steed: true, needsType: false })).toBe('');
     expect(
       plain(missingOf({ ...ready, hasSlot: false, total: 0, hasOption: false, count: 2 })),
     ).toBe('Escolha o espaço de magia.');
@@ -248,6 +254,18 @@ describe('summon views: the list, the keys and the dice', () => {
     expect(rowsOf({ ...none, option: forms }).map((r) => [r.key, r.title, r.subtitle])).toEqual([
       ['monster:cat', 'Gato', ''],
       ['monster:wolf', 'Lobo', ''],
+    ]);
+    // A form the caster cannot ride says so (#588, `too_small_for_you`); the others carry no warning.
+    const steeds = create(SummonOptionSchema, {
+      forms: [
+        { monsterKey: 'monster:warhorse', namePt: 'Cavalo de guerra' },
+        { monsterKey: 'monster:pony', namePt: 'Pônei' },
+      ],
+      tooSmallForYou: ['monster:pony'],
+    });
+    expect(rowsOf({ ...none, option: steeds }).map((r) => [r.title, r.warning])).toEqual([
+      ['Cavalo de guerra', undefined],
+      ['Pônei', 'Pequeno demais para você montar'],
     ]);
     const beasts = create(SummonOptionSchema, { type: 'beast', maxCr: '1' });
     expect(rowsOf({ ...none, option: beasts })).toEqual([]);

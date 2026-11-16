@@ -31,6 +31,8 @@ export interface ChoiceRow {
   readonly attacks?: readonly AttackLine[];
   /** A creature of the table's own (key ends with "@mesa"): "Da mesa" beside the name, and the note in place of numbers it does not have yet. */
   readonly table?: boolean;
+  /** A warning that does not stop the pick ("Pequeno demais para você montar"), under the numbers with an icon. */
+  readonly warning?: string;
 }
 
 let nextId = 0;
@@ -105,6 +107,9 @@ let nextId = 0;
               <span class="row__sub">{{ tableNote }}</span>
             } @else {
               <span class="row__sub">{{ r.subtitle }}</span>
+            }
+            @if (r.warning) {
+              <span class="row__warn"><mat-icon aria-hidden="true">warning</mat-icon>{{ r.warning }}</span>
             }
             @if (r.attacks?.length && (attacksAlways() || (multi() ? n > 0 : r.key === chosen()))) {
               <span class="row__attacks">
