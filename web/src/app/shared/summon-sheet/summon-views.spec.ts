@@ -12,7 +12,9 @@ import type { SlotRow } from '../../core/combat/cast-flow';
 import {
   concentrationLineOf,
   costLineOf,
+  chosenTitles,
   creatureKeysOf,
+  steppedCounts,
   diceFlagsOf,
   joinDotsOf,
   listLabelOf,
@@ -414,5 +416,17 @@ describe('summon views: the result of a casting in a combat', () => {
     expect(plain(resultLineOf(c, 14))).toBe('CA 14 · PV 30 de 37 · 15 m');
     expect(plain(resultLineOf(c, undefined))).toBe('PV 30 de 37 · 15 m');
     expect(plain(resultLineOf(creature({ speedFt: 50 }), 14))).toBe('CA 14 · 15 m');
+  });
+
+  it('steps the count of one kind: up while the group has room, down to nothing, and the kinds chosen by title', () => {
+    expect(steppedCounts({}, { key: 'a', delta: 1 }, false)).toEqual({ a: 1 });
+    expect(steppedCounts({ a: 1 }, { key: 'a', delta: 1 }, true)).toBeNull();
+    expect(steppedCounts({ a: 1, b: 1 }, { key: 'a', delta: -1 }, true)).toEqual({ b: 1 });
+    expect(steppedCounts({}, { key: 'a', delta: -1 }, false)).toEqual({});
+    const rows = [
+      { key: 'a', title: 'Lobo', subtitle: '' },
+      { key: 'b', title: 'Urso', subtitle: '' },
+    ];
+    expect(chosenTitles(rows, { b: 2 })).toEqual(['Urso']);
   });
 });

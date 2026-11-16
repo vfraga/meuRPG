@@ -69,8 +69,8 @@
           type="button"
           matButton="outlined"
           class="cast__btn js-cast"
-          [class.mr-button--off]="!live()"
-          [disabled]="!live()"
+          [class.mr-button--off]="!!steedCast.why(c, live())"
+          [disabled]="!!steedCast.why(c, live())"
           disabledInteractive
           [attr.aria-describedby]="'cast-cost-' + $index"
           (click)="cast(c)"
@@ -78,9 +78,9 @@
           <mat-icon aria-hidden="true">auto_awesome</mat-icon>{{ c.namePt }}
         </button>
         <p class="cast__cost" [id]="'cast-cost-' + $index">
-          {{ costText(c) }}
-          @if (!live()) {
-            <strong class="cast__why">Agora não há sessão aberta.</strong>
+          {{ steedCast.cost(c, creatures()) }}
+          @if (steedCast.why(c, live()); as why) {
+            <strong class="cast__why">{{ why }}</strong>
           }
         </p>
       </div>

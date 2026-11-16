@@ -23,11 +23,7 @@ import {
 import { CreaturesClient } from '../../../core/creatures/creatures-client';
 import { focusWithRing } from '../../../core/creatures/focus-ring';
 import { creaturesHidden } from '../../../core/creatures/creature-errors';
-import {
-  castConfirmation,
-  castCostText,
-  creaturesText,
-} from '../../../core/creatures/summon-labels';
+import { castConfirmation, creaturesText } from '../../../core/creatures/summon-labels';
 import { tight } from '../../../core/format/text';
 import { OpenSessions } from '../../../core/play/open-sessions';
 import { openSheet } from '../../../shared/sheet/sheet-host';
@@ -37,6 +33,7 @@ import { isUnlimited } from '../../../core/combat/unlimited-uses';
 import { ActionKey } from '../../../core/connect/idempotency';
 import { CreatureCard } from './creature-card';
 import { SteedAway } from './steed-away';
+import { SteedCast } from './steed-cast';
 import { readWild, stayBeast } from './wild-read';
 import type { EditMode } from '../../../shared/creatures/creature-edit';
 import {
@@ -114,6 +111,8 @@ export class CreaturesPanel {
     this.openSessions.sessions().some((s) => s.campaignId === this.campaignId()),
   );
   protected readonly casts = computed(() => (this.isMaster() ? [] : this.spells()));
+  /** Convocar Montaria's cast button: off in a combat, and what the cast does for the bonded steed (#588). */
+  protected readonly steedCast = new SteedCast(this.injector);
   /** The bonded steed that is not among the creatures (dismissed, or gone at 0 hit points): the dashed "Fora" row (#588). */
   protected readonly away = computed(() => {
     const steed = this.spells().find((s) => s.bondedSteed)?.bondedSteed;
@@ -346,6 +345,12 @@ export class CreaturesPanel {
     this.spells.set(
       options.status === 'fulfilled' && options.value ? [...options.value.spells] : [],
     );
+    void this.steedCast.read(
+      this.spells(),
+      this.live() && !this.isMaster(),
+      campaignId,
+      characterId,
+    );
     this.announceArrivals(list.value);
     this.creatures.set(list.value);
     this.state.set('ready');
@@ -378,10 +383,8 @@ export class CreaturesPanel {
     );
   }
 
-  protected readonly costText = castCostText;
-
   protected cast(spell: SummonSpellOptions): void {
-    if (!this.live()) {
+    if (this.steedCast.why(spell, this.live())) {
       return;
     }
     this.notice.set('');

@@ -324,6 +324,31 @@ export function resultLineOf(c: Combatant, ac: number | undefined): string {
   return tight(joinDotsOf([ac === undefined ? '' : `CA ${ac}`, hp, metersText(c.speedFt)]));
 }
 
+/** "−" and "+" of one kind: the counts after the step, or `null` when the group is already full. */
+export function steppedCounts(
+  counts: Readonly<Record<string, number>>,
+  change: { readonly key: string; readonly delta: number },
+  full: boolean,
+): Readonly<Record<string, number>> | null {
+  if (change.delta > 0 && full) {
+    return null;
+  }
+  const next = Math.max(0, (counts[change.key] ?? 0) + change.delta);
+  const stepped = { ...counts, [change.key]: next };
+  if (next === 0) {
+    delete stepped[change.key];
+  }
+  return stepped;
+}
+
+/** The titles of the kinds chosen so far, in the list's order. */
+export function chosenTitles(
+  rows: readonly ChoiceRow[],
+  counts: Readonly<Record<string, number>>,
+): string[] {
+  return rows.filter((r) => (counts[r.key] ?? 0) > 0).map((r) => r.title);
+}
+
 /** The kinds in the list's order, each as many times as it was chosen. */
 export function creatureKeysOf(
   rows: readonly ChoiceRow[],

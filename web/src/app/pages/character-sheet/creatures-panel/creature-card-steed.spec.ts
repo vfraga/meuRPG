@@ -106,6 +106,18 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     expect(flat(tag)).toBe('Montaria vinculada');
     expect(tag?.querySelector('mat-icon')?.textContent?.trim()).toBe('link');
     expect(flat(el.querySelector('.sub'))).toBe('Cavalo de guerra · Grande · celestial');
+    // Board 588-23 (phone): the tag sits under the subtitle; from the tablet up the grid puts it beside the name (588-25).
+    const order = Array.from(el.querySelector('.head__text')!.children).map((n) => n.className);
+    expect(order).toEqual(['name', 'sub', 'mr-tag']);
+    expect(el.querySelector('.head__text')?.classList).toContain('head__text');
+  });
+
+  it('"⋮" is a bordered square at the far right of the actions (board 588-23)', async () => {
+    const { el } = await setup();
+    const more = getComputedStyle(el.querySelector('.js-more')!);
+    expect(more.borderTopStyle).toBe('solid');
+    expect(parseFloat(more.width)).toBe(44);
+    expect(more.marginLeft).toBe('auto');
   });
 
   it('a creature that is no bonded steed keeps its card: no tag, no "⋮", the origin in the subtitle', async () => {
@@ -146,6 +158,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     const panels = document.querySelectorAll('.mat-mdc-menu-panel');
     const item = panels[panels.length - 1].querySelector<HTMLElement>('[mat-menu-item]')!;
     expect(flat(item.querySelector('.release__t'))).toBe('Libertar Estrela');
+    expect(item.querySelector('mat-icon')?.textContent?.trim()).toBe('link_off');
     expect(item.classList).toContain('release');
     expect(flat(item.querySelector('.release__line'))).toBe(
       'Acaba o vínculo: a próxima é outra montaria.',
@@ -195,6 +208,26 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     await settle();
     expect(getEncounter).toHaveBeenCalledWith('camp-1');
     expect(flat(el.querySelector('.ask__chip'))).toBe('● Gasta a sua ação');
+    expect(flat(el.querySelector('.ask__d'))).not.toContain('desce de pé');
+    expect(flat(el.querySelector('.ask__d'))).not.toContain('não gasta nada');
+  });
+
+  it('with the owner on the steed, the question says where the rider lands (board 588-24)', async () => {
+    const { el, acts, settle } = await setup({ live: true });
+    getEncounter.mockResolvedValue(
+      create(EncounterSchema, {
+        id: 'enc-1',
+        combatants: [
+          { id: 'c-1', characterId: 'char-1', mountedOnId: 'c-9' },
+          { id: 'c-9', creatureId: 'steed-1', riderId: 'c-1' },
+        ],
+      }),
+    );
+    acts()[1].click();
+    await settle();
+    expect(flat(el.querySelector('.ask__d'))).toBe(
+      'Estrela some do mapa e da sua ficha, e você desce de pé no quadrado dela. O vínculo fica: Convocar Montaria a traz de volta.',
+    );
   });
 
   it('no chip when the combat does not hold the steed, when no combat runs, or when the read fails', async () => {
@@ -223,6 +256,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     master.acts()[2].click();
     await master.settle();
     expect(master.el.querySelector('.ask__chip')).toBeNull();
+    expect(flat(master.el.querySelector('.ask__d'))).not.toContain('não gasta nada');
 
     TestBed.resetTestingModule();
     document.body.replaceChildren();
@@ -232,6 +266,7 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     await closed.settle();
     expect(getEncounter).not.toHaveBeenCalled();
     expect(closed.el.querySelector('.ask__chip')).toBeNull();
+    expect(flat(closed.el.querySelector('.ask__d'))).toContain('Fora de combate, não gasta nada.');
   });
 
   it('a refusal for the turn closes the question and turns "Dispensar" off, muted, with "desligado" and the reason linked under the actions', async () => {
@@ -248,9 +283,11 @@ describe('CreatureCard, a bonded steed (#588, boards 588-23 to 588-26)', () => {
     expect(off.getAttribute('aria-disabled')).toBe('true');
     expect(off.classList).toContain('act--off');
     expect(off.querySelector('mat-icon')?.textContent?.trim()).toBe('block');
-    expect(flat(off)).toBe('Dispensar desligado');
+    // Board 588-26 card 4: "⊘ Dispensar · desligado", and the reason with the block icon.
+    expect(flat(off)).toBe('Dispensar · desligado');
     const why = el.querySelector(`#${off.getAttribute('aria-describedby')}`);
     expect(flat(why)).toBe('Só na vez de Lia: dispensar gasta a ação.');
+    expect(why?.parentElement?.querySelector('mat-icon')?.textContent?.trim()).toBe('block');
     // Off is off: a tap asks nothing.
     off.click();
     await settle();

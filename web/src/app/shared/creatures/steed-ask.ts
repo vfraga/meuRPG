@@ -18,7 +18,12 @@ import type { CharacterCreature } from '../../../gen/meurpg/characters/v1/charac
 import { creatureErrorMessage } from '../../core/creatures/creature-errors';
 import { CreaturesClient } from '../../core/creatures/creatures-client';
 import { focusWithRing } from '../../core/creatures/focus-ring';
-import { type SteedGoing, steedAskText, steedRefusal } from '../../core/creatures/steed-card';
+import {
+  type SteedGoing,
+  type SteedWhere,
+  steedAskText,
+  steedRefusal,
+} from '../../core/creatures/steed-card';
 
 let nextId = 0;
 
@@ -29,7 +34,7 @@ let nextId = 0;
  * `DismissCreature`, with `dismissal` DISMISS or RELEASE.
  *
  * In a combat that holds the steed the owner's player spends the action of the turn: the chip "● Gasta a sua ação" says so
- * (`spendsAction`), and a refusal for the turn or the action goes to the card (`refused`), which shows it under its
+ * (`where.combat`), and a refusal for the turn or the action goes to the card (`refused`), which shows it under its
  * actions. Any other error stays here, in words, with the question open.
  */
 @Component({
@@ -41,14 +46,14 @@ let nextId = 0;
     <div class="ask" role="alertdialog" [attr.aria-labelledby]="id + '-t'" [attr.aria-describedby]="id + '-d'">
       <p class="ask__t" [id]="id + '-t'"><mat-icon aria-hidden="true">warning</mat-icon><span>{{ verb() }} {{ c.name }}?</span></p>
       <p class="ask__d" [id]="id + '-d'">{{ text() }}</p>
-      @if (spendsAction()) {
+      @if (chip()) {
         <p class="ask__chip"><span aria-hidden="true">●</span> Gasta a sua ação</p>
       }
       @if (error()) {
         <p class="err" role="alert"><mat-icon aria-hidden="true">error</mat-icon>{{ error() }}</p>
       }
       <button #first type="button" matButton="outlined" class="big" [disabled]="busy()" (click)="closed.emit(false)">Voltar</button>
-      <button type="button" matButton="outlined" class="big big--danger" data-confirm [disabled]="busy()" (click)="confirm()"><span class="lbl">{{ verb() }}&nbsp;<span class="nm">{{ c.name }}</span></span></button>
+      <button type="button" matButton="outlined" class="big big--danger" data-confirm [disabled]="busy()" (click)="confirm()"><mat-icon aria-hidden="true">{{ mode() === 'release' ? 'link_off' : 'close' }}</mat-icon><span class="lbl">{{ verb() }}&nbsp;<span class="nm">{{ c.name }}</span></span></button>
     </div>
   `,
   styleUrl: './creature-edit.scss',
@@ -63,8 +68,8 @@ export class SteedAsk {
   /** Whose steed it is, for the sentence ("da sua ficha" or "da ficha de Lia") and for a refusal ("Só na vez de Lia"). */
   readonly ownerView = input(true);
   readonly ownerName = input('');
-  /** A combat holds the steed and the asker is its owner's player: the chip "Gasta a sua ação". */
-  readonly spendsAction = input(false);
+  /** Where the steed is: in a combat (the owner's player then spends the action: the chip), and under its owner. */
+  readonly where = input<SteedWhere>({ combat: false, mounted: false });
   /** Done: true when the steed went (the list is read again), false when the person backed out. */
   readonly closed = output<boolean>();
   /** The combat refused for the turn or the action: the card says why under its actions. */
@@ -77,8 +82,14 @@ export class SteedAsk {
 
   protected readonly verb = computed(() => (this.mode() === 'release' ? 'Libertar' : 'Dispensar'));
   protected readonly text = computed(() =>
-    steedAskText(this.mode(), this.creature().name, this.ownerView() ? '' : this.ownerName()),
+    steedAskText(
+      this.mode(),
+      this.creature().name,
+      this.ownerView() ? '' : this.ownerName(),
+      this.where(),
+    ),
   );
+  protected readonly chip = computed(() => this.where().combat && this.ownerView());
 
   constructor() {
     afterNextRender(

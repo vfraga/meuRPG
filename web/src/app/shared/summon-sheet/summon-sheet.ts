@@ -43,6 +43,7 @@ import { SteedPick } from './steed-pick';
 import { InitiativeDie, type SummonCombatResult, castSummonInCombat } from './summon-combat-cast';
 import { SummonLists } from './summon-lists';
 import {
+  chosenTitles,
   concentrationLineOf,
   costLineOf,
   creatureKeysOf,
@@ -55,6 +56,7 @@ import {
   setupLineOf,
   slotId,
   slotRowsOf,
+  steppedCounts,
   subtitleOf,
   type SummonSheetResult,
 } from './summon-views';
@@ -186,13 +188,9 @@ export class SummonSheet {
     if (!this.combat || !s?.concentration) {
       return null;
     }
-    const kinds = this.rows().filter((r) => (this.counts()[r.key] ?? 0) > 0);
-    return concentrationLineOf({
-      spell: s,
-      count: this.count(),
-      kindTitles: kinds.map((r) => r.title),
-      concentrating: this.combat.concentrating,
-    });
+    const kindTitles = chosenTitles(this.rows(), this.counts());
+    const concentrating = this.combat.concentrating;
+    return concentrationLineOf({ spell: s, count: this.count(), kindTitles, concentrating });
   });
 
   /** The slots this spell can use: from its circle up, only the circles the server lists for it. */
@@ -233,10 +231,6 @@ export class SummonSheet {
   /** "3º nível · 2 feras de ND 1 ou menos". */
   protected readonly setupLine = computed(() =>
     this.steed.on ? this.steed.setupLine(this.slot()) : setupLineOf(this.slot(), this.opt()),
-  );
-  /** The bonded steed's stat block, for its fixed row. */
-  protected readonly steedBlock = computed(
-    () => this.forms()?.find((c) => c.summary?.key === this.steed.bonded()?.monsterKey) ?? null,
   );
 
   protected readonly replacesNote = computed(() => replacesNoteOf(this.spell()));
@@ -366,17 +360,12 @@ export class SummonSheet {
 
   /** Several creatures: "−" and "+" of one kind. */
   protected step(change: { key: string; delta: number }): void {
-    const next = Math.max(0, (this.counts()[change.key] ?? 0) + change.delta);
-    if (change.delta > 0 && this.total() >= this.count()) {
-      return;
+    const counts = steppedCounts(this.counts(), change, this.total() >= this.count());
+    if (counts) {
+      this.editing.set(false);
+      this.counts.set(counts);
+      this.changed();
     }
-    this.editing.set(false);
-    const counts = { ...this.counts(), [change.key]: next };
-    if (next === 0) {
-      delete counts[change.key];
-    }
-    this.counts.set(counts);
-    this.changed();
   }
 
   protected pickSteedType(type: string): void {
@@ -436,11 +425,7 @@ export class SummonSheet {
       });
     } catch (err) {
       this.error.set(
-        this.combat
-          ? combatErrorMessage(err, 'conjurar a magia')
-          : this.steed.on
-            ? this.steed.castError(err)
-            : creatureErrorMessage(err, 'cast'),
+        this.combat ? combatErrorMessage(err, 'conjurar a magia') : this.steed.castError(err),
       );
       // The refusal is at the top of the body: scroll there, where it is seen.
       setTimeout(() => this.frame().scrollToTop());

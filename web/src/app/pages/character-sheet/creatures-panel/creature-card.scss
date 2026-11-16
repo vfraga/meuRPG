@@ -139,14 +139,43 @@
 }
 
 // A bonded steed (#588). The tag sits under the name, before the subtitle.
+// "Montaria vinculada": under the subtitle on a phone (588-23), beside the name from the tablet up (588-25).
 .head__text .mr-tag {
-  margin: 2px 0;
+  margin: 6px 0 0;
 }
 
-// "⋮": a square target with no words.
+@media (min-width: 768px) {
+  .head__text:has(.mr-tag) {
+    display: grid;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--mr-space-2);
+  }
+
+  .head__text .sub {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+
+  .head__text .mr-tag {
+    grid-row: 1;
+    grid-column: 2;
+    justify-self: start;
+    margin: 0;
+  }
+}
+
+// "⋮": a bordered 44 px square with no words, at the far right of the actions (588-23).
 .act--more {
   justify-content: center;
+  width: 44px;
   min-width: 44px;
+  height: 44px;
+  margin-left: auto;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--mr-control-line);
+  border-radius: var(--mr-radius-md);
   color: var(--mr-ink);
 }
 
@@ -160,7 +189,18 @@
   font-weight: 400;
 }
 
+.acts__why .mat-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+  color: var(--mr-ink-muted);
+}
+
 .acts__why {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin: 0;
   font-size: var(--mr-font-14);
   line-height: 20px;

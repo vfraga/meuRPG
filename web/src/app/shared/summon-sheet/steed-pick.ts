@@ -1,6 +1,8 @@
 import { type Signal, computed, signal } from '@angular/core';
 
+import type { Creature } from '../../../gen/meurpg/rules/v1/rules_pb';
 import type { SummonSpellOptions } from '../../../gen/meurpg/characters/v1/characters_pb';
+import { creatureErrorMessage } from '../../core/creatures/creature-errors';
 import {
   FIND_STEED,
   steedCastError,
@@ -53,8 +55,16 @@ export class SteedPick {
     return slot ? steedSetupLine(slot.level, slot.free) : '';
   }
 
+  /** A refused cast: the steed's own words for Convocar Montaria, any summon's for the rest. */
   castError(err: unknown): string {
-    return steedCastError(err, this.bonded()?.name ?? '');
+    return this.on
+      ? steedCastError(err, this.bonded()?.name ?? '')
+      : creatureErrorMessage(err, 'cast');
+  }
+
+  /** The bonded steed's stat block among the forms read, for its fixed row; `null` until then. */
+  block(forms: readonly Creature[] | null): Creature | null {
+    return forms?.find((c) => c.summary?.key === this.bonded()?.monsterKey) ?? null;
   }
 
   /** What the cast adds to `SummonChoice`. */

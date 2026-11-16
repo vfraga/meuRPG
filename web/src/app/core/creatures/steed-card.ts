@@ -1,9 +1,11 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 
 import {
+  type Encounter,
   EncounterBlockedReason,
   EncounterBlockedSchema,
 } from '../../../gen/meurpg/play/v1/combat_pb';
+import { article } from '../format/article';
 import { joinDots } from '../format/text';
 import { steedTypeWord } from './steed';
 
@@ -18,13 +20,52 @@ export function steedSubtitle(form: string, size: string, type: string): string 
   return joinDots([form, size, steedTypeWord(type)].filter((part) => part !== ''));
 }
 
-/** What the question says before a dismissal or a release; `owner` is empty for the owner's own view, the owner's name for the master's. */
-export function steedAskText(going: SteedGoing, name: string, owner: string): string {
-  const sheet = owner ? `da ficha de ${owner}` : 'da sua ficha';
-  if (going === 'release') {
-    return `O vínculo acaba: ${name} some do mapa e ${sheet}, e a próxima Convocar Montaria escolhe de novo a forma e o tipo.`;
+/** Where a bonded steed is when its question is asked: in a running combat, and under its owner. */
+export interface SteedWhere {
+  readonly combat: boolean;
+  readonly mounted: boolean;
+}
+
+/** Reads `SteedWhere` from the running combat (`null`: none runs). */
+export function steedWhere(
+  enc: Pick<Encounter, 'combatants'> | null,
+  creatureId: string,
+  characterId: string,
+): SteedWhere {
+  const steed = enc?.combatants.find((c) => c.creatureId === creatureId);
+  if (!enc || !steed) {
+    return { combat: false, mounted: false };
   }
-  return `${name} some do mapa e ${sheet}, e ${owner || 'você'} desce de pé se estiver montado. O vínculo fica: Convocar Montaria traz ${name} de volta.`;
+  return {
+    combat: true,
+    mounted: enc.combatants.some(
+      (c) => c.characterId === characterId && c.mountedOnId === steed.id,
+    ),
+  };
+}
+
+/**
+ * What the question says before a dismissal or a release, in the words of boards 588-24 and 588-25. `owner` is empty for
+ * the owner's own view, the owner's name for the master's. The rider's landing is said only with the owner on the steed;
+ * "Fora de combate, não gasta nada." only to the owner (the master never spends) and only with no combat holding the steed.
+ */
+export function steedAskText(
+  going: SteedGoing,
+  name: string,
+  owner: string,
+  where: SteedWhere,
+): string {
+  const fem = article(name) === 'a';
+  const free = !owner && !where.combat ? ' Fora de combate, não gasta nada.' : '';
+  if (going === 'release') {
+    const sheet = owner ? `da ficha de ${owner}` : 'da ficha';
+    return `O vínculo acaba: ${name} some ${sheet} e do mapa, e a próxima Convocar Montaria escolhe de novo a forma e o tipo.${free}`;
+  }
+  const sheet = owner ? `da ficha de ${owner}` : 'da sua ficha';
+  const lands = where.mounted
+    ? `, e ${owner || 'você'} desce de pé no quadrado ${fem ? 'dela' : 'dele'}`
+    : '';
+  return `${name} some do mapa e ${sheet}${lands}. O vínculo fica: Convocar Montaria ${fem ? 'a' : 'o'} traz de volta.${free}`;
 }
 
 /**
@@ -46,7 +87,15 @@ export function steedRefusal(err: unknown, owner: string): string {
   }
 }
 
-/** Under a bonded steed that is not among the live creatures (the dashed "Fora" row). */
-export function steedAwayLine(name: string): string {
-  return `Convocar Montaria traz ${name} de volta.`;
+/** The dashed "Fora" row's line: "Cavalo de guerra · celestial · fora da mesa". */
+export function steedAwaySubtitle(form: string, type: string): string {
+  return joinDots([form, steedTypeWord(type), 'fora da mesa'].filter((part) => part !== ''));
+}
+
+/** Under the cast button of Convocar Montaria: what the cast does for a steed that is away, or for one that is here. */
+export function steedCastHint(name: string, away: boolean): string {
+  const fem = article(name) === 'a';
+  return away
+    ? `Traz ${name} de volta, com a forma e o tipo ${fem ? 'dela' : 'dele'} e os PV cheios.`
+    : `Com ${name} aqui, ${fem ? 'ela' : 'ele'} volta aos PV cheios.`;
 }

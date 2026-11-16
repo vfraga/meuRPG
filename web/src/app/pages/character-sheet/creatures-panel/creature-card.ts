@@ -28,7 +28,9 @@ import { sourcePhrase } from '../../../core/creatures/creature-format';
 import {
   STEED_RELEASE_LINE,
   type SteedGoing,
+  type SteedWhere,
   steedSubtitle,
+  steedWhere,
 } from '../../../core/creatures/steed-card';
 import { joinDots, tight } from '../../../core/format/text';
 import { metersText } from '../../../core/units';
@@ -36,6 +38,8 @@ import { FamiliarEyesButton } from '../../../shared/familiar-eyes/familiar-eyes-
 import { CreatureArt } from '../../../shared/creatures/creature-art';
 import { CreatureEdit, type EditMode } from '../../../shared/creatures/creature-edit';
 import { SteedAsk } from '../../../shared/creatures/steed-ask';
+
+const NOWHERE: SteedWhere = { combat: false, mounted: false };
 
 /**
  * One creature of the character, as a card (E9-10, quadro 1): its picture, the
@@ -100,8 +104,8 @@ export class CreatureCard {
   protected readonly mode = signal<EditMode | null>(null);
   /** The question of a bonded steed: the dismissal that keeps the bond, or the release. */
   protected readonly going = signal<SteedGoing | null>(null);
-  /** A combat holds the steed and the asker is its owner's player: the question says the action it spends. */
-  protected readonly spendsAction = signal(false);
+  /** Where the steed is when its question is asked: in a combat (its owner's player spends the action), under its owner. */
+  protected readonly where = signal<SteedWhere>(NOWHERE);
   /** Why the combat refused to send the steed away now; `''` when it did not. */
   protected readonly refusal = signal('');
   protected readonly releaseLine = STEED_RELEASE_LINE;
@@ -175,9 +179,9 @@ export class CreatureCard {
     if (this.refusal()) {
       return;
     }
-    this.spendsAction.set(false);
+    this.where.set(NOWHERE);
     this.going.set(going);
-    if (!this.live() || this.isMaster()) {
+    if (!this.live()) {
       return;
     }
     const id = this.creature().id;
@@ -185,8 +189,8 @@ export class CreatureCard {
       .get(CombatClient)
       .turn.get(this.campaignId())
       .then(
-        (enc) => this.spendsAction.set(!!enc?.combatants.some((c) => c.creatureId === id)),
-        () => this.spendsAction.set(false),
+        (enc) => this.where.set(steedWhere(enc, id, this.characterId())),
+        () => this.where.set(NOWHERE),
       );
   }
 

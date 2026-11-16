@@ -49,7 +49,7 @@
       }
 
       @if (steed.bonded()) {
-        <app-steed-choice class="fixed" part="same" [spell]="s" [block]="steedBlock()" />
+        <app-steed-choice class="fixed" part="same" [spell]="s" [block]="steed.block(forms())" />
       }
 
       @if (collapsed()) {
