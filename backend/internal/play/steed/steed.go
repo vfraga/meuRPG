@@ -12,7 +12,7 @@ const (
 	// TargetNote is the line of a cast that put its lasting effect on the steed too.
 	TargetNote = "O corcel também é alvo da magia."
 	// TableNote is the line of a cast whose effect the master applies to the steed.
-	TableNote = "O corcel também é alvo da magia: o Mestre aplica o efeito a ele."
+	TableNote = "O corcel também é alvo da magia: o mestre aplica o efeito a ele."
 	// tooSimpleScore is the Intelligence score at or under which Hideous Laughter does nothing (SRD 5.1).
 	tooSimpleScore = 4
 )

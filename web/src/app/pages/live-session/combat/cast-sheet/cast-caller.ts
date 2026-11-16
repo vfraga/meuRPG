@@ -153,7 +153,7 @@ export class CastCaller {
       ...(destination ? { destination } : {}),
       ...(data.grant ? { grantedBy: data.grant.sourceKey } : {}),
       ...(spend ? { spendFavor: true } : {}),
-      ...(data.alsoSteed && this.s.alsoSteed() ? { alsoSteed: true } : {}),
+      ...(data.alsoSteed && this.s.alsoSteed() && this.s.steedName() ? { alsoSteed: true } : {}),
     };
   }
 

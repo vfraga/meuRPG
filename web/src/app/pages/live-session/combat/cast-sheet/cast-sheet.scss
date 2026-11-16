@@ -166,3 +166,11 @@
   font-size: var(--mr-font-14);
   line-height: 20px;
 }
+
+// The check "Estrela também" went away with the mount: why, in its place.
+.steed-off {
+  margin: 0;
+  font-size: var(--mr-font-14);
+  line-height: 20px;
+  color: var(--mr-ink-muted);
+}
