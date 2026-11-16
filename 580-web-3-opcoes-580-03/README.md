@@ -1,37 +1,24 @@
-# 580 web-3: opções de característica com pré-requisito (board 580-03)
+# 580 web-3: opções de característica com pré-requisito (board 580-03), rodada 2
 
-Branch `feat/table-prereq-580-web-3`. Subclasse "Guarda do Corvo", característica "Truques de lâmina" (escolha 3), 5 opções. Todos os shots com deviceScaleFactor 2, claro e escuro.
-
-Sufixos: `-claro` / `-escuro`. Larguras 768 e 1280 (editor). O editor de subclasse não existe em 390 (só no notebook): em 390 há só a página de leitura.
-
-| Arquivo (prefixo 580-03-) | Estado |
-| --- | --- |
-| opcoes-recolhidas-{768,1280}-{claro,escuro}.png | 5 linhas recolhidas com resumo ("Opção N · nome" e "efeito · pede X"), setas no primeiro (Subir desligado), no meio e no último (Descer desligado), moldura cinza na característica |
-| opcao-aberta-{768,1280}-{claro,escuro}.png | Uma linha aberta (Opção 2), moldura de destaque só nela, corpo recuado 36px |
-| outras-opcoes-irmas-{768,1280}-{claro,escuro}.png | "Outras opções" aberta: irmãs salvas com selo "Opção N", nunca a própria opção; a lista é o select nativo renderizado como listbox, por isso no escuro o texto das opções aparece apagado (artefato do headless, não do app) |
-| dica-opcao-nova-{768,1280}-{claro,escuro}.png | A dica: "Uma opção nova só pode ser pedida depois de salvar a característica." mantendo "Nunca a própria opção." |
-| como-os-jogadores-veem-{768,1280}-{claro,escuro}.png | Painel "Como os jogadores veem" com a linha apagada "Pede …" por opção (mesma frase da leitura) |
-| recusa-no-campo-{768,1280}-{claro,escuro}.png | Recusa do servidor no campo "Outras opções" ("Este valor não é aceito. Confira o campo."), a linha abre sozinha e mostra "Precisa de ajuste" |
-| celular-so-le-390-{claro,escuro}.png | Página de leitura em 390 com a linha "Pede …" apagada nas opções |
-
-## Diferenças em relação ao board (não fechadas)
-- No 768 o painel "Como os jogadores veem" fica abaixo do editor (a coluna lateral só aparece a partir de 1100px).
-- A recusa do servidor usa o texto genérico "Este valor não é aceito. Confira o campo."; o texto do board é mais específico e depende de mensagem do servidor.
-- A lista "Outras opções" usa o select nativo, não um menu desenhado.
-
-## Rodada 1 de revisão
-Editor de subclasse "Guarda do Vale" e de classe "Guardião do Vale", 768 e 1280, claro e escuro (sufixo `-{768,1280}-{claro,escuro}`), deviceScaleFactor 2. Os recortes de elemento podem mostrar a barra "Salvar" fixa por cima.
+Branch `feat/table-prereq-580-web-3`. Subclasse "Guarda do Corvo" e classe "Guardião do Vale", característica "Truques de lâmina" (escolha 3), opções com pré-requisito. deviceScaleFactor 2, claro e escuro (`-claro` / `-escuro`), larguras 768 e 1280 (o editor não existe em 390). `580-03-board-1280-claro.png` é o board, para comparar. Os shots das rodadas anteriores que mostravam texto ou estrutura já trocados (ponto antes de "Precisa de ajuste", select nativo, "1 de 10." na dica, etiqueta colada ao nome) foram apagados.
 
 | Arquivo | Estado |
 | --- | --- |
-| 580-03-board-1280-claro.png | O board 580-03 (a exportação do board, para comparar) |
-| 580-web-3-r1-editor-de-classe-preview-aberto-* / -recorte-* | Editor de classe com uma característica aberta: o painel "Como os jogadores veem" (sem ele não há marco "Como os jogadores veem") |
-| 580-03-r1-chip-opcao-n-* / -recorte-* | "Outras opções" com a irmã escolhida: o chip "Asa Partida" com a etiqueta "Opção 2" a 8 px do nome |
-| 580-03-r1-recusa-irma-com-motivo-* / -recorte-* | Depois do "Salvar subclasse" recusado: a opção 1 aberta com a frase "Esta opção e a que ela pede esperam uma pela outra: nenhuma das duas poderia ser escolhida. Tire um dos pedidos." no campo, e as linhas 1 e 2 com "Precisa de ajuste" |
-| 580-03-r1-linha-recusada-cabeca-* | A cabeça da linha 1 recusada: setas e "⋮" com o tamanho das demais, o ponto depois do resumo e a etiqueta fora dele |
-| 580-03-r1-linha-recusada-setas-ponto-* | A linha 2 recusada inteira (em 768 o ponto fecha a primeira linha e a etiqueta desce) |
-| 580-03-r1-recusa-segue-a-opcao-* | Depois de "Descer a opção Asa Partida": a marca vai com a opção |
+| 580-03-r2-opcoes-recolhidas-* | 5 linhas recolhidas, "Opção N · nome" e resumo, setas, moldura cinza |
+| 580-03-r2-adicionar-opcao-menu-* | "Outras opções": o botão "Adicionar opção" aberto no painel de menu do sistema; cada escolha com a origem ("Opção N", "SRD" ou "Da mesa") à direita, a lista rola dentro do painel |
+| 580-03-r2-chip-opcao-n-* / -recorte-* | A irmã escolhida: chip de cantos retos "Asa Partida" + "Opção 2", o botão "Adicionar opção" na mesma linha e "1 de 10" no fim da linha |
+| 580-03-r2-recusa-chip-marcado-* / -recorte-* | Depois do "Salvar subclasse" recusado: a linha 1 aberta e a linha 2 fechada com borda e fundo de perigo e "Precisa de ajuste" na linha do nome; o chip da recusa com borda de perigo e ícone; a frase sob os chips; o painel "Como os jogadores veem" diz "Ainda não salvo: a característica tem um ajuste pendente." |
+| 580-03-r2-linha-recusada-cabeca-{aberta,fechada}-* | A cabeça das duas linhas recusadas, sem ponto, a marca sem quebra |
+| 580-03-r2-preview-nao-salvo-* | O painel "Como os jogadores veem" com a recusa de pé |
+| 580-web-3-r2-editor-de-classe-preview-* / -recorte-* | Editor de classe com a característica aberta e o painel "Como os jogadores veem" logo depois da seção das características |
+| 580-web-3-r2-editor-de-classe-faixa-fixa-* | Rolado pelo meio da seção: em 768 só a faixa de seções fica presa sob a barra; o cartão "Para os jogadores" não cobre mais nada |
+| 580-web-3-r2-editor-de-classe-subclasse-* | A seção "Subclasse": o rótulo "A subclasse se escolhe no nível" inteiro |
+| 580-web-3-r2-editor-de-classe-fim-da-pagina-* | Fim da página: a barra "Salvar classe" assenta na borda do conteúdo |
+| 580-03-r2-celular-so-le-390-* | Leitura em 390: o aviso com a primeira frase em negrito e "Escolha 3 de 5 opções." na característica |
 
-## Diferenças em relação ao board (não fechadas)
+## Diferenças em relação ao board (mantidas)
+- Em 768 o painel "Como os jogadores veem" fica abaixo do editor (a coluna lateral só aparece a partir de 1100 px). No editor de classe ele fica logo depois da seção das características, em qualquer largura, porque a coluna lateral da classe tem 236 px e é a lista de seções.
+- A origem "SRD" só aparece no menu; o chip de uma opção do SRD não leva etiqueta. Nomes iguais de conjuntos diferentes do SRD (ex.: três "Arquearia") aparecem repetidos no menu.
 - O servidor marca as duas opções do par (cada uma pede a outra); o board marca uma.
-- Em 390 não há editor de subclasse nem de classe.
+- O cartão "Para os jogadores" mantém o título e a frase sob o interruptor; o board tem só o interruptor e "Ligado".
+- A barra de salvar fica na borda do conteúdo; entre ela e o rodapé do app sobra o espaço do rodapé.

@@ -1,30 +1,17 @@
-# 580 web-3: estado 8 do board 580-16, "A arma mudou." na ficha de Tor
+# 580 web-3: estado 8 do board 580-16, "A arma mudou." na ficha de Toren (rodada 2)
 
-Branch `feat/table-prereq-580-web-3`. Mesa com o "Machado de Lenhador" (simples, 1d6, uma mão); Toren (Guerreiro 4, proficiente em armas simples e escudos) o carrega com um escudo equipado. O mestre edita o machado e põe "Duas mãos"; o dono abre a ficha. Todos os shots com deviceScaleFactor 2, claro e escuro (sufixo `-claro` / `-escuro`). Os números são os reais da ficha de Toren (CA 13 → 11), não os do board (Tor, CA 18 → 16).
+Branch `feat/table-prereq-580-web-3`. Mesa com o "Machado de Lenhador"; Toren (Guerreiro 4, escudo equipado) o carrega. O mestre põe "Duas mãos"; a ficha ainda é rascunho (sem sessão). deviceScaleFactor 2, 390/768/1280, claro e escuro. Os números são os reais da ficha (CA 13 → 11), não os do board (18 → 16). Os shots anteriores (frases e legendas antigas, ficha travada, folha "Ver o que mudou" do mestre) foram apagados; a ficha travada não foi refeita nesta rodada.
 
-| Arquivo (prefixo 580-web-3-estado-8-) | Estado |
+| Arquivo (prefixo 580-web-3-estado-8-r2-) | Estado |
 | --- | --- |
-| ficha-dono-{390,768,1280}-{claro,escuro}.png | A ficha do dono (viewport inteira) com o aviso "A arma mudou." sob o cabeçalho; a CA mostrada na ficha é a de depois (11) |
-| aviso-dono-{390,768,1280}-{claro,escuro}.png | Só o aviso, recortado: negrito "A arma mudou.", a frase do mestre com a data, "Os números da ficha já usam as regras novas. O que não combina mais:", o marcador com a frase da arma e o botão "Ver o que mudou" |
-| ficha-mestre-{390,1280}-{claro,escuro}.png | A mesma ficha lida pelo mestre: o mesmo aviso |
-| ver-o-que-mudou-390-{claro,escuro}.png | O que "Ver o que mudou" abre no celular: folha de baixo "O que mudou: Machado de Lenhador", a frase em aviso, "Quem ajusta: você, na ficha. O aviso some sozinho quando os números voltam a combinar." e "Fechar" |
-| ver-o-que-mudou-1280-{claro,escuro}.png | O mesmo, como janela de 560 px a partir do tablet |
+| ficha-rascunho-dono-* | A ficha do dono, rascunho, com o aviso sob o cabeçalho |
+| aviso-dono-* / aviso-mestre-* | Só o aviso, lido pelo dono e pelo mestre: "A arma mudou." em negrito e a frase "A arma Machado de Lenhador passou a exigir as duas mãos. Com ela em uso, o escudo de Toren não conta na CA (CA 13 → 11)." |
+| ficha-rascunho-mestre-* | A mesma ficha lida pelo mestre |
+| dica-da-ca-dono-* | A frase junto à CA: "O escudo não conta na CA: há uma arma de duas mãos equipada. Guarde o escudo ou a arma de duas mãos." |
+| chip-nao-conta-dono-* | Em Equipamento, a etiqueta pontilhada "Não conta na CA" ao lado do escudo, com "CA 11" no cabeçalho |
+| ver-o-que-mudou-dono-* | O que "Ver o que mudou" abre (folha de baixo em 390, janela a partir de 768) |
 
 ## Diferenças em relação ao board (não fechadas)
-- O botão "Ver o que mudou" tem o estilo do botão contornado do app (texto vinho, borda cinza), não o marrom do aviso do board: item à parte.
-- Em 1280 a frase corre a largura toda do aviso (o board mostra uma coluna estreita): item à parte.
-- A ficha não tem o jogador "Tor, CA 18 → 16": o texto é o do servidor com o nome e a CA reais da ficha.
-
-## O que foi corrigido
-- O botão ficava a 16 px da última linha da lista; o board tem 8 px (o espaço da coluna, sem margem a mais). Retirada a margem do botão.
-
-## Rodada 1 de revisão: a ficha travada lida pelo dono
-Mesma mesa, com a sessão iniciada (a ficha do dono está travada: "Travada: equipar e guardar continuam valendo"). Shots com deviceScaleFactor 2, em 390, 768 e 1280, claro e escuro.
-
-| Arquivo (prefixo 580-web-3-estado-8-r1-) | Estado |
-| --- | --- |
-| ficha-travada-dono-{390,768,1280}-{claro,escuro}.png | A ficha travada lida pelo dono, com o aviso "A arma mudou." |
-| aviso-travada-dono-{390,768,1280}-{claro,escuro}.png | Só o aviso, recortado |
-| ver-o-que-mudou-travada-dono-{390,768,1280}-{claro,escuro}.png | "Ver o que mudou" (folha de baixo em 390, janela de 560 px a partir de 768): a frase da arma e "Quem ajusta: o dono da ficha, guardando o escudo ou a arma. O aviso some quando um dos dois deixa de estar em uso." |
-
-A CA é a real de Toren (13 → 11), não a do board (18 → 16).
+- O botão "Ver o que mudou" é o contornado do app (texto vinho), não o marrom do aviso do board.
+- Em 1280 a frase corre a largura toda do aviso.
+- A frase da CA fica sob a linha da CA e do deslocamento, não ao lado do escudo.
