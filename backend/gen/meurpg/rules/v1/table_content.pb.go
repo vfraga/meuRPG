@@ -2063,8 +2063,9 @@ type TableEffect struct {
 	// the cast spends no slot. A cast of the same spell with a slot (`also_with_slot`) uses the slot's
 	// level. Refused on a cantrip, with `ritual_only` and on any other effect type.
 	CastLevel int32 `protobuf:"varint,95,opt,name=cast_level,json=castLevel,proto3" json:"cast_level,omitempty"`
-	// choice of kind "tool" only: instead of a `from` list, the player picks from every
-	// proficiency of the content that the filter's kinds name. Refused together with `from`,
+	// choice of kind "tool", "cantrip" or "spell" only: instead of a `from` list, the player picks
+	// from every proficiency of the filter's kinds (a tool choice) or every spell of the filter's class
+	// lists, circles and schools (a cantrip or spell choice). Refused together with `from`,
 	// `set`, `from_feature` and `daily_choice`.
 	Filter *TableChoiceFilter `protobuf:"bytes,96,opt,name=filter,proto3" json:"filter,omitempty"`
 	// choice of kind "feature" only: the key of a feature with options ("feature:..."), the SRD's or
@@ -2780,16 +2781,26 @@ func (x *TableEffect) GetFromFeature() string {
 }
 
 // TableChoiceFilter says which entries a `choice` effect offers, by what they are rather
-// than by a list of keys. Today it holds the kinds of proficiency of a choice of tools. The
-// fields for the spells of a choice of spells join this message later; a field it does not
-// have yet is never sent.
+// than by a list of keys: the proficiencies of some kinds in a choice of tools, and the spells
+// of some class lists in a choice of cantrips or of spells.
 type TableChoiceFilter struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The kinds of proficiency offered: "weapon", "tool" and "other" (the vehicles and the
-	// kits the SRD lists apart from the tools). Each at most once; at least one.
+	// choice of kind "tool" only. The kinds of proficiency offered: "weapon", "tool" and "other"
+	// (the vehicles and the kits the SRD lists apart from the tools). Each at most once; at least one.
 	ProficiencyKinds []string `protobuf:"bytes,1,rep,name=proficiency_kinds,json=proficiencyKinds,proto3" json:"proficiency_kinds,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// choice of kind "cantrip" or "spell" only: the class lists the spells come from ("class:wizard",
+	// or a class of the table). At least one when any of the fields below is set; each at most once.
+	ClassLists []string `protobuf:"bytes,2,rep,name=class_lists,json=classLists,proto3" json:"class_lists,omitempty"`
+	// The circles offered, 0 to 9, each at most once; empty is every circle the kind allows (a
+	// choice of cantrips offers the cantrips, a choice of spells circles 1 to 9). A choice of cantrips
+	// takes only 0, a choice of spells only 1 to 9.
+	SpellLevels []int32 `protobuf:"varint,3,rep,packed,name=spell_levels,json=spellLevels,proto3" json:"spell_levels,omitempty"`
+	// The schools of magic offered ("school:evocation"); empty is every school. At most 8, each once.
+	Schools []string `protobuf:"bytes,4,rep,name=schools,proto3" json:"schools,omitempty"`
+	// True offers only the spells that can be cast as a ritual.
+	Ritual        bool `protobuf:"varint,5,opt,name=ritual,proto3" json:"ritual,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TableChoiceFilter) Reset() {
@@ -2827,6 +2838,34 @@ func (x *TableChoiceFilter) GetProficiencyKinds() []string {
 		return x.ProficiencyKinds
 	}
 	return nil
+}
+
+func (x *TableChoiceFilter) GetClassLists() []string {
+	if x != nil {
+		return x.ClassLists
+	}
+	return nil
+}
+
+func (x *TableChoiceFilter) GetSpellLevels() []int32 {
+	if x != nil {
+		return x.SpellLevels
+	}
+	return nil
+}
+
+func (x *TableChoiceFilter) GetSchools() []string {
+	if x != nil {
+		return x.Schools
+	}
+	return nil
+}
+
+func (x *TableChoiceFilter) GetRitual() bool {
+	if x != nil {
+		return x.Ritual
+	}
+	return false
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
@@ -8971,6 +9010,8 @@ type EffectMenuList struct {
 	// "modifier_targets", "modifier_modes", "proficiency_targets",
 	// "proficiency_levels", "roll_modes", "roll_targets", "senses", "recharges",
 	// "economies", "choice_kinds", "skills", "languages", "tools", "tag_prefixes",
+	// "spell_schools" (the schools of magic a spell filter's `schools` may name) and "class_lists" (the
+	// classes whose spell list the master reads, the SRD's and the table's, for its `class_lists`),
 	// "abilities" (the six abilities, for an ability_increase's `from`),
 	// "ability_increase_amounts" (its `value`: "1" or "2"), "state_ends" (a state's
 	// `ends_on`), "state_economies" (its `economy`), "weapon_filters" (a weapon_rule's
@@ -9636,9 +9677,15 @@ const file_meurpg_rules_v1_table_content_proto_rawDesc = "" +
 	"\n" +
 	"cast_level\x18_ \x01(\x05R\tcastLevel\x12:\n" +
 	"\x06filter\x18` \x01(\v2\".meurpg.rules.v1.TableChoiceFilterR\x06filter\x12!\n" +
-	"\ffrom_feature\x18a \x01(\tR\vfromFeatureJ\x04\bZ\x10[\"F\n" +
+	"\ffrom_feature\x18a \x01(\tR\vfromFeatureJ\x04\bZ\x10[\"\xce\x01\n" +
 	"\x11TableChoiceFilter\x121\n" +
-	"\x11proficiency_kinds\x18\x01 \x03(\tB\x04\x88\xb5\x18\x03R\x10proficiencyKinds\"\xca\x02\n" +
+	"\x11proficiency_kinds\x18\x01 \x03(\tB\x04\x88\xb5\x18\x03R\x10proficiencyKinds\x12%\n" +
+	"\vclass_lists\x18\x02 \x03(\tB\x04\x88\xb5\x18\bR\n" +
+	"classLists\x12'\n" +
+	"\fspell_levels\x18\x03 \x03(\x05B\x04\x88\xb5\x18\n" +
+	"R\vspellLevels\x12\x1e\n" +
+	"\aschools\x18\x04 \x03(\tB\x04\x88\xb5\x18\bR\aschools\x12\x16\n" +
+	"\x06ritual\x18\x05 \x01(\bR\x06ritual\"\xca\x02\n" +
 	"\fTableFeature\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x17\n" +
 	"\aname_pt\x18\x02 \x01(\tR\x06namePt\x12\x1f\n" +

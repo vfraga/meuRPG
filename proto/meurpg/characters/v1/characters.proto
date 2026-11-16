@@ -3780,6 +3780,8 @@ message ChoiceOption {
   repeated string classes_pt = 10;
   // True for the option that takes free text (the two humanoid races).
   bool needs_text = 11;
+  // For a spell: it can be cast as a ritual.
+  bool ritual = 12;
 }
 
 // Choice is one thing the sheet asks the player to pick.

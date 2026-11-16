@@ -509,8 +509,9 @@ message TableEffect {
   // the cast spends no slot. A cast of the same spell with a slot (`also_with_slot`) uses the slot's
   // level. Refused on a cantrip, with `ritual_only` and on any other effect type.
   int32 cast_level = 95;
-  // choice of kind "tool" only: instead of a `from` list, the player picks from every
-  // proficiency of the content that the filter's kinds name. Refused together with `from`,
+  // choice of kind "tool", "cantrip" or "spell" only: instead of a `from` list, the player picks
+  // from every proficiency of the filter's kinds (a tool choice) or every spell of the filter's class
+  // lists, circles and schools (a cantrip or spell choice). Refused together with `from`,
   // `set`, `from_feature` and `daily_choice`.
   TableChoiceFilter filter = 96;
   // choice of kind "feature" only: the key of a feature with options ("feature:..."), the SRD's or
@@ -524,13 +525,23 @@ message TableEffect {
 }
 
 // TableChoiceFilter says which entries a `choice` effect offers, by what they are rather
-// than by a list of keys. Today it holds the kinds of proficiency of a choice of tools. The
-// fields for the spells of a choice of spells join this message later; a field it does not
-// have yet is never sent.
+// than by a list of keys: the proficiencies of some kinds in a choice of tools, and the spells
+// of some class lists in a choice of cantrips or of spells.
 message TableChoiceFilter {
-  // The kinds of proficiency offered: "weapon", "tool" and "other" (the vehicles and the
-  // kits the SRD lists apart from the tools). Each at most once; at least one.
+  // choice of kind "tool" only. The kinds of proficiency offered: "weapon", "tool" and "other"
+  // (the vehicles and the kits the SRD lists apart from the tools). Each at most once; at least one.
   repeated string proficiency_kinds = 1 [(meurpg.options.v1.max_items) = 3];
+  // choice of kind "cantrip" or "spell" only: the class lists the spells come from ("class:wizard",
+  // or a class of the table). At least one when any of the fields below is set; each at most once.
+  repeated string class_lists = 2 [(meurpg.options.v1.max_items) = 8];
+  // The circles offered, 0 to 9, each at most once; empty is every circle the kind allows (a
+  // choice of cantrips offers the cantrips, a choice of spells circles 1 to 9). A choice of cantrips
+  // takes only 0, a choice of spells only 1 to 9.
+  repeated int32 spell_levels = 3 [(meurpg.options.v1.max_items) = 10];
+  // The schools of magic offered ("school:evocation"); empty is every school. At most 8, each once.
+  repeated string schools = 4 [(meurpg.options.v1.max_items) = 8];
+  // True offers only the spells that can be cast as a ritual.
+  bool ritual = 5;
 }
 
 // TableFeature is a class or subclass feature, a race or subrace trait, or a
@@ -2164,6 +2175,8 @@ message EffectMenuList {
   // "modifier_targets", "modifier_modes", "proficiency_targets",
   // "proficiency_levels", "roll_modes", "roll_targets", "senses", "recharges",
   // "economies", "choice_kinds", "skills", "languages", "tools", "tag_prefixes",
+  // "spell_schools" (the schools of magic a spell filter's `schools` may name) and "class_lists" (the
+  // classes whose spell list the master reads, the SRD's and the table's, for its `class_lists`),
   // "abilities" (the six abilities, for an ability_increase's `from`),
   // "ability_increase_amounts" (its `value`: "1" or "2"), "state_ends" (a state's
   // `ends_on`), "state_economies" (its `economy`), "weapon_filters" (a weapon_rule's

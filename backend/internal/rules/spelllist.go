@@ -22,6 +22,8 @@ type SpellFilter struct {
 	Levels []int
 	// Schools are school keys; empty for all.
 	Schools []string
+	// Ritual keeps the spells that can be cast as a ritual.
+	Ritual bool
 	// Learnable, when not nil, keeps the spells one of these lists has, up to the
 	// highest circle of that list: what a character can learn.
 	Learnable []SpellAccess
@@ -88,12 +90,16 @@ func spellPasses(f SpellFilter, e SpellEntry, query, list string) bool {
 		return false
 	case list != "" && !slices.Contains(e.Classes, list):
 		return false
-	case len(f.Levels) > 0 && !slices.Contains(f.Levels, e.Level):
-		return false
-	case len(f.Schools) > 0 && !slices.Contains(f.Schools, e.School):
+	case !spellIsOfKind(f, e):
 		return false
 	}
 	return f.Learnable == nil || slices.ContainsFunc(f.Learnable, func(a SpellAccess) bool {
 		return e.Level <= a.MaxLevel && slices.Contains(e.Classes, a.List)
 	})
+}
+
+// spellIsOfKind says whether a spell is of one of the circles and schools of the filter, and a ritual when it asks for one.
+func spellIsOfKind(f SpellFilter, e SpellEntry) bool {
+	return (len(f.Levels) == 0 || slices.Contains(f.Levels, e.Level)) &&
+		(len(f.Schools) == 0 || slices.Contains(f.Schools, e.School)) && (!f.Ritual || e.Ritual)
 }

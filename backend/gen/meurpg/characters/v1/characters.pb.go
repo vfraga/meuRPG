@@ -13192,7 +13192,9 @@ type ChoiceOption struct {
 	SchoolPt   string   `protobuf:"bytes,9,opt,name=school_pt,json=schoolPt,proto3" json:"school_pt,omitempty"`
 	ClassesPt  []string `protobuf:"bytes,10,rep,name=classes_pt,json=classesPt,proto3" json:"classes_pt,omitempty"`
 	// True for the option that takes free text (the two humanoid races).
-	NeedsText     bool `protobuf:"varint,11,opt,name=needs_text,json=needsText,proto3" json:"needs_text,omitempty"`
+	NeedsText bool `protobuf:"varint,11,opt,name=needs_text,json=needsText,proto3" json:"needs_text,omitempty"`
+	// For a spell: it can be cast as a ritual.
+	Ritual        bool `protobuf:"varint,12,opt,name=ritual,proto3" json:"ritual,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13300,6 +13302,13 @@ func (x *ChoiceOption) GetClassesPt() []string {
 func (x *ChoiceOption) GetNeedsText() bool {
 	if x != nil {
 		return x.NeedsText
+	}
+	return false
+}
+
+func (x *ChoiceOption) GetRitual() bool {
+	if x != nil {
+		return x.Ritual
 	}
 	return false
 }
@@ -15270,7 +15279,7 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"\x05level\x18\x01 \x01(\x05R\x05level\x12\x1b\n" +
 	"\tspell_key\x18\x02 \x01(\tR\bspellKey\x12\x17\n" +
 	"\aname_pt\x18\x03 \x01(\tR\x06namePt\x12\x18\n" +
-	"\areached\x18\x04 \x01(\bR\areached\"\xae\x03\n" +
+	"\areached\x18\x04 \x01(\bR\areached\"\xc6\x03\n" +
 	"\fChoiceOption\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1d\n" +
 	"\n" +
@@ -15288,7 +15297,8 @@ const file_meurpg_characters_v1_characters_proto_rawDesc = "" +
 	"classes_pt\x18\n" +
 	" \x03(\tR\tclassesPt\x12\x1d\n" +
 	"\n" +
-	"needs_text\x18\v \x01(\bR\tneedsText\"\xf6\x03\n" +
+	"needs_text\x18\v \x01(\bR\tneedsText\x12\x16\n" +
+	"\x06ritual\x18\f \x01(\bR\x06ritual\"\xf6\x03\n" +
 	"\x06Choice\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1f\n" +
 	"\vfeature_key\x18\x02 \x01(\tR\n" +

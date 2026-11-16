@@ -491,7 +491,10 @@ func choiceFilterOf(m *rulesv1.TableChoiceFilter) *rules.ChoiceFilter {
 	if m == nil {
 		return nil
 	}
-	return &rules.ChoiceFilter{ProficiencyKinds: m.GetProficiencyKinds()}
+	return &rules.ChoiceFilter{
+		ProficiencyKinds: m.GetProficiencyKinds(), ClassLists: m.GetClassLists(), SpellLevels: intsOf(m.GetSpellLevels()),
+		Schools: m.GetSchools(), Ritual: m.GetRitual(),
+	}
 }
 
 // featureUseOf is the use a grant_action declares, nil for none. An unset enum is the rules' default (""), and a
@@ -1477,6 +1480,9 @@ func (v playerView) dropEffects(fs []*rulesv1.TableFeature) {
 		for _, ef := range f.GetEffects() {
 			ef.Spells = v.visible(ef.Spells)
 			ef.From = v.visible(ef.From)
+			if f := ef.GetFilter(); f != nil {
+				f.ClassLists = v.visible(f.ClassLists) // a class list the players do not see is not named to them
+			}
 			if v.hidden(ef.Spell) {
 				ef.Spell = "" // a granted spell the players do not see is not named to them
 			}

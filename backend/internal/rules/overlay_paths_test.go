@@ -96,6 +96,15 @@ var entryViolationRows = []struct {
 	{"a filter of a choice of skills", "backgrounds", 0, func(o *Overlay) {
 		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "skill", Count: 1, Filter: &ChoiceFilter{ProficiencyKinds: []string{"tool"}}}
 	}, "table_background.feature.effects[0].filter", ReasonValue},
+	{"a filter of cantrips with no class list", "backgrounds", 0, func(o *Overlay) {
+		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "cantrip", Count: 1, Filter: &ChoiceFilter{Schools: []string{"school:evocation"}}}
+	}, "table_background.feature.effects[0].filter.class_lists", ReasonValue},
+	{"a filter of spells with a class list that is not there", "backgrounds", 0, func(o *Overlay) {
+		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "spell", Count: 1, Filter: &ChoiceFilter{ClassLists: []string{"class:fantasma"}}}
+	}, "table_background.feature.effects[0].filter.class_lists", ReasonReference},
+	{"a filter of spells with a circle of cantrips", "backgrounds", 0, func(o *Overlay) {
+		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "spell", Count: 1, Filter: &ChoiceFilter{ClassLists: []string{"class:wizard"}, SpellLevels: []int{0}}}
+	}, "table_background.feature.effects[0].filter.spell_levels", ReasonValue},
 	{"the options of a feature on a background", "backgrounds", 0, func(o *Overlay) {
 		o.Backgrounds[0].Feature.Effects[0] = Effect{Type: "choice", Choice: "feature", Count: 1, FromFeature: "feature:fighter-fighting-style"}
 	}, "table_background.feature.effects[0].from_feature", ReasonValue},
