@@ -1,5 +1,15 @@
 import { noticeOpenedDoors } from './door-notice';
-import { TemplateRef, computed, effect, input, output, signal, Directive } from '@angular/core';
+import { FavorState } from '../../../core/play/favor-state';
+import {
+  TemplateRef,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  Directive,
+} from '@angular/core';
 import {
   CombatLogKind,
   CombatantSide,
@@ -354,6 +364,8 @@ export abstract class CombatViewDerivedDirective extends CombatViewStateDirectiv
   protected readonly ownConcentration = computed(() => {
     return this.own()?.concentrationSpellNamePt ?? '';
   });
+  /** What the Inspiração asks of the master: his tab counts it (RN-43). */
+  protected readonly favorAsks = inject(FavorState).asked;
   /** What the master's turn still owes a hit: "Falta aplicar 5 de dano". */
   protected readonly owed = computed(() =>
     this.isMaster()

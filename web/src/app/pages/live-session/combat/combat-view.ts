@@ -73,7 +73,7 @@ export class CombatView extends CombatViewPartsDirective {
 
   /** The tabs of the master's combat and which one is open. */
   protected readonly layout = new MasterLayout({
-    waiting: computed(() => this.held.count() + (this.owed() ? 1 : 0) + (this.waitNote() ? 1 : 0)),
+    waiting: computed(() => this.asked() + (this.owed() ? 1 : 0) + (this.waitNote() ? 1 : 0)),
     unread: computed(() => this.chatUnread()),
     hasChat: computed(() => this.chat() !== null),
     projected: computed(() => this.projected()),

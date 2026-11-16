@@ -299,6 +299,10 @@ export class FavorSpend {
   spent(): void {
     if (this.ticked()) {
       this.ticked.set(false);
+      const who = this.host.who();
+      if (who) {
+        this.host.favor.spentBy(who.characterId);
+      }
       void this.host.favor.refresh();
     }
   }

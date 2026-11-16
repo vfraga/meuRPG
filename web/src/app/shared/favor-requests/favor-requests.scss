@@ -1,0 +1,166 @@
+:host {
+  display: grid;
+  gap: var(--mr-space-3);
+}
+
+// With nothing waiting and no notice the host takes no room (its live regions stay, to announce the next one).
+:host:not(:has(.fr)):not(:has([data-testid='favor-line'])) {
+  display: contents;
+}
+
+.fr {
+  display: grid;
+  gap: var(--mr-space-3);
+}
+
+// "Para você responder", the count in an accent badge and "A mesa não espera" at the end.
+.fr__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--mr-space-2);
+}
+
+.fr__title {
+  display: flex;
+  align-items: center;
+  gap: var(--mr-space-2);
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-size: var(--mr-font-20);
+  font-weight: 700;
+  line-height: 25px;
+  color: var(--mr-ink);
+}
+
+.fr__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  border-radius: var(--mr-radius-pill);
+  background: var(--mr-accent);
+  color: var(--mr-on-accent);
+  font-size: var(--mr-font-13);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.fr__wait {
+  margin-left: auto;
+  font-size: var(--mr-font-14);
+  color: var(--mr-ink-muted);
+}
+
+.fr__list {
+  display: grid;
+  gap: var(--mr-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Two cards side by side when they fit (the master's 1280 board), one under the other on a phone.
+@media (min-width: 1280px) {
+  .fr__list:has(li + li) {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+}
+
+.fr__card {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mr-space-3);
+  box-sizing: border-box;
+  height: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--mr-accent);
+  border-radius: var(--mr-radius-lg);
+  background: var(--mr-surface);
+  color: var(--mr-ink);
+
+  p {
+    margin: 0;
+  }
+}
+
+.fr__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  font-size: var(--mr-font-22);
+  color: var(--mr-accent);
+}
+
+.fr__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--mr-space-2);
+  min-width: 0;
+  flex: 1;
+}
+
+.fr__card-title {
+  margin: 0;
+  font-family: var(--mr-font-display);
+  font-size: var(--mr-font-18);
+  font-weight: 700;
+  line-height: 24px;
+  color: var(--mr-ink);
+  overflow-wrap: anywhere;
+}
+
+.fr__text {
+  font-size: var(--mr-font-15);
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+.fr__note {
+  font-size: var(--mr-font-13);
+  line-height: 18px;
+  color: var(--mr-ink-muted);
+}
+
+// The roller on the refund card: a tag with the character's name.
+.fr__who {
+  height: 28px;
+  color: var(--mr-ink);
+}
+
+// Side by side while they fit, stacked at 390 px, 48 px on a phone and 44 px from a tablet up.
+.fr__pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-self: stretch;
+  gap: var(--mr-space-2);
+  margin-top: var(--mr-space-1);
+}
+
+.fr__btn {
+  --mat-button-filled-container-height: 48px;
+  --mat-button-outlined-container-height: 48px;
+  --mat-button-outlined-label-text-color: var(--mr-ink);
+  --mat-button-outlined-outline-color: var(--mr-control-line);
+  flex: 1 1 auto;
+  min-width: max-content;
+
+  @media (min-width: 768px) {
+    --mat-button-filled-container-height: 44px;
+    --mat-button-outlined-container-height: 44px;
+    flex: 0 0 auto;
+  }
+
+  @media (max-width: 419.98px) {
+    flex-basis: 100%;
+  }
+}
+
+.fr__pair .mat-mdc-outlined-button {
+  background: var(--mr-surface);
+}

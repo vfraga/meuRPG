@@ -129,8 +129,8 @@ export const FAVOR_CANCEL_FAILED = 'Não foi possível cancelar o pedido. Tente 
 export interface FavorLine {
   readonly id: number;
   readonly text: string;
-  /** `success`: something good reached the reader; `neutral`: a plain fact; `info`: something closed and nothing changed. */
-  readonly tone: 'success' | 'neutral' | 'info';
+  /** `success`: something good reached the reader; `neutral`: a plain fact (a refusal, a card that closed, nothing changed). */
+  readonly tone: 'success' | 'neutral';
   readonly icon: string;
 }
 

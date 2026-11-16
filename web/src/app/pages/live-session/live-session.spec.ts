@@ -12,7 +12,7 @@ import { MapsClient } from '../../core/maps/maps-client';
 import { visionResponse } from '../../core/maps/vision-testing';
 import { FamiliarEyesClient } from '../../core/play/familiar-eyes';
 import { FavorClient } from '../../core/play/favor-client';
-import { FakeFavorClient } from '../../core/play/favor-testing';
+import { FakeFavorClient, favorPass, favorRefund } from '../../core/play/favor-testing';
 import { textOf } from '../../core/format/text-testing';
 import { CastingClient } from '../../core/casting/casting-client';
 import { FakeCastingClient } from '../../core/casting/casting-testing';
@@ -2184,6 +2184,41 @@ describe('LiveSession', () => {
       ).toContain('1 com Inspiração');
       expect(el.querySelector('app-party-panel .js-favor-badge')).not.toBeNull();
       expect(el.querySelector('app-favor-notice')).toBeNull();
+    });
+
+    it('puts the master\'s two cards under "Para você responder" outside a combat, and shows a player no card', async () => {
+      asMaster();
+      favorApi.passes = [favorPass()];
+      favorApi.refunds = [favorRefund()];
+      const el = await render();
+      await settle();
+      const heading = el.querySelector('app-favor-requests #fr-h');
+      expect(heading?.textContent).toContain('Para você responder');
+      expect(el.querySelector('app-favor-requests [data-testid=favor-pass-card]')).not.toBeNull();
+      expect(el.querySelector('app-favor-requests [data-testid=favor-refund-card]')).not.toBeNull();
+    });
+
+    it('draws no master card for a player, whatever the read says', async () => {
+      favorApi.passes = [favorPass()];
+      favorApi.refunds = [favorRefund()];
+      const el = await render();
+      await settle();
+      expect(el.querySelector('app-favor-requests')).toBeNull();
+      expect(el.querySelector('[data-testid=favor-pass-card]')).toBeNull();
+    });
+
+    it("tells the giver what the master answered, in the player's notices", async () => {
+      favorApi.holders = [{ characterId: 'pensantus', name: 'Pensantus' }];
+      favorApi.passes = [favorPass({ fromId: 'pensantus', fromName: 'Pensantus' })];
+      const el = await render();
+      await settle();
+      favorApi.holders = [];
+      favorApi.passes = [];
+      source.push({ kind: 'vitals', vitals: pensantusVitals({ revision: 3 }) });
+      await settle();
+      expect(el.querySelector('app-favor-lines')?.textContent).toContain(
+        'O mestre aceitou: a sua Inspiração foi para Tor.',
+      );
     });
 
     it('stops reading and offers nothing when the session ends', async () => {

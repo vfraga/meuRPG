@@ -234,12 +234,37 @@ describe('FavorState: the pass and the refund question', () => {
       const { client, favor } = setup();
       client.holders = [{ characterId: 'jabuti', name: 'Jabuti' }];
       await follow(favor, client, false);
+      favor.spentBy('jabuti');
       client.holders = [];
       await favor.refresh();
       client.holders = [{ characterId: 'jabuti', name: 'Jabuti' }];
       await favor.refresh();
       expect(texts(favor)).toEqual(['O mestre devolveu a sua Inspiração.']);
       expect(favor.gained()).toBe('');
+    });
+
+    it('reads a grant after the spend as a grant, when this screen did not spend it (another device, or the master gave another)', async () => {
+      const { client, favor } = setup();
+      client.holders = [{ characterId: 'jabuti', name: 'Jabuti' }];
+      await follow(favor, client, false);
+      client.holders = [];
+      await favor.refresh();
+      client.holders = [{ characterId: 'jabuti', name: 'Jabuti' }];
+      await favor.refresh();
+      expect(favor.gained()).toBe('jabuti');
+      expect(favor.lines()).toEqual([]);
+    });
+
+    it("reads any of the reader's characters as the spender when the roll does not name one", async () => {
+      const { client, favor } = setup();
+      client.holders = [{ characterId: 'jabuti', name: 'Jabuti' }];
+      await follow(favor, client, false);
+      favor.spentBy('');
+      client.holders = [];
+      await favor.refresh();
+      client.holders = [{ characterId: 'jabuti', name: 'Jabuti' }];
+      await favor.refresh();
+      expect(texts(favor)).toEqual(['O mestre devolveu a sua Inspiração.']);
     });
 
     it('reads a grant to a character that never spent one as a grant', async () => {

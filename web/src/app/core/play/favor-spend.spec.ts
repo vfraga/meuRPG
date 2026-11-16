@@ -291,6 +291,15 @@ describe('FavorSpend', () => {
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
+  it('tells the state whose Inspiração the roll spent, so that its coming back reads as the master giving it back', () => {
+    const { fav, favor } = setup();
+    vi.spyOn(favor, 'refresh').mockResolvedValue();
+    const spentBy = vi.spyOn(favor, 'spentBy');
+    fav.set(true);
+    fav.spent();
+    expect(spentBy).toHaveBeenCalledTimes(1);
+  });
+
   it('unticks when the box closes, so it is not ticked when it opens again', () => {
     const circumstances = signal<FavorCircumstances>(none);
     const { fav } = setup({ circumstances: () => circumstances() });

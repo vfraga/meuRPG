@@ -781,6 +781,8 @@
 
 <ng-template #masterWaiting>
   @if (encounter(); as e) {
+    <!-- What the Inspiração asks of the master (RN-43, boards 581-05 and 581-06): the pass to accept or refuse and the roll it spent for nothing; at the top of what waits. -->
+    <app-favor-requests (answered)="focusOrder()" />
     <!-- A player's reaction nobody answered in 10 s (C8-04): the question comes to the master, at the top. -->
     <app-reaction-queue
       [encounter]="e"

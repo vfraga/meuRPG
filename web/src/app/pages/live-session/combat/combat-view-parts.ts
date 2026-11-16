@@ -176,6 +176,7 @@ export abstract class CombatViewPartsDirective extends CombatViewActingDirective
     send: (holdId, answer, key) =>
       this.injector.get(ResourceClient).answerHeldRoll(this.campaignId(), holdId, answer, key),
   });
+  protected readonly asked = computed(() => this.held.count() + this.favorAsks());
   protected readonly heldCount = computed(() => pendingCountText(this.held.count()));
   protected readonly heldCanType = computed(() => this.diceMode() !== DiceMode.APP);
   /** The master may roll in the app for a player (the campaign did not force physical dice). */

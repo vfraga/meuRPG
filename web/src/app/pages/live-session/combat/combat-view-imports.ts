@@ -30,6 +30,7 @@ import { InitiativeSide } from './initiative-side/initiative-side';
 import { MovePage } from './move-page/move-page';
 import { MoveRow } from './move-row/move-row';
 import { OpportunityCard } from './opportunity/opportunity-card';
+import { FavorRequests } from '../../../shared/favor-requests/favor-requests';
 import { HiddenRevealCard } from './hidden-reveal/hidden-reveal-card';
 import { NpcCard } from './npc-card/npc-card';
 import { DeathsBlock } from './deaths-block/deaths-block';
@@ -91,6 +92,7 @@ export const COMBAT_VIEW_IMPORTS = [
   InspirationCard,
   CombatBar,
   SunSwitch,
+  FavorRequests,
   HiddenRevealCard,
   CombatLogPanel,
   CombatMapCard,

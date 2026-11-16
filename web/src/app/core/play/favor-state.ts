@@ -97,7 +97,7 @@ export class FavorState {
   private noteTimer: ReturnType<typeof setTimeout> | undefined;
   /** The asks and questions this screen closed itself: their leaving the list is no news. */
   private readonly handled = new Set<string>();
-  /** The characters that lost the Inspiração without a pass: one that comes back after a roll spent it was given back, not granted. */
+  /** The characters whose Inspiração a roll of this screen spent: one that comes back after that was given back, not granted. */
   private readonly spentIds = new Set<string>();
   private lastPasses: readonly FavorPassVm[] = [];
   private lastRefunds: readonly FavorRefundVm[] = [];
@@ -106,6 +106,9 @@ export class FavorState {
   constructor() {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.noteTimer));
   }
+
+  /** How many asks and questions wait for the master's answer (the badge of his tab counts them). */
+  readonly asked = computed(() => this.passes().length + this.refunds().length);
 
   /** Whether `characterId` has it, as far as the reader may know. */
   has(characterId: string): boolean {
@@ -222,7 +225,7 @@ export class FavorState {
     this.passes.set(read.passes);
     this.refunds.set(read.refunds);
     if (before !== null) {
-      this.tellClosed(prevPasses, read.passes, prevRefunds, read.refunds, next, before);
+      this.tellClosed(prevPasses, read.passes, prevRefunds, read.refunds, next);
       // A holder that was not there at the last read that worked is a grant (not the first read: it had it already), or the
       // Inspiração a roll spent that the master gave back.
       const fresh = [...next.keys()].find((id) => !before.has(id));
@@ -232,6 +235,15 @@ export class FavorState {
     }
     if (this.gained() !== '' && !next.has(this.gained())) {
       this.gained.set('');
+    }
+  }
+
+  /** A roll of this screen was made with the Inspiração of `characterId` (`''`: of any of the reader's characters): if it comes back
+   * before another grant, the master gave it back (581-07, item 2). The server tells the roller nothing else of a refund outside a
+   * combat, so a spend made on another device reads as a grant when it comes back. */
+  spentBy(characterId: string): void {
+    for (const id of characterId === '' ? this.holders().keys() : [characterId]) {
+      this.spentIds.add(id);
     }
   }
 
@@ -252,23 +264,15 @@ export class FavorState {
     prevRefunds: readonly FavorRefundVm[],
     refunds: readonly FavorRefundVm[],
     holders: ReadonlyMap<string, string>,
-    before: ReadonlySet<string>,
   ): void {
     const open = new Set(passes.map((p) => p.id));
     const gone = prevPasses.filter((p) => !open.has(p.id));
-    // The Inspiração a pass took from its giver: the accept moved it, so it is not a spent one.
-    const moved = new Set(gone.map((p) => p.fromId));
-    for (const id of before) {
-      if (!holders.has(id) && !moved.has(id)) {
-        this.spentIds.add(id);
-      }
-    }
     for (const p of gone) {
       if (this.handled.delete(p.id)) {
         continue;
       }
       if (this.master()) {
-        this.tell(favorCanceledText(p.fromName), 'info', 'keyboard_tab');
+        this.tell(favorCanceledText(p.fromName), 'neutral', 'keyboard_tab');
       } else if (!holders.has(p.fromId)) {
         this.tell(favorAcceptedText(p.toName), 'success', 'keyboard_tab');
       } else {
@@ -278,7 +282,7 @@ export class FavorState {
     const openRefunds = new Set(refunds.map((r) => r.id));
     for (const r of prevRefunds.filter((r) => !openRefunds.has(r.id))) {
       if (!this.handled.delete(r.id) && this.master()) {
-        this.tell(FAVOR_ANSWERED_ELSEWHERE, 'info', 'info');
+        this.tell(FAVOR_ANSWERED_ELSEWHERE, 'neutral', 'info');
       }
     }
   }
@@ -386,7 +390,7 @@ export class FavorState {
       } else {
         this.handled.delete(pass.id);
       }
-      this.tell(out.text, out.closes ? 'info' : 'neutral', 'keyboard_tab');
+      this.tell(out.text, 'neutral', 'keyboard_tab');
     }
     await this.refresh();
   }
@@ -413,7 +417,7 @@ export class FavorState {
         // The server leaves the question open after a refused give back: the roller has one, so keeping it spent is what is true.
         await this.keepQuietly(prompt);
       }
-      this.tell(out.text, out.closes ? 'info' : 'neutral', out.keep ? 'star' : 'info');
+      this.tell(out.text, 'neutral', out.keep ? 'star' : 'info');
     }
     await this.refresh();
   }

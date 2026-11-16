@@ -132,6 +132,8 @@
       @if (!state.isMaster()) {
         <!-- The master gave this player's character the Inspiração (RN-43, 581 states 3): a polite status; no other player reads anything (RN-10). -->
         <app-favor-notice [on]="favor.gained() !== ''" (dismissed)="favor.dismissGained()" />
+        <!-- What the pass and the refund tell this player (state 2, 5 and 6): only what the server said to them (RN-10). -->
+        <app-favor-lines />
       }
 
       @if (!state.isMaster()) {
@@ -265,6 +267,8 @@
           />
         }
       } @else if (state.isMaster()) {
+        <!-- What the Inspiração asks of the master outside a combat (RN-43): "Para você responder", above the rolls that wait. -->
+        <app-favor-requests />
         <!-- The rolls that wait for their roller's answer, which the master may answer too after ten seconds: above the tabs. -->
         <app-held-rolls-panel
           [campaignId]="state.campaignId()"
