@@ -1,6 +1,7 @@
 package play
 
 import (
+	"github.com/PuraFome/meuRPG/backend/internal/play/mountsave"
 	"testing"
 
 	"github.com/PuraFome/meuRPG/backend/internal/authz"
@@ -110,7 +111,7 @@ func TestMountedCombat_TheSquaresOfTheEarlierPushesKeepTheSave(t *testing.T) {
 	one, two, three := int32(20), int32(22), int32(24)
 	rider := playdb.Combatant{ID: "r", MountedOnID: new("m")}
 	w := playdb.ReactionWindow{ReactorID: new("r")}
-	tr := windowTrigger{Target: "m", Cause: mountCauseKey(causePushed), AtCol: two, AtRow: 7, Before: [][2]int32{{one, 7}}}
+	tr := windowTrigger{Target: "m", Cause: mountsave.Key(causePushed), AtCol: two, AtRow: 7, Before: [][2]int32{{one, 7}}}
 	for col, gone := range map[int32]bool{one: false, two: false, three: true, 18: true} {
 		mount := playdb.Combatant{ID: "m", GridCol: &col, GridRow: new(int32(7))}
 		if got := mountSaveGone(w, tr, map[string]playdb.Combatant{"r": rider, "m": mount}); got != gone {

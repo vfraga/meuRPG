@@ -13,6 +13,7 @@ import (
 	"github.com/PuraFome/meuRPG/backend/internal/platform/conv"
 	"github.com/PuraFome/meuRPG/backend/internal/play/advantage"
 	"github.com/PuraFome/meuRPG/backend/internal/play/link"
+	"github.com/PuraFome/meuRPG/backend/internal/play/mountsave"
 	"github.com/PuraFome/meuRPG/backend/internal/play/playdb"
 	"github.com/PuraFome/meuRPG/backend/internal/rules"
 	"github.com/PuraFome/meuRPG/backend/internal/rules/combat"
@@ -39,31 +40,6 @@ import (
 // mountSaveDC is the DC of the saving throw, the SRD's 10.
 const mountSaveDC = 10
 
-// The causes a window keeps in its trigger.
-const (
-	mountCausePushed = "pushed"
-	mountCauseProne  = "prone"
-)
-
-// mountCauseKey is the word a window keeps for its cause.
-func mountCauseKey(cause playv1.MountSaveCause) string {
-	if cause == playv1.MountSaveCause_MOUNT_SAVE_CAUSE_PRONE {
-		return mountCauseProne
-	}
-	return mountCausePushed
-}
-
-// mountCauseOf is the cause a stored word says.
-func mountCauseOf(key string) playv1.MountSaveCause {
-	switch key {
-	case mountCauseProne:
-		return playv1.MountSaveCause_MOUNT_SAVE_CAUSE_PRONE
-	case mountCausePushed:
-		return playv1.MountSaveCause_MOUNT_SAVE_CAUSE_PUSHED
-	}
-	return playv1.MountSaveCause_MOUNT_SAVE_CAUSE_UNSPECIFIED // the fall of a dismount: no save was asked
-}
-
 // openMountSave opens the save of a rider that sits on the mount, unless it owes one already (one pending save for each rider, whatever
 // asks) or it is defeated (a dead rider is no rider's fall). A rider at 0 hit points that is alive is unconscious and auto-fails a
 // Dexterity saving throw (SRD 5.1, Conditions): it is thrown at once, with no window and no d20. The window keeps the square the mount
@@ -88,7 +64,7 @@ func (s *Service) openMountSave(ctx context.Context, c *combatTx, _ []playdb.Com
 	}); i >= 0 {
 		return s.carrySaveOn(ctx, c, open[i], mount, cause) // one save covers both
 	}
-	trigger := windowTrigger{Target: mount.ID, Cause: mountCauseKey(cause)}
+	trigger := windowTrigger{Target: mount.ID, Cause: mountsave.Key(cause)}
 	if placed(mount) {
 		trigger.AtCol, trigger.AtRow = conv.OrZero(mount.GridCol), conv.OrZero(mount.GridRow)
 	}
@@ -105,13 +81,13 @@ func (s *Service) carrySaveOn(ctx context.Context, c *combatTx, w playdb.Reactio
 	}
 	t := windowTriggerOf(w)
 	here := [2]int32{conv.OrZero(mount.GridCol), conv.OrZero(mount.GridRow)}
-	if t.Cause != mountCauseProne && here == [2]int32{t.AtCol, t.AtRow} {
+	if t.Cause != mountsave.Prone && here == [2]int32{t.AtCol, t.AtRow} {
 		return nil
 	}
-	if t.Cause != mountCauseProne {
+	if t.Cause != mountsave.Prone {
 		t.Before = append(t.Before, [2]int32{t.AtCol, t.AtRow})
 	}
-	t.Cause, t.AtCol, t.AtRow = mountCauseKey(cause), here[0], here[1]
+	t.Cause, t.AtCol, t.AtRow = mountsave.Key(cause), here[0], here[1]
 	body, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Errorf("encode the window's trigger: %w", err)
@@ -126,7 +102,7 @@ func (s *Service) carrySaveOn(ctx context.Context, c *combatTx, w playdb.Reactio
 // with no d20 and no window.
 func (s *Service) throwDownRider(ctx context.Context, c *combatTx, rider, mount playdb.Combatant, cause playv1.MountSaveCause) error {
 	ev := actionEvent{Round: c.enc.Round, Secret: rider.Hidden || mount.Hidden, Actor: rider.ID, Target: mount.ID}
-	ev.Reaction = &reactionEvent{Kind: string(reaction.MountSave), SaveDC: mountSaveDC, Cause: mountCauseKey(cause), AutoFail: true}
+	ev.Reaction = &reactionEvent{Kind: string(reaction.MountSave), SaveDC: mountSaveDC, Cause: mountsave.Key(cause), AutoFail: true}
 	return s.throwRider(ctx, c, rider, mount, &ev)
 }
 
@@ -173,7 +149,7 @@ func mountSaveGone(w playdb.ReactionWindow, t windowTrigger, byID map[string]pla
 	if !ok || !there || rider.Defeated || rider.MountedOnID == nil || *rider.MountedOnID != mount.ID {
 		return true
 	}
-	if t.Cause == mountCauseProne {
+	if t.Cause == mountsave.Prone {
 		return !slices.Contains(rider.Conditions, condProne)
 	}
 	if !placed(mount) {
@@ -230,11 +206,10 @@ func (s *Service) mountSaveView(ctx context.Context, m authz.Membership, d *enco
 	return nil, nil
 }
 
-// mountSavePrompt is the prompt of an open window: the rider, the mount when the caller sees it, the DC, the circumstances of the d20
-// and the bonus it adds.
+// mountSavePrompt is the prompt of an open window: the rider, the mount when the caller sees it, the DC, the d20's circumstances and bonus.
 func (s *Service) mountSavePrompt(ctx context.Context, m authz.Membership, d *encounterData, v combatViewer, w playdb.ReactionWindow, rider playdb.Combatant) (*playv1.MountSavePrompt, error) {
 	t := windowTriggerOf(w)
-	out := &playv1.MountSavePrompt{RiderId: rider.ID, Cause: mountCauseOf(t.Cause)}
+	out := &playv1.MountSavePrompt{RiderId: rider.ID, Cause: mountsave.CauseOf(t.Cause)}
 	if v.master || v.showSaveDC { // the table's rule (RN-24): the player reads the DC only when it shows it
 		out.Dc = mountSaveDC
 	}
@@ -317,7 +292,7 @@ func (e *logEntry) fillMountSave(c *logViewing, out *playv1.CombatLogEntry) bool
 		return false
 	}
 	ms := &playv1.CombatLogMountSave{
-		Cause: mountCauseOf(re.Cause), Held: re.Kept, AutoFail: re.AutoFail, LandedCol: re.LandCol, LandedRow: re.LandRow,
+		Cause: mountsave.CauseOf(re.Cause), Held: re.Kept, AutoFail: re.AutoFail, LandedCol: re.LandCol, LandedRow: re.LandRow,
 	}
 	if c.v.master || (c.v.owns(c.actor) && !isCreature(c.actor)) {
 		ms.D20, ms.Total = e.ev.D20, e.ev.Total

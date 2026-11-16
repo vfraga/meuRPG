@@ -72,7 +72,7 @@ type reactionEvent struct {
 	Why string `json:"why,omitempty"`
 	// Concentration: the spell, the DC and whether it was kept.
 	Kept bool `json:"kept,omitempty"`
-	// Mount save: what asked it (mountCausePushed, mountCauseProne), whether the rider failed with no d20, where it landed after the fall
+	// Mount save: what asked it (mountsave.Pushed, mountsave.Prone), whether the rider failed with no d20, where it landed after the fall
 	// and that no square next to the mount was free.
 	Cause    string `json:"cause,omitempty"`
 	AutoFail bool   `json:"auto_fail,omitempty"`
