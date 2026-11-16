@@ -51,10 +51,14 @@
       @if (ch.asksAbility) {
         <app-ability-picker [chosen]="s.ability()" (pick)="ch.pickAbility($event)" />
       }
-      @if (s.data.alsoSteed && !s.steedName()) {
-        <!-- The caster got off (or was thrown) while the sheet was open: the spell is the caster's alone again. -->
-        <p class="steed-off" role="status">Você desmontou: a magia vale só para você.</p>
-      } @else if (s.data.alsoSteed) {
+      <!-- The live region is on the page before its text, so a screen reader announces the text when it comes. -->
+      <div class="steed-status" role="status">
+        @if (s.data.alsoSteed && !s.steedName()) {
+          <!-- The caster got off (or was thrown) while the sheet was open: the spell is the caster's alone again. -->
+          <p class="steed-off">Você desmontou: a magia vale só para você.</p>
+        }
+      </div>
+      @if (s.data.alsoSteed && s.steedName()) {
         <app-steed-also [name]="s.steedName()" [checked]="s.alsoSteed()" (flip)="s.alsoSteed.set(!s.alsoSteed())" />
       }
       @if (ch.damageChoices().length) {

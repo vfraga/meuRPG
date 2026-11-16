@@ -137,6 +137,9 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
 
   it('a dismount while the sheet is open takes the check away and says why; the cast reaches the caster alone', async () => {
     const { fixture, el, castSpell, cast, check, live, lia, estrela } = await open(true);
+    const status = el.querySelector('.steed-status');
+    expect(status?.getAttribute('role')).toBe('status');
+    expect(status?.textContent?.trim()).toBe('');
     live.set(
       encounter({
         combatants: [
@@ -146,8 +149,10 @@ describe('CastSheet: "Estrela também", a self-only spell that reaches the steed
       }),
     );
     fixture.detectChanges();
+    expect(el.querySelector('.steed-status')).toBe(status);
     expect(check()).toBeNull();
-    expect(el.querySelector('.steed-off')?.textContent?.trim()).toBe(
+    expect(status?.querySelector('[role]')).toBeNull();
+    expect(status?.querySelector('.steed-off')?.textContent?.trim()).toBe(
       'Você desmontou: a magia vale só para você.',
     );
     await cast();
